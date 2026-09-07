@@ -24,15 +24,27 @@
  *   exam              → Esami HMD
  *   competition       → the WAKO circuit and other outside opens
  *   hmd_fighting_cup  → HMD's own cup (the plugin's event type)
- *   seminar / workshop → everything else; counts toward nothing
+ *   seminar / workshop → training that counts toward nothing
+ *   other             → none of the above; counts toward nothing
  *
- * ── SOME ROWS ARE MY BEST GUESS, NOT HMD'S ANSWER ───────────────────────────
- * They are marked `CONFIRM` in `note`. Riunione Cinture Nere is a black-belt
- * MEETING, Budo Night is a social evening and Escursione Pre Pasqua is a
- * one-day outing — none of the five built-in types is obviously right for any
- * of them, and I have typed all three as things that count toward nothing,
- * which is the conservative direction. If the Escursione is really a day camp,
- * change it and the attendees gain a requirement they earned.
+ * ── THE GUESSED ROWS, AS HMD ANSWERED THEM (2026-09-07) ─────────────────────
+ * Nothing here is a guess any more — no row is awaiting confirmation.
+ *
+ * Riunione Cinture Nere and Budo Night are `other`, not `seminar` — one is a
+ * plain meeting, the other a once-a-year show, and neither involves teaching.
+ * `other` was added to the built-in types for exactly this shape of event;
+ * `BuiltinEventType` in `packages/shared/src/types/event.ts` says why a
+ * catch-all had to be one. Both already counted toward nothing, so this is a
+ * LABELLING correction and moves no belt requirement.
+ *
+ * Escursione Pre Pasqua IS a `camp`, and that one does change the rules. It is
+ * a new one-day format REPLACING the Easter camp — and the Easter camp counted.
+ * Typing the replacement as anything else would quietly withdraw a requirement
+ * from everyone who attends the thing that replaced it, which is the silent
+ * failure this header warns about two paragraphs up. One consequence to
+ * expect: `camp` is the one type whose check-in demands `join_as`
+ * (`isCheckinCompleted`), so a day outing's roster now asks what each person
+ * is coming as.
  *
  * ── THE PUBLISHED ORDER IS NOT ALWAYS BY DATE ───────────────────────────────
  * March lists the Italian World Cup (11–15) above Esami (13), and May lists the
@@ -47,6 +59,7 @@ export type SeasonEventType =
   | 'exam'
   | 'seminar'
   | 'workshop'
+  | 'other'
   | 'hmd_fighting_cup'
 
 export interface SeasonEvent {
@@ -61,8 +74,24 @@ export interface SeasonEvent {
   /** Not organised by HMD. Members still attend; HMD does not run it. */
   external?: boolean
   location?: string
-  /** Free text. `CONFIRM:` marks something I guessed — see the header. */
+  /**
+   * Free text that becomes part of the event's DESCRIPTION — members read it,
+   * on the event page (`describe()` in the season pass).
+   *
+   * Reasoning about WHY a row is typed the way it is is not that. It goes in a
+   * `//` comment above the row, where the next editor of this file sees it and
+   * no member does.
+   */
   note?: string
+  /**
+   * "This type is a guess — ask HMD." Internal: the season pass prints these
+   * loudly at the end of a run and NEVER writes them to Firestore.
+   *
+   * It has its own field because it used to be a `CONFIRM:` prefix on `note` —
+   * and `note` is member-facing copy, so the marker for an unanswered question
+   * would now be published on the event page as its description.
+   */
+  confirm?: string
 }
 
 /** The season these events belong to, for the pass's log line. */
@@ -71,12 +100,13 @@ export const HMD_SEASON_LABEL = '2026/2027'
 export const HMD_SEASON_EVENTS: SeasonEvent[] = [
   // ── Settembre 2026 ────────────────────────────────────────────────────────
   {
+    // A black-belt MEETING — nobody is taught anything, so `seminar` was a
+    // claim about it that was not true. Counts toward nothing either way.
     id: 'hmd-2026-09-12-riunione-cinture-nere',
     title: 'Riunione Cinture Nere HMD',
-    type: 'seminar',
+    type: 'other',
     start: '2026-09-12',
     end: '2026-09-12',
-    note: 'CONFIRM: a black-belt MEETING. Typed seminar because no built-in type fits; counts toward nothing.',
   },
 
   // ── Ottobre 2026 ──────────────────────────────────────────────────────────
@@ -114,12 +144,13 @@ export const HMD_SEASON_EVENTS: SeasonEvent[] = [
 
   // ── Dicembre 2026 ─────────────────────────────────────────────────────────
   {
+    // A show, once a year. HMD's own call: not worth a type of its own, so it
+    // takes the catch-all. Counts toward nothing.
     id: 'hmd-2026-12-19-budo-night',
     title: 'Budo Night',
-    type: 'seminar',
+    type: 'other',
     start: '2026-12-19',
     end: '2026-12-19',
-    note: 'CONFIRM: a social evening. Typed seminar; counts toward nothing.',
   },
   {
     id: 'hmd-2026-12-27-montagna-invernale',
@@ -175,12 +206,16 @@ export const HMD_SEASON_EVENTS: SeasonEvent[] = [
     end: '2027-03-13',
   },
   {
+    // ONE DAY, AND STILL A CAMP. A new format replacing the Easter camp — and
+    // the Easter camp counted toward the camp requirement. Typing the
+    // replacement as a workshop would withdraw that requirement from everyone
+    // who attends it, silently. The duration is not what `camp` means here.
     id: 'hmd-2027-03-27-escursione-pre-pasqua',
     title: 'Escursione Pre Pasqua',
-    type: 'workshop',
+    type: 'camp',
     start: '2027-03-27',
     end: '2027-03-27',
-    note: 'CONFIRM: a one-day outing, so NOT typed camp. If it is a day camp, change the type — attendees gain a belt requirement.',
+    note: 'Replaces the Easter camp.',
   },
 
   // ── Aprile 2027 ───────────────────────────────────────────────────────────
