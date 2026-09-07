@@ -9,9 +9,9 @@
  * visible failure; the structural one was that eleven flat tabs are an entire
  * application's navigation, not a feature area's.
  *
- * Both halves of that now live where a studio's equivalents live: the four
- * working destinations are SIDEBAR ROWS (the shell renders them when the URL is
- * in org scope), and everything configurational is behind the RAIL below. The
+ * Both halves of that now live where a studio's equivalents live: the working
+ * destinations are SIDEBAR ROWS (the shell renders them when the URL is in org
+ * scope), and everything configurational is behind the RAIL below. The
  * strip and the "← Back to dashboard" link are gone — the second because it
  * framed the organisation as a modal detour rather than a place you work, which
  * is exactly the framing this design rejects.

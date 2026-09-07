@@ -27,6 +27,7 @@ import {
   CreditCard,
   Globe,
   IdCard,
+  LayoutDashboard,
   ListTodo,
   MapPin,
   Settings,
@@ -48,7 +49,7 @@ export interface OrgNavItem {
   /** Key in the `Org` i18n namespace. */
   labelKey: string
   icon: LucideIcon
-  /** Which rail group it belongs to. Absent for the four sidebar rows. */
+  /** Which rail group it belongs to. Absent for a sidebar row. */
   group?: OrgRailGroupKey
   /**
    * Rendered with the tenant's own word for it rather than the static label —
@@ -90,13 +91,20 @@ export interface OrgNavItem {
  *
  * `lib/navSort.ts` puts rows in alphabetical order wherever a list GROWS —
  * sections and rail groups gain and lose rows constantly, so a considered order
- * there decays into the order things were written in. These four or five do not
- * grow: they are the org's whole shape, and their order is load-bearing at both
- * ends (Studios is home; Manage is the way into the rail, and a settings row
- * that sorted into the middle would read as a destination rather than a door).
- * Ranking five fixed things once is the case the rule explicitly leaves alone.
+ * there decays into the order things were written in. These few do not grow:
+ * they are the org's whole shape, and their order is load-bearing at both ends
+ * (Dashboard is home; Manage is the way into the rail, and a settings row that
+ * sorted into the middle would read as a destination rather than a door).
+ * Ranking a handful of fixed things once is the case the rule explicitly leaves
+ * alone.
  */
 export const ORG_NAV_ITEMS: OrgNavItem[] = [
+  // HOME, and the reason it is a sidebar row rather than one more destination
+  // behind the rail: an organisation had no page that was ABOUT the
+  // organisation. Studios was standing in for one — which is why
+  // `orgLandingPath` sent an organiser there — and a roster answers "who is in
+  // it", never "how is it doing".
+  { id: 'org-dashboard', path: 'dashboard', labelKey: 'navDashboard', icon: LayoutDashboard },
   { id: 'org-teams', path: 'teams', labelKey: 'navStudios', icon: Building2 },
   { id: 'org-events', path: 'events', labelKey: 'tabEvents', icon: CalendarRange },
   {
@@ -201,12 +209,17 @@ export function orgNavItemsForRole(role: OrgRole | null): OrgNavItem[] {
 }
 
 /**
- * Where `/org/{orgId}` lands. An organiser opens the roster; a member studio
- * opens the summary — the roster is the one page their own membership does not
- * let them read.
+ * Where `/org/{orgId}` lands. An organiser opens the dashboard; a member studio
+ * opens the summary — the dashboard reads the roster and the federation's
+ * contacts, and their own membership lets them do neither.
+ *
+ * It used to be the roster for an organiser, for the honest reason that nothing
+ * better existed: `/org/{id}/teams` was the only page about the organisation as
+ * a whole. `/org/{id}/dashboard` is now that page, and a scope's front door
+ * should be the thing that summarises it rather than one of its lists.
  */
 export function orgLandingPath(role: OrgRole | null): string {
-  return role == null ? 'overview' : 'teams'
+  return role == null ? 'overview' : 'dashboard'
 }
 
 /**
@@ -256,7 +269,7 @@ export function orgHref(orgId: string, path: string): string {
  * Does this pathname sit behind the rail?
  *
  * The org layout renders the master-detail shell only for rail destinations —
- * the four sidebar rows are full-width pages, like a studio's own. Matching on
+ * a sidebar row is a full-width page, like a studio's own. Matching on
  * the SEGMENT rather than the whole path keeps a detail route
  * (`/org/{id}/places/{placeId}`) inside its own rail, which is what the studio
  * settings do too.

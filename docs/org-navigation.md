@@ -55,10 +55,40 @@ ctrlKey + altKey on the layouts this product is built for.
   profile and an org has no equivalent document, so a repointed QR would be some
   arbitrary studio's.
 
+**Revised 2026-09-07 — the scope gained a front door:**
+
+- **`/org/{id}/dashboard` is home, and `orgLandingPath` sends an organiser
+  there.** The landing was the roster, for the honest reason that nothing better
+  existed: `/org/{id}/teams` was the only page ABOUT the organisation as a whole,
+  and a roster answers "who is in it", never "how is it doing". Every scope in
+  this product now opens on the thing that summarises it.
+- **It is not the studio dashboard with a wider `where` clause**, and the reason
+  is structural rather than aesthetic. A studio's dashboard is a DAY — agenda,
+  queue, trends — and an organisation has no day: it runs no sessions and takes
+  no bookings, its studios do. What it has is scale, composition and a queue of
+  invitations, so the figures LEAD at full width (a studio's sit in a 2×2 rail
+  beside the agenda) and exactly one block wears the accent frame, because a
+  federation has one subject where a studio's morning has two. Same building
+  blocks — `Figure`, `Panel`, `Card` — a different sentence.
+- **Nothing was relaxed to build it.** Every read was already permitted; the
+  page's own constraint is that a denial renders as `—` and never as `0`. See
+  the module header of `apps/web/src/components/org-dashboard/data.ts` for who
+  may ask what, including why the people figures are org-ADMIN only and why the
+  roster reads studio names from the world-readable `public_profile` rather than
+  from `teams/{id}`, which an org admin cannot read.
+- **A member studio still lands on `/overview`**, which is their summary; the
+  dashboard route renders a signpost for one rather than four dashes.
+
 **Still open after the build:** `useAffiliationTerm` resolves the CURRENT TEAM's
 org rather than the route's — so on an `/org/{X}` route where X is not the current
 team's org, the studio sidebar's affiliation word is the wrong org's. Both are
 recorded in `docs/open-defects.md`.
+
+**Still missing from the dashboard, and named rather than faked:** sessions,
+bookings, attendance and money across the federation. All of those are
+studio-scoped, no org rollup document exists, and computing one in the browser
+across sixteen tenants is the fan-out that page deliberately refuses. The home
+for them is a scheduled function writing an org rollup.
 
 ---
 
@@ -115,8 +145,15 @@ made the strip eleven long in the first place.
 
 **Org sidebar rows** — opened while doing the organisation's work:
 
+(The table below is the ORIGINAL design. The rows and the rail have both moved
+since — Affiliations and Places came out of the rail, the rail's three groups
+collapsed to one, and Dashboard was added as home. `lib/org-nav.ts` is the
+catalogue and the only authority; the revision notes above say why each change
+happened.)
+
 | Row | Today |
 |---|---|
+| Dashboard | `/org/{id}/dashboard` — **added 2026-09-07**, and the scope's landing page |
 | Studios | `/org/{id}/teams` — rename to match the product's own vocabulary (`plan: 'studio'`, "studio" throughout CLAUDE.md) |
 | Events | `/org/{id}/events` |
 | Program templates | `/org/{id}/program-templates` — sits by Events because it is read while creating one |
