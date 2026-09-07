@@ -231,10 +231,16 @@ export function SessionPeekSheet({ sessionId, onClose, activities, onEdit, onDel
                   </div>
                 )}
                 {session.max_participants != null && (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-muted text-muted-foreground px-2.5 py-1.5 text-xs font-medium">
-                    <Users className="h-3.5 w-3.5" />
-                    {session.bookings_count ?? 0} / {session.max_participants}
-                  </div>
+                  // The only chip here without words on it — the two beside it
+                  // say "Check-ins" and "Pending bookings" and this one says
+                  // `1 / 12`, which could be either of them. It is neither: it
+                  // is SEATS HELD against capacity.
+                  <Tip label={t('peekCapacity')}>
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted text-muted-foreground px-2.5 py-1.5 text-xs font-medium">
+                      <Users className="h-3.5 w-3.5" />
+                      {session.bookings_count ?? 0} / {session.max_participants}
+                    </div>
+                  </Tip>
                 )}
                 {session.allowBooking && (
                   <Badge variant="secondary" className="text-xs self-center">{t('peekBookingOpen')}</Badge>
