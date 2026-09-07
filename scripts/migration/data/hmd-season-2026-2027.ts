@@ -26,7 +26,7 @@
  *   hmd_fighting_cup  → HMD's own cup (the plugin's event type)
  *   seminar / workshop → everything else; counts toward nothing
  *
- * ── FOUR ROWS ARE MY BEST GUESS, NOT HMD'S ANSWER ───────────────────────────
+ * ── SOME ROWS ARE MY BEST GUESS, NOT HMD'S ANSWER ───────────────────────────
  * They are marked `CONFIRM` in `note`. Riunione Cinture Nere is a black-belt
  * MEETING, Budo Night is a social evening and Escursione Pre Pasqua is a
  * one-day outing — none of the five built-in types is obviously right for any
