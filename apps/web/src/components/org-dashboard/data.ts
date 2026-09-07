@@ -67,6 +67,13 @@ import {
 } from '@linyup/shared'
 import type { OrgTeamStatus } from '@linyup/shared'
 
+/**
+ * A stand-in name for a studio whose public profile has not synced, chosen so it
+ * sorts after every real one. `localeCompare` has no "put this last" argument,
+ * and U+FFFF written literally in the source reads as an encoding accident.
+ */
+const SORTS_LAST = '\uFFFF'
+
 /** How many upcoming events the "coming up" list shows before "all events". */
 export const UPCOMING_EVENTS_SHOWN = 5
 
@@ -135,7 +142,7 @@ export function useOrgRoster(orgId: string) {
 
       // Named studios first and alphabetically; the unnamed sink to the bottom
       // rather than sorting under a raw id nobody recognises.
-      return rows.sort((a, b) => (a.name ?? '￿').localeCompare(b.name ?? '￿'))
+      return rows.sort((a, b) => (a.name ?? SORTS_LAST).localeCompare(b.name ?? SORTS_LAST))
     },
   })
 }
