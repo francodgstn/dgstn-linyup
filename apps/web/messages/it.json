@@ -1387,7 +1387,8 @@
     "detail_tabProgram": "Programma",
     "detail_tabRsvps": "RSVP",
     "detail_rsvpsEmpty": "Nessuno ha ancora accettato.",
-    "detail_tabCategories": "Categorie"
+    "detail_tabCategories": "Categorie",
+    "type_other": "Altro"
   },
   "EventProgram": {
     "emptyTitle": "Nessun programma",
@@ -5749,7 +5750,8 @@
     "printTitle": "Calendario della stagione",
     "printFrom": "Dal",
     "printTo": "Al",
-    "printEmpty": "Nessun evento in questo periodo."
+    "printEmpty": "Nessun evento in questo periodo.",
+    "type_other": "Altro"
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",
@@ -5772,7 +5774,8 @@
     "titleConfirm": "Conferma",
     "emptyCheckins": "Ancora nessun check-in.",
     "eventDetail_rsvpsHint": "Chi ha accettato, in tutti i club membri. I nomi non sono link — i contatti di un club appartengono al club.",
-    "eventDetail_invitationsHint": "Tutte le persone invitate a questo evento. Un nuovo invio salta chi ha già un invito, a meno che tu non scelga di reinviare."
+    "eventDetail_invitationsHint": "Tutte le persone invitate a questo evento. Un nuovo invio salta chi ha già un invito, a meno che tu non scelga di reinviare.",
+    "type_other": "Altro"
   },
   "OrgRanking": {
     "title": "Sistemi di graduazione",
@@ -5850,7 +5853,8 @@
       "camp": "Camp",
       "exam": "Esame",
       "seminar": "Seminario",
-      "workshop": "Workshop"
+      "workshop": "Workshop",
+      "other": "Altro"
     },
     "fieldBuilder": {
       "label": "Etichetta",

@@ -50,11 +50,19 @@ function dayEnd(date: string): Timestamp {
  * script writes would be a flag nothing reads — the shape `docs/open-defects.md`
  * already records as a mistake once (`EventTypeConfig.contact_requirements`). The
  * fact belongs where a person will see it, so it goes in the description.
+ *
+ * `note` LANDS HERE TOO, AND THAT IS THE WHOLE CONTRACT — a note is member-facing
+ * copy, not a margin annotation. This used to skip notes prefixed `CONFIRM:`,
+ * which was how a row said its type was a guess — an internal marker one
+ * forgotten prefix away from being published as an event's description. The
+ * marker is its own field now (`SeasonEvent.confirm`, never written to
+ * Firestore), and the reasoning that shared those notes sits in `//` comments
+ * beside each row, where no member reads it.
  */
 function describe(e: SeasonEvent): string | null {
   const parts: string[] = []
   if (e.external) parts.push('Not organised by HMD — members attend, HMD does not run it.')
-  if (e.note && !e.note.startsWith('CONFIRM:')) parts.push(e.note)
+  if (e.note) parts.push(e.note)
   return parts.length ? parts.join(' ') : null
 }
 
@@ -62,7 +70,7 @@ export async function pass14SeasonCalendar(cfg: MigrationConfig): Promise<void> 
   console.log(`\n📅 Pass 14 — HMD season calendar ${HMD_SEASON_LABEL}`)
 
   const db = targetDb()
-  const unconfirmed = HMD_SEASON_EVENTS.filter((e) => e.note?.startsWith('CONFIRM:'))
+  const unconfirmed = HMD_SEASON_EVENTS.filter((e) => e.confirm)
 
   let created = 0
   let updated = 0
@@ -125,7 +133,9 @@ export async function pass14SeasonCalendar(cfg: MigrationConfig): Promise<void> 
     console.warn(
       `\n   ⚠️  ${unconfirmed.length} event(s) carry a GUESSED type — confirm with HMD and edit\n` +
         `      scripts/migration/data/hmd-season-2026-2027.ts:\n` +
-        unconfirmed.map((e) => `        ${e.start}  ${e.type.padEnd(10)} ${e.title}`).join('\n')
+        unconfirmed
+          .map((e) => `        ${e.start}  ${e.type.padEnd(10)} ${e.title}\n           ${e.confirm}`)
+          .join('\n')
     )
   }
 }
