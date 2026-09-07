@@ -1,8 +1,34 @@
 import type { Timestamp } from './common'
 
-// Built-in event types — hardcoded, always available
-export type BuiltinEventType = 'competition' | 'camp' | 'exam' | 'seminar' | 'workshop'
-export const BUILTIN_EVENT_TYPES: BuiltinEventType[] = ['competition', 'camp', 'exam', 'seminar', 'workshop']
+// Built-in event types — hardcoded, always available.
+//
+// `other` IS THE CATCH-ALL, and it exists because there was nowhere else to
+// put a thing. Custom event types are TEAM-scoped
+// (`teams/{teamId}/event_types`, and nothing reads an org-level one), so an
+// organisation running an AGM, an open day or a demo night could not name it:
+// the only honest-looking slot was `seminar`, which asserts that training
+// happened.
+//
+// It counts toward NOTHING, and that is the point. A catch-all that satisfied
+// a grading requirement would hand one out every time somebody reached for it
+// because none of the other words fit — silently, and to everyone who
+// attended. `seminar` and `workshop` count toward nothing for the same reason;
+// `other` differs only in making no claim at all about the event.
+export type BuiltinEventType =
+  | 'competition'
+  | 'camp'
+  | 'exam'
+  | 'seminar'
+  | 'workshop'
+  | 'other'
+export const BUILTIN_EVENT_TYPES: BuiltinEventType[] = [
+  'competition',
+  'camp',
+  'exam',
+  'seminar',
+  'workshop',
+  'other',
+]
 
 // EventType is open: built-in slug OR a custom event_type_id (e.g. 'fighting_cup' from plugin)
 export type EventType = BuiltinEventType | string

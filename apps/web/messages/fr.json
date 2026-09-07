@@ -1387,7 +1387,8 @@
     "detail_tabProgram": "Programme",
     "detail_tabRsvps": "RSVP",
     "detail_rsvpsEmpty": "Personne n'a encore accepté.",
-    "detail_tabCategories": "Catégories"
+    "detail_tabCategories": "Catégories",
+    "type_other": "Autre"
   },
   "EventProgram": {
     "emptyTitle": "Pas encore de programme",
@@ -5749,7 +5750,8 @@
     "printTitle": "Calendrier de la saison",
     "printFrom": "Du",
     "printTo": "Au",
-    "printEmpty": "Aucun événement dans cette période."
+    "printEmpty": "Aucun événement dans cette période.",
+    "type_other": "Autre"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",
@@ -5772,7 +5774,8 @@
     "titleConfirm": "Confirmer",
     "emptyCheckins": "Aucun check-in pour l'instant.",
     "eventDetail_rsvpsHint": "Qui a accepté, dans tous les clubs membres. Les noms ne sont pas des liens — les contacts d'un club lui appartiennent.",
-    "eventDetail_invitationsHint": "Toutes les personnes invitées à cet événement. Un nouvel envoi ignore celles qui ont déjà une invitation, sauf si vous choisissez de renvoyer."
+    "eventDetail_invitationsHint": "Toutes les personnes invitées à cet événement. Un nouvel envoi ignore celles qui ont déjà une invitation, sauf si vous choisissez de renvoyer.",
+    "type_other": "Autre"
   },
   "OrgRanking": {
     "title": "Systèmes de classement",
@@ -5850,7 +5853,8 @@
       "camp": "Camp",
       "exam": "Examen",
       "seminar": "Séminaire",
-      "workshop": "Atelier"
+      "workshop": "Atelier",
+      "other": "Autre"
     },
     "fieldBuilder": {
       "label": "Libellé",

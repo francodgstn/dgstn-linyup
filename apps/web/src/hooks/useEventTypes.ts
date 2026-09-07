@@ -21,6 +21,7 @@ const BUILTIN_LABELS: Record<string, string> = {
   exam: 'Exam',
   seminar: 'Seminar',
   workshop: 'Workshop',
+  other: 'Other',
 }
 
 export function useEventTypes(teamId: string | null): {

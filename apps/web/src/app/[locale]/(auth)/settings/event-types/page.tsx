@@ -42,6 +42,7 @@ const BUILTIN_LABEL_KEYS: Record<string, string> = {
   exam: 'builtinLabels.exam',
   seminar: 'builtinLabels.seminar',
   workshop: 'builtinLabels.workshop',
+  other: 'builtinLabels.other',
 }
 
 // ─── field builder ────────────────────────────────────────────────────────────

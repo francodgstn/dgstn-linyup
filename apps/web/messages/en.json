@@ -1387,7 +1387,8 @@
     "detail_tabProgram": "Program",
     "detail_tabRsvps": "RSVPs",
     "detail_rsvpsEmpty": "No one has accepted yet.",
-    "detail_tabCategories": "Categories"
+    "detail_tabCategories": "Categories",
+    "type_other": "Other"
   },
   "EventProgram": {
     "emptyTitle": "No programme yet",
@@ -5749,7 +5750,8 @@
     "printTitle": "Season calendar",
     "printFrom": "From",
     "printTo": "To",
-    "printEmpty": "No events fall in this window."
+    "printEmpty": "No events fall in this window.",
+    "type_other": "Other"
   },
   "OrgEventDetail": {
     "backToEvents": "Organization events",
@@ -5772,7 +5774,8 @@
     "titleConfirm": "Confirm",
     "emptyCheckins": "No check-ins yet.",
     "eventDetail_rsvpsHint": "Who accepted, across every member studio. Names are not links — a studio's contacts are its own.",
-    "eventDetail_invitationsHint": "Everyone invited to this event. Sending again skips people who already have an invitation unless you choose to resend."
+    "eventDetail_invitationsHint": "Everyone invited to this event. Sending again skips people who already have an invitation unless you choose to resend.",
+    "type_other": "Other"
   },
   "OrgRanking": {
     "title": "Ranking systems",
@@ -5850,7 +5853,8 @@
       "camp": "Camp",
       "exam": "Exam",
       "seminar": "Seminar",
-      "workshop": "Workshop"
+      "workshop": "Workshop",
+      "other": "Other"
     },
     "fieldBuilder": {
       "label": "Label",
