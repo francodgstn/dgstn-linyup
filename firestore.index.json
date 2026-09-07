@@ -264,6 +264,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "affiliation_summary.org_ids",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "teamId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "contacts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "assigned_coach_ids",
           "arrayConfig": "CONTAINS"
         },

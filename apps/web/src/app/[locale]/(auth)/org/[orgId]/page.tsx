@@ -11,11 +11,11 @@ import { orgHref, orgLandingPath } from '@/lib/org-nav'
  * THE ORGANISATION'S FRONT DOOR — and it opens onto a different room depending
  * on who knocked.
  *
- * An organiser lands on the roster; somebody from a member studio lands on the
- * summary, because the roster is precisely the page their membership does not
- * let them read (`org_teams` admits `isOrgMember(orgId) || isTeamMember(teamId)`,
- * so listing it returns a sibling studio's row that fails both arms and
- * Firestore denies the whole query).
+ * An organiser lands on the dashboard; somebody from a member studio lands on
+ * the summary, because the dashboard is built on precisely the reads their
+ * membership does not permit (`org_teams` admits `isOrgMember(orgId) ||
+ * isTeamMember(teamId)`, so listing the roster returns a sibling studio's row
+ * that fails both arms and Firestore denies the whole query).
  *
  * THE REDIRECT IS WHY THE SWITCHER CAN STAY SIMPLE. Every entry point into org
  * scope — the scope switcher, a pasted link, a bookmark — comes here and lets
@@ -23,8 +23,8 @@ import { orgHref, orgLandingPath } from '@/lib/org-nav'
  * organisation before it could even render a menu item.
  *
  * It waits for the role rather than guessing: sending an organiser to the
- * summary and then bouncing them to the roster is two navigations and a visible
- * flicker on every entry.
+ * summary and then bouncing them to the dashboard is two navigations and a
+ * visible flicker on every entry.
  */
 export default function OrgPage() {
   const { orgId } = useParams<{ orgId: string }>()
