@@ -349,6 +349,13 @@ export type ParticipantSource =
   | 'self-scan'
   /** Written by a seeding script, never by the product. */
   | 'seed'
+  /**
+   * Carried over from hmd-lineup, where attendance was a row's EXISTENCE and
+   * carried no timestamp of its own. Those rows are stamped with the session's
+   * start — the class is when the attendance happened — so a roster can say the
+   * time is reconstructed rather than recorded.
+   */
+  | 'migration'
 
 export interface ParticipantIdentity {
   firstname?: string | null
