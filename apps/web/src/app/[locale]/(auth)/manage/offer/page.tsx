@@ -86,6 +86,7 @@ import {
   anyRatedPlanIds,
   ratedPlanIds,
   resolveActivityAccessRule,
+  resolveClassGate,
   type Activity,
   type Course,
   type Product,
@@ -552,14 +553,25 @@ export default function CataloguePage() {
   // NO KIND BADGE IN THE CHIPS. The pane's header already carries it beside the
   // name, and in the rail the row sits under a heading that says it — so it was
   // printed twice on one screen and told the reader nothing either time.
+  /** The tier a class's gate actually amounts to — see the chip below. */
+  const classTierOf = (a: Activity): 'open' | 'members' | 'subscription' => {
+    const gate = resolveClassGate(
+      resolveActivityAccessRule(a),
+      a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+    )
+    return gate.requirePlan ? 'subscription' : gate.audience === 'members' ? 'members' : 'open'
+  }
+
   const activityChips = (a: Activity): OfferChip[] => {
     const appointment = isAppointmentActivity(a)
     const rule = resolveActivityAccessRule(a)
     return [
       ...(a.tags ?? []).map((tag) => ({ label: tag })),
-      // THE FORM'S OWN WORDS for who can book — `access_open` / `access_members`
-      // / `access_subscription`, the exact three options the activity editor
-      // offers. It used to be a shorter private vocabulary ("Members",
+      // THE FORM'S OWN WORDS for who can book. The editor now asks TWO
+      // questions — open to anyone / members only, then whether a plan is
+      // required — and `accessRule.type` is the display projection of that
+      // pair, so `access_open` / `access_members` / `access_subscription`
+      // ("Plan required") still name exactly what was chosen. It used to be a shorter private vocabulary ("Members",
       // "Subscription") that appeared nowhere the studio had chosen from, and
       // said NOTHING AT ALL for an open class — the commonest answer of the
       // three rendered as an absent chip, which reads as "not configured"
@@ -571,14 +583,25 @@ export default function CataloguePage() {
       // about a field it does not have.
       ...(appointment
         ? []
-        : [{ label: tAct(`access_${rule.type}` as const), tone: 'accent' as const }]),
+        : [
+            {
+              // DERIVED, not read off `accessRule.type`. That field is the
+              // display projection of the two facts below it, and the form keeps
+              // it in step — but seeded or hand-written data can carry a stale
+              // one, and a chip saying "Plan required" over a class that plainly
+              // does not require a plan is worse than no chip. Asking the gate
+              // is asking the same thing the booking path will answer.
+              label: tAct(`access_${classTierOf(a)}` as const),
+              tone: 'accent' as const,
+            },
+          ]),
       // The newcomer's trial door, where it opens something: it is independent
       // of the tier above, but on an OPEN class it grants nothing extra
       // (everyone already books free), so the editor ignores it there and so
       // does this. A PRICED trial is money and comes through the money chips
       // below as "Trial {amount}" instead — one trial fact per row, not two.
       ...(!appointment &&
-      rule.type !== 'open' &&
+      classTierOf(a) !== 'open' &&
       a.trialEnabled === true &&
       a.trialPriceAmount == null
         ? [{ label: tAct('freeTrialBadge') }]

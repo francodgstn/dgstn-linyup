@@ -306,8 +306,13 @@ export async function resolveBookingCoverage(params: {
   authenticatedContact: (admin.firestore.DocumentData & { id: string }) | null
   /** Session start — meters usage limits against the week the class HAPPENS. */
   usageAt?: Date
+  /** The class's drop-in configuration. The FREE path needs it to tell "books
+   *  free" from "must go and pay": with no price there is nowhere to send her,
+   *  so a class nobody's plan covers is simply free. Omitted ⇒ no paid door,
+   *  which is the safe reading (it can only refuse, never give a class away). */
+  dropIn?: { enabled?: boolean; priceAmount?: number } | null
 }): Promise<BookingCoverageResult> {
-  const { teamId, accessRule, authenticatedContact, usageAt } = params
+  const { teamId, accessRule, authenticatedContact, usageAt, dropIn } = params
   const { snapshot, limitedWindows } = await loadContactPaymentContext({
     teamId,
     contact: authenticatedContact,
@@ -317,6 +322,7 @@ export async function resolveBookingCoverage(params: {
   const { options, denial } = resolvePaymentOptions(snapshot, {
     kind: 'class_booking',
     accessRule,
+    dropIn,
   })
   if (denial) {
     // 'sign_in_required'/'trial_used' never come out of the class arm.
@@ -375,6 +381,8 @@ export async function resolveBookingAccessGate(params: {
   isAppointment: boolean
   /** Session start — meters usage limits against the week the class HAPPENS. */
   usageAt?: Date
+  /** See `resolveBookingCoverage` — the paid door the free path checks for. */
+  dropIn?: { enabled?: boolean; priceAmount?: number } | null
 }): Promise<AccessGateResult> {
   const coverage = await resolveBookingCoverage(params)
   if (coverage.denial) {

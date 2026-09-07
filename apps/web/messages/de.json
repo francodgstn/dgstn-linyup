@@ -1701,11 +1701,10 @@
     "emptyAction": "Erste Aktivität erstellen",
     "accessLabel": "Wer kann buchen",
     "access_open": "Für alle offen",
-    "access_open_desc": "Alle können gratis buchen — keine Mitgliedschaft, keine Zahlung. Neue Personen werden zu Trial-Kontakten.",
-    "access_members": "Alle Mitglieder",
-    "access_members_desc": "Alle, die sich angemeldet haben, können buchen — auch ohne Abo. Neulinge können weiterhin eine Lektion buchen, wenn unten «Gratis-Probelektion für Neulinge» aktiviert ist.",
-    "access_subscription": "Bestimmte Abos",
-    "access_subscription_desc": "Nur Mitglieder mit einem der ausgewählten Abos können buchen. Neue Personen können trotzdem eine Klasse buchen, wenn unten „Gratis-Trial für Neue“ aktiv ist.",
+    "access_open_desc": "Kein Konto nötig. Neulinge werden bei der Buchung zu Probe-Kontakten.",
+    "access_members": "Nur für Mitglieder",
+    "access_members_desc": "Nur Personen auf Ihrer Liste können buchen — auch zum Drop-in-Preis. Neulinge können trotzdem eine Probestunde nehmen, wenn das unten aktiviert ist.",
+    "access_subscription": "Abo erforderlich",
     "accessBadgeSubscription": "Abonnement",
     "dropInLabel": "Drop-in anbieten (pro Kurs zahlen)",
     "dropInPricePlaceholder": "z. B. 25",
@@ -1806,7 +1805,10 @@
     "sectionAppearanceHint": "Farbe und Labels auf Ihrer öffentlichen Seite.",
     "sectionVisitorTitle": "Was Besucher sehen",
     "sectionVisitorHint": "Die Texte und Fragen auf dem Weg zur Buchung. Alle Felder sind optional.",
-    "durationsInCatalogue": "Dauern, ihre Preise und der Mitgliederpreis werden unter Zugang & Preise festgelegt, neben den Abos, für die sie gelten."
+    "durationsInCatalogue": "Dauern, ihre Preise und der Mitgliederpreis werden unter Zugang & Preise festgelegt, neben den Abos, für die sie gelten.",
+    "accessHint": "Das ist die Tür. Was bezahlt wird, legen Sie unten fest — ein Abo kann es gratis machen, alle anderen zahlen den Drop-in-Preis.",
+    "accessAllowWithoutPlan": "Buchung für Mitglieder ohne Abo erlauben",
+    "accessAllowWithoutPlanHint": "Aktiv buchen sie zum Drop-in-Preis — oder gratis, wenn keiner gesetzt ist. Inaktiv können nur Inhaber eines verknüpften Abos buchen."
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",

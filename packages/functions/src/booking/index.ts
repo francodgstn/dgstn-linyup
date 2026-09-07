@@ -789,6 +789,10 @@ export const bookSession = onCall(async (request) => {
   // trial stays FREE (today's behaviour). A number means this trial is paid —
   // see the payment gate below.
   let activityTrialPriceAmount: number | null = null
+  // The class's paid door, read for the GATE (not for pricing — bookSession is
+  // the free path). It is what tells "books free" apart from "must go and pay"
+  // for someone no plan covers: with no price there is nowhere to send her.
+  let activityDropIn: { enabled?: boolean; priceAmount?: number } | null = null
 
   if (sessionData.activityId) {
     try {
@@ -804,6 +808,8 @@ export const bookSession = onCall(async (request) => {
           accessRule: actData.accessRule as ActivityAccessRule | undefined,
           isFreeTrial: actData.isFreeTrial as boolean | undefined,
         })
+        activityDropIn =
+          (actData.dropIn as { enabled?: boolean; priceAmount?: number } | undefined) ?? null
         activityInstructions = (actData.confirmationInstructions as string) || null
         activityCancellationPolicy = (actData.cancellationPolicy as string) || null
         activityBookingQuestions = Array.isArray(actData.bookingQuestions)
@@ -975,6 +981,9 @@ export const bookSession = onCall(async (request) => {
     // Meter usage limits against the week the CLASS happens, not the booking
     // moment — advance bookings must debit the session's own window.
     usageAt: (sessionData.start as Timestamp).toDate(),
+    // The trial door is its own free path (`gateAccessRule` is forced open
+    // above), so it must not be told a paid door exists.
+    dropIn: isTrialDoor ? null : activityDropIn,
   })
 
   // ── The waiver gate ────────────────────────────────────────────────────────

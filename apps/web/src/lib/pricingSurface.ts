@@ -7,6 +7,7 @@ import {
   GUEST_SNAPSHOT,
   normalizeBenefit,
   resolveActivityAccessRule,
+  resolveClassGate,
   resolveAppointmentDurations,
   resolveDurationBenefit,
   resolveDurationSale,
@@ -453,17 +454,21 @@ export function computePricingHealth(
     // anything but 'subscription', which blinded it to 'members': the DEFAULT
     // tier of every new class.
     if (rule.type === 'open') continue
-    if (rule.type === 'subscription') {
+    const hasDropIn = a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+    const gate = resolveClassGate(rule, hasDropIn)
+    if (gate.requirePlan) {
       const allowed = rule.subscriptionTypeIds ?? []
       allowed.forEach((id) => acceptedTypeIds.add(id))
-      // Deliberately subscription-only, both of them:
-      //  · an empty allow-list is a broken RULE — 'members' has no allow-list to
-      //    be empty (it gates on joined, not on holding a plan), so a studio that
-      //    sells no subscriptions at all still has a perfectly bookable class;
-      //  · acceptedTypeIds feeds `credits_unusable`, which asks where a credit
-      //    gets SPENT. A 'members' class covers a joined contact outright
-      //    (`via: { reason: 'members' }`) and burns no credit, so it must not
-      //    count as a place a credit pack is usable.
+      // NOW IT IS A REAL DEAD END, and only now. Under the old tiers "gated to
+      // subscriptions with none ticked" was ambiguous — usually a studio that
+      // had not finished, occasionally one that meant "nobody books this free" —
+      // so the warning had to guess. Requiring a plan is an explicit answer, and
+      // combined with no plan to hold it means the class cannot be booked by
+      // anyone at all, which is never what was meant.
+      //
+      // `acceptedTypeIds` stays scoped to this branch for the other reason it
+      // always was: it feeds `credits_unusable`, which asks where a credit gets
+      // SPENT. A class that covers its audience outright burns no credit.
       if (allowed.length === 0) {
         warnings.push({
           code: 'gated_empty_allowlist',
@@ -474,7 +479,6 @@ export function computePricingHealth(
         })
       }
     }
-    const hasDropIn = a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
     if (!hasDropIn && a.trialEnabled !== true) {
       warnings.push({
         code: 'gated_no_newcomer_path',
