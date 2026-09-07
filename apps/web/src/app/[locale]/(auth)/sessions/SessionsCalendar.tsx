@@ -10,6 +10,7 @@ import {
   Clock,
   MapPin,
   Users,
+  UserCheck,
   Pencil,
   Trash2,
   CalendarDays,
@@ -223,6 +224,19 @@ function SessionCard({ session, activities, onOpen, onEdit, onDelete }: SessionC
   const t = useTranslations('Calendar')
   const color = activityAccent(session.activityId, activities)
 
+  // `bookings_count` is SEATS HELD, `participants_count` is WHO TURNED UP, and
+  // the second is not derivable from the first — a walk-in is checked in with no
+  // booking at all, and a no-show has a booking that holds no seat.
+  const booked = session.bookings_count ?? 0
+  const attended = session.participants_count ?? 0
+  const countsLabel = [
+    t('countBooked', { count: booked }),
+    attended > 0 ? t('countCheckedIn', { count: attended }) : null,
+    session.max_participants != null ? t('countCapacity', { count: session.max_participants }) : null,
+  ]
+    .filter((part): part is string => !!part)
+    .join(' · ')
+
   return (
     <div
       role="button"
@@ -257,13 +271,34 @@ function SessionCard({ session, activities, onOpen, onEdit, onDelete }: SessionC
           )}
         </div>
 
-        {/* row 3: participants + hover actions */}
+        {/* row 3: who is coming, who came + hover actions */}
         <div className="flex items-center justify-between mt-0.5">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Users className="h-3 w-3" />
-            {session.bookings_count ?? 0}
-            {session.max_participants ? ` / ${session.max_participants}` : ''}
-          </span>
+          {/*
+            TWO NUMBERS, BECAUSE THEY ARE TWO FACTS. This was one bare icon and
+            `bookings_count`, which reads as "how many people" and is not:
+            `bookings_count` is SEATS HELD, so a booking marked no-show drops out
+            of it (`NON_HOLDING_BOOKING_STATUSES`). A class where one person
+            booked, did not come, and six others were checked in at the door
+            therefore showed "1" — every number on the screen correct, and the
+            row still wrong about the day.
+
+            The tooltip names them, because an icon pair is a legend nobody has.
+          */}
+          <Tip label={countsLabel}>
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {booked}
+                {session.max_participants ? ` / ${session.max_participants}` : ''}
+              </span>
+              {attended > 0 && (
+                <span className="flex items-center gap-1">
+                  <UserCheck className="h-3 w-3" />
+                  {attended}
+                </span>
+              )}
+            </span>
+          </Tip>
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"

@@ -1305,7 +1305,11 @@
     "eventUntil": "fino alle",
     "deleteEventConfirmTitle": "Eliminare questo evento?",
     "timezoneNotice": "Orari mostrati in {zone}.",
-    "timezoneChange": "Modifica"
+    "timezoneChange": "Modifica",
+    "countBooked": "{count} prenotati",
+    "countCheckedIn": "{count} presenti",
+    "countCapacity": "capienza {count}",
+    "peekCapacity": "Posti prenotati / capienza"
   },
   "Events": {
     "title": "Eventi",
