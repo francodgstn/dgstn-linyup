@@ -50,7 +50,18 @@ export async function pass06Sessions(
           const existing = await pRef.get()
           if (existing.exists && !cfg.overwrite) { bw.skip(); continue }
         }
-        bw.set(pRef, transformParticipant(pd.id, pd.data() as Record<string, unknown>, teamId))
+        // `checkedInAt` is the SESSION'S start: hmd-lineup recorded attendance as
+        // the row's existence and no time at all. See `transformParticipant`.
+        bw.set(
+          pRef,
+          transformParticipant(
+            pd.id,
+            pd.data() as Record<string, unknown>,
+            teamId,
+            d.id,
+            (d.data() as Record<string, unknown>).start ?? null
+          )
+        )
       }
 
       // Bookings — always walk subcollection so post-migration bookings are picked up on re-runs

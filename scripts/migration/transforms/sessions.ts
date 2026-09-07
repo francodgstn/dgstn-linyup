@@ -1,3 +1,5 @@
+import { buildParticipantDoc } from '@linyup/shared'
+
 export function transformSession(
   src: Record<string, unknown>,
   activityMap: Map<string, { name: string; type: string }>
@@ -43,18 +45,76 @@ export function transformSession(
   return out
 }
 
+/**
+ * THE ATTENDANCE ROW — built by `buildParticipantDoc`, never by hand.
+ *
+ * This used to write a shape of its own: `{contactId, teamId, checked_in_at,
+ * checked_in_by, created_at}`. It shared exactly ONE field with what the
+ * product writes, and the source's names — present on 100% of hmd-lineup's
+ * participant docs — were dropped on the floor. Three consequences, in
+ * increasing order of how long they took to notice:
+ *
+ *  1. The roster rendered blank names, because `ParticipantDoc` reads
+ *     `firstname`/`lastname`.
+ *  2. `contact` was absent, so the roster's contact link went nowhere AND the
+ *     "add from confirmed bookings" dedupe (`existingParticipantIds`, built
+ *     from `p.contact`) never matched — offering to add people already on the
+ *     roster.
+ *  3. `checked_in_at` is not `checkedInAt`, and the contact's attendance
+ *     history is a collection-group query ordered on the latter, behind a
+ *     SPARSE_ALL index. A document missing the ordered field is not in the
+ *     index at all, so every migrated attendance was invisible — the identical
+ *     failure `useContactRecentSessions` documents having already been fixed
+ *     once on the reader side.
+ *
+ * `buildParticipantDoc` exists precisely so writers cannot disagree like this;
+ * the migration was simply a writer nobody converted.
+ *
+ * TWO DELIBERATE DEPARTURES FROM COPYING THE SOURCE:
+ *
+ *  • `fullname` is REBUILT, not copied. hmd-lineup wrote it both ways round —
+ *    "Mues Heinrich Maximilian" from the roster, "Linus Lamon" from the
+ *    bookings list — which is the sort bug `buildParticipantDoc`'s header
+ *    describes. Copying the field would import the bug with the data.
+ *  • `checkedInAt` is the SESSION'S START. The old system recorded no
+ *    attendance time — presence in the subcollection was the whole fact — and
+ *    the class is when the attendance happened. Writing null instead would
+ *    keep the row in the index but pile every historical attendance at the
+ *    bottom of a descending sort. `demoTenant.ts` stamps the session start for
+ *    the same reason.
+ *
+ * `teamId` is kept ALONGSIDE the canonical shape, not instead of any of it —
+ * the rules reach the parent session for tenancy, but every other migrated
+ * subcollection carries the stamp and dropping it here would be a lone
+ * exception.
+ *
+ * `rank` (the belt at the time, on every source row) is dropped: the target
+ * has no field for it, and a field nothing reads is the shape this repo has
+ * already recorded as a mistake once.
+ */
 export function transformParticipant(
   docId: string,
   src: Record<string, unknown>,
-  teamId: string
+  teamId: string,
+  sessionId: string,
+  checkedInAt: unknown
 ): Record<string, unknown> {
   return {
-    contactId: docId, // participant doc ID is the contactId in old system
+    ...buildParticipantDoc({
+      // The participant doc ID is the contactId in the old system, and
+      // `buildParticipantDoc` enforces that same invariant on the new one.
+      contactId: docId,
+      sessionId,
+      who: {
+        firstname: (src.firstname as string | null | undefined) ?? null,
+        lastname: (src.lastname as string | null | undefined) ?? null,
+        avatar_url: (src.avatar_url as string | null | undefined) ?? null,
+      },
+      checkedInBy: 'migration',
+      checkedInAt,
+      fromBooking: src.confirmedFromBooking === true,
+    }),
     teamId,
-    checked_in_at: src.checked_in_at ?? null,
-    checked_in_by: null,
-    created_at: src.created_at ?? null,
-    // attended boolean dropped — attendance implied by presence
   }
 }
 
