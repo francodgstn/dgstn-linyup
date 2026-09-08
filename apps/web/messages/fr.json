@@ -5761,11 +5761,6 @@
     "printTo": "Au",
     "printEmpty": "Aucun événement dans cette période.",
     "type_other": "Autre",
-    "trendTitle": "Participation par événement",
-    "trendSubtitle": "{attendees} présences sur {events} événements au cours des 12 derniers mois",
-    "trendTooltip": "{attendees} présences · {date}",
-    "trendEmptyTitle": "Aucune participation",
-    "trendEmptyHint": "Enregistrez les présences à un événement et les mois se rempliront ici.",
     "viewTimeline": "Chronologie",
     "timelineZoomYear": "Année",
     "timelineZoomMonth": "Mois",
@@ -5775,7 +5770,12 @@
     "timelineEmpty": "Aucun événement pour l'instant",
     "timelineTypeless": "Sans type",
     "timelineZoomYears": "{count} ans",
-    "timelineDays": "{count, plural, one {# jour} other {# jours}}"
+    "timelineDays": "{count, plural, one {# jour} other {# jours}}",
+    "timelineAttended": "{count, plural, =0 {Personne enregistrée} one {# personne enregistrée} other {# personnes enregistrées}}",
+    "timelineInView": "Dans la vue",
+    "timelineInViewCount": "{count, plural, =0 {aucun événement} one {# événement} other {# événements}}",
+    "timelineInViewEmpty": "Rien dans cette portion — faites défiler jusqu'aux prochains événements",
+    "timelineGroupByType": "Lignes par type"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

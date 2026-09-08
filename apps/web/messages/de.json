@@ -5761,11 +5761,6 @@
     "printTo": "Bis",
     "printEmpty": "In diesem Zeitraum liegen keine Veranstaltungen.",
     "type_other": "Sonstiges",
-    "trendTitle": "Teilnahme nach Veranstaltung",
-    "trendSubtitle": "{attendees} Check-ins bei {events} Veranstaltungen in den letzten 12 Monaten",
-    "trendTooltip": "{attendees} Check-ins · {date}",
-    "trendEmptyTitle": "Noch keine Teilnahme",
-    "trendEmptyHint": "Sobald bei einer Veranstaltung eingecheckt wird, füllen sich die Monate hier.",
     "viewTimeline": "Zeitachse",
     "timelineZoomYear": "Jahr",
     "timelineZoomMonth": "Monat",
@@ -5775,7 +5770,12 @@
     "timelineEmpty": "Noch keine Veranstaltungen",
     "timelineTypeless": "Ohne Typ",
     "timelineZoomYears": "{count} Jahre",
-    "timelineDays": "{count, plural, one {# Tag} other {# Tage}}"
+    "timelineDays": "{count, plural, one {# Tag} other {# Tage}}",
+    "timelineAttended": "{count, plural, =0 {Niemand eingecheckt} one {# Person eingecheckt} other {# Personen eingecheckt}}",
+    "timelineInView": "Im Ausschnitt",
+    "timelineInViewCount": "{count, plural, =0 {keine Veranstaltungen} one {# Veranstaltung} other {# Veranstaltungen}}",
+    "timelineInViewEmpty": "Nichts in diesem Abschnitt — scrollen Sie zu den nächsten Veranstaltungen",
+    "timelineGroupByType": "Zeilen nach Typ"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",

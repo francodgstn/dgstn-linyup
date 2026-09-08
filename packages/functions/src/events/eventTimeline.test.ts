@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict'
 import {
   TIMELINE_DAYS_PER_SCREEN,
+  TIMELINE_MIN_FILL,
   TIMELINE_MIN_UNIT_PX,
   TIMELINE_YEARS_SPAN,
   estimateLabelPx,
   fractionOf,
+  participationCap,
+  participationFill,
   placeTimelineEvents,
   timelineDateAt,
   timelinePxPerDay,
@@ -614,5 +617,106 @@ describe('eventTimeline — continuity', () => {
     assert.equal(placed[0].clippedStart, false)
     assert.equal(placed[0].clippedEnd, false)
     assert.ok(placed[0].left > 0 && placed[0].left + placed[0].width < 1)
+  })
+})
+
+describe('eventTimeline — participation', () => {
+  it('a full bar means the busiest event there has been', () => {
+    assert.equal(participationFill(210, 210), 1)
+    assert.equal(participationFill(105, 210), 0.5)
+  })
+
+  it('ZERO IS A REAL ZERO — an empty frame, not a floor', () => {
+    // An event nobody attended is a finding, and drawing it the same as one
+    // person would hide it. Inherited from the attendance chart this replaced.
+    assert.equal(participationFill(0, 210), 0)
+    assert.equal(participationFill(undefined, 210), 0)
+    assert.equal(participationFill(null, 210), 0)
+  })
+
+  it('but ONE person is never invisible', () => {
+    // 1/400 of a 20px bar is a twentieth of a pixel, which rounds to nothing
+    // and says "nobody came". The floor is the whole reason this is not a
+    // division.
+    assert.equal(participationFill(1, 400), TIMELINE_MIN_FILL)
+    assert.ok(participationFill(1, 400) > 0)
+  })
+
+  it('never overflows its frame, whatever the cap says', () => {
+    assert.equal(participationFill(500, 210), 1)
+  })
+
+  it('a cap of nothing fills nothing rather than dividing by zero', () => {
+    assert.equal(participationFill(10, 0), 0)
+    assert.equal(participationFill(10, -1), 0)
+  })
+
+  it('the cap is the maximum, and ignores the events that have no count', () => {
+    assert.equal(participationCap([12, undefined, 210, null, 7]), 210)
+    assert.equal(participationCap([]), 0)
+    assert.equal(participationCap([undefined, null]), 0)
+  })
+
+  it('the cap does not move when the events are reordered', () => {
+    // It is computed over the whole archive precisely so it CANNOT change with
+    // what is on screen: a cap that moved would redraw every bar as you
+    // scrolled, and two events could not be compared by eye.
+    const counts = [12, 210, 7, 96]
+    assert.equal(participationCap(counts), participationCap([...counts].reverse()))
+  })
+})
+
+describe('eventTimeline — banding is optional', () => {
+  // What the toggle does, at the level the packer sees it: the same events,
+  // handed over with or without a group.
+  const items = [
+    ev('c1', ms(2026, 2, 3), ms(2026, 2, 4), 'Cup'),
+    ev('k1', ms(2026, 4, 10), ms(2026, 4, 17), 'Camp'),
+    ev('e1', ms(2026, 6, 1), ms(2026, 6, 2), 'Grading'),
+    ev('s1', ms(2026, 8, 9), ms(2026, 8, 10), 'Seminar'),
+  ]
+  const typed = items.map((e, i) => ({ ...e, group: ['competition', 'camp', 'exam', 'seminar'][i] }))
+  const untyped = typed.map((e) => ({ ...e, group: undefined }))
+  const year = yearRange(2026)
+
+  it('withholding the group collapses the bands into one', () => {
+    const { bands, lanes } = placeTimelineEvents(untyped, year, WIDE)
+    assert.deepEqual(bands, [{ group: '', lane: 0, lanes: 1 }])
+    assert.equal(lanes, 1, 'four events that never cross fit on one row')
+  })
+
+  it('and never needs MORE rows than banding them did', () => {
+    // The reason the toggle is worth having: banding costs a row per type
+    // whether or not that type's events ever collide, so unbanded is the
+    // compact reading of the same season.
+    const banded = placeTimelineEvents(typed, year, WIDE)
+    const flat = placeTimelineEvents(untyped, year, WIDE)
+    assert.equal(banded.lanes, 4, 'one row per type')
+    assert.ok(flat.lanes <= banded.lanes, `${flat.lanes} should not exceed ${banded.lanes}`)
+  })
+
+  it('draws exactly the same events either way', () => {
+    const banded = placeTimelineEvents(typed, year, WIDE)
+    const flat = placeTimelineEvents(untyped, year, WIDE)
+    assert.deepEqual(
+      banded.placed.map((p) => p.id).sort(),
+      flat.placed.map((p) => p.id).sort()
+    )
+    // Same dates, so the same horizontal positions — only the rows move.
+    for (const p of flat.placed) {
+      const b = banded.placed.find((x) => x.id === p.id)!
+      assert.equal(p.left, b.left)
+      assert.equal(p.width, b.width)
+    }
+  })
+
+  it('an ungrouped event still collides with one it overlaps', () => {
+    // Dropping the bands must not drop the packing: two events on top of each
+    // other still take two rows.
+    const clash = [
+      { ...ev('a', ms(2026, 3, 1), ms(2026, 3, 20), 'A'), group: undefined },
+      { ...ev('b', ms(2026, 3, 10), ms(2026, 3, 28), 'B'), group: undefined },
+    ]
+    assert.equal(placeTimelineEvents(clash, year, WIDE).lanes, 2)
   })
 })

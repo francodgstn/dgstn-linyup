@@ -54,18 +54,20 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarRange, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/ui/tip'
 import { EventPeekSheet } from '@/components/events/EventPeekSheet'
 import { eventTypeColor } from '@/lib/eventTypeColor'
 import { eventTypeLabel } from '@/lib/eventTypeLabel'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card'
-import { MapPin } from 'lucide-react'
+import { MapPin, Users } from 'lucide-react'
 import {
   BUILTIN_EVENT_TYPES,
   TIMELINE_YEARS_SPAN,
   TIMELINE_ZOOMS,
+  participationCap,
+  participationFill,
   placeTimelineEvents,
   timelineDateAt,
   timelinePxPerDay,
@@ -99,7 +101,7 @@ const DAY_MS = 86_400_000
  * fifteen reads on a page that has already loaded everything it needs — the
  * peek sheet, which opens on click, is where a resolved place belongs.
  */
-function BarCard({ event, color }: { event: Event; color: string }) {
+function BarCard({ event, color, past }: { event: Event; color: string; past: boolean }) {
   const t = useTranslations('OrgEvents')
   const tE = useTranslations('Events')
   const format = useFormatter()
@@ -141,6 +143,26 @@ function BarCard({ event, color }: { event: Event; color: string }) {
           <span className="min-w-0 break-words">{event.location}</span>
         </div>
       )}
+
+      {/* THE BAR GIVES THE SHAPE, THIS GIVES THE NUMBER. How full a bar is
+          answers "did this one draw people"; nobody can read 137 off it, and
+          nobody should have to. Shown only for a PAST event: an upcoming one
+          has no attendance to report, and a zero there would read as a
+          prediction rather than a blank.
+
+          It counts CHECK-INS (`participants_count`), which is the only
+          attendance there is — `attendees_count` is RSVPs, and who said they
+          were coming is a different question from who came. A past event with
+          no count is a real zero: on migrated data the field may simply never
+          have been written, and inventing attendance for it would be worse than
+          reporting none. (The same call the attendance chart made, before this
+          view absorbed it and it was deleted in 2026-09.) */}
+      {past && (
+        <div className="flex items-center gap-1.5 border-t pt-1.5 text-xs text-muted-foreground">
+          <Users className="h-3 w-3 shrink-0" />
+          <span>{t('timelineAttended', { count: event.participants_count ?? 0 })}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -159,6 +181,11 @@ export function EventsTimeline({
   const format = useFormatter()
 
   const [zoom, setZoom] = useState<TimelineZoom>('year')
+  // Rows by type, or everything packed as tightly as it will go. Local state
+  // like `zoom` and the legend's filtering, and for the same reason: it is how
+  // one reader is looking at the page right now, not something a pasted link
+  // should carry.
+  const [grouped, setGrouped] = useState(true)
   const [peekId, setPeekId] = useState<string | null>(null)
   // TODAY IS CAPTURED ONCE. It anchors the range and draws the marker, and a
   // timeline that silently re-based itself at midnight would move under anyone
@@ -229,6 +256,14 @@ export function EventsTimeline({
   // that still needs it.
   const trackPx = Math.max(timelineTrackPx(range, pxPerDay), viewPx)
 
+  // THE BUSIEST EVENT THERE HAS BEEN — what a full bar means. Over the whole
+  // archive and never over what is on screen: a cap that changed as you
+  // scrolled would redraw every bar under you. See `participationFill`.
+  const cap = useMemo(
+    () => participationCap(events.map((e) => e.participants_count)),
+    [events]
+  )
+
   // BUILT-IN TYPES IN THEIR DECLARED ORDER, so a band stays on the same row all
   // the way through a federation's history. A plugin or team-custom type is not
   // in that list and lands after them, ordered by its first event — see
@@ -246,9 +281,27 @@ export function EventsTimeline({
     [inputs, range, trackPx]
   )
   const shown = useMemo(() => inputs.filter((e) => !hidden.has(e.group ?? '')), [inputs, hidden])
+  /**
+   * BANDING IS A VIEW, NOT A PROPERTY OF THE EVENTS — so turning it off just
+   * withholds the group and lets the packer do what it did before bands
+   * existed: first-fit everything into as few rows as it can.
+   *
+   * Both readings are worth having. Banded answers "how did the competitions
+   * go this season", because a row you can read along is the whole reason the
+   * bands were asked for. Unbanded answers "how busy is the year" — the same
+   * events in half the rows, where the clustering and the empty stretches are
+   * the shape rather than five sparse lines each telling a fifth of the story.
+   *
+   * `group: undefined` rather than a `delete`: the packer reads `e.group ?? ''`,
+   * so an absent group and an undefined one are already the same thing to it.
+   */
+  const packed = useMemo(
+    () => (grouped ? shown : shown.map((e) => ({ ...e, group: undefined }))),
+    [shown, grouped]
+  )
   const { placed, lanes, bands } = useMemo(
-    () => placeTimelineEvents(shown, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
-    [shown, range, trackPx]
+    () => placeTimelineEvents(packed, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
+    [packed, range, trackPx]
   )
   const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
   const { unit, ticks } = useMemo(() => timelineTicks(range, pxPerDay), [range, pxPerDay])
@@ -417,6 +470,31 @@ export function EventsTimeline({
         : // An EN DASH between the first and last year on screen.
           `${yFrom}–${yTo}`
 
+  /**
+   * THE EVENTS THE VIEWPORT IS OVER, in date order — what the list below reads.
+   *
+   * A timeline answers "how is the season shaped" and is bad at "what exactly
+   * is that one in March", which is the question you ask the moment the shape
+   * tells you something. The list is that answer, and it is bound to the SCROLL
+   * rather than to a filter: what you have scrolled to IS the query, so there is
+   * no second control to keep in step with the first.
+   *
+   * Read off `placed`, so it inherits the legend's filtering for free — switch
+   * camps off and they leave the list with the rows. INTERSECTION, not
+   * containment: a camp running across the whole viewport is very much in view
+   * even though neither end of it is.
+   */
+  const inView = useMemo(() => {
+    if (!measured) return []
+    const from = scrollPx
+    const to = scrollPx + viewPx
+    return placed
+      .filter((p) => p.left * trackPx < to && (p.left + p.width) * trackPx > from)
+      .map((p) => byId.get(p.id))
+      .filter((e): e is Event => !!e)
+      .sort((a, b) => (a.start?.toDate?.()?.getTime() ?? 0) - (b.start?.toDate?.()?.getTime() ?? 0))
+  }, [placed, scrollPx, viewPx, trackPx, byId, measured])
+
   // The button appears only when today is somewhere you cannot see, which on a
   // continuous track is a real possibility rather than a page you stepped off.
   const todayOffScreen =
@@ -467,6 +545,27 @@ export function EventsTimeline({
           )}
         </div>
 
+        <div className="flex items-center gap-2">
+          {/* IN THE SAME FAMILY AS THE ZOOM CONTROL, because it is the same kind
+              of thing: how the track is drawn, not which events are on it. Kept
+              next to it rather than down in the legend, where it would sit among
+              the type chips and read as another filter. */}
+          <Tip label={t('timelineGroupByType')}>
+            <button
+              type="button"
+              aria-pressed={grouped}
+              onClick={() => setGrouped((v) => !v)}
+              className={`flex items-center rounded-lg border p-1.5 transition-colors ${
+                grouped
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'bg-background text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              <span className="sr-only">{t('timelineGroupByType')}</span>
+            </button>
+          </Tip>
+
         <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
           {TIMELINE_ZOOMS.map((z) => (
             <button
@@ -491,6 +590,7 @@ export function EventsTimeline({
                   : t('timelineZoomMonth')}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -522,7 +622,10 @@ export function EventsTimeline({
               instead. The spacer matches the axis above the rows exactly
               (`h-5 mb-1`), because a gutter half a row out of step is worse
               than no gutter. */}
-          {measured && bands.length > 0 && (
+          {/* Nothing to name when the rows are not bands — an ungrouped track
+              has one band whose group is the empty string, and a gutter reading
+              "No type" beside every row would be worse than no gutter. */}
+          {grouped && measured && bands.length > 0 && (
             <div className="hidden shrink-0 border-r py-3 pl-3 pr-2 sm:block">
               <div className="mb-1 h-5" aria-hidden />
               {bands.map((b) => (
@@ -656,6 +759,13 @@ export function EventsTimeline({
                     const event = byId.get(p.id)
                     if (!event) return null
                     const color = eventTypeColor(event.type)
+                    // AN EVENT IS PAST WHEN IT HAS FINISHED, not when it started
+                    // — a camp running across today is still happening, and
+                    // drawing it as an attendance figure would be a count of a
+                    // thing that is not over.
+                    const ends = (event.end?.toDate?.() ?? event.start?.toDate?.())?.getTime() ?? 0
+                    const past = ends < today.getTime()
+                    const fill = past ? participationFill(event.participants_count, cap) : 0
                     return (
                       // A HOVER CARD, NOT A `title` ATTRIBUTE. The native
                       // tooltip could only repeat the name already written
@@ -683,6 +793,11 @@ export function EventsTimeline({
                                 if (draggedRef.current) return
                                 setPeekId(p.id)
                               }}
+                              // NO `overflow-hidden` HERE, EVER. The `after` and `before`
+                              // labels are absolutely positioned OUTSIDE this
+                              // box, so clipping the fill to the rounded corners
+                              // this way deletes almost every title on the
+                              // track. The fill rounds its own bottom instead.
                               className={`group absolute z-20 flex items-center rounded-[4px] text-left text-[11px] font-medium text-white transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                 // A clipped edge is drawn SQUARE. A rounded end
                                 // says "it finishes here", which is the one thing
@@ -694,11 +809,50 @@ export function EventsTimeline({
                                 width: `${p.width * 100}%`,
                                 top: p.lane * LANE_H + (LANE_H - BAR_H) / 2,
                                 height: BAR_H,
-                                background: color,
+                                // THE BAR IS A FRAME AND THE FILL IS THE
+                                // QUANTITY — see the `PARTICIPATION` note in the
+                                // module header. The frame carries the type
+                                // colour so a band still reads as one colour;
+                                // the fill inside it says how many came.
+                                // THE FRAME IS FAINT AND THE FILL IS THE INK.
+                                // At 42% an empty bar already read as a
+                                // coloured one, which left the fill almost no
+                                // range to work in — a one-day event is an 8px
+                                // sliver and the whole quantity has to live in
+                                // 20px of height, so every bit of contrast
+                                // between empty and full is worth having.
+                                background: `color-mix(in srgb, ${color} ${past ? 14 : 22}%, transparent)`,
+                                // AN UPCOMING EVENT IS DRAWN HOLLOW. The today
+                                // marker already separates the two spatially,
+                                // but that is no help once you have scrolled
+                                // away from it, and an empty solid frame would
+                                // otherwise be indistinguishable from a past
+                                // event nobody came to.
+                                border: past
+                                  ? `1px solid color-mix(in srgb, ${color} 45%, transparent)`
+                                  : // AN UPCOMING EVENT KEEPS ITS FULL-STRENGTH
+                                    // OUTLINE. Fading it to match the faint
+                                    // frame of a past one made the events you
+                                    // are PLANNING the least visible thing on a
+                                    // planning view — the exact opposite of
+                                    // what this is for. Hollow says "no figure
+                                    // yet"; faint would say "less important".
+                                    `1px dashed ${color}`,
                               }}
                             />
                           }
                         >
+                          {/* THE FILL IS A CHILD OF THE TRIGGER, NOT OF THE
+                        RENDERED BUTTON. base-ui injects the trigger's children
+                        into the element `render` returns, so giving that
+                        element its own children REPLACES them — which silently
+                        deleted every bar's title the first time this was
+                        written. Everything the bar draws goes in here. */}
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b-[3px]"
+                            style={{ height: `${fill * 100}%`, background: color }}
+                          />
                           {/* THREE PLACES A TITLE CAN GO, and the packer chose which
                         — see `labelSide`. An outside label is positioned
                         ABSOLUTELY so it cannot stretch the bar it belongs to,
@@ -707,8 +861,17 @@ export function EventsTimeline({
                         container. Whichever side it took, the row already
                         reserved that space, which is what stops another event
                         being drawn underneath it. */}
+                          {/* AN INSIDE LABEL GETS ITS OWN BACKING. It used to
+                        be white on a solid bar; the bar is now part tint and
+                        part saturated fill, and no single text colour is
+                        readable on both — white disappears against the empty
+                        top of a quiet event, dark text against the fill of a
+                        busy one. A translucent chip is legible over either, and
+                        it separates the name from the quantity behind it. */}
                           {p.labelSide === 'inside' && (
-                            <span className="truncate px-1.5">{event.title}</span>
+                            <span className="relative mx-1 truncate rounded-sm bg-background/75 px-1 text-foreground">
+                              {event.title}
+                            </span>
                           )}
                           {p.labelSide === 'after' && (
                             <span className="pointer-events-none absolute left-full ml-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
@@ -722,7 +885,7 @@ export function EventsTimeline({
                           )}
                         </HoverCardTrigger>
                         <HoverCardContent className="w-auto max-w-72">
-                          <BarCard event={event} color={color} />
+                          <BarCard event={event} color={color} past={past} />
                         </HoverCardContent>
                       </HoverCard>
                     )
@@ -757,7 +920,13 @@ export function EventsTimeline({
             drawn would remove "Camp" from the legend the instant you hid camps,
             and nothing would bring it back. A hidden entry is struck through
             and dimmed rather than removed, so the set of things you can switch
-            on never changes under you. */}
+            on never changes under you.
+
+            `allBands` IS ALSO WHY IT SURVIVES UNGROUPING. The legend does two
+            jobs — it names the bands and it filters by type — and only the
+            first one depends on the rows being bands. `allBands` is packed WITH
+            groups whatever the toggle says, so switching banding off leaves the
+            filter, and the colours, exactly where they were. */}
         {allBands.length > 0 && (
           <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2">
             {allBands.map((b) => {
@@ -795,6 +964,74 @@ export function EventsTimeline({
           </ul>
         )}
       </div>
+
+      {/* ── WHAT YOU ARE LOOKING AT, SPELLED OUT ──────────────────────────────
+          BELOW the track, not beside it. A column alongside would cost the
+          timeline a third of its width, and width is the one thing it cannot
+          spare: at 1440 the panel is 872px and a 65/35 split leaves ~560, which
+          is under the floor a year needs — "Year" would quietly stop meaning a
+          year on screen. Below, both get the full width and the sync, which was
+          the valuable half, costs nothing. */}
+      {measured && (
+        <div className="rounded-xl border bg-card">
+          <div className="flex items-baseline justify-between gap-2 border-b px-3 py-2">
+            <span className="text-xs font-medium">{t('timelineInView')}</span>
+            <span className="text-xs text-muted-foreground">
+              {t('timelineInViewCount', { count: inView.length })}
+            </span>
+          </div>
+
+          {inView.length === 0 ? (
+            // An empty stretch is a FINDING, not a failure — a quiet summer is
+            // one of the things this view exists to show — so it says so rather
+            // than offering to widen the search.
+            <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+              {t('timelineInViewEmpty')}
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {inView.map((e) => {
+                const start = e.start?.toDate?.()
+                const ends = (e.end?.toDate?.() ?? start)?.getTime() ?? 0
+                const isPast = ends < today.getTime()
+                return (
+                  <li key={e.id}>
+                    <button
+                      type="button"
+                      onClick={() => setPeekId(e.id)}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    >
+                      {/* The same glyph the bar uses — hollow while it is still
+                          ahead, filled once it has run — so a row and its bar
+                          are recognisably the same thing. */}
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          background: isPast ? eventTypeColor(e.type) : 'transparent',
+                          border: `1px ${isPast ? 'solid' : 'dashed'} ${eventTypeColor(e.type)}`,
+                        }}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium">{e.title}</span>
+                      <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">
+                        {e.type ? eventTypeLabel(e.type, tE.has, tE) : t('timelineTypeless')}
+                      </span>
+                      {isPast && (
+                        <span className="flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          {e.participants_count ?? 0}
+                        </span>
+                      )}
+                      <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                        {start ? format.dateTime(start, { day: 'numeric', month: 'short' }) : '—'}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      )}
 
       {peekId && (
         <EventPeekSheet
