@@ -415,16 +415,18 @@ export default function OrgEventsPage() {
           in would draw a cliff at today that means nothing. Costs no extra
           reads; both halves are already loaded for the calendar view.
 
-          NOT IN TIMELINE VIEW. Both this and the timeline put date on a
-          horizontal axis, and stacking them made the page show two of them at
-          DIFFERENT SCALES — this one fixed at twelve months, the timeline
-          zoomable and scrollable — so the same event sat at two different
-          horizontal positions a few pixels apart vertically. The chart still
-          answers a question the timeline does not (how many came, rather than
-          when and for how long), which is why it survives at all rather than
-          being merged into it; it just does not belong directly above another
-          date axis. */}
-      {view !== 'timeline' && (
+          LIST VIEW ONLY. The other two views ARE date layouts — the timeline
+          places events along a horizontal axis, the calendar across a month
+          grid — so putting this above either one gives the page a second,
+          differently-scaled reading of the same dates, and the same event ends
+          up at two positions at once. The list is the one view that orders
+          events without drawing time, which is exactly where a picture of time
+          earns its space.
+
+          It survives rather than being folded into the timeline because it
+          answers a question neither of those views does: how many people came,
+          against when an event ran and for how long. */}
+      {view === 'list' && (
         <EventAttendanceTrendCard events={past.data ?? []} loading={past.isLoading} />
       )}
 
