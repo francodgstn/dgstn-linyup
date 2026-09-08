@@ -53,7 +53,10 @@ import {
   benefitOpensDoorAt,
   isAppointmentActivity,
   resolveActivityAccessRule,
+  resolveClassGate,
   type Activity,
+  type ActivityAccessRule,
+  type ActivityAudience,
   type SubscriptionType,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
@@ -72,7 +75,16 @@ import {
   type DurationFormValue,
 } from '@/components/activities/AppointmentDurationsEditor'
 
-type AccessTier = 'open' | 'members' | 'subscription'
+// ── WHO MAY BOOK, AS TWO QUESTIONS ──────────────────────────────────────────
+// The old single tier answered "who books FREE" while being labelled "who can
+// book", which is why "Any member" and "Specific subscriptions" read as two
+// overlapping walls. They are now the two questions a studio actually has:
+//
+//   audience     may this person book at all?      anyone | members
+//   requirePlan  must they hold one of the plans?  the tick, members-only
+//
+// What they PAY is neither: a linked plan makes it free, everyone else pays the
+// drop-in below. See `ActivityAccessRule` in @linyup/shared.
 
 /** Major-unit price string → number. Accepts a comma decimal separator. */
 function parsePrice(raw: string): number {
@@ -80,7 +92,8 @@ function parsePrice(raw: string): number {
 }
 
 interface Draft {
-  accessTier: AccessTier
+  audience: ActivityAudience
+  requirePlan: boolean
   trialEnabled: boolean
   trialPrice: string
   dropInEnabled: boolean
@@ -92,9 +105,41 @@ interface Draft {
   durations: DurationFormValue[]
 }
 
+/**
+ * The two answers, read through the GATE'S OWN translation of a stored rule
+ * (`resolveClassGate`), so the form opens showing exactly what the booking path
+ * is already doing — including for a document that predates both fields.
+ *
+ * The one normalisation: "anyone may book, but a plan is required" is not a
+ * state a studio can mean, since a guest holds no plan. The gate derives it for
+ * a legacy `subscription` class that sells no drop-in, and it is shown — and
+ * saved — as MEMBERS ONLY with the tick off, which is the same door said out
+ * loud instead of by implication.
+ */
+function audienceDraftOf(a: Activity): { audience: ActivityAudience; requirePlan: boolean } {
+  const gate = resolveClassGate(
+    resolveActivityAccessRule(a),
+    !!a.dropIn?.enabled && typeof a.dropIn.priceAmount === 'number'
+  )
+  return {
+    audience: gate.requirePlan ? 'members' : gate.audience,
+    requirePlan: gate.requirePlan,
+  }
+}
+
+/** The stored rule a draft means — the two answers plus the display tier they
+ *  imply, so `type` can never drift from them. */
+function draftAccessRule(d: Pick<Draft, 'audience' | 'requirePlan'>): ActivityAccessRule {
+  return {
+    type: d.requirePlan ? 'subscription' : d.audience === 'members' ? 'members' : 'open',
+    audience: d.audience,
+    requirePlan: d.requirePlan,
+  }
+}
+
 function draftOf(a: Activity): Draft {
   return {
-    accessTier: resolveActivityAccessRule(a).type as AccessTier,
+    ...audienceDraftOf(a),
     trialEnabled: a.trialEnabled ?? false,
     trialPrice: a.trialPriceAmount != null ? String(a.trialPriceAmount) : '',
     dropInEnabled: a.dropIn?.enabled ?? false,
@@ -105,7 +150,8 @@ function draftOf(a: Activity): Draft {
 
 function same(a: Draft, b: Draft): boolean {
   return (
-    a.accessTier === b.accessTier &&
+    a.audience === b.audience &&
+    a.requirePlan === b.requirePlan &&
     a.trialEnabled === b.trialEnabled &&
     a.trialPrice === b.trialPrice &&
     a.dropInEnabled === b.dropInEnabled &&
@@ -160,7 +206,10 @@ export function ActivityPricingForm({
   // Read off the DRAFT tier, not the stored one: picking "Any member" should
   // reveal the plan table there and then, the same way the course's sell
   // switch reveals its rate columns.
-  const noPlanEdge = !isAppointment && draft.accessTier === 'open'
+  // The plan table is meaningful in EVERY state now, so it is never hidden: a
+  // class anyone may book can still make holders of a plan free and charge the
+  // rest, which is the ordinary "members free, visitors pay" shape.
+  const noPlanEdge = false
   /**
    * THE MATCHER READS THE DRAFT TIER, not the stored one.
    *
@@ -178,7 +227,7 @@ export function ActivityPricingForm({
     : {
         ...activity,
         accessRule: {
-          type: draft.accessTier,
+          ...draftAccessRule(draft),
           ...(resolveActivityAccessRule(activity).subscriptionTypeIds?.length
             ? { subscriptionTypeIds: resolveActivityAccessRule(activity).subscriptionTypeIds }
             : {}),
@@ -222,10 +271,15 @@ export function ActivityPricingForm({
         isAppointment
           ? { durations: toActivityDurations(draft.durations) }
           : {
-              // A FIELD PATH, not the whole map: `accessRule.subscriptionTypeIds` is
-              // the matcher's and must survive every save from here.
-              'accessRule.type': draft.accessTier,
-              isFreeTrial: draft.accessTier === 'open',
+              // FIELD PATHS, not the whole map: `accessRule.subscriptionTypeIds`
+              // is the matcher's and must survive every save from here.
+              'accessRule.audience': draft.audience,
+              'accessRule.requirePlan': draft.requirePlan,
+              // The display projection, kept in step so a surface that only
+              // wants to say "open / members only / plan required" never
+              // disagrees with the two fields above.
+              'accessRule.type': draftAccessRule(draft).type,
+              isFreeTrial: draft.audience === 'anyone' && !draft.requirePlan,
               dropIn: {
                 enabled: draft.dropInEnabled,
                 ...(draft.dropInPrice ? { priceAmount: parsePrice(draft.dropInPrice) } : {}),
@@ -235,7 +289,7 @@ export function ActivityPricingForm({
               // grants nothing extra on a free-to-book class), so a leftover price
               // must not survive as inert data the UI cannot show.
               trialPriceAmount:
-                draft.trialPrice && draft.accessTier !== 'open'
+                draft.trialPrice && !(draft.audience === 'anyone' && !draft.requirePlan)
                   ? parsePrice(draft.trialPrice)
                   : null,
             }
@@ -258,14 +312,17 @@ export function ActivityPricingForm({
         <>
           <div className="space-y-2">
             <Label>{t('accessLabel')}</Label>
-            {/* Selectable tier cards — the same pattern the availability form's
-                mode toggle uses. */}
-            <div className="grid gap-2 lg:grid-cols-3">
-              {(['open', 'members', 'subscription'] as const).map((tier) => (
+            <p className="text-xs text-muted-foreground">{t('accessHint')}</p>
+            {/* TWO cards, not three. The third used to be "Specific
+                subscriptions", which was the same field the plan table below
+                already edits — so it asked one question twice and left the
+                studio deciding which control won. */}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {(['anyone', 'members'] as const).map((who) => (
                 <label
-                  key={tier}
+                  key={who}
                   className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-sm transition-colors ${
-                    draft.accessTier === tier
+                    draft.audience === who
                       ? 'border-primary bg-primary/5'
                       : 'hover:border-foreground/30'
                   } ${canEdit ? '' : 'pointer-events-none opacity-60'}`}
@@ -273,31 +330,48 @@ export function ActivityPricingForm({
                   <input
                     type="radio"
                     className="mt-0.5 accent-primary"
-                    checked={draft.accessTier === tier}
-                    onChange={() => set('accessTier', tier)}
+                    checked={draft.audience === who}
+                    onChange={() => set('audience', who)}
                     disabled={!canEdit}
                   />
                   <span>
-                    {/* Four literal keys per group, never `t(\`access_${tier}\`)`:
+                    {/* Literal keys per branch, never a template-literal key:
                         i18n:check counts computed keys and never fails them. */}
                     <span className="font-medium">
-                      {tier === 'open'
-                        ? t('access_open')
-                        : tier === 'members'
-                          ? t('access_members')
-                          : t('access_subscription')}
+                      {who === 'anyone' ? t('access_open') : t('access_members')}
                     </span>
                     <span className="block text-xs text-muted-foreground">
-                      {tier === 'open'
-                        ? t('access_open_desc')
-                        : tier === 'members'
-                          ? t('access_members_desc')
-                          : t('access_subscription_desc')}
+                      {who === 'anyone' ? t('access_open_desc') : t('access_members_desc')}
                     </span>
                   </span>
                 </label>
               ))}
             </div>
+            {/* Only under MEMBERS ONLY: a guest holds no plan by definition, so
+                "anyone may book" and "a plan is required" cannot both be true.
+                And it is a separate control from the table on purpose — ticking
+                a plan there must never silently narrow the door. */}
+            {draft.audience === 'members' && (
+              <label
+                className={`flex items-start gap-2 rounded-lg border p-2.5 text-sm ${
+                  canEdit ? 'cursor-pointer' : 'pointer-events-none opacity-60'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 accent-primary"
+                  checked={!draft.requirePlan}
+                  onChange={(e) => set('requirePlan', !e.target.checked)}
+                  disabled={!canEdit}
+                />
+                <span>
+                  <span className="font-medium">{t('accessAllowWithoutPlan')}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t('accessAllowWithoutPlanHint')}
+                  </span>
+                </span>
+              </label>
+            )}
           </div>
 
           <div className="divide-y rounded-lg border">
@@ -320,7 +394,7 @@ export function ActivityPricingForm({
               {/* Only on a GATED class — on an open one the trial door grants
                   nothing extra (everyone books free), so a price there would be
                   silently ignored by `bookSession`. */}
-              {draft.trialEnabled && draft.accessTier !== 'open' && (
+              {draft.trialEnabled && !(draft.audience === 'anyone' && !draft.requirePlan) && (
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0 pr-4">
                     <p className="text-xs font-medium">{t('trialPriceLabel')}</p>
@@ -437,10 +511,17 @@ export function ActivityPricingForm({
           // tier has to land first or a tick is computed against the old one —
           // the same seam the course settings form uses.
           onBeforeSave={async () => {
-            if (draft.accessTier === stored.accessTier) return
+            if (
+              draft.audience === stored.audience &&
+              draft.requirePlan === stored.requirePlan
+            ) {
+              return
+            }
             await updateDoc(doc(db, ACTIVITIES_COLLECTION, activity.id), {
-              'accessRule.type': draft.accessTier,
-              isFreeTrial: draft.accessTier === 'open',
+              'accessRule.audience': draft.audience,
+              'accessRule.requirePlan': draft.requirePlan,
+              'accessRule.type': draftAccessRule(draft).type,
+              isFreeTrial: draft.audience === 'anyone' && !draft.requirePlan,
             })
             refreshQueries(qc, ['activities'])
           }}

@@ -1701,11 +1701,10 @@
     "emptyAction": "Créer votre première activité",
     "accessLabel": "Qui peut réserver",
     "access_open": "Ouvert à tous",
-    "access_open_desc": "Tout le monde peut réserver gratuitement — sans abonnement ni paiement. Un nouveau venu devient un contact d’essai.",
-    "access_members": "Tout membre",
-    "access_members_desc": "Toute personne inscrite peut réserver — même sans abonnement. Un nouveau venu peut toujours réserver un cours si « Cours d'essai gratuit » est activé ci-dessous.",
-    "access_subscription": "Abonnements spécifiques",
-    "access_subscription_desc": "Seuls les membres possédant l’un des abonnements sélectionnés peuvent réserver. Un nouveau venu peut tout de même réserver un cours si « Essai gratuit pour les nouveaux » est activé ci-dessous.",
+    "access_open_desc": "Aucun compte requis. Un nouveau venu devient un contact d'essai en réservant.",
+    "access_members": "Membres uniquement",
+    "access_members_desc": "Seules les personnes de votre liste peuvent réserver — y compris au tarif drop-in. Un nouveau venu peut toujours faire un essai si l'option est activée ci-dessous.",
+    "access_subscription": "Plan requis",
     "accessBadgeSubscription": "Abonnement",
     "dropInLabel": "Proposer le drop-in (paiement à la séance)",
     "dropInPricePlaceholder": "p. ex. 25",
@@ -1806,7 +1805,10 @@
     "sectionAppearanceHint": "Couleur et libellés affichés sur votre page publique.",
     "sectionVisitorTitle": "Ce que voit un visiteur",
     "sectionVisitorHint": "Les textes et questions rencontrés avant de réserver. Tous les champs sont facultatifs.",
-    "durationsInCatalogue": "Les durées, leurs tarifs et le tarif membre se définissent dans Accès et tarifs, à côté des abonnements auxquels ils s'appliquent."
+    "durationsInCatalogue": "Les durées, leurs tarifs et le tarif membre se définissent dans Accès et tarifs, à côté des abonnements auxquels ils s'appliquent.",
+    "accessHint": "C'est la porte d'entrée. Ce que les gens paient se règle ci-dessous — un plan peut rendre l'accès gratuit, les autres paient le tarif drop-in.",
+    "accessAllowWithoutPlan": "Autoriser la réservation aux membres sans abonnement",
+    "accessAllowWithoutPlanHint": "Activé, ils réservent au tarif drop-in — ou gratuitement s'il n'y en a pas. Désactivé, seuls les détenteurs d'un plan lié peuvent réserver."
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",

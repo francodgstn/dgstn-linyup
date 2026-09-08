@@ -736,7 +736,14 @@ async function seedTeam(opts: {
     tags: string[]
     isFreeTrial: boolean
     type: 'class'
-    accessRule: { type: string; subscriptionTypeIds?: string[] }
+    accessRule: {
+      type: string
+      subscriptionTypeIds?: string[]
+      /** Who may book AT ALL — the door, free path and paid path alike. */
+      audience?: 'anyone' | 'members'
+      /** Must the booker hold a linked plan? */
+      requirePlan?: boolean
+    }
     /** Independent of the tier: a gated class still accepts a newcomer's trial. */
     trialEnabled?: boolean
     /** Pay-per-class price for uncovered contacts (the ONE drop-in concept). */
@@ -759,9 +766,15 @@ async function seedTeam(opts: {
     },
     {
       // MMA demos the FULL ordinary offer (members included + trial + drop-in):
-      // subscription-gated, but `trialEnabled` lets a newcomer book a free trial,
-      // and an uncovered contact can pay the per-class drop-in price instead —
+      // gated to plans, but `trialEnabled` lets a newcomer book a free trial,
+      // and an uncovered MEMBER can pay the per-class drop-in price instead —
       // the three toggles are independent and coexist.
+      //
+      // It is also the cell the old single tier could not express: MEMBERS ONLY
+      // WITH A PAID DOOR. Under `members` the price never fired (every member
+      // was free); under `subscription` a stranger could buy in. Here the studio
+      // says both things — you must be on our list, and if your plan does not
+      // cover this you pay the drop-in.
       id: `${teamId}-act-mma`,
       name: 'MMA',
       slug: 'mma',
@@ -769,7 +782,14 @@ async function seedTeam(opts: {
       tags: ['intermediate'],
       isFreeTrial: false,
       type: 'class',
-      accessRule: { type: 'subscription', subscriptionTypeIds: mmaSubIds },
+      accessRule: {
+        // `type` is the DISPLAY projection of the pair below and must agree with
+        // it: members-only without a required plan reads as "Members only".
+        type: 'members',
+        subscriptionTypeIds: mmaSubIds,
+        audience: 'members',
+        requirePlan: false,
+      },
       trialEnabled: true,
       dropIn: {
         enabled: true,

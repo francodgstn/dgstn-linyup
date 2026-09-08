@@ -28,7 +28,7 @@ import {
   buildContactFieldPatch,
   expandContactFieldPatch,
 } from './contactFields'
-import { resolveBookingContactFields } from '@linyup/shared'
+import { classIsFreeForEveryone, resolveBookingContactFields } from '@linyup/shared'
 import type { CustomFieldDefinition } from '@linyup/shared'
 import { loadEnabledTeam, requireChargeableAccount } from '../connect/access'
 import {
@@ -239,7 +239,10 @@ export const createDropInCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
     )
   }
   const { target: dropInTarget, accessRule } = door
-  if (accessRule.type === 'open') {
+  // A LEGACY `open` class refuses payment; a modern "anyone may book" one does
+  // not, because there the drop-in price is exactly how anyone pays. Reading the
+  // tier alone would have made the new combination unsellable.
+  if (classIsFreeForEveryone(accessRule)) {
     throw new HttpsError('failed-precondition', 'This class is free to book — no payment needed')
   }
 

@@ -11,25 +11,67 @@ import type { FormField } from './form'
  *  time booked from published availability (was 'coaching'). */
 export type ActivityType = 'class' | 'appointment'
 
-// Who may book an activity — the paid-access axis (mirrors CourseAccessRule).
-//  - 'open'         → anyone; a newcomer/guest booking creates a trial contact
-//  - 'members'      → any signed-in 'joined' contact of the team (trial accounts can't)
-//  - 'subscription' → a 'joined' contact holding one of `subscriptionTypeIds` (live)
-// Enforced authoritatively in the bookSession callable; defended in Firestore rules.
+// ─── WHO MAY BOOK A CLASS ────────────────────────────────────────────────────
+//
+// TWO INDEPENDENT QUESTIONS, and conflating them is what made this area hard to
+// explain for as long as it was one enum:
+//
+//   AUDIENCE     — may this person book AT ALL?      'anyone' | 'members'
+//   requirePlan  — must they hold one of the plans?  boolean
+//
+// What they PAY is not asked here at all: a covering plan makes it free, and
+// everyone else pays the drop-in price if one is set. So "free" is the ABSENCE
+// of a price, not a tier — which is why there is no 'free' state to choose.
+//
+//   audience   requirePlan   drop-in price   outcome
+//   ────────   ───────────   ─────────────   ────────────────────────────────
+//   anyone     false         —               free for everyone
+//   anyone     false         CHF 25          anyone books; pays 25 unless covered
+//   members    false         —               free for every member
+//   members    false         CHF 25          members pay 25 unless covered; guests refused
+//   members    true          (either)        only holders of a linked plan may book
+//
+// The fourth row is the one the old enum could not say: 'members' made EVERY
+// member free (so the price never fired) and 'subscription' let a stranger pay.
+//
+// ── THE LEGACY TIER ──────────────────────────────────────────────────────────
+// `type` came first and is still read: `resolveActivityAccessRule` derives the
+// pair above from it when the new fields are absent, so no document needs
+// rewriting. It survives as the DISPLAY projection — surfaces that only want to
+// say "open / members only / plan required" keep reading it — but nothing that
+// DECIDES may branch on it any more, because it cannot express the fourth row.
+//
 // CLASSES ONLY — appointments dropped this gate entirely in 2026-07 (see
 // `ActivityMemberBenefit`'s history note); `Activity.accessRule` still exists
 // because classes use it, but appointment booking paths ignore it everywhere.
 export type ActivityAccessTier = 'open' | 'members' | 'subscription'
 
+/** Who is allowed through the door — free path and paid path alike. */
+export type ActivityAudience = 'anyone' | 'members'
+
 export interface ActivityAccessRule {
+  /** LEGACY + display projection. Never branch on it to decide access. */
   type: ActivityAccessTier
-  /** For 'subscription': the team subscription_type ids that grant access. */
+  /** The plans that grant free (or credit-spent) access. */
   subscriptionTypeIds?: string[]
+  /** Absent ⇒ derived from `type` by `resolveActivityAccessRule`. */
+  audience?: ActivityAudience
+  /** Must the booker hold a linked plan? Absent ⇒ false (derived). */
+  requirePlan?: boolean
 }
 
-/** Resolve an activity's effective access rule, deriving from the legacy `isFreeTrial`
- *  flag when `accessRule` is unset (true/undefined → open, false → members). Keep this
- *  the single source of truth so callable, rules-sync, and UI agree. */
+/**
+ * THE ONE READER of an activity's stored access rule — unchanged in behaviour:
+ * it fills in the legacy `isFreeTrial` default and hands back what is stored.
+ *
+ * IT DELIBERATELY DOES NOT DERIVE `audience` / `requirePlan`. The legacy
+ * `subscription` tier maps to one or the other depending on whether a DROP-IN
+ * PRICE exists (with one, a non-holder could always buy in; without one she was
+ * refused), and this function is called from surfaces that have no drop-in in
+ * hand — the public mirror, the terms line, the plan-link editor. Deriving here
+ * would make those surfaces guess. The gate does it instead, where the price is
+ * known: `resolveClassGate` in utils/paymentOptions.ts.
+ */
 export function resolveActivityAccessRule(a: {
   accessRule?: ActivityAccessRule | null
   isFreeTrial?: boolean

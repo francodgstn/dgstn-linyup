@@ -1701,11 +1701,10 @@
     "emptyAction": "Crea la tua prima attività",
     "accessLabel": "Chi può prenotare",
     "access_open": "Aperto a tutti",
-    "access_open_desc": "Chiunque può prenotare gratuitamente — nessun abbonamento e nessun pagamento. Chi è nuovo diventa un contatto di prova.",
-    "access_members": "Qualsiasi membro",
-    "access_members_desc": "Chiunque si sia iscritto può prenotare — anche senza abbonamento. Un nuovo arrivato può comunque prenotare una lezione se «Lezione di prova gratuita» è attivo qui sotto.",
-    "access_subscription": "Abbonamenti specifici",
-    "access_subscription_desc": "Possono prenotare solo i membri con uno degli abbonamenti selezionati. Chi è nuovo può comunque prenotare una lezione se qui sotto è attivo “Prova gratuita per i nuovi”.",
+    "access_open_desc": "Nessun account necessario. Un nuovo arrivato diventa un contatto di prova prenotando.",
+    "access_members": "Solo membri",
+    "access_members_desc": "Solo le persone nel tuo elenco possono prenotare — anche al prezzo drop-in. Un nuovo arrivato può comunque fare una prova, se attivata sotto.",
+    "access_subscription": "Piano richiesto",
     "accessBadgeSubscription": "Abbonamento",
     "dropInLabel": "Offri drop-in (paga a lezione)",
     "dropInPricePlaceholder": "es. 25",
@@ -1806,7 +1805,10 @@
     "sectionAppearanceHint": "Colore ed etichette mostrati sulla tua pagina pubblica.",
     "sectionVisitorTitle": "Cosa vede un visitatore",
     "sectionVisitorHint": "I testi e le domande che si incontrano prima di prenotare. Tutti i campi sono facoltativi.",
-    "durationsInCatalogue": "Le durate, i loro prezzi e la tariffa per i membri si impostano in Accesso e prezzi, accanto agli abbonamenti a cui si applicano."
+    "durationsInCatalogue": "Le durate, i loro prezzi e la tariffa per i membri si impostano in Accesso e prezzi, accanto agli abbonamenti a cui si applicano.",
+    "accessHint": "Questa è la porta. Quanto si paga si imposta sotto — un piano può renderlo gratuito, tutti gli altri pagano il prezzo drop-in.",
+    "accessAllowWithoutPlan": "Consenti la prenotazione ai membri senza abbonamento",
+    "accessAllowWithoutPlanHint": "Attivo, prenotano al prezzo drop-in — o gratis se non ce n'è uno. Disattivo, solo chi ha un piano collegato può prenotare."
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",
