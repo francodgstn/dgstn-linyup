@@ -122,12 +122,29 @@ jobs:
           # Pinned for the scripts that guard on it rather than on --project,
           # the same way the reseed step in deploy.yml does.
           GOOGLE_CLOUD_PROJECT: ${{ inputs.project }}
+          # THE INPUTS REACH THE SHELL THROUGH THE ENVIRONMENT, not spliced into
+          # the script text. `script` and `project` are `choice` inputs and so
+          # are already constrained to the lists above, but `extra_args` is free
+          # form — and a dispatch input interpolated into a `run:` block IS
+          # shell, evaluated before bash ever sees it. Whoever can dispatch this
+          # can already push a workflow, so the exposure is small; the habit is
+          # what matters, because the next input somebody adds may not be.
+          SCRIPT: ${{ inputs.script }}
+          PROJECT: ${{ inputs.project }}
+          APPLY: ${{ inputs.apply }}
+          EXTRA_ARGS: ${{ inputs.extra_args }}
         run: |
           set -o pipefail
-          pnpm "backfill:${{ inputs.script }}" \
-            --project "${{ inputs.project }}" \
-            ${{ inputs.apply && '--apply' || '' }} \
-            ${{ inputs.extra_args }} 2>&1 | tee backfill.log
+          # An `if`, not `[ … ] && …`: the runner's shell is `bash -e`, so a
+          # one-liner whose test FAILS returns non-zero and takes the step with
+          # it — the dry run, which is the default, would be the broken one.
+          apply_flag=()
+          if [ "$APPLY" = "true" ]; then apply_flag=(--apply); fi
+          # $EXTRA_ARGS is deliberately unquoted so several flags word-split into
+          # several arguments. A variable expansion is not re-evaluated, so this
+          # splits without executing anything.
+          # shellcheck disable=SC2086
+          pnpm "backfill:$SCRIPT" --project "$PROJECT" "${apply_flag[@]}" $EXTRA_ARGS 2>&1 | tee backfill.log
 
       # The counts ARE the result, and a workflow log is a page nobody reopens.
       - name: Summarise
