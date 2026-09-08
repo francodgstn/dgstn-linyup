@@ -15,6 +15,15 @@ const SessionsCalendar = dynamic(
   () => import('../../../sessions/SessionsCalendar'),
   { ssr: false }
 )
+// Same reason: the timeline measures its own track on mount, so it has nothing
+// to say on the server.
+const EventsTimeline = dynamic(
+  () => import('@/components/events/EventsTimeline').then((m) => m.EventsTimeline),
+  { ssr: false }
+)
+
+/** List, calendar, timeline — the three ways to look at the same events. */
+const EVENT_VIEWS = ['list', 'calendar', 'timeline'] as const
 import { useCallback, useMemo, useState } from 'react'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -272,7 +281,12 @@ export default function OrgEventsPage() {
   const [tab, setTab] = useTabParam(ORG_EVENT_TABS, 'upcoming')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Event | null>(null)
-  const [view, setView] = useState<'list' | 'calendar'>('list')
+  // IN THE URL, like every other tab in this app. It was `useState`, so a
+  // refresh, a pasted link or the Back button dropped whoever was reading the
+  // timeline back onto the list — the failure UX-22 named ("the app forgot").
+  // `?view=` rather than `?tab=`, because this page already spends `?tab=` on
+  // upcoming/past and the two are independent.
+  const [view, setView] = useTabParam(EVENT_VIEWS, 'list', 'view')
   const [deleting, setDeleting] = useState<Event | null>(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState(ALL_TYPES)
@@ -345,9 +359,10 @@ export default function OrgEventsPage() {
       />
 
       {/* Tab, and the view switch.
-          UPCOMING/PAST IS A LIST IDEA. A calendar shows a month — whatever falls
-          in it, on both sides of today — so the tabs are hidden in calendar mode
-          rather than left there filtering a grid they cannot describe. */}
+          UPCOMING/PAST IS A LIST IDEA. A calendar shows a month and a timeline
+          shows a year — whatever falls in the window, on both sides of today —
+          so the tabs are hidden in both rather than left there filtering
+          something they cannot describe. */}
       <div className="flex items-center justify-between gap-3 border-b">
         <div className="flex gap-1 text-sm">
           {view === 'list' &&
@@ -374,7 +389,7 @@ export default function OrgEventsPage() {
             {t('printButton')}
           </Link>
         <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
-          {(['list', 'calendar'] as const).map((v) => (
+          {EVENT_VIEWS.map((v) => (
             <button
               key={v}
               type="button"
@@ -386,7 +401,7 @@ export default function OrgEventsPage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {v === 'list' ? t('viewList') : t('viewCalendar')}
+              {v === 'list' ? t('viewList') : v === 'calendar' ? t('viewCalendar') : t('viewTimeline')}
             </button>
           ))}
         </div>
@@ -403,6 +418,17 @@ export default function OrgEventsPage() {
           onDelete={() => {}}
           onEventEdit={isAdmin ? (e) => { setEditing(e); setDialogOpen(true) } : undefined}
           onEventDelete={isAdmin ? (e) => setDeleting(e) : undefined}
+        />
+      )}
+
+      {/* THE SEASON, END TO END. Both halves of the year for the same reason
+          the calendar takes both: a window is a window, and the events on
+          either side of today are equally in it. */}
+      {view === 'timeline' && (
+        <EventsTimeline
+          events={[...(upcoming.data ?? []), ...(past.data ?? [])]}
+          onEdit={isAdmin ? (e) => { setEditing(e); setDialogOpen(true) } : undefined}
+          onDelete={isAdmin ? (e) => setDeleting(e) : undefined}
         />
       )}
 

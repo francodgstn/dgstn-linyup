@@ -5758,7 +5758,14 @@
     "printFrom": "Dal",
     "printTo": "Al",
     "printEmpty": "Nessun evento in questo periodo.",
-    "type_other": "Altro"
+    "type_other": "Altro",
+    "viewTimeline": "Cronologia",
+    "timelineZoomYear": "Anno",
+    "timelineZoomMonth": "Mese",
+    "timelinePrevious": "Periodo precedente",
+    "timelineNext": "Periodo successivo",
+    "timelineToday": "Oggi",
+    "timelineEmpty": "Nessun evento in {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",

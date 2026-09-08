@@ -5758,7 +5758,14 @@
     "printFrom": "Du",
     "printTo": "Au",
     "printEmpty": "Aucun événement dans cette période.",
-    "type_other": "Autre"
+    "type_other": "Autre",
+    "viewTimeline": "Chronologie",
+    "timelineZoomYear": "Année",
+    "timelineZoomMonth": "Mois",
+    "timelinePrevious": "Période précédente",
+    "timelineNext": "Période suivante",
+    "timelineToday": "Aujourd'hui",
+    "timelineEmpty": "Aucun événement en {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

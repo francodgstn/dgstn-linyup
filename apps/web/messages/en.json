@@ -5758,7 +5758,14 @@
     "printFrom": "From",
     "printTo": "To",
     "printEmpty": "No events fall in this window.",
-    "type_other": "Other"
+    "type_other": "Other",
+    "viewTimeline": "Timeline",
+    "timelineZoomYear": "Year",
+    "timelineZoomMonth": "Month",
+    "timelinePrevious": "Previous period",
+    "timelineNext": "Next period",
+    "timelineToday": "Today",
+    "timelineEmpty": "No events in {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Organization events",

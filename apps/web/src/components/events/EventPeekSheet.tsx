@@ -22,19 +22,13 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { eventTypeColor } from '@/lib/eventTypeColor'
 import { EVENTS_COLLECTION } from '@linyup/shared'
 import type { Event } from '@linyup/shared'
 import type { Route } from 'next'
 import { Tip } from '@/components/ui/tip'
 
 // Matches the event-type palette used in SessionsCalendar
-const EVENT_TYPE_COLOR: Record<string, string> = {
-  competition: '#EF4444',
-  camp: '#F97316',
-  exam: '#8B5CF6',
-  seminar: '#3B82F6',
-  workshop: '#10B981',
-}
 const BUILTIN_TYPES = ['competition', 'camp', 'exam', 'seminar', 'workshop']
 
 function formatDate(ts?: { toDate(): Date } | null) {
@@ -75,7 +69,7 @@ export function EventPeekSheet({ eventId, onClose, onEdit, onDelete }: EventPeek
   })
 
   const event = eventQ.data
-  const accent = (event && EVENT_TYPE_COLOR[event.type]) ?? '#6B7280'
+  const accent = eventTypeColor(event?.type)
   const typeLabel = event
     ? BUILTIN_TYPES.includes(event.type)
       ? tE(`type_${event.type}` as Parameters<typeof tE>[0])

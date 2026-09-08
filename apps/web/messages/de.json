@@ -5758,7 +5758,14 @@
     "printFrom": "Von",
     "printTo": "Bis",
     "printEmpty": "In diesem Zeitraum liegen keine Veranstaltungen.",
-    "type_other": "Sonstiges"
+    "type_other": "Sonstiges",
+    "viewTimeline": "Zeitachse",
+    "timelineZoomYear": "Jahr",
+    "timelineZoomMonth": "Monat",
+    "timelinePrevious": "Vorheriger Zeitraum",
+    "timelineNext": "Nächster Zeitraum",
+    "timelineToday": "Heute",
+    "timelineEmpty": "Keine Anlässe in {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",

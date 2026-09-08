@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { eventTypeColor } from '@/lib/eventTypeColor'
 import { Button } from '@/components/ui/button'
 import {
   ChevronLeft,
@@ -51,13 +52,6 @@ function activityAccent(activityId?: string | null, activities: Activity[] = [])
   return PALETTE[h % PALETTE.length]
 }
 
-const EVENT_TYPE_COLOR: Record<string, string> = {
-  competition: '#EF4444',
-  camp: '#F97316',
-  exam: '#8B5CF6',
-  seminar: '#3B82F6',
-  workshop: '#10B981',
-}
 
 // ─── calendar helpers ─────────────────────────────────────────────────────────
 
@@ -342,7 +336,7 @@ function EventCard({
   onOpen: (e: Event) => void
 }) {
   const t = useTranslations('Calendar')
-  const color = EVENT_TYPE_COLOR[event.type] ?? '#6B7280'
+  const color = eventTypeColor(event.type)
 
   // "09:00 – 17:00" is a lie on a four-day camp: those are the clock times of
   // two different days, three days apart, and printed together they read as one
@@ -1058,7 +1052,7 @@ export default function SessionsCalendar({
                       )}
                     >
                       {dayEvts.map((e) => {
-                        const color = EVENT_TYPE_COLOR[e.type] ?? '#6B7280'
+                        const color = eventTypeColor(e.type)
                         // A multi-day event now appears in every day's cell.
                         // Squaring off the inner edges is what turns seven
                         // separate chips into one continuous bar; the label is
