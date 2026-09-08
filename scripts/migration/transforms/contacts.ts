@@ -109,7 +109,15 @@ function validatedRank(src: Record<string, unknown>, systemId: string, raw: unkn
   return value
 }
 
-export function transformContact(src: Record<string, unknown>): Record<string, unknown> {
+/**
+ * @param sourceTypeNames  Source subscription-type id → its NAME, read from the
+ *   source team's own `subscription_types`. See the subscription block below for
+ *   why a name the contact does not carry has to be looked up.
+ */
+export function transformContact(
+  src: Record<string, unknown>,
+  sourceTypeNames?: ReadonlyMap<string, string>,
+): Record<string, unknown> {
   const out: Record<string, unknown> = { ...src }
 
   // Field renames
@@ -274,7 +282,25 @@ export function transformContact(src: Record<string, unknown>): Record<string, u
   // subscription type by keyword. This is a best-effort approximation — the
   // matched-vs-unmatched counts logged by pass05 must be reviewed against the
   // real source data to confirm accuracy before going live.
-  const srcTypeName = out.subscription_type_name as string | undefined | null
+  //
+  // THE CONTACT DOES NOT CARRY THE NAME. It never did: hmd-lineup stores only
+  // `subscription_type_id` on a contact and keeps the name on the type document,
+  // and a survey of the real source found the name on 0 of 137 contacts. So this
+  // matcher — which reads a name — was handed `undefined` every single time,
+  // returned null every single time, and fell through to "leave all
+  // subscription_* fields unchanged".
+  //
+  // Nothing errored. Every migrated contact simply kept the SOURCE's type id,
+  // gained no `subscription_type_name`, no price, no amount and no
+  // `active_subscriptions` — and the contact page gates its subscription panel
+  // on the NAME, so a member with a live plan showed "No subscription history
+  // yet" while the history list right below it showed the plan as active.
+  //
+  // The id is the thing the source actually has, so resolve the name through it.
+  const srcTypeId = out.subscription_type_id as string | undefined | null
+  const srcTypeName =
+    (out.subscription_type_name as string | undefined | null) ??
+    (srcTypeId ? (sourceTypeNames?.get(srcTypeId) ?? null) : null)
   const match = matchSubscriptionType(srcTypeName)
   if (match !== null) {
     const price = pickSubscriptionPrice(
@@ -306,9 +332,20 @@ export function transformContact(src: Record<string, unknown>): Record<string, u
         status:                 'active',
       },
     ]
+  } else if (srcTypeName) {
+    // NO CANONICAL COUNTERPART — Fitpass, ClassPass, Instructor, Free. The type
+    // itself is copied to the target under this same id, so the id already
+    // points at a real document and only the NAME was missing. Write it: the
+    // contact page gates its subscription panel on the name, so without this a
+    // partner member reads as having no plan at all.
+    //
+    // Nothing else is invented. These types carry no prices in the source, so
+    // there is no price, amount or recurrence to state, and `active_subscriptions`
+    // stays unwritten rather than claiming a shape this data cannot fill.
+    out.subscription_type_name = srcTypeName
   }
-  // If match is null, leave all subscription_* fields unchanged (pass through source values)
-  // and do not write active_subscriptions (no reliable canonical mapping available).
+  // A contact with no resolvable type name keeps every subscription_* field as
+  // the source had it.
 
   return out
 }

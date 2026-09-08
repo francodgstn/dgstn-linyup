@@ -16,8 +16,10 @@
  * packages/shared/src/types/contact.ts:
  *   'per_class' | 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual'
  *
- * Shape mirrors SubscriptionType + SubscriptionPrice from that same file.
- * NOT imported from @linyup/shared — migration scripts are plain tsx, no monorepo imports.
+ * Shape mirrors SubscriptionType + SubscriptionPrice from that same file, and is
+ * declared here rather than imported so this file stays a plain data table. (The
+ * `scripts/` tree CAN import @linyup/shared — a dozen backfills do — so if these
+ * ever drift far enough to be worth binding together, nothing is stopping that.)
  */
 
 export interface MigrationSubscriptionPrice {
@@ -37,6 +39,18 @@ export interface MigrationSubscriptionType {
   public: boolean
   order: number
   prices: MigrationSubscriptionPrice[]
+  /**
+   * How much of the plan a member may use. Mirrors `SubscriptionUsageLimit`
+   * (count + per: 'day' | 'week' | 'month'). ABSENT MEANS UNLIMITED, which is
+   * what every plan but Essential is.
+   *
+   * It only binds where an activity actually lists the plan in
+   * `accessRule.subscriptionTypeIds` — that list is what `resolvePaymentOptions`
+   * reads before it consults the remaining allowance. On a class that is open to
+   * everyone there is no plan in the transaction at all, so there is nothing for
+   * a cap to count.
+   */
+  limits?: Array<{ count: number; per: 'day' | 'week' | 'month' }>
 }
 
 export const CANONICAL_SUBSCRIPTION_TYPES: MigrationSubscriptionType[] = [
@@ -47,6 +61,10 @@ export const CANONICAL_SUBSCRIPTION_TYPES: MigrationSubscriptionType[] = [
     active:      true,
     public:      true,
     order:       1,
+    // THE ONE CAPPED PLAN (Franco, 2026-09-08). Stated as 4 per MONTH rather
+    // than 1 per week, which is what the studio sells: a member who trains twice
+    // one week and not at all the next has not overrun anything.
+    limits:      [{ count: 4, per: 'month' }],
     prices: [
       {
         id:         'essential_monthly',
@@ -182,6 +200,25 @@ const KEYWORD_MAP: Array<{ regex: RegExp; typeId: string }> = [
 const TYPE_INDEX = new Map<string, MigrationSubscriptionType>(
   CANONICAL_SUBSCRIPTION_TYPES.map((t) => [t.id, t]),
 )
+
+/**
+ * Does this SOURCE type duplicate a canonical one we are about to seed?
+ *
+ * Pass 11 does two things to a team's plans: it copies the source's own
+ * `subscription_types`, and it writes the five canonical ones. Where a source
+ * plan is called "Unlimited" and a canonical plan is called "Unlimited", the
+ * studio ends up with both — the rich one with prices and a description, and a
+ * bare one carrying nothing but a name. That is what a real import produced for
+ * HMD Basel: duplicate Unlimited, Intro Offer, Student and Essential.
+ *
+ * Over the whole federation this drops exactly those four (only one team has
+ * plans at all), and keeps ClassPass, Fitpass, Free and Instructor, which have
+ * no canonical counterpart. The contact-side matcher sends the members of a
+ * dropped type to the canonical id, so nothing is orphaned by the skip.
+ */
+export function sourceTypeDuplicatesCanonical(name: string | undefined | null): boolean {
+  return matchSubscriptionType(name) !== null
+}
 
 /** Returns the canonical match for the given source subscription_type_name, or null. */
 export function matchSubscriptionType(sourceName: string | undefined | null): CanonicalMatch | null {
