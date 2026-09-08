@@ -51,12 +51,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DateTimePicker } from '@/components/ui/date-picker'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -74,6 +69,7 @@ import {
   Plus,
   ChevronDown,
   CalendarDays,
+  ChartNoAxesGantt,
   CalendarRange,
   CalendarClock,
   List,
@@ -91,7 +87,10 @@ import {
 import { Link } from '@/i18n/navigation'
 import { SessionFormDialog } from '@/components/sessions/SessionFormDialog'
 import { SessionDeleteDialog } from '@/components/sessions/SessionDeleteDialog'
-import { AppointmentAvailabilityFormDialog, AppointmentDetail } from '@/components/appointments/AppointmentAvailability'
+import {
+  AppointmentAvailabilityFormDialog,
+  AppointmentDetail,
+} from '@/components/appointments/AppointmentAvailability'
 import { AppointmentFormDialog } from '@/components/appointments/AppointmentFormDialog'
 import { useVisibleCalendars, type ScheduleCalendar } from '@/hooks/useVisibleCalendars'
 import { useGeneratingSeries } from '@/hooks/useGeneratingSeries'
@@ -105,11 +104,18 @@ import { QuickLinks } from '@/components/layout/QuickLinks'
 import { PublicSurfaceLink } from '@/components/layout/PublicSurfaceLink'
 import { Tip } from '@/components/ui/tip'
 
+// `ssr: false` for the same reason the org events page does it: the timeline
+// measures its own viewport on mount, so it has nothing to say on the server.
+const EventsTimeline = dynamic(
+  () => import('@/components/events/EventsTimeline').then((m) => m.EventsTimeline),
+  { ssr: false }
+)
+
 const SessionsCalendar = dynamic(() => import('../sessions/SessionsCalendar'), { ssr: false })
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
-type CalendarView = 'calendar' | 'list'
+type CalendarView = 'calendar' | 'list' | 'planning'
 const TIME_TABS = ['upcoming', 'past'] as const
 
 // How far the list reaches, in months from today. `3` reproduces the window the
@@ -300,9 +306,7 @@ function useActivities(teamId: string | null) {
           orderBy('name', 'asc')
         )
       )
-      return snap.docs
-        .map((d) => ({ ...d.data(), id: d.id }) as Activity)
-        .sort(compareActivities)
+      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Activity).sort(compareActivities)
     },
   })
 }
@@ -420,14 +424,17 @@ function EventFormDialog({
   // (or it's an unknown/legacy type) — otherwise editing would silently drop it.
   const typeOptions =
     editing && editing.type && !types.some((x) => x.id === editing.type)
-      ? [...types, { id: editing.type, name: prettyEventType(editing.type), source: 'builtin' as const }]
+      ? [
+          ...types,
+          { id: editing.type, name: prettyEventType(editing.type), source: 'builtin' as const },
+        ]
       : types
   const labelForType = (id: string) =>
     eventTypeLabel(
       id,
       (k) => t.has(k as Parameters<typeof t>[0]),
       (k) => t(k as Parameters<typeof t>[0]),
-      typeOptions.find((x) => x.id === id)?.name,
+      typeOptions.find((x) => x.id === id)?.name
     )
 
   const onSubmit = async (data: EventForm) => {
@@ -828,7 +835,7 @@ function ListItemRow({
                 {eventTypeLabel(
                   e.type,
                   (k) => tE.has(k as Parameters<typeof tE>[0]),
-                  (k) => tE(k as Parameters<typeof tE>[0]),
+                  (k) => tE(k as Parameters<typeof tE>[0])
                 )}
               </Badge>
               {e.scope === 'org' && (
@@ -1104,9 +1111,13 @@ export default function CalendarPage() {
   const calendarHasContent = (calendar: ScheduleCalendar): boolean => {
     switch (calendar) {
       case 'classes':
-        return scopedSessions.some((s) => !isAppointment(s) && inTimeWindow(s.start.toDate().getTime()))
+        return scopedSessions.some(
+          (s) => !isAppointment(s) && inTimeWindow(s.start.toDate().getTime())
+        )
       case 'appointments':
-        return scopedSessions.some((s) => isAppointment(s) && inTimeWindow(s.start.toDate().getTime()))
+        return scopedSessions.some(
+          (s) => isAppointment(s) && inTimeWindow(s.start.toDate().getTime())
+        )
       case 'events':
         return scopedEvents.some((e) => inTimeWindow(e.start.toDate().getTime()))
       // Bookable hours draw on the week grid only — in the list there is nothing
@@ -1118,7 +1129,9 @@ export default function CalendarPage() {
   const hiddenWithContent = calendars.hidden.filter(calendarHasContent)
   const nothingDrawn =
     view === 'calendar'
-      ? filteredSessions.length === 0 && filteredEvents.length === 0 && calendarAvailability.length === 0
+      ? filteredSessions.length === 0 &&
+        filteredEvents.length === 0 &&
+        calendarAvailability.length === 0
       : listItems.length === 0
   const showHiddenCalendarsNotice =
     hiddenWithContent.length > 0 && nothingDrawn && !isListLoading && !availabilityQ.isLoading
@@ -1181,35 +1194,12 @@ export default function CalendarPage() {
           />
           <PublicSurfaceLink subPath="booking" label={tNav('bookingPage')} className="mt-1.5" />
         </div>
-        {/* ONE height across this row. The three controls were hand-sized
-            independently — a p-1 segmented group, a `size="sm"` link and a
-            px-4/py-2 trigger — so nothing lined up. They all render at the
-            Button default (h-8) now; only the view toggle keeps its own padding,
-            because its inner buttons sit inside a p-1 track that must add up to
-            the same 32px. */}
+        {/* ONE height across this row. These controls were hand-sized
+            independently — a `size="sm"` link and a px-4/py-2 trigger — so
+            nothing lined up. They all render at the Button default (h-8) now.
+            The view toggle used to be here too and kept its own p-1 padding to
+            reach the same 32px; it now has its own line below. */}
         <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="hidden sm:flex gap-1 p-1 bg-muted rounded-lg">
-            {(
-              [
-                { key: 'calendar', icon: CalendarDays, label: t('viewCalendar') },
-                { key: 'list', icon: List, label: t('viewList') },
-              ] as const
-            ).map(({ key, icon: Icon, label }) => (
-              <button
-                key={key}
-                onClick={() => setView(key)}
-                className={`flex h-6 items-center gap-1.5 px-2.5 rounded-md text-sm font-medium transition-colors ${
-                  view === key
-                    ? 'bg-background shadow-sm text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
           {/* Bookable hours — a NAMED control, at every width. This is what a
               coach hunts for when she wants to be bookable; it was a bare
               chevron on a filter chip and she never found it, so it must never
@@ -1292,11 +1282,52 @@ export default function CalendarPage() {
           read as a save that half-worked. */}
       <GeneratingSeriesNotice teamId={currentTeamId} />
 
+      {/* WHICH VIEW — ON ITS OWN LINE, ON THE LEFT (Franco, 2026-09-08).
+          It had been sharing the header's right-hand group with three ACTIONS
+          (bookable hours, places, new), which put a question about what you are
+          looking at among the things you can do to it, and left a long label no
+          room. On its own line it is read before the page it switches, in the
+          direction the page is read from — and above the filters, because
+          choosing a view and narrowing it are different questions. */}
+      <div className="hidden w-fit gap-1 rounded-lg bg-muted p-1 sm:flex">
+        {(
+          [
+            { key: 'calendar', icon: CalendarDays, label: t('viewCalendar') },
+            { key: 'list', icon: List, label: t('viewList') },
+            { key: 'planning', icon: ChartNoAxesGantt, label: t('viewPlanning') },
+          ] as const
+        ).map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            className={`flex h-6 items-center gap-1.5 px-2.5 rounded-md text-sm font-medium transition-colors ${
+              view === key
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Filters — ONE control group, read left to right as <who> | <what>.
           Both chips carry a caret and open checkboxes: same shape, same
           gesture, and the label on each names its current state rather than a
-          static noun. Nothing here switches the view. */}
-      <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
+          static noun. Nothing here switches the view.
+
+          HIDDEN IN PLANNING, because neither chip can do anything there but
+          subtract: the events layer would empty the view entirely and the coach
+          filter blanks `scopedEvents` although an event has no coach to be
+          scoped by. A control that is visible and inert is worse than one that
+          is absent — it invites the reader to blame it for what they cannot
+          see. */}
+      <div
+        className={`flex flex-wrap items-center gap-x-1 gap-y-2 ${
+          view === 'planning' ? 'hidden' : ''
+        }`}
+      >
         {/* WHO — first, because it scopes everything to its right. */}
         {coachRoster.length > 1 && (
           <>
@@ -1390,6 +1421,34 @@ export default function CalendarPage() {
         />
       )}
 
+      {/* ── PLANNING: THE SEASON'S EVENTS, NOT ITS WEEKS ────────────────────
+          EVENTS ONLY, and that is the point rather than an omission. A studio
+          runs 500-1300 sessions a year against a few dozen events; the
+          timeline's whole premise is "one row unless they cross", and at year
+          zoom a week's classes sit about 1.5px apart, collide, and correctly
+          open a row each. A timeline of a weekly rhythm IS a calendar, which is
+          the view next door. The tab is named for what it holds so that
+          dropping the classes reads as the view's subject and not as data that
+          went missing.
+
+          IT TAKES `eventsQ.data`, NOT `filteredEvents`. Those filters belong to
+          a mixed calendar: the `events` calendar layer can only empty this view
+          entirely, and the coach filter blanks `scopedEvents` although an event
+          has no coach to be scoped by. Both can subtract everything here and
+          add nothing.
+
+          The studio's own events and its organisation's arrive together (see
+          `useAllEvents`), which is what makes the timeline's by-owner banding
+          worth having: the organisation's dates are the fixed ones to plan
+          around. */}
+      {view === 'planning' && (
+        <EventsTimeline
+          events={eventsQ.data ?? []}
+          onEdit={(e) => setEventDialog({ open: true, editing: e })}
+          onDelete={handleDeleteEvent}
+        />
+      )}
+
       {/* List view */}
       {view === 'list' && (
         <>
@@ -1415,10 +1474,7 @@ export default function CalendarPage() {
                 </button>
               ))}
             </div>
-            <Select
-              value={String(horizon)}
-              onValueChange={(v) => setHorizon(Number(v) as Horizon)}
-            >
+            <Select value={String(horizon)} onValueChange={(v) => setHorizon(Number(v) as Horizon)}>
               <SelectTrigger className="h-7 text-xs w-[150px] mb-1" aria-label={t('horizonLabel')}>
                 <span className="truncate">{horizonLabel(horizon)}</span>
               </SelectTrigger>

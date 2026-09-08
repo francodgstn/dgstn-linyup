@@ -720,3 +720,58 @@ describe('eventTimeline — banding is optional', () => {
     assert.equal(placeTimelineEvents(clash, year, WIDE).lanes, 2)
   })
 })
+
+describe('eventTimeline — banding by owner', () => {
+  // The studio schedule bands by WHOSE event it is rather than by type: its
+  // organisation's dates are the fixed ones, its own are what it arranges
+  // around them. The packer needs no new concept for that — it is `groupOrder`
+  // over a different group — but the ORDER is the design, so it is pinned here.
+  const year = yearRange(2026)
+  const mine = (id: string, m: number) => ({
+    ...ev(id, ms(2026, m, 4), ms(2026, m, 5), 'Club night'),
+    group: 'team',
+  })
+  const theirs = (id: string, m: number) => ({
+    ...ev(id, ms(2026, m, 12), ms(2026, m, 13), 'Championship'),
+    group: 'org',
+  })
+
+  it("puts the organisation's row ABOVE the studio's, whoever started first", () => {
+    // The studio's January event comes first in time, so first-appearance order
+    // would put it on top — which reads as the constraints hanging off the
+    // choices instead of the other way round.
+    const { bands } = placeTimelineEvents([mine('a', 0), theirs('b', 5)], year, {
+      ...WIDE,
+      groupOrder: ['org', 'team'],
+    })
+    assert.deepEqual(bands, [
+      { group: 'org', lane: 0, lanes: 1 },
+      { group: 'team', lane: 1, lanes: 1 },
+    ])
+  })
+
+  it('keeps that order when only one side has anything in view', () => {
+    // A band with nothing visible is not returned, so a studio with no events
+    // of its own gets one row rather than an empty one labelled "This studio".
+    const { bands } = placeTimelineEvents([theirs('b', 5)], year, {
+      ...WIDE,
+      groupOrder: ['org', 'team'],
+    })
+    assert.deepEqual(bands, [{ group: 'org', lane: 0, lanes: 1 }])
+  })
+
+  it('bands by owner across every type at once', () => {
+    // The point of the mode: a competition and a camp of the SAME owner share a
+    // row, which by type they never would.
+    const { bands, lanes } = placeTimelineEvents(
+      [
+        { ...ev('c', ms(2026, 1, 3), ms(2026, 1, 4), 'Cup'), group: 'org' },
+        { ...ev('k', ms(2026, 7, 1), ms(2026, 7, 8), 'Camp'), group: 'org' },
+      ],
+      year,
+      { ...WIDE, groupOrder: ['org', 'team'] }
+    )
+    assert.equal(lanes, 1)
+    assert.deepEqual(bands, [{ group: 'org', lane: 0, lanes: 1 }])
+  })
+})
