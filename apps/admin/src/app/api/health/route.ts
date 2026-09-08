@@ -32,6 +32,12 @@ export function GET() {
       usingEmulators,
       revision: process.env.K_REVISION ?? null,
       service: process.env.K_SERVICE ?? null,
+      // THE COMMIT THIS BUNDLE WAS BUILT FROM, and where the build got it —
+      // 'env', 'git', 'git-file', or null. The revision above names a BUILD;
+      // this names the CODE. Stamped by next.config.ts via
+      // scripts/lib/commitSha.mjs; see apps/web's route for the full reasoning.
+      commit: process.env.NEXT_PUBLIC_COMMIT_SHA ?? null,
+      commitSource: process.env.NEXT_PUBLIC_COMMIT_SOURCE ?? null,
       time: new Date().toISOString(),
     },
     { headers: { 'Cache-Control': 'no-store' } }

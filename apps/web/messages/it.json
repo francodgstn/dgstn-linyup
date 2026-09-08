@@ -5765,7 +5765,14 @@
     "trendSubtitle": "{attendees} presenze in {events} eventi negli ultimi 12 mesi",
     "trendTooltip": "{attendees} presenze · {date}",
     "trendEmptyTitle": "Nessuna partecipazione",
-    "trendEmptyHint": "Registra le presenze a un evento e i mesi si popoleranno qui."
+    "trendEmptyHint": "Registra le presenze a un evento e i mesi si popoleranno qui.",
+    "viewTimeline": "Cronologia",
+    "timelineZoomYear": "Anno",
+    "timelineZoomMonth": "Mese",
+    "timelinePrevious": "Periodo precedente",
+    "timelineNext": "Periodo successivo",
+    "timelineToday": "Oggi",
+    "timelineEmpty": "Nessun evento in {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",
@@ -8071,6 +8078,8 @@
     "growthSubtitle": "{count, plural, =0 {Nessun nuovo studio} one {# studio si è unito} other {# studi si sono uniti}} negli ultimi {months} mesi",
     "growthEmptyTitle": "Ancora nessuno studio",
     "growthEmptyHint": "Quando gli studi si uniscono, qui appare la crescita dell'organizzazione.",
-    "growthSeries": "Studi"
+    "growthSeries": "Studi",
+    "statusTitle": "{term} per stato",
+    "statusAll": "{count, plural, one {# scheda} other {# schede}}"
   }
 }

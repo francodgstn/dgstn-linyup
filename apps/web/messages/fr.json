@@ -5765,7 +5765,14 @@
     "trendSubtitle": "{attendees} présences sur {events} événements au cours des 12 derniers mois",
     "trendTooltip": "{attendees} présences · {date}",
     "trendEmptyTitle": "Aucune participation",
-    "trendEmptyHint": "Enregistrez les présences à un événement et les mois se rempliront ici."
+    "trendEmptyHint": "Enregistrez les présences à un événement et les mois se rempliront ici.",
+    "viewTimeline": "Chronologie",
+    "timelineZoomYear": "Année",
+    "timelineZoomMonth": "Mois",
+    "timelinePrevious": "Période précédente",
+    "timelineNext": "Période suivante",
+    "timelineToday": "Aujourd'hui",
+    "timelineEmpty": "Aucun événement en {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",
@@ -8071,6 +8078,8 @@
     "growthSubtitle": "{count, plural, =0 {Aucun nouveau studio} one {# studio a rejoint} other {# studios ont rejoint}} ces {months} derniers mois",
     "growthEmptyTitle": "Aucun studio pour l'instant",
     "growthEmptyHint": "Dès que des studios rejoignent l'organisation, sa croissance apparaît ici.",
-    "growthSeries": "Studios"
+    "growthSeries": "Studios",
+    "statusTitle": "{term} par statut",
+    "statusAll": "{count, plural, one {# dossier} other {# dossiers}}"
   }
 }

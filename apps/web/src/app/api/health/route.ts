@@ -38,8 +38,17 @@ export function GET() {
       // live" needs no build-time plumbing of our own.
       revision: process.env.K_REVISION ?? null,
       service: process.env.K_SERVICE ?? null,
-      // Present only if a build ever chooses to stamp it; null is honest.
+      // THE COMMIT THIS BUNDLE WAS BUILT FROM. Stamped at build time by
+      // `next.config.ts` via `scripts/lib/commitSha.mjs`; null when the build
+      // could not work it out, which is honest rather than a guess.
       commit: process.env.NEXT_PUBLIC_COMMIT_SHA ?? null,
+      // WHERE THAT SHA CAME FROM — 'env', 'git', 'git-file', or null.
+      //
+      // Not noise: App Hosting documents no build-time commit variable, so
+      // whether its buildpack image keeps a `.git` (or a `git` binary) can only
+      // be settled by a real deploy. This field is that answer, and the reason
+      // nobody has to read a build log to find out why `commit` is null.
+      commitSource: process.env.NEXT_PUBLIC_COMMIT_SOURCE ?? null,
       time: new Date().toISOString(),
     },
     // An uptime check and a CDN must never serve a cached "ok".

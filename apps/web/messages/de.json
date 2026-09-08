@@ -5765,7 +5765,14 @@
     "trendSubtitle": "{attendees} Check-ins bei {events} Veranstaltungen in den letzten 12 Monaten",
     "trendTooltip": "{attendees} Check-ins · {date}",
     "trendEmptyTitle": "Noch keine Teilnahme",
-    "trendEmptyHint": "Sobald bei einer Veranstaltung eingecheckt wird, füllen sich die Monate hier."
+    "trendEmptyHint": "Sobald bei einer Veranstaltung eingecheckt wird, füllen sich die Monate hier.",
+    "viewTimeline": "Zeitachse",
+    "timelineZoomYear": "Jahr",
+    "timelineZoomMonth": "Monat",
+    "timelinePrevious": "Vorheriger Zeitraum",
+    "timelineNext": "Nächster Zeitraum",
+    "timelineToday": "Heute",
+    "timelineEmpty": "Keine Anlässe in {window}"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",
@@ -8071,6 +8078,8 @@
     "growthSubtitle": "{count, plural, =0 {Keine neuen Studios} one {# Studio beigetreten} other {# Studios beigetreten}} in den letzten {months} Monaten",
     "growthEmptyTitle": "Noch keine Studios",
     "growthEmptyHint": "Sobald Studios beitreten, zeigt sich hier das Wachstum der Organisation.",
-    "growthSeries": "Studios"
+    "growthSeries": "Studios",
+    "statusTitle": "{term} nach Status",
+    "statusAll": "{count, plural, one {# Eintrag} other {# Einträge}}"
   }
 }

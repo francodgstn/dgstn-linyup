@@ -1,6 +1,7 @@
 import path from 'node:path'
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
+import { commitEnv } from '../../scripts/lib/commitSha.mjs'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
@@ -50,6 +51,21 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   typedRoutes: true,
+  // WHICH COMMIT THIS BUNDLE IS, stamped in so `/api/health` can say it.
+  //
+  // `NEXT_PUBLIC_*` is inlined at BUILD time on both the server and the client,
+  // which is exactly the property that makes the answer trustworthy: it reports
+  // what the served bundle was COMPILED from, not what the running container's
+  // environment happens to say today.
+  //
+  // Resolved by `scripts/lib/commitSha.mjs`, which also reports WHICH source
+  // answered — App Hosting documents no build-time commit variable, so whether
+  // its buildpack image keeps a `.git` (or a `git` binary) is something only a
+  // real deploy can settle. `commitSource` in the health payload is how.
+  //
+  // Both keys are omitted entirely when nothing could be resolved; `?? null` at
+  // the read end turns that back into an honest "unknown".
+  env: commitEnv(path.join(__dirname, '..', '..')),
   // Pin the workspace root to THIS monorepo checkout. Without it, Next infers
   // the root from the nearest lockfile — inside a git worktree
   // (.claude/worktrees/*) it finds the parent checkout's pnpm-workspace.yaml

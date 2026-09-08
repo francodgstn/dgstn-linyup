@@ -1,4 +1,6 @@
+import path from 'node:path'
 import type { NextConfig } from 'next'
+import { commitEnv } from '../../scripts/lib/commitSha.mjs'
 
 // Operator console. Reads data server-side via the Firebase Admin SDK, so no
 // client-side Firestore proxy is needed (unlike apps/web). The only client
@@ -13,6 +15,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // WHICH COMMIT THIS BUNDLE IS — the same stamp apps/web carries, for the same
+  // reason: the Cloud Run revision names a BUILD, not a commit, and the console
+  // is the surface an operator reaches for when they need to know exactly what
+  // is running. See `scripts/lib/commitSha.mjs`.
+  env: commitEnv(path.join(__dirname, '..', '..')),
   // Server-only, and both must stay UNBUNDLED.
   //
   // @google-cloud/secret-manager pulls google-gax → @grpc/grpc-js. Bundling
