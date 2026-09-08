@@ -34,6 +34,12 @@ import {
 import {  } from 'lucide-react'
 import { renewAffiliationCall } from '@/components/affiliations/renew'
 import { AffiliationBulkBar, RenewConfirmDialog } from '@/components/affiliations/RenewUI'
+import {
+  NO_AFFILIATION,
+  RemoveAffiliationButton,
+  RemoveConfirmDialog,
+  removeAffiliationCall,
+} from '@/components/affiliations/remove'
 
 // ─── colour map ───────────────────────────────────────────────────────────────
 
@@ -183,7 +189,16 @@ function isExpiringSoon(aff: Affiliation | undefined): boolean {
 // ─── status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ statusId, defs }: { statusId: string; defs: OrgAffiliationStatusDef[] }) {
-  const def = defs.find((s) => s.id === statusId) ?? defs.find((s) => s.id === 'guest')
+  const t = useTranslations('OrgAffiliations')
+  // Reachable only in theory on this page — the roster now asks for contacts
+  // that hold one of this org's affiliations, so every row has a status. Kept
+  // because a query and a render should not have to agree for the screen to be
+  // truthful, and because falling back to `guest` (as it did) would relabel an
+  // unknown status rather than admit it.
+  if (statusId === NO_AFFILIATION) {
+    return <span className="text-xs text-muted-foreground">{t('statusNone')}</span>
+  }
+  const def = defs.find((s) => s.id === statusId)
   if (!def) return <span className="text-xs text-muted-foreground">—</span>
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(def.color)}`}>
@@ -285,9 +300,10 @@ function ContactAffiliationRow({
   onToggleSelect: (checked: boolean) => void
 }) {
   const t = useTranslations('OrgAffiliations')
-  const currentStatusId = affiliation?.status_id ?? 'guest'
+  const currentStatusId = affiliation?.status_id ?? NO_AFFILIATION
   const [pending, setPending] = useState<string | null>(null)
   const [showExpiry, setShowExpiry] = useState(false)
+  const [showRemove, setShowRemove] = useState(false)
 
   const upsertAffiliation = httpsCallable(functions, 'upsertAffiliation')
 
@@ -305,6 +321,26 @@ function ContactAffiliationRow({
       })
     },
     onSuccess: onUpdated,
+  })
+
+  // Removing the row is what takes the person off this federation's books, and
+  // off its roster — see `components/affiliations/remove.tsx`. Gated the same way
+  // every write on this page is: `removeAffiliation` runs `affiliationWriteAllowed`,
+  // which requires studio-manager rights, so an org admin who is not also staff
+  // at the studio is refused server-side exactly as they are for a status change.
+  const { mutate: removeAffiliation, isPending: removing } = useMutation({
+    mutationFn: async () => {
+      if (!affiliation) return
+      await removeAffiliationCall({
+        teamId: contact.teamId,
+        contactId: contact.id,
+        affiliationId: affiliation.id,
+      })
+    },
+    onSuccess: () => {
+      setShowRemove(false)
+      onUpdated()
+    },
   })
 
   function handleStatusChange(statusId: string | null) {
@@ -364,6 +400,15 @@ function ContactAffiliationRow({
             <StatusBadge statusId={currentStatusId} defs={defs} />
           )}
         </td>
+        <td className="px-2 py-3 w-8">
+          {isAdmin && affiliation && (
+            <RemoveAffiliationButton
+              label={t('removeAction')}
+              onClick={() => setShowRemove(true)}
+              disabled={removing || saving}
+            />
+          )}
+        </td>
         <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
           {affiliation?.valid_until
             ? formatExpiry(affiliation.valid_until as { toDate(): Date }, t('noExpiration'))
@@ -378,6 +423,16 @@ function ContactAffiliationRow({
           setPending(null)
         }}
         onCancel={() => { setShowExpiry(false); setPending(null) }}
+      />
+      <RemoveConfirmDialog
+        open={showRemove}
+        onOpenChange={setShowRemove}
+        title={t('removeTitle')}
+        description={t('removeBody', { name: contactName(contact) })}
+        confirmLabel={t('removeConfirm')}
+        cancelLabel={t('cancel')}
+        onConfirm={() => removeAffiliation()}
+        busy={removing}
       />
     </>
   )
@@ -449,7 +504,7 @@ export default function OrgAffiliationsPage() {
         if (statusFilter === '__expiring__') {
           if (!isExpiringSoon(aff)) return false
         } else if (statusFilter !== '__all__') {
-          const statusId = aff?.status_id ?? 'guest'
+          const statusId = aff?.status_id ?? NO_AFFILIATION
           if (statusId !== statusFilter) return false
         }
       }
@@ -466,7 +521,7 @@ export default function OrgAffiliationsPage() {
     const map: Record<string, number> = {}
     contacts?.forEach((c) => {
       const aff = affiliationsByContact[c.id]
-      const s = aff?.status_id ?? 'guest'
+      const s = aff?.status_id ?? NO_AFFILIATION
       map[s] = (map[s] ?? 0) + 1
     })
     return map
@@ -711,6 +766,8 @@ export default function OrgAffiliationsPage() {
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colName')}</th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{t('colTeam')}</th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colStatus')}</th>
+                {/* The remove control's column — unlabelled, like the studio's. */}
+                <th className="px-2 py-3 w-8" />
                 <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">{t('colExpires')}</th>
               </tr>
             </thead>

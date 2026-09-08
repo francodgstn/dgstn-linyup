@@ -1083,7 +1083,12 @@
     "manageTypes": "Typen verwalten",
     "notOnBooksTitle": "{count, plural, one {# Kontakt gehört nur diesem Studio} other {# Kontakte gehören nur diesem Studio}}.",
     "notOnBooksBody": "{org} kann sie nicht sehen. {term} vergeben, wenn jemand dort erfasst werden soll.",
-    "notOnBooksBodyBare": "Die Organisation kann sie nicht sehen. {term} vergeben, wenn jemand dort erfasst werden soll."
+    "notOnBooksBodyBare": "Die Organisation kann sie nicht sehen. {term} vergeben, wenn jemand dort erfasst werden soll.",
+    "statusNone": "Nicht affiliiert",
+    "removeAction": "Affiliation entfernen",
+    "removeTitle": "Diese Affiliation entfernen?",
+    "removeBody": "{name} wird aus der Erfassung genommen und ist für die Organisation nicht mehr sichtbar. Der Nachweis einer früheren Affiliation wird gelöscht — um eine abgelaufene Affiliation festzuhalten, stattdessen auf abgelaufen setzen.",
+    "removeConfirm": "Entfernen"
   },
   "SubscriptionsOverview": {
     "title": "Abonnements",
@@ -3111,7 +3116,12 @@
     "filterExpiring": "Läuft bald ab",
     "selectAll": "Alle auswählen",
     "bulkRenewedPartial": "{ok} verlängert, {failed} fehlgeschlagen",
-    "clearSelection": "Auswahl aufheben"
+    "clearSelection": "Auswahl aufheben",
+    "statusNone": "Nicht affiliiert",
+    "removeAction": "Affiliation entfernen",
+    "removeTitle": "Diese Affiliation entfernen?",
+    "removeBody": "{name} verschwindet aus der Erfassung dieser Organisation und aus dieser Liste. Der Nachweis einer früheren Affiliation wird gelöscht — um eine abgelaufene Affiliation festzuhalten, stattdessen auf abgelaufen setzen.",
+    "removeConfirm": "Entfernen"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliationsstatus",

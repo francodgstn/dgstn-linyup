@@ -23,13 +23,18 @@ export const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 // The built-in fallback status vocabulary, reused as affiliation statuses. Only
 // `active` counts as active; `expired` is final. The same shape an org carries at
 // organizations/{orgId}/affiliation_statuses.
+//
+// NO 'guest'. Not belonging is the ABSENCE of an affiliation row, never a status
+// — see the long note on the shared constant this mirrors. The seeders' own
+// `status: 'guest'` fixture label is a different thing: it is an INPUT meaning
+// "give this persona no affiliation", and each seeder already honours it that
+// way.
 export const DEFAULT_ORG_AFFILIATION_STATUSES = [
-  { id: 'guest',        label: 'Guest',        description: 'No membership process started.',                    color: 'gray',   order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'requested',    label: 'Requested',    description: 'Member has submitted a request, awaiting review.',  color: 'yellow', order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue',   order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.',     color: 'purple', order: 3, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'active',       label: 'Active',       description: 'Valid membership, recognised by the federation.',    color: 'green',  order: 4, isBuiltIn: true, countsAsActive: true,  isFinal: false },
-  { id: 'expired',      label: 'Expired',      description: 'Membership period has ended. Renewal required.',     color: 'red',    order: 5, isBuiltIn: true, countsAsActive: false, isFinal: true },
+  { id: 'requested',    label: 'Requested',    description: 'Member has submitted a request, awaiting review.',  color: 'yellow', order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue',   order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.',     color: 'purple', order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'active',       label: 'Active',       description: 'Valid membership, recognised by the federation.',    color: 'green',  order: 3, isBuiltIn: true, countsAsActive: true,  isFinal: false },
+  { id: 'expired',      label: 'Expired',      description: 'Membership period has ended. Renewal required.',     color: 'red',    order: 4, isBuiltIn: true, countsAsActive: false, isFinal: true },
 ] as const
 
 // Set of status ids whose `countsAsActive` is true — drives the affiliation's

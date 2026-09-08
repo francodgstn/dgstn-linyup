@@ -1083,7 +1083,12 @@
     "manageTypes": "Gérer les types",
     "notOnBooksTitle": "{count, plural, one {# contact appartient à ce studio seul} other {# contacts appartiennent à ce studio seul}}.",
     "notOnBooksBody": "{org} ne peut pas les voir. Attribuer {term} pour enregistrer quelqu'un.",
-    "notOnBooksBodyBare": "L'organisation ne peut pas les voir. Attribuer {term} pour enregistrer quelqu'un."
+    "notOnBooksBodyBare": "L'organisation ne peut pas les voir. Attribuer {term} pour enregistrer quelqu'un.",
+    "statusNone": "Non affilié",
+    "removeAction": "Retirer l'affiliation",
+    "removeTitle": "Retirer cette affiliation ?",
+    "removeBody": "{name} est retiré des registres et l'organisation cesse de le voir. La trace d'une affiliation passée est supprimée — pour signaler une affiliation échue, la passer plutôt à expirée.",
+    "removeConfirm": "Retirer"
   },
   "SubscriptionsOverview": {
     "title": "Abonnements",
@@ -3111,7 +3116,12 @@
     "filterExpiring": "Expire bientôt",
     "selectAll": "Tout sélectionner",
     "bulkRenewedPartial": "{ok} renouvelé(s), {failed} en échec",
-    "clearSelection": "Effacer la sélection"
+    "clearSelection": "Effacer la sélection",
+    "statusNone": "Non affilié",
+    "removeAction": "Retirer l'affiliation",
+    "removeTitle": "Retirer cette affiliation ?",
+    "removeBody": "{name} disparaît des registres de cette organisation et de cette liste. La trace d'une affiliation passée est supprimée — pour signaler une affiliation échue, la passer plutôt à expirée.",
+    "removeConfirm": "Retirer"
   },
   "OrgAffiliationStatuses": {
     "title": "Statuts d'affiliation",

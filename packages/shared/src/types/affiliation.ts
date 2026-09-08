@@ -119,6 +119,25 @@ export interface AffiliationSummary {
 // stored at organizations/{orgId}/affiliation_statuses. Reused across every
 // affiliation type; `countsAsActive` drives the denormalised `active` rollup.
 // (The status `id`s below are stable identifiers referenced by Affiliation.status_id.)
+//
+// THERE IS NO 'guest' STATUS, AND ITS ABSENCE IS THE DESIGN.
+//
+// It existed in the old product, where belonging was a FIELD on the contact and
+// somebody who did not belong still had to hold some value: 'guest' meant "on
+// the roster, not counting". Affiliations made belonging a ROW, so not
+// belonging is the absence of one and needs no vocabulary at all.
+//
+// Keeping it was actively harmful once `orgAdminMayReadContact` shipped: every
+// writer in the product already treated 'guest' as "write no row" (the HMD
+// import, all three seeders), so the ONLY way to create one was a manager
+// picking it from the roster's status list — which WRITES a row, and a row is
+// what discloses the contact to the organisation. The status whose label said
+// "not a member" was the one control that made someone a member.
+// See `docs/org-contact-visibility.md`.
+//
+// "No affiliation" is therefore never a `status_id`. The UI carries its own
+// sentinel for the empty state (`NO_AFFILIATION`, web only) and removal is an
+// explicit action — `removeAffiliation` — not a value anyone can select.
 
 export type AffiliationStatusColor =
   | 'gray' | 'yellow' | 'blue' | 'purple' | 'green' | 'red' | 'orange'
@@ -134,11 +153,13 @@ export interface OrgAffiliationStatusDef {
   isFinal: boolean
 }
 
+// `order` is a SORT KEY, not an identity, which is why renumbering after the
+// removal costs nothing: an org that auto-initialised these before still holds
+// docs numbered 1–5, and the two orderings interleave to the same sequence.
 export const DEFAULT_ORG_AFFILIATION_STATUSES: OrgAffiliationStatusDef[] = [
-  { id: 'guest', label: 'Guest', description: 'No affiliation process started.', color: 'gray', order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'requested', label: 'Requested', description: 'A request has been submitted, awaiting review.', color: 'yellow', order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue', order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.', color: 'purple', order: 3, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'active', label: 'Active', description: 'Valid affiliation, recognised by the federation.', color: 'green', order: 4, isBuiltIn: true, countsAsActive: true, isFinal: false },
-  { id: 'expired', label: 'Expired', description: 'The affiliation period has ended. Renewal required.', color: 'red', order: 5, isBuiltIn: true, countsAsActive: false, isFinal: true },
+  { id: 'requested', label: 'Requested', description: 'A request has been submitted, awaiting review.', color: 'yellow', order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue', order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.', color: 'purple', order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'active', label: 'Active', description: 'Valid affiliation, recognised by the federation.', color: 'green', order: 3, isBuiltIn: true, countsAsActive: true, isFinal: false },
+  { id: 'expired', label: 'Expired', description: 'The affiliation period has ended. Renewal required.', color: 'red', order: 4, isBuiltIn: true, countsAsActive: false, isFinal: true },
 ]

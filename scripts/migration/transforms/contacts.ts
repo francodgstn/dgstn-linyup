@@ -29,6 +29,13 @@ function statusCountsAsActive(statusId: string): boolean {
 }
 
 // A non-guest, non-empty status is a real affiliation; guest/none → none.
+//
+// KEEP THE 'guest' TEST even though Linyup has no such status any more. This
+// reads HMD's SOURCE data, where `org_membership_status: 'guest'` is a real
+// stored value meaning "on the roster, not a member" — the old model this
+// import exists to translate out of. Dropping the test would turn every one of
+// those into an affiliation row, which is precisely the disclosure that
+// `orgAdminMayReadContact` is built to withhold.
 function isAffiliationStatus(status: unknown): status is string {
   return typeof status === 'string' && status.length > 0 && status !== 'guest'
 }

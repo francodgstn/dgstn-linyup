@@ -47,15 +47,62 @@ the organisation's books. Delete it and they go back to invisible:
 `onAffiliationWrite` recomputes the summary from the rows that remain, so this
 reverses rather than merely stopping.
 
-**`DEFAULT_ORG_AFFILIATION_STATUSES` still ships a `guest` status described as
-"No affiliation process started", and that description is now a trap.** Under
-this model "no process started" is expressed by having no row at all, so
-*creating* a `guest` row is the opposite of what its description suggests — it is
-the disclosure. A manager picking `guest` to mean "not the federation's business"
-would achieve precisely the thing they were avoiding. Either redescribe it as
-what it now is (*on the books, not yet affiliated* — a useful funnel state the
-federation legitimately wants) or drop it from the defaults. **Not done in this
-change**; it is copy plus a data question about rows that already hold it.
+**The `guest` status is gone** (2026-09-08, second pass). It shipped described
+as "No affiliation process started", which under this model is a trap: no process
+started is expressed by having no row, so *creating* a `guest` row is the
+opposite of what the description says — it is the disclosure. A manager picking
+it to mean "not the federation's business" achieved precisely the thing they were
+avoiding.
+
+What made it removable rather than merely wrong is that **nothing had ever
+written one**. Every writer already treated it as "no row": the HMD import
+(`transforms/contacts.ts`, `isAffiliationStatus`) and all three seeders. A search
+for a stored `status_id: 'guest'` returns nothing. It survived only as a status
+DEF in the vocabulary and as a `?? 'guest'` fallback in the two rosters — a
+value nobody stored, that anybody could select.
+
+Removed from the canonical list and from both mirrors that cannot import it
+(`scripts/lib/affiliations.ts`, `scripts/migration/passes/00-setup.ts` — the HMD
+import was seeding it into the one org with real data). The three are held
+together by `packages/functions/src/affiliations/statusVocabulary.test.ts`, which
+re-derives the mirrors from source.
+
+**`transforms/contacts.ts` still tests for `'guest'`, and must.** That reads
+HMD's SOURCE data, where `org_membership_status: 'guest'` is a real stored value
+meaning "on the roster, not a member" — the old model the import exists to
+translate out of. Dropping the test would turn every one of those into an
+affiliation row, which is the exact disclosure this design withholds. The
+seeders' `status: 'guest'` fixture label is the same kind of thing: an input
+meaning "give this persona no affiliation".
+
+No backfill: there is no production data, and an org that auto-initialised its
+vocabulary keeps a `guest` doc that nothing can now select into existence.
+
+### Removal is an action, not a status
+
+Removing `guest` needed something to take its place, because **neither roster
+could un-affiliate anybody**. The status selector only ever called
+`upsertAffiliation`; `removeAffiliation` existed but was wired solely to the
+contact detail page. So the disclosure was one click to make and unreachable to
+undo from the screen where people work.
+
+`components/affiliations/remove.tsx` is now that action, on both rosters, behind
+a confirmation — and deliberately **not** an entry in the status dropdown:
+
+- **`expired` and deleted are different acts.** Expired keeps the record that
+  this person WAS a member, which is what a federation needs when they come back
+  or ask for proof. Deleting throws it away, and is right only when the row
+  should not have existed. One dropdown holding both would put an irreversible
+  act one mis-click from a routine one. The dialog says which is which.
+- **It has to be a delete, not a flag.** The row IS the disclosure, so hiding
+  someone again means the row goes. `onAffiliationWrite` recomputes the summary
+  from what remains, so the contact drops out of `org_ids` and the rule stops
+  admitting the org on the next evaluation.
+
+The rosters' `?? 'guest'` fallbacks became a `NO_AFFILIATION` sentinel that is
+never a `status_id` and never selectable, plus a "Not affiliated" filter pill
+that does what the `Guest` pill used to. An unknown status id now renders `—`
+rather than being silently relabelled.
 
 ## What changed
 
@@ -181,7 +228,6 @@ headcount — a number, never people. Not built; do not add it by widening a rea
 
 ## Open
 
-- **The `guest` status description**, above. The only loose end in this design.
 - **A studio's own opt-in headcount**, if a federation ever needs its reach back.
 - **Aggregate inference**: an org admin can see a studio's on-books count but not
   its total, so it cannot compute what it is not being shown. Deliberate, and

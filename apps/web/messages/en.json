@@ -1083,7 +1083,12 @@
     "manageTypes": "Manage types",
     "notOnBooksTitle": "{count, plural, one {# contact is yours alone} other {# contacts are yours alone}}.",
     "notOnBooksBody": "{org} cannot see them. Add a {term} when someone should be on its records.",
-    "notOnBooksBodyBare": "The organisation cannot see them. Add a {term} when someone should be on its records."
+    "notOnBooksBodyBare": "The organisation cannot see them. Add a {term} when someone should be on its records.",
+    "statusNone": "Not affiliated",
+    "removeAction": "Remove affiliation",
+    "removeTitle": "Remove this affiliation?",
+    "removeBody": "{name} is taken off the records and the organisation stops seeing them. The record that they were ever affiliated is deleted — to mark a lapsed affiliation instead, set it to expired.",
+    "removeConfirm": "Remove"
   },
   "SubscriptionsOverview": {
     "title": "Subscriptions",
@@ -3111,7 +3116,12 @@
     "filterExpiring": "Expiring soon",
     "selectAll": "Select all",
     "bulkRenewedPartial": "Renewed {ok}, {failed} failed",
-    "clearSelection": "Clear selection"
+    "clearSelection": "Clear selection",
+    "statusNone": "Not affiliated",
+    "removeAction": "Remove affiliation",
+    "removeTitle": "Remove this affiliation?",
+    "removeBody": "{name} comes off this organisation's records and off this roster. The record that they were ever affiliated is deleted — to mark a lapsed affiliation instead, set it to expired.",
+    "removeConfirm": "Remove"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliation Statuses",

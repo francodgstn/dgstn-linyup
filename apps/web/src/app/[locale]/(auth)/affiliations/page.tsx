@@ -34,6 +34,12 @@ import {
 import { EyeOff, IdCard, Settings2 } from 'lucide-react'
 import { renewAffiliationCall } from '@/components/affiliations/renew'
 import { AffiliationBulkBar, RenewConfirmDialog } from '@/components/affiliations/RenewUI'
+import {
+  NO_AFFILIATION,
+  RemoveAffiliationButton,
+  RemoveConfirmDialog,
+  removeAffiliationCall,
+} from '@/components/affiliations/remove'
 import { AffiliationTypesManager } from '@/components/affiliations/AffiliationTypesManager'
 
 // ─── colour map ────────────────────────────────────────────────────────────────
@@ -202,7 +208,16 @@ function isExpiringSoon(aff: Affiliation | undefined): boolean {
 // ─── status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ statusId, defs }: { statusId: string; defs: OrgAffiliationStatusDef[] }) {
-  const def = defs.find((s) => s.id === statusId) ?? defs.find((s) => s.id === 'guest')
+  const t = useTranslations('TeamAffiliations')
+  // NO AFFILIATION IS NOT A STATUS. It used to fall back to the built-in `guest`
+  // def, which dressed "holds nothing" as a value somebody could also SELECT —
+  // and selecting it wrote a row. The empty state now says so in its own words,
+  // and an unknown id (a status def the org deleted) renders as `—` rather than
+  // being quietly relabelled.
+  if (statusId === NO_AFFILIATION) {
+    return <span className="text-xs text-muted-foreground">{t('statusNone')}</span>
+  }
+  const def = defs.find((s) => s.id === statusId)
   if (!def) return <span className="text-xs text-muted-foreground">—</span>
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(def.color)}`}>
@@ -295,9 +310,10 @@ function ContactAffiliationRow({
   onToggleSelect: (checked: boolean) => void
 }) {
   const t = useTranslations('TeamAffiliations')
-  const currentStatusId = affiliation?.status_id ?? 'guest'
+  const currentStatusId = affiliation?.status_id ?? NO_AFFILIATION
   const [pending, setPending] = useState<string | null>(null)
   const [showExpiry, setShowExpiry] = useState(false)
+  const [showRemove, setShowRemove] = useState(false)
 
   const upsertAffiliation = httpsCallable(functions, 'upsertAffiliation')
 
@@ -314,6 +330,19 @@ function ContactAffiliationRow({
       })
     },
     onSuccess: onUpdated,
+  })
+
+  // REMOVING THE ROW, not setting a status on it — see the module header of
+  // `components/affiliations/remove.tsx` for why the two are separate controls.
+  const { mutate: removeAffiliation, isPending: removing } = useMutation({
+    mutationFn: async () => {
+      if (!affiliation) return
+      await removeAffiliationCall({ teamId, contactId: contact.id, affiliationId: affiliation.id })
+    },
+    onSuccess: () => {
+      setShowRemove(false)
+      onUpdated()
+    },
   })
 
   function handleStatusChange(statusId: string | null) {
@@ -370,6 +399,17 @@ function ContactAffiliationRow({
             <StatusBadge statusId={currentStatusId} defs={defs} />
           )}
         </td>
+        <td className="px-2 py-3 w-8">
+          {/* Only where there IS a row to remove. Nothing to take off the books
+              means nothing to confirm. */}
+          {canEdit && affiliation && (
+            <RemoveAffiliationButton
+              label={t('removeAction')}
+              onClick={() => setShowRemove(true)}
+              disabled={removing || saving}
+            />
+          )}
+        </td>
         <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">
           {affiliation?.valid_until
             ? formatExpiry(affiliation.valid_until as { toDate(): Date }, t('noExpiration'))
@@ -384,6 +424,16 @@ function ContactAffiliationRow({
           setPending(null)
         }}
         onCancel={() => { setShowExpiry(false); setPending(null) }}
+      />
+      <RemoveConfirmDialog
+        open={showRemove}
+        onOpenChange={setShowRemove}
+        title={t('removeTitle')}
+        description={t('removeBody', { name: contactName(contact) })}
+        confirmLabel={t('removeConfirm')}
+        cancelLabel={t('cancel')}
+        onConfirm={() => removeAffiliation()}
+        busy={removing}
       />
     </>
   )
@@ -459,7 +509,7 @@ export default function TeamAffiliationsPage() {
         if (statusFilter === '__expiring__') {
           if (!isExpiringSoon(aff)) return false
         } else if (statusFilter !== '__all__') {
-          const statusId = aff?.status_id ?? 'guest'
+          const statusId = aff?.status_id ?? NO_AFFILIATION
           if (statusId !== statusFilter) return false
         }
       }
@@ -494,7 +544,7 @@ export default function TeamAffiliationsPage() {
     const map: Record<string, number> = {}
     contacts?.forEach((c) => {
       const aff = affiliationsByContact[c.id]
-      const s = aff?.status_id ?? 'guest'
+      const s = aff?.status_id ?? NO_AFFILIATION
       map[s] = (map[s] ?? 0) + 1
     })
     return map
@@ -731,6 +781,19 @@ export default function TeamAffiliationsPage() {
                   {t('filterExpiring')} ({expiringCount})
                 </button>
               )}
+              {/* NOT AFFILIATED — the bucket the removed `guest` pill used to
+                  fill. It is a tally key, never a status, so it is rendered here
+                  rather than found in `defs`. */}
+              {(countsByStatus[NO_AFFILIATION] ?? 0) > 0 && (
+                <button
+                  onClick={() => setStatusFilter(NO_AFFILIATION)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    statusFilter === NO_AFFILIATION ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t('statusNone')} ({countsByStatus[NO_AFFILIATION]})
+                </button>
+              )}
               {defs.map((s) => {
                 const count = countsByStatus[s.id] ?? 0
                 if (count === 0) return null
@@ -811,6 +874,10 @@ export default function TeamAffiliationsPage() {
                 </th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colName')}</th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colStatus')}</th>
+                {/* The remove control's column. Deliberately unlabelled — an icon
+                    action needs no heading, and naming it would put "Remove" at
+                    the top of a column of blanks. */}
+                <th className="px-2 py-3 w-8" />
                 <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{t('colExpires')}</th>
               </tr>
             </thead>
