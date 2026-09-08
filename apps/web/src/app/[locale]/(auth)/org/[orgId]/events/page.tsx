@@ -64,7 +64,6 @@ import { Plus, Pencil, Trash2, CalendarRange, MapPin, CalendarDays, ChevronRight
 import { Link } from '@/i18n/navigation'
 import { eventTypeLabel } from '@/lib/eventTypeLabel'
 import { BUILTIN_EVENT_TYPES, EVENTS_COLLECTION } from '@linyup/shared'
-import { EventAttendanceTrendCard } from '@/components/events/EventAttendanceTrendCard'
 import type { Event } from '@linyup/shared'
 import type { Route } from 'next'
 
@@ -287,7 +286,13 @@ export default function OrgEventsPage() {
   // timeline back onto the list — the failure UX-22 named ("the app forgot").
   // `?view=` rather than `?tab=`, because this page already spends `?tab=` on
   // upcoming/past and the two are independent.
-  const [view, setView] = useTabParam(EVENT_VIEWS, 'list', 'view')
+  // THE TIMELINE OPENS FIRST (Franco, 2026-09-08). A federation reviewing or
+  // planning a season asks how the year is SHAPED before it asks what row 14
+  // says, and the timeline now carries the attendance figures the chart used to
+  // hold — with a list of what is on screen underneath it, so the list is one
+  // scroll away rather than one tab away. The other two views keep their tabs
+  // and the URL stays truthful, so a link to `?view=list` still opens the list.
+  const [view, setView] = useTabParam(EVENT_VIEWS, 'timeline', 'view')
   const [deleting, setDeleting] = useState<Event | null>(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState(ALL_TYPES)
@@ -408,13 +413,6 @@ export default function OrgEventsPage() {
         </div>
         </div>
       </div>
-
-      {/* ATTENDANCE ACROSS THE SEASON, above the list it summarises. Fed from
-          PAST events only: attendance is a fact about an event that happened,
-          and a camp next March carries `participants_count: 0` — folding those
-          in would draw a cliff at today that means nothing. Costs no extra
-          reads; both halves are already loaded for the calendar view. */}
-      <EventAttendanceTrendCard events={past.data ?? []} loading={past.isLoading} />
 
       {/* The federation's calendar. Both halves, because a month contains both. */}
       {view === 'calendar' && (

@@ -17,16 +17,24 @@
  * it is a decomposition of one of them, not a fourth subject — the hairline
  * above it is the only separation it needs.
  *
- * ── RECORDS, NEVER PEOPLE ──────────────────────────────────────────────────
+ * ── PEOPLE, LIKE EVERYTHING ELSE ON THIS PAGE ──────────────────────────────
  *
- * The counts are affiliation DOCUMENTS (see `useOrgAffiliationStatusCounts` for
- * why they cannot exclude an archived contact's row). Every other figure on this
- * page counts live people, so the copy here says records and the strip states NO
- * percentage of the headcount: a ratio across two different populations is the
- * one number that would read as precise and be wrong.
+ * It counted affiliation DOCUMENTS until 2026-09-08, archived people's included,
+ * and read `34 records` under a headcount of `31` — see
+ * `useOrgAffiliationStatusCounts` for why that was unfilterable and what
+ * replaced it. Both halves of the copy follow from the fix: a segment is people
+ * in that status, so its `Active` count is now comparable to the AFFILIATION
+ * figure directly above it rather than quietly larger.
  *
- * Percentages WITHIN the strip are honest — they are shares of the strip's own
- * total — so the legend carries them and the segments are sized by them.
+ * ── THE HEADER IS NOT THE SUM OF THE SEGMENTS, DELIBERATELY ────────────────
+ *
+ * A person holding a licence that is active and a grading that is merely
+ * requested is one person in two segments — real, because affiliation types are
+ * reused across one vocabulary. So the header states DISTINCT people (its own
+ * count, never above the headcount) while the bar is sized by the segment sum,
+ * because a distribution has to fill its own width. Percentages are shares of
+ * that sum and are honest as such; the strip still states no percentage of the
+ * headcount, which would be a ratio across two populations.
  *
  * ── A DENIED COUNT IS NOT A ZERO ───────────────────────────────────────────
  *
@@ -42,16 +50,16 @@ import { Link } from '@/i18n/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orgHref } from '@/lib/org-nav'
 import { statusFillClass } from '@/lib/affiliationStatusColors'
-import type { OrgAffiliationStatusCount } from './data'
+import type { OrgAffiliationStatusBreakdown } from './data'
 
 export function AffiliationStatusStrip({
   orgId,
-  rows,
+  breakdown,
   affiliationTerm,
   loading,
 }: {
   orgId: string
-  rows: OrgAffiliationStatusCount[] | undefined
+  breakdown: OrgAffiliationStatusBreakdown | undefined
   affiliationTerm: string
   loading: boolean
 }) {
@@ -59,8 +67,13 @@ export function AffiliationStatusStrip({
 
   // Answered AND non-empty. A status the organisation defined but has never used
   // is noise in a legend that is already six items long.
-  const answered = (rows ?? []).filter((r) => r.count != null && r.count > 0)
+  const answered = (breakdown?.rows ?? []).filter((r) => r.count != null && r.count > 0)
+  // The bar's own scale — see the header note above on why it is not what the
+  // link states.
   const total = answered.reduce((sum, r) => sum + (r.count ?? 0), 0)
+  // Falls back to the segment sum only when the distinct count did not answer,
+  // so a denial costs precision rather than the whole line.
+  const people = breakdown?.people ?? total
 
   if (loading) {
     return (
@@ -84,7 +97,7 @@ export function AffiliationStatusStrip({
           href={orgHref(orgId, 'affiliations') as Route}
           className="text-xs font-medium text-primary hover:underline"
         >
-          {t('statusAll', { count: total })}
+          {t('statusAll', { count: people })}
         </Link>
       </div>
 

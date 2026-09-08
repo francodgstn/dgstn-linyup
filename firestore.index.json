@@ -340,6 +340,28 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "affiliation_summary.org_status_ids",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "contacts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "teamId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deleted_at",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "archived_at",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "affiliation_summary.org_ids",
           "arrayConfig": "CONTAINS"
         }

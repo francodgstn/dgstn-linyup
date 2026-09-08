@@ -131,10 +131,19 @@ export default function OrgDashboardPage() {
   // Both are org-member reads; the counts additionally need the collection-group
   // rule added on 2026-09-08, without which every one of them was denied.
   const { data: statusDefs, isLoading: statusDefsLoading } = useOrgAffiliationStatusDefs(orgId)
+  // SCOPED TO THE ACTIVE STUDIOS, like every other count on this page: the
+  // breakdown now asks the CONTACT which status it is in, and `teamId` is what
+  // the rules grant an org admin over contacts.
+  //
+  // WHICH ALSO MAKES IT ADMIN-ONLY, where the old document count was not. That
+  // is the right way round: an `org_viewer` cannot read contacts at all, so the
+  // page already withholds PEOPLE from them, and a breakdown OF that number
+  // should not be the one thing that leaks it.
   const { data: statusCounts, isLoading: statusCountsLoading } = useOrgAffiliationStatusCounts(
     orgId,
+    active.map((r) => r.teamId),
     statusDefs,
-    true
+    isAdmin
   )
 
   const onBooks = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.onBooks)) : null
@@ -217,7 +226,7 @@ export default function OrgDashboardPage() {
           rather than in the band — a decomposition, not a fourth subject. */}
       <AffiliationStatusStrip
         orgId={orgId}
-        rows={statusCounts}
+        breakdown={statusCounts}
         affiliationTerm={affiliationTerm}
         loading={statusDefsLoading || statusCountsLoading}
       />
