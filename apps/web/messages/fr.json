@@ -5782,7 +5782,8 @@
     "timelineBandNone": "Compact",
     "timelineBandOrgRow": "Organisation",
     "timelineBandTeamRow": "Ce studio",
-    "timelineZoomLabel": "Zoom"
+    "timelineZoomLabel": "Zoom",
+    "viewLabel": "Vue"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

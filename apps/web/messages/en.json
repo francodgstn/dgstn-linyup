@@ -5782,7 +5782,8 @@
     "timelineBandNone": "Packed",
     "timelineBandOrgRow": "Organisation",
     "timelineBandTeamRow": "This studio",
-    "timelineZoomLabel": "Zoom"
+    "timelineZoomLabel": "Zoom",
+    "viewLabel": "View"
   },
   "OrgEventDetail": {
     "backToEvents": "Organization events",
