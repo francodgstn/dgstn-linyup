@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import {
+  TIMELINE_MIN_UNIT_PX,
   estimateLabelPx,
   fractionOf,
+  timelineMinTrackPx,
   placeTimelineEvents,
   shiftTimelineWindow,
   timelineTicks,
@@ -71,6 +73,42 @@ describe('eventTimeline — the window', () => {
   })
 })
 
+describe('eventTimeline — how wide the track wants to be', () => {
+  it('a year asks for twelve months of room', () => {
+    const w = timelineWindow('year', new Date(2026, 3, 1))
+    assert.equal(timelineMinTrackPx(w), 12 * TIMELINE_MIN_UNIT_PX.year)
+  })
+
+  it('a month asks for its OWN number of days, not an average', () => {
+    // February and January must not ask for the same width, or the last days of
+    // a long month are drawn tighter than the rest of the year.
+    const feb = timelineMinTrackPx(timelineWindow('month', new Date(2026, 1, 1)))
+    const jan = timelineMinTrackPx(timelineWindow('month', new Date(2026, 0, 1)))
+    assert.equal(feb, 28 * TIMELINE_MIN_UNIT_PX.month)
+    assert.equal(jan, 31 * TIMELINE_MIN_UNIT_PX.month)
+    assert.ok(feb < jan)
+  })
+
+  it('a leap February asks for one more day', () => {
+    const y2028 = timelineMinTrackPx(timelineWindow('month', new Date(2028, 1, 1)))
+    assert.equal(y2028, 29 * TIMELINE_MIN_UNIT_PX.month)
+  })
+
+  it('the minimum is what keeps a phone off one-row-per-event', () => {
+    // THE REASON THIS EXISTS. Packed against a phone's viewport every label
+    // collides and the packer opens a row per event; packed against the track
+    // it actually scrolls across, it does not.
+    const year = timelineWindow('year', new Date(2026, 0, 1))
+    const events = [0, 1, 2, 3, 4, 5].map((i) =>
+      ev(`e${i}`, ms(2026, i * 2, 3), ms(2026, i * 2, 4), 'Regional Championship')
+    )
+    const squeezed = placeTimelineEvents(events, year, { trackPx: 330 })
+    const scrolled = placeTimelineEvents(events, year, { trackPx: timelineMinTrackPx(year) })
+    assert.equal(squeezed.lanes, 6, 'a 330px year really does collide everywhere')
+    assert.ok(scrolled.lanes < squeezed.lanes, 'the scrollable track packs tighter')
+  })
+})
+
 describe('eventTimeline — ticks', () => {
   it('a year has twelve, one per month', () => {
     const t = timelineTicks(timelineWindow('year', new Date(2026, 0, 1)), 1200)
@@ -126,10 +164,7 @@ describe('eventTimeline — one row unless they cross', () => {
 
   it('two events that overlap take two rows, and only two', () => {
     const { placed, lanes } = placeTimelineEvents(
-      [
-        ev('a', ms(2026, 5, 1), ms(2026, 5, 20)),
-        ev('b', ms(2026, 5, 10), ms(2026, 5, 25)),
-      ],
+      [ev('a', ms(2026, 5, 1), ms(2026, 5, 20)), ev('b', ms(2026, 5, 10), ms(2026, 5, 25))],
       year,
       WIDE
     )
@@ -169,10 +204,7 @@ describe('eventTimeline — one row unless they cross', () => {
   it('events that merely touch do not count as crossing', () => {
     // One ends exactly where the next begins. On a wide track the gap is real.
     const { lanes } = placeTimelineEvents(
-      [
-        ev('a', ms(2026, 0, 1), ms(2026, 5, 1)),
-        ev('b', ms(2026, 5, 1), ms(2026, 11, 1)),
-      ],
+      [ev('a', ms(2026, 0, 1), ms(2026, 5, 1)), ev('b', ms(2026, 5, 1), ms(2026, 11, 1))],
       year,
       { trackPx: 4000, gapPx: 0 }
     )
@@ -269,7 +301,10 @@ describe('eventTimeline — the window edges', () => {
       june,
       WIDE
     )
-    assert.deepEqual(placed.map((p) => p.id), ['inside'])
+    assert.deepEqual(
+      placed.map((p) => p.id),
+      ['inside']
+    )
   })
 
   it('an event straddling the start is clipped to it and flagged', () => {
