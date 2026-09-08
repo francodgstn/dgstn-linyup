@@ -276,6 +276,51 @@ export function timelineTicks(
   return { unit, ticks }
 }
 
+// ─── participation ───────────────────────────────────────────────────────────
+
+/**
+ * The least a bar with anybody in it is filled.
+ *
+ * One person against a cap of four hundred is 0.25% of a 20px bar — a quarter
+ * of a pixel, which rounds to nothing and says "nobody came". The floor is what
+ * keeps "somebody" and "nobody" visibly different, and it is the only reason
+ * this is not just a division.
+ */
+export const TIMELINE_MIN_FILL = 0.12
+
+/**
+ * How full to draw an event's bar, 0..1 — the attendance chart's encoding, moved
+ * onto the timeline.
+ *
+ * ── ZERO IS A REAL ZERO ─────────────────────────────────────────────────────
+ *
+ * An event nobody attended returns exactly 0 and is drawn as an empty frame,
+ * which is the honest picture. `EventAttendanceTrendCard` made the same call
+ * for the same reason, and a missing `participants_count` on a PAST event is
+ * read as 0 there too — on migrated data the field may simply never have been
+ * written, and inventing attendance for it would be worse than showing none.
+ * The caller decides whether an event is past; an upcoming one is not asked.
+ *
+ * ── THE CAP IS THE ARCHIVE'S OWN MAXIMUM ────────────────────────────────────
+ *
+ * So a full bar means "the best-attended event this federation has had", which
+ * needs no legend to explain. It must be computed over the WHOLE archive and
+ * never over what happens to be on screen: a cap that changed as you scrolled
+ * would redraw every bar under you, and two events could not be compared by
+ * eye — which is the entire point of putting the quantity here.
+ */
+export function participationFill(count: number | undefined | null, cap: number): number {
+  if (!count || count <= 0 || cap <= 0) return 0
+  return Math.max(TIMELINE_MIN_FILL, Math.min(1, count / cap))
+}
+
+/** The busiest event there has been, which is what a full bar means. */
+export function participationCap(counts: readonly (number | undefined | null)[]): number {
+  let max = 0
+  for (const c of counts) if (c && c > max) max = c
+  return max
+}
+
 // ─── placement ───────────────────────────────────────────────────────────────
 
 /** What the packer needs to know about one event. */

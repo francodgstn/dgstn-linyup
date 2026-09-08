@@ -5775,7 +5775,11 @@
     "timelineEmpty": "Noch keine Veranstaltungen",
     "timelineTypeless": "Ohne Typ",
     "timelineZoomYears": "{count} Jahre",
-    "timelineDays": "{count, plural, one {# Tag} other {# Tage}}"
+    "timelineDays": "{count, plural, one {# Tag} other {# Tage}}",
+    "timelineAttended": "{count, plural, =0 {Niemand eingecheckt} one {# Person eingecheckt} other {# Personen eingecheckt}}",
+    "timelineInView": "Im Ausschnitt",
+    "timelineInViewCount": "{count, plural, =0 {keine Veranstaltungen} one {# Veranstaltung} other {# Veranstaltungen}}",
+    "timelineInViewEmpty": "Nichts in diesem Abschnitt — scrollen Sie zu den nächsten Veranstaltungen"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",

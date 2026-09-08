@@ -5775,7 +5775,11 @@
     "timelineEmpty": "Aucun événement pour l'instant",
     "timelineTypeless": "Sans type",
     "timelineZoomYears": "{count} ans",
-    "timelineDays": "{count, plural, one {# jour} other {# jours}}"
+    "timelineDays": "{count, plural, one {# jour} other {# jours}}",
+    "timelineAttended": "{count, plural, =0 {Personne enregistrée} one {# personne enregistrée} other {# personnes enregistrées}}",
+    "timelineInView": "Dans la vue",
+    "timelineInViewCount": "{count, plural, =0 {aucun événement} one {# événement} other {# événements}}",
+    "timelineInViewEmpty": "Rien dans cette portion — faites défiler jusqu'aux prochains événements"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

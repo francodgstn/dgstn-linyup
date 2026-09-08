@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict'
 import {
   TIMELINE_DAYS_PER_SCREEN,
+  TIMELINE_MIN_FILL,
   TIMELINE_MIN_UNIT_PX,
   TIMELINE_YEARS_SPAN,
   estimateLabelPx,
   fractionOf,
+  participationCap,
+  participationFill,
   placeTimelineEvents,
   timelineDateAt,
   timelinePxPerDay,
@@ -614,5 +617,51 @@ describe('eventTimeline — continuity', () => {
     assert.equal(placed[0].clippedStart, false)
     assert.equal(placed[0].clippedEnd, false)
     assert.ok(placed[0].left > 0 && placed[0].left + placed[0].width < 1)
+  })
+})
+
+describe('eventTimeline — participation', () => {
+  it('a full bar means the busiest event there has been', () => {
+    assert.equal(participationFill(210, 210), 1)
+    assert.equal(participationFill(105, 210), 0.5)
+  })
+
+  it('ZERO IS A REAL ZERO — an empty frame, not a floor', () => {
+    // An event nobody attended is a finding, and drawing it the same as one
+    // person would hide it. `EventAttendanceTrendCard` made the same call.
+    assert.equal(participationFill(0, 210), 0)
+    assert.equal(participationFill(undefined, 210), 0)
+    assert.equal(participationFill(null, 210), 0)
+  })
+
+  it('but ONE person is never invisible', () => {
+    // 1/400 of a 20px bar is a twentieth of a pixel, which rounds to nothing
+    // and says "nobody came". The floor is the whole reason this is not a
+    // division.
+    assert.equal(participationFill(1, 400), TIMELINE_MIN_FILL)
+    assert.ok(participationFill(1, 400) > 0)
+  })
+
+  it('never overflows its frame, whatever the cap says', () => {
+    assert.equal(participationFill(500, 210), 1)
+  })
+
+  it('a cap of nothing fills nothing rather than dividing by zero', () => {
+    assert.equal(participationFill(10, 0), 0)
+    assert.equal(participationFill(10, -1), 0)
+  })
+
+  it('the cap is the maximum, and ignores the events that have no count', () => {
+    assert.equal(participationCap([12, undefined, 210, null, 7]), 210)
+    assert.equal(participationCap([]), 0)
+    assert.equal(participationCap([undefined, null]), 0)
+  })
+
+  it('the cap does not move when the events are reordered', () => {
+    // It is computed over the whole archive precisely so it CANNOT change with
+    // what is on screen: a cap that moved would redraw every bar as you
+    // scrolled, and two events could not be compared by eye.
+    const counts = [12, 210, 7, 96]
+    assert.equal(participationCap(counts), participationCap([...counts].reverse()))
   })
 })
