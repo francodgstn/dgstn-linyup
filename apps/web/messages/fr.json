@@ -5761,9 +5761,9 @@
     "printTo": "Au",
     "printEmpty": "Aucun événement dans cette période.",
     "type_other": "Autre",
-    "trendTitle": "Participation par mois",
+    "trendTitle": "Participation par événement",
     "trendSubtitle": "{attendees} présences sur {events} événements au cours des 12 derniers mois",
-    "trendTooltip": "{attendees} présences · {events} événements",
+    "trendTooltip": "{attendees} présences · {date}",
     "trendEmptyTitle": "Aucune participation",
     "trendEmptyHint": "Enregistrez les présences à un événement et les mois se rempliront ici."
   },

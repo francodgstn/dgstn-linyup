@@ -5761,9 +5761,9 @@
     "printTo": "To",
     "printEmpty": "No events fall in this window.",
     "type_other": "Other",
-    "trendTitle": "Attendance by month",
+    "trendTitle": "Attendance by event",
     "trendSubtitle": "{attendees} checked in across {events} events in the last 12 months",
-    "trendTooltip": "{attendees} checked in · {events} events",
+    "trendTooltip": "{attendees} checked in · {date}",
     "trendEmptyTitle": "No attendance yet",
     "trendEmptyHint": "Check people in at an event and the months fill in here."
   },

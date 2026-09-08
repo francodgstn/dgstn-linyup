@@ -1,31 +1,38 @@
 'use client'
 
 /**
- * ATTENDANCE ACROSS THE SEASON — how many people the federation's events drew,
- * month by month, for the last twelve.
+ * ATTENDANCE ACROSS THE SEASON — one bar per EVENT, placed on the date it ran.
+ *
+ * ── A TIME AXIS, NOT TWELVE CATEGORIES ──────────────────────────────────────
+ * This began as a monthly total and the aggregate was the wrong unit: a
+ * federation's question is "which events drew people", and a month that holds a
+ * cup and a belt test answers it with one number that is neither. So each event
+ * keeps its own bar, and the x axis is real TIME (`type="number"` over epoch
+ * milliseconds) rather than twelve equal slots — two events a week apart sit a
+ * week apart, and a quiet summer is visibly empty instead of being compressed
+ * into a category that looks the same width as a busy March.
+ *
+ * The month ticks are supplied explicitly. Left to itself a numeric axis picks
+ * round numbers, and a round number of milliseconds lands mid-month.
  *
  * ── BARS, NOT A LINE ────────────────────────────────────────────────────────
- * Each month is an INDEPENDENT TOTAL, not a running one: 60 people in March and
- * 40 in April is 60 then 40, and a line drawn between them invites the reader to
- * see a decline through the weeks in between, where nothing happened at all
- * because there was no event. The same misreading `GrowthCard` fixed with
- * `stepAfter` — bars are the shape that says "these are buckets".
- *
- * A month with no event is a REAL ZERO and is drawn, rather than dropped. A
- * federation's calendar has quiet months by design (a summer with one camp in
- * it), and omitting them would compress the axis until the season looked
- * continuous.
+ * Each event is an independent quantity. A line between two of them invites the
+ * reader to see a trend through the weeks in between, where nothing happened at
+ * all — the same misreading `GrowthCard` fixed with `stepAfter`.
  *
  * ── IT COUNTS CHECK-INS, WHICH IS THE ONLY ATTENDANCE THERE IS ──────────────
- * `Event.participants_count` — the number of people actually checked in,
- * recounted by the trigger that owns it. Not `attendees_count`, which is RSVPs:
- * who said they were coming is a different question from who came, and on
- * migrated data the second exists while the first does not.
+ * `Event.participants_count` — people actually checked in, recounted by the
+ * trigger that owns it. Not `attendees_count`, which is RSVPs: who said they
+ * were coming is a different question from who came, and on migrated data the
+ * second exists while the first does not.
+ *
+ * An event nobody attended is a REAL ZERO and stays in the series: it has no bar
+ * to hover, which is the honest picture of an event with no attendance rather
+ * than an omission that makes the season look busier than it was.
  *
  * ── ZERO EXTRA READS ────────────────────────────────────────────────────────
  * The events page already loads past events to list them, and the count is a
- * field on each. So this cannot go stale relative to the rows beneath it, and it
- * costs nothing to show.
+ * field on each. So this cannot go stale relative to the rows beneath it.
  */
 
 import { useMemo } from 'react'
@@ -39,13 +46,12 @@ import type { Event } from '@linyup/shared'
 
 const MONTHS_SHOWN = 12
 
-export interface AttendancePoint {
-  /** First day of the month — the locale formats the label from it. */
-  date: Date
-  /** People checked in across every event that started in this month. */
+export interface AttendanceBar {
+  /** Epoch ms of the event's start — the x position. */
+  ts: number
   attendees: number
-  /** How many events those came from, for the tooltip. */
-  events: number
+  title: string
+  type: string
 }
 
 const toDate = (v: unknown): Date | null =>
@@ -54,38 +60,45 @@ const toDate = (v: unknown): Date | null =>
     : null
 
 /**
- * Attendance per month over the trailing window, plus the totals inside it.
+ * One point per event inside the trailing window, plus the month ticks the axis
+ * is drawn against.
  *
- * Events OUTSIDE the window are excluded rather than folded into the first
- * bucket — unlike a cumulative series, an opening balance would be a lie here:
- * a camp in 2022 did not happen last September.
+ * The window runs from the first of the month twelve months back to the first of
+ * NEXT month, so an event today sits inside the domain rather than exactly on
+ * its edge, where half its bar would be clipped.
  */
-export function buildAttendanceSeries(events: Event[], now = new Date()) {
-  const months: AttendancePoint[] = []
-  for (let i = MONTHS_SHOWN - 1; i >= 0; i--) {
-    months.push({
-      date: new Date(now.getFullYear(), now.getMonth() - i, 1),
-      attendees: 0,
-      events: 0,
-    })
-  }
-  const index = new Map(months.map((m, i) => [`${m.date.getFullYear()}-${m.date.getMonth()}`, i]))
+export function buildAttendanceBars(events: Event[], now = new Date()) {
+  const windowStart = new Date(now.getFullYear(), now.getMonth() - (MONTHS_SHOWN - 1), 1)
+  const windowEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
+  const monthTicks: number[] = []
+  for (let i = 0; i < MONTHS_SHOWN; i++) {
+    monthTicks.push(new Date(now.getFullYear(), now.getMonth() - (MONTHS_SHOWN - 1) + i, 1).getTime())
+  }
+
+  const bars: AttendanceBar[] = []
   let totalAttendees = 0
-  let totalEvents = 0
   for (const e of events) {
     const start = toDate(e.start)
-    if (!start) continue
-    const slot = index.get(`${start.getFullYear()}-${start.getMonth()}`)
-    if (slot === undefined) continue
-    const n = e.participants_count ?? 0
-    months[slot].attendees += n
-    months[slot].events += 1
-    totalAttendees += n
-    totalEvents += 1
+    if (!start || start < windowStart || start >= windowEnd) continue
+    const attendees = e.participants_count ?? 0
+    bars.push({
+      ts: start.getTime(),
+      attendees,
+      title: e.title,
+      type: String(e.type ?? ''),
+    })
+    totalAttendees += attendees
   }
+  bars.sort((a, b) => a.ts - b.ts)
 
-  return { months, totalAttendees, totalEvents }
+  return {
+    bars,
+    monthTicks,
+    domain: [windowStart.getTime(), windowEnd.getTime()] as [number, number],
+    totalAttendees,
+    totalEvents: bars.length,
+  }
 }
 
 export function EventAttendanceTrendCard({
@@ -97,17 +110,10 @@ export function EventAttendanceTrendCard({
 }) {
   const t = useTranslations('OrgEvents')
   const format = useFormatter()
-  const { months, totalAttendees, totalEvents } = useMemo(
-    () => buildAttendanceSeries(events),
+  const { bars, monthTicks, domain, totalAttendees, totalEvents } = useMemo(
+    () => buildAttendanceBars(events),
     [events]
   )
-
-  const data = months.map((m) => ({
-    label: format.dateTime(m.date, { month: 'short' }),
-    full: format.dateTime(m.date, { month: 'long', year: 'numeric' }),
-    attendees: m.attendees,
-    events: m.events,
-  }))
 
   return (
     <Card className="min-h-[248px]">
@@ -129,10 +135,17 @@ export function EventAttendanceTrendCard({
         ) : (
           <div className="h-[160px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+              <BarChart data={bars} margin={{ top: 4, right: 12, left: -24, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
                 <XAxis
-                  dataKey="label"
+                  // TIME, not a category index — see the header. `ticks` are the
+                  // month boundaries; without them a numeric axis picks round
+                  // millisecond values, which land mid-month.
+                  type="number"
+                  dataKey="ts"
+                  domain={domain}
+                  ticks={monthTicks}
+                  tickFormatter={(ts: number) => format.dateTime(new Date(ts), { month: 'short' })}
                   tickLine={false}
                   axisLine={false}
                   tick={{ fontSize: 11 }}
@@ -152,32 +165,46 @@ export function EventAttendanceTrendCard({
                 />
                 <Tooltip
                   cursor={{ fill: 'var(--color-muted)', opacity: 0.4 }}
+                  // The row is one sentence, not a name/value pair, so there is
+                  // nothing for a separator to sit between. Recharts prints its
+                  // default " : " regardless of an empty series name, which read
+                  // as ": 42 checked in".
+                  separator=""
                   contentStyle={{
                     background: 'var(--color-popover)',
                     border: '1px solid var(--color-border)',
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  labelFormatter={(_label, payload) => payload?.[0]?.payload?.full ?? ''}
+                  // The EVENT is the headline, because that is what a bar is
+                  // now. The date is the subtitle the label formatter cannot
+                  // carry, so it rides on the value line.
+                  labelFormatter={(_ts, payload) => payload?.[0]?.payload?.title ?? ''}
                   formatter={(value, _name, item) => [
                     t('trendTooltip', {
                       attendees: Number(value),
-                      events: Number(item?.payload?.events ?? 0),
+                      date: format.dateTime(new Date(Number(item?.payload?.ts ?? 0)), {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      }),
                     }),
                     '',
                   ]}
                 />
-                {/* NO ENTRY ANIMATION. Recharts grows a bar from zero height
-                    over 1.5s, and a chart whose first painted frames are empty
-                    is one a reader can genuinely catch reading "no attendance"
-                    — the bars measured 1-9px of their real height for as long
-                    as the tab was throttled. A twelve-bar summary is read at a
-                    glance; there is nothing here worth animating. */}
+                {/* A FIXED WIDTH, because a numeric axis has no category to
+                    divide: recharts would otherwise size every bar from the
+                    smallest gap between two events, so one busy weekend would
+                    make the whole season hairline-thin. */}
                 <Bar
                   dataKey="attendees"
                   fill="var(--color-primary)"
                   radius={[3, 3, 0, 0]}
-                  maxBarSize={28}
+                  barSize={9}
+                  // No entry animation: recharts grows a bar from zero over
+                  // 1.5s, and the bars measured 1-9px of their true height for
+                  // as long as the tab was throttled. A chart whose painted
+                  // frames read "no attendance" is worse than one that appears.
                   isAnimationActive={false}
                 />
               </BarChart>

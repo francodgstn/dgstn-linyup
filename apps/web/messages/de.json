@@ -5761,9 +5761,9 @@
     "printTo": "Bis",
     "printEmpty": "In diesem Zeitraum liegen keine Veranstaltungen.",
     "type_other": "Sonstiges",
-    "trendTitle": "Teilnahme nach Monat",
+    "trendTitle": "Teilnahme nach Veranstaltung",
     "trendSubtitle": "{attendees} Check-ins bei {events} Veranstaltungen in den letzten 12 Monaten",
-    "trendTooltip": "{attendees} Check-ins · {events} Veranstaltungen",
+    "trendTooltip": "{attendees} Check-ins · {date}",
     "trendEmptyTitle": "Noch keine Teilnahme",
     "trendEmptyHint": "Sobald bei einer Veranstaltung eingecheckt wird, füllen sich die Monate hier."
   },
