@@ -5772,7 +5772,7 @@
     "timelinePrevious": "Previous period",
     "timelineNext": "Next period",
     "timelineToday": "Today",
-    "timelineEmpty": "No events in {window}",
+    "timelineEmpty": "No events yet",
     "timelineTypeless": "No type",
     "timelineZoomYears": "{count} years",
     "timelineDays": "{count, plural, one {# day} other {# days}}"

@@ -1,5 +1,5 @@
 /**
- * THE MATHS BEHIND A TIMELINE OF EVENTS — a window, positions within it, and
+ * THE MATHS BEHIND A TIMELINE OF EVENTS — a range, positions within it, and
  * which row each event lands on.
  *
  * Pure and date-only: no React, no DOM, no Firestore. It lives in shared and is
@@ -34,76 +34,102 @@
  * titles. The first is a slightly taller timeline, the second is unreadable.
  */
 
-/** How much calendar the timeline shows at once. */
+/**
+ * How much calendar the viewport shows AT ONCE.
+ *
+ * THIS IS A DENSITY, NOT A WINDOW (Franco, 2026-09-08: "continuous scroll among
+ * the years"). The track is one unbroken span of the federation's whole history
+ * — see `timelineRange` — and the zoom only decides how tightly it is drawn, so
+ * scrolling right runs off the end of one year and into the next with no seam,
+ * no page and no reflow. Changing zoom re-scales what you are looking at rather
+ * than replacing it.
+ */
 export type TimelineZoom = 'years' | 'year' | 'month'
 
 /** Widest first, which is the order the zoom control renders them in. */
 export const TIMELINE_ZOOMS: readonly TimelineZoom[] = ['years', 'year', 'month'] as const
 
 /**
- * How many years the widest zoom spans, and it is THREE for a reason: a
- * federation asking "how does next season sit against this one" needs the year
+ * How many years the widest zoom fits on screen, and it is THREE for a reason:
+ * a federation asking "how does next season sit against this one" needs the year
  * before and the year after in the same picture. Two would answer only half of
  * that, and four starts compressing a year past the point where a bar is a bar.
- *
- * The window is centred on the anchor's year, so 2026 shows 2025–2027 and the
- * events you already know about are in the middle rather than at an edge.
  */
 export const TIMELINE_YEARS_SPAN = 3
 
 /** A half-open interval `[start, end)` in LOCAL time. */
-export interface TimelineWindow {
-  zoom: TimelineZoom
+export interface TimelineRange {
   start: Date
   end: Date
 }
 
-/** The window of `zoom` that contains `anchor`. */
-export function timelineWindow(zoom: TimelineZoom, anchor: Date): TimelineWindow {
-  const y = anchor.getFullYear()
-  if (zoom === 'years') {
-    // CENTRED on the anchor's year, not started at it — see TIMELINE_YEARS_SPAN.
-    const half = Math.floor(TIMELINE_YEARS_SPAN / 2)
-    return { zoom, start: new Date(y - half, 0, 1), end: new Date(y - half + TIMELINE_YEARS_SPAN, 0, 1) }
-  }
-  if (zoom === 'year') {
-    return { zoom, start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) }
-  }
-  const m = anchor.getMonth()
-  return { zoom, start: new Date(y, m, 1), end: new Date(y, m + 1, 1) }
+/** Days of calendar the viewport holds at each zoom. The zoom IS this number. */
+export const TIMELINE_DAYS_PER_SCREEN: Record<TimelineZoom, number> = {
+  years: 365 * TIMELINE_YEARS_SPAN,
+  year: 365,
+  month: 30,
 }
+
+const DAY_MS = 86_400_000
+/** Mean days per unit, for converting the floors below into a density. */
+const DAYS_PER_UNIT: Record<TimelineZoom, number> = { years: 365, year: 30.44, month: 1 }
 
 /**
- * The window `delta` steps away. Steps are whole years or whole months, so
- * stepping never lands mid-period and stepping back and forth returns exactly
- * where it started — `new Date(y, m + n, 1)` normalises the overflow, which is
- * why this does no modular arithmetic of its own.
+ * THE WHOLE EXTENT THE TRACK COVERS: every event there is, plus today.
+ *
+ * The page already holds every org event — it hands the timeline `[...upcoming,
+ * ...past]` with no date bound — so the continuous track costs nothing to fill
+ * and there is no window left to page between. Today is always included, so the
+ * marker has somewhere to be even for a federation whose events are all history.
+ *
+ * IT TAKES NO ZOOM, deliberately. A range that changed with the zoom would move
+ * the ground under you every time you re-scaled: the same scroll fraction would
+ * be a different date, and the view would jump. Zoom-independent means switching
+ * from a year to three years keeps you looking at the same month.
+ *
+ * Snapped outward to whole months and padded by one, so the earliest event is
+ * never flush against the edge with its label clipped, and there is always a
+ * little empty track that says "nothing before this" rather than a hard stop
+ * that might be a scroll that failed.
  */
-export function shiftTimelineWindow(w: TimelineWindow, delta: number): TimelineWindow {
-  const s = w.start
-  if (w.zoom === 'years') {
-    // A WHOLE SPAN per step, so paging never shows a year you have just read.
-    // The anchor passed back is the CENTRE year, because that is what
-    // `timelineWindow` centres on — handing it the start would drift the window
-    // by a year on every step.
-    const centre = s.getFullYear() + Math.floor(TIMELINE_YEARS_SPAN / 2)
-    return timelineWindow('years', new Date(centre + delta * TIMELINE_YEARS_SPAN, 0, 1))
+export function timelineRange(
+  items: readonly { start: number; end: number }[],
+  today: Date
+): TimelineRange {
+  const now = today.getTime()
+  let min = now
+  let max = now
+  for (const e of items) {
+    if (e.start < min) min = e.start
+    if (e.end > max) max = e.end
   }
-  return w.zoom === 'year'
-    ? timelineWindow('year', new Date(s.getFullYear() + delta, 0, 1))
-    : timelineWindow('month', new Date(s.getFullYear(), s.getMonth() + delta, 1))
+  const a = new Date(min)
+  const b = new Date(max)
+  return {
+    start: new Date(a.getFullYear(), a.getMonth() - 1, 1),
+    // +1 closes the month `max` falls in, +1 again is the pad.
+    end: new Date(b.getFullYear(), b.getMonth() + 2, 1),
+  }
 }
 
-/** Where `t` sits in the window, as a fraction. Outside the window it is <0 or >1. */
-export function fractionOf(w: TimelineWindow, t: Date | number): number {
+/** Whole days the range covers. Fractional across a DST boundary; that is fine
+ *  for a width, and every position is computed from milliseconds regardless. */
+export function timelineRangeDays(r: TimelineRange): number {
+  return Math.max(1, (r.end.getTime() - r.start.getTime()) / DAY_MS)
+}
+
+/** Where `t` sits in the range, as a fraction. Outside it this is <0 or >1. */
+export function fractionOf(r: TimelineRange, t: Date | number): number {
   const ms = typeof t === 'number' ? t : t.getTime()
-  const span = w.end.getTime() - w.start.getTime()
-  return span <= 0 ? 0 : (ms - w.start.getTime()) / span
+  const span = r.end.getTime() - r.start.getTime()
+  return span <= 0 ? 0 : (ms - r.start.getTime()) / span
 }
 
-/** Does the window contain `t`? Half-open, like the window itself. */
-export function windowContains(w: TimelineWindow, t: Date): boolean {
-  return t.getTime() >= w.start.getTime() && t.getTime() < w.end.getTime()
+/** The inverse: the date a fraction of the way along. Used to say what is on
+ *  screen, which is now a question about the scroll position rather than about
+ *  a window the component chose. */
+export function timelineDateAt(r: TimelineRange, fraction: number): Date {
+  return new Date(r.start.getTime() + fraction * (r.end.getTime() - r.start.getTime()))
 }
 
 // ─── how wide the track wants to be ──────────────────────────────────────────
@@ -142,81 +168,112 @@ export const TIMELINE_MIN_UNIT_PX: Record<TimelineZoom, number> = {
 }
 
 /**
- * The track's minimum width in pixels. The renderer takes `max(container, this)`
- * — so a wide viewport draws the window across its full width and a narrow one
- * scrolls, rather than either compressing.
+ * How many pixels one day gets — the single number the whole track is drawn
+ * from.
+ *
+ * TWO CLAIMS, AND THE LARGER WINS. The zoom asks for a FIT: a year across the
+ * viewport means `viewport / 365`, which is what makes "Year" mean a year on
+ * screen at any width. `TIMELINE_MIN_UNIT_PX` asks for a FLOOR, which is what
+ * stops a phone compressing that year into an unreadable smear. On a laptop the
+ * fit is the larger and the zoom means exactly what it says; on a phone the
+ * floor takes over and the year simply scrolls, which is the trade the floors
+ * were always there to make.
  */
-export function timelineMinTrackPx(w: TimelineWindow): number {
-  if (w.zoom === 'years') return TIMELINE_YEARS_SPAN * TIMELINE_MIN_UNIT_PX.years
-  if (w.zoom === 'year') return 12 * TIMELINE_MIN_UNIT_PX.year
-  const days = Math.round((w.end.getTime() - w.start.getTime()) / 86_400_000)
-  return days * TIMELINE_MIN_UNIT_PX.month
+export function timelinePxPerDay(zoom: TimelineZoom, viewportPx: number): number {
+  const fit = Math.max(1, viewportPx) / TIMELINE_DAYS_PER_SCREEN[zoom]
+  return Math.max(fit, TIMELINE_MIN_UNIT_PX[zoom] / DAYS_PER_UNIT[zoom])
+}
+
+/** How wide the whole track is drawn. There is no `max(container, …)` any more:
+ *  the range is longer than the viewport by construction, so the track's width
+ *  is simply its length in days times the density. */
+export function timelineTrackPx(r: TimelineRange, pxPerDay: number): number {
+  return Math.max(1, timelineRangeDays(r) * pxPerDay)
 }
 
 // ─── ticks ───────────────────────────────────────────────────────────────────
 
+/** What one gridline stands for. There is no 'year' member: the coarsest
+ *  density any zoom can reach is the widest zoom's floor of 300px a year, and a
+ *  quarter is still 75px there — so a year-unit tick is unreachable, and an
+ *  unreachable branch is a lie about what the code does. */
+export type TimelineTickUnit = 'day' | 'month' | 'quarter'
+
 export interface TimelineTick {
-  /** Where the tick sits, as a fraction of the window. */
+  /** Where the tick sits, as a fraction of the range. */
   at: number
   /** The date it marks — the caller formats it in the viewer's locale. */
   date: Date
-  /** Whether this tick is worth a written label at the current width. */
+  /** Whether this tick is worth a written label at the current density. */
   labelled: boolean
-  /** Saturday or Sunday. Month zoom only; a year's ticks are month starts. */
+  /** Saturday or Sunday. Day ticks only. */
   weekend: boolean
 }
 
 /**
- * The gridlines. Quarters across several years, month starts for a year, days
- * for a month.
+ * The gridlines across the WHOLE range.
  *
- * THE LABEL DENSITY IS DECIDED HERE, from the track width, because it is the
- * one thing that cannot be decided in CSS: at 1100px a month's 31 day-numbers
- * fit comfortably, at 360px they overlap into a grey smear. Every tick is still
- * RETURNED — the gridlines stay evenly spaced and only the writing thins out.
+ * ── THE UNIT COMES FROM THE DENSITY, NOT FROM THE ZOOM'S NAME ───────────────
+ *
+ * It used to be one branch per zoom, which worked only because a zoom was a
+ * window of known length. On a continuous track "month zoom" can mean thirty
+ * days or ten years of them, so the question a tick has to answer is not which
+ * zoom is selected but how much room one day has. Picking from `pxPerDay` also
+ * collapses the three branches into one ladder, and lands on exactly the same
+ * choices the named branches made: 28px a day is still days, a year across a
+ * laptop (~2.4px a day) is still months, three years (~0.8) is still quarters.
+ *
+ * THE LABELS THIN, THE GRIDLINES DO NOT — the lines stay evenly spaced and only
+ * the writing drops out, which is what keeps the grid readable while the
+ * density changes under it.
+ *
+ * A LABEL IS COUNTED FROM THE CALENDAR, NEVER FROM THE RANGE'S START. Counting
+ * every second month from wherever the earliest event happens to sit would land
+ * on January only half the time, and January is the one label a multi-year
+ * track cannot do without — it is where the year gets written.
  */
-export function timelineTicks(w: TimelineWindow, trackPx: number): TimelineTick[] {
+export function timelineTicks(
+  r: TimelineRange,
+  pxPerDay: number
+): { unit: TimelineTickUnit; ticks: TimelineTick[] } {
+  const unit: TimelineTickUnit = pxPerDay >= 12 ? 'day' : pxPerDay >= 1.2 ? 'month' : 'quarter'
   const ticks: TimelineTick[] = []
-  if (w.zoom === 'years') {
-    // QUARTERS, LABELLED AT JANUARY. Monthly gridlines over three years is 36 of
-    // them — a grey comb rather than structure — and a year is far too coarse to
-    // place a September camp against. A quarter is the coarsest line that still
-    // says roughly when, and only the year gets written.
-    const y0 = w.start.getFullYear()
-    const years = Math.round((w.end.getFullYear() - y0) || TIMELINE_YEARS_SPAN)
-    for (let i = 0; i < years * 4; i++) {
-      const date = new Date(y0 + Math.floor(i / 4), (i % 4) * 3, 1)
-      ticks.push({ at: fractionOf(w, date), date, labelled: i % 4 === 0, weekend: false })
+  const endMs = r.end.getTime()
+
+  if (unit === 'day') {
+    // A day number is ~14px; below ~22px per day, label the odd days only.
+    const step = pxPerDay >= 22 ? 1 : 2
+    const d = new Date(r.start.getFullYear(), r.start.getMonth(), r.start.getDate())
+    for (; d.getTime() < endMs; d.setDate(d.getDate() + 1)) {
+      const date = new Date(d)
+      const dow = date.getDay()
+      ticks.push({
+        at: fractionOf(r, date),
+        date,
+        labelled: step === 1 || date.getDate() % 2 === 1,
+        weekend: dow === 0 || dow === 6,
+      })
     }
-    return ticks
+    return { unit, ticks }
   }
-  if (w.zoom === 'year') {
-    const y = w.start.getFullYear()
-    // A month label is ~26px ("Sep"); below ~40px per month, label every third.
-    const per = trackPx / 12
-    const step = per >= 40 ? 1 : per >= 22 ? 2 : 3
-    for (let m = 0; m < 12; m++) {
-      const date = new Date(y, m, 1)
-      ticks.push({ at: fractionOf(w, date), date, labelled: m % step === 0, weekend: false })
-    }
-    return ticks
-  }
-  const days = Math.round((w.end.getTime() - w.start.getTime()) / 86_400_000)
-  const per = trackPx / days
-  // A day number is ~14px; leave half again as breathing room before labelling
-  // every day, then thin to every other, every fifth, every seventh.
-  const step = per >= 22 ? 1 : per >= 12 ? 2 : per >= 6 ? 5 : 7
-  for (let d = 0; d < days; d++) {
-    const date = new Date(w.start.getFullYear(), w.start.getMonth(), 1 + d)
-    const dow = date.getDay()
+
+  // Month and quarter both walk months; the quarter keeps every third.
+  const perMonth = pxPerDay * 30.44
+  // A month label is ~26px ("Sep"); below ~40px, label every second or third.
+  const step = unit === 'quarter' ? 3 : perMonth >= 40 ? 1 : perMonth >= 22 ? 2 : 3
+  const m = new Date(r.start.getFullYear(), r.start.getMonth(), 1)
+  for (; m.getTime() < endMs; m.setMonth(m.getMonth() + 1)) {
+    const date = new Date(m)
+    if (unit === 'quarter' && date.getMonth() % 3 !== 0) continue
     ticks.push({
-      at: fractionOf(w, date),
+      at: fractionOf(r, date),
       date,
-      labelled: d % step === 0,
-      weekend: dow === 0 || dow === 6,
+      // A quarter writes only January — the year. See the header.
+      labelled: unit === 'quarter' ? date.getMonth() === 0 : date.getMonth() % step === 0,
+      weekend: false,
     })
   }
-  return ticks
+  return { unit, ticks }
 }
 
 // ─── placement ───────────────────────────────────────────────────────────────
@@ -251,10 +308,12 @@ export interface PlacedTimelineEvent {
    * anything.
    */
   lane: number
-  /** Fraction of the window, already clamped to it. */
+  /** Fraction of the range, already clamped to it. */
   left: number
   width: number
-  /** The event starts before / ends after the window and is drawn cut off. */
+  /** The event starts before / ends after the range and is drawn cut off.
+   *  The range covers every event by construction, so on the org timeline these
+   *  are always false — they are kept for a caller that passes a narrower one. */
   clippedStart: boolean
   clippedEnd: boolean
   /**
@@ -263,7 +322,7 @@ export interface PlacedTimelineEvent {
    *   'inside'  the bar is wide enough to hold it.
    *   'after'   to the right of the bar, in room the packer reserved.
    *   'before'  to the LEFT of the bar — the only option for an event near the
-   *             end of the window, where a label written to the right would run
+   *             end of the range, where a label written to the right would run
    *             off the track and be clipped. That was the first thing wrong
    *             with the rendered timeline: December's events had their titles
    *             cut in half by the track's own `overflow-hidden`.
@@ -331,7 +390,7 @@ export function estimateLabelPx(title: string): number {
  * events cross, and same-type events rarely do) and buys a row you can read
  * along: "here is every competition this season" (Franco, 2026-09-08).
  *
- * Events entirely outside the window are dropped; ones that straddle an edge are
+ * Events entirely outside the range are dropped; ones that straddle an edge are
  * clipped to it and flagged, so the renderer can show that they continue rather
  * than pretending they begin at the boundary. A band with no visible event is
  * not returned — an empty row is a claim that something is missing.
@@ -343,7 +402,7 @@ export function estimateLabelPx(title: string): number {
  */
 export function placeTimelineEvents(
   items: TimelineInput[],
-  w: TimelineWindow,
+  w: TimelineRange,
   opts: TimelinePlacementOptions
 ): { placed: PlacedTimelineEvent[]; lanes: number; bands: TimelineBand[] } {
   const trackPx = Math.max(1, opts.trackPx)
@@ -401,7 +460,7 @@ export function placeTimelineEvents(
       const clippedStart = e.start < wStart
       const clippedEnd = e.end > wEnd
       const left = fractionOf(w, Math.max(e.start, wStart))
-      // An event that ends exactly at the window's end must not exceed 1.
+      // An event that ends exactly at the range's end must not exceed 1.
       const right = fractionOf(w, Math.min(e.end, wEnd))
 
       const leftPx = left * trackPx

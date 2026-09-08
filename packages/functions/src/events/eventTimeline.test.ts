@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict'
 import {
+  TIMELINE_DAYS_PER_SCREEN,
   TIMELINE_MIN_UNIT_PX,
   TIMELINE_YEARS_SPAN,
   estimateLabelPx,
   fractionOf,
-  timelineMinTrackPx,
   placeTimelineEvents,
-  shiftTimelineWindow,
+  timelineDateAt,
+  timelinePxPerDay,
+  timelineRange,
+  timelineRangeDays,
   timelineTicks,
-  timelineWindow,
-  windowContains,
+  timelineTrackPx,
   type TimelineInput,
 } from '@linyup/shared'
 
@@ -33,173 +35,17 @@ const WIDE = { trackPx: 4000 }
 /** The built-in event types, in the order the org timeline stacks them. */
 const BUILTIN_ORDER = ['competition', 'camp', 'exam', 'seminar', 'workshop', 'other']
 
-describe('eventTimeline — the window', () => {
-  it('a year window is Jan 1 to Jan 1, half-open', () => {
-    const w = timelineWindow('year', new Date(2026, 6, 14))
-    assert.equal(w.start.getTime(), ms(2026, 0, 1))
-    assert.equal(w.end.getTime(), ms(2027, 0, 1))
-  })
-
-  it('a month window is the 1st to the 1st, and handles December', () => {
-    const w = timelineWindow('month', new Date(2026, 11, 31))
-    assert.equal(w.start.getTime(), ms(2026, 11, 1))
-    assert.equal(w.end.getTime(), ms(2027, 0, 1))
-  })
-
-  it('stepping forward and back returns exactly where it started', () => {
-    for (const zoom of ['year', 'month'] as const) {
-      const w = timelineWindow(zoom, new Date(2026, 0, 15))
-      const there = shiftTimelineWindow(w, 5)
-      const back = shiftTimelineWindow(there, -5)
-      assert.equal(back.start.getTime(), w.start.getTime(), zoom)
-      assert.equal(back.end.getTime(), w.end.getTime(), zoom)
-    }
-  })
-
-  it('stepping a month across a year boundary lands on the right month', () => {
-    const dec = timelineWindow('month', new Date(2026, 11, 5))
-    const jan = shiftTimelineWindow(dec, 1)
-    assert.equal(jan.start.getTime(), ms(2027, 0, 1))
-  })
-
-  it('the window is half-open: its own end is NOT contained', () => {
-    const w = timelineWindow('month', new Date(2026, 5, 1))
-    assert.equal(windowContains(w, w.start), true)
-    assert.equal(windowContains(w, w.end), false)
-  })
-
-  it('fractionOf spans 0 to 1 across the window', () => {
-    const w = timelineWindow('year', new Date(2026, 0, 1))
-    assert.equal(fractionOf(w, w.start), 0)
-    assert.equal(fractionOf(w, w.end), 1)
-    const half = fractionOf(w, new Date(2026, 6, 2))
-    assert.ok(half > 0.49 && half < 0.51, `mid-year was ${half}`)
-  })
-})
-
-describe('eventTimeline — how wide the track wants to be', () => {
-  it('a year asks for twelve months of room', () => {
-    const w = timelineWindow('year', new Date(2026, 3, 1))
-    assert.equal(timelineMinTrackPx(w), 12 * TIMELINE_MIN_UNIT_PX.year)
-  })
-
-  it('a month asks for its OWN number of days, not an average', () => {
-    // February and January must not ask for the same width, or the last days of
-    // a long month are drawn tighter than the rest of the year.
-    const feb = timelineMinTrackPx(timelineWindow('month', new Date(2026, 1, 1)))
-    const jan = timelineMinTrackPx(timelineWindow('month', new Date(2026, 0, 1)))
-    assert.equal(feb, 28 * TIMELINE_MIN_UNIT_PX.month)
-    assert.equal(jan, 31 * TIMELINE_MIN_UNIT_PX.month)
-    assert.ok(feb < jan)
-  })
-
-  it('a leap February asks for one more day', () => {
-    const y2028 = timelineMinTrackPx(timelineWindow('month', new Date(2028, 1, 1)))
-    assert.equal(y2028, 29 * TIMELINE_MIN_UNIT_PX.month)
-  })
-
-  it('the minimum is what keeps a phone off one-row-per-event', () => {
-    // THE REASON THIS EXISTS. Packed against a phone's viewport every label
-    // collides and the packer opens a row per event; packed against the track
-    // it actually scrolls across, it does not.
-    const year = timelineWindow('year', new Date(2026, 0, 1))
-    const events = [0, 1, 2, 3, 4, 5].map((i) =>
-      ev(`e${i}`, ms(2026, i * 2, 3), ms(2026, i * 2, 4), 'Regional Championship')
-    )
-    const squeezed = placeTimelineEvents(events, year, { trackPx: 330 })
-    const scrolled = placeTimelineEvents(events, year, { trackPx: timelineMinTrackPx(year) })
-    assert.equal(squeezed.lanes, 6, 'a 330px year really does collide everywhere')
-    assert.ok(scrolled.lanes < squeezed.lanes, 'the scrollable track packs tighter')
-  })
-})
-
-describe('eventTimeline — the multi-year window', () => {
-  it('is CENTRED on the anchor year, not started at it', () => {
-    // So the season you already know about sits in the middle, with the year
-    // before and the year after either side of it.
-    const w = timelineWindow('years', new Date(2026, 6, 14))
-    assert.equal(w.start.getFullYear(), 2025)
-    assert.equal(w.end.getFullYear(), 2028)
-    assert.equal(w.start.getMonth(), 0)
-    assert.equal(w.start.getDate(), 1)
-  })
-
-  it('spans exactly TIMELINE_YEARS_SPAN years', () => {
-    const w = timelineWindow('years', new Date(2026, 0, 1))
-    assert.equal(w.end.getFullYear() - w.start.getFullYear(), TIMELINE_YEARS_SPAN)
-  })
-
-  it('steps a WHOLE span, so paging never re-shows a year you just read', () => {
-    const w = timelineWindow('years', new Date(2026, 0, 1)) // 2025–2027
-    const next = shiftTimelineWindow(w, 1)
-    assert.equal(next.start.getFullYear(), 2028)
-    assert.equal(next.end.getFullYear(), 2031)
-  })
-
-  it('steps back to exactly where it started', () => {
-    // The centre-vs-start trap: handing `timelineWindow` the window's START
-    // rather than its centre drifts by a year on every step, so a round trip
-    // would not return home.
-    const w = timelineWindow('years', new Date(2026, 3, 9))
-    const round = shiftTimelineWindow(shiftTimelineWindow(w, 1), -1)
-    assert.equal(round.start.getTime(), w.start.getTime())
-    assert.equal(round.end.getTime(), w.end.getTime())
-  })
-
-  it('asks for room per YEAR, not per month', () => {
-    const w = timelineWindow('years', new Date(2026, 0, 1))
-    assert.equal(timelineMinTrackPx(w), TIMELINE_YEARS_SPAN * TIMELINE_MIN_UNIT_PX.years)
-  })
-
-  it('ticks every quarter and writes only the years', () => {
-    const w = timelineWindow('years', new Date(2026, 0, 1))
-    const t = timelineTicks(w, 1200)
-    assert.equal(t.length, TIMELINE_YEARS_SPAN * 4, 'four quarters a year')
-    const labelled = t.filter((x) => x.labelled)
-    assert.equal(labelled.length, TIMELINE_YEARS_SPAN)
-    assert.deepEqual(
-      labelled.map((x) => x.date.getFullYear()),
-      [2025, 2026, 2027]
-    )
-    // A quarter tick is a January, April, July or October start.
-    assert.ok(t.every((x) => x.date.getMonth() % 3 === 0 && x.date.getDate() === 1))
-    assert.ok(t.every((x) => !x.weekend), 'weekend shading is a month-zoom idea')
-  })
-
-  it('places an event by its real distance into the span', () => {
-    // The whole point of the widest zoom: two events a year apart are a third
-    // of the track apart, not adjacent.
-    const w = timelineWindow('years', new Date(2026, 0, 1)) // 2025-01-01 .. 2028-01-01
-    const a = fractionOf(w, new Date(2025, 0, 1))
-    const b = fractionOf(w, new Date(2026, 0, 1))
-    assert.equal(Math.round(a * 1000) / 1000, 0)
-    assert.ok(Math.abs(b - 1 / 3) < 0.002, `2026 sits a third in, got ${b}`)
-  })
-
-  it('the window contains its own start and excludes its end', () => {
-    const w = timelineWindow('years', new Date(2026, 0, 1))
-    assert.ok(windowContains(w, w.start))
-    assert.ok(!windowContains(w, w.end))
-  })
-
-  it('packs across years, and a band still holds one row when nothing crosses', () => {
-    const w = timelineWindow('years', new Date(2026, 0, 1))
-    const events = [2025, 2026, 2027].map((y) => ({
-      id: `c${y}`,
-      start: new Date(y, 5, 1).getTime(),
-      end: new Date(y, 5, 3).getTime(),
-      title: 'Championship',
-      group: 'competition',
-    }))
-    const { placed, lanes, bands } = placeTimelineEvents(events, w, { trackPx: 1200 })
-    assert.equal(placed.length, 3)
-    assert.equal(lanes, 1, 'one a year does not collide')
-    assert.deepEqual(bands, [{ group: 'competition', lane: 0, lanes: 1 }])
-  })
+// A range is now just `{start, end}` — the packer never cared about anything
+// else, and since the track is continuous there is no window type left to
+// build one from. These two say what the old `timelineWindow` said, locally.
+const yearRange = (y: number) => ({ start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) })
+const monthRange = (y: number, m: number) => ({
+  start: new Date(y, m, 1),
+  end: new Date(y, m + 1, 1),
 })
 
 describe('eventTimeline — a band per event type', () => {
-  const year = timelineWindow('year', new Date(2026, 0, 1))
+  const year = yearRange(2026)
   /** An event of a given type — `ev` above leaves the band unset. */
   const typed = (id: string, group: string, month: number, title = 'Event'): TimelineInput => ({
     ...ev(id, ms(2026, month, 3), ms(2026, month, 5), title),
@@ -334,44 +180,8 @@ describe('eventTimeline — a band per event type', () => {
   })
 })
 
-describe('eventTimeline — ticks', () => {
-  it('a year has twelve, one per month', () => {
-    const t = timelineTicks(timelineWindow('year', new Date(2026, 0, 1)), 1200)
-    assert.equal(t.length, 12)
-    assert.equal(t[0].date.getMonth(), 0)
-    assert.equal(t[11].date.getMonth(), 11)
-  })
-
-  it('a month has one per day, February included', () => {
-    const feb = timelineTicks(timelineWindow('month', new Date(2026, 1, 1)), 1200)
-    assert.equal(feb.length, 28)
-    const leap = timelineTicks(timelineWindow('month', new Date(2028, 1, 1)), 1200)
-    assert.equal(leap.length, 29)
-  })
-
-  it('EVERY tick survives a narrow track — only the labels thin out', () => {
-    // The gridlines must stay evenly spaced; it is the writing that cannot fit.
-    const wide = timelineTicks(timelineWindow('month', new Date(2026, 0, 1)), 1200)
-    const narrow = timelineTicks(timelineWindow('month', new Date(2026, 0, 1)), 320)
-    assert.equal(narrow.length, wide.length)
-    const labelled = (ts: typeof wide) => ts.filter((x) => x.labelled).length
-    assert.ok(labelled(narrow) < labelled(wide), 'a phone should label fewer days')
-    assert.ok(labelled(narrow) > 0, 'but not zero')
-  })
-
-  it('weekends are flagged in a month, and never in a year', () => {
-    // 2026-01-03 is a Saturday.
-    const jan = timelineTicks(timelineWindow('month', new Date(2026, 0, 1)), 1200)
-    assert.equal(jan[2].weekend, true)
-    assert.equal(jan[3].weekend, true)
-    assert.equal(jan[4].weekend, false)
-    const year = timelineTicks(timelineWindow('year', new Date(2026, 0, 1)), 1200)
-    assert.ok(year.every((t) => !t.weekend))
-  })
-})
-
 describe('eventTimeline — one row unless they cross', () => {
-  const year = timelineWindow('year', new Date(2026, 0, 1))
+  const year = yearRange(2026)
 
   it('events that never overlap all share row 0', () => {
     const { placed, lanes } = placeTimelineEvents(
@@ -438,7 +248,7 @@ describe('eventTimeline — one row unless they cross', () => {
 })
 
 describe('eventTimeline — crossing is measured on screen, not on the calendar', () => {
-  const year = timelineWindow('year', new Date(2026, 0, 1))
+  const year = yearRange(2026)
 
   it('two one-day events a week apart collide once their titles are drawn', () => {
     // Nine days apart in a 1000px year is ~25px — nowhere near two titles.
@@ -514,7 +324,7 @@ describe('eventTimeline — crossing is measured on screen, not on the calendar'
 })
 
 describe('eventTimeline — the window edges', () => {
-  const june = timelineWindow('month', new Date(2026, 5, 1))
+  const june = monthRange(2026, 5)
 
   it('events wholly outside are dropped', () => {
     const { placed } = placeTimelineEvents(
@@ -577,7 +387,7 @@ describe('eventTimeline — stability', () => {
   it('two events starting at the same instant get a deterministic order', () => {
     // Without an id tiebreak these swap rows depending on the order Firestore
     // happened to return them, and the timeline reshuffles between renders.
-    const year = timelineWindow('year', new Date(2026, 0, 1))
+    const year = yearRange(2026)
     const a = ev('aaa', ms(2026, 5, 1), ms(2026, 5, 10))
     const b = ev('bbb', ms(2026, 5, 1), ms(2026, 5, 10))
     const one = placeTimelineEvents([a, b], year, WIDE).placed
@@ -589,8 +399,220 @@ describe('eventTimeline — stability', () => {
   })
 
   it('an empty timeline has no rows at all', () => {
-    const { placed, lanes } = placeTimelineEvents([], timelineWindow('year', new Date()), WIDE)
+    const { placed, lanes } = placeTimelineEvents([], yearRange(new Date().getFullYear()), WIDE)
     assert.equal(placed.length, 0)
     assert.equal(lanes, 0)
+  })
+})
+
+describe('eventTimeline — the range is the whole archive', () => {
+  const today = new Date(2026, 8, 8)
+
+  it('covers every event, snapped outward to whole months and padded by one', () => {
+    const r = timelineRange([ev('a', ms(2026, 5, 20), ms(2026, 5, 26))], today)
+    // June's event and a September today: May 1 through to 1 November.
+    assert.equal(r.start.getTime(), ms(2026, 4, 1))
+    assert.equal(r.end.getTime(), ms(2026, 10, 1))
+  })
+
+  it('always contains today, even when every event is history', () => {
+    // A federation that stopped running events still has a marker to draw, and
+    // "scroll to today" still has somewhere to go.
+    const r = timelineRange([ev('old', ms(2019, 2, 1), ms(2019, 2, 2))], today)
+    assert.ok(r.start.getTime() <= today.getTime())
+    assert.ok(r.end.getTime() > today.getTime())
+    assert.equal(r.start.getFullYear(), 2019)
+  })
+
+  it('always contains today, even when every event is still ahead', () => {
+    const r = timelineRange([ev('soon', ms(2028, 4, 1), ms(2028, 4, 2))], today)
+    assert.ok(r.start.getTime() <= today.getTime())
+    assert.equal(r.end.getFullYear(), 2028)
+  })
+
+  it('an empty archive is still a range, around today', () => {
+    const r = timelineRange([], today)
+    assert.equal(r.start.getTime(), ms(2026, 7, 1))
+    assert.equal(r.end.getTime(), ms(2026, 10, 1))
+  })
+
+  it('spans the years between two distant events rather than either alone', () => {
+    // THE WHOLE POINT: 2025 and 2027 are on ONE track. Under the window model
+    // these were two different screens with a page turn between them.
+    const r = timelineRange(
+      [ev('a', ms(2025, 1, 1), ms(2025, 1, 2)), ev('b', ms(2027, 10, 1), ms(2027, 10, 2))],
+      today
+    )
+    assert.equal(r.start.getFullYear(), 2025)
+    assert.equal(r.end.getFullYear(), 2028)
+    assert.ok(timelineRangeDays(r) > 1000)
+  })
+
+  it('reads the LATEST END, not the latest start', () => {
+    // A camp starting in December and ending in January is a January event as
+    // far as the track's extent is concerned.
+    const r = timelineRange([ev('camp', ms(2026, 11, 28), ms(2027, 0, 4))], today)
+    assert.equal(r.end.getTime(), ms(2027, 2, 1))
+  })
+
+  it('inverts its own fractions', () => {
+    const r = timelineRange([ev('a', ms(2026, 2, 5), ms(2026, 2, 9))], today)
+    const d = new Date(2026, 5, 17, 12)
+    const back = timelineDateAt(r, fractionOf(r, d))
+    assert.ok(Math.abs(back.getTime() - d.getTime()) < 1000)
+  })
+})
+
+describe('eventTimeline — the zoom is a density', () => {
+  it('means what it says once the viewport is wide enough', () => {
+    // "Year" is a year across the viewport, at whatever width that is.
+    assert.equal(timelinePxPerDay('year', 1460), 1460 / 365)
+    assert.equal(timelinePxPerDay('month', 1200), 1200 / TIMELINE_DAYS_PER_SCREEN.month)
+  })
+
+  it('falls back to the floor on a phone rather than compressing', () => {
+    // 351px over a year is 0.96px a day; the floor of 64px a month is more than
+    // twice that, so the year stops fitting and starts scrolling — which is the
+    // trade the floors were always there to make.
+    const phone = timelinePxPerDay('year', 351)
+    assert.ok(phone > 351 / 365)
+    assert.equal(phone, TIMELINE_MIN_UNIT_PX.year / 30.44)
+  })
+
+  it('the widest zoom is floored per YEAR, the others per month and per day', () => {
+    assert.equal(timelinePxPerDay('years', 10), TIMELINE_MIN_UNIT_PX.years / 365)
+    assert.equal(timelinePxPerDay('month', 10), TIMELINE_MIN_UNIT_PX.month)
+  })
+
+  it('the track is the range times the density', () => {
+    const r = { start: new Date(2026, 0, 1), end: new Date(2027, 0, 1) }
+    assert.equal(Math.round(timelineTrackPx(r, 2)), Math.round(timelineRangeDays(r) * 2))
+  })
+
+  it('a longer archive makes a longer track at the same zoom', () => {
+    // Which is the mechanism: zoom fixes the density, the data fixes the length,
+    // and the difference between them is how far there is to scroll.
+    const one = { start: new Date(2026, 0, 1), end: new Date(2027, 0, 1) }
+    const five = { start: new Date(2022, 0, 1), end: new Date(2027, 0, 1) }
+    const px = timelinePxPerDay('year', 900)
+    assert.ok(timelineTrackPx(five, px) > 4.9 * timelineTrackPx(one, px))
+  })
+})
+
+describe('eventTimeline — ticks follow the density, not the zoom', () => {
+  const year = { start: new Date(2026, 0, 1), end: new Date(2027, 0, 1) }
+
+  it('one range, three densities, three units', () => {
+    // The unit used to be read off the zoom's NAME, which only worked while a
+    // zoom was a window of known length. On a continuous track "month zoom" can
+    // mean thirty days or ten years of them.
+    assert.equal(timelineTicks(year, 30).unit, 'day')
+    assert.equal(timelineTicks(year, 2.4).unit, 'month')
+    assert.equal(timelineTicks(year, 0.8).unit, 'quarter')
+  })
+
+  it('lands on the same choices the named branches used to make', () => {
+    // A laptop's panel, at each zoom. These three are the whole of the old
+    // behaviour, and they must not have moved.
+    assert.equal(timelineTicks(year, timelinePxPerDay('month', 872)).unit, 'day')
+    assert.equal(timelineTicks(year, timelinePxPerDay('year', 872)).unit, 'month')
+    assert.equal(timelineTicks(year, timelinePxPerDay('years', 872)).unit, 'quarter')
+  })
+
+  it('a year of month ticks is twelve, one per month', () => {
+    const { ticks } = timelineTicks(year, 2.4)
+    assert.equal(ticks.length, 12)
+    assert.deepEqual(
+      ticks.map((t) => t.date.getMonth()),
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    )
+  })
+
+  it('a month of day ticks is its OWN number of days, February included', () => {
+    assert.equal(timelineTicks(monthRange(2026, 1), 30).ticks.length, 28)
+    assert.equal(timelineTicks(monthRange(2028, 1), 30).ticks.length, 29)
+    assert.equal(timelineTicks(monthRange(2026, 0), 30).ticks.length, 31)
+  })
+
+  it('quarters are the four quarter-starts a year, and only January is written', () => {
+    const { ticks } = timelineTicks(year, 0.8)
+    assert.equal(ticks.length, 4)
+    assert.ok(ticks.every((t) => t.date.getMonth() % 3 === 0 && t.date.getDate() === 1))
+    assert.deepEqual(
+      ticks.filter((t) => t.labelled).map((t) => t.date.getMonth()),
+      [0]
+    )
+  })
+
+  it('EVERY tick survives a low density — only the labels thin out', () => {
+    const roomy = timelineTicks(monthRange(2026, 0), 30)
+    const tight = timelineTicks(monthRange(2026, 0), 14)
+    assert.equal(roomy.ticks.length, tight.ticks.length, 'the gridlines stay')
+    assert.ok(
+      tight.ticks.filter((t) => t.labelled).length <
+        roomy.ticks.filter((t) => t.labelled).length,
+      'the writing thins'
+    )
+  })
+
+  it('JANUARY IS ALWAYS WRITTEN, whatever month the archive happens to start in', () => {
+    // The trap this pins: thinning by counting every second month FROM THE
+    // RANGE'S START lands on January only half the time — and on a track that
+    // runs across a decade, January is the label carrying the year.
+    const odd = { start: new Date(2025, 4, 1), end: new Date(2028, 7, 1) }
+    const { ticks } = timelineTicks(odd, 1.3) // dense enough for months, thin enough to skip
+    const januaries = ticks.filter((t) => t.date.getMonth() === 0)
+    assert.equal(januaries.length, 3, '2026, 2027, 2028')
+    assert.ok(januaries.every((t) => t.labelled))
+  })
+
+  it('ticks run the WHOLE range, not one period of it', () => {
+    const threeYears = { start: new Date(2025, 0, 1), end: new Date(2028, 0, 1) }
+    assert.equal(timelineTicks(threeYears, 2.4).ticks.length, 36)
+    assert.equal(timelineTicks(threeYears, 0.8).ticks.length, 12)
+  })
+
+  it('weekends are flagged on day ticks and never on the coarser ones', () => {
+    const days = timelineTicks(monthRange(2026, 1), 30)
+    assert.ok(days.ticks.some((t) => t.weekend))
+    assert.ok(days.ticks.filter((t) => t.weekend).length >= 8, 'four weekends in February')
+    assert.ok(timelineTicks(year, 2.4).ticks.every((t) => !t.weekend))
+    assert.ok(timelineTicks(year, 0.8).ticks.every((t) => !t.weekend))
+  })
+})
+
+describe('eventTimeline — continuity', () => {
+  const today = new Date(2026, 8, 8)
+
+  it('two events a year apart sit a year apart on the track', () => {
+    // A calendar year of pixels between them, not a page turn — which is the
+    // whole of what "continuous" buys.
+    const items = [
+      ev('a', ms(2025, 5, 1), ms(2025, 5, 2)),
+      ev('b', ms(2026, 5, 1), ms(2026, 5, 2)),
+    ]
+    const r = timelineRange(items, today)
+    const px = 4
+    const track = timelineTrackPx(r, px)
+    const gap = (fractionOf(r, items[1].start) - fractionOf(r, items[0].start)) * track
+    assert.ok(Math.abs(gap - 365 * px) < 2 * px, `expected ~a year of pixels, got ${gap}`)
+  })
+
+  it('places events from several years at once — none is out of the window', () => {
+    // Under the window model exactly one of these was ever drawn.
+    const items = [2024, 2025, 2026, 2027].map((y) => ev(`e${y}`, ms(y, 3, 1), ms(y, 3, 3)))
+    const r = timelineRange(items, today)
+    const { placed } = placeTimelineEvents(items, r, WIDE)
+    assert.equal(placed.length, 4)
+    assert.ok(placed.every((p) => !p.clippedStart && !p.clippedEnd))
+  })
+
+  it('nothing is clipped, because the range was built to hold it', () => {
+    const items = [ev('camp', ms(2026, 11, 28), ms(2027, 0, 4))]
+    const r = timelineRange(items, today)
+    const { placed } = placeTimelineEvents(items, r, WIDE)
+    assert.equal(placed[0].clippedStart, false)
+    assert.equal(placed[0].clippedEnd, false)
+    assert.ok(placed[0].left > 0 && placed[0].left + placed[0].width < 1)
   })
 })
