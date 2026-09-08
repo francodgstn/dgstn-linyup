@@ -59,6 +59,7 @@ import {
   CalendarDays,
   ChevronLeft,
   Copy,
+  DoorOpen,
   ExternalLink,
   GraduationCap,
   GripVertical,
@@ -69,6 +70,7 @@ import {
   Sparkles,
   Trash2,
   type LucideIcon,
+  Users,
   Zap,
 } from 'lucide-react'
 
@@ -576,7 +578,6 @@ export default function CataloguePage() {
     const appointment = isAppointmentActivity(a)
     const rule = resolveActivityAccessRule(a)
     return [
-      ...(a.tags ?? []).map((tag) => ({ label: tag })),
       // THE FORM'S OWN WORDS for who can book. The editor now asks TWO
       // questions — open to anyone / members only, then whether a plan is
       // required — and `accessRule.type` is the display projection of that
@@ -605,6 +606,11 @@ export default function CataloguePage() {
               tone: 'accent' as const,
             },
           ]),
+      // Tags follow the access fact rather than leading. Who may book outranks
+      // a freeform label, and the rail's leading icon (`activityAccessIcon`)
+      // labels whatever the line STARTS with — with tags first it would have sat
+      // against "intermediate" and appeared to mean that.
+      ...(a.tags ?? []).map((tag) => ({ label: tag })),
       // The newcomer's trial door, where it opens something: it is independent
       // of the tier above, but on an OPEN class it grants nothing extra
       // (everyone already books free), so the editor ignores it there and so
@@ -625,6 +631,26 @@ export default function CataloguePage() {
         formatCurrency
       ).map((label) => ({ label })),
     ]
+  }
+
+  /**
+   * THE RAIL'S LEADING GLYPH — the same fact the first chip states, so a studio
+   * scanning twenty rows sees who may book without reading any of them.
+   *
+   * The vocabulary is the catalogue's own, which is why `IdCard` means PLAN
+   * REQUIRED and not "members": this page already spends that glyph on the
+   * Plans rail tab, and one icon meaning both on one screen is worse than no
+   * icon. `Users` is what the org nav already calls Members. The pricing form's
+   * two tiles use the same door and the same people.
+   *
+   * Undefined for an APPOINTMENT, which has no access rule at all — its price
+   * is its gate, so `activityChips` prints no access chip and there is nothing
+   * here to label.
+   */
+  const activityAccessIcon = (a: Activity): LucideIcon | undefined => {
+    if (isAppointmentActivity(a)) return undefined
+    const tier = classTierOf(a)
+    return tier === 'open' ? DoorOpen : tier === 'members' ? Users : IdCard
   }
 
   const planChips = (st: SubscriptionType): OfferChip[] => [
@@ -1241,6 +1267,7 @@ export default function CataloguePage() {
                       <RailRow
                         name={a.name}
                         detail={detailLine(activityChips(a))}
+                        detailIcon={activityAccessIcon(a)}
                         color={a.color}
                         warn={deadEndIds.has(a.id)}
                         selected={selection?.kind === 'activity' && selection.id === a.id}
@@ -1267,6 +1294,7 @@ export default function CataloguePage() {
                       <RailRow
                         name={a.name}
                         detail={detailLine(activityChips(a))}
+                        detailIcon={activityAccessIcon(a)}
                         color={a.color}
                         warn={deadEndIds.has(a.id)}
                         selected={selection?.kind === 'activity' && selection.id === a.id}
@@ -2088,6 +2116,7 @@ function RailGroup({
 function RailRow({
   name,
   detail,
+  detailIcon: DetailIcon,
   color,
   warn,
   selected,
@@ -2100,6 +2129,11 @@ function RailRow({
   name: string
   /** The second line — see `detailLine` in the page. */
   detail?: string
+  /** Leads the detail line, labelling the fact the line OPENS with. Only the
+   *  activity rows pass one, and `activityChips` puts the access fact first for
+   *  exactly that reason — an icon sitting next to a freeform tag would look
+   *  like it labelled the tag. */
+  detailIcon?: LucideIcon
   color?: string
   warn?: boolean
   selected: boolean
@@ -2174,8 +2208,12 @@ function RailRow({
               list of names with notes attached (Franco, 2026-09-02). */}
           <span className="block truncate text-[15px] font-semibold leading-tight">{name}</span>
           {detail && (
-            <span className="mt-1 block truncate text-[11px] leading-tight text-muted-foreground">
-              {detail}
+            <span className="mt-1 flex items-center gap-1 text-[11px] leading-tight text-muted-foreground">
+              {DetailIcon && <DetailIcon className="h-3 w-3 shrink-0" aria-hidden />}
+              {/* `truncate` stays on the TEXT, not on the row: hung on the flex
+                  parent it would clip the icon first and leave the words the
+                  ellipsis was meant to protect. */}
+              <span className="truncate">{detail}</span>
             </span>
           )}
         </span>
