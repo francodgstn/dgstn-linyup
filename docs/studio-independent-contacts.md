@@ -179,11 +179,66 @@ styling, not a warning**: joining a federation is a legitimate, usually
 desirable act, and dressing it as a hazard would train people to click past it.
 The copy names what changes and lets the owner decide.
 
-Two things it does NOT claim, because they were not verified: that an existing
-team-owned Stripe subscription is cancelled or refunded when the team moves onto
-the org plan (the accept batch only rewrites `plan` / `plan_status` and clears
-`trial_ends_at`, so a team that was paying may keep paying — worth checking), and
-anything about what a **viewer**-role org member sees as distinct from an admin.
+One thing it does NOT claim, because it was not verified: anything about what a
+**viewer**-role org member sees as distinct from an admin.
+
+It also does not claim the team's own subscription is cancelled, because it is
+not — see the next entry, which that omission turned up.
+
+### A studio that was already paying is charged twice, and then torn down
+
+**OPEN.** Traced through the source on 2026-09-08 and stated with the reads
+behind it; **not reproduced against a running stack**, so it is here rather than
+in `docs/open-defects.md`, whose bar is reproduction.
+
+Four steps, none of them guarded:
+
+1. A studio buys its own Coach or Studio plan. `saas_subscriptions/{teamId}` is
+   live and so is the Stripe subscription.
+2. It accepts an organisation invitation. `acceptOrgInvitation` writes `org_id`,
+   `plan: 'organization'`, `plan_status` and clears `trial_ends_at` — and
+   touches nothing else. `inviteTeamToOrg` checks only that the team is not
+   already in an org. The one `teams/{teamId}` trigger is
+   `syncTeamPublicProfile`, which is not billing. **So the old subscription
+   keeps invoicing while the organisation also pays.**
+3. Every `customer.subscription.updated` from that still-live subscription
+   carries a plan (`extractPlanFromSubscription` reads the price lookup key
+   `linyup_{plan}_monthly`), and the webhook's team branch writes
+   `teams/{id}.update({ plan, plan_status })` **with no `org_id` check anywhere
+   in the handler**. `plan` goes back to `'studio'` over `'organization'`:
+   UX-35's invariant breaks silently, and the Connect take rate goes 0.5% → 0.8%
+   (`CONNECT_TAKE_RATE`), shrinking the studio's own payouts.
+4. The owner spots the double charge and cancels the old subscription — the
+   correct move. `subscription.cancelled` routes to the team branch, which calls
+   `downgradeTeamToFree(teamId, { courseMirrors: 'tear_down' })` on **a paid-up
+   member of a federation**: `plan: 'free'`, every active plugin install
+   deactivated, the website unpublished, every course public profile deleted
+   **one-way**. It does not clear `org_id` either, leaving precisely the
+   `org_id` + Free state `orgs/lifecycle.ts` goes out of its way to avoid
+   (`orgTierRails.test.ts` says why).
+
+**Half of this was already reasoned about, in the other order.**
+`createCheckoutSession` refuses when `org_id` is set, and its comment names both
+halves — "a second subscription bought here is a second charge for one seat —
+and on payment the webhook's team branch overwrites `plan`/`plan_status`". That
+guard covers BUY-THEN-JOIN. JOIN-WHEN-ALREADY-BOUGHT has no equivalent.
+
+**The obvious fix is a trap on its own.** Calling `cancelSubscriptionFor` from
+`acceptOrgInvitation` cancels **at period end** (`cancel_at_period_end: true`),
+so `subscription.cancelled` fires weeks later and lands step 4 on a timer. **The
+webhook's cancelled branch has to learn about `org_id` first** — that is the
+prerequisite, not the follow-up. Order the work: guard the webhook (steps 3 and
+4 die together, and everything else becomes safe), then choose the accept-time
+policy — refuse while a live subscription exists, or auto-cancel and say so.
+Refusing never takes a money action on an owner's behalf and mirrors the
+`billed_by_org` refusal already on the other side; auto-cancelling is fewer
+steps. That is a money-policy call, and it changes how the webhook guard is
+written (an auto-cancel has to be distinguishable from a real one), which is why
+neither half shipped on the strength of the trace alone.
+
+**Whether any live tenant is in this state is a query, not a guess**: teams with
+`org_id` set that also have a `saas_subscriptions/{teamId}` whose status is
+`active` or `past_due`.
 
 ### There is no way to tell the two studios apart at a glance
 
