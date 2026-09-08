@@ -219,17 +219,22 @@ export function buildAffiliationDoc(opts: BuildAffiliationOpts): Record<string, 
  * object is how one of them silently stops passing a field the summary needs.
  * That already happened once: `status_id` was present at runtime and absent
  * from the cast.
+ *
+ * A TYPE ALIAS AND NOT AN INTERFACE, which is load-bearing rather than style:
+ * every call site reaches it by casting a `Record\<string, unknown\>` read out
+ * of a seed object, and only an object type gets the implicit index signature
+ * that makes such a conversion legal. As an interface `pnpm typecheck:seeds`
+ * rejects all five with TS2352 — and that target is not part of
+ * `pnpm typecheck`, so it fails in CI rather than locally.
  */
-export interface AffiliationSummaryInput {
+export type AffiliationSummaryInput = {
   active: boolean
   type_key?: string
   org_id?: string
   status_id?: string
 }
 
-export function buildAffiliationSummary(
-  affiliations: AffiliationSummaryInput[]
-): {
+export function buildAffiliationSummary(affiliations: AffiliationSummaryInput[]): {
   has_active: boolean
   types: string[]
   org_ids: string[]
