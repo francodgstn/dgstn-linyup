@@ -31,6 +31,19 @@
  * ones deleted from the target as duplicates. So `id → name → canonical` is
  * always answerable here, even for an id that now resolves to nothing.
  *
+ * ── IT ALSO CLOSES THE GAP THE SNAPSHOT OPENS ───────────────────────────────
+ * The target is a SNAPSHOT and hmd-lineup keeps being used after one is taken,
+ * so the source is authoritative about which plan a contact holds TODAY and a
+ * difference is staleness rather than a defect. A plan assigned since the import
+ * is ADOPTED; one the source has since cleared is REPORTED and removed only
+ * under `--clear`, because taking a plan off a member is not a repair's decision
+ * to make alone.
+ *
+ * Writing the contact is enough to fix its history: `onContactSubscriptionChange`
+ * reconciles `subscription_history` by set difference against what the contact
+ * holds, so it opens the new period and closes the old one with no row written
+ * from here.
+ *
  * ── IDEMPOTENT ──────────────────────────────────────────────────────────────
  * A contact already carrying the right id and a name is left alone, and reported
  * as such. Re-running writes nothing.
@@ -54,6 +67,9 @@ const { values } = parseArgs({
     'target-creds': { type: 'string' },
     team: { type: 'string' },
     apply: { type: 'boolean', default: false },
+    /** Also CLEAR a plan the source no longer has. Off by default — see the
+     *  drift section of the header. */
+    clear: { type: 'boolean', default: false },
   },
   allowPositionals: false,
 })
@@ -63,6 +79,7 @@ if (!values['source-creds'] || !values['target-creds']) {
   process.exit(1)
 }
 const apply = values.apply ?? false
+const clearDropped = values.clear ?? false
 
 function db(path: string, name: string): Firestore {
   const sa = JSON.parse(readFileSync(path, 'utf8'))
@@ -120,6 +137,8 @@ async function main() {
   console.log(`teams: ${teamIds.length}`)
 
   let contactsFixed = 0
+  let adopted = 0
+  let droppedInSource: string[] = []
   let historyFixed = 0
   let activitiesLinked = 0
   let dupTypesDeleted = 0
@@ -193,7 +212,78 @@ async function main() {
     const contacts = await tgt.collection('contacts').where('teamId', '==', teamId).get()
     for (const c of contacts.docs) {
       const v = c.data() as Record<string, unknown>
-      const held = v.subscription_type_id as string | undefined | null
+      // A blank string is what an unassigned contact carries, not absence —
+      // `!v.subscription_type_id` is the only test that reads both.
+      const held = (v.subscription_type_id as string | undefined | null) || null
+
+      // ── DRIFT: the source has moved since the import ──────────────────────
+      // The target is a SNAPSHOT, and hmd-lineup keeps being used after one is
+      // taken. So the source is authoritative about WHICH plan a contact holds
+      // today, and a difference is staleness rather than a migration defect.
+      //
+      // Writing the contact is enough to fix the history too:
+      // `onContactSubscriptionChange` reconciles `subscription_history` by SET
+      // DIFFERENCE against what the contact holds, so it opens the new period
+      // and closes the old one without this script touching a row.
+      const srcContact = await src.collection('contacts').doc(c.id).get()
+      const srcHeldRaw = srcContact.exists
+        ? ((srcContact.data() as Record<string, unknown>).subscription_type_id as string | null)
+        : null
+      const srcHeld = srcHeldRaw && srcHeldRaw.trim() ? srcHeldRaw.trim() : null
+
+      if (!held && srcHeld) {
+        // ADOPT — assigned in hmd-lineup after the snapshot was taken.
+        const r = resolve(srcHeld, nameById.get(srcHeld) ?? null, v.subscription_recurrence)
+        if (r) {
+          const patch: Record<string, unknown> = {
+            subscription_type_id: r.typeId,
+            subscription_type_name: r.typeName,
+          }
+          if (r.canonical && r.priced) {
+            patch.subscription_price_id = r.priceId
+            patch.subscription_amount = r.amount
+            patch.subscription_recurrence = r.recurrence
+          }
+          if (r.canonical) {
+            patch.active_subscriptions = [
+              {
+                subscription_type_id: r.typeId,
+                subscription_type_name: r.typeName,
+                recurrence: r.recurrence ?? null,
+                amount: r.amount ?? 0,
+                status: 'active',
+              },
+            ]
+          }
+          console.log(`  ${teamId}: adopt "${r.typeName}" for ${v.firstname} ${v.lastname} (source is newer)`)
+          if (apply) await c.ref.set(patch, { merge: true })
+          adopted += 1
+        }
+      } else if (held && !srcHeld && srcContact.exists) {
+        // The source CLEARED it. Reported always, written only under --clear:
+        // taking a plan off a member is not something a repair should decide on
+        // its own, and the open period the trigger then closes is not free to
+        // reopen.
+        droppedInSource.push(
+          `${v.firstname} ${v.lastname} — target holds "${v.subscription_type_name ?? held}", source has none`
+        )
+        if (clearDropped) {
+          if (apply) {
+            await c.ref.set(
+              {
+                subscription_type_id: '',
+                subscription_type_name: null,
+                subscription_price_id: null,
+                subscription_amount: null,
+                active_subscriptions: [],
+              },
+              { merge: true }
+            )
+          }
+          contactsFixed += 1
+          continue
+        }
+      }
 
       if (held) {
         const r = resolve(held, nameById.get(held) ?? null, v.subscription_recurrence)
@@ -256,8 +346,17 @@ async function main() {
   console.log(`duplicate plans deleted : ${dupTypesDeleted}`)
   console.log(`activities gated on plans: ${activitiesLinked}${apply ? '' : ' (dry run)'}`)
   console.log(`contacts repaired       : ${contactsFixed}${apply ? '' : ' (dry run)'}`)
+  console.log(`plans adopted from source: ${adopted}${apply ? '' : ' (dry run)'}`)
   console.log(`history rows repaired   : ${historyFixed}${apply ? '' : ' (dry run)'}`)
   console.log(`contacts already correct: ${alreadyOk}`)
+  if (droppedInSource.length > 0) {
+    console.log(
+      `
+⚠️  ${droppedInSource.length} contact(s) hold a plan the SOURCE no longer has` +
+        `${clearDropped ? ' — cleared' : ' — pass --clear to remove them'}:`
+    )
+    droppedInSource.forEach((x) => console.log(`      ${x}`))
+  }
   if (unresolved > 0) {
     console.log(`⚠️  contacts whose type id is neither canonical nor a source type: ${unresolved}`)
   }
