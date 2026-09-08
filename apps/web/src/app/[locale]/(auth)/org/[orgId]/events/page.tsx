@@ -55,6 +55,7 @@ import { Plus, Pencil, Trash2, CalendarRange, MapPin, CalendarDays, ChevronRight
 import { Link } from '@/i18n/navigation'
 import { eventTypeLabel } from '@/lib/eventTypeLabel'
 import { BUILTIN_EVENT_TYPES, EVENTS_COLLECTION } from '@linyup/shared'
+import { EventAttendanceTrendCard } from '@/components/events/EventAttendanceTrendCard'
 import type { Event } from '@linyup/shared'
 import type { Route } from 'next'
 
@@ -392,6 +393,13 @@ export default function OrgEventsPage() {
         </div>
         </div>
       </div>
+
+      {/* ATTENDANCE ACROSS THE SEASON, above the list it summarises. Fed from
+          PAST events only: attendance is a fact about an event that happened,
+          and a camp next March carries `participants_count: 0` — folding those
+          in would draw a cliff at today that means nothing. Costs no extra
+          reads; both halves are already loaded for the calendar view. */}
+      <EventAttendanceTrendCard events={past.data ?? []} loading={past.isLoading} />
 
       {/* The federation's calendar. Both halves, because a month contains both. */}
       {view === 'calendar' && (

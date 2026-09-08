@@ -10,6 +10,7 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useEventCheckins as useCheckins } from '@/hooks/useEventCheckins'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -117,20 +118,6 @@ function customCheckinFields(
 }
 
 // ─── data hooks ───────────────────────────────────────────────────────────────
-
-function useCheckins(eventId: string) {
-  return useQuery<EventCheckin[]>({
-    queryKey: ['event-checkins', eventId],
-    enabled: !!eventId,
-    queryFn: async () => {
-      const snap = await getDocs(query(
-        collection(db, CHECKINS_COLLECTION),
-        where('event.id', '==', eventId),
-      ))
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as EventCheckin)
-    },
-  })
-}
 
 /**
  * The team's own event types, WITH their `checkin_fields`.

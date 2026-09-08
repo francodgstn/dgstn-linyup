@@ -38,6 +38,8 @@ import { PLUGIN_REGISTRY } from '@/plugins/registry'
 import { useEventTypes } from '@/hooks/useEventTypes'
 import { eventTypeLabel, prettyEventType } from '@/lib/eventTypeLabel'
 import { CheckinPanel } from '@/components/events/CheckinPanel'
+import { EventDemographicsCard } from '@/components/events/EventDemographicsCard'
+import { useEventCheckins } from '@/hooks/useEventCheckins'
 import { ProgramTab } from '@/components/events/program/ProgramTab'
 import { EventRsvpList, EventInvitationList } from '@/components/events/EventPeopleLists'
 import { DuplicateEventDialog } from '@/components/events/DuplicateEventDialog'
@@ -374,6 +376,12 @@ export default function EventDetailPage() {
   const router = useRouter()
   const qc = useQueryClient()
 
+  // WITH THE OTHER HOOKS, above the loading/not-found early returns — a hook
+  // after one of those is called on some renders and not others. Shares
+  // `useEventCheckins`' cache key with the Check-ins tab, so mounting both
+  // costs one read.
+  const checkinsQ = useEventCheckins(id)
+
   const [tab, setTab] = useTabParam(DETAIL_TABS, 'overview')
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -686,6 +694,15 @@ export default function EventDetailPage() {
           ) : (
             <p className="text-sm text-muted-foreground italic">{t('detail_noDescription')}</p>
           )}
+          {/* WHO WAS IN THE ROOM. The counters above say how many; this says
+              who. Shares `useEventCheckins`' cache key with the Check-ins tab,
+              so opening both costs one read, and it renders nothing until the
+              event actually has check-ins. */}
+          <EventDemographicsCard
+            checkins={checkinsQ.data ?? []}
+            rankingSystems={rankingSystems}
+            loading={checkinsQ.isLoading}
+          />
         </div>
       )}
 

@@ -1392,7 +1392,9 @@
     "detail_tabRsvps": "RSVP",
     "detail_rsvpsEmpty": "Personne n'a encore accepté.",
     "detail_tabCategories": "Catégories",
-    "type_other": "Autre"
+    "type_other": "Autre",
+    "demographicsTitle": "Qui est venu",
+    "demographicsSubtitle": "{shown} sur {total} présences"
   },
   "EventProgram": {
     "emptyTitle": "Pas encore de programme",
@@ -5758,7 +5760,12 @@
     "printFrom": "Du",
     "printTo": "Au",
     "printEmpty": "Aucun événement dans cette période.",
-    "type_other": "Autre"
+    "type_other": "Autre",
+    "trendTitle": "Participation par mois",
+    "trendSubtitle": "{attendees} présences sur {events} événements au cours des 12 derniers mois",
+    "trendTooltip": "{attendees} présences · {events} événements",
+    "trendEmptyTitle": "Aucune participation",
+    "trendEmptyHint": "Enregistrez les présences à un événement et les mois se rempliront ici."
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

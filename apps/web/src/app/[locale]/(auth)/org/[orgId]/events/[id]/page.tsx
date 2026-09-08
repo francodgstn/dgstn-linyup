@@ -7,6 +7,8 @@ import {
   doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { useEventCheckins } from '@/hooks/useEventCheckins'
+import { EventDemographicsCard } from '@/components/events/EventDemographicsCard'
 import { useOrg } from '@/contexts/OrgContext'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
@@ -60,19 +62,6 @@ function useOrgEvent(eventId: string) {
   })
 }
 
-function useEventCheckins(eventId: string) {
-  return useQuery<EventCheckin[]>({
-    queryKey: ['event-checkins', eventId],
-    queryFn: async () => {
-      const snap = await getDocs(query(
-        collection(db, CHECKINS_COLLECTION),
-        where('event.id', '==', eventId),
-      ))
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as EventCheckin)
-    },
-  })
-}
-
 function useOrgTeams(orgId: string) {
   return useQuery<Team[]>({
     queryKey: ['org-teams-list', orgId],
@@ -99,7 +88,7 @@ export default function OrgEventDetailPage() {
   // Programme + duplication copy lives in its own namespace.
   const tpp = useTranslations('EventProgram')
   const { orgId, id: eventId } = useParams<{ orgId: string; id: string }>()
-  const { isAdmin } = useOrg()
+  const { isAdmin, org } = useOrg()
   const qc = useQueryClient()
 
   const [teamFilter, setTeamFilter] = useState<string>('all')
@@ -270,6 +259,14 @@ export default function OrgEventDetailPage() {
           ) : (
             <p className="text-sm text-muted-foreground italic">{tp('detail_noDescription')}</p>
           )}
+          {/* WHO WAS IN THE ROOM. The counters above say how many; this says
+              who. It renders nothing before the event has any check-ins, so an
+              upcoming camp is not given three empty donuts. */}
+          <EventDemographicsCard
+            checkins={checkinsQ.data ?? []}
+            rankingSystems={org?.ranking_systems ?? []}
+            loading={checkinsQ.isLoading}
+          />
         </div>
       )}
 
@@ -369,7 +366,19 @@ export default function OrgEventDetailPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
-                      {teamMap.get(checkin.teamId) ?? checkin.teamId}
+                      {/* AN UNRESOLVED CLUB IS A DASH, NOT ITS ID. The fallback
+                          used to print `checkin.teamId`, which is a 20-character
+                          document id and says nothing to the person reading the
+                          roster — it just looks like the column is broken.
+                          And it is reached often: 211 of HMD's migrated
+                          check-ins carry a `teamId` that is not a club at all
+                          (hmd-lineup keyed a team by its owner's uid, and these
+                          point at clubs that no longer exist in it), with the
+                          participant's own contact unable to name one either. So
+                          the club is genuinely unknown, and the dash is the same
+                          "we do not have this" the Checked-in column beside it
+                          already uses. */}
+                      {teamMap.get(checkin.teamId) ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">
                       {checkin.created_at
