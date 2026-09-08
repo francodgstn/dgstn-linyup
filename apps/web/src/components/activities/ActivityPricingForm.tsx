@@ -48,6 +48,7 @@ import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { doc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
+import { DoorOpen, Users } from 'lucide-react'
 import {
   ACTIVITIES_COLLECTION,
   benefitOpensDoorAt,
@@ -318,34 +319,53 @@ export function ActivityPricingForm({
                 already edits — so it asked one question twice and left the
                 studio deciding which control won. */}
             <div className="grid gap-2 sm:grid-cols-2">
-              {(['anyone', 'members'] as const).map((who) => (
-                <label
-                  key={who}
-                  className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-sm transition-colors ${
-                    draft.audience === who
-                      ? 'border-primary bg-primary/5'
-                      : 'hover:border-foreground/30'
-                  } ${canEdit ? '' : 'pointer-events-none opacity-60'}`}
-                >
-                  <input
-                    type="radio"
-                    className="mt-0.5 accent-primary"
-                    checked={draft.audience === who}
-                    onChange={() => set('audience', who)}
-                    disabled={!canEdit}
-                  />
-                  <span>
-                    {/* Literal keys per branch, never a template-literal key:
-                        i18n:check counts computed keys and never fails them. */}
-                    <span className="font-medium">
-                      {who === 'anyone' ? t('access_open') : t('access_members')}
+              {(['anyone', 'members'] as const).map((who) => {
+                // A DOOR, not a padlock. `Lock` already means "you cannot have
+                // this" everywhere a member sees it (shop, course player,
+                // gamification), and a members-only class is not locked — the
+                // studio picked an audience.
+                //
+                // `Users` and NOT `IdCard`, which was the first choice: the
+                // catalogue already spends `IdCard` on PLANS (its rail tab and
+                // its menu entry), so a card here would mean "a plan" and
+                // "members" on one screen. `Users` is what the org nav already
+                // calls Members, and the rail's third state — "Plan required" —
+                // is the one that gets the card.
+                const Icon = who === 'anyone' ? DoorOpen : Users
+                const active = draft.audience === who
+                return (
+                  <label
+                    key={who}
+                    className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-sm transition-colors ${
+                      active ? 'border-primary bg-primary/5' : 'hover:border-foreground/30'
+                    } ${canEdit ? '' : 'pointer-events-none opacity-60'}`}
+                  >
+                    <input
+                      type="radio"
+                      className="mt-0.5 accent-primary"
+                      checked={active}
+                      onChange={() => set('audience', who)}
+                      disabled={!canEdit}
+                    />
+                    <span className="min-w-0">
+                      {/* Literal keys per branch, never a template-literal key:
+                          i18n:check counts computed keys and never fails them. */}
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Icon
+                          aria-hidden
+                          className={`h-4 w-4 shrink-0 ${
+                            active ? 'text-primary' : 'text-muted-foreground'
+                          }`}
+                        />
+                        {who === 'anyone' ? t('access_open') : t('access_members')}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {who === 'anyone' ? t('access_open_desc') : t('access_members_desc')}
+                      </span>
                     </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {who === 'anyone' ? t('access_open_desc') : t('access_members_desc')}
-                    </span>
-                  </span>
-                </label>
-              ))}
+                  </label>
+                )
+              })}
             </div>
             {/* Only under MEMBERS ONLY: a guest holds no plan by definition, so
                 "anyone may book" and "a plan is required" cannot both be true.
