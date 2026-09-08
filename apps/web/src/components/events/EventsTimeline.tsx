@@ -19,35 +19,40 @@
  *
  * "Crossing" is decided in PIXELS, not in dates — two one-day events a week
  * apart are 6px apart in a year view, and with their titles written beside them
- * they collide badly. The maths, and the reason the track measures itself, are
- * in `@linyup/shared/utils/eventTimeline`; it is tested from
- * `packages/functions/src/events/eventTimeline.test.ts` because `apps/web` has
- * no test runner.
+ * they collide badly. The maths are in `@linyup/shared/utils/eventTimeline`;
+ * they are tested from `packages/functions/src/events/eventTimeline.test.ts`
+ * because `apps/web` has no test runner.
  *
- * ── WHY IT MEASURES ITSELF ──────────────────────────────────────────────────
+ * ── ONE CONTINUOUS TRACK, NOT A WINDOW YOU PAGE ─────────────────────────────
  *
- * Packing needs the track's width in pixels, so a `ResizeObserver` feeds it
- * back. Everything else is positioned in PERCENTAGES, so the bars stay correct
- * between a resize and the next observer callback — only the row assignment is
- * ever momentarily stale, and it settles on the same frame in practice. Before
- * the first measurement nothing is drawn rather than drawn wrongly.
+ * Franco, 2026-09-08: "can we make it like continuous scroll among the years?"
+ * The track is the federation's WHOLE archive, end to end, and you scroll
+ * along it — off the end of one year and into the next with no seam and nothing
+ * reflowing. The zoom is a DENSITY (how much fits on screen), not a window, so
+ * changing it re-scales what you are looking at rather than replacing it.
  *
- * ── IT SCROLLS SIDEWAYS RATHER THAN COMPRESSING ─────────────────────────────
+ * What that retires, and what it costs:
  *
- * The track is `max(container, timelineMinTrackPx(window))`, so a wide viewport
- * draws the whole window across its full width and a narrow one scrolls. This
- * is what retires the trade-off the first version shipped with: squeezed into a
- * phone's 330px, a year gave each month 27px, every label collided, and the
- * packer — correctly — opened a row per event. Measuring the TRACK rather than
- * the viewport means a phone packs against 768px instead of 330 and gets a
- * desktop's handful of rows; the width it cannot show, it scrolls to.
+ *   GONE  the `anchor` state, `shiftTimelineWindow`, and the arrows-turn-a-page
+ *         model. The arrows now scroll, and the header is a READOUT of what is
+ *         on screen rather than a statement of what was chosen.
+ *   GONE  measuring the track. Its width is derived — the range's length in
+ *         days times the density — so only the viewport is observed.
+ *   COST  the scroll position has to come back into React, which is why there
+ *         is an rAF throttle AND a 16px threshold on `scrollPx`.
+ *   COST  the range can be thousands of gridlines wide, so only the ticks near
+ *         the viewport are put in the DOM. Bars are not virtualised: there are
+ *         at most a few hundred, and they are the thing you came to see.
+ *
+ * Everything is positioned in PERCENTAGES of the track, so a re-measure moves
+ * nothing but the row assignment, which settles on the same frame.
  *
  * DRAGGING IS FOR MICE ONLY (`pointerType === 'mouse'`). Touch already has
  * momentum scrolling that is better than anything reimplemented here, and
  * hijacking it would replace a good gesture with a worse one.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -60,14 +65,14 @@ import { MapPin } from 'lucide-react'
 import {
   BUILTIN_EVENT_TYPES,
   TIMELINE_YEARS_SPAN,
-  placeTimelineEvents,
-  shiftTimelineWindow,
-  timelineMinTrackPx,
-  timelineTicks,
-  timelineWindow,
-  windowContains,
-  fractionOf,
   TIMELINE_ZOOMS,
+  placeTimelineEvents,
+  timelineDateAt,
+  timelinePxPerDay,
+  timelineRange,
+  timelineTicks,
+  timelineTrackPx,
+  fractionOf,
   type TimelineInput,
   type TimelineZoom,
 } from '@linyup/shared'
@@ -154,15 +159,18 @@ export function EventsTimeline({
   const format = useFormatter()
 
   const [zoom, setZoom] = useState<TimelineZoom>('year')
-  // The window is held as its own anchor rather than derived from "today", so
-  // stepping away from the current period survives a re-render.
-  const [anchor, setAnchor] = useState<Date>(() => new Date())
   const [peekId, setPeekId] = useState<string | null>(null)
+  // TODAY IS CAPTURED ONCE. It anchors the range and draws the marker, and a
+  // timeline that silently re-based itself at midnight would move under anyone
+  // who left the tab open.
+  const [today] = useState(() => new Date())
 
   const trackRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
-  const [trackPx, setTrackPx] = useState(0)
   const [viewPx, setViewPx] = useState(0)
+  // Where the scroller is, quantised — the source for the header readout and
+  // for which ticks are worth putting in the DOM.
+  const [scrollPx, setScrollPx] = useState(0)
   const [dragging, setDragging] = useState(false)
   // A drag that MOVED must not also fire the bar it started on. Set on the
   // first real movement, read by the bar's click handler, cleared on the next
@@ -174,31 +182,22 @@ export function EventsTimeline({
   // with camps hidden".
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
 
-  // TWO widths, and the difference between them is the point: the TRACK is how
-  // wide the window is drawn, which is what packing and label-thinning need;
-  // the VIEW is the hole you look at it through, which is what tells us whether
-  // there is anything to scroll at all.
+  // ONLY THE VIEWPORT IS MEASURED NOW. The track used to be measured too,
+  // because its width was `max(container, minTrackPx)` and only the DOM knew
+  // which side had won. On a continuous track the width is derived — the
+  // range's length in days times the density the zoom asked for — so the one
+  // thing left to observe is the hole you look through it.
   useEffect(() => {
-    const track = trackRef.current
     const view = scrollRef.current
-    if (!track || !view) return
+    if (!view) return
     const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === track) setTrackPx(entry.contentRect.width)
-        else setViewPx(entry.contentRect.width)
-      }
+      for (const entry of entries) setViewPx(entry.contentRect.width)
     })
-    ro.observe(track)
     ro.observe(view)
-    // The track alone is read synchronously, so the first paint draws the bars
-    // rather than nothing. The view is only used for the cursor, which can wait
-    // for the observer's own first callback — and `clientWidth` would not agree
-    // with `contentRect` anyway, since it counts the padding.
-    setTrackPx(track.getBoundingClientRect().width)
+    // Read once synchronously so the first paint draws bars rather than nothing.
+    setViewPx(view.getBoundingClientRect().width)
     return () => ro.disconnect()
   }, [])
-
-  const win = useMemo(() => timelineWindow(zoom, anchor), [zoom, anchor])
 
   const inputs = useMemo<TimelineInput[]>(
     () =>
@@ -218,37 +217,73 @@ export function EventsTimeline({
     [events]
   )
 
+  // THE RANGE IS THE WHOLE ARCHIVE, and it does NOT depend on the zoom — see
+  // `timelineRange`. Everything below is derived from it and one number: how
+  // many pixels a day gets.
+  const range = useMemo(() => timelineRange(inputs, today), [inputs, today])
+  const pxPerDay = timelinePxPerDay(zoom, viewPx)
+  // `max(…, viewPx)` for the degenerate archive: a federation with one event
+  // has a range of about three months, which at the widest zoom is a track
+  // narrower than the card it sits in. Stretching it to fill is the same
+  // bargain the old `max(container, minTrackPx)` struck, kept for the only case
+  // that still needs it.
+  const trackPx = Math.max(timelineTrackPx(range, pxPerDay), viewPx)
+
   // BUILT-IN TYPES IN THEIR DECLARED ORDER, so a band stays on the same row all
   // the way through a federation's history. A plugin or team-custom type is not
   // in that list and lands after them, ordered by its first event — see
   // `groupOrder` for why ordering everything that way would be worse.
   // WHAT THE LEGEND OFFERS AND WHAT THE TRACK DRAWS ARE TWO DIFFERENT PACKS.
   //
-  // The legend has to list every type in the window INCLUDING the hidden ones —
+  // The legend has to list every type there is INCLUDING the hidden ones —
   // a legend that only listed what is currently drawn would delete its own
   // "camp" entry the moment you hid camps, and there would be no way back. So
   // the full set is packed for its BAND ORDER and the filtered set for the
   // rows. Two passes over a few dozen events, and the alternative is a second
   // copy of the packer's ordering rules living here and drifting from it.
   const allBands = useMemo(
-    () => placeTimelineEvents(inputs, win, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }).bands,
-    [inputs, win, trackPx]
+    () => placeTimelineEvents(inputs, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }).bands,
+    [inputs, range, trackPx]
   )
   const shown = useMemo(() => inputs.filter((e) => !hidden.has(e.group ?? '')), [inputs, hidden])
   const { placed, lanes, bands } = useMemo(
-    () => placeTimelineEvents(shown, win, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
-    [shown, win, trackPx]
+    () => placeTimelineEvents(shown, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
+    [shown, range, trackPx]
   )
   const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
-  const ticks = useMemo(() => timelineTicks(win, trackPx), [win, trackPx])
+  const { unit, ticks } = useMemo(() => timelineTicks(range, pxPerDay), [range, pxPerDay])
 
-  const todayAt = windowContains(win, new Date()) ? fractionOf(win, new Date()) : null
-  const measured = trackPx > 0
-  const minTrackPx = timelineMinTrackPx(win)
+  const todayAt = fractionOf(range, today)
+  const measured = viewPx > 0
   // A grab cursor over something that cannot move is a small lie, and the one
-  // people notice — so it waits until BOTH widths are real. 1px of slack for
-  // sub-pixel layout.
-  const overflowing = trackPx > 0 && viewPx > 0 && trackPx - viewPx > 1
+  // people notice. 1px of slack for sub-pixel layout.
+  const overflowing = measured && trackPx - viewPx > 1
+
+  // ONLY THE TICKS NEAR THE VIEWPORT REACH THE DOM. The range is the whole of a
+  // federation's history, so at day density it can run to thousands of
+  // gridlines — three years of days is 1,095 of them, and a bigger archive is
+  // worse. A viewport of margin on each side means a scroll never outruns the
+  // last render, and `nextAt` is carried along because the weekend shading is
+  // drawn as the gap to the following tick and filtering breaks the indices.
+  // The bigger boundary WITHIN the current unit: a month among days, a year
+  // among months and quarters. It gets the firmer gridline and the bolder label.
+  const startsAPeriod = useCallback(
+    (d: Date) => (unit === 'day' ? d.getDate() === 1 : d.getMonth() === 0),
+    [unit]
+  )
+
+  const drawnTicks = useMemo(() => {
+    const from = scrollPx - viewPx
+    const to = scrollPx + viewPx * 2
+    const out: { at: number; nextAt: number; date: Date; labelled: boolean; weekend: boolean }[] = []
+    for (let i = 0; i < ticks.length; i++) {
+      const x = ticks[i].at * trackPx
+      if (!measured || (x >= from && x <= to)) {
+        out.push({ ...ticks[i], nextAt: ticks[i + 1]?.at ?? 1 })
+      }
+    }
+    return out
+  }, [ticks, scrollPx, viewPx, trackPx, measured])
 
   // ── DRAG TO SCROLL, for mice ───────────────────────────────────────────────
   //
@@ -291,36 +326,101 @@ export function EventsTimeline({
     window.addEventListener('pointercancel', up)
   }, [])
 
-  // BRING TODAY INTO VIEW when the window changes and the track overflows.
-  // Opening on January while the season is in September would be a strange
-  // place to start, and the arrows are for moving between windows, not for
-  // hunting inside one. Centred, and only when there is something to scroll.
-  useEffect(() => {
-    const el = scrollRef.current
-    const track = trackRef.current
-    if (!el || !track || todayAt === null) return
-    const overflow = el.scrollWidth - el.clientWidth
-    if (overflow <= 0) return
-    // `todayAt` is a fraction of the TRACK, and the track does not start at the
-    // scroller's edge — the padding sits in front of it. Measuring the offset
-    // rather than assuming it keeps this right if the padding ever changes.
-    const trackBox = track.getBoundingClientRect()
-    const trackStart = trackBox.left - el.getBoundingClientRect().left + el.scrollLeft
-    const today = trackStart + todayAt * trackBox.width
-    el.scrollLeft = Math.max(0, Math.min(overflow, today - el.clientWidth / 2))
-    // Deliberately keyed on the WINDOW, not on `todayAt` — recentring on every
-    // render would fight the person scrolling.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [win.start.getTime(), win.end.getTime(), minTrackPx])
+  // ── WHERE THE SCROLLER IS ──────────────────────────────────────────────────
+  //
+  // The scroll position is now what the window used to be: it decides what the
+  // header says, which ticks are worth drawing, and whether the Today button
+  // has anything to offer. So it has to come back into React — but at 60fps,
+  // and it moves ~150 elements when it changes.
+  //
+  // Hence both throttles. `requestAnimationFrame` collapses a burst of scroll
+  // events into one, and the 16px threshold drops the rest: the readout says
+  // "2026", and no reader can tell it was computed a few pixels ago.
+  //
+  // The CENTRE is kept separately and unthrottled, because it is not display —
+  // it is the anchor that holds your place when the track is re-scaled.
+  const centreFracRef = useRef<number | null>(null)
+  const trackPxRef = useRef(trackPx)
+  trackPxRef.current = trackPx
+  const rafRef = useRef(0)
 
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    if (trackPxRef.current > 0) {
+      centreFracRef.current = (el.scrollLeft + el.clientWidth / 2) / trackPxRef.current
+    }
+    if (rafRef.current) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0
+      const now = scrollRef.current?.scrollLeft ?? 0
+      setScrollPx((prev) => (Math.abs(now - prev) >= 16 ? now : prev))
+    })
+  }, [])
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), [])
+
+  // OPEN ON TODAY; AFTERWARDS, STAY WHERE YOU WERE.
+  //
+  // The track's width changes for two reasons — the zoom was re-scaled, or the
+  // window was resized — and in both the reader is looking at something and
+  // expects to go on looking at it. Restoring the CENTRE fraction is what makes
+  // zooming feel like a lens rather than a jump; anchoring on the left edge
+  // instead would slide the view sideways every time.
+  //
+  // A layout effect, so the corrected position is the first one painted.
+  const initedRef = useRef(false)
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el || trackPx <= 0 || viewPx <= 0) return
+    const frac = initedRef.current && centreFracRef.current !== null ? centreFracRef.current : todayAt
+    initedRef.current = true
+    const max = Math.max(0, el.scrollWidth - el.clientWidth)
+    el.scrollLeft = Math.max(0, Math.min(max, frac * trackPx - el.clientWidth / 2))
+    setScrollPx(el.scrollLeft)
+    // `todayAt` is read on the first run only, and re-running when it changes
+    // would fight the person scrolling.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackPx, viewPx])
+
+  /** Scroll so `frac` of the range sits in the middle of the viewport. */
+  const scrollToFraction = useCallback((frac: number) => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollTo({
+      left: frac * trackPxRef.current - el.clientWidth / 2,
+      behavior: 'smooth',
+    })
+  }, [])
+
+  /** One arrow press: most of a viewport, forwards or back. */
+  const scrollBy = useCallback((dir: 1 | -1) => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: 'smooth' })
+  }, [])
+
+  // WHAT IS ON SCREEN, read off the scroll position rather than chosen. The
+  // half-open range makes the right edge exclusive, so a viewport ending
+  // exactly at 1 January reports the year before it — which is what a reader
+  // looking at December would expect it to say.
+  const viewFrom = timelineDateAt(range, Math.max(0, scrollPx) / trackPx)
+  const viewTo = timelineDateAt(range, Math.min(1, (scrollPx + Math.max(1, viewPx)) / trackPx))
+  const midDate = timelineDateAt(range, (scrollPx + Math.max(1, viewPx) / 2) / trackPx)
+  const yFrom = viewFrom.getFullYear()
+  const yTo = new Date(viewTo.getTime() - 1).getFullYear()
   const windowLabel =
-    zoom === 'years'
-      ? // An EN DASH and the two end years — the window is half-open, so the
-        // last year it shows is the one before `end`.
-        `${win.start.getFullYear()}–${win.end.getFullYear() - 1}`
-      : zoom === 'year'
-        ? String(win.start.getFullYear())
-        : format.dateTime(win.start, { month: 'long', year: 'numeric' })
+    zoom === 'month'
+      ? format.dateTime(midDate, { month: 'long', year: 'numeric' })
+      : yFrom === yTo
+        ? String(yFrom)
+        : // An EN DASH between the first and last year on screen.
+          `${yFrom}–${yTo}`
+
+  // The button appears only when today is somewhere you cannot see, which on a
+  // continuous track is a real possibility rather than a page you stepped off.
+  const todayOffScreen =
+    measured && (todayAt * trackPx < scrollPx || todayAt * trackPx > scrollPx + viewPx)
 
   return (
     <div className="space-y-3">
@@ -332,7 +432,14 @@ export function EventsTimeline({
               variant="ghost"
               size="icon-sm"
               aria-label={t('timelinePrevious')}
-              onClick={() => setAnchor(shiftTimelineWindow(win, -1).start)}
+              // THE ARROWS SCROLL; THEY NO LONGER TURN A PAGE. A shade under a
+              // full viewport, so a strip of what you were just reading stays on
+              // screen — a full one lands you somewhere with nothing in common
+              // with where you were, which is the discontinuity this whole change
+              // was about. Keyboard and screen readers need them: dragging and a
+              // trackpad are the only other ways across.
+              onClick={() => scrollBy(-1)}
+              disabled={!overflowing}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -347,13 +454,14 @@ export function EventsTimeline({
               variant="ghost"
               size="icon-sm"
               aria-label={t('timelineNext')}
-              onClick={() => setAnchor(shiftTimelineWindow(win, 1).start)}
+              onClick={() => scrollBy(1)}
+              disabled={!overflowing}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </Tip>
-          {todayAt === null && (
-            <Button variant="ghost" size="sm" onClick={() => setAnchor(new Date())}>
+          {todayOffScreen && (
+            <Button variant="ghost" size="sm" onClick={() => scrollToFraction(todayAt)}>
               {t('timelineToday')}
             </Button>
           )}
@@ -364,9 +472,10 @@ export function EventsTimeline({
             <button
               key={z}
               type="button"
-              // THE ANCHOR IS KEPT, so zooming out from September lands on that
-              // year and zooming back in returns to September rather than to
-              // today. Changing zoom is a change of scale, not of place.
+              // NOTHING IS SAVED HERE. Changing zoom is a change of scale,
+              // not of place, and the scroll centre that keeps your place was
+              // recorded by the last scroll — the layout effect restores it once
+              // the new track width is known. See `centreFracRef`.
               onClick={() => setZoom(z)}
               aria-pressed={zoom === z}
               className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -386,16 +495,22 @@ export function EventsTimeline({
       </div>
 
       {/* ── the track ─────────────────────────────────────────────────────── */}
-      {/* THE SCROLLER IS THE OUTER ELEMENT, THE TRACK IS THE INNER ONE, and the
-          `ResizeObserver` watches the INNER one — that is the whole trick. What
-          packing needs is the width things are actually DRAWN across, which is
-          `max(container, minTrackPx)`, not the width of the viewport hole you
-          are looking through it. Get that backwards and a phone packs against
-          330px again.
+      {/* THE SCROLLER IS THE OUTER ELEMENT AND THE TRACK IS THE INNER ONE, and
+          the track is now given an explicit width rather than measured: it is
+          the range's length in days times the density. That removes the loop
+          the old version had to live with, where the DOM decided the width and
+          React had to read it back before it could pack anything.
 
-          `p-3` moves to the scroller so the padding does not scroll away with
-          the content, and `overscroll-x-contain` stops a sideways flick at the
-          end of the year from navigating the browser back. */}
+          NO HORIZONTAL PADDING, deliberately. A continuous track should run
+          under both edges of the card — content that stops short of the edge
+          reads as the end of the data rather than the end of the viewport — and
+          it also makes the scroll arithmetic honest: fraction `f` is at exactly
+          `f * trackPx`, with no padding offset to remember. The month of empty
+          range at each end (see `timelineRange`) is what keeps the first bar
+          off the border.
+
+          `overscroll-x-contain` stops a sideways flick at the end of the track
+          from navigating the browser back. */}
       <div className="overflow-hidden rounded-xl border bg-card">
         <div className="flex">
           {/* THE ROW LABELS, OUTSIDE THE SCROLLER so they never scroll away from
@@ -436,28 +551,48 @@ export function EventsTimeline({
           <div
             ref={scrollRef}
             onPointerDown={onPointerDown}
-            className={`min-w-0 flex-1 overflow-x-auto overscroll-x-contain p-3 ${
+            onScroll={onScroll}
+            className={`min-w-0 flex-1 overflow-x-auto overscroll-x-contain py-3 ${
               !overflowing ? '' : dragging ? 'cursor-grabbing select-none' : 'cursor-grab'
             }`}
           >
-            <div ref={trackRef} className="relative" style={{ minWidth: minTrackPx }}>
+            <div ref={trackRef} className="relative" style={{ width: trackPx }}>
               {/* THE AXIS. Gridlines for every tick, writing only where it fits —
-              see `timelineTicks`, which thins the labels by track width so a
-              phone shows a readable few rather than a grey smear. */}
+              see `timelineTicks`, which picks the unit and thins the labels by
+              how many pixels a day has.
+
+              THE YEAR IS WRITTEN WHEREVER A YEAR BEGINS, and a month wherever a
+              month does. On a track that runs across a decade, "Feb" on its own
+              says nothing — the reader needs to know which February — so January
+              gives up its own name to carry the year, and the 1st of a month
+              carries the month. It costs nothing: the position already says
+              which month it is, and the word was the redundant half. */}
               <div className="relative mb-1 h-5 select-none">
-                {ticks.map((tick) => (
+                {drawnTicks.map((tick) => (
                   <div
                     key={tick.date.getTime()}
                     className="absolute top-0 text-[10px] leading-5 text-muted-foreground"
                     style={{ left: `${tick.at * 100}%` }}
                   >
                     {tick.labelled && (
-                      <span className="-ml-px inline-block pl-1">
-                        {zoom === 'years'
-                          ? tick.date.getFullYear()
-                          : zoom === 'year'
+                      <span
+                        className={`-ml-px inline-block whitespace-nowrap pl-1 ${
+                          startsAPeriod(tick.date) ? 'font-semibold text-foreground/70' : ''
+                        }`}
+                      >
+                        {unit === 'day'
+                          ? // THE MONTH NAME REPLACES THE NUMBER, it does not join
+                            // it. "Aug 1" is about 30px and a day is 29 at the
+                            // densities this unit appears at, so the two together
+                            // crowd the 2 beside them — and the number was the
+                            // redundant half, because the position already says
+                            // which day this is.
+                            tick.date.getDate() === 1
                             ? format.dateTime(tick.date, { month: 'short' })
-                            : tick.date.getDate()}
+                            : tick.date.getDate()
+                          : tick.date.getMonth() === 0
+                            ? tick.date.getFullYear()
+                            : format.dateTime(tick.date, { month: 'short' })}
                       </span>
                     )}
                   </div>
@@ -468,25 +603,30 @@ export function EventsTimeline({
                 className="relative overflow-hidden rounded-md bg-muted/30"
                 style={{ height: Math.max(1, lanes) * LANE_H }}
               >
-                {/* Weekend shading, month zoom only. It is what makes a month
+                {/* Weekend shading, day ticks only. It is what makes a month
                 timeline scannable — the eye finds the weeks without counting. */}
-                {ticks.map((tick, i) =>
+                {drawnTicks.map((tick) =>
                   tick.weekend ? (
                     <div
                       key={`w${tick.date.getTime()}`}
                       className="absolute inset-y-0 bg-foreground/[0.04]"
                       style={{
                         left: `${tick.at * 100}%`,
-                        width: `${((ticks[i + 1]?.at ?? 1) - tick.at) * 100}%`,
+                        width: `${(tick.nextAt - tick.at) * 100}%`,
                       }}
                     />
                   ) : null
                 )}
 
-                {ticks.map((tick) => (
+                {drawnTicks.map((tick) => (
                   <div
                     key={`g${tick.date.getTime()}`}
-                    className="absolute inset-y-0 w-px bg-border/60"
+                    className={`absolute inset-y-0 w-px ${
+                      // The turn of a period gets a firmer line, so a track that
+                      // runs across several of them has structure you can see
+                      // without reading the labels.
+                      startsAPeriod(tick.date) ? 'bg-border' : 'bg-border/60'
+                    }`}
                     style={{ left: `${tick.at * 100}%` }}
                   />
                 ))}
@@ -503,13 +643,13 @@ export function EventsTimeline({
                   />
                 ))}
 
-                {todayAt !== null && (
-                  <div
-                    className="absolute inset-y-0 z-10 w-0.5 bg-primary/70"
-                    style={{ left: `${todayAt * 100}%` }}
-                    title={t('timelineToday')}
-                  />
-                )}
+                {/* Always drawn: the range is built to contain today, so there
+                is no longer a window it can fall outside of. */}
+                <div
+                  className="absolute inset-y-0 z-10 w-0.5 bg-primary/70"
+                  style={{ left: `${todayAt * 100}%` }}
+                  title={t('timelineToday')}
+                />
 
                 {measured &&
                   placed.map((p) => {
@@ -588,10 +728,18 @@ export function EventsTimeline({
                     )
                   })}
 
+                {/* PINNED TO TODAY, not centred in the track. The track is as
+                    long as the archive and the view opens on today, so
+                    `justify-center` would put this message halfway along a
+                    track that can be forty thousand pixels wide — off screen,
+                    and reading as a timeline that simply failed to draw. */}
                 {measured && placed.length === 0 && (
-                  <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <div
+                    className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 whitespace-nowrap text-xs text-muted-foreground"
+                    style={{ left: `${todayAt * 100}%` }}
+                  >
                     <CalendarRange className="h-4 w-4 text-muted-foreground/40" />
-                    {t('timelineEmpty', { window: windowLabel })}
+                    {t('timelineEmpty')}
                   </div>
                 )}
               </div>
