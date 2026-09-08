@@ -40,21 +40,19 @@ to end before any app code is written. Test it against a hostname you control
 instead; open decision in `docs/custom-domains.md`. The slug is read in exactly
 one place, so whichever wins is a one-line change here.
 
-## What it deliberately does not rewrite
+## What it no longer does
 
-`/pay/*` is the Stripe return and lives at the app root, not under a surface —
-rewriting it would strand every payment. `/embed/*` already carries its own slug.
-`/api/*`, `/_next/*` and anything with a file extension are framework-owned. See
-`PASSTHROUGH_PREFIXES` in `src/index.ts`.
-
-Redirect `Location` headers coming back from the app are translated out of the
-`/public/{slug}/…` namespace, so next-intl's locale redirect
-(`/shop` → `/de/shop`) does not leak an internal path onto the tenant's domain.
+It does not rewrite paths, so it no longer needs a passthrough list, and it does
+not translate `Location` headers on the way back. An internal Next rewrite never
+reaches the browser, so there is nothing to translate — that whole class of bug
+left with the rewrite. The passthrough rules now live once, in
+`@linyup/shared/utils/customDomainPaths`, exercised by
+`packages/functions/src/domains/customDomainPaths.test.ts`.
 
 ## Verifying the path logic
 
-The rewrite/unrewrite pair is the part worth checking before deploying:
+It moved to the app, and so did its tests:
 
 ```bash
-node scripts/check-paths.mjs
+pnpm --filter @linyup/functions test    # customDomainPaths.test.ts
 ```

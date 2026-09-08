@@ -25,16 +25,18 @@
   "routes": [{ "pattern": "*/*", "zone_name": "linyup.com" }],
 
   "vars": {
-    // The SANDBOX backend: six seeded demo studios, no real customers.
-    // NOTE us-central1, not europe-west4 — the sandbox backend has not been
-    // moved to the EU (infra/README.md §5b, "Moving an existing App Hosting
-    // backend to the EU"). Verified serving: /public/ronin-grappling-academy
-    // and /de/public/… both return 200.
-    "ORIGIN": "https://linyup-web--linyup-sandbox.us-central1.hosted.app",
-
-    // PASS A only — one hostname, one studio, no lookup. Removed in Pass B when
-    // the slug comes from the custom hostname's own metadata.
-    "TENANT_SLUG": "ronin-grappling-academy"
+    // The PRODUCTION web backend — custom domains are production-only
+    // (packages/shared/src/utils/customDomains.ts), so pointing this anywhere
+    // else means a paying studio's domain serves another environment's data.
+    //
+    // The *.hosted.app name, NOT app.linyup.com: this fetch must leave the
+    // Cloudflare zone entirely. Forwarding to a hostname inside the zone would
+    // re-enter the `*/*` route if that record were ever proxied by mistake.
+    //
+    // NOTE us-central1, not europe-west4 — the prod backend has not been moved
+    // to the EU (infra/README.md §5b). Verified serving: /login returns 200,
+    // while the europe-west4 name 404s.
+    "ORIGIN": "https://linyup-web--linyup-prod.us-central1.hosted.app"
   },
 
   "observability": { "enabled": true }

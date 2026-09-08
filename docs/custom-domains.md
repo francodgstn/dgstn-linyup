@@ -4,32 +4,43 @@ A studio's public surfaces live at `linyup.com/public/{slug}/…` — bio-link, 
 booking, shop, documents, space, events, appointments. This feature serves that
 same tree from a hostname the studio owns, with the slug segment gone.
 
-## Status (2026-08-21)
+## Status (2026-09-08)
 
-**The registration rail is built; the serving rail is not.** A studio can connect
-a domain and watch it go live at Cloudflare — but a request to it does not yet
-reach their pages, because the edge cannot yet tell which tenant a hostname
-belongs to (see "How the edge learns…" below, which is the one open decision).
+**A studio's own domain serves their pages.** Connect it in Public pages, add one
+CNAME, and `book.theirdojo.ch` is their bio-link, shop, booking and Space.
 
 Built:
 
 - `registerPublicDomain` / `checkPublicDomain` / `removePublicDomain`
   (`packages/functions/src/domains/`), plus the Cloudflare client.
-- `PublicDomainConfig` + the `public_domains/{hostname}` uniqueness registry,
-  with rules denying every client write (including the owner — see below).
-- Studio UI: Settings → Team, directly under the email sender card.
-- Operator console: Settings → Domains — the platform token, and every connected
-  domain across all tenants.
-- `refreshCustomDomains` in `dailyTasks`.
-- The edge Worker, `infra/workers/tenant-router/`.
+- `PublicDomainConfig` + the `public_domains/{hostname}` uniqueness registry.
+- **Studio UI: Public pages** — under the hero, which shows the custom domain in
+  place of the linyup.com path once it is live.
+- Operator console: Settings → Domains.
+- `refreshCustomDomains` + `assertZoneRecordsUnproxied` in `dailyTasks`.
+- **Host → tenant resolution in the app** (`proxy.ts` +
+  `lib/customDomainTenant.ts` + `shared/utils/customDomainPaths.ts`), and the
+  edge Worker reduced to a pass-through.
+- **Emailed links carry the studio's domain.** Rewritten ONCE at the mail seam
+  (`sendEntityMail`), not at the ~39 `getHostingUrl()` call sites: threading a
+  per-tenant base through all of them is 39 chances to miss one, and a missed one
+  is invisible because the link still works. Anchored on the exact
+  origin + locale + `/public/{slug}` prefix, so it cannot drag a neighbouring
+  studio (`hmd-basel-nord`) onto the wrong domain — pinned by
+  `domains/tenantLinks.test.ts`.
+- **The Stripe return stays on the domain.** `buildResultUrls` resolves the
+  tenant's active host and `resolveBaseUrl` accepts the caller's origin when it
+  matches it — per tenant, never per pattern: widening the trusted regex to
+  cover customer domains would let studio A's checkout return a visitor to
+  studio B's site. Pinned by `domains/returnOrigin.test.ts`, including the
+  look-alike (`https://evilbook.theirdojo.ch`) and plain-http cases.
 
-Not built, and each is load-bearing before this can be announced: the edge
-tenant lookup, per-tenant emailed links (`teamPublicBaseUrl`), the Stripe return
-origin check, `proxy.ts` host handling, and the canonical/301 policy. They are
-described under "What this breaks in the app" below.
+Not built:
 
-Verified end to end on 2026-08-21 against `book.hmdbasel.ch`: hostname `active`,
-certificate `active`, TLS verifying — the DNS → certificate → edge path works.
+- **In-page links keep the slug.** `publicHref` still emits
+  `/public/{slug}/shop`, so the address bar shows the short form only until the
+  first click. Both forms serve (see below); making the builders host-aware is
+  the remaining half.
 
 ## The shape
 
@@ -151,67 +162,54 @@ proxied hostnames only. See the ⚠ in `infra/README.md` §5d and in
 `wrangler.jsonc`; the Worker answers 503 naming the cause if it is ever handed
 one of our own hostnames.
 
-**How the edge learns which tenant a hostname belongs to is an OPEN DECISION**,
-because the obvious answer is not available to us. Cloudflare's `custom_metadata`
-(read at the edge as `request.cf.hostMetadata`) would carry `{teamId, slug}` on
-the hostname record itself — no second store, no sync job. It is **Enterprise
-only**: creating a hostname with it on our plan fails with
+**The app resolves the tenant, not the edge** (decided 2026-09-08).
+
+Cloudflare's `custom_metadata` — `{teamId, slug}` carried on the hostname record
+and read at the edge as `request.cf.hostMetadata` — was the design, and it is
+**Enterprise only**: creating a hostname with it fails outright with
 
 ```
 1413  No custom metadata access has been allocated for this zone or account.
 ```
 
-verified against the live zone on 2026-08-21. The two workable alternatives:
+The alternative at the edge was Workers KV, and it was rejected. The app already
+needs the host→tenant mapping for emailed links, canonical tags and the Stripe
+return-origin check, so a KV copy could only DRIFT from it — and a drifted edge
+serves a live customer domain another studio's pages. Resolving in the app leaves
+one owner.
 
-- **Workers KV** — the Worker reads `host:{hostname}` → `{teamId, slug}`;
-  `registerPublicDomain` writes it when a domain verifies. Fast and edge-local,
-  but it is a second store, and this repo has a strong preference against
-  anything that can go stale (see the dynamic contact groups note in CLAUDE.md).
-- **Resolve in the app** — the Worker stops rewriting paths and becomes a pure
-  host-preserving proxy; `proxy.ts` resolves host→slug from Firestore (REST, with
-  an in-process TTL cache) and rewrites there. One source of truth, nothing to
-  sync. Costs a lookup per instance per domain, and moves the rewrite into the
-  app.
+So `proxy.ts` resolves the host and rewrites internally:
 
-Leaning towards the second: the app **already** needs the host→tenant mapping for
-emailed links, canonical URLs and the Stripe origin check, so having the edge keep
-its own copy buys little and can disagree with the app's.
+```
+book.theirdojo.ch/shop   →  (rewrite)  /de/public/{slug}/shop
+```
 
-## Environments — PRODUCTION ONLY
+Two document GETs by known id (`lib/customDomainTenant.ts`), cached in-process
+for five minutes:
 
-**Custom domains work on `linyup-prod` and nowhere else.** Not sandbox, not
-staging, not the emulator. The predicate is `customDomainsAvailable(projectId)`
-(`packages/shared/src/utils/customDomains.ts`), derived from the Firebase project
-id for the same reason `robots.ts` is — the project id cannot disagree with which
-backend is actually being served.
+1. `public_domains/{hostname}` → which tenant claimed the host
+2. `{teams|organizations}/{id}/public_profile/{id}` → that tenant's slug
 
-The constraint is structural, not a policy choice: **one Cloudflare zone has one
-fallback origin**, so every custom hostname on a zone reaches a single backend.
-Serving prod and sandbox from one zone would need the edge to resolve a hostname
-to an *environment*, which is the same lookup that does not exist yet. Real
-separation therefore means separate zones — a second registered domain, a second
-token, a second Worker deploy — and that is deferred.
+**Two reads rather than one, deliberately.** The slug could be denormalised onto
+the claim, but a team's slug is EDITABLE — that copy would go stale the moment
+somebody renamed theirs, and the symptom is a custom domain quietly 404ing while
+every record involved looks correct.
 
-So the honest thing is to say so, in three places, rather than let a form accept
-a domain that will never be served:
+The registry allows `get` and denies `list`: the doc id IS the hostname, so
+resolving one requires already knowing it, while listing would hand over the
+customer roster.
 
-- the studio card renders one sentence instead of the form
-  (`CustomDomain.unavailable*`);
-- the operator console replaces the token field with the reason — an operator
-  staring at a bare "not configured" badge would go hunting for a missing secret;
-- **`registerPublicDomain` refuses server-side** (`CUSTOM_DOMAIN_ENV_REFUSAL`).
-  That is the enforcement; the UI is only the explanation. Without it a sandbox
-  tenant reaches Cloudflare and registers a hostname on the PRODUCTION zone — the
-  zone id and token are per-environment params, but "unset" is one
-  misconfiguration away from "set to prod's".
+Three consequences worth knowing:
 
-`check` and `remove` stay open deliberately, so a domain connected before a
-project was reclassified can still be inspected and cleaned up rather than
-stranded by the guard meant to prevent strandings.
-
-**The product consequence, agreed 2026-08-21: Linyup advertises custom domains,
-but never showcases them on demo/sandbox/staging.** Lead demos and the `/try`
-playground run on linyup.com URLs.
+- **The rewrite is INTERNAL**, so the visitor's address bar keeps `/shop` and
+  nothing has to translate `Location` headers back out of `/public/{slug}/…`.
+  That whole class of bug left with the Worker's rewrite.
+- **`/public/…` is passed through unmapped.** The pages still emit
+  `/public/{slug}/…` links, and mapping those a second time would produce
+  `/public/{slug}/public/{slug}/…`. Both URL forms therefore serve.
+- **An unprefixed path gets the TENANT's language**, not the browser's — a Basel
+  dojo's front door answering in English because a visitor's laptop is set that
+  way is the wrong default for a vanity domain. An explicit `/de/…` still wins.
 
 ## Per-tenant flow
 

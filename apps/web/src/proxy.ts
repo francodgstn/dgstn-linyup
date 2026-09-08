@@ -1,6 +1,8 @@
 import createMiddleware from 'next-intl/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isCustomDomainPassthrough, splitPathLocale, toTenantInternalPath } from '@linyup/shared'
 import { routing } from './i18n/routing'
+import { resolveCustomDomainTenant } from './lib/customDomainTenant'
 
 const handleI18n = createMiddleware(routing)
 
@@ -19,7 +21,71 @@ const APP_FRAME_CSP =
 // Matches /embed/… with or without an as-needed locale prefix (/de/embed/…).
 const EMBED_PATH = /^\/(?:(?:de|fr|it)\/)?embed\//
 
-export default function proxy(request: NextRequest) {
+/**
+ * Hosts that are OURS — the app, the marketing site, the previews, localhost.
+ * Anything else reaching this app is a studio's own domain, forwarded here by
+ * the Cloudflare tenant-router.
+ */
+function isOwnHost(hostname: string): boolean {
+  return (
+    hostname === 'linyup.com' ||
+    hostname.endsWith('.linyup.com') ||
+    hostname.endsWith('.hosted.app') ||
+    hostname.endsWith('.web.app') ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1'
+  )
+}
+
+/**
+ * Maps a request on a studio's own domain onto the public route tree, or null
+ * when it is not one (or needs no mapping).
+ *
+ *     book.theirdojo.ch/shop     →  /de/public/{slug}/shop
+ *     book.theirdojo.ch/         →  /de/public/{slug}
+ *
+ * The rewrite is INTERNAL, so the visitor's address bar keeps `/shop` — which is
+ * the entire point of a custom domain, and is also why nothing here has to
+ * translate `Location` headers back afterwards.
+ *
+ * `/public/…` is deliberately NOT mapped. The pages emit their own links through
+ * `publicHref`, which still produces `/public/{slug}/…`; passing those through
+ * means an in-page click serves the same content instead of being mapped a
+ * SECOND time into `/public/{slug}/public/{slug}/…`. Both URL forms therefore
+ * work on the domain today; making the links themselves emit the short form is
+ * the remaining half (see docs/custom-domains.md).
+ */
+async function tenantRewrite(request: NextRequest): Promise<URL | null> {
+  // The Worker preserves the visitor's host here, because forwarding to App
+  // Hosting necessarily overwrites `Host` with the backend's own name.
+  const host = (request.headers.get('x-linyup-host') || request.nextUrl.hostname).toLowerCase()
+  if (isOwnHost(host)) return null
+
+  const pathname = request.nextUrl.pathname
+  if (isCustomDomainPassthrough(pathname)) return null
+
+  const [locale, rest] = splitPathLocale(pathname)
+  if (rest.startsWith('/public/')) return null // already an internal path
+
+  const tenant = await resolveCustomDomainTenant(host)
+  if (!tenant) return null
+
+  // The locale segment is always explicit on the internal path: the routes live
+  // under `app/[locale]/`, so a rewrite has to name one. An unprefixed request
+  // gets the TENANT's language, not the browser's.
+  const language = locale || tenant.language || 'en'
+  const url = request.nextUrl.clone()
+  url.pathname = `/${language}${toTenantInternalPath(rest, tenant.slug, tenant.scope)}`
+  return url
+}
+
+export default async function proxy(request: NextRequest) {
+  // A studio's own domain is resolved BEFORE anything else, because the rules
+  // below are about the app's own hosts: a bare `/` must reach the studio's
+  // landing surface, not be redirected to the operator login.
+  const tenantUrl = await tenantRewrite(request)
+  if (tenantUrl) return withFramingPolicy(NextResponse.rewrite(tenantUrl), request)
+
   // Embed snippet language pinning (WidgetTheme.locale): 'de'/'fr'/'it' bake
   // straight into the path prefix, but English is the UNPREFIXED locale under
   // localePrefix 'as-needed', so it has no prefix to bake into. A cross-origin
@@ -86,6 +152,11 @@ export default function proxy(request: NextRequest) {
     }
   }
 
+  return withFramingPolicy(response, request)
+}
+
+/** The framing policy, applied to every exit from `proxy` including the tenant one. */
+function withFramingPolicy(response: NextResponse, request: NextRequest): NextResponse {
   if (EMBED_PATH.test(request.nextUrl.pathname)) {
     response.headers.set('Content-Security-Policy', 'frame-ancestors *')
   } else if (isDemoBuild) {

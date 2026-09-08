@@ -119,10 +119,11 @@ export const createMemberPayment = onCall(async (request) => {
   await assertManager(request.auth.uid, teamId)
   const team = await loadEnabledTeam(teamId)
 
-  const { successUrl, cancelUrl } = buildResultUrls(locale, {
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
     successUrl: data.successUrl,
     cancelUrl: data.cancelUrl,
     origin: data.origin,
+    teamId,
   })
 
   const metadata: Record<string, string> = { teamId, purpose, kind: 'one_off' }
@@ -178,10 +179,11 @@ export const createMemberSubscription = onCall(async (request) => {
   await assertManager(request.auth.uid, teamId)
   const team = await loadEnabledTeam(teamId)
 
-  const { successUrl, cancelUrl } = buildResultUrls(locale, {
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
     successUrl: data.successUrl,
     cancelUrl: data.cancelUrl,
     origin: data.origin,
+    teamId,
   })
 
   const metadata: Record<string, string> = { teamId, kind: 'subscription' }
@@ -249,10 +251,11 @@ export const createMembershipPayment = onCall(async (request) => {
   // Amount: subscription prices are stored in MAJOR units (e.g. 49.9) → Rappen.
   const amount = requireChargeableAmountFromMajor(price.amount)
 
-  const { successUrl, cancelUrl } = buildResultUrls(locale, {
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
     successUrl: data.successUrl,
     cancelUrl: data.cancelUrl,
     origin: data.origin,
+    teamId,
   })
   const productName = price.label ? `${subType.name} — ${price.label}` : subType.name
 
@@ -423,9 +426,10 @@ export const createMembershipCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFO
   const slugQuery = data.slug
     ? `&slug=${encodeURIComponent(data.slug)}&seg=${seg}${emailQuery}`
     : ''
-  const { successUrl, cancelUrl } = buildResultUrls(locale, {
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
     extraQuery: slugQuery,
     origin: data.origin,
+    teamId,
   })
   const productName = price.label ? `${subType.name} — ${price.label}` : subType.name
 
@@ -643,9 +647,10 @@ export const createProductCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE
   const promoApplied = priced.promo?.status === 'applied'
 
   const slugQuery = data.slug ? `&slug=${encodeURIComponent(data.slug)}&seg=shop` : ''
-  const { successUrl, cancelUrl } = buildResultUrls(locale, {
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
     extraQuery: slugQuery,
     origin: data.origin,
+    teamId,
   })
   const productName = variantLabel ? `${product.name} — ${variantLabel}` : product.name
 
@@ -1070,9 +1075,10 @@ export const createCourseCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
 
   // Land the buyer back in the Space (where they watch), not the shop.
   const slugQuery = data.slug ? `&slug=${encodeURIComponent(data.slug)}&seg=space` : ''
-  const { successUrl, cancelUrl } = buildResultUrls(locale, {
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
     extraQuery: slugQuery,
     origin: data.origin,
+    teamId,
   })
 
   // Webhook reads this to grant the entitlement to the buyer's exact contact.
