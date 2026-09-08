@@ -5779,7 +5779,8 @@
     "timelineAttended": "{count, plural, =0 {Personne enregistrée} one {# personne enregistrée} other {# personnes enregistrées}}",
     "timelineInView": "Dans la vue",
     "timelineInViewCount": "{count, plural, =0 {aucun événement} one {# événement} other {# événements}}",
-    "timelineInViewEmpty": "Rien dans cette portion — faites défiler jusqu'aux prochains événements"
+    "timelineInViewEmpty": "Rien dans cette portion — faites défiler jusqu'aux prochains événements",
+    "timelineGroupByType": "Lignes par type"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

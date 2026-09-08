@@ -665,3 +665,58 @@ describe('eventTimeline — participation', () => {
     assert.equal(participationCap(counts), participationCap([...counts].reverse()))
   })
 })
+
+describe('eventTimeline — banding is optional', () => {
+  // What the toggle does, at the level the packer sees it: the same events,
+  // handed over with or without a group.
+  const items = [
+    ev('c1', ms(2026, 2, 3), ms(2026, 2, 4), 'Cup'),
+    ev('k1', ms(2026, 4, 10), ms(2026, 4, 17), 'Camp'),
+    ev('e1', ms(2026, 6, 1), ms(2026, 6, 2), 'Grading'),
+    ev('s1', ms(2026, 8, 9), ms(2026, 8, 10), 'Seminar'),
+  ]
+  const typed = items.map((e, i) => ({ ...e, group: ['competition', 'camp', 'exam', 'seminar'][i] }))
+  const untyped = typed.map((e) => ({ ...e, group: undefined }))
+  const year = yearRange(2026)
+
+  it('withholding the group collapses the bands into one', () => {
+    const { bands, lanes } = placeTimelineEvents(untyped, year, WIDE)
+    assert.deepEqual(bands, [{ group: '', lane: 0, lanes: 1 }])
+    assert.equal(lanes, 1, 'four events that never cross fit on one row')
+  })
+
+  it('and never needs MORE rows than banding them did', () => {
+    // The reason the toggle is worth having: banding costs a row per type
+    // whether or not that type's events ever collide, so unbanded is the
+    // compact reading of the same season.
+    const banded = placeTimelineEvents(typed, year, WIDE)
+    const flat = placeTimelineEvents(untyped, year, WIDE)
+    assert.equal(banded.lanes, 4, 'one row per type')
+    assert.ok(flat.lanes <= banded.lanes, `${flat.lanes} should not exceed ${banded.lanes}`)
+  })
+
+  it('draws exactly the same events either way', () => {
+    const banded = placeTimelineEvents(typed, year, WIDE)
+    const flat = placeTimelineEvents(untyped, year, WIDE)
+    assert.deepEqual(
+      banded.placed.map((p) => p.id).sort(),
+      flat.placed.map((p) => p.id).sort()
+    )
+    // Same dates, so the same horizontal positions — only the rows move.
+    for (const p of flat.placed) {
+      const b = banded.placed.find((x) => x.id === p.id)!
+      assert.equal(p.left, b.left)
+      assert.equal(p.width, b.width)
+    }
+  })
+
+  it('an ungrouped event still collides with one it overlaps', () => {
+    // Dropping the bands must not drop the packing: two events on top of each
+    // other still take two rows.
+    const clash = [
+      { ...ev('a', ms(2026, 3, 1), ms(2026, 3, 20), 'A'), group: undefined },
+      { ...ev('b', ms(2026, 3, 10), ms(2026, 3, 28), 'B'), group: undefined },
+    ]
+    assert.equal(placeTimelineEvents(clash, year, WIDE).lanes, 2)
+  })
+})

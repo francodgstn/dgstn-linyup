@@ -54,7 +54,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarRange, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/ui/tip'
 import { EventPeekSheet } from '@/components/events/EventPeekSheet'
@@ -180,6 +180,11 @@ export function EventsTimeline({
   const format = useFormatter()
 
   const [zoom, setZoom] = useState<TimelineZoom>('year')
+  // Rows by type, or everything packed as tightly as it will go. Local state
+  // like `zoom` and the legend's filtering, and for the same reason: it is how
+  // one reader is looking at the page right now, not something a pasted link
+  // should carry.
+  const [grouped, setGrouped] = useState(true)
   const [peekId, setPeekId] = useState<string | null>(null)
   // TODAY IS CAPTURED ONCE. It anchors the range and draws the marker, and a
   // timeline that silently re-based itself at midnight would move under anyone
@@ -275,9 +280,27 @@ export function EventsTimeline({
     [inputs, range, trackPx]
   )
   const shown = useMemo(() => inputs.filter((e) => !hidden.has(e.group ?? '')), [inputs, hidden])
+  /**
+   * BANDING IS A VIEW, NOT A PROPERTY OF THE EVENTS — so turning it off just
+   * withholds the group and lets the packer do what it did before bands
+   * existed: first-fit everything into as few rows as it can.
+   *
+   * Both readings are worth having. Banded answers "how did the competitions
+   * go this season", because a row you can read along is the whole reason the
+   * bands were asked for. Unbanded answers "how busy is the year" — the same
+   * events in half the rows, where the clustering and the empty stretches are
+   * the shape rather than five sparse lines each telling a fifth of the story.
+   *
+   * `group: undefined` rather than a `delete`: the packer reads `e.group ?? ''`,
+   * so an absent group and an undefined one are already the same thing to it.
+   */
+  const packed = useMemo(
+    () => (grouped ? shown : shown.map((e) => ({ ...e, group: undefined }))),
+    [shown, grouped]
+  )
   const { placed, lanes, bands } = useMemo(
-    () => placeTimelineEvents(shown, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
-    [shown, range, trackPx]
+    () => placeTimelineEvents(packed, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
+    [packed, range, trackPx]
   )
   const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
   const { unit, ticks } = useMemo(() => timelineTicks(range, pxPerDay), [range, pxPerDay])
@@ -521,6 +544,27 @@ export function EventsTimeline({
           )}
         </div>
 
+        <div className="flex items-center gap-2">
+          {/* IN THE SAME FAMILY AS THE ZOOM CONTROL, because it is the same kind
+              of thing: how the track is drawn, not which events are on it. Kept
+              next to it rather than down in the legend, where it would sit among
+              the type chips and read as another filter. */}
+          <Tip label={t('timelineGroupByType')}>
+            <button
+              type="button"
+              aria-pressed={grouped}
+              onClick={() => setGrouped((v) => !v)}
+              className={`flex items-center rounded-lg border p-1.5 transition-colors ${
+                grouped
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'bg-background text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              <span className="sr-only">{t('timelineGroupByType')}</span>
+            </button>
+          </Tip>
+
         <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
           {TIMELINE_ZOOMS.map((z) => (
             <button
@@ -545,6 +589,7 @@ export function EventsTimeline({
                   : t('timelineZoomMonth')}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -576,7 +621,10 @@ export function EventsTimeline({
               instead. The spacer matches the axis above the rows exactly
               (`h-5 mb-1`), because a gutter half a row out of step is worse
               than no gutter. */}
-          {measured && bands.length > 0 && (
+          {/* Nothing to name when the rows are not bands — an ungrouped track
+              has one band whose group is the empty string, and a gutter reading
+              "No type" beside every row would be worse than no gutter. */}
+          {grouped && measured && bands.length > 0 && (
             <div className="hidden shrink-0 border-r py-3 pl-3 pr-2 sm:block">
               <div className="mb-1 h-5" aria-hidden />
               {bands.map((b) => (
@@ -871,7 +919,13 @@ export function EventsTimeline({
             drawn would remove "Camp" from the legend the instant you hid camps,
             and nothing would bring it back. A hidden entry is struck through
             and dimmed rather than removed, so the set of things you can switch
-            on never changes under you. */}
+            on never changes under you.
+
+            `allBands` IS ALSO WHY IT SURVIVES UNGROUPING. The legend does two
+            jobs — it names the bands and it filters by type — and only the
+            first one depends on the rows being bands. `allBands` is packed WITH
+            groups whatever the toggle says, so switching banding off leaves the
+            filter, and the colours, exactly where they were. */}
         {allBands.length > 0 && (
           <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2">
             {allBands.map((b) => {
