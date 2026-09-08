@@ -1,0 +1,144 @@
+name: Backfill
+
+# RUN A BACKFILL AGAINST A DEPLOYED PROJECT.
+#
+# There are a dozen or so `backfill:*` scripts in package.json and, until this
+# workflow, exactly one way to point any of them at staging, sandbox or
+# production: a developer's laptop holding Application Default Credentials. That
+# is a poor place to run a script that writes to every tenant — nobody else can
+# see it happen, the output lives in one terminal, and it needs a human with
+# broad credentials sitting in front of it. Several of these scripts are DEPLOY
+# PRECONDITIONS (`backfill-affiliation-active-orgs`, `backfill-document-versions`
+# — see their headers), so "somebody remembered to run it locally" is the weakest
+# link in shipping a denormalised field.
+#
+# Here it uses the same keyless Workload Identity Federation the deploys use, so
+# no service-account key exists to leak, and the run is a link anybody can read.
+#
+# ── DISPATCH ONLY, AND A DRY RUN BY DEFAULT ─────────────────────────────────
+#
+# Nothing here fires on a push. A backfill is a deliberate act with a person
+# behind it, and one that follows a deploy rather than accompanying it — the
+# trigger and the indexes have to be live before repairing data against them.
+#
+# `apply` defaults to FALSE, so the obvious way to run this is the safe one:
+# every script reports what it WOULD write and exits. Run it that way first and
+# read the counts — they are the only check that the script is looking at what
+# you think it is.
+#
+# The `environment` follows the project, so whatever reviewer gates protect a
+# deploy to that project protect a backfill of it too. That matters most for
+# production, which is precisely where nobody should be able to start one alone.
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Which backfill (the package.json script name, without "backfill:")'
+        type: choice
+        required: true
+        options:
+          - affiliation-active-orgs
+          - activity-type-mirrors
+          - booking-joined-at
+          - contact-notes-count
+          - document-mirrors
+          - document-versions
+          - finance
+          - gateway-data
+          - partner-apps
+          - site-translations
+          - subscription-lifecycle
+          - team-public-profile
+      project:
+        description: 'Target Firebase project'
+        type: choice
+        required: true
+        default: linyup-staging
+        options:
+          - linyup-staging
+          - linyup-sandbox
+          - linyup-prod
+      apply:
+        description: 'WRITE the changes. Leave off for a dry run that only reports.'
+        type: boolean
+        default: false
+      extra_args:
+        description: 'Extra flags for the script (e.g. --team abc123). Rarely needed.'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+# One backfill at a time PER PROJECT. Two scans of the same collection group
+# writing the same documents is a way to spend quota discovering nothing; a
+# second run waits. Never cancel one in flight — these scripts are idempotent
+# but a half-finished pass leaves a partially repaired collection, which reads
+# on a dashboard as a number that is simply wrong.
+concurrency:
+  group: backfill-${{ inputs.project }}
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    name: ${{ inputs.apply && 'Apply' || 'Dry run' }} backfill:${{ inputs.script }} on ${{ inputs.project }}
+    runs-on: ubuntu-latest
+    # Reuses the deploy gates: staging is ungated, sandbox and production are
+    # not. An expression is needed because the environment names and the project
+    # ids are deliberately different vocabularies.
+    environment: ${{ inputs.project == 'linyup-prod' && 'production' || inputs.project == 'linyup-sandbox' && 'sandbox' || 'staging' }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          # Pinned to match the deploy workflows — see the note in deploy.yml on
+          # the Node 22.23.0 keep-alive regression under Workload Identity
+          # Federation. These scripts authenticate the same way.
+          node-version: '22.22.3'
+          cache: 'pnpm'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The scripts import from `@linyup/shared`, which resolves to its BUILT
+      # dist — the one thing a fresh checkout never has.
+      - name: Build shared
+        run: pnpm --filter @linyup/shared run build
+
+      - name: Run the backfill
+        env:
+          # Pinned for the scripts that guard on it rather than on --project,
+          # the same way the reseed step in deploy.yml does.
+          GOOGLE_CLOUD_PROJECT: ${{ inputs.project }}
+        run: |
+          set -o pipefail
+          pnpm "backfill:${{ inputs.script }}" \
+            --project "${{ inputs.project }}" \
+            ${{ inputs.apply && '--apply' || '' }} \
+            ${{ inputs.extra_args }} 2>&1 | tee backfill.log
+
+      # The counts ARE the result, and a workflow log is a page nobody reopens.
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "### backfill:${{ inputs.script }} — ${{ inputs.apply && '**APPLIED**' || 'dry run' }}"
+            echo ""
+            echo "Project: \`${{ inputs.project }}\` · commit \`${{ github.sha }}\`"
+            echo ""
+            echo '```'
+            tail -n 40 backfill.log 2>/dev/null || echo '(the script produced no output)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
