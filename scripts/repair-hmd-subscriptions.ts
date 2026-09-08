@@ -79,6 +79,8 @@ interface Resolved {
   amount?: number
   recurrence?: string
   canonical: boolean
+  /** A canonical plan can still be priceless — Complimentary is. */
+  priced?: boolean
 }
 
 /** What a source type id should become on the target. */
@@ -90,14 +92,21 @@ function resolve(sourceTypeId: string, sourceName: string | null, recurrence: un
     // still valid on the target, only the name was missing.
     return { typeId: sourceTypeId, typeName: sourceName, canonical: false }
   }
-  const price = pickSubscriptionPrice(m.prices, typeof recurrence === 'string' ? recurrence : null)
+  // A COMPED PLAN HAS NO PRICES — `pickSubscriptionPrice` would hand back
+  // undefined and the next read would throw. The member still gets the plan and
+  // its name; there is simply no amount, because that is what a comp is.
+  const price =
+    m.prices.length > 0
+      ? pickSubscriptionPrice(m.prices, typeof recurrence === 'string' ? recurrence : null)
+      : null
   return {
     typeId: m.typeId,
     typeName: m.typeName,
-    priceId: price.id,
-    amount: price.amount,
-    recurrence: price.recurrence,
+    ...(price
+      ? { priceId: price.id, amount: price.amount, recurrence: price.recurrence }
+      : {}),
     canonical: true,
+    priced: price !== null,
   }
 }
 
@@ -193,17 +202,21 @@ async function main() {
             subscription_type_name: r.typeName,
           }
           if (r.canonical) {
-            patch.subscription_price_id = r.priceId
-            patch.subscription_amount = r.amount
-            patch.subscription_recurrence = r.recurrence
+            if (r.priced) {
+              patch.subscription_price_id = r.priceId
+              patch.subscription_amount = r.amount
+              patch.subscription_recurrence = r.recurrence
+            }
             // Mirrors ActiveSubscriptionSummary, exactly as the transform writes
             // it — the weekly report counts subscriptions by type off this array.
+            // A COMP IS STILL A LIVE PLAN, so it belongs in this array; `amount`
+            // is required and zero is the honest figure for one.
             patch.active_subscriptions = [
               {
                 subscription_type_id: r.typeId,
                 subscription_type_name: r.typeName,
-                recurrence: r.recurrence,
-                amount: r.amount,
+                recurrence: r.recurrence ?? null,
+                amount: r.amount ?? 0,
                 status: 'active',
               },
             ]

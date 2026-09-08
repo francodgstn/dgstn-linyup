@@ -303,16 +303,29 @@ export function transformContact(
     (srcTypeId ? (sourceTypeNames?.get(srcTypeId) ?? null) : null)
   const match = matchSubscriptionType(srcTypeName)
   if (match !== null) {
-    const price = pickSubscriptionPrice(
-      match.prices,
-      out.subscription_recurrence as string | undefined | null,
-    )
     out.subscription_type_id   = match.typeId
     out.subscription_type_name = match.typeName
-    out.subscription_price_id  = price.id
-    out.subscription_amount    = price.amount
-    // Keep subscription_recurrence authoritative from the chosen price
-    out.subscription_recurrence = price.recurrence
+
+    // A COMPED PLAN HAS NO PRICE, AND THAT IS THE WHOLE POINT OF IT.
+    // `Complimentary` carries no prices, so there is nothing to pick — asking
+    // `pickSubscriptionPrice` for one returns undefined and the next line reads
+    // `.id` off it. The member still gets a plan, a name and a live
+    // `active_subscriptions` row; what they do not get is an amount they never
+    // agreed to pay.
+    const price =
+      match.prices.length > 0
+        ? pickSubscriptionPrice(
+            match.prices,
+            out.subscription_recurrence as string | undefined | null,
+          )
+        : null
+
+    if (price) {
+      out.subscription_price_id  = price.id
+      out.subscription_amount    = price.amount
+      // Keep subscription_recurrence authoritative from the chosen price
+      out.subscription_recurrence = price.recurrence
+    }
 
     // Populate active_subscriptions with a single-entry summary so the live
     // weeklyReports Cloud Function can count subscriptions by type correctly.
@@ -327,8 +340,10 @@ export function transformContact(
       {
         subscription_type_id:   match.typeId,
         subscription_type_name: match.typeName,
-        recurrence:             price.recurrence,
-        amount:                 price.amount,
+        recurrence:             price?.recurrence ?? null,
+        // `ActiveSubscriptionSummary.amount` is a required number, and zero is
+        // the honest one for a comp: they hold a live plan and pay nothing.
+        amount:                 price?.amount ?? 0,
         status:                 'active',
       },
     ]

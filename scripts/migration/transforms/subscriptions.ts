@@ -166,6 +166,25 @@ export const CANONICAL_SUBSCRIPTION_TYPES: MigrationSubscriptionType[] = [
       },
     ],
   },
+  {
+    // THE COMP. Family, and people who support the club in ways that are not
+    // money — full access, pays nothing (Franco, 2026-09-08). hmd-lineup called
+    // it "Free", which in this product means three other things: the SaaS `free`
+    // plan tier, the newcomer's free trial, and a class that is free to book. A
+    // membership sitting beside those needed a word of its own.
+    //
+    // NO PRICES, and `public: false`: there is nothing to sell and nothing to
+    // put on the pricing table. It is assigned by hand, which is exactly the
+    // "just a container" shape `SubscriptionType.prices` documents as absent —
+    // the same shape HMD's own Instructor plan already has.
+    id:          'complimentary',
+    name:        'Complimentary',
+    description: 'Full access, no charge — family, supporters, and guests of the club',
+    active:      true,
+    public:      false,
+    order:       6,
+    prices:      [],
+  },
 ]
 
 // ─── Contact subscription field matching ─────────────────────────────────────
@@ -175,11 +194,18 @@ export const CANONICAL_SUBSCRIPTION_TYPES: MigrationSubscriptionType[] = [
 // approximation and MUST be validated against the real source data after migration.
 //
 // Match logic (evaluated in order; first match wins):
+//   exactly "free"  → complimentary   (EXACT, see below)
 //   intro           → intro_offer
 //   one / single / drop / drop.in / drop-in → one_time_class
 //   unlimited       → unlimited
 //   student(s)      → students
 //   essential       → essential
+//
+// "free" is the one rule anchored to the WHOLE name rather than matched as a
+// substring, because the substring is a trap: "Free Trial" is a newcomer's first
+// class and must never become a lifetime comp, and "Free Weights" is not a
+// membership at all. Anchoring costs nothing here — a club that comps somebody
+// writes "Free", not "Free-ish".
 //
 // If no keyword matches, the contact's subscription fields are left unchanged.
 
@@ -190,6 +216,7 @@ type CanonicalMatch = {
 }
 
 const KEYWORD_MAP: Array<{ regex: RegExp; typeId: string }> = [
+  { regex: /^\s*free\s*$/i,         typeId: 'complimentary' },
   { regex: /intro/i,                typeId: 'intro_offer'   },
   { regex: /one|single|drop/i,      typeId: 'one_time_class' },
   { regex: /unlimited/i,            typeId: 'unlimited'     },
