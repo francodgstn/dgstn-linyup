@@ -9,9 +9,10 @@
 // namespace, which is the tell. Merged 2026-08-25; `/settings/team?tab=outreach`
 // now redirects here so pins and bookmarks survive.
 //
-// `CustomDomainCard` stays in the team folder — it is imported here rather than
-// moved, because nothing else about it changed and moving it would put churn in
-// a file this change has no other reason to touch.
+// The custom DOMAIN card used to sit here too, on the reasoning that "our
+// domain" is one question in an owner's head. That was wrong: the domain a
+// studio's PAGES are served from is a property of the pages, not of the mail,
+// and an owner looking for it goes to Public pages. It moved there 2026-09-08.
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -29,7 +30,6 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
 import { useEmailSenderSettings } from '@/hooks/useEmailSenderSettings'
-import { CustomDomainCard } from '../team/CustomDomainCard'
 import { Tip } from '@/components/ui/tip'
 
 const KEY_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/
@@ -416,20 +416,6 @@ export function OutreachCards({ teamId, team }: { teamId: string; team: Team }) 
       <Card>
         <CardContent className="pt-6">
           <EmailSenderForm teamId={teamId} plan={team.plan} />
-        </CardContent>
-      </Card>
-
-      {/* The domain the studio's PAGES are served from, directly below the one
-          their MAIL is sent from — "our domain" is one question in an owner's
-          head, and separating the two makes them look unrelated. */}
-      <Card>
-        <CardContent className="pt-6">
-          <CustomDomainCard
-            scope="team"
-            entityId={teamId}
-            plan={team.plan}
-            slug={team.slug}
-          />
         </CardContent>
       </Card>
 

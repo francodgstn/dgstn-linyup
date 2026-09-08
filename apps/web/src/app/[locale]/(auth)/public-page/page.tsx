@@ -72,6 +72,8 @@ import {
   UserPlus, ClipboardList, FileText, CalendarRange, ExternalLink, Copy, Check, Plus, Settings2,
 } from 'lucide-react'
 import { Tip } from '@/components/ui/tip'
+import { CustomDomainCard } from './CustomDomainCard'
+import { useCustomDomain } from '@/hooks/useCustomDomain'
 
 // Plugin a surface needs; clicking "Set up" deep-links the plugins page, whose
 // modal handles the included / add-on / upgrade flow for the current plan.
@@ -177,6 +179,12 @@ export default function PublicPageHub() {
   const t = useTranslations('PublicHub')
   const { slug, publicUrl, defaultSurface, setDefaultSurface, flags } = usePublicSurfaces()
   const { team } = useAuth()
+  // Same query key as the card below, so TanStack dedupes this to one read.
+  // The hero exists to answer "what is my public address" — once a studio has
+  // connected their own domain, answering with the linyup.com path would be
+  // stale the moment it mattered most.
+  const { data: customDomain } = useCustomDomain('team', team?.id ?? null)
+  const liveDomain = customDomain?.status === 'active' ? customDomain.hostname : null
 
   const [copied, setCopied] = useState(false)
   const [pendingDefault, setPendingDefault] = useState<PublicSurface | null>(null)
@@ -347,7 +355,9 @@ export default function PublicPageHub() {
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('yourPublicUrl')}</p>
               {homeUrl ? (
                 <div className="mt-1 flex items-center gap-2">
-                  <code className="truncate rounded bg-muted px-2 py-1 text-sm font-medium">{`/public/${slug}`}</code>
+                  <code className="truncate rounded bg-muted px-2 py-1 text-sm font-medium">
+                    {liveDomain ?? `/public/${slug}`}
+                  </code>
                   <Tip label={t('copy')}>
                     <button
                       type="button"
@@ -391,6 +401,15 @@ export default function PublicPageHub() {
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{t('defaultLandingHint')}</p>
       </Card>
+
+      {/* Their own domain — directly under the link it replaces. This is a
+          property of the PAGES, which is why it lives here and not beside the
+          email sender it was originally filed next to. */}
+      {team?.id && (
+        <Card className="p-4 md:p-5">
+          <CustomDomainCard scope="team" entityId={team.id} plan={team.plan} slug={slug ?? undefined} />
+        </Card>
+      )}
 
       {/* Surface list — one row per public surface, live-first. */}
       <Card className="gap-0 py-0">
