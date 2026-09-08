@@ -65,15 +65,18 @@ export const onAffiliationWrite = onDocumentWritten(
     const types = [
       ...new Set(affiliations.map((a) => a.type_key).filter((k): k is string => Boolean(k))),
     ]
-    const org_ids = [
-      ...new Set(
-        affiliations
-          .filter((a) => a.issuer === 'org' && a.org_id)
-          .map((a) => a.org_id as string),
-      ),
+    const orgIssued = affiliations.filter((a) => a.issuer === 'org' && a.org_id)
+    // EVER — every org that has ever put this person on its books.
+    const org_ids = [...new Set(orgIssued.map((a) => a.org_id as string))]
+    // NOW — the same list narrowed to affiliations that currently count. The two
+    // are separate fields because they answer different questions and a
+    // federation's headline numbers were reading the first as the second; see
+    // `AffiliationSummary` in shared for the whole story.
+    const active_org_ids = [
+      ...new Set(orgIssued.filter((a) => a.active === true).map((a) => a.org_id as string)),
     ]
 
-    const newSummary: AffiliationSummary = { has_active, types, org_ids }
+    const newSummary: AffiliationSummary = { has_active, types, org_ids, active_org_ids }
     const newTypes = new Set<string>(types)
 
     // Idempotent: only write if the summary actually changed
@@ -83,7 +86,13 @@ export const onAffiliationWrite = onDocumentWritten(
       JSON.stringify([...newSummary.types].sort()) !==
         JSON.stringify([...(existingSummary.types ?? [])].sort()) ||
       JSON.stringify([...newSummary.org_ids].sort()) !==
-        JSON.stringify([...(existingSummary.org_ids ?? [])].sort())
+        JSON.stringify([...(existingSummary.org_ids ?? [])].sort()) ||
+      // Compared like the others, and it MUST be: an affiliation expiring is a
+      // write that changes this list and nothing else on the summary, so an
+      // omitted comparison would leave the count reading last season's answer
+      // for as long as nobody touched that contact again.
+      JSON.stringify([...active_org_ids].sort()) !==
+        JSON.stringify([...(existingSummary.active_org_ids ?? [])].sort())
 
     if (summaryChanged) {
       const [updateErr] = await to(

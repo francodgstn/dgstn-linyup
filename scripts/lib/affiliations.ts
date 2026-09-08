@@ -149,14 +149,24 @@ export function buildAffiliationDoc(opts: BuildAffiliationOpts): Record<string, 
  */
 export function buildAffiliationSummary(
   affiliations: Array<{ active: boolean; type_key?: string; org_id?: string }>
-): { has_active: boolean; types: string[]; org_ids: string[] } {
+): { has_active: boolean; types: string[]; org_ids: string[]; active_org_ids: string[] } {
   const types = new Set<string>()
   const orgIds = new Set<string>()
+  const activeOrgIds = new Set<string>()
   let hasActive = false
   for (const a of affiliations) {
     if (a.active) hasActive = true
     if (a.type_key) types.add(a.type_key)
     if (a.org_id) orgIds.add(a.org_id)
+    // NOW vs EVER — the distinction the org's counts hang on. Kept in step with
+    // `onAffiliationWrite`, which is the real writer; a seed that disagreed with
+    // it would produce demo numbers no deployment could reproduce.
+    if (a.org_id && a.active) activeOrgIds.add(a.org_id)
   }
-  return { has_active: hasActive, types: [...types], org_ids: [...orgIds] }
+  return {
+    has_active: hasActive,
+    types: [...types],
+    org_ids: [...orgIds],
+    active_org_ids: [...activeOrgIds],
+  }
 }

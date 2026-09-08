@@ -264,12 +264,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "affiliation_summary.org_ids",
-          "arrayConfig": "CONTAINS"
-        },
-        {
           "fieldPath": "teamId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deleted_at",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "archived_at",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "affiliation_summary.active_org_ids",
+          "arrayConfig": "CONTAINS"
         }
       ]
     },

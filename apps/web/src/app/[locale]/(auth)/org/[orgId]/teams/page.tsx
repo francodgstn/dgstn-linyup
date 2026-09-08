@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { collection, getDocs, query, where, getDoc, doc, getCountFromServer, limit } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
+import { liveContactConstraints } from '@/lib/liveContacts'
 import { useTranslations } from 'next-intl'
 import { useOrg } from '@/contexts/OrgContext'
 import { Badge } from '@/components/ui/badge'
@@ -130,12 +131,29 @@ function useOrgTeams(orgId: string) {
             }
           }
 
+          // THE SAME NUMBER THE ORG DASHBOARD SHOWS, and it now asks the same
+          // question — because two org pages printing different figures under
+          // the organisation's own word for affiliation is worse than either
+          // being wrong alone. Two things changed here:
+          //
+          //   LIVE CONTACTS ONLY (`liveContactConstraints`). It counted every
+          //   contact that was not in the bin, archived ones included, so a
+          //   studio's column included the people who had left it.
+          //
+          //   THIS ORGANISATION'S affiliation, and a CURRENT one. `has_active`
+          //   is true for a studio's own internal club membership and for a
+          //   governing body the studio merely tracks; under a column headed
+          //   with the org's own term that read as the federation's coverage.
+          //   `active_org_ids` answers both halves — whose, and whether it is
+          //   still valid (`org_ids` would count a licence that lapsed last
+          //   season). It needs the backfill; see AffiliationSummary.
           try {
             const countSnap = await getCountFromServer(
               query(
                 collection(db, CONTACTS_COLLECTION),
                 where('teamId', '==', row.teamId),
-                where('affiliation_summary.has_active', '==', true)
+                ...liveContactConstraints(),
+                where('affiliation_summary.active_org_ids', 'array-contains', orgId)
               )
             )
             row.activeMemberships = countSnap.data().count
@@ -424,7 +442,15 @@ export default function OrgTeamsPage() {
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colTeam')}</th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">{t('colOwner')}</th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{t('colJoined')}</th>
-                <th className="text-right font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">Active {affiliationTerm.toLowerCase()}</th>
+                {/* THE TENANT'S OWN NOUN, verbatim and on its own. It was
+                    `Active {affiliationTerm.toLowerCase()}` — hardcoded English
+                    in a four-locale product, and a `toLowerCase()` on arbitrary
+                    tenant text that reads as a typo in German, where nouns are
+                    capitalised ("Aktive lizenz"). The word alone is unambiguous
+                    in a table of the organisation's own studios, and it is
+                    exactly what the dashboard figure showing this number is
+                    captioned with. */}
+                <th className="text-right font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{affiliationTerm}</th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colStatus')}</th>
                 {isAdmin && <th className="px-4 py-3 w-12" />}
               </tr>

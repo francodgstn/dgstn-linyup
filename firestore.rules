@@ -151,6 +151,26 @@ service cloud.firestore {
              (role == 'org_viewer' && userRole == 'org_viewer');
     }
 
+    // THE SAME QUESTION AS `hasOrgRole(orgId, 'org_admin')`, ASKED SAFELY.
+    //
+    // `hasOrgRole` does an UNGUARDED `get(...).data` on the caller's org_members
+    // row. A `get()` of a document that does not exist returns null, and reading
+    // `.data` off null is an evaluation ERROR — not a `false`. Every existing
+    // caller survives that only because it sits LAST in an `||` whose earlier arm
+    // short-circuits for the ordinary case (a team member reading their own
+    // team's contacts never reaches `isOrgAdminOfTeam`).
+    //
+    // A rule whose FIRST question is "are you an org admin" has no such earlier
+    // arm, so it needs the existence check. Takes the org id as data — the
+    // affiliation document names its own issuer — so it costs no `teams/{id}`
+    // read, which an org admin cannot do anyway (that document is members-only).
+    function isOrgAdminOfOrg(orgId) {
+      return isAuthed()
+             && orgId != null
+             && isOrgMember(orgId)
+             && hasOrgRole(orgId, 'org_admin');
+    }
+
     // Check if the current user is an org_admin of the org that owns the given team
     function isOrgAdminOfTeam(teamId) {
       let orgId = get(/databases/$(database)/documents/teams/$(teamId)).data.get('org_id', null);
@@ -1684,6 +1704,58 @@ service cloud.firestore {
     match /{path=**}/bookings/{bookingId} {
       allow read: if request.auth != null && (
         resource.data.teamId != null && isTeamMember(resource.data.teamId)
+      );
+    }
+
+    // affiliations (collection group) — THE STUDIO'S ROSTER, AND THE ISSUER'S.
+    //
+    // Both Affiliations pages ask the same shape and NEITHER worked:
+    //   collectionGroup('affiliations').where('teamId','==',myTeam)      (studio)
+    //   collectionGroup('affiliations').where('org_id','==',orgId)       (org)
+    // The nested `contacts/{id}/{subcollection}/{docId}` catch-all cannot serve
+    // either, for the reason spelled out on the `purchases` block below: a
+    // collection-group read is matched ONLY by a `{path=**}` statement. So every
+    // status on both pages came back empty — a permission denial wearing the
+    // costume of a roster where nobody holds anything.
+    //
+    // ── THE STUDIO'S ARM ────────────────────────────────────────────────────
+    //
+    // `canAccessContact` minus its own-scope branch, which is the most this
+    // shape can honestly express: that branch reads `assigned_coach_ids` off the
+    // CONTACT, and a `{path=**}` match binds no contact id to `get()` with. So
+    // an own-scoped coach is excluded here by `callerIsAllScoped` rather than
+    // silently handed a list of contacts that are not in their book. They lose
+    // nothing they had — today nobody can run this query at all — and the
+    // per-document nested rule still gives a coach their own contacts' rows.
+    //
+    // The `getUserCurrentTeam()` pin is kept for the same reason: it is what the
+    // nested rule requires, and dropping it here would grant a query shape over
+    // documents the caller cannot read one at a time.
+    //
+    // ── THE ISSUER'S ARM ────────────────────────────────────────────────────
+    //
+    // An organisation could not read the licences it had issued itself. It reads
+    // `org_id` off the affiliation, so it admits exactly the rows this
+    // organisation granted — never a studio's own internal club membership
+    // (`issuer: 'team'`) and never a governing body the studio merely tracks
+    // (`issuer: 'external'`), both of which live in this same subcollection and
+    // are nobody's business but the studio's. `org_id` is set only when
+    // `issuer == 'org'`, so naming it is the whole check.
+    //
+    // Reachable PII is unchanged: `contacts/{contactId}` already admits
+    // `isOrgAdminOfTeam` for read, so an org admin can already see the person.
+    // This adds the fact the organisation itself recorded about them.
+    //
+    // READ ONLY, and writes are untouched: they stay with the nested catch-all
+    // and the `upsertAffiliation` callable (Admin SDK), which is where the org's
+    // affiliation lock is applied.
+    match /{path=**}/affiliations/{affiliationId} {
+      allow read: if request.auth != null && (
+        (resource.data.get('teamId', null) != null
+          && resource.data.teamId == getUserCurrentTeam()
+          && isTeamMember(resource.data.teamId)
+          && callerIsAllScoped(resource.data.teamId))
+        || isOrgAdminOfOrg(resource.data.get('org_id', null))
       );
     }
 
