@@ -32,7 +32,6 @@ import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
 import { useEmailSenderSettings } from '@/hooks/useEmailSenderSettings'
 import { Tip } from '@/components/ui/tip'
 
-const KEY_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 function EmailSenderForm({
   teamId,
@@ -359,130 +358,14 @@ function EmailSenderForm({
 }
 
 export function OutreachCards({ teamId, team }: { teamId: string; team: Team }) {
-  const t = useTranslations('EmailSettings')
-  const qc = useQueryClient()
-
-  type VarRow = { key: string; value: string }
-  const [vars, setVars] = useState<VarRow[]>([])
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-  const [saved, setSaved] = useState(false)
-
-  useEffect(() => {
-    if (team?.outreach_placeholders) {
-      setVars(
-        Object.entries(team.outreach_placeholders).map(([key, value]) => ({
-          key,
-          value: value as string,
-        }))
-      )
-    }
-  }, [team?.outreach_placeholders])
-
-  const addRow = () => setVars((prev) => [...prev, { key: '', value: '' }])
-
-  const removeRow = (idx: number) => setVars((prev) => prev.filter((_, i) => i !== idx))
-
-  const updateRow = (idx: number, field: 'key' | 'value', val: string) =>
-    setVars((prev) => prev.map((row, i) => (i === idx ? { ...row, [field]: val } : row)))
-
-  const onSave = async () => {
-    setSaveError('')
-    const invalid = vars.filter((v) => v.key && !KEY_REGEX.test(v.key))
-    if (invalid.length > 0) {
-      setSaveError(
-        t('customVariablesInvalidKeys', { keys: invalid.map((v) => v.key).join(', ') })
-      )
-      return
-    }
-    const payload = Object.fromEntries(
-      vars.filter((v) => v.key.trim()).map((v) => [v.key.trim(), v.value])
-    )
-    setSaving(true)
-    try {
-      await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { outreach_placeholders: payload })
-      await qc.invalidateQueries({ queryKey: ['team', teamId] })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch (err) {
-      setSaveError((err as Error).message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
+  // Custom `{{variables}}` used to render below the sender. They moved to
+  // Settings → Email templates (2026-09-08): they exist to be typed INTO a
+  // template, so they belong above the templates, not beside the sender.
   return (
     <div className="space-y-8">
       <Card>
         <CardContent className="pt-6">
           <EmailSenderForm teamId={teamId} plan={team.plan} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6 space-y-5">
-        <div>
-          <h3 className="font-semibold text-sm">{t('customVariablesTitle')}</h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            {t.rich('customVariablesDescription', {
-              code: (chunks) => (
-                <code className="font-mono text-xs bg-muted px-1 rounded">{chunks}</code>
-              ),
-            })}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          {vars.map((row, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <div className="flex items-center border rounded-md overflow-hidden flex-1">
-                <span className="px-2 py-2 text-xs text-muted-foreground bg-muted border-r select-none font-mono">
-                  {'{{'}
-                </span>
-                <input
-                  value={row.key}
-                  onChange={(e) => updateRow(idx, 'key', e.target.value)}
-                  placeholder="variableName"
-                  className="flex-1 px-2 py-2 text-sm font-mono outline-none bg-background"
-                />
-                <span className="px-2 py-2 text-xs text-muted-foreground bg-muted border-l select-none font-mono">
-                  {'}}'}
-                </span>
-              </div>
-              <input
-                value={row.value}
-                onChange={(e) => updateRow(idx, 'value', e.target.value)}
-                placeholder={t('customVariablesValuePlaceholder')}
-                className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => removeRow(idx)}
-              >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <Button variant="outline" size="sm" onClick={addRow}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          {t('customVariablesAddButton')}
-        </Button>
-
-        {saveError && <p className="text-xs text-destructive">{saveError}</p>}
-
-        <div className="flex items-center justify-end gap-3">
-          {saved && !saving && (
-            <span className="text-xs text-muted-foreground">{t('customVariablesSaved')}</span>
-          )}
-          <Button size="sm" onClick={onSave} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? t('customVariablesSaving') : t('customVariablesSaveButton')}
-          </Button>
-        </div>
         </CardContent>
       </Card>
     </div>
