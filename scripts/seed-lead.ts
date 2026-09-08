@@ -70,6 +70,7 @@ import {
   teamAffiliationTypes,
   buildAffiliationDoc,
   buildAffiliationSummary,
+  type AffiliationSummaryInput,
   statusCountsAsActive,
 } from './lib/affiliations'
 import { buildStorefrontPageLinks, seedStorePromoCode } from './lib/storefront'
@@ -1802,7 +1803,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         ...(affiliationDoc
           ? {
               affiliation_summary: buildAffiliationSummary([
-                affiliationDoc as { active: boolean; type_key?: string; org_id?: string },
+                affiliationDoc as AffiliationSummaryInput,
               ]),
             }
           : {}),

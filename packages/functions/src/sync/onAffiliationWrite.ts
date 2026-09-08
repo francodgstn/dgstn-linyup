@@ -12,6 +12,7 @@ import { fireEventRules, type ContactData, type EventDelta } from '../utils/auto
 import {
   CONTACTS_COLLECTION,
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
+  orgAffiliationStatusKey,
   type Affiliation,
   type AffiliationSummary,
 } from '@linyup/shared'
@@ -36,9 +37,7 @@ export const onAffiliationWrite = onDocumentWritten(
     // ── 1. Snapshot the PREVIOUS summary before recomputing ───────────────────
     // We read the contact doc once and reuse it for both the idempotency check
     // and the automation context below.
-    const [, contactSnap] = await to(
-      db.collection(CONTACTS_COLLECTION).doc(contactId).get(),
-    )
+    const [, contactSnap] = await to(db.collection(CONTACTS_COLLECTION).doc(contactId).get())
     const contactData = contactSnap?.data()
     const existingSummary = contactData?.affiliation_summary as AffiliationSummary | undefined
     const previousTypes = new Set<string>(existingSummary?.types ?? [])
@@ -49,7 +48,7 @@ export const onAffiliationWrite = onDocumentWritten(
         .collection(CONTACTS_COLLECTION)
         .doc(contactId)
         .collection(CONTACT_AFFILIATIONS_SUBCOLLECTION)
-        .get(),
+        .get()
     )
 
     if (snapErr) {
@@ -57,9 +56,7 @@ export const onAffiliationWrite = onDocumentWritten(
       return
     }
 
-    const affiliations = (affiliationsSnap?.docs ?? []).map(
-      (d) => d.data() as Affiliation,
-    )
+    const affiliations = (affiliationsSnap?.docs ?? []).map((d) => d.data() as Affiliation)
 
     const has_active = affiliations.some((a) => a.active === true)
     const types = [
@@ -76,7 +73,24 @@ export const onAffiliationWrite = onDocumentWritten(
       ...new Set(orgIssued.filter((a) => a.active === true).map((a) => a.org_id as string)),
     ]
 
-    const newSummary: AffiliationSummary = { has_active, types, org_ids, active_org_ids }
+    // WHICH STATUS, PER ORG — what the federation's breakdown counts, asked of
+    // the contact so it composes with `archived_at`. See the field's own comment
+    // in shared for why the key is composite and why this is a distinct set.
+    const org_status_ids = [
+      ...new Set(
+        orgIssued
+          .filter((a) => a.status_id)
+          .map((a) => orgAffiliationStatusKey(a.org_id as string, a.status_id))
+      ),
+    ]
+
+    const newSummary: AffiliationSummary = {
+      has_active,
+      types,
+      org_ids,
+      active_org_ids,
+      org_status_ids,
+    }
     const newTypes = new Set<string>(types)
 
     // Idempotent: only write if the summary actually changed
@@ -92,17 +106,27 @@ export const onAffiliationWrite = onDocumentWritten(
       // omitted comparison would leave the count reading last season's answer
       // for as long as nobody touched that contact again.
       JSON.stringify([...active_org_ids].sort()) !==
-        JSON.stringify([...(existingSummary.active_org_ids ?? [])].sort())
+        JSON.stringify([...(existingSummary.active_org_ids ?? [])].sort()) ||
+      // Compared for the same reason, and it catches MORE writes than the line
+      // above: a status moving between two inactive values (requested → under
+      // review) changes neither `has_active` nor either org list, so without
+      // this the breakdown would keep showing the application in the queue it
+      // has already left.
+      JSON.stringify([...org_status_ids].sort()) !==
+        JSON.stringify([...(existingSummary.org_status_ids ?? [])].sort())
 
     if (summaryChanged) {
       const [updateErr] = await to(
         db.collection(CONTACTS_COLLECTION).doc(contactId).update({
           affiliation_summary: newSummary,
           updated_at: FieldValue.serverTimestamp(),
-        }),
+        })
       )
       if (updateErr) {
-        console.error(`[onAffiliationWrite] failed to update affiliation_summary for ${contactId}:`, updateErr) // eslint-disable-line no-console
+        console.error(
+          `[onAffiliationWrite] failed to update affiliation_summary for ${contactId}:`,
+          updateErr
+        ) // eslint-disable-line no-console
       }
     }
 
@@ -129,12 +153,16 @@ export const onAffiliationWrite = onDocumentWritten(
 
     for (const key of addedKeys) {
       const delta: EventDelta = { affiliationTypeKey: key }
-      console.log(`[onAffiliationWrite] contact=${contactId} team=${teamId} trigger=affiliation_added key=${key}`) // eslint-disable-line no-console
+      console.log(
+        `[onAffiliationWrite] contact=${contactId} team=${teamId} trigger=affiliation_added key=${key}`
+      ) // eslint-disable-line no-console
       await fireEventRules(teamId, 'affiliation_added', [contact], { eventId: event.id }, delta)
     }
     for (const key of removedKeys) {
       const delta: EventDelta = { affiliationTypeKey: key }
-      console.log(`[onAffiliationWrite] contact=${contactId} team=${teamId} trigger=affiliation_removed key=${key}`) // eslint-disable-line no-console
+      console.log(
+        `[onAffiliationWrite] contact=${contactId} team=${teamId} trigger=affiliation_removed key=${key}`
+      ) // eslint-disable-line no-console
       await fireEventRules(teamId, 'affiliation_removed', [contact], { eventId: event.id }, delta)
     }
 
@@ -143,5 +171,5 @@ export const onAffiliationWrite = onDocumentWritten(
     if (summaryChanged) {
       await fireEventRules(teamId, 'affiliation_changed', [contact], { eventId: event.id })
     }
-  },
+  }
 )

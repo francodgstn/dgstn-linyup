@@ -86,6 +86,7 @@ import {
   teamAffiliationTypes,
   buildAffiliationDoc,
   buildAffiliationSummary,
+  type AffiliationSummaryInput,
   statusCountsAsActive,
   type SeedAffiliationType,
 } from './lib/affiliations'
@@ -1445,7 +1446,7 @@ async function seedTeam(opts: {
         ...(authoringType === 'external' ? { tags: ['external'] } : {}),
         // Best-effort affiliation summary (the trigger recomputes this live).
         ...(affiliationDoc
-          ? { affiliation_summary: buildAffiliationSummary([affiliationDoc as { active: boolean; type_key?: string; org_id?: string }]) }
+          ? { affiliation_summary: buildAffiliationSummary([affiliationDoc as AffiliationSummaryInput]) }
           : {}),
         ...(subAssign
           ? {

@@ -5772,7 +5772,8 @@
     "timelinePrevious": "Vorheriger Zeitraum",
     "timelineNext": "Nächster Zeitraum",
     "timelineToday": "Heute",
-    "timelineEmpty": "Keine Anlässe in {window}"
+    "timelineEmpty": "Keine Anlässe in {window}",
+    "timelineTypeless": "Ohne Typ"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",
@@ -8080,6 +8081,6 @@
     "growthEmptyHint": "Sobald Studios beitreten, zeigt sich hier das Wachstum der Organisation.",
     "growthSeries": "Studios",
     "statusTitle": "{term} nach Status",
-    "statusAll": "{count, plural, one {# Eintrag} other {# Einträge}}"
+    "statusAll": "{count, plural, one {# Person} other {# Personen}}"
   }
 }

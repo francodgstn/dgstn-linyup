@@ -5772,7 +5772,8 @@
     "timelinePrevious": "Période précédente",
     "timelineNext": "Période suivante",
     "timelineToday": "Aujourd'hui",
-    "timelineEmpty": "Aucun événement en {window}"
+    "timelineEmpty": "Aucun événement en {window}",
+    "timelineTypeless": "Sans type"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",
@@ -8080,6 +8081,6 @@
     "growthEmptyHint": "Dès que des studios rejoignent l'organisation, sa croissance apparaît ici.",
     "growthSeries": "Studios",
     "statusTitle": "{term} par statut",
-    "statusAll": "{count, plural, one {# dossier} other {# dossiers}}"
+    "statusAll": "{count, plural, one {# personne} other {# personnes}}"
   }
 }

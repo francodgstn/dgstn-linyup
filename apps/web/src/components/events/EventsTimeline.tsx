@@ -54,7 +54,9 @@ import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/ui/tip'
 import { EventPeekSheet } from '@/components/events/EventPeekSheet'
 import { eventTypeColor } from '@/lib/eventTypeColor'
+import { eventTypeLabel } from '@/lib/eventTypeLabel'
 import {
+  BUILTIN_EVENT_TYPES,
   placeTimelineEvents,
   shiftTimelineWindow,
   timelineMinTrackPx,
@@ -83,6 +85,7 @@ export function EventsTimeline({
   onDelete?: (event: Event) => void
 }) {
   const t = useTranslations('OrgEvents')
+  const tE = useTranslations('Events')
   const format = useFormatter()
 
   const [zoom, setZoom] = useState<TimelineZoom>('year')
@@ -133,6 +136,9 @@ export function EventsTimeline({
         .filter((e) => e.start?.toDate)
         .map((e) => ({
           id: e.id,
+          // THE BAND IS THE EVENT TYPE. It is also what colours the bar, so a
+          // band reads as one colour without needing a gutter to name it.
+          group: e.type ?? '',
           start: e.start.toDate().getTime(),
           // An event with no end is a moment, not a zero-length error — the
           // packer gives it the minimum bar either way.
@@ -142,8 +148,12 @@ export function EventsTimeline({
     [events]
   )
 
-  const { placed, lanes } = useMemo(
-    () => placeTimelineEvents(inputs, win, { trackPx }),
+  // BUILT-IN TYPES IN THEIR DECLARED ORDER, so a band stays on the same row all
+  // the way through a federation's history. A plugin or team-custom type is not
+  // in that list and lands after them, ordered by its first event — see
+  // `groupOrder` for why ordering everything that way would be worse.
+  const { placed, lanes, bands } = useMemo(
+    () => placeTimelineEvents(inputs, win, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
     [inputs, win, trackPx]
   )
   const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
@@ -352,6 +362,18 @@ export function EventsTimeline({
                 />
               ))}
 
+              {/* A HAIRLINE BETWEEN BANDS, and none above the first. Without
+                it the rows are a stack; with it they read as groups, which is
+                the entire point of banding. Drawn under the bars (`z-0`) so a
+                bar crossing it is not sliced in half. */}
+              {bands.slice(1).map((b) => (
+                <div
+                  key={`band-${b.group}`}
+                  className="absolute inset-x-0 z-0 h-px bg-border/70"
+                  style={{ top: b.lane * LANE_H }}
+                />
+              ))}
+
               {todayAt !== null && (
                 <div
                   className="absolute inset-y-0 z-10 w-0.5 bg-primary/70"
@@ -425,6 +447,28 @@ export function EventsTimeline({
             </div>
           </div>
         </div>
+
+        {/* THE LEGEND NAMES THE BANDS, and it is what makes them worth having:
+            a row of one colour is only a group until something says which. It
+            sits OUTSIDE the scroller, so it neither scrolls away from the rows
+            it explains nor costs the track any width — a sticky left gutter
+            would have taken a quarter of a 351px phone. Order matches the
+            bands, top to bottom. */}
+        {bands.length > 0 && (
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2">
+            {bands.map((b) => (
+              <li key={b.group} className="flex items-baseline gap-1.5 text-[11px]">
+                <span
+                  className="inline-block h-2 w-2 shrink-0 translate-y-px rounded-full"
+                  style={{ background: eventTypeColor(b.group) }}
+                />
+                <span className="text-muted-foreground">
+                  {b.group ? eventTypeLabel(b.group, tE.has, tE) : t('timelineTypeless')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {peekId && (

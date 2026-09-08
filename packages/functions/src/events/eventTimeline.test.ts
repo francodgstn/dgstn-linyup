@@ -29,6 +29,9 @@ function ev(id: string, start: number, end: number, title = 'Event'): TimelineIn
 /** A wide track, so packing is decided by real overlap rather than by labels. */
 const WIDE = { trackPx: 4000 }
 
+/** The built-in event types, in the order the org timeline stacks them. */
+const BUILTIN_ORDER = ['competition', 'camp', 'exam', 'seminar', 'workshop', 'other']
+
 describe('eventTimeline — the window', () => {
   it('a year window is Jan 1 to Jan 1, half-open', () => {
     const w = timelineWindow('year', new Date(2026, 6, 14))
@@ -106,6 +109,142 @@ describe('eventTimeline — how wide the track wants to be', () => {
     const scrolled = placeTimelineEvents(events, year, { trackPx: timelineMinTrackPx(year) })
     assert.equal(squeezed.lanes, 6, 'a 330px year really does collide everywhere')
     assert.ok(scrolled.lanes < squeezed.lanes, 'the scrollable track packs tighter')
+  })
+})
+
+describe('eventTimeline — a band per event type', () => {
+  const year = timelineWindow('year', new Date(2026, 0, 1))
+  /** An event of a given type — `ev` above leaves the band unset. */
+  const typed = (id: string, group: string, month: number, title = 'Event'): TimelineInput => ({
+    ...ev(id, ms(2026, month, 3), ms(2026, month, 5), title),
+    group,
+  })
+
+  it('no groups at all behaves exactly as it did before bands existed', () => {
+    // THE COMPATIBILITY CLAIM, asserted rather than assumed: every other test in
+    // this file calls `ev`, which sets no group.
+    const { lanes, bands, placed } = placeTimelineEvents(
+      [ev('a', ms(2026, 5, 1), ms(2026, 5, 20)), ev('b', ms(2026, 5, 10), ms(2026, 5, 25))],
+      year,
+      WIDE
+    )
+    assert.equal(lanes, 2)
+    assert.equal(bands.length, 1)
+    assert.deepEqual(bands[0], { group: '', lane: 0, lanes: 2 })
+    assert.deepEqual(
+      placed.map((p) => p.group),
+      ['', '']
+    )
+  })
+
+  it('one row per type when nothing inside a type crosses', () => {
+    // The premise Franco named: same type rarely overlaps. Four competitions
+    // spread across a season are four bars on ONE row.
+    const { lanes, bands } = placeTimelineEvents(
+      [0, 3, 6, 9].map((m) => typed(`c${m}`, 'competition', m)),
+      year,
+      WIDE
+    )
+    assert.equal(lanes, 1)
+    assert.deepEqual(bands, [{ group: 'competition', lane: 0, lanes: 1 }])
+  })
+
+  it('types that overlap in time take one row each', () => {
+    // The gain over plain first-fit: a camp and a competition in the same week
+    // needed two rows anyway, but now the rows MEAN something.
+    const { lanes, bands, placed } = placeTimelineEvents(
+      [typed('a', 'competition', 5), typed('b', 'camp', 5)],
+      year,
+      { ...WIDE, groupOrder: ['competition', 'camp'] }
+    )
+    assert.equal(lanes, 2)
+    assert.deepEqual(bands, [
+      { group: 'competition', lane: 0, lanes: 1 },
+      { group: 'camp', lane: 1, lanes: 1 },
+    ])
+    assert.equal(placed.find((p) => p.id === 'a')?.lane, 0)
+    assert.equal(placed.find((p) => p.id === 'b')?.lane, 1)
+  })
+
+  it('a band that crosses ITSELF opens a second row, and only its own', () => {
+    const camps = [
+      ev('a', ms(2026, 5, 1), ms(2026, 5, 20)),
+      ev('b', ms(2026, 5, 10), ms(2026, 5, 25)),
+    ].map((e) => ({ ...e, group: 'camp' }))
+    const { lanes, bands } = placeTimelineEvents([...camps, typed('c', 'exam', 8)], year, {
+      ...WIDE,
+      groupOrder: ['camp', 'exam'],
+    })
+    assert.equal(lanes, 3)
+    assert.deepEqual(bands, [
+      { group: 'camp', lane: 0, lanes: 2 },
+      { group: 'exam', lane: 2, lanes: 1 },
+    ])
+  })
+
+  it('`groupOrder` decides the stacking, not who happens to start first', () => {
+    // THE REASON THE ORDER IS THE CALLER'S. Ordering by first appearance would
+    // put camp on top here and competition on top next year — the same row
+    // meaning something different every time you page.
+    const { bands } = placeTimelineEvents(
+      [typed('camp', 'camp', 0), typed('comp', 'competition', 9)],
+      year,
+      { ...WIDE, groupOrder: ['competition', 'camp'] }
+    )
+    assert.deepEqual(
+      bands.map((b) => b.group),
+      ['competition', 'camp']
+    )
+  })
+
+  it('a type the order does not name lands after the ones it does', () => {
+    // A plugin or team-custom type. It still gets a band, just not a reserved
+    // position — which beats dropping it in with an unrelated colour.
+    const { bands } = placeTimelineEvents(
+      [typed('x', 'hmd_fighting_cup', 1), typed('c', 'competition', 6)],
+      year,
+      { ...WIDE, groupOrder: ['competition', 'camp'] }
+    )
+    assert.deepEqual(
+      bands.map((b) => b.group),
+      ['competition', 'hmd_fighting_cup']
+    )
+  })
+
+  it('a band with nothing visible in the window is not returned', () => {
+    // An empty row is a claim that something is missing from it.
+    const gone = { ...typed('old', 'camp', 6), start: ms(2019, 1, 1), end: ms(2019, 1, 2) }
+    const { bands, lanes } = placeTimelineEvents([typed('c', 'competition', 6), gone], year, {
+      ...WIDE,
+      groupOrder: ['competition', 'camp'],
+    })
+    assert.deepEqual(
+      bands.map((b) => b.group),
+      ['competition']
+    )
+    assert.equal(lanes, 1)
+  })
+
+  it('bands tile the rows with no gap and no overlap', () => {
+    // The invariant the renderer draws its separators from: `lane` is a drawing
+    // coordinate, so a band starting anywhere but where the last one ended
+    // would leave a blank row or stack two bands on one.
+    const { bands, lanes } = placeTimelineEvents(
+      [
+        typed('a', 'competition', 0),
+        typed('b', 'camp', 2),
+        typed('c', 'exam', 4),
+        typed('d', 'seminar', 6),
+      ],
+      year,
+      { ...WIDE, groupOrder: BUILTIN_ORDER }
+    )
+    let expected = 0
+    for (const b of bands) {
+      assert.equal(b.lane, expected, `band ${b.group} starts where the last ended`)
+      expected += b.lanes
+    }
+    assert.equal(expected, lanes)
   })
 })
 

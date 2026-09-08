@@ -74,6 +74,7 @@ import {
   teamAffiliationTypes,
   buildAffiliationDoc,
   buildAffiliationSummary,
+  type AffiliationSummaryInput,
   statusCountsAsActive,
 } from './lib/affiliations'
 import {
@@ -1474,7 +1475,7 @@ async function seedTeam(opts: TeamSeed) {
         ...acquisition,
         // Best-effort affiliation summary (the trigger recomputes this live).
         ...(affiliationDoc
-          ? { affiliation_summary: buildAffiliationSummary([affiliationDoc as { active: boolean; type_key?: string; org_id?: string }]) }
+          ? { affiliation_summary: buildAffiliationSummary([affiliationDoc as AffiliationSummaryInput]) }
           : {}),
         ...(gamificationEnabled
           ? {
