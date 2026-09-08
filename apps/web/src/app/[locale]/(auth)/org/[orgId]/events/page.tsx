@@ -58,6 +58,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-picker'
 import { Badge } from '@/components/ui/badge'
+import { Segmented } from '@/components/ui/segmented'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, CalendarRange, MapPin, CalendarDays, ChevronRight, Printer } from 'lucide-react'
@@ -356,63 +357,69 @@ export default function OrgEventsPage() {
         title={t('title')}
         subtitle={t('subtitle')}
         action={
-          isAdmin ? (
-            <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true) }}>
-              <Plus className="h-4 w-4 mr-1.5" />{t('newEvent')}
-            </Button>
-          ) : undefined
+          // ACTIONS TOGETHER, IN THE HEADER — the shape the studio schedule
+          // uses, where bookable hours, places and new sit as a group beside the
+          // title. Print used to sit beside the view switcher, which put a page
+          // you can go to next to a question about what you are looking at.
+          <div className="flex items-center gap-2">
+            {/* The season on paper. A link rather than a button because it IS a
+                page — one you can bookmark with a window already chosen. */}
+            <Link
+              href={`/org/${orgId}/events/print` as Route}
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              {t('printButton')}
+            </Link>
+            {isAdmin && (
+              <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true) }}>
+                <Plus className="h-4 w-4 mr-1.5" />{t('newEvent')}
+              </Button>
+            )}
+          </div>
         }
       />
 
-      {/* Tab, and the view switch.
-          UPCOMING/PAST IS A LIST IDEA. A calendar shows a month and a timeline
-          shows a year — whatever falls in the window, on both sides of today —
-          so the tabs are hidden in both rather than left there filtering
-          something they cannot describe. */}
-      <div className="flex items-center justify-between gap-3 border-b">
-        <div className="flex gap-1 text-sm">
-          {view === 'list' &&
-            (['upcoming', 'past'] as const).map((tabKey) => (
-              <button
-                key={tabKey}
-                onClick={() => setTab(tabKey)}
-                className={`px-4 py-2 border-b-2 -mb-px font-medium capitalize transition-colors ${
-                  tab === tabKey ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tabKey === 'upcoming' ? t('tabUpcoming') : t('tabPast')}
-              </button>
-            ))}
-        </div>
-        <div className="flex items-center gap-2 mb-1.5">
-          {/* The season on paper. A link rather than a button because it IS a
-              page — one you can bookmark with a window already chosen. */}
-          <Link
-            href={`/org/${orgId}/events/print` as Route}
-            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            {t('printButton')}
-          </Link>
-        <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
-          {EVENT_VIEWS.map((v) => (
+      {/* WHICH VIEW — ON ITS OWN LINE, ON THE LEFT, the same shape the studio
+          schedule uses. It had been in the right-hand group beside Print, which
+          is an ACTION: a question about what you are looking at does not belong
+          among the things you can do to it.
+
+          `Segmented` rather than the pill tray this had hand-rolled. That
+          component exists because the markup had been written twice and "two
+          copies of a control are two places for its focus, hover and selected
+          states to drift" — this page was the last copy. */}
+      <Segmented
+        size="sm"
+        ariaLabel={t('viewLabel')}
+        value={view}
+        onChange={setView}
+        options={EVENT_VIEWS.map((v) => ({
+          value: v,
+          label: v === 'list' ? t('viewList') : v === 'calendar' ? t('viewCalendar') : t('viewTimeline'),
+        }))}
+      />
+
+      {/* UPCOMING/PAST IS A LIST IDEA, so the whole strip is. A calendar shows a
+          month and a timeline shows a year — whatever falls in the window, on
+          both sides of today — and the tabs cannot describe either. It used to
+          render empty in those two views, carrying a rule under nothing once
+          Print moved up to the header. */}
+      {view === 'list' && (
+        <div className="flex gap-1 border-b text-sm">
+          {(['upcoming', 'past'] as const).map((tabKey) => (
             <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              aria-pressed={view === v}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                view === v
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
+              className={`px-4 py-2 border-b-2 -mb-px font-medium capitalize transition-colors ${
+                tab === tabKey ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              {v === 'list' ? t('viewList') : v === 'calendar' ? t('viewCalendar') : t('viewTimeline')}
+              {tabKey === 'upcoming' ? t('tabUpcoming') : t('tabPast')}
             </button>
           ))}
         </div>
-        </div>
-      </div>
+      )}
 
       {/* The federation's calendar. Both halves, because a month contains both. */}
       {view === 'calendar' && (

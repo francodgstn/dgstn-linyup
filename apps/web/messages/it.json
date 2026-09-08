@@ -5782,7 +5782,8 @@
     "timelineBandNone": "Compatto",
     "timelineBandOrgRow": "Organizzazione",
     "timelineBandTeamRow": "Questo studio",
-    "timelineZoomLabel": "Zoom"
+    "timelineZoomLabel": "Zoom",
+    "viewLabel": "Vista"
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",
