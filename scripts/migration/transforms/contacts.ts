@@ -1,5 +1,6 @@
 import { RANKING_HMD, RANKING_KD, ORG_ID, rankingSystemLevelValues } from '../config'
 import { matchSubscriptionType, pickSubscriptionPrice } from './subscriptions'
+import { buildAffiliationSummary } from '../../lib/affiliations'
 
 // ── Affiliation mapping (Phase 2) ─────────────────────────────────────────────
 //
@@ -250,13 +251,21 @@ export function transformContact(src: Record<string, unknown>): Record<string, u
 
   if (affiliations.length > 0) {
     // Best-effort summary so the contacts list shows belonging without the trigger.
-    const types = [...new Set(affiliations.map((a) => a.type_key as string))]
-    const orgIds = [...new Set(affiliations.filter((a) => a.org_id).map((a) => a.org_id as string))]
-    out.affiliation_summary = {
-      has_active: affiliations.some((a) => a.active === true),
-      types,
-      org_ids: orgIds,
-    }
+    //
+    // THROUGH THE SHARED BUILDER, and it was not: this was a fourth private copy
+    // of the summary logic, and the copy is what made it wrong. When
+    // `AffiliationSummary` gained `active_org_ids` — the orgs whose affiliation
+    // is CURRENT, which the org dashboard's figures are counted from — the four
+    // seeders picked it up because they call `buildAffiliationSummary`, and this
+    // did not because it spelled the object out. A migrated federation would
+    // have read zero affiliated: an `array-contains` never matches a missing
+    // field, so every HMD contact would have dropped out of the count.
+    //
+    // The helper is dependency-free and compiles under tsconfig.scripts.json
+    // like the rest of this directory, so there was never a reason for the copy.
+    out.affiliation_summary = buildAffiliationSummary(
+      affiliations as Array<{ active: boolean; type_key?: string; org_id?: string }>
+    )
     out[AFFILIATIONS_OUTPUT_KEY] = affiliations
   }
 

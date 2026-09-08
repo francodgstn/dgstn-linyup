@@ -19,6 +19,17 @@
  * same sense as `backfill-document-versions.ts`: deploy the trigger, run this,
  * then the federation's numbers tell the truth.
  *
+ * ── WHERE IT ACTUALLY APPLIES ───────────────────────────────────────────────
+ * Anywhere contacts were written before the field existed. As of 2026-09-08 that
+ * is the persisted EMULATOR SNAPSHOTS — `snapshots/hmd-migration`, `demo`, `all`
+ * and the lead tenants — because a snapshot is loaded, not recomputed, so no
+ * trigger fires over it. Re-running the migration or the seeders fixes them too
+ * (both write the field now); this is the cheaper route when the snapshot itself
+ * is worth keeping.
+ *
+ * It is a no-op against an environment whose data was all written after the
+ * trigger shipped — which it reports rather than assumes ("N already correct").
+ *
  * ── WHAT IT READS ───────────────────────────────────────────────────────────
  * A collection-group scan of `affiliations`, grouped by parent contact, so it
  * costs one read per AFFILIATION rather than one query per contact. A contact
