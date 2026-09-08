@@ -16,6 +16,9 @@ import {
   resolveMessagingPolicy,
 } from './messagingPolicy'
 import type { MailProvider, OutboundMessage, ResolvedSender } from './types'
+import { rewriteTenantPublicLinks } from '@linyup/shared'
+import { activeCustomDomainHost } from '../domains/activeDomain'
+import { getHostingUrl } from '../utils/env'
 
 const testModeEnabled = defineString('TEST_MODE', {
   description: 'Redirect all outbound mail to a single test address',
@@ -377,7 +380,39 @@ export async function sendEntityMail(
     config: ctx.config,
     managedFrom: getManagedStudioFrom(),
   })
-  return dispatch(msg, sender, 'studio', entityId)
+  return dispatch(await onCustomDomain(msg, scope, entityId, ctx.slug), sender, 'studio', entityId)
+}
+
+/**
+ * Puts this studio's OWN domain in the mail it sends.
+ *
+ * Every emailed link is built from one global `getHostingUrl()`, read at ~39
+ * call sites, so a booking confirmation says `app.linyup.com/public/{slug}/…`
+ * even for a studio paying to be on their own domain. Threading a per-tenant
+ * base through all of those is 39 chances to miss one — and a missed one is
+ * INVISIBLE, because the link still works. Rewriting here, at the seam every
+ * studio mail already passes through, cannot be missed and covers call sites
+ * that do not exist yet.
+ *
+ * Untouched when the studio has no active domain, which is almost everyone: one
+ * cached lookup and the message is returned exactly as it came in.
+ */
+async function onCustomDomain(
+  msg: OutboundMessage,
+  scope: 'team' | 'org',
+  entityId: string,
+  slug: string | undefined,
+): Promise<OutboundMessage> {
+  if (!slug || (!msg.html && !msg.text)) return msg
+  const host = await activeCustomDomainHost(entityId, scope)
+  if (!host) return msg
+
+  const opts = { origin: getHostingUrl(), slug, host, scope }
+  return {
+    ...msg,
+    ...(msg.html ? { html: rewriteTenantPublicLinks(msg.html, opts) } : {}),
+    ...(msg.text ? { text: rewriteTenantPublicLinks(msg.text, opts) } : {}),
+  }
 }
 
 // Convenience wrapper for the common team case (used by utils/email's façade).

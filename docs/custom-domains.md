@@ -21,6 +21,13 @@ Built:
 - **Host → tenant resolution in the app** (`proxy.ts` +
   `lib/customDomainTenant.ts` + `shared/utils/customDomainPaths.ts`), and the
   edge Worker reduced to a pass-through.
+- **Emailed links carry the studio's domain.** Rewritten ONCE at the mail seam
+  (`sendEntityMail`), not at the ~39 `getHostingUrl()` call sites: threading a
+  per-tenant base through all of them is 39 chances to miss one, and a missed one
+  is invisible because the link still works. Anchored on the exact
+  origin + locale + `/public/{slug}` prefix, so it cannot drag a neighbouring
+  studio (`hmd-basel-nord`) onto the wrong domain — pinned by
+  `domains/tenantLinks.test.ts`.
 - **The Stripe return stays on the domain.** `buildResultUrls` resolves the
   tenant's active host and `resolveBaseUrl` accepts the caller's origin when it
   matches it — per tenant, never per pattern: widening the trusted regex to
@@ -30,10 +37,6 @@ Built:
 
 Not built:
 
-- **Emailed links still say linyup.com.** `getHostingUrl()` is one global param
-  read at ~39 call sites; a booking confirmation therefore links to
-  `app.linyup.com/public/{slug}/…` even for a studio on their own domain. Those
-  links WORK — they are just not branded.
 - **In-page links keep the slug.** `publicHref` still emits
   `/public/{slug}/shop`, so the address bar shows the short form only until the
   first click. Both forms serve (see below); making the builders host-aware is

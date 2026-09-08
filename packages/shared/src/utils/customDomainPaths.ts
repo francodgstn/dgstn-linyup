@@ -97,3 +97,43 @@ export function toTenantInternalPath(
   const tail = rest === '/' ? '' : rest.replace(/\/$/, '')
   return `${prefix}${root}${tail}`
 }
+
+/** Escapes a string for literal use inside a RegExp. */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Rewrites the app's own public links in outbound content onto the studio's
+ * custom domain.
+ *
+ *     https://app.linyup.com/de/public/hmd-basel/manage-booking?t=x
+ *  →  https://book.hmdbasel.ch/de/manage-booking?t=x
+ *
+ * **Applied once, at the send, rather than at each link's call site.** The
+ * emailed links are built from a single global `getHostingUrl()` read at ~39
+ * places; threading a per-tenant base through all of them means 39 chances to
+ * miss one, and a missed one is invisible — the link still works, it just says
+ * linyup.com on a studio that is paying to be on their own domain. Rewriting at
+ * the seam every studio mail already passes through cannot be missed, and covers
+ * call sites that do not exist yet.
+ *
+ * Anchored on the EXACT origin + locale + `/public/{slug}` prefix, and refuses
+ * to match a slug that is merely a prefix of another (`/public/hmd` inside
+ * `/public/hmd-basel`), so it cannot touch a link to a different studio.
+ */
+export function rewriteTenantPublicLinks(
+  content: string,
+  opts: { origin: string; slug: string; host: string; scope?: 'team' | 'org' }
+): string {
+  const { origin, slug, host, scope = 'team' } = opts
+  if (!content || !origin || !slug || !host) return content
+
+  const localeGroup = `((?:/(?:${PREFIXED_LOCALES.join('|')}))?)`
+  const root = scope === 'org' ? 'public/org/' : 'public/'
+  const pattern = new RegExp(
+    `${escapeRegExp(origin.replace(/\/+$/, ''))}${localeGroup}/${root}${escapeRegExp(slug)}(?![A-Za-z0-9_-])`,
+    'g'
+  )
+  return content.replace(pattern, (_match, locale: string) => `https://${host}${locale}`)
+}
