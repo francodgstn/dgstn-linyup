@@ -81,6 +81,46 @@ export function windowContains(w: TimelineWindow, t: Date): boolean {
   return t.getTime() >= w.start.getTime() && t.getTime() < w.end.getTime()
 }
 
+// ─── how wide the track wants to be ──────────────────────────────────────────
+
+/**
+ * The narrowest a single unit may be drawn — a month in a year view, a day in a
+ * month view.
+ *
+ * BELOW THIS THE VIEW STOPS BEING A TIMELINE. Squeezed into a phone's 330px a
+ * year gives each month 27px, every label collides with every other, and the
+ * packer — correctly — opens a row per event, at which point it is a list with
+ * extra steps. The answer is not to squeeze harder but to let the track be as
+ * wide as it needs and SCROLL, which is what these numbers are for.
+ *
+ * THIS IS A FLOOR, NOT A PREFERRED WIDTH — read it as "narrower than this is
+ * broken", never as "this is how wide a year should be". Pitching it at what
+ * looks comfortable instead costs a phantom scrollbar on every viewport that
+ * lands just under it: 80px per month put a year at 960 and made a 1440px
+ * laptop — whose panel measures 950 — scroll by ten pixels.
+ *
+ * 64px per month puts a year at 768: several times the label it has to hold
+ * ("Sep" is about 19px at this size), so the axis stays legible and the packer
+ * keeps the lane count it would have on a desktop, while laptops draw the whole
+ * year with room to spare and only tablets and phones scroll. 28px per day
+ * holds a two-digit date the same way and puts a long month at 868.
+ */
+export const TIMELINE_MIN_UNIT_PX: Record<TimelineZoom, number> = {
+  year: 64,
+  month: 28,
+}
+
+/**
+ * The track's minimum width in pixels. The renderer takes `max(container, this)`
+ * — so a wide viewport draws the window across its full width and a narrow one
+ * scrolls, rather than either compressing.
+ */
+export function timelineMinTrackPx(w: TimelineWindow): number {
+  if (w.zoom === 'year') return 12 * TIMELINE_MIN_UNIT_PX.year
+  const days = Math.round((w.end.getTime() - w.start.getTime()) / 86_400_000)
+  return days * TIMELINE_MIN_UNIT_PX.month
+}
+
 // ─── ticks ───────────────────────────────────────────────────────────────────
 
 export interface TimelineTick {
