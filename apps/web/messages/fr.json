@@ -8064,6 +8064,8 @@
     "growthSubtitle": "{count, plural, =0 {Aucun nouveau studio} one {# studio a rejoint} other {# studios ont rejoint}} ces {months} derniers mois",
     "growthEmptyTitle": "Aucun studio pour l'instant",
     "growthEmptyHint": "Dès que des studios rejoignent l'organisation, sa croissance apparaît ici.",
-    "growthSeries": "Studios"
+    "growthSeries": "Studios",
+    "statusTitle": "{term} par statut",
+    "statusAll": "{count, plural, one {# dossier} other {# dossiers}}"
   }
 }

@@ -19,19 +19,37 @@
  *
  *      ┌───────────────────────────────────────────────────────┐
  *      │  STUDIOS · PEOPLE  ‖  {AFFILIATION} · EVENTS          │  full width,
- *      └───────────────────────────────────────────────────────┘  unframed
- *      ┌──────────────────────────────┐ ┌──────────────────────┐
- *      │  STUDIOS        (accent)     │ │  NEEDS YOU           │
- *      │  ranked by size, coverage bar│ │  COMING UP           │
- *      └──────────────────────────────┘ └──────────────────────┘
+ *      ├───────────────────────────────────────────────────────┤  unframed
+ *      │  {AFFILIATION} BY STATUS  ▓▓▓▓▓▓▒▒▒░░  + legend       │
+ *      └───────────────────────────────────────────────────────┘
+ *      ┌───────────┐ ┌───────────┐ ┌───────────────────────────┐
+ *      │ NEEDS ATT │ │ COMING UP │ │ OVER TIME                 │
+ *      └───────────┘ └───────────┘ └───────────────────────────┘
  *      ┌───────────────────────────────────────────────────────┐
- *      │  THE FEDERATION OVER TIME                             │
+ *      │  STUDIOS                                    (accent)  │
+ *      │  ranked by size · coverage bar · every studio         │
  *      └───────────────────────────────────────────────────────┘
  *
  * The figures lead instead of sitting in a margin, because scale IS the
  * organisation's headline; and exactly ONE thing wears the accent frame, because
  * a federation has one subject where a studio's morning has two. Same building
  * blocks (`Figure`, `Panel`, `Card`), a different sentence.
+ *
+ * ── WHY THE ROSTER MOVED TO THE BOTTOM, FULL WIDTH (Franco, 2026-09-08) ─────
+ *
+ * It used to sit in an 8:4 row with the two reference cards beside it, which
+ * looked balanced against the seeded federation of TWO studios and fell apart
+ * against a real one: at twelve studios the roster ran to 700px and the right
+ * column held ~350px of content, stranding 400px of empty page beside the most
+ * important thing on it. Column layouts only balance when both columns grow at
+ * the same rate, and these do not — the roster grows with the federation and the
+ * cards never grow at all.
+ *
+ * So the things that DON'T grow are a band of three, and the thing that does
+ * gets the full width and the bottom, where it can be as long as the federation
+ * is without pulling anything out of alignment. It no longer scrolls inside
+ * itself either: reading sixteen studios four at a time through a 320px window
+ * is a summary of a summary.
  *
  * ── EVERYTHING HERE IS A READ THE ORGANISATION ALREADY HAD ──────────────────
  *
@@ -70,12 +88,15 @@ import { useOrg } from '@/contexts/OrgContext'
 import { orgHref } from '@/lib/org-nav'
 import {
   sumOrNull,
+  useOrgAffiliationStatusCounts,
+  useOrgAffiliationStatusDefs,
   useOrgAttention,
   useOrgRoster,
   useOrgStudioCounts,
   useOrgUpcomingEvents,
 } from '@/components/org-dashboard/data'
 import { ScaleStrip } from '@/components/org-dashboard/ScaleStrip'
+import { AffiliationStatusStrip } from '@/components/org-dashboard/AffiliationStatusStrip'
 import { StudiosPanel } from '@/components/org-dashboard/StudiosPanel'
 import { AttentionCard } from '@/components/org-dashboard/AttentionCard'
 import { UpcomingEventsCard } from '@/components/org-dashboard/UpcomingEventsCard'
@@ -104,6 +125,17 @@ export default function OrgDashboardPage() {
   )
   const { data: events, isLoading: eventsLoading } = useOrgUpcomingEvents(orgId)
   const { data: attention, isLoading: attentionLoading } = useOrgAttention(orgId, isAdmin)
+
+  // THE VOCABULARY FIRST, THEN THE COUNTS — one aggregation per status, so the
+  // second query cannot be built until the first has said which statuses exist.
+  // Both are org-member reads; the counts additionally need the collection-group
+  // rule added on 2026-09-08, without which every one of them was denied.
+  const { data: statusDefs, isLoading: statusDefsLoading } = useOrgAffiliationStatusDefs(orgId)
+  const { data: statusCounts, isLoading: statusCountsLoading } = useOrgAffiliationStatusCounts(
+    orgId,
+    statusDefs,
+    true
+  )
 
   const people = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.people)) : null
   const affiliated = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.affiliated)) : null
@@ -181,48 +213,51 @@ export default function OrgDashboardPage() {
         peopleWithheld={!isAdmin}
       />
 
-      {/* 8:4 of twelve, and the seam is the page's only one. The roster is the
-          subject and needs the width for a name, two figures and a bar; the
-          right column is two short reference cards that never scroll.
+      {/* THE BREAKDOWN OF THE FIGURE ABOVE IT, so it sits with the figures
+          rather than in the band — a decomposition, not a fourth subject. */}
+      <AffiliationStatusStrip
+        orgId={orgId}
+        rows={statusCounts}
+        affiliationTerm={affiliationTerm}
+        loading={statusDefsLoading || statusCountsLoading}
+      />
 
-          NO FIXED ROW HEIGHT, unlike the studio dashboard's two rows — and the
-          difference is not stylistic. A studio's agenda and queue are always
-          long enough to fill a pane, so pinning the height buys a straight seam
-          for free. A federation's roster is TWO rows for the organisation in
-          the seed and sixteen for HMD, and 320px of empty frame under two
-          studios reads as a page that failed to load. So the panel sizes to its
-          content and starts scrolling only once the roster is genuinely long
-          (`StudiosPanel` caps its own body). */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8">
-          <StudiosPanel
-            orgId={orgId}
-            lines={rows.map((r) => ({ ...r, counts: counts?.[r.teamId] }))}
-            loading={rosterLoading}
-            affiliationTerm={affiliationTerm}
-            countsWithheld={!isAdmin}
-          />
-        </div>
-        <div className="flex flex-col gap-6 lg:col-span-4">
-          <AttentionCard
-            orgId={orgId}
-            invitedStudios={invited}
-            accessRequests={attention?.accessRequests ?? null}
-            memberInvitations={attention?.memberInvitations ?? null}
-            loading={rosterLoading || (isAdmin && attentionLoading)}
-          />
-          <UpcomingEventsCard
-            orgId={orgId}
-            rows={events?.rows ?? []}
-            total={events?.total ?? null}
-            loading={eventsLoading}
-          />
+      {/* THE THINGS THAT DO NOT GROW. Three cards of roughly one screenful
+          between them, whatever the federation's size: a queue that is usually
+          short, the next few events, and twelve months of one line. Equal
+          thirds at `lg`; two-up at `sm` with the chart taking the full row
+          under them, because a 12-month axis in a half column is unreadable. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <AttentionCard
+          orgId={orgId}
+          invitedStudios={invited}
+          accessRequests={attention?.accessRequests ?? null}
+          memberInvitations={attention?.memberInvitations ?? null}
+          loading={rosterLoading || (isAdmin && attentionLoading)}
+        />
+        <UpcomingEventsCard
+          orgId={orgId}
+          rows={events?.rows ?? []}
+          total={events?.total ?? null}
+          loading={eventsLoading}
+        />
+        <div className="sm:col-span-2 lg:col-span-1">
+          {/* ACTIVE studios only. An invitation is not a member, and counting
+              one here made the chart's subtitle disagree with the STUDIOS
+              figure at the top of this very page. */}
+          <GrowthCard rows={active} loading={rosterLoading} />
         </div>
       </div>
 
-      {/* Below the working rows, and the only thing on the page that is
-          history rather than state. */}
-      <GrowthCard rows={rows} loading={rosterLoading} />
+      {/* THE SUBJECT, and it gets the width and the bottom. Uncapped: as long
+          as the federation is. */}
+      <StudiosPanel
+        orgId={orgId}
+        lines={rows.map((r) => ({ ...r, counts: counts?.[r.teamId] }))}
+        loading={rosterLoading}
+        affiliationTerm={affiliationTerm}
+        countsWithheld={!isAdmin}
+      />
     </div>
   )
 }

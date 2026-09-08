@@ -36,7 +36,7 @@
 import { useMemo } from 'react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { Building2 } from 'lucide-react'
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChartEmptyState } from '@/components/dashboard/ChartEmptyState'
@@ -92,6 +92,12 @@ export function buildGrowthSeries(rows: OrgStudioRow[], now = new Date()) {
   return { months, joinedInWindow }
 }
 
+/**
+ * ACTIVE STUDIOS ONLY — the caller passes them, and the header above says why
+ * this counts current membership rather than a historical headcount. An INVITED
+ * studio has not joined, so counting it here made the chart's own subtitle
+ * disagree with the STUDIOS figure at the top of the page (13 against 12).
+ */
 export function GrowthCard({ rows, loading }: { rows: OrgStudioRow[]; loading: boolean }) {
   const t = useTranslations('OrgDashboard')
   const format = useFormatter()
@@ -104,16 +110,16 @@ export function GrowthCard({ rows, loading }: { rows: OrgStudioRow[]; loading: b
   }))
 
   return (
-    <Card className="min-h-[248px]">
+    <Card size="sm" className="flex flex-col">
       <CardHeader>
         <CardTitle className="text-sm">{t('growthTitle')}</CardTitle>
         <p className="text-xs text-muted-foreground">
           {t('growthSubtitle', { count: joinedInWindow, months: MONTHS_SHOWN })}
         </p>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col">
+      <CardContent className="flex flex-1 flex-col px-3">
         {loading ? (
-          <Skeleton className="h-[160px] w-full" />
+          <Skeleton className="h-[120px] w-full" />
         ) : rows.length === 0 ? (
           <ChartEmptyState
             icon={Building2}
@@ -121,34 +127,36 @@ export function GrowthCard({ rows, loading }: { rows: OrgStudioRow[]; loading: b
             hint={t('growthEmptyHint')}
           />
         ) : (
-          <div className="h-[160px] w-full">
+          <div className="h-[120px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+              <AreaChart data={data} margin={{ top: 6, right: 4, left: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="orgGrowthFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.28} />
                     <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                {/* NO Y AXIS, AND NO GRID FOR IT TO LABEL.
+                    This card is a third of the page wide. A value axis there
+                    cost ~34px of a ~270px plot and then failed twice over: at
+                    `margin.left: -24` it clipped its own top tick (a
+                    twelve-studio federation drew "12" as "3"), and once the card
+                    narrowed it rendered at zero width with no ticks at all. An
+                    axis that is sometimes wrong and sometimes absent is worse
+                    than none.
+
+                    Nothing is lost. The MAGNITUDE is the STUDIOS figure at the
+                    top of this page, the CHANGE is the subtitle directly above,
+                    and the per-month value is on hover. What is left is the
+                    shape, which is the only thing a twelve-point series in
+                    ~270px can honestly show. */}
                 <XAxis
                   dataKey="label"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 11 }}
-                  className="fill-muted-foreground"
-                />
-                <YAxis
-                  allowDecimals={false}
-                  // `dataMax` rather than recharts' padded default: a federation
-                  // of two studios was drawn against a ceiling of four, so half
-                  // the plot was empty and the count looked like a shortfall
-                  // against a target that does not exist.
-                  domain={[0, 'dataMax']}
-                  width={40}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11 }}
+                  interval="preserveStartEnd"
+                  minTickGap={16}
+                  tick={{ fontSize: 10 }}
                   className="fill-muted-foreground"
                 />
                 <Tooltip

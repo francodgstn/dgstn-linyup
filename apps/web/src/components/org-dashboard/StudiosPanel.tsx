@@ -99,11 +99,18 @@ export function StudiosPanel({
           </Link>
         }
       />
-      {/* `lg:max-h-[320px] lg:flex-none` undoes the shell's "let the ROW own the
-          height" behaviour, which only makes sense when the row has one. Here
-          the panel owns it: short rosters are short, and a long one scrolls at
-          the same ceiling on every width. */}
-      <PanelBody className="lg:max-h-[320px] lg:flex-none">
+      {/* `scroll={false}` — THE PAGE SCROLLS, NOT THE PANEL, and for an
+          organisation that is the right way round: the roster is what this page
+          is about, and a federation of sixteen studios reading four at a time
+          through a 320px window is a summary of a summary. It also removes the
+          only place the two dimensions could disagree — the panel is exactly as
+          tall as the federation is long.
+
+          A PROP rather than a class: passing `max-h-none` through `className`
+          does not survive `twMerge` against the shell's own arbitrary value, and
+          the first attempt at this shipped a cap that silently never applied.
+          See `PanelBody`. */}
+      <PanelBody scroll={false}>
         {loading ? (
           <div className="space-y-2 p-1">
             {[0, 1, 2, 3].map((i) => (
@@ -144,8 +151,14 @@ function StudioRow({
       : null
 
   return (
-    <li className="flex items-center gap-3 px-1 py-2">
-      <div className="min-w-0 flex-1">
+    <li className="flex items-center gap-3 px-1 py-2 sm:gap-6">
+      {/* THE NAME NO LONGER OWNS THE WHOLE ROW. At 640px the name and its bar
+          shared one column because there was no room for two; at full width
+          that left ~400px of nothing between the name and its figures. The name
+          takes what it needs, the bar becomes its own column and gets the slack,
+          and the two figures stay pinned right where a reader scans them down
+          the page. */}
+      <div className="min-w-0 flex-1 sm:max-w-[22rem] sm:flex-none">
         <div className="flex items-center gap-2">
           {/* A studio with no public profile yet has no readable name — say that,
               rather than printing a document id at somebody who has never seen
@@ -162,10 +175,24 @@ function StudioRow({
             </Badge>
           )}
         </div>
-        {/* The bar carries no number of its own — the two figures to the right
-            are the number. It is a shape, read at a glance down the column. */}
+        {/* The same bar, under the name, for the widths where it has no column
+            of its own. */}
         {coverage != null && (
-          <div className="mt-1 h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-muted">
+          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted sm:hidden">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${coverage}%` }} />
+          </div>
+        )}
+      </div>
+
+      {/* The bar carries no number of its own — the two figures to the right
+          are the number. It is a shape, read at a glance down the column, and
+          at full width it is finally long enough for the difference between 34%
+          and 62% to be visible rather than inferred. Hidden below `sm`, where
+          there is no width to spare and the percentage beside the count says
+          the same thing. */}
+      <div className="hidden min-w-0 flex-1 sm:block">
+        {coverage != null && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-primary" style={{ width: `${coverage}%` }} />
           </div>
         )}
