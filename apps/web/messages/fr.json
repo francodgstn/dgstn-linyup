@@ -7636,7 +7636,8 @@
     "toSchedule": "Planning",
     "lengthGroup": "{minutes} min",
     "lengthRow": "{name} · {minutes} min",
-    "durationRulesHint": "Chaque durée a son propre tarif, donc chaque abonnement y répond séparément."
+    "durationRulesHint": "Chaque durée a son propre tarif, donc chaque abonnement y répond séparément.",
+    "filterAll": "Tous"
   },
   "VerifyEmail": {
     "title": "Confirmez {email}",

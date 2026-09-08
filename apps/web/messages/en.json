@@ -7636,7 +7636,8 @@
     "toSchedule": "Schedule",
     "lengthGroup": "{minutes} min",
     "lengthRow": "{name} · {minutes} min",
-    "durationRulesHint": "Each length is priced on its own, so each one gets its own answer from every plan."
+    "durationRulesHint": "Each length is priced on its own, so each one gets its own answer from every plan.",
+    "filterAll": "All"
   },
   "VerifyEmail": {
     "title": "Confirm {email}",

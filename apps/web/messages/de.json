@@ -7636,7 +7636,8 @@
     "toSchedule": "Kalender",
     "lengthGroup": "{minutes} Min.",
     "lengthRow": "{name} · {minutes} Min.",
-    "durationRulesHint": "Jede Dauer wird einzeln bepreist, also beantwortet jedes Abo sie auch einzeln."
+    "durationRulesHint": "Jede Dauer wird einzeln bepreist, also beantwortet jedes Abo sie auch einzeln.",
+    "filterAll": "Alle"
   },
   "VerifyEmail": {
     "title": "Bestätige {email}",

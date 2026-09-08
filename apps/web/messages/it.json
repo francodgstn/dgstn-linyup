@@ -7636,7 +7636,8 @@
     "toSchedule": "Calendario",
     "lengthGroup": "{minutes} min",
     "lengthRow": "{name} · {minutes} min",
-    "durationRulesHint": "Ogni durata ha il suo prezzo, quindi ogni abbonamento risponde separatamente."
+    "durationRulesHint": "Ogni durata ha il suo prezzo, quindi ogni abbonamento risponde separatamente.",
+    "filterAll": "Tutti"
   },
   "VerifyEmail": {
     "title": "Conferma {email}",

@@ -353,6 +353,11 @@ export default function CataloguePage() {
       ? tabParam
       : null
   const [onlyDeadEnds, setOnlyDeadEnds] = useState(false)
+  /** Plans rail: show only one SOURCE, or all of them. A studio that accepts
+   *  two or three partners has their plans interleaved with its own by `order`,
+   *  and "which of these do I actually sell?" is the question it then asks the
+   *  list most often. Null = no filter, which is what the rail opens on. */
+  const [planSource, setPlanSource] = useState<'internal' | 'aggregator' | null>(null)
 
   /**
    * THE DECK'S HEIGHT, MEASURED.
@@ -501,6 +506,11 @@ export default function CataloguePage() {
   const visible = (list: Activity[]) =>
     onlyDeadEnds ? list.filter((a) => deadEndIds.has(a.id)) : list
   const visibleCourses = onlyDeadEnds ? courses.filter((c) => deadEndIds.has(c.id)) : courses
+  // `source` is absent on every plan written before the field existed, and those
+  // are the studio's own — so the default reading is 'internal', never "neither".
+  const visiblePlans = planSource
+    ? plans.filter((st) => (st.source ?? 'internal') === planSource)
+    : plans
 
   // The SAME icons name these things in the sidebar, so they are what a studio
   // already recognises them by. The strip's layout lives with the strip.
@@ -805,6 +815,10 @@ export default function CataloguePage() {
   // filtered view would compute positions from rows that are not all the rows.
   // The handles disappear rather than misbehave.
   const canReorder = canEdit && !onlyDeadEnds
+  // Same reason as above, for the plans rail: every reorder write computes
+  // `order = index over the FULL list`, so dragging inside a filtered view would
+  // position rows against rows that are not all the rows.
+  const canReorderPlans = canReorder && !planSource
 
   async function reorderActivities(section: Activity[], from: number, to: number) {
     if (from === to) return
@@ -1271,12 +1285,48 @@ export default function CataloguePage() {
 
           {!loading && activeTab === 'plans' && (
             <div className="space-y-2.5 p-1">
-              {plans.length === 0 ? (
-                <RailEmpty text={t('noPlans')} />
+              {/* SOURCE CHIPS, and only once there is a mix to sort out. A studio
+                  with nothing but its own plans would get a filter whose every
+                  option is the whole list — a control that can only ever be a
+                  no-op, occupying the top of the rail on the commonest setup. */}
+              {plans.some((st) => st.source === 'aggregator') &&
+                plans.some((st) => (st.source ?? 'internal') === 'internal') && (
+                  <div className="flex flex-wrap gap-1.5 px-1">
+                    {([null, 'internal', 'aggregator'] as const).map((val) => {
+                      const on = planSource === val
+                      return (
+                        <button
+                          key={val ?? 'all'}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => setPlanSource(val)}
+                          className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                            on
+                              ? 'border-primary bg-primary/10 font-medium text-foreground'
+                              : 'text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                          }`}
+                        >
+                          {/* Literal keys, never a template-literal one:
+                              i18n:check counts computed keys and never fails
+                              them. The two source labels are the SAME keys the
+                              plan editor and the row chips use, so renaming a
+                              source renames it everywhere at once. */}
+                          {val === null
+                            ? t('filterAll')
+                            : val === 'internal'
+                              ? tSet('subTypeSourceInternal')
+                              : tSet('subTypeSourceAggregator')}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              {visiblePlans.length === 0 ? (
+                <RailEmpty text={planSource ? t('noneFiltered') : t('noPlans')} />
               ) : (
                 <OrderableRows
-                  items={plans}
-                  canReorder={canReorder}
+                  items={visiblePlans}
+                  canReorder={canReorderPlans}
                   onReorder={(from, to) => void reorderPlans(from, to)}
                   renderRow={(pl, sortable) => (
                     <RailRow
