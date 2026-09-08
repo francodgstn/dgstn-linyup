@@ -1309,7 +1309,8 @@
     "countBooked": "{count} réservés",
     "countCheckedIn": "{count} présents",
     "countCapacity": "capacité {count}",
-    "peekCapacity": "Places réservées / capacité"
+    "peekCapacity": "Places réservées / capacité",
+    "viewPlanning": "Planification"
   },
   "Events": {
     "title": "Événements",
@@ -5775,7 +5776,13 @@
     "timelineInView": "Dans la vue",
     "timelineInViewCount": "{count, plural, =0 {aucun événement} one {# événement} other {# événements}}",
     "timelineInViewEmpty": "Rien dans cette portion — faites défiler jusqu'aux prochains événements",
-    "timelineGroupByType": "Lignes par type"
+    "timelineBandsLabel": "Lignes",
+    "timelineBandType": "Par type",
+    "timelineBandOwner": "Par propriétaire",
+    "timelineBandNone": "Compact",
+    "timelineBandOrgRow": "Organisation",
+    "timelineBandTeamRow": "Ce studio",
+    "timelineZoomLabel": "Zoom"
   },
   "OrgEventDetail": {
     "backToEvents": "Événements de l'organisation",

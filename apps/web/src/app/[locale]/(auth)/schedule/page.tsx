@@ -74,6 +74,7 @@ import {
   Plus,
   ChevronDown,
   CalendarDays,
+  ChartNoAxesGantt,
   CalendarRange,
   CalendarClock,
   List,
@@ -105,11 +106,18 @@ import { QuickLinks } from '@/components/layout/QuickLinks'
 import { PublicSurfaceLink } from '@/components/layout/PublicSurfaceLink'
 import { Tip } from '@/components/ui/tip'
 
+// `ssr: false` for the same reason the org events page does it: the timeline
+// measures its own viewport on mount, so it has nothing to say on the server.
+const EventsTimeline = dynamic(
+  () => import('@/components/events/EventsTimeline').then((m) => m.EventsTimeline),
+  { ssr: false }
+)
+
 const SessionsCalendar = dynamic(() => import('../sessions/SessionsCalendar'), { ssr: false })
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
-type CalendarView = 'calendar' | 'list'
+type CalendarView = 'calendar' | 'list' | 'planning'
 const TIME_TABS = ['upcoming', 'past'] as const
 
 // How far the list reaches, in months from today. `3` reproduces the window the
@@ -1194,6 +1202,7 @@ export default function CalendarPage() {
               [
                 { key: 'calendar', icon: CalendarDays, label: t('viewCalendar') },
                 { key: 'list', icon: List, label: t('viewList') },
+                { key: 'planning', icon: ChartNoAxesGantt, label: t('viewPlanning') },
               ] as const
             ).map(({ key, icon: Icon, label }) => (
               <button
@@ -1295,8 +1304,19 @@ export default function CalendarPage() {
       {/* Filters — ONE control group, read left to right as <who> | <what>.
           Both chips carry a caret and open checkboxes: same shape, same
           gesture, and the label on each names its current state rather than a
-          static noun. Nothing here switches the view. */}
-      <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
+          static noun. Nothing here switches the view.
+
+          HIDDEN IN PLANNING, because neither chip can do anything there but
+          subtract: the events layer would empty the view entirely and the coach
+          filter blanks `scopedEvents` although an event has no coach to be
+          scoped by. A control that is visible and inert is worse than one that
+          is absent — it invites the reader to blame it for what they cannot
+          see. */}
+      <div
+        className={`flex flex-wrap items-center gap-x-1 gap-y-2 ${
+          view === 'planning' ? 'hidden' : ''
+        }`}
+      >
         {/* WHO — first, because it scopes everything to its right. */}
         {coachRoster.length > 1 && (
           <>
@@ -1387,6 +1407,34 @@ export default function CalendarPage() {
             setViewYear(y)
             setViewMonth(m)
           }}
+        />
+      )}
+
+      {/* ── PLANNING: THE SEASON'S EVENTS, NOT ITS WEEKS ────────────────────
+          EVENTS ONLY, and that is the point rather than an omission. A studio
+          runs 500-1300 sessions a year against a few dozen events; the
+          timeline's whole premise is "one row unless they cross", and at year
+          zoom a week's classes sit about 1.5px apart, collide, and correctly
+          open a row each. A timeline of a weekly rhythm IS a calendar, which is
+          the view next door. The tab is named for what it holds so that
+          dropping the classes reads as the view's subject and not as data that
+          went missing.
+
+          IT TAKES `eventsQ.data`, NOT `filteredEvents`. Those filters belong to
+          a mixed calendar: the `events` calendar layer can only empty this view
+          entirely, and the coach filter blanks `scopedEvents` although an event
+          has no coach to be scoped by. Both can subtract everything here and
+          add nothing.
+
+          The studio's own events and its organisation's arrive together (see
+          `useAllEvents`), which is what makes the timeline's by-owner banding
+          worth having: the organisation's dates are the fixed ones to plan
+          around. */}
+      {view === 'planning' && (
+        <EventsTimeline
+          events={eventsQ.data ?? []}
+          onEdit={(e) => setEventDialog({ open: true, editing: e })}
+          onDelete={handleDeleteEvent}
         />
       )}
 

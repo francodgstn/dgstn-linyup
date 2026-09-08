@@ -1309,7 +1309,8 @@
     "countBooked": "{count} gebucht",
     "countCheckedIn": "{count} eingecheckt",
     "countCapacity": "Kapazität {count}",
-    "peekCapacity": "Gebuchte Plätze / Kapazität"
+    "peekCapacity": "Gebuchte Plätze / Kapazität",
+    "viewPlanning": "Planung"
   },
   "Events": {
     "title": "Veranstaltungen",
@@ -5775,7 +5776,13 @@
     "timelineInView": "Im Ausschnitt",
     "timelineInViewCount": "{count, plural, =0 {keine Veranstaltungen} one {# Veranstaltung} other {# Veranstaltungen}}",
     "timelineInViewEmpty": "Nichts in diesem Abschnitt — scrollen Sie zu den nächsten Veranstaltungen",
-    "timelineGroupByType": "Zeilen nach Typ"
+    "timelineBandsLabel": "Zeilen",
+    "timelineBandType": "Nach Typ",
+    "timelineBandOwner": "Nach Inhaber",
+    "timelineBandNone": "Kompakt",
+    "timelineBandOrgRow": "Organisation",
+    "timelineBandTeamRow": "Dieses Studio",
+    "timelineZoomLabel": "Zoom"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",

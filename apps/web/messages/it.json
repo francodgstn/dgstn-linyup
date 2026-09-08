@@ -1309,7 +1309,8 @@
     "countBooked": "{count} prenotati",
     "countCheckedIn": "{count} presenti",
     "countCapacity": "capienza {count}",
-    "peekCapacity": "Posti prenotati / capienza"
+    "peekCapacity": "Posti prenotati / capienza",
+    "viewPlanning": "Pianificazione"
   },
   "Events": {
     "title": "Eventi",
@@ -5775,7 +5776,13 @@
     "timelineInView": "Nella vista",
     "timelineInViewCount": "{count, plural, =0 {nessun evento} one {# evento} other {# eventi}}",
     "timelineInViewEmpty": "Niente in questo tratto — scorri fino ai prossimi eventi",
-    "timelineGroupByType": "Righe per tipo"
+    "timelineBandsLabel": "Righe",
+    "timelineBandType": "Per tipo",
+    "timelineBandOwner": "Per titolare",
+    "timelineBandNone": "Compatto",
+    "timelineBandOrgRow": "Organizzazione",
+    "timelineBandTeamRow": "Questo studio",
+    "timelineZoomLabel": "Zoom"
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",

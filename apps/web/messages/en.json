@@ -1309,7 +1309,8 @@
     "countBooked": "{count} booked",
     "countCheckedIn": "{count} checked in",
     "countCapacity": "capacity {count}",
-    "peekCapacity": "Booked seats / capacity"
+    "peekCapacity": "Booked seats / capacity",
+    "viewPlanning": "Planning"
   },
   "Events": {
     "title": "Events",
@@ -5775,7 +5776,13 @@
     "timelineInView": "In view",
     "timelineInViewCount": "{count, plural, =0 {no events} one {# event} other {# events}}",
     "timelineInViewEmpty": "Nothing in this stretch — scroll to find the next events",
-    "timelineGroupByType": "Rows by type"
+    "timelineBandsLabel": "Rows",
+    "timelineBandType": "By type",
+    "timelineBandOwner": "By owner",
+    "timelineBandNone": "Packed",
+    "timelineBandOrgRow": "Organisation",
+    "timelineBandTeamRow": "This studio",
+    "timelineZoomLabel": "Zoom"
   },
   "OrgEventDetail": {
     "backToEvents": "Organization events",

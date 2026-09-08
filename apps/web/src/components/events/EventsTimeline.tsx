@@ -54,9 +54,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { CalendarRange, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
+import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/ui/tip'
+import { Segmented } from '@/components/ui/segmented'
 import { EventPeekSheet } from '@/components/events/EventPeekSheet'
 import { eventTypeColor } from '@/lib/eventTypeColor'
 import { eventTypeLabel } from '@/lib/eventTypeLabel'
@@ -86,6 +87,29 @@ const LANE_H = 34
 const BAR_H = 20
 
 const DAY_MS = 86_400_000
+
+/**
+ * WHAT THE ROWS MEAN.
+ *
+ *   'type'   one band per event type — a row you can read along, which is why
+ *            bands were asked for in the first place.
+ *   'owner'  one band for the organisation's events and one for the studio's.
+ *            Only offered where both exist; see `ownerBandsWorth`.
+ *   'none'   no bands, everything packed into as few rows as it will go.
+ *
+ * BANDING IS A VIEW, NOT A PROPERTY OF THE EVENTS, so every mode is the same
+ * packer over the same events with a different `group` withheld or supplied.
+ */
+export type TimelineBandMode = 'type' | 'owner' | 'none'
+
+const OWNER_BANDS = ['org', 'team'] as const
+
+/** THE ORGANISATION'S ROW COMES FIRST, deliberately: on a studio's own page its
+ *  federation's dates are the FIXED ones and its own are what it arranges around
+ *  them, so the constraints read above the choices. */
+function ownerBandOf(event: Event | undefined): string {
+  return event?.scope === 'org' ? 'org' : 'team'
+}
 
 /**
  * WHAT A BAR CANNOT SAY FOR ITSELF — the dates, the length and the place.
@@ -185,7 +209,7 @@ export function EventsTimeline({
   // like `zoom` and the legend's filtering, and for the same reason: it is how
   // one reader is looking at the page right now, not something a pasted link
   // should carry.
-  const [grouped, setGrouped] = useState(true)
+  const [bandMode, setBandMode] = useState<TimelineBandMode>('type')
   const [peekId, setPeekId] = useState<string | null>(null)
   // TODAY IS CAPTURED ONCE. It anchors the range and draws the marker, and a
   // timeline that silently re-based itself at midnight would move under anyone
@@ -295,15 +319,56 @@ export function EventsTimeline({
    * `group: undefined` rather than a `delete`: the packer reads `e.group ?? ''`,
    * so an absent group and an undefined one are already the same thing to it.
    */
-  const packed = useMemo(
-    () => (grouped ? shown : shown.map((e) => ({ ...e, group: undefined }))),
-    [shown, grouped]
-  )
-  const { placed, lanes, bands } = useMemo(
-    () => placeTimelineEvents(packed, range, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
-    [packed, range, trackPx]
-  )
   const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
+
+  /**
+   * OWNER BANDS ARE OFFERED ONLY WHERE BOTH OWNERS EXIST — which is derived from
+   * the events rather than passed in, so the mode appears exactly where it means
+   * something and cannot be misconfigured. On an organisation's own events page
+   * everything is org-scoped, so it never shows; on a studio's schedule, which
+   * loads its own events AND its organisation's, it does.
+   */
+  const ownerBandsWorth = useMemo(() => {
+    let org = false
+    let team = false
+    for (const e of events) {
+      if (ownerBandOf(e) === 'org') org = true
+      else team = true
+      if (org && team) return true
+    }
+    return false
+  }, [events])
+  // Derived rather than corrected by an effect: if the events change under a
+  // chosen mode that no longer applies, the view falls back on the same render
+  // instead of drawing one frame of a band that is not there.
+  const mode: TimelineBandMode = bandMode === 'owner' && !ownerBandsWorth ? 'type' : bandMode
+
+  /** What a band is called in the gutter — the type, or whose event it is. */
+  const bandName = useCallback(
+    (group: string) =>
+      mode === 'owner'
+        ? group === 'org'
+          ? t('timelineBandOrgRow')
+          : t('timelineBandTeamRow')
+        : group
+          ? eventTypeLabel(group, tE.has, tE)
+          : t('timelineTypeless'),
+    [mode, t, tE]
+  )
+
+  const packed = useMemo(() => {
+    if (mode === 'none') return shown.map((e) => ({ ...e, group: undefined }))
+    if (mode === 'owner') return shown.map((e) => ({ ...e, group: ownerBandOf(byId.get(e.id)) }))
+    return shown
+  }, [shown, mode, byId])
+  const { placed, lanes, bands } = useMemo(
+    () =>
+      placeTimelineEvents(packed, range, {
+        trackPx,
+        groupOrder: mode === 'owner' ? [...OWNER_BANDS] : BUILTIN_EVENT_TYPES,
+      }),
+    [packed, range, trackPx, mode]
+  )
   const { unit, ticks } = useMemo(() => timelineTicks(range, pxPerDay), [range, pxPerDay])
 
   const todayAt = fractionOf(range, today)
@@ -545,52 +610,48 @@ export function EventsTimeline({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* IN THE SAME FAMILY AS THE ZOOM CONTROL, because it is the same kind
-              of thing: how the track is drawn, not which events are on it. Kept
-              next to it rather than down in the legend, where it would sit among
-              the type chips and read as another filter. */}
-          <Tip label={t('timelineGroupByType')}>
-            <button
-              type="button"
-              aria-pressed={grouped}
-              onClick={() => setGrouped((v) => !v)}
-              className={`flex items-center rounded-lg border p-1.5 transition-colors ${
-                grouped
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Layers className="h-4 w-4" />
-              <span className="sr-only">{t('timelineGroupByType')}</span>
-            </button>
-          </Tip>
+        {/* TWO CONTROLS OF ONE KIND, so they are drawn by one component. Both
+            answer "how is the track drawn" rather than "which events are on
+            it", which is why neither lives down in the legend among the type
+            chips, where it would read as another filter.
 
-        <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
-          {TIMELINE_ZOOMS.map((z) => (
-            <button
-              key={z}
-              type="button"
-              // NOTHING IS SAVED HERE. Changing zoom is a change of scale,
-              // not of place, and the scroll centre that keeps your place was
-              // recorded by the last scroll — the layout effect restores it once
-              // the new track width is known. See `centreFracRef`.
-              onClick={() => setZoom(z)}
-              aria-pressed={zoom === z}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                zoom === z
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {z === 'years'
-                ? t('timelineZoomYears', { count: TIMELINE_YEARS_SPAN })
-                : z === 'year'
-                  ? t('timelineZoomYear')
-                  : t('timelineZoomMonth')}
-            </button>
-          ))}
-        </div>
+            `Segmented` rather than a third hand-rolled pill tray: its own
+            header says it exists because this markup had been written twice and
+            "two copies of a control are two places for its focus, hover and
+            selected states to drift". The zoom buttons were the third copy. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented
+            size="sm"
+            ariaLabel={t('timelineBandsLabel')}
+            value={mode}
+            onChange={setBandMode}
+            options={[
+              { value: 'type' as const, label: t('timelineBandType') },
+              // Offered only where both owners exist — see `ownerBandsWorth`.
+              ...(ownerBandsWorth ? [{ value: 'owner' as const, label: t('timelineBandOwner') }] : []),
+              { value: 'none' as const, label: t('timelineBandNone') },
+            ]}
+          />
+
+          {/* NOTHING IS SAVED WHEN THE ZOOM CHANGES. It is a change of scale,
+              not of place, and the scroll centre that keeps your place was
+              recorded by the last scroll — the layout effect restores it once
+              the new track width is known. See `centreFracRef`. */}
+          <Segmented
+            size="sm"
+            ariaLabel={t('timelineZoomLabel')}
+            value={zoom}
+            onChange={setZoom}
+            options={TIMELINE_ZOOMS.map((z) => ({
+              value: z,
+              label:
+                z === 'years'
+                  ? t('timelineZoomYears', { count: TIMELINE_YEARS_SPAN })
+                  : z === 'year'
+                    ? t('timelineZoomYear')
+                    : t('timelineZoomMonth'),
+            }))}
+          />
         </div>
       </div>
 
@@ -625,7 +686,7 @@ export function EventsTimeline({
           {/* Nothing to name when the rows are not bands — an ungrouped track
               has one band whose group is the empty string, and a gutter reading
               "No type" beside every row would be worse than no gutter. */}
-          {grouped && measured && bands.length > 0 && (
+          {mode !== 'none' && measured && bands.length > 0 && (
             <div className="hidden shrink-0 border-r py-3 pl-3 pr-2 sm:block">
               <div className="mb-1 h-5" aria-hidden />
               {bands.map((b) => (
@@ -635,13 +696,17 @@ export function EventsTimeline({
                   style={{ height: b.lanes * LANE_H }}
                 >
                   <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <span
-                      className="inline-block h-2 w-2 shrink-0 rounded-full"
-                      style={{ background: eventTypeColor(b.group) }}
-                    />
-                    <span className="max-w-24 truncate">
-                      {b.group ? eventTypeLabel(b.group, tE.has, tE) : t('timelineTypeless')}
-                    </span>
+                    {/* NO DOT ON AN OWNER BAND. A type band is one colour, so a
+                        dot restates the bars beside it; an owner band holds
+                        every type at once and a single colour would name one of
+                        them, which is worse than naming none. */}
+                    {mode === 'type' && (
+                      <span
+                        className="inline-block h-2 w-2 shrink-0 rounded-full"
+                        style={{ background: eventTypeColor(b.group) }}
+                      />
+                    )}
+                    <span className="max-w-24 truncate">{bandName(b.group)}</span>
                   </span>
                 </div>
               ))}
@@ -1012,6 +1077,21 @@ export function EventsTimeline({
                         }}
                       />
                       <span className="min-w-0 flex-1 truncate text-xs font-medium">{e.title}</span>
+                      {/* WHOSE EVENT IT IS, and only where that is a real
+                          question — a studio's schedule carries its own events
+                          and its organisation's, an organisation's page only
+                          its own. Marked on the ORGANISATION's rows alone:
+                          badging both is noise, and the one worth spotting is
+                          the date somebody else fixed.
+
+                          At every width, unlike the type beside it, because the
+                          gutter that names the owner bands is hidden below `sm`
+                          — on a phone this row is the only thing that says. */}
+                      {ownerBandsWorth && ownerBandOf(e) === 'org' && (
+                        <span className="shrink-0 rounded border px-1 py-px text-[10px] text-muted-foreground">
+                          {t('timelineBandOrgRow')}
+                        </span>
+                      )}
                       <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">
                         {e.type ? eventTypeLabel(e.type, tE.has, tE) : t('timelineTypeless')}
                       </span>
