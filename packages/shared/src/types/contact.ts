@@ -656,6 +656,23 @@ export interface SubscriptionType {
   id: string
   name: string
   description?: string
+  // 'aggregator' is displayed as "PARTNER", and the wider word is the accurate
+  // one: the type means a third party owns the money relationship with the
+  // member — a fitness app (ClassPass, Urban Sports Club), a gym the club
+  // teaches inside, an employer, an insurer. The studio charges the member
+  // nothing in every one of those cases, which is the whole behaviour.
+  //
+  // THERE IS NO THIRD SOURCE, deliberately. Ask what a reader would do
+  // differently for a host gym than for a fitness app: nothing. Every consumer
+  // does the same four things — keep it out of the shop, keep it out of own
+  // revenue, write a `partner_visits` row on a covered booking, offer its name
+  // in the public "which partner did you come through?" question. What varies
+  // between partners is SETTLEMENT, and that is already a per-plan setting
+  // (`payoutPerVisit`, optional) rather than a kind.
+  //
+  // The stored value stays 'aggregator' — a stable machine identifier, renamed
+  // in display only, the same way `club`→`studio` and `members`→`registered`
+  // were (see CLAUDE.md). The ledger has always called it partner.
   source?: 'internal' | 'aggregator'
   active?: boolean
   public?: boolean // show on the bio-link / website pricing table (default off)
@@ -669,9 +686,17 @@ export interface SubscriptionType {
   // Usage limits — v1 supports a single entry (the editor enforces that); the
   // array leaves room for per-subset caps later. Absent = unlimited.
   limits?: SubscriptionUsageLimit[]
-  // AGGREGATOR types only (source: 'aggregator'): what the partner pays the
-  // studio per attended visit (major units, team currency). Drives the
-  // partner_visits payout ledger — see Phase E1 of the pricing initiative.
+  // PARTNER types only (source: 'aggregator'): what the partner pays the studio
+  // per attended visit (major units, team currency). Drives the partner_visits
+  // payout ledger — see Phase E1 of the pricing initiative.
+  //
+  // ONE DIRECTION: what the partner pays US. Absent is a real answer and a
+  // common one — a club teaching inside a gym may settle by rent or a flat fee,
+  // and then the visit rows carry `amount: null` and stand as the attendance
+  // record that settlement is reconciled against. An arrangement running the
+  // OTHER way (the studio paying the partner a share) is a cost and belongs in
+  // the finance plugin as an expense; never express it as a negative here, or
+  // every reader of the payout ledger has to ask which way this one meant.
   payoutPerVisit?: number
   // Intro offers, at most one per recurring price of this plan. Never trusted as
   // written: every reader resolves through `resolveIntroOffer`
