@@ -46,6 +46,7 @@ import {
   pickSubscriptionPrice,
   sourceTypeDuplicatesCanonical,
 } from './migration/transforms/subscriptions'
+import { PLAN_GATED_TEAMS } from './migration/config'
 
 const { values } = parseArgs({
   options: {
@@ -161,7 +162,11 @@ async function main() {
         .filter((d) => !sourceTypeDuplicatesCanonical(nameById.get(d.id)))
         .map((d) => d.id),
     ]
-    const activities = await tgt.collection('activities').where('teamId', '==', teamId).get()
+    //    OPT-IN PER CLUB, from the same list the migration reads — gating a club
+    //    whose members hold no plan locks every one of them out.
+    const activities = PLAN_GATED_TEAMS.includes(teamId)
+      ? await tgt.collection('activities').where('teamId', '==', teamId).get()
+      : { docs: [] as FirebaseFirestore.QueryDocumentSnapshot[] }
     for (const a of activities.docs) {
       const v = a.data() as Record<string, unknown>
       if (v.type === 'appointment') continue // class-only gate, by design

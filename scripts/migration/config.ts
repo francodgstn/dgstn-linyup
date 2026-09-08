@@ -66,6 +66,36 @@ export const EXPECTED_HMD_MODULES = ['hmd-fighting-cup', 'hmd-belts'] as const
  */
 export const EXCLUDED_SOURCE_TEAMS: string[] = ['jtTJcfqxDkvjfDQz9JTM']
 
+/**
+ * Clubs whose classes are MEMBERS-ONLY: every plan the club has is linked to
+ * every class, and `trialEnabled` is the public way in — "public booking is
+ * done by enabling the trial, only trials can book free" (Franco, 2026-09-08).
+ *
+ * ── WHY THIS IS A LIST AND NOT THE DEFAULT ──────────────────────────────────
+ * Because the gate is only as good as the plan data behind it. A club whose
+ * members hold no plan, gated on plans, is a club where NOBODY CAN BOOK: the
+ * canonical plans are seeded into every team, so `subscriptionTypeIds` would be
+ * non-empty and every member would be refused `no_subscription` — with no
+ * drop-in price to buy in through, and one trial per person as the only door.
+ *
+ * That is not hypothetical, and the counter-example is the instructive one: HMD
+ * Team Ardovini has 6 activities, 129 contacts and 0 holding a plan. It looks
+ * like a club ready to be gated and it is the opposite — Ardovini "was just
+ * trying to set up the plans, but never really got it fully done" (Franco,
+ * 2026-09-08). Activities without plan-holders is what a HALF-FINISHED setup
+ * looks like, so the shape that most invites the gate is the one it would hurt.
+ *
+ * The other clubs barely used hmd-lineup at all, and that is expected to change
+ * on Linyup rather than stay true. So the answer is not "never" — it is "when
+ * the plans are real".
+ *
+ * So a club joins this list when its plans are real. Everything else keeps the
+ * shape it had before: no `accessRule`, which reads as legacy `open`.
+ */
+export const PLAN_GATED_TEAMS: string[] = [
+  'DVyzKM5DXAarcUuJ5SnXD5kIgT43', // HMD Basel
+]
+
 // `hmd-belts` joined the bundle on 2026-09-05 and this copy did not, which is
 // the drift direction the comment above does NOT cover: an EXTRA member the
 // list does not know about is not warned about — it is simply never checked, so

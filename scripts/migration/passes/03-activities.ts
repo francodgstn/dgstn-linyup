@@ -1,5 +1,5 @@
 import type { MigrationConfig } from '../config'
-import { sourceDb, targetDb } from '../config'
+import { sourceDb, targetDb, PLAN_GATED_TEAMS } from '../config'
 import { BatchWriter } from '../batch-writer'
 import { transformActivity } from '../transforms/activities'
 import {
@@ -24,13 +24,21 @@ export async function pass03Activities(
     // canonical ids are a code constant, and a source type survives exactly when
     // pass 11 will not skip it as a canonical duplicate — the same predicate, so
     // the two passes cannot disagree about which plans exist.
-    const srcTypes = await src.collection('teams').doc(teamId).collection('subscription_types').get()
-    const planIds = [
-      ...CANONICAL_SUBSCRIPTION_TYPES.map((t) => t.id),
-      ...srcTypes.docs
-        .filter((d) => !sourceTypeDuplicatesCanonical((d.data() as { name?: string }).name))
-        .map((d) => d.id),
-    ]
+    //
+    // OPT-IN PER CLUB. Gating on plans a club's members do not hold locks every
+    // one of them out — see `PLAN_GATED_TEAMS` for the club that looks ready and
+    // is not. `undefined` leaves the activity as it was: no `accessRule`, which
+    // reads as legacy `open`.
+    let planIds: string[] | undefined
+    if (PLAN_GATED_TEAMS.includes(teamId)) {
+      const srcTypes = await src.collection('teams').doc(teamId).collection('subscription_types').get()
+      planIds = [
+        ...CANONICAL_SUBSCRIPTION_TYPES.map((t) => t.id),
+        ...srcTypes.docs
+          .filter((d) => !sourceTypeDuplicatesCanonical((d.data() as { name?: string }).name))
+          .map((d) => d.id),
+      ]
+    }
 
     const snap = await src.collection('activities').where('teamId', '==', teamId).get()
     for (const d of snap.docs) {

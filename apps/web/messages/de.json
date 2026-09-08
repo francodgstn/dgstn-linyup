@@ -1392,7 +1392,9 @@
     "detail_tabRsvps": "Rückmeldungen",
     "detail_rsvpsEmpty": "Noch hat niemand zugesagt.",
     "detail_tabCategories": "Kategorien",
-    "type_other": "Sonstiges"
+    "type_other": "Sonstiges",
+    "demographicsTitle": "Wer da war",
+    "demographicsSubtitle": "{shown} von {total} Check-ins"
   },
   "EventProgram": {
     "emptyTitle": "Noch kein Programm",
@@ -5759,6 +5761,11 @@
     "printTo": "Bis",
     "printEmpty": "In diesem Zeitraum liegen keine Veranstaltungen.",
     "type_other": "Sonstiges",
+    "trendTitle": "Teilnahme nach Veranstaltung",
+    "trendSubtitle": "{attendees} Check-ins bei {events} Veranstaltungen in den letzten 12 Monaten",
+    "trendTooltip": "{attendees} Check-ins · {date}",
+    "trendEmptyTitle": "Noch keine Teilnahme",
+    "trendEmptyHint": "Sobald bei einer Veranstaltung eingecheckt wird, füllen sich die Monate hier.",
     "viewTimeline": "Zeitachse",
     "timelineZoomYear": "Jahr",
     "timelineZoomMonth": "Monat",

@@ -1392,7 +1392,9 @@
     "detail_tabRsvps": "RSVPs",
     "detail_rsvpsEmpty": "No one has accepted yet.",
     "detail_tabCategories": "Categories",
-    "type_other": "Other"
+    "type_other": "Other",
+    "demographicsTitle": "Who came",
+    "demographicsSubtitle": "{shown} of {total} check-ins"
   },
   "EventProgram": {
     "emptyTitle": "No programme yet",
@@ -5759,6 +5761,11 @@
     "printTo": "To",
     "printEmpty": "No events fall in this window.",
     "type_other": "Other",
+    "trendTitle": "Attendance by event",
+    "trendSubtitle": "{attendees} checked in across {events} events in the last 12 months",
+    "trendTooltip": "{attendees} checked in · {date}",
+    "trendEmptyTitle": "No attendance yet",
+    "trendEmptyHint": "Check people in at an event and the months fill in here.",
     "viewTimeline": "Timeline",
     "timelineZoomYear": "Year",
     "timelineZoomMonth": "Month",
