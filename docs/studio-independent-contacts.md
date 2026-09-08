@@ -1,11 +1,13 @@
 # A coach's own contacts, beside the studio's — design
 
-**Status: DECIDED, NOT BUILT (2026-09-08, Franco).** A coach who belongs to an
+**Status: DECIDED, LARGELY NOT BUILT (2026-09-08, Franco).** A coach who belongs to an
 organisation and also works for themselves gets **a second studio**, not a
 private partition inside the first. Recorded before implementation so the shape
-is agreed rather than discovered halfway. Nothing below is built; the two seams
-in "What we owe it later" are the roadmap, and one of the three defects in
-"What is wrong today" exists whether or not any of it ships.
+is agreed rather than discovered halfway. The two seams in "What we owe it later"
+are the roadmap and neither is built. Of the three defects in "What is wrong
+today", one — the silent organisation invitation — **shipped with this
+document**, because it could undo the whole decision in two clicks; the other
+two are open, and the split calendar exists whether or not any of this ships.
 
 ## The scenario
 
@@ -148,24 +150,40 @@ matches (an 08:30–09:30 class and a 09:00 appointment collide in reality and n
 in the id), and when it does fire it refuses a booking because of a session the
 caller cannot see. Keep it as a backstop; do not mistake it for the fix.
 
-### The organisation invitation does not say what the organisation will see
+### ~~The organisation invitation does not say what the organisation will see~~
+
+**FIXED 2026-09-08**, and recorded here because the reasoning outlives the diff.
 
 `acceptOrgInvitation` requires the **team owner** — which the coach is, for their
 own studio — and the accept page (`app/[locale]/org-invite/[orgId]/[invId]`)
-renders a **"Select your team" dropdown listing every studio they own**. The
-`OrgInvite` copy in `messages/en.json` says only "You have been invited to join
-your team to …". Nothing states that accepting hands the chosen studio's entire
-contact book to the organisation's admins via `isOrgAdminOfTeam`, nor that it
-moves that studio's billing.
+populated a **"Select your team" dropdown from a `collectionGroup` query for
+`role == 'owner'`: every studio the caller owns, by name, in a plain select**.
+The `OrgInvite` copy said only "You have been invited to join your team to …".
+Nothing stated that accepting hands the chosen studio's entire contact book to
+the organisation's admins via `isOrgAdminOfTeam`, that it moves that studio onto
+the org plan, or that only an org admin can undo it (`removeTeamFromOrg` asserts
+org admin, and there is no team-side leave).
 
-So the exact outcome this design exists to prevent is **two clicks away, framed
+So the exact outcome this design exists to prevent was **two clicks away, framed
 as a free upgrade, with the wrong studio one line above the right one in a
-select**. The neighbouring `OrgMemberInvite.scopeNote` already does the right
+select**. The neighbouring `OrgMemberInvite.scopeNote` already did the right
 thing for the other invitation ("This invitation is for you personally. It does
 not change anything about a studio you may run, and it does not affect
-billing."); the studio invitation has no equivalent.
+billing."); the studio invitation had no equivalent.
 
-Fixing the copy is small and should not wait for anything else here.
+The page now states all three facts in a panel between the select and the accept
+button, plus a fourth line — shown only when the caller owns more than one
+studio, which is the only case where it is a choice — saying that a studio kept
+out of the organisation keeps its contacts to itself. Deliberately **neutral
+styling, not a warning**: joining a federation is a legitimate, usually
+desirable act, and dressing it as a hazard would train people to click past it.
+The copy names what changes and lets the owner decide.
+
+Two things it does NOT claim, because they were not verified: that an existing
+team-owned Stripe subscription is cancelled or refunded when the team moves onto
+the org plan (the accept batch only rewrites `plan` / `plan_status` and clears
+`trial_ends_at`, so a team that was paying may keep paying — worth checking), and
+anything about what a **viewer**-role org member sees as distinct from an admin.
 
 ### There is no way to tell the two studios apart at a glance
 

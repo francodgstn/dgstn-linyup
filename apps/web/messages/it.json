@@ -3280,7 +3280,12 @@
     "notFound": "Invito non trovato.",
     "loginRequired": "Devi essere connesso come proprietario del team per accettare questo invito.",
     "selectTeam": "Seleziona il tuo team",
-    "processing": "Elaborazione…"
+    "processing": "Elaborazione…",
+    "changesTitle": "Cosa cambia accettando",
+    "changesData": "Gli amministratori di {org} potranno leggere i contatti di questo team — nomi, recapiti e le informazioni registrate su di loro — oltre ai suoi eventi e check-in.",
+    "changesBilling": "Questo team passa al piano Linyup di {org}, che da quel momento lo paga.",
+    "changesUndo": "Solo un amministratore di {org} potrà scollegare questo team in seguito.",
+    "changesChooseTeam": "Possiedi più di un team. Questo vale solo per quello selezionato sopra — un team che tieni fuori da {org} mantiene i suoi contatti per sé."
   },
   "Discover": {
     "tabPlugins": "Plugin",

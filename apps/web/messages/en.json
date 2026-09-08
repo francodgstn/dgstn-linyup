@@ -3280,7 +3280,12 @@
     "notFound": "Invitation not found.",
     "loginRequired": "You must be logged in as the team owner to accept this invitation.",
     "selectTeam": "Select your team",
-    "processing": "Processing…"
+    "processing": "Processing…",
+    "changesTitle": "What accepting changes",
+    "changesData": "Administrators of {org} will be able to read this team's contacts — names, contact details and the records kept on them — as well as its events and check-ins.",
+    "changesBilling": "This team moves onto {org}'s Linyup plan, and {org} pays for it from then on.",
+    "changesUndo": "Only an administrator of {org} can unlink this team later.",
+    "changesChooseTeam": "You own more than one team. This applies only to the one selected above — a team you keep out of {org} keeps its contacts to itself."
   },
   "Discover": {
     "tabPlugins": "Plugins",

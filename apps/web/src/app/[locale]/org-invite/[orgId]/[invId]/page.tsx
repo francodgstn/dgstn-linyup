@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, CheckCircle2, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, Info, XCircle } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
 
@@ -227,6 +227,35 @@ export default function OrgInvitePage() {
 
                     </div>
                   )}
+
+                  {/* WHAT ACCEPTING CHANGES — stated at the point of decision.
+                      Accepting hands `isOrgAdminOfTeam` read over the chosen
+                      team's contacts to every admin of the organisation and
+                      moves that team onto the org plan (`org_id` IS the grant,
+                      UX-35), and only an org admin can unlink it afterwards
+                      (`removeTeamFromOrg` asserts org admin; there is no
+                      team-side leave). None of that was said anywhere, while
+                      the select above lists EVERY studio the caller owns — so
+                      an owner who also runs a studio of their own could hand
+                      over its whole contact book by picking the wrong line of a
+                      dropdown, with the page framing it as a free upgrade.
+                      See docs/studio-independent-contacts.md. */}
+                  <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+                    <p className="flex items-center gap-1.5 text-sm font-medium">
+                      <Info className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      {t('changesTitle')}
+                    </p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                      <li>{t('changesData', { org: invitation.orgName })}</li>
+                      <li>{t('changesBilling', { org: invitation.orgName })}</li>
+                      <li>{t('changesUndo', { org: invitation.orgName })}</li>
+                    </ul>
+                    {!invitation.teamId && userTeams.length > 1 && (
+                      <p className="text-sm font-medium">
+                        {t('changesChooseTeam', { org: invitation.orgName })}
+                      </p>
+                    )}
+                  </div>
 
                   {inviteError && (
                     <p className="text-sm text-destructive">{inviteError}</p>

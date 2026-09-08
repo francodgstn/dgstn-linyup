@@ -3280,7 +3280,12 @@
     "notFound": "Einladung nicht gefunden.",
     "loginRequired": "Du musst als Team-Inhaber angemeldet sein, um diese Einladung anzunehmen.",
     "selectTeam": "Wähle dein Team",
-    "processing": "Wird verarbeitet…"
+    "processing": "Wird verarbeitet…",
+    "changesTitle": "Was sich mit dem Annehmen ändert",
+    "changesData": "Administratoren von {org} können die Kontakte dieses Teams lesen — Namen, Kontaktdaten und die dazu erfassten Angaben — sowie seine Events und Check-ins.",
+    "changesBilling": "Dieses Team wechselt auf den Linyup-Plan von {org}; ab dann zahlt {org} dafür.",
+    "changesUndo": "Nur ein Administrator von {org} kann dieses Team später wieder lösen.",
+    "changesChooseTeam": "Du führst mehr als ein Team. Dies gilt nur für das oben ausgewählte — ein Team, das du aus {org} heraushältst, behält seine Kontakte für sich."
   },
   "Discover": {
     "tabPlugins": "Plugins",

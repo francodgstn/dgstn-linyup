@@ -3280,7 +3280,12 @@
     "notFound": "Invitation introuvable.",
     "loginRequired": "Vous devez être connecté en tant que propriétaire de l'équipe pour accepter cette invitation.",
     "selectTeam": "Sélectionnez votre équipe",
-    "processing": "Traitement…"
+    "processing": "Traitement…",
+    "changesTitle": "Ce que l'acceptation change",
+    "changesData": "Les administrateurs de {org} pourront lire les contacts de cette équipe — noms, coordonnées et informations enregistrées à leur sujet — ainsi que ses événements et check-ins.",
+    "changesBilling": "Cette équipe passe sur le forfait Linyup de {org}, qui le paie à partir de ce moment.",
+    "changesUndo": "Seul un administrateur de {org} pourra dissocier cette équipe par la suite.",
+    "changesChooseTeam": "Vous possédez plusieurs équipes. Ceci ne concerne que celle sélectionnée ci-dessus — une équipe que vous gardez hors de {org} garde ses contacts pour elle."
   },
   "Discover": {
     "tabPlugins": "Plugins",
