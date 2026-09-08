@@ -2,7 +2,10 @@ import { FieldValue } from 'firebase-admin/firestore'
 import type { MigrationConfig } from '../config'
 import { sourceDb, targetDb } from '../config'
 import { BatchWriter } from '../batch-writer'
-import { CANONICAL_SUBSCRIPTION_TYPES } from '../transforms/subscriptions'
+import {
+  CANONICAL_SUBSCRIPTION_TYPES,
+  sourceTypeDuplicatesCanonical,
+} from '../transforms/subscriptions'
 import { transformTeamWeeklyReport } from '../transforms/team-weekly-reports'
 import { transformAutomationRule } from '../transforms/automation-rules'
 import { transformTeamInvitation } from '../transforms/team-invitations'
@@ -175,6 +178,18 @@ export async function pass11TeamSubcollections(
     for (const sub of TEAM_SUBCOLLECTIONS) {
       const snap = await src.collection('teams').doc(teamId).collection(sub).get()
       for (const d of snap.docs) {
+        // A SOURCE PLAN THAT DUPLICATES A CANONICAL ONE IS NOT COPIED. Both
+        // would land in the same list — the canonical one with prices and a
+        // description, the source one with nothing but a name — and the studio
+        // would be looking at two plans called "Unlimited". See
+        // `sourceTypeDuplicatesCanonical` for the full reasoning and for which
+        // of HMD's plans this drops.
+        if (sub === 'subscription_types' &&
+            sourceTypeDuplicatesCanonical((d.data() as { name?: string }).name)) {
+          bw.skip()
+          continue
+        }
+
         const tgtRef = tgt.collection('teams').doc(teamId).collection(sub).doc(d.id)
         if (!cfg.dryRun) {
           const existing = await tgtRef.get()

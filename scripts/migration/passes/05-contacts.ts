@@ -75,6 +75,17 @@ export async function pass05Contacts(
     )
     bw.merge(tgt.collection('teams').doc(teamId), { affiliations_enabled: true })
 
+    // THE NAME LIVES ON THE TYPE, NOT ON THE CONTACT. hmd-lineup stores only
+    // `subscription_type_id` on a contact; the matcher needs a name. Read the
+    // source team's own types once and hand the transform the lookup — see the
+    // subscription block in transforms/contacts.ts for the defect this fixes.
+    const srcTypes = await src.collection('teams').doc(teamId).collection('subscription_types').get()
+    const sourceTypeNames = new Map<string, string>(
+      srcTypes.docs
+        .map((d) => [d.id, String((d.data() as Record<string, unknown>).name ?? '')] as const)
+        .filter(([, name]) => name.length > 0),
+    )
+
     // HEURISTIC subscription matching counters — review these after migration
     // to validate the name-based matching against the real source data.
     let subMatched   = 0
@@ -90,7 +101,14 @@ export async function pass05Contacts(
 
       // Track subscription match rate before transforming (transform logs nothing)
       const srcData = d.data() as Record<string, unknown>
-      const srcSubName = srcData.subscription_type_name as string | undefined | null
+      // Counted through the SAME resolution the transform uses, or the counters
+      // report on a question nobody asked: the old version read the contact's
+      // own `subscription_type_name`, which is never set, so both counters sat
+      // at zero and the run looked like it had nothing to match.
+      const srcSubTypeId = srcData.subscription_type_id as string | undefined | null
+      const srcSubName =
+        (srcData.subscription_type_name as string | undefined | null) ??
+        (srcSubTypeId ? (sourceTypeNames.get(srcSubTypeId) ?? null) : null)
       if (srcSubName) {
         if (matchSubscriptionType(srcSubName) !== null) { subMatched++ }
         else { subUnmatched++ }
@@ -100,7 +118,7 @@ export async function pass05Contacts(
       // under AFFILIATIONS_OUTPUT_KEY (they are not a source subcollection); peel
       // them off and write them into the affiliations subcollection, then persist
       // the contact doc without that reserved key.
-      const transformed = transformContact(srcData)
+      const transformed = transformContact(srcData, sourceTypeNames)
       const affiliations =
         (transformed[AFFILIATIONS_OUTPUT_KEY] as Array<Record<string, unknown>> | undefined) ?? []
       delete transformed[AFFILIATIONS_OUTPUT_KEY]
