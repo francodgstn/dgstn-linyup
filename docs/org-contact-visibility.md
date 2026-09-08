@@ -136,6 +136,22 @@ also a manager there has never been able to create a contact's first affiliation
 The permission to *see* every contact was always wider than the permission to
 *do* anything with them.
 
+**It names `active_org_ids` too, and that arm grants nothing.** It is the `active`
+subset of the rows that build `org_ids`, so it admits no contact the first arm
+does not. It is there because Firestore checks a QUERY against the rule
+**statically** — an aggregation has no documents to evaluate one at a time — so a
+count constrained on `active_org_ids` cannot be proved to satisfy a rule naming
+only `org_ids`. Without it the dashboard's affiliation figure was
+`permission-denied` for every studio the caller was not personally a member of.
+One `array-contains` per query is a hard Firestore limit, so the query cannot
+carry both clauses instead.
+
+That defect shipped in the first pass and **every single-document test passed**.
+It took opening the page. The suite now exercises the query shapes the product
+actually issues — both counts, the roster list, and the unfiltered list that must
+be refused — and the numerator case was verified to fail against the old rule
+before being kept.
+
 Held by `packages/functions/src/orgs/orgContactVisibility.rules-test.ts`, whose
 last case is the one that matters most: the studio still reads every one of its
 own. Nothing here narrows what a tenant sees of itself.

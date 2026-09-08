@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import {
@@ -6,7 +7,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
 
 // Security-rules tests for WHICH CONTACTS AN ORGANISATION MAY READ.
 //
@@ -185,6 +186,78 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     const rival = testEnv.authenticatedContext('rivalAdmin').firestore()
     await assertFails(getDoc(doc(rival, 'contacts', 'affiliated')))
     await assertFails(getDoc(doc(rival, 'contacts', 'rivalMember')))
+  })
+
+  // ── THE QUERY SHAPES ────────────────────────────────────────────────────
+  //
+  // EVERY TEST ABOVE READS ONE DOCUMENT, AND THAT IS NOT ENOUGH. Firestore
+  // checks a QUERY against the rule STATICALLY — an aggregation has no documents
+  // to evaluate one at a time — so a query is admitted only when its own
+  // constraints prove the rule. The first version of this rule named `org_ids`
+  // alone, every single-document test passed, and the org dashboard's
+  // affiliation figure was `permission-denied` for every studio the caller was
+  // not personally a member of, because that figure is counted on
+  // `active_org_ids`. It took a browser to find. These are the shapes the
+  // product actually issues.
+
+  it('COUNTS on-books contacts — the dashboard denominator', async () => {
+    await assertSucceeds(
+      getCountFromServer(
+        query(
+          collection(asFedAdmin(), 'contacts'),
+          where('teamId', '==', STUDIO),
+          where('deleted_at', '==', null),
+          where('archived_at', '==', null),
+          where('affiliation_summary.org_ids', 'array-contains', ORG)
+        )
+      )
+    )
+  })
+
+  it('COUNTS currently-affiliated contacts — the dashboard numerator', async () => {
+    // The one the single-document tests could not see. `active_org_ids` is a
+    // subset of `org_ids` by construction, so this grants nothing; it has to be
+    // NAMED in the rule for the query to be provable.
+    await assertSucceeds(
+      getCountFromServer(
+        query(
+          collection(asFedAdmin(), 'contacts'),
+          where('teamId', '==', STUDIO),
+          where('deleted_at', '==', null),
+          where('archived_at', '==', null),
+          where('affiliation_summary.active_org_ids', 'array-contains', ORG)
+        )
+      )
+    )
+  })
+
+  it('LISTS the roster the org Affiliations page asks for', async () => {
+    const snap = await getDocs(
+      query(
+        collection(asFedAdmin(), 'contacts'),
+        where('teamId', 'in', [STUDIO]),
+        where('deleted_at', '==', null),
+        where('archived_at', '==', null),
+        where('affiliation_summary.org_ids', 'array-contains', ORG)
+      )
+    )
+    // And it returns the people on the books, not the studio's whole address book.
+    assert.deepEqual(snap.docs.map((d) => d.id).sort(), ['affiliated', 'lapsed'])
+  })
+
+  it('REFUSES the unfiltered roster — the query this page used to run', async () => {
+    // Dropping the affiliation clause is the old behaviour, and it must fail
+    // rather than quietly return everyone.
+    await assertFails(
+      getDocs(
+        query(
+          collection(asFedAdmin(), 'contacts'),
+          where('teamId', 'in', [STUDIO]),
+          where('deleted_at', '==', null),
+          where('archived_at', '==', null)
+        )
+      )
+    )
   })
 
   it('THE STUDIO STILL READS EVERY ONE OF ITS OWN', async () => {

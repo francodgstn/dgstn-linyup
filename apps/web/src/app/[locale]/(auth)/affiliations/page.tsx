@@ -674,9 +674,15 @@ export default function TeamAffiliationsPage() {
                 {t('notOnBooksTitle', { count: notOnOrgBooks })}
               </span>{' '}
               <span className="text-muted-foreground">
+                {/* The organisation's own word for an affiliation is the H1 of
+                    this page, so the sentence does not repeat it — and cannot:
+                    `affiliationTerm` is tenant-configurable, so any article in
+                    front of it ("Add a {term}") is a grammar bug waiting for the
+                    tenant that renames it. It read "Add a Affiliation" on the
+                    seeded org. */}
                 {orgName
-                  ? t('notOnBooksBody', { org: orgName, term: affiliationTerm })
-                  : t('notOnBooksBodyBare', { term: affiliationTerm })}
+                  ? t('notOnBooksBody', { org: orgName })
+                  : t('notOnBooksBodyBare')}
               </span>
             </span>
           </p>
