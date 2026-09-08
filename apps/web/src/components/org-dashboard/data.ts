@@ -95,7 +95,7 @@ export interface OrgStudioRow {
 
 /** Per-studio figures. `null` on either field means NOT ASKED OR DENIED. */
 export interface OrgStudioCounts {
-  people: number | null
+  onBooks: number | null
   affiliated: number | null
 }
 
@@ -153,30 +153,57 @@ export function useOrgRoster(orgId: string) {
 }
 
 /**
- * PEOPLE AND AFFILIATION, per studio — the two counts the federation is scaled by.
+ * ON THE BOOKS AND STILL VALID, per studio — the two counts the federation is
+ * scaled by, and NEITHER of them is a headcount.
+ *
+ * ── WHY THE HEADCOUNT IS GONE ───────────────────────────────────────────────
+ *
+ * This used to count every live contact of every member studio and call it
+ * `people`. A federation does not have those people: a studio inside it has
+ * contacts who are nobody's business but its own — someone who trains at the
+ * club spot, a lead from a fitness app, a person doing a personalised activity
+ * the studio runs under its own name. Counting them made the organisation look
+ * bigger than it is AND made every studio that serves non-members look worse at
+ * "coverage" for doing so. Both directions were wrong, and the second was a
+ * perverse incentive. See `docs/org-contact-visibility.md`.
+ *
+ * The federation now sees only the people on its books, and the rules agree:
+ * `orgAdminMayReadContact` denies an org admin a contact who holds no
+ * affiliation of theirs, so the old query would not merely be impolite — it
+ * would be refused.
+ *
+ * ── THE TWO FIELDS ARE DIFFERENT QUESTIONS AND BOTH ARE NEEDED ──────────────
+ *
+ *   `onBooks`    — `org_ids`, ANY status. Expired, revoked and merely requested
+ *                  all count: the organisation knows this person. This is the
+ *                  DENOMINATOR, and it is also exactly the set the rules let an
+ *                  admin read, so the figure can never describe more people than
+ *                  the page could name.
+ *
+ *   `affiliated` — `active_org_ids`, valid RIGHT NOW (denormalised from the
+ *                  status def's `countsAsActive`, flipped by the
+ *                  `expireAffiliations` sweep). This is the NUMERATOR. Needs
+ *                  `pnpm backfill:affiliation-active-orgs` on data written
+ *                  before the field existed; `org_ids` needs no backfill, being
+ *                  non-optional since the summary existed.
+ *
+ * Both name THIS org, so a studio's own internal club membership
+ * (`issuer: 'team'`) and a governing body it merely tracks (`issuer: 'external'`)
+ * are excluded — counting other people's badges as your own would be worse than
+ * counting nothing.
+ *
+ * The ratio of the two therefore reads "how many of our members are current",
+ * which is renewal health. The old ratio read "what share of these studios'
+ * customers are ours", which is market penetration — a different question, and
+ * not one a member studio had agreed to answer.
  *
  * BOTH COUNT LIVE CONTACTS ONLY, through `liveContactConstraints` — not deleted
  * AND not archived. They shipped with `deleted_at` alone, so an organisation
- * counted everyone its studios had ever looked after, including the people who
- * had left, and read a headcount that flattered it (Franco, 2026-09-08). The
- * pair now has one owner; see `lib/liveContacts.ts` for why it is a module.
- *
- * `affiliated` is narrowed on BOTH axes a federation can be flattered by:
- *
- *   WHOSE — `active_org_ids` array-contains THIS org, so a studio's own internal
- *   club membership (`issuer: 'team'`) and a governing body it merely tracks
- *   (`issuer: 'external'`) are excluded. Counting other people's badges as your
- *   own coverage would be worse than counting nothing.
- *
- *   WHEN — `active_org_ids` and not `org_ids`. The latter lists every org that
- *   has EVER put the contact on its books, lapsed licences included, so the
- *   figure and the coverage percentage beside it counted last season's members
- *   as this season's. See `AffiliationSummary` in shared, and note that the
- *   field needs `pnpm backfill:affiliation-active-orgs` on any data written
- *   before it existed.
+ * counted people who had left and read a figure that flattered it (Franco,
+ * 2026-09-08). The pair has one owner; see `lib/liveContacts.ts`.
  *
  * (`affiliation_summary` is denormalised onto the contact by
- * `onAffiliationWrite`, so this is one indexed count rather than a walk of every
+ * `onAffiliationWrite`, so these are indexed counts rather than a walk of every
  * contact's affiliations subcollection.)
  *
  * ADMIN ONLY, by rule — see fact 2 in the module header. `enabled` carries that,
@@ -192,12 +219,13 @@ export function useOrgStudioCounts(orgId: string, teamIds: string[], enabled: bo
     queryFn: async () => {
       const settled = await Promise.allSettled(
         teamIds.map(async (teamId) => {
-          const [people, affiliated] = await Promise.allSettled([
+          const [onBooks, affiliated] = await Promise.allSettled([
             getCountFromServer(
               query(
                 collection(db, CONTACTS_COLLECTION),
                 where('teamId', '==', teamId),
-                ...liveContactConstraints()
+                ...liveContactConstraints(),
+                where('affiliation_summary.org_ids', 'array-contains', orgId)
               )
             ),
             getCountFromServer(
@@ -212,7 +240,7 @@ export function useOrgStudioCounts(orgId: string, teamIds: string[], enabled: bo
           return {
             teamId,
             counts: {
-              people: people.status === 'fulfilled' ? people.value.data().count : null,
+              onBooks: onBooks.status === 'fulfilled' ? onBooks.value.data().count : null,
               affiliated: affiliated.status === 'fulfilled' ? affiliated.value.data().count : null,
             } satisfies OrgStudioCounts,
           }

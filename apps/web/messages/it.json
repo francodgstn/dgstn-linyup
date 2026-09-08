@@ -1080,7 +1080,10 @@
     "selectAll": "Seleziona tutto",
     "bulkRenewedPartial": "{ok} rinnovati, {failed} non riusciti",
     "clearSelection": "Deseleziona",
-    "manageTypes": "Gestisci i tipi"
+    "manageTypes": "Gestisci i tipi",
+    "notOnBooksTitle": "{count, plural, one {# contatto appartiene solo a questo studio} other {# contatti appartengono solo a questo studio}}.",
+    "notOnBooksBody": "{org} non può vederli. Assegna {term} per registrare qualcuno.",
+    "notOnBooksBodyBare": "L'organizzazione non può vederli. Assegna {term} per registrare qualcuno."
   },
   "SubscriptionsOverview": {
     "title": "Abbonamenti",
@@ -8053,10 +8056,8 @@
     "figureStudios": "Studi",
     "figureStudiosSub": "attivi al momento",
     "figureStudiosInvited": "{count, plural, one {# invito in sospeso} other {# inviti in sospeso}}",
-    "figurePeople": "Persone",
-    "figurePeopleSub": "in tutti gli studi membri",
     "figureWithheld": "visibile agli amministratori dell'organizzazione",
-    "figureAffiliatedSub": "{percent}% di tutte le persone",
+    "figureAffiliatedSub": "{percent}% ancora validi",
     "figureAffiliatedSubBare": "rilasciate da questa organizzazione",
     "figureEvents": "Eventi",
     "figureEventsSub": "in arrivo",
@@ -8068,7 +8069,6 @@
     "studiosEmptyBody": "Invita uno studio: comparirà qui con le sue persone e la sua copertura.",
     "studioUnnamed": "Studio senza nome",
     "studioInvited": "Invitato",
-    "studioPeople": "persone",
     "studioCoverage": "({percent}%)",
     "attentionTitle": "Da gestire",
     "attentionInvitedStudios": "{count, plural, one {Invito a uno studio in sospeso} other {Inviti a studi in sospeso}}",
@@ -8085,6 +8085,9 @@
     "growthEmptyHint": "Quando gli studi si uniscono, qui appare la crescita dell'organizzazione.",
     "growthSeries": "Studi",
     "statusTitle": "{term} per stato",
-    "statusAll": "{count, plural, one {# scheda} other {# schede}}"
+    "statusAll": "{count, plural, one {# scheda} other {# schede}}",
+    "figureOnBooks": "Persone registrate",
+    "figureOnBooksSub": "registrate presso l'organizzazione, qualsiasi stato",
+    "studioOnBooks": "registrate"
   }
 }

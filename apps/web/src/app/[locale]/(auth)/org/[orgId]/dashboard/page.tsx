@@ -137,7 +137,7 @@ export default function OrgDashboardPage() {
     true
   )
 
-  const people = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.people)) : null
+  const onBooks = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.onBooks)) : null
   const affiliated = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.affiliated)) : null
 
   const figuresLoading =
@@ -205,7 +205,7 @@ export default function OrgDashboardPage() {
         orgId={orgId}
         activeStudios={active.length}
         invitedStudios={invited}
-        people={people}
+        onBooks={onBooks}
         affiliated={affiliated}
         events={events?.total ?? null}
         affiliationTerm={affiliationTerm}

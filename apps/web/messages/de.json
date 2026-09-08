@@ -1080,7 +1080,10 @@
     "selectAll": "Alle auswählen",
     "bulkRenewedPartial": "{ok} verlängert, {failed} fehlgeschlagen",
     "clearSelection": "Auswahl aufheben",
-    "manageTypes": "Typen verwalten"
+    "manageTypes": "Typen verwalten",
+    "notOnBooksTitle": "{count, plural, one {# Kontakt gehört nur diesem Studio} other {# Kontakte gehören nur diesem Studio}}.",
+    "notOnBooksBody": "{org} kann sie nicht sehen. {term} vergeben, wenn jemand dort erfasst werden soll.",
+    "notOnBooksBodyBare": "Die Organisation kann sie nicht sehen. {term} vergeben, wenn jemand dort erfasst werden soll."
   },
   "SubscriptionsOverview": {
     "title": "Abonnements",
@@ -8053,10 +8056,8 @@
     "figureStudios": "Studios",
     "figureStudiosSub": "derzeit aktiv",
     "figureStudiosInvited": "{count, plural, one {# Einladung offen} other {# Einladungen offen}}",
-    "figurePeople": "Personen",
-    "figurePeopleSub": "in allen Mitgliedsstudios",
     "figureWithheld": "nur für Organisationsadministratoren sichtbar",
-    "figureAffiliatedSub": "{percent}% aller Personen",
+    "figureAffiliatedSub": "{percent}% aktuell gültig",
     "figureAffiliatedSubBare": "von dieser Organisation ausgestellt",
     "figureEvents": "Anlässe",
     "figureEventsSub": "stehen an",
@@ -8068,7 +8069,6 @@
     "studiosEmptyBody": "Laden Sie ein Studio ein — es erscheint hier mit seinen Personen und seiner Abdeckung.",
     "studioUnnamed": "Unbenanntes Studio",
     "studioInvited": "Eingeladen",
-    "studioPeople": "Personen",
     "studioCoverage": "({percent}%)",
     "attentionTitle": "Zu erledigen",
     "attentionInvitedStudios": "{count, plural, one {Studio-Einladung offen} other {Studio-Einladungen offen}}",
@@ -8085,6 +8085,9 @@
     "growthEmptyHint": "Sobald Studios beitreten, zeigt sich hier das Wachstum der Organisation.",
     "growthSeries": "Studios",
     "statusTitle": "{term} nach Status",
-    "statusAll": "{count, plural, one {# Eintrag} other {# Einträge}}"
+    "statusAll": "{count, plural, one {# Eintrag} other {# Einträge}}",
+    "figureOnBooks": "Erfasste Personen",
+    "figureOnBooksSub": "bei der Organisation erfasst, jeder Status",
+    "studioOnBooks": "erfasst"
   }
 }

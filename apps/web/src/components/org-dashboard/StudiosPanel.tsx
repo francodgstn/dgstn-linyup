@@ -19,17 +19,25 @@
  *
  * The Studios page is the alphabetical one — it is a directory you look a studio
  * up in. This is the opposite question: which studios ARE the federation. A
- * federation whose largest studio holds 60% of its people has a concentration
+ * federation whose largest studio brings 60% of its members has a concentration
  * risk that an A–Z list actively hides. Studios whose count could not be read
  * sink to the bottom rather than sorting as zero.
  *
- * ── THE BAR IS COVERAGE, AND IT IS THE POINT OF THE ROW ─────────────────────
+ * ── SIZE HERE MEANS MEMBERS BROUGHT, NOT CUSTOMERS SERVED ──────────────────
  *
- * Not "how big" — the number already says that — but what share of that studio's
- * people hold the organisation's own affiliation. That is the single fact a
+ * The rank and the left-hand figure count the studio's people ON THE
+ * ORGANISATION'S BOOKS, never its contact list — the federation has no claim on
+ * a studio's own clients and, since `orgAdminMayReadContact`, no way to read
+ * them either (`docs/org-contact-visibility.md`).
+ *
+ * ── THE BAR IS RENEWAL, AND IT IS THE POINT OF THE ROW ─────────────────────
+ *
+ * Not "how big" — the number already says that — but what share of the members
+ * that studio brought are CURRENT rather than lapsed. That is the single fact a
  * federation is FOR, it varies enormously between member studios, and it exists
  * nowhere else in the product. A studio at 12% is the row an organiser wants to
- * see without running a report.
+ * see without running a report. (It used to divide by the studio's whole contact
+ * list, which scored a studio down for serving anyone outside the federation.)
  */
 
 import { useTranslations } from 'next-intl'
@@ -49,8 +57,8 @@ export interface StudioLine extends OrgStudioRow {
 /** Size first, unknown last, then by name so the order is stable between renders. */
 export function rankStudios(lines: StudioLine[]): StudioLine[] {
   return [...lines].sort((a, b) => {
-    const ap = a.counts?.people
-    const bp = b.counts?.people
+    const ap = a.counts?.onBooks
+    const bp = b.counts?.onBooks
     if (ap == null && bp == null) return (a.name ?? '').localeCompare(b.name ?? '')
     if (ap == null) return 1
     if (bp == null) return -1
@@ -143,11 +151,11 @@ function StudioRow({
   affiliationTerm: string
 }) {
   const t = useTranslations('OrgDashboard')
-  const people = studio.counts?.people ?? null
+  const onBooks = studio.counts?.onBooks ?? null
   const affiliated = studio.counts?.affiliated ?? null
   const coverage =
-    people != null && affiliated != null && people > 0
-      ? Math.min(100, Math.round((affiliated / people) * 100))
+    onBooks != null && affiliated != null && onBooks > 0
+      ? Math.min(100, Math.round((affiliated / onBooks) * 100))
       : null
 
   return (
@@ -199,8 +207,8 @@ function StudioRow({
       </div>
 
       <div className="shrink-0 text-right">
-        <div className="text-sm font-semibold tabular-nums">{people ?? '—'}</div>
-        <div className="text-[11px] text-muted-foreground">{t('studioPeople')}</div>
+        <div className="text-sm font-semibold tabular-nums">{onBooks ?? '—'}</div>
+        <div className="text-[11px] text-muted-foreground">{t('studioOnBooks')}</div>
       </div>
       <div className="w-20 shrink-0 text-right">
         <div className="text-sm font-semibold tabular-nums text-primary">

@@ -1080,7 +1080,10 @@
     "selectAll": "Tout sélectionner",
     "bulkRenewedPartial": "{ok} renouvelé(s), {failed} en échec",
     "clearSelection": "Effacer la sélection",
-    "manageTypes": "Gérer les types"
+    "manageTypes": "Gérer les types",
+    "notOnBooksTitle": "{count, plural, one {# contact appartient à ce studio seul} other {# contacts appartiennent à ce studio seul}}.",
+    "notOnBooksBody": "{org} ne peut pas les voir. Attribuer {term} pour enregistrer quelqu'un.",
+    "notOnBooksBodyBare": "L'organisation ne peut pas les voir. Attribuer {term} pour enregistrer quelqu'un."
   },
   "SubscriptionsOverview": {
     "title": "Abonnements",
@@ -8053,10 +8056,8 @@
     "figureStudios": "Studios",
     "figureStudiosSub": "actifs actuellement",
     "figureStudiosInvited": "{count, plural, one {# invitation en attente} other {# invitations en attente}}",
-    "figurePeople": "Personnes",
-    "figurePeopleSub": "dans tous les studios membres",
     "figureWithheld": "visible par les administrateurs de l'organisation",
-    "figureAffiliatedSub": "{percent}% de toutes les personnes",
+    "figureAffiliatedSub": "{percent}% encore valides",
     "figureAffiliatedSubBare": "délivrées par cette organisation",
     "figureEvents": "Événements",
     "figureEventsSub": "à venir",
@@ -8068,7 +8069,6 @@
     "studiosEmptyBody": "Invitez un studio : il apparaîtra ici avec ses personnes et sa couverture.",
     "studioUnnamed": "Studio sans nom",
     "studioInvited": "Invité",
-    "studioPeople": "personnes",
     "studioCoverage": "({percent}%)",
     "attentionTitle": "À traiter",
     "attentionInvitedStudios": "{count, plural, one {Invitation de studio en attente} other {Invitations de studio en attente}}",
@@ -8085,6 +8085,9 @@
     "growthEmptyHint": "Dès que des studios rejoignent l'organisation, sa croissance apparaît ici.",
     "growthSeries": "Studios",
     "statusTitle": "{term} par statut",
-    "statusAll": "{count, plural, one {# dossier} other {# dossiers}}"
+    "statusAll": "{count, plural, one {# dossier} other {# dossiers}}",
+    "figureOnBooks": "Personnes enregistrées",
+    "figureOnBooksSub": "enregistrées auprès de l'organisation, tous statuts",
+    "studioOnBooks": "enregistrées"
   }
 }

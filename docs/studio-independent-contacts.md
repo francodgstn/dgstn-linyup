@@ -22,9 +22,18 @@ Only one of them is hard:
 
 | | Who owns the client relationship | Shape |
 |---|---|---|
-| The club's business | HMD invoices, HMD's liability, the coach delivers | One studio. Already built. |
+| The club's business, on the org's books | HMD invoices or the club does; the person is a federation member | One studio. Already built. |
+| **The club's business, NOT the org's books** | **The club invoices; the person is nobody's member — a walk-in, a fitness-app lead, a personalised activity** | **One studio, and no affiliation row. See `docs/org-contact-visibility.md`.** |
 | The coach's business, entangled | The coach invoices, but same room, same people, adjacent brand | The hard case — this document |
 | A separate business | Own name, own clients, own tax | Two studios. Never in doubt. |
+
+**The second row was missing when this document was written, and it is the
+common one.** It came out of the same conversation a day later (Franco,
+2026-09-08, on HMD Basel) and it is why the table has four rows rather than
+three: the tenant answers *whose business is this*, the affiliation row answers
+*whose member are they*, and fusing them implies a second studio for a case that
+needs nothing of the sort. `docs/org-contact-visibility.md` is that design, and
+it shipped.
 
 The first case is finished work: `Activity.type: 'appointment'`, availability,
 priced durations, and the **own-scoped coach** (`callerOwnsContact` /

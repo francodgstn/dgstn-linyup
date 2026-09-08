@@ -68,10 +68,31 @@ function useOrgTeamIds(orgId: string) {
   })
 }
 
-function useOrgContacts(teams: TeamMeta[] | undefined) {
+/**
+ * THE PEOPLE ON THIS ORGANISATION'S BOOKS — and deliberately not the member
+ * studios' contact lists, which this page used to download whole.
+ *
+ * `affiliation_summary.org_ids` array-contains THIS org: the contact holds an
+ * affiliation the organisation issued, in ANY status. Someone a studio looks
+ * after who has never been put on the federation's books does not appear here
+ * at all, and since `orgAdminMayReadContact` they cannot be read either — so
+ * this filter is not a courtesy, it is what keeps the query from being denied
+ * document by document. See `docs/org-contact-visibility.md`.
+ *
+ * `org_ids` and NOT `active_org_ids`: an expired or merely requested licence is
+ * precisely what an administrator opens this page to chase. The status columns
+ * do the narrowing; the query must not.
+ *
+ * WHERE SOMEBODY IS ADDED TO THE BOOKS IS THE STUDIO'S PAGE, not this one, and
+ * that was already true before the filter: `upsertAffiliation` opens with
+ * `assertManager(uid, teamId)` on the STUDIO, so an org admin who is not also a
+ * manager there has never been able to create the first row. This page manages
+ * the affiliations that exist.
+ */
+function useOrgContacts(orgId: string, teams: TeamMeta[] | undefined) {
   const teamIds = teams?.map((t) => t.id) ?? []
   return useQuery<ContactRow[]>({
-    queryKey: ['org-contacts', teamIds],
+    queryKey: ['org-contacts', orgId, teamIds],
     enabled: teamIds.length > 0,
     staleTime: 2 * 60_000,
     queryFn: async () => {
@@ -90,6 +111,7 @@ function useOrgContacts(teams: TeamMeta[] | undefined) {
               collection(db, CONTACTS_COLLECTION),
               where('teamId', 'in', chunk),
               ...liveContactConstraints(),
+              where('affiliation_summary.org_ids', 'array-contains', orgId),
             ),
           )
           snap.docs.forEach((d) => {
@@ -379,7 +401,7 @@ export default function OrgAffiliationsPage() {
   const [toast, setToast] = useState<string | null>(null)
 
   const { data: teams, isLoading: teamsLoading } = useOrgTeamIds(orgId)
-  const { data: contacts, isLoading: contactsLoading } = useOrgContacts(teams)
+  const { data: contacts, isLoading: contactsLoading } = useOrgContacts(orgId, teams)
   const { data: rawDefs } = useStatusDefs(orgId)
   const { data: affiliationTypes = [], isLoading: typesLoading } = useOrgAffiliationTypes(orgId)
 

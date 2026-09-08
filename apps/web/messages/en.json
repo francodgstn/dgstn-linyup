@@ -1080,7 +1080,10 @@
     "selectAll": "Select all",
     "bulkRenewedPartial": "Renewed {ok}, {failed} failed",
     "clearSelection": "Clear selection",
-    "manageTypes": "Manage types"
+    "manageTypes": "Manage types",
+    "notOnBooksTitle": "{count, plural, one {# contact is yours alone} other {# contacts are yours alone}}.",
+    "notOnBooksBody": "{org} cannot see them. Add a {term} when someone should be on its records.",
+    "notOnBooksBodyBare": "The organisation cannot see them. Add a {term} when someone should be on its records."
   },
   "SubscriptionsOverview": {
     "title": "Subscriptions",
@@ -8053,10 +8056,8 @@
     "figureStudios": "Studios",
     "figureStudiosSub": "currently active",
     "figureStudiosInvited": "{count, plural, one {# invitation pending} other {# invitations pending}}",
-    "figurePeople": "People",
-    "figurePeopleSub": "across every member studio",
     "figureWithheld": "visible to organisation admins",
-    "figureAffiliatedSub": "{percent}% of all people",
+    "figureAffiliatedSub": "{percent}% still current",
     "figureAffiliatedSubBare": "issued by this organisation",
     "figureEvents": "Events",
     "figureEventsSub": "coming up",
@@ -8068,7 +8069,6 @@
     "studiosEmptyBody": "Invite a studio and it appears here with its people and its coverage.",
     "studioUnnamed": "Unnamed studio",
     "studioInvited": "Invited",
-    "studioPeople": "people",
     "studioCoverage": "({percent}%)",
     "attentionTitle": "Needs attention",
     "attentionInvitedStudios": "{count, plural, one {Studio invitation not accepted} other {Studio invitations not accepted}}",
@@ -8085,6 +8085,9 @@
     "growthEmptyHint": "Once studios join, this shows how the organisation has grown.",
     "growthSeries": "Studios",
     "statusTitle": "{term} by status",
-    "statusAll": "{count, plural, one {# record} other {# records}}"
+    "statusAll": "{count, plural, one {# record} other {# records}}",
+    "figureOnBooks": "People on record",
+    "figureOnBooksSub": "registered with the organisation, any status",
+    "studioOnBooks": "on record"
   }
 }

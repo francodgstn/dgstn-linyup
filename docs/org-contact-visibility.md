@@ -1,0 +1,188 @@
+# What an organisation may see of a member studio's people — design
+
+**Status: BUILT 2026-09-08** (Franco). A studio inside an organisation keeps its
+own contacts to itself. The federation sees a person only once that person is on
+its books — and "on its books" means holding an affiliation the organisation
+issued, in **any** status.
+
+Split out of `docs/studio-independent-contacts.md`, which asked when a coach
+needs a second studio. This is the larger and more common question that came out
+of it, and the answer is not a second studio at all.
+
+## The case
+
+> "In HMD Basel I have a few contacts coming into the club spot, maybe doing
+> personalised activities, and contacts coming from fitness apps. In the old
+> lineup those were marked 'guest' so they would not count in the total. The
+> amount and frequency is not enough to justify a dedicated studio, and I do
+> offer the activities under my club, but outside the HMD org — unless they take
+> up more consistent participation or join HMD events." (Franco, 2026-09-08)
+
+## The axis this separates
+
+The product had been treating one question as two halves of the same thing. They
+are orthogonal:
+
+| Question | Answered by |
+|---|---|
+| **Whose business is this?** | the tenant — `teamId` |
+| **Whose member are they?** | the affiliation row |
+
+A contact can be the studio's business and not the organisation's member, and
+that is the ordinary case, not an edge one. It needs **no second tenant** — which
+is what `docs/studio-independent-contacts.md` would have implied if the two axes
+stayed fused. That document answers a different case: the coach whose personal
+training has its own money and its own data controller. Here the studio is both.
+
+## 'Guest' is not a status any more, it is the absence of a row
+
+The old product expressed non-membership with a `guest` MEMBERSHIP STATUS: a
+person on the federation's roster, flagged as not counting. Affiliations replaced
+that model — belonging is a ROW, so "not affiliated" is the absence of one and
+needs no status to say it.
+
+**So the affiliation row IS the disclosure.** Creating one — in any status,
+`guest` and `requested` included — is the studio's act of putting this person on
+the organisation's books. Delete it and they go back to invisible:
+`onAffiliationWrite` recomputes the summary from the rows that remain, so this
+reverses rather than merely stopping.
+
+**`DEFAULT_ORG_AFFILIATION_STATUSES` still ships a `guest` status described as
+"No affiliation process started", and that description is now a trap.** Under
+this model "no process started" is expressed by having no row at all, so
+*creating* a `guest` row is the opposite of what its description suggests — it is
+the disclosure. A manager picking `guest` to mean "not the federation's business"
+would achieve precisely the thing they were avoiding. Either redescribe it as
+what it now is (*on the books, not yet affiliated* — a useful funnel state the
+federation legitimately wants) or drop it from the defaults. **Not done in this
+change**; it is copy plus a data question about rows that already hold it.
+
+## What changed
+
+### 1. The rule — `orgAdminMayReadContact`
+
+The contact read admitted `isOrgAdminOfTeam(resource.data.teamId)`: an
+unconditioned grant over every contact of every member studio. Belonging to a
+federation meant handing it your address book.
+
+It now additionally requires the team's organisation to appear in the contact's
+`affiliation_summary.org_ids`.
+
+**`org_ids`, not `active_org_ids`.** An expired, revoked or merely requested
+licence still means the organisation knows this person, and renewing or
+reviewing them is exactly what an administrator opens the roster to do.
+`active_org_ids` answers "is it valid now", which is a FIGURE and not a
+permission; narrowing to it would hide the very people the federation needs to
+chase.
+
+**It costs what it replaced.** The team's `org_id`, then the caller's
+`org_members` row — the array test is a field already on the document,
+denormalised by `onAffiliationWrite` for exactly this (its `AffiliationSummary`
+comment names Firestore rules as a reader). No backfill: `org_ids` is
+non-optional and has been written since the summary existed, unlike its
+`active_` sibling. A contact with no summary at all reads as `[]` and is
+therefore HIDDEN — the safe direction.
+
+**The read now agrees with the write, which it never did.** `upsertAffiliation`
+opens with `assertManager(uid, teamId)` on the STUDIO, so an org admin who is not
+also a manager there has never been able to create a contact's first affiliation.
+The permission to *see* every contact was always wider than the permission to
+*do* anything with them.
+
+Held by `packages/functions/src/orgs/orgContactVisibility.rules-test.ts`, whose
+last case is the one that matters most: the studio still reads every one of its
+own. Nothing here narrows what a tenant sees of itself.
+
+### 2. The federation's headcount is gone
+
+The org dashboard counted every live contact of every member studio and called it
+`people`. Two things were wrong with it and they pointed in opposite directions:
+it made the organisation look bigger than it is, and it scored a studio DOWN on
+"coverage" for serving anyone outside the federation. The second is a perverse
+incentive — it rewards a studio for not taking on the very clients this design
+exists to protect.
+
+`onBooks` (`org_ids`, any status) replaces it as both the figure and the
+denominator; `affiliated` (`active_org_ids`) stays as the numerator. The ratio
+therefore now reads **renewal health** — how many of our members are current —
+rather than **market penetration** — what share of these studios' customers are
+ours, which is a question the member studios never agreed to answer.
+
+The figure can never describe more people than the page could name, because it
+counts exactly the set the rules let an admin read.
+
+### 3. The org's Affiliations roster is filtered
+
+It downloaded every live contact of every member studio with no affiliation
+filter at all, and rendered anyone without a row as status `guest` — the old
+model, alive in the UI. It now asks for `org_ids` array-contains the org. Under
+the new rule this is not a courtesy: without it the query is denied document by
+document.
+
+### 4. The studio is told what the organisation cannot see
+
+A guarantee nobody can observe is worth very little, so the studio's Affiliations
+page states the number: *"N contacts are yours alone. {org} cannot see them. Add
+a {term} when someone should be on its records."* Computed in memory from
+contacts the page already holds — no query, no permission, no field.
+
+**Neutral, never a warning.** Having unaffiliated contacts is the normal,
+supported state and the entire reason the boundary exists. Styling it as a
+problem would push managers to affiliate people who should not be, which is the
+outcome the design is there to prevent. It reports, and names the action without
+demanding it.
+
+It counts `org_ids`, not `has_active` — the filter chips above it already answer
+"is their affiliation current", and this is the different question of whether the
+organisation knows the person at all. A lapsed member is inactive but very much
+on the books, and counting them here would tell a manager the federation cannot
+see somebody it can.
+
+## What the organisation gives up, knowingly
+
+**It can no longer state its own reach.** "How many people are in our member
+studios" is a real federation question — insurance, grant applications, reporting
+to a national body — and there is now no number in the product that answers it.
+That is the deliberate trade: the federation's size is the people who joined it,
+not the customers of the clubs that joined it.
+
+If it turns out to matter, the clean answer is a studio OPTING IN to publish a
+headcount — a number, never people. Not built; do not add it by widening a read.
+
+## What was already right and is untouched
+
+- **The affiliations collection group** already scoped the org to rows it issued
+  (`isOrgAdminOfOrg(resource.data.get('org_id', null))`) — never a studio's
+  internal club membership (`issuer: 'team'`), never a governing body it merely
+  tracks (`issuer: 'external'`). That boundary was correct before this change;
+  only the contact document was not.
+- **Contact subcollections** (notes, goals, subscription history) gate on
+  `canAccessContact`, which has no org branch at all. The federation never saw
+  them.
+- **Org event check-ins and program items** still name participants. That is not
+  a hole: attending the organisation's event is itself a disclosure, and it is
+  the second of the two triggers Franco named — "more consistent participation
+  and/or join HMD events".
+- **The status strip** counts affiliation DOCUMENTS through the collection group,
+  which was already scoped by issuer. Unchanged.
+
+## Deploy notes
+
+- `firestore.index.json` gains one composite index —
+  `teamId, deleted_at, archived_at, affiliation_summary.org_ids CONTAINS` —
+  mirroring the `active_org_ids` one. Additive; deploy it before the web app or
+  both new queries fail on a missing index.
+- **No backfill.** `org_ids` is non-optional and has always been written. The
+  `active_org_ids` backfill (`pnpm backfill:affiliation-active-orgs`) remains a
+  precondition for the numerator, as it already was.
+- Rules and app should ship together. Rules first is safe (the org roster shows
+  fewer people than it could); app first is also safe (the queries simply return
+  what the old rule already allowed). Neither order breaks a studio.
+
+## Open
+
+- **The `guest` status description**, above. The only loose end in this design.
+- **A studio's own opt-in headcount**, if a federation ever needs its reach back.
+- **Aggregate inference**: an org admin can see a studio's on-books count but not
+  its total, so it cannot compute what it is not being shown. Deliberate, and
+  worth not eroding.

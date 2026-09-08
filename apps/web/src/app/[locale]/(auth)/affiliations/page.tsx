@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  collection, getDocs, query, where, collectionGroup,
+  collection, doc, getDoc, getDocs, query, where, collectionGroup,
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
@@ -31,7 +31,7 @@ import {
 import {
   Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
-import { IdCard, Settings2 } from 'lucide-react'
+import { EyeOff, IdCard, Settings2 } from 'lucide-react'
 import { renewAffiliationCall } from '@/components/affiliations/renew'
 import { AffiliationBulkBar, RenewConfirmDialog } from '@/components/affiliations/RenewUI'
 import { AffiliationTypesManager } from '@/components/affiliations/AffiliationTypesManager'
@@ -40,6 +40,24 @@ import { AffiliationTypesManager } from '@/components/affiliations/AffiliationTy
 
 
 // ─── data hooks ───────────────────────────────────────────────────────────────
+
+/**
+ * The organisation's NAME, for the one sentence on this page that has to say
+ * WHO can see a contact. A member studio may read its org's root document —
+ * see the note on `match /organizations/{orgId}` in `firestore.rules`.
+ */
+function useOrgName(orgId: string | undefined) {
+  return useQuery<string | null>({
+    queryKey: ['org-name', orgId ?? null],
+    enabled: !!orgId,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      if (!orgId) return null
+      const snap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId))
+      return snap.exists() ? ((snap.data().name as string | undefined) ?? null) : null
+    },
+  })
+}
 
 function useTeamContacts(teamId: string | null) {
   return useQuery<Contact[]>({
@@ -382,6 +400,7 @@ export default function TeamAffiliationsPage() {
   const [typesOpen, setTypesOpen] = useState(false)
 
   const orgId = team?.org_id
+  const { data: orgName } = useOrgName(orgId)
   // Affiliation types are studio "offerings" — manager+ may edit them.
   const canEdit = can('offerings.manage')
 
@@ -456,6 +475,19 @@ export default function TeamAffiliationsPage() {
     () => contacts?.filter((c) => c.affiliation_summary?.has_active).length ?? 0,
     [contacts],
   )
+
+  // NOT ON THE ORGANISATION'S BOOKS — the studio's own people, and the number
+  // that tells the manager what the federation cannot see.
+  //
+  // `org_ids` (any status), never `has_active`: the filter chips above already
+  // answer "is their affiliation current", and this is a different question —
+  // whether the organisation knows this person AT ALL. A contact with a lapsed
+  // licence is inactive but very much on the books, and counting them here
+  // would tell a manager the org cannot see somebody it can.
+  const notOnOrgBooks = useMemo(() => {
+    if (!orgId || !contacts) return 0
+    return contacts.filter((c) => !(c.affiliation_summary?.org_ids ?? []).includes(orgId)).length
+  }, [contacts, orgId])
 
   const countsByStatus = useMemo(() => {
     if (selectedTypeId === '__all__') return {}
@@ -564,6 +596,42 @@ export default function TeamAffiliationsPage() {
           </Button>
         )}
       </div>
+
+      {/* WHAT THE ORGANISATION CANNOT SEE — stated to the studio, because the
+          studio is the only party that can see both sides of it.
+
+          A studio inside a federation has contacts who are nobody's business but
+          its own: someone training at the club spot, a lead from a fitness app,
+          a person doing an activity the studio runs under its own name. Since
+          `orgAdminMayReadContact`, the organisation cannot read them at all —
+          which is the intent, and is also exactly the kind of guarantee that is
+          worthless if the person relying on it cannot tell whether it is
+          holding. So the studio gets the number.
+
+          NEUTRAL, NEVER A WARNING. Having unaffiliated contacts is the normal,
+          supported state and the whole reason this boundary exists; styling it
+          as a problem would push managers to affiliate people who should not be,
+          which is the exact outcome the design is there to prevent. It reports,
+          and names the action without demanding it.
+
+          See `docs/org-contact-visibility.md`. */}
+      {orgId && notOnOrgBooks > 0 && (
+        <div className="rounded-md border bg-muted/40 p-3">
+          <p className="flex items-start gap-2 text-sm">
+            <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span>
+              <span className="font-medium">
+                {t('notOnBooksTitle', { count: notOnOrgBooks })}
+              </span>{' '}
+              <span className="text-muted-foreground">
+                {orgName
+                  ? t('notOnBooksBody', { org: orgName, term: affiliationTerm })
+                  : t('notOnBooksBodyBare', { term: affiliationTerm })}
+              </span>
+            </span>
+          </p>
+        </div>
+      )}
 
       {/* The types manager, unchanged, in a dialog. On close the types query is
           invalidated so a type added here shows up in the selector below without
