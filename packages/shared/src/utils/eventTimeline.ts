@@ -35,9 +35,21 @@
  */
 
 /** How much calendar the timeline shows at once. */
-export type TimelineZoom = 'year' | 'month'
+export type TimelineZoom = 'years' | 'year' | 'month'
 
-export const TIMELINE_ZOOMS: readonly TimelineZoom[] = ['year', 'month'] as const
+/** Widest first, which is the order the zoom control renders them in. */
+export const TIMELINE_ZOOMS: readonly TimelineZoom[] = ['years', 'year', 'month'] as const
+
+/**
+ * How many years the widest zoom spans, and it is THREE for a reason: a
+ * federation asking "how does next season sit against this one" needs the year
+ * before and the year after in the same picture. Two would answer only half of
+ * that, and four starts compressing a year past the point where a bar is a bar.
+ *
+ * The window is centred on the anchor's year, so 2026 shows 2025–2027 and the
+ * events you already know about are in the middle rather than at an edge.
+ */
+export const TIMELINE_YEARS_SPAN = 3
 
 /** A half-open interval `[start, end)` in LOCAL time. */
 export interface TimelineWindow {
@@ -49,6 +61,11 @@ export interface TimelineWindow {
 /** The window of `zoom` that contains `anchor`. */
 export function timelineWindow(zoom: TimelineZoom, anchor: Date): TimelineWindow {
   const y = anchor.getFullYear()
+  if (zoom === 'years') {
+    // CENTRED on the anchor's year, not started at it — see TIMELINE_YEARS_SPAN.
+    const half = Math.floor(TIMELINE_YEARS_SPAN / 2)
+    return { zoom, start: new Date(y - half, 0, 1), end: new Date(y - half + TIMELINE_YEARS_SPAN, 0, 1) }
+  }
   if (zoom === 'year') {
     return { zoom, start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) }
   }
@@ -64,6 +81,14 @@ export function timelineWindow(zoom: TimelineZoom, anchor: Date): TimelineWindow
  */
 export function shiftTimelineWindow(w: TimelineWindow, delta: number): TimelineWindow {
   const s = w.start
+  if (w.zoom === 'years') {
+    // A WHOLE SPAN per step, so paging never shows a year you have just read.
+    // The anchor passed back is the CENTRE year, because that is what
+    // `timelineWindow` centres on — handing it the start would drift the window
+    // by a year on every step.
+    const centre = s.getFullYear() + Math.floor(TIMELINE_YEARS_SPAN / 2)
+    return timelineWindow('years', new Date(centre + delta * TIMELINE_YEARS_SPAN, 0, 1))
+  }
   return w.zoom === 'year'
     ? timelineWindow('year', new Date(s.getFullYear() + delta, 0, 1))
     : timelineWindow('month', new Date(s.getFullYear(), s.getMonth() + delta, 1))
@@ -104,8 +129,14 @@ export function windowContains(w: TimelineWindow, t: Date): boolean {
  * keeps the lane count it would have on a desktop, while laptops draw the whole
  * year with room to spare and only tablets and phones scroll. 28px per day
  * holds a two-digit date the same way and puts a long month at 868.
+ *
+ * The widest zoom is measured PER YEAR rather than per month, because at that
+ * scale a month is never labelled and never needs to be: 300px a year keeps the
+ * four year labels apart and still leaves a fortnight-long camp about 12px of
+ * bar, which reads as a bar rather than a tick.
  */
 export const TIMELINE_MIN_UNIT_PX: Record<TimelineZoom, number> = {
+  years: 300,
   year: 64,
   month: 28,
 }
@@ -116,6 +147,7 @@ export const TIMELINE_MIN_UNIT_PX: Record<TimelineZoom, number> = {
  * scrolls, rather than either compressing.
  */
 export function timelineMinTrackPx(w: TimelineWindow): number {
+  if (w.zoom === 'years') return TIMELINE_YEARS_SPAN * TIMELINE_MIN_UNIT_PX.years
   if (w.zoom === 'year') return 12 * TIMELINE_MIN_UNIT_PX.year
   const days = Math.round((w.end.getTime() - w.start.getTime()) / 86_400_000)
   return days * TIMELINE_MIN_UNIT_PX.month
@@ -135,7 +167,8 @@ export interface TimelineTick {
 }
 
 /**
- * The gridlines. Month starts for a year; days for a month.
+ * The gridlines. Quarters across several years, month starts for a year, days
+ * for a month.
  *
  * THE LABEL DENSITY IS DECIDED HERE, from the track width, because it is the
  * one thing that cannot be decided in CSS: at 1100px a month's 31 day-numbers
@@ -144,6 +177,19 @@ export interface TimelineTick {
  */
 export function timelineTicks(w: TimelineWindow, trackPx: number): TimelineTick[] {
   const ticks: TimelineTick[] = []
+  if (w.zoom === 'years') {
+    // QUARTERS, LABELLED AT JANUARY. Monthly gridlines over three years is 36 of
+    // them — a grey comb rather than structure — and a year is far too coarse to
+    // place a September camp against. A quarter is the coarsest line that still
+    // says roughly when, and only the year gets written.
+    const y0 = w.start.getFullYear()
+    const years = Math.round((w.end.getFullYear() - y0) || TIMELINE_YEARS_SPAN)
+    for (let i = 0; i < years * 4; i++) {
+      const date = new Date(y0 + Math.floor(i / 4), (i % 4) * 3, 1)
+      ticks.push({ at: fractionOf(w, date), date, labelled: i % 4 === 0, weekend: false })
+    }
+    return ticks
+  }
   if (w.zoom === 'year') {
     const y = w.start.getFullYear()
     // A month label is ~26px ("Sep"); below ~40px per month, label every third.
