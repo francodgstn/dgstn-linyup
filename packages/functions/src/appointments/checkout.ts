@@ -395,9 +395,10 @@ export const createAppointmentCheckout = onCall(
 
     // ── Create the Connect checkout; the webhook (kind: 'appointment') confirms. ──
     const slugQuery = data.slug ? `&slug=${encodeURIComponent(data.slug)}&seg=appointments` : ''
-    const { successUrl, cancelUrl } = buildResultUrls(locale, {
+    const { successUrl, cancelUrl } = await buildResultUrls(locale, {
       extraQuery: slugQuery,
       origin: data.origin,
+      teamId,
     })
 
     // ONE instant for the Stripe session and for the promo reservation guarding

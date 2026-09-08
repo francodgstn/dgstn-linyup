@@ -21,6 +21,12 @@ Built:
 - **Host → tenant resolution in the app** (`proxy.ts` +
   `lib/customDomainTenant.ts` + `shared/utils/customDomainPaths.ts`), and the
   edge Worker reduced to a pass-through.
+- **The Stripe return stays on the domain.** `buildResultUrls` resolves the
+  tenant's active host and `resolveBaseUrl` accepts the caller's origin when it
+  matches it — per tenant, never per pattern: widening the trusted regex to
+  cover customer domains would let studio A's checkout return a visitor to
+  studio B's site. Pinned by `domains/returnOrigin.test.ts`, including the
+  look-alike (`https://evilbook.theirdojo.ch`) and plain-http cases.
 
 Not built:
 
@@ -28,14 +34,6 @@ Not built:
   read at ~39 call sites; a booking confirmation therefore links to
   `app.linyup.com/public/{slug}/…` even for a studio on their own domain. Those
   links WORK — they are just not branded.
-- **The Stripe return leaves the domain.** `resolveBaseUrl` validates the
-  caller's origin against a static `*.linyup.com` regex, so a visitor who pays on
-  `book.theirdojo.ch` lands back on `app.linyup.com/pay/result`. They get their
-  booking, but they are bounced off the studio's domain and their contact session
-  — which is ORIGIN-SCOPED — does not come with them. Fixing it means checking
-  the origin against **that tenant's** verified domain (widening the regex would
-  be an open redirect) and threading a teamId through `buildResultUrls`'s ten
-  callers.
 - **In-page links keep the slug.** `publicHref` still emits
   `/public/{slug}/shop`, so the address bar shows the short form only until the
   first click. Both forms serve (see below); making the builders host-aware is

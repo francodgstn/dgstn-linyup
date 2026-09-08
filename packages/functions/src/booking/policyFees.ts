@@ -62,7 +62,7 @@ export async function createPolicyFeeCheckoutUrl(params: {
   const { team, fee } = params
   const locale = params.locale ?? 'en'
   const amountMinor = requireChargeableAmountFromMajor(fee.amount)
-  const { successUrl, cancelUrl } = buildResultUrls(locale)
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, { teamId: team.id })
 
   const metadata: Record<string, string> = {
     teamId: team.id,

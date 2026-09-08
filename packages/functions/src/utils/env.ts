@@ -40,10 +40,26 @@ const TRUSTED_ORIGIN_RE =
  * Do NOT use this for EMAILED links — those must always use getHostingUrl(), the
  * canonical public URL, since the recipient's browser has no relevant origin.
  */
-export function resolveBaseUrl(origin?: string | null): string {
+export function resolveBaseUrl(origin?: string | null, tenantHost?: string | null): string {
   if (origin) {
     const trimmed = origin.trim().replace(/\/+$/, '')
     if (TRUSTED_ORIGIN_RE.test(trimmed)) return trimmed
+    // …and the ONE custom domain belonging to the tenant this checkout is for.
+    //
+    // Passed in per call rather than matched against a pattern, because the
+    // safe question is "is this THIS tenant's verified domain" — not "is this
+    // anybody's". Widening TRUSTED_ORIGIN_RE to cover customer domains would
+    // let a checkout for studio A return the visitor to studio B's site, which
+    // is an open redirect through our own customer list.
+    //
+    // Without this a visitor who pays on `book.theirdojo.ch` lands back on
+    // app.linyup.com: the booking is fine, but they are bounced off the studio's
+    // domain, and the public contact session is ORIGIN-SCOPED so it does not
+    // come with them — they arrive signed out, at the moment they expect a
+    // confirmation.
+    if (tenantHost && trimmed.toLowerCase() === `https://${tenantHost.toLowerCase()}`) {
+      return trimmed
+    }
   }
   return getHostingUrl()
 }

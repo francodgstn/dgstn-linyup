@@ -27,6 +27,7 @@ import {
   type CheckoutSessionCloseOutcome,
   type IntroCouponSpec,
 } from '../utils/connect/client'
+import { activeCustomDomainHost } from '../domains/activeDomain'
 import { resolveBaseUrl } from '../utils/env'
 import { sha256Hex } from '../utils/crypto'
 import { requireChargeableAccount, type EnabledTeam } from './access'
@@ -173,8 +174,15 @@ export function requireChargeableMinorAmount(amount: unknown): number {
  */
 const CHECKOUT_SESSION_ID_PARAM = '&cs={CHECKOUT_SESSION_ID}'
 
-/** Default `pay/result` URLs (success/cancel), honouring caller overrides. */
-export function buildResultUrls(
+/**
+ * Default `pay/result` URLs (success/cancel), honouring caller overrides.
+ *
+ * ASYNC because of `teamId`: the return origin is validated against THAT
+ * tenant's verified custom domain, which is a Firestore read. Resolving it here
+ * rather than at each of the callers keeps one site making that security
+ * decision — ten of them making it independently is how one quietly stops.
+ */
+export async function buildResultUrls(
   locale: string,
   opts?: {
     successUrl?: string
@@ -183,9 +191,19 @@ export function buildResultUrls(
     extraQuery?: string
     /** Caller's origin — prefers localhost in dev, falls back to the hosting URL. */
     origin?: string
+    /**
+     * The tenant this checkout belongs to. Supplying it lets a visitor who paid
+     * on the studio's own domain come back to it; omitting it is safe and simply
+     * returns them to the canonical app host.
+     */
+    teamId?: string
   }
-): { successUrl: string; cancelUrl: string } {
-  const base = `${resolveBaseUrl(opts?.origin)}/${locale}/pay/result`
+): Promise<{ successUrl: string; cancelUrl: string }> {
+  // Only worth a read when the caller actually came from somewhere else — an
+  // origin we already trust, or none at all, cannot be improved on.
+  const tenantHost =
+    opts?.teamId && opts?.origin ? await activeCustomDomainHost(opts.teamId) : null
+  const base = `${resolveBaseUrl(opts?.origin, tenantHost)}/${locale}/pay/result`
   const extra = opts?.extraQuery ?? ''
   return {
     successUrl: opts?.successUrl ?? `${base}?status=success${extra}${CHECKOUT_SESSION_ID_PARAM}`,
