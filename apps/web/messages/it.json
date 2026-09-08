@@ -8064,6 +8064,8 @@
     "growthSubtitle": "{count, plural, =0 {Nessun nuovo studio} one {# studio si è unito} other {# studi si sono uniti}} negli ultimi {months} mesi",
     "growthEmptyTitle": "Ancora nessuno studio",
     "growthEmptyHint": "Quando gli studi si uniscono, qui appare la crescita dell'organizzazione.",
-    "growthSeries": "Studi"
+    "growthSeries": "Studi",
+    "statusTitle": "{term} per stato",
+    "statusAll": "{count, plural, one {# scheda} other {# schede}}"
   }
 }

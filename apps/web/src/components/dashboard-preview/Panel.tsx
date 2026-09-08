@@ -81,18 +81,36 @@ export function PanelHeader({
  * The body. `lg:min-h-0 lg:flex-1` is what lets the ROW own the height and the
  * longer of the two lists absorb the difference — below `lg` the panel has no
  * height to divide, so it is an ordinary block under its own ceiling.
+ *
+ * ── `scroll={false}` IS A PROP AND NOT A CLASS, AND THAT IS THE POINT ────────
+ *
+ * A caller that wants an uncapped body cannot get one by passing `max-h-none`
+ * through `className`. `cn` is `twMerge`, and twMerge does not reliably fold an
+ * ARBITRARY value (`lg:max-h-[320px]`) against a named one (`lg:max-h-none`) —
+ * it keeps both, CSS then resolves them by stylesheet order rather than by the
+ * order they were written, and the caller's intent loses silently. The org
+ * dashboard shipped exactly that: a roster asking to cap at 320px, rendering
+ * with `max-height: none` and running to 700px, with both classes sitting in
+ * the DOM looking correct.
+ *
+ * So the choice is made HERE, by not emitting the classes at all, which no
+ * merge strategy can undo. Default `true` — every existing caller is unchanged.
  */
 export function PanelBody({
   className,
+  scroll = true,
   children,
 }: {
   className?: string
+  /** `false` for a list the PAGE should scroll rather than the panel. */
+  scroll?: boolean
   children: React.ReactNode
 }) {
   return (
     <div
       className={cn(
-        'max-h-[320px] overflow-y-auto p-2 lg:max-h-none lg:min-h-0 lg:flex-1',
+        'p-2',
+        scroll ? 'max-h-[320px] overflow-y-auto lg:max-h-none lg:min-h-0 lg:flex-1' : 'lg:min-h-0',
         className
       )}
     >

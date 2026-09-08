@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
+import { statusBadgeClass, statusFillClass } from '@/lib/affiliationStatusColors'
 import { liveContactConstraints } from '@/lib/liveContacts'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -36,15 +37,6 @@ import { AffiliationBulkBar, RenewConfirmDialog } from '@/components/affiliation
 
 // ─── colour map ───────────────────────────────────────────────────────────────
 
-const COLOR_CLASSES: Record<string, string> = {
-  gray:   'bg-gray-100   text-gray-700   dark:bg-gray-800   dark:text-gray-300',
-  yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  blue:   'bg-blue-100   text-blue-700   dark:bg-blue-900   dark:text-blue-300',
-  purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  green:  'bg-green-100  text-green-700  dark:bg-green-900  dark:text-green-300',
-  red:    'bg-red-100    text-red-700    dark:bg-red-900    dark:text-red-300',
-  orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-}
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -172,7 +164,7 @@ function StatusBadge({ statusId, defs }: { statusId: string; defs: OrgAffiliatio
   const def = defs.find((s) => s.id === statusId) ?? defs.find((s) => s.id === 'guest')
   if (!def) return <span className="text-xs text-muted-foreground">—</span>
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${COLOR_CLASSES[def.color] ?? COLOR_CLASSES.gray}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(def.color)}`}>
       {def.label}
     </span>
   )
@@ -189,7 +181,7 @@ function AffiliationSummaryChip({ contact, affiliationTypes }: { contact: Contac
   return (
     <div className="flex flex-wrap gap-1">
       {labels.map((l) => (
-        <span key={l} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${COLOR_CLASSES.green}`}>
+        <span key={l} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass('green')}`}>
           {l}
         </span>
       ))}
@@ -339,7 +331,7 @@ function ContactAffiliationRow({
                 {defs.map((s) => (
                   <SelectItem key={s.id} value={s.id} textValue={s.label}>
                     <div className="flex items-center gap-2">
-                      <span className={`inline-block h-2 w-2 rounded-full ${COLOR_CLASSES[s.color]?.split(' ')[0] ?? ''}`} />
+                      <span className={`inline-block h-2 w-2 rounded-full ${statusFillClass(s.color)}`} />
                       <span>{s.label}</span>
                     </div>
                   </SelectItem>

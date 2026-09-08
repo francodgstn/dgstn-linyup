@@ -46,6 +46,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   collection,
+  collectionGroup,
   doc,
   getCountFromServer,
   getDoc,
@@ -60,13 +61,16 @@ import { db } from '@/lib/firebase'
 import { liveContactConstraints } from '@/lib/liveContacts'
 import {
   CONTACTS_COLLECTION,
+  CONTACT_AFFILIATIONS_SUBCOLLECTION,
+  DEFAULT_ORG_AFFILIATION_STATUSES,
   EVENTS_COLLECTION,
   ORGANIZATIONS_COLLECTION,
+  ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
   ORG_MEMBER_INVITATIONS_SUBCOLLECTION,
   ORG_TEAMS_SUBCOLLECTION,
   TEAMS_COLLECTION,
 } from '@linyup/shared'
-import type { OrgTeamStatus } from '@linyup/shared'
+import type { OrgAffiliationStatusDef, OrgTeamStatus } from '@linyup/shared'
 
 /**
  * A stand-in name for a studio whose public profile has not synced, chosen so it
@@ -339,4 +343,95 @@ export function sumOrNull(values: (number | null | undefined)[]): number | null 
     total += v
   }
   return total
+}
+
+/** One row of the status strip: a status def and how many records hold it. */
+export interface OrgAffiliationStatusCount {
+  def: OrgAffiliationStatusDef
+  /** `null` = the count did not answer. Never rendered as zero. */
+  count: number | null
+}
+
+/**
+ * THE ORGANISATION'S AFFILIATION VOCABULARY, in the org's own words.
+ *
+ * `affiliation_statuses` is tenant-configurable and admits `isOrgMember`; an
+ * organisation that has never edited it has an empty subcollection, which means
+ * the DEFAULTS rather than "no statuses". Merged the same way the Affiliations
+ * page merges them, so both surfaces name and order the vocabulary identically.
+ */
+export function useOrgAffiliationStatusDefs(orgId: string) {
+  return useQuery<OrgAffiliationStatusDef[]>({
+    queryKey: ['org-affiliation-status-defs', orgId],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const snap = await getDocs(
+        collection(db, ORGANIZATIONS_COLLECTION, orgId, ORG_AFFILIATION_STATUSES_SUBCOLLECTION)
+      )
+      if (snap.empty) return DEFAULT_ORG_AFFILIATION_STATUSES
+      const byId: Record<string, OrgAffiliationStatusDef> = Object.fromEntries(
+        DEFAULT_ORG_AFFILIATION_STATUSES.map((d) => [d.id, d])
+      )
+      snap.docs.forEach((d) => {
+        byId[d.id] = { ...(d.data() as OrgAffiliationStatusDef), id: d.id }
+      })
+      return Object.values(byId).sort((a, b) => a.order - b.order)
+    },
+  })
+}
+
+/**
+ * HOW MANY OF THE ORGANISATION'S AFFILIATIONS SIT IN EACH STATUS.
+ *
+ * ── RECORDS, NOT PEOPLE, AND THE DISTINCTION IS LOAD-BEARING ────────────────
+ *
+ * Every other number on this page counts CONTACTS and excludes the archived
+ * ones. This counts AFFILIATION DOCUMENTS, and it cannot do the same: the
+ * archived flag lives on the parent contact and a collection-group query cannot
+ * reach across to it. So an ex-member's expired licence is still a row here.
+ *
+ * That is not a compromise, it is the right question. "How many licences are
+ * awaiting review" is about a queue of applications, and the answer does not
+ * change because one applicant has since left their club. The copy therefore
+ * says records rather than people, and the strip never states a percentage of
+ * the headcount — a ratio across those two populations would be the lie.
+ *
+ * ── ONE AGGREGATION PER STATUS ─────────────────────────────────────────────
+ *
+ * Not a fan-out: `getCountFromServer` per status def transfers one integer each,
+ * where downloading the affiliations to tally them client-side would be every
+ * licence the federation has ever issued. A tenant that has invented a dozen
+ * statuses costs a dozen counts, which is still nothing.
+ *
+ * This read is what the 2026-09-08 rules change made possible at all — before
+ * it, the collection group was matched by no `{path=**}` statement and every
+ * query over it was denied.
+ */
+export function useOrgAffiliationStatusCounts(
+  orgId: string,
+  defs: OrgAffiliationStatusDef[] | undefined,
+  enabled: boolean
+) {
+  return useQuery<OrgAffiliationStatusCount[]>({
+    queryKey: ['org-affiliation-status-counts', orgId, (defs ?? []).map((d) => d.id)],
+    enabled: enabled && !!defs && defs.length > 0,
+    staleTime: 2 * 60_000,
+    queryFn: async () => {
+      const settled = await Promise.allSettled(
+        (defs ?? []).map((def) =>
+          getCountFromServer(
+            query(
+              collectionGroup(db, CONTACT_AFFILIATIONS_SUBCOLLECTION),
+              where('org_id', '==', orgId),
+              where('status_id', '==', def.id)
+            )
+          )
+        )
+      )
+      return (defs ?? []).map((def, i) => {
+        const r = settled[i]
+        return { def, count: r.status === 'fulfilled' ? r.value.data().count : null }
+      })
+    },
+  })
 }
