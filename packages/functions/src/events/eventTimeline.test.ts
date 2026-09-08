@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {
   TIMELINE_MIN_UNIT_PX,
+  TIMELINE_YEARS_SPAN,
   estimateLabelPx,
   fractionOf,
   timelineMinTrackPx,
@@ -109,6 +110,91 @@ describe('eventTimeline — how wide the track wants to be', () => {
     const scrolled = placeTimelineEvents(events, year, { trackPx: timelineMinTrackPx(year) })
     assert.equal(squeezed.lanes, 6, 'a 330px year really does collide everywhere')
     assert.ok(scrolled.lanes < squeezed.lanes, 'the scrollable track packs tighter')
+  })
+})
+
+describe('eventTimeline — the multi-year window', () => {
+  it('is CENTRED on the anchor year, not started at it', () => {
+    // So the season you already know about sits in the middle, with the year
+    // before and the year after either side of it.
+    const w = timelineWindow('years', new Date(2026, 6, 14))
+    assert.equal(w.start.getFullYear(), 2025)
+    assert.equal(w.end.getFullYear(), 2028)
+    assert.equal(w.start.getMonth(), 0)
+    assert.equal(w.start.getDate(), 1)
+  })
+
+  it('spans exactly TIMELINE_YEARS_SPAN years', () => {
+    const w = timelineWindow('years', new Date(2026, 0, 1))
+    assert.equal(w.end.getFullYear() - w.start.getFullYear(), TIMELINE_YEARS_SPAN)
+  })
+
+  it('steps a WHOLE span, so paging never re-shows a year you just read', () => {
+    const w = timelineWindow('years', new Date(2026, 0, 1)) // 2025–2027
+    const next = shiftTimelineWindow(w, 1)
+    assert.equal(next.start.getFullYear(), 2028)
+    assert.equal(next.end.getFullYear(), 2031)
+  })
+
+  it('steps back to exactly where it started', () => {
+    // The centre-vs-start trap: handing `timelineWindow` the window's START
+    // rather than its centre drifts by a year on every step, so a round trip
+    // would not return home.
+    const w = timelineWindow('years', new Date(2026, 3, 9))
+    const round = shiftTimelineWindow(shiftTimelineWindow(w, 1), -1)
+    assert.equal(round.start.getTime(), w.start.getTime())
+    assert.equal(round.end.getTime(), w.end.getTime())
+  })
+
+  it('asks for room per YEAR, not per month', () => {
+    const w = timelineWindow('years', new Date(2026, 0, 1))
+    assert.equal(timelineMinTrackPx(w), TIMELINE_YEARS_SPAN * TIMELINE_MIN_UNIT_PX.years)
+  })
+
+  it('ticks every quarter and writes only the years', () => {
+    const w = timelineWindow('years', new Date(2026, 0, 1))
+    const t = timelineTicks(w, 1200)
+    assert.equal(t.length, TIMELINE_YEARS_SPAN * 4, 'four quarters a year')
+    const labelled = t.filter((x) => x.labelled)
+    assert.equal(labelled.length, TIMELINE_YEARS_SPAN)
+    assert.deepEqual(
+      labelled.map((x) => x.date.getFullYear()),
+      [2025, 2026, 2027]
+    )
+    // A quarter tick is a January, April, July or October start.
+    assert.ok(t.every((x) => x.date.getMonth() % 3 === 0 && x.date.getDate() === 1))
+    assert.ok(t.every((x) => !x.weekend), 'weekend shading is a month-zoom idea')
+  })
+
+  it('places an event by its real distance into the span', () => {
+    // The whole point of the widest zoom: two events a year apart are a third
+    // of the track apart, not adjacent.
+    const w = timelineWindow('years', new Date(2026, 0, 1)) // 2025-01-01 .. 2028-01-01
+    const a = fractionOf(w, new Date(2025, 0, 1))
+    const b = fractionOf(w, new Date(2026, 0, 1))
+    assert.equal(Math.round(a * 1000) / 1000, 0)
+    assert.ok(Math.abs(b - 1 / 3) < 0.002, `2026 sits a third in, got ${b}`)
+  })
+
+  it('the window contains its own start and excludes its end', () => {
+    const w = timelineWindow('years', new Date(2026, 0, 1))
+    assert.ok(windowContains(w, w.start))
+    assert.ok(!windowContains(w, w.end))
+  })
+
+  it('packs across years, and a band still holds one row when nothing crosses', () => {
+    const w = timelineWindow('years', new Date(2026, 0, 1))
+    const events = [2025, 2026, 2027].map((y) => ({
+      id: `c${y}`,
+      start: new Date(y, 5, 1).getTime(),
+      end: new Date(y, 5, 3).getTime(),
+      title: 'Championship',
+      group: 'competition',
+    }))
+    const { placed, lanes, bands } = placeTimelineEvents(events, w, { trackPx: 1200 })
+    assert.equal(placed.length, 3)
+    assert.equal(lanes, 1, 'one a year does not collide')
+    assert.deepEqual(bands, [{ group: 'competition', lane: 0, lanes: 1 }])
   })
 })
 

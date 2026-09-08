@@ -55,8 +55,11 @@ import { Tip } from '@/components/ui/tip'
 import { EventPeekSheet } from '@/components/events/EventPeekSheet'
 import { eventTypeColor } from '@/lib/eventTypeColor'
 import { eventTypeLabel } from '@/lib/eventTypeLabel'
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card'
+import { MapPin } from 'lucide-react'
 import {
   BUILTIN_EVENT_TYPES,
+  TIMELINE_YEARS_SPAN,
   placeTimelineEvents,
   shiftTimelineWindow,
   timelineMinTrackPx,
@@ -74,6 +77,68 @@ import type { Event } from '@linyup/shared'
  *  of this view is how many rows there AREN'T. */
 const LANE_H = 34
 const BAR_H = 20
+
+const DAY_MS = 86_400_000
+
+/**
+ * WHAT A BAR CANNOT SAY FOR ITSELF — the dates, the length and the place.
+ *
+ * The bar already carries the title beside it, so repeating it here would waste
+ * the one thing a hover card has that a tooltip does not: room for the answer
+ * rather than the question. A one-day event states its date once; a camp states
+ * the range AND the number of days, because "27 Jun – 4 Jul" is a span you have
+ * to count and "8 days" is the thing you actually wanted.
+ *
+ * PLACE COMES FROM `location`, THE FREE-TEXT FIELD, and never from `placeId`.
+ * Resolving the id means a read per event, and a hover card is not worth
+ * fifteen reads on a page that has already loaded everything it needs — the
+ * peek sheet, which opens on click, is where a resolved place belongs.
+ */
+function BarCard({ event, color }: { event: Event; color: string }) {
+  const t = useTranslations('OrgEvents')
+  const tE = useTranslations('Events')
+  const format = useFormatter()
+
+  const start = event.start?.toDate?.()
+  const end = event.end?.toDate?.() ?? start
+  if (!start) return null
+
+  // CALENDAR days, not elapsed ones: a camp that runs 09:00 Saturday to 16:00
+  // the next Saturday is eight days to everyone who is going, and 7.3 to
+  // subtraction. Both ends are floored to midnight before counting.
+  const d0 = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
+  const d1 = new Date(end!.getFullYear(), end!.getMonth(), end!.getDate()).getTime()
+  const days = Math.round((d1 - d0) / DAY_MS) + 1
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline gap-1.5">
+        <span
+          className="inline-block h-2 w-2 shrink-0 translate-y-px rounded-full"
+          style={{ background: color }}
+        />
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          {event.type ? eventTypeLabel(event.type, tE.has, tE) : t('timelineTypeless')}
+        </span>
+      </div>
+
+      <div className="text-sm font-medium leading-snug">{event.title}</div>
+
+      <div className="text-xs text-muted-foreground">
+        {days <= 1
+          ? format.dateTime(start, { day: 'numeric', month: 'short', year: 'numeric' })
+          : `${format.dateTimeRange(start, end!, { day: 'numeric', month: 'short', year: 'numeric' })} · ${t('timelineDays', { count: days })}`}
+      </div>
+
+      {event.location && (
+        <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+          <span className="min-w-0 break-words">{event.location}</span>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function EventsTimeline({
   events,
@@ -103,6 +168,11 @@ export function EventsTimeline({
   // first real movement, read by the bar's click handler, cleared on the next
   // press — a ref rather than state so the click sees it in the same tick.
   const draggedRef = useRef(false)
+  // Types the legend has been used to switch off. A view control, not a query:
+  // it is deliberately NOT in the URL, where `?view=` earns its place because a
+  // pasted link should open the timeline — nobody pastes a link meaning "and
+  // with camps hidden".
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set())
 
   // TWO widths, and the difference between them is the point: the TRACK is how
   // wide the window is drawn, which is what packing and label-thinning need;
@@ -152,9 +222,22 @@ export function EventsTimeline({
   // the way through a federation's history. A plugin or team-custom type is not
   // in that list and lands after them, ordered by its first event — see
   // `groupOrder` for why ordering everything that way would be worse.
-  const { placed, lanes, bands } = useMemo(
-    () => placeTimelineEvents(inputs, win, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
+  // WHAT THE LEGEND OFFERS AND WHAT THE TRACK DRAWS ARE TWO DIFFERENT PACKS.
+  //
+  // The legend has to list every type in the window INCLUDING the hidden ones —
+  // a legend that only listed what is currently drawn would delete its own
+  // "camp" entry the moment you hid camps, and there would be no way back. So
+  // the full set is packed for its BAND ORDER and the filtered set for the
+  // rows. Two passes over a few dozen events, and the alternative is a second
+  // copy of the packer's ordering rules living here and drifting from it.
+  const allBands = useMemo(
+    () => placeTimelineEvents(inputs, win, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }).bands,
     [inputs, win, trackPx]
+  )
+  const shown = useMemo(() => inputs.filter((e) => !hidden.has(e.group ?? '')), [inputs, hidden])
+  const { placed, lanes, bands } = useMemo(
+    () => placeTimelineEvents(shown, win, { trackPx, groupOrder: BUILTIN_EVENT_TYPES }),
+    [shown, win, trackPx]
   )
   const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events])
   const ticks = useMemo(() => timelineTicks(win, trackPx), [win, trackPx])
@@ -231,9 +314,13 @@ export function EventsTimeline({
   }, [win.start.getTime(), win.end.getTime(), minTrackPx])
 
   const windowLabel =
-    zoom === 'year'
-      ? String(win.start.getFullYear())
-      : format.dateTime(win.start, { month: 'long', year: 'numeric' })
+    zoom === 'years'
+      ? // An EN DASH and the two end years — the window is half-open, so the
+        // last year it shows is the one before `end`.
+        `${win.start.getFullYear()}–${win.end.getFullYear() - 1}`
+      : zoom === 'year'
+        ? String(win.start.getFullYear())
+        : format.dateTime(win.start, { month: 'long', year: 'numeric' })
 
   return (
     <div className="space-y-3">
@@ -288,7 +375,11 @@ export function EventsTimeline({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {z === 'year' ? t('timelineZoomYear') : t('timelineZoomMonth')}
+              {z === 'years'
+                ? t('timelineZoomYears', { count: TIMELINE_YEARS_SPAN })
+                : z === 'year'
+                  ? t('timelineZoomYear')
+                  : t('timelineZoomMonth')}
             </button>
           ))}
         </div>
@@ -306,114 +397,169 @@ export function EventsTimeline({
           the content, and `overscroll-x-contain` stops a sideways flick at the
           end of the year from navigating the browser back. */}
       <div className="overflow-hidden rounded-xl border bg-card">
-        <div
-          ref={scrollRef}
-          onPointerDown={onPointerDown}
-          className={`overflow-x-auto overscroll-x-contain p-3 ${
-            !overflowing ? '' : dragging ? 'cursor-grabbing select-none' : 'cursor-grab'
-          }`}
-        >
-          <div ref={trackRef} className="relative" style={{ minWidth: minTrackPx }}>
-            {/* THE AXIS. Gridlines for every tick, writing only where it fits —
-              see `timelineTicks`, which thins the labels by track width so a
-              phone shows a readable few rather than a grey smear. */}
-            <div className="relative mb-1 h-5 select-none">
-              {ticks.map((tick) => (
+        <div className="flex">
+          {/* THE ROW LABELS, OUTSIDE THE SCROLLER so they never scroll away from
+              the rows they name — which is the whole reason a Gantt chart puts
+              them in a gutter rather than on the track.
+
+              HIDDEN BELOW `sm`. It costs ~7rem, and 7rem of a 351px phone is a
+              fifth of the timeline; there the legend underneath does the naming
+              instead. The spacer matches the axis above the rows exactly
+              (`h-5 mb-1`), because a gutter half a row out of step is worse
+              than no gutter. */}
+          {measured && bands.length > 0 && (
+            <div className="hidden shrink-0 border-r py-3 pl-3 pr-2 sm:block">
+              <div className="mb-1 h-5" aria-hidden />
+              {bands.map((b) => (
                 <div
-                  key={tick.date.getTime()}
-                  className="absolute top-0 text-[10px] leading-5 text-muted-foreground"
-                  style={{ left: `${tick.at * 100}%` }}
+                  key={`lbl-${b.group}`}
+                  className="flex items-center"
+                  style={{ height: b.lanes * LANE_H }}
                 >
-                  {tick.labelled && (
-                    <span className="-ml-px inline-block pl-1">
-                      {zoom === 'year'
-                        ? format.dateTime(tick.date, { month: 'short' })
-                        : tick.date.getDate()}
+                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <span
+                      className="inline-block h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: eventTypeColor(b.group) }}
+                    />
+                    <span className="max-w-24 truncate">
+                      {b.group ? eventTypeLabel(b.group, tE.has, tE) : t('timelineTypeless')}
                     </span>
-                  )}
+                  </span>
                 </div>
               ))}
             </div>
+          )}
 
-            <div
-              className="relative overflow-hidden rounded-md bg-muted/30"
-              style={{ height: Math.max(1, lanes) * LANE_H }}
-            >
-              {/* Weekend shading, month zoom only. It is what makes a month
-                timeline scannable — the eye finds the weeks without counting. */}
-              {ticks.map((tick, i) =>
-                tick.weekend ? (
+          {/* `min-w-0` is load-bearing: a flex child defaults to `min-width:
+              auto`, which is its CONTENT width, so without this the scroller
+              refuses to shrink and the whole card overflows the page instead. */}
+          <div
+            ref={scrollRef}
+            onPointerDown={onPointerDown}
+            className={`min-w-0 flex-1 overflow-x-auto overscroll-x-contain p-3 ${
+              !overflowing ? '' : dragging ? 'cursor-grabbing select-none' : 'cursor-grab'
+            }`}
+          >
+            <div ref={trackRef} className="relative" style={{ minWidth: minTrackPx }}>
+              {/* THE AXIS. Gridlines for every tick, writing only where it fits —
+              see `timelineTicks`, which thins the labels by track width so a
+              phone shows a readable few rather than a grey smear. */}
+              <div className="relative mb-1 h-5 select-none">
+                {ticks.map((tick) => (
                   <div
-                    key={`w${tick.date.getTime()}`}
-                    className="absolute inset-y-0 bg-foreground/[0.04]"
-                    style={{
-                      left: `${tick.at * 100}%`,
-                      width: `${((ticks[i + 1]?.at ?? 1) - tick.at) * 100}%`,
-                    }}
+                    key={tick.date.getTime()}
+                    className="absolute top-0 text-[10px] leading-5 text-muted-foreground"
+                    style={{ left: `${tick.at * 100}%` }}
+                  >
+                    {tick.labelled && (
+                      <span className="-ml-px inline-block pl-1">
+                        {zoom === 'years'
+                          ? tick.date.getFullYear()
+                          : zoom === 'year'
+                            ? format.dateTime(tick.date, { month: 'short' })
+                            : tick.date.getDate()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className="relative overflow-hidden rounded-md bg-muted/30"
+                style={{ height: Math.max(1, lanes) * LANE_H }}
+              >
+                {/* Weekend shading, month zoom only. It is what makes a month
+                timeline scannable — the eye finds the weeks without counting. */}
+                {ticks.map((tick, i) =>
+                  tick.weekend ? (
+                    <div
+                      key={`w${tick.date.getTime()}`}
+                      className="absolute inset-y-0 bg-foreground/[0.04]"
+                      style={{
+                        left: `${tick.at * 100}%`,
+                        width: `${((ticks[i + 1]?.at ?? 1) - tick.at) * 100}%`,
+                      }}
+                    />
+                  ) : null
+                )}
+
+                {ticks.map((tick) => (
+                  <div
+                    key={`g${tick.date.getTime()}`}
+                    className="absolute inset-y-0 w-px bg-border/60"
+                    style={{ left: `${tick.at * 100}%` }}
                   />
-                ) : null
-              )}
+                ))}
 
-              {ticks.map((tick) => (
-                <div
-                  key={`g${tick.date.getTime()}`}
-                  className="absolute inset-y-0 w-px bg-border/60"
-                  style={{ left: `${tick.at * 100}%` }}
-                />
-              ))}
-
-              {/* A HAIRLINE BETWEEN BANDS, and none above the first. Without
+                {/* A HAIRLINE BETWEEN BANDS, and none above the first. Without
                 it the rows are a stack; with it they read as groups, which is
                 the entire point of banding. Drawn under the bars (`z-0`) so a
                 bar crossing it is not sliced in half. */}
-              {bands.slice(1).map((b) => (
-                <div
-                  key={`band-${b.group}`}
-                  className="absolute inset-x-0 z-0 h-px bg-border/70"
-                  style={{ top: b.lane * LANE_H }}
-                />
-              ))}
+                {bands.slice(1).map((b) => (
+                  <div
+                    key={`band-${b.group}`}
+                    className="absolute inset-x-0 z-0 h-px bg-border/70"
+                    style={{ top: b.lane * LANE_H }}
+                  />
+                ))}
 
-              {todayAt !== null && (
-                <div
-                  className="absolute inset-y-0 z-10 w-0.5 bg-primary/70"
-                  style={{ left: `${todayAt * 100}%` }}
-                  title={t('timelineToday')}
-                />
-              )}
+                {todayAt !== null && (
+                  <div
+                    className="absolute inset-y-0 z-10 w-0.5 bg-primary/70"
+                    style={{ left: `${todayAt * 100}%` }}
+                    title={t('timelineToday')}
+                  />
+                )}
 
-              {measured &&
-                placed.map((p) => {
-                  const event = byId.get(p.id)
-                  if (!event) return null
-                  const color = eventTypeColor(event.type)
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      // A drag that moved is not a click on whatever it began
-                      // over. `draggedRef` is set by the first few pixels of
-                      // movement and read here in the same tick.
-                      onClick={() => {
-                        if (draggedRef.current) return
-                        setPeekId(p.id)
-                      }}
-                      title={event.title}
-                      className={`group absolute z-20 flex items-center rounded-[4px] text-left text-[11px] font-medium text-white transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                        // A clipped edge is drawn SQUARE. A rounded end says "it
-                        // finishes here", which is the one thing an event running
-                        // past the window does not do.
-                        p.clippedStart ? 'rounded-l-none' : ''
-                      } ${p.clippedEnd ? 'rounded-r-none' : ''}`}
-                      style={{
-                        left: `${p.left * 100}%`,
-                        width: `${p.width * 100}%`,
-                        top: p.lane * LANE_H + (LANE_H - BAR_H) / 2,
-                        height: BAR_H,
-                        background: color,
-                      }}
-                    >
-                      {/* THREE PLACES A TITLE CAN GO, and the packer chose which
+                {measured &&
+                  placed.map((p) => {
+                    const event = byId.get(p.id)
+                    if (!event) return null
+                    const color = eventTypeColor(event.type)
+                    return (
+                      // A HOVER CARD, NOT A `title` ATTRIBUTE. The native
+                      // tooltip could only repeat the name already written
+                      // beside the bar; WHEN the event runs, for how long and
+                      // where is the thing a timeline is being read for, and
+                      // clicking each bar open to find out is the interaction
+                      // this view exists to replace.
+                      //
+                      // `render` because base-ui's trigger is an `<a>` by
+                      // default — this has to be the button that opens the peek
+                      // sheet, not a link wrapped round one. The delay is well
+                      // under the 600ms default: hovering ALONG a row is the
+                      // gesture here, and at 600ms it feels broken.
+                      <HoverCard key={p.id}>
+                        <HoverCardTrigger
+                          delay={200}
+                          closeDelay={80}
+                          render={
+                            <button
+                              type="button"
+                              // A drag that moved is not a click on whatever it
+                              // began over. `draggedRef` is set by the first few
+                              // pixels of movement and read here in the same tick.
+                              onClick={() => {
+                                if (draggedRef.current) return
+                                setPeekId(p.id)
+                              }}
+                              className={`group absolute z-20 flex items-center rounded-[4px] text-left text-[11px] font-medium text-white transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                // A clipped edge is drawn SQUARE. A rounded end
+                                // says "it finishes here", which is the one thing
+                                // an event running past the window does not do.
+                                p.clippedStart ? 'rounded-l-none' : ''
+                              } ${p.clippedEnd ? 'rounded-r-none' : ''}`}
+                              style={{
+                                left: `${p.left * 100}%`,
+                                width: `${p.width * 100}%`,
+                                top: p.lane * LANE_H + (LANE_H - BAR_H) / 2,
+                                height: BAR_H,
+                                background: color,
+                              }}
+                            />
+                          }
+                        >
+                          {/* THREE PLACES A TITLE CAN GO, and the packer chose which
                         — see `labelSide`. An outside label is positioned
                         ABSOLUTELY so it cannot stretch the bar it belongs to,
                         and `before` exists because a December event written to
@@ -421,52 +567,83 @@ export function EventsTimeline({
                         container. Whichever side it took, the row already
                         reserved that space, which is what stops another event
                         being drawn underneath it. */}
-                      {p.labelSide === 'inside' && (
-                        <span className="truncate px-1.5">{event.title}</span>
-                      )}
-                      {p.labelSide === 'after' && (
-                        <span className="pointer-events-none absolute left-full ml-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
-                          {event.title}
-                        </span>
-                      )}
-                      {p.labelSide === 'before' && (
-                        <span className="pointer-events-none absolute right-full mr-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
-                          {event.title}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
+                          {p.labelSide === 'inside' && (
+                            <span className="truncate px-1.5">{event.title}</span>
+                          )}
+                          {p.labelSide === 'after' && (
+                            <span className="pointer-events-none absolute left-full ml-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
+                              {event.title}
+                            </span>
+                          )}
+                          {p.labelSide === 'before' && (
+                            <span className="pointer-events-none absolute right-full mr-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
+                              {event.title}
+                            </span>
+                          )}
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-auto max-w-72">
+                          <BarCard event={event} color={color} />
+                        </HoverCardContent>
+                      </HoverCard>
+                    )
+                  })}
 
-              {measured && placed.length === 0 && (
-                <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <CalendarRange className="h-4 w-4 text-muted-foreground/40" />
-                  {t('timelineEmpty', { window: windowLabel })}
-                </div>
-              )}
+                {measured && placed.length === 0 && (
+                  <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <CalendarRange className="h-4 w-4 text-muted-foreground/40" />
+                    {t('timelineEmpty', { window: windowLabel })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* THE LEGEND NAMES THE BANDS, and it is what makes them worth having:
-            a row of one colour is only a group until something says which. It
-            sits OUTSIDE the scroller, so it neither scrolls away from the rows
-            it explains nor costs the track any width — a sticky left gutter
-            would have taken a quarter of a 351px phone. Order matches the
-            bands, top to bottom. */}
-        {bands.length > 0 && (
+        {/* THE LEGEND NAMES THE BANDS AND SWITCHES THEM OFF.
+            On a phone it is the only thing that names them at all, the gutter
+            being hidden there; on a desktop it is the control, and the gutter
+            does the naming beside each row.
+
+            IT LISTS `allBands`, NOT `bands` — every type in the window,
+            including the ones currently switched off. Listing only what is
+            drawn would remove "Camp" from the legend the instant you hid camps,
+            and nothing would bring it back. A hidden entry is struck through
+            and dimmed rather than removed, so the set of things you can switch
+            on never changes under you. */}
+        {allBands.length > 0 && (
           <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2">
-            {bands.map((b) => (
-              <li key={b.group} className="flex items-baseline gap-1.5 text-[11px]">
-                <span
-                  className="inline-block h-2 w-2 shrink-0 translate-y-px rounded-full"
-                  style={{ background: eventTypeColor(b.group) }}
-                />
-                <span className="text-muted-foreground">
-                  {b.group ? eventTypeLabel(b.group, tE.has, tE) : t('timelineTypeless')}
-                </span>
-              </li>
-            ))}
+            {allBands.map((b) => {
+              const off = hidden.has(b.group)
+              const label = b.group ? eventTypeLabel(b.group, tE.has, tE) : t('timelineTypeless')
+              return (
+                <li key={b.group}>
+                  <button
+                    type="button"
+                    aria-pressed={!off}
+                    onClick={() =>
+                      setHidden((prev) => {
+                        const next = new Set(prev)
+                        if (!next.delete(b.group)) next.add(b.group)
+                        return next
+                      })
+                    }
+                    className="flex items-baseline gap-1.5 rounded text-[11px] transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span
+                      className={`inline-block h-2 w-2 shrink-0 translate-y-px rounded-full ${off ? 'opacity-30' : ''}`}
+                      style={{ background: eventTypeColor(b.group) }}
+                    />
+                    <span
+                      className={
+                        off ? 'text-muted-foreground/50 line-through' : 'text-muted-foreground'
+                      }
+                    >
+                      {label}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

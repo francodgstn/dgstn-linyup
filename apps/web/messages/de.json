@@ -5773,7 +5773,9 @@
     "timelineNext": "Nächster Zeitraum",
     "timelineToday": "Heute",
     "timelineEmpty": "Keine Anlässe in {window}",
-    "timelineTypeless": "Ohne Typ"
+    "timelineTypeless": "Ohne Typ",
+    "timelineZoomYears": "{count} Jahre",
+    "timelineDays": "{count, plural, one {# Tag} other {# Tage}}"
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",
