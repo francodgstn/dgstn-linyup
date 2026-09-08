@@ -244,6 +244,43 @@ headcount — a number, never people. Not built; do not add it by widening a rea
 
 ## Open
 
+### The dashboard status strip is denied, and it needs a decision
+
+**Found merging `main` on 2026-09-08, and it is the one thing here that is
+currently WRONG rather than merely unbuilt.**
+
+`#249` moved the org dashboard's per-status counts off the affiliations
+collection group and onto the CONTACT, filtering
+`affiliation_summary.org_status_ids` with an `org:status` key — so that the
+counts compose with `archived_at` and stop counting people who had left.
+`orgAdminMayReadContact` admits a contact by `org_ids` / `active_org_ids`.
+
+Firestore matches a query against a rule **by value**: the rule's expression is
+evaluated and compared to the query's filter. A query for `fed:active` is
+provable only by a rule naming `fed:active`, and the status half is
+tenant-configurable — so it cannot be enumerated in a rule, and the query cannot
+carry a second `array-contains` to prove the first (one per query, hard limit).
+
+Every document that query would return is one the organisation may read. Only
+the proof is missing. So the counts come back `permission-denied` and the strip
+renders `—` on every studio the caller is not personally a member of. Visible
+and safe rather than silently wrong, but wrong.
+
+Two ways out, each losing something real:
+
+- **Move the strip back to the affiliations collection group**, where
+  `isOrgAdminOfOrg(org_id)` already proves it. This gives up `#249`'s
+  correctness unless a contact-write trigger propagates `archived_at` onto each
+  affiliation row — new machinery plus a backfill.
+- **Widen the rule back toward the team.** Cheapest, and it gives up the
+  boundary this whole document exists to draw. Not recommended.
+
+Pinned by the one skipped case in
+`packages/functions/src/orgs/orgContactVisibility.rules-test.ts`, which is the
+assertion that says which option landed. Un-skip it when one does.
+
+### Smaller
+
 - **A studio's own opt-in headcount**, if a federation ever needs its reach back.
 - **Aggregate inference**: an org admin can see a studio's on-books count but not
   its total, so it cannot compute what it is not being shown. Deliberate, and

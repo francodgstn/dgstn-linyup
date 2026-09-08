@@ -260,6 +260,47 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     )
   })
 
+  // PENDING, AND THE PENDING IS THE POINT — this shape is DENIED today.
+  //
+  // #249 moved the dashboard's status strip off the affiliations collection
+  // group and onto the contact, filtering `affiliation_summary.org_status_ids`
+  // with an `org:status` key, so that the per-status counts compose with
+  // `archived_at` and stop counting people who had left. `orgAdminMayReadContact`
+  // then landed and admits a contact by `org_ids` / `active_org_ids`. Firestore
+  // matches a query against the rule by VALUE — the rule's expression is
+  // evaluated and compared to the query's filter — so a query for `fed:active`
+  // is provable only by a rule that names `fed:active`, and the status half is
+  // tenant-configurable. It cannot be enumerated in a rule, and the query cannot
+  // carry a second `array-contains` to prove the first.
+  //
+  // Every document the strip's query would return is one the organisation may
+  // read; only the PROOF is missing. The counts therefore come back
+  // `permission-denied` and the strip renders `—` (its existing denial state) on
+  // every studio the caller is not personally a member of. Visible and safe, not
+  // silently wrong — but wrong.
+  //
+  // The two ways out both cost something real, so this is a decision and not a
+  // fix: move the strip back to the affiliations collection group (loses #249's
+  // archived correctness unless a contact-write trigger propagates `archived_at`
+  // onto each affiliation row), or widen the rule back toward the team (loses
+  // the boundary this whole change exists to draw). Recorded in
+  // `docs/org-contact-visibility.md`.
+  //
+  // Un-skip this the moment either lands; it is the assertion that says which.
+  it.skip('COUNTS one status across studios — the dashboard status strip', async () => {
+    await assertSucceeds(
+      getCountFromServer(
+        query(
+          collection(asFedAdmin(), 'contacts'),
+          where('teamId', 'in', [STUDIO]),
+          where('deleted_at', '==', null),
+          where('archived_at', '==', null),
+          where('affiliation_summary.org_status_ids', 'array-contains', `${ORG}:active`)
+        )
+      )
+    )
+  })
+
   it('THE STUDIO STILL READS EVERY ONE OF ITS OWN', async () => {
     // Nothing was taken from the studio: this narrowing is about what the
     // FEDERATION sees. If this ever fails, the change has broken the tenant it
