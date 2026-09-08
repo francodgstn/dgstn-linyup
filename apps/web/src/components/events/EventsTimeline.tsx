@@ -153,9 +153,10 @@ function BarCard({ event, color, past }: { event: Event; color: string; past: bo
           It counts CHECK-INS (`participants_count`), which is the only
           attendance there is — `attendees_count` is RSVPs, and who said they
           were coming is a different question from who came. A past event with
-          no count is a real zero, the same call `EventAttendanceTrendCard`
-          made: on migrated data the field may simply never have been written,
-          and inventing attendance for it would be worse than reporting none. */}
+          no count is a real zero: on migrated data the field may simply never
+          have been written, and inventing attendance for it would be worse than
+          reporting none. (The same call the attendance chart made, before this
+          view absorbed it and it was deleted in 2026-09.) */}
       {past && (
         <div className="flex items-center gap-1.5 border-t pt-1.5 text-xs text-muted-foreground">
           <Users className="h-3 w-3 shrink-0" />

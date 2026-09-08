@@ -628,7 +628,7 @@ describe('eventTimeline — participation', () => {
 
   it('ZERO IS A REAL ZERO — an empty frame, not a floor', () => {
     // An event nobody attended is a finding, and drawing it the same as one
-    // person would hide it. `EventAttendanceTrendCard` made the same call.
+    // person would hide it. Inherited from the attendance chart this replaced.
     assert.equal(participationFill(0, 210), 0)
     assert.equal(participationFill(undefined, 210), 0)
     assert.equal(participationFill(null, 210), 0)

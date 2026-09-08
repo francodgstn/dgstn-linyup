@@ -64,7 +64,6 @@ import { Plus, Pencil, Trash2, CalendarRange, MapPin, CalendarDays, ChevronRight
 import { Link } from '@/i18n/navigation'
 import { eventTypeLabel } from '@/lib/eventTypeLabel'
 import { BUILTIN_EVENT_TYPES, EVENTS_COLLECTION } from '@linyup/shared'
-import { EventAttendanceTrendCard } from '@/components/events/EventAttendanceTrendCard'
 import type { Event } from '@linyup/shared'
 import type { Route } from 'next'
 
@@ -414,27 +413,6 @@ export default function OrgEventsPage() {
         </div>
         </div>
       </div>
-
-      {/* ATTENDANCE ACROSS THE SEASON, above the list it summarises. Fed from
-          PAST events only: attendance is a fact about an event that happened,
-          and a camp next March carries `participants_count: 0` — folding those
-          in would draw a cliff at today that means nothing. Costs no extra
-          reads; both halves are already loaded for the calendar view.
-
-          LIST VIEW ONLY. The other two views ARE date layouts — the timeline
-          places events along a horizontal axis, the calendar across a month
-          grid — so putting this above either one gives the page a second,
-          differently-scaled reading of the same dates, and the same event ends
-          up at two positions at once. The list is the one view that orders
-          events without drawing time, which is exactly where a picture of time
-          earns its space.
-
-          It survives rather than being folded into the timeline because it
-          answers a question neither of those views does: how many people came,
-          against when an event ran and for how long. */}
-      {view === 'list' && (
-        <EventAttendanceTrendCard events={past.data ?? []} loading={past.isLoading} />
-      )}
 
       {/* The federation's calendar. Both halves, because a month contains both. */}
       {view === 'calendar' && (

@@ -295,11 +295,12 @@ export const TIMELINE_MIN_FILL = 0.12
  * ── ZERO IS A REAL ZERO ─────────────────────────────────────────────────────
  *
  * An event nobody attended returns exactly 0 and is drawn as an empty frame,
- * which is the honest picture. `EventAttendanceTrendCard` made the same call
- * for the same reason, and a missing `participants_count` on a PAST event is
- * read as 0 there too — on migrated data the field may simply never have been
- * written, and inventing attendance for it would be worse than showing none.
- * The caller decides whether an event is past; an upcoming one is not asked.
+ * which is the honest picture. A missing `participants_count` on a PAST event
+ * is read as 0 for the same reason — on migrated data the field may simply
+ * never have been written, and inventing attendance for it would be worse than
+ * showing none. The caller decides whether an event is past; an upcoming one is
+ * not asked. (Both calls are inherited from the org attendance chart, which
+ * this replaced and which was deleted in 2026-09.)
  *
  * ── THE CAP IS THE ARCHIVE'S OWN MAXIMUM ────────────────────────────────────
  *
