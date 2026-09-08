@@ -57,6 +57,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { liveContactConstraints } from '@/lib/liveContacts'
 import {
   CONTACTS_COLLECTION,
   EVENTS_COLLECTION,
@@ -150,15 +151,29 @@ export function useOrgRoster(orgId: string) {
 /**
  * PEOPLE AND AFFILIATION, per studio — the two counts the federation is scaled by.
  *
- * `affiliated` is deliberately **this organisation's** affiliation and not "any
- * affiliation the studio recorded": `affiliation_summary.org_ids` array-contains
- * the org, so a studio's own internal club membership and a governing body it
- * merely tracks are both correctly excluded. A federation counting other
- * people's badges as its own coverage would be worse than counting nothing.
+ * BOTH COUNT LIVE CONTACTS ONLY, through `liveContactConstraints` — not deleted
+ * AND not archived. They shipped with `deleted_at` alone, so an organisation
+ * counted everyone its studios had ever looked after, including the people who
+ * had left, and read a headcount that flattered it (Franco, 2026-09-08). The
+ * pair now has one owner; see `lib/liveContacts.ts` for why it is a module.
+ *
+ * `affiliated` is narrowed on BOTH axes a federation can be flattered by:
+ *
+ *   WHOSE — `active_org_ids` array-contains THIS org, so a studio's own internal
+ *   club membership (`issuer: 'team'`) and a governing body it merely tracks
+ *   (`issuer: 'external'`) are excluded. Counting other people's badges as your
+ *   own coverage would be worse than counting nothing.
+ *
+ *   WHEN — `active_org_ids` and not `org_ids`. The latter lists every org that
+ *   has EVER put the contact on its books, lapsed licences included, so the
+ *   figure and the coverage percentage beside it counted last season's members
+ *   as this season's. See `AffiliationSummary` in shared, and note that the
+ *   field needs `pnpm backfill:affiliation-active-orgs` on any data written
+ *   before it existed.
+ *
  * (`affiliation_summary` is denormalised onto the contact by
  * `onAffiliationWrite`, so this is one indexed count rather than a walk of every
- * contact's affiliations subcollection — which an org admin cannot read anyway:
- * that subcollection's rule is `canAccessContact`, i.e. team membership.)
+ * contact's affiliations subcollection.)
  *
  * ADMIN ONLY, by rule — see fact 2 in the module header. `enabled` carries that,
  * so a viewer's page simply never asks.
@@ -178,14 +193,15 @@ export function useOrgStudioCounts(orgId: string, teamIds: string[], enabled: bo
               query(
                 collection(db, CONTACTS_COLLECTION),
                 where('teamId', '==', teamId),
-                where('deleted_at', '==', null)
+                ...liveContactConstraints()
               )
             ),
             getCountFromServer(
               query(
                 collection(db, CONTACTS_COLLECTION),
                 where('teamId', '==', teamId),
-                where('affiliation_summary.org_ids', 'array-contains', orgId)
+                ...liveContactConstraints(),
+                where('affiliation_summary.active_org_ids', 'array-contains', orgId)
               )
             ),
           ])

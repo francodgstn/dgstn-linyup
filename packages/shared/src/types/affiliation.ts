@@ -83,7 +83,35 @@ export interface AffiliationType {
 export interface AffiliationSummary {
   has_active: boolean
   types: string[] // distinct type_keys the contact holds
-  org_ids: string[] // distinct org_ids of the contact's org-issued affiliations
+  /**
+   * Distinct org_ids of the contact's org-issued affiliations, **whatever their
+   * status** — expired, revoked and merely requested ones all count. It answers
+   * "has this person ever been on that federation's books".
+   */
+  org_ids: string[]
+  /**
+   * The orgs whose affiliation the contact holds **right now** — the same list
+   * narrowed to `active` rows (denormalised from the status def's
+   * `countsAsActive`, and flipped to false by the `expireAffiliations` sweep
+   * when `valid_until` passes).
+   *
+   * IT EXISTS BECAUSE `org_ids` ANSWERS A DIFFERENT QUESTION, and a federation's
+   * headline numbers were reading it as if it answered this one: the org
+   * dashboard's affiliation figure, its coverage percentage and the Studios
+   * column all counted a licence that lapsed last season as current (Franco,
+   * 2026-09-08 — "in the org dashboard, I see too high counts"). Narrowing
+   * `org_ids` in place would have been a silent change of meaning to a field
+   * whose name does not imply a status, so the current set got its own name.
+   *
+   * OPTIONAL, and the reason matters: a summary written before this field
+   * existed simply lacks it, and a Firestore `array-contains` never matches a
+   * missing field — so an un-backfilled contact drops OUT of the count rather
+   * than being counted wrongly. That is the safer direction (a number that is
+   * visibly too low, not invisibly too high) but it is still wrong, which is why
+   * `pnpm backfill:affiliation-active-orgs` is a deploy precondition. The
+   * trigger fills it for everyone it touches from here on.
+   */
+  active_org_ids?: string[]
 }
 
 // ─── Affiliation status defs (org-configurable) ──────────────────────────────

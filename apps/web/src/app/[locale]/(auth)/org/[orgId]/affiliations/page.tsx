@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
+import { liveContactConstraints } from '@/lib/liveContacts'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useOrg } from '@/contexts/OrgContext'
@@ -88,11 +89,15 @@ function useOrgContacts(teams: TeamMeta[] | undefined) {
       for (let i = 0; i < teamIds.length; i += 30) chunks.push(teamIds.slice(i, i + 30))
       await Promise.all(
         chunks.map(async (chunk) => {
+          // LIVE CONTACTS ONLY. `deleted_at` alone let ARCHIVED people — the
+          // ones who left — into the federation's roster and into the two
+          // counts beside its filters. Same omission the org dashboard shipped
+          // with; the pair now has one owner (lib/liveContacts.ts).
           const snap = await getDocs(
             query(
               collection(db, CONTACTS_COLLECTION),
               where('teamId', 'in', chunk),
-              where('deleted_at', '==', null),
+              ...liveContactConstraints(),
             ),
           )
           snap.docs.forEach((d) => {
