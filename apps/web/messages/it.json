@@ -5772,7 +5772,8 @@
     "timelinePrevious": "Periodo precedente",
     "timelineNext": "Periodo successivo",
     "timelineToday": "Oggi",
-    "timelineEmpty": "Nessun evento in {window}"
+    "timelineEmpty": "Nessun evento in {window}",
+    "timelineTypeless": "Senza tipo"
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",
@@ -8080,6 +8081,6 @@
     "growthEmptyHint": "Quando gli studi si uniscono, qui appare la crescita dell'organizzazione.",
     "growthSeries": "Studi",
     "statusTitle": "{term} per stato",
-    "statusAll": "{count, plural, one {# scheda} other {# schede}}"
+    "statusAll": "{count, plural, one {# persona} other {# persone}}"
   }
 }

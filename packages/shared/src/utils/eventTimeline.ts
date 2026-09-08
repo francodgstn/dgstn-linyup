@@ -184,11 +184,26 @@ export interface TimelineInput {
   end: number
   /** Used only to estimate how much room its label needs. */
   title: string
+  /**
+   * The BAND this event belongs to — its event type, for the org timeline.
+   *
+   * Absent on every event ⇒ one band, and the packer behaves exactly as it did
+   * before bands existed. Absent on SOME is treated as its own band (`''`)
+   * rather than merged into a neighbour's, because a typeless event sharing a
+   * row with the competitions would say it was one.
+   */
+  group?: string
 }
 
 export interface PlacedTimelineEvent {
   id: string
-  /** Row, from 0. Everything sits on 0 until something collides. */
+  /** The band it was packed in — echoed back so the renderer needn't re-derive. */
+  group: string
+  /**
+   * Row, from 0, ACROSS THE WHOLE TRACK — a band's own rows are offset by the
+   * bands above it, so this is a drawing coordinate and not an index into
+   * anything.
+   */
   lane: number
   /** Fraction of the window, already clamped to it. */
   left: number
@@ -217,6 +232,27 @@ export interface TimelinePlacementOptions {
   minBarPx?: number
   /** Clear space demanded between one event's extent and the next's start. */
   gapPx?: number
+  /**
+   * The order bands are stacked in. Groups it does not name follow, ordered by
+   * their first event.
+   *
+   * IT MATTERS THAT THE CALLER DECIDES. Ordering by first appearance alone
+   * would be stable within one window and reshuffle between them — page from
+   * 2026 to 2027 and the row that was competitions becomes camps, which is the
+   * one thing banding is supposed to prevent. A fixed vocabulary (the built-in
+   * event types) keeps a band in the same place all the way through a
+   * federation's history.
+   */
+  groupOrder?: string[]
+}
+
+/** One band of the track: which group it is, and the rows it occupies. */
+export interface TimelineBand {
+  group: string
+  /** First lane index, inclusive. */
+  lane: number
+  /** How many rows the band needed — 1 unless its own events crossed. */
+  lanes: number
 }
 
 const DEFAULT_MIN_BAR_PX = 8
@@ -232,16 +268,27 @@ export function estimateLabelPx(title: string): number {
 }
 
 /**
- * Assign every event a row, first-fit by start.
+ * Assign every event a row, first-fit by start, WITHIN ITS BAND.
  *
  * Greedy first-fit over intervals sorted by start is OPTIMAL for interval
  * graphs — it never uses more rows than the deepest pile-up — which is exactly
  * the "one row unless they cross" promise, stated as an algorithm rather than
- * hoped for.
+ * hoped for. Bands do not weaken it: each is packed that way on its own, and
+ * they are stacked.
+ *
+ * ── WHY BAND AT ALL, WHEN FIRST-FIT ALREADY USES FEWEST ROWS ────────────────
+ *
+ * Because fewest rows was never the goal — a READABLE year was, and an
+ * unbanded row means nothing. It holds whatever happened to fit: a competition,
+ * then a camp, then a grading, in an order that changes as soon as one event
+ * moves. Banding by type costs a row or two (a band is one row unless its own
+ * events cross, and same-type events rarely do) and buys a row you can read
+ * along: "here is every competition this season" (Franco, 2026-09-08).
  *
  * Events entirely outside the window are dropped; ones that straddle an edge are
  * clipped to it and flagged, so the renderer can show that they continue rather
- * than pretending they begin at the boundary.
+ * than pretending they begin at the boundary. A band with no visible event is
+ * not returned — an empty row is a claim that something is missing.
  *
  * TIES ARE BROKEN BY `id`, not left to sort stability. Two events starting at
  * the same instant would otherwise swap rows between renders depending on the
@@ -252,7 +299,7 @@ export function placeTimelineEvents(
   items: TimelineInput[],
   w: TimelineWindow,
   opts: TimelinePlacementOptions
-): { placed: PlacedTimelineEvent[]; lanes: number } {
+): { placed: PlacedTimelineEvent[]; lanes: number; bands: TimelineBand[] } {
   const trackPx = Math.max(1, opts.trackPx)
   const minBarPx = opts.minBarPx ?? DEFAULT_MIN_BAR_PX
   const gapPx = opts.gapPx ?? DEFAULT_GAP_PX
@@ -264,57 +311,94 @@ export function placeTimelineEvents(
     .filter((e) => e.end > wStart && e.start < wEnd)
     .sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id))
 
-  // `laneEnd[i]` is the right-most pixel row `i` is occupied to.
-  const laneEnd: number[] = []
-  const placed: PlacedTimelineEvent[] = []
-
+  // Grouped in the sorted order, so each band's list is already sorted and the
+  // insertion order records which band's first event came first — the tiebreak
+  // for anything `groupOrder` does not name.
+  const byGroup = new Map<string, TimelineInput[]>()
   for (const e of visible) {
-    const clippedStart = e.start < wStart
-    const clippedEnd = e.end > wEnd
-    const left = fractionOf(w, Math.max(e.start, wStart))
-    // An event that ends exactly at the window's end must not exceed 1.
-    const right = fractionOf(w, Math.min(e.end, wEnd))
-
-    const leftPx = left * trackPx
-    const barPx = Math.max(minBarPx, (right - left) * trackPx)
-    const labelPx = estimateLabelPx(e.title)
-    // Inside when the bar can hold the whole label. Otherwise the label needs a
-    // side, and which side is decided by whether the track has room on the
-    // right — an event in December has none, so its title goes to the left.
-    const labelSide: PlacedTimelineEvent['labelSide'] =
-      barPx >= labelPx
-        ? 'inside'
-        : leftPx + barPx + gapPx / 2 + labelPx <= trackPx
-          ? 'after'
-          : 'before'
-
-    // THE ROW MUST RESERVE WHAT IS ACTUALLY DRAWN, on whichever side. A
-    // 'before' label reaches BACKWARDS, so its claim starts left of its bar —
-    // reserving only to the right would let the previous event's bar sit under
-    // this one's title.
-    const claimLeft = labelSide === 'before' ? leftPx - gapPx / 2 - labelPx : leftPx
-    const claimRight = leftPx + barPx + (labelSide === 'after' ? gapPx / 2 + labelPx : 0)
-
-    let lane = laneEnd.findIndex((end) => end + gapPx <= claimLeft)
-    if (lane === -1) {
-      lane = laneEnd.length
-      laneEnd.push(claimRight)
-    } else {
-      laneEnd[lane] = claimRight
-    }
-
-    placed.push({
-      id: e.id,
-      lane,
-      left,
-      // Width in FRACTIONS still, but never below what minBarPx asked for —
-      // the renderer positions in %, so the floor has to survive the conversion.
-      width: Math.max(barPx / trackPx, right - left),
-      clippedStart,
-      clippedEnd,
-      labelSide,
-    })
+    const key = e.group ?? ''
+    const list = byGroup.get(key)
+    if (list) list.push(e)
+    else byGroup.set(key, [e])
   }
 
-  return { placed, lanes: laneEnd.length }
+  const order = opts.groupOrder ?? []
+  const groups = [...byGroup.keys()].sort((a, b) => {
+    const ia = order.indexOf(a)
+    const ib = order.indexOf(b)
+    // Named groups first, in the caller's order; the rest keep the insertion
+    // order above, which is first-event-first.
+    if (ia !== -1 && ib !== -1) return ia - ib
+    if (ia !== -1) return -1
+    if (ib !== -1) return 1
+    return 0
+  })
+
+  const placed: PlacedTimelineEvent[] = []
+  const bands: TimelineBand[] = []
+  let laneOffset = 0
+
+  for (const group of groups) {
+    // `laneEnd[i]` is the right-most pixel row `i` OF THIS BAND is occupied to.
+    // It resets per band, which is the whole of the change: a competition never
+    // has to fit around a camp.
+    const laneEnd: number[] = []
+    placeInBand(byGroup.get(group) ?? [], group, laneEnd)
+    bands.push({ group, lane: laneOffset, lanes: laneEnd.length })
+    laneOffset += laneEnd.length
+  }
+
+  return { placed, lanes: laneOffset, bands }
+
+  function placeInBand(band: TimelineInput[], group: string, laneEnd: number[]) {
+    for (const e of band) {
+      const clippedStart = e.start < wStart
+      const clippedEnd = e.end > wEnd
+      const left = fractionOf(w, Math.max(e.start, wStart))
+      // An event that ends exactly at the window's end must not exceed 1.
+      const right = fractionOf(w, Math.min(e.end, wEnd))
+
+      const leftPx = left * trackPx
+      const barPx = Math.max(minBarPx, (right - left) * trackPx)
+      const labelPx = estimateLabelPx(e.title)
+      // Inside when the bar can hold the whole label. Otherwise the label needs a
+      // side, and which side is decided by whether the track has room on the
+      // right — an event in December has none, so its title goes to the left.
+      const labelSide: PlacedTimelineEvent['labelSide'] =
+        barPx >= labelPx
+          ? 'inside'
+          : leftPx + barPx + gapPx / 2 + labelPx <= trackPx
+            ? 'after'
+            : 'before'
+
+      // THE ROW MUST RESERVE WHAT IS ACTUALLY DRAWN, on whichever side. A
+      // 'before' label reaches BACKWARDS, so its claim starts left of its bar —
+      // reserving only to the right would let the previous event's bar sit under
+      // this one's title.
+      const claimLeft = labelSide === 'before' ? leftPx - gapPx / 2 - labelPx : leftPx
+      const claimRight = leftPx + barPx + (labelSide === 'after' ? gapPx / 2 + labelPx : 0)
+
+      let lane = laneEnd.findIndex((end) => end + gapPx <= claimLeft)
+      if (lane === -1) {
+        lane = laneEnd.length
+        laneEnd.push(claimRight)
+      } else {
+        laneEnd[lane] = claimRight
+      }
+
+      placed.push({
+        id: e.id,
+        group,
+        // The band's own row, shifted past every band above it.
+        lane: laneOffset + lane,
+        left,
+        // Width in FRACTIONS still, but never below what minBarPx asked for —
+        // the renderer positions in %, so the floor has to survive the conversion.
+        width: Math.max(barPx / trackPx, right - left),
+        clippedStart,
+        clippedEnd,
+        labelSide,
+      })
+    }
+  }
 }

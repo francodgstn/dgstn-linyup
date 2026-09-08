@@ -5772,7 +5772,8 @@
     "timelinePrevious": "Previous period",
     "timelineNext": "Next period",
     "timelineToday": "Today",
-    "timelineEmpty": "No events in {window}"
+    "timelineEmpty": "No events in {window}",
+    "timelineTypeless": "No type"
   },
   "OrgEventDetail": {
     "backToEvents": "Organization events",
@@ -8080,6 +8081,6 @@
     "growthEmptyHint": "Once studios join, this shows how the organisation has grown.",
     "growthSeries": "Studios",
     "statusTitle": "{term} by status",
-    "statusAll": "{count, plural, one {# record} other {# records}}"
+    "statusAll": "{count, plural, one {# person} other {# people}}"
   }
 }

@@ -1,6 +1,6 @@
 import { RANKING_HMD, RANKING_KD, ORG_ID, rankingSystemLevelValues } from '../config'
 import { matchSubscriptionType, pickSubscriptionPrice } from './subscriptions'
-import { buildAffiliationSummary } from '../../lib/affiliations'
+import { buildAffiliationSummary, type AffiliationSummaryInput } from '../../lib/affiliations'
 
 // ── Affiliation mapping (Phase 2) ─────────────────────────────────────────────
 //
@@ -272,7 +272,7 @@ export function transformContact(
     // The helper is dependency-free and compiles under tsconfig.scripts.json
     // like the rest of this directory, so there was never a reason for the copy.
     out.affiliation_summary = buildAffiliationSummary(
-      affiliations as Array<{ active: boolean; type_key?: string; org_id?: string }>
+      affiliations as AffiliationSummaryInput[]
     )
     out[AFFILIATIONS_OUTPUT_KEY] = affiliations
   }
