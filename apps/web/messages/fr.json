@@ -1310,7 +1310,7 @@
     "countCheckedIn": "{count} présents",
     "countCapacity": "capacité {count}",
     "peekCapacity": "Places réservées / capacité",
-    "viewPlanning": "Planification"
+    "viewPlanning": "Planification des événements"
   },
   "Events": {
     "title": "Événements",
