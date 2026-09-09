@@ -41,7 +41,10 @@
  *      is how a lane's copy vanishes with no diff to notice.
  *   3. A key that already exists with different text — that is either a lane
  *      stomping shipped copy or a stale fragment, and both want a human.
- *      Identical text is a no-op, so re-running is safe.
+ *      Identical text is a no-op, so re-running is safe. "Identical" means all
+ *      FOUR locales: comparing English alone made a translation-only fix
+ *      unexpressible, since it was skipped as a re-run before --force could
+ *      apply.
  */
 
 import { readFileSync, writeFileSync, readdirSync, rmSync, existsSync } from 'fs'
@@ -139,16 +142,34 @@ const skipped = []
 
 for (const [dotted, { value, lane }] of claimed) {
   const path = dotted.split('.')
-  const existingEn = path.reduce((n, k) => (n && typeof n === 'object' ? n[k] : undefined), files.en)
+  const read = (locale) =>
+    path.reduce((n, k) => (n && typeof n === 'object' ? n[k] : undefined), files[locale])
+  const existingEn = read('en')
   if (typeof existingEn === 'string') {
-    if (existingEn === value.en) {
+    // COMPARED ACROSS ALL FOUR, not just English.
+    //
+    // This used to short-circuit on `existingEn === value.en`, which made a
+    // TRANSLATION-ONLY fix unexpressible: a fragment correcting the Italian of
+    // a key whose English is already right was reported as an "idempotent
+    // re-run" and silently dropped — before `--force` was ever consulted, so
+    // even asking for it did nothing. The lane's only way through was to edit
+    // the locale file by hand, which is the one thing this scheme exists to
+    // stop. Found fixing `{count} selezionato/i` (2026-09-09).
+    const differing = LOCALES.filter((l) => read(l) !== value[l])
+    if (differing.length === 0) {
       skipped.push(dotted) // idempotent re-run
       continue
     }
     if (!force) {
+      // Name the locales AND show English, because the two cases want
+      // different judgements: changed English is a lane stomping shipped copy,
+      // while changed translations alone is usually a correction.
+      const detail = differing.includes('en')
+        ? `"${existingEn}" vs "${value.en}"`
+        : `English unchanged; differs in ${differing.join(', ')}`
       fail(
-        `${lane}: ${dotted} already exists with different copy — ` +
-          `"${existingEn}" vs "${value.en}". Re-run with --force only if you mean to replace it.`
+        `${lane}: ${dotted} already exists with different copy — ${detail}. ` +
+          `Re-run with --force only if you mean to replace it.`
       )
       continue
     }
