@@ -7,7 +7,17 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
+import {
+  collection,
+  collectionGroup,
+  doc,
+  getCountFromServer,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from 'firebase/firestore'
 
 // Security-rules tests for WHICH CONTACTS AN ORGANISATION MAY READ.
 //
@@ -146,6 +156,40 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
 
       // Written before the summary existed — no field at all.
       await setDoc(doc(db, 'contacts', 'noSummary'), { ...base, firstname: 'Legacy' })
+
+      // The rows the status strip counts. All three issuers live in this one
+      // subcollection and only the first is the federation's business.
+      await setDoc(doc(db, 'contacts', 'affiliated', 'affiliations', 'orgLicence'), {
+        teamId: STUDIO,
+        issuer: 'org',
+        org_id: ORG,
+        status_id: 'active',
+        active: true,
+        contact_live: true,
+      })
+      await setDoc(doc(db, 'contacts', 'lapsed', 'affiliations', 'orgLicence'), {
+        teamId: STUDIO,
+        issuer: 'org',
+        org_id: ORG,
+        status_id: 'expired',
+        active: false,
+        contact_live: true,
+      })
+      await setDoc(doc(db, 'contacts', 'clubOnly', 'affiliations', 'clubMembership'), {
+        teamId: STUDIO,
+        issuer: 'team',
+        status_id: 'active',
+        active: true,
+        contact_live: true,
+      })
+      await setDoc(doc(db, 'contacts', 'rivalMember', 'affiliations', 'rivalLicence'), {
+        teamId: STUDIO,
+        issuer: 'org',
+        org_id: OTHER_ORG,
+        status_id: 'active',
+        active: true,
+        contact_live: true,
+      })
     })
   })
 
@@ -260,42 +304,41 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     )
   })
 
-  // PENDING, AND THE PENDING IS THE POINT — this shape is DENIED today.
-  //
-  // #249 moved the dashboard's status strip off the affiliations collection
-  // group and onto the contact, filtering `affiliation_summary.org_status_ids`
-  // with an `org:status` key, so that the per-status counts compose with
-  // `archived_at` and stop counting people who had left. `orgAdminMayReadContact`
-  // then landed and admits a contact by `org_ids` / `active_org_ids`. Firestore
-  // matches a query against the rule by VALUE — the rule's expression is
-  // evaluated and compared to the query's filter — so a query for `fed:active`
-  // is provable only by a rule that names `fed:active`, and the status half is
-  // tenant-configurable. It cannot be enumerated in a rule, and the query cannot
-  // carry a second `array-contains` to prove the first.
-  //
-  // Every document the strip's query would return is one the organisation may
-  // read; only the PROOF is missing. The counts therefore come back
-  // `permission-denied` and the strip renders `—` (its existing denial state) on
-  // every studio the caller is not personally a member of. Visible and safe, not
-  // silently wrong — but wrong.
-  //
-  // The two ways out both cost something real, so this is a decision and not a
-  // fix: move the strip back to the affiliations collection group (loses #249's
-  // archived correctness unless a contact-write trigger propagates `archived_at`
-  // onto each affiliation row), or widen the rule back toward the team (loses
-  // the boundary this whole change exists to draw). Recorded in
-  // `docs/org-contact-visibility.md`.
-  //
-  // Un-skip this the moment either lands; it is the assertion that says which.
-  it.skip('COUNTS one status across studios — the dashboard status strip', async () => {
+  it('COUNTS one status across the federation — the dashboard status strip', async () => {
+    // THE CASE THAT WAS PENDING. #249 had moved this count onto the CONTACT,
+    // filtering `affiliation_summary.org_status_ids` with an `org:status` key —
+    // and `orgAdminMayReadContact` could not prove it, because Firestore matches
+    // a query against a rule by VALUE and the status half of that key is
+    // tenant-configurable. Every document it would have returned was readable;
+    // only the proof was missing, so the strip rendered `—` on every studio the
+    // caller was not personally a member of.
+    //
+    // It counts affiliation ROWS again (Franco, 2026-09-09), where the
+    // collection-group rule admits `isOrgAdminOfOrg` on the row's own `org_id`
+    // and a query pinning `org_id` is provably inside it. The liveness that a
+    // collection group cannot reach came with it as `contact_live`.
     await assertSucceeds(
       getCountFromServer(
         query(
-          collection(asFedAdmin(), 'contacts'),
-          where('teamId', 'in', [STUDIO]),
-          where('deleted_at', '==', null),
-          where('archived_at', '==', null),
-          where('affiliation_summary.org_status_ids', 'array-contains', `${ORG}:active`)
+          collectionGroup(asFedAdmin(), 'affiliations'),
+          where('org_id', '==', ORG),
+          where('contact_live', '==', true),
+          where('status_id', '==', 'active')
+        )
+      )
+    )
+  })
+
+  it('and that count reaches ONLY this organisation\u2019s rows', async () => {
+    // The other half of the same rule. A studio's own club membership
+    // (`issuer: 'team'`) and a rival federation's licence live in this very
+    // subcollection, and `org_id` is what keeps them out.
+    await assertFails(
+      getCountFromServer(
+        query(
+          collectionGroup(asFedAdmin(), 'affiliations'),
+          where('contact_live', '==', true),
+          where('status_id', '==', 'active')
         )
       )
     )

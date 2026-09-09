@@ -46,6 +46,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   collection,
+  collectionGroup,
   doc,
   getCountFromServer,
   getDoc,
@@ -61,6 +62,7 @@ import { db } from '@/lib/firebase'
 import { liveContactConstraints } from '@/lib/liveContacts'
 import {
   CONTACTS_COLLECTION,
+  CONTACT_AFFILIATIONS_SUBCOLLECTION,
   DEFAULT_ORG_AFFILIATION_STATUSES,
   EVENTS_COLLECTION,
   ORGANIZATIONS_COLLECTION,
@@ -426,97 +428,86 @@ export function useOrgAffiliationStatusDefs(orgId: string) {
 }
 
 /**
- * HOW MANY OF THE ORGANISATION'S PEOPLE SIT IN EACH AFFILIATION STATUS.
+ * HOW MANY OF THE ORGANISATION'S AFFILIATIONS SIT IN EACH STATUS.
  *
- * ── IT COUNTS CONTACTS, LIKE EVERY OTHER NUMBER ON THIS PAGE ────────────────
+ * ── IT COUNTS ROWS, THROUGH THE COLLECTION GROUP, AND THAT IS A DECISION ────
  *
- * It counted affiliation DOCUMENTS until 2026-09-08, through a collection group,
- * and could not be filtered: `archived_at` lives on the PARENT contact and a
- * collection-group query has no way to reach it, so the people who had left kept
- * their licences in the federation's queue for ever. The strip read `34 records`
- * on a page whose headcount was `31` — which is exactly how a wrong number gets
- * noticed and exactly the direction that flatters (Franco, 2026-09-08).
+ * `org_id` names the issuing organisation, `status_id` the bucket. That shape is
+ * the ONE `firestore.rules` can prove for an org admin: the collection-group
+ * block admits `isOrgAdminOfOrg` on the row's own `org_id`, so a query pinning
+ * `org_id` is provably inside it.
  *
- * The old comment defended that as the right question ("a queue of applications
- * does not shrink because an applicant left their club"). It is not: a
- * federation looking at its own dashboard is asking about the people its studios
- * look after now, and every other figure beside this one already says so.
+ * It was moved onto the CONTACT (#249, `affiliation_summary.org_status_ids`) so
+ * the counts would compose with `archived_at`, and moved back here (Franco,
+ * 2026-09-09) because `orgAdminMayReadContact` cannot prove that query:
+ * Firestore matches a query against a rule by VALUE, and an `org:status` key has
+ * a tenant-configurable half no rule can name. Every document it would have
+ * returned was readable; only the proof was missing, so the counts came back
+ * `permission-denied` on every studio the caller was not personally a member of.
+ * See `docs/org-contact-visibility.md`.
  *
- * So the question is asked of the CONTACT instead, against
- * `affiliation_summary.org_status_ids` — a denormalised set of `org:status`
- * keys, written by `onAffiliationWrite`. That puts the status filter on the same
- * document as `archived_at`, so it composes with `liveContactConstraints()`
- * exactly like the per-studio counts above.
+ * ── WHAT #249 FIXED IS NOT GIVEN BACK ───────────────────────────────────────
  *
- * ── ONE AGGREGATION PER STATUS PER CHUNK ───────────────────────────────────
+ * A collection group cannot reach the parent contact, which is why this count
+ * could not see `archived_at` and an ex-member's licence sat in the federation's
+ * queue for ever. `contact_live` is now denormalised onto every affiliation by
+ * `syncAffiliationContactLive`, so the same exclusion is an ordinary equality
+ * filter here.
  *
- * Still `getCountFromServer` — one integer each, never a fan-out of contacts.
- * The studios are chunked into `in` clauses of 30 (Firestore's limit, and the
- * shape the affiliations page already uses), so a federation of thirty studios
- * with eight statuses costs eight counts. `teamId` is what the rules grant an
- * org admin, so the scope is not optional.
+ * A missing field never matches an equality filter, so a row written before that
+ * field simply does not count — visibly low rather than invisibly high, which is
+ * the safe direction. Every dataset that has affiliations writes it now (the
+ * three seeders and the HMD migration), so re-seed or re-migrate rather than
+ * reaching for a backfill.
  *
- * A CONTACT COUNTS ONCE PER STATUS, not once per licence — holding two
- * affiliations of one org in the same status is one person. Holding two in
- * DIFFERENT statuses does put them in two buckets, which is why the strip
- * states a record total rather than a share of the headcount.
+ * ── RECORDS, NOT PEOPLE, AND THE DISTINCTION IS LOAD-BEARING ────────────────
+ *
+ * A person holding a licence that is active and a grading that is merely
+ * requested is one person in two rows. That is the right answer to "how many
+ * licences are awaiting review" and the wrong one to "how many people", so the
+ * copy says records and the strip states no percentage of the headcount — a
+ * ratio across those two populations would be the lie.
+ *
+ * ── ONE AGGREGATION PER STATUS ─────────────────────────────────────────────
+ *
+ * `getCountFromServer` per status def transfers one integer each, where
+ * downloading the rows to tally them would be every licence the federation has
+ * ever issued. No `teamId` scoping and no chunking: `org_id` already bounds the
+ * query to this organisation's own rows, which is also what makes it provable.
  */
 export function useOrgAffiliationStatusCounts(
   orgId: string,
-  teamIds: string[],
   defs: OrgAffiliationStatusDef[] | undefined,
   enabled: boolean
 ) {
-  const scope = [...teamIds].sort()
   return useQuery<OrgAffiliationStatusBreakdown>({
-    queryKey: ['org-affiliation-status-counts', orgId, scope, (defs ?? []).map((d) => d.id)],
-    enabled: enabled && !!defs && defs.length > 0 && scope.length > 0,
+    queryKey: ['org-affiliation-status-counts', orgId, (defs ?? []).map((d) => d.id)],
+    enabled: enabled && !!defs && defs.length > 0,
     staleTime: 2 * 60_000,
     queryFn: async () => {
-      const chunks: string[][] = []
-      for (let i = 0; i < scope.length; i += 30) chunks.push(scope.slice(i, i + 30))
-
-      const countAcrossStudios = async (constraint: QueryFieldFilterConstraint) => {
-        const counts = await Promise.all(
-          chunks.map((chunk) =>
-            getCountFromServer(
-              query(
-                collection(db, CONTACTS_COLLECTION),
-                where('teamId', 'in', chunk),
-                ...liveContactConstraints(),
-                constraint
-              )
+      const settled = await Promise.allSettled(
+        (defs ?? []).map(async (def) => {
+          const snap = await getCountFromServer(
+            query(
+              collectionGroup(db, CONTACT_AFFILIATIONS_SUBCOLLECTION),
+              where('org_id', '==', orgId),
+              where('contact_live', '==', true),
+              where('status_id', '==', def.id)
             )
           )
-        )
-        return counts.reduce((n, c) => n + c.data().count, 0)
-      }
-
-      const settled = await Promise.allSettled([
-        // DISTINCT PEOPLE, off `org_ids` — "has this federation ever had a
-        // record for them". One `array-contains` and therefore one query per
-        // chunk, where an `array-contains-any` over every status key would hit
-        // Firestore's 30-value limit for an org that invented enough statuses,
-        // and chunking THAT would double-count the people who span two chunks.
-        countAcrossStudios(where('affiliation_summary.org_ids', 'array-contains', orgId)),
-        ...(defs ?? []).map((def) =>
-          countAcrossStudios(
-            where(
-              'affiliation_summary.org_status_ids',
-              'array-contains',
-              orgAffiliationStatusKey(orgId, def.id)
-            )
-          )
-        ),
-      ])
-
-      const [peopleResult, ...statusResults] = settled
+          return snap.data().count
+        })
+      )
+      const rows = (defs ?? []).map((def, i) => {
+        const r = settled[i]
+        return { def, count: r?.status === 'fulfilled' ? r.value : null }
+      })
       return {
-        people: peopleResult.status === 'fulfilled' ? peopleResult.value : null,
-        rows: (defs ?? []).map((def, i) => {
-          const r = statusResults[i]
-          return { def, count: r?.status === 'fulfilled' ? r.value : null }
-        }),
+        // Summed from the buckets it is showing, rather than counted separately:
+        // a total that does not add up to its own parts is the number a reader
+        // stops trusting. `sumOrNull` keeps a single denial honest.
+        people: sumOrNull(rows.map((r) => r.count)),
+        rows,
       }
     },
   })

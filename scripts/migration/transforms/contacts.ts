@@ -242,6 +242,12 @@ export function transformContact(
       issuer,
       status_id: statusId,
       active: statusCountsAsActive(statusId),
+      // Denormalised liveness. The federation's status breakdown counts these
+      // rows through a collection group, which cannot reach the parent contact
+      // to read `archived_at` — so an ex-member's licence would sit in its queue
+      // for ever. Both halves, the same pair every contact query uses; `out`
+      // has coalesced them to null above, so this is a plain read.
+      contact_live: out.deleted_at == null && out.archived_at == null,
       created_at: createdAt,
       updated_at: createdAt,
       created_by: 'migration',

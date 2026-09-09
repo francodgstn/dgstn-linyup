@@ -35,6 +35,39 @@ export interface Affiliation {
   reference?: string // licence / registration number
   valid_from?: Timestamp
   valid_until?: Timestamp
+  /**
+   * IS THE PERSON THIS ROW BELONGS TO STILL SOMEBODY THE STUDIO LOOKS AFTER?
+   * Denormalised from the parent contact — `!deleted_at && !archived_at`, the
+   * same pair `liveContactConstraints()` puts on every contact query.
+   *
+   * It exists because a collection-group query over affiliations CANNOT REACH
+   * THE PARENT. The organisation's status breakdown counts rows here, and
+   * without this an ex-member's licence sat in the federation's queue for ever
+   * — "34 records" on a page whose headcount was 31 (#249).
+   *
+   * #249 solved that by moving the breakdown onto the CONTACT
+   * (`affiliation_summary.org_status_ids`), which composes with `archived_at`
+   * natively. `orgAdminMayReadContact` then made that query unprovable:
+   * Firestore matches a query against a rule by VALUE, and the `org:status` key
+   * it filters on has a tenant-configurable half no rule can name. So the
+   * breakdown came back to this collection group, where the rule proves it on
+   * `org_id` alone — and the liveness it cannot see had to come with it.
+   *
+   * WRITTEN BY: `syncAffiliationContactLive` (the contact-side trigger, which
+   * owns transitions), `upsertAffiliation` at create time — so a row is never
+   * uncounted by accident before the trigger has any reason to fire — and the
+   * two dataset builders, `scripts/lib/affiliations.ts` for all four seeders and
+   * `scripts/migration/transforms/contacts.ts` for HMD.
+   *
+   * NO BACKFILL EXISTS, DELIBERATELY. An equality filter never matches a missing
+   * field, so a row written before this field simply does not count — visibly
+   * low rather than invisibly high, the safe direction. Every dataset that holds
+   * affiliations today is REPRODUCIBLE (seeds, leads, the HMD migration), so
+   * re-seeding or re-running the migration is the migration. Should that stop
+   * being true — real tenant data with affiliations — a backfill becomes a
+   * deploy precondition and this note is the reason it was not needed before.
+   */
+  contact_live?: boolean
   // Display-only bookkeeping: the fee is paid directly to the issuer (not via Linyup).
   // `fee_paid` is a manual "fee received" flag a manager toggles for their own records.
   fee_paid?: boolean

@@ -61,6 +61,7 @@ export { onInstalledPluginStatusChange } from './sync/onInstalledPluginStatusCha
 // non-idempotent activation hook and cannot be retried; these can.
 export { onTeamBundleInstallChange, onOrgBundleInstallChange } from './plugins/bundleTriggers'
 export { onAffiliationWrite } from './sync/onAffiliationWrite'
+export { syncAffiliationContactLive } from './sync/syncAffiliationContactLive'
 export { onCreditGrantWrite } from './sync/onCreditGrantWrite'
 // Availability writes re-run the team sync so the appointment picker's liveness
 // flag (active_public_surfaces.appointments) can't go stale — see the file.

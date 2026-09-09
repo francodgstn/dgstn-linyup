@@ -176,6 +176,16 @@ export interface BuildAffiliationOpts {
   validFrom?: unknown
   createdAt?: unknown
   createdBy?: string
+  /**
+   * Is the parent contact live — not deleted, not archived?
+   *
+   * DEFAULTS TO TRUE, and that is safe only because every seeder writes
+   * `archived_at: null` and `deleted_at: null` on every contact it creates: no
+   * seeded persona has ever left. A seeder that starts creating archived
+   * personas MUST pass this, or the organisation's status breakdown counts
+   * people who are gone — the exact defect #249 fixed.
+   */
+  contactLive?: boolean
 }
 
 /**
@@ -194,6 +204,12 @@ export function buildAffiliationDoc(opts: BuildAffiliationOpts): Record<string, 
     issuer,
     status_id: statusId,
     active: statusCountsAsActive(statusId),
+    // Denormalised liveness — the organisation's status breakdown counts these
+    // rows through a collection group, which cannot reach the parent contact to
+    // see `archived_at`. See `Affiliation.contact_live` in shared. Writing it
+    // HERE is why no backfill exists: every seeded dataset is reproducible, so
+    // re-seeding is the migration.
+    contact_live: opts.contactLive ?? true,
     created_at: createdAt ?? null,
     updated_at: createdAt ?? null,
   }

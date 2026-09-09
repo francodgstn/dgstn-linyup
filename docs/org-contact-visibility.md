@@ -244,40 +244,46 @@ headcount — a number, never people. Not built; do not add it by widening a rea
 
 ## Open
 
-### The dashboard status strip is denied, and it needs a decision
+### ~~The dashboard status strip is denied~~ — RESOLVED 2026-09-09
 
-**Found merging `main` on 2026-09-08, and it is the one thing here that is
-currently WRONG rather than merely unbuilt.**
+Kept because the reasoning outlives the diff, and because the shape of the
+problem will recur the next time a query is added on this rule.
 
-`#249` moved the org dashboard's per-status counts off the affiliations
+`#249` had moved the org dashboard's per-status counts off the affiliations
 collection group and onto the CONTACT, filtering
-`affiliation_summary.org_status_ids` with an `org:status` key — so that the
-counts compose with `archived_at` and stop counting people who had left.
-`orgAdminMayReadContact` admits a contact by `org_ids` / `active_org_ids`.
+`affiliation_summary.org_status_ids` with an `org:status` key — so the counts
+would compose with `archived_at` and stop counting people who had left.
+`orgAdminMayReadContact` then made that query unprovable: **Firestore matches a
+query against a rule by value**, and the status half of that key is
+tenant-configurable, so no rule can name it and the query cannot carry a second
+`array-contains` to prove itself. Every document it would return was readable;
+only the proof was missing. The strip rendered `—` on every studio the caller was
+not personally a member of.
 
-Firestore matches a query against a rule **by value**: the rule's expression is
-evaluated and compared to the query's filter. A query for `fed:active` is
-provable only by a rule naming `fed:active`, and the status half is
-tenant-configurable — so it cannot be enumerated in a rule, and the query cannot
-carry a second `array-contains` to prove the first (one per query, hard limit).
+**The strip counts affiliation ROWS again** (Franco, 2026-09-09), through the
+collection group, where `isOrgAdminOfOrg` reads the row's own `org_id` and a
+query pinning `org_id` is provably inside the rule.
 
-Every document that query would return is one the organisation may read. Only
-the proof is missing. So the counts come back `permission-denied` and the strip
-renders `—` on every studio the caller is not personally a member of. Visible
-and safe rather than silently wrong, but wrong.
+**What #249 fixed did not come back.** A collection group cannot reach the parent
+contact, which is exactly why that count could not see `archived_at`. The
+liveness is now denormalised onto every affiliation as `contact_live`, so the
+same exclusion is an ordinary equality filter — written by
+`syncAffiliationContactLive` (a contact-side trigger, because archiving somebody
+touches none of their affiliations and nothing on the affiliation side would ever
+fire), by `upsertAffiliation` at create time, and by both dataset builders.
 
-Two ways out, each losing something real:
+**No backfill, and the reason is a fact about today rather than a shortcut.** A
+missing field never matches an equality filter, so an unwritten row simply does
+not count — visibly low, not invisibly high. Every dataset holding affiliations
+is reproducible (the three seeders, the leads, the HMD migration), so re-seeding
+or re-running the migration IS the migration. The day real tenant data carries
+affiliations, that stops being true and a backfill becomes a deploy
+precondition.
 
-- **Move the strip back to the affiliations collection group**, where
-  `isOrgAdminOfOrg(org_id)` already proves it. This gives up `#249`'s
-  correctness unless a contact-write trigger propagates `archived_at` onto each
-  affiliation row — new machinery plus a backfill.
-- **Widen the rule back toward the team.** Cheapest, and it gives up the
-  boundary this whole document exists to draw. Not recommended.
-
-Pinned by the one skipped case in
-`packages/functions/src/orgs/orgContactVisibility.rules-test.ts`, which is the
-assertion that says which option landed. Un-skip it when one does.
+**`affiliation_summary.org_status_ids` is now written and read by nothing.** It
+stays: `onAffiliationWrite` maintains it, its backfill still repairs it, and it
+is what the contact-side query would use if that query ever became provable.
+Removing it is a separate cleanup, not part of this decision.
 
 ### Smaller
 
