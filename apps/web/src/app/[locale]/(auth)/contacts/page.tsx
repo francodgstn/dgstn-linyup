@@ -75,8 +75,9 @@ import { setGroupRule } from '@/plugins/contact-groups/hooks'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { UserPlus, X, Plus, AlertCircle, ChevronDown, ChevronUp, ChevronRight, Archive, Trash2, RotateCcw, MoreHorizontal, ArrowRightLeft, Mail, Pencil, Award, CreditCard, Tag, Check, Bookmark, BookmarkPlus, BarChart2, Eye, FolderTree, ShieldCheck, UserCheck, StickyNote, ListPlus } from 'lucide-react'
+import { UserPlus, X, Plus, AlertCircle, ChevronDown, ChevronUp, ChevronRight, Archive, Trash2, RotateCcw, MoreHorizontal, ArrowRightLeft, Mail, Pencil, Award, CreditCard, Tag, Check, Bookmark, BookmarkPlus, BarChart2, Eye, FolderTree, ShieldCheck, UserCheck, StickyNote, ListPlus, QrCode } from 'lucide-react'
 import type { Route } from 'next'
+import { writeQrSheetSelection } from '@/lib/qrSheetSelection'
 import { RosterCard } from '@/components/dashboard/RosterCard'
 import { DemographicsCard } from '@/components/dashboard/DemographicsCard'
 import { getPrimaryRank } from '@/lib/rank-utils'
@@ -2602,12 +2603,14 @@ type TabId = (typeof TAB_IDS)[number]
 
 export default function ContactsPage() {
   const { currentTeamId, user, team } = useAuth()
+  const pageRouter = useRouter()
   const { isAtLeast, plan } = usePlan()
   const { ownScoped } = useCapabilities()
   const { openUpgradeModal } = useUpgradeModal()
   const qc = useQueryClient()
   const t = useTranslations('Contacts')
   const tNav = useTranslations('Nav')
+  const tLink = useTranslations('ContactLink')
 
   // Coaches (own-scoped) see only their assigned contacts and have no
   // archived/deleted admin views (those queries would be denied by the rules).
@@ -3280,6 +3283,17 @@ export default function ContactsPage() {
             ...(askedDocuments.some((d) => d.requiredBeforeBooking)
               ? [{ label: t('bulkAskToSign'), icon: ShieldCheck, onClick: () => setAskToSignOpen(true) }]
               : []),
+            // The EXACT ids are handed over, not the filter: this list is live,
+            // and re-deriving it on the sheet would print a different set from
+            // the one that was ticked.
+            {
+              label: tLink('sheetAction'),
+              icon: QrCode,
+              onClick: () => {
+                writeQrSheetSelection(selectedList)
+                pageRouter.push('/contacts/qr-sheet' as Route)
+              },
+            },
           ] : []}
         />
       )}

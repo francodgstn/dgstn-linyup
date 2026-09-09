@@ -138,6 +138,7 @@ export { grantCredits } from './contacts/grantCredits'
 export { manageContactUpdateRequest } from './contacts/manageContactUpdateRequest'
 export {
   createContactUpdateLink,
+  createContactUpdateLinksBatch,
   revokeContactUpdateLinks,
   resolveContactUpdateLink,
   submitContactUpdateLink,

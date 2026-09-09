@@ -33,6 +33,7 @@ import {
   CONTACT_REQUESTS_SUBCOLLECTION,
   CONTACT_UPDATE_LINKS_COLLECTION,
   CONTACT_LINK_MAX_ATTEMPTS,
+  CONTACT_LINK_MAX_BATCH,
   CONTACT_LINK_MAX_SUBMISSIONS,
   CONTACT_LINK_OTP_LENGTH,
   TEAMS_COLLECTION,
@@ -121,6 +122,39 @@ async function loadPublicCustomFields(teamId: string): Promise<CustomFieldDefini
   return defs.filter((d) => d?.publicOnBookingForm === true)
 }
 
+/**
+ * THE STORED GRANT — built here and nowhere else, so the single mint and the
+ * batch mint cannot drift on what a link is. Every field is written explicitly,
+ * including the nulls: `revoked_at` in particular is QUERIED
+ * (`where('revoked_at','==',null)`), and Firestore does not match a document
+ * that simply lacks the field, so an omitted null would make a grant invisible
+ * to both the revoke path and the one-live-link rule.
+ */
+function linkDoc(input: {
+  teamId: string
+  contactId: string
+  name: string
+  uid: string
+  minutes: number
+  token: string
+  otp: string | null
+}): Record<string, unknown> {
+  return {
+    teamId: input.teamId,
+    contact_id: input.contactId,
+    contact_name: input.name,
+    created_at: FieldValue.serverTimestamp(),
+    created_by: input.uid,
+    expires_at: Timestamp.fromMillis(Date.now() + input.minutes * 60_000),
+    requires_otp: input.otp !== null,
+    otp_hash: input.otp === null ? null : sha256(`${input.token}:${input.otp}`),
+    attempts: 0,
+    submissions: 0,
+    revoked_at: null,
+    last_submitted_at: null,
+  }
+}
+
 // ─── mint ────────────────────────────────────────────────────────────────────
 
 /**
@@ -189,20 +223,7 @@ export const createContactUpdateLink = onCall(async (request) => {
   for (const d of live.docs) batch.update(d.ref, { revoked_at: FieldValue.serverTimestamp() })
 
   const name = `${contactSnap.get('firstname') ?? ''} ${contactSnap.get('lastname') ?? ''}`.trim()
-  batch.set(links.doc(sha256(token)), {
-    teamId,
-    contact_id: contactId,
-    contact_name: name,
-    created_at: FieldValue.serverTimestamp(),
-    created_by: uid,
-    expires_at: Timestamp.fromMillis(Date.now() + minutes * 60_000),
-    requires_otp: otp !== null,
-    otp_hash: otp === null ? null : sha256(`${token}:${otp}`),
-    attempts: 0,
-    submissions: 0,
-    revoked_at: null,
-    last_submitted_at: null,
-  })
+  batch.set(links.doc(sha256(token)), linkDoc({ teamId, contactId, name, uid, minutes, token, otp }))
   await batch.commit()
 
   return {
@@ -409,4 +430,93 @@ export const submitContactUpdateLink = onCall(async (request) => {
   })
 
   return { status: 'ok' as const, emailSharedWith: sharedWith.length }
+})
+
+// ─── batch mint (the printed sheet) ──────────────────────────────────────────
+
+/**
+ * Mint one grant per contact, for a sheet of QR slips handed out at training.
+ *
+ * ── WHY THIS IS NOT A LOOP OVER THE SINGLE CALLABLE ─────────────────────────
+ * At 336 contacts in one club, a call per contact is 336 round trips and 336
+ * chances to half-finish. It is also 336 queries for the previous grant, which
+ * is the part that actually costs: here the live links are read ONCE for the
+ * whole team and matched in memory, because a team's outstanding grants are
+ * bounded by how many slips it has printed lately — not by its roster.
+ *
+ * ── NO SPOKEN CODE ON THIS PATH ─────────────────────────────────────────────
+ * `requireOtp` is not a parameter and is never set. A code printed beside its
+ * own QR protects nothing, and a code NOT printed cannot be read aloud to three
+ * hundred people. On a sheet the slip IS the secret — which is why the windows
+ * offered for it start at an hour rather than five minutes, and why the sheet
+ * is worth collecting back. See CONTACT_LINK_SHEET_TTL_CHOICES.
+ */
+export const createContactUpdateLinksBatch = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'Sign in required')
+
+  const { teamId, contactIds, ttlMinutes } = request.data as {
+    teamId?: string
+    contactIds?: string[]
+    ttlMinutes?: number
+  }
+  if (!teamId || !Array.isArray(contactIds) || contactIds.length === 0) {
+    throw new HttpsError('invalid-argument', 'teamId and contactIds are required')
+  }
+  if (contactIds.length > CONTACT_LINK_MAX_BATCH) {
+    throw new HttpsError('invalid-argument', `At most ${CONTACT_LINK_MAX_BATCH} contacts per call`)
+  }
+  if (!(await hasTeamRole(uid, teamId, 'coach'))) {
+    throw new HttpsError('permission-denied', 'Not allowed for this team')
+  }
+
+  const db = admin.firestore()
+  const teamSnap = await db.collection(TEAMS_COLLECTION).doc(teamId).get()
+  const slug = teamSnap.get('slug') as string | undefined
+  if (!slug) throw new HttpsError('failed-precondition', 'Team has no public slug')
+  const lang = teamSnap.get('language') as string | undefined
+
+  const minutes = clampContactLinkTtl(ttlMinutes)
+  const links = db.collection(CONTACT_UPDATE_LINKS_COLLECTION)
+
+  // ONE read for the whole team's outstanding grants, then matched in memory.
+  const live = await links.where('teamId', '==', teamId).where('revoked_at', '==', null).get()
+  const wanted = new Set(contactIds)
+
+  const contactSnaps = await db.getAll(
+    ...contactIds.map((cid) => db.collection(CONTACTS_COLLECTION).doc(cid))
+  )
+
+  const batch = db.batch()
+  for (const d of live.docs) {
+    if (wanted.has(d.get('contact_id') as string)) {
+      batch.update(d.ref, { revoked_at: FieldValue.serverTimestamp() })
+    }
+  }
+
+  const out: Array<{ contactId: string; name: string; url: string }> = []
+  const skipped: string[] = []
+  for (const snap of contactSnaps) {
+    // A contact of another team, or one in the trash, is SKIPPED rather than
+    // failing the sheet: the caller passed a selection off a list, and one
+    // stale id should not cost the other ninety-nine their slips.
+    if (!snap.exists || snap.get('teamId') !== teamId || snap.get('deleted_at')) {
+      skipped.push(snap.id)
+      continue
+    }
+    const name = `${snap.get('firstname') ?? ''} ${snap.get('lastname') ?? ''}`.trim()
+    const token = randomBytes(24).toString('base64url')
+    batch.set(
+      links.doc(sha256(token)),
+      linkDoc({ teamId, contactId: snap.id, name, uid, minutes, token, otp: null })
+    )
+    out.push({
+      contactId: snap.id,
+      name,
+      url: localizedPublicUrl(getHostingUrl(), lang, slug, 'contact-update', { t: token }),
+    })
+  }
+
+  await batch.commit()
+  return { links: out, skipped, expiresAt: Date.now() + minutes * 60_000, ttlMinutes: minutes }
 })

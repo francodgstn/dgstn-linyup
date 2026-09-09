@@ -373,6 +373,47 @@
   }
 }
 
+/* ── Print: the contact QR slip sheet ────────────────────────────────────────
+   The third printable surface (/contacts/qr-sheet). One slip per contact, cut
+   apart and handed out at training so a member with no email on file can give
+   one — see @linyup/shared → types/contactLink.ts.
+
+   It rides on the `.no-print` + chrome-hiding rules in the manifest block
+   above rather than restating them; only the slip grid is described here.
+
+   The slips are laid out with `break-inside: avoid` because a QR split across
+   a page boundary is not a degraded slip, it is an unscannable one. */
+@media print {
+  .qr-sheet {
+    max-width: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0 !important;
+  }
+
+  .qr-slip {
+    border: 1px dashed #999 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 8mm 4mm !important;
+    text-align: center;
+  }
+
+  /* Canvas QRs survive printing; a background-image one would not, because
+     most browsers drop background graphics by default. */
+  .qr-slip canvas {
+    width: 34mm !important;
+    height: 34mm !important;
+  }
+
+  @page {
+    margin: 10mm;
+  }
+}
+
 /* ── Print: the event programme sheet ────────────────────────────────────────
    The second printable surface (/public/{slug}/events/{id}/print). Browser
    "Save as PDF" over these rules produces the A4 handout, which is why there
