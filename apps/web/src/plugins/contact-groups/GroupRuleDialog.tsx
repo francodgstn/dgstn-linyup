@@ -63,6 +63,7 @@ export function GroupRuleDialog({
     tags: tc('filterTags'),
     hasAlerts: tc('filterAlertsLabel'),
     hasNotes: tc('filterNotesLabel'),
+    missingEmail: tc('filterMissingEmail'),
     needsAttention: tc('filterNeedsAttention'),
     consent: tc('filterConsent'),
     pendingSignup: tc('filterPendingSignup'),

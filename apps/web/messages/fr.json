@@ -1048,7 +1048,8 @@
     "goalUnarchive": "Restaurer l'objectif",
     "goalArchivedBadge": "Archivé",
     "goalShowArchived": "Archivés",
-    "sendLinkTip": "Copiez un lien à leur envoyer. La confirmation se fait par un code envoyé par e-mail, il faut donc une adresse enregistrée."
+    "sendLinkTip": "Copiez un lien à leur envoyer. La confirmation se fait par un code envoyé par e-mail, il faut donc une adresse enregistrée.",
+    "filterMissingEmail": "Sans e-mail"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
