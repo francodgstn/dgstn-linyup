@@ -12,6 +12,7 @@ export type ProviderCategory =
   | 'Email'
   | 'Analytics'
   | 'Content'
+  | 'Mobile'
   | 'Other'
 
 export interface Provider {
@@ -36,6 +37,7 @@ export const CATEGORY_ORDER: ProviderCategory[] = [
   'Email',
   'Analytics',
   'Content',
+  'Mobile',
   'Other',
 ]
 
@@ -104,5 +106,30 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://www.deepl.com/your-account/summary',
     docsUrl: 'https://developers.deepl.com/docs',
     statusUrl: 'https://status.deepl.com/',
+  },
+  // The two store portals. What the console can show WITHOUT opening them lives
+  // on the Member app page; these rows are the one-click route to the things it
+  // cannot — App Review's rejection message and Resolution Center thread, and
+  // Play's policy status and Console inbox, none of which either vendor exposes
+  // through an API.
+  {
+    id: 'apple-app-store',
+    name: 'App Store Connect',
+    category: 'Mobile',
+    description:
+      'iOS member app — releases, App Review, TestFlight. Rejection reasons live here and nowhere else.',
+    panelUrl: 'https://appstoreconnect.apple.com/apps/6808572774/distribution',
+    docsUrl: 'https://developer.apple.com/documentation/appstoreconnectapi',
+    statusUrl: 'https://developer.apple.com/system-status/',
+  },
+  {
+    id: 'google-play',
+    name: 'Google Play Console',
+    category: 'Mobile',
+    description:
+      'Android member app — releases, testing tracks, Android vitals. Policy status is portal-only.',
+    panelUrl: 'https://play.google.com/console',
+    docsUrl: 'https://developers.google.com/android-publisher',
+    statusUrl: 'https://status.play.google.com/',
   },
 ]

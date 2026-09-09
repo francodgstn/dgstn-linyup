@@ -2413,6 +2413,23 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── App-store presence (operator console) ─────────────────────────────────
+    // Written by the `appstores` ingest (Admin SDK) and read by the operator
+    // console (Admin SDK). No client access, same posture as the snapshots
+    // above — and store_reviews additionally carries reviewers' display names
+    // and the free text they wrote, so a readable collection here is a readable
+    // list of members' own words.
+    match /store_presence/{platform} {
+      allow read, write: if false;
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /store_reviews/{reviewId} {
+      allow read, write: if false;
+    }
+
     // Operator → Customer notices, and the recipient list each one was actually
     // sent to. Deny-all to clients, like the mail ledger above and for the same
     // reason: the recipients subcollection is a list of every studio's owner

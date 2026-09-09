@@ -183,6 +183,12 @@ export {
 } from './analytics'
 export { capturePlatformMetrics } from './analytics/platformMetrics'
 
+// App-store presence (App Store Connect + Google Play → store_presence/*).
+// Read-only; gated by STORE_INGEST_ENABLED, which is 'false' everywhere until
+// somebody turns it on. See appstores/ingest.ts.
+export { ingestAppStores } from './appstores/ingest'
+export { refreshStorePresence } from './appstores/ops'
+
 // Daily maintenance tasks + the hourly multi-step booking-reminder scan
 export { dailyTasks, bookingRemindersHourly } from './dailyTasks'
 

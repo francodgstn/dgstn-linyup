@@ -63,6 +63,19 @@ export const PLATFORM_NOTICES_COLLECTION = 'platform_notices'
 export const PLATFORM_NOTICE_RECIPIENTS_SUBCOLLECTION = 'recipients'
 
 export const PLATFORM_METRICS_COLLECTION = 'platform_metrics'
+
+// App-store presence — what App Store Connect and Google Play say about the
+// member app. Written by the `appstores` ingest, read by the operator console,
+// both Admin SDK; no client access at all (see types/storePresence.ts for why
+// store_reviews in particular must never be readable).
+export const STORE_PRESENCE_COLLECTION = 'store_presence'
+/** store_presence/{platform} — doc id is the StorePlatform ('ios' | 'android'). */
+export const STORE_PRESENCE_IOS_DOC = 'ios'
+export const STORE_PRESENCE_ANDROID_DOC = 'android'
+/** store_presence/{platform}/daily/{YYYY-MM-DD} — the vendor-reported series. */
+export const STORE_PRESENCE_DAILY_SUBCOLLECTION = 'daily'
+/** Doc id = `${platform}_${kind}_${vendorId}` — see storeReviewDocId(). */
+export const STORE_REVIEWS_COLLECTION = 'store_reviews'
 export const ORGANIZATIONS_COLLECTION = 'organizations'
 export const ORG_MEMBERS_SUBCOLLECTION = 'org_members'
 export const ORG_TEAMS_SUBCOLLECTION = 'org_teams'

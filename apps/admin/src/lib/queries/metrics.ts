@@ -15,10 +15,9 @@ export interface MetricsPoint {
    * every snapshot with no mail block — a zero there would draw a flat line
    * through history that never happened.
    *
-   * Currently null on ALL of them: the producer exists but is not yet called
-   * from `capturePlatformMetrics` (see capturePlatformMailMetrics's header in
-   * packages/functions/src/mail/mailMetrics.ts). The overview's platform mail
-   * KPIs do not depend on this — they are aggregated live in `./messaging`.
+   * Null on every snapshot taken before `capturePlatformMetrics` started
+   * writing the block. The overview's platform mail KPIs do not depend on this
+   * — they are aggregated live in `./messaging`.
    */
   emailsSent: number | null
 }

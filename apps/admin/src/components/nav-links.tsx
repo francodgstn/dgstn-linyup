@@ -2,13 +2,25 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Boxes, MessageSquare, Settings, HeartPulse } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Users,
+  Boxes,
+  MessageSquare,
+  Settings,
+  HeartPulse,
+  Smartphone,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// `Member app` here is for WATCHING it (store presence, adoption, reviews);
+// `Settings → Member app` is for CONFIGURING it (the min-version gate, store
+// URLs). Same subject, two verbs — the pages link to each other.
 const LINKS = [
   { href: '/', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/accounts', label: 'Accounts', icon: Users, exact: false },
   { href: '/health', label: 'Health', icon: HeartPulse, exact: false },
+  { href: '/member-app', label: 'Member app', icon: Smartphone, exact: false },
   { href: '/providers', label: 'Providers', icon: Boxes, exact: false },
   { href: '/feedback', label: 'Feedback', icon: MessageSquare, exact: false },
   { href: '/settings', label: 'Settings', icon: Settings, exact: false },

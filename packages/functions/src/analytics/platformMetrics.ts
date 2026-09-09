@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
 import { capturePlatformMailMetrics } from '../mail/mailMetrics'
+import { capturePlatformMobileMetrics } from './mobileAdoptionMetrics'
 import {
   computePlatformMetrics,
   platformMetricsToDoc,
@@ -135,12 +136,23 @@ export const capturePlatformMetrics = onSchedule(
     // it, and `mail` is optional precisely so a day can lack the block.
     const mail = await capturePlatformMailMetrics(db, date)
 
+    // Member-app adoption, from our own `Contact.mobile_app` telemetry rather
+    // than from either store — see mobileAdoptionMetrics.ts for why that is a
+    // different question from anything App Store Connect or Play can answer.
+    // Same null-means-omit contract as `mail` above.
+    const mobile = await capturePlatformMobileMetrics(db, nowMs)
+
     const [writeErr] = await to(
       db
         .collection(PLATFORM_METRICS_COLLECTION)
         .doc(date)
         .set(
-          { ...docData, ...(mail ? { mail } : {}), captured_at: FieldValue.serverTimestamp() },
+          {
+            ...docData,
+            ...(mail ? { mail } : {}),
+            ...(mobile ? { mobile } : {}),
+            captured_at: FieldValue.serverTimestamp(),
+          },
           { merge: true },
         ),
     )
