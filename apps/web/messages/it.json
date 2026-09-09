@@ -2784,7 +2784,7 @@
     "contactsLine": "{count} contatti",
     "unlimitedContacts": "Contatti illimitati",
     "compareToggle": "Confronta tutte le funzionalità",
-    "contactsNote": "Conta solo i contatti attivi (non archiviati). Studio può aggiungere blocchi da +250 per CHF 10/mese; i contatti archiviati vengono anonimizzati automaticamente dopo 2 anni.",
+    "contactsNote": "Conta solo i contatti attivi (non archiviati). Studio può aggiungere blocchi da +300 per CHF 10/mese; i contatti archiviati vengono anonimizzati automaticamente dopo 2 anni.",
     "unlimited": "Illimitati",
     "addon": "Opzione",
     "limited": "Limitato",
@@ -5741,9 +5741,9 @@
     "compareAllPlans": "Confronta tutti i piani →",
     "planContent": {
       "free": {
-        "tagline": "Inizia gratuitamente con fino a 15 contatti.",
+        "tagline": "Inizia gratuitamente con fino a 50 contatti.",
         "features": [
-          "Fino a 15 contatti attivi",
+          "Fino a 50 contatti attivi",
           "Bio link pubblico",
           "Sessioni, abbonamenti e obiettivi"
         ]
@@ -5753,13 +5753,13 @@
         "features": [
           "App membri + prenotazione appuntamenti",
           "Gruppi di contatti e campi personalizzati inclusi",
-          "Opzioni à la carte + 50 contatti"
+          "Opzioni à la carte + 150 contatti"
         ]
       },
       "studio": {
         "tagline": "Cresci con strumenti di coinvolgimento, automazione e l'app membri.",
         "features": [
-          "Tutte le opzioni incluse + 250 contatti",
+          "Tutte le opzioni incluse + 300 contatti",
           "Gamification – serie, classifiche, badge",
           "Suite di automazione completa e più manager"
         ]

@@ -2784,7 +2784,7 @@
     "contactsLine": "{count} contacts",
     "unlimitedContacts": "Unlimited contacts",
     "compareToggle": "Compare all features",
-    "contactsNote": "Counts active (non-archived) contacts only. Studio can add +250 blocks for CHF 10/mo; archived contacts auto-anonymise after 2 years.",
+    "contactsNote": "Counts active (non-archived) contacts only. Studio can add +300 blocks for CHF 10/mo; archived contacts auto-anonymise after 2 years.",
     "unlimited": "Unlimited",
     "addon": "Add-on",
     "limited": "Limited",
@@ -5741,9 +5741,9 @@
     "compareAllPlans": "Compare all plans →",
     "planContent": {
       "free": {
-        "tagline": "Get started for free with up to 15 contacts.",
+        "tagline": "Get started for free with up to 50 contacts.",
         "features": [
-          "Up to 15 active contacts",
+          "Up to 50 active contacts",
           "Public bio link",
           "Sessions, subscriptions & goals"
         ]
@@ -5753,13 +5753,13 @@
         "features": [
           "Member app + appointment booking",
           "Contact Groups & Custom Fields included",
-          "À-la-carte add-ons + 50 contacts"
+          "À-la-carte add-ons + 150 contacts"
         ]
       },
       "studio": {
         "tagline": "Scale with engagement tools, automation, and the member app.",
         "features": [
-          "Every add-on included + 250 contacts",
+          "Every add-on included + 300 contacts",
           "Gamification — streaks, leaderboards, badges",
           "Full automation suite & multiple managers"
         ]

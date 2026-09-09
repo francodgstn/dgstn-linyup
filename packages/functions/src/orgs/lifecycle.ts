@@ -143,7 +143,7 @@ export async function lapseOrganization(
         // on reinstall, so it would not come back when the org pays again.
         await downgradeTeamToFree(teamId, { fromTrial, courseMirrors: 'keep_for_buyers' })
         // The studio owner is told on BOTH rails, because on neither one did
-        // they do anything — the organisation did. A silent drop to a 15-contact
+        // they do anything — the organisation did. A silent drop to a capped
         // plan is the thing nobody finds out about until it refuses a signup.
         await sendStudioLapseEmail(teamId, teamSnap.data()!, orgId, opts.reason).catch((e) =>
           console.error(`[org-lapse] studio email failed ${teamId}:`, e)

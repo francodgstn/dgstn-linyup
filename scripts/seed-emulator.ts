@@ -3033,7 +3033,7 @@ async function seedFreeTeam() {
   // at 10, which made the block, the over-cap upgrade prompt and the meter-at-
   // limit all unreachable, and printed a tenant that *claims* to be at cap yet
   // takes more contacts fine (so "is the cap wired?" reads as broken).
-  const freeCap = PLAN_PRICING.free.includedContacts ?? 15
+  const freeCap = PLAN_PRICING.free.includedContacts ?? 50
   const freeNamePool = [
     { firstname: 'Mia', lastname: 'Keller', gender: 'F' },
     { firstname: 'Jonas', lastname: 'Frei', gender: 'M' },

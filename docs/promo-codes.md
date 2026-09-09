@@ -150,7 +150,7 @@ resolves the same key from either.
 in the shape of `PRODUCT_LIMITS`. Zero on free/coach is the same statement as the
 `requirePlan(teamId, 'studio')` gate, expressed as data so the admin page renders
 "4 of 20" without a second rule. Free inherits Coach, which is why Coach is zero:
-a 15-contact hobbyist running discount campaigns is not a real persona.
+a hobbyist at the free contact cap running discount campaigns is not a real persona.
 
 **Gates control creation only.** `requirePlan` is called by `createPromoCode` and
 by nothing else. A team downgraded to `free` keeps its live codes previewable,

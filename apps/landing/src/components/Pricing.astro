@@ -16,6 +16,13 @@ const ORG_MIN_STUDIOS = 2;
 const ORG_MAX_LISTED_STUDIOS = 10;
 const ORG_RATE_MONTHLY = 25;
 
+// THE CONTACT CAPS, mirrored the same way from PLAN_PRICING.includedContacts and
+// pinned by the same test. They were literals inline in the comparison row below,
+// which is the shape the org rate was in on the day it drifted.
+const FREE_CONTACTS = 50;
+const COACH_CONTACTS = 150;
+const STUDIO_CONTACTS = 300;
+
 interface Props {
   lang: Language;
 }
@@ -44,7 +51,7 @@ const COMPARE: { heading: string; rows: { label: string; note?: string; feature?
     heading: 'plans.cmpUsage',
     rows: [
       { label: 'plans.cmpUiLanguages', note: 'plans.cmpUiLanguagesNote', values: [true, true, true, true] },
-      { label: 'plans.cmpContacts', note: 'plans.cmpContactsNote', values: ['15', '50', '250', 'unlimited'] },
+      { label: 'plans.cmpContacts', note: 'plans.cmpContactsNote', values: [String(FREE_CONTACTS), String(COACH_CONTACTS), String(STUDIO_CONTACTS), 'unlimited'] },
       { label: 'plans.cmpMigration', values: [false, true, true, true] },
       { label: 'plans.cmpBranding', values: [false, false, true, true] },
       // Paid plans, mirroring BYO email sending: a DOMAIN is the studio's own
