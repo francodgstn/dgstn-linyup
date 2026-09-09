@@ -79,7 +79,24 @@ variable "secret_ids" {
     "deepl-api-key",        # DeepL machine translation (public site/embed localization)
     "posthog-api-key",
     "ai-assistant-unlock-key", # strong key to unlock the locked AI assistant plugin
-    "deepl-api-key",           # DeepL machine translation for public sites (docs/site-translations.md)
+    # App-store insights (docs/app-store-insights.md). Present in STAGING as well
+    # as prod, unlike cloudflare-api-token — and the difference is the point:
+    # the Cloudflare token is prod-only because it WRITES (it registers hostnames
+    # on the production zone), whereas every one of these is read-only against
+    # Apple and Google. A read-only key off-prod is how the integration gets
+    # exercised before it reaches production, and App Store Connect allows more
+    # than one webhook per app, so staging can have its own without touching
+    # prod's. The guard against unattended activity is STORE_INGEST_ENABLED,
+    # which is 'false' here regardless.
+    #
+    # Deliberately NOT in sandbox: that project hosts prospect demos and has
+    # nothing to do with the member app, so the containers would only ever be
+    # empty there — which `readSecret` reports as `not_configured`, correctly.
+    "apple-asc-key-id",
+    "apple-asc-issuer-id",
+    "apple-asc-private-key",
+    "apple-asc-webhook-secret",
+    "google-play-service-account",
   ]
 }
 

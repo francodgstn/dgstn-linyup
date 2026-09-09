@@ -262,12 +262,40 @@ Named so nobody assumes otherwise:
 
 ## Productionising
 
-1. Add the five secret ids to `infra/environments/prod/variables.tf` —
-   `secret_ids` **and** `admin_writable_secret_ids`, so an operator pastes the
-   `.p8` from the console rather than putting a private key through shell
-   history. Prod-only, mirroring `cloudflare-api-token`: there is one App Store
-   record and one Play listing, so an environment that can reach them reaches
-   the real app.
+1. **Terraform — done, not applied.** The five secret ids are in `secret_ids`
+   for **staging and prod** (`infra/environments/{staging,prod}/variables.tf`).
+   Each environment plans to *15 to add, 0 to change, 0 to destroy*; run
+   `terraform plan -target=module.secrets -out=tfplan && terraform apply tfplan`
+   in each to create the containers. `-target` is deliberate here rather than
+   routine: a full apply trips over pre-existing state drift unrelated to this.
+
+   Two corrections to what this document said before the work was done:
+
+   - **Not prod-only.** The obvious precedent, `cloudflare-api-token`, is
+     prod-only because it **writes** — it registers hostnames on the production
+     zone. Every credential here is read-only against Apple and Google, so that
+     reasoning does not transfer, and a read-only key in staging is how the
+     integration gets exercised before it reaches production. App Store Connect
+     allows more than one webhook per app, so staging can have its own.
+     `STORE_INGEST_ENABLED` is the guard against unattended activity, not the
+     absence of a secret. Sandbox is still excluded — it hosts prospect demos
+     and has nothing to do with the member app.
+   - **Not in `admin_writable_secret_ids`.** The earlier argument was that an
+     operator should paste the `.p8` from the console rather than put a private
+     key through shell history. But there is no Settings form for these secrets,
+     and granting `secretVersionAdder` for a form that does not exist is
+     provisioning a capability nothing uses. Set the values with
+     `gcloud secrets versions add … --data-file=-`, which keeps them out of
+     shell history anyway. Add the grant if and when a form is built.
+
+   While doing this, `deepl-api-key` turned out to be listed **twice** in every
+   environment's `secret_ids`. `toset()` deduped it for most resources, but
+   `extra_accessor` builds its key from `setproduct` on the raw list, so the
+   duplicate produced *"Two different items produced the key
+   deepl-api-key|…-compute@…"* — meaning staging and prod could not `plan` at
+   all. Removed in both; the plan shows no churn from it, which confirms nothing
+   else was ever affected.
+
 2. Mint the ASC API key. **The role is chosen once and cannot be changed** —
    App Manager reads versions, builds and TestFlight; `salesReports` needs
    Finance or higher. A key with too narrow a role 403s in a way that reads as a
