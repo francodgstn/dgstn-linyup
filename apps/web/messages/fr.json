@@ -700,7 +700,7 @@
     "customFieldsConfigureLink": "Configurer les champs personnalisés",
     "archivedBadge": "Archivé",
     "deletedBadge": "Supprimé",
-    "copyUpdateLink": "Copier le lien de mise à jour",
+    "copyUpdateLink": "Envoyer un lien",
     "updateLinkCopied": "Lien copié !",
     "archivedNotice": "Désarchiver ce contact pour modifier ses informations. Les contacts archivés n'apparaissent pas dans les séances, événements ou réservations.",
     "actionUnarchive": "Désarchiver",
@@ -1047,7 +1047,8 @@
     "goalArchive": "Archiver l'objectif",
     "goalUnarchive": "Restaurer l'objectif",
     "goalArchivedBadge": "Archivé",
-    "goalShowArchived": "Archivés"
+    "goalShowArchived": "Archivés",
+    "sendLinkTip": "Copiez un lien à leur envoyer. La confirmation se fait par un code envoyé par e-mail, il faut donc une adresse enregistrée."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -8094,7 +8095,7 @@
     "statusAll": "{count, plural, one {# personne} other {# personnes}}"
   },
   "ContactLink": {
-    "title": "Lien de mise à jour",
+    "title": "Afficher un QR",
     "intro": "Montrez ceci à {name} pour qu'il complète lui-même ses informations.",
     "validFor": "Valable",
     "minutes": "{count} minutes",
@@ -8134,6 +8135,18 @@
     "save": "Enregistrer mes informations",
     "privacyNote": "Seul votre club le voit. Laissez un champ vide pour conserver la valeur enregistrée.",
     "thanksTitle": "Merci",
-    "thanksBody": "Vos informations ont été transmises à votre club."
+    "thanksBody": "Vos informations ont été transmises à votre club.",
+    "headerTip": "Afficher un QR — à remettre en personne, fonctionne même sans e-mail enregistré.",
+    "sheetAction": "Imprimer des tickets QR",
+    "sheetTitle": "Tickets QR",
+    "sheetIntro": "Un ticket par contact, pour {count} personnes. Découpez-les et distribuez-les à l'entraînement.",
+    "sheetNoSelection": "Aucun contact sélectionné. Choisissez-les d'abord dans la liste des contacts.",
+    "sheetBackToContacts": "Retour aux contacts",
+    "sheetCreate": "Créer la feuille",
+    "sheetCreating": "Création… {done} sur {total}",
+    "sheetPrint": "Imprimer",
+    "sheetLiveWarning": "{count} tickets restent valables jusqu'à expiration — mieux vaut récupérer la feuille.",
+    "sheetSlipHint": "Scannez pour vérifier vos informations",
+    "sheetFailed": "La feuille n'a pas pu être créée. Réessayez."
   }
 }
