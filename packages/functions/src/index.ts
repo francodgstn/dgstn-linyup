@@ -136,6 +136,12 @@ export { getContactQR } from './contacts/getContactQR'
 export { requestContactUpdate } from './contacts/requestContactUpdate'
 export { grantCredits } from './contacts/grantCredits'
 export { manageContactUpdateRequest } from './contacts/manageContactUpdateRequest'
+export {
+  createContactUpdateLink,
+  revokeContactUpdateLinks,
+  resolveContactUpdateLink,
+  submitContactUpdateLink,
+} from './contacts/contactUpdateLinks'
 export { switchActiveContact } from './contacts/switchActiveContact'
 export { listMyContactPayments, createContactBillingPortalSession } from './contacts/contactPayments'
 // Contact alerts — the ONE writer of alerts_count (previously dead; see the

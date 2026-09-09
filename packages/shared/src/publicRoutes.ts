@@ -77,6 +77,13 @@ export interface TokenParams {
 export interface ContactUpdateParams {
   contactId?: string
   from?: PublicFrom
+  /**
+   * A contact update LINK token (see types/contactLink.ts). Present instead of
+   * `contactId`, never beside it: the token resolves the contact server-side,
+   * and putting an id in a pre-authorised URL is how the code-based flow was
+   * once talked into authoring an update against an arbitrary contact.
+   */
+  t?: string
 }
 
 export interface FromOnlyParams {

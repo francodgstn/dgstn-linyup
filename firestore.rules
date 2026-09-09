@@ -468,6 +468,16 @@ service cloud.firestore {
     match /mail_sends/{idempotencyKey} {
       allow read, write: if false;
     }
+    // Contact update LINKS — scoped grants to edit one contact's own details.
+    // Functions-only in BOTH directions, and the deny is load-bearing rather
+    // than tidy: the document carries an OTP hash and the grant's expiry, so a
+    // readable copy is a list of live links and a writable one is a way to
+    // extend your own. The four callables in contacts/contactUpdateLinks.ts are
+    // the entire surface; see @linyup/shared → types/contactLink.ts for why the
+    // doc id is a hash of the token rather than the token.
+    match /contact_update_links/{tokenHash} {
+      allow read, write: if false;
+    }
     // Custom public domains — the GLOBAL uniqueness registry (doc id = hostname).
     // Functions-only, and deliberately unreadable by clients too: it is a list of
     // every studio's custom domain, so a readable registry would let any signed-in

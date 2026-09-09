@@ -139,6 +139,10 @@ export const FEEDBACK_PROMPTS_COLLECTION = 'feedback_prompts'
 
 export const PROJECTS_COLLECTION = 'projects'
 export const CONTACTS_COLLECTION = 'contacts'
+/** Scoped grants to edit one contact's own details — see types/contactLink.ts.
+ *  Server-written only; `firestore.rules` denies every client read and write,
+ *  which is what lets the document hold an OTP hash at all. */
+export const CONTACT_UPDATE_LINKS_COLLECTION = 'contact_update_links'
 export const CONTACT_ALERTS_SUBCOLLECTION = 'contact_alerts'
 export const CONTACT_WEEKLY_REPORTS_SUBCOLLECTION = 'contact_weekly_reports'
 export const CONTACT_NOTES_SUBCOLLECTION = 'contact_notes'
