@@ -79,12 +79,23 @@ variable "secret_ids" {
     "deepl-api-key",        # DeepL machine translation (public site/embed localization)
     "posthog-api-key",
     "ai-assistant-unlock-key", # strong key to unlock the locked AI assistant plugin
-    "deepl-api-key",           # DeepL machine translation for public sites (docs/site-translations.md)
     # Cloudflare for SaaS — custom domains. PROD ONLY, deliberately: the
     # feature is gated to linyup-prod (docs/custom-domains.md → "Environments"),
     # and a token that exists off-prod is a token that can register a hostname
     # on the production zone.
     "cloudflare-api-token",
+    # App-store insights (docs/app-store-insights.md). All READ-ONLY against the
+    # two vendors — nothing in this feature writes to Apple or Google.
+    #
+    # The key id and issuer id are identifiers rather than credentials, but they
+    # live here rather than as `defineString` params because
+    # packages/functions/.env.* are tracked in git and a value written there is
+    # in the history forever. Same reasoning as OPERATOR_EMAILS.
+    "apple-asc-key-id",
+    "apple-asc-issuer-id",
+    "apple-asc-private-key",    # the .p8, PEM or single-line base64
+    "apple-asc-webhook-secret", # HMAC phrase shared with ASC → Integrations → Webhooks
+    "google-play-service-account",
   ]
 }
 
