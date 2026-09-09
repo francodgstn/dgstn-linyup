@@ -179,6 +179,7 @@ import {
   ShieldCheck,
   ShieldOff,
   MoreVertical,
+  QrCode,
   User,
   Check,
   IdCard,
@@ -215,6 +216,7 @@ import {
 } from '@/components/contacts/RelationshipTimeline'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
+import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
 import { CustomFieldsCardBody } from '@/plugins/custom-fields/CustomFieldsCardBody'
@@ -5139,6 +5141,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   )
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
+  const tLink = useTranslations('ContactLink')
   const { goBack, isHistoryBack } = useBack('/contacts' as Route)
   const qc = useQueryClient()
   const { hasFeature } = usePlan()
@@ -5149,6 +5152,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [emailCopied, setEmailCopied] = useState(false)
   // Notes editor sheet — opened from the header icon and the profile-column glance.
   const [notesOpen, setNotesOpen] = useState(false)
+  const [updateLinkOpen, setUpdateLinkOpen] = useState(false)
   const [alertsOpen, setAlertsOpen] = useState(false)
   const { data: notesCount = 0 } = useContactNotesCount(id)
   const { data: contactAlerts = [] } = useContactAlerts(id)
@@ -5449,6 +5453,14 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                   count={notesCount}
                   onClick={() => setNotesOpen(true)}
                 />
+                {/* Hand the person a QR and let them fill in their own details
+                    — the only route in for a contact with no email on file,
+                    since every other one authenticates by emailed code. */}
+                <HeaderActionButton
+                  icon={QrCode}
+                  label={tLink('title')}
+                  onClick={() => setUpdateLinkOpen(true)}
+                />
               </div>
             )}
           </div>
@@ -5613,6 +5625,13 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Single notes editor sheet — shared by the header icon + profile glance. */}
           <NotesSheet contact={contact} open={notesOpen} onOpenChange={setNotesOpen} />
+          <ContactUpdateLinkDialog
+            open={updateLinkOpen}
+            onClose={() => setUpdateLinkOpen(false)}
+            teamId={contact.teamId}
+            contactId={contact.id}
+            contactName={`${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim()}
+          />
           {/* Outside the tab content, like the notes sheet, so the header bell
               opens it from whichever tab you are standing on. */}
           <AlertsSheet

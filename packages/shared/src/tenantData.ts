@@ -11,6 +11,7 @@
 import {
   TEAMS_COLLECTION,
   CONTACTS_COLLECTION,
+  CONTACT_UPDATE_LINKS_COLLECTION,
   SESSIONS_COLLECTION,
   ACTIVITIES_COLLECTION,
   EVENTS_COLLECTION,
@@ -92,6 +93,10 @@ export function tenantStoragePrefix(teamId: string): string {
  */
 export const TENANT_DATA_COLLECTIONS: TenantCollection[] = [
   { collection: CONTACTS_COLLECTION, match: { by: 'field', field: 'teamId' } },
+  // Live grants to edit a contact's details. Tenant data, and the one entry here
+  // whose omission would be a SECURITY leftover rather than an orphaned row: a
+  // purged team's outstanding QR would still resolve.
+  { collection: CONTACT_UPDATE_LINKS_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: SESSIONS_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: ACTIVITIES_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: EVENTS_COLLECTION, match: { by: 'field', field: 'teamId' } },
