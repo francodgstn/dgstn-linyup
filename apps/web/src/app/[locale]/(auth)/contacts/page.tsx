@@ -75,7 +75,7 @@ import { setGroupRule } from '@/plugins/contact-groups/hooks'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { UserPlus, X, Plus, AlertCircle, ChevronDown, ChevronUp, ChevronRight, Archive, Trash2, RotateCcw, MoreHorizontal, ArrowRightLeft, Mail, Pencil, Award, CreditCard, Tag, Check, Bookmark, BookmarkPlus, BarChart2, Eye, FolderTree, ShieldCheck, UserCheck, StickyNote, ListPlus, QrCode } from 'lucide-react'
+import { UserPlus, X, Plus, AlertCircle, ChevronDown, ChevronUp, ChevronRight, Archive, Trash2, RotateCcw, MoreHorizontal, ArrowRightLeft, Mail, Pencil, Award, CreditCard, Tag, Check, Bookmark, BookmarkPlus, BarChart2, Eye, FolderTree, ShieldCheck, UserCheck, StickyNote, ListPlus, QrCode, MailX } from 'lucide-react'
 import type { Route } from 'next'
 import { writeQrSheetSelection } from '@/lib/qrSheetSelection'
 import { RosterCard } from '@/components/dashboard/RosterCard'
@@ -1653,6 +1653,18 @@ function FilterChips({
       isActive: (f) => f.hasNotes,
       clear: (f) => ({ ...f, hasNotes: false }),
       toggle: (f) => ({ ...f, hasNotes: !f.hasNotes }),
+    },
+    {
+      // The campaign filter: who a studio cannot reach or identify by mail.
+      // Pair it with "Print QR slips" and an owner hands out only the slips
+      // somebody actually needs — otherwise "Select all" prints the roster.
+      key: 'missingEmail',
+      label: t('filterMissingEmail'),
+      available: true,
+      icon: MailX,
+      isActive: (f) => f.missingEmail,
+      clear: (f) => ({ ...f, missingEmail: false }),
+      toggle: (f) => ({ ...f, missingEmail: !f.missingEmail }),
     },
     {
       key: 'pendingSignup',

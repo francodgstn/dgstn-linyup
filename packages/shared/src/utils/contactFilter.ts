@@ -245,6 +245,19 @@ export interface ContactFilter {
    *  `trackContactNotes` trigger maintains — a note is a subcollection document
    *  and this predicate never leaves the contact it was handed. */
   hasNotes: boolean
+  /**
+   * NO EMAIL ON FILE — the people a studio cannot reach or identify by mail.
+   *
+   * Its use is the data-collection campaign: filter to these, select all, print
+   * their QR slips. Without it "Select all" means the whole roster, so a club
+   * with one gap prints fifty slips to close it.
+   *
+   * "Missing" counts `login_emails` too, not just the primary field. That list
+   * is what `loginCandidates` resolves a sign-in through — a child whose parent's
+   * address is on it can already reach their Space, so putting a slip in their
+   * hand collects an address nobody needed.
+   */
+  missingEmail: boolean
   pendingSignup: boolean
   /** "Who needs me today" — derived, never stored; see
    *  `contactAttentionReasons` for exactly what counts and why the answer is a
@@ -271,11 +284,29 @@ export const GROUP_NONE = 'none'
  *  can never be this string. */
 export const COACH_NONE = 'none'
 
+/**
+ * Any address that would let this person sign in — the primary field or the
+ * `login_emails` allow-list. Exported because "do we have an email for them"
+ * is asked by the filter and is exactly the question a campaign asks; a second
+ * spelling of it elsewhere is how the roster and the slips would disagree
+ * about who still needs one.
+ *
+ * Whitespace counts as absent: an imported `" "` is not an address.
+ */
+export function contactHasEmail(subject: {
+  email?: string
+  login_emails?: string[]
+}): boolean {
+  if (typeof subject.email === 'string' && subject.email.trim()) return true
+  return (subject.login_emails ?? []).some((e) => typeof e === 'string' && e.trim().length > 0)
+}
+
 export const EMPTY_CONTACT_FILTER: ContactFilter = {
   search: '',
   stages: [], sources: [], statuses: [], subscriptions: [], groups: [], coaches: [],
   engagement: [], tags: [],
-  hasAlerts: false, hasNotes: false, pendingSignup: false, needsAttention: false,
+  hasAlerts: false, hasNotes: false, missingEmail: false,
+  pendingSignup: false, needsAttention: false,
   sessionsMin: null, sessionsMax: null,
   inactivity: null, rankFilter: null, age: null, customFields: [],
   consent: null,
@@ -306,6 +337,7 @@ export function normalizeContactFilter(filter: Partial<ContactFilter> | null | u
     // dimension existed still valid — saved presets and dynamic group rules are
     // both stored, and neither is migrated.
     hasNotes: f.hasNotes ?? false,
+    missingEmail: f.missingEmail ?? false,
     pendingSignup: f.pendingSignup ?? false,
     needsAttention: f.needsAttention ?? false,
     sessionsMin: f.sessionsMin ?? null,
@@ -350,6 +382,7 @@ export function activeFilterKeys(filter: Partial<ContactFilter> | null | undefin
   if (f.tags.length) keys.push('tags')
   if (f.hasAlerts) keys.push('hasAlerts')
   if (f.hasNotes) keys.push('hasNotes')
+  if (f.missingEmail) keys.push('missingEmail')
   if (f.pendingSignup) keys.push('pendingSignup')
   if (f.needsAttention) keys.push('needsAttention')
   if (f.sessionsMin != null || f.sessionsMax != null) keys.push('sessionsMin')
@@ -439,6 +472,10 @@ export interface ContactFilterSubject {
   firstname?: string
   lastname?: string
   email?: string
+  /** The sign-in allow-list (a parent's address on a child's record). Read by
+   *  the `missingEmail` dimension, which must not offer a slip to somebody who
+   *  can already sign in through it. */
+  login_emails?: string[]
   acquisition_stage?: string
   source?: string
   affiliation_summary?: { has_active?: boolean }
@@ -954,6 +991,7 @@ export function matchesFilter(
 
   if (f.hasAlerts && (subject.alerts_count ?? 0) <= 0) return false
   if (f.hasNotes && (subject.notes_count ?? 0) <= 0) return false
+  if (f.missingEmail && contactHasEmail(subject)) return false
 
   if (f.needsAttention && contactAttentionReasons(subject, ctx).length === 0) return false
 

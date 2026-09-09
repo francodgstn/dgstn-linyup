@@ -14,6 +14,7 @@ import {
   groupsForContact,
   matchesFilter,
   membersOfGroup,
+  normalizeContactFilter,
   wouldCreateCycle,
   type ContactFilter,
   type ContactFilterContext,
@@ -821,5 +822,76 @@ describe('evaluateContactConditions — in_group', () => {
       ),
       true,
     )
+  })
+})
+
+describe('missingEmail — who still needs a slip', () => {
+  // `contact()` carries an address by default, so "no email" is stated
+  // explicitly here rather than left to the fixture.
+  const noEmail = (overrides: Partial<ContactFilterSubject> = {}) =>
+    contact({ email: undefined, ...overrides })
+
+  it('is off by default and keeps everyone', () => {
+    assert.equal(matchesFilter(contact(), filter()), true)
+    assert.equal(matchesFilter(noEmail(), filter()), true)
+  })
+
+  it('keeps a contact with no address at all', () => {
+    assert.equal(matchesFilter(noEmail(), filter({ missingEmail: true })), true)
+  })
+
+  it('drops a contact that has one', () => {
+    assert.equal(matchesFilter(contact(), filter({ missingEmail: true })), false)
+  })
+
+  it('treats an EMPTY or whitespace address as missing', () => {
+    // Migrated rosters carry both. A contact whose email is '' or '   ' can
+    // neither be mailed nor sign in, so keeping them out of the campaign hides
+    // exactly the people it exists to find.
+    assert.equal(matchesFilter(contact({ email: '' }), filter({ missingEmail: true })), true)
+    assert.equal(matchesFilter(contact({ email: '   ' }), filter({ missingEmail: true })), true)
+  })
+
+  it('counts a login_emails entry as HAVING an address', () => {
+    // The parent case: a child with no address of their own, whose parent's is
+    // on the allow-list, can already reach their Space — `loginCandidates`
+    // resolves a sign-in through that list. A slip would collect an address
+    // nobody needed.
+    assert.equal(
+      matchesFilter(
+        noEmail({ login_emails: ['parent@example.com'] }),
+        filter({ missingEmail: true })
+      ),
+      false
+    )
+  })
+
+  it('ignores an allow-list that is present but empty or blank', () => {
+    assert.equal(matchesFilter(noEmail({ login_emails: [] }), filter({ missingEmail: true })), true)
+    assert.equal(
+      matchesFilter(noEmail({ login_emails: ['  '] }), filter({ missingEmail: true })),
+      true
+    )
+  })
+
+  it('composes with another dimension rather than replacing it', () => {
+    // The campaign asks both at once: who is joined AND unreachable.
+    const joined = noEmail({ acquisition_stage: 'joined' })
+    assert.equal(matchesFilter(joined, filter({ missingEmail: true, stages: ['joined'] })), true)
+    assert.equal(
+      matchesFilter(joined, filter({ missingEmail: true, stages: ['trial_booked'] })),
+      false
+    )
+  })
+
+  it('survives a filter document written before the dimension existed', () => {
+    // Saved presets and dynamic group rules are stored and never migrated.
+    const legacy = normalizeContactFilter({ search: '', stages: ['joined'] })
+    assert.equal(legacy.missingEmail, false)
+    assert.equal(activeFilterKeys(legacy).includes('missingEmail'), false)
+  })
+
+  it('reports itself as active so the chip can render', () => {
+    assert.equal(activeFilterKeys(filter({ missingEmail: true })).includes('missingEmail'), true)
   })
 })

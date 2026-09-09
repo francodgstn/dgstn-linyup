@@ -1048,7 +1048,8 @@
     "goalUnarchive": "Restore goal",
     "goalArchivedBadge": "Archived",
     "goalShowArchived": "Archived",
-    "sendLinkTip": "Copy a link to send them. They confirm with a code emailed to them, so it needs an email on file."
+    "sendLinkTip": "Copy a link to send them. They confirm with a code emailed to them, so it needs an email on file.",
+    "filterMissingEmail": "No email"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
