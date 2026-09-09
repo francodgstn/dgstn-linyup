@@ -25,6 +25,10 @@
  * merge-safe: they are never partial.
  */
 import * as admin from 'firebase-admin'
+// Directly, not via `admin.firestore.Timestamp` — that static is only populated
+// once something has loaded this submodule, so relying on a sibling import to
+// have done so is a runtime crash waiting for whoever removes it.
+import { Timestamp } from 'firebase-admin/firestore'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import {
   STORE_PRESENCE_COLLECTION,
@@ -174,7 +178,7 @@ async function writeReview(
 }
 
 const isoToTimestamp = (iso: string | null) =>
-  iso ? admin.firestore.Timestamp.fromDate(new Date(iso)) : admin.firestore.Timestamp.now()
+  iso ? Timestamp.fromDate(new Date(iso)) : Timestamp.now()
 
 // ─── iOS ────────────────────────────────────────────────────────────────────
 

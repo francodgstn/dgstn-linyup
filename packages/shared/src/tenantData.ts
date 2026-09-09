@@ -53,6 +53,7 @@ import {
   ORG_SITE_PUBLISHED_COLLECTION,
   STORE_PRESENCE_COLLECTION,
   STORE_REVIEWS_COLLECTION,
+  STORE_EVENTS_COLLECTION,
 } from './paths'
 
 /** How a top-level collection's documents are matched to a team. */
@@ -192,6 +193,7 @@ export const PLATFORM_COLLECTIONS: string[] = [
   // any one studio.
   STORE_PRESENCE_COLLECTION,
   STORE_REVIEWS_COLLECTION,
+  STORE_EVENTS_COLLECTION,
 ]
 
 /**

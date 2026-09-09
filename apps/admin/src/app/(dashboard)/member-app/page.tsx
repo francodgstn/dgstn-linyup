@@ -8,8 +8,10 @@ import { formatDate, formatDateTime } from '@/lib/format'
 import { requireOperator } from '@/lib/require-operator'
 import {
   getMobileAdoption,
+  getStoreEvents,
   getStorePresence,
   getStoreReviews,
+  type StoreEventView,
   type StorePresenceView,
   type StoreReviewView,
 } from '@/lib/queries/storePresence'
@@ -210,11 +212,44 @@ function ReviewList({ reviews }: { reviews: StoreReviewView[] }) {
   )
 }
 
+function EventList({ events }: { events: StoreEventView[] }) {
+  if (events.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No deliveries yet. Register the webhook in App Store Connect → Users and Access →
+        Integrations → Webhooks, pointing at{' '}
+        <code className="font-mono text-xs">handleAppStoreWebhook</code>, and version state
+        changes, build states and TestFlight feedback will land here within seconds.
+      </p>
+    )
+  }
+
+  return (
+    <ul className="flex flex-col divide-y">
+      {events.map((e) => (
+        <li key={e.id} className="flex items-start justify-between gap-3 py-2">
+          <div className="min-w-0">
+            <div className="text-sm font-medium">{e.summary}</div>
+            <div className="text-xs text-muted-foreground">
+              {formatDateTime(e.occurredMs)} · <span className="font-mono">{e.vendorType}</span>
+            </div>
+          </div>
+          {/* The badge is a highlight, never a filter — every event is listed,
+              and `summary` already carries Apple's own state verbatim, so a
+              state we do not recognise loses a badge and nothing else. */}
+          {e.needsAttention && <Badge variant="warning">Needs attention</Badge>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default async function MemberAppPage() {
-  const [presence, reviews, adoption] = await Promise.all([
+  const [presence, reviews, adoption, events] = await Promise.all([
     getStorePresence(),
     getStoreReviews(),
     getMobileAdoption(),
+    getStoreEvents(),
     requireOperator(),
   ])
 
@@ -267,6 +302,20 @@ export default async function MemberAppPage() {
           providerId="google-play"
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Store activity</CardTitle>
+          <CardDescription>
+            Pushed by App Store Connect as it happens, rather than found on the next daily sweep —
+            a rejection shows up here in seconds. Each delivery also refreshes the App Store card
+            above, so the two cannot disagree. Google Play has no webhook and is polled.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EventList events={events} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

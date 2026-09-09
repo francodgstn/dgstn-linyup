@@ -76,6 +76,11 @@ export const STORE_PRESENCE_ANDROID_DOC = 'android'
 export const STORE_PRESENCE_DAILY_SUBCOLLECTION = 'daily'
 /** Doc id = `${platform}_${kind}_${vendorId}` — see storeReviewDocId(). */
 export const STORE_REVIEWS_COLLECTION = 'store_reviews'
+/**
+ * Append-only log of App Store Connect webhook deliveries.
+ * Doc id = `${platform}_${vendorEventId}` — see storeEventDocId().
+ */
+export const STORE_EVENTS_COLLECTION = 'store_events'
 export const ORGANIZATIONS_COLLECTION = 'organizations'
 export const ORG_MEMBERS_SUBCOLLECTION = 'org_members'
 export const ORG_TEAMS_SUBCOLLECTION = 'org_teams'

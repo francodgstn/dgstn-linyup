@@ -2430,6 +2430,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Append-only log of App Store Connect webhook deliveries. Written by
+    // handleAppStoreWebhook (Admin SDK, after verifying Apple's HMAC), read by
+    // the operator console (Admin SDK). No client access.
+    match /store_events/{eventId} {
+      allow read, write: if false;
+    }
+
     // Operator → Customer notices, and the recipient list each one was actually
     // sent to. Deny-all to clients, like the mail ledger above and for the same
     // reason: the recipients subcollection is a list of every studio's owner

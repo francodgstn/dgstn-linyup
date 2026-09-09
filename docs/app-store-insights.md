@@ -63,6 +63,8 @@ appstores/ingest.ts  ── writes ─→     store_presence/{ios,       lib/que
   ├── itunesLookup.ts                                android}    storePresence.ts
   ├── appleClient.ts (appleJwt)  ─→   store_reviews/{id}      ─→ (dashboard)/
   └── playClient.ts  (playAuth)                                    member-app/
+appstores/webhook.ts ── writes ─→     store_events/{id}
+        └── re-runs the ingest ─┘
 analytics/mobileAdoptionMetrics ─→    platform_metrics/{date}.mobile
 ```
 
@@ -112,6 +114,71 @@ a convenience, and it must stay one click from wherever a key is pasted.
   after it in the array — `rollSessionSeries` among them. An experimental
   read-only dashboard must not be able to stop recurring classes being
   materialised.
+
+## The webhook
+
+`handleAppStoreWebhook` (`packages/functions/src/appstores/webhook.ts`) is the
+push half. Apple introduced these at WWDC25; they are registered **per app**
+under App Store Connect → Users and Access → Integrations → Webhooks, with a URL
+and a secret phrase you choose. Registration is manual and deliberately so — the
+API can create one (`POST /v1/webhooks`), but that is a write, and this
+integration does not write to Apple.
+
+Because it is registered per app, every delivery is already about our app;
+nothing in the payload need be checked against `ASC_APP_ID` (and for most event
+types nothing could be — `appStoreVersionAppVersionStateUpdated` carries no
+`appId` at all).
+
+**The signature format is the thing to get right:**
+
+```
+x-apple-signature: hmacsha256=<hex of HMAC-SHA256(raw body, secret)>
+```
+
+The `hmacsha256=` prefix is **part of the header value**. Comparing the whole
+header against a bare hex digest fails on every delivery, and fails identically
+to a wrong secret — pinned by `webhook.test.ts`, which asserts a bare digest is
+*refused*. The HMAC is over `req.rawBody`; `JSON.stringify(req.body)` produces
+different bytes and matches nothing.
+
+**What the payload does and does not carry.** The envelope is JSON:API-shaped —
+`{ data: { type, id, version, attributes, relationships: { instance } } }` —
+and `attributes` is thin. A version-state change gives `oldValue` / `newValue` /
+`timestamp` but **not** the version string; beta feedback gives a timestamp and
+an instance id but **not** the comment text. Two names for one idea:
+`appStoreVersionAppVersionStateUpdated` uses `newValue`, `buildUploadStateUpdated`
+uses `newState`. Reading only one stores a silent null.
+
+**Three behaviours worth keeping:**
+
+- **It does not write `store_presence`.** That doc is a gauge with one writer
+  (the ingest, which replaces it wholesale). The webhook records the event and
+  then **re-runs the ingest**, so the gauge keeps its single writer and the
+  store card can never say `READY_FOR_REVIEW` while the log says `REJECTED`.
+  The event is written *before* the ingest runs, so a slow or failing Apple API
+  cannot lose the notification.
+- **It fails closed.** No secret configured ⇒ 503 and nothing recorded. The
+  setup-phase leniency in `handlePayrexxWebhook.ts` ("no secret? warn and allow")
+  is wrong here: this endpoint is on the open internet and writes to Firestore,
+  and a webhook cannot be registered in ASC without a secret anyway, so the
+  lenient branch could only ever serve an attacker.
+- **An unknown event type is KEPT**, as `kind: 'other'` carrying Apple's own
+  type string. Apple ships new event types, and a handler that dropped them
+  would lose deliveries silently — this also means a ping or test delivery is
+  accepted and visible, whatever Apple calls it. Only an unusable envelope (no
+  `data.type` / `data.id`) is rejected, and even then with a 200: a retry storm
+  over a payload we will never understand is worse than one logged line.
+
+`needs_attention` (`ATTENTION_VERSION_STATES` in the shared types) is a
+**highlight, not a filter** — every event is stored and listed regardless, with
+Apple's state rendered verbatim beside it. So a state Apple adds that we do not
+recognise costs a badge, never visibility. That is what makes matching on a
+known set of names safe.
+
+**Local testing** needs no public URL: the emulator exposes
+`http://localhost:5001/demo-linyup/europe-west6/handleAppStoreWebhook`, and any
+script that HMACs the exact request bytes with `APPLE_ASC_WEBHOOK_SECRET` is
+indistinguishable from Apple. A real registration does need a public URL.
 
 ### Deliberately absent
 
@@ -182,14 +249,6 @@ because a human who just clicked the button is by definition attending).
 
 Named so nobody assumes otherwise:
 
-- **The App Store Connect webhook.** `apple-asc-webhook-secret` is reserved and
-  nothing reads it. This is the single highest-value remaining piece: version
-  state changes, build state and TestFlight feedback pushed with an HMAC-SHA256
-  signature in `X-Apple-SIGNATURE`, registered under ASC → Users and Access →
-  Integrations → Webhooks. Copy the `rawBody` + `timingSafeEqual` idiom from
-  `packages/functions/src/billing/handlePayrexxWebhook.ts` verbatim —
-  re-serializing `req.body` changes bytes and breaks the HMAC. It needs a public
-  URL, which a local spike does not have.
 - **Vendor-reported install series.** `salesReports` (needs `ASC_VENDOR_NUMBER`
   and a key with Finance-or-higher access) and the Play reports-bucket CSVs. The
   types (`StoreDailyMetricDoc`) and the `daily` subcollection exist; nothing

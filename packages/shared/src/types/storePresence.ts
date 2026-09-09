@@ -237,6 +237,73 @@ export interface StoreDailyMetricDoc {
   fetched_at: Timestamp
 }
 
+// ─── Webhook events ─────────────────────────────────────────────────────────
+// App Store Connect pushes state changes (WWDC25 webhooks). Google Play has no
+// equivalent and must be polled, so every row here is iOS today.
+
+export type StoreEventKind = 'version_state' | 'build_state' | 'beta_feedback' | 'other'
+
+/**
+ * store_events/{platform}_{vendorEventId}
+ *
+ * Append-only log of what the store told us, as it told us. Deliberately NOT
+ * merged into `store_presence`: that doc is a gauge with exactly ONE writer
+ * (the ingest, which replaces it wholesale), and a second writer would either
+ * be clobbered or would diverge from the API's own answer. The webhook instead
+ * records the event here and re-runs the ingest, so the gauge still has one
+ * writer and the card cannot say READY_FOR_REVIEW while the log says REJECTED.
+ *
+ * The doc id derives from Apple's own `data.id`, so a redelivery rewrites the
+ * same row rather than duplicating it. `occurred_at` comes from the payload and
+ * therefore never moves on redelivery; `received_at` may.
+ */
+export interface StoreEventDoc {
+  platform: StorePlatform
+  /** Apple's `data.type`, VERBATIM — e.g. 'appStoreVersionAppVersionStateUpdated'. */
+  vendor_type: string
+  /** Apple's `data.id`. */
+  vendor_id: string
+  kind: StoreEventKind
+  /** One line, computed once at receipt, for the console list. */
+  summary: string
+  old_value?: string | null
+  new_value?: string | null
+  /** The ASC resource the event is about, e.g. 'appStoreVersions' / its id. */
+  instance_type?: string | null
+  instance_id?: string | null
+  /**
+   * A state worth a human's attention right now.
+   *
+   * A HIGHLIGHT, NOT A FILTER. Every event is stored and shown whatever this
+   * says, and `new_value` is always rendered verbatim beside it — so a state
+   * Apple adds that this does not recognise costs a badge, never visibility.
+   * That is what makes it safe to match on a known set of names.
+   */
+  needs_attention: boolean
+  occurred_at: Timestamp
+  received_at: Timestamp
+}
+
+/**
+ * App Store version states that mean somebody has to do something.
+ *
+ * Two groups, and they are not the same feeling: the rejections need a fix,
+ * `PENDING_DEVELOPER_RELEASE` needs a button pressed. Both are "you are the
+ * blocker", which is the question this answers.
+ */
+export const ATTENTION_VERSION_STATES: readonly string[] = [
+  'REJECTED',
+  'METADATA_REJECTED',
+  'DEVELOPER_REJECTED',
+  'INVALID_BINARY',
+  'PENDING_DEVELOPER_RELEASE',
+]
+
+/** Doc id for an event row. */
+export function storeEventDocId(platform: StorePlatform, vendorEventId: string): string {
+  return `${platform}_${vendorEventId}`
+}
+
 /** Doc id for a review/feedback row. */
 export function storeReviewDocId(
   platform: StorePlatform,

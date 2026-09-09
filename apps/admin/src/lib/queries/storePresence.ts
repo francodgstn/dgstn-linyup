@@ -1,12 +1,15 @@
 import 'server-only'
 import {
   PLATFORM_METRICS_COLLECTION,
+  STORE_EVENTS_COLLECTION,
   STORE_PRESENCE_ANDROID_DOC,
   STORE_PRESENCE_COLLECTION,
   STORE_PRESENCE_IOS_DOC,
   STORE_REVIEWS_COLLECTION,
   type PlatformMetricsDoc,
   type PlatformMobileMetrics,
+  type StoreEventDoc,
+  type StoreEventKind,
   type StorePlatform,
   type StorePresenceDoc,
   type StoreReviewDoc,
@@ -150,6 +153,53 @@ export async function getStoreReviews(limit = 20): Promise<StoreReviewView[]> {
     // here carries the index-creation URL — so log the cause and render an empty
     // list rather than 500ing the whole page. Same posture as queries/messaging.
     console.warn('[store-presence] review read failed:', err)
+    return []
+  }
+}
+
+export interface StoreEventView {
+  id: string
+  platform: StorePlatform
+  kind: StoreEventKind
+  vendorType: string
+  summary: string
+  oldValue: string | null
+  newValue: string | null
+  needsAttention: boolean
+  occurredMs: number | null
+}
+
+/**
+ * The App Store Connect webhook log, newest first.
+ *
+ * This is the LATENCY half of the integration — the store cards are refreshed
+ * by the same webhook, so these two never disagree, but the log is what says
+ * *when* something changed and what it changed from.
+ */
+export async function getStoreEvents(limit = 15): Promise<StoreEventView[]> {
+  try {
+    const snap = await adminDb
+      .collection(STORE_EVENTS_COLLECTION)
+      .orderBy('occurred_at', 'desc')
+      .limit(limit)
+      .get()
+
+    return snap.docs.map((d) => {
+      const e = d.data() as StoreEventDoc
+      return {
+        id: d.id,
+        platform: e.platform,
+        kind: e.kind,
+        vendorType: e.vendor_type,
+        summary: e.summary,
+        oldValue: e.old_value ?? null,
+        newValue: e.new_value ?? null,
+        needsAttention: e.needs_attention === true,
+        occurredMs: ms(e.occurred_at as Stamp),
+      } satisfies StoreEventView
+    })
+  } catch (err) {
+    console.warn('[store-presence] event read failed:', err)
     return []
   }
 }
