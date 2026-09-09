@@ -44,6 +44,28 @@ export const CONTACT_LINK_TTL_CHOICES = [5, 15, 60, 480, 1440] as const
 export const CONTACT_LINK_OTP_LENGTH = 6
 
 /**
+ * Contacts per batch-mint call. The client chunks a bigger roster.
+ *
+ * Sized by the Firestore batch limit rather than by taste: each contact costs
+ * one create plus at most one revoke of its previous grant, so 100 contacts is
+ * 200 writes against a ceiling of 500 — room for the limit to be misread once
+ * without a partial commit.
+ */
+export const CONTACT_LINK_MAX_BATCH = 100
+
+/**
+ * Windows offered when PRINTING a sheet. The hand-to-hand default makes no
+ * sense on paper: a sheet is printed before training and handed out during it,
+ * so anything under an hour is expired before the first slip is torn off.
+ *
+ * A printed slip also carries no spoken code — printing the code beside the QR
+ * would defeat it — so on this path the slip IS the secret, which is the other
+ * reason the window matters more here than it does at the counter.
+ */
+export const CONTACT_LINK_SHEET_TTL_CHOICES = [60, 480, 1440] as const
+export const CONTACT_LINK_SHEET_DEFAULT_TTL_MINUTES = 1440
+
+/**
  * Wrong OTPs before the link is dead. Low on purpose: the code is spoken aloud
  * to somebody standing there, so a second failure is a typo and a sixth is not
  * the person the studio was talking to.

@@ -700,7 +700,7 @@
     "customFieldsConfigureLink": "Set up custom fields",
     "archivedBadge": "Archived",
     "deletedBadge": "Deleted",
-    "copyUpdateLink": "Copy update link",
+    "copyUpdateLink": "Send a link",
     "updateLinkCopied": "Link copied!",
     "archivedNotice": "Unarchive this contact to edit their details. Archived contacts won't appear in sessions, events or bookings.",
     "actionUnarchive": "Unarchive",
@@ -1047,7 +1047,8 @@
     "goalArchive": "Archive goal",
     "goalUnarchive": "Restore goal",
     "goalArchivedBadge": "Archived",
-    "goalShowArchived": "Archived"
+    "goalShowArchived": "Archived",
+    "sendLinkTip": "Copy a link to send them. They confirm with a code emailed to them, so it needs an email on file."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -8094,7 +8095,7 @@
     "statusAll": "{count, plural, one {# person} other {# people}}"
   },
   "ContactLink": {
-    "title": "Update link",
+    "title": "Show a QR",
     "intro": "Show this to {name} so they can fill in their own details.",
     "validFor": "Valid for",
     "minutes": "{count} minutes",
@@ -8134,6 +8135,18 @@
     "save": "Save my details",
     "privacyNote": "Only your club sees this. Leave a field empty to keep what's already stored.",
     "thanksTitle": "Thank you",
-    "thanksBody": "Your details have been sent to your club."
+    "thanksBody": "Your details have been sent to your club.",
+    "headerTip": "Show a QR — hand it over in person, and it works even with no email on file.",
+    "sheetAction": "Print QR slips",
+    "sheetTitle": "QR slips",
+    "sheetIntro": "One slip per contact, for {count} people. Cut them apart and hand them out at training.",
+    "sheetNoSelection": "No contacts selected. Pick them on the contacts list first.",
+    "sheetBackToContacts": "Back to contacts",
+    "sheetCreate": "Create the sheet",
+    "sheetCreating": "Creating… {done} of {total}",
+    "sheetPrint": "Print",
+    "sheetLiveWarning": "{count} slips are live until they expire — worth collecting the sheet back in.",
+    "sheetSlipHint": "Scan to check your details",
+    "sheetFailed": "The sheet could not be created. Try again."
   }
 }

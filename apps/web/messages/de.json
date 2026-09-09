@@ -700,7 +700,7 @@
     "customFieldsConfigureLink": "Eigene Felder einrichten",
     "archivedBadge": "Archiviert",
     "deletedBadge": "Gelöscht",
-    "copyUpdateLink": "Aktualisierungslink kopieren",
+    "copyUpdateLink": "Link senden",
     "updateLinkCopied": "Link kopiert!",
     "archivedNotice": "Archivierung aufheben, um Details zu bearbeiten. Archivierte Kontakte erscheinen nicht in Einheiten, Events oder Buchungen.",
     "actionUnarchive": "Archivierung aufheben",
@@ -1047,7 +1047,8 @@
     "goalArchive": "Ziel archivieren",
     "goalUnarchive": "Ziel wiederherstellen",
     "goalArchivedBadge": "Archiviert",
-    "goalShowArchived": "Archivierte"
+    "goalShowArchived": "Archivierte",
+    "sendLinkTip": "Kopiere einen Link zum Senden. Die Bestätigung erfolgt per E-Mail-Code — dafür braucht es eine hinterlegte E-Mail."
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -8094,7 +8095,7 @@
     "statusAll": "{count, plural, one {# Person} other {# Personen}}"
   },
   "ContactLink": {
-    "title": "Aktualisierungslink",
+    "title": "QR-Code zeigen",
     "intro": "Zeige dies {name}, damit sie ihre Daten selbst ergänzen können.",
     "validFor": "Gültig für",
     "minutes": "{count} Minuten",
@@ -8134,6 +8135,18 @@
     "save": "Daten speichern",
     "privacyNote": "Nur dein Verein sieht das. Lass ein Feld leer, um den gespeicherten Wert zu behalten.",
     "thanksTitle": "Danke",
-    "thanksBody": "Deine Daten wurden an deinen Verein übermittelt."
+    "thanksBody": "Deine Daten wurden an deinen Verein übermittelt.",
+    "headerTip": "QR-Code zeigen — direkt vor Ort übergeben, auch ohne hinterlegte E-Mail.",
+    "sheetAction": "QR-Zettel drucken",
+    "sheetTitle": "QR-Zettel",
+    "sheetIntro": "Ein Zettel pro Kontakt, für {count} Personen. Auseinanderschneiden und im Training verteilen.",
+    "sheetNoSelection": "Keine Kontakte ausgewählt. Wähle sie zuerst in der Kontaktliste aus.",
+    "sheetBackToContacts": "Zurück zu den Kontakten",
+    "sheetCreate": "Blatt erstellen",
+    "sheetCreating": "Wird erstellt… {done} von {total}",
+    "sheetPrint": "Drucken",
+    "sheetLiveWarning": "{count} Zettel sind bis zum Ablauf gültig — das Blatt am besten wieder einsammeln.",
+    "sheetSlipHint": "Scannen und Daten prüfen",
+    "sheetFailed": "Das Blatt konnte nicht erstellt werden. Bitte erneut versuchen."
   }
 }

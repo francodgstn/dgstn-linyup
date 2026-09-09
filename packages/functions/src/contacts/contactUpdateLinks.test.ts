@@ -6,6 +6,9 @@ import {
   CONTACT_LINK_DEFAULT_TTL_MINUTES,
   CONTACT_LINK_MAX_TTL_MINUTES,
   CONTACT_LINK_MIN_TTL_MINUTES,
+  CONTACT_LINK_MAX_BATCH,
+  CONTACT_LINK_SHEET_DEFAULT_TTL_MINUTES,
+  CONTACT_LINK_SHEET_TTL_CHOICES,
   clampContactLinkTtl,
 } from '@linyup/shared'
 
@@ -50,9 +53,16 @@ describe('contact update links — what the stored document gives away', () => {
   })
 
   it('SALTS the OTP hash with the token — six digits is otherwise an enumerable space', () => {
+    // Spelt through `linkDoc`'s parameter object on the mint side and off the
+    // request on the verify side, so this matches the SHAPE rather than one
+    // spelling: `<something>:<something>` inside the hash, both places.
     assert.ok(
-      SRC.includes('sha256(`${token}:${otp}`)') && SRC.includes('sha256(`${token}:${supplied}`)'),
-      'mint and verify must both hash the OTP together with the token'
+      /sha256\(`\$\{input\.token\}:\$\{input\.otp\}`\)/.test(SRC),
+      'the mint must hash the OTP together with the token'
+    )
+    assert.ok(
+      /sha256\(`\$\{token\}:\$\{supplied\}`\)/.test(SRC),
+      'the verify must hash the supplied code together with the token'
     )
     // The property that salting buys, stated as arithmetic: the same code under
     // two different tokens must not collide.
@@ -145,5 +155,86 @@ describe('contact update links — the rules that are only visible in the source
     }
     walk(root)
     assert.deepEqual(offenders, [], `only contactUpdateLinks.ts may touch the grants: ${offenders.join(', ')}`)
+  })
+})
+
+describe('contact update links — the printed sheet', () => {
+  it('mints NO spoken code on the batch path', () => {
+    const batch = SRC.split('createContactUpdateLinksBatch')[1] ?? ''
+    assert.ok(
+      !/requireOtp/.test(batch),
+      'a code printed beside its own QR protects nothing, and one not printed cannot be read aloud to a room — the batch must never take the flag'
+    )
+    assert.ok(
+      /otp:\s*null/.test(batch),
+      'the batch must pass otp: null explicitly rather than leaving it to a default'
+    )
+  })
+
+  it('reads the outstanding grants ONCE, not once per contact', () => {
+    const batch = SRC.split('createContactUpdateLinksBatch')[1] ?? ''
+    const queries = batch.match(/await links\s*\n?\s*\.where|await links\.where/g) ?? []
+    assert.equal(
+      queries.length,
+      1,
+      'at 336 contacts a query per contact is the cost that matters; the live links are read for the team and matched in memory'
+    )
+    assert.ok(
+      batch.includes("where('teamId', '==', teamId)"),
+      'the single read must be scoped to the team'
+    )
+  })
+
+  it('caps the batch below the Firestore write limit', () => {
+    // Each contact costs one create plus at most one revoke.
+    assert.ok(
+      CONTACT_LINK_MAX_BATCH * 2 < 500,
+      `${CONTACT_LINK_MAX_BATCH} contacts is ${CONTACT_LINK_MAX_BATCH * 2} writes against a 500 ceiling`
+    )
+    const batch = SRC.split('createContactUpdateLinksBatch')[1] ?? ''
+    assert.ok(
+      batch.includes('CONTACT_LINK_MAX_BATCH'),
+      'the callable must enforce the cap rather than trusting the client to chunk'
+    )
+  })
+
+  it('SKIPS a contact of another team instead of failing the sheet', () => {
+    const batch = SRC.split('createContactUpdateLinksBatch')[1] ?? ''
+    assert.ok(
+      batch.includes('skipped.push('),
+      'one stale id from a live list must not cost the other ninety-nine their slips'
+    )
+    assert.ok(
+      batch.includes("snap.get('teamId') !== teamId"),
+      'the tenant check must still run per contact'
+    )
+  })
+
+  it('builds every stored grant through ONE builder', () => {
+    // Both mints must agree on what a link is — in particular on writing
+    // `revoked_at: null`, which is QUERIED, and which Firestore will not match
+    // on a document that merely lacks the field.
+    const setCalls = SRC.match(/links\.doc\(sha256\(token\)\),?\s*\n?\s*linkDoc\(|batch\.set\(\s*links\.doc/g) ?? []
+    assert.ok(setCalls.length >= 2, 'both the single and batch mints must write through linkDoc')
+    // Sliced at the first line that is ONLY a closing brace — the end of the
+    // function. A bare '}' at line start is not enough: the parameter type ends
+    // with `}): Record<string, unknown> {`, also in column zero, which cuts the
+    // slice before the body this is trying to read. `\s*` covers CRLF.
+    const builder = SRC.split('function linkDoc')[1]?.split(/^\}\s*$/m)[0] ?? ''
+    assert.ok(
+      /revoked_at: null/.test(builder),
+      'linkDoc must write revoked_at: null explicitly — it is QUERIED, and Firestore will not match a document that merely lacks the field'
+    )
+    // Nothing else may hand-roll a grant document.
+    const handRolled = SRC.match(/attempts:\s*0,/g) ?? []
+    assert.equal(handRolled.length, 1, 'only linkDoc may spell out a fresh grant')
+  })
+
+  it('offers only sheet-length windows for printing', () => {
+    assert.ok(
+      CONTACT_LINK_SHEET_TTL_CHOICES.every((m) => m >= 60),
+      'a sheet is printed before training and handed out during it — anything under an hour expires before the first slip is torn off'
+    )
+    assert.equal(CONTACT_LINK_SHEET_DEFAULT_TTL_MINUTES, 1440)
   })
 })

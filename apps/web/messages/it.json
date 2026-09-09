@@ -700,7 +700,7 @@
     "customFieldsConfigureLink": "Configura i campi personalizzati",
     "archivedBadge": "Archiviato",
     "deletedBadge": "Eliminato",
-    "copyUpdateLink": "Copia link di aggiornamento",
+    "copyUpdateLink": "Invia un link",
     "updateLinkCopied": "Link copiato!",
     "archivedNotice": "Ripristina questo contatto per modificarne i dettagli. I contatti archiviati non appaiono nelle sessioni, eventi o prenotazioni.",
     "actionUnarchive": "Annulla archiviazione",
@@ -1047,7 +1047,8 @@
     "goalArchive": "Archivia obiettivo",
     "goalUnarchive": "Ripristina obiettivo",
     "goalArchivedBadge": "Archiviato",
-    "goalShowArchived": "Archiviati"
+    "goalShowArchived": "Archiviati",
+    "sendLinkTip": "Copia un link da inviare. La conferma avviene con un codice via email, quindi serve un indirizzo registrato."
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -8094,7 +8095,7 @@
     "statusAll": "{count, plural, one {# persona} other {# persone}}"
   },
   "ContactLink": {
-    "title": "Link di aggiornamento",
+    "title": "Mostra un QR",
     "intro": "Mostralo a {name} così può inserire i propri dati.",
     "validFor": "Valido per",
     "minutes": "{count} minuti",
@@ -8134,6 +8135,18 @@
     "save": "Salva i miei dati",
     "privacyNote": "Lo vede solo il tuo club. Lascia vuoto un campo per mantenere il valore salvato.",
     "thanksTitle": "Grazie",
-    "thanksBody": "I tuoi dati sono stati inviati al tuo club."
+    "thanksBody": "I tuoi dati sono stati inviati al tuo club.",
+    "headerTip": "Mostra un QR — da consegnare di persona, funziona anche senza email registrata.",
+    "sheetAction": "Stampa foglietti QR",
+    "sheetTitle": "Foglietti QR",
+    "sheetIntro": "Un foglietto per contatto, per {count} persone. Ritagliali e distribuiscili in allenamento.",
+    "sheetNoSelection": "Nessun contatto selezionato. Selezionali prima nell'elenco contatti.",
+    "sheetBackToContacts": "Torna ai contatti",
+    "sheetCreate": "Crea il foglio",
+    "sheetCreating": "Creazione… {done} di {total}",
+    "sheetPrint": "Stampa",
+    "sheetLiveWarning": "{count} foglietti restano validi fino alla scadenza — meglio ritirare il foglio.",
+    "sheetSlipHint": "Scansiona per controllare i tuoi dati",
+    "sheetFailed": "Non è stato possibile creare il foglio. Riprova."
   }
 }

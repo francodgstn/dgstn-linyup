@@ -5285,7 +5285,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     contact a link to update their own details" — rather than
                     describing them like the status and contact lines below. */}
                 {team?.slug && !contact.archived_at && !contact.deleted_at && (
-                  <Tip label={t('copyUpdateLink')}>
+                  <Tip label={t('sendLinkTip')}>
                     <button
                       onClick={handleCopyUpdateLink}
                       className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -5458,7 +5458,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     since every other one authenticates by emailed code. */}
                 <HeaderActionButton
                   icon={QrCode}
-                  label={tLink('title')}
+                  label={tLink('headerTip')}
                   onClick={() => setUpdateLinkOpen(true)}
                 />
               </div>
