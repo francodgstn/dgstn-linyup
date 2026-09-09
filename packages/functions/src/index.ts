@@ -184,6 +184,16 @@ export {
 } from './analytics'
 export { capturePlatformMetrics } from './analytics/platformMetrics'
 
+// App-store presence (App Store Connect + Google Play → store_presence/*).
+// Read-only; gated by STORE_INGEST_ENABLED, which is 'false' everywhere until
+// somebody turns it on. See appstores/ingest.ts.
+export { ingestAppStores } from './appstores/ingest'
+export { refreshStorePresence } from './appstores/ops'
+// App Store Connect push notifications (WWDC25 webhooks). Registered manually
+// per app in ASC → Users and Access → Integrations → Webhooks; verifies Apple's
+// HMAC and fails closed when no secret is configured.
+export { handleAppStoreWebhook } from './appstores/webhook'
+
 // Daily maintenance tasks + the hourly multi-step booking-reminder scan
 export { dailyTasks, bookingRemindersHourly } from './dailyTasks'
 
