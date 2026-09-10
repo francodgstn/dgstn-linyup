@@ -194,11 +194,11 @@ One thing it does NOT claim, because it was not verified: anything about what a
 It also does not claim the team's own subscription is cancelled, because it is
 not — see the next entry, which that omission turned up.
 
-### A studio that was already paying is charged twice, and then torn down
+### ~~A studio that was already paying is charged twice, and then torn down~~ — FIXED
 
-**OPEN.** Traced through the source on 2026-09-08 and stated with the reads
-behind it; **not reproduced against a running stack**, so it is here rather than
-in `docs/open-defects.md`, whose bar is reproduction.
+**FIXED 2026-09-09.** Traced through the source on 2026-09-08 and stated with the
+reads behind it; never reproduced against a running stack, which is why it stayed
+here rather than in `docs/open-defects.md`. The four steps below are what it did.
 
 Four steps, none of them guarded:
 
@@ -232,22 +232,47 @@ halves — "a second subscription bought here is a second charge for one seat �
 and on payment the webhook's team branch overwrites `plan`/`plan_status`". That
 guard covers BUY-THEN-JOIN. JOIN-WHEN-ALREADY-BOUGHT has no equivalent.
 
-**The obvious fix is a trap on its own.** Calling `cancelSubscriptionFor` from
-`acceptOrgInvitation` cancels **at period end** (`cancel_at_period_end: true`),
-so `subscription.cancelled` fires weeks later and lands step 4 on a timer. **The
-webhook's cancelled branch has to learn about `org_id` first** — that is the
-prerequisite, not the follow-up. Order the work: guard the webhook (steps 3 and
-4 die together, and everything else becomes safe), then choose the accept-time
-policy — refuse while a live subscription exists, or auto-cancel and say so.
-Refusing never takes a money action on an owner's behalf and mirrors the
-`billed_by_org` refusal already on the other side; auto-cancelling is fewer
-steps. That is a money-policy call, and it changes how the webhook guard is
-written (an auto-cancel has to be distinguishable from a real one), which is why
-neither half shipped on the strength of the trace alone.
+**The obvious fix would have been a trap.** Calling `cancelSubscriptionFor` from
+`acceptOrgInvitation` cancels **at period end**, so `subscription.cancelled`
+fires weeks later and lands step 4 on a timer. That is why the accept-time policy
+had to be chosen before the webhook guard could be written: an auto-cancel has to
+be distinguishable from a real one, and a refusal does not.
 
-**Whether any live tenant is in this state is a query, not a guess**: teams with
-`org_id` set that also have a `saas_subscriptions/{teamId}` whose status is
-`active` or `past_due`.
+**THE ANSWER IS TO REFUSE** (Franco, 2026-09-09). `acceptOrgInvitation` now reads
+the accepting studio's own `saas_subscriptions/{teamId}` and throws
+`failed-precondition` with `reason: 'team_has_own_subscription'` when its status
+is `active` or `past_due` — the two that can still take money. The accept page
+translates on that reason rather than on the message text, so the owner is told
+to cancel first, in their own language.
+
+`active` deliberately includes a subscription already set to stop at period end:
+it is still live, the studio has paid through the period, and letting it in would
+hand the organisation a bill for the overlap. **A trial is not a subscription and
+is not refused** — a trialing studio joining a federation is the ordinary path,
+and it is safe by construction, because no `saas_subscriptions/{teamId}` document
+exists until Stripe fires for a real one (a team's trial lives on `teams/{id}`;
+only `createOrganization` seeds a subscription doc up front, for an org).
+
+**Refusing never takes a money action on somebody's behalf**, and it mirrors
+`createCheckoutSession`'s `billed_by_org` — the same rule read from the other
+end. Between them, `org_id` and a live own subscription should never coexist.
+
+**The webhook is guarded anyway, for the gap between them.** A refusal cannot
+stop an event arriving LATE for a subscription that ended before the studio
+joined. So the SaaS webhook's team branch now checks `org_id` first and, when the
+studio is billed by an organisation, writes nothing: not the plan (step 3), not
+the teardown (step 4), and not the add-on reconcile — which DELETES installs
+whose item the payload does not carry, and an ex-subscription's payload carries
+none, on a studio whose organisation is what grants its plugins.
+
+Pinned by two tests in `packages/functions/src/orgs/orgTierRails.test.ts`, both
+verified to fail against the unguarded source. One of them asserts the guard does
+NOT name `trial`, so the ordinary path cannot be closed by a later edit.
+
+**Whether any live tenant was ever in this state is a query, not a guess**: teams
+with `org_id` set that also have a `saas_subscriptions/{teamId}` whose status is
+`active` or `past_due`. The guards stop new ones; they do not repair an existing
+one, and nothing in this change looks for them.
 
 ### There is no way to tell the two studios apart at a glance
 

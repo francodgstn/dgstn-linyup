@@ -124,7 +124,19 @@ export default function OrgInvitePage() {
       await fn({ invitationId: params.invId, teamId: selectedTeamId })
       setStatus('accepted')
     } catch (err: unknown) {
-      setInviteError(err instanceof Error ? err.message : 'Error')
+      // THE ONE REFUSAL WORTH TRANSLATING. Everything else this callable throws
+      // is a state the page cannot happen upon (a revoked invitation, a caller
+      // who is not the owner) and the server's own sentence is the better
+      // answer; this one is reachable by an ordinary owner doing an ordinary
+      // thing, tells them to go and do something first, and so has to arrive in
+      // their language. Keyed on the `reason` the callable sends rather than on
+      // its message text, which is English and may be reworded.
+      const reason = (err as { details?: { reason?: string } } | null)?.details?.reason
+      if (reason === 'team_has_own_subscription') {
+        setInviteError(t('errorOwnSubscription'))
+      } else {
+        setInviteError(err instanceof Error ? err.message : 'Error')
+      }
     } finally {
       setActionLoading(false)
     }

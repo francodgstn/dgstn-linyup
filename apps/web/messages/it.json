@@ -3298,7 +3298,8 @@
     "changesData": "Gli amministratori di {org} potranno leggere i contatti di questo team — nomi, recapiti e le informazioni registrate su di loro — oltre ai suoi eventi e check-in.",
     "changesBilling": "Questo team passa al piano Linyup di {org}, che da quel momento lo paga.",
     "changesUndo": "Solo un amministratore di {org} potrà scollegare questo team in seguito.",
-    "changesChooseTeam": "Possiedi più di un team. Questo vale solo per quello selezionato sopra — un team che tieni fuori da {org} mantiene i suoi contatti per sé."
+    "changesChooseTeam": "Possiedi più di un team. Questo vale solo per quello selezionato sopra — un team che tieni fuori da {org} mantiene i suoi contatti per sé.",
+    "errorOwnSubscription": "Questo studio ha ancora un proprio abbonamento Linyup. Disdicilo prima in Impostazioni → Fatturazione, poi accetta — altrimenti verrebbe pagato due volte."
   },
   "Discover": {
     "tabPlugins": "Plugin",

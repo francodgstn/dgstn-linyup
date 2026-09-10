@@ -3298,7 +3298,8 @@
     "changesData": "Administrators of {org} will be able to read this team's contacts — names, contact details and the records kept on them — as well as its events and check-ins.",
     "changesBilling": "This team moves onto {org}'s Linyup plan, and {org} pays for it from then on.",
     "changesUndo": "Only an administrator of {org} can unlink this team later.",
-    "changesChooseTeam": "You own more than one team. This applies only to the one selected above — a team you keep out of {org} keeps its contacts to itself."
+    "changesChooseTeam": "You own more than one team. This applies only to the one selected above — a team you keep out of {org} keeps its contacts to itself.",
+    "errorOwnSubscription": "This studio still has its own Linyup subscription. Cancel it in Settings → Billing first, then accept — otherwise it would be paid for twice."
   },
   "Discover": {
     "tabPlugins": "Plugins",

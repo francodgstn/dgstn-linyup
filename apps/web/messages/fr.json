@@ -3298,7 +3298,8 @@
     "changesData": "Les administrateurs de {org} pourront lire les contacts de cette équipe — noms, coordonnées et informations enregistrées à leur sujet — ainsi que ses événements et check-ins.",
     "changesBilling": "Cette équipe passe sur le forfait Linyup de {org}, qui le paie à partir de ce moment.",
     "changesUndo": "Seul un administrateur de {org} pourra dissocier cette équipe par la suite.",
-    "changesChooseTeam": "Vous possédez plusieurs équipes. Ceci ne concerne que celle sélectionnée ci-dessus — une équipe que vous gardez hors de {org} garde ses contacts pour elle."
+    "changesChooseTeam": "Vous possédez plusieurs équipes. Ceci ne concerne que celle sélectionnée ci-dessus — une équipe que vous gardez hors de {org} garde ses contacts pour elle.",
+    "errorOwnSubscription": "Ce studio a encore son propre abonnement Linyup. Résiliez-le d'abord dans Paramètres → Facturation, puis acceptez — sinon il serait payé deux fois."
   },
   "Discover": {
     "tabPlugins": "Plugins",

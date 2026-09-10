@@ -253,6 +253,56 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
     )
   })
 
+  it('a studio that still pays for itself is REFUSED, not enrolled and charged twice', () => {
+    // Accepting puts the studio on the org plan and does not touch its own
+    // Stripe subscription, so it went on invoicing while the federation paid
+    // too. Cancelling that leftover — the correct move — then fired
+    // `subscription.cancelled` into `downgradeTeamToFree` on a paid-up member.
+    // Refusing at the door is the chosen answer; see the callable's comment.
+    const orgs = read('orgs/index.ts')
+    const accept = orgs.split('acceptOrgInvitation = onCall(')[1].split('\n})')[0]
+    assert.ok(
+      accept.includes("collection('saas_subscriptions').doc(data.teamId)"),
+      'acceptOrgInvitation must look at the accepting studio’s OWN subscription'
+    )
+    assert.ok(
+      accept.includes("reason: 'team_has_own_subscription'"),
+      'the refusal carries a named reason — the accept page translates on it, not on the message'
+    )
+    assert.ok(
+      /teamSubStatus === 'active' \|\| teamSubStatus === 'past_due'/.test(accept),
+      'both statuses that can still take money must refuse'
+    )
+    // A TRIAL MUST STILL BE ABLE TO JOIN — the ordinary path. It is safe by
+    // construction (no subscription doc exists for a trialing team), and the
+    // guard must not start naming 'trial'.
+    assert.ok(
+      !/teamSubStatus === 'trial'/.test(accept),
+      'a trialing studio joining a federation is the normal case and must not be refused'
+    )
+  })
+
+  it('an org-billed studio’s own subscription events cannot speak for it', () => {
+    // The gap the refusal cannot close: an event arriving LATE for a
+    // subscription that ended before the studio joined. `subscription.updated`
+    // carries the old tier (knocking the studio off `plan: 'organization'`),
+    // `subscription.cancelled` reaches `downgradeTeamToFree`, and the add-on
+    // reconcile DELETES installs whose item the payload does not carry.
+    const billing = read('saas-billing/index.ts')
+    assert.ok(
+      billing.includes('const teamBilledByOrg = '),
+      'the webhook must know whether the team it is about is billed by an organisation'
+    )
+    assert.ok(
+      /if \(teamBilledByOrg\) \{/.test(billing),
+      'the guard comes BEFORE the cancelled branch, so the teardown is unreachable for such a team'
+    )
+    assert.ok(
+      /entityType === 'team' &&\s*!teamBilledByOrg/.test(billing),
+      'the add-on reconcile is guarded too — it deletes installs the org is what grants'
+    )
+  })
+
   it('joining an organisation clears the team’s own trial deadline', () => {
     const orgs = read('orgs/index.ts')
     const accept = orgs.split('acceptOrgInvitation = onCall(')[1].split('\n})')[0]
