@@ -273,6 +273,33 @@ export function sourceTypeDuplicatesCanonical(name: string | undefined | null): 
   return matchSubscriptionType(name) !== null
 }
 
+/**
+ * Is this SOURCE type a partner-app plan — a subscription the studio did not
+ * sell (FitPass, ClassPass, SportPass, Urban Sports…)?
+ *
+ * hmd-lineup had no notion of a plan's source, so the copied type carries none;
+ * Linyup reads `SubscriptionType.source: 'aggregator'` for everything a partner
+ * plan means — the booking gate, the partner-visit payout, the "via a partner
+ * app" figure, and the External bucket's whole premise. ONE matcher, read by
+ * pass 11 (stamps the type) and by the contact transform (writes the holder's
+ * live row), so the two can never disagree about which plans are partner ones.
+ * Matched on the name because that is all the source has; case-insensitive,
+ * whitespace-tolerant, substring — "Fitpass Partner" and "ClassPass" both hit.
+ */
+const PARTNER_TYPE_PATTERNS: readonly RegExp[] = [
+  /fit\s*pass/i,
+  /class\s*pass/i,
+  /sport\s*pass/i,
+  /urban\s*sports/i,
+  /gymlib/i,
+  /wellpass/i,
+]
+
+export function isPartnerSourceType(name: string | undefined | null): boolean {
+  if (!name) return false
+  return PARTNER_TYPE_PATTERNS.some((re) => re.test(name))
+}
+
 /** Returns the canonical match for the given source subscription_type_name, or null. */
 export function matchSubscriptionType(sourceName: string | undefined | null): CanonicalMatch | null {
   if (!sourceName) return null

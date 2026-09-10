@@ -6,8 +6,6 @@ import { matchSubscriptionType } from '../transforms/subscriptions'
 
 // Affiliation subcollection name (mirrors @linyup/shared CONTACT_AFFILIATIONS_SUBCOLLECTION).
 const AFFILIATIONS_SUBCOLLECTION = 'affiliations'
-// Affiliation type catalog subcollection (mirrors AFFILIATION_TYPES_SUBCOLLECTION).
-const AFFILIATION_TYPES_SUBCOLLECTION = 'affiliation_types'
 
 // Most subcollections keep their name. HMD stored the performance radar data as
 // 'training_checkins'; Linyup renamed it to 'performance_checkins', so that one
@@ -65,14 +63,12 @@ export async function pass05Contacts(
     const bw   = new BatchWriter(tgt, cfg.dryRun)
     const snap = await src.collection('contacts').where('teamId', '==', teamId).get()
 
-    // Seed a team-local 'club' affiliation type for this team's team-issued
-    // (membership_status) affiliations. The org-level 'club' type + org
-    // affiliation_statuses are seeded once in pass00Setup. Flag the team so the
-    // affiliation axis is enabled. (org_id / organization_ids set in pass02.)
-    bw.set(
-      tgt.collection('teams').doc(teamId).collection(AFFILIATION_TYPES_SUBCOLLECTION).doc('club'),
-      { id: 'club', key: 'club', label: 'Club membership', default_issuer: 'team', active: true, order: 0 },
-    )
+    // Flag the team so the affiliation axis is enabled. (org_id / organization_ids
+    // set in pass02.) No team-local affiliation type is seeded any more: every
+    // migrated row is ORG-issued (the federation card — see the transform), and
+    // the org-level 'club' type + statuses are seeded once in pass00Setup. The
+    // team-local "Club membership" this used to write offered the studio a second
+    // type of the same name that nothing referenced.
     bw.merge(tgt.collection('teams').doc(teamId), { affiliations_enabled: true })
 
     // THE NAME LIVES ON THE TYPE, NOT ON THE CONTACT. hmd-lineup stores only
