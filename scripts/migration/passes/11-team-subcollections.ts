@@ -13,6 +13,7 @@ import { transformActivityLogEntry } from '../transforms/activity-log'
 import { transformAlertPreset } from '../transforms/alert-presets'
 import { transformLeaderboardDoc } from '../transforms/leaderboard'
 import { memberCapsFor, type MemberRole } from '../../lib/roles'
+import { resolveOrgAdmin, isRemappedAdminUid } from '../orgAdmin'
 
 const TEAM_SUBCOLLECTIONS = [
   'team_members',          // must come first — rules depend on this for read access
@@ -151,18 +152,14 @@ export async function pass11TeamSubcollections(
   const src = sourceDb()
   const tgt = targetDb()
 
-  // Resolve org admin UID from target (users were already migrated in pass01).
-  // The admin needs a manager team_members entry in every club they aren't already in.
-  let adminUid: string | null = null
-  const adminSnap = await tgt.collection('users')
-    .where('email', '==', cfg.orgAdminEmail)
-    .limit(1)
-    .get()
-  if (adminSnap.empty) {
-    console.warn(`  WARN: could not find user with email ${cfg.orgAdminEmail} in target — org admin will not be injected as manager`)
-  } else {
-    adminUid = adminSnap.docs[0].id
-    console.log(`  org admin: ${cfg.orgAdminEmail} → uid=${adminUid}`)
+  // The admin needs a manager team_members entry in every club they aren't
+  // already in — keyed by the login they will actually use on THIS target,
+  // which is not necessarily their source uid (orgAdmin.ts). A source
+  // team_members row keyed by the source uid is re-keyed below.
+  const admin = await resolveOrgAdmin(cfg)
+  const adminUid = admin.uid
+  if (!adminUid) {
+    console.warn(`  WARN: ${cfg.orgAdminEmail} has no uid on either side — org admin will not be injected as manager`)
   }
 
   for (const teamId of teamIds) {
@@ -198,6 +195,19 @@ export async function pass11TeamSubcollections(
 
         // Apply per-subcollection transforms before writing — see transformSubcollectionDoc.
         const data = transformSubcollectionDoc(sub, teamId, d.id, d.data() as Record<string, unknown>)
+
+        // The admin's own membership row, keyed by their SOURCE uid, is written
+        // under their TARGET login instead — the row is what grants access, and
+        // access is checked against the uid that signs in. Every other member
+        // keeps their source uid, which the auth pass imported as-is.
+        if (sub === 'team_members' && isRemappedAdminUid(admin, d.id) && admin.targetUid) {
+          const remapped = tgt.collection('teams').doc(teamId).collection(sub).doc(admin.targetUid)
+          bw.set(remapped, { ...data, userId: admin.targetUid })
+          adminHandledInSource = true
+          console.log(`    ${teamId}: org admin's membership re-keyed ${d.id} → ${admin.targetUid}`)
+          continue
+        }
+
         bw.set(tgtRef, data)
 
         if (sub === 'team_members' && adminUid && d.id === adminUid) {

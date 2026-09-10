@@ -31,6 +31,13 @@ export class BatchWriter {
     if (this.opCount >= BATCH_LIMIT) this.rotate()
   }
 
+  delete(ref: DocumentReference) {
+    if (this.dryRun) { this.totalWritten++; return }
+    this.batch.delete(ref)
+    this.opCount++
+    if (this.opCount >= BATCH_LIMIT) this.rotate()
+  }
+
   skip() { this.totalSkipped++ }
 
   private rotate() {
