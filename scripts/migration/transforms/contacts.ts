@@ -1,5 +1,5 @@
 import { RANKING_HMD, RANKING_KD, ORG_ID, rankingSystemLevelValues } from '../config'
-import { matchSubscriptionType, pickSubscriptionPrice } from './subscriptions'
+import { matchSubscriptionType, pickSubscriptionPrice, isPartnerSourceType } from './subscriptions'
 import { buildAffiliationSummary, type AffiliationSummaryInput } from '../../lib/affiliations'
 
 // ── Affiliation mapping (Phase 2) ─────────────────────────────────────────────
@@ -19,7 +19,6 @@ export const AFFILIATIONS_OUTPUT_KEY = '__affiliations'
 // org-level 'club' type lives at organizations/{ORG_ID}/affiliation_types/club;
 // a team-local 'club' type at teams/{teamId}/affiliation_types/club.
 const ORG_CLUB_TYPE = { id: 'club', key: 'club', label: 'Club membership' }
-const TEAM_CLUB_TYPE = { id: 'club', key: 'club', label: 'Club membership' }
 
 // Only 'active' counts as an active affiliation (mirrors DEFAULT_ORG_AFFILIATION_STATUSES).
 const ACTIVE_COUNTING_STATUS_IDS = new Set(['active'])
@@ -223,15 +222,29 @@ export function transformContact(
   out.deleted_at    = out.deleted_at    ?? null
   out.archived_at   = out.archived_at   ?? null
 
-  // ── Affiliations (replaces the removed membership_* / org_membership_* fields) ─
-  // Derive affiliation docs from the HMD membership fields, then delete those
+  // ── Affiliations (replaces the removed membership_* fields) ──────────────
+  // Derive affiliation docs from the HMD membership field, then delete those
   // fields from the contact doc. pass05 reads the __affiliations array off the
   // transform output and writes each into contacts/{id}/affiliations.
-  //   org_membership_status (non-guest) → issuer 'org' affiliation (the HMD org),
-  //     valid_until from org_membership_expiration.
-  //   membership_status     (non-guest) → 'club' issuer 'team' affiliation,
-  //     valid_until from membership_expiration.
+  //
+  //   membership_status (non-guest) → issuer 'org' affiliation of the HMD org,
+  //     type 'club', valid_until from membership_expiration.
   //   guest / none → no affiliation.
+  //
+  // ORG-ISSUED, NOT TEAM-ISSUED. `membership_status` is the federation card:
+  // hmd-lineup's Membership route lists it ACROSS EVERY CLUB (`teacherId ===
+  // 'all'`) with exactly the vocabulary Linyup seeds for the organisation
+  // (requested / almost ready / active / expired / guest), and the org's
+  // managers are the ones who move it. Until 2026-09-11 this wrote a
+  // team-issued row with no `org_id`, and under `orgAdminMayReadContact` (which
+  // admits an org admin only to a contact holding a row WITH its org_id) the
+  // federation would have seen none of its own members. The seeders' own rule
+  // (`buildAffiliationDoc`: a team inside an org issues org rows) says the same.
+  //
+  // There is no `org_membership_status`. The field exists nowhere in hmd-lineup;
+  // an earlier version of this transform mapped it "in case newer docs carry
+  // it", and no document ever did. Still deleted below in case a stray value
+  // exists, never read.
   // Soft-deleted AND archived contacts are coerced to 'expired' so they never
   // count as active. Archived was missing until 2026-09-10: HMD's status field
   // is not cleared when a club archives somebody, so the licence rode along —
@@ -275,10 +288,8 @@ export function transformContact(
     affiliations.push(doc)
   }
 
-  // org-issued membership (newer HMD docs may carry this explicitly)
-  pushAffiliation(out.org_membership_status, 'org', ORG_CLUB_TYPE, out.org_membership_expiration)
-  // club / team-issued membership (the field HMD historically stores)
-  pushAffiliation(out.membership_status, 'team', TEAM_CLUB_TYPE, out.membership_expiration)
+  // The federation card — org-issued, see above.
+  pushAffiliation(out.membership_status, 'org', ORG_CLUB_TYPE, out.membership_expiration)
 
   // Drop the removed membership fields from the contact doc.
   delete out.membership_status
@@ -392,11 +403,29 @@ export function transformContact(
     // points at a real document and only the NAME was missing. Write it: the
     // contact page gates its subscription panel on the name, so without this a
     // partner member reads as having no plan at all.
-    //
-    // Nothing else is invented. These types carry no prices in the source, so
-    // there is no price, amount or recurrence to state, and `active_subscriptions`
-    // stays unwritten rather than claiming a shape this data cannot fill.
     out.subscription_type_name = srcTypeName
+
+    // A PARTNER-APP PLAN IS A LIVE PLAN. Pass 11 stamps the copied type
+    // `source: 'aggregator'` (same matcher), and its holder gets the live row a
+    // partner plan means in Linyup: the booking gate can match it, the weekly
+    // report counts them "via a partner app" rather than as subscribers, and
+    // the External tab — where most of these people sit — shows the plan that
+    // lets them through the door. Amount 0 and no recurrence are the honest
+    // values: the partner bills them, the studio is paid per visit. Not for a
+    // person the club has archived or binned, for the same reason as above.
+    // The other unmatched names (Instructor, Free) stay name-only: a type with
+    // no prices and no partner is a label, not a plan anyone can claim.
+    if (isPartnerSourceType(srcTypeName) && !isGone) {
+      out.active_subscriptions = [
+        {
+          subscription_type_id:   srcTypeId,
+          subscription_type_name: srcTypeName,
+          recurrence:             null,
+          amount:                 0,
+          status:                 'active',
+        },
+      ]
+    }
   }
   // A contact with no resolvable type name keeps every subscription_* field as
   // the source had it.

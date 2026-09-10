@@ -5,6 +5,7 @@ import { BatchWriter } from '../batch-writer'
 import {
   CANONICAL_SUBSCRIPTION_TYPES,
   sourceTypeDuplicatesCanonical,
+  isPartnerSourceType,
 } from '../transforms/subscriptions'
 import { transformTeamWeeklyReport } from '../transforms/team-weekly-reports'
 import { transformAutomationRule } from '../transforms/automation-rules'
@@ -67,6 +68,14 @@ function transformSubcollectionDoc(
   // team_weekly_reports: remap to the new field contract (drop deprecated fields,
   // derive new affiliation/subscription counts, remap or omit HMD-specific keys).
   if (sub === 'team_weekly_reports') return transformTeamWeeklyReport(data)
+
+  // subscription_types: a partner-app plan (Fitpass, ClassPass…) is stamped
+  // `source: 'aggregator'` — the one field everything partner-related in Linyup
+  // reads, and one hmd-lineup never had. Same matcher as the contact transform,
+  // which writes the holder's live row; see `isPartnerSourceType`.
+  if (sub === 'subscription_types' && isPartnerSourceType((data as { name?: string }).name)) {
+    return { ...data, source: 'aggregator' }
+  }
 
   // team_members: denormalize the capability-model fields (capabilities/scope)
   // from the migrated role so the granular-role rules gate consistently.

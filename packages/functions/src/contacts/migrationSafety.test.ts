@@ -128,3 +128,34 @@ describe('affiliations re-sync — the migration\'s rows only', () => {
     assert.match(code(AFFILIATIONS), /if \(!\(await contactRef\.get\(\)\)\.exists\) \{ missing\+\+; continue \}/)
   })
 })
+
+describe('the federation card and the partner plans — what the org can see, and what lets a visitor in', () => {
+  const TRANSFORM = read('migration/transforms/contacts.ts')
+  const SUBS_TRANSFORM = read('migration/transforms/subscriptions.ts')
+  const PASS05 = read('migration/passes/05-contacts.ts')
+
+  it("membership_status is ORG-issued — the one row the org-visibility rule admits — and there is no org_membership_status", () => {
+    const body = code(TRANSFORM)
+    assert.match(body, /pushAffiliation\(out\.membership_status, 'org', ORG_CLUB_TYPE, out\.membership_expiration\)/)
+    assert.doesNotMatch(body, /pushAffiliation\(out\.org_membership_status/)
+    assert.doesNotMatch(body, /'team', TEAM_CLUB_TYPE/)
+    assert.match(body, /if \(issuer === 'org'\) doc\.org_id = ORG_ID/)
+  })
+
+  it('no team-local "Club membership" type is seeded beside it any more', () => {
+    assert.doesNotMatch(code(PASS05), /default_issuer: 'team'/)
+    assert.match(code(PASS05), /affiliations_enabled: true/)
+  })
+
+  it('ONE partner matcher, read by the type copy and by the holder\'s row', () => {
+    assert.match(code(SUBS_TRANSFORM), /export function isPartnerSourceType\(/)
+    assert.match(code(SUBS), /sub === 'subscription_types' && isPartnerSourceType\([\s\S]*?source: 'aggregator'/)
+    assert.match(code(TRANSFORM), /if \(isPartnerSourceType\(srcTypeName\) && !isGone\) \{[\s\S]*?status:\s*'active'/)
+  })
+
+  it('a partner holder\'s live row is honest about money: amount 0, no recurrence, and never for the archived', () => {
+    const branch = code(TRANSFORM).slice(code(TRANSFORM).indexOf('isPartnerSourceType(srcTypeName)'))
+    assert.match(branch, /recurrence:\s*null/)
+    assert.match(branch, /amount:\s*0/)
+  })
+})
