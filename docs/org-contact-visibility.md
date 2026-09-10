@@ -201,6 +201,51 @@ organisation knows the person at all. A lapsed member is inactive but very much
 on the books, and counting them here would tell a manager the federation cannot
 see somebody it can.
 
+## The External bucket, and who this notice is for
+
+**Added 2026-09-11, after `#274`/`#275`/`#276` landed.** `contactLifecycle`
+(shared) now names five buckets, and two of them are LIVE without being on the
+roster: a **provisional** lead whose registration has not materialised, and an
+**external** — somebody who trains here without being looked after, the
+partner-app drop-in the bucket was made for. HMD Basel has 93 of the latter.
+
+**The studio-side notice counts `active` only, and every exclusion has its own
+reason.** It asks "should this person be on the federation's books?", which is a
+real question only for somebody on the roster today. An archived person left and
+the federation should not see them; an external is the LAST person to affiliate;
+a lead may never become one. Counting them would have read as a backlog of 93 —
+and pushing a manager to clear it is precisely what the notice's neutral styling
+exists to avoid, undone by one number.
+
+**`contact_live` on an affiliation is LIVE, not ROSTER, and that is deliberate.**
+An external who holds this organisation's licence IS on its books; the federation
+counts its own members whether or not the studio looks after them day to day. The
+organisation's question is "is this person still real", not "is this person
+yours". The writers now call `isLiveContact` from shared rather than testing
+`!deleted_at && !archived_at` by hand — which had silently missed
+`anonymized_at`, so a GDPR-anonymised person would have kept counting in the
+status breakdown for ever.
+
+**The org dashboard needs no external subtraction, and could not run one.**
+`#275` made the per-studio `people` figure live MINUS a second count of externals
+— correct for a headcount of who a studio looks after. That headcount is gone
+here: the federation counts who is on ITS books, and an external only appears
+there if the studio put them there, which is the studio saying they belong. The
+subtraction query (`where('external', '==', true)`) is also unprovable under
+`orgAdminMayReadContact` — it names no `affiliation_summary` clause — so the
+merge that brought it in would have reproduced the `permission-denied` this
+document already records once. A test in `orgTierRails.test.ts` now counts
+aggregations against `affiliation_summary` clauses on that page, so a third
+occurrence fails the build instead of the dashboard.
+
+**Still open, and not mine to decide:** the studio's Affiliations ROSTER lists
+every non-deleted contact, so archived people, externals and leads all appear in
+its table with a "Not affiliated" status. That predates this work — the page has
+always queried `deleted_at` alone — and narrowing it is a change to what that
+screen is FOR, not a repair. The notice above is now narrower than the table it
+sits on, which is defensible (a count that suggests action, over a table that
+shows everything) but worth deciding on purpose.
+
 ## What the organisation gives up, knowingly
 
 **It can no longer state its own reach.** "How many people are in our member

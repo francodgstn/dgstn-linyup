@@ -18,6 +18,7 @@ import {
   CONTACTS_COLLECTION, ORGANIZATIONS_COLLECTION, ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
   DEFAULT_ORG_AFFILIATION_STATUSES, AFFILIATION_TYPES_SUBCOLLECTION, CONTACT_AFFILIATIONS_SUBCOLLECTION,
 } from '@linyup/shared'
+import { contactLifecycle } from '@linyup/shared'
 import type { Contact, OrgAffiliationStatusDef, Affiliation, AffiliationType } from '@linyup/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -534,9 +535,32 @@ export default function TeamAffiliationsPage() {
   // whether the organisation knows this person AT ALL. A contact with a lapsed
   // licence is inactive but very much on the books, and counting them here
   // would tell a manager the org cannot see somebody it can.
+  //
+  // ── ACTIVE ONLY, AND EVERY OTHER BUCKET IS EXCLUDED FOR ITS OWN REASON ─────
+  //
+  // This page's query filters `deleted_at` alone, so `contacts` still holds
+  // people no manager should be nudged about. The notice asks "should this
+  // person be on the federation's books?", which is only a real question for
+  // somebody on the roster today:
+  //
+  //   archived     they left. The federation cannot see them and should not.
+  //   external     trains here without being looked after — a partner-app
+  //                drop-in (`contactLifecycle` in shared). Affiliating one is
+  //                the LAST thing this notice should suggest, and at HMD Basel
+  //                there are 93 of them: the number alone would read as a
+  //                backlog and push a manager to clear it.
+  //   provisional  a lead whose registration has not materialised. Not a
+  //                federation candidate yet, and may never be.
+  //
+  // That last pressure is the whole reason the notice is styled neutrally, so
+  // counting those people would undo in one number what the styling is for.
   const notOnOrgBooks = useMemo(() => {
     if (!orgId || !contacts) return 0
-    return contacts.filter((c) => !(c.affiliation_summary?.org_ids ?? []).includes(orgId)).length
+    return contacts.filter(
+      (c) =>
+        contactLifecycle(c) === 'active' &&
+        !(c.affiliation_summary?.org_ids ?? []).includes(orgId)
+    ).length
   }, [contacts, orgId])
 
   const countsByStatus = useMemo(() => {

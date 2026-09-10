@@ -33,19 +33,34 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
-import { CONTACTS_COLLECTION, CONTACT_AFFILIATIONS_SUBCOLLECTION } from '@linyup/shared'
+import {
+  CONTACTS_COLLECTION,
+  CONTACT_AFFILIATIONS_SUBCOLLECTION,
+  isLiveContact,
+} from '@linyup/shared'
 
 /**
- * Is this contact somebody the studio still looks after?
+ * Is this person still someone the federation's count should include?
  *
- * THE SAME PAIR `liveContactConstraints()` puts on every contact query in
- * `apps/web/src/lib/liveContacts.ts` — deleted is "in the bin", archived is
- * "the person left, keep the record". Both halves matter and forgetting the
- * second is the failure that module exists to prevent; it fails silently and
- * UPWARDS, as a count that flatters whoever reads it.
+ * `isLiveContact` FROM SHARED, not a hand-rolled pair. This started as
+ * `!deleted_at && !archived_at`, which is what `liveContactConstraints()`
+ * queries — and it silently missed the third way a contact stops counting:
+ * `anonymized_at`. A GDPR-anonymised person would have kept `contact_live:
+ * true` and gone on being counted in the organisation's status breakdown for
+ * ever, which is the one direction a wrong number is least likely to be
+ * questioned.
+ *
+ * LIVE, NOT ROSTER — the distinction `contactLifecycle` draws, and the choice
+ * matters. `isRosterContact` additionally drops EXTERNALS (a partner-app
+ * drop-in, somebody who trains here without being looked after), which is right
+ * for a studio's headcount and wrong here: an external who holds this
+ * organisation's licence is on its books, and the federation counts its own
+ * members whether or not the studio looks after them day to day. The
+ * organisation's question is "is this person still real", not "is this person
+ * yours".
  */
 function contactIsLive(data: admin.firestore.DocumentData | undefined): boolean {
-  return !!data && !data.deleted_at && !data.archived_at
+  return !!data && isLiveContact(data)
 }
 
 export const syncAffiliationContactLive = onDocumentWritten(

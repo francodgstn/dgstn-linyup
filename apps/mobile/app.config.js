@@ -49,7 +49,7 @@ const environments = {
     databaseURL: 'https://linyup-prod.firebaseio.com',
     projectId: 'linyup-prod',
     storageBucket: 'linyup-prod.firebasestorage.app',
-    messagingSenderId: '', // TODO: set from Firebase console
+    messagingSenderId: '576514050360',
     webAppUrl: 'https://app.linyup.com',
   },
 }

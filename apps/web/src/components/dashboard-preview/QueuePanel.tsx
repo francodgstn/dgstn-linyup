@@ -47,7 +47,7 @@ import type {
   ContactFilterContext,
   EngagementThresholds,
 } from '@linyup/shared'
-import { compareContactsByAttention, contactAttentionReasons } from '@linyup/shared'
+import { compareContactsByAttention, contactAttentionReasons, isRosterContact } from '@linyup/shared'
 import type { SetupStep } from '@/hooks/useSetupChecklist'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -76,7 +76,7 @@ export function useQueuePeople(
   )
   return useMemo(() => {
     const rows = (contacts ?? [])
-      .filter((c) => !c.archived_at)
+      .filter(isRosterContact)
       .map((c) => ({ contact: c, reason: contactAttentionReasons(c, ctx)[0] }))
       .filter((r): r is PersonRow => !!r.reason)
     rows.sort((a, b) => compareContactsByAttention(a.contact, b.contact, ctx))

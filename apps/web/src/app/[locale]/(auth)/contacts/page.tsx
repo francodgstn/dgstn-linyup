@@ -40,7 +40,7 @@ import {
   planHasHardContactCap, resolveIntroOffer,
 } from '@linyup/shared'
 import type { Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
-import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, planGrantExpiryMs } from '@linyup/shared'
+import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle, planGrantExpiryMs } from '@linyup/shared'
 // The ONE contact predicate — see packages/shared/src/utils/contactFilter.ts.
 // Never re-implement matching here; extend the resolver instead.
 import {
@@ -75,8 +75,9 @@ import { setGroupRule } from '@/plugins/contact-groups/hooks'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { UserPlus, X, Plus, AlertCircle, ChevronDown, ChevronUp, ChevronRight, Archive, Trash2, RotateCcw, MoreHorizontal, ArrowRightLeft, Mail, Pencil, Award, CreditCard, Tag, Check, Bookmark, BookmarkPlus, BarChart2, Eye, FolderTree, ShieldCheck, UserCheck, StickyNote, ListPlus } from 'lucide-react'
+import { UserPlus, X, Plus, AlertCircle, ChevronDown, ChevronUp, ChevronRight, Archive, Trash2, RotateCcw, MoreHorizontal, ArrowRightLeft, Mail, Pencil, Award, CreditCard, Tag, Check, Bookmark, BookmarkPlus, BarChart2, Eye, FolderTree, ShieldCheck, UserCheck, StickyNote, ListPlus, QrCode, MailX, DoorOpen } from 'lucide-react'
 import type { Route } from 'next'
+import { writeQrSheetSelection } from '@/lib/qrSheetSelection'
 import { RosterCard } from '@/components/dashboard/RosterCard'
 import { DemographicsCard } from '@/components/dashboard/DemographicsCard'
 import { getPrimaryRank } from '@/lib/rank-utils'
@@ -1654,6 +1655,18 @@ function FilterChips({
       toggle: (f) => ({ ...f, hasNotes: !f.hasNotes }),
     },
     {
+      // The campaign filter: who a studio cannot reach or identify by mail.
+      // Pair it with "Print QR slips" and an owner hands out only the slips
+      // somebody actually needs — otherwise "Select all" prints the roster.
+      key: 'missingEmail',
+      label: t('filterMissingEmail'),
+      available: true,
+      icon: MailX,
+      isActive: (f) => f.missingEmail,
+      clear: (f) => ({ ...f, missingEmail: false }),
+      toggle: (f) => ({ ...f, missingEmail: !f.missingEmail }),
+    },
+    {
       key: 'pendingSignup',
       label: t('filterPendingSignup'),
       available: true,
@@ -1865,6 +1878,15 @@ function ContactRow({
           </p>
           {/* Line 3: stage + affiliation + subscription chips */}
           <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+            {/* Off the roster (Contact.external). Shown on the row itself so the
+                same person reads the same way in a session's participant list
+                or a search result as on the External tab. */}
+            {contact.external === true && (
+              <Badge variant="outline" className="text-xs gap-1" title={t('externalHint')}>
+                <DoorOpen className="h-3 w-3" />
+                {t('externalBadge')}
+              </Badge>
+            )}
             {contact.acquisition_stage && contact.acquisition_stage !== 'joined' && (
               <Badge variant="outline" className="text-xs">{t(`stage_${contact.acquisition_stage}` as Parameters<typeof t>[0])}</Badge>
             )}
@@ -2484,12 +2506,15 @@ interface MoreAction {
 }
 
 function BulkBar({
-  count, tab, onArchive, onDelete, onRestore, onConfirm, onClear, moreActions = [], editActions = [],
+  count, tab, onArchive, onDelete, onRestore, onConfirm, onMarkExternal, onMarkActive, onClear, moreActions = [], editActions = [],
 }: {
   count: number; tab: TabId
   onArchive?: () => void; onDelete?: () => void; onRestore?: () => void
   /** Unconfirmed tab: manually confirm provisional contacts (clears the purge deadline). */
   onConfirm?: () => void
+  /** Active tab → External tab, and back. See Contact.external. */
+  onMarkExternal?: () => void
+  onMarkActive?: () => void
   onClear: () => void
   moreActions?: MoreAction[]
   editActions?: MoreAction[]
@@ -2527,6 +2552,18 @@ function BulkBar({
         <button onClick={onConfirm}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm hover:bg-muted transition-colors">
           <UserCheck className="h-3.5 w-3.5" />{t('bulkConfirm')}
+        </button>
+      )}
+      {onMarkActive && (
+        <button onClick={onMarkActive}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm hover:bg-muted transition-colors">
+          <UserCheck className="h-3.5 w-3.5" />{t('bulkMarkActive')}
+        </button>
+      )}
+      {onMarkExternal && (
+        <button onClick={onMarkExternal}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm hover:bg-muted transition-colors">
+          <DoorOpen className="h-3.5 w-3.5" />{t('bulkMarkExternal')}
         </button>
       )}
       {onArchive && (
@@ -2595,30 +2632,36 @@ function BulkBar({
 
 // ─── tab types ────────────────────────────────────────────────────────────────
 
-const TAB_IDS = ['active', 'leads', 'archived', 'deleted', 'requests'] as const
+const TAB_IDS = ['active', 'leads', 'external', 'archived', 'deleted', 'requests'] as const
 type TabId = (typeof TAB_IDS)[number]
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function ContactsPage() {
   const { currentTeamId, user, team } = useAuth()
+  const pageRouter = useRouter()
   const { isAtLeast, plan } = usePlan()
   const { ownScoped } = useCapabilities()
   const { openUpgradeModal } = useUpgradeModal()
   const qc = useQueryClient()
   const t = useTranslations('Contacts')
   const tNav = useTranslations('Nav')
+  const tLink = useTranslations('ContactLink')
 
   // Coaches (own-scoped) see only their assigned contacts and have no
   // archived/deleted admin views (those queries would be denied by the rules).
   const coachScopeUid = ownScoped ? (user?.uid ?? null) : null
   const { data: allActive = [], isLoading: loadingActive } = useActiveContacts(currentTeamId, coachScopeUid)
-  // PROVISIONAL contacts — the not-yet-materialized leads (shop registrations
-  // awaiting payment, trial bookings never attended, form leads) — live in the
-  // "Leads" tab and don't count toward the plan cap; the Active tab therefore
-  // equals the counted roster. Mirrors server-side canCreateContact (contactCap.ts).
-  const active = useMemo(() => allActive.filter((c) => c.provisional !== true), [allActive])
-  const leads = useMemo(() => allActive.filter((c) => c.provisional === true), [allActive])
+  // ONE live query, split three ways by `contactLifecycle` (the one reader of
+  // the markers): PROVISIONAL contacts — the not-yet-materialized leads (shop
+  // registrations awaiting payment, trial bookings never attended, form leads)
+  // — live in the "Leads" tab and don't count toward the plan cap; EXTERNAL
+  // contacts — people who train here without being looked after — in their own
+  // tab; the Active tab is what is left. Mirrors server-side canCreateContact
+  // (contactCap.ts) for leads and getActiveContacts for externals.
+  const active = useMemo(() => allActive.filter((c) => contactLifecycle(c) === 'active'), [allActive])
+  const leads = useMemo(() => allActive.filter((c) => contactLifecycle(c) === 'provisional'), [allActive])
+  const external = useMemo(() => allActive.filter((c) => contactLifecycle(c) === 'external'), [allActive])
   const { data: archived = [], isLoading: loadingArchived } = useArchivedContacts(ownScoped ? null : currentTeamId)
   const { data: deleted = [], isLoading: loadingDeleted } = useDeletedContacts(ownScoped ? null : currentTeamId)
   const { data: requests = [] } = useContactRequests(currentTeamId)
@@ -2663,11 +2706,15 @@ export default function ContactsPage() {
     }
   }, [])
 
-  // Contact cap usage: counts active = non-archived, non-deleted. Over-cap
-  // behaviour is tier-specific (contactOverageForPlan) and never per-contact
-  // metered: Free hard-blocks manual adds (portal signups still land), Coach is
-  // prompted to upgrade, Studio can buy +contact blocks. Org is unlimited.
-  const usage = contactUsageForPlan(plan, active.length)
+  // Contact cap usage: counts what the SERVER counts (contactCap.ts) — every
+  // live contact except the provisional leads, so an EXTERNAL counts too: the
+  // cap is about records held, not people looked after. Reading `active.length`
+  // here would show "0 / 250" to a studio whose whole book is externals while
+  // the server still refuses the 251st. Over-cap behaviour is tier-specific
+  // (contactOverageForPlan) and never per-contact metered: Free hard-blocks
+  // manual adds (portal signups still land), Coach is prompted to upgrade,
+  // Studio can buy +contact blocks. Org is unlimited.
+  const usage = contactUsageForPlan(plan, active.length + external.length)
   const overage = contactOverageForPlan(plan)
   const freeCapBlocked = planHasHardContactCap(plan) && usage.atOrOverLimit && !loadingActive
   const planIdx = plan ? PLAN_ORDER.indexOf(plan) : -1
@@ -2698,7 +2745,8 @@ export default function ContactsPage() {
   // Active when the last one is confirmed/deleted (its tab entry disappears).
   useEffect(() => {
     if (tab === 'leads' && !loadingActive && leads.length === 0) setTab('active')
-  }, [tab, loadingActive, leads.length])
+    if (tab === 'external' && !loadingActive && external.length === 0) setTab('active')
+  }, [tab, loadingActive, leads.length, external.length])
   const [filters, setFilters] = useState<Filters>(() =>
     openOnAttention
       ? normalizeContactFilter({ ...EMPTY_FILTERS, needsAttention: true })
@@ -2723,6 +2771,7 @@ export default function ContactsPage() {
 
   // confirm dialogs
   const [confirmArchive, setConfirmArchive] = useState<string[]>([])
+  const [confirmExternal, setConfirmExternal] = useState<string[]>([])
   const [confirmDelete, setConfirmDelete] = useState<string[]>([])
   const [confirmRestore, setConfirmRestore] = useState<string[]>([])
 
@@ -2758,6 +2807,7 @@ export default function ContactsPage() {
 
   const filteredActive   = useMemo(() => filterContacts(active,   filters, filterContext), [active,   filters, filterContext])
   const filteredLeads    = useMemo(() => filterContacts(leads,    filters, filterContext), [leads,    filters, filterContext])
+  const filteredExternal = useMemo(() => filterContacts(external, filters, filterContext), [external, filters, filterContext])
   const filteredArchived = useMemo(() => filterContacts(archived, filters, filterContext), [archived, filters, filterContext])
   const filteredDeleted  = useMemo(() => filterContacts(deleted,  filters, filterContext), [deleted,  filters, filterContext])
 
@@ -2766,6 +2816,7 @@ export default function ContactsPage() {
   const currentListUnsorted =
     tab === 'active' ? filteredActive
     : tab === 'leads' ? filteredLeads
+    : tab === 'external' ? filteredExternal
     : tab === 'archived' ? filteredArchived
     : filteredDeleted
   // ORDERING (UX-44). Surname order answers "where is Meier?" — the question you
@@ -2790,10 +2841,11 @@ export default function ContactsPage() {
   const currentUnfilteredList =
     tab === 'active' ? active
     : tab === 'leads' ? leads
+    : tab === 'external' ? external
     : tab === 'archived' ? archived
     : deleted
   const isLoading =
-    (tab === 'active' || tab === 'leads' ? loadingActive
+    (tab === 'active' || tab === 'leads' || tab === 'external' ? loadingActive
     : tab === 'archived' ? loadingArchived
     : loadingDeleted) || consentLedgerPending
 
@@ -2828,6 +2880,29 @@ export default function ContactsPage() {
       updateDoc(doc(db, CONTACTS_COLLECTION, id), {
         provisional: deleteField(),
         provisional_expires_at: deleteField(),
+      })
+    ))
+    invalidateAll()
+  }
+
+  // Roster ↔ external. `external` is present ONLY when true (see
+  // Contact.external), so bringing someone back deletes the fields rather
+  // than writing false — a `false` would be a third shape every reader had
+  // to know about. Nothing else moves: journey, plan and affiliation stay.
+  const markExternal = async (ids: string[]) => {
+    await Promise.all(ids.map((id) =>
+      updateDoc(doc(db, CONTACTS_COLLECTION, id), {
+        external: true,
+        external_since: serverTimestamp(),
+      })
+    ))
+    invalidateAll()
+  }
+  const markActive = async (ids: string[]) => {
+    await Promise.all(ids.map((id) =>
+      updateDoc(doc(db, CONTACTS_COLLECTION, id), {
+        external: deleteField(),
+        external_since: deleteField(),
       })
     ))
     invalidateAll()
@@ -2946,13 +3021,19 @@ export default function ContactsPage() {
     ...(leads.length === 0
       ? []
       : [{ id: 'leads' as TabId, label: t('tabLeads'), count: leads.length }]),
+    // External = people who train here without being looked after (a
+    // partner-app drop-in, a former member who still comes now and then).
+    // Same rule as Leads: the tab exists only while somebody is in it.
+    ...(external.length === 0
+      ? []
+      : [{ id: 'external' as TabId, label: t('tabExternal'), count: external.length }]),
     // Archived/deleted are studio-admin views — hidden for own-scoped coaches.
     ...(ownScoped ? [] : [{ id: 'archived' as TabId, label: t('tabArchived'), count: archived.length }]),
     ...(ownScoped ? [] : [{ id: 'deleted' as TabId, label: t('tabDeleted'), count: deleted.length }]),
     { id: 'requests', label: t('tabRequests'),  count: requests.filter((r) => (r.status ?? 'pending') === 'pending').length },
   ]
 
-  const selectable = tab === 'active' || tab === 'leads' || tab === 'archived' || tab === 'deleted'
+  const selectable = tab === 'active' || tab === 'leads' || tab === 'external' || tab === 'archived' || tab === 'deleted'
   const selectedList = [...selected]
   // Resolved rows, not just ids — the outreach dialog needs each contact's
   // email + unsubscribe flag to say who will actually receive the message.
@@ -3247,8 +3328,10 @@ export default function ContactsPage() {
         <BulkBar
           count={selected.size}
           tab={tab}
-          onArchive={tab === 'active' || tab === 'leads' ? () => setConfirmArchive(selectedList) : undefined}
+          onArchive={tab === 'active' || tab === 'leads' || tab === 'external' ? () => setConfirmArchive(selectedList) : undefined}
           onConfirm={tab === 'leads' ? () => confirmProvisional(selectedList) : undefined}
+          onMarkExternal={tab === 'active' ? () => setConfirmExternal(selectedList) : undefined}
+          onMarkActive={tab === 'external' ? () => markActive(selectedList) : undefined}
           onRestore={tab === 'archived' || tab === 'deleted' ? () => setConfirmRestore(selectedList) : undefined}
           onDelete={tab !== 'deleted' ? () => setConfirmDelete(selectedList) : undefined}
           onClear={() => setSelected(new Set())}
@@ -3280,6 +3363,17 @@ export default function ContactsPage() {
             ...(askedDocuments.some((d) => d.requiredBeforeBooking)
               ? [{ label: t('bulkAskToSign'), icon: ShieldCheck, onClick: () => setAskToSignOpen(true) }]
               : []),
+            // The EXACT ids are handed over, not the filter: this list is live,
+            // and re-deriving it on the sheet would print a different set from
+            // the one that was ticked.
+            {
+              label: tLink('sheetAction'),
+              icon: QrCode,
+              onClick: () => {
+                writeQrSheetSelection(selectedList)
+                pageRouter.push('/contacts/qr-sheet' as Route)
+              },
+            },
           ] : []}
         />
       )}
@@ -3303,6 +3397,15 @@ export default function ContactsPage() {
         desc={t('archiveContactDesc', { name: `${confirmArchive.length} contacts` })}
         confirmLabel={t('bulkArchive')}
         onConfirm={() => archiveContacts(confirmArchive)}
+      />
+
+      <ConfirmDialog
+        open={confirmExternal.length > 0}
+        onOpenChange={(v) => { if (!v) setConfirmExternal([]) }}
+        title={t('markExternalTitle', { count: confirmExternal.length })}
+        desc={t('markExternalDesc')}
+        confirmLabel={t('bulkMarkExternal')}
+        onConfirm={() => markExternal(confirmExternal)}
       />
 
       <ConfirmDialog

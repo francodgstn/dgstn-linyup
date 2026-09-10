@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import * as crypto from 'crypto'
+import { isRosterContact } from '@linyup/shared'
 import { to } from '../utils/async'
 import { sendEmail, buildEmailTemplate } from '../utils/email'
 import { detailsBox, ctaButton, factLines } from '../utils/emailLayout'
@@ -133,7 +134,10 @@ export const sendEventInvitations = onCall(async (request) => {
       ? (teamDoc.data()!.name as string) || 'Our Team'
       : 'Our Team'
 
-  // Get all active contacts for this team with an email address
+  // Everyone on the ROSTER with an email address: live by query, then minus
+  // externals in memory (`external` is present only when true, so its absence
+  // cannot be queried). An invitation to everyone is the studio addressing the
+  // people it looks after — a partner-app drop-in is not one of them.
   const [contactsErr, contactsSnap] = await to(
     db
       .collection(CONTACTS_COLLECTION)
@@ -142,7 +146,8 @@ export const sendEventInvitations = onCall(async (request) => {
       .where('archived_at', '==', null)
       .get()
   )
-  if (contactsErr || !contactsSnap || contactsSnap.empty) {
+  const rosterDocs = (contactsSnap?.docs ?? []).filter((d) => isRosterContact(d.data()))
+  if (contactsErr || rosterDocs.length === 0) {
     throw new HttpsError('failed-precondition', 'No active contacts to invite')
   }
 
@@ -194,7 +199,7 @@ export const sendEventInvitations = onCall(async (request) => {
   const errors: Array<{ contactId: string; error: string }> = []
 
   await Promise.all(
-    contactsSnap.docs.map(async (contactDoc) => {
+    rosterDocs.map(async (contactDoc) => {
       const email = contactDoc.data().email as string | undefined
       if (!email) return
 

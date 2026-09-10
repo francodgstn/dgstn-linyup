@@ -11,22 +11,22 @@
  * The path mapping itself lives in `paths.ts` and is unit-checked by
  * `scripts/check-paths.ts`.
  *
- * ─── PASS A (this file, today) ───────────────────────────────────────────────
- * `TENANT_SLUG` is a var, so one hostname maps to one hard-coded studio. That is
- * deliberate: it proves DNS → certificate → edge → Worker → App Hosting end to
- * end with nothing clever in the path. Get this working before adding lookup.
+ * ─── Why this Worker knows nothing about tenants ─────────────────────────────
+ * It carries requests and preserves the visitor's hostname. That is all.
  *
- * ─── PASS B (next) ───────────────────────────────────────────────────────────
- * NOT `request.cf.hostMetadata` — that is Enterprise only. Creating a custom
- * hostname with `custom_metadata` on our plan fails with error 1413, verified
- * against the live zone on 2026-08-21. The replacement is an open decision
- * (Workers KV vs resolving in the app); see `docs/custom-domains.md`.
+ * It briefly did more: a `TENANT_SLUG` var pinned one hostname to one studio,
+ * to prove the DNS → certificate → edge → App Hosting path end to end. The real
+ * lookup was going to live here too, on Cloudflare's `custom_metadata` — which
+ * turned out to be ENTERPRISE ONLY (error 1413, verified against the live zone
+ * on 2026-08-21).
  *
- * Either way the slug is resolved on the ONE line marked below, which is why
- * that decision does not reach the rest of this file.
+ * The alternative was Workers KV at the edge, and it was rejected: the APP
+ * already needs the host→tenant mapping for emailed links, canonical tags and
+ * the Stripe return-origin check, so a KV copy could only drift from it — and a
+ * drifted edge serves a live domain the wrong studio's pages. Resolving in the
+ * app leaves ONE owner of that mapping. See `docs/custom-domains.md`.
  */
 
-import { isPassthrough, toInternalPath, toPublicPath } from './paths'
 
 /** Zone hostnames that exist only to carry traffic — never a tenant destination. */
 const PLUMBING_HOSTS = new Set(['origin.linyup.com', 'connect.linyup.com'])
@@ -34,8 +34,6 @@ const PLUMBING_HOSTS = new Set(['origin.linyup.com', 'connect.linyup.com'])
 interface Env {
   /** Base URL of the App Hosting backend, e.g. https://linyup-web--linyup-sandbox.europe-west4.hosted.app */
   ORIGIN: string
-  /** PASS A only: the single studio slug this Worker serves. */
-  TENANT_SLUG: string
 }
 
 export default {
@@ -87,41 +85,29 @@ export default {
       return fetch(request)
     }
 
-    const slug = env.TENANT_SLUG // PASS B resolves the slug HERE — see header
-    if (!slug) return new Response('Tenant not configured', { status: 404 })
-
+    // ── The tenant's own domain ─────────────────────────────────────────────
+    //
+    // Forwarded UNTOUCHED. This Worker used to resolve the slug and rewrite the
+    // path itself; it does neither now. The app resolves the tenant from the
+    // host and rewrites internally (`proxy.ts` + `shared/utils/customDomainPaths`),
+    // which is where that knowledge already had to live for emailed links,
+    // canonical tags and the Stripe return-origin check.
+    //
+    // Deleting the rewrite from here deleted the return trip with it: an
+    // internal Next rewrite never reaches the browser, so there are no
+    // `Location` headers to translate back out of `/public/{slug}/…` and no
+    // `redirect: 'manual'` handling. This Worker's whole job is now: carry the
+    // request to App Hosting, and tell it which hostname the visitor typed.
     const origin = new URL(env.ORIGIN)
-    origin.pathname = isPassthrough(url.pathname)
-      ? url.pathname
-      : toInternalPath(url.pathname, slug)
+    origin.pathname = url.pathname
     origin.search = url.search
 
     // `new Request(origin, request)` re-derives Host from the target URL, which
-    // is what App Hosting needs to route to the right backend. The tenant's own
-    // hostname is preserved separately so the app can build absolute URLs and
-    // canonical tags pointing at the domain the visitor actually typed.
+    // is what App Hosting needs to route to the right backend — and is exactly
+    // why the visitor's hostname has to be carried separately.
     const proxied = new Request(origin, request)
     proxied.headers.set('X-Linyup-Host', tenantHost)
-    proxied.headers.set('X-Linyup-Slug', slug)
 
-    // `manual` so redirects can be translated back into the tenant's namespace
-    // rather than leaking the *.hosted.app origin into the address bar.
-    const response = await fetch(proxied, { redirect: 'manual' })
-
-    const location = response.headers.get('location')
-    if (!location) return response
-
-    const rewritten = new Response(response.body, response)
-    try {
-      const redirect = new URL(location, url)
-      redirect.protocol = 'https:'
-      redirect.hostname = tenantHost
-      redirect.port = ''
-      redirect.pathname = toPublicPath(redirect.pathname, slug)
-      rewritten.headers.set('location', redirect.toString())
-    } catch {
-      // Unparseable Location — leave it exactly as the app sent it.
-    }
-    return rewritten
+    return fetch(proxied)
   },
 } satisfies ExportedHandler<Env>

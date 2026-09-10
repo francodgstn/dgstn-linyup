@@ -179,6 +179,9 @@ import {
   ShieldCheck,
   ShieldOff,
   MoreVertical,
+  DoorOpen,
+  UserCheck,
+  QrCode,
   User,
   Check,
   IdCard,
@@ -215,6 +218,7 @@ import {
 } from '@/components/contacts/RelationshipTimeline'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
+import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
 import { CustomFieldsCardBody } from '@/plugins/custom-fields/CustomFieldsCardBody'
@@ -2231,6 +2235,7 @@ function MembershipTab({
     { ts: contact.trial_booked_at, label: t('stage_trial_booked'), tone: 'neutral' as const },
     { ts: contact.trial_attended_at, label: t('stage_trial_attended'), tone: 'neutral' as const },
     { ts: contact.converted_at, label: t('stage_joined'), tone: 'positive' as const },
+    { ts: contact.external_since, label: t('externalBadge'), tone: 'neutral' as const },
     { ts: contact.archived_at, label: t('archivedBadge'), tone: 'negative' as const },
   ].flatMap(({ ts, label, tone }) => {
     const date = tsToDate(ts)
@@ -3200,6 +3205,8 @@ const CATEGORY_EVENTS = {
     'subscription_change',
     'contact_archive',
     'contact_unarchive',
+    'contact_mark_external',
+    'contact_unmark_external',
     'contact_delete',
     'contact_login',
     'contact_anonymized',
@@ -3242,6 +3249,8 @@ const EVENT_META: Record<ActivityEventType, EventMeta> = {
   contact_add: { Icon: UserPlus, bg: 'bg-green-500/10', fg: 'text-green-600' },
   contact_archive: { Icon: Archive, bg: 'bg-yellow-500/10', fg: 'text-yellow-600' },
   contact_unarchive: { Icon: RotateCcw, bg: 'bg-green-500/10', fg: 'text-green-600' },
+  contact_mark_external: { Icon: DoorOpen, bg: 'bg-yellow-500/10', fg: 'text-yellow-600' },
+  contact_unmark_external: { Icon: RotateCcw, bg: 'bg-green-500/10', fg: 'text-green-600' },
   contact_delete: { Icon: Trash2, bg: 'bg-red-500/10', fg: 'text-red-600' },
   contact_type_change: { Icon: ArrowRightLeft, bg: 'bg-yellow-500/10', fg: 'text-yellow-600' },
   acquisition_stage_change: { Icon: ArrowRightLeft, bg: 'bg-yellow-500/10', fg: 'text-yellow-600' },
@@ -4430,6 +4439,9 @@ function ArchivedContactView({
         {contact.created_at && (
           <DetailRow label={t('memberSince')} value={formatDate(contact.created_at)} />
         )}
+        {contact.external_since && (
+          <DetailRow label={t('externalSince')} value={formatDate(contact.external_since)} />
+        )}
         {contact.archived_at && (
           <DetailRow label={t('archivedSince')} value={formatDate(contact.archived_at)} />
         )}
@@ -5139,6 +5151,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   )
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
+  const tLink = useTranslations('ContactLink')
   const { goBack, isHistoryBack } = useBack('/contacts' as Route)
   const qc = useQueryClient()
   const { hasFeature } = usePlan()
@@ -5149,7 +5162,29 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [emailCopied, setEmailCopied] = useState(false)
   // Notes editor sheet — opened from the header icon and the profile-column glance.
   const [notesOpen, setNotesOpen] = useState(false)
+  const [updateLinkOpen, setUpdateLinkOpen] = useState(false)
   const [alertsOpen, setAlertsOpen] = useState(false)
+  // Roster ↔ external (Contact.external). Marking external asks first — it
+  // silences every reminder and invitation for this person; bringing them
+  // back does not. `external` is present only when true, so the way back
+  // DELETES the fields rather than writing false. Nothing else moves.
+  const [confirmExternalOpen, setConfirmExternalOpen] = useState(false)
+  const [externalBusy, setExternalBusy] = useState(false)
+  const setExternal = async (next: boolean) => {
+    setExternalBusy(true)
+    try {
+      await updateDoc(
+        doc(db, CONTACTS_COLLECTION, id),
+        next
+          ? { external: true, external_since: serverTimestamp(), updatedAt: serverTimestamp() }
+          : { external: deleteField(), external_since: deleteField(), updatedAt: serverTimestamp() }
+      )
+      invalidate()
+      setConfirmExternalOpen(false)
+    } finally {
+      setExternalBusy(false)
+    }
+  }
   const { data: notesCount = 0 } = useContactNotesCount(id)
   const { data: contactAlerts = [] } = useContactAlerts(id)
 
@@ -5281,7 +5316,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     contact a link to update their own details" — rather than
                     describing them like the status and contact lines below. */}
                 {team?.slug && !contact.archived_at && !contact.deleted_at && (
-                  <Tip label={t('copyUpdateLink')}>
+                  <Tip label={t('sendLinkTip')}>
                     <button
                       onClick={handleCopyUpdateLink}
                       className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -5314,6 +5349,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                   <Badge variant="secondary">{t('archivedBadge')}</Badge>
                 ) : (
                   <>
+                    {/* Off the roster (Contact.external): trains here, not
+                        looked after. Read with the stage chip beside it —
+                        "External · Trial attended" is exactly the ClassPass
+                        visitor this bucket was made for. */}
+                    {contact.external === true && (
+                      <Badge variant="outline" className="gap-1" title={t('externalHint')}>
+                        <DoorOpen className="h-3 w-3" />
+                        {t('externalBadge')}
+                      </Badge>
+                    )}
                     {/* Only the IN-PROGRESS stages get a chip. "Joined" is the
                         settled, expected state — badging it says nothing, and
                         "Joined on {date}" below already carries it. Absence of a
@@ -5358,6 +5403,17 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 {contact.phone && (
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Phone className="h-3 w-3 shrink-0" /> {contact.phone}
+                  </span>
+                )}
+                {/* Off the roster since — a fact line like "Joined on", because
+                    the date matters: it is where this person's reminders and
+                    invitations stopped. */}
+                {contact.external === true && contact.external_since && (
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <DoorOpen className="h-3 w-3 shrink-0" />
+                    <span>
+                      {t('externalSince')} {formatDate(contact.external_since)}
+                    </span>
                   </span>
                 )}
                 {contact.created_at && (
@@ -5448,6 +5504,24 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                   label={t('tabNotes')}
                   count={notesCount}
                   onClick={() => setNotesOpen(true)}
+                />
+                {/* Hand the person a QR and let them fill in their own details
+                    — the only route in for a contact with no email on file,
+                    since every other one authenticates by emailed code. */}
+                <HeaderActionButton
+                  icon={QrCode}
+                  label={tLink('headerTip')}
+                  onClick={() => setUpdateLinkOpen(true)}
+                />
+                {/* Roster ↔ external. One button whose meaning flips with the
+                    state: on the roster it offers the door, off it the way
+                    back. See Contact.external for what each side excludes. */}
+                <HeaderActionButton
+                  icon={contact.external === true ? UserCheck : DoorOpen}
+                  label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
+                  onClick={() =>
+                    contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
+                  }
                 />
               </div>
             )}
@@ -5613,6 +5687,27 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Single notes editor sheet — shared by the header icon + profile glance. */}
           <NotesSheet contact={contact} open={notesOpen} onOpenChange={setNotesOpen} />
+          <ContactUpdateLinkDialog
+            open={updateLinkOpen}
+            onClose={() => setUpdateLinkOpen(false)}
+            teamId={contact.teamId}
+            contactId={contact.id}
+            contactName={`${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim()}
+          />
+          <ConfirmDialog open={confirmExternalOpen} onOpenChange={setConfirmExternalOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('markExternalTitle', { count: 1 })}</AlertDialogTitle>
+                <AlertDialogDescription>{t('markExternalDesc')}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => void setExternal(true)} disabled={externalBusy}>
+                  {t('bulkMarkExternal')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </ConfirmDialog>
           {/* Outside the tab content, like the notes sheet, so the header bell
               opens it from whichever tab you are standing on. */}
           <AlertsSheet

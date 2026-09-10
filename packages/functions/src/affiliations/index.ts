@@ -23,6 +23,7 @@ import {
   type AffiliationType,
   type OrgAffiliationStatusDef,
   type AffiliationIssuer,
+  isLiveContact,
 } from '@linyup/shared'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -249,7 +250,7 @@ export const upsertAffiliation = onCall(async (request) => {
       issuer,
       status_id,
       active,
-      contact_live: !contactData.deleted_at && !contactData.archived_at,
+      contact_live: isLiveContact(contactData),
       created_by: request.auth.uid,
       created_at: FieldValue.serverTimestamp() as unknown as admin.firestore.Timestamp,
       updated_at: FieldValue.serverTimestamp() as unknown as admin.firestore.Timestamp,

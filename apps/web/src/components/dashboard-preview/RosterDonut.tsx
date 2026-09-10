@@ -63,7 +63,7 @@ import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslations } from 'next-intl'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact } from '@linyup/shared'
 import { getPrimaryRank } from '@/lib/rank-utils'
 import {
   Select,
@@ -169,7 +169,7 @@ export function RosterDonut({
   const tc = useTranslations('Contacts')
   const [view, setView] = useState<View>('engagement')
 
-  const live = (contacts ?? []).filter((c) => !c.archived_at)
+  const live = (contacts ?? []).filter(isRosterContact)
   const total = live.length
   const systems = rankingSystems ?? []
   const hasRanking = systems.length > 0

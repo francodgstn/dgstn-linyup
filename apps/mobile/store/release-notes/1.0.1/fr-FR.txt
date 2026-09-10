@@ -1,0 +1,3 @@
+• L'app parle maintenant allemand, français et italien – elle suit la langue de ton téléphone.
+• Le graphique d'entraînement affiche chaque semaine, y compris celles où tu as fait une pause.
+• Les bases pour les rappels, afin de les activer sans nouveau téléchargement.

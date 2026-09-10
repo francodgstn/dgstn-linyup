@@ -23,6 +23,7 @@ import { TemplateEditor, type OutreachTemplate } from './TemplateEditor'
 import { templateDefault } from './templateDefaults'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Tip } from '@/components/ui/tip'
+import { CustomVariablesCard } from './CustomVariablesCard'
 
 export default function SettingsEmailTemplatesPage() {
   // Styled confirmation, replacing a browser `confirm()` (see confirm-dialog).
@@ -30,7 +31,7 @@ export default function SettingsEmailTemplatesPage() {
   const t = useTranslations('SettingsEmails')
   const ta = useTranslations('Automations')
   const tCommon = useTranslations('Common')
-  const { currentTeamId } = useAuth()
+  const { currentTeamId, team } = useAuth()
   const qc = useQueryClient()
 
   const { data: templates = [], isLoading } = useQuery<OutreachTemplate[]>({
@@ -203,6 +204,11 @@ export default function SettingsEmailTemplatesPage() {
           {ta('dialogs.templates.newTemplate')}
         </Button>
       </div>
+
+      {/* The studio's own {{variables}} come FIRST — they are what a template
+          can be written with, so they read as the vocabulary above the list of
+          things written in it. */}
+      {currentTeamId && team && <CustomVariablesCard teamId={currentTeamId} team={team} />}
 
       <Card>
         <CardContent className="pt-6 space-y-5">

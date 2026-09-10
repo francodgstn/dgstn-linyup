@@ -3,7 +3,7 @@
  * Extracted from analytics/index.ts to be reusable across functions.
  */
 import * as admin from 'firebase-admin'
-import { CONTACTS_COLLECTION, normalizeEmail } from '@linyup/shared'
+import { CONTACTS_COLLECTION, isRosterContact, normalizeEmail } from '@linyup/shared'
 import { to } from './async'
 
 export interface SingleContactMatch {
@@ -53,7 +53,12 @@ export async function resolveSingleContact(
 }
 
 /**
- * Fetches all active (not deleted, not archived) contacts for a team.
+ * Fetches the ROSTER — every contact the studio looks after today. Live (not
+ * deleted, not archived) by query, then narrowed in memory by `isRosterContact`
+ * so an external (a partner-app drop-in, a former member who still comes now
+ * and then) is not counted: `external` is present only when true, so its
+ * absence cannot be queried and is decided here instead. Leads stay: they are
+ * the top of the studio's own funnel.
  */
 export async function getActiveContacts(
   db: admin.firestore.Firestore,
@@ -67,7 +72,7 @@ export async function getActiveContacts(
       .get(),
   )
   if (err || !snap) return []
-  return snap.docs.map((d) => d.data())
+  return snap.docs.map((d) => d.data()).filter(isRosterContact)
 }
 
 /**

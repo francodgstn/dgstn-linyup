@@ -203,6 +203,10 @@ export interface ContactData {
   last_session_at?: Timestamp | { seconds: number; nanoseconds: number } | null
   deleted_at?: Timestamp | null
   archived_at?: Timestamp | null
+  // Off the roster (Contact.external). Skipped by every rule — the sweep and
+  // the per-contact triggers alike — on the same line as archived: an
+  // automation is the studio talking to the people it looks after.
+  external?: boolean
   outreach_rules_sent?: Record<string, Timestamp>
   avatar_url?: string | null
   // Tag-based filtering + assign_tag action
@@ -1594,7 +1598,7 @@ async function runContactRule(
   }
 
   for (const contact of contacts) {
-    if (contact.deleted_at || contact.archived_at) continue
+    if (contact.deleted_at || contact.archived_at || contact.external) continue
     if (!contact.email) {
       stats.skipped++
       continue

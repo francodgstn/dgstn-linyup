@@ -296,9 +296,28 @@ export function PaymentsTable({
                       {t('mayDuplicate')}
                     </Badge>
                   )}
-                  {row.source === 'connect' && row.feeAmount > 0 && (
+                  {/* THE FALLBACK FEE LINE — shown only when the hover card on
+                      the amount cannot answer instead.
+
+                      It said "Fee 2.67" about `application_fee_amount`, which is
+                      OUR cut alone, and a studio reading it did the obvious
+                      subtraction and got a net that was too high: Stripe's
+                      processing fee is gone from the same charge and is not in
+                      this number (the row has no field for it — see
+                      `PaymentRow.feeAmount`). The hover card gets this right,
+                      naming all three lines and calling the bottom one "You
+                      receive" — so wherever it exists, this line was a worse
+                      answer to the same question standing next to a better one
+                      (Franco, 2026-09-09).
+
+                      NOT DELETED OUTRIGHT, because the card is not always
+                      there: `journal` is fetched only when the finance plugin is
+                      installed, so on every other team this is the one place a
+                      fee is visible at all. Kept for those rows and relabelled
+                      to the card's own wording, which says whose fee it is. */}
+                  {!entry && row.source === 'connect' && row.feeAmount > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      {t('fee')} {formatMoneyMinor(row.feeAmount, row.currency)}
+                      {t('journalPlatformFee')} {formatMoneyMinor(row.feeAmount, row.currency)}
                     </div>
                   )}
                 </TableCell>

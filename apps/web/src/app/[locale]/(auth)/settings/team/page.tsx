@@ -104,7 +104,6 @@ import {
 } from 'lucide-react'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
-import { CustomDomainCard } from './CustomDomainCard'
 import { ConnectPaymentsCard } from '@/components/connect/ConnectPaymentsCard'
 import { PaymentModesCard } from '@/components/payments/PaymentModesCard'
 import { BillingCurrencyCard, useGatewayCurrency } from '@/components/connect/BillingCurrencyCard'

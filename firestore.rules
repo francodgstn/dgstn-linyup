@@ -525,13 +525,35 @@ service cloud.firestore {
     match /mail_sends/{idempotencyKey} {
       allow read, write: if false;
     }
+    // Contact update LINKS — scoped grants to edit one contact's own details.
+    // Functions-only in BOTH directions, and the deny is load-bearing rather
+    // than tidy: the document carries an OTP hash and the grant's expiry, so a
+    // readable copy is a list of live links and a writable one is a way to
+    // extend your own. The four callables in contacts/contactUpdateLinks.ts are
+    // the entire surface; see @linyup/shared → types/contactLink.ts for why the
+    // doc id is a hash of the token rather than the token.
+    match /contact_update_links/{tokenHash} {
+      allow read, write: if false;
+    }
     // Custom public domains — the GLOBAL uniqueness registry (doc id = hostname).
     // Functions-only, and deliberately unreadable by clients too: it is a list of
     // every studio's custom domain, so a readable registry would let any signed-in
     // user enumerate the customer base. A tenant reads its own
     // integrations/public_domain doc instead. See docs/custom-domains.md.
     match /public_domains/{hostname} {
-      allow read, write: if false;
+      // GET is public, LIST is not — and the split is the whole point. Resolving
+      // an incoming custom hostname to its tenant is a public act: the app's
+      // middleware does it for every visitor to `book.theirdojo.ch`, with no
+      // credentials and no admin SDK. But the doc id IS the hostname, so `get`
+      // requires already knowing the domain — while `list` would hand anyone the
+      // entire customer roster.
+      //
+      // The document is therefore written to be readable: it carries the tenant
+      // id and scope (both already public via `public_profile`) and the
+      // Cloudflare hostname id, which is an opaque handle that does nothing
+      // without the platform's zone-scoped API token.
+      allow get: if true;
+      allow list, write: if false;
     }
 
     // SMS pipeline — same posture as mail: functions-only, phone numbers are PII.
@@ -2445,6 +2467,30 @@ service cloud.firestore {
     // Written by capturePlatformMetrics (Admin SDK) and read by the operator
     // console (Admin SDK). No client access.
     match /platform_metrics/{date} {
+      allow read, write: if false;
+    }
+
+    // ── App-store presence (operator console) ─────────────────────────────────
+    // Written by the `appstores` ingest (Admin SDK) and read by the operator
+    // console (Admin SDK). No client access, same posture as the snapshots
+    // above — and store_reviews additionally carries reviewers' display names
+    // and the free text they wrote, so a readable collection here is a readable
+    // list of members' own words.
+    match /store_presence/{platform} {
+      allow read, write: if false;
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /store_reviews/{reviewId} {
+      allow read, write: if false;
+    }
+
+    // Append-only log of App Store Connect webhook deliveries. Written by
+    // handleAppStoreWebhook (Admin SDK, after verifying Apple's HMAC), read by
+    // the operator console (Admin SDK). No client access.
+    match /store_events/{eventId} {
       allow read, write: if false;
     }
 

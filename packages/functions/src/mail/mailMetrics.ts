@@ -98,21 +98,14 @@ async function sumRecipientsOrNull(query: FirebaseFirestore.Query): Promise<numb
 }
 
 /**
- * NOT YET CALLED. This belongs in `capturePlatformMetrics`
- * (`../analytics/platformMetrics.ts`, the 00:15 Europe/Zurich cron), between
- * `platformMetricsToDoc` and the `set()`:
- *
- *     const mail = await capturePlatformMailMetrics(db, date)
- *     … .set({ ...docData, ...(mail ? { mail } : {}), captured_at: … })
- *
- * Until that lands, `PlatformMetricsDoc.mail` is never written, so
- * `MetricsPoint.emailsSent` is always null and the operator overview's
- * "Emails / day" trend card does not render (it is guarded on having two days of
- * mail history, so it degrades to absent rather than to a flat zero line). The
- * platform's 30-day and lifetime mail figures do NOT depend on this — they are
- * aggregated live by `apps/admin/src/lib/queries/messaging.ts`. What is missing
- * is only the DAILY series, which cannot be re-derived once a retention policy
- * exists, which is the whole reason for storing it.
+ * Called by `capturePlatformMetrics` (`../analytics/platformMetrics.ts`, the
+ * 00:15 Europe/Zurich cron), between `platformMetricsToDoc` and the `set()`.
+ * Snapshots written before that wiring landed carry no `mail` block at all, so
+ * every reader must keep tolerating its absence — the platform's 30-day and
+ * lifetime mail figures do NOT depend on it either way, being aggregated live
+ * by `apps/admin/src/lib/queries/messaging.ts`. What this stores is the DAILY
+ * series, which cannot be re-derived once a retention policy exists, which is
+ * the whole reason for storing it.
  *
  * Platform-wide email volume for the snapshot doc dated `date`. Includes studio
  * mail AND Linyup's own system mail — the platform total is "how much mail did

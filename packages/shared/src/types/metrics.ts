@@ -165,11 +165,10 @@ export function computePlatformMetrics(
  * reader that treated an absent block as zero would draw a flat line through
  * the whole pre-change history.
  *
- * NOTHING WRITES IT YET. The producer exists and is tested
- * (`capturePlatformMailMetrics`, packages/functions/src/mail/mailMetrics.ts) but
- * is not yet called from `capturePlatformMetrics`; see that function's header
- * for the exact wiring. Readers must keep tolerating an absent block regardless
- * — the pre-change history needs that anyway.
+ * `capturePlatformMetrics` writes it (via `capturePlatformMailMetrics`,
+ * packages/functions/src/mail/mailMetrics.ts), omitting the block when the
+ * aggregation fails. Readers must keep tolerating an absent block: every
+ * snapshot from before that wiring landed has none.
  *
  * `*_yesterday` counts the calendar day BEFORE `date`, in Europe/Zurich — the
  * capture runs shortly after midnight, so the day it can report in full is the
@@ -189,9 +188,42 @@ export interface PlatformMailMetrics {
   sent_cumulative: number
 }
 
+/**
+ * Member-app adoption derived from OUR OWN data (`Contact.mobile_app`), not
+ * from either store.
+ *
+ * Needs no credential and works today, which is the point: the App Store and
+ * Play both report nothing until the app is published, while this is measurable
+ * from the moment somebody opens the app. It answers the question a store
+ * dashboard cannot — how many people are on an OLD build — because the store
+ * knows about downloads and this knows about what is actually running.
+ *
+ * OPTIONAL for the same reason `PlatformMailMetrics` is: a day whose
+ * aggregation fails LACKS the block. A zero here would claim nobody was running
+ * the app, which is a different and much more alarming statement than "we could
+ * not count".
+ *
+ * A contact counts as an install once it has ever written telemetry — there is
+ * no uninstall signal in it, so `installs_seen` only ever grows. `active_30d`
+ * is the figure to read as "people still using it".
+ */
+export interface PlatformMobileMetrics {
+  /** Contacts that have ever written `mobile_app` telemetry — i.e. opened the app. */
+  installs_seen: number
+  /** Of those, seen in the last 30 days (`last_seen_at`). */
+  active_30d: number
+  /** App version → contacts. Key '(unknown)' when telemetry carries no version. */
+  by_version: Record<string, number>
+  /** OTA channel → contacts. Key '(unknown)' when absent. */
+  by_ota_channel: Record<string, number>
+  /** Still on the build's embedded update — no OTA has applied. */
+  embedded: number
+}
+
 export interface PlatformMetricsDoc {
   date: string
   mail?: PlatformMailMetrics
+  mobile?: PlatformMobileMetrics
   accounts: {
     total: number
     teams: number

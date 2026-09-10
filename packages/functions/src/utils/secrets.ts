@@ -43,6 +43,53 @@ const CACHE_TTL = 5 * 60 * 1000
  * comes through, and a per-consumer trim is a rule that only holds until the
  * next consumer forgets it.
  */
+export type SecretRead =
+  | { ok: true; value: string }
+  | { ok: false; reason: 'missing' | 'denied' | 'error'; detail: string }
+
+/**
+ * `getSecret`'s non-throwing sibling, for the callers where ABSENCE IS EXPECTED.
+ *
+ * Most consumers here fail hard when their secret is missing, and should — a
+ * Stripe key that is not set is an outage. But a source that has never been
+ * configured is the normal steady state for the app-store ingest, and a
+ * try/catch at each of its call sites would flatten every failure into "no
+ * credential".
+ *
+ * Which is precisely the bug `getSecret`'s own error message exists to prevent.
+ * So this keeps the distinction rather than discarding it:
+ *
+ *   NOT_FOUND (5) / FAILED_PRECONDITION (9) → 'missing'  nobody has set it
+ *   PERMISSION_DENIED (7)                   → 'denied'   the SA lacks the grant
+ *   anything else                           → 'error'
+ *
+ * A missing IAM grant reported as "not configured" sends somebody to paste a
+ * key that is already there. That is the failure this signature buys off.
+ *
+ * `detail` is failure metadata (gRPC code + message) and never the payload —
+ * the value only exists on the success path.
+ */
+export async function readSecret(secretName: string, version = 'latest'): Promise<SecretRead> {
+  try {
+    return { ok: true, value: await getSecret(secretName, version) }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    // The emulator path throws a plain "not found in env" Error with no gRPC
+    // code — an unset local variable is the same fact as an unset secret.
+    if (detail.includes('[emulator]')) return { ok: false, reason: 'missing', detail }
+
+    // getSecret embeds the code as `[gRPC <n>]`; the underlying cause carries it
+    // too. Read the cause first — it is the structured one.
+    const cause = (error as { cause?: { code?: number | string } }).cause
+    const code = cause?.code ?? (detail.match(/\[gRPC (\d+)\]/)?.[1] ?? '')
+    const numeric = typeof code === 'number' ? code : parseInt(String(code), 10)
+
+    if (numeric === 5 || numeric === 9) return { ok: false, reason: 'missing', detail }
+    if (numeric === 7) return { ok: false, reason: 'denied', detail }
+    return { ok: false, reason: 'error', detail }
+  }
+}
+
 export async function getSecret(secretName: string, version = 'latest'): Promise<string> {
   // ── emulator fallback ────────────────────────────────────────────────────────
   if (process.env.FUNCTIONS_EMULATOR === 'true') {

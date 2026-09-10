@@ -11,6 +11,9 @@ import {
   PARTICIPANTS_SUBCOLLECTION,
   TEAM_WEEKLY_REPORTS_SUBCOLLECTION,
   bookingHoldsSeat,
+  holdsOwnPlan,
+  holdsPartnerPlan,
+  partnerSubscriptionTypeIds,
 } from '@linyup/shared'
 
 // The acquisition funnel only ever advances forward by design, so a stage that
@@ -273,8 +276,14 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
         refs: baseRefs,
       })
     )
-    // Trial dropout: archived while still in the trial funnel (never joined)
-    if (oldData.acquisition_stage === 'trial_booked' || oldData.acquisition_stage === 'trial_attended') {
+    // Trial dropout: archived while still in the trial funnel (never joined).
+    // Not for an external — a ClassPass visitor who attended once was never a
+    // trial the studio was converting, and archiving them in a tidy-up must not
+    // read as one lost.
+    if (
+      !oldData.external &&
+      (oldData.acquisition_stage === 'trial_booked' || oldData.acquisition_stage === 'trial_attended')
+    ) {
       const weekLabel = format(new Date(), "R-'W'II")
       promises.push(
         db
@@ -295,6 +304,35 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
         event: 'contact_unarchive',
         parameters: {
           description: `${fullname} was restored from archive.`,
+          contact_firstname: firstname,
+          contact_lastname: lastname,
+        },
+        refs: baseRefs,
+      })
+    )
+  }
+
+  // Roster ↔ external (Contact.external) — a lifecycle move like archiving,
+  // logged the same way. `external` is present only when true, so `!x`
+  // reads absent and false alike.
+  if (!oldData.external && newData.external) {
+    promises.push(
+      logActivity(teamId, {
+        event: 'contact_mark_external',
+        parameters: {
+          description: `${fullname} was marked external.`,
+          contact_firstname: firstname,
+          contact_lastname: lastname,
+        },
+        refs: baseRefs,
+      })
+    )
+  } else if (oldData.external && !newData.external) {
+    promises.push(
+      logActivity(teamId, {
+        event: 'contact_unmark_external',
+        parameters: {
+          description: `${fullname} is back on the roster.`,
           contact_firstname: firstname,
           contact_lastname: lastname,
         },
@@ -593,9 +631,25 @@ export const weeklyReports = onSchedule(
         const contacts_count_by_affiliation_type = countByDistinctKeys(contacts, (c) => {
           return (c.affiliation_summary as { types?: string[] } | undefined)?.types ?? []
         })
-        const contacts_with_active_subscription = contacts.filter(
-          (c) => ((c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []).length > 0
-        ).length
+        // "Subscribed" means ON ONE OF THE STUDIO'S OWN PLANS. A partner-app
+        // type (source: 'aggregator' — FitPass, ClassPass…) is a subscription
+        // the studio did not sell, so a contact whose only live plan is one of
+        // those is counted apart, under contacts_with_aggregator_subscription,
+        // never in the headline. The per-type map below keeps every type by id
+        // — a partner type is honest by name. ONE predicate: subscriptionSource.ts
+        // in shared. A failed types read leaves the set empty (partner plans
+        // then read as own for that week) and says so in the log.
+        const [typesErr, typesSnap] = await to(
+          db.collection('teams').doc(teamId).collection('subscription_types').get()
+        )
+        if (typesErr) console.warn(`weeklyReports: subscription_types read failed for team=${teamId}`, typesErr)
+        const partnerIds = partnerSubscriptionTypeIds(
+          (typesSnap?.docs ?? []).map((d) => ({ id: d.id, source: (d.data() as { source?: string }).source }))
+        )
+        const liveSubs = (c: admin.firestore.DocumentData) =>
+          (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
+        const contacts_with_active_subscription = contacts.filter((c) => holdsOwnPlan(liveSubs(c), partnerIds)).length
+        const contacts_with_aggregator_subscription = contacts.filter((c) => holdsPartnerPlan(liveSubs(c), partnerIds)).length
         const contacts_count_by_subscription_type = countByDistinctKeys(contacts, (c) => {
           const subs = (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
           return subs.map((s) => s.subscription_type_id)
@@ -657,6 +711,7 @@ export const weeklyReports = onSchedule(
           contacts_with_active_affiliation,
           contacts_count_by_affiliation_type,
           contacts_with_active_subscription,
+          contacts_with_aggregator_subscription,
           contacts_count_by_subscription_type,
           sessions_count,
           sessions_count_by_type,

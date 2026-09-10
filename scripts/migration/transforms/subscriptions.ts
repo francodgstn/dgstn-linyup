@@ -176,13 +176,33 @@ export const CANONICAL_SUBSCRIPTION_TYPES: MigrationSubscriptionType[] = [
     // NO PRICES, and `public: false`: there is nothing to sell and nothing to
     // put on the pricing table. It is assigned by hand, which is exactly the
     // "just a container" shape `SubscriptionType.prices` documents as absent —
-    // the same shape HMD's own Instructor plan already has.
+    // the same shape the Instructor plan below has.
     id:          'complimentary',
     name:        'Complimentary',
     description: 'Full access, no charge — family, supporters, and guests of the club',
     active:      true,
     public:      false,
     order:       6,
+    prices:      [],
+  },
+  {
+    // THE OTHER COMP — the people who TEACH. Structurally identical to
+    // Complimentary (full access, no prices, `public: false`, assigned by hand)
+    // and kept separate because the two answer different questions about a
+    // roster: how many people the club comps, and how many of them are staff.
+    // Folding coaches into Complimentary would make the first number unusable
+    // and lose the second entirely.
+    //
+    // Canonical for the reason Complimentary is: it was a per-club source type
+    // with a generated id, so every club that comps its coaches — which is every
+    // club — had to invent its own. It grants no permission of any kind; who may
+    // manage a team is `team_members`, and this is only what the coach pays.
+    id:          'instructor',
+    name:        'Instructor',
+    description: 'Full access, no charge — coaches and assistant instructors',
+    active:      true,
+    public:      false,
+    order:       7,
     prices:      [],
   },
 ]
@@ -195,6 +215,7 @@ export const CANONICAL_SUBSCRIPTION_TYPES: MigrationSubscriptionType[] = [
 //
 // Match logic (evaluated in order; first match wins):
 //   exactly "free"  → complimentary   (EXACT, see below)
+//   instructor      → instructor
 //   intro           → intro_offer
 //   one / single / drop / drop.in / drop-in → one_time_class
 //   unlimited       → unlimited
@@ -217,6 +238,11 @@ type CanonicalMatch = {
 
 const KEYWORD_MAP: Array<{ regex: RegExp; typeId: string }> = [
   { regex: /^\s*free\s*$/i,         typeId: 'complimentary' },
+  // A SUBSTRING, unlike `free`, and BEFORE `students?`: "Head Instructor" and
+  // "Assistant Instructor" are the same comp, and a "Student Instructor" is an
+  // instructor rather than a student — first match wins, so the order is the
+  // answer to that.
+  { regex: /instructor/i,           typeId: 'instructor'    },
   { regex: /intro/i,                typeId: 'intro_offer'   },
   { regex: /one|single|drop/i,      typeId: 'one_time_class' },
   { regex: /unlimited/i,            typeId: 'unlimited'     },

@@ -210,6 +210,35 @@ notice. `AgeFilter` therefore carries two modes — `'age'` (today's age) and
 categories actually use) — plus `includeUnknown`, because a missing birthdate is
 common and dropping those contacts silently is exactly the failure nobody spots.
 
+### Contact lifecycle — ONE predicate, and two questions
+
+`contactLifecycle(c)` in `packages/shared/src/utils/contactLifecycle.ts` is the
+only reader of the lifecycle markers, in a fixed order: `deleted` (also
+anonymised) → `archived` → `provisional` → `external` → `active`. Two
+predicates sit on it, and they answer **different questions**:
+
+| | asks | includes |
+|---|---|---|
+| `isLiveContact` | may they book, attend, sign in, be matched by email? | active, leads, **externals** |
+| `isRosterContact` | does the studio look after them? | active, leads |
+
+**External** (`Contact.external` + `external_since`) is a person who trains
+here without being on the roster — a partner-app drop-in, a former member who
+still comes now and then, the old HMD `type: external`. They are live and
+counted in every class's attendance and toward the contact cap, but excluded
+from the headcount, event invitations, every automation (sweep AND per-contact
+triggers), Needs attention, and the lost-trial count. It is a **lifecycle**
+value: marking someone external moves nothing on the journey, plan or
+affiliation axes. Cleared by the studio or by completing the public signup
+form; **a purchase never clears it** (a partner-app plan is a purchase).
+
+Two mechanics that the seams depend on: `archived_at`/`deleted_at` are ALWAYS
+present (`null` when clear — what makes the Firestore `== null` query safe,
+see `apps/web/src/lib/liveContacts.ts`), while `provisional`/`external` are
+present ONLY when true — so "is external" can be queried and "is not external"
+is decided in memory after the live query. Never test the field inline; the
+census of server seams is `contacts/contactLifecycle.test.ts`.
+
 ### Public Space — the contacts' personal portal
 
 `/public/{slug}/space` is a minimal, team-branded public area (sibling to `/public/{slug}`

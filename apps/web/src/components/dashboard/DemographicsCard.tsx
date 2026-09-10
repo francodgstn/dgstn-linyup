@@ -5,6 +5,7 @@
 
 import { useTranslations } from 'next-intl'
 import type { Contact, RankingSystem } from '@linyup/shared'
+import { isRosterContact } from '@linyup/shared'
 import { ContactsOverviewCard } from '@/components/dashboard/ContactsOverviewCard'
 
 export function DemographicsCard({
@@ -15,7 +16,7 @@ export function DemographicsCard({
   rankingSystems?: RankingSystem[]
 }) {
   const t = useTranslations('Dashboard')
-  const activeCount = contacts.filter((c) => !c.archived_at).length
+  const activeCount = contacts.filter(isRosterContact).length
   return (
     <ContactsOverviewCard
       contacts={contacts}

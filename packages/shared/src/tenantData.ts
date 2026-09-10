@@ -11,6 +11,7 @@
 import {
   TEAMS_COLLECTION,
   CONTACTS_COLLECTION,
+  CONTACT_UPDATE_LINKS_COLLECTION,
   SESSIONS_COLLECTION,
   ACTIVITIES_COLLECTION,
   EVENTS_COLLECTION,
@@ -50,6 +51,9 @@ import {
   COACH_SLOTS_COLLECTION,
   ORG_SITE_DRAFTS_COLLECTION,
   ORG_SITE_PUBLISHED_COLLECTION,
+  STORE_PRESENCE_COLLECTION,
+  STORE_REVIEWS_COLLECTION,
+  STORE_EVENTS_COLLECTION,
 } from './paths'
 
 /** How a top-level collection's documents are matched to a team. */
@@ -92,6 +96,10 @@ export function tenantStoragePrefix(teamId: string): string {
  */
 export const TENANT_DATA_COLLECTIONS: TenantCollection[] = [
   { collection: CONTACTS_COLLECTION, match: { by: 'field', field: 'teamId' } },
+  // Live grants to edit a contact's details. Tenant data, and the one entry here
+  // whose omission would be a SECURITY leftover rather than an orphaned row: a
+  // purged team's outstanding QR would still resolve.
+  { collection: CONTACT_UPDATE_LINKS_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: SESSIONS_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: ACTIVITIES_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: EVENTS_COLLECTION, match: { by: 'field', field: 'teamId' } },
@@ -178,6 +186,14 @@ export const PLATFORM_COLLECTIONS: string[] = [
   // never touches them — they belong with the org itself.
   ORG_SITE_DRAFTS_COLLECTION,
   ORG_SITE_PUBLISHED_COLLECTION,
+  // What the App Store and Play say about LINYUP'S OWN member app. There is one
+  // app for the whole platform, so these are as far from tenant data as a
+  // collection gets — a per-team teardown has nothing to walk here, and the
+  // reviews are written by the app's users about the product, not by or about
+  // any one studio.
+  STORE_PRESENCE_COLLECTION,
+  STORE_REVIEWS_COLLECTION,
+  STORE_EVENTS_COLLECTION,
 ]
 
 /**

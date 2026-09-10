@@ -777,7 +777,11 @@ export const createGiftCardCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORC
   const amount = requireChargeableAmountFromMajor(amountMajor)
 
   const slugQuery = data.slug ? `&slug=${encodeURIComponent(data.slug)}&seg=shop` : ''
-  const { successUrl, cancelUrl } = buildResultUrls(locale, { extraQuery: slugQuery, origin: data.origin })
+  const { successUrl, cancelUrl } = await buildResultUrls(locale, {
+    extraQuery: slugQuery,
+    origin: data.origin,
+    teamId,
+  })
 
   // Webhook reads this to mint the card and email the purchaser. Stripe
   // metadata is Record<string,string> and rejects null/undefined values, so the

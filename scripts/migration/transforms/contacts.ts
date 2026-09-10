@@ -154,9 +154,24 @@ export function transformContact(
     out.entry = 'import'
     out.converted_at = milestoneTs
   } else if (hmdType === 'external') {
-    out.acquisition_stage = 'joined'
+    // HMD's "external": somebody who trains here without being one of the
+    // club's own people — licensed elsewhere, or not at all. That is the
+    // LIFECYCLE bucket Contact.external was made for (PR #274), so they land
+    // off the roster from day one: bookable and in the class stats, but no
+    // reminders, invitations, automations or headcount. Until 2026-09-10 this
+    // folded them into `joined` with an 'external' tag, which put every one of
+    // them in the roster AND in the conversion count of a join they never made.
+    //
+    // The journey records what they DID: attended ⇒ trial_attended; never came
+    // ⇒ no stage at all (an import can enter stage-less, like a shop purchase).
+    // Never `joined` — that is a claim about THIS club.
+    out.external = true
+    out.external_since = milestoneTs
     out.entry = 'import'
-    out.converted_at = milestoneTs
+    if (hasAttended) {
+      out.acquisition_stage = 'trial_attended'
+      out.trial_attended_at = milestoneTs
+    }
   } else {
     // trial (and any unknown legacy value): a booking-born trial contact
     out.entry = 'booking'
@@ -167,7 +182,9 @@ export function transformContact(
       out.acquisition_stage = 'trial_booked'
     }
   }
-  out.acquisition_stage_updated_at = milestoneTs
+  // Only where a stage was set — a stage-less external carrying a "stage
+  // updated" stamp would be a timestamp about nothing.
+  if (out.acquisition_stage) out.acquisition_stage_updated_at = milestoneTs
   delete out.type
 
   // Source axis — capture the marketing channel from the old `acquisition` blob.
@@ -201,11 +218,6 @@ export function transformContact(
 
   // New required fields with safe defaults
   out.tags          = out.tags          ?? []
-  // 'external' is no longer a contact status/type — represent it as a tag.
-  if (hmdType === 'external') {
-    const tags = out.tags as unknown[]
-    if (!tags.includes('external')) tags.push('external')
-  }
   out.anonymized_at = out.anonymized_at ?? null
   // Ensure these fields always exist as null so Firestore equality queries work correctly
   out.deleted_at    = out.deleted_at    ?? null
@@ -220,9 +232,14 @@ export function transformContact(
   //   membership_status     (non-guest) → 'club' issuer 'team' affiliation,
   //     valid_until from membership_expiration.
   //   guest / none → no affiliation.
-  // Soft-deleted contacts are coerced to 'expired' so they never count as active.
+  // Soft-deleted AND archived contacts are coerced to 'expired' so they never
+  // count as active. Archived was missing until 2026-09-10: HMD's status field
+  // is not cleared when a club archives somebody, so the licence rode along —
+  // Basel's audit found that EVERY affiliation the transform would have marked
+  // active belonged to a person the club had already archived (31 of 31), and
+  // the federation's member count would have been made of people who had left.
   const teamId = typeof out.teamId === 'string' ? out.teamId : ''
-  const isDeleted = out.deleted_at != null
+  const isGone = out.deleted_at != null || out.archived_at != null
   const createdAt = (out.created_at as unknown) ?? null
   const affiliations: Array<Record<string, unknown>> = []
 
@@ -233,7 +250,7 @@ export function transformContact(
     expiration: unknown,
   ): void {
     if (!isAffiliationStatus(statusRaw)) return
-    const statusId = isDeleted ? 'expired' : statusRaw
+    const statusId = isGone ? 'expired' : statusRaw
     const doc: Record<string, unknown> = {
       teamId,
       affiliation_type_id: type.id,
@@ -245,9 +262,10 @@ export function transformContact(
       // Denormalised liveness. The federation's status breakdown counts these
       // rows through a collection group, which cannot reach the parent contact
       // to read `archived_at` — so an ex-member's licence would sit in its queue
-      // for ever. Both halves, the same pair every contact query uses; `out`
-      // has coalesced them to null above, so this is a plain read.
-      contact_live: out.deleted_at == null && out.archived_at == null,
+      // for ever. `isGone` above is the same question this file already asks to
+      // coerce an archived person's status to 'expired', so the row's liveness
+      // and its status cannot disagree.
+      contact_live: !isGone,
       created_at: createdAt,
       updated_at: createdAt,
       created_by: 'migration',
@@ -349,17 +367,25 @@ export function transformContact(
     // status; contacts with a subscription_type were active members by definition.
     // onMemberSubscriptionWrite will replace this array once real Stripe
     // subscriptions are created for the team.
-    out.active_subscriptions = [
-      {
-        subscription_type_id:   match.typeId,
-        subscription_type_name: match.typeName,
-        recurrence:             price?.recurrence ?? null,
-        // `ActiveSubscriptionSummary.amount` is a required number, and zero is
-        // the honest one for a comp: they hold a live plan and pay nothing.
-        amount:                 price?.amount ?? 0,
-        status:                 'active',
-      },
-    ]
+    //
+    // NOT for somebody the club has archived or binned: the plan stays on the
+    // record as history (type id + name above), but nothing claims it is LIVE —
+    // a "subscribed" chip on an archived person is the same lie as an active
+    // licence on one. Basel's audit: 11 archived contacts would have landed
+    // holding an active plan.
+    if (!isGone) {
+      out.active_subscriptions = [
+        {
+          subscription_type_id:   match.typeId,
+          subscription_type_name: match.typeName,
+          recurrence:             price?.recurrence ?? null,
+          // `ActiveSubscriptionSummary.amount` is a required number, and zero is
+          // the honest one for a comp: they hold a live plan and pay nothing.
+          amount:                 price?.amount ?? 0,
+          status:                 'active',
+        },
+      ]
+    }
   } else if (srcTypeName) {
     // NO CANONICAL COUNTERPART — Fitpass, ClassPass, Instructor, Free. The type
     // itself is copied to the target under this same id, so the id already

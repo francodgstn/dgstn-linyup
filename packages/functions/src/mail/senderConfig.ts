@@ -83,6 +83,12 @@ export async function getTeamContactEmail(
 // Everything sender resolution needs for a team, fetched in one place.
 export interface StudioContext {
   teamName: string
+  /**
+   * The tenant's public slug. Carried purely so outbound mail can rewrite its
+   * own `/public/{slug}/…` links onto a custom domain — it costs nothing, the
+   * team document is already read here.
+   */
+  slug?: string
   plan?: SaasPlan
   contactEmail?: string
   config: EmailSenderConfig | null
@@ -106,6 +112,7 @@ export async function loadStudioContext(teamId: string): Promise<StudioContext> 
   ])
   return {
     teamName: (team.name as string) || '',
+    slug: team.slug as string | undefined,
     plan: team.plan as SaasPlan | undefined,
     contactEmail,
     config,
@@ -122,6 +129,7 @@ export async function loadOrgContext(orgId: string, fallbackContactEmail?: strin
   const config = await getEmailSenderConfig('org', orgId)
   return {
     teamName: (org.name as string) || '',
+    slug: org.slug as string | undefined,
     plan: 'organization',
     contactEmail: (typeof org.email === 'string' && org.email.trim()) || fallbackContactEmail,
     config,

@@ -282,6 +282,39 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
     )
   })
 
+  it('the org dashboard asks nothing of contacts it cannot prove it may read', () => {
+    // EVERY contacts query on that page must carry an `affiliation_summary`
+    // clause naming the org, because `orgAdminMayReadContact` admits a contact
+    // only through one — and Firestore checks a query against a rule
+    // STATICALLY, so an unconstrained count is refused however readable the
+    // documents it would return happen to be.
+    //
+    // This has already happened twice. The affiliation figure filtered
+    // `active_org_ids` against a rule that named only `org_ids` and came back
+    // `permission-denied` on every studio the caller was not a member of. Then
+    // #275 added a `where('external', '==', true)` count to subtract externals
+    // from a per-studio headcount — correct for the figure it was fixing, and
+    // unprovable here; the merge that brought it in is where this test comes
+    // from. The headcount it belonged to no longer exists (the federation counts
+    // who is on ITS books, not who a studio looks after), which is why the org
+    // side needs no external subtraction at all.
+    const src = readWeb('components/org-dashboard/data.ts')
+    const counts = src.split('export function useOrgStudioCounts')[1].split('\n}')[0]
+    // Counted rather than parsed: one `affiliation_summary` clause per
+    // aggregation, so an added count that names none moves the two apart
+    // whatever the surrounding formatting looks like.
+    const aggregations = counts.split('getCountFromServer').length - 1
+    const constrained = counts.split('affiliation_summary.').length - 1
+    assert.ok(aggregations > 0, 'the per-studio counts must still be aggregations')
+    assert.equal(
+      constrained,
+      aggregations,
+      `${aggregations} contacts aggregation(s) on the org dashboard but ${constrained} ` +
+        'affiliation_summary clause(s) — one of them is unconstrained, and ' +
+        'orgAdminMayReadContact denies it'
+    )
+  })
+
   it('an org-billed studio’s own subscription events cannot speak for it', () => {
     // The gap the refusal cannot close: an event arriving LATE for a
     // subscription that ended before the studio joined. `subscription.updated`

@@ -96,7 +96,6 @@ import {
   seedCoursePurchase,
   seedDynamicContactGroup,
   seedEventProgram,
-  seedSessionWaitlist,
 } from './lib/fixtures/engagement'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
@@ -2748,7 +2747,13 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     { id: 'gamification' },
     { id: 'website' },
     { id: 'online-courses' },
-    { id: 'products' },
+    // PROFILE-DRIVEN since 2026-09-09, like every other optional plugin here.
+    // It was unconditional, which gave a lead with nothing to sell a Products
+    // entry in its menu and an empty tab behind it — the shop reads the
+    // `public_profile.products` mirror, so the tab was already hidden and the
+    // install was pure menu clutter in a demo that is meant to look like the
+    // lead's own business.
+    ...(profile.products.length ? [{ id: 'products' }] : []),
     ...(profile.customFieldDefinitions?.length ? [{ id: 'custom-fields' }] : []),
     ...(profile.contactGroups?.length ? [{ id: 'contact-groups' }] : []),
     ...(profile.forms?.length ? [{ id: 'custom-forms' }] : []),
@@ -3005,7 +3010,18 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   await seedContactNotes(teamId, uid)
   await seedDynamicContactGroup(teamId, uid)
   await seedEventProgram(teamId, uid)
-  await seedSessionWaitlist({ teamId })
+  // NO WAITLIST ON A LEAD TENANT (Franco, 2026-09-09). The queue is an advanced,
+  // still-experimental feature and a prospect demo is not where it should first
+  // be met — but the data was showing it anyway, because the session page opens
+  // the panel on `waitlist.length > 0` as well as on the activity flag, and the
+  // flag is off here (a lead tenant leaves `bookingSettings.waitlistEnabled`
+  // unset, which is the studio-level experimental opt-in).
+  //
+  // Dropping the call removes a SECOND thing worth more than the queue: the
+  // fixture fills the SOONEST upcoming class to capacity to have something to
+  // queue behind, so a prospect's first view of the booking page was the next
+  // class sold out. The other seeders (`/try`, emulator, staging) still seed it
+  // — the feature stays exercisable everywhere it is not being demoed.
   await seedCoursePurchase(teamId)
 
   // ── one-off sales, then the journal ────────────────────────────────────────
@@ -3016,6 +3032,20 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   await seedTeamSales({ teamId, currency: profile.currency })
   await seedTeamFinance({ teamId, uid })
   // The asset register is its own Coach+ plugin — seeded beside finance, not by it.
+  //
+  // IT CANNOT BE DROPPED FROM A LEAD DEMO WHILE FINANCE IS INSTALLED, and this
+  // was tried on 2026-09-09 alongside the gift-cards and products removals.
+  // `PLUGIN_REQUIREMENTS` declares `finance: ['asset-register']` (finance READS
+  // the register for the statement of assets), and `reconcileRequirements` —
+  // a deployed trigger on every `installed_plugins` write — put the plugin back
+  // within seconds of the delete. That is its documented job: "a client that
+  // bypasses the UI is simply converged back."
+  //
+  // So the nav entry is there either way, and the only real choice is whether
+  // the page behind it has anything in it. Seeded beats empty (Franco,
+  // 2026-09-09): a blank register invites "why is this here?", which is a worse
+  // demo moment than one glance at seven plausible assets. Removing it for real
+  // means removing finance, which is a far bigger cut than it is worth.
   await seedTeamAssetRegister({ teamId, uid })
 
   // ── documents ──────────────────────────────────────────────────────────────

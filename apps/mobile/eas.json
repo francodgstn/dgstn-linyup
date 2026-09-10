@@ -53,15 +53,15 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "FIREBASE_PROJECT_ID": "linyup-staging",
-        "FIREBASE_API_KEY": "AIzaSyAuMHWbGKmyL78xVfrStkIctShzqrd4zcg"
+        "FIREBASE_PROJECT_ID": "linyup-prod",
+        "FIREBASE_API_KEY": "AIzaSyCAYQcDgB9wBXylM33jbCfHfR7uQpw3tUE"
       }
     }
   },
   "submit": {
     "store": {
       "android": {
-        "track": "internal"
+        "track": "alpha"
       },
       "ios": {
         "ascAppId": "6808572774",

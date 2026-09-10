@@ -92,6 +92,7 @@ import {
   Users,
 } from 'lucide-react'
 import type { Contact, SubscriptionType } from '@linyup/shared'
+import { isRosterContact, partnerSubscriptionTypeIds } from '@linyup/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePlan } from '@/hooks/usePlan'
 import { useMonthlyRevenue } from '@/hooks/useMonthlyRevenue'
@@ -220,7 +221,9 @@ export function FiguresBlock({
   const { data: sessions, isLoading: sessionsLoading } = usePreviewUpcomingSessions(teamId)
   const { data: subTypes = [] } = useSubscriptionTypes(teamId)
 
-  const live = (contacts ?? []).filter((c) => !c.archived_at)
+  // The ROSTER, not merely the live set: an external is bookable but not one
+  // of the studio's own people — see `contactLifecycle` in shared.
+  const live = (contacts ?? []).filter(isRosterContact)
 
   // ── attendance: this week, and the DIFFERENT people whose last visit was the
   // week before. Deliberately not phrased as a comparison — `last_session_at`
@@ -247,12 +250,11 @@ export function FiguresBlock({
   const booked = (sessions ?? []).reduce((sum, s) => sum + (s.bookings_count ?? 0), 0)
   const trials = (sessions ?? []).reduce((sum, s) => sum + (s.trial_bookings_count ?? 0), 0)
 
-  // ── subscriptions: YOUR plans, with aggregator-sourced ones counted apart.
+  // ── subscriptions: YOUR plans, with partner-app ones counted apart.
   // A ClassPass-style type is a subscription the studio did not sell, so
   // folding it into "on one of your own plans" would make the subtitle false.
-  const aggregatorIds = new Set(
-    (subTypes as SubscriptionType[]).filter((s) => s.source === 'aggregator').map((s) => s.id)
-  )
+  // The same predicate the weekly report uses (subscriptionSource.ts in shared).
+  const aggregatorIds = partnerSubscriptionTypeIds(subTypes as SubscriptionType[])
   const withSub = live.filter((c) => !!c.subscription_type_id)
   const internalSubs = withSub.filter((c) => !aggregatorIds.has(c.subscription_type_id!)).length
   const aggregatorSubs = withSub.length - internalSubs

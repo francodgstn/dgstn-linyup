@@ -178,7 +178,7 @@ Checks doc counts (source vs target) for all top-level collections, plus spot-ch
 | `teams` | Copied + `plan: 'studio'`, `organizationId: 'hmd'` added |
 | `activities` | Copied + new fields (`slug`, `type`, `isActive`, `level`) |
 | `session_series` | Copied + recurrence field names normalised |
-| `contacts` + subcollections | Copied; `rank → ranks.hmd`; `notes` dropped; `type` → acquisition axis (`acquisition_stage`/`entry` + milestone timestamps, `external` → `external` tag); `acquisition.channel` → `source` (+ `source_detail`), `acquisition.acknowledged` → `lead_acknowledged`; membership fields → **affiliations** (see below) |
+| `contacts` + subcollections | Copied; `rank → ranks.hmd`; `notes` dropped; `type` → acquisition axis (`acquisition_stage`/`entry` + milestone timestamps); `type: external` → the **External lifecycle bucket** (`external: true`, `external_since` ← `created_at`, journey from attendance only — never `joined`, no tag); `acquisition.channel` → `source` (+ `source_detail`), `acquisition.acknowledged` → `lead_acknowledged`; membership fields → **affiliations** (see below) |
 | `sessions` + participants/bookings | Copied + activity name/type enriched |
 | `events` + invitations/attendees | Copied as `scope='org', orgId='hmd', teamId=null` |
 | Global `checkins` (event check-ins) | Migrated from the top-level `checkins` collection where `event.id == eventId`; doc IDs preserved; `completed_checkins_count` set on each event doc |
@@ -373,8 +373,13 @@ Mapping (`scripts/migration/transforms/contacts.ts`):
 | `membership_status` | `issuer: 'team'`, type `club`, `status_id` = the value, `active` = (`active`-status), `valid_until` ← `membership_expiration` |
 | `guest` / none | no affiliation |
 
-Soft-deleted contacts (`deleted_at != null`) are coerced to `status_id: 'expired'`
-so they never count as active. The transform derives the affiliation docs and
+Soft-deleted **and archived** contacts (`deleted_at != null` or `archived_at != null`)
+are coerced to `status_id: 'expired'` so they never count as active — HMD does
+not clear the membership field when a club archives somebody, and Basel's
+pre-migration audit found every affiliation the transform would have marked
+active belonged to an archived person. The same `isGone` test withholds the
+`active_subscriptions` row: the plan stays on the record as history, nothing
+claims it is live. The transform derives the affiliation docs and
 attaches them under the reserved `__affiliations` key; **pass 05** peels that off
 and writes each into `contacts/{id}/affiliations/{id}-aff-N`, then persists the
 contact doc without the key. A best-effort `affiliation_summary` is set on the
