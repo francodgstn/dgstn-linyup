@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import type { MigrationConfig } from '../config'
 import { sourceDb, targetDb, ORG_ID, ORG_NAME, HMD_ORG_RANKING_SYSTEMS, EXPECTED_HMD_MODULES } from '../config'
+import { resolveOrgAdmin } from '../orgAdmin'
 
 /** The bundle container HMD installs at org level. Its members are EXPECTED_HMD_MODULES. */
 const CONTAINER_PLUGIN_ID = 'hmd'
@@ -36,18 +37,9 @@ export async function pass00Setup(cfg: MigrationConfig): Promise<void> {
   const src = sourceDb()
   const tgt = targetDb()
 
-  // Resolve the admin user UID from their email in the source users collection
-  const userSnap = await src.collection('users')
-    .where('email', '==', cfg.orgAdminEmail)
-    .limit(1)
-    .get()
-
-  if (userSnap.empty) {
-    console.warn(`  WARN: no user found with email ${cfg.orgAdminEmail} — org will be created without a createdBy UID`)
-  }
-
-  const adminUid = userSnap.empty ? null : userSnap.docs[0].id
-  console.log(`  org admin: ${cfg.orgAdminEmail} → uid=${adminUid ?? 'unknown'}`)
+  // The TARGET's login for that email first, the source user second — see
+  // orgAdmin.ts for the production case this order exists for.
+  const adminUid = (await resolveOrgAdmin(cfg)).uid
 
   if (cfg.dryRun) {
     console.log(`  [dry-run] would create organizations/${ORG_ID} and org_members/${adminUid}`)

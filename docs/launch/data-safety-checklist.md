@@ -8,7 +8,7 @@ data lands**.
 
 ## 1. Backups + Point-in-Time Recovery (do first — highest leverage)
 
-- [ ] Enable Firestore **PITR** (7-day window) on `linyup-prod` (and `linyup-staging`)
+- [x] Enable Firestore **PITR** (7-day window) on `linyup-prod` (and `linyup-staging`) — verified 2026-09-10 with `gcloud firestore databases describe --database="(default)" --project=linyup-prod`: `POINT_IN_TIME_RECOVERY_ENABLED`, `versionRetentionPeriod: 604800s`, `DELETE_PROTECTION_ENABLED`, plus a daily `backupSchedules` entry with 98-day retention (`gcloud firestore backups schedules list`). Staging identical. Both come from `infra/modules/firestore` defaults (`enable_pitr`, `enable_daily_backup`) — check GCP, not the tf state, which is known to drift.
 - [ ] Schedule **daily managed exports** to a dedicated GCS bucket
 - [ ] Set the bucket lifecycle/retention policy (decide retention — see open items)
 - [ ] Document + dry-run the **restore runbook**:

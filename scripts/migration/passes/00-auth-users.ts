@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { getApp } from 'firebase-admin/app'
 import type { UserImportRecord, HashAlgorithmType } from 'firebase-admin/auth'
 import type { MigrationConfig } from '../config'
-import { sourceAuth, targetAuth } from '../config'
+import { sourceAuth, targetAuth, sourceDb, EXCLUDED_SOURCE_TEAMS, matchesTeamSample } from '../config'
 
 const PAGE_SIZE = 1000
 
@@ -84,28 +84,113 @@ async function fetchSourceUsers(sourceCredsPath: string): Promise<{
   return { users: allUsers, hashConfig }
 }
 
+// ─── the activation list ──────────────────────────────────────────────────────
+
+/**
+ * The uids that belong to a LIVE club: every `team_members` row of every club
+ * named on `--live`. A dormant club's members get no login on the target until
+ * their wave — see `MigrationConfig.live`.
+ */
+async function liveMemberUids(cfg: MigrationConfig): Promise<Set<string>> {
+  const src = sourceDb()
+  const clubs = (await src.collection('teams').get()).docs.filter(
+    (d) => !EXCLUDED_SOURCE_TEAMS.includes(d.id),
+  )
+  const nameOf = (d: { data(): Record<string, unknown> }) => String(d.data().name ?? '')
+  const unmatched = (cfg.live ?? []).filter(
+    (want) => !clubs.some((d) => matchesTeamSample([want], d.id, nameOf(d))),
+  )
+  if (unmatched.length > 0) {
+    console.error(`\n❌ --live named ${unmatched.length} club(s) that do not exist in the source: ${unmatched.join(', ')}`)
+    process.exit(1)
+  }
+  const uids = new Set<string>()
+  for (const club of clubs) {
+    if (!matchesTeamSample(cfg.live, club.id, nameOf(club))) continue
+    const members = await src.collection('teams').doc(club.id).collection('team_members').get()
+    members.docs.forEach((m) => uids.add(m.id))
+    console.log(`  live: ${nameOf(club)} — ${members.size} member login(s)`)
+  }
+  return uids
+}
+
+// ─── the collision guard ──────────────────────────────────────────────────────
+
+interface Collision { email: string; sourceUid: string; targetUid: string }
+
+/**
+ * A source account whose EMAIL already exists on the target under a DIFFERENT
+ * uid is not imported. `importUsers` does not refuse it — it either creates a
+ * second account for the same address or fails the record, depending on the
+ * project's one-account-per-email setting — and neither is what anyone wants
+ * for a person who already has a Linyup login (the org admin, on production).
+ * Same uid is fine: `importUsers` replaces it, which is what makes re-runs
+ * idempotent.
+ */
+async function withoutEmailCollisions(
+  users: IdentityUser[],
+): Promise<{ keep: IdentityUser[]; collisions: Collision[] }> {
+  const tgt = targetAuth()
+  const byEmail = new Map<string, string>() // target email (lower) → target uid
+  const withEmail = users.filter((u) => !!u.email)
+  for (let i = 0; i < withEmail.length; i += 100) {
+    const chunk = withEmail.slice(i, i + 100)
+    const found = await tgt.getUsers(chunk.map((u) => ({ email: u.email! })))
+    for (const t of found.users) if (t.email) byEmail.set(t.email.toLowerCase(), t.uid)
+  }
+  const keep: IdentityUser[] = []
+  const collisions: Collision[] = []
+  for (const u of users) {
+    const targetUid = u.email ? byEmail.get(u.email.toLowerCase()) : undefined
+    if (targetUid && targetUid !== u.localId) {
+      collisions.push({ email: u.email!, sourceUid: u.localId, targetUid })
+    } else {
+      keep.push(u)
+    }
+  }
+  return { keep, collisions }
+}
+
 // ─── pass ─────────────────────────────────────────────────────────────────────
 
 export async function pass00AuthUsers(cfg: MigrationConfig): Promise<void> {
   console.log('Pass 0b: auth users')
 
-  if (cfg.dryRun) {
-    console.log('  [dry-run] skipping Identity Toolkit API call')
-    return
-  }
-
+  // Reads only, so a dry run performs them: the activation filter and the
+  // collision guard ARE the pre-flight, and a dry run that skipped them would
+  // report nothing about the one thing a production import can get wrong.
   const { users: sourceUsers, hashConfig } = await fetchSourceUsers(cfg.sourceCredsPath)
   const active = sourceUsers.filter((u) => !u.disabled)
   console.log(`  fetched ${active.length} active users from source (hashes: ${!!hashConfig})`)
 
+  let candidates = active
+  if (cfg.live?.length) {
+    const liveUids = await liveMemberUids(cfg)
+    const adminEmail = cfg.orgAdminEmail.toLowerCase()
+    candidates = active.filter(
+      (u) => liveUids.has(u.localId) || (u.email ?? '').toLowerCase() === adminEmail,
+    )
+    console.log(`  activation list (${cfg.live.join(', ')}): ${candidates.length} of ${active.length} accounts belong to a live club or the org admin`)
+  }
+
+  const { keep, collisions } = await withoutEmailCollisions(candidates)
+  for (const c of collisions) {
+    console.warn(`  COLLISION ${c.email}: already on the target as uid=${c.targetUid} (source uid=${c.sourceUid}) — not imported; rows keyed by the source uid are re-keyed by the passes that write them`)
+  }
+
+  if (cfg.dryRun) {
+    console.log(`  [dry-run] would import ${keep.length} account(s); ${collisions.length} collision(s) skipped; ${active.length - candidates.length} outside the activation list`)
+    return
+  }
+
   const tgt = targetAuth()
   let totalImported = 0
-  let totalSkipped  = 0
+  let totalSkipped  = collisions.length
   let totalErrored  = 0
 
   // Chunk into batches of 1000 (importUsers limit)
-  for (let i = 0; i < active.length; i += PAGE_SIZE) {
-    const chunk = active.slice(i, i + PAGE_SIZE)
+  for (let i = 0; i < keep.length; i += PAGE_SIZE) {
+    const chunk = keep.slice(i, i + PAGE_SIZE)
 
     if (hashConfig) {
       // Full import with SCRYPT hashes — preserves original passwords
