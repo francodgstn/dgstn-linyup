@@ -39,12 +39,19 @@
  * `trial_booked` (`totalSessions > 0`). So a scored `type: 'trial'` entry
  * can only be `trial_attended`, never `trial_booked` — there is no case
  * here transforms/contacts.ts's own logic would resolve differently.
- * `'student'` and `'external'` both fold to `'joined'`, mirroring the same
- * transform.
+ * `'student'` folds to `'joined'`; a scored `'external'` is `trial_attended`
+ * too — the person attended and never joined THIS club (they land in the
+ * Contact.external lifecycle bucket) — mirroring the same transform.
  */
 
+// Mirrors transforms/contacts.ts: a scored entry has attended, so `trial` AND
+// `external` both read `trial_attended` — an external never joined THIS club
+// (they land in the Contact.external lifecycle bucket, journey from what they
+// did), and the leaderboard entry must say the same thing the contact says or
+// the mobile anonymisation check disagrees with the contact page. Only
+// `student` is `joined`.
 function mapEntryAcquisitionStage(type: unknown): 'trial_attended' | 'joined' {
-  return type === 'trial' ? 'trial_attended' : 'joined'
+  return type === 'trial' || type === 'external' ? 'trial_attended' : 'joined'
 }
 
 export function transformLeaderboardDoc(src: Record<string, unknown>): Record<string, unknown> {

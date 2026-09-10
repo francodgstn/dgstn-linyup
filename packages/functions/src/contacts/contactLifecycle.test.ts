@@ -149,3 +149,38 @@ describe('the seams — every server path that must tell an external apart', () 
     assert.equal(CONTACT_CSV_COLUMNS[i + 1], 'archived_at')
   })
 })
+
+describe('the HMD migration — where the old "external" type lands', () => {
+  // The transform lives outside this package's rootDir, so it is pinned by
+  // reading its source, the way the census above pins the server seams.
+  const MIG = join(__dirname, '..', '..', '..', '..', 'scripts', 'migration', 'transforms')
+  const contacts = readFileSync(join(MIG, 'contacts.ts'), 'utf8')
+  const leaderboard = readFileSync(join(MIG, 'leaderboard.ts'), 'utf8')
+
+  it("type: 'external' → the lifecycle bucket, stamped from created_at", () => {
+    assert.match(contacts, /hmdType === 'external'\)\s*\{[\s\S]*?out\.external = true[\s\S]*?out\.external_since = milestoneTs/)
+  })
+
+  it('never joined — an external gets a stage only for what they did, and no tag', () => {
+    const branch = contacts.slice(contacts.indexOf("hmdType === 'external')"), contacts.indexOf('} else {', contacts.indexOf("hmdType === 'external')")))
+    assert.doesNotMatch(branch, /'joined'/, 'joined is a claim about THIS club')
+    assert.doesNotMatch(branch, /converted_at/)
+    assert.match(branch, /if \(hasAttended\)[\s\S]*?'trial_attended'/)
+    assert.doesNotMatch(contacts, /tags\.push\('external'\)|includes\('external'\)/, 'the tag is gone — the bucket is the record')
+  })
+
+  it('a stage-less external carries no "stage updated" stamp', () => {
+    assert.match(contacts, /if \(out\.acquisition_stage\) out\.acquisition_stage_updated_at = milestoneTs/)
+  })
+
+  it("an archived contact's licence is coerced to expired, like a deleted one — and no live plan is claimed for either", () => {
+    assert.match(contacts, /const isGone = out\.deleted_at != null \|\| out\.archived_at != null/)
+    assert.match(contacts, /const statusId = isGone \? 'expired' : statusRaw/)
+    assert.match(contacts, /if \(!isGone\) \{\s*out\.active_subscriptions = \[/)
+    assert.doesNotMatch(contacts, /\bisDeleted\b/, 'the narrower test must not survive beside the wider one')
+  })
+
+  it('the leaderboard entry says what the contact says: external scored ⇒ trial_attended, never joined', () => {
+    assert.match(leaderboard, /type === 'trial' \|\| type === 'external' \? 'trial_attended' : 'joined'/)
+  })
+})
