@@ -1,0 +1,4 @@
+• L'app parle maintenant allemand, français et italien – elle suit la langue de ton téléphone.
+• Les couleurs et le logo de ton studio dans toute l'app.
+• Code non reçu ? « Renvoyer un code » est juste là.
+• Les bases pour les rappels, et un écran « mise à jour requise » pour les anciennes versions.

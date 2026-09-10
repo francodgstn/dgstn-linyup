@@ -1,0 +1,4 @@
+• The app now speaks German, French and Italian — it follows your phone's language.
+• Your studio's colours and logo throughout the app.
+• Didn't get your sign-in code? "Send a new code" is right there.
+• Groundwork for reminders and an "update required" screen for old versions.

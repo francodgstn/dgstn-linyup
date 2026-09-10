@@ -61,7 +61,7 @@
   "submit": {
     "store": {
       "android": {
-        "track": "internal"
+        "track": "alpha"
       },
       "ios": {
         "ascAppId": "6808572774",

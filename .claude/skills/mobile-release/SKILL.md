@@ -59,6 +59,34 @@ The tag body is the release note (same convention as the backend's `v*`
 tags). Store build numbers are EAS-managed (`appVersionSource: remote`,
 `autoIncrement` on `store`).
 
+## An update during the Play closed test (before production access)
+
+While `eas.json`'s `store` profile still targets `linyup-staging` the
+`mobile-v*` lane refuses to run, by design — so a mid-test update is manual,
+and it is a STORE build, not an OTA: Play only sees a new version code on the
+closed track, and an EAS Update is invisible to it. Testers who uninstall a
+broken build drop the count below twelve and the fourteen days restart, so the
+order below puts your own phone before theirs.
+
+```bash
+# 1. version — the notes live beside the listing assets
+pnpm --filter @linyup/mobile version patch --no-git-tag-version
+#    write apps/mobile/store/release-notes/<version>/{en-US,de-DE,fr-FR,it-IT}.txt
+git commit -am "chore(mobile): v1.0.1 — <what testers get>"     # PR, merge
+
+# 2. build + submit to the closed track (submit.store.android.track = alpha)
+cd apps/mobile
+npx eas-cli build --profile store --platform android --wait
+npx eas-cli submit --profile store --platform android --latest
+
+# 3. Play Console → Closed testing → the new release: paste the notes per
+#    language, but install it on YOUR phone from the tester link and sign in
+#    with the review login before rolling it out to the group.
+# 4. Tell the testers what changed and ask for ONE concrete thing
+#    ("switch the phone to German, book a class, reply with what annoyed you") —
+#    the production-access questionnaire asks for feedback and what you changed.
+```
+
 ## Backend compatibility — the rule the web never needed
 
 A phone can be several store versions behind. Before merging a backend change:

@@ -54,6 +54,20 @@ populated first — see `packages/functions/src/ops/demoTenant.ts`; it once
 provisioned a tenant whose sessions never reached the app, and the screenshots
 (and the store reviewer) got empty states.
 
+## Release notes
+
+`release-notes/<version>/<locale>.txt` — one file per Play locale (`en-US`,
+`de-DE`, `fr-FR`, `it-IT`), plain text, under 500 characters each (Play's
+limit). Written for a member, not a changelog: what they will notice, in the
+language the app now speaks to them in.
+
+`eas submit` uploads the bundle but not the notes: paste each file into Play
+Console → the release → **Release notes** (add a language, paste, repeat).
+Apple takes "What's New" per locale the same way, or via `store.config.json`.
+
+Keep every version's notes — the production-access questionnaire asks what
+changed during the test, and the answer is this directory.
+
 ## Apple, when you get there
 
 Different requirements, same sources:
