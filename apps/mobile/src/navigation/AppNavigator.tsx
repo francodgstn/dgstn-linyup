@@ -87,7 +87,15 @@ export const AppNavigator: React.FC = () => {
 
   return (
     <NavigationContainer>
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      {/* The top inset needs its own background. It sits OUTSIDE the
+          navigator's painted area, so with none it shows the RN root view's
+          default WHITE — a white band above a dark app on every notched
+          iPhone, in every screenshot. Android never showed it: there the OS
+          paints the status bar itself. */}
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: theme.colors.background }}
+        edges={['top']}
+      >
         {isAuthenticated ? (
           <Stack.Navigator
             key="authenticated"
