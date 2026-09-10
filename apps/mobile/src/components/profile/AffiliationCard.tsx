@@ -114,13 +114,7 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
           style={styles.collapsedGradient}
         >
           <View style={styles.collapsedTopRow}>
-            <BeltBadge
-              primaryColor={rankInfo?.color ?? '#DDDDDD'}
-              secondaryColor={rankInfo?.secondColor}
-              emoji={rankInfo?.emoji}
-              imageUrl={rankInfo?.imageUrl}
-              size={26}
-            />
+            <BeltBadge badge={rankInfo?.badge} size={26} />
             <Text style={styles.collapsedRank}>{rankTitle.toUpperCase()}</Text>
             <TouchableRipple onPress={onShowStatusModal} style={styles.statusBadgeContainer}>
               <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
@@ -174,13 +168,7 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
               </Text>
             </View>
             <View style={styles.rankTitleRow}>
-              <BeltBadge
-                primaryColor={rankInfo?.color ?? '#DDDDDD'}
-                secondaryColor={rankInfo?.secondColor}
-                emoji={rankInfo?.emoji}
-                imageUrl={rankInfo?.imageUrl}
-                size={32}
-              />
+              <BeltBadge badge={rankInfo?.badge} size={32} />
               <Text variant="headlineMedium" style={styles.rankTitle}>
                 {rankTitle.toUpperCase()}
               </Text>

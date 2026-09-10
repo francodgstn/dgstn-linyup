@@ -3,8 +3,8 @@
 // The self-rating form — one star row per team dimension (see
 // `resolveCoachingDimensions` in CoachingHome). Every axis starts unset;
 // Submit stays disabled until every one of them has been rated, for the same
-// reason a single evaluation score starts unset (see RatingStars/
-// EvaluationFormDialog) — a pre-filled "3" across the board would let a stray
+// reason a single evaluation score starts unset (see the shared RatingStars/
+// EvaluationDialog) — a pre-filled "3" across the board would let a stray
 // click submit a check-in nobody actually rated, indistinguishable later from
 // a deliberate neutral self-assessment.
 
@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { PerformanceIndicator } from '@linyup/shared'
-import { RatingStars } from './RatingStars'
+import { RatingStars } from '@/components/coaching/RatingStars'
 
 export interface CheckinFormValues {
   scores: Record<string, number>

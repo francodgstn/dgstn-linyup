@@ -10,6 +10,8 @@ import {
   CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION,
   CONTACT_ALERTS_SUBCOLLECTION,
   CONTACT_WEEKLY_REPORTS_SUBCOLLECTION,
+  TEAM_LEADERBOARD_SUBCOLLECTION,
+  TEAM_LEADERBOARD_CURRENT_DOC,
   visibleGoals,
   densifyWeeklyCounts,
   isoWeekKeysBack,
@@ -514,7 +516,7 @@ export const FirestoreService = {
   // Get team leaderboard (denormalized document for gamification)
   async getTeamLeaderboard(teamId: string): Promise<Leaderboard | null> {
     try {
-      const leaderboardRef = doc(db, TEAMS_COLLECTION, teamId, 'leaderboard', 'current');
+      const leaderboardRef = doc(db, TEAMS_COLLECTION, teamId, TEAM_LEADERBOARD_SUBCOLLECTION, TEAM_LEADERBOARD_CURRENT_DOC);
       const leaderboardSnap = await getDoc(leaderboardRef);
 
       if (!leaderboardSnap.exists()) {

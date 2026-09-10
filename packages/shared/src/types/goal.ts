@@ -42,6 +42,21 @@ export type GoalStatus = 'open' | 'in_progress' | 'achieved' | 'abandoned'
  *  member app cannot disagree about what the statuses are; each used to carry
  *  its own copy of this literal. */
 export const GOAL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned']
+
+/**
+ * ONE hex per status, for every surface that colours one: the member app's
+ * chips, rails and pickers, the admin's evaluation rows. The admin's status
+ * PILL keeps Tailwind light/dark pairs of the same colour FAMILIES (blue /
+ * orange / green / gray — `apps/web/src/components/coaching/goalStatusStyles.ts`)
+ * because a single hex cannot also carry a dark-mode text contrast; those pairs
+ * are derived by family from this map and change together with it.
+ */
+export const GOAL_STATUS_COLORS: Record<GoalStatus, string> = {
+  open: '#3B82F6',
+  in_progress: '#F97316',
+  achieved: '#22C55E',
+  abandoned: '#9CA3AF',
+}
 export type GoalCreatedBy = 'coach' | 'student'
 
 // ─── the two vocabularies ────────────────────────────────────────────────────
@@ -392,6 +407,22 @@ export type ProfileKey =
   | 'inconsistent'
   | 'balanced'
   | 'default'
+
+/**
+ * ONE hex per performance profile — the admin's profile badge and the member
+ * app's profile card tint the same reading the same way. The member-facing
+ * WORDS stay per surface (they are the most sensitive copy in the product and
+ * are translated with care, not shared); the colour is a fact.
+ */
+export const PERFORMANCE_PROFILE_COLORS: Record<ProfileKey, string> = {
+  burnout_risk: '#EF4444',
+  overreaching: '#F97316',
+  stuck: '#EAB308',
+  coasting: '#8B5CF6',
+  inconsistent: '#06B6D4',
+  balanced: '#22C55E',
+  default: '#6B7280',
+}
 
 export interface PerformanceCheckin {
   id: string

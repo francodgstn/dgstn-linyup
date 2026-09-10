@@ -3,7 +3,7 @@
 // genuinely mobile-local view/wire types are declared in this file. If a type
 // drifts between here and @linyup/shared, fix it there; this file must never
 // hand-mirror a shape @linyup/shared already owns.
-import type { Contact as SharedContact, TeamPublicProfile as SharedTeamPublicProfile } from '@linyup/shared';
+import type { Contact as SharedContact, TeamPublicProfile as SharedTeamPublicProfile, TeamLeaderboard } from '@linyup/shared';
 
 export type {
   // Contact + its sub-shapes
@@ -34,6 +34,7 @@ export type {
   GamificationSettings,
   GamificationBadgeThresholds,
   GamificationCoachBadge,
+  LeaderboardEntry,
   // Bio-link / public profile building blocks
   TeamLink,
   SocialLink,
@@ -122,21 +123,11 @@ export interface SessionWithStatus extends HydratedSession {
   status: SessionParticipationStatus;
 }
 
-export interface LeaderboardEntry {
-  contact_id: string;
-  firstname: string;
-  lastname: string;
-  acquisition_stage?: string;
-  score: number;
-  rank: number;
-  streak: number;
-  max_streak?: number;
-}
-
-export interface Leaderboard {
-  month: string;
-  entries: LeaderboardEntry[];
-  entries_count: number;
+/** The shared `TeamLeaderboard` document as `FirestoreService.getTeamLeaderboard`
+ *  hands it out — `updated_at` hydrated to a Date. Same relationship as
+ *  `HydratedSession` to the session mirror: the rows are the wire shape
+ *  (`LeaderboardEntry`, re-exported above), the envelope is not. */
+export interface Leaderboard extends Omit<TeamLeaderboard, 'updated_at' | 'score_history'> {
   updated_at: Date;
 }
 

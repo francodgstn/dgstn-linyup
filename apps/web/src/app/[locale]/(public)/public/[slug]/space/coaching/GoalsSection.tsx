@@ -31,7 +31,8 @@ import { useConfirm } from '@/components/ui/confirm-dialog'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { GoalCard } from './GoalCard'
 import { StepRow } from './StepRow'
-import { GoalFormDialog } from './GoalFormDialog'
+import { GoalDialog } from '@/components/coaching/GoalDialog'
+import { useSpaceCoachingLabels } from './useSpaceCoachingLabels'
 import type { SpaceGoalsState } from './useSpaceGoals'
 
 export function GoalsSection({
@@ -47,6 +48,7 @@ export function GoalsSection({
   dimensions: PerformanceIndicator[]
 }) {
   const t = useTranslations('SpaceCoaching')
+  const labels = useSpaceCoachingLabels()
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
   const { confirm, confirmDialog } = useConfirm()
   const [addingGoal, setAddingGoal] = useState(false)
@@ -134,25 +136,29 @@ export function GoalsSection({
         </div>
       )}
 
-      <GoalFormDialog
+      <GoalDialog
         open={addingGoal}
         onOpenChange={setAddingGoal}
-        kind="goal"
+        type="goal"
         categories={categories}
-        onSubmit={async (values) => {
-          await createGoal.mutateAsync({ type: 'goal', ...values })
+        fields={{ description: true, targetDate: true }}
+        onSubmit={async (v) => {
+          await createGoal.mutateAsync({ type: 'goal', title: v.title, description: v.description || null, categories: v.categories, targetDate: v.targetDate })
           setAddingGoal(false)
         }}
+        labels={labels.goalDialog(t('goalFormTitleCreate'))}
       />
-      <GoalFormDialog
+      <GoalDialog
         open={addingGeneralStep}
         onOpenChange={setAddingGeneralStep}
-        kind="task"
+        type="task"
         categories={categories}
-        onSubmit={async (values) => {
-          await createGoal.mutateAsync({ type: 'task', parentGoalId: null, ...values })
+        fields={{}}
+        onSubmit={async (v) => {
+          await createGoal.mutateAsync({ type: 'task', parentGoalId: null, title: v.title })
           setAddingGeneralStep(false)
         }}
+        labels={labels.goalDialog(t('goalFormTitleCreateStep'))}
       />
 
       {confirmDialog}

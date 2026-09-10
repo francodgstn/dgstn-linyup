@@ -16,7 +16,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FirestoreService } from '../../services/firestore';
 import { Goal, GoalEvaluation, GoalStatus, PerformanceIndicator } from '../../types';
-import { dimensionLabel, goalCategoryLabel, groupGoalsWithSteps, sortSteps, GOAL_STATUSES } from '../../utils/goalContract';
+import { dimensionLabel, goalCategoryLabel, groupGoalsWithSteps, sortSteps, GOAL_STATUSES, GOAL_STATUS_COLORS } from '../../utils/goalContract';
 import { Timestamp } from 'firebase/firestore';
 import { useTranslations } from '../../i18n';
 
@@ -37,13 +37,6 @@ const statusLabel = (t: Translate, status: GoalStatus): string => {
     case 'achieved': return t('statusAchieved');
     case 'abandoned': return t('statusAbandoned');
   }
-};
-
-const STATUS_COLORS: Record<GoalStatus, string> = {
-  open: '#3B82F6',
-  in_progress: '#F97316',
-  achieved: '#22C55E',
-  abandoned: '#9CA3AF',
 };
 
 
@@ -109,7 +102,7 @@ const EvaluationItem: React.FC<EvaluationItemProps> = ({ eval_, onEdit }) => {
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderLeftWidth: 3,
-        borderLeftColor: STATUS_COLORS[eval_.status_after],
+        borderLeftColor: GOAL_STATUS_COLORS[eval_.status_after],
         marginBottom: 8,
         backgroundColor: theme.colors.surfaceVariant,
         borderRadius: 6,
@@ -248,8 +241,8 @@ const AddEvalModal: React.FC<EvalModalProps> = ({
                   key={s}
                   selected={statusAfter === s}
                   onPress={() => setStatusAfter(s)}
-                  style={statusAfter === s ? { backgroundColor: STATUS_COLORS[s] + '30' } : undefined}
-                  textStyle={statusAfter === s ? { color: STATUS_COLORS[s], fontWeight: '700' } : undefined}
+                  style={statusAfter === s ? { backgroundColor: GOAL_STATUS_COLORS[s] + '30' } : undefined}
+                  textStyle={statusAfter === s ? { color: GOAL_STATUS_COLORS[s], fontWeight: '700' } : undefined}
                 >
                   {statusLabel(t, s)}
                 </Chip>
@@ -614,7 +607,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ goal, steps, contactId, categoryOpt
   };
 
   const canEvaluate = goal.status === 'open' || goal.status === 'in_progress';
-  const statusColor = STATUS_COLORS[goal.status];
+  const statusColor = GOAL_STATUS_COLORS[goal.status];
 
   return (
     <>

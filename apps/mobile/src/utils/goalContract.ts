@@ -13,6 +13,8 @@ export {
   groupGoalsWithSteps,
   sortSteps,
   GOAL_STATUSES,
+  GOAL_STATUS_COLORS,
+  PERFORMANCE_PROFILE_COLORS,
   resolveCoachingDimensions,
   resolveGoalCategories,
 } from '@linyup/shared';

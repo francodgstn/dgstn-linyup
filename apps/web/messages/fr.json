@@ -22,7 +22,8 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "remove": "Retirer",
-    "reset": "Réinitialiser"
+    "reset": "Réinitialiser",
+    "ratingAriaLabel": "Noter {n} sur 5"
   },
   "Plans": {
     "free": "Free",
@@ -1062,7 +1063,9 @@
     "headerMarkExternal": "Marquer comme externe",
     "headerMarkActive": "Remettre dans Actifs",
     "markExternalTitle": "{count, plural, one {Marquer ce contact comme externe ?} other {Marquer # contacts comme externes ?}}",
-    "markExternalDesc": "Ils peuvent toujours réserver et participer, et leur historique reste. Ils quittent la liste Actifs, le nombre de contacts, les invitations aux événements, les automatisations et « À traiter » — jusqu'à ce que vous les marquiez actifs à nouveau, ou qu'ils remplissent votre formulaire d'inscription."
+    "markExternalDesc": "Ils peuvent toujours réserver et participer, et leur historique reste. Ils quittent la liste Actifs, le nombre de contacts, les invitations aux événements, les automatisations et « À traiter » — jusqu'à ce que vous les marquiez actifs à nouveau, ou qu'ils remplissent votre formulaire d'inscription.",
+    "goalSaveFailed": "Impossible d'enregistrer cet objectif. Veuillez réessayer.",
+    "goalEvalSaveFailed": "Impossible d'enregistrer cette évaluation. Veuillez réessayer."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -7862,7 +7865,6 @@
     "profileInconsistentDesc": "La régularité de présence est le principal frein — le reste est solide une fois sur place.",
     "profileBalancedTitle": "Équilibré",
     "profileBalancedDesc": "Chaque domaine est solide. Continuez ainsi.",
-    "ratingAriaLabel": "Noter {n} sur 5",
     "createStepCta": "Créer une tâche pour {dimension}",
     "createStepDefaultTitle": "Travailler sur {dimension}",
     "createStepSubmit": "Créer la tâche",
@@ -7871,7 +7873,8 @@
     "collapseGoal": "Réduire l'objectif",
     "expandGoal": "Développer l'objectif",
     "startDateLabel": "Début : {date}",
-    "tasksCompletedLabel": "{done}/{total} tâches terminées"
+    "tasksCompletedLabel": "{done}/{total} tâches terminées",
+    "fieldNoTargetDate": "Aucune date cible"
   },
   "OrgUpsell": {
     "title": "Vous gérez plusieurs studios ?",

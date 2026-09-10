@@ -227,7 +227,7 @@ export function useAddGoalEvaluation() {
       score: number
       notes: string | null
       /** Present only when the goal is student-owned AND the form offered (and
-       *  changed) the control — see EvaluationFormDialog. */
+       *  changed) the control — see the shared EvaluationDialog's `canSetStatus`. */
       statusAfter?: GoalStatus
     }) => {
       if (!contactId) throw new Error('Not signed in')

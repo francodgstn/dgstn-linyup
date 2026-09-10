@@ -15,6 +15,7 @@ import {
 import Svg, { Circle, Line, Polygon, Polyline, Text as SvgText } from 'react-native-svg';
 import { FirestoreService } from '../../services/firestore';
 import { PerformanceIndicator, PerformanceCheckin, ProfileKey } from '../../types';
+import { PERFORMANCE_PROFILE_COLORS } from '../../utils/goalContract';
 import { Timestamp } from 'firebase/firestore';
 import { useTranslations } from '../../i18n';
 
@@ -64,25 +65,28 @@ type ProfileDisplay = {
   message: string;
 };
 
+// The colour is the shared fact (`PERFORMANCE_PROFILE_COLORS` — the admin's
+// profile badge tints the same reading the same way); the words stay here.
 const profileDisplay = (t: Translate, key: ProfileKey, lever?: string, anchor?: string): ProfileDisplay => {
   const labels = axisLabels(t);
+  const color = PERFORMANCE_PROFILE_COLORS[key];
   switch (key) {
     case 'burnout_risk':
-      return { label: t('profileBurnoutRiskLabel'), color: '#EF4444', message: t('profileBurnoutRiskMessage') };
+      return { label: t('profileBurnoutRiskLabel'), color, message: t('profileBurnoutRiskMessage') };
     case 'overreaching':
-      return { label: t('profileOverreachingLabel'), color: '#F97316', message: t('profileOverreachingMessage') };
+      return { label: t('profileOverreachingLabel'), color, message: t('profileOverreachingMessage') };
     case 'stuck':
-      return { label: t('profileStuckLabel'), color: '#EAB308', message: t('profileStuckMessage') };
+      return { label: t('profileStuckLabel'), color, message: t('profileStuckMessage') };
     case 'coasting':
-      return { label: t('profileCoastingLabel'), color: '#8B5CF6', message: t('profileCoastingMessage') };
+      return { label: t('profileCoastingLabel'), color, message: t('profileCoastingMessage') };
     case 'inconsistent':
-      return { label: t('profileInconsistentLabel'), color: '#06B6D4', message: t('profileInconsistentMessage') };
+      return { label: t('profileInconsistentLabel'), color, message: t('profileInconsistentMessage') };
     case 'balanced':
-      return { label: t('profileBalancedLabel'), color: '#22C55E', message: t('profileBalancedMessage') };
+      return { label: t('profileBalancedLabel'), color, message: t('profileBalancedMessage') };
     default:
       return {
         label: t('profileDefaultLabel'),
-        color: '#6B7280',
+        color,
         message: anchor && lever
           ? t('profileDefaultMessage', { anchor: labels[anchor] ?? anchor, lever: labels[lever] ?? lever })
           : '',

@@ -7,7 +7,7 @@
 // said what the work is about — see the header of
 // packages/shared/src/types/goal.ts.
 //
-// Deliberately NOT the full GoalFormDialog: the title is pre-filled (and
+// Deliberately NOT the full GoalDialog: the title is pre-filled (and
 // editable) and the axis is fixed, so there is nothing left to ask except,
 // optionally, which open goal this step serves. Picking none files it under
 // the virtual "General" group — no placeholder goal is ever created for it

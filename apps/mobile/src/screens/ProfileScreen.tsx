@@ -1,4 +1,4 @@
-import { isTrialStage, leaderboardDisplayName } from '@linyup/shared';
+import { isTrialStage, leaderboardDisplayName, personInitials } from '@linyup/shared';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -262,10 +262,7 @@ export const ProfileScreen: React.FC = () => {
     setIsRefreshing(false);
   };
 
-  const initials = useMemo(() => {
-    if (!contact) return '';
-    return `${contact.firstname?.[0] || ''}${contact.lastname?.[0] || ''}`.toUpperCase();
-  }, [contact]);
+  const initials = useMemo(() => (contact ? personInitials(contact) : ''), [contact]);
 
   const myLeaderboardRank = useMemo(() => {
     if (!leaderboard || !contact?.id) return undefined;

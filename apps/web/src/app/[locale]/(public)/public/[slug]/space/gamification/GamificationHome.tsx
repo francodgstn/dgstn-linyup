@@ -28,7 +28,7 @@
 import { useMemo } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Trophy, Star, Flame, Award, Lock } from 'lucide-react'
-import { isTrialStage, leaderboardDisplayName } from '@linyup/shared'
+import { isTrialStage, leaderboardDisplayName, mergeBadgeThresholds } from '@linyup/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { loadFailureDetail } from '@/lib/publicQueryError'
@@ -38,7 +38,7 @@ import { usePublicContactRecord } from '../../usePublicContactRecord'
 import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceLeaderboard } from './useSpaceLeaderboard'
-import { BADGE_DEFINITIONS, isBadgeEarned, earnedBadgeCount, type BadgeGroupKey, type BadgeStats } from './badges'
+import { badgeDefinitions, isBadgeEarned, earnedBadgeCount, type BadgeGroupKey, type BadgeStats } from './badges'
 
 
 const LEADERBOARD_DISPLAY_LIMIT = 10
@@ -82,7 +82,13 @@ export default function GamificationHome() {
     }),
     [contactRecord]
   )
-  const earned = earnedBadgeCount(stats)
+  // The studio's own thresholds (public mirror), over the product defaults —
+  // the same resolution the admin editor and the member app make.
+  const badges = useMemo(
+    () => badgeDefinitions(mergeBadgeThresholds(team.gamification_settings?.badge_thresholds)),
+    [team.gamification_settings?.badge_thresholds]
+  )
+  const earned = earnedBadgeCount(badges, stats)
 
   const monthLabel = useMemo(() => {
     const month = leaderboard?.month
@@ -267,7 +273,7 @@ export default function GamificationHome() {
           </div>
           {!contactPending && !contactErrored && (
             <span className="text-xs font-semibold" style={{ color: textMuted }}>
-              {t('badgesEarnedCount', { earned, total: BADGE_DEFINITIONS.length })}
+              {t('badgesEarnedCount', { earned, total: badges.length })}
             </span>
           )}
         </div>
@@ -286,7 +292,7 @@ export default function GamificationHome() {
           />
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-            {BADGE_DEFINITIONS.map((def) => {
+            {badges.map((def) => {
               const isEarned = isBadgeEarned(def, stats)
               const GroupIcon = GROUP_ICON[def.group]
               return (

@@ -16,8 +16,9 @@ import { Badge } from '@/components/ui/badge'
 import { FloatingSlot } from '@/components/layout/FloatingDock'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { CONTACTS_COLLECTION, ACTIVITIES_COLLECTION, TEAMS_COLLECTION } from '@linyup/shared'
-import type { Contact, Activity, Team } from '@linyup/shared'
+import { CONTACTS_COLLECTION, ACTIVITIES_COLLECTION, TEAMS_COLLECTION, DEFAULT_BADGE_THRESHOLDS, DEFAULT_GAMIFICATION_SCORING, mergeBadgeThresholds, personInitials } from '@linyup/shared'
+import type { Contact, Activity, Team, StoredGamificationSettings } from '@linyup/shared'
+import { avatarColor } from '@/lib/colors'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { Link } from '@/i18n/navigation'
 import { buttonVariants } from '@/components/ui/button'
@@ -27,56 +28,19 @@ import {
 } from 'lucide-react'
 
 // ─── types ────────────────────────────────────────────────────────────────────
+// The stored bag is `StoredGamificationSettings` (@linyup/shared, the ONE
+// owner — this page used to declare its own `GamificationSettings`, same name
+// as shared's and a different shape). The FORM holds every field, so it is
+// the required rendering of it.
 
-interface TimeMultiplier {
-  day: number
-  start_hour: number
-  end_hour: number
-  multiplier: number
-  label: string
-}
-
-interface CoachBadge {
-  key: string
-  label: string
-  description: string
-}
-
-interface BadgeSection {
-  enabled: boolean
-  [key: string]: number | boolean
-}
-
-interface GamificationSettings {
-  default_base_score: number
-  monthly_cap: number
-  streak_min_sessions: number
-  time_multipliers: TimeMultiplier[]
-  badge_thresholds: {
-    attendance: BadgeSection & { first_class: number; dedicated: number; committed: number; centurion: number; veteran: number }
-    streak: BadgeSection & { on_fire: number; unstoppable: number; legendary: number }
-    score: BadgeSection & { rising_star: number; monthly_star: number; superstar: number }
-    leaderboard: BadgeSection & { leader: number; top5: number; hall_of_fame: number }
-    explorer: BadgeSection & { explorer: number }
-  }
-  coach_badges: CoachBadge[]
-}
+type GamificationSettings = Required<StoredGamificationSettings>
 
 /** Lets the floating Save submit the settings form from its FloatingSlot portal. */
 const GAMIFICATION_FORM_ID = 'gamification-settings-form'
 
 const DEFAULTS: GamificationSettings = {
-  default_base_score: 10,
-  monthly_cap: 300,
-  streak_min_sessions: 2,
-  time_multipliers: [],
-  badge_thresholds: {
-    attendance: { enabled: true, first_class: 1, dedicated: 10, committed: 50, centurion: 100, veteran: 200 },
-    streak: { enabled: true, on_fire: 4, unstoppable: 8, legendary: 12 },
-    score: { enabled: true, rising_star: 30, monthly_star: 60, superstar: 90 },
-    leaderboard: { enabled: true, leader: 1, top5: 1, hall_of_fame: 5 },
-    explorer: { enabled: true, explorer: 2 },
-  },
+  ...DEFAULT_GAMIFICATION_SCORING,
+  badge_thresholds: DEFAULT_BADGE_THRESHOLDS,
   coach_badges: [],
 }
 
@@ -87,19 +51,6 @@ function currentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-function initials(c: Contact) {
-  return `${c.firstname?.[0] ?? ''}${c.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-}
-
-const AVATAR_COLORS = [
-  'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500',
-  'bg-pink-500', 'bg-teal-500', 'bg-red-500', 'bg-indigo-500',
-]
-function avatarColor(id: string) {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
-  return AVATAR_COLORS[h % AVATAR_COLORS.length]
-}
 
 // ─── data hooks ───────────────────────────────────────────────────────────────
 
@@ -244,7 +195,7 @@ function LeaderboardTab({ teamId }: { teamId: string }) {
           const rank = ranks[index]
           const isTrial = contact.acquisition_stage === 'trial_booked' || contact.acquisition_stage === 'trial_attended'
           const displayName = isTrial
-            ? initials(contact) + '.'
+            ? personInitials(contact) + '.'
             : `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim() || '?'
           const score = contact.current_month_score ?? 0
           const streak = contact.current_streak ?? 0
@@ -262,7 +213,7 @@ function LeaderboardTab({ teamId }: { teamId: string }) {
 
               {/* Avatar + name */}
               <div className={`h-8 w-8 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-semibold ${avatarColor(contact.id)}`}>
-                {initials(contact)}
+                {personInitials(contact)}
               </div>
               <div className="flex-1 min-w-0">
                 {/* The name links to the record — the same fix UX-63 made on
@@ -750,19 +701,13 @@ export default function GamificationPage() {
   const { data: team } = useTeam(currentTeamId)
   const { data: activities = [] } = useActivities(currentTeamId)
 
-  const gamSettings = (team?.settings as { gamification?: Partial<GamificationSettings> } | undefined)?.gamification ?? {}
+  const gamSettings = (team?.settings as { gamification?: StoredGamificationSettings } | undefined)?.gamification ?? {}
 
   const defaultValues: GamificationSettings = {
     ...DEFAULTS,
     ...gamSettings,
     time_multipliers: gamSettings.time_multipliers ?? DEFAULTS.time_multipliers,
-    badge_thresholds: {
-      attendance: { ...DEFAULTS.badge_thresholds.attendance, ...gamSettings.badge_thresholds?.attendance },
-      streak: { ...DEFAULTS.badge_thresholds.streak, ...gamSettings.badge_thresholds?.streak },
-      score: { ...DEFAULTS.badge_thresholds.score, ...gamSettings.badge_thresholds?.score },
-      leaderboard: { ...DEFAULTS.badge_thresholds.leaderboard, ...gamSettings.badge_thresholds?.leaderboard },
-      explorer: { ...DEFAULTS.badge_thresholds.explorer, ...gamSettings.badge_thresholds?.explorer },
-    },
+    badge_thresholds: mergeBadgeThresholds(gamSettings.badge_thresholds),
     coach_badges: gamSettings.coach_badges ?? DEFAULTS.coach_badges,
   }
 

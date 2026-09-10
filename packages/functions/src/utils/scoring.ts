@@ -1,19 +1,13 @@
-export interface GamificationSettings {
+import { DEFAULT_GAMIFICATION_SCORING, type GamificationScoringSettings } from '@linyup/shared'
+
+/** The scorer's resolved view of `settings.gamification`: the shared scoring
+ *  shape plus the plugin's on/off flag. */
+export interface GamificationSettings extends GamificationScoringSettings {
   enabled: boolean
-  default_base_score: number
-  streak_min_sessions: number
-  monthly_cap: number
-  time_multipliers: Array<{ day: number; start_hour: number; end_hour: number; multiplier: number }>
 }
 
 export function getDefaultGamificationSettings(): GamificationSettings {
-  return {
-    enabled: false,
-    default_base_score: 10,
-    streak_min_sessions: 2,
-    monthly_cap: 300,
-    time_multipliers: [],
-  }
+  return { enabled: false, ...DEFAULT_GAMIFICATION_SCORING, time_multipliers: [] }
 }
 
 export function resolveGamificationSettings(teamSettings: Partial<GamificationSettings> | undefined): GamificationSettings {

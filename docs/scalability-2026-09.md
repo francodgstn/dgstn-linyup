@@ -291,35 +291,63 @@ to do, and worth recording so nobody "fixes" it into being wrong.
     explanatory card on the portal and nothing in the app. A copy decision;
     the vocabulary map is the thing to share (item 22).
 
-### Not yet drifted, cheap — the next edit to any of these drifts it
+### Not yet drifted, cheap — closed before they could (2026-09-10)
 
-17. **Star ratings, three implementations.** Two are React DOM in the same app
-    and differ only in where the empty-star colour comes from — the identical
-    situation `GoalProgressBar` was in. The `value: 0 means unset` invariant is
-    restated in all three headers.
-18. **`GoalStateChips` twice, both DOM.** The Space's own header calls it "the
-    admin's twin". Same palette-prop shape as `GoalProgressBar`.
-19. **Badge thresholds, the same nine numbers in three files** — and the
-    Space's flat `BADGE_DEFINITIONS` has no override path. One edit in the
-    admin editor away from a studio seeing one set on the portal and another
-    in the app. `DEFAULT_BADGE_THRESHOLDS` beside the type it already owns.
-20. **`BeltBadge` re-derives the precedence `rankLevelBadge` exists to own**,
-    from four loose colour/emoji/image props. Its own header names the shared
-    function it is re-implementing.
-21. **`initials()` is written out eleven times** across web and mobile;
-    `avatarColor` + its palette twice, byte-for-byte, in `apps/web`.
-22. **Colour and label maps for `GoalStatus` and `ProfileKey`, each declared
-    two or three times** — the mobile hexes are the resolved values of the
-    admin's Tailwind classes. Wants one hex map both derive from.
-23. **Shadowing types.** The admin gamification page declares its own
-    `GamificationSettings` — same name as shared's, different shape, in an app
-    that imports shared everywhere else. `Leaderboard`/`LeaderboardEntry`
-    exist in mobile and again as `SpaceLeaderboard*` with a nullability
-    difference. `ShownSubscription` casts away `status` from shared's
-    `ActiveSubscriptionSummary` rather than extending it.
-24. **Goal and evaluation dialogs twice, both DOM.** The field sets genuinely
-    differ (a member cannot set a start date or reparent), so this wants one
-    form with capability props rather than a merge. Item 4 came from here.
+Each of these was taken while the copies still agreed, which is the cheap
+moment. Every claim was read at source first; the sweep's descriptions held for
+all eight, and the site count on 21 was low.
+
+17. **DONE — Star ratings.** The two DOM copies are one `RatingStars`
+    (`apps/web/src/components/coaching/`), read-only or interactive, with the
+    same optional-colour split as `GoalProgressBar`. The admin's filled star
+    is now amber-500 — the hex the member app already used. The aria label
+    moved to `Common`, since the component belongs to neither surface. Mobile
+    keeps its Paper renderer: a different toolkit is not a duplicate.
+18. **DONE — `GoalStateChips`** is one component, same directory. The words
+    come from the caller as a small `labels` object, because the two surfaces
+    translate from different namespaces and format dates differently (item
+    13); the component owns the three facts and the say-nothing rule.
+19. **DONE — Badge thresholds.** `DEFAULT_BADGE_THRESHOLDS` and
+    `mergeBadgeThresholds` sit beside the type in shared; the admin editor, the
+    member app (which spread the five sections by hand, twice) and the Space
+    all resolve through it. The Space also gained the override path it lacked:
+    it reads the studio's thresholds off the public mirror, so a raised
+    "Dedicated" shows the same number on the portal, in the app and in the
+    editor, and a switched-off group disappears on both member surfaces.
+20. **DONE — `BeltBadge`** takes the shared `RankBadge` and switches on
+    `kind`; mobile's `resolvePrimaryRank` now returns that badge from
+    `rankLevelBadge` instead of four loose fields. Item 10 (*which* system is
+    primary) is untouched and still owed.
+21. **DONE — `personInitials` / `nameInitials`** in shared, every hand-written
+    copy replaced (the sweep's eleven were thirteen), including the two mobile
+    ones that had no `'?'` fallback; `avatarColor` in `@/lib/colors` (Tailwind
+    classes, so web-only).
+22. **DONE, with one deliberate remainder — colour maps.** `GOAL_STATUS_COLORS`
+    and `PERFORMANCE_PROFILE_COLORS` are in shared; mobile, the admin's profile
+    badge and the admin's evaluation rows (which carried the same four hexes
+    inline) read them. The admin's status *pill* keeps Tailwind light/dark
+    class pairs (`components/coaching/goalStatusStyles.ts`) derived by colour
+    family, because one hex cannot also carry a dark-mode text contrast; the
+    file says so and names its owner. The *label* maps stay per surface: they
+    are i18n keys in three namespaces, and moving them is a copy migration,
+    not a dedupe.
+23. **DONE — Shadowing types.** The admin gamification page's form type is
+    `Required<StoredGamificationSettings>`, a shared type that now describes
+    the whole stored bag (public slice + scoring); the functions scorer's
+    defaults derive from `DEFAULT_GAMIFICATION_SCORING` too. `LeaderboardEntry`
+    and `TeamLeaderboard` are in shared — mobile's hydrated envelope extends
+    them the way `HydratedSession` does, the Space picks two fields — and the
+    leaderboard path is three constants in `paths.ts` used by the writer and
+    both readers. `ShownSubscription` is a `Partial<Pick<…>>` of
+    `ActiveSubscriptionSummary`, and the cast is gone.
+24. **DONE — Goal and evaluation dialogs.** One `GoalDialog` and one
+    `EvaluationDialog` (`components/coaching/`), with capability props rather
+    than a merge: the admin declares description + both dates + a parent
+    picker on a step; the Space declares description + target date on a goal
+    and a title-only step, and offers the status control only on the member's
+    own goal. Both surfaces now use the app's `DatePicker`, which retires the
+    string round-trip that item 4 fixed. The words come from the caller, as
+    with 18.
 
 ### Worth doing, not urgent
 

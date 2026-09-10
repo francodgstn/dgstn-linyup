@@ -933,6 +933,85 @@ export interface GamificationSettings {
 }
 
 /**
+ * The product's own badge thresholds — what every surface falls back to for a
+ * studio that has never customised them. ONE copy: the admin editor's
+ * defaults, the member app's fallback and the Space's badge list all read
+ * this. The same numbers used to be typed out in the editor, the app and the
+ * Space, byte-identical — which is exactly the state that is one edit away
+ * from a studio seeing one set on the portal and another in the app.
+ */
+export const DEFAULT_BADGE_THRESHOLDS: GamificationBadgeThresholds = {
+  attendance: { enabled: true, first_class: 1, dedicated: 10, committed: 50, centurion: 100, veteran: 200 },
+  streak: { enabled: true, on_fire: 4, unstoppable: 8, legendary: 12 },
+  score: { enabled: true, rising_star: 30, monthly_star: 60, superstar: 90 },
+  leaderboard: { enabled: true, leader: 1, top5: 1, hall_of_fame: 5 },
+  explorer: { enabled: true, explorer: 2 },
+}
+
+/** What a studio may have stored: any section, any field of it, or nothing. */
+export type BadgeThresholdOverrides = {
+  [K in keyof GamificationBadgeThresholds]?: Partial<GamificationBadgeThresholds[K]> | null
+}
+
+/**
+ * A studio's stored overrides laid over the defaults, section by section, so a
+ * partially-saved section (one number edited, the rest absent) still resolves
+ * every field. Null/undefined → the defaults. The admin editor, the member app
+ * and the Space all resolve through this — never spread the sections by hand.
+ */
+export function mergeBadgeThresholds(
+  overrides?: BadgeThresholdOverrides | null,
+): GamificationBadgeThresholds {
+  return {
+    attendance: { ...DEFAULT_BADGE_THRESHOLDS.attendance, ...overrides?.attendance },
+    streak: { ...DEFAULT_BADGE_THRESHOLDS.streak, ...overrides?.streak },
+    score: { ...DEFAULT_BADGE_THRESHOLDS.score, ...overrides?.score },
+    leaderboard: { ...DEFAULT_BADGE_THRESHOLDS.leaderboard, ...overrides?.leaderboard },
+    explorer: { ...DEFAULT_BADGE_THRESHOLDS.explorer, ...overrides?.explorer },
+  }
+}
+
+/** One window of the week in which a session scores more — the studio's
+ *  early-bird / off-peak multiplier. `label` is the studio's own name for the
+ *  window; the scorer never reads it. */
+export interface GamificationTimeMultiplier {
+  day: number
+  start_hour: number
+  end_hour: number
+  multiplier: number
+  label?: string
+}
+
+/** The SCORING half of `teams/{id}.settings.gamification` — how points are
+ *  earned. Never mirrored publicly: see `pickPublicGamificationSettings`. */
+export interface GamificationScoringSettings {
+  default_base_score: number
+  monthly_cap: number
+  streak_min_sessions: number
+  time_multipliers: GamificationTimeMultiplier[]
+}
+
+/** The scorer's defaults for a studio that never saved the form. */
+export const DEFAULT_GAMIFICATION_SCORING: GamificationScoringSettings = {
+  default_base_score: 10,
+  monthly_cap: 300,
+  streak_min_sessions: 2,
+  time_multipliers: [],
+}
+
+/**
+ * The WHOLE stored bag — the public slice plus the scoring configuration —
+ * every field optional, because a studio saves the form once and may never
+ * have. The admin editor's form type is `Required<StoredGamificationSettings>`:
+ * the shape it writes back. It used to declare its own `GamificationSettings`,
+ * same name as this file's and a different shape, in an app that imports
+ * shared everywhere else.
+ */
+export interface StoredGamificationSettings
+  extends GamificationSettings,
+    Partial<GamificationScoringSettings> {}
+
+/**
  * The PUBLIC-safe slice of `teams/{id}.settings.gamification` — exactly the
  * two fields `GamificationSettings` declares. The stored bag ALSO carries the
  * studio's scoring configuration (`default_base_score`, `monthly_cap`,

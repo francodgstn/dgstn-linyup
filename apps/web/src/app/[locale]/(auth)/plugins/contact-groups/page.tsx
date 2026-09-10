@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { Route } from 'next'
-import { CONTACTS_COLLECTION } from '@linyup/shared'
+import { CONTACTS_COLLECTION, personInitials } from '@linyup/shared'
 import type { Contact, ContactGroup } from '@linyup/shared'
 import { Input } from '@/components/ui/input'
 import { SearchInput } from '@/components/ui/search-input'
@@ -41,9 +41,6 @@ const GROUP_COLORS = [
   '#6b7280', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
 ]
 
-function initials(c: Contact) {
-  return `${c.firstname?.[0] ?? ''}${c.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-}
 
 // Same query + key as the contacts list page so the TanStack cache is shared.
 function useActiveContacts(teamId: string | null) {
@@ -234,7 +231,7 @@ function AddMembersDialog({
                 {picked.has(c.id) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
               </span>
               <span className="h-7 w-7 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-semibold">
-                {initials(c)}
+                {personInitials(c)}
               </span>
               <span className="truncate">{c.firstname} {c.lastname}</span>
             </button>
@@ -649,7 +646,7 @@ export default function ContactGroupsPage() {
                       <Link href={`/contacts/${c.id}` as Route}
                         className="flex-1 flex items-center gap-3 text-left min-w-0">
                         <span className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-xs font-semibold">
-                          {initials(c)}
+                          {personInitials(c)}
                         </span>
                         <span className="text-sm font-medium truncate">{c.firstname} {c.lastname}</span>
                         {!isDirect && !ungroupedSelected && (

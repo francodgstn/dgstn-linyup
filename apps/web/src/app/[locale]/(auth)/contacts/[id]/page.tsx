@@ -97,6 +97,7 @@ import {
   alertIsFired,
   planGrantExpiryMs,
   planGrantIsCurrent,
+  personInitials,
 } from '@linyup/shared'
 import type {
   Contact,
@@ -242,9 +243,6 @@ import { Tip } from '@/components/ui/tip'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function initials(c: Contact) {
-  return `${c.firstname?.[0] ?? ''}${c.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-}
 
 
 function formatDate(ts: { toDate(): Date } | null | undefined, opts?: Intl.DateTimeFormatOptions) {
@@ -5306,7 +5304,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 below so the avatar never shifts content sideways on mobile. */}
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-xl font-bold">
-                {initials(contact)}
+                {personInitials(contact)}
               </div>
               <div className="min-w-0">
                 <h1 className="text-xl font-bold min-w-0 break-words">

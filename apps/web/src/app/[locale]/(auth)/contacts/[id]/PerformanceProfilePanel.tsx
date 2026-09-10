@@ -36,6 +36,7 @@ import {
   resolveCoachingDimensions,
   detectPerformanceProfile,
   dimensionLabel,
+  PERFORMANCE_PROFILE_COLORS,
 } from '@linyup/shared'
 import type { Contact, Team, PerformanceCheckin, ProfileKey, Goal } from '@linyup/shared'
 import { usePlan } from '@/hooks/usePlan'
@@ -72,16 +73,6 @@ import {
 // are new i18n keys (see module header).
 
 
-const PROFILE_COLORS: Record<ProfileKey, string> = {
-  burnout_risk: '#EF4444',
-  overreaching: '#F97316',
-  stuck: '#EAB308',
-  coasting: '#8B5CF6',
-  inconsistent: '#06B6D4',
-  balanced: '#22C55E',
-  default: '#6B7280',
-}
-
 function ProfileBadge({
   profileKey,
   primaryLever,
@@ -94,7 +85,7 @@ function ProfileBadge({
   dimensions: { key: string; label: string }[]
 }) {
   const t = useTranslations('Contacts')
-  const color = PROFILE_COLORS[profileKey]
+  const color = PERFORMANCE_PROFILE_COLORS[profileKey]
   const labelFor = (key?: string | null) =>
     key ? (dimensions.find((d) => d.key === key)?.label ?? key) : ''
   const message =
@@ -126,7 +117,7 @@ function ProfileBadge({
 // header of packages/shared/src/types/goal.ts). The coach can file it into a
 // real category later; guessing one here would be worse than leaving it blank.
 //
-// Deliberately NOT the full GoalFormDialog: the title is pre-filled (and
+// Deliberately NOT the full GoalDialog: the title is pre-filled (and
 // editable) and the axis is fixed, so there is nothing left to fill in except,
 // optionally, which open goal this serves. Choosing none files it under the
 // virtual "General" group — no placeholder goal is ever created for it (see

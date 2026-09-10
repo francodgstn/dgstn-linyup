@@ -47,7 +47,9 @@ import {
   activityRequiresSubscription, contactHoldsCoveringSubscription,
   bookingHoldsSeat, confirmClearedHoldFields, seatsFree,
   bookingContactId, buildParticipantDoc,
-  CONTACT_GOALS_SUBCOLLECTION, resolveCoachingDimensions, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION } from '@linyup/shared'
+  CONTACT_GOALS_SUBCOLLECTION, resolveCoachingDimensions, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION,
+  personInitials,
+} from '@linyup/shared'
 import type { Session, Booking, Contact, Activity, WaitlistEntry, PerformanceIndicator } from '@linyup/shared'
 import { WaiverChip, WaiverDoorCheckChip } from '@/components/WaiverChip'
 import { useWaiverPolicy, useWaiverRoster } from '@/hooks/useWaiverStates'
@@ -736,10 +738,6 @@ function AddParticipantsDialog({
     }
   }
 
-  function initials(c: Contact) {
-    return `${c.firstname?.[0] ?? ''}${c.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-  }
-
   // A fresh open starts from nothing chosen. Leaving the previous selection
   // standing would re-add people the manager already committed.
   useEffect(() => {
@@ -862,7 +860,7 @@ function AddParticipantsDialog({
                       {isPicked && <Check className="h-3 w-3" />}
                     </span>
                     <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
-                      {initials(c)}
+                      {personInitials(c)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{c.firstname} {c.lastname}</p>

@@ -1,19 +1,18 @@
-import { planGrantIsCurrent } from '@linyup/shared';
+import { planGrantIsCurrent, rankLevelBadge, type RankBadge } from '@linyup/shared';
 import { AffiliationSummary, ContactAddress, Contact, RankingSystem } from '../types';
 
 /** What a few helpers below need from `useTranslations(...)` — the caller's
  *  own namespace (these are plain utilities with no namespace of their own). */
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
-/** What the badge needs to draw a level, whatever scale it came from. */
+/** The contact's level on a scale, plus how to DRAW it — `badge` is the shared
+ *  `rankLevelBadge` resolution, so the app never re-derives which of colour /
+ *  split / emoji / artwork wins. */
 export interface ResolvedRank {
   system: RankingSystem | null;
   value: number;
   label: string;
-  color: string;
-  secondColor?: string;
-  emoji?: string;
-  imageUrl?: string;
+  badge: RankBadge;
 }
 
 /**
@@ -42,10 +41,7 @@ export function resolvePrimaryRank(
     system,
     value,
     label: level.label,
-    color: level.color ?? '#DDDDDD',
-    secondColor: level.secondColor,
-    emoji: level.emoji,
-    imageUrl: level.imageUrl,
+    badge: rankLevelBadge(level),
   };
 }
 

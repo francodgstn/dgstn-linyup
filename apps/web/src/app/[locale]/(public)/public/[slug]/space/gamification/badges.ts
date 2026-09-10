@@ -1,23 +1,25 @@
 // Pure badge computation — deliberately SIMPLE, on purpose.
 //
 // This is a smaller badge set than the mobile app's `BadgesCard.tsx`: no
-// team-customized thresholds (`teams/{id}.settings.gamification.badge_thresholds`
-// is private — team-member-or-creator only per firestore.rules — and mirroring
-// it onto public_profile is a bigger change than this pass), no coach-assigned
-// custom badges (same problem: their labels live on the same private doc), and
-// no rank/explorer/"special" groups. The web Space is explicitly the SIMPLE
-// view of gamification (score/streak/leaderboard/badges) while the mobile app
-// is not yet the primary surface — see the module header of
-// `GamificationHome.tsx`.
+// coach-assigned custom badges and no rank/leaderboard/explorer/"special"
+// groups. The web Space is explicitly the SIMPLE view of gamification
+// (score/streak/leaderboard/badges) while the mobile app is not yet the
+// primary surface — see the module header of `GamificationHome.tsx`.
 //
-// The three groups below (attendance / streak / score) use the SAME numbers
-// mobile's `BadgesCard.tsx` DEFAULT_THRESHOLDS falls back to for a team that
-// has never customized them, so nothing here is invented — it is the product's
-// own default, just not yet override-able from this surface.
+// The NUMBERS are not this file's, though. The three groups below read the
+// studio's own thresholds — `TeamPublicProfile.gamification_settings`, the
+// public mirror of `teams/{id}.settings.gamification.badge_thresholds`, laid
+// over `DEFAULT_BADGE_THRESHOLDS` by the shared `mergeBadgeThresholds` — so a
+// studio that raised "Dedicated" to 20 in the admin sees 20 here, in the app,
+// and in the editor. A group the studio switched off is dropped, as the app
+// drops it. (The nine numbers used to be typed out here; one edit in the
+// admin editor away from the portal and the app disagreeing.)
 //
 // Every input is a field already on `Contact` that a contact session may read
 // off its OWN document (`isSelfContact` in firestore.rules) — no new mirror
 // needed for badges.
+
+import { DEFAULT_BADGE_THRESHOLDS, type GamificationBadgeThresholds } from '@linyup/shared'
 
 export type BadgeGroupKey = 'attendance' | 'streak' | 'score'
 
@@ -30,17 +32,35 @@ export interface BadgeDefinition {
   threshold: number
 }
 
-export const BADGE_DEFINITIONS: readonly BadgeDefinition[] = [
-  { key: 'first_class', group: 'attendance', threshold: 1 },
-  { key: 'dedicated', group: 'attendance', threshold: 10 },
-  { key: 'committed', group: 'attendance', threshold: 50 },
-  { key: 'on_fire', group: 'streak', threshold: 4 },
-  { key: 'unstoppable', group: 'streak', threshold: 8 },
-  { key: 'legendary', group: 'streak', threshold: 12 },
-  { key: 'rising_star', group: 'score', threshold: 30 },
-  { key: 'monthly_star', group: 'score', threshold: 60 },
-  { key: 'superstar', group: 'score', threshold: 90 },
-]
+/** The badges this surface shows, at the studio's resolved thresholds. */
+export function badgeDefinitions(
+  thresholds: GamificationBadgeThresholds = DEFAULT_BADGE_THRESHOLDS,
+): BadgeDefinition[] {
+  const { attendance, streak, score } = thresholds
+  const defs: BadgeDefinition[] = []
+  if (attendance.enabled !== false) {
+    defs.push(
+      { key: 'first_class', group: 'attendance', threshold: attendance.first_class },
+      { key: 'dedicated', group: 'attendance', threshold: attendance.dedicated },
+      { key: 'committed', group: 'attendance', threshold: attendance.committed },
+    )
+  }
+  if (streak.enabled !== false) {
+    defs.push(
+      { key: 'on_fire', group: 'streak', threshold: streak.on_fire },
+      { key: 'unstoppable', group: 'streak', threshold: streak.unstoppable },
+      { key: 'legendary', group: 'streak', threshold: streak.legendary },
+    )
+  }
+  if (score.enabled !== false) {
+    defs.push(
+      { key: 'rising_star', group: 'score', threshold: score.rising_star },
+      { key: 'monthly_star', group: 'score', threshold: score.monthly_star },
+      { key: 'superstar', group: 'score', threshold: score.superstar },
+    )
+  }
+  return defs
+}
 
 export interface BadgeStats {
   /** Total sessions attended (`Contact.total_sessions`). */
@@ -65,6 +85,6 @@ export function isBadgeEarned(def: BadgeDefinition, stats: BadgeStats): boolean 
   return statValue(def.group, stats) >= def.threshold
 }
 
-export function earnedBadgeCount(stats: BadgeStats): number {
-  return BADGE_DEFINITIONS.reduce((count, def) => count + (isBadgeEarned(def, stats) ? 1 : 0), 0)
+export function earnedBadgeCount(defs: readonly BadgeDefinition[], stats: BadgeStats): number {
+  return defs.reduce((count, def) => count + (isBadgeEarned(def, stats) ? 1 : 0), 0)
 }
