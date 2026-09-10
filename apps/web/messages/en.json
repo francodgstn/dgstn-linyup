@@ -426,7 +426,10 @@
     "chartTitleContacts": "Contacts",
     "chartTitleTopActivities": "Top activities",
     "sectionDiscover": "Discover",
-    "firstRunSetupBody": "Nothing has happened yet, so there is nothing to count. Finish setting up and this page fills itself in."
+    "firstRunSetupBody": "Nothing has happened yet, so there is nothing to count. Finish setting up and this page fills itself in.",
+    "seriesSubscribed": "Subscribed",
+    "seriesAffiliated": "Affiliated",
+    "seriesViaPartner": "Via a partner app"
   },
   "Contacts": {
     "noteColor_none": "No colour",

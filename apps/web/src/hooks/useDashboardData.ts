@@ -25,7 +25,10 @@ export interface WeeklyReport {
   contacts_count_by_stage?: Record<string, number>
   contacts_with_active_affiliation?: number
   contacts_count_by_affiliation_type?: Record<string, number>
+  /** On one of the studio's OWN plans — partner-app plans are counted apart. */
   contacts_with_active_subscription?: number
+  /** On a partner-app plan (`source: 'aggregator'`); displayed as "via a partner". */
+  contacts_with_aggregator_subscription?: number
   contacts_count_by_subscription_type?: Record<string, number>
   active_contacts_count?: number
   trial_conversions_count?: number

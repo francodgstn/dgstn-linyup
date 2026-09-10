@@ -426,7 +426,10 @@
     "chartTitleContacts": "Contatti",
     "chartTitleTopActivities": "Attività principali",
     "sectionDiscover": "Scopri",
-    "firstRunSetupBody": "Non è ancora successo nulla, quindi non c'è nulla da contare. Completa la configurazione e questa pagina si riempirà da sola."
+    "firstRunSetupBody": "Non è ancora successo nulla, quindi non c'è nulla da contare. Completa la configurazione e questa pagina si riempirà da sola.",
+    "seriesSubscribed": "Abbonati",
+    "seriesAffiliated": "Affiliati",
+    "seriesViaPartner": "Tramite un'app partner"
   },
   "Contacts": {
     "noteColor_none": "Nessun colore",

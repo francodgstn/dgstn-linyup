@@ -30,6 +30,10 @@ function paletteColor(i: number) { return PALETTE[i % PALETTE.length] }
 // ─── dimensions ──────────────────────────────────────────────────────────────
 // Built dynamically inside the component so the membership term can be injected.
 
+// The series value for "on a partner-app plan". Not a subscription type id —
+// no type doc carries this id — so it cannot collide with the per-type series.
+const PARTNER_SERIES = '__partner'
+
 // Fallback display for an affiliation type_key (e.g. 'federation_licence').
 function humanizeKey(k: string): string {
   const s = k.replace(/[_-]+/g, ' ').trim()
@@ -45,7 +49,10 @@ function countFor(report: WeeklyReport | undefined, dim: string, value: string):
     return report.contacts_count_by_affiliation_type?.[value] ?? 0
   }
   if (dim === 'subscription_type') {
+    // "Subscribed" is the studio's OWN plans; partner-app plans are their own
+    // series (see subscriptionSource.ts in shared) and never in the headline.
     if (value === 'all') return report.contacts_with_active_subscription ?? 0
+    if (value === PARTNER_SERIES) return report.contacts_with_aggregator_subscription ?? 0
     return report.contacts_count_by_subscription_type?.[value] ?? 0
   }
   // Acquisition stage is exclusive, so summing the map gives distinct contacts.
@@ -168,18 +175,22 @@ export function ContactsSummaryCard({
     if (dimension === 'affiliation') {
       const keys = Array.from(new Set(weeklyReports.flatMap((r) => Object.keys(r.contacts_count_by_affiliation_type ?? {})))).sort()
       return [
-        { value: 'all', label: 'Affiliated', color: typeColor('member') },
+        { value: 'all', label: td('seriesAffiliated'), color: typeColor('member') },
         ...keys.map((k, i) => ({ value: k, label: humanizeKey(k), color: paletteColor(i) })),
       ]
     }
-    // subscription_type
+    // subscription_type — "Subscribed" is the studio's OWN plans; a partner-app
+    // plan (FitPass, ClassPass…) gets its own series, offered only once a
+    // report has somebody on one. Per-type series keep every type by name.
     const ids = Array.from(new Set(weeklyReports.flatMap((r) => Object.keys(r.contacts_count_by_subscription_type ?? {}))))
     const nameMap = Object.fromEntries((subscriptionTypes ?? []).map((st) => [st.id, st.name]))
+    const anyPartner = weeklyReports.some((r) => (r.contacts_with_aggregator_subscription ?? 0) > 0)
     return [
-      { value: 'all', label: 'Subscribed', color: FALLBACK },
+      { value: 'all', label: td('seriesSubscribed'), color: FALLBACK },
+      ...(anyPartner ? [{ value: PARTNER_SERIES, label: td('seriesViaPartner'), color: paletteColor(ids.length) }] : []),
       ...ids.map((id, i) => ({ value: id, label: nameMap[id] ?? id, color: paletteColor(i) })),
     ]
-  }, [dimension, weeklyReports, subscriptionTypes])
+  }, [dimension, weeklyReports, subscriptionTypes, td])
 
   const handleDimensionChange = (dim: string) => {
     setDimension(dim)
