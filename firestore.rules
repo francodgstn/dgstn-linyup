@@ -177,6 +177,63 @@ service cloud.firestore {
       return orgId != null && hasOrgRole(orgId, 'org_admin');
     }
 
+    // MAY AN ORG ADMIN READ THIS CONTACT? Only once the contact is ON THE
+    // ORGANISATION'S BOOKS — and being in a member studio is not that.
+    //
+    // A studio inside a federation has contacts who are nobody's business but
+    // its own: someone who trains at the club spot, a lead from a fitness app,
+    // a person doing a personalised activity the studio runs under its own name
+    // (Franco, 2026-09-08, describing HMD Basel). The old product expressed this
+    // with a 'guest' membership status — a person on the federation's roster
+    // marked as not counting. Affiliations replaced that: belonging is a ROW,
+    // so "not affiliated" is the ABSENCE of one and needs no status to say so.
+    //
+    // THE AFFILIATION ROW IS THEREFORE THE DISCLOSURE. Creating one — in ANY
+    // status, `guest` and `requested` included — is the studio's act of putting
+    // this person on the organisation's books, and it is what makes them
+    // readable here. Delete the row and they go back to being invisible:
+    // `onAffiliationWrite` recomputes the summary from the rows that remain, so
+    // this reverses rather than merely stopping.
+    //
+    // `org_ids` is the MEANING: an expired or merely requested licence still means
+    // the organisation knows this person and has to be able to renew or review
+    // them. `active_org_ids` answers "is it valid now", which is a FIGURE, not a
+    // permission — narrowing to it would hide the very people an administrator
+    // opens the page to chase.
+    //
+    // THE SECOND DISJUNCT GRANTS NOTHING AND IS NOT OPTIONAL. `active_org_ids` is
+    // built by `onAffiliationWrite` as the `active` subset of the same rows that
+    // build `org_ids`, so it is a SUBSET by construction and admits no contact the
+    // first arm does not already admit. It is here because Firestore checks a
+    // QUERY against the rule statically — an aggregation has no documents to
+    // evaluate one at a time — and a query constrained on `active_org_ids` cannot
+    // be proved to satisfy a rule that names only `org_ids`. Without this arm the
+    // org dashboard's affiliation figure is `permission-denied` for every studio
+    // the caller is not personally a member of (observed in the browser
+    // 2026-09-08; the single-document tests all passed, which is exactly why the
+    // query shapes are now tested too). One `array-contains` per query is a hard
+    // Firestore limit, so the query cannot simply carry both clauses instead.
+    //
+    // COSTS THE SAME AS THE RULE IT REPLACES in the passing case (the team's
+    // `org_id`, then the caller's org_members row) and less in the denying one:
+    // the array test is a field already on the document, denormalised by
+    // `onAffiliationWrite` for exactly this — see `AffiliationSummary` in shared,
+    // which names Firestore rules as a reader. It needs no backfill, unlike its
+    // `active_` sibling: `org_ids` is non-optional and has been written since the
+    // summary existed. A contact with no summary at all reads as `[]`, which
+    // hides them — the safe direction.
+    //
+    // `isOrgAdminOfOrg` rather than `hasOrgRole` directly: see the note on that
+    // function about the unguarded `.data` read.
+    function orgAdminMayReadContact(res) {
+      let orgId = get(/databases/$(database)/documents/teams/$(res.data.teamId)).data.get('org_id', null);
+      let summary = res.data.get('affiliation_summary', {});
+      return orgId != null
+             && (orgId in summary.get('org_ids', [])
+                 || orgId in summary.get('active_org_ids', []))
+             && isOrgAdminOfOrg(orgId);
+    }
+
     // Check if the current user is an org_admin of the org that owns the given
     // ORG-SCOPED event. Event subcollections (categories/attendees) previously
     // gated only on belongsToUserTeam(parent), which can never pass for an org
@@ -1161,7 +1218,7 @@ service cloud.firestore {
                    || hasRole('admin')
                    || isSelfContact(contactId)
                    || sharesContactEmail(resource)
-                   || isOrgAdminOfTeam(resource.data.teamId);
+                   || orgAdminMayReadContact(resource);
       // Belonging now lives in the affiliations subcollection (governed by the
       // catch-all below + the upsertAffiliation callable's org-lock guard), so the
       // old org_membership_* field gate is gone.

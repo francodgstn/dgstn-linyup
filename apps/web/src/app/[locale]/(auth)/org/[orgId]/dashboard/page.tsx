@@ -139,14 +139,16 @@ export default function OrgDashboardPage() {
   // is the right way round: an `org_viewer` cannot read contacts at all, so the
   // page already withholds PEOPLE from them, and a breakdown OF that number
   // should not be the one thing that leaks it.
+  // No studio scope: the breakdown counts affiliation ROWS through the collection
+  // group, where `org_id` already bounds it to this organisation — and where the
+  // rules can prove it. See the hook's own note.
   const { data: statusCounts, isLoading: statusCountsLoading } = useOrgAffiliationStatusCounts(
     orgId,
-    active.map((r) => r.teamId),
     statusDefs,
     isAdmin
   )
 
-  const people = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.people)) : null
+  const onBooks = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.onBooks)) : null
   const affiliated = isAdmin ? sumOrNull(active.map((r) => counts?.[r.teamId]?.affiliated)) : null
 
   const figuresLoading =
@@ -214,7 +216,7 @@ export default function OrgDashboardPage() {
         orgId={orgId}
         activeStudios={active.length}
         invitedStudios={invited}
-        people={people}
+        onBooks={onBooks}
         affiliated={affiliated}
         events={events?.total ?? null}
         affiliationTerm={affiliationTerm}

@@ -573,7 +573,7 @@
     "clearFilters": "Cancella",
     "selectAll": "Seleziona tutti",
     "selectAllCount": "{count} di {total} selezionati",
-    "bulkSelected": "{count, plural, one {# selezionato} other {# selezionati}}",
+    "bulkSelected": "{count} selezionato/i",
     "bulkMore": "Altre azioni",
     "bulkMove": "Sposta in un team",
     "bulkOutreach": "Invia email di contatto",
@@ -703,7 +703,7 @@
     "customFieldsConfigureLink": "Configura i campi personalizzati",
     "archivedBadge": "Archiviato",
     "deletedBadge": "Eliminato",
-    "copyUpdateLink": "Invia un link",
+    "copyUpdateLink": "Copia link di aggiornamento",
     "updateLinkCopied": "Link copiato!",
     "archivedNotice": "Ripristina questo contatto per modificarne i dettagli. I contatti archiviati non appaiono nelle sessioni, eventi o prenotazioni.",
     "actionUnarchive": "Annulla archiviazione",
@@ -1086,7 +1086,7 @@
     "typeSelector": "Tutti i tipi",
     "allTypes": "Tutti i tipi",
     "noOrg": "Questo team non appartiene a nessuna organizzazione. I tipi di affiliazione devono essere configurati nelle impostazioni del team.",
-    "bulkSelected": "{count, plural, one {# selezionato} other {# selezionati}}",
+    "bulkSelected": "{count} selezionati",
     "bulkRenew": "Rinnova",
     "bulkRenewTitle": "Rinnova affiliazioni",
     "bulkRenewDesc": "Rinnovare {count} affiliazione/i? Riattiva ciascuna ed estende la validità del periodo predefinito del tipo. Nessun pagamento viene addebitato.",
@@ -1095,7 +1095,15 @@
     "selectAll": "Seleziona tutto",
     "bulkRenewedPartial": "{ok} rinnovati, {failed} non riusciti",
     "clearSelection": "Deseleziona",
-    "manageTypes": "Gestisci i tipi"
+    "manageTypes": "Gestisci i tipi",
+    "notOnBooksTitle": "{count, plural, one {# contatto appartiene solo a questo studio} other {# contatti appartengono solo a questo studio}}.",
+    "notOnBooksBody": "{org} non può vederli finché non vengono aggiunti qui ai suoi registri.",
+    "notOnBooksBodyBare": "L'organizzazione non può vederli finché non vengono aggiunti qui ai suoi registri.",
+    "statusNone": "Non affiliato",
+    "removeAction": "Rimuovi affiliazione",
+    "removeTitle": "Rimuovere questa affiliazione?",
+    "removeBody": "{name} viene tolto dai registri e l'organizzazione smette di vederlo. La traccia di un'affiliazione passata viene eliminata — per registrare un'affiliazione scaduta, impostarla invece su scaduta.",
+    "removeConfirm": "Rimuovi"
   },
   "SubscriptionsOverview": {
     "title": "Abbonamenti",
@@ -3116,7 +3124,7 @@
     "cancel": "Annulla",
     "typeSelector": "Tutti i tipi",
     "allTypes": "Tutti i tipi",
-    "bulkSelected": "{count, plural, one {# selezionato} other {# selezionati}}",
+    "bulkSelected": "{count} selezionati",
     "bulkRenew": "Rinnova",
     "bulkRenewTitle": "Rinnova affiliazioni",
     "bulkRenewDesc": "Rinnovare {count} affiliazione/i? Riattiva ciascuna ed estende la validità del periodo predefinito del tipo. Nessun pagamento viene addebitato.",
@@ -3124,7 +3132,12 @@
     "filterExpiring": "In scadenza",
     "selectAll": "Seleziona tutto",
     "bulkRenewedPartial": "{ok} rinnovati, {failed} non riusciti",
-    "clearSelection": "Deseleziona"
+    "clearSelection": "Deseleziona",
+    "statusNone": "Non affiliato",
+    "removeAction": "Rimuovi affiliazione",
+    "removeTitle": "Rimuovere questa affiliazione?",
+    "removeBody": "{name} esce dai registri di questa organizzazione e da questo elenco. La traccia di un'affiliazione passata viene eliminata — per registrare un'affiliazione scaduta, impostarla invece su scaduta.",
+    "removeConfirm": "Rimuovi"
   },
   "OrgAffiliationStatuses": {
     "title": "Stati di affiliazione",
@@ -3296,7 +3309,13 @@
     "notFound": "Invito non trovato.",
     "loginRequired": "Devi essere connesso come proprietario del team per accettare questo invito.",
     "selectTeam": "Seleziona il tuo team",
-    "processing": "Elaborazione…"
+    "processing": "Elaborazione…",
+    "changesTitle": "Cosa cambia accettando",
+    "changesData": "Gli amministratori di {org} potranno leggere i contatti di questo team — nomi, recapiti e le informazioni registrate su di loro — oltre ai suoi eventi e check-in.",
+    "changesBilling": "Questo team passa al piano Linyup di {org}, che da quel momento lo paga.",
+    "changesUndo": "Solo un amministratore di {org} potrà scollegare questo team in seguito.",
+    "changesChooseTeam": "Possiedi più di un team. Questo vale solo per quello selezionato sopra — un team che tieni fuori da {org} mantiene i suoi contatti per sé.",
+    "errorOwnSubscription": "Questo studio ha ancora un proprio abbonamento Linyup. Disdicilo prima in Impostazioni → Fatturazione, poi accetta — altrimenti verrebbe pagato due volte."
   },
   "Discover": {
     "tabPlugins": "Plugin",
@@ -5783,7 +5802,7 @@
     "timelinePrevious": "Periodo precedente",
     "timelineNext": "Periodo successivo",
     "timelineToday": "Oggi",
-    "timelineEmpty": "Nessun evento per ora",
+    "timelineEmpty": "Nessun evento in {window}",
     "timelineTypeless": "Senza tipo",
     "timelineZoomYears": "{count} anni",
     "timelineDays": "{count, plural, one {# giorno} other {# giorni}}",
@@ -5798,7 +5817,13 @@
     "timelineBandOrgRow": "Organizzazione",
     "timelineBandTeamRow": "Questo studio",
     "timelineZoomLabel": "Zoom",
-    "viewLabel": "Vista"
+    "viewLabel": "Vista",
+    "timelineGroupByType": "Righe per tipo",
+    "trendTitle": "Partecipazione per evento",
+    "trendSubtitle": "{attendees} presenze in {events} eventi negli ultimi 12 mesi",
+    "trendTooltip": "{attendees} presenze · {date}",
+    "trendEmptyTitle": "Nessuna partecipazione",
+    "trendEmptyHint": "Registra le presenze a un evento e i mesi si popoleranno qui."
   },
   "OrgEventDetail": {
     "backToEvents": "Eventi dell'organizzazione",
@@ -8077,7 +8102,7 @@
     "figurePeople": "Persone",
     "figurePeopleSub": "in tutti gli studi membri",
     "figureWithheld": "visibile agli amministratori dell'organizzazione",
-    "figureAffiliatedSub": "{percent}% di tutte le persone",
+    "figureAffiliatedSub": "{percent}% ancora validi",
     "figureAffiliatedSubBare": "rilasciate da questa organizzazione",
     "figureEvents": "Eventi",
     "figureEventsSub": "in arrivo",
@@ -8106,7 +8131,10 @@
     "growthEmptyHint": "Quando gli studi si uniscono, qui appare la crescita dell'organizzazione.",
     "growthSeries": "Studi",
     "statusTitle": "{term} per stato",
-    "statusAll": "{count, plural, one {# persona} other {# persone}}"
+    "statusAll": "{count, plural, one {# scheda} other {# schede}}",
+    "figureOnBooks": "Persone registrate",
+    "figureOnBooksSub": "registrate presso l'organizzazione, qualsiasi stato",
+    "studioOnBooks": "registrate"
   },
   "ContactLink": {
     "title": "Mostra un QR",

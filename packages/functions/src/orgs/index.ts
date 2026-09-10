@@ -321,6 +321,45 @@ export const acceptOrgInvitation = onCall(async (request) => {
     )
   }
 
+  // A STUDIO THAT IS STILL PAYING FOR ITSELF CANNOT JOIN — it would pay twice.
+  //
+  // Accepting puts the studio on the ORGANISATION's plan and the org's
+  // subscription is what pays for it (UX-35). Its own Stripe subscription is not
+  // touched by that write and goes on invoicing, so the owner is charged for a
+  // seat the federation is already paying for — and nothing anywhere says so.
+  // The two halves of the old failure are both silent, and the second is worse
+  // than the duplicate charge: cancelling the leftover subscription — the
+  // correct thing to do — fires `subscription.cancelled` into
+  // `downgradeTeamToFree` on a paid-up member of the federation, deactivating
+  // its plugins, unpublishing its website and deleting its course mirrors
+  // one-way. See `docs/studio-independent-contacts.md`.
+  //
+  // REFUSING IS THE CHOSEN ANSWER (Franco, 2026-09-09) rather than cancelling
+  // the subscription on the owner's behalf: this callable never takes a money
+  // action for somebody, and the refusal mirrors `createCheckoutSession`'s
+  // `billed_by_org`, which is this same rule read from the other end.
+  //
+  // A TRIAL IS NOT A SUBSCRIPTION and must not be refused — a trialing studio
+  // joining a federation is the ordinary path. It cannot be caught here by
+  // construction: no `saas_subscriptions/{teamId}` document exists until Stripe
+  // fires for a real subscription (a team's trial lives on `teams/{id}`, and
+  // only `createOrganization` seeds a subscription doc up front, for an ORG).
+  const teamSubDoc = await db.collection('saas_subscriptions').doc(data.teamId).get()
+  const teamSubStatus = teamSubDoc.exists
+    ? ((teamSubDoc.data()?.status as string | undefined) ?? null)
+    : null
+  // `active` covers a subscription already set to stop at period end: it is
+  // still live, the studio has paid through the period, and letting it in would
+  // still hand the organisation a bill for the overlap.
+  if (teamSubStatus === 'active' || teamSubStatus === 'past_due') {
+    throw new HttpsError(
+      'failed-precondition',
+      'This studio still has its own Linyup subscription. Cancel it first, then accept — ' +
+        'otherwise it would be paid for twice.',
+      { reason: 'team_has_own_subscription', status: teamSubStatus }
+    )
+  }
+
   const now = FieldValue.serverTimestamp()
   const batch = db.batch()
 

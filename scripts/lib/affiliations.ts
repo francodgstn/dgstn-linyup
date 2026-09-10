@@ -14,18 +14,6 @@
  * which does not resolve the @linyup/shared workspace import.
  */
 
-/**
- * The `affiliation_summary.org_status_ids` entry for one (org, status) pair.
- *
- * Mirrors `orgAffiliationStatusKey` in `@linyup/shared` — which is the OWNER of
- * this format — for the same reason the constants below are mirrored: these
- * scripts compile under `tsconfig.scripts.json`, which does not resolve the
- * workspace import. Change it there first.
- */
-export function orgAffiliationStatusKey(orgId: string, statusId: string): string {
-  return `${orgId}:${statusId}`
-}
-
 // ── Firestore path constants (mirror @linyup/shared/paths) ─────────────────────
 export const CONTACT_AFFILIATIONS_SUBCOLLECTION = 'affiliations'
 export const AFFILIATION_TYPES_SUBCOLLECTION = 'affiliation_types'
@@ -35,23 +23,19 @@ export const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 // The built-in fallback status vocabulary, reused as affiliation statuses. Only
 // `active` counts as active; `expired` is final. The same shape an org carries at
 // organizations/{orgId}/affiliation_statuses.
+//
+// NO 'guest'. Not belonging is the ABSENCE of an affiliation row, never a status
+// — see the long note on the shared constant this mirrors. The seeders' own
+// `status: 'guest'` fixture label is a different thing: it is an INPUT meaning
+// "give this persona no affiliation", and each seeder already honours it that
+// way.
 export const DEFAULT_ORG_AFFILIATION_STATUSES = [
-  {
-    id: 'guest',
-    label: 'Guest',
-    description: 'No membership process started.',
-    color: 'gray',
-    order: 0,
-    isBuiltIn: true,
-    countsAsActive: false,
-    isFinal: false,
-  },
   {
     id: 'requested',
     label: 'Requested',
     description: 'Member has submitted a request, awaiting review.',
     color: 'yellow',
-    order: 1,
+    order: 0,
     isBuiltIn: true,
     countsAsActive: false,
     isFinal: false,
@@ -61,7 +45,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES = [
     label: 'Under review',
     description: 'Documents are being reviewed by the organisation.',
     color: 'blue',
-    order: 2,
+    order: 1,
     isBuiltIn: true,
     countsAsActive: false,
     isFinal: false,
@@ -71,7 +55,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES = [
     label: 'Almost ready',
     description: 'Review complete, awaiting final confirmation.',
     color: 'purple',
-    order: 3,
+    order: 2,
     isBuiltIn: true,
     countsAsActive: false,
     isFinal: false,
@@ -81,7 +65,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES = [
     label: 'Active',
     description: 'Valid membership, recognised by the federation.',
     color: 'green',
-    order: 4,
+    order: 3,
     isBuiltIn: true,
     countsAsActive: true,
     isFinal: false,
@@ -91,7 +75,7 @@ export const DEFAULT_ORG_AFFILIATION_STATUSES = [
     label: 'Expired',
     description: 'Membership period has ended. Renewal required.',
     color: 'red',
-    order: 5,
+    order: 4,
     isBuiltIn: true,
     countsAsActive: false,
     isFinal: true,
@@ -180,6 +164,16 @@ export interface BuildAffiliationOpts {
   validFrom?: unknown
   createdAt?: unknown
   createdBy?: string
+  /**
+   * Is the parent contact live — not deleted, not archived?
+   *
+   * DEFAULTS TO TRUE, and that is safe only because every seeder writes
+   * `archived_at: null` and `deleted_at: null` on every contact it creates: no
+   * seeded persona has ever left. A seeder that starts creating archived
+   * personas MUST pass this, or the organisation's status breakdown counts
+   * people who are gone — the exact defect #249 fixed.
+   */
+  contactLive?: boolean
 }
 
 /**
@@ -198,6 +192,12 @@ export function buildAffiliationDoc(opts: BuildAffiliationOpts): Record<string, 
     issuer,
     status_id: statusId,
     active: statusCountsAsActive(statusId),
+    // Denormalised liveness — the organisation's status breakdown counts these
+    // rows through a collection group, which cannot reach the parent contact to
+    // see `archived_at`. See `Affiliation.contact_live` in shared. Writing it
+    // HERE is why no backfill exists: every seeded dataset is reproducible, so
+    // re-seeding is the migration.
+    contact_live: opts.contactLive ?? true,
     created_at: createdAt ?? null,
     updated_at: createdAt ?? null,
   }
@@ -239,12 +239,10 @@ export function buildAffiliationSummary(affiliations: AffiliationSummaryInput[])
   types: string[]
   org_ids: string[]
   active_org_ids: string[]
-  org_status_ids: string[]
 } {
   const types = new Set<string>()
   const orgIds = new Set<string>()
   const activeOrgIds = new Set<string>()
-  const orgStatusIds = new Set<string>()
   let hasActive = false
   for (const a of affiliations) {
     if (a.active) hasActive = true
@@ -254,15 +252,11 @@ export function buildAffiliationSummary(affiliations: AffiliationSummaryInput[])
     // `onAffiliationWrite`, which is the real writer; a seed that disagreed with
     // it would produce demo numbers no deployment could reproduce.
     if (a.org_id && a.active) activeOrgIds.add(a.org_id)
-    // WHICH STATUS, per org — what the dashboard's breakdown counts. Same rule:
-    // the trigger owns it, this only has to agree.
-    if (a.org_id && a.status_id) orgStatusIds.add(orgAffiliationStatusKey(a.org_id, a.status_id))
   }
   return {
     has_active: hasActive,
     types: [...types],
     org_ids: [...orgIds],
     active_org_ids: [...activeOrgIds],
-    org_status_ids: [...orgStatusIds],
   }
 }

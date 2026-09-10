@@ -23,6 +23,7 @@ import {
   type AffiliationType,
   type OrgAffiliationStatusDef,
   type AffiliationIssuer,
+  isLiveContact,
 } from '@linyup/shared'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -237,12 +238,19 @@ export const upsertAffiliation = onCall(async (request) => {
   } else {
     // Create new
     const newRef = affiliationsRef.doc()
+    // `contact_live` IS STAMPED AT CREATE, and the contact is already loaded
+    // above. `syncAffiliationContactLive` owns the TRANSITIONS, but it fires on
+    // the contact — so a row created for somebody already archived would carry
+    // no value at all until that person was next written, and an equality filter
+    // never matches a missing field. See the field's comment in shared.
+    const contactData = contactSnap.data()!
     const createPayload: Omit<Affiliation, 'id'> & { created_at: unknown; updated_at: unknown } = {
       teamId,
       affiliation_type_id,
       issuer,
       status_id,
       active,
+      contact_live: isLiveContact(contactData),
       created_by: request.auth.uid,
       created_at: FieldValue.serverTimestamp() as unknown as admin.firestore.Timestamp,
       updated_at: FieldValue.serverTimestamp() as unknown as admin.firestore.Timestamp,

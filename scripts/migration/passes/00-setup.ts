@@ -11,13 +11,20 @@ const CONTAINER_PLUGIN_ID = 'hmd'
 const AFFILIATION_TYPES_SUBCOLLECTION = 'affiliation_types'
 const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 
+// NO 'guest' — the migration used to seed it, and seeding it was how the old
+// model survived the import. HMD's source data DOES carry
+// `org_membership_status: 'guest'`, and `transforms/contacts.ts` maps it to NO
+// affiliation row (`isAffiliationStatus`), which is correct and stays. But the
+// import then wrote a `guest` STATUS DEF into the org's vocabulary, so the
+// federation's status picker offered "Guest" — a value that, if anyone chose it,
+// creates the very row whose absence is what "guest" was supposed to mean.
+// See `docs/org-contact-visibility.md`.
 const DEFAULT_ORG_AFFILIATION_STATUSES = [
-  { id: 'guest',        label: 'Guest',        description: 'No membership process started.',                    color: 'gray',   order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'requested',    label: 'Requested',    description: 'Member has submitted a request, awaiting review.',  color: 'yellow', order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue',   order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.',     color: 'purple', order: 3, isBuiltIn: true, countsAsActive: false, isFinal: false },
-  { id: 'active',       label: 'Active',       description: 'Valid membership, recognised by the federation.',    color: 'green',  order: 4, isBuiltIn: true, countsAsActive: true,  isFinal: false },
-  { id: 'expired',      label: 'Expired',      description: 'Membership period has ended. Renewal required.',     color: 'red',    order: 5, isBuiltIn: true, countsAsActive: false, isFinal: true },
+  { id: 'requested',    label: 'Requested',    description: 'Member has submitted a request, awaiting review.',  color: 'yellow', order: 0, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'under_review', label: 'Under review', description: 'Documents are being reviewed by the organisation.', color: 'blue',   order: 1, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'almost_ready', label: 'Almost ready', description: 'Review complete, awaiting final confirmation.',     color: 'purple', order: 2, isBuiltIn: true, countsAsActive: false, isFinal: false },
+  { id: 'active',       label: 'Active',       description: 'Valid membership, recognised by the federation.',    color: 'green',  order: 3, isBuiltIn: true, countsAsActive: true,  isFinal: false },
+  { id: 'expired',      label: 'Expired',      description: 'Membership period has ended. Renewal required.',     color: 'red',    order: 4, isBuiltIn: true, countsAsActive: false, isFinal: true },
 ] as const
 
 const ORG_CLUB_AFFILIATION_TYPE = {

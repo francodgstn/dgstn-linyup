@@ -253,6 +253,89 @@ describe('an org-affiliated team does not own its own billing (UX-35)', () => {
     )
   })
 
+  it('a studio that still pays for itself is REFUSED, not enrolled and charged twice', () => {
+    // Accepting puts the studio on the org plan and does not touch its own
+    // Stripe subscription, so it went on invoicing while the federation paid
+    // too. Cancelling that leftover — the correct move — then fired
+    // `subscription.cancelled` into `downgradeTeamToFree` on a paid-up member.
+    // Refusing at the door is the chosen answer; see the callable's comment.
+    const orgs = read('orgs/index.ts')
+    const accept = orgs.split('acceptOrgInvitation = onCall(')[1].split('\n})')[0]
+    assert.ok(
+      accept.includes("collection('saas_subscriptions').doc(data.teamId)"),
+      'acceptOrgInvitation must look at the accepting studio’s OWN subscription'
+    )
+    assert.ok(
+      accept.includes("reason: 'team_has_own_subscription'"),
+      'the refusal carries a named reason — the accept page translates on it, not on the message'
+    )
+    assert.ok(
+      /teamSubStatus === 'active' \|\| teamSubStatus === 'past_due'/.test(accept),
+      'both statuses that can still take money must refuse'
+    )
+    // A TRIAL MUST STILL BE ABLE TO JOIN — the ordinary path. It is safe by
+    // construction (no subscription doc exists for a trialing team), and the
+    // guard must not start naming 'trial'.
+    assert.ok(
+      !/teamSubStatus === 'trial'/.test(accept),
+      'a trialing studio joining a federation is the normal case and must not be refused'
+    )
+  })
+
+  it('the org dashboard asks nothing of contacts it cannot prove it may read', () => {
+    // EVERY contacts query on that page must carry an `affiliation_summary`
+    // clause naming the org, because `orgAdminMayReadContact` admits a contact
+    // only through one — and Firestore checks a query against a rule
+    // STATICALLY, so an unconstrained count is refused however readable the
+    // documents it would return happen to be.
+    //
+    // This has already happened twice. The affiliation figure filtered
+    // `active_org_ids` against a rule that named only `org_ids` and came back
+    // `permission-denied` on every studio the caller was not a member of. Then
+    // #275 added a `where('external', '==', true)` count to subtract externals
+    // from a per-studio headcount — correct for the figure it was fixing, and
+    // unprovable here; the merge that brought it in is where this test comes
+    // from. The headcount it belonged to no longer exists (the federation counts
+    // who is on ITS books, not who a studio looks after), which is why the org
+    // side needs no external subtraction at all.
+    const src = readWeb('components/org-dashboard/data.ts')
+    const counts = src.split('export function useOrgStudioCounts')[1].split('\n}')[0]
+    // Counted rather than parsed: one `affiliation_summary` clause per
+    // aggregation, so an added count that names none moves the two apart
+    // whatever the surrounding formatting looks like.
+    const aggregations = counts.split('getCountFromServer').length - 1
+    const constrained = counts.split('affiliation_summary.').length - 1
+    assert.ok(aggregations > 0, 'the per-studio counts must still be aggregations')
+    assert.equal(
+      constrained,
+      aggregations,
+      `${aggregations} contacts aggregation(s) on the org dashboard but ${constrained} ` +
+        'affiliation_summary clause(s) — one of them is unconstrained, and ' +
+        'orgAdminMayReadContact denies it'
+    )
+  })
+
+  it('an org-billed studio’s own subscription events cannot speak for it', () => {
+    // The gap the refusal cannot close: an event arriving LATE for a
+    // subscription that ended before the studio joined. `subscription.updated`
+    // carries the old tier (knocking the studio off `plan: 'organization'`),
+    // `subscription.cancelled` reaches `downgradeTeamToFree`, and the add-on
+    // reconcile DELETES installs whose item the payload does not carry.
+    const billing = read('saas-billing/index.ts')
+    assert.ok(
+      billing.includes('const teamBilledByOrg = '),
+      'the webhook must know whether the team it is about is billed by an organisation'
+    )
+    assert.ok(
+      /if \(teamBilledByOrg\) \{/.test(billing),
+      'the guard comes BEFORE the cancelled branch, so the teardown is unreachable for such a team'
+    )
+    assert.ok(
+      /entityType === 'team' &&\s*!teamBilledByOrg/.test(billing),
+      'the add-on reconcile is guarded too — it deletes installs the org is what grants'
+    )
+  })
+
   it('joining an organisation clears the team’s own trial deadline', () => {
     const orgs = read('orgs/index.ts')
     const accept = orgs.split('acceptOrgInvitation = onCall(')[1].split('\n})')[0]

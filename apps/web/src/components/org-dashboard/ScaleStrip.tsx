@@ -37,9 +37,12 @@ export interface ScaleStripProps {
   /** Studios invited that have not accepted — surfaced as the note, not as a
    *  second figure: it is a queue item, and the queue is its own panel. */
   invitedStudios: number
-  /** Live contacts across every member studio. `null` = not asked or denied. */
-  people: number | null
-  /** People holding an affiliation issued by THIS organisation. */
+  /** People ON THE ORGANISATION'S BOOKS — holding an affiliation it issued, in
+   *  ANY status. NOT a headcount of the member studios' contacts, which the
+   *  organisation neither has nor may read (`docs/org-contact-visibility.md`).
+   *  `null` = not asked or denied. */
+  onBooks: number | null
+  /** Of those, the ones whose affiliation is valid RIGHT NOW. */
   affiliated: number | null
   /** Upcoming org-scope events. */
   events: number | null
@@ -54,7 +57,7 @@ export function ScaleStrip({
   orgId,
   activeStudios,
   invitedStudios,
-  people,
+  onBooks,
   affiliated,
   events,
   affiliationTerm,
@@ -63,13 +66,18 @@ export function ScaleStrip({
 }: ScaleStripProps) {
   const t = useTranslations('OrgDashboard')
 
-  // COVERAGE IS THE ONE DERIVED NUMBER ON THIS PAGE, and it is the federation's
-  // own KPI: of the people its studios look after, how many hold its licence,
-  // badge or membership. Withheld when either half is unknown — a percentage of
-  // a partial total reads as precision that is not there.
+  // COVERAGE IS THE ONE DERIVED NUMBER ON THIS PAGE, and what it measures
+  // changed with its denominator: of the people on the organisation's books, how
+  // many hold a CURRENT licence. That is renewal health.
+  //
+  // It used to divide by every contact of every member studio, which asked what
+  // share of those studios' customers were the federation's — a question the
+  // studios had not agreed to answer, and one that scored a studio DOWN for
+  // serving anyone outside the federation. Withheld when either half is unknown:
+  // a percentage of a partial total reads as precision that is not there.
   const coverage =
-    people != null && affiliated != null && people > 0
-      ? Math.round((affiliated / people) * 100)
+    onBooks != null && affiliated != null && onBooks > 0
+      ? Math.round((affiliated / onBooks) * 100)
       : null
 
   return (
@@ -88,10 +96,10 @@ export function ScaleStrip({
           />
         </Figure>
 
-        <Figure title={t('figurePeople')} icon={Users}>
+        <Figure title={t('figureOnBooks')} icon={Users} href={orgHref(orgId, 'affiliations')}>
           <FigureNumber
-            value={people ?? '—'}
-            subtitle={t('figurePeopleSub')}
+            value={onBooks ?? '—'}
+            subtitle={t('figureOnBooksSub')}
             loading={loading}
             note={
               peopleWithheld ? <FigureNote>{t('figureWithheld')}</FigureNote> : undefined

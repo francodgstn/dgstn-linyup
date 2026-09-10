@@ -703,7 +703,7 @@
     "customFieldsConfigureLink": "Set up custom fields",
     "archivedBadge": "Archived",
     "deletedBadge": "Deleted",
-    "copyUpdateLink": "Send a link",
+    "copyUpdateLink": "Copy update link",
     "updateLinkCopied": "Link copied!",
     "archivedNotice": "Unarchive this contact to edit their details. Archived contacts won't appear in sessions, events or bookings.",
     "actionUnarchive": "Unarchive",
@@ -1095,7 +1095,15 @@
     "selectAll": "Select all",
     "bulkRenewedPartial": "Renewed {ok}, {failed} failed",
     "clearSelection": "Clear selection",
-    "manageTypes": "Manage types"
+    "manageTypes": "Manage types",
+    "notOnBooksTitle": "{count, plural, one {# contact is yours alone} other {# contacts are yours alone}}.",
+    "notOnBooksBody": "{org} cannot see them until they are added to its records here.",
+    "notOnBooksBodyBare": "The organisation cannot see them until they are added to its records here.",
+    "statusNone": "Not affiliated",
+    "removeAction": "Remove affiliation",
+    "removeTitle": "Remove this affiliation?",
+    "removeBody": "{name} is taken off the records and the organisation stops seeing them. The record that they were ever affiliated is deleted — to mark a lapsed affiliation instead, set it to expired.",
+    "removeConfirm": "Remove"
   },
   "SubscriptionsOverview": {
     "title": "Subscriptions",
@@ -3124,7 +3132,12 @@
     "filterExpiring": "Expiring soon",
     "selectAll": "Select all",
     "bulkRenewedPartial": "Renewed {ok}, {failed} failed",
-    "clearSelection": "Clear selection"
+    "clearSelection": "Clear selection",
+    "statusNone": "Not affiliated",
+    "removeAction": "Remove affiliation",
+    "removeTitle": "Remove this affiliation?",
+    "removeBody": "{name} comes off this organisation's records and off this roster. The record that they were ever affiliated is deleted — to mark a lapsed affiliation instead, set it to expired.",
+    "removeConfirm": "Remove"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliation Statuses",
@@ -3296,7 +3309,13 @@
     "notFound": "Invitation not found.",
     "loginRequired": "You must be logged in as the team owner to accept this invitation.",
     "selectTeam": "Select your team",
-    "processing": "Processing…"
+    "processing": "Processing…",
+    "changesTitle": "What accepting changes",
+    "changesData": "Administrators of {org} will be able to read this team's contacts — names, contact details and the records kept on them — as well as its events and check-ins.",
+    "changesBilling": "This team moves onto {org}'s Linyup plan, and {org} pays for it from then on.",
+    "changesUndo": "Only an administrator of {org} can unlink this team later.",
+    "changesChooseTeam": "You own more than one team. This applies only to the one selected above — a team you keep out of {org} keeps its contacts to itself.",
+    "errorOwnSubscription": "This studio still has its own Linyup subscription. Cancel it in Settings → Billing first, then accept — otherwise it would be paid for twice."
   },
   "Discover": {
     "tabPlugins": "Plugins",
@@ -5783,7 +5802,7 @@
     "timelinePrevious": "Previous period",
     "timelineNext": "Next period",
     "timelineToday": "Today",
-    "timelineEmpty": "No events yet",
+    "timelineEmpty": "No events in {window}",
     "timelineTypeless": "No type",
     "timelineZoomYears": "{count} years",
     "timelineDays": "{count, plural, one {# day} other {# days}}",
@@ -5798,7 +5817,13 @@
     "timelineBandOrgRow": "Organisation",
     "timelineBandTeamRow": "This studio",
     "timelineZoomLabel": "Zoom",
-    "viewLabel": "View"
+    "viewLabel": "View",
+    "timelineGroupByType": "Rows by type",
+    "trendTitle": "Attendance by event",
+    "trendSubtitle": "{attendees} checked in across {events} events in the last 12 months",
+    "trendTooltip": "{attendees} checked in · {date}",
+    "trendEmptyTitle": "No attendance yet",
+    "trendEmptyHint": "Check people in at an event and the months fill in here."
   },
   "OrgEventDetail": {
     "backToEvents": "Organization events",
@@ -8077,7 +8102,7 @@
     "figurePeople": "People",
     "figurePeopleSub": "across every member studio",
     "figureWithheld": "visible to organisation admins",
-    "figureAffiliatedSub": "{percent}% of all people",
+    "figureAffiliatedSub": "{percent}% still current",
     "figureAffiliatedSubBare": "issued by this organisation",
     "figureEvents": "Events",
     "figureEventsSub": "coming up",
@@ -8106,7 +8131,10 @@
     "growthEmptyHint": "Once studios join, this shows how the organisation has grown.",
     "growthSeries": "Studios",
     "statusTitle": "{term} by status",
-    "statusAll": "{count, plural, one {# person} other {# people}}"
+    "statusAll": "{count, plural, one {# record} other {# records}}",
+    "figureOnBooks": "People on record",
+    "figureOnBooksSub": "registered with the organisation, any status",
+    "studioOnBooks": "on record"
   },
   "ContactLink": {
     "title": "Show a QR",

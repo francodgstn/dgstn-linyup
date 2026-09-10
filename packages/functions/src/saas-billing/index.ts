@@ -423,10 +423,41 @@ export const handleStripeWebhook = onRequest(
       // also the act of stripping it to Free: plugins off, site down, course
       // mirrors deleted one-way. The flag is the record that nothing upstream
       // can legitimately conclude this tenant stopped paying.
-      if (entityType === 'team' && update.status === 'cancelled') {
-        const teamFlags = (
-          await admin.firestore().collection(TEAMS_COLLECTION).doc(entityId).get()
-        ).data()?.flags as TenantFlags | undefined
+      // A STUDIO INSIDE AN ORGANISATION DOES NOT OWN ITS OWN BILLING (UX-35), AND
+      // ITS OWN SUBSCRIPTION'S EVENTS MUST NOT SPEAK FOR IT.
+      //
+      // `acceptOrgInvitation` now refuses a studio that still has a live
+      // subscription, and `createCheckoutSession` refuses a studio that is
+      // already in an org — so the two should never coexist. This is the guard
+      // for the gap between them: an event that arrives LATE for a subscription
+      // that ended before the studio joined, or any state those two checks did
+      // not foresee. Both halves matter and the second is destructive:
+      //
+      //   plan/plan_status — `subscription.updated` carries the OLD tier, so
+      //   writing it knocks the studio off `plan: 'organization'` while `org_id`
+      //   still says it belongs, breaking UX-35's invariant silently and moving
+      //   the Connect take rate against the studio's own payouts.
+      //
+      //   the teardown — `downgradeTeamToFree` on a paid-up member of a
+      //   federation deactivates its plugins, unpublishes its website and
+      //   deletes its course mirrors ONE-WAY, and leaves `org_id` standing
+      //   beside `plan: 'free'` (the state `orgs/lifecycle.ts` goes out of its
+      //   way to avoid).
+      //
+      // The organisation's own subscription still governs the studio — that
+      // event arrives on the `org` branch below and propagates from there.
+      const teamDoc =
+        entityType === 'team'
+          ? await admin.firestore().collection(TEAMS_COLLECTION).doc(entityId).get()
+          : null
+      const teamBilledByOrg = !!teamDoc?.data()?.org_id
+      if (teamBilledByOrg) {
+        console.log(
+          `[billing] ignored ${event.type} for team ${entityId}: billed by org ` +
+            `${teamDoc?.data()?.org_id as string} — its own subscription does not govern it`
+        )
+      } else if (entityType === 'team' && update.status === 'cancelled') {
+        const teamFlags = teamDoc?.data()?.flags as TenantFlags | undefined
         if (tenantExemptFromTrialSweep(teamFlags)) {
           console.log(
             `[billing] kept ${trialSweepExemption(teamFlags)} team ${entityId} on its plan after cancellation`
@@ -463,8 +494,15 @@ export const handleStripeWebhook = onRequest(
       // Reconcile plugin add-on installs against the subscription's items.
       // Handles trial→paid conversion (carried add-ons become paid items) and
       // external removals. Only touches paid add-on installs (config.addonItemId).
+      //
+      // SKIPPED for a studio billed by its organisation, for the same reason the
+      // plan write above is: this DELETES installs whose add-on item is absent
+      // from the subscription, and an ex-subscription's event carries none — so
+      // a late event would strip paid plugins off a studio whose organisation is
+      // what grants them ("org_id IS the grant", `useInstalledPlugins`).
       if (
         entityType === 'team' &&
+        !teamBilledByOrg &&
         (event.type === 'subscription.created' || event.type === 'subscription.updated')
       ) {
         const installsCol = admin

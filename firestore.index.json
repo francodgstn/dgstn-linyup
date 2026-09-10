@@ -240,6 +240,24 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "contact_live",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status_id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "affiliations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "org_id",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "affiliation_type_id",
           "order": "ASCENDING"
         }
@@ -319,28 +337,6 @@
         },
         {
           "fieldPath": "affiliation_summary.active_org_ids",
-          "arrayConfig": "CONTAINS"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "contacts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "teamId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "deleted_at",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "archived_at",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "affiliation_summary.org_status_ids",
           "arrayConfig": "CONTAINS"
         }
       ]

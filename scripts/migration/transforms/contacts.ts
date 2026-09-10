@@ -29,6 +29,13 @@ function statusCountsAsActive(statusId: string): boolean {
 }
 
 // A non-guest, non-empty status is a real affiliation; guest/none → none.
+//
+// KEEP THE 'guest' TEST even though Linyup has no such status any more. This
+// reads HMD's SOURCE data, where `org_membership_status: 'guest'` is a real
+// stored value meaning "on the roster, not a member" — the old model this
+// import exists to translate out of. Dropping the test would turn every one of
+// those into an affiliation row, which is precisely the disclosure that
+// `orgAdminMayReadContact` is built to withhold.
 function isAffiliationStatus(status: unknown): status is string {
   return typeof status === 'string' && status.length > 0 && status !== 'guest'
 }
@@ -252,6 +259,13 @@ export function transformContact(
       issuer,
       status_id: statusId,
       active: statusCountsAsActive(statusId),
+      // Denormalised liveness. The federation's status breakdown counts these
+      // rows through a collection group, which cannot reach the parent contact
+      // to read `archived_at` — so an ex-member's licence would sit in its queue
+      // for ever. `isGone` above is the same question this file already asks to
+      // coerce an archived person's status to 'expired', so the row's liveness
+      // and its status cannot disagree.
+      contact_live: !isGone,
       created_at: createdAt,
       updated_at: createdAt,
       created_by: 'migration',

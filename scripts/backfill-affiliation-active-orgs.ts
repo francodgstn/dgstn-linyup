@@ -1,32 +1,27 @@
 /**
- * Stamp the org-derived halves of `affiliation_summary` — `active_org_ids` and
- * `org_status_ids` — on every contact that holds an org-issued affiliation.
+ * Stamp `affiliation_summary.active_org_ids` on every contact that holds an
+ * org-issued affiliation.
  *
  * ── WHY IT IS NEEDED ────────────────────────────────────────────────────────
- * `AffiliationSummary` gained two org-derived lists, both on 2026-09-08 and both
- * for the same reason — a federation's dashboard was counting something looser
- * than what it claimed:
+ * `active_org_ids` names the orgs whose affiliation currently counts, beside
+ * `org_ids`, which is every org that has EVER put the contact on its books. The
+ * affiliation figure, the coverage percentage and the Studios column read the
+ * old one and so counted last season's lapsed licence as current
+ * (Franco, 2026-09-08).
  *
- *   `active_org_ids`   the orgs whose affiliation currently counts, beside
- *                      `org_ids`, which is every org that has EVER put the
- *                      contact on its books. The affiliation figure, the
- *                      coverage percentage and the Studios column read the old
- *                      one and so counted last season's lapsed licence as
- *                      current.
- *   `org_status_ids`   one `org:status` key per (org, status) the contact sits
- *                      in. The status breakdown counted affiliation DOCUMENTS
- *                      through a collection group, which cannot exclude an
- *                      archived contact's row — `archived_at` is on the parent —
- *                      so people who had left stayed in the queue for ever.
+ * It once filled a second field, `org_status_ids`, for the dashboard's status
+ * breakdown. That field is gone: the breakdown moved back to the affiliations
+ * collection group, where the rules can prove the query, and nothing read the
+ * key any more (2026-09-10 — see `docs/org-contact-visibility.md`).
  *
- * `onAffiliationWrite` fills both fields, but a trigger only ever fires on a
- * WRITE: every affiliation recorded before it was deployed leaves a summary with
- * neither. A Firestore `array-contains` never matches a
- * missing field, so an un-backfilled contact drops OUT of the count. That is the
- * safer direction — a number that is visibly too low rather than invisibly too
- * high — but it is still wrong, which makes this a DEPLOY PRECONDITION in the
- * same sense as `backfill-document-versions.ts`: deploy the trigger, run this,
- * then the federation's numbers tell the truth.
+ * `onAffiliationWrite` fills the field, but a trigger only ever fires on a
+ * WRITE: every affiliation recorded before it was deployed leaves a summary
+ * without it. A Firestore `array-contains` never matches a missing field, so an
+ * un-backfilled contact drops OUT of the count. That is the safer direction — a
+ * number that is visibly too low rather than invisibly too high — but it is
+ * still wrong, which makes this a DEPLOY PRECONDITION in the same sense as
+ * `backfill-document-versions.ts`: deploy the trigger, run this, then the
+ * federation's numbers tell the truth.
  *
  * ── WHERE IT ACTUALLY APPLIES ───────────────────────────────────────────────
  * Anywhere contacts were written before the field existed. As of 2026-09-08 that
@@ -46,12 +41,11 @@
  * org-issued affiliation there is nothing for either list to hold.
  *
  * ── WHAT IT WRITES ──────────────────────────────────────────────────────────
- * `affiliation_summary.org_ids`, `active_org_ids` and `org_status_ids`, by
- * FIELD PATH, so the rest of the summary is untouched. Both, not just the new
- * one: recomputing `org_ids` from the same read set is free and makes the two
- * lists agree by construction — writing only one would leave a summary whose
- * "now" could contain an org its "ever" does not, which is nonsense no reader
- * would expect to have to handle.
+ * `affiliation_summary.org_ids` and `active_org_ids`, by FIELD PATH, so the rest
+ * of the summary is untouched. Both, not just the new one: recomputing `org_ids`
+ * from the same read set is free and makes the two lists agree by construction —
+ * writing only one would leave a summary whose "now" could contain an org its
+ * "ever" does not, which is nonsense no reader would expect to have to handle.
  *
  * It does NOT touch `has_active` or `types`. Those have been maintained by the
  * trigger since the beginning and this pass has no better information about
@@ -79,7 +73,6 @@ import { FieldPath } from 'firebase-admin/firestore'
 import {
   CONTACTS_COLLECTION,
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
-  orgAffiliationStatusKey,
 } from '@linyup/shared'
 import type { Affiliation } from '@linyup/shared'
 
@@ -130,7 +123,7 @@ async function main() {
   // contact that has none.
   const orgIssued = new Map<
     string,
-    { ever: Set<string>; now: Set<string>; statuses: Set<string> }
+    { ever: Set<string>; now: Set<string> }
   >()
   let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null
 
@@ -158,11 +151,9 @@ async function main() {
       const entry = orgIssued.get(contactRef.id) ?? {
         ever: new Set<string>(),
         now: new Set<string>(),
-        statuses: new Set<string>(),
       }
       entry.ever.add(a.org_id)
       if (a.active === true) entry.now.add(a.org_id)
-      if (a.status_id) entry.statuses.add(orgAffiliationStatusKey(a.org_id, a.status_id))
       orgIssued.set(contactRef.id, entry)
     }
 
@@ -193,15 +184,10 @@ async function main() {
 
     const ever = [...entry.ever]
     const now = [...entry.now]
-    const statuses = [...entry.statuses]
     const existing = data.affiliation_summary as
-      | { org_ids?: string[]; active_org_ids?: string[]; org_status_ids?: string[] }
+      | { org_ids?: string[]; active_org_ids?: string[] }
       | undefined
-    if (
-      sameSet(ever, existing?.org_ids) &&
-      sameSet(now, existing?.active_org_ids) &&
-      sameSet(statuses, existing?.org_status_ids)
-    ) {
+    if (sameSet(ever, existing?.org_ids) && sameSet(now, existing?.active_org_ids)) {
       stats.unchanged++
       continue
     }
@@ -212,7 +198,6 @@ async function main() {
       await ref.update({
         'affiliation_summary.org_ids': ever,
         'affiliation_summary.active_org_ids': now,
-        'affiliation_summary.org_status_ids': statuses,
       })
     }
     stats.written++

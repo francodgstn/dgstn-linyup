@@ -703,7 +703,7 @@
     "customFieldsConfigureLink": "Eigene Felder einrichten",
     "archivedBadge": "Archiviert",
     "deletedBadge": "Gelöscht",
-    "copyUpdateLink": "Link senden",
+    "copyUpdateLink": "Aktualisierungslink kopieren",
     "updateLinkCopied": "Link kopiert!",
     "archivedNotice": "Archivierung aufheben, um Details zu bearbeiten. Archivierte Kontakte erscheinen nicht in Einheiten, Events oder Buchungen.",
     "actionUnarchive": "Archivierung aufheben",
@@ -1095,7 +1095,15 @@
     "selectAll": "Alle auswählen",
     "bulkRenewedPartial": "{ok} verlängert, {failed} fehlgeschlagen",
     "clearSelection": "Auswahl aufheben",
-    "manageTypes": "Typen verwalten"
+    "manageTypes": "Typen verwalten",
+    "notOnBooksTitle": "{count, plural, one {# Kontakt gehört nur diesem Studio} other {# Kontakte gehören nur diesem Studio}}.",
+    "notOnBooksBody": "{org} sieht sie erst, wenn sie hier zu den Einträgen hinzugefügt werden.",
+    "notOnBooksBodyBare": "Die Organisation sieht sie erst, wenn sie hier zu den Einträgen hinzugefügt werden.",
+    "statusNone": "Nicht affiliiert",
+    "removeAction": "Affiliation entfernen",
+    "removeTitle": "Diese Affiliation entfernen?",
+    "removeBody": "{name} wird aus der Erfassung genommen und ist für die Organisation nicht mehr sichtbar. Der Nachweis einer früheren Affiliation wird gelöscht — um eine abgelaufene Affiliation festzuhalten, stattdessen auf abgelaufen setzen.",
+    "removeConfirm": "Entfernen"
   },
   "SubscriptionsOverview": {
     "title": "Abonnements",
@@ -3124,7 +3132,12 @@
     "filterExpiring": "Läuft bald ab",
     "selectAll": "Alle auswählen",
     "bulkRenewedPartial": "{ok} verlängert, {failed} fehlgeschlagen",
-    "clearSelection": "Auswahl aufheben"
+    "clearSelection": "Auswahl aufheben",
+    "statusNone": "Nicht affiliiert",
+    "removeAction": "Affiliation entfernen",
+    "removeTitle": "Diese Affiliation entfernen?",
+    "removeBody": "{name} verschwindet aus der Erfassung dieser Organisation und aus dieser Liste. Der Nachweis einer früheren Affiliation wird gelöscht — um eine abgelaufene Affiliation festzuhalten, stattdessen auf abgelaufen setzen.",
+    "removeConfirm": "Entfernen"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliationsstatus",
@@ -3296,7 +3309,13 @@
     "notFound": "Einladung nicht gefunden.",
     "loginRequired": "Du musst als Team-Inhaber angemeldet sein, um diese Einladung anzunehmen.",
     "selectTeam": "Wähle dein Team",
-    "processing": "Wird verarbeitet…"
+    "processing": "Wird verarbeitet…",
+    "changesTitle": "Was sich mit dem Annehmen ändert",
+    "changesData": "Administratoren von {org} können die Kontakte dieses Teams lesen — Namen, Kontaktdaten und die dazu erfassten Angaben — sowie seine Events und Check-ins.",
+    "changesBilling": "Dieses Team wechselt auf den Linyup-Plan von {org}; ab dann zahlt {org} dafür.",
+    "changesUndo": "Nur ein Administrator von {org} kann dieses Team später wieder lösen.",
+    "changesChooseTeam": "Du führst mehr als ein Team. Dies gilt nur für das oben ausgewählte — ein Team, das du aus {org} heraushältst, behält seine Kontakte für sich.",
+    "errorOwnSubscription": "Dieses Studio hat noch ein eigenes Linyup-Abo. Kündige es zuerst unter Einstellungen → Abrechnung und nimm dann an — sonst wird doppelt bezahlt."
   },
   "Discover": {
     "tabPlugins": "Plugins",
@@ -5783,7 +5802,7 @@
     "timelinePrevious": "Vorheriger Zeitraum",
     "timelineNext": "Nächster Zeitraum",
     "timelineToday": "Heute",
-    "timelineEmpty": "Noch keine Veranstaltungen",
+    "timelineEmpty": "Keine Anlässe in {window}",
     "timelineTypeless": "Ohne Typ",
     "timelineZoomYears": "{count} Jahre",
     "timelineDays": "{count, plural, one {# Tag} other {# Tage}}",
@@ -5798,7 +5817,13 @@
     "timelineBandOrgRow": "Organisation",
     "timelineBandTeamRow": "Dieses Studio",
     "timelineZoomLabel": "Zoom",
-    "viewLabel": "Ansicht"
+    "viewLabel": "Ansicht",
+    "timelineGroupByType": "Zeilen nach Typ",
+    "trendTitle": "Teilnahme nach Veranstaltung",
+    "trendSubtitle": "{attendees} Check-ins bei {events} Veranstaltungen in den letzten 12 Monaten",
+    "trendTooltip": "{attendees} Check-ins · {date}",
+    "trendEmptyTitle": "Noch keine Teilnahme",
+    "trendEmptyHint": "Sobald bei einer Veranstaltung eingecheckt wird, füllen sich die Monate hier."
   },
   "OrgEventDetail": {
     "backToEvents": "Organisationsveranstaltungen",
@@ -8077,7 +8102,7 @@
     "figurePeople": "Personen",
     "figurePeopleSub": "in allen Mitgliedsstudios",
     "figureWithheld": "nur für Organisationsadministratoren sichtbar",
-    "figureAffiliatedSub": "{percent}% aller Personen",
+    "figureAffiliatedSub": "{percent}% aktuell gültig",
     "figureAffiliatedSubBare": "von dieser Organisation ausgestellt",
     "figureEvents": "Anlässe",
     "figureEventsSub": "stehen an",
@@ -8106,7 +8131,10 @@
     "growthEmptyHint": "Sobald Studios beitreten, zeigt sich hier das Wachstum der Organisation.",
     "growthSeries": "Studios",
     "statusTitle": "{term} nach Status",
-    "statusAll": "{count, plural, one {# Person} other {# Personen}}"
+    "statusAll": "{count, plural, one {# Eintrag} other {# Einträge}}",
+    "figureOnBooks": "Erfasste Personen",
+    "figureOnBooksSub": "bei der Organisation erfasst, jeder Status",
+    "studioOnBooks": "erfasst"
   },
   "ContactLink": {
     "title": "QR-Code zeigen",

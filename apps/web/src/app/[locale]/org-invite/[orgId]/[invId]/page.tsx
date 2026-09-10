@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, CheckCircle2, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, Info, XCircle } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
 
@@ -124,7 +124,19 @@ export default function OrgInvitePage() {
       await fn({ invitationId: params.invId, teamId: selectedTeamId })
       setStatus('accepted')
     } catch (err: unknown) {
-      setInviteError(err instanceof Error ? err.message : 'Error')
+      // THE ONE REFUSAL WORTH TRANSLATING. Everything else this callable throws
+      // is a state the page cannot happen upon (a revoked invitation, a caller
+      // who is not the owner) and the server's own sentence is the better
+      // answer; this one is reachable by an ordinary owner doing an ordinary
+      // thing, tells them to go and do something first, and so has to arrive in
+      // their language. Keyed on the `reason` the callable sends rather than on
+      // its message text, which is English and may be reworded.
+      const reason = (err as { details?: { reason?: string } } | null)?.details?.reason
+      if (reason === 'team_has_own_subscription') {
+        setInviteError(t('errorOwnSubscription'))
+      } else {
+        setInviteError(err instanceof Error ? err.message : 'Error')
+      }
     } finally {
       setActionLoading(false)
     }
@@ -227,6 +239,35 @@ export default function OrgInvitePage() {
 
                     </div>
                   )}
+
+                  {/* WHAT ACCEPTING CHANGES — stated at the point of decision.
+                      Accepting hands `isOrgAdminOfTeam` read over the chosen
+                      team's contacts to every admin of the organisation and
+                      moves that team onto the org plan (`org_id` IS the grant,
+                      UX-35), and only an org admin can unlink it afterwards
+                      (`removeTeamFromOrg` asserts org admin; there is no
+                      team-side leave). None of that was said anywhere, while
+                      the select above lists EVERY studio the caller owns — so
+                      an owner who also runs a studio of their own could hand
+                      over its whole contact book by picking the wrong line of a
+                      dropdown, with the page framing it as a free upgrade.
+                      See docs/studio-independent-contacts.md. */}
+                  <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+                    <p className="flex items-center gap-1.5 text-sm font-medium">
+                      <Info className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      {t('changesTitle')}
+                    </p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                      <li>{t('changesData', { org: invitation.orgName })}</li>
+                      <li>{t('changesBilling', { org: invitation.orgName })}</li>
+                      <li>{t('changesUndo', { org: invitation.orgName })}</li>
+                    </ul>
+                    {!invitation.teamId && userTeams.length > 1 && (
+                      <p className="text-sm font-medium">
+                        {t('changesChooseTeam', { org: invitation.orgName })}
+                      </p>
+                    )}
+                  </div>
 
                   {inviteError && (
                     <p className="text-sm text-destructive">{inviteError}</p>
