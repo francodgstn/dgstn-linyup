@@ -192,12 +192,26 @@ export function useOrgStudioCounts(orgId: string, teamIds: string[], enabled: bo
     queryFn: async () => {
       const settled = await Promise.allSettled(
         teamIds.map(async (teamId) => {
-          const [people, affiliated] = await Promise.allSettled([
+          // `people` is the ROSTER: live minus EXTERNAL (partner-app drop-ins,
+          // former members who still come now and then — see `contactLifecycle`
+          // in shared). "Not external" cannot be queried — the field is present
+          // only when true — so it is a second count, subtracted, the same way
+          // the contact cap subtracts provisional leads. Either half failing
+          // fails the figure rather than flattering it.
+          const [live, external, affiliated] = await Promise.allSettled([
             getCountFromServer(
               query(
                 collection(db, CONTACTS_COLLECTION),
                 where('teamId', '==', teamId),
                 ...liveContactConstraints()
+              )
+            ),
+            getCountFromServer(
+              query(
+                collection(db, CONTACTS_COLLECTION),
+                where('teamId', '==', teamId),
+                ...liveContactConstraints(),
+                where('external', '==', true)
               )
             ),
             getCountFromServer(
@@ -212,7 +226,10 @@ export function useOrgStudioCounts(orgId: string, teamIds: string[], enabled: bo
           return {
             teamId,
             counts: {
-              people: people.status === 'fulfilled' ? people.value.data().count : null,
+              people:
+                live.status === 'fulfilled' && external.status === 'fulfilled'
+                  ? live.value.data().count - external.value.data().count
+                  : null,
               affiliated: affiliated.status === 'fulfilled' ? affiliated.value.data().count : null,
             } satisfies OrgStudioCounts,
           }

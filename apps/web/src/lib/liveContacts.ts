@@ -34,7 +34,6 @@
  */
 
 import { where, type QueryFieldFilterConstraint } from 'firebase/firestore'
-import type { Contact } from '@linyup/shared'
 
 /**
  * The clauses to spread into any `contacts` query that means "people, now".
@@ -48,7 +47,13 @@ export function liveContactConstraints(): QueryFieldFilterConstraint[] {
   return [where('deleted_at', '==', null), where('archived_at', '==', null)]
 }
 
-/** The same question asked of a contact already in memory. */
-export function isLiveContact(contact: Pick<Contact, 'deleted_at' | 'archived_at'>): boolean {
-  return !contact.deleted_at && !contact.archived_at
-}
+/**
+ * The same question asked of a contact already in memory — and its sibling,
+ * `isRosterContact`, which additionally drops EXTERNALS (people who train here
+ * without being looked after — see `contactLifecycle` in shared). The roster
+ * cannot be a query: `external` is present only when true, so a headcount
+ * spreads `liveContactConstraints()` and then narrows with `isRosterContact`.
+ * Both re-exported from the one owner so this module stays the place a reader
+ * looks for "who counts".
+ */
+export { isLiveContact, isRosterContact } from '@linyup/shared'

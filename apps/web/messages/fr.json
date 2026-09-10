@@ -1049,7 +1049,17 @@
     "goalArchivedBadge": "Archivé",
     "goalShowArchived": "Archivés",
     "sendLinkTip": "Copiez un lien à leur envoyer. La confirmation se fait par un code envoyé par e-mail, il faut donc une adresse enregistrée.",
-    "filterMissingEmail": "Sans e-mail"
+    "filterMissingEmail": "Sans e-mail",
+    "tabExternal": "Externes",
+    "externalBadge": "Externe",
+    "externalHint": "S'entraîne ici sans faire partie de votre effectif — ni rappels, ni invitations, ni automatisations.",
+    "externalSince": "Externe depuis",
+    "bulkMarkExternal": "Marquer externe",
+    "bulkMarkActive": "Marquer actif",
+    "headerMarkExternal": "Marquer comme externe",
+    "headerMarkActive": "Remettre dans Actifs",
+    "markExternalTitle": "{count, plural, one {Marquer ce contact comme externe ?} other {Marquer # contacts comme externes ?}}",
+    "markExternalDesc": "Ils peuvent toujours réserver et participer, et leur historique reste. Ils quittent la liste Actifs, le nombre de contacts, les invitations aux événements, les automatisations et « À traiter » — jusqu'à ce que vous les marquiez actifs à nouveau, ou qu'ils remplissent votre formulaire d'inscription."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
