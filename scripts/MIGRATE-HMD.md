@@ -94,9 +94,11 @@ pnpm migrate:hmd \
 | `--overwrite` | Re-apply the current transforms to docs that already exist on the target (default: skip them) — see **Re-running over a populated target** below |
 | `--only <pass>` | Run a single pass (see pass names below) |
 | `--from-team <teamId>` | Resume contacts/sessions passes from a specific team |
+| `--teams <a,b>` | Import only these clubs, by name or id. A **sample** for rehearsing a transform, and the **scope of a per-club catch-up** at a wave (`--only contacts --teams X --overwrite`). Never for a real project's *initial* import — see "Activation and waves" |
+| `--live <a,b>` | **The activation list** — which clubs go live on this target. Everything is imported; only these clubs' members get a login (`auth-users`) and only these clubs and the org may send mail (`activation`). **Required** for a full run into a real project; **cumulative** across waves |
 | `--verify` | Run verification after migration |
 
-Pass names: `setup` · `auth-users` · `users` · `teams` · `activities` · `session-series` · `contacts` · `sessions` · `events` · `exam-checkins` · `cup-checkins` · `event-categories` · `referrals` · `team-subcollections` · `places` · `verify`
+Pass names: `setup` · `auth-users` · `users` · `teams` · `activities` · `session-series` · `contacts` · `sessions` · `events` · `exam-checkins` · `cup-checkins` · `event-categories` · `referrals` · `team-subcollections` · `places` · `org-website` · `season-calendar` · `activation` · `affiliations` · `verify`
 
 **Run a single pass** (e.g. after a failure mid-way):
 
@@ -111,6 +113,70 @@ pnpm migrate:hmd ... --only contacts --from-team <teamId>
 ```
 
 ---
+
+## Activation and waves — how the federation goes to production
+
+**The whole federation is imported at once; clubs go live one wave at a time.**
+The org's events (the cup, the exams) carry check-ins from every club's contacts,
+so a partial import leaves dangling references, `org_teams` shows a fraction of
+the federation, and `verify` compares only what was asked for. A full import
+costs nothing for a dormant club *provided nobody can act on it* — which is
+what `--live` guarantees:
+
+| | live club | dormant club |
+|---|---|---|
+| data (contacts, sessions, plans, check-ins) | imported | imported |
+| logins (`auth-users`) | members imported, same passwords | **not imported** — nothing an owner could edit that the wave's catch-up would clobber |
+| messaging policy (`activation`) | `live` | **`silent`** — no seeded automation reaches people who have never heard of Linyup |
+| org (`hmd`) | `live` | — |
+
+**Day 0** (after the staging rehearsal below):
+
+```bash
+pnpm migrate:hmd --source-creds ./keys/hmd-prod-sa.json --target-creds ./keys/linyup-prod-sa.json \
+  --live "Basel,Ardovini" --dry-run          # census: who gets a login, which emails collide
+pnpm migrate:hmd --source-creds ./keys/hmd-prod-sa.json --target-creds ./keys/linyup-prod-sa.json \
+  --live "Basel,Ardovini" --verify
+```
+
+**A later wave** — the club's data is caught up from the source (it was dormant,
+so nothing in Linyup is lost), its members get logins, and the activation list
+is re-stated **with every club that is live by then**:
+
+```bash
+pnpm migrate:hmd ... --only contacts            --teams Marzella --overwrite
+pnpm migrate:hmd ... --only sessions            --teams Marzella --overwrite
+pnpm migrate:hmd ... --only team-subcollections --teams Marzella --overwrite
+pnpm migrate:hmd ... --only auth-users          --live "Basel,Ardovini,Marzella"
+pnpm migrate:hmd ... --only activation          --live "Basel,Ardovini,Marzella"
+```
+
+**The licence record stays with the old system** until the organisation's
+managers move. `--only affiliations --teams "Basel,Ardovini"` re-derives every
+migrated contact's affiliation rows from the source through the same transform
+pass 05 used — including an archived person's coercion to `expired` and the
+row's `contact_live` — and deletes a positional row the source no longer
+justifies. Rows the organisation created *in Linyup* (generated ids) are never
+touched; `affiliation_summary` is left to `onAffiliationWrite`, its one writer.
+Run it weekly, or after every renewal batch, until the org moves.
+
+**The org admin's login.** Every pass that writes a row in the admin's name
+resolves the uid from the **target's auth first** (`migration/orgAdmin.ts`) —
+on production that is the account that signed up months before this ran, and
+it differs from the source uid. The source membership row is re-keyed to it
+(`team_members`), the source profile document is skipped (`users`), and the
+source auth account is not imported (the collision guard). Any *other* source
+email already on the target under a different uid is reported as a
+`COLLISION` and skipped, never duplicated.
+
+**Staging is the dress rehearsal**, and it is run the way production will be —
+a fresh import, not an overwrite:
+
+```bash
+pnpm reset:org --org hmd --target staging        # HMD only; testers' tenants untouched
+pnpm migrate:hmd --source-creds ./keys/hmd-prod-sa.json --target-creds ./keys/linyup-staging-sa.json \
+  --live "Basel,Ardovini" --verify
+```
 
 ## Re-running over a populated target — read this first
 

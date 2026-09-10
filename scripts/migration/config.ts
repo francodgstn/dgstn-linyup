@@ -278,6 +278,24 @@ export interface MigrationConfig {
   overwrite: boolean
   fromTeam?: string
   orgAdminEmail: string      // email of the user who becomes org creator + org_admin
+  /**
+   * THE ACTIVATION LIST — which clubs go live on this target, by name or id
+   * (same matcher as `teams`). Everything is imported either way; this decides
+   * who can act on it:
+   *
+   *   auth-users   imports only the members of a live club (plus the org
+   *                admin). A dormant club's owner has no login on the target
+   *                until their wave, so nothing they might edit can later be
+   *                clobbered by that wave's `--overwrite` catch-up.
+   *   activation   writes a messaging policy per club — `live` for these,
+   *                `silent` for every other club, `live` for the org — so a
+   *                seeded automation cannot email thirteen clubs' worth of
+   *                people who have never heard of Linyup.
+   *
+   * REQUIRED for a full run into a real project. CUMULATIVE: each wave names
+   * every club that is live by then, because `activation` sets the rest silent.
+   */
+  live?: string[]
 }
 
 // ─── read-only source type ────────────────────────────────────────────────────

@@ -14,10 +14,19 @@
  *                              target (default: skip them). Needed whenever a transform has
  *                              changed since the target was last migrated — see MIGRATE-HMD.md.
  *   --only <pass>                 Run a single pass (see pass names below)
+ *   --teams <a,b>                 Import only these clubs (a SAMPLE for rehearsal, or the scope of
+ *                                 a per-club catch-up: --only contacts --teams X --overwrite)
+ *   --live <a,b>                  THE ACTIVATION LIST — which clubs go live on this target. Everything
+ *                                 is imported; only these clubs' members get a login and only these
+ *                                 clubs (and the org) may send mail. REQUIRED for a full run into a
+ *                                 real project; cumulative across waves. See MigrationConfig.live.
  *   --from-team <teamId>          Resume contacts/sessions from a specific team
  *   --verify                      Run verification after migration
  *
- * Passes: setup | auth-users | users | teams | activities | session-series | contacts | sessions | events | exam-checkins | event-categories | referrals | team-subcollections | places | verify
+ * Passes: setup | auth-users | users | teams | activities | session-series | contacts | sessions | events | exam-checkins | cup-checkins | event-categories | referrals | team-subcollections | places | org-website | season-calendar | activation | affiliations | verify
+ *
+ *   activation    — part of every full run that has --live; alone, to flip a club live at its wave
+ *   affiliations  — never part of a full run; the licence re-sync while the old system stays master
  */
 
 import { parseArgs } from 'node:util'
@@ -43,6 +52,8 @@ import { pass11TeamSubcollections } from './migration/passes/11-team-subcollecti
 import { pass12Places }             from './migration/passes/12-places'
 import { pass13OrgWebsite }         from './migration/passes/13-org-website'
 import { pass14SeasonCalendar }     from './migration/passes/14-season-calendar'
+import { pass15Activation }         from './migration/passes/15-activation'
+import { pass16Affiliations }       from './migration/passes/16-affiliations'
 import { verify }                   from './migration/verify'
 
 const { values } = parseArgs({
@@ -55,6 +66,7 @@ const { values } = parseArgs({
     'overwrite':       { type: 'boolean', default: false },
     'only':            { type: 'string' },
     'teams':           { type: 'string' },
+    'live':            { type: 'string' },
     'reset':           { type: 'boolean', default: false },
     'from-team':       { type: 'string' },
     'verify':          { type: 'boolean', default: false },
@@ -86,6 +98,25 @@ const cfg: MigrationConfig = {
     ?.split(',')
     .map((t) => t.trim())
     .filter(Boolean),
+  live:            values['live']
+    ?.split(',')
+    .map((t) => t.trim())
+    .filter(Boolean),
+}
+
+// ── --live: a real project never gets a full import without an activation list ──
+// Everything is imported, and the target's env default for messaging is `live`,
+// so a full run without `--live` would put thirteen dormant clubs' contacts in
+// front of every seeded automation and hand every club's owner a login. The
+// emulator and a dry run are exempt: nothing there can reach a person.
+const isFullRun = !values['only']
+if (isFullRun && !targetEmulator && !(values['dry-run'] ?? false) && !cfg.live?.length) {
+  console.error(
+    'Error: a full import into a real project needs --live <club,...> — the clubs that go live.\n' +
+      '       Every other club is imported dormant (no logins, messaging silent) until its wave.\n' +
+      '       See MigrationConfig.live and scripts/MIGRATE-HMD.md → "Activation and waves".'
+  )
+  process.exit(1)
 }
 
 // ── --reset: start from an empty target ────────────────────────────────────
@@ -240,6 +271,13 @@ async function run() {
   if (!only || only === 'places')              await pass12Places(cfg, teamIds)
   if (!only || only === 'org-website')         await pass13OrgWebsite(cfg)
   if (!only || only === 'season-calendar')     await pass14SeasonCalendar(cfg)
+  // Activation closes every full run that has a --live list, and runs alone to
+  // flip a club live at its wave. It iterates the SOURCE club list, so `--only
+  // activation` needs no teamIds and never touches a non-HMD tenant.
+  if ((!only && cfg.live?.length) || only === 'activation') await pass15Activation(cfg)
+  // The licence re-sync is never part of a full run — pass 05 writes the same
+  // rows on import; this exists for the weeks the old system stays master.
+  if (only === 'affiliations')                 await pass16Affiliations(cfg, teamIds)
 
   if (!only || only === 'verify' || values['verify']) await verify(teamIds, !!cfg.teams?.length)
 
