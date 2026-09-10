@@ -288,6 +288,10 @@ export const completeSignup = onCall(async (request) => {
         // counts toward the contact cap (see Contact.provisional).
         provisional: FieldValue.delete(),
         provisional_expires_at: FieldValue.delete(),
+        // …and brings an EXTERNAL back onto the roster: this form is the one
+        // act that says "I'm joining". A purchase never does (Contact.external).
+        external: FieldValue.delete(),
+        external_since: FieldValue.delete(),
       },
       { merge: true }
     )
@@ -334,9 +338,12 @@ export const completeSignup = onCall(async (request) => {
       {
         ...profile,
         ...promotion.patch,
-        // Full signup materializes a provisional lead (counts toward the cap).
+        // Full signup materializes a provisional lead (counts toward the cap)
+        // and brings an external back onto the roster — see the branch above.
         provisional: FieldValue.delete(),
         provisional_expires_at: FieldValue.delete(),
+        external: FieldValue.delete(),
+        external_since: FieldValue.delete(),
       },
       { merge: true }
     )

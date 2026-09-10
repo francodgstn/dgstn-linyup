@@ -176,8 +176,9 @@ export const onContactWrite = onDocumentWritten(
       return
     }
 
-    // Skip deleted or archived contacts on update triggers
-    if (after && (after.deleted_at || after.archived_at)) return
+    // Skip deleted, archived or external contacts on update triggers — an
+    // external buying a partner-app plan must not fire the welcome sequence.
+    if (after && (after.deleted_at || after.archived_at || after.external)) return
 
     const contact: ContactData = {
       id: event.params.contactId,

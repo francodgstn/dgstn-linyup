@@ -243,6 +243,27 @@ export interface Contact {
   // 'lib_trial_cleanup' automation instead. Absent ⇒ a normal, counted contact.
   provisional?: boolean
   provisional_expires_at?: Timestamp | null
+  // EXTERNAL = trains with the studio without being on its roster: a partner-app
+  // (ClassPass, Urban Sports…) drop-in, a former member who still comes now and
+  // then, a visiting athlete, a club's "external" type from the old system. The
+  // person is fully LIVE — bookable, checked in, counted in every class's
+  // attendance, holding whatever plan or credits they hold — but the studio does
+  // not look after them: no reminders, no event invitations, no automations, no
+  // Needs-attention row, and not in the headline contact count or the Active
+  // list. They still count toward the plan's contact cap (the record exists).
+  //
+  // A LIFECYCLE value, not a journey stage. Marking someone external moves
+  // nothing on the journey, plan or affiliation axes — what they did stays
+  // done — which is what lets a former member keep their `joined` history while
+  // sitting outside the roster. `contactLifecycle()` (utils/contactLifecycle.ts)
+  // is the ONE reader; never test the field inline.
+  //
+  // Set by the studio (contact page, bulk action) and by the HMD migration.
+  // Cleared by the studio, and by completing the public signup form — the one
+  // act that says "I'm joining". A purchase never clears it: a partner-app plan
+  // IS a purchase. Absent ⇒ on the roster.
+  external?: boolean
+  external_since?: Timestamp | null
 
   // ─── Source axis ───────────────────────────────────────────────────────────
   // Marketing channel + free-form detail. Set once at creation, never overwritten.

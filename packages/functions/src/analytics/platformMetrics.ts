@@ -17,8 +17,10 @@ import {
   CONTACTS_COLLECTION,
 } from '@linyup/shared'
 
-// Canonical "active contact" definition (matches getActiveContacts): a contact
-// whose deleted_at and archived_at are both null. count() keeps this cheap.
+// LIVE contacts — deleted_at and archived_at both null — which is deliberately
+// NOT the studio's roster (getActiveContacts): an external counts here, as it
+// does toward the contact cap, because the operator is measuring records held,
+// not people looked after. count() keeps this cheap.
 async function countActiveContacts(
   db: admin.firestore.Firestore,
   teamId: string,
