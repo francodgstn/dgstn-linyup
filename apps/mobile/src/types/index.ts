@@ -98,8 +98,15 @@ export type SessionParticipationStatus = 'attended' | 'not attended' | 'booked' 
  *  (`teams|organizations/{id}/sessions/{id}/public_profile/{id}`), filtered on
  *  `type == 'session'` — see syncSessionPublicProfile.ts. `location` is the
  *  ONLY location field the mirror carries (no `locationAddress`/`locationMapsUrl`
- *  — nothing writes those). */
-export interface SessionPublicProfile {
+ *  — nothing writes those).
+ *
+ *  DELIBERATELY NOT NAMED `SessionPublicProfile`. That name belongs to the WIRE
+ *  shape in @linyup/shared (`start`/`end` as Timestamps, no `id`); this is what
+ *  `mapSessionPublicProfile` produces from it — Dates, plus the doc id — and
+ *  the two shared one name for long enough that it was recorded as a hazard in
+ *  docs/scalability-2026-09.md. If you find yourself wanting the shared type
+ *  here, you want the mapper's input, not its output. */
+export interface HydratedSession {
   id: string;
   activityId?: string;
   activityName?: string;
@@ -111,7 +118,7 @@ export interface SessionPublicProfile {
   allowBooking?: boolean;
 }
 
-export interface SessionWithStatus extends SessionPublicProfile {
+export interface SessionWithStatus extends HydratedSession {
   status: SessionParticipationStatus;
 }
 

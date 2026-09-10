@@ -45,7 +45,7 @@ import { RatingStars } from './RatingStars'
 import { StepRow } from './StepRow'
 import { GoalFormDialog } from './GoalFormDialog'
 import { EvaluationFormDialog } from './EvaluationFormDialog'
-import { GoalProgressBar } from './GoalProgressBar'
+import { GoalProgressBar } from '@/components/coaching/GoalProgressBar'
 import { useAddGoalEvaluation, useGoalEvaluations } from './useSpaceGoals'
 import type { SpaceGoalsState } from './useSpaceGoals'
 import { Tip } from '@/components/ui/tip'
@@ -254,7 +254,11 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
           header for why. */}
       {steps.length > 0 && (
         <div className="mt-2">
-          <GoalProgressBar steps={steps} label={t('tasksCompletedLabel', { done: doneSteps, total: steps.length })} />
+          <GoalProgressBar
+            steps={steps}
+            label={t('tasksCompletedLabel', { done: doneSteps, total: steps.length })}
+            palette={{ accent, muted: textMuted, halo: cardBg, track: cardBorder }}
+          />
         </div>
       )}
 

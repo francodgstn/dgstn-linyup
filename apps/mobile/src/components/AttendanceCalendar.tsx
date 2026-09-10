@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import { Text, IconButton, useTheme, ActivityIndicator, Divider, Button } from 'react-native-paper';
 import { FirestoreService } from '../services/firestore';
-import { SessionPublicProfile, Contact } from '../types';
+import { HydratedSession, Contact } from '../types';
 import { waiverRefusal } from '../utils/waiverRefusal';
 import { useTranslations } from '../i18n';
 
@@ -26,9 +26,9 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
       setSelectedDay(null);
     }
   }, [initialMonth]);
-  const [attendedSessions, setAttendedSessions] = useState<SessionPublicProfile[]>([]);
-  const [bookedSessions, setBookedSessions] = useState<SessionPublicProfile[]>([]);
-  const [availableSessions, setAvailableSessions] = useState<SessionPublicProfile[]>([]);
+  const [attendedSessions, setAttendedSessions] = useState<HydratedSession[]>([]);
+  const [bookedSessions, setBookedSessions] = useState<HydratedSession[]>([]);
+  const [availableSessions, setAvailableSessions] = useState<HydratedSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -69,7 +69,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
     }
   };
 
-  const handleBook = async (session: SessionPublicProfile) => {
+  const handleBook = async (session: HydratedSession) => {
     if (!contact?.id) {
       Alert.alert(t('errorTitle'), t('signInAgain'));
       return;
@@ -112,7 +112,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
     }
   };
 
-  const handleCancel = async (session: SessionPublicProfile) => {
+  const handleCancel = async (session: HydratedSession) => {
     if (!contact?.id) return;
     Alert.alert(
       t('cancelBookingTitle'),

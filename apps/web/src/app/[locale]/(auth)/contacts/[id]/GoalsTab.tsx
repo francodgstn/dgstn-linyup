@@ -25,7 +25,7 @@ import {
   Star, Info, CheckCircle2, AlertTriangle, Archive, ArchiveRestore,
 } from 'lucide-react'
 import { Segmented } from '@/components/ui/segmented'
-import { GoalProgressBar } from './GoalProgressBar'
+import { GoalProgressBar } from '@/components/coaching/GoalProgressBar'
 import { SortableTaskList } from './SortableTaskList'
 import { CoachAssignment } from './CoachAssignment'
 import { PerformanceProfilePanel } from './PerformanceProfilePanel'

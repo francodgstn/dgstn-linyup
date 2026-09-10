@@ -1,11 +1,11 @@
 import { db, getFunctions } from '../config/firebase';
 import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, collectionGroup, orderBy, Timestamp, addDoc, serverTimestamp, limit, writeBatch } from 'firebase/firestore';
-import { CONTACTS_COLLECTION, SESSIONS_COLLECTION, TEAMS_COLLECTION, densifyWeeklyCounts, isoWeekKeysBack } from '@linyup/shared';
+import { CONTACTS_COLLECTION, SESSIONS_COLLECTION, TEAMS_COLLECTION, PARTICIPANTS_SUBCOLLECTION, densifyWeeklyCounts, isoWeekKeysBack } from '@linyup/shared';
 import {
   Contact,
   TeamPublicProfile,
   ReferralInfo,
-  SessionPublicProfile,
+  HydratedSession,
   WeeklyReport,
   ContactAlert,
   Leaderboard,
@@ -36,11 +36,10 @@ export { SESSION_MIRROR_TYPE };
  *  path constant exists for this subcollection yet (functions code keeps it
  *  as a local literal too — see packages/functions/src/booking/myBookings.ts). */
 const BOOKINGS_SUBCOLLECTION = 'bookings';
-const PARTICIPANTS_SUBCOLLECTION = 'participants';
 const PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile';
 
 /** Map one `sessions/{id}/public_profile/{id}` mirror doc to the app's view. */
-function mapSessionPublicProfile(sessionId: string, data: Record<string, unknown>): SessionPublicProfile {
+function mapSessionPublicProfile(sessionId: string, data: Record<string, unknown>): HydratedSession {
   const start = data.start as { toDate?: () => Date } | undefined;
   const end = data.end as { toDate?: () => Date } | undefined;
   return {
@@ -319,7 +318,7 @@ export const FirestoreService = {
   },
 
   // Get upcoming sessions for a team from the public_profile mirror
-  async getUpcomingSessions(teamId: string, date: Date = new Date()): Promise<SessionPublicProfile[]> {
+  async getUpcomingSessions(teamId: string, date: Date = new Date()): Promise<HydratedSession[]> {
     try {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -357,11 +356,11 @@ export const FirestoreService = {
     startDate: Date,
     endDate: Date,
     teamId?: string
-  ): Promise<SessionPublicProfile[]> {
+  ): Promise<HydratedSession[]> {
     try {
       const sessions = await this.getTeamSessionsInRange(teamId ?? '', startDate, endDate);
 
-      const attendedSessions: SessionPublicProfile[] = [];
+      const attendedSessions: HydratedSession[] = [];
       await Promise.all(
         sessions.map(async (session) => {
           try {
@@ -388,7 +387,7 @@ export const FirestoreService = {
     teamId: string,
     startDate: Date,
     endDate: Date
-  ): Promise<SessionPublicProfile[]> {
+  ): Promise<HydratedSession[]> {
     try {
       if (!teamId) return [];
       const publicProfileSnapshot = await getDocs(
@@ -425,7 +424,7 @@ export const FirestoreService = {
     teamId: string,
     startDate: Date,
     endDate: Date
-  ): Promise<(SessionPublicProfile & { status: SessionParticipationStatus })[]> {
+  ): Promise<(HydratedSession & { status: SessionParticipationStatus })[]> {
     try {
       const [sessions, bookingsResult] = await Promise.all([
         this.getTeamSessionsInRange(teamId, startDate, endDate),
@@ -632,7 +631,7 @@ export const FirestoreService = {
     startDate: Date,
     endDate: Date,
     teamId?: string
-  ): Promise<SessionPublicProfile[]> {
+  ): Promise<HydratedSession[]> {
     try {
       if (!teamId) return [];
       const [sessions, bookingsResult] = await Promise.all([
