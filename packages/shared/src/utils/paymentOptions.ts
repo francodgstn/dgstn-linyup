@@ -20,6 +20,7 @@
 import {
   resolveDurationSale,
   type ActivityAccessRule,
+  type ActivityAccessTier,
   type ActivityAudience,
   type ActivityDuration,
   type ActivityMemberBenefit,
@@ -295,6 +296,45 @@ export function resolveClassGate(
 }
 
 /**
+ * The DISPLAY tier a gate amounts to — the one projection of the two answers
+ * onto `accessRule.type`.
+ *
+ * Every writer of `type` and every surface that names a tier ("open / members
+ * only / plan required") goes through this, so the stored projection, the
+ * pricing form's draft and the catalogue's chip can never disagree about what
+ * the same pair means. It is the inverse of `resolveClassGate`'s legacy legs:
+ * a plan required is 'subscription', a members wall without one is 'members',
+ * and anyone-may-book is 'open' — whatever it costs.
+ */
+export function classAccessTierOf(gate: {
+  audience: ActivityAudience
+  requirePlan: boolean
+}): ActivityAccessTier {
+  return gate.requirePlan ? 'subscription' : gate.audience === 'members' ? 'members' : 'open'
+}
+
+/**
+ * The pair as a studio would SAY it — `resolveClassGate` plus the one
+ * normalisation every WRITER applies before storing it: "anyone may book, but
+ * a plan is required" is not a state a studio can mean, since a guest holds no
+ * plan. The gate derives it for a legacy `subscription` class that sells no
+ * drop-in, and it is stored — by the pricing form and by the plan matcher alike
+ * — as MEMBERS ONLY with the plan required, the same door said out loud instead
+ * of by implication. Deciders keep reading `resolveClassGate`; the two agree on
+ * every outcome, because a guest fails either spelling.
+ */
+export function canonicalClassGate(
+  accessRule: ActivityAccessRule,
+  paidDoor: boolean
+): { audience: ActivityAudience; requirePlan: boolean } {
+  const gate = resolveClassGate(accessRule, paidDoor)
+  return {
+    audience: gate.requirePlan ? 'members' : gate.audience,
+    requirePlan: gate.requirePlan,
+  }
+}
+
+/**
  * Has this activity been asked the new questions?
  *
  * A document that has not is read by the LEGACY path below, which reproduces the
@@ -305,7 +345,7 @@ export function resolveClassGate(
  * improvements and NEITHER is something a deploy should do to a studio that
  * changed nothing — the new shape is available the moment they open the form.
  */
-function hasModernGate(accessRule: ActivityAccessRule): boolean {
+export function hasModernGate(accessRule: ActivityAccessRule): boolean {
   return accessRule.audience !== undefined || accessRule.requirePlan !== undefined
 }
 

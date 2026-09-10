@@ -52,9 +52,10 @@ import { DoorOpen, Users } from 'lucide-react'
 import {
   ACTIVITIES_COLLECTION,
   benefitOpensDoorAt,
+  canonicalClassGate,
+  classAccessTierOf,
   isAppointmentActivity,
   resolveActivityAccessRule,
-  resolveClassGate,
   type Activity,
   type ActivityAccessRule,
   type ActivityAudience,
@@ -108,31 +109,23 @@ interface Draft {
 
 /**
  * The two answers, read through the GATE'S OWN translation of a stored rule
- * (`resolveClassGate`), so the form opens showing exactly what the booking path
- * is already doing — including for a document that predates both fields.
- *
- * The one normalisation: "anyone may book, but a plan is required" is not a
- * state a studio can mean, since a guest holds no plan. The gate derives it for
- * a legacy `subscription` class that sells no drop-in, and it is shown — and
- * saved — as MEMBERS ONLY with the tick off, which is the same door said out
- * loud instead of by implication.
+ * (`canonicalClassGate`), so the form opens showing exactly what the booking
+ * path is already doing — including for a document that predates both fields.
+ * The plan matcher stores the pair through the same call, so the two writers
+ * of `accessRule` cannot spell one door two ways.
  */
 function audienceDraftOf(a: Activity): { audience: ActivityAudience; requirePlan: boolean } {
-  const gate = resolveClassGate(
+  return canonicalClassGate(
     resolveActivityAccessRule(a),
     !!a.dropIn?.enabled && typeof a.dropIn.priceAmount === 'number'
   )
-  return {
-    audience: gate.requirePlan ? 'members' : gate.audience,
-    requirePlan: gate.requirePlan,
-  }
 }
 
 /** The stored rule a draft means — the two answers plus the display tier they
  *  imply, so `type` can never drift from them. */
 function draftAccessRule(d: Pick<Draft, 'audience' | 'requirePlan'>): ActivityAccessRule {
   return {
-    type: d.requirePlan ? 'subscription' : d.audience === 'members' ? 'members' : 'open',
+    type: classAccessTierOf(d),
     audience: d.audience,
     requirePlan: d.requirePlan,
   }
@@ -235,6 +228,16 @@ export function ActivityPricingForm({
         },
       }
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }))
+  /**
+   * THE TRIAL DOOR EXISTS ONLY ON A GATED CLASS. `bookSession` opens it for a
+   * guest when `accessRule.type !== 'open'` and treats it as fully inert
+   * otherwise — on an open class a newcomer already books through the front
+   * door (and becomes a trial contact by doing so, which is what the
+   * "Open to anyone" card says). So the control is not shown there, and what
+   * it governs is cleared on save rather than left standing as data no
+   * surface can show or change — the same rule the trial price follows.
+   */
+  const openTier = classAccessTierOf(draft) === 'open'
 
   const dropInPriceInvalid =
     draft.dropInEnabled && !(draft.dropInPrice.trim() !== '' && parsePrice(draft.dropInPrice) >= 0.5)
@@ -285,14 +288,10 @@ export function ActivityPricingForm({
                 enabled: draft.dropInEnabled,
                 ...(draft.dropInPrice ? { priceAmount: parsePrice(draft.dropInPrice) } : {}),
               },
-              trialEnabled: draft.trialEnabled,
-              // Cleared on an open tier — the field is hidden there (the trial door
-              // grants nothing extra on a free-to-book class), so a leftover price
-              // must not survive as inert data the UI cannot show.
+              // Both cleared on an open tier — see `openTier`.
+              trialEnabled: openTier ? false : draft.trialEnabled,
               trialPriceAmount:
-                draft.trialPrice && !(draft.audience === 'anyone' && !draft.requirePlan)
-                  ? parsePrice(draft.trialPrice)
-                  : null,
+                draft.trialPrice && !openTier ? parsePrice(draft.trialPrice) : null,
             }
       )
       refreshQueries(qc, ['activities'])
@@ -395,50 +394,50 @@ export function ActivityPricingForm({
           </div>
 
           <div className="divide-y rounded-lg border">
-            {/* Independent of the access tier above — a gated class may still
-                take a newcomer's trial booking. */}
-            <div className="space-y-2 p-3">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0 pr-4">
-                  <p className="text-sm font-medium">{t('fieldTrialEnabled')}</p>
-                  <p className="text-xs text-muted-foreground">{t('trialEnabledHint')}</p>
-                </div>
-                <input
-                  type="checkbox"
-                  className="shrink-0 accent-primary"
-                  checked={draft.trialEnabled}
-                  onChange={(e) => set('trialEnabled', e.target.checked)}
-                  disabled={!canEdit}
-                />
-              </div>
-              {/* Only on a GATED class — on an open one the trial door grants
-                  nothing extra (everyone books free), so a price there would be
-                  silently ignored by `bookSession`. */}
-              {draft.trialEnabled && !(draft.audience === 'anyone' && !draft.requirePlan) && (
+            {/* Independent of WHICH gate is above — a members-only class and a
+                plan-required one both take a newcomer's trial booking. Absent
+                on an open class: see `openTier`. */}
+            {!openTier && (
+              <div className="space-y-2 p-3">
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0 pr-4">
-                    <p className="text-xs font-medium">{t('trialPriceLabel')}</p>
-                    <p className="text-xs text-muted-foreground">{t('trialPriceHint')}</p>
+                    <p className="text-sm font-medium">{t('fieldTrialEnabled')}</p>
+                    <p className="text-xs text-muted-foreground">{t('trialEnabledHint')}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground">{currency}</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={draft.trialPrice}
-                      onChange={(e) => set('trialPrice', e.target.value)}
-                      placeholder={t('trialPricePlaceholder')}
-                      className="h-8 w-24 text-sm"
-                      disabled={!canEdit}
-                    />
-                  </div>
+                  <input
+                    type="checkbox"
+                    className="shrink-0 accent-primary"
+                    checked={draft.trialEnabled}
+                    onChange={(e) => set('trialEnabled', e.target.checked)}
+                    disabled={!canEdit}
+                  />
                 </div>
-              )}
-              {trialPriceInvalid && (
-                <p className="text-xs text-destructive">{t('trialPriceValidation')}</p>
-              )}
-            </div>
+                {draft.trialEnabled && (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 pr-4">
+                      <p className="text-xs font-medium">{t('trialPriceLabel')}</p>
+                      <p className="text-xs text-muted-foreground">{t('trialPriceHint')}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground">{currency}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={draft.trialPrice}
+                        onChange={(e) => set('trialPrice', e.target.value)}
+                        placeholder={t('trialPricePlaceholder')}
+                        className="h-8 w-24 text-sm"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+                )}
+                {trialPriceInvalid && (
+                  <p className="text-xs text-destructive">{t('trialPriceValidation')}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2 p-3">
               <div className={row.replace(' p-3', '')}>

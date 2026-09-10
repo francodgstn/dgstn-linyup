@@ -58,6 +58,8 @@ import {
   productPriceRange,
   grantsForType,
   computePricingHealth,
+  classDoors,
+  type ClassDoors,
   type PricingPersona,
   type PriceCell,
   type PricingWarning,
@@ -205,11 +207,47 @@ function PriceCellView({
       <span className="text-sm text-muted-foreground">
         {cell.denial === 'limit_reached' ? t('limitReached') : t('noAccess')}
       </span>
-      {cell.trialAvailable && (
-        <span className="text-xs text-muted-foreground italic">{t('trialAvailableHint')}</span>
+      {cell.trial && (
+        <span className="text-xs text-muted-foreground italic">
+          {trialDoorLabel(cell.trial, currency, t)}
+        </span>
       )}
     </span>
   )
+}
+
+function trialDoorLabel(
+  trial: NonNullable<ClassDoors['trial']>,
+  currency: string,
+  t: ReturnType<typeof useTranslations<'OfferPricing'>>
+): string {
+  return trial.priceAmount === null
+    ? t('doorTrialFree')
+    : t('doorTrialPriced', { amount: formatCurrency(trial.priceAmount, currency) })
+}
+
+/**
+ * What the class offers a newcomer, under its name and whoever is asking. The
+ * persona cell answers "what would THIS person pay"; this line keeps the
+ * drop-in price and the trial in view when that answer is "nothing" or "no
+ * access", so the preview never reads as if the class had no way in.
+ */
+function ClassDoorsLine({
+  doors,
+  currency,
+  t,
+}: {
+  doors: ClassDoors
+  currency: string
+  t: ReturnType<typeof useTranslations<'OfferPricing'>>
+}) {
+  const parts: string[] = []
+  if (doors.dropInAmount !== null) {
+    parts.push(t('doorDropIn', { amount: formatCurrency(doors.dropInAmount, currency) }))
+  }
+  if (doors.trial) parts.push(trialDoorLabel(doors.trial, currency, t))
+  if (parts.length === 0) return null
+  return <p className="text-xs text-muted-foreground">{parts.join(' · ')}</p>
 }
 
 // ─── Price preview section ──────────────────────────────────────────────────────
@@ -293,9 +331,12 @@ function PricingPreviewSection({
                 <div className="divide-y rounded-lg border">
                   {classes.map((a) => (
                     <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
-                      <Link href={'/offer/activities' as Route} className="text-sm font-medium hover:underline">
-                        {a.name}
-                      </Link>
+                      <div className="min-w-0">
+                        <Link href={'/offer/activities' as Route} className="text-sm font-medium hover:underline">
+                          {a.name}
+                        </Link>
+                        <ClassDoorsLine doors={classDoors(a)} currency={currency} t={t} />
+                      </div>
                       <PriceCellView
                         cell={resolveClassCell(snapshot, a)}
                         currency={currency}
