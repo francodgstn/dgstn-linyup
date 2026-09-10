@@ -426,7 +426,10 @@
     "chartTitleContacts": "Contacts",
     "chartTitleTopActivities": "Activités principales",
     "sectionDiscover": "Découvrir",
-    "firstRunSetupBody": "Rien ne s'est encore passé, il n'y a donc rien à compter. Terminez la configuration et cette page se remplira d'elle-même."
+    "firstRunSetupBody": "Rien ne s'est encore passé, il n'y a donc rien à compter. Terminez la configuration et cette page se remplira d'elle-même.",
+    "seriesSubscribed": "Abonnés",
+    "seriesAffiliated": "Affiliés",
+    "seriesViaPartner": "Via une app partenaire"
   },
   "Contacts": {
     "noteColor_none": "Sans couleur",

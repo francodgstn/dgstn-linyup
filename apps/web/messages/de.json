@@ -426,7 +426,10 @@
     "chartTitleContacts": "Kontakte",
     "chartTitleTopActivities": "Top-Aktivitäten",
     "sectionDiscover": "Entdecken",
-    "firstRunSetupBody": "Es ist noch nichts passiert, also gibt es nichts zu zählen. Schliesse die Einrichtung ab, und diese Seite füllt sich von selbst."
+    "firstRunSetupBody": "Es ist noch nichts passiert, also gibt es nichts zu zählen. Schliesse die Einrichtung ab, und diese Seite füllt sich von selbst.",
+    "seriesSubscribed": "Abonniert",
+    "seriesAffiliated": "Angeschlossen",
+    "seriesViaPartner": "Über eine Partner-App"
   },
   "Contacts": {
     "noteColor_none": "Keine Farbe",
