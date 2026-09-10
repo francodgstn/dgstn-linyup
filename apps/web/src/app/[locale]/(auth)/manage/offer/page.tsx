@@ -88,6 +88,7 @@ import {
   anyRatedPlanIds,
   ratedPlanIds,
   resolveActivityAccessRule,
+  classAccessTierOf,
   resolveClassGate,
   type Activity,
   type Course,
@@ -566,13 +567,13 @@ export default function CataloguePage() {
   // name, and in the rail the row sits under a heading that says it — so it was
   // printed twice on one screen and told the reader nothing either time.
   /** The tier a class's gate actually amounts to — see the chip below. */
-  const classTierOf = (a: Activity): 'open' | 'members' | 'subscription' => {
-    const gate = resolveClassGate(
-      resolveActivityAccessRule(a),
-      a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+  const classTierOf = (a: Activity): 'open' | 'members' | 'subscription' =>
+    classAccessTierOf(
+      resolveClassGate(
+        resolveActivityAccessRule(a),
+        a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+      )
     )
-    return gate.requirePlan ? 'subscription' : gate.audience === 'members' ? 'members' : 'open'
-  }
 
   const activityChips = (a: Activity): OfferChip[] => {
     const appointment = isAppointmentActivity(a)

@@ -3636,7 +3636,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <MobileHeader onMobileMenu={() => setMobileOpen(true)} />
             <OpenTabsStrip />
             <main className="flex-1">
-              <div className="max-w-5xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
+              {/* THE BOTTOM PADDING IS THE DOCK'S GROUND, on every width. It used
+                  to shrink to `pb-8` from `md` up, which was right while the
+                  only floating control was the mobile FAB — but the shell's own
+                  overlays (the setup guide's pill, the assistant launcher) sit
+                  in the same corner on desktop, and a page whose Save is its
+                  last row (the offer pane, every settings form) scrolled to a
+                  button the pill covered. `FloatingDock` keeps floating
+                  controls off EACH OTHER; this keeps them off the page. */}
+              <div className="max-w-5xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
                 <FreeDowngradeBanner />
                 {onSettingsPage && (
                   <Link

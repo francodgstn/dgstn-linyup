@@ -47,9 +47,17 @@ describe('the activity ↔ plan edge', () => {
       const fromActivity = activityPlanEdgeUpdate(fresh, 'premium', { access: true, rate: false })
       const fromPlan = activityPlanEdgeUpdate(fresh, 'premium', { access: true, rate: false })
       assert.deepEqual(fromActivity, fromPlan)
+      // A document with no rule at all is a legacy OPEN class; the write
+      // upgrades it to the two-field shape and adds the plan — who may book
+      // is untouched, which is the whole point of the pair.
       assert.deepEqual(fromActivity, {
-        accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
-        isFreeTrial: false,
+        accessRule: {
+          type: 'open',
+          audience: 'anyone',
+          requirePlan: false,
+          subscriptionTypeIds: ['premium'],
+        },
+        isFreeTrial: true,
       })
     })
 
@@ -79,8 +87,13 @@ describe('the activity ↔ plan edge', () => {
       })
       assert.deepEqual(update, {
         memberBenefit: { subscriptionTypeIds: ['premium'], effect: 'percent_off', percent: 25 },
-        accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
-        isFreeTrial: false,
+        accessRule: {
+          type: 'open',
+          audience: 'anyone',
+          requirePlan: false,
+          subscriptionTypeIds: ['premium'],
+        },
+        isFreeTrial: true,
       })
     })
 
@@ -90,7 +103,10 @@ describe('the activity ↔ plan edge', () => {
         memberBenefit: { subscriptionTypeIds: ['premium'], effect: 'percent_off', percent: 25 },
       })
       const update = activityPlanEdgeUpdate(fresh, 'premium', { access: false, rate: true })
-      assert.deepEqual(update, { accessRule: { type: 'members' }, isFreeTrial: false })
+      assert.deepEqual(update, {
+        accessRule: { type: 'subscription', audience: 'members', requirePlan: true },
+        isFreeTrial: false,
+      })
       assert.ok(!(update && 'memberBenefit' in update), 'the rate was not asked to change')
     })
 
@@ -152,12 +168,14 @@ describe('the activity ↔ plan edge', () => {
   })
 
   describe('a class gate', () => {
-    it('falls back to members when the last plan is removed, never to open', () => {
-      // The studio said this is not for the public. Dropping the last plan is
-      // not them changing their mind about that.
+    it('still requires a plan when the last plan is removed — never widens', () => {
+      // The studio said only plan holders may book. Dropping the last plan is
+      // not them changing their mind about that: the door stays as it was and
+      // the pricing page's health check names the empty list. (It used to fall
+      // back to `members`, which silently let every member in.)
       const fresh = cls({ accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] } })
       assert.deepEqual(activityPlanEdgeUpdate(fresh, 'premium', OFF), {
-        accessRule: { type: 'members' },
+        accessRule: { type: 'subscription', audience: 'members', requirePlan: true },
         isFreeTrial: false,
       })
     })
@@ -167,9 +185,137 @@ describe('the activity ↔ plan edge', () => {
         accessRule: { type: 'subscription', subscriptionTypeIds: ['basic', 'premium', 'gold'] },
       })
       assert.deepEqual(activityPlanEdgeUpdate(fresh, 'premium', OFF), {
-        accessRule: { type: 'subscription', subscriptionTypeIds: ['basic', 'gold'] },
+        accessRule: {
+          type: 'subscription',
+          audience: 'members',
+          requirePlan: true,
+          subscriptionTypeIds: ['basic', 'gold'],
+        },
         isFreeTrial: false,
       })
+    })
+
+    it('a legacy subscription class WITH a drop-in was already open to a paying stranger', () => {
+      // The old tier let anyone buy in once a price existed; the upgrade says
+      // so out loud rather than pretending the wall was there.
+      const fresh = cls({
+        accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
+        dropIn: { enabled: true, priceAmount: 25 },
+      })
+      assert.deepEqual(activityPlanEdgeUpdate(fresh, 'gold', { access: true, rate: false }), {
+        accessRule: {
+          type: 'open',
+          audience: 'anyone',
+          requirePlan: false,
+          subscriptionTypeIds: ['premium', 'gold'],
+        },
+        isFreeTrial: true,
+      })
+    })
+
+    it('a legacy members class keeps its wall when a plan is ticked included', () => {
+      // THE BUG, on an un-migrated document: this used to write
+      // `{type:'subscription'}`, which a drop-in price then read as open.
+      const fresh = cls({
+        accessRule: { type: 'members' },
+        dropIn: { enabled: true, priceAmount: 25 },
+      })
+      assert.deepEqual(activityPlanEdgeUpdate(fresh, 'premium', { access: true, rate: false }), {
+        accessRule: {
+          type: 'members',
+          audience: 'members',
+          requirePlan: false,
+          subscriptionTypeIds: ['premium'],
+        },
+        isFreeTrial: false,
+      })
+    })
+  })
+
+  describe('a class asked the two questions', () => {
+    // The pricing form writes `audience` + `requirePlan`; `type` is only their
+    // projection. Until 2026-09-10 the edge rebuilt `accessRule` from the id
+    // list alone, and "members only" with a drop-in price came back as OPEN.
+    const membersNoPlan = {
+      type: 'members' as const,
+      audience: 'members' as const,
+      requirePlan: false,
+    }
+
+    it('keeps who may book when a plan is ticked included', () => {
+      const fresh = cls({
+        accessRule: membersNoPlan,
+        dropIn: { enabled: true, priceAmount: 25 },
+      })
+      const update = activityPlanEdgeUpdate(fresh, 'premium', { access: true, rate: false })
+      assert.deepEqual(update, {
+        accessRule: { ...membersNoPlan, subscriptionTypeIds: ['premium'] },
+        isFreeTrial: false,
+      })
+    })
+
+    it('keeps the legacy isFreeTrial flag in step with the pair, as the form does', () => {
+      const anyone = { type: 'open' as const, audience: 'anyone' as const, requirePlan: false }
+      const update = activityPlanEdgeUpdate(cls({ accessRule: anyone }), 'premium', {
+        access: true,
+        rate: false,
+      })
+      assert.equal(update?.isFreeTrial, true)
+    })
+
+    it('reads the list whatever the display tier says', () => {
+      assert.deepEqual(
+        gatedPlanIds(cls({ accessRule: { ...membersNoPlan, subscriptionTypeIds: ['premium'] } })),
+        ['premium']
+      )
+      assert.deepEqual(
+        gatedPlanIds(
+          cls({
+            accessRule: {
+              type: 'open',
+              audience: 'anyone',
+              requirePlan: false,
+              subscriptionTypeIds: ['premium'],
+            },
+          })
+        ),
+        ['premium']
+      )
+    })
+
+    it('keeps the pair when the last plan comes off, dropping only the list', () => {
+      const fresh = cls({
+        accessRule: { ...membersNoPlan, subscriptionTypeIds: ['premium'] },
+      })
+      const update = activityPlanEdgeUpdate(fresh, 'premium', OFF)
+      assert.deepEqual(update, { accessRule: membersNoPlan, isFreeTrial: false })
+    })
+
+    it('a plan required stays required, and its tier stays subscription', () => {
+      const planRequired = {
+        type: 'subscription' as const,
+        audience: 'members' as const,
+        requirePlan: true,
+        subscriptionTypeIds: ['premium'],
+      }
+      const update = activityPlanEdgeUpdate(cls({ accessRule: planRequired }), 'gold', {
+        access: true,
+        rate: false,
+      })
+      assert.deepEqual(update, {
+        accessRule: { ...planRequired, subscriptionTypeIds: ['premium', 'gold'] },
+        isFreeTrial: false,
+      })
+    })
+
+    it('open to anyone with a drop-in price offers both facets', () => {
+      assert.deepEqual(
+        activityPlanFacets({
+          type: 'class',
+          accessRule: { type: 'open', audience: 'anyone', requirePlan: false },
+        }),
+        { access: true, rate: true }
+      )
     })
   })
 
@@ -282,7 +428,12 @@ describe('the course ↔ plan edge', () => {
         { subTypeId: 'starter', next: { access: true, rate: false } },
       ])
       assert.deepEqual(update, {
-        accessRule: { type: 'subscription', subscriptionTypeIds: ['premium', 'elite', 'starter'] },
+        accessRule: {
+          type: 'members',
+          audience: 'members',
+          requirePlan: false,
+          subscriptionTypeIds: ['premium', 'elite', 'starter'],
+        },
         isFreeTrial: false,
       })
     })
@@ -314,7 +465,12 @@ describe('the course ↔ plan edge', () => {
         { subTypeId: 'starter', next: { access: false, rate: false } },
       ])
       assert.deepEqual(update, {
-        accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
+        accessRule: {
+          type: 'subscription',
+          audience: 'members',
+          requirePlan: true,
+          subscriptionTypeIds: ['premium'],
+        },
         isFreeTrial: false,
       })
     })

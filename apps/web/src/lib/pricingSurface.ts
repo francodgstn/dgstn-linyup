@@ -146,18 +146,53 @@ export type PriceCell =
       promoCode?: string
       source: 'base' | 'drop_in' | 'trial' | 'course_price' | 'product'
     }
-  | { kind: 'blocked'; denial: PaymentDenial; trialAvailable?: boolean }
+  | {
+      kind: 'blocked'
+      denial: PaymentDenial
+      /** The trial door this persona could still take — a guest on a gated
+       *  class that offers one. `priceAmount` null ⇒ the trial is free. */
+      trial?: ClassDoors['trial']
+    }
+
+/**
+ * THE STANDING DOORS OF A CLASS — what it offers a newcomer regardless of who
+ * is asking. The preview shows them beside every persona's answer, because
+ * "Included with Premium" is what one member pays and says nothing about the
+ * drop-in price or the trial the same class also sells.
+ *
+ * Both mirror the server: the trial door is `bookSession`'s `isTrialDoor`
+ * (`trialEnabled` on a class whose display tier is not `open` — on an open
+ * class a newcomer already books through the front door and the flag is
+ * inert), the drop-in is the resolver's `hasPaidDoor`.
+ */
+export interface ClassDoors {
+  trial: { priceAmount: number | null } | null
+  dropInAmount: number | null
+}
+
+export function classDoors(activity: Activity): ClassDoors {
+  const accessRule = resolveActivityAccessRule(activity)
+  const trial =
+    activity.trialEnabled === true && accessRule.type !== 'open'
+      ? { priceAmount: typeof activity.trialPriceAmount === 'number' ? activity.trialPriceAmount : null }
+      : null
+  const dropInAmount =
+    activity.dropIn?.enabled && typeof activity.dropIn.priceAmount === 'number'
+      ? activity.dropIn.priceAmount
+      : null
+  return { trial, dropInAmount }
+}
 
 function fromResult(
   result: ReturnType<typeof resolvePaymentOptions>,
-  trialAvailableForGuest: boolean
+  trialForGuest: ClassDoors['trial']
 ): PriceCell {
   const option = result.options[0]
   if (!option) {
     return {
       kind: 'blocked',
       denial: result.denial ?? 'no_subscription',
-      trialAvailable: trialAvailableForGuest,
+      ...(trialForGuest ? { trial: trialForGuest } : {}),
     }
   }
   if (option.type === 'covered') {
@@ -219,7 +254,9 @@ export function resolveClassCell(snapshot: ContactPaymentSnapshot, activity: Act
     asTrial: false,
     benefit: activity.memberBenefit ?? null,
   })
-  const trialForGuest = !snapshot.authenticated && activity.trialEnabled === true && accessRule.type !== 'open'
+  // Guest-only: the trial door is how a stranger becomes a member, and an
+  // authenticated contact is past it.
+  const trialForGuest = snapshot.authenticated ? null : classDoors(activity).trial
   return fromResult(result, trialForGuest)
 }
 
@@ -242,7 +279,7 @@ export function resolveAppointmentCells(
         // not be priced by the rule the studio wrote for 90.
         benefit: resolveDurationBenefit(activity, duration.minutes),
       }),
-      false
+      null
     ),
   }))
 }
@@ -254,7 +291,7 @@ export function resolveCourseCell(snapshot: ContactPaymentSnapshot, course: Cour
       accessRule: course.accessRule,
       benefit: course.benefit ?? null,
     }),
-    false
+    null
   )
 }
 

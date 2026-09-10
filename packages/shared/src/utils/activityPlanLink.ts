@@ -48,7 +48,14 @@ import {
 import type { Benefit, BenefitEffect } from '../types/benefit'
 import { normalizeBenefit } from '../types/benefit'
 // The effect sets the RESOLVER honours — the editor offers exactly these.
-import { APPOINTMENT_EFFECTS, COURSE_EFFECTS, DROP_IN_EFFECTS } from './paymentOptions'
+import {
+  APPOINTMENT_EFFECTS,
+  COURSE_EFFECTS,
+  DROP_IN_EFFECTS,
+  canonicalClassGate,
+  classAccessTierOf,
+  hasModernGate,
+} from './paymentOptions'
 
 /** The fields the edge is read from and written to — narrow on purpose, so a
  *  caller can pass a form's partial state or a Firestore snapshot alike.
@@ -103,11 +110,19 @@ export function isAppointmentActivity(a: Pick<Activity, 'type'>): boolean {
   return a.type === 'appointment'
 }
 
-/** Plans on the activity's ACCESS gate. Empty for an appointment, and for a
- *  class that is open or members-only. */
+/** Plans on the activity's ACCESS gate — the ones whose holders book free.
+ *  Empty for an appointment.
+ *
+ *  A class that has been asked the two questions (`hasModernGate`) carries its
+ *  list whatever its display tier says: the resolver reads
+ *  `subscriptionTypeIds` without branching on `type`, so "members only, no
+ *  plan required, Premium included" is a real state and the list on it is
+ *  live. Only a LEGACY rule ties the list to the `subscription` tier, because
+ *  there the tier was the only thing that made the list mean anything. */
 export function gatedPlanIds(a: ActivityEdgeFields): string[] {
   if (isAppointmentActivity(a)) return []
   const rule = resolveActivityAccessRule(a)
+  if (hasModernGate(rule)) return rule.subscriptionTypeIds ?? []
   return rule.type === 'subscription' ? (rule.subscriptionTypeIds ?? []) : []
 }
 
@@ -283,13 +298,33 @@ export function activityPlanEdgeUpdate(
     const nextGateIds = next.access
       ? [...gateIds, subTypeId]
       : gateIds.filter((id) => id !== subTypeId)
-    update.accessRule = nextGateIds.length
-      ? { type: 'subscription', subscriptionTypeIds: nextGateIds }
-      : // Emptying the allow-list falls back to `members`, never `open`: the
-        // studio said this is not for the public, and dropping the last plan is
-        // not them changing their mind about that.
-        { type: 'members' }
-    update.isFreeTrial = false
+    // THE TWO ANSWERS SURVIVE A PLAN EDIT. This map is written whole (see the
+    // fold), and until 2026-09-10 it was rebuilt from the id list alone —
+    // `{type:'subscription', ids}`, or `{type:'members'}` once the list was
+    // empty — which dropped `audience` / `requirePlan`, so "members only" with
+    // a drop-in price came back through `resolveClassGate`'s legacy legs as
+    // OPEN TO EVERYONE the moment a plan was ticked "included". Linking a plan
+    // says who books FREE; it never says who may book.
+    //
+    // So the pair is read through the same canonical translation the pricing
+    // form opens with, carried forward, and `type` stays its projection. A
+    // legacy document is upgraded to the two-field shape by this write exactly
+    // as the form's first save would upgrade it — and `isFreeTrial` is kept in
+    // step the way the form keeps it, for the public card's legacy reading.
+    // Dropping the last plan therefore never widens the door either: a class
+    // that required a plan still requires one, and the pricing page's health
+    // check says so until the studio changes its mind in "Who can book".
+    const gate = canonicalClassGate(
+      resolveActivityAccessRule(fresh),
+      !!fresh.dropIn?.enabled && typeof fresh.dropIn.priceAmount === 'number'
+    )
+    update.accessRule = {
+      type: classAccessTierOf(gate),
+      audience: gate.audience,
+      requirePlan: gate.requirePlan,
+      ...(nextGateIds.length ? { subscriptionTypeIds: nextGateIds } : {}),
+    }
+    update.isFreeTrial = gate.audience === 'anyone' && !gate.requirePlan
   }
 
   return Object.keys(update).length ? update : null
@@ -400,7 +435,14 @@ export function activityPlanFacets(
   // NARROWING a class from everyone to one plan. Widening is a decision for the
   // activity's own "Who can book", not a side effect of linking a plan
   // (Franco, 2026-09-01).
-  return resolveActivityAccessRule(a).type === 'open'
+  //
+  // THAT IS THE LEGACY `open` TIER ONLY. A class asked the two questions may be
+  // open to anyone AND sell a drop-in, and there a plan is exactly what makes
+  // its holders free ("members free, visitors pay") — so both facets are live
+  // whatever the display tier says. The pricing form shows the table in every
+  // state for the same reason.
+  const rule = resolveActivityAccessRule(a)
+  return !hasModernGate(rule) && rule.type === 'open'
     ? { access: false, rate: false }
     : { access: true, rate: true }
 }
