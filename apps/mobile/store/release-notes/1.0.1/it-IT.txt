@@ -1,4 +1,3 @@
 • L'app ora parla tedesco, francese e italiano – segue la lingua del tuo telefono.
-• I colori e il logo della tua palestra in tutta l'app.
-• Codice non arrivato? «Invia un nuovo codice» è lì a portata di mano.
-• Le basi per i promemoria e una schermata «aggiornamento richiesto» per le versioni vecchie.
+• Il grafico degli allenamenti mostra ogni settimana, comprese quelle di pausa.
+• Le basi per i promemoria, così potremo attivarli senza un nuovo download.

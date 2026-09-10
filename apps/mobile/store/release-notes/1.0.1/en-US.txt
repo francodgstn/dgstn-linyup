@@ -1,4 +1,3 @@
 • The app now speaks German, French and Italian — it follows your phone's language.
-• Your studio's colours and logo throughout the app.
-• Didn't get your sign-in code? "Send a new code" is right there.
-• Groundwork for reminders and an "update required" screen for old versions.
+• The training chart shows every week, including the ones you took off.
+• Groundwork for reminders, so we can switch them on without a new download.
