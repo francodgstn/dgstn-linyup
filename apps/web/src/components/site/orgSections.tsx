@@ -12,6 +12,7 @@ import { publicHrefLocalized } from '@/lib/publicRoutes'
 // Type-only — avoids a real runtime circular import (sections.tsx imports the
 // blocks below as values).
 import type { RenderCtx } from './sections'
+import { nameInitials } from '@linyup/shared'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Organization site — aggregate blocks (clubs / locations / coaches).
@@ -53,12 +54,6 @@ function colsClass(columns: 2 | 3 | 4): string {
     : columns === 4
       ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
       : '@2xl:grid-cols-2 @5xl:grid-cols-3'
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
-  return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
 }
 
 // ─── Clubs (card per member team, linking to its bio-link) ───────────────────
@@ -501,7 +496,7 @@ function CoachesBlock({ section, ctx }: { section: CoachesSection; ctx: RenderCt
                     <img src={c.photoUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-xl font-bold" style={{ color: '#ffffff' }}>
-                      {initials(c.name)}
+                      {nameInitials(c.name)}
                     </span>
                   )}
                 </div>

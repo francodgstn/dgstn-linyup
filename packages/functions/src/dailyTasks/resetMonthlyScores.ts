@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
 import { snapshotLeaderboardHistory } from '../utils/leaderboard'
-import { CONTACTS_COLLECTION, TEAMS_COLLECTION } from '@linyup/shared'
+import { CONTACTS_COLLECTION, TEAMS_COLLECTION, TEAM_LEADERBOARD_SUBCOLLECTION, TEAM_LEADERBOARD_CURRENT_DOC } from '@linyup/shared'
 
 const BATCH_SIZE = 400
 
@@ -70,8 +70,8 @@ export async function resetMonthlyScores(): Promise<{ skipped?: boolean; reset?:
       db
         .collection(TEAMS_COLLECTION)
         .doc(teamId)
-        .collection('leaderboard')
-        .doc('current')
+        .collection(TEAM_LEADERBOARD_SUBCOLLECTION)
+        .doc(TEAM_LEADERBOARD_CURRENT_DOC)
         .set({
           month: currentMonth,
           entries: [],

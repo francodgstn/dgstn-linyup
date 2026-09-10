@@ -16,7 +16,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FirestoreService } from '../../services/firestore';
 import { Goal, GoalEvaluation, GoalStatus, PerformanceIndicator } from '../../types';
-import { dimensionLabel, goalCategoryLabel, groupGoalsWithSteps } from '../../utils/goalContract';
+import { dimensionLabel, goalCategoryLabel, groupGoalsWithSteps, sortSteps, GOAL_STATUSES, GOAL_STATUS_COLORS } from '../../utils/goalContract';
 import { Timestamp } from 'firebase/firestore';
 import { useTranslations } from '../../i18n';
 
@@ -39,14 +39,6 @@ const statusLabel = (t: Translate, status: GoalStatus): string => {
   }
 };
 
-const STATUS_COLORS: Record<GoalStatus, string> = {
-  open: '#3B82F6',
-  in_progress: '#F97316',
-  achieved: '#22C55E',
-  abandoned: '#9CA3AF',
-};
-
-const ALL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned'];
 
 // Categories are the team's resolved GOAL CATEGORIES — what a goal is about
 // (FirestoreService.getGoalCategories). They are NOT the check-in axes, which
@@ -110,7 +102,7 @@ const EvaluationItem: React.FC<EvaluationItemProps> = ({ eval_, onEdit }) => {
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderLeftWidth: 3,
-        borderLeftColor: STATUS_COLORS[eval_.status_after],
+        borderLeftColor: GOAL_STATUS_COLORS[eval_.status_after],
         marginBottom: 8,
         backgroundColor: theme.colors.surfaceVariant,
         borderRadius: 6,
@@ -244,13 +236,13 @@ const AddEvalModal: React.FC<EvalModalProps> = ({
               {t('statusAfterLabel')}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {ALL_STATUSES.map(s => (
+              {GOAL_STATUSES.map(s => (
                 <Chip
                   key={s}
                   selected={statusAfter === s}
                   onPress={() => setStatusAfter(s)}
-                  style={statusAfter === s ? { backgroundColor: STATUS_COLORS[s] + '30' } : undefined}
-                  textStyle={statusAfter === s ? { color: STATUS_COLORS[s], fontWeight: '700' } : undefined}
+                  style={statusAfter === s ? { backgroundColor: GOAL_STATUS_COLORS[s] + '30' } : undefined}
+                  textStyle={statusAfter === s ? { color: GOAL_STATUS_COLORS[s], fontWeight: '700' } : undefined}
                 >
                   {statusLabel(t, s)}
                 </Chip>
@@ -615,7 +607,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ goal, steps, contactId, categoryOpt
   };
 
   const canEvaluate = goal.status === 'open' || goal.status === 'in_progress';
-  const statusColor = STATUS_COLORS[goal.status];
+  const statusColor = GOAL_STATUS_COLORS[goal.status];
 
   return (
     <>
@@ -890,7 +882,14 @@ export const GoalsSection: React.FC<Props> = ({ contactId, teamId }) => {
     );
   };
 
-  const { goals: goalGroups, generalSteps } = groupGoalsWithSteps(goals);
+  // Sort AROUND the grouping helper, never inside it — its contract is to
+  // preserve input order, and the query hands it created_at-desc. Without this
+  // a goal's steps read as their sequence in REVERSE. The web fixed exactly
+  // this (see sortSteps' header) and called it fixed on "both surfaces"; the
+  // app was a third surface running the same query.
+  const grouped = groupGoalsWithSteps(goals);
+  const goalGroups = grouped.goals.map(g => ({ ...g, steps: sortSteps(g.steps, 'manual') }));
+  const generalSteps = sortSteps(grouped.generalSteps, 'manual');
   const isEmpty = goalGroups.length === 0 && generalSteps.length === 0;
 
   return (

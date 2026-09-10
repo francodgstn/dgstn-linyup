@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, CalendarDays, MapPin, Users, Check, X, Copy } from 'lucide-react'
 import { Link, useRouter } from '@/i18n/navigation'
-import { EVENTS_COLLECTION, CHECKINS_COLLECTION } from '@linyup/shared'
+import { EVENTS_COLLECTION, CHECKINS_COLLECTION, personInitials } from '@linyup/shared'
 import type { Event, EventCheckin, EventType } from '@linyup/shared'
 import type { Route } from 'next'
 import { ProgramTab } from '@/components/events/program/ProgramTab'
@@ -74,10 +74,6 @@ function useOrgTeams(orgId: string) {
       return snap.docs.map((d) => ({ id: d.id, name: d.data().name as string }))
     },
   })
-}
-
-function initials(c: { contact: { firstname: string; lastname: string } }) {
-  return `${c.contact.firstname?.[0] ?? ''}${c.contact.lastname?.[0] ?? ''}`.toUpperCase() || '?'
 }
 
 export default function OrgEventDetailPage() {
@@ -358,7 +354,7 @@ export default function OrgEventDetailPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
-                          {initials(checkin)}
+                          {personInitials(checkin.contact)}
                         </div>
                         <span className="font-medium">
                           {checkin.contact.firstname} {checkin.contact.lastname}

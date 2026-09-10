@@ -37,3 +37,26 @@ export function normalizeHex(value: string | undefined | null, fallback = DEFAUL
   }
   return HEX_RE.test(v) ? v.toLowerCase() : fallback
 }
+
+/** The avatar-bubble palette — Tailwind background classes, so it lives here
+ *  in the web app rather than in shared (the member app draws its bubbles with
+ *  Paper's theme). Used to be declared in both `BookingRow` and the
+ *  gamification page, byte-for-byte. */
+const AVATAR_COLORS = [
+  'bg-blue-500',
+  'bg-purple-500',
+  'bg-green-500',
+  'bg-orange-500',
+  'bg-pink-500',
+  'bg-teal-500',
+  'bg-red-500',
+  'bg-indigo-500',
+] as const
+
+/** A stable colour for an entity id, so the same person's bubble is the same
+ *  colour on every list that shows it. */
+export function avatarColor(id: string): string {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}

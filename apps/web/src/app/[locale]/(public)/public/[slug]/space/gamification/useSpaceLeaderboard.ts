@@ -32,28 +32,16 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
+import { TEAMS_COLLECTION, TEAM_LEADERBOARD_SUBCOLLECTION, TEAM_LEADERBOARD_CURRENT_DOC } from '@linyup/shared'
+import type { LeaderboardEntry, TeamLeaderboard } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { usePublicTeam } from '../../PublicTeamProvider'
 
-export interface SpaceLeaderboardEntry {
-  contact_id: string
-  firstname: string
-  lastname: string
-  /** Set on a not-yet-joined (trial) contact — used to anonymise the row on
-   *  screen, same as the mobile app's leaderboard. */
-  acquisition_stage?: string | null
-  score: number
-  rank: number
-  streak: number
-  max_streak?: number
-}
-
-export interface SpaceLeaderboard {
-  month: string
-  entries: SpaceLeaderboardEntry[]
-}
+/** The slice of the shared `TeamLeaderboard` document this surface reads —
+ *  the row shape is shared's `LeaderboardEntry`, the same one the app reads. */
+export type SpaceLeaderboard = Pick<TeamLeaderboard, 'month' | 'entries'>
 
 export function useSpaceLeaderboard() {
   const { isAuthenticated } = useSpaceAuth()
@@ -64,12 +52,12 @@ export function useSpaceLeaderboard() {
     enabled: isAuthenticated && !!teamId,
     queryFn: async () => {
       try {
-        const snap = await getDoc(doc(db, 'teams', teamId, 'leaderboard', 'current'))
+        const snap = await getDoc(doc(db, TEAMS_COLLECTION, teamId, TEAM_LEADERBOARD_SUBCOLLECTION, TEAM_LEADERBOARD_CURRENT_DOC))
         if (!snap.exists()) return null
         const data = snap.data() as Record<string, unknown>
         return {
           month: (data.month as string | undefined) ?? '',
-          entries: (data.entries as SpaceLeaderboardEntry[] | undefined) ?? [],
+          entries: (data.entries as LeaderboardEntry[] | undefined) ?? [],
         }
       } catch (err: unknown) {
         reportPublicLoadFailure('space/leaderboard', err)

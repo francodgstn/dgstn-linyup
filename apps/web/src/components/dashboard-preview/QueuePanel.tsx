@@ -47,7 +47,7 @@ import type {
   ContactFilterContext,
   EngagementThresholds,
 } from '@linyup/shared'
-import { compareContactsByAttention, contactAttentionReasons, isRosterContact } from '@linyup/shared'
+import { compareContactsByAttention, contactAttentionReasons, isRosterContact, personInitials } from '@linyup/shared'
 import type { SetupStep } from '@/hooks/useSetupChecklist'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -90,8 +90,7 @@ const ROW_CLASS =
 
 function PersonRowView({ contact, reason }: PersonRow) {
   const t = useTranslations('NewDashboard')
-  const initials =
-    `${contact.firstname?.[0] ?? ''}${contact.lastname?.[0] ?? ''}`.toUpperCase() || '?'
+  const initials = personInitials(contact)
   return (
     <Link href={`/contacts/${contact.id}` as Route} className={ROW_CLASS}>
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[11px] font-semibold text-amber-600">

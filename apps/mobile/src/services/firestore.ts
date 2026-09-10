@@ -1,11 +1,26 @@
 import { db, getFunctions } from '../config/firebase';
 import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, collectionGroup, orderBy, Timestamp, addDoc, serverTimestamp, limit, writeBatch } from 'firebase/firestore';
-import { CONTACTS_COLLECTION, SESSIONS_COLLECTION, TEAMS_COLLECTION, densifyWeeklyCounts, isoWeekKeysBack } from '@linyup/shared';
+import {
+  CONTACTS_COLLECTION,
+  SESSIONS_COLLECTION,
+  TEAMS_COLLECTION,
+  PARTICIPANTS_SUBCOLLECTION,
+  CONTACT_GOALS_SUBCOLLECTION,
+  CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION,
+  CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION,
+  CONTACT_ALERTS_SUBCOLLECTION,
+  CONTACT_WEEKLY_REPORTS_SUBCOLLECTION,
+  TEAM_LEADERBOARD_SUBCOLLECTION,
+  TEAM_LEADERBOARD_CURRENT_DOC,
+  visibleGoals,
+  densifyWeeklyCounts,
+  isoWeekKeysBack,
+} from '@linyup/shared';
 import {
   Contact,
   TeamPublicProfile,
   ReferralInfo,
-  SessionPublicProfile,
+  HydratedSession,
   WeeklyReport,
   ContactAlert,
   Leaderboard,
@@ -36,11 +51,10 @@ export { SESSION_MIRROR_TYPE };
  *  path constant exists for this subcollection yet (functions code keeps it
  *  as a local literal too — see packages/functions/src/booking/myBookings.ts). */
 const BOOKINGS_SUBCOLLECTION = 'bookings';
-const PARTICIPANTS_SUBCOLLECTION = 'participants';
 const PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile';
 
 /** Map one `sessions/{id}/public_profile/{id}` mirror doc to the app's view. */
-function mapSessionPublicProfile(sessionId: string, data: Record<string, unknown>): SessionPublicProfile {
+function mapSessionPublicProfile(sessionId: string, data: Record<string, unknown>): HydratedSession {
   const start = data.start as { toDate?: () => Date } | undefined;
   const end = data.end as { toDate?: () => Date } | undefined;
   return {
@@ -319,7 +333,7 @@ export const FirestoreService = {
   },
 
   // Get upcoming sessions for a team from the public_profile mirror
-  async getUpcomingSessions(teamId: string, date: Date = new Date()): Promise<SessionPublicProfile[]> {
+  async getUpcomingSessions(teamId: string, date: Date = new Date()): Promise<HydratedSession[]> {
     try {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -357,11 +371,11 @@ export const FirestoreService = {
     startDate: Date,
     endDate: Date,
     teamId?: string
-  ): Promise<SessionPublicProfile[]> {
+  ): Promise<HydratedSession[]> {
     try {
       const sessions = await this.getTeamSessionsInRange(teamId ?? '', startDate, endDate);
 
-      const attendedSessions: SessionPublicProfile[] = [];
+      const attendedSessions: HydratedSession[] = [];
       await Promise.all(
         sessions.map(async (session) => {
           try {
@@ -388,7 +402,7 @@ export const FirestoreService = {
     teamId: string,
     startDate: Date,
     endDate: Date
-  ): Promise<SessionPublicProfile[]> {
+  ): Promise<HydratedSession[]> {
     try {
       if (!teamId) return [];
       const publicProfileSnapshot = await getDocs(
@@ -425,7 +439,7 @@ export const FirestoreService = {
     teamId: string,
     startDate: Date,
     endDate: Date
-  ): Promise<(SessionPublicProfile & { status: SessionParticipationStatus })[]> {
+  ): Promise<(HydratedSession & { status: SessionParticipationStatus })[]> {
     try {
       const [sessions, bookingsResult] = await Promise.all([
         this.getTeamSessionsInRange(teamId, startDate, endDate),
@@ -482,7 +496,7 @@ export const FirestoreService = {
   async getContactWeeklyReports(contactId: string, weeks = 16): Promise<WeeklyReport[]> {
     try {
       const window = isoWeekKeysBack(weeks);
-      const reportsRef = collection(db, CONTACTS_COLLECTION, contactId, 'contact_weekly_reports');
+      const reportsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_WEEKLY_REPORTS_SUBCOLLECTION);
       const q = query(reportsRef, where('iso_week', '>=', window[0]), orderBy('iso_week', 'asc'));
       const snapshot = await getDocs(q);
 
@@ -502,7 +516,7 @@ export const FirestoreService = {
   // Get team leaderboard (denormalized document for gamification)
   async getTeamLeaderboard(teamId: string): Promise<Leaderboard | null> {
     try {
-      const leaderboardRef = doc(db, TEAMS_COLLECTION, teamId, 'leaderboard', 'current');
+      const leaderboardRef = doc(db, TEAMS_COLLECTION, teamId, TEAM_LEADERBOARD_SUBCOLLECTION, TEAM_LEADERBOARD_CURRENT_DOC);
       const leaderboardSnap = await getDoc(leaderboardRef);
 
       if (!leaderboardSnap.exists()) {
@@ -538,7 +552,7 @@ export const FirestoreService = {
   // `totalSessions` is Contact.total_sessions, needed for sessions_countdown.
   async getContactAlerts(contactId: string, totalSessions?: number | null): Promise<ContactAlert[]> {
     try {
-      const alertsRef = collection(db, CONTACTS_COLLECTION, contactId, 'contact_alerts');
+      const alertsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_ALERTS_SUBCOLLECTION);
       const q = query(
         alertsRef,
         where('show_in_app', '==', true),
@@ -632,7 +646,7 @@ export const FirestoreService = {
     startDate: Date,
     endDate: Date,
     teamId?: string
-  ): Promise<SessionPublicProfile[]> {
+  ): Promise<HydratedSession[]> {
     try {
       if (!teamId) return [];
       const [sessions, bookingsResult] = await Promise.all([
@@ -739,7 +753,7 @@ export const FirestoreService = {
 
   async getGoals(contactId: string): Promise<Goal[]> {
     try {
-      const goalsRef = collection(db, CONTACTS_COLLECTION, contactId, 'goals');
+      const goalsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION);
       const q = query(goalsRef, orderBy('created_at', 'desc'));
       const snapshot = await getDocs(q);
       const all = snapshot.docs.map(docSnap => {
@@ -753,18 +767,10 @@ export const FirestoreService = {
           type: (data.type as GoalType | undefined) ?? 'goal',
         } as Goal;
       });
-      // A goal the coach archived is hidden here too, with its steps — the same
-      // rule the admin tab and the member Space apply. IN MEMORY, because
-      // `archived_at` is absent on older goals and a `where(== null)` would
-      // match none of them.
-      const archivedGoalIds = new Set(
-        all.filter(g => g.type !== 'task' && !!g.archived_at).map(g => g.id),
-      );
-      return all.filter(
-        g =>
-          !g.archived_at &&
-          !(g.type === 'task' && g.parent_goal_id && archivedGoalIds.has(g.parent_goal_id)),
-      );
+      // A goal the coach archived is hidden here too, with its steps — the ONE
+      // cascade every surface applies, `visibleGoals` in @linyup/shared. (This
+      // copy had re-spelled the predicate as `!!archived_at`.)
+      return visibleGoals(all);
     } catch (error) {
       console.error('Error fetching goals:', error);
       return [];
@@ -773,7 +779,7 @@ export const FirestoreService = {
 
   async updateGoal(contactId: string, goalId: string, data: Partial<Omit<Goal, 'id'>>): Promise<void> {
     try {
-      const goalRef = doc(db, CONTACTS_COLLECTION, contactId, 'goals', goalId);
+      const goalRef = doc(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId);
       await updateDoc(goalRef, data as any);
     } catch (error) {
       console.error('Error updating goal:', error);
@@ -783,7 +789,7 @@ export const FirestoreService = {
 
   async deleteGoal(contactId: string, goalId: string): Promise<void> {
     try {
-      const goalRef = doc(db, CONTACTS_COLLECTION, contactId, 'goals', goalId);
+      const goalRef = doc(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId);
       await deleteDoc(goalRef);
     } catch (error) {
       console.error('Error deleting goal:', error);
@@ -793,7 +799,7 @@ export const FirestoreService = {
 
   async createGoal(contactId: string, data: Omit<Goal, 'id'>): Promise<string> {
     try {
-      const goalsRef = collection(db, CONTACTS_COLLECTION, contactId, 'goals');
+      const goalsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION);
       const docRef = await addDoc(goalsRef, data);
       return docRef.id;
     } catch (error) {
@@ -804,7 +810,7 @@ export const FirestoreService = {
 
   async getGoalEvaluations(contactId: string, goalId: string): Promise<GoalEvaluation[]> {
     try {
-      const evalsRef = collection(db, CONTACTS_COLLECTION, contactId, 'goals', goalId, 'evaluations');
+      const evalsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION);
       const q = query(evalsRef, orderBy('evaluated_at', 'desc'));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(docSnap => ({
@@ -834,14 +840,14 @@ export const FirestoreService = {
     goalCreatedBy: GoalCreatedBy,
   ): Promise<void> {
     try {
-      const evalsRef = collection(db, CONTACTS_COLLECTION, contactId, 'goals', goalId, 'evaluations');
+      const evalsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION);
       // ONE BATCH: the evaluation and the status it moves the goal to are a
       // single fact. Landing one without the other leaves a goal whose status
       // its own newest evaluation contradicts, and nothing reconciles them.
       const batch = writeBatch(db);
       batch.set(doc(evalsRef), data);
       if (goalCreatedBy === 'student') {
-        batch.update(doc(db, CONTACTS_COLLECTION, contactId, 'goals', goalId), { status: data.status_after });
+        batch.update(doc(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId), { status: data.status_after });
       }
       await batch.commit();
     } catch (error) {
@@ -858,11 +864,11 @@ export const FirestoreService = {
     goalCreatedBy: GoalCreatedBy,
   ): Promise<void> {
     try {
-      const evalRef = doc(db, CONTACTS_COLLECTION, contactId, 'goals', goalId, 'evaluations', evalId);
+      const evalRef = doc(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION, evalId);
       const batch = writeBatch(db);
       batch.update(evalRef, { ...data, edited: true });
       if (data.status_after && goalCreatedBy === 'student') {
-        batch.update(doc(db, CONTACTS_COLLECTION, contactId, 'goals', goalId), { status: data.status_after });
+        batch.update(doc(db, CONTACTS_COLLECTION, contactId, CONTACT_GOALS_SUBCOLLECTION, goalId), { status: data.status_after });
       }
       await batch.commit();
     } catch (error) {
@@ -875,7 +881,7 @@ export const FirestoreService = {
 
   async getPerformanceCheckins(contactId: string, limitCount: number = 10): Promise<PerformanceCheckin[]> {
     try {
-      const checkinsRef = collection(db, CONTACTS_COLLECTION, contactId, 'performance_checkins');
+      const checkinsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION);
       const q = query(checkinsRef, orderBy('taken_at', 'desc'), limit(limitCount));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(docSnap => ({
@@ -890,7 +896,7 @@ export const FirestoreService = {
 
   async addPerformanceCheckin(contactId: string, data: Omit<PerformanceCheckin, 'id'>): Promise<void> {
     try {
-      const checkinsRef = collection(db, CONTACTS_COLLECTION, contactId, 'performance_checkins');
+      const checkinsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION);
 
       const profile = detectPerformanceProfile(data.scores);
       const payload = { ...data, ...profile };
@@ -911,7 +917,7 @@ export const FirestoreService = {
       const existingSnap = await getDocs(existingQ);
 
       if (!existingSnap.empty) {
-        const existingDocRef = doc(db, CONTACTS_COLLECTION, contactId, 'performance_checkins', existingSnap.docs[0].id);
+        const existingDocRef = doc(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION, existingSnap.docs[0].id);
         await updateDoc(existingDocRef, { ...payload });
         return;
       }

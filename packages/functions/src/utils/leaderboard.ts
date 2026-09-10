@@ -1,9 +1,14 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from './async'
+import {
+  CONTACTS_COLLECTION,
+  TEAMS_COLLECTION,
+  TEAM_LEADERBOARD_SUBCOLLECTION,
+  TEAM_LEADERBOARD_CURRENT_DOC,
+  TEAM_LEADERBOARD_HISTORY_SUBCOLLECTION,
+} from '@linyup/shared'
 
-const CONTACTS_COLLECTION = 'contacts'
-const TEAMS_COLLECTION = 'teams'
 const MONTHLY_SCORES_SUBCOLLECTION = 'monthly_scores'
 
 export async function updateTeamLeaderboard(teamId: string, month: string): Promise<void> {
@@ -58,7 +63,7 @@ export async function updateTeamLeaderboard(teamId: string, month: string): Prom
     }
   }
 
-  const leaderboardRef = db.collection(TEAMS_COLLECTION).doc(teamId).collection('leaderboard').doc('current')
+  const leaderboardRef = db.collection(TEAMS_COLLECTION).doc(teamId).collection(TEAM_LEADERBOARD_SUBCOLLECTION).doc(TEAM_LEADERBOARD_CURRENT_DOC)
   const [writeErr] = await to(
     leaderboardRef.set({
       month,
@@ -150,7 +155,7 @@ export async function snapshotLeaderboardHistory(teamId: string, month: string):
     return { ...entry, rank: currentRank }
   })
 
-  const histRef = db.collection(TEAMS_COLLECTION).doc(teamId).collection('leaderboard_history').doc(month)
+  const histRef = db.collection(TEAMS_COLLECTION).doc(teamId).collection(TEAM_LEADERBOARD_HISTORY_SUBCOLLECTION).doc(month)
   const [writeErr] = await to(
     histRef.set({ month, entries, entries_count: entries.length, generated_at: FieldValue.serverTimestamp() })
   )
@@ -160,7 +165,7 @@ export async function snapshotLeaderboardHistory(teamId: string, month: string):
 export async function clearTeamLeaderboard(teamId: string, month: string): Promise<void> {
   if (!teamId) return
   const db = admin.firestore()
-  const leaderboardRef = db.collection(TEAMS_COLLECTION).doc(teamId).collection('leaderboard').doc('current')
+  const leaderboardRef = db.collection(TEAMS_COLLECTION).doc(teamId).collection(TEAM_LEADERBOARD_SUBCOLLECTION).doc(TEAM_LEADERBOARD_CURRENT_DOC)
   const [writeErr] = await to(
     leaderboardRef.set({
       month,

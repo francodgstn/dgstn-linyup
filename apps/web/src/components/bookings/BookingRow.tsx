@@ -16,6 +16,8 @@ import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { Booking } from '@linyup/shared'
+import { personInitials } from '@linyup/shared'
+import { avatarColor } from '@/lib/colors'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -69,26 +71,6 @@ export function formatIso(iso: string | null | undefined): string {
     ' · ' +
     d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   )
-}
-
-export function initials(b: Booking) {
-  return `${b.firstname?.[0] ?? ''}${b.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-}
-
-const AVATAR_COLORS = [
-  'bg-blue-500',
-  'bg-purple-500',
-  'bg-green-500',
-  'bg-orange-500',
-  'bg-pink-500',
-  'bg-teal-500',
-  'bg-red-500',
-  'bg-indigo-500',
-]
-export function avatarColor(id: string) {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
-  return AVATAR_COLORS[h % AVATAR_COLORS.length]
 }
 
 // ─── status vocabulary ─────────────────────────────────────────────────────────
@@ -179,7 +161,7 @@ export function BookingRow({
         <div
           className={`h-10 w-10 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-semibold ${avatarColor(booking.id)}`}
         >
-          {initials(booking)}
+          {personInitials(booking)}
         </div>
       ) : (
         // The contact-scoped row loses the identity avatar (the contact IS the

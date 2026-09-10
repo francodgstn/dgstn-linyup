@@ -8,24 +8,24 @@ import {
   doc, serverTimestamp, Timestamp, writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, resolveGoalCategories, goalCategoryLabel, resolveCoachingDimensions, dimensionLabel, groupGoalsWithSteps, goalIsOverdue, goalIsArchived, sortSteps, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION } from '@linyup/shared'
-import type { Contact, Team, Goal, GoalEvaluation, GoalStatus, GoalType, PerformanceIndicator, StepSortMode } from '@linyup/shared'
+import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, resolveGoalCategories, goalCategoryLabel, resolveCoachingDimensions, dimensionLabel, groupGoalsWithSteps, goalIsArchived, sortSteps, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION, GOAL_STATUS_COLORS, visibleGoals } from '@linyup/shared'
+import type { Contact, Team, Goal, GoalEvaluation, GoalStatus, PerformanceIndicator, StepSortMode } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { DatePicker } from '@/components/ui/date-picker'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
   Flag, CheckSquare, Circle, ChevronDown, ChevronUp, ChevronRight, Plus, Trash2,
-  Star, Info, CheckCircle2, AlertTriangle, Archive, ArchiveRestore,
+  Info, CheckCircle2, Archive, ArchiveRestore,
 } from 'lucide-react'
 import { Segmented } from '@/components/ui/segmented'
-import { GoalProgressBar } from './GoalProgressBar'
+import { GoalProgressBar } from '@/components/coaching/GoalProgressBar'
+import { RatingStars } from '@/components/coaching/RatingStars'
+import { GoalStateChips, type GoalStateChipLabels } from '@/components/coaching/GoalStateChips'
+import { GoalDialog, type GoalDialogLabels } from '@/components/coaching/GoalDialog'
+import { EvaluationDialog, type EvaluationDialogLabels } from '@/components/coaching/EvaluationDialog'
+import { GOAL_STATUS_CLASSES } from '@/components/coaching/goalStatusStyles'
 import { SortableTaskList } from './SortableTaskList'
 import { CoachAssignment } from './CoachAssignment'
 import { PerformanceProfilePanel } from './PerformanceProfilePanel'
@@ -49,19 +49,49 @@ import {
 // not the same question, and collapsing them made the picker wrong. See the
 // header of `packages/shared/src/types/goal.ts` for the full reasoning.
 
-const ALL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned']
-
-const STATUS_STYLES: Record<GoalStatus, string> = {
-  open: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  in_progress: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  achieved: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-  abandoned: 'bg-muted text-muted-foreground',
+// The shared coaching dialogs and chips own the behaviour and take their WORDS
+// from the surface mounting them (`components/coaching/*` — the Space mounts
+// the same components from its own namespace, see its `useSpaceCoachingLabels`).
+// This builds the Contacts copy. A hook, so the accessors are bound HERE and
+// `i18n:check` resolves each key against its namespace.
+function useCoachingLabels() {
+  const t = useTranslations('Contacts')
+  const tCommon = useTranslations('Common')
+  return {
+    goalDialog: (dialogTitle: string): GoalDialogLabels => ({
+      dialogTitle,
+      title: t('goalFormTitle'),
+      description: t('goalFormDescription'),
+      categories: t('goalFormCategories'),
+      parentGoal: t('goalFormParentGoal'),
+      parentGoalNone: t('goalFormParentGoalNone'),
+      startDate: t('goalFormStartDate'),
+      noStartDate: t('goalFormNoStartDate'),
+      targetDate: t('goalFormTargetDate'),
+      noTargetDate: t('goalFormNoTargetDate'),
+      cancel: t('cancel'),
+      save: t('save'),
+      saving: tCommon('saving'),
+      saveFailed: t('goalSaveFailed'),
+    }),
+    evaluationDialog: (editing: boolean): EvaluationDialogLabels => ({
+      title: editing ? t('goalEditEval') : t('goalAddEval'),
+      score: t('goalScore'),
+      scoreHint: t('goalScoreHint'),
+      notes: t('goalNotes'),
+      statusAfter: t('goalStatusAfter'),
+      status: (s) => t(`goalStatus_${s}`),
+      cancel: t('cancel'),
+      save: t('save'),
+      saving: tCommon('saving'),
+      saveFailed: t('goalEvalSaveFailed'),
+    }),
+    goalStateChips: {
+      lastEvaluated: (date) => t('goalLastEvaluatedOn', { date: formatDate(date) }),
+      overdue: t('goalOverdueBadge'),
+    } satisfies GoalStateChipLabels,
+  }
 }
-
-// Sentinel for the Select's "no parent" option — Radix Select rejects an
-// empty-string item value, and `undefined`/`null` aren't valid values either.
-const NO_PARENT = '__general__'
-
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -106,297 +136,6 @@ async function fetchEvaluations(contactId: string, goalId: string): Promise<Goal
   return snap.docs.map((d) => ({ ...d.data(), id: d.id } as GoalEvaluation))
 }
 
-// ─── StarDisplay + StarInput ───────────────────────────────────────────────────
-
-function StarDisplay({ score }: { score: number }) {
-  return (
-    <span className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          className={`h-3.5 w-3.5 ${i <= score ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`}
-        />
-      ))}
-    </span>
-  )
-}
-
-// `value` starts (and can stay) unset — see EvalDialog: a rating that was never
-// touched must not be indistinguishable from a deliberate "3".
-function StarInput({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
-  return (
-    <span className="flex gap-1.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <button key={i} type="button" onClick={() => onChange(i)}>
-          <Star
-            className={`h-7 w-7 transition-colors ${value !== null && i <= value ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground hover:text-amber-300'}`}
-          />
-        </button>
-      ))}
-    </span>
-  )
-}
-
-// ─── EvalDialog ───────────────────────────────────────────────────────────────
-
-interface EvalDialogProps {
-  open: boolean
-  goalStatus: GoalStatus
-  initial?: GoalEvaluation
-  onClose: () => void
-  onSubmit: (score: number, notes: string, statusAfter: GoalStatus) => Promise<void>
-}
-
-// Score starts UNSET (never a default 3) — a stray double-click on Save used to
-// write a permanent, dated rating indistinguishable from a deliberate neutral.
-function EvalDialog({ open, goalStatus, initial, onClose, onSubmit }: EvalDialogProps) {
-  const t = useTranslations('Contacts')
-  const [score, setScore] = useState<number | null>(initial?.score ?? null)
-  const [notes, setNotes] = useState(initial?.notes ?? '')
-  const [statusAfter, setStatusAfter] = useState<GoalStatus>(initial?.status_after ?? goalStatus)
-  const [saving, setSaving] = useState(false)
-
-  const handleOpen = (o: boolean) => {
-    if (o) {
-      setScore(initial?.score ?? null)
-      setNotes(initial?.notes ?? '')
-      setStatusAfter(initial?.status_after ?? goalStatus)
-    }
-  }
-
-  const save = async () => {
-    if (score == null) return
-    setSaving(true)
-    try { await onSubmit(score, notes.trim(), statusAfter) } finally { setSaving(false) }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => { handleOpen(o); if (!o) onClose() }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{initial ? t('goalEditEval') : t('goalAddEval')}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('goalScore')}</p>
-            <StarInput value={score} onChange={setScore} />
-            {score == null && <p className="text-xs text-muted-foreground">{t('goalScoreHint')}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">{t('goalNotes')}</label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('goalStatusAfter')}</p>
-            <div className="flex flex-wrap gap-2">
-              {ALL_STATUSES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setStatusAfter(s)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    statusAfter === s
-                      ? STATUS_STYLES[s] + ' border-transparent'
-                      : 'border-border text-muted-foreground hover:border-foreground'
-                  }`}
-                >
-                  {t(`goalStatus_${s}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>{t('cancel')}</Button>
-          <Button onClick={save} disabled={saving || score == null}>{saving ? '…' : t('save')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ─── GoalFormDialog ───────────────────────────────────────────────────────────
-
-interface GoalFormDialogProps {
-  open: boolean
-  type: GoalType
-  categories: PerformanceIndicator[]
-  initial?: Goal
-  /** Steps only: the goals a step can attach to. Absent/empty hides the picker
-   *  (there is nothing to parent to yet). */
-  parentOptions?: { id: string; title: string }[]
-  /** Steps only, new step: pre-filled when opened from a goal card's own "add
-   *  step" button; unset (General) when opened from the General section. */
-  defaultParentGoalId?: string | null
-  onClose: () => void
-  onSubmit: (data: { title: string; description: string; categories: string[]; targetDate: Date | null; startDate: Date | null; parentGoalId: string | null }) => Promise<void>
-}
-
-function GoalFormDialog({ open, type, categories, initial, parentOptions, defaultParentGoalId, onClose, onSubmit }: GoalFormDialogProps) {
-  const t = useTranslations('Contacts')
-  const [title, setTitle] = useState(initial?.title ?? '')
-  const [description, setDescription] = useState(initial?.description ?? '')
-  const [selectedCats, setSelectedCats] = useState<string[]>(initial?.categories ?? [])
-  const [targetDate, setTargetDate] = useState<Date | null>(
-    tsToDate(initial?.target_date) ?? null,
-  )
-  const [startDate, setStartDate] = useState<Date | null>(
-    tsToDate(initial?.start_date) ?? null,
-  )
-  const [parentGoalId, setParentGoalId] = useState<string | null>(
-    initial ? (initial.parent_goal_id ?? null) : (defaultParentGoalId ?? null),
-  )
-  const [saving, setSaving] = useState(false)
-
-  const handleOpen = (o: boolean) => {
-    if (o) {
-      setTitle(initial?.title ?? '')
-      setDescription(initial?.description ?? '')
-      setSelectedCats(initial?.categories ?? [])
-      setTargetDate(tsToDate(initial?.target_date) ?? null)
-      setStartDate(tsToDate(initial?.start_date) ?? null)
-      setParentGoalId(initial ? (initial.parent_goal_id ?? null) : (defaultParentGoalId ?? null))
-    }
-  }
-
-  const toggleCat = (key: string) =>
-    setSelectedCats((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
-
-  const save = async () => {
-    if (!title.trim()) return
-    setSaving(true)
-    try {
-      await onSubmit({
-        title: title.trim(),
-        description: description.trim(),
-        categories: selectedCats,
-        targetDate: targetDate,
-        startDate: startDate,
-        parentGoalId,
-      })
-    } finally { setSaving(false) }
-  }
-
-  const isGoal = type === 'goal'
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => { handleOpen(o); if (!o) onClose() }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>
-            {initial
-              ? t(isGoal ? 'goalEditGoal' : 'goalEditTask')
-              : t(isGoal ? 'goalsAddGoal' : 'goalsAddTask')}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">{t('goalFormTitle')}</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">{t('goalFormDescription')}</label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
-          </div>
-          {isGoal && categories.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('goalFormCategories')}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.key}
-                    type="button"
-                    onClick={() => toggleCat(cat.key)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                      selectedCats.includes(cat.key)
-                        ? 'bg-primary text-primary-foreground border-transparent'
-                        : 'border-border text-muted-foreground hover:border-foreground'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {!isGoal && parentOptions && parentOptions.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t('goalFormParentGoal')}</label>
-              <Select
-                value={parentGoalId ?? NO_PARENT}
-                onValueChange={(v) => setParentGoalId(v === NO_PARENT ? null : v)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_PARENT}>{t('goalFormParentGoalNone')}</SelectItem>
-                  {parentOptions.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {/* Start beside target: two halves of the same question, and the
-              start is the one a coach fills in when planning ahead. */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t('goalFormStartDate')}</label>
-              <DatePicker
-                value={startDate ?? undefined}
-                onChange={(d) => setStartDate(d ?? null)}
-                placeholder={t('goalFormNoStartDate')}
-                fromYear={new Date().getFullYear() - 1}
-                toYear={new Date().getFullYear() + 5}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t('goalFormTargetDate')}</label>
-              <DatePicker
-                value={targetDate ?? undefined}
-                onChange={(d) => setTargetDate(d ?? null)}
-                placeholder={t('goalFormNoTargetDate')}
-                fromYear={new Date().getFullYear() - 1}
-                toYear={new Date().getFullYear() + 5}
-              />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>{t('cancel')}</Button>
-          <Button onClick={save} disabled={saving || !title.trim()}>{saving ? '…' : t('save')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ─── shared collapsed-state chips (score, last evaluated, overdue) ────────────
-
-function GoalStateChips({ goal, t }: { goal: Goal; t: ReturnType<typeof useTranslations> }) {
-  const overdue = goalIsOverdue(goal)
-  if (goal.latest_score == null && !goal.last_evaluated_at && !overdue) return null
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {goal.latest_score != null && (
-        <span className="inline-flex items-center gap-1">
-          <StarDisplay score={goal.latest_score} />
-        </span>
-      )}
-      {goal.last_evaluated_at && (
-        <span className="text-xs text-muted-foreground">
-          {t('goalLastEvaluatedOn', { date: formatDate(goal.last_evaluated_at) })}
-        </span>
-      )}
-      {overdue && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
-          <AlertTriangle className="h-3 w-3" />
-          {t('goalOverdueBadge')}
-        </span>
-      )}
-    </div>
-  )
-}
-
 // ─── GoalCard ─────────────────────────────────────────────────────────────────
 
 interface GoalCardProps {
@@ -416,6 +155,7 @@ interface GoalCardProps {
 
 function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, onAddStep, onEditStep, sortMode, onReorderSteps }: GoalCardProps) {
   const t = useTranslations('Contacts')
+  const labels = useCoachingLabels()
   const qc = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   // NOT the same thing as `expanded` above, which opens the EVALUATIONS panel.
@@ -569,7 +309,7 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
 
           {/* Chips */}
           <div className={`flex flex-wrap gap-1.5 ${collapsed ? 'hidden' : ''}`}>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[goal.status]}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${GOAL_STATUS_CLASSES[goal.status]}`}>
               {t(`goalStatus_${goal.status}`)}
             </span>
             {goal.categories.map((key) => (
@@ -608,7 +348,7 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
 
           {/* Latest score / last evaluated / overdue — so the one stale goal in
               a list is visible WITHOUT expanding every card. */}
-          {!collapsed && <GoalStateChips goal={goal} t={t} />}
+          {!collapsed && <GoalStateChips goal={goal} labels={labels.goalStateChips} />}
 
           {/* THE RAIL STAYS WHEN COLLAPSED. It is the one thing worth reading
               about a goal you have folded away — "two of five done" answers the
@@ -680,10 +420,10 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
                 <div
                   key={ev.id}
                   className="rounded-lg border-l-4 bg-card px-3 py-2 space-y-1"
-                  style={{ borderLeftColor: ev.status_after === 'achieved' ? '#22c55e' : ev.status_after === 'in_progress' ? '#f97316' : ev.status_after === 'abandoned' ? '#9ca3af' : '#3b82f6' }}
+                  style={{ borderLeftColor: GOAL_STATUS_COLORS[ev.status_after] }}
                 >
                   <div className="flex items-center justify-between">
-                    <StarDisplay score={ev.score} />
+                    <RatingStars value={ev.score} readOnly size={14} />
                     <div className="flex items-center gap-1.5">
                       {ev.edited && <span className="text-[10px] text-muted-foreground">edited</span>}
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${ev.evaluated_by === 'coach' ? 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'}`}>
@@ -727,27 +467,33 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <GoalFormDialog
+      <GoalDialog
         open={editOpen}
+        onOpenChange={setEditOpen}
         type="goal"
         categories={categories}
         initial={goal}
-        onClose={() => setEditOpen(false)}
+        fields={{ description: true, startDate: true, targetDate: true }}
         onSubmit={handleEdit}
+        labels={labels.goalDialog(t('goalEditGoal'))}
       />
-      <EvalDialog
+      <EvaluationDialog
         open={showEvalDialog}
+        onOpenChange={setShowEvalDialog}
         goalStatus={goal.status}
-        onClose={() => setShowEvalDialog(false)}
-        onSubmit={handleAddEval}
+        canSetStatus
+        onSubmit={(v) => handleAddEval(v.score, v.notes, v.statusAfter)}
+        labels={labels.evaluationDialog(false)}
       />
       {editingEval && (
-        <EvalDialog
+        <EvaluationDialog
           open={true}
+          onOpenChange={(o) => { if (!o) setEditingEval(null) }}
           goalStatus={goal.status}
           initial={editingEval}
-          onClose={() => setEditingEval(null)}
-          onSubmit={handleEditEval}
+          canSetStatus
+          onSubmit={(v) => handleEditEval(v.score, v.notes, v.statusAfter)}
+          labels={labels.evaluationDialog(true)}
         />
       )}
     </>
@@ -857,6 +603,7 @@ interface Props {
 
 export function GoalsTab({ contact, teamId, team }: Props) {
   const t = useTranslations('Contacts')
+  const labels = useCoachingLabels()
   const qc = useQueryClient()
   const { data: goals = [], isLoading } = useGoals(contact.id)
   const [addGoalOpen, setAddGoalOpen] = useState(false)
@@ -885,24 +632,14 @@ export function GoalsTab({ contact, teamId, team }: Props) {
   const categories = resolveGoalCategories(team)
   const dimensions = resolveCoachingDimensions(team)
 
-  // ARCHIVING A GOAL TAKES ITS STEPS WITH IT. Hiding the parent alone would
-  // send its steps through groupGoalsWithSteps' missing-parent fallback and out
-  // into General, where they would read as loose to-dos the coach never wrote.
-  const archivedGoalIds = new Set(
-    goals.filter((g) => g.type !== 'task' && goalIsArchived(g)).map((g) => g.id),
-  )
-  const visibleGoals = showArchived
-    ? goals
-    : goals.filter(
-        (g) =>
-          !goalIsArchived(g) &&
-          !(g.type === 'task' && g.parent_goal_id && archivedGoalIds.has(g.parent_goal_id)),
-      )
+  // ARCHIVING A GOAL TAKES ITS STEPS WITH IT — the cascade lives ONCE in
+  // `visibleGoals` (@linyup/shared); its header says why it is in memory.
+  const shownGoals = showArchived ? goals : visibleGoals(goals)
   const hasArchived = goals.some((g) => goalIsArchived(g))
 
   // Sort AROUND the grouping helper, never inside it: its contract is to
   // preserve input order, and the mobile app mirrors it byte-for-byte.
-  const { goals: groupedGoals, generalSteps: ungroupedGeneral } = groupGoalsWithSteps(visibleGoals)
+  const { goals: groupedGoals, generalSteps: ungroupedGeneral } = groupGoalsWithSteps(shownGoals)
   const goalsWithSteps = groupedGoals.map(({ goal, steps }) => ({
     goal,
     steps: sortSteps(steps, sortMode),
@@ -1125,23 +862,26 @@ export function GoalsTab({ contact, teamId, team }: Props) {
         </div>
       </div>
 
-      <GoalFormDialog
+      <GoalDialog
         open={addGoalOpen}
+        onOpenChange={setAddGoalOpen}
         type="goal"
         categories={categories}
-        onClose={() => setAddGoalOpen(false)}
+        fields={{ description: true, startDate: true, targetDate: true }}
         onSubmit={handleAddGoal}
+        labels={labels.goalDialog(t('goalsAddGoal'))}
       />
-      <GoalFormDialog
+      <GoalDialog
         key={stepDialog.editing?.id ?? stepDialog.defaultParentGoalId ?? 'new'}
         open={stepDialog.open}
+        onOpenChange={(o) => { if (!o) closeStepDialog() }}
         type="task"
         categories={[]}
         initial={stepDialog.editing ?? undefined}
-        parentOptions={goalOptions}
         defaultParentGoalId={stepDialog.defaultParentGoalId}
-        onClose={closeStepDialog}
+        fields={{ description: true, startDate: true, targetDate: true, parentOptions: goalOptions }}
         onSubmit={handleSubmitStep}
+        labels={labels.goalDialog(stepDialog.editing ? t('goalEditTask') : t('goalsAddTask'))}
       />
     </div>
   )

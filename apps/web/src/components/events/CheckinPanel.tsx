@@ -30,6 +30,7 @@ import { Check, Search, Download, UserPlus, ClipboardList, Loader2 } from 'lucid
 import {
   CONTACTS_COLLECTION, CHECKINS_COLLECTION, TEAMS_COLLECTION, EVENT_TYPES_SUBCOLLECTION,
   isCheckinCompleted,
+  personInitials,
 } from '@linyup/shared'
 import type {
   Contact, EventCheckin, RankingSystem, EventType, EventTypeConfig, EventTypeField, Team,
@@ -54,10 +55,6 @@ interface PluginCheckinFormProps {
 type MinContact = { id: string; firstname: string; lastname: string }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-function initials(c: MinContact) {
-  return `${c.firstname?.[0] ?? ''}${c.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-}
 
 function exportCsv(t: ReturnType<typeof useTranslations>, checkins: EventCheckin[], eventTitle: string) {
   const rows: string[][] = [[
@@ -333,7 +330,7 @@ function AddCheckinDialog({
                   {isPicked && <Check className="h-3 w-3" />}
                 </span>
                 <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold shrink-0">
-                  {initials(c)}
+                  {personInitials(c)}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{c.firstname} {c.lastname}</p>

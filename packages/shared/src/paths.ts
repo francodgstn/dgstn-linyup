@@ -34,6 +34,11 @@ export const OUTREACH_TEMPLATES_SUBCOLLECTION = 'outreach_templates'
 export const AUTOMATION_RULES_SUBCOLLECTION = 'automation_rules'
 export const AUTOMATION_LOGS_SUBCOLLECTION = 'automation_logs'
 export const TEAM_REBUILD_JOBS_SUBCOLLECTION = 'rebuild_jobs'
+// The monthly leaderboard: one denormalised document per team (see
+// types/leaderboard.ts), plus a per-month history written at month end.
+export const TEAM_LEADERBOARD_SUBCOLLECTION = 'leaderboard'
+export const TEAM_LEADERBOARD_CURRENT_DOC = 'current'
+export const TEAM_LEADERBOARD_HISTORY_SUBCOLLECTION = 'leaderboard_history'
 
 // Platform-wide operator configuration (SMTP, etc.). Single well-known doc.
 // Read by Cloud Functions (getAppSettings) and written by the operator console.

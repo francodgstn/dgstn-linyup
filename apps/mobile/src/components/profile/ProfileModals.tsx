@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, StyleSheet, View, ScrollView } from 'react-native';
 import { ActivityIndicator, Button, IconButton, Text, useTheme, Avatar, Surface, TouchableRipple } from 'react-native-paper';
 import QRCode from 'react-native-qrcode-svg';
+import { personInitials } from '@linyup/shared';
 import { Contact, TeamPublicProfile } from '../../types';
 import {
   getAffiliationLabel,
@@ -248,7 +249,7 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({
                             />
                           ) : (
                             <Avatar.Text
-                              label={`${c.firstname?.[0] || ''}${c.lastname?.[0] || ''}`.toUpperCase()}
+                              label={personInitials(c)}
                               size={48}
                               style={{ backgroundColor: isCurrent ? theme.colors.primary : theme.colors.surfaceVariant }}
                               color={isCurrent ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}

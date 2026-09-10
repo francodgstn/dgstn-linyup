@@ -41,12 +41,8 @@ import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { CONTACTS_COLLECTION, CONTACT_PUSH_TOKENS_SUBCOLLECTION } from '@linyup/shared'
 
-const CONTACTS_COLLECTION = 'contacts'
-// Mirrors CONTACT_PUSH_TOKENS_SUBCOLLECTION in @linyup/shared/paths. Imported
-// as a literal only because this file is also read by people wiring the native
-// side; the shared constant is the owner.
-const PUSH_TOKENS_SUBCOLLECTION = 'push_tokens'
 
 /** Android needs a channel to exist before anything can be delivered to it.
  *  Creating it is free, silent, and does NOT prompt — so it happens now rather
@@ -93,7 +89,7 @@ export async function registerPushTokenIfAllowed(
     if (!token) return null
 
     await setDoc(
-      doc(db, CONTACTS_COLLECTION, contactId, PUSH_TOKENS_SUBCOLLECTION, token),
+      doc(db, CONTACTS_COLLECTION, contactId, CONTACT_PUSH_TOKENS_SUBCOLLECTION, token),
       {
         token,
         teamId,

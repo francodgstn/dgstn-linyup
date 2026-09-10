@@ -40,7 +40,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION, goalIsArchived } from '@linyup/shared'
+import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION, visibleGoals } from '@linyup/shared'
 import type { Goal, GoalEvaluation, GoalStatus, GoalType } from '@linyup/shared'
 import { reportPublicActionFailure, reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from '../SpaceAuthProvider'
@@ -83,17 +83,9 @@ export function useSpaceGoals() {
         // otherwise archiving is only cosmetic for the coach, and the member
         // keeps being shown work nobody is tracking any more. Its steps go with
         // it, or they would surface as loose General tasks.
-        // IN MEMORY, never a `where`: `archived_at` is ABSENT on every goal
-        // written before the field existed, and `== null` matches only
-        // documents that HAVE it. Same trap as `overdue_at` in stampOverdueGoals.
-        const archivedGoalIds = new Set(
-          all.filter((g) => g.type !== 'task' && goalIsArchived(g)).map((g) => g.id),
-        )
-        return all.filter(
-          (g) =>
-            !goalIsArchived(g) &&
-            !(g.type === 'task' && g.parent_goal_id && archivedGoalIds.has(g.parent_goal_id)),
-        )
+        // The cascade — and why it is in memory rather than a `where` — lives
+        // ONCE in `visibleGoals` (@linyup/shared).
+        return visibleGoals(all)
       } catch (err: unknown) {
         reportPublicLoadFailure('space/goals', err)
         throw err
@@ -235,7 +227,7 @@ export function useAddGoalEvaluation() {
       score: number
       notes: string | null
       /** Present only when the goal is student-owned AND the form offered (and
-       *  changed) the control — see EvaluationFormDialog. */
+       *  changed) the control — see the shared EvaluationDialog's `canSetStatus`. */
       statusAfter?: GoalStatus
     }) => {
       if (!contactId) throw new Error('Not signed in')

@@ -44,6 +44,33 @@ describe('resolveSubscriptionTypeName', () => {
     expect(name).toBe('Legacy Plan');
   });
 
+  // The flat grant carries an expiry; a live subscription does not. The
+  // date check must therefore bite ONLY on the fallback arm — this is the
+  // asymmetry the admin and the Space already honour and the app did not.
+  it('does NOT show a flat grant whose expiry has passed', () => {
+    const name = resolveSubscriptionTypeName({
+      subscription_type_name: '2 months included',
+      subscription_expires_at: { toMillis: () => Date.now() - 1000 } as any,
+    });
+    expect(name).toBeNull();
+  });
+
+  it('still shows a flat grant that has not yet expired', () => {
+    const name = resolveSubscriptionTypeName({
+      subscription_type_name: '2 months included',
+      subscription_expires_at: { toMillis: () => Date.now() + 86_400_000 } as any,
+    });
+    expect(name).toBe('2 months included');
+  });
+
+  it('never gates a LIVE subscription on the grant expiry', () => {
+    const name = resolveSubscriptionTypeName({
+      subscription_expires_at: { toMillis: () => Date.now() - 1000 } as any,
+      active_subscriptions: [{ subscription_type_id: 'type-1', subscription_type_name: 'Type One' } as any],
+    });
+    expect(name).toBe('Type One');
+  });
+
   it('returns null when the contact has no subscription anywhere', () => {
     expect(resolveSubscriptionTypeName({})).toBeNull();
   });

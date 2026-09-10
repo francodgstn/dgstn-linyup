@@ -22,7 +22,8 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "remove": "Entfernen",
-    "reset": "Zurücksetzen"
+    "reset": "Zurücksetzen",
+    "ratingAriaLabel": "Bewerte {n} von 5"
   },
   "Plans": {
     "free": "Free",
@@ -1062,7 +1063,9 @@
     "headerMarkExternal": "Als extern markieren",
     "headerMarkActive": "Wieder als aktiv führen",
     "markExternalTitle": "{count, plural, one {Diesen Kontakt als extern markieren?} other {# Kontakte als extern markieren?}}",
-    "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen."
+    "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen.",
+    "goalSaveFailed": "Dieses Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut."
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -7862,7 +7865,6 @@
     "profileInconsistentDesc": "Regelmässig dabei zu sein ist das Hauptproblem — der Rest stimmt, sobald du da bist.",
     "profileBalancedTitle": "Ausgeglichen",
     "profileBalancedDesc": "Jeder Bereich ist stark. Weiter so.",
-    "ratingAriaLabel": "Bewerte {n} von 5",
     "createStepCta": "Aufgabe für {dimension} erstellen",
     "createStepDefaultTitle": "An {dimension} arbeiten",
     "createStepSubmit": "Aufgabe erstellen",
@@ -7871,7 +7873,8 @@
     "collapseGoal": "Ziel einklappen",
     "expandGoal": "Ziel ausklappen",
     "startDateLabel": "Start: {date}",
-    "tasksCompletedLabel": "{done}/{total} Aufgaben erledigt"
+    "tasksCompletedLabel": "{done}/{total} Aufgaben erledigt",
+    "fieldNoTargetDate": "Kein Zieldatum"
   },
   "OrgUpsell": {
     "title": "Betreiben Sie mehr als ein Studio?",

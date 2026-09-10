@@ -31,19 +31,21 @@ import { QueryErrorState } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { loadFailureDetail } from '@/lib/publicQueryError'
 import { planGrantIsCurrent } from '@linyup/shared'
+import type { ActiveSubscriptionSummary } from '@linyup/shared'
 import { useSpaceTheme } from './useSpaceTheme'
 import { useSpaceContact } from './useSpaceContact'
 import { usePublicTeam } from '../PublicTeamProvider'
 
-/** One row of the member's membership list — the shape both
- *  `Contact.active_subscriptions` and the legacy single-field fallback reduce to. */
-interface ShownSubscription {
-  subscription_type_id?: string | null
-  subscription_type_name?: string | null
-  recurrence?: string | null
-  amount?: number
-  cancels_at_ms?: number | null
-  cancelling?: boolean
+/** One row of the member's membership list — the fields of the shared
+ *  `ActiveSubscriptionSummary` this card reads (every one optional, because the
+ *  legacy single-field fallback below cannot fill them all), plus one of its
+ *  own. A real summary IS one of these; no cast. */
+type ShownSubscription = Partial<
+  Pick<
+    ActiveSubscriptionSummary,
+    'subscription_type_id' | 'subscription_type_name' | 'recurrence' | 'amount' | 'cancels_at_ms' | 'cancelling'
+  >
+> & {
   /** End of a one-off grant ("2 months included") — the member's own answer to
    *  "until when", which otherwise only the studio could see. */
   until?: { toDate(): Date } | null
@@ -67,7 +69,7 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
 
   const cardStyle = { background: cardBg, border: `1px solid ${cardBorder}` }
 
-  const subs = (contact?.active_subscriptions ?? []) as ShownSubscription[]
+  const subs: ShownSubscription[] = contact?.active_subscriptions ?? []
   // The flat grant, shown only while it still COVERS her — the same
   // `planGrantIsCurrent` comparison the booking gate makes. A member whose "2
   // months included" has run out must not be told she is still a member by the

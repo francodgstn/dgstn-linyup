@@ -22,7 +22,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "remove": "Remove",
-    "reset": "Reset"
+    "reset": "Reset",
+    "ratingAriaLabel": "Rate {n} out of 5"
   },
   "Plans": {
     "free": "Free",
@@ -1062,7 +1063,9 @@
     "headerMarkExternal": "Mark as external",
     "headerMarkActive": "Bring back to Active",
     "markExternalTitle": "{count, plural, one {Mark this contact as external?} other {Mark # contacts as external?}}",
-    "markExternalDesc": "They can still book and attend, and their history stays. They leave the Active list, the contact count, event invitations, automations and Needs attention — until you mark them active again, or they complete your signup form."
+    "markExternalDesc": "They can still book and attend, and their history stays. They leave the Active list, the contact count, event invitations, automations and Needs attention — until you mark them active again, or they complete your signup form.",
+    "goalSaveFailed": "Couldn't save this goal. Please try again.",
+    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -7862,7 +7865,6 @@
     "profileInconsistentDesc": "Showing up is the main thing holding you back — the rest is solid once you're there.",
     "profileBalancedTitle": "Balanced",
     "profileBalancedDesc": "Every area is strong. Keep it up.",
-    "ratingAriaLabel": "Rate {n} out of 5",
     "createStepCta": "Create a task for {dimension}",
     "createStepDefaultTitle": "Work on {dimension}",
     "createStepSubmit": "Create task",
@@ -7871,7 +7873,8 @@
     "collapseGoal": "Collapse goal",
     "expandGoal": "Expand goal",
     "startDateLabel": "Start: {date}",
-    "tasksCompletedLabel": "{done}/{total} tasks done"
+    "tasksCompletedLabel": "{done}/{total} tasks done",
+    "fieldNoTargetDate": "No target date"
   },
   "OrgUpsell": {
     "title": "Running more than one studio?",

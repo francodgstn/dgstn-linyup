@@ -38,6 +38,7 @@ import {
   ORG_AFFILIATION_STATUSES_SUBCOLLECTION, DEFAULT_ORG_AFFILIATION_STATUSES,
   CONTACT_FILTERS_SUBCOLLECTION, contactUsageForPlan, PLAN_ORDER, contactOverageForPlan,
   planHasHardContactCap, resolveIntroOffer,
+  personInitials,
 } from '@linyup/shared'
 import type { Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
 import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle, planGrantExpiryMs } from '@linyup/shared'
@@ -86,9 +87,6 @@ import { Tip } from '@/components/ui/tip'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function initials(c: Contact) {
-  return `${c.firstname?.[0] ?? ''}${c.lastname?.[0] ?? ''}`.toUpperCase() || '?'
-}
 
 
 const MEMBERSHIP_COLOR_CLASSES: Record<string, string> = {
@@ -1855,7 +1853,7 @@ function ContactRow({
       >
         {/* Avatar */}
         <div className="h-10 w-10 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-sm font-semibold relative">
-          {initials(contact)}
+          {personInitials(contact)}
           {rankLevel && (
             <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-background bg-background">
               <RankBadge level={rankLevel} size="sm" />
@@ -1987,7 +1985,7 @@ function DeletedRow({
         />
       </label>
       <div className="h-10 w-10 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-sm font-semibold">
-        {initials(contact)}
+        {personInitials(contact)}
       </div>
       <div className="flex-1 min-w-0 ml-3">
         <p className="font-medium text-sm truncate">{contact.firstname} {contact.lastname}</p>

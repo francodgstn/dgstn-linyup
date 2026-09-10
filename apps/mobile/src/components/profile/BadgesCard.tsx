@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Icon, Surface, Text, useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import { mergeBadgeThresholds } from '@linyup/shared';
 import { Contact, GamificationBadgeThresholds, GamificationCoachBadge, RankingSystem } from '../../types';
 import { resolvePrimaryRank } from '../../utils/profileUtils';
 import { useTranslations } from '../../i18n';
@@ -40,14 +41,6 @@ interface BadgesCardProps {
   /** The tenant's effective ranking systems. Empty = no Rank badge group. */
   rankingSystems?: RankingSystem[];
 }
-
-const DEFAULT_THRESHOLDS: GamificationBadgeThresholds = {
-  attendance: { enabled: true, first_class: 1, dedicated: 10, committed: 50, centurion: 100, veteran: 200 },
-  streak: { enabled: true, on_fire: 4, unstoppable: 8, legendary: 12 },
-  score: { enabled: true, rising_star: 30, monthly_star: 60, superstar: 90 },
-  leaderboard: { enabled: true, leader: 1, top5: 1, hall_of_fame: 5 },
-  explorer: { enabled: true, explorer: 2 },
-};
 
 // Coach badge icons are stored as MaterialCommunityIcons names directly
 // (matching react-native-paper's Icon component)
@@ -224,25 +217,15 @@ export const BadgesCard: React.FC<BadgesCardProps> = ({ contact, badgeThresholds
   const theme = useTheme();
   const t = useTranslations('Badges');
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
-  const mergedThresholds = useMemo<GamificationBadgeThresholds>(() => ({
-    attendance: { ...DEFAULT_THRESHOLDS.attendance, ...badgeThresholds?.attendance },
-    streak: { ...DEFAULT_THRESHOLDS.streak, ...badgeThresholds?.streak },
-    score: { ...DEFAULT_THRESHOLDS.score, ...badgeThresholds?.score },
-    leaderboard: { ...DEFAULT_THRESHOLDS.leaderboard, ...badgeThresholds?.leaderboard },
-    explorer: { ...DEFAULT_THRESHOLDS.explorer, ...badgeThresholds?.explorer },
-  }), [badgeThresholds]);
+  // The studio's thresholds over the product defaults — the same resolution the
+  // admin editor and the web Space make (`mergeBadgeThresholds`, @linyup/shared).
+  const mergedThresholds = useMemo<GamificationBadgeThresholds>(() => mergeBadgeThresholds(badgeThresholds), [badgeThresholds]);
 
   const resolvedCoachBadges = coachBadges || [];
   const groups = useMemo(() => getBadgeGroups(t, contact, mergedThresholds, resolvedCoachBadges, rankingSystems ?? []), [t, contact, mergedThresholds, resolvedCoachBadges, rankingSystems]);
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
-    new Set(getBadgeGroups(t, contact, {
-      attendance: { ...DEFAULT_THRESHOLDS.attendance, ...badgeThresholds?.attendance },
-      streak: { ...DEFAULT_THRESHOLDS.streak, ...badgeThresholds?.streak },
-      score: { ...DEFAULT_THRESHOLDS.score, ...badgeThresholds?.score },
-      leaderboard: { ...DEFAULT_THRESHOLDS.leaderboard, ...badgeThresholds?.leaderboard },
-      explorer: { ...DEFAULT_THRESHOLDS.explorer, ...badgeThresholds?.explorer },
-    }, coachBadges || [], rankingSystems ?? []).map(g => g.id))
+    new Set(getBadgeGroups(t, contact, mergeBadgeThresholds(badgeThresholds), coachBadges || [], rankingSystems ?? []).map(g => g.id))
   );
   const allBadges = groups.flatMap(g => g.badges);
   const earnedCount = allBadges.filter(b => b.earned).length;

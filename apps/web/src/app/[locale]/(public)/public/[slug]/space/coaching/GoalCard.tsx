@@ -35,17 +35,19 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronDown, ChevronRight, ChevronUp, Info, Pencil, Plus, Star, Trash2 } from 'lucide-react'
-import { dimensionLabel, goalCategoryLabel, goalIsArchived, goalIsOverdue } from '@linyup/shared'
+import { dimensionLabel, goalCategoryLabel, goalIsArchived } from '@linyup/shared'
 import type { Goal, GoalStatus, PerformanceIndicator } from '@linyup/shared'
 import type { ConfirmOptions } from '@/components/ui/confirm-dialog'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { loadFailureDetail } from '@/lib/publicQueryError'
 import { useSpaceTheme } from '../useSpaceTheme'
-import { RatingStars } from './RatingStars'
 import { StepRow } from './StepRow'
-import { GoalFormDialog } from './GoalFormDialog'
-import { EvaluationFormDialog } from './EvaluationFormDialog'
-import { GoalProgressBar } from './GoalProgressBar'
+import { RatingStars } from '@/components/coaching/RatingStars'
+import { GoalStateChips } from '@/components/coaching/GoalStateChips'
+import { GoalProgressBar } from '@/components/coaching/GoalProgressBar'
+import { GoalDialog } from '@/components/coaching/GoalDialog'
+import { EvaluationDialog } from '@/components/coaching/EvaluationDialog'
+import { useSpaceCoachingLabels } from './useSpaceCoachingLabels'
 import { useAddGoalEvaluation, useGoalEvaluations } from './useSpaceGoals'
 import type { SpaceGoalsState } from './useSpaceGoals'
 import { Tip } from '@/components/ui/tip'
@@ -55,48 +57,6 @@ const STATUS_KEYS: Record<GoalStatus, string> = {
   in_progress: 'statusInProgress',
   achieved: 'statusAchieved',
   abandoned: 'statusAbandoned',
-}
-
-// ─── state chips: score, last evaluated, overdue ───────────────────────────
-// Space's twin of the admin's `GoalStateChips` — same three facts, same "say
-// nothing if there's nothing to say" rule, themed through useSpaceTheme()
-// instead of Tailwind's semantic tokens.
-function GoalStateChips({
-  goal,
-  t,
-  textMuted,
-}: {
-  goal: Goal
-  t: ReturnType<typeof useTranslations>
-  textMuted: string
-}) {
-  const overdue = goalIsOverdue(goal)
-  if (goal.latest_score == null && !goal.last_evaluated_at && !overdue) return null
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      {goal.latest_score != null && (
-        <span className="inline-flex items-center gap-1.5">
-          <RatingStars value={goal.latest_score} readOnly size={14} emptyColor={textMuted} />
-          <span className="text-[11px]" style={{ color: textMuted }}>
-            {t('latestScoreLabel', { score: goal.latest_score })}
-          </span>
-        </span>
-      )}
-      {goal.last_evaluated_at && (
-        <span className="text-[11px]" style={{ color: textMuted }}>
-          {t('lastEvaluatedOn', { date: goal.last_evaluated_at.toDate().toLocaleDateString() })}
-        </span>
-      )}
-      {overdue && (
-        <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-          style={{ background: '#fee2e2', color: '#b91c1c' }}
-        >
-          {t('overdueBadge')}
-        </span>
-      )}
-    </div>
-  )
 }
 
 interface Props {
@@ -119,6 +79,7 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
   const t = useTranslations('SpaceCoaching')
   const tCommon = useTranslations('Common')
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const labels = useSpaceCoachingLabels()
 
   const [expanded, setExpanded] = useState(false)
   // NOT `expanded` above, which opens the evaluations history. This folds the
@@ -248,13 +209,17 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
       )}
 
       {/* Latest score / last evaluated / overdue — folded away with the card. */}
-      {!collapsed && <GoalStateChips goal={goal} t={t} textMuted={textMuted} />}
+      {!collapsed && <GoalStateChips goal={goal} labels={labels.goalStateChips} mutedColor={textMuted} className="mt-2" />}
 
       {/* THE RAIL STAYS WHEN COLLAPSED — see GoalProgressBar and this file's
           header for why. */}
       {steps.length > 0 && (
         <div className="mt-2">
-          <GoalProgressBar steps={steps} label={t('tasksCompletedLabel', { done: doneSteps, total: steps.length })} />
+          <GoalProgressBar
+            steps={steps}
+            label={t('tasksCompletedLabel', { done: doneSteps, total: steps.length })}
+            palette={{ accent, muted: textMuted, halo: cardBg, track: cardBorder }}
+          />
         </div>
       )}
 
@@ -341,35 +306,43 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
         </div>
       )}
 
-      <GoalFormDialog
+      <GoalDialog
         open={editing}
         onOpenChange={setEditing}
-        kind="goal"
+        type="goal"
         categories={categories}
-        initialGoal={goal}
-        onSubmit={async (values) => {
-          await updateGoal.mutateAsync({ goalId: goal.id, ...values })
+        initial={goal}
+        fields={{ description: true, targetDate: true }}
+        onSubmit={async (v) => {
+          await updateGoal.mutateAsync({ goalId: goal.id, title: v.title, description: v.description || null, categories: v.categories, targetDate: v.targetDate })
           setEditing(false)
         }}
+        labels={labels.goalDialog(t('goalFormTitleEdit'))}
       />
-      <GoalFormDialog
+      <GoalDialog
         open={addingStep}
         onOpenChange={setAddingStep}
-        kind="task"
+        type="task"
         categories={categories}
-        onSubmit={async (values) => {
-          await createGoal.mutateAsync({ type: 'task', parentGoalId: goal.id, ...values })
+        fields={{}}
+        onSubmit={async (v) => {
+          await createGoal.mutateAsync({ type: 'task', parentGoalId: goal.id, title: v.title })
           setAddingStep(false)
         }}
+        labels={labels.goalDialog(t('goalFormTitleCreateStep'))}
       />
-      <EvaluationFormDialog
+      {/* The status control is offered only on the member's OWN goal — the
+          only case the cascade write can succeed (useSpaceGoals). */}
+      <EvaluationDialog
         open={evaluating}
         onOpenChange={setEvaluating}
-        goal={goal}
+        goalStatus={goal.status}
+        canSetStatus={own}
         onSubmit={async ({ score, notes, statusAfter }) => {
-          await addEvaluation.mutateAsync({ goal, score, notes, statusAfter })
+          await addEvaluation.mutateAsync({ goal, score, notes: notes || null, statusAfter: own ? statusAfter : undefined })
           setEvaluating(false)
         }}
+        labels={labels.evaluationDialog}
       />
     </div>
   )

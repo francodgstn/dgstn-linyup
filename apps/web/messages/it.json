@@ -22,7 +22,8 @@
     "cancel": "Annulla",
     "delete": "Elimina",
     "remove": "Rimuovi",
-    "reset": "Reimposta"
+    "reset": "Reimposta",
+    "ratingAriaLabel": "Valuta {n} su 5"
   },
   "Plans": {
     "free": "Free",
@@ -1062,7 +1063,9 @@
     "headerMarkExternal": "Segna come esterno",
     "headerMarkActive": "Riporta tra gli Attivi",
     "markExternalTitle": "{count, plural, one {Segnare questo contatto come esterno?} other {Segnare # contatti come esterni?}}",
-    "markExternalDesc": "Possono ancora prenotare e partecipare, e la loro storia resta. Escono dalla lista Attivi, dal conteggio contatti, dagli inviti agli eventi, dalle automazioni e da «Da seguire» — finché non li segni di nuovo come attivi, o compilano il tuo modulo di iscrizione."
+    "markExternalDesc": "Possono ancora prenotare e partecipare, e la loro storia resta. Escono dalla lista Attivi, dal conteggio contatti, dagli inviti agli eventi, dalle automazioni e da «Da seguire» — finché non li segni di nuovo come attivi, o compilano il tuo modulo di iscrizione.",
+    "goalSaveFailed": "Impossibile salvare questo obiettivo. Riprova.",
+    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova."
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -7862,7 +7865,6 @@
     "profileInconsistentDesc": "La costanza nella presenza è il freno principale — il resto è solido una volta che ci sei.",
     "profileBalancedTitle": "Equilibrato",
     "profileBalancedDesc": "Ogni area è forte. Continua così.",
-    "ratingAriaLabel": "Valuta {n} su 5",
     "createStepCta": "Crea un compito per {dimension}",
     "createStepDefaultTitle": "Lavora su {dimension}",
     "createStepSubmit": "Crea compito",
@@ -7871,7 +7873,8 @@
     "collapseGoal": "Comprimi obiettivo",
     "expandGoal": "Espandi obiettivo",
     "startDateLabel": "Inizio: {date}",
-    "tasksCompletedLabel": "{done}/{total} attività completate"
+    "tasksCompletedLabel": "{done}/{total} attività completate",
+    "fieldNoTargetDate": "Nessuna data obiettivo"
   },
   "OrgUpsell": {
     "title": "Gestisci più di uno studio?",

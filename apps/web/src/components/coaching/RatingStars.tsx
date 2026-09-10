@@ -1,18 +1,31 @@
 'use client'
 
-// A 1–5 star rating, shared by the evaluation form, the check-in form and the
-// read-only `latest_score` badge on a goal card.
+// A 1–5 star rating — read-only, or interactive through `onChange` — for every
+// place a score is shown or asked: the evaluation and check-in forms, the
+// `latest_score` chip on a goal card, each row of an evaluation history, on
+// the admin's coaching tab AND in the member Space. The admin carried its own
+// `StarDisplay` + `StarInput` pair that differed from this only in where the
+// empty-star colour came from — the identical situation `GoalProgressBar` was
+// in, resolved the same way:
+//
+//   no `emptyColor` → the app's muted token. Right on the neutral admin
+//                     surface and inside the Dialogs, which are app-token
+//                     everywhere (the Space's included).
+//   `emptyColor`    → the host surface's own muted colour, for a
+//                     tenant-themed card whose dark theme can render the app
+//                     token invisible (the same split `QueryErrorState` makes).
 //
 // `value: 0` MEANS UNSET, and is only meaningful when interactive. A rating
 // input that opens pre-filled at "3" lets a stray click submit a score
-// indistinguishable, later, from a deliberate neutral one — every caller of
-// this component in `onChange` mode starts its own state at 0 and disables
-// its Submit button until every star it renders has been touched. This
-// component itself does not enforce that; it just never claims 0 is a rating.
+// indistinguishable, later, from a deliberate neutral one — every caller in
+// `onChange` mode starts its own state at 0 and disables its Submit until a
+// star has been touched. This component does not enforce that; it just never
+// claims 0 is a rating.
 
 import { useTranslations } from 'next-intl'
 import { Star } from 'lucide-react'
 
+/** amber-500 — the hex the member app fills its stars with too. */
 const FILLED_COLOR = '#f59e0b'
 
 interface Props {
@@ -21,17 +34,12 @@ interface Props {
   onChange?: (value: number) => void
   size?: number
   readOnly?: boolean
-  /** Colour for an unfilled star. Leave unset inside the neutral app-token
-   *  Dialogs (the default Tailwind muted token is already correct there); pass
-   *  the host surface's own muted colour on a tenant-themed card — RatingStars
-   *  has no theme of its own, same split `QueryErrorState` makes and for the
-   *  same reason (a studio's dark theme can render an app-token muted colour
-   *  invisible). */
+  /** Colour for an unfilled star — see the module header. */
   emptyColor?: string
 }
 
 export function RatingStars({ value, onChange, size = 22, readOnly = false, emptyColor }: Props) {
-  const t = useTranslations('SpaceCoaching')
+  const t = useTranslations('Common')
   return (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((n) => {

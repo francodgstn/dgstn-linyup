@@ -21,6 +21,7 @@ import {
   TEAMS_COLLECTION,
   TEAM_INVITATIONS_SUBCOLLECTION,
   canManageRole,
+  nameInitials,
 } from '@linyup/shared'
 import type { TeamRole } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
@@ -42,12 +43,6 @@ type Invite = { id: string; email: string; role: string }
 function errorMessage(err: unknown): string | null {
   if (err instanceof Error && err.message) return err.message
   return null
-}
-
-function initials(name?: string, email?: string): string {
-  const src = (name || email || '?').trim()
-  const parts = src.split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || src[0]?.toUpperCase() || '?'
 }
 
 export default function CoachesPage() {
@@ -202,7 +197,7 @@ export default function CoachesPage() {
           {coaches.map((m) => (
             <div key={m.userId} className="flex items-center gap-3 rounded-xl border bg-card p-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                {initials(m.displayName, m.email)}
+                {nameInitials(m.displayName || m.email)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{m.displayName || m.email || m.userId}</p>
