@@ -13,11 +13,7 @@ import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpacePayments } from '../useSpacePayments'
-
-function formatDate(ms: number | null): string {
-  if (!ms) return '—'
-  return new Date(ms).toLocaleDateString()
-}
+import { usePublicFormat } from '../../usePublicFormat'
 
 /** What "this money did not arrive" actually looks like on a payment row.
  *  'refunded' and 'partially_refunded' are deliberately absent: the money DID
@@ -29,6 +25,7 @@ export default function PaymentsHome() {
   const locale = useLocale()
   const { slug, isAuthenticated } = useSpaceAuth()
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const { team } = usePublicTeam()
   const currency = team?.default_currency ?? 'CHF'
   // A failed MONEY read must never render as "No payments yet": that tells
@@ -130,7 +127,7 @@ export default function PaymentsHome() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: textMain }}>{p.label}</p>
                     <p className="text-xs" style={{ color: textMuted }}>
-                      {formatDate(p.createdAt)}
+                      {p.createdAt ? fmt.date(p.createdAt) : '—'}
                       {p.promoCode ? ` · ${t('paymentPromoCode', { code: p.promoCode })}` : ''}
                     </p>
                   </div>

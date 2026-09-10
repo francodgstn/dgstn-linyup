@@ -1,4 +1,4 @@
-import { resolveAffiliationTerm, resolveSubscriptionTypeName, resolvePrimaryRank, formatAddress } from './profileUtils';
+import { resolveAffiliationTerm, resolveSubscriptionTypeName, formatAddress } from './profileUtils';
 
 describe('resolveAffiliationTerm', () => {
   const term = { en: 'Membership', de: 'Mitgliedschaft', fr: 'Adhésion' };
@@ -76,33 +76,6 @@ describe('resolveSubscriptionTypeName', () => {
   });
 });
 
-describe('resolvePrimaryRank', () => {
-  const systems = [
-    {
-      id: 'default',
-      name: 'Default',
-      is_primary: true,
-      levels: [
-        { value: 1, label: 'Beginner', color: '#fff' },
-        { value: 2, label: 'Advanced', color: '#000' },
-      ],
-    },
-  ];
-
-  it('resolves the level matching the contact\'s stored rank for the primary system', () => {
-    const resolved = resolvePrimaryRank({ ranks: { default: 2 } }, systems as any);
-    expect(resolved?.label).toBe('Advanced');
-  });
-
-  it('returns null when no ranking systems are configured — no sport-specific fallback', () => {
-    expect(resolvePrimaryRank({ ranks: { default: 2 } }, [])).toBeNull();
-    expect(resolvePrimaryRank({ ranks: { default: 2 } }, null)).toBeNull();
-  });
-
-  it('returns null when the contact has no recorded level for the system', () => {
-    expect(resolvePrimaryRank({ ranks: {} }, systems as any)).toBeNull();
-  });
-});
 
 describe('formatAddress', () => {
   it('joins the route/street_number and postal_code/locality lines', () => {

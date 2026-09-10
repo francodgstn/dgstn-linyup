@@ -27,6 +27,8 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import {
@@ -34,9 +36,10 @@ import {
   CONTACT_GOALS_SUBCOLLECTION,
   CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION,
   resolveCoachingDimensions,
-  detectPerformanceProfile,
   dimensionLabel,
   PERFORMANCE_PROFILE_COLORS,
+  buildPerformanceCheckin,
+  sameDayCheckin,
 } from '@linyup/shared'
 import type { Contact, Team, PerformanceCheckin, ProfileKey, Goal } from '@linyup/shared'
 import { usePlan } from '@/hooks/usePlan'
@@ -296,12 +299,16 @@ function AddCheckinDialog({
   onOpenChange,
   contactId,
   dimensions,
+  recent,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   contactId: string
   dimensions: { key: string; label: string }[]
+  /** The most recent check-ins, already loaded for the panel — where today's
+   *  coach check-in, if any, is found (`sameDayCheckin`). */
+  recent: PerformanceCheckin[]
   onSaved: () => void
 }) {
   const t = useTranslations('Contacts')
@@ -321,18 +328,17 @@ function AddCheckinDialog({
       const finalScores = Object.fromEntries(
         Object.entries(scores).filter((entry): entry is [string, number] => entry[1] != null)
       )
-      const profile = detectPerformanceProfile(finalScores)
-      await addDoc(
-        collection(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION),
-        {
-          scores: finalScores,
-          notes: notes.trim() || null,
-          filled_by: 'coach',
-          context: '1to1',
-          taken_at: serverTimestamp(),
-          ...profile,
-        }
+      const payload = buildPerformanceCheckin(
+        { scores: finalScores, notes, filled_by: 'coach', context: '1to1' },
+        serverTimestamp(),
       )
+      const col = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION)
+      // ONE coach check-in per day — the same rule the member surfaces apply to
+      // their own author. A second 1:1 on the same day is a correction of the
+      // first, not a second row; this tab used to accumulate them.
+      const existing = sameDayCheckin(recent, 'coach')
+      if (existing) await updateDoc(doc(col, existing.id), payload)
+      else await addDoc(col, payload)
       onSaved()
       onOpenChange(false)
       setScores(emptyScores())
@@ -587,6 +593,7 @@ export function PerformanceProfilePanel({
         onOpenChange={setAddCheckinOpen}
         contactId={contact.id}
         dimensions={dimensions}
+        recent={checkins}
         onSaved={() =>
           qc.invalidateQueries({ queryKey: ['contact-performance-checkins', contact.id] })
         }

@@ -1,59 +1,9 @@
-import { planGrantIsCurrent, rankLevelBadge, type RankBadge } from '@linyup/shared';
-import { AffiliationSummary, ContactAddress, Contact, RankingSystem } from '../types';
+import { planGrantIsCurrent, resolveAffiliationTerm as resolveSharedAffiliationTerm, type AffiliationTerm } from '@linyup/shared';
+import { AffiliationSummary, ContactAddress, Contact } from '../types';
 
 /** What a few helpers below need from `useTranslations(...)` — the caller's
  *  own namespace (these are plain utilities with no namespace of their own). */
 type Translate = (key: string, values?: Record<string, string | number>) => string;
-
-/** The contact's level on a scale, plus how to DRAW it — `badge` is the shared
- *  `rankLevelBadge` resolution, so the app never re-derives which of colour /
- *  split / emoji / artwork wins. */
-export interface ResolvedRank {
-  system: RankingSystem | null;
-  value: number;
-  label: string;
-  badge: RankBadge;
-}
-
-/**
- * THE contact's rank — resolved against the tenant's CONFIGURED ranking
- * systems only. No sport-specific fallback: a tenant that has not configured
- * any ranking system simply has nothing to show here, and the caller hides
- * the badge rather than inventing a default belt table.
- *
- * Returns null when there is nothing to show — no systems configured, or no
- * level recorded for the contact.
- */
-export function resolvePrimaryRank(
-  contact: Pick<Contact, 'ranks'>,
-  systems: RankingSystem[] | undefined | null,
-): ResolvedRank | null {
-  const list = systems ?? [];
-  const system = list.find((s) => s.is_primary) ?? list[0] ?? null;
-  if (!system) return null;
-
-  const value = contact.ranks?.[system.id];
-  if (value == null) return null;
-  const level = (system.levels ?? []).find((l) => l.value === value);
-  if (!level) return null; // a level the scale no longer defines
-
-  return {
-    system,
-    value,
-    label: level.label,
-    badge: rankLevelBadge(level),
-  };
-}
-
-// Returns white or black text depending on background luminance
-export const contrastTextColor = (hex: string) => {
-  const c = hex.replace('#', '');
-  const r = parseInt(c.substring(0, 2), 16);
-  const g = parseInt(c.substring(2, 4), 16);
-  const b = parseInt(c.substring(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? '#000000' : '#FFFFFF';
-};
 
 export const formatDateValue = (value: unknown) => {
   if (!value) {
@@ -159,22 +109,20 @@ export const getAffiliationColors = (
   };
 };
 
-type AffiliationTermLocale = 'en' | 'de' | 'fr' | 'it';
-
 /**
- * Resolve the organisation's affiliation-concept label (`TeamPublicProfile
- * .affiliation_term`, e.g. "Membership", "Lizenz") for the device's language,
- * falling back to English then to the generic "Affiliation" — same rule the
- * org-facing web surfaces apply. `locale` is injectable for tests; defaults to
- * the device locale.
+ * The organisation's affiliation-concept label (`TeamPublicProfile
+ * .affiliation_term`, e.g. "Membership", "Lizenz") — THE shared fallback chain
+ * (`resolveAffiliationTerm` in @linyup/shared, the same one the org-facing web
+ * surfaces run), asked for the DEVICE's language. That default is this app's
+ * only contribution; rewiring it to the app's chosen locale is a separate,
+ * behaviour-changing step (docs/scalability-2026-09.md item 29). `locale` is
+ * injectable for tests.
  */
 export function resolveAffiliationTerm(
-  term: Partial<Record<AffiliationTermLocale, string>> | null | undefined,
+  term: AffiliationTerm | null | undefined,
   locale: string = Intl.DateTimeFormat().resolvedOptions().locale ?? 'en',
 ): string {
-  if (!term) return 'Affiliation';
-  const short = locale.slice(0, 2).toLowerCase() as AffiliationTermLocale;
-  return term[short] ?? term.en ?? 'Affiliation';
+  return resolveSharedAffiliationTerm(term, locale);
 }
 
 /**

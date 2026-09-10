@@ -1,5 +1,5 @@
 import { brandFromProfile, resolveTenantTheme } from './tenantTheme';
-import { contrastRatio, contrastText, isHexColor, mix, parseHex, toHex, withAlpha } from './color';
+import { contrastRatio, contrastText, isHexColor, mix, parseHex, toHex, withAlpha } from '@linyup/shared';
 
 describe('color helpers', () => {
   it('parses the hex shapes a studio can store', () => {

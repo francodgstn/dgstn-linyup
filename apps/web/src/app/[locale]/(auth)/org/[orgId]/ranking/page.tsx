@@ -123,7 +123,7 @@ function RankSystemDialog({
 
   // Removing a level is destructive to CONTACTS, not just to this form: every
   // `Contact.ranks[systemId]` sitting on that value is orphaned and thereafter
-  // renders as the nearest level below it (see `getPrimaryRank`). So ask — but
+  // renders as the nearest level below it (see `primaryRank` in @linyup/shared). So ask — but
   // only where somebody can actually be holding it.
   const requestRemoveLevel = (i: number) => {
     const value = form.levels[i]?.value

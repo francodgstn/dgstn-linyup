@@ -15,6 +15,9 @@ import {
   visibleGoals,
   densifyWeeklyCounts,
   isoWeekKeysBack,
+  buildPerformanceCheckin,
+  localDayBounds,
+  type PerformanceCheckinInput,
 } from '@linyup/shared';
 import {
   Contact,
@@ -38,7 +41,7 @@ import {
   RankingSystem,
   SessionParticipationStatus,
 } from '../types';
-import { detectPerformanceProfile, resolveCoachingDimensions, resolveGoalCategories } from '../utils/goalContract';
+import { resolveCoachingDimensions, resolveGoalCategories } from '../utils/goalContract';
 import { readAlert, alertIsFired, RawContactAlert } from '../utils/contactAlerts';
 import { mapPublicProfileMirror } from '../utils/publicProfileMapper';
 import { resolveAffiliationTerm } from '../utils/profileUtils';
@@ -894,24 +897,23 @@ export const FirestoreService = {
     }
   },
 
-  async addPerformanceCheckin(contactId: string, data: Omit<PerformanceCheckin, 'id'>): Promise<void> {
+  /** The shared payload (`buildPerformanceCheckin`, profile included) under the
+   *  shared one-per-day-per-author rule — enforced here with a range query
+   *  over `localDayBounds`, which this app's index covers; the Space asks the
+   *  same question of the rows it already holds. */
+  async addPerformanceCheckin(contactId: string, input: PerformanceCheckinInput): Promise<void> {
     try {
       const checkinsRef = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION);
 
-      const profile = detectPerformanceProfile(data.scores);
-      const payload = { ...data, ...profile };
+      const payload = buildPerformanceCheckin(input, Timestamp.now());
 
       // Enforce one-per-day per author: overwrite if exists
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-
+      const { start, end } = localDayBounds();
       const existingQ = query(
         checkinsRef,
-        where('filled_by', '==', data.filled_by),
-        where('taken_at', '>=', Timestamp.fromDate(todayStart)),
-        where('taken_at', '<=', Timestamp.fromDate(todayEnd)),
+        where('filled_by', '==', input.filled_by),
+        where('taken_at', '>=', Timestamp.fromDate(start)),
+        where('taken_at', '<=', Timestamp.fromDate(end)),
         limit(1)
       );
       const existingSnap = await getDocs(existingQ);

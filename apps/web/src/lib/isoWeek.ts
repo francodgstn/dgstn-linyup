@@ -1,24 +1,22 @@
-import { subWeeks, parse, format } from 'date-fns'
+// ISO-week LABELS for the dashboard charts. The key grammar itself — what a
+// date's week is called, and the window of keys a trend card plots — is
+// @linyup/shared's `isoWeekKey` / `isoWeekKeysBack`, the same generator the
+// functions write `*_weekly_reports` with and the member app reads them by.
+// This file used to carry a second generator (UTC midnight where shared uses
+// UTC noon; same keys today, two places to break tomorrow); it now only turns
+// a key back into words.
 
-export function dateToIsoWeek(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const dayNum = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
-  return `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`
-}
+import { subWeeks, parse, format } from 'date-fns'
+import { isoWeekKeysBack } from '@linyup/shared'
 
 export function isoWeekToDate(isoWeek: string): Date {
   return parse(isoWeek, "RRRR-'W'II", new Date())
 }
 
+/** The `weeks` keys ending `offset` weeks ago, oldest first — a trend window
+ *  and, with an offset, the comparison window before it. */
 export function buildWeekKeys(weeks: number, offset = 0): string[] {
-  const keys: string[] = []
-  for (let i = weeks - 1; i >= 0; i--) {
-    keys.push(dateToIsoWeek(subWeeks(new Date(), i + offset)))
-  }
-  return keys
+  return isoWeekKeysBack(weeks, subWeeks(new Date(), offset))
 }
 
 export function shortWeekLabel(isoWeek: string, prevIsoWeek?: string): string {

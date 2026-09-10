@@ -1,4 +1,4 @@
-import { resolveSurfacePalette, surfaceThemePreset } from '@linyup/shared'
+import { resolveSurfacePalette, surfaceThemePreset, isLightColor } from '@linyup/shared'
 import type { SocialPlatform, SurfaceThemePresetId } from '@linyup/shared'
 
 export const BIO_LINK_GRADIENTS: Record<string, { label: string; css: string; dark: boolean }> = {
@@ -127,11 +127,7 @@ export function getTextColor(
   if (bg.type === 'gradient') {
     return BIO_LINK_GRADIENTS[bg.color]?.dark ? 'light' : isDark ? 'light' : 'dark'
   }
-  // simple luminance check for solid
-  const hex = bg.color.replace('#', '')
-  const r = parseInt(hex.slice(0, 2), 16)
-  const g = parseInt(hex.slice(2, 4), 16)
-  const b = parseInt(hex.slice(4, 6), 16)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.5 ? 'dark' : 'light'
+  // THE shared contrast rule (WCAG, `isLightColor`) — this used to be a YIQ
+  // copy with its own threshold. Unparseable → light text, as before.
+  return isLightColor(bg.color) ? 'dark' : 'light'
 }

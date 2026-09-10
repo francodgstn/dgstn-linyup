@@ -35,6 +35,7 @@ import type { ActiveSubscriptionSummary } from '@linyup/shared'
 import { useSpaceTheme } from './useSpaceTheme'
 import { useSpaceContact } from './useSpaceContact'
 import { usePublicTeam } from '../PublicTeamProvider'
+import { usePublicFormat } from '../usePublicFormat'
 
 /** One row of the member's membership list — the fields of the shared
  *  `ActiveSubscriptionSummary` this card reads (every one optional, because the
@@ -63,6 +64,7 @@ interface Props {
 export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: Props) {
   const t = useTranslations('Space')
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const { team } = usePublicTeam()
   const currency = team?.default_currency ?? 'CHF'
   const { data: contact, isPending, isError, error, refetch } = useSpaceContact()
@@ -138,7 +140,7 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
                 {typeof s.cancels_at_ms === 'number' ? (
                   <span className="block text-xs font-normal" style={{ color: '#b45309' }}>
                     {t('membershipEndsOn', {
-                      date: new Date(s.cancels_at_ms).toLocaleDateString(),
+                      date: fmt.date(s.cancels_at_ms),
                     })}
                   </span>
                 ) : s.cancelling ? (
@@ -154,7 +156,7 @@ export function SpaceMembershipCard({ variant, slug, hasSubscriptionsForSale }: 
                   // date. Not amber like a cancellation — nothing is going
                   // wrong, this is simply what she bought.
                   <span className="block text-xs font-normal" style={{ color: textMuted }}>
-                    {t('membershipUntil', { date: s.until.toDate().toLocaleDateString() })}
+                    {t('membershipUntil', { date: fmt.date(s.until) })}
                   </span>
                 ) : null}
               </span>

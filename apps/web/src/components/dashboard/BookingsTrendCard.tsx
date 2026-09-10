@@ -25,10 +25,10 @@ import {
   shortWeekLabel,
   formatTooltipWeek,
   formatAxisWeek,
-  dateToIsoWeek,
 } from '@/lib/isoWeek'
 import { ChartEmptyState } from './ChartEmptyState'
 import type { SessionDoc, BookingDoc, WeeklyReport } from '@/hooks/useDashboardData'
+import { isoWeekKey } from '@linyup/shared'
 
 const SOURCE_OPTIONS = [
   {
@@ -89,7 +89,7 @@ function buildByWeek(
     for (const s of sessions) {
       const date = s.start?.toDate?.()
       if (!date) continue
-      const key = dateToIsoWeek(date)
+      const key = isoWeekKey(date)
       if (byWeek[key] === undefined) continue
       byWeek[key] += s.participants_count ?? 0
     }
@@ -97,7 +97,7 @@ function buildByWeek(
     for (const b of allBookings) {
       const date = b.joinedAt?.toDate?.()
       if (!date) continue
-      const key = dateToIsoWeek(date)
+      const key = isoWeekKey(date)
       if (byWeek[key] === undefined) continue
       byWeek[key] += 1
     }
@@ -105,7 +105,7 @@ function buildByWeek(
     for (const b of newBookings) {
       const date = b.joinedAt?.toDate?.()
       if (!date) continue
-      const key = dateToIsoWeek(date)
+      const key = isoWeekKey(date)
       if (byWeek[key] === undefined) continue
       byWeek[key] += 1
     }
@@ -120,7 +120,7 @@ function buildByWeek(
     for (const s of sessions) {
       const date = s.start?.toDate?.()
       if (!date) continue
-      const key = dateToIsoWeek(date)
+      const key = isoWeekKey(date)
       if (byWeek[key] === undefined) continue
       byWeek[key] += s.participants_count ?? 0
     }
@@ -133,7 +133,7 @@ function buildByWeek(
       if (b.status !== 'no_show') continue
       const date = b.joinedAt?.toDate?.()
       if (!date) continue
-      const key = dateToIsoWeek(date)
+      const key = isoWeekKey(date)
       if (byWeek[key] === undefined) continue
       byWeek[key] += 1
     }
@@ -144,7 +144,7 @@ function buildByWeek(
       if (b.status === 'pending') continue
       const date = b.joinedAt?.toDate?.()
       if (!date) continue
-      const key = dateToIsoWeek(date)
+      const key = isoWeekKey(date)
       if (resolved[key] === undefined) continue
       resolved[key] += 1
       if (b.status === 'no_show') noShow[key] += 1

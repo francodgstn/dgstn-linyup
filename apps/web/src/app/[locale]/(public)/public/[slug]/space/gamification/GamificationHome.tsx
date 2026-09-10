@@ -26,7 +26,7 @@
 //    `useSpaceLeaderboard.ts` for the exact rule text and why it is safe.
 
 import { useMemo } from 'react'
-import { useTranslations, useLocale } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { Trophy, Star, Flame, Award, Lock } from 'lucide-react'
 import { isTrialStage, leaderboardDisplayName, mergeBadgeThresholds } from '@linyup/shared'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -39,6 +39,7 @@ import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceLeaderboard } from './useSpaceLeaderboard'
 import { badgeDefinitions, isBadgeEarned, earnedBadgeCount, type BadgeGroupKey, type BadgeStats } from './badges'
+import { usePublicFormat } from '../../usePublicFormat'
 
 
 const LEADERBOARD_DISPLAY_LIMIT = 10
@@ -52,10 +53,10 @@ const GROUP_ICON: Record<BadgeGroupKey, React.ElementType> = {
 export default function GamificationHome() {
   const t = useTranslations('SpaceGamification')
   const tSpace = useTranslations('Space')
-  const locale = useLocale()
   const { isAuthenticated, contact } = useSpaceAuth()
   const { team } = usePublicTeam()
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const cardStyle = { background: cardBg, border: `1px solid ${cardBorder}` }
 
   const {
@@ -93,10 +94,12 @@ export default function GamificationHome() {
   const monthLabel = useMemo(() => {
     const month = leaderboard?.month
     if (!month) return ''
-    const parsed = new Date(`${month}-01T00:00:00`)
+    // Mid-month, noon UTC: an instant that is inside `month` in EVERY zone, so
+    // the studio-zone formatter cannot land on the neighbouring month.
+    const parsed = new Date(`${month}-15T12:00:00Z`)
     if (Number.isNaN(parsed.getTime())) return month
-    return parsed.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
-  }, [leaderboard?.month, locale])
+    return fmt.monthYear(parsed)
+  }, [leaderboard?.month, fmt])
 
   const { topEntries, myEntry, myEntryInTop } = useMemo(() => {
     const entries = leaderboard?.entries ?? []

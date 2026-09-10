@@ -2,9 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Icon, Surface, Text, useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
-import { mergeBadgeThresholds } from '@linyup/shared';
+import { mergeBadgeThresholds, primaryRank } from '@linyup/shared';
 import { Contact, GamificationBadgeThresholds, GamificationCoachBadge, RankingSystem } from '../../types';
-import { resolvePrimaryRank } from '../../utils/profileUtils';
 import { useTranslations } from '../../i18n';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -83,9 +82,11 @@ const getBadgeGroups = (
   coachBadgeList: GamificationCoachBadge[],
   rankingSystems: RankingSystem[],
 ): BadgeGroup[] => {
-  const resolved = resolvePrimaryRank(contact, rankingSystems);
-  const levels = [...(resolved?.system?.levels ?? [])].sort((a, b) => a.value - b.value);
-  const position = resolved ? levels.findIndex((l) => l.value === resolved.value) : -1;
+  const resolved = primaryRank(contact, rankingSystems);
+  const levels = [...(resolved?.system.levels ?? [])].sort((a, b) => a.value - b.value);
+  // `level.value`, not the stored value: an orphaned rank resolves to the
+  // nearest level below, and that is the position on the scale it shows as.
+  const position = resolved ? levels.findIndex((l) => l.value === resolved.level.value) : -1;
   const top = levels.length - 1;
   const fraction = position >= 0 && top > 0 ? position / top : 0;
   /** The label a tenant's own scale gives the level at `f` — so the badge says

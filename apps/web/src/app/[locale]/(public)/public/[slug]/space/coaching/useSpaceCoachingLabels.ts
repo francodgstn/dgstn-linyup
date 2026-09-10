@@ -13,6 +13,7 @@ import type { GoalStatus } from '@linyup/shared'
 import type { GoalDialogLabels } from '@/components/coaching/GoalDialog'
 import type { EvaluationDialogLabels } from '@/components/coaching/EvaluationDialog'
 import type { GoalStateChipLabels } from '@/components/coaching/GoalStateChips'
+import { usePublicFormat } from '../../usePublicFormat'
 
 const STATUS_KEYS: Record<GoalStatus, string> = {
   open: 'statusOpen',
@@ -24,6 +25,7 @@ const STATUS_KEYS: Record<GoalStatus, string> = {
 export function useSpaceCoachingLabels() {
   const t = useTranslations('SpaceCoaching')
   const tCommon = useTranslations('Common')
+  const fmt = usePublicFormat()
   return {
     goalDialog: (dialogTitle: string): GoalDialogLabels => ({
       dialogTitle,
@@ -51,7 +53,7 @@ export function useSpaceCoachingLabels() {
     } satisfies EvaluationDialogLabels,
     goalStateChips: {
       latestScore: (score) => t('latestScoreLabel', { score }),
-      lastEvaluated: (date) => t('lastEvaluatedOn', { date: date.toLocaleDateString() }),
+      lastEvaluated: (date) => t('lastEvaluatedOn', { date: fmt.date(date) }),
       overdue: t('overdueBadge'),
     } satisfies GoalStateChipLabels,
   }

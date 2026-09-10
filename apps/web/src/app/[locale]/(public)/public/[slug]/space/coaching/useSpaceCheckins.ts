@@ -1,17 +1,17 @@
 'use client'
 
 // The member's own performance check-ins — `contacts/{contactId}/performance_checkins`,
-// same `isSelfContact` grant as goals (see useSpaceGoals.ts). The profile
-// heuristic (`detectPerformanceProfile`) is computed HERE, client-side, at
-// submit time: there is no Cloud Function trigger for it yet (see the
-// `onGoalWrite` note in useSpaceGoals.ts), so a check-in that skipped this step
-// would store raw scores and no profile at all. Mirrors the mobile app's
-// `addPerformanceCheckin`.
+// same `isSelfContact` grant as goals (see useSpaceGoals.ts). The payload —
+// including the profile heuristic, run client-side at submit time because
+// there is no Cloud Function trigger for it yet (see the `onGoalWrite` note in
+// useSpaceGoals.ts) — and the one-per-day rule are the shared
+// `buildPerformanceCheckin` / `sameDayCheckin`, the same ones the member app
+// and the coach's tab write with.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Timestamp, addDoc, collection, doc, getDocs, limit, orderBy, query, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CONTACTS_COLLECTION, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION, detectPerformanceProfile } from '@linyup/shared'
+import { CONTACTS_COLLECTION, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION, buildPerformanceCheckin, sameDayCheckin } from '@linyup/shared'
 import type { PerformanceCheckin } from '@linyup/shared'
 import { reportPublicActionFailure, reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from '../SpaceAuthProvider'
@@ -45,28 +45,17 @@ export function useSpaceCheckins() {
     mutationFn: async ({ scores, notes }: { scores: Record<string, number>; notes: string | null }) => {
       if (!contactId) throw new Error('Not signed in')
       const col = collection(db, CONTACTS_COLLECTION, contactId, CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION)
-      const profile = detectPerformanceProfile(scores)
-      const payload = {
-        taken_at: Timestamp.now(),
-        filled_by: 'student' as const,
-        context: 'self' as const,
-        scores,
-        notes: notes || null,
-        ...profile,
-      }
-      // One self check-in per day — overwrite rather than accumulate, the same
-      // rule the mobile app already applies (a correction five minutes later
-      // should not leave two rows for the same day). Found from the page
-      // already in hand rather than a second query: a `where('filled_by', …)
-      // .where('taken_at', '>=', …)` query needs a composite index this
-      // surface does not (yet) ship, and today's entry — if it exists — is
-      // necessarily the single most recent one, so it is always on this page.
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
-      const todayMs = todayStart.getTime()
-      const existing = (checkinsQuery.data ?? []).find(
-        (c) => c.filled_by === 'student' && c.taken_at.toMillis() >= todayMs
+      const payload = buildPerformanceCheckin(
+        { scores, notes, filled_by: 'student', context: 'self' },
+        Timestamp.now(),
       )
+      // One self check-in per day — overwrite rather than accumulate. Found
+      // from the page already in hand rather than a second query: a
+      // `where('filled_by', …).where('taken_at', '>=', …)` query needs a
+      // composite index this surface does not (yet) ship, and today's entry —
+      // if it exists — is necessarily the single most recent one, so it is
+      // always on this page.
+      const existing = sameDayCheckin(checkinsQuery.data ?? [], 'student')
       if (existing) {
         await updateDoc(doc(col, existing.id), payload)
       } else {

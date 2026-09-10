@@ -21,6 +21,7 @@ import {
 import SpaceSignInWall from '../SpaceSignInWall'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
+import { usePublicFormat } from '../../usePublicFormat'
 
 // "My bookings" — one server read of HER bookings, through `getMyBookings`.
 //
@@ -52,6 +53,7 @@ export default function BookingsHome() {
   const tCancel = useTranslations('BookingCancellation')
   const { teamId, contact, isAuthenticated } = useSpaceAuth()
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const contactId = contact?.id ?? null
   const [cancelling, setCancelling] = useState<string | null>(null)
   // Which booking's cancel failed, and why — held per booking so the sentence
@@ -228,9 +230,9 @@ export default function BookingsHome() {
                     {b.activityName ?? (isAppointment ? t('bookingsAppointment') : t('bookingsSession'))}
                   </p>
                   <p className="text-xs" style={{ color: textMuted }}>
-                    {start ? start.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
-                    {start ? ` · ${start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : ''}
-                    {end ? `–${end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    {start ? fmt.custom(start, { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
+                    {start ? ` · ${fmt.time(start)}` : ''}
+                    {end ? `–${fmt.time(end)}` : ''}
                   </p>
                   {/* The provider is what tells two otherwise identical
                       appointment slots apart, so it is never dropped from an

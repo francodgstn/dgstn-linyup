@@ -330,6 +330,10 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     language: ((PUBLIC_LOCALES as readonly string[]).includes(data.language as string)
       ? (data.language as UiLanguage)
       : null),
+    // How the studio renders dates and times — display settings, nothing
+    // private; the public surfaces' `usePublicFormat` reads them. Mirrored as
+    // stored (a Firestore map never carries `undefined`), null when unset.
+    regional: (data.regional as Record<string, unknown> | undefined) ?? null,
     sport_type: data.sport_type || null,
     profileImage: data.profileImage || null,
     heroImage: data.heroImage || null,

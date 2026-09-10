@@ -12,12 +12,12 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { subWeeks, addWeeks } from 'date-fns'
-import { dateToIsoWeek } from '@/lib/isoWeek'
 import {
   TEAMS_COLLECTION,
   SESSIONS_COLLECTION,
   ACTIVITIES_COLLECTION,
   TEAM_WEEKLY_REPORTS_SUBCOLLECTION,
+  isoWeekKey,
 } from '@linyup/shared'
 
 export interface WeeklyReport {
@@ -104,8 +104,8 @@ export function useDashboardData(
   const compStart = isComparing ? periodStart(trendsWeeks + comparisonOffset) : null
   const compEnd = compStart ? addWeeks(compStart, trendsWeeks) : null
 
-  const minIsoWeek = dateToIsoWeek(mainStart)
-  const extMinIsoWeek = compStart ? dateToIsoWeek(compStart) : minIsoWeek
+  const minIsoWeek = isoWeekKey(mainStart)
+  const extMinIsoWeek = compStart ? isoWeekKey(compStart) : minIsoWeek
 
   const { data: allReports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ['dashboard', 'weekly-reports', teamId, extMinIsoWeek],
@@ -265,7 +265,7 @@ export function useDashboardData(
   const weeklyReports = allReports.filter((r) => r.iso_week >= minIsoWeek)
   const comparisonWeeklyReports =
     isComparing && compStart
-      ? allReports.filter((r) => r.iso_week >= dateToIsoWeek(compStart) && r.iso_week < minIsoWeek)
+      ? allReports.filter((r) => r.iso_week >= isoWeekKey(compStart) && r.iso_week < minIsoWeek)
       : []
 
   return {

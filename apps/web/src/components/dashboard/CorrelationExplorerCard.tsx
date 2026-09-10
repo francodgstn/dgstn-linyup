@@ -10,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { buildWeekKeys, dateToIsoWeek, formatTooltipWeek } from '@/lib/isoWeek'
+import { buildWeekKeys, formatTooltipWeek } from '@/lib/isoWeek'
 import type { WeeklyReport, SessionDoc, BookingDoc } from '@/hooks/useDashboardData'
+import { isoWeekKey } from '@linyup/shared'
 
 // ─── metrics ──────────────────────────────────────────────────────────────────
 // Labels are translated (CorrelationExplorer.metric*); this only maps a metric
@@ -116,7 +117,7 @@ export function CorrelationExplorerCard({
     const checkinsByWeek: Record<string, number> = {}
     for (const s of sessions) {
       if (!s.start) continue
-      const wk = dateToIsoWeek((s.start as { toDate(): Date }).toDate())
+      const wk = isoWeekKey((s.start as { toDate(): Date }).toDate())
       checkinsByWeek[wk] = (checkinsByWeek[wk] ?? 0) + (s.participants_count ?? 0)
     }
 
@@ -125,12 +126,12 @@ export function CorrelationExplorerCard({
     const newByWeek: Record<string, number> = {}
     for (const b of allBookings) {
       if (!b.joinedAt) continue
-      const wk = dateToIsoWeek((b.joinedAt as { toDate(): Date }).toDate())
+      const wk = isoWeekKey((b.joinedAt as { toDate(): Date }).toDate())
       allByWeek[wk] = (allByWeek[wk] ?? 0) + 1
     }
     for (const b of newContactBookings) {
       if (!b.joinedAt) continue
-      const wk = dateToIsoWeek((b.joinedAt as { toDate(): Date }).toDate())
+      const wk = isoWeekKey((b.joinedAt as { toDate(): Date }).toDate())
       newByWeek[wk] = (newByWeek[wk] ?? 0) + 1
     }
 

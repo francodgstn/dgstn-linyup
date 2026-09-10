@@ -19,6 +19,7 @@ import { CheckinFormDialog } from './CheckinFormDialog'
 import { CreateStepFromLever } from './CreateStepFromLever'
 import type { SpaceCheckinsState } from './useSpaceCheckins'
 import type { SpaceGoalsState } from './useSpaceGoals'
+import { usePublicFormat } from '../../usePublicFormat'
 
 // Covers all seven `ProfileKey` members, including `default` — a check-in
 // against the canonical five dimensions that matched no named pattern still
@@ -58,6 +59,7 @@ export function CheckinSection({
 }) {
   const t = useTranslations('SpaceCoaching')
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const [rating, setRating] = useState(false)
   const cardStyle = { background: cardBg, border: `1px solid ${cardBorder}` }
 
@@ -108,7 +110,7 @@ export function CheckinSection({
       ) : (
         <div>
           <p className="text-xs" style={{ color: textMuted }}>
-            {t('checkinLastOn', { date: latestSelf.taken_at.toDate().toLocaleDateString() })}
+            {t('checkinLastOn', { date: fmt.date(latestSelf.taken_at) })}
           </p>
 
           {latestSelf.profile_key ? (

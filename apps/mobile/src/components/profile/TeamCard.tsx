@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Avatar, Icon, Surface, Text } from 'react-native-paper';
 import { useAppTheme } from '../../theme';
-import { withAlpha } from '../../utils/color';
+import { withAlpha } from '@linyup/shared';
 import { useTranslations } from '../../i18n';
 
 interface TeamCardProps {
