@@ -6,7 +6,7 @@
 #                                        already exists, a `preview` BUILD otherwise
 #                                        (ANDROID ONLY for now — see the staging job)
 #   mobile-v* tag                      → the `production` channel: same rule with the
-#                                        `store` profile, and builds are auto-submitted
+#                                        `store` profile. It NEVER submits — see below.
 #
 # Why a separate tag: docs/mobile-roadmap-2026-09.md §3. Why fingerprint:
 # app.config.js sets runtimeVersion.policy = 'fingerprint', so an update can only
@@ -38,8 +38,16 @@
 # action.yml). The first run on main then failed with nothing but an exit
 # code, because `eas build` evaluates app.config.js locally with ONLY
 # eas.json's `env` in scope and our config refuses a real project without a
-# key — see the runbook's step 5. The `store` profile still has no prod key
-# in either channel, so the release lane cannot build until it is added.
+# key — see the runbook's step 5. Both channels now carry the prod key, so the
+# release lane can build.
+#
+# NO AUTO-SUBMIT, deliberately (2026-09-10). The fingerprint is computed on the
+# RUNNER, and a reference build made on a dev machine hashes differently — a
+# Windows checkout alone shifts it, via CRLF in the .gitignore that decides what
+# fingerprint skips. So "no matching build" is the NORMAL outcome here, not a
+# signal that anything changed, and with `auto-submit-builds` that outcome put an
+# unreviewed binary in front of both stores. It did, once. A miss must cost a
+# build and nothing more; submitting stays a deliberate `eas submit`.
 name: Mobile
 
 on:
@@ -215,7 +223,7 @@ jobs:
       - name: Build shared package
         run: pnpm --filter @linyup/shared run build
 
-      - name: OTA update, or store build + submit when the native fingerprint changed
+      - name: OTA update, or store build when the native fingerprint changed
         uses: expo/expo-github-action/continuous-deploy-fingerprint@v9
         with:
           working-directory: apps/mobile
@@ -223,5 +231,4 @@ jobs:
           branch: production
           environment: production
           platform: all
-          auto-submit-builds: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
