@@ -16,7 +16,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FirestoreService } from '../../services/firestore';
 import { Goal, GoalEvaluation, GoalStatus, PerformanceIndicator } from '../../types';
-import { dimensionLabel, goalCategoryLabel, groupGoalsWithSteps } from '../../utils/goalContract';
+import { dimensionLabel, goalCategoryLabel, groupGoalsWithSteps, sortSteps, GOAL_STATUSES } from '../../utils/goalContract';
 import { Timestamp } from 'firebase/firestore';
 import { useTranslations } from '../../i18n';
 
@@ -46,7 +46,6 @@ const STATUS_COLORS: Record<GoalStatus, string> = {
   abandoned: '#9CA3AF',
 };
 
-const ALL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned'];
 
 // Categories are the team's resolved GOAL CATEGORIES — what a goal is about
 // (FirestoreService.getGoalCategories). They are NOT the check-in axes, which
@@ -244,7 +243,7 @@ const AddEvalModal: React.FC<EvalModalProps> = ({
               {t('statusAfterLabel')}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {ALL_STATUSES.map(s => (
+              {GOAL_STATUSES.map(s => (
                 <Chip
                   key={s}
                   selected={statusAfter === s}
@@ -890,7 +889,14 @@ export const GoalsSection: React.FC<Props> = ({ contactId, teamId }) => {
     );
   };
 
-  const { goals: goalGroups, generalSteps } = groupGoalsWithSteps(goals);
+  // Sort AROUND the grouping helper, never inside it — its contract is to
+  // preserve input order, and the query hands it created_at-desc. Without this
+  // a goal's steps read as their sequence in REVERSE. The web fixed exactly
+  // this (see sortSteps' header) and called it fixed on "both surfaces"; the
+  // app was a third surface running the same query.
+  const grouped = groupGoalsWithSteps(goals);
+  const goalGroups = grouped.goals.map(g => ({ ...g, steps: sortSteps(g.steps, 'manual') }));
+  const generalSteps = sortSteps(grouped.generalSteps, 'manual');
   const isEmpty = goalGroups.length === 0 && generalSteps.length === 0;
 
   return (

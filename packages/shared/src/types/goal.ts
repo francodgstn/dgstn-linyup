@@ -36,6 +36,12 @@ import type { Timestamp } from './common'
 
 export type GoalType = 'goal' | 'task'
 export type GoalStatus = 'open' | 'in_progress' | 'achieved' | 'abandoned'
+
+/** Every status, in lifecycle order — the list a status picker offers. Declared
+ *  once beside the type so the pickers on the admin tab, the Space and the
+ *  member app cannot disagree about what the statuses are; each used to carry
+ *  its own copy of this literal. */
+export const GOAL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned']
 export type GoalCreatedBy = 'coach' | 'student'
 
 // ─── the two vocabularies ────────────────────────────────────────────────────
@@ -307,6 +313,33 @@ export function sortSteps(steps: Goal[], mode: StepSortMode = 'manual'): Goal[] 
     if (byKey !== 0) return byKey
     return (toMillis(a.created_at) ?? 0) - (toMillis(b.created_at) ?? 0)
   })
+}
+
+/**
+ * The goals a surface should SHOW: everything not archived, minus the steps of
+ * an archived goal.
+ *
+ * The second half is the rule worth owning once. `goalIsArchived` answers one
+ * document — but a step's own `archived_at` is never set, because archiving a
+ * goal stamps the goal and not its steps. Filter on the predicate alone and
+ * every step of an archived goal stays alive, and `groupGoalsWithSteps` then
+ * files each one under the virtual "General" bucket as an orphan. The admin
+ * tab, the Space and the member app had each re-derived that cascade by hand,
+ * and one of them had re-spelled the predicate as `!!archived_at` on the way.
+ *
+ * In memory, not a query: `archived_at` is ABSENT on every goal written before
+ * the field existed, and a `where('archived_at', '==', null)` matches none of
+ * them.
+ */
+export function visibleGoals(goals: Goal[]): Goal[] {
+  const archivedGoalIds = new Set(
+    goals.filter((g) => g.type !== 'task' && goalIsArchived(g)).map((g) => g.id),
+  )
+  return goals.filter(
+    (g) =>
+      !goalIsArchived(g) &&
+      !(g.type === 'task' && g.parent_goal_id && archivedGoalIds.has(g.parent_goal_id)),
+  )
 }
 
 /**

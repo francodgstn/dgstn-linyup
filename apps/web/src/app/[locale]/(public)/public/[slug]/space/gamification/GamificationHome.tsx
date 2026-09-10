@@ -28,7 +28,7 @@
 import { useMemo } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Trophy, Star, Flame, Award, Lock } from 'lucide-react'
-import type { AcquisitionStage } from '@linyup/shared'
+import { isTrialStage, leaderboardDisplayName } from '@linyup/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { loadFailureDetail } from '@/lib/publicQueryError'
@@ -37,10 +37,9 @@ import { useSpaceAuth } from '../SpaceAuthProvider'
 import { usePublicContactRecord } from '../../usePublicContactRecord'
 import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
-import { useSpaceLeaderboard, type SpaceLeaderboardEntry } from './useSpaceLeaderboard'
+import { useSpaceLeaderboard } from './useSpaceLeaderboard'
 import { BADGE_DEFINITIONS, isBadgeEarned, earnedBadgeCount, type BadgeGroupKey, type BadgeStats } from './badges'
 
-const TRIAL_STAGES: readonly AcquisitionStage[] = ['trial_booked', 'trial_attended']
 
 const LEADERBOARD_DISPLAY_LIMIT = 10
 
@@ -48,22 +47,6 @@ const GROUP_ICON: Record<BadgeGroupKey, React.ElementType> = {
   attendance: Trophy,
   streak: Flame,
   score: Star,
-}
-
-function initialsName(firstname: string, lastname: string): string {
-  const parts = [firstname?.[0], lastname?.[0]].filter(Boolean)
-  return parts.length ? `${parts.join('.')}.` : '?'
-}
-
-function firstNameLastInitial(firstname: string, lastname: string): string {
-  const first = firstname || ''
-  const lastInitial = lastname ? ` ${lastname[0]}.` : ''
-  return `${first}${lastInitial}`.trim() || '?'
-}
-
-function displayName(entry: SpaceLeaderboardEntry): string {
-  const isTrial = TRIAL_STAGES.includes((entry.acquisition_stage ?? '') as AcquisitionStage)
-  return isTrial ? initialsName(entry.firstname, entry.lastname) : firstNameLastInitial(entry.firstname, entry.lastname)
 }
 
 export default function GamificationHome() {
@@ -223,7 +206,7 @@ export default function GamificationHome() {
           <div className="space-y-1">
             {topEntries.map((entry) => {
               const isMe = entry.contact_id === contact?.id
-              const isTrial = TRIAL_STAGES.includes((entry.acquisition_stage ?? '') as AcquisitionStage)
+              const isTrial = isTrialStage(entry.acquisition_stage)
               return (
                 <div
                   key={entry.contact_id}
@@ -243,7 +226,7 @@ export default function GamificationHome() {
                     className="min-w-0 flex-1 truncate text-sm"
                     style={{ color: textMain, fontWeight: isMe ? 700 : 400 }}
                   >
-                    {displayName(entry)}
+                    {leaderboardDisplayName(entry)}
                     {isTrial && <span className="ml-1 text-xs" style={{ color: textMuted }}>{t('leaderboardTrialLabel')}</span>}
                   </span>
                   <span className="shrink-0 text-sm font-bold" style={{ color: textMain }}>

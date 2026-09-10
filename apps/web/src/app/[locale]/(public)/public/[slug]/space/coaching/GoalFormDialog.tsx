@@ -11,17 +11,12 @@
 // its edit trigger when `goal.created_by === 'student'` — so there is no
 // "read-only" mode to build here.
 
+import { toDateInputValue } from '@/lib/format'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { Goal, PerformanceIndicator } from '@linyup/shared'
-
-function toDateInputValue(ts: Goal['target_date']): string {
-  if (!ts) return ''
-  const d = ts.toDate()
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
-}
 
 export interface GoalFormValues {
   title: string
@@ -63,7 +58,11 @@ export function GoalFormDialog({ open, onOpenChange, kind, categories, initialGo
     setTitle(initialGoal?.title ?? '')
     setDescription(initialGoal?.description ?? '')
     setSelected(initialGoal?.categories ?? [])
-    setTargetDate(toDateInputValue(initialGoal?.target_date))
+    // The app's local-calendar formatter, not a UTC slice: the copy that used to
+    // live here serialised through toISOString(), so a CET deadline of the 15th
+    // rendered as the 14th on reopen and the save path then wrote the 14th back
+    // — one day earlier per edit, and goalIsOverdue ran off the drifted date.
+    setTargetDate(toDateInputValue(initialGoal?.target_date?.toDate() ?? null))
     setErrorMsg('')
   }, [open, initialGoal])
 

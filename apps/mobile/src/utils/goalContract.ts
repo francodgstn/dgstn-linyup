@@ -11,6 +11,8 @@ export {
   dimensionLabel,
   goalCategoryLabel,
   groupGoalsWithSteps,
+  sortSteps,
+  GOAL_STATUSES,
   resolveCoachingDimensions,
   resolveGoalCategories,
 } from '@linyup/shared';

@@ -40,6 +40,15 @@ found while building or reviewing it, and none of it was hypothetical:
   coaching data even though the rules already permitted it.
 - **The member half of a four-locale product was English-only.** `apps/mobile`
   had no i18n runtime whatsoever, in a country with four national languages.
+- **A copied date formatter walked a deadline back a day per edit.** The Space's
+  goal form carried its own `toDateInputValue` — a `toISOString().slice(0, 10)`
+  — while the app's real one in `lib/format.ts` formats the LOCAL calendar
+  date, and says in its own header exactly why the UTC slice is wrong. Read
+  through the copy, a CET target of the 15th rendered as the 14th; the save
+  path then wrote the 14th back. `goalIsOverdue` and the nightly sweep both ran
+  off the drifted date, so coach and member disagreed about when a goal was
+  due. Found by the duplication sweep in §7, a week after this document's first
+  draft listed the three cases it happened to notice.
 
 The common cause is one sentence: **a shape owned in one place and copied into
 another has no mechanism that notices when the copy stops matching.**
@@ -192,69 +201,151 @@ More hands on this repo hit contention before they hit compute limits.
   reproduced on main" — its control run had stashed its *own* changes while a
   concurrent lane's edits stayed on disk. The literal was on `main` and was gone.
   When two lanes are live, `git stash` is not a control.
+- **A generated finding is a lead, not a fact.** The duplication sweep below
+  was right about twenty-one of twenty-three items and wrong about two in ways
+  that would have produced a bad commit: it reported one shared default accent
+  where `defaultAccent` is a per-preset field (the Space *matched* the default
+  preset; the "drift" was inverted), and it counted a triplicated constant as
+  a pair. Both were caught only because every claim was read at source before
+  being acted on. The cost of that reading was minutes; the cost of the
+  inverted fix would have been a wrong accent on every member portal.
 
 ---
 
-## 7. Still owed
+## 7. The duplication ledger
 
-Ranked by value per unit of work.
+A deliberate sweep of the three front ends against `packages/shared` — hand-
+copied functions, shadowing types, hardcoded paths, twinned components,
+twice-declared vocabularies — found twenty-three duplications beyond the
+three the first draft had noticed. Twelve had **already drifted**, meaning
+behaviour differed between surfaces today; eleven had not yet, meaning the next
+edit to one copy would make them drift silently. What follows is the ledger,
+ranked drifted-first, then by cost. Everything marked DONE was verified at
+source before being changed.
 
-**Easy, do now**
+### Done in this pass
 
-1. **One `GoalProgressBar`, not two.** The admin and the Space each carried a
-   copy; they were structurally identical and differed only in where colours
-   came from (Tailwind semantic tokens vs `useSpaceTheme`). Both are React DOM
-   in the same app. This was §1 in miniature, freshly created. DONE — it lives
-   at `apps/web/src/components/coaching/GoalProgressBar.tsx` with colour as an
-   optional `palette` prop: absent means the app's semantic tokens, present
-   means the tenant's.
-2. **Mobile hardcoded path literals that `@linyup/shared` owns** — `contacts`,
-   `push_tokens`, `participants`. The dependency now resolves, so these are
-   simply imported. DONE.
+| # | What | Where it now lives |
+|---|---|---|
+| 1 | One `GoalProgressBar` for admin and Space, colour as an optional palette | `apps/web/src/components/coaching/` |
+| 2 | Mobile imports every path constant shared owns — `contacts`, `push_tokens`, `participants`, and then `goals`, `evaluations`, `performance_checkins`, `contact_alerts`, `contact_weekly_reports` (fourteen literal sites) | `@linyup/shared` paths |
+| 3 | Mobile's hydrated session type renamed `HydratedSession`, with a comment saying why it is not the wire shape's name | `apps/mobile/src/types` |
+| 4 | **Drifted, corrupting.** The Space goal form's UTC `toDateInputValue` copy (§1) replaced by the app's local-date one | `@/lib/format` |
+| 5 | **Drifted.** The member app never called `sortSteps`, so a goal's steps read in reverse there — the fix this document's own `sortSteps` header described as landed "on both surfaces" had missed the third | `sortSteps` via `goalContract` |
+| 6 | **Drifted.** The app showed a lapsed flat plan grant ("2 months included") as the member's current plan; it never called `planGrantIsCurrent`, which the admin and the Space both do. Three tests now pin the asymmetry: the date bites only on the fallback arm, never on a live subscription | `planGrantIsCurrent` |
+| 7 | **Drifted.** The leaderboard's trial-anonymisation rule was inline on both member surfaces with different fallbacks (`'?'` vs `'Unknown'`) and, on mobile, untyped stage comparisons — so a renamed stage would have de-anonymised trials in the app alone | `leaderboardDisplayName`, `isTrialStage` |
+| 8 | The archived-goal cascade — hide the goal AND its steps, or the steps surface as loose General to-dos — was hand-derived on all three surfaces, one of them re-spelling the predicate as `!!archived_at` | `visibleGoals` |
+| 9 | `ALL_STATUSES` was declared three times (the sweep counted two; the Space's evaluation dialog was the third) | `GOAL_STATUSES` beside the type |
 
-   Two others looked like the same fix and were not: **`public_profile` and
-   `bookings` have no general constant in `packages/shared` at all.** The only
-   ones there are scoped to users (`USER_PUBLIC_PROFILE_SUBCOLLECTION`) and
-   coach slots (`COACH_SLOT_BOOKINGS_SUBCOLLECTION`). The *web* hardcodes
-   `'public_profile'` nineteen times and `'bookings'` five more, plus a local
-   `BOOKINGS_SUB` alias. So mobile's two remaining literals are not a mobile
-   gap — they are the visible edge of one string hand-typed across every
-   surface. Fixing that is a shared constant plus a sweep of every site, which
-   is a change of its own; see "Worth doing" below.
-3. **`SessionPublicProfile` meant two different things.** Mobile declared its
-   own with `start: Date` / `end: Date` and an `id`; shared's has `start:
-   Timestamp` / `end: Timestamp` and no `id`. Both were correct — mobile's is
-   the *hydrated* shape after `mapSessionPublicProfile`, shared's is the wire
-   shape — but one name for two shapes would have misled someone. DONE — the
-   mobile one is now `HydratedSession`, and its doc comment says why it is not
-   the shared name, so it is not "fixed" back.
+### A finding that was not one
 
-**Worth doing, not urgent**
+The sweep reported "two default accents for the same studio" — the Space's
+`DEFAULT_ACCENT` (`#6366f1`) against a shared `#7c3aed`. Read at source,
+`defaultAccent` is a **per-preset** field: `#6366f1` belongs to `paper`, the
+default preset, and `#7c3aed` to `violet`. The Space *matches* the default. The
+`#7C3AED` in mobile is its Paper chrome colour, a different concept from the
+tenant accent, which mobile resolves through the same preset registry. Nothing
+to do, and worth recording so nobody "fixes" it into being wrong.
 
-4. **A shared constant for `public_profile` and for session `bookings`, then a
-   sweep.** `packages/shared/src/paths.ts` names the user public profile and the
-   coach-slot bookings, and nothing else — so the *general* mirror subcollection
-   that every public surface queries, and the session bookings every rail
-   writes, are hand-typed strings: nineteen `'public_profile'` and five
-   `'bookings'` in the web alone, plus a local `BOOKINGS_SUB` alias, plus two in
-   mobile. A rename of either would today be a grep-and-hope across two apps.
-   Not urgent because the strings are stable; worth doing because "stable" is
-   exactly what every hand-copied shape in §1 was, until it was not.
-5. Push cannot deliver until an FCM V1 service account and an APNs key are
-   uploaded to EAS. Recorded in the mobile-release store-submission checklist.
-   Tokens registered before then are still valid; nothing is lost.
-6. The emulator-backed integration suite (`test:integration`) does not run in CI
-   — it needs a built `dist/` and the functions emulator. It covers the counters
-   that feed contact triage, where a wrong value does not throw.
-7. Org-scoped coaching dimensions; the editor is team-only.
-8. `resolveAffiliationTerm` resolves its own four locales over a studio-authored
-   map using the *device* locale, outside React. It is deliberately not wired to
-   the app's chosen-locale system — doing so is a behaviour change, not a string
-   migration.
+### Drifted, still owed — each needs care, not a sed
 
-**Decide, do not drift**
+10. **Primary rank resolves differently.** Web's `getPrimaryRank` picks the
+    first system the contact *holds a rank in* and, for an orphaned value, the
+    nearest lower level; mobile's `resolvePrimaryRank` picks the first
+    *configured* system and shows nothing for an orphan. A member ranked only
+    in a studio's second scale has a belt in admin and none in the app. Belongs
+    in `packages/shared/src/utils/rankingSystems.ts`; the return shapes differ.
+11. **`resolveAffiliationTerm` has two fallback chains.** Web falls through to
+    the first *filled* translation so a studio that entered only German gets it
+    everywhere; mobile falls straight to the English word "Affiliation". The
+    device-vs-chosen locale question is item 18; the missing fallback arm is a
+    plain bug regardless of it.
+12. **"One check-in per day per author" is implemented three ways.** Mobile
+    runs a real range query; the Space scans the ten most recent in memory;
+    the admin does not dedupe at all, so a coach can leave several 1:1
+    check-ins on one day. The timestamp source differs too (client clock,
+    server timestamp, caller-supplied), which is precisely what the day-window
+    compares. The payload builder and the same-day predicate are pure and
+    belong in shared; the query strategy can legitimately differ.
+13. **The Space never uses the regional formatter.** Twelve bare
+    `toLocaleDateString()` calls, which `lib/format.ts` warns against in its
+    own header — an en-US browser shows US dates and 12-hour times inside a
+    German portal. Mobile pins `hour12: false` in seven places; the Space omits
+    it. The same goal reads "15 Sep 2026" on the coach's tab and in the app,
+    and "9/15/2026" on the member's portal. `createRegionalFormatter` is
+    already in shared; the Space needs a `useSpaceFormat` built on the public
+    team's regional settings.
+14. **The luminance formula exists four times with two thresholds** — three
+    YIQ copies (`> 0.5`, `> 0.5`, `>= 0.6`) deciding black-vs-white text on the
+    same studio accent, plus a fourth, correct WCAG pair in
+    `apps/mobile/src/utils/color.ts` that disagrees with the other three for
+    mid-tones. Promote the WCAG pair to shared; retire the rest.
+15. **Two ISO-week key generators.** `apps/web/src/lib/isoWeek.ts` (UTC
+    midnight) and shared's `isoWeeks.ts` (UTC noon, "to avoid DST edges") emit
+    the same key grammar today. The shared one also carries
+    `densifyWeeklyCounts`, whose absence is the exact "flat, healthy sixteen-
+    week line" bug its header documents — and the dashboard trend cards still
+    build sparse windows by hand.
+16. **The `default` performance profile is shown on two surfaces and hidden on
+    the third.** A member whose check-in matched no pattern sees an
+    explanatory card on the portal and nothing in the app. A copy decision;
+    the vocabulary map is the thing to share (item 22).
 
-9. What the app sends. The capability exists; what is worth interrupting somebody
-   for is a product judgement, and it now ships over the air.
-10. Whether the app's scope should shrink to what only an app can do, rather than
-   tracking the portal.
+### Not yet drifted, cheap — the next edit to any of these drifts it
+
+17. **Star ratings, three implementations.** Two are React DOM in the same app
+    and differ only in where the empty-star colour comes from — the identical
+    situation `GoalProgressBar` was in. The `value: 0 means unset` invariant is
+    restated in all three headers.
+18. **`GoalStateChips` twice, both DOM.** The Space's own header calls it "the
+    admin's twin". Same palette-prop shape as `GoalProgressBar`.
+19. **Badge thresholds, the same nine numbers in three files** — and the
+    Space's flat `BADGE_DEFINITIONS` has no override path. One edit in the
+    admin editor away from a studio seeing one set on the portal and another
+    in the app. `DEFAULT_BADGE_THRESHOLDS` beside the type it already owns.
+20. **`BeltBadge` re-derives the precedence `rankLevelBadge` exists to own**,
+    from four loose colour/emoji/image props. Its own header names the shared
+    function it is re-implementing.
+21. **`initials()` is written out eleven times** across web and mobile;
+    `avatarColor` + its palette twice, byte-for-byte, in `apps/web`.
+22. **Colour and label maps for `GoalStatus` and `ProfileKey`, each declared
+    two or three times** — the mobile hexes are the resolved values of the
+    admin's Tailwind classes. Wants one hex map both derive from.
+23. **Shadowing types.** The admin gamification page declares its own
+    `GamificationSettings` — same name as shared's, different shape, in an app
+    that imports shared everywhere else. `Leaderboard`/`LeaderboardEntry`
+    exist in mobile and again as `SpaceLeaderboard*` with a nullability
+    difference. `ShownSubscription` casts away `status` from shared's
+    `ActiveSubscriptionSummary` rather than extending it.
+24. **Goal and evaluation dialogs twice, both DOM.** The field sets genuinely
+    differ (a member cannot set a start date or reparent), so this wants one
+    form with capability props rather than a merge. Item 4 came from here.
+
+### Worth doing, not urgent
+
+25. **A shared constant for `public_profile` and for session `bookings`, then a
+    sweep.** `packages/shared/src/paths.ts` names the user public profile and
+    the coach-slot bookings and nothing else — so the *general* mirror
+    subcollection every public surface queries, and the session bookings every
+    rail writes, are hand-typed: nineteen `'public_profile'` and five
+    `'bookings'` in the web, plus a local `BOOKINGS_SUB` alias, plus two in
+    mobile. Not urgent because the strings are stable; worth doing because
+    "stable" is exactly what every hand-copied shape in §1 was, until it was
+    not.
+26. Push cannot deliver until an FCM V1 service account and an APNs key are
+    uploaded to EAS. Recorded in the mobile-release store-submission checklist.
+    Tokens registered before then are still valid; nothing is lost.
+27. The emulator-backed integration suite (`test:integration`) does not run in
+    CI — it needs a built `dist/` and the functions emulator. It covers the
+    counters that feed contact triage, where a wrong value does not throw.
+28. Org-scoped coaching dimensions; the editor is team-only.
+29. `resolveAffiliationTerm` resolves over a studio-authored map using the
+    *device* locale, outside React. Rewiring it to the app's chosen locale is
+    a behaviour change, not a string migration — separate from item 11.
+
+### Decide, do not drift
+
+30. What the app sends. The capability exists; what is worth interrupting
+    somebody for is a product judgement, and it now ships over the air.
+31. Whether the app's scope should shrink to what only an app can do, rather
+    than tracking the portal.

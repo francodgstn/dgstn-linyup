@@ -8,7 +8,7 @@ import {
   doc, serverTimestamp, Timestamp, writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, resolveGoalCategories, goalCategoryLabel, resolveCoachingDimensions, dimensionLabel, groupGoalsWithSteps, goalIsOverdue, goalIsArchived, sortSteps, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION } from '@linyup/shared'
+import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, resolveGoalCategories, goalCategoryLabel, resolveCoachingDimensions, dimensionLabel, groupGoalsWithSteps, goalIsOverdue, goalIsArchived, sortSteps, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION, GOAL_STATUSES, visibleGoals} from '@linyup/shared'
 import type { Contact, Team, Goal, GoalEvaluation, GoalStatus, GoalType, PerformanceIndicator, StepSortMode } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,7 +49,6 @@ import {
 // not the same question, and collapsing them made the picker wrong. See the
 // header of `packages/shared/src/types/goal.ts` for the full reasoning.
 
-const ALL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned']
 
 const STATUS_STYLES: Record<GoalStatus, string> = {
   open: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
@@ -189,7 +188,7 @@ function EvalDialog({ open, goalStatus, initial, onClose, onSubmit }: EvalDialog
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('goalStatusAfter')}</p>
             <div className="flex flex-wrap gap-2">
-              {ALL_STATUSES.map((s) => (
+              {GOAL_STATUSES.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -885,24 +884,14 @@ export function GoalsTab({ contact, teamId, team }: Props) {
   const categories = resolveGoalCategories(team)
   const dimensions = resolveCoachingDimensions(team)
 
-  // ARCHIVING A GOAL TAKES ITS STEPS WITH IT. Hiding the parent alone would
-  // send its steps through groupGoalsWithSteps' missing-parent fallback and out
-  // into General, where they would read as loose to-dos the coach never wrote.
-  const archivedGoalIds = new Set(
-    goals.filter((g) => g.type !== 'task' && goalIsArchived(g)).map((g) => g.id),
-  )
-  const visibleGoals = showArchived
-    ? goals
-    : goals.filter(
-        (g) =>
-          !goalIsArchived(g) &&
-          !(g.type === 'task' && g.parent_goal_id && archivedGoalIds.has(g.parent_goal_id)),
-      )
+  // ARCHIVING A GOAL TAKES ITS STEPS WITH IT — the cascade lives ONCE in
+  // `visibleGoals` (@linyup/shared); its header says why it is in memory.
+  const shownGoals = showArchived ? goals : visibleGoals(goals)
   const hasArchived = goals.some((g) => goalIsArchived(g))
 
   // Sort AROUND the grouping helper, never inside it: its contract is to
   // preserve input order, and the mobile app mirrors it byte-for-byte.
-  const { goals: groupedGoals, generalSteps: ungroupedGeneral } = groupGoalsWithSteps(visibleGoals)
+  const { goals: groupedGoals, generalSteps: ungroupedGeneral } = groupGoalsWithSteps(shownGoals)
   const goalsWithSteps = groupedGoals.map(({ goal, steps }) => ({
     goal,
     steps: sortSteps(steps, sortMode),

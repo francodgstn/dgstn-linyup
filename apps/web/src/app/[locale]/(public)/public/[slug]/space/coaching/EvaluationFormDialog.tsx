@@ -8,6 +8,7 @@
 // Showing it regardless and quietly dropping the write afterwards — which is
 // what the mobile app currently does — would be worse than never asking.
 
+import { GOAL_STATUSES } from '@linyup/shared'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -15,7 +16,6 @@ import { Button } from '@/components/ui/button'
 import type { Goal, GoalStatus } from '@linyup/shared'
 import { RatingStars } from './RatingStars'
 
-const ALL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned']
 const STATUS_KEYS: Record<GoalStatus, string> = {
   open: 'statusOpen',
   in_progress: 'statusInProgress',
@@ -105,7 +105,7 @@ export function EvaluationFormDialog({ open, onOpenChange, goal, onSubmit }: Pro
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">{t('evaluationStatusLabel')}</label>
                 <div className="flex flex-wrap gap-1.5">
-                  {ALL_STATUSES.map((s) => (
+                  {GOAL_STATUSES.map((s) => (
                     <button
                       key={s}
                       type="button"

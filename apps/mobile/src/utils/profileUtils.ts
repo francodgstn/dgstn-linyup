@@ -1,3 +1,4 @@
+import { planGrantIsCurrent } from '@linyup/shared';
 import { AffiliationSummary, ContactAddress, Contact, RankingSystem } from '../types';
 
 /** What a few helpers below need from `useTranslations(...)` — the caller's
@@ -188,11 +189,20 @@ export function resolveAffiliationTerm(
  * subscription that has no Stripe-maintained array entry yet.
  */
 export function resolveSubscriptionTypeName(
-  contact: Pick<Contact, 'active_subscriptions' | 'subscription_type_id' | 'subscription_type_name'>,
+  contact: Pick<
+    Contact,
+    'active_subscriptions' | 'subscription_type_id' | 'subscription_type_name' | 'subscription_expires_at'
+  >,
 ): string | null {
   const active = contact.active_subscriptions ?? [];
   const matching = contact.subscription_type_id
     ? active.find((s) => s.subscription_type_id === contact.subscription_type_id)
     : undefined;
-  return matching?.subscription_type_name ?? active[0]?.subscription_type_name ?? contact.subscription_type_name ?? null;
+  const live = matching?.subscription_type_name ?? active[0]?.subscription_type_name;
+  if (live != null) return live;
+  // The flat grant ("2 months included") — a name only while it still COVERS
+  // her, the same `planGrantIsCurrent` comparison the booking gate and the
+  // Space's membership card make. This copy had no date check at all, so a
+  // lapsed grant read as the member's current plan in the app alone.
+  return planGrantIsCurrent(contact) ? (contact.subscription_type_name ?? null) : null;
 }

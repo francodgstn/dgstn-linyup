@@ -1,3 +1,4 @@
+import { isTrialStage, leaderboardDisplayName } from '@linyup/shared';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -885,14 +886,12 @@ export const ProfileScreen: React.FC = () => {
           </View>
           {processedEntries.map((entry) => {
             const isCurrentUser = entry.contact_id === contact?.id;
-            // Anonymise not-yet-joined (trial) members on the public leaderboard.
-            const isTrial =
-              entry.acquisition_stage === 'trial_booked' ||
-              entry.acquisition_stage === 'trial_attended';
-            const lastInitial = entry.lastname ? ` ${entry.lastname[0]}.` : '';
-            const fullName = isTrial
-              ? ([entry.firstname?.[0], entry.lastname?.[0]].filter(Boolean).join('.') || '?') + '.'
-              : `${entry.firstname || ''}${lastInitial}`.trim() || 'Unknown';
+            // Anonymise not-yet-joined (trial) members — the ONE rule, shared
+            // with the Space's leaderboard (leaderboardName in @linyup/shared).
+            // This copy compared stage strings untyped and fell back to
+            // 'Unknown' where the Space used '?'.
+            const isTrial = isTrialStage(entry.acquisition_stage);
+            const fullName = leaderboardDisplayName(entry);
             const rank = entry.displayRank;
             const primaryValue = getSortValue(entry);
             const primaryUnit = lbSort === 'points' ? 'pts' : 'w';
