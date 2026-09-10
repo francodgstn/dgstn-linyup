@@ -14,18 +14,6 @@
  * which does not resolve the @linyup/shared workspace import.
  */
 
-/**
- * The `affiliation_summary.org_status_ids` entry for one (org, status) pair.
- *
- * Mirrors `orgAffiliationStatusKey` in `@linyup/shared` — which is the OWNER of
- * this format — for the same reason the constants below are mirrored: these
- * scripts compile under `tsconfig.scripts.json`, which does not resolve the
- * workspace import. Change it there first.
- */
-export function orgAffiliationStatusKey(orgId: string, statusId: string): string {
-  return `${orgId}:${statusId}`
-}
-
 // ── Firestore path constants (mirror @linyup/shared/paths) ─────────────────────
 export const CONTACT_AFFILIATIONS_SUBCOLLECTION = 'affiliations'
 export const AFFILIATION_TYPES_SUBCOLLECTION = 'affiliation_types'
@@ -251,12 +239,10 @@ export function buildAffiliationSummary(affiliations: AffiliationSummaryInput[])
   types: string[]
   org_ids: string[]
   active_org_ids: string[]
-  org_status_ids: string[]
 } {
   const types = new Set<string>()
   const orgIds = new Set<string>()
   const activeOrgIds = new Set<string>()
-  const orgStatusIds = new Set<string>()
   let hasActive = false
   for (const a of affiliations) {
     if (a.active) hasActive = true
@@ -266,15 +252,11 @@ export function buildAffiliationSummary(affiliations: AffiliationSummaryInput[])
     // `onAffiliationWrite`, which is the real writer; a seed that disagreed with
     // it would produce demo numbers no deployment could reproduce.
     if (a.org_id && a.active) activeOrgIds.add(a.org_id)
-    // WHICH STATUS, per org — what the dashboard's breakdown counts. Same rule:
-    // the trigger owns it, this only has to agree.
-    if (a.org_id && a.status_id) orgStatusIds.add(orgAffiliationStatusKey(a.org_id, a.status_id))
   }
   return {
     has_active: hasActive,
     types: [...types],
     org_ids: [...orgIds],
     active_org_ids: [...activeOrgIds],
-    org_status_ids: [...orgStatusIds],
   }
 }

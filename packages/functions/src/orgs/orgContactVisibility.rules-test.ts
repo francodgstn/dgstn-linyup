@@ -306,7 +306,7 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
 
   it('COUNTS one status across the federation — the dashboard status strip', async () => {
     // THE CASE THAT WAS PENDING. #249 had moved this count onto the CONTACT,
-    // filtering `affiliation_summary.org_status_ids` with an `org:status` key —
+    // filtering a denormalised `org:status` key on the contact —
     // and `orgAdminMayReadContact` could not prove it, because Firestore matches
     // a query against a rule by VALUE and the status half of that key is
     // tenant-configurable. Every document it would have returned was readable;

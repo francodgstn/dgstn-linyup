@@ -12,7 +12,6 @@ import { fireEventRules, type ContactData, type EventDelta } from '../utils/auto
 import {
   CONTACTS_COLLECTION,
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
-  orgAffiliationStatusKey,
   type Affiliation,
   type AffiliationSummary,
 } from '@linyup/shared'
@@ -73,23 +72,12 @@ export const onAffiliationWrite = onDocumentWritten(
       ...new Set(orgIssued.filter((a) => a.active === true).map((a) => a.org_id as string)),
     ]
 
-    // WHICH STATUS, PER ORG — what the federation's breakdown counts, asked of
-    // the contact so it composes with `archived_at`. See the field's own comment
-    // in shared for why the key is composite and why this is a distinct set.
-    const org_status_ids = [
-      ...new Set(
-        orgIssued
-          .filter((a) => a.status_id)
-          .map((a) => orgAffiliationStatusKey(a.org_id as string, a.status_id))
-      ),
-    ]
 
     const newSummary: AffiliationSummary = {
       has_active,
       types,
       org_ids,
       active_org_ids,
-      org_status_ids,
     }
     const newTypes = new Set<string>(types)
 
@@ -106,14 +94,7 @@ export const onAffiliationWrite = onDocumentWritten(
       // omitted comparison would leave the count reading last season's answer
       // for as long as nobody touched that contact again.
       JSON.stringify([...active_org_ids].sort()) !==
-        JSON.stringify([...(existingSummary.active_org_ids ?? [])].sort()) ||
-      // Compared for the same reason, and it catches MORE writes than the line
-      // above: a status moving between two inactive values (requested → under
-      // review) changes neither `has_active` nor either org list, so without
-      // this the breakdown would keep showing the application in the queue it
-      // has already left.
-      JSON.stringify([...org_status_ids].sort()) !==
-        JSON.stringify([...(existingSummary.org_status_ids ?? [])].sort())
+        JSON.stringify([...(existingSummary.active_org_ids ?? [])].sort())
 
     if (summaryChanged) {
       const [updateErr] = await to(
@@ -166,9 +147,23 @@ export const onAffiliationWrite = onDocumentWritten(
       await fireEventRules(teamId, 'affiliation_removed', [contact], { eventId: event.id }, delta)
     }
 
-    // Legacy coarse trigger — fires whenever the summary changed (any add or remove),
-    // so existing 'affiliation_changed' rules keep working without migration.
-    if (summaryChanged) {
+    // THE WRITTEN ROW'S OWN STATUS MOVE, which the summary can no longer see.
+    //
+    // A status going between two INACTIVE values — requested → under review —
+    // changes neither `has_active` nor either org list, so `summaryChanged` is
+    // false for it. #249 caught those by diffing a denormalised `org:status` set
+    // on the summary; that field is gone (nothing read it once the dashboard's
+    // breakdown moved back to the affiliations collection group), and diffing
+    // the WRITTEN DOCUMENT is a better signal anyway: it is exactly the change
+    // that just happened, needs no stored copy to compare against, and cannot
+    // drift from it.
+    const statusMoved =
+      !!beforeData && !!afterData && beforeData.status_id !== afterData.status_id
+
+    // Legacy coarse trigger — fires whenever the summary changed (any add or
+    // remove) or a status moved, so existing 'affiliation_changed' rules keep
+    // working without migration.
+    if (summaryChanged || statusMoved) {
       await fireEventRules(teamId, 'affiliation_changed', [contact], { eventId: event.id })
     }
   }

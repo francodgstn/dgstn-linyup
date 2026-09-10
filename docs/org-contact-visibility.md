@@ -280,10 +280,26 @@ or re-running the migration IS the migration. The day real tenant data carries
 affiliations, that stops being true and a backfill becomes a deploy
 precondition.
 
-**`affiliation_summary.org_status_ids` is now written and read by nothing.** It
-stays: `onAffiliationWrite` maintains it, its backfill still repairs it, and it
-is what the contact-side query would use if that query ever became provable.
-Removing it is a separate cleanup, not part of this decision.
+**`affiliation_summary.org_status_ids` is gone** (2026-09-10). It was left in
+place for a day, written by the trigger and read by nothing, on the argument that
+it was what the contact-side query would use if that query ever became provable.
+That argument does not survive contact with the rule: the query is unprovable
+because the key's status half is tenant-configurable, and no amount of waiting
+changes that. Denormalisation nobody reads is a field that drifts, a backfill
+nobody runs and an index that costs every write — so the field, its
+`orgAffiliationStatusKey` helper, its index, its half of the backfill and the
+seed builder's copy all went with it.
+
+**One thing it was quietly doing had to be replaced.** `onAffiliationWrite` gates
+BOTH the summary write and the legacy `affiliation_changed` automation on
+`summaryChanged`, and the `org_status_ids` comparison was the only one that
+noticed a status moving between two INACTIVE values (`requested` →
+`under_review`) — such a move changes neither `has_active` nor either org list.
+Removing the comparison alone would have silently stopped that automation firing.
+The trigger now reads the move off the WRITTEN ROW (`beforeData.status_id !==
+afterData.status_id`), which is a better signal than a summary diff: it is
+exactly the change that just happened, needs no stored copy to compare against,
+and cannot drift from one.
 
 ### Smaller
 

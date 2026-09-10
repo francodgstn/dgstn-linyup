@@ -70,7 +70,6 @@ import {
   ORG_MEMBER_INVITATIONS_SUBCOLLECTION,
   ORG_TEAMS_SUBCOLLECTION,
   TEAMS_COLLECTION,
-  orgAffiliationStatusKey,
 } from '@linyup/shared'
 import type { OrgAffiliationStatusDef, OrgTeamStatus } from '@linyup/shared'
 
@@ -437,9 +436,9 @@ export function useOrgAffiliationStatusDefs(orgId: string) {
  * block admits `isOrgAdminOfOrg` on the row's own `org_id`, so a query pinning
  * `org_id` is provably inside it.
  *
- * It was moved onto the CONTACT (#249, `affiliation_summary.org_status_ids`) so
- * the counts would compose with `archived_at`, and moved back here (Franco,
- * 2026-09-09) because `orgAdminMayReadContact` cannot prove that query:
+ * It was moved onto the CONTACT (#249) so the counts would compose with
+ * `archived_at`, filtering a denormalised `org:status` key, and moved back here
+ * (Franco, 2026-09-09) because `orgAdminMayReadContact` cannot prove that query:
  * Firestore matches a query against a rule by VALUE, and an `org:status` key has
  * a tenant-configurable half no rule can name. Every document it would have
  * returned was readable; only the proof was missing, so the counts came back
