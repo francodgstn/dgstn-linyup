@@ -149,21 +149,30 @@ cd apps/mobile
 npx eas-cli build --profile store --platform android
 ```
 
-**The `store` profile targets `linyup-staging`** — decided 2026-09-03, so the
-clock can start without the production key being settled. Know what you are
-trading: testers sign into **seeded demo studios**, not a real school, and
-staging is wiped and reseeded, so anything they do there is disposable. That
-satisfies the mechanical requirement (12 opted in, 14 continuous days); it does
-NOT give Google's engagement check real members making real bookings. Recruit
-testers who are fine with a demo — friends and colleagues, not your studio's
-members.
+**The `store` profile targets `linyup-prod`** — flipped 2026-09-10. It pointed at
+`linyup-staging` from 2026-09-03 so the 14-day clock could start before the
+production key was settled; that trade is over.
 
-**Before going public**, set `FIREBASE_PROJECT_ID` back to `linyup-prod` and put
-the prod key in the `store` profile's `env` block *and* the `production` EAS
-environment (`docs/mobile-eas-setup.md` step 5 explains why both, and why
-omitting the `env` half fails with an empty error). You cannot forget this: the
-release lane refuses a `mobile-v*` tag while that value is anything but
-`linyup-prod`.
+**Flip on a build you were making anyway.** The closed test was going to need a
+v1.0.1 AAB regardless — an OTA cannot reach a closed-track build (wrong channel,
+and by then a different fingerprint) — so the prod configuration rode along and
+got a week of exercise by ~103 testers before it was the thing being submitted.
+The alternative was for the FIRST prod-pointed build to be the one going to
+production, which is the same big-bang shape that produced the empty demo tenant.
+
+The key lives in BOTH the `store` profile's `env` block and the `production` EAS
+environment (`docs/mobile-eas-setup.md` step 5 explains why both, and why omitting
+the `env` half fails with an empty error). When both are present EAS says so and
+the `env` one wins — they must not be allowed to drift apart.
+
+**The release-lane guard now PASSES.** It refused a `mobile-v*` tag while this
+value was anything but `linyup-prod`; from here a tag builds AND auto-submits both
+platforms, so tag deliberately.
+
+What changed for testers: they now sign into PRODUCTION's demo tenant rather than
+staging's. Same logins, same fixed code — but production infrastructure, so
+`pnpm provision:demo --project linyup-prod` is the repair if it drifts, and prod
+is not a place to reseed casually.
 
 **d. Upload that AAB by hand.** Google requires the first one to be uploaded
 manually before `eas submit` can target a track. Play Console → Testing →
