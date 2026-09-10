@@ -273,8 +273,14 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
         refs: baseRefs,
       })
     )
-    // Trial dropout: archived while still in the trial funnel (never joined)
-    if (oldData.acquisition_stage === 'trial_booked' || oldData.acquisition_stage === 'trial_attended') {
+    // Trial dropout: archived while still in the trial funnel (never joined).
+    // Not for an external — a ClassPass visitor who attended once was never a
+    // trial the studio was converting, and archiving them in a tidy-up must not
+    // read as one lost.
+    if (
+      !oldData.external &&
+      (oldData.acquisition_stage === 'trial_booked' || oldData.acquisition_stage === 'trial_attended')
+    ) {
       const weekLabel = format(new Date(), "R-'W'II")
       promises.push(
         db

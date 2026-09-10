@@ -44,8 +44,8 @@ export const onMemberPaymentWrite = onDocumentWritten(
       console.log(`[onMemberPaymentWrite] pi=${paymentIntentId} contact=${contactId} team mismatch`) // eslint-disable-line no-console
       return
     }
-    // Same guard onContactWrite applies: a deleted or archived contact is not outreached.
-    if (data.deleted_at || data.archived_at) return
+    // Same guard onContactWrite applies: a deleted, archived or external contact is not outreached.
+    if (data.deleted_at || data.archived_at || data.external) return
 
     const contact: ContactData = { id: contactId, ...(data as Omit<ContactData, 'id'>) }
 

@@ -495,6 +495,9 @@ export interface ContactFilterSubject {
   pending_signup?: boolean
   /** `false` = a lead nobody has opened yet. Absent/true = seen. */
   lead_acknowledged?: boolean
+  /** Off the roster (see `contactLifecycle`). Read ONLY by the attention
+   *  reasons: an external is never waiting on the studio. */
+  external?: boolean
   total_sessions?: number
   last_session_at?: TimestampLike
   /** Denormalized coaching counters — see the attention reasons below. */
@@ -853,6 +856,14 @@ export function contactAttentionReasons(
 ): ContactAttentionReason[] {
   const nowMs = ctx.nowMs ?? Date.now()
   const reasons: ContactAttentionReason[] = []
+  // An EXTERNAL is never waiting on the studio. Every reason below describes a
+  // person the studio looks after — a trial to convert, a member gone quiet, a
+  // lead nobody opened — and a ClassPass visitor who attended once and never
+  // came back is none of those; before this bucket existed they filled the
+  // attention queue with "gone quiet" rows nobody could act on. Decided before
+  // any reason so a stored alert on an external stays on their page and off
+  // the queue.
+  if (subject.external === true) return reasons
   if ((subject.alerts_count ?? 0) > 0) reasons.push('alerts')
   if (subject.pending_signup === true) reasons.push('pending_signup')
   if (subject.acquisition_stage === 'trial_booked') reasons.push('trial_pending')

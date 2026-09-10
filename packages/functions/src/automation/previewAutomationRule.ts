@@ -172,7 +172,7 @@ export const previewAutomationRule = onCall(async (request) => {
 
     // Evaluate conditions directly (no runRule to avoid loading templates)
     for (const contact of contacts) {
-      if (contact.deleted_at || contact.archived_at) continue
+      if (contact.deleted_at || contact.archived_at || contact.external) continue
       if (!contact.email || contact.email_unsubscribed) continue
       if (!evaluateContactConditions(rule.conditions, contact, now, conditionCtx)) continue
 
