@@ -4,6 +4,10 @@ export type ActivityEventType =
   | 'contact_add'
   | 'contact_archive'
   | 'contact_unarchive'
+  // Roster ↔ external (Contact.external). Written by trackContacts beside the
+  // archive pair — a lifecycle move, so it sits in the same `profile` feed.
+  | 'contact_mark_external'
+  | 'contact_unmark_external'
   | 'contact_delete'
   | 'contact_type_change'
   | 'acquisition_stage_change'

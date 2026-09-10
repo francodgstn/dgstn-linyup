@@ -1049,7 +1049,17 @@
     "goalArchivedBadge": "Archiviert",
     "goalShowArchived": "Archivierte",
     "sendLinkTip": "Kopiere einen Link zum Senden. Die Bestätigung erfolgt per E-Mail-Code — dafür braucht es eine hinterlegte E-Mail.",
-    "filterMissingEmail": "Keine E-Mail"
+    "filterMissingEmail": "Keine E-Mail",
+    "tabExternal": "Extern",
+    "externalBadge": "Extern",
+    "externalHint": "Trainiert hier, ohne zu deinem Stamm zu gehören – keine Erinnerungen, Einladungen oder Automationen.",
+    "externalSince": "Extern seit",
+    "bulkMarkExternal": "Als extern markieren",
+    "bulkMarkActive": "Als aktiv markieren",
+    "headerMarkExternal": "Als extern markieren",
+    "headerMarkActive": "Wieder als aktiv führen",
+    "markExternalTitle": "{count, plural, one {Diesen Kontakt als extern markieren?} other {# Kontakte als extern markieren?}}",
+    "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen."
   },
   "TeamAffiliations": {
     "title": "Affiliationen",

@@ -92,6 +92,7 @@ import {
   Users,
 } from 'lucide-react'
 import type { Contact, SubscriptionType } from '@linyup/shared'
+import { isRosterContact } from '@linyup/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePlan } from '@/hooks/usePlan'
 import { useMonthlyRevenue } from '@/hooks/useMonthlyRevenue'
@@ -220,7 +221,9 @@ export function FiguresBlock({
   const { data: sessions, isLoading: sessionsLoading } = usePreviewUpcomingSessions(teamId)
   const { data: subTypes = [] } = useSubscriptionTypes(teamId)
 
-  const live = (contacts ?? []).filter((c) => !c.archived_at)
+  // The ROSTER, not merely the live set: an external is bookable but not one
+  // of the studio's own people — see `contactLifecycle` in shared.
+  const live = (contacts ?? []).filter(isRosterContact)
 
   // ── attendance: this week, and the DIFFERENT people whose last visit was the
   // week before. Deliberately not phrased as a comparison — `last_session_at`

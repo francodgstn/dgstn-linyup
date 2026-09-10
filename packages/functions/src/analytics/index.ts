@@ -309,6 +309,35 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
     )
   }
 
+  // Roster ↔ external (Contact.external) — a lifecycle move like archiving,
+  // logged the same way. `external` is present only when true, so `!x`
+  // reads absent and false alike.
+  if (!oldData.external && newData.external) {
+    promises.push(
+      logActivity(teamId, {
+        event: 'contact_mark_external',
+        parameters: {
+          description: `${fullname} was marked external.`,
+          contact_firstname: firstname,
+          contact_lastname: lastname,
+        },
+        refs: baseRefs,
+      })
+    )
+  } else if (oldData.external && !newData.external) {
+    promises.push(
+      logActivity(teamId, {
+        event: 'contact_unmark_external',
+        parameters: {
+          description: `${fullname} is back on the roster.`,
+          contact_firstname: firstname,
+          contact_lastname: lastname,
+        },
+        refs: baseRefs,
+      })
+    )
+  }
+
   // Acquisition stage change
   if (
     oldData.acquisition_stage &&

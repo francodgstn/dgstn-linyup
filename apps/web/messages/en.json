@@ -1049,7 +1049,17 @@
     "goalArchivedBadge": "Archived",
     "goalShowArchived": "Archived",
     "sendLinkTip": "Copy a link to send them. They confirm with a code emailed to them, so it needs an email on file.",
-    "filterMissingEmail": "No email"
+    "filterMissingEmail": "No email",
+    "tabExternal": "External",
+    "externalBadge": "External",
+    "externalHint": "Trains here without being on your roster — no reminders, invitations or automations.",
+    "externalSince": "External since",
+    "bulkMarkExternal": "Mark external",
+    "bulkMarkActive": "Mark active",
+    "headerMarkExternal": "Mark as external",
+    "headerMarkActive": "Bring back to Active",
+    "markExternalTitle": "{count, plural, one {Mark this contact as external?} other {Mark # contacts as external?}}",
+    "markExternalDesc": "They can still book and attend, and their history stays. They leave the Active list, the contact count, event invitations, automations and Needs attention — until you mark them active again, or they complete your signup form."
   },
   "TeamAffiliations": {
     "title": "Affiliations",

@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact } from '@linyup/shared'
 import { getPrimaryRank } from '@/lib/rank-utils'
 
 // ─── palettes ────────────────────────────────────────────────────────────────
@@ -239,7 +239,10 @@ export function ContactsOverviewCard({
 
   const [view, setView] = useState<View>(showRoster ? 'engagement' : 'age')
 
-  const active = contacts.filter((c) => !c.archived_at)
+  // The ROSTER — people the studio looks after. Externals (partner-app
+  // drop-ins, former members who still come now and then) are live but not
+  // counted here; see `contactLifecycle` in shared.
+  const active = contacts.filter(isRosterContact)
   const total = active.length
 
   // ── Engagement band (exclusive) — derived from attendance recency ──
