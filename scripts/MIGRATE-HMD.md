@@ -435,9 +435,24 @@ Mapping (`scripts/migration/transforms/contacts.ts`):
 
 | Source field (non-`guest`) | → Affiliation |
 |---|---|
-| `org_membership_status` | `issuer: 'org'` (HMD org `hmd`), type `club`, `status_id` = the value, `active` = (`active`-status), `valid_until` ← `org_membership_expiration` |
-| `membership_status` | `issuer: 'team'`, type `club`, `status_id` = the value, `active` = (`active`-status), `valid_until` ← `membership_expiration` |
-| `guest` / none | no affiliation |
+| `membership_status` | **`issuer: 'org'`, `org_id: 'hmd'`**, type `club` (the org-level type seeded in pass 00), `status_id` = the value, `active` = (`active`-status), `contact_live` = not archived/deleted, `valid_until` ← `membership_expiration` |
+| `guest` / none | no affiliation — and therefore invisible to the organisation (`orgAdminMayReadContact`) |
+
+`membership_status` is the **federation card**, not a club-level membership: hmd-lineup's
+Membership route lists it across every club with the org's own vocabulary, and the org's
+managers move it. Until 2026-09-11 the transform wrote it as a *team*-issued row with no
+`org_id`, which under the org-visibility model of #259 would have hidden every HMD member
+from HMD. There is no `org_membership_status` in hmd-lineup — the field an earlier version
+mapped "in case" never existed on any document; it is deleted from the contact doc if
+present and never read.
+
+**Partner-app plans.** hmd-lineup had no notion of a plan's source. Pass 11 stamps a copied
+`subscription_types` doc whose name matches `isPartnerSourceType` (Fitpass, ClassPass,
+SportPass, Urban Sports…) with `source: 'aggregator'`, and the contact transform writes
+its holder a live `active_subscriptions` row (amount 0, no recurrence) — so the booking
+gate can match the plan, the weekly report counts them "via a partner app" rather than as
+subscribers, and the External tab shows the plan that lets them through the door. Not for
+an archived or binned contact. Instructor / Free stay name-only.
 
 Soft-deleted **and archived** contacts (`deleted_at != null` or `archived_at != null`)
 are coerced to `status_id: 'expired'` so they never count as active — HMD does

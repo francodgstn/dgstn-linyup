@@ -9,6 +9,7 @@ rather than from a screenshot somebody took once and lost.
 | `icon-512.png` | 512×512 | Play store icon (Play requires exactly this) |
 | `feature-graphic-1024x500.png` | 1024×500 | Play feature graphic (**required** to publish) |
 | `screenshots/android/*.png` | 1080×2410 | Play phone screenshots (2–8) |
+| `screenshots/ios/*.png` | 1290×2796 | App Store iPhone screenshots (6.7", min 3) |
 
 Four screens, in the order they tell a story: the dashboard (points, streak,
 upcoming classes), the training calendar, the performance radar, the team
@@ -78,6 +79,19 @@ Different requirements, same sources:
 - **Screenshots** are per device class and Apple is strict about exact pixel
   sizes. `ios.supportsTablet` is `false`, so **iPhone only** — that decision
   exists precisely to avoid maintaining an iPad set forever
-  (`docs/mobile-store-setup.md`).
+  (`docs/mobile-store-setup.md`). The set here is 1290×2796 (6.7"), captured
+  on a physical iPhone and moved over USB — anything that treats an image as a
+  photo to be optimised (a messaging app, mail's "resize to medium") silently
+  downscales them, and the first attempt arrived at 590×1280, which Apple
+  rejects on sight. **Three screens, not four:** 01/02/04 keep the Android
+  numbering so one screen has one number on both stores; 03, the performance
+  radar, has no iOS capture yet.
+- **The iOS three were hand-patched** to fill the top inset with `#121015`.
+  Builds before the AppNavigator fix painted the notch area WHITE on iOS, so
+  every capture carried a white band and the red screen-recording pill. That is
+  fixed, and it shipped as an OTA — captures from 1.0.1 onward need no
+  retouching and should match these pixel for pixel. If a fresh capture still
+  shows the band, the device has not picked the update up: force-quit and
+  reopen twice.
 - Listing **text** belongs in `store.config.json` at `apps/mobile/`, pushed with
   `eas metadata:push` — Apple only; Play has no equivalent and stays manual.
