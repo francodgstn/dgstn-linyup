@@ -707,6 +707,37 @@ recorded decision). Full docs: `docs/site-translations.md` (incl. the embed
 `?hl=en` pinning, the switcher/cookie change, and
 `pnpm backfill:site-translations`).
 
+### Scheduled jobs fan out — one Cloud Task per tenant, never a loop
+
+A cron that loops tenants with `await` inside the loop is one instance, one
+timeout and one point of failure for every studio at once. Past a few hundred
+tenants it does not slow down, it **dies partway** — some tenants done, some
+not, with nothing on any screen to say which (`docs/scalability-2026-09.md` §9).
+
+So a scheduled job is a **dispatcher**: `dispatchTenantJob`
+(`packages/functions/src/utils/tenantFanOut.ts`, whose header owns the
+reasoning) lists the tenants and enqueues one Cloud Task each, and a
+`…ForTeam(teamId)` function does one tenant's work. That same function is what
+the dispatcher runs inline on a machine with no Cloud Tasks emulator, so there
+is never a second implementation to drift. Converted: `sendBookingReminders`,
+`markNoShowBookings`, `runScheduledRules`, `weeklyReports` — each with its own
+handler in `dailyTasks/tenantWorkers.ts`, hence its own queue and its own retry
+and concurrency settings.
+
+Two rules when adding one:
+
+- **Idempotence is the JOB's, not the queue's.** Cloud Tasks is at-least-once.
+  The deterministic task id (`{teamId}-{runId}`, tenant first because a run id
+  is a sequential prefix and Cloud Tasks degrades on those) is a first line of
+  defence; the guarantee has to be the job's own marker — a `reminders_sent`
+  key, a report that refuses to overwrite its week, a status that is only ever
+  flipped from `pending`.
+- **`teams where archived_at == null` matches almost nothing.** A Firestore
+  `== null` filter matches an explicit null and NOT a missing field, and no
+  team writer sets that field. Project it and filter in memory. The identical
+  clause against `contacts` IS correct — see `apps/web/src/lib/liveContacts.ts`
+  for why the two collections differ.
+
 ### Comments must not assert a COUNT of code sites
 
 A comment saying "the two X", "all three Y", "six copies" or "the only Z" is a

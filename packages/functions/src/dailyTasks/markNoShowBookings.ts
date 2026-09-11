@@ -1,36 +1,45 @@
+// Bookings nobody ever turned up for. One task per tenant rather than one
+// global scan over every studio's past week — see utils/tenantFanOut.ts and
+// docs/scalability-2026-09.md §9.
 import * as admin from 'firebase-admin'
 import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
 import { SESSIONS_COLLECTION, CONTACTS_COLLECTION } from '@linyup/shared'
+import { dispatchTenantJob, type FanOutResult } from '../utils/tenantFanOut'
 
-export async function markNoShowBookings(): Promise<{
+export interface NoShowRunStats {
   sessions: number
   updated: number
   errors: number
-}> {
-  console.log('markNoShowBookings task started') // eslint-disable-line no-console
+}
 
+/** ONE tenant's past week. The worker body and the dispatcher's inline path. */
+export async function markNoShowBookingsForTeam(teamId: string): Promise<NoShowRunStats> {
   const db = admin.firestore()
   const now = new Date()
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600000)
-  const stats = { sessions: 0, updated: 0, errors: 0 }
+  const stats: NoShowRunStats = { sessions: 0, updated: 0, errors: 0 }
 
   const [sessErr, sessSnap] = await to(
     db
       .collection(SESSIONS_COLLECTION)
+      .where('teamId', '==', teamId)
       .where('end', '>=', Timestamp.fromDate(sevenDaysAgo))
       .where('end', '<', Timestamp.fromDate(now))
       .get()
   )
   if (sessErr) {
-    console.error('markNoShowBookings: error fetching sessions:', sessErr) // eslint-disable-line no-console
+    console.error(`markNoShowBookings: error fetching sessions for team ${teamId}:`, sessErr) // eslint-disable-line no-console
     throw sessErr
   }
 
   stats.sessions = sessSnap!.size
-  console.log(`markNoShowBookings: found ${sessSnap!.size} past sessions to check`) // eslint-disable-line no-console
 
   for (const sessionDoc of sessSnap!.docs) {
+    // Nobody booked, so nobody failed to turn up — and no subcollection read.
+    // `bookings_count` is absolute (trackBookings owns it); an ABSENT count is
+    // not the same claim and still reads.
+    if (sessionDoc.data().bookings_count === 0) continue
     const [bookErr, bookSnap] = await to(
       sessionDoc.ref.collection('bookings').where('fromBioLink', '==', true).get()
     )
@@ -93,6 +102,20 @@ export async function markNoShowBookings(): Promise<{
     }
   }
 
-  console.log('markNoShowBookings task completed:', stats) // eslint-disable-line no-console
   return stats
+}
+
+/** THE DISPATCHER — one task per tenant, daily. Idempotent per tenant by its
+ *  own rule: only a `pending` booking is ever flipped, so a redelivered task
+ *  finds nothing left to do. */
+export async function markNoShowBookings(): Promise<FanOutResult> {
+  console.log('markNoShowBookings dispatch started') // eslint-disable-line no-console
+  const result = await dispatchTenantJob({
+    functionName: 'noShowsForTeam',
+    granularity: 'day',
+    perTeam: markNoShowBookingsForTeam,
+    label: 'noShows',
+  })
+  console.log('markNoShowBookings dispatch completed:', result) // eslint-disable-line no-console
+  return result
 }
