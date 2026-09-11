@@ -14,6 +14,11 @@ import {
   holdsOwnPlan,
   holdsPartnerPlan,
   partnerSubscriptionTypeIds,
+  TEAMS_COLLECTION,
+  TEAM_COUNTERS_SUBCOLLECTION,
+  TEAM_CONTACT_COUNTER_DOC,
+  liveContactCountDeltas,
+  type ContactLivenessFields,
 } from '@linyup/shared'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
 
@@ -211,11 +216,51 @@ export const trackSessions = onDocumentWritten('sessions/{sessionId}', async (ev
   )
 })
 
+// ─── the live-contact counter ─────────────────────────────────────────────────
+//
+// `teams/{teamId}/counters/contacts` — see utils/contactCounter.ts in shared for
+// why it is stored, why it is a subcollection and why drift is survivable. This
+// is the DELTA writer; `capturePlatformMetrics` is the reconciler.
+async function applyContactCountDeltas(
+  before: FirebaseFirestore.DocumentData | null,
+  after: FirebaseFirestore.DocumentData | null,
+): Promise<void> {
+  const deltas = liveContactCountDeltas(
+    before as ContactLivenessFields | null,
+    after as ContactLivenessFields | null,
+  )
+  if (deltas.length === 0) return
+  const db = admin.firestore()
+  await Promise.all(
+    deltas.map(({ teamId, delta }) =>
+      to(
+        db
+          .collection(TEAMS_COLLECTION)
+          .doc(teamId)
+          .collection(TEAM_COUNTERS_SUBCOLLECTION)
+          .doc(TEAM_CONTACT_COUNTER_DOC)
+          .set(
+            { live: FieldValue.increment(delta), updated_at: FieldValue.serverTimestamp() },
+            { merge: true },
+          ),
+      ),
+    ),
+  )
+}
+
 // ─── trackContacts ────────────────────────────────────────────────────────────
 
 export const trackContacts = onDocumentWritten('contacts/{contactId}', async (event) => {
   const newData = event.data?.after.exists ? event.data.after.data() : null
   const oldData = event.data?.before.exists ? event.data.before.data() : null
+
+  // THE LIVE-CONTACT COUNTER, before anything else — it is the one effect here
+  // that must survive every early return below. An anonymised contact still
+  // leaves the live set, and a contact created with no name still joins it, so
+  // gating this on the activity-log conditions would drift the counter by
+  // exactly the cases nobody looks at. One rule, in @linyup/shared, so the
+  // nightly reconciliation and the backfill cannot express it differently.
+  await applyContactCountDeltas(oldData ?? null, newData ?? null)
 
   const teamId = (newData?.teamId || newData?.teacher || oldData?.teamId || oldData?.teacher) as
     | string

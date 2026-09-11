@@ -1115,6 +1115,12 @@ tripwire — a direct read of a collection that grows with time must carry a bou
 `docs/scalability-2026-09.md` §17 is the census it guards). Cloud/data ops live under `seed:*` / `reset:*` /
 `migrate:hmd` / `stripe:sync` / `emulators:export:*` — not part of day-to-day startup.
 
+**Deploy preconditions owed by the scalability work** (`docs/scalability-2026-09.md`
+Part 2 §14, Part 3 §19): `pnpm backfill:ledger-ttl` before the TTL index overrides,
+and `pnpm backfill:contact-counts` after the functions deploy — the operator console
+reads a per-team contact counter that only exists once its trigger or the nightly
+reconciliation has written it.
+
 ---
 
 ## UI/UX porting principles

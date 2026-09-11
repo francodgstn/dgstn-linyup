@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getOverviewMetrics } from '@/lib/queries/accounts'
+import { getOverviewMetrics, CONTACT_COUNTER_NOTE } from '@/lib/queries/accounts'
 import { getMetricsHistory, type MetricsPoint } from '@/lib/queries/metrics'
 import { getPlatformMailVolume, MAIL_LEDGER_NOTE } from '@/lib/queries/messaging'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -88,7 +88,18 @@ export default async function OverviewPage() {
         <Kpi label="Total accounts" value={String(m.accounts.total)} sub={`${m.accounts.byPlan.coach} coach · ${m.accounts.byPlan.studio} studio · ${m.accounts.byPlan.organization} org`} />
         <Kpi label="Active" value={String(m.accounts.byStatus.active)} sub={`${m.trials.active} on trial`} />
         <Kpi label="Est. MRR" value={formatChf(m.mrr.estimatedChf)} sub="active subscriptions" />
-        <Kpi label="Total contacts" value={num(m.contacts.totalActive)} sub="across all teams" />
+        {/* A SUM OF STORED COUNTERS, so a team without one is excluded rather
+            than guessed at — and the subtitle says which, instead of letting a
+            smaller platform pass as a fact. */}
+        <Kpi
+          label="Total contacts"
+          value={num(m.contacts.totalActive)}
+          sub={
+            m.contactCountsMissing > 0
+              ? `${m.contactCountsMissing} team(s) not yet counted`
+              : 'across all teams'
+          }
+        />
       </section>
 
       <section className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -102,6 +113,9 @@ export default async function OverviewPage() {
         <Kpi label="Emails (total)" value={numOrDash(mail.lifetime)} sub="as of last night" />
       </section>
       <p className="-mt-4 text-xs text-muted-foreground">{MAIL_LEDGER_NOTE}</p>
+      {m.contactCountsMissing > 0 && (
+        <p className="-mt-4 text-xs text-muted-foreground">{CONTACT_COUNTER_NOTE}</p>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-muted-foreground">

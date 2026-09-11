@@ -91,6 +91,11 @@ export { createDropInCheckout } from './booking/dropIn'
 // surface adds: a booking on a session the STUDIO entered has no public mirror
 // to be found through, because a session is mirrored only while it is on sale.
 export { getMyBookings } from './booking/myBookings'
+// The member's own ATTENDANCE — the same rules split one collection over
+// (a contact may GET her own participant row, never LIST across sessions), and
+// the reason the member app no longer reads one document per session in a
+// window to draw its calendar. See booking/myAttendance.ts.
+export { getMyAttendance } from './booking/myAttendance'
 // Waitlist (class-only) — join/leave the queue for a full class, and the
 // promoter that offers a seat to the front of it. The promoter is a session
 // TRIGGER, not a call site hook: every event that frees a seat converges on a
