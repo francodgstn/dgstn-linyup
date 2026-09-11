@@ -10,11 +10,27 @@ name: Verify
 on:
   pull_request:
     branches: [main]
+  # ALSO ON `main` ITSELF, because two green PRs can merge into a red branch.
+  #
+  # A source-reading test is pinned to a spelling in another package, so a PR
+  # that renames the spelling and a PR that asserts it are each green against
+  # their own base and broken together. That is exactly what happened on
+  # 2026-09-11: #292 turned `collectionGroup(db, 'bookings')` into a path
+  # constant, `checkoutClaim.test.ts` kept grepping for the literal, and `main`
+  # went red with nothing scheduled to notice — the next PR to open inherited
+  # the failure and looked like the culprit.
+  #
+  # Runs the same secret-free checks, so this costs minutes and nothing else.
+  push:
+    branches: [main]
   workflow_call: {}
 
-# A newer push to the same PR supersedes the older run. Not applied to
-# workflow_call runs (a deploy's gate must never be cancelled by another deploy
-# — deploy.yml serialises those itself).
+# A newer push to the same PR supersedes the older run. Cancellation is scoped to
+# `pull_request` alone: a deploy's gate must never be cancelled by another deploy
+# (deploy.yml serialises those itself), and a `main` run must not be cancelled by
+# the next merge — the run that would be discarded is the one naming which commit
+# turned the branch red. The group keys on `github.ref`, so PR runs
+# (`refs/pull/N/merge`) and `main` runs (`refs/heads/main`) never share a slot.
 concurrency:
   group: verify-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

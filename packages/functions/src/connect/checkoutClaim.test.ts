@@ -167,7 +167,15 @@ describe('A CONTACT’S BOOKINGS ARE FOUND BY THE FIELD BOOKINGS CARRY', () => {
     // Scoped to the bookings query itself. The `participants` collection group
     // one file over DOES carry `contactId` (analytics/index.ts writes it), so a
     // blanket ban on that string would fail on correct code.
-    const bookingsQuery = /collectionGroup\(db, 'bookings'\)[\s\S]{0,300}/.exec(page)?.[0]
+    //
+    // Anchored on the CONSTANT, not the literal it replaced (#292): the literal
+    // is what the path-segment lint tripwires now refuse, so spelling it here
+    // would pin this test to code the repo has banned. That rename is what broke
+    // this assertion — it kept looking for `'bookings'` after the only caller
+    // stopped saying it, and reported the query as missing rather than wrong.
+    const bookingsQuery = /collectionGroup\(db, SESSION_BOOKINGS_SUBCOLLECTION\)[\s\S]{0,300}/.exec(
+      page
+    )?.[0]
     assert.ok(bookingsQuery, 'the bookings collection-group query is still there')
     assert.match(bookingsQuery!, /where\('contact', '==', contactId\)/)
     assert.doesNotMatch(bookingsQuery!, /where\('contactId'/)
