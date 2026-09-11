@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank, rankLevelKey, orderedLevels } from '@linyup/shared'
 
 // ─── palettes ────────────────────────────────────────────────────────────────
 
@@ -338,14 +338,14 @@ export function ContactsOverviewCard({
         unranked++
         continue
       }
-      counts[`${result.system.id}:${result.level.value}`] =
-        (counts[`${result.system.id}:${result.level.value}`] ?? 0) + 1
+      counts[`${result.system.id}:${rankLevelKey(result.level)}`] =
+        (counts[`${result.system.id}:${rankLevelKey(result.level)}`] ?? 0) + 1
     }
-    const data = (primarySystem?.levels ?? [])
+    const data = orderedLevels(primarySystem ?? { levels: [] })
       .map((l) => ({
         name: l.label,
         color: l.color ?? '#9CA3AF',
-        value: counts[`${primarySystem.id}:${l.value}`] ?? 0,
+        value: counts[`${primarySystem.id}:${rankLevelKey(l)}`] ?? 0,
       }))
       .filter((d) => d.value > 0)
     if (unranked > 0) data.push({ name: t('rankUnranked'), color: '#E5E7EB', value: unranked })

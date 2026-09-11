@@ -66,6 +66,7 @@ admin.initializeApp({ credential: applicationDefault(), projectId: values.projec
 const db = admin.firestore()
 
 interface RankLevelLike {
+  id?: string
   value: number
   label: string
 }
@@ -99,8 +100,10 @@ async function loadScales(orgId?: string): Promise<Map<string, RankingSystemLike
   return scales
 }
 
-function labelFor(scale: RankingSystemLike | undefined, value: number): string | null {
-  const exact = scale?.levels?.find((l) => l.value === value)
+/** A ref is the level's id, or a legacy number on a record the data flip has
+ *  not reached; both resolve here. */
+function labelFor(scale: RankingSystemLike | undefined, ref: string | number): string | null {
+  const exact = scale?.levels?.find((l) => (typeof ref === 'string' ? l.id === ref : l.value === ref))
   return exact?.label ?? null
 }
 
@@ -122,7 +125,7 @@ async function main() {
 
   for (const doc of contacts.docs) {
     const data = doc.data()
-    const ranks = data.ranks as Record<string, number> | undefined
+    const ranks = data.ranks as Record<string, string | number> | undefined
     if (!ranks || Object.keys(ranks).length === 0) {
       skippedNoRanks += 1
       continue
@@ -136,7 +139,7 @@ async function main() {
 
     const legacy: Record<string, unknown> = {}
     for (const [systemId, value] of Object.entries(ranks)) {
-      if (typeof value !== 'number') continue
+      if (typeof value !== 'number' && typeof value !== 'string') continue
       const scale = scales.get(systemId)
       const label = labelFor(scale, value)
       if (!label) {

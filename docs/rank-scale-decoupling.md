@@ -1,8 +1,10 @@
 # Decoupling the rank scale — a plan
 
-**Status: Phase 1 shipped 2026-09-11 (ids introduced, `value` still
-authoritative); Phases 2–5 in progress; Phase 6 blocked on the reassignment
-decision.** Decided the same day: ids are opaque strings, not a reinterpreted
+**Status: Phase 1 shipped 2026-09-11 (#322). Phases 2+3 in review (every
+reader resolves a level by `RankRef` — its id, or a legacy number — and order
+is array position; `value` still present, no longer consulted for order;
+`backfill:rank-refs` is the data flip and is run by hand). Phases 4–5 next;
+Phase 6 blocked on the reassignment decision.** Decided the same day: ids are opaque strings, not a reinterpreted
 `value`, and installed mobile apps will show no belt between the Phase 2 data
 flip and their update — so that flip is a script run on Franco's timing, never
 a merge side effect. Written 2026-09-11 after the HMD belt

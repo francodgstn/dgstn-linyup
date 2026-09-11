@@ -20,17 +20,19 @@ import {
 
 const MONTH = 'months' as const
 
-/** A scale that is deliberately NOT contiguous, so anything assuming
- *  `next = current + 1` fails here rather than in front of a customer. */
+/** A scale whose values are deliberately NOT contiguous and NOT in array
+ *  order, so anything assuming `next = current + 1` — or sorting by value —
+ *  fails here rather than in front of a customer. Levels are named by id;
+ *  the values are legacy and never consulted for order. */
 const SYSTEM: RankingSystem = {
   id: 'test',
   name: 'Test scale',
   is_primary: true,
   levels: [
-    { value: 0, label: 'None' },
-    { value: 1, label: 'One' },
-    { value: 2, label: 'Two' },
-    { value: 5, label: 'Five' },
+    { id: 'none', value: 0, label: 'None' },
+    { id: 'one', value: 1, label: 'One' },
+    { id: 'two', value: 2, label: 'Two' },
+    { id: 'five', value: 5, label: 'Five' },
   ],
 }
 
@@ -43,7 +45,7 @@ function monthsAgo(n: number): number {
 function facts(over: Partial<RankFactsSnapshot> = {}): RankFactsSnapshot {
   return {
     nowMs: NOW,
-    ranks: { test: 1 },
+    ranks: { test: 'one' },
     participation: [],
     examsAtMs: [],
     ...over,
@@ -88,7 +90,7 @@ describe('the evaluator distinguishes no-rule from not-eligible', () => {
   it('a level the organisation set no rule for is NOT_CONFIGURED, never a refusal', () => {
     const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts() })
     assert.equal(r.eligibility, 'not_configured')
-    assert.equal(r.targetLevel, 2, 'the next level is read from the scale')
+    assert.equal(r.targetLevel, 'two', 'the next level is read from the scale, by identity')
     assert.deepEqual(r.missing, [])
   })
 
@@ -98,27 +100,27 @@ describe('the evaluator distinguishes no-rule from not-eligible', () => {
   })
 
   it('the top of the scale is AT_TOP', () => {
-    const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts({ ranks: { test: 5 } }) })
+    const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts({ ranks: { test: 'five' } }) })
     assert.equal(r.eligibility, 'at_top')
     assert.equal(r.targetLevel, null)
   })
 
   it('the next level is the next VALUE in the scale, not current + 1', () => {
-    const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts({ ranks: { test: 2 } }) })
-    assert.equal(r.targetLevel, 5, 'a gap in the numbering is not a level nobody defined')
+    const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts({ ranks: { test: 'two' } }) })
+    assert.equal(r.targetLevel, 'five', 'a gap in the numbering is not a level nobody defined')
   })
 
   it('an unranked contact is measured against the FIRST level', () => {
     const r = rankEligibility({ progression: empty, system: SYSTEM, facts: facts({ ranks: {} }) })
     assert.equal(r.currentLevel, null)
-    assert.equal(r.targetLevel, 0)
+    assert.equal(r.targetLevel, 'none')
   })
 })
 
 describe('an unmeasurable requirement is UNKNOWN, never a pass and never a fail', () => {
   const timed: RankProgression = {
     id: 'test',
-    rules: [{ from: 2, to: 2, requirements: [{ id: 't', kind: 'time_since_previous_exam', amount: 6, unit: MONTH }] }],
+    rules: [{ from: 'two', to: 'two', requirements: [{ id: 't', kind: 'time_since_previous_exam', amount: 6, unit: MONTH }] }],
   }
 
   it('no exam history means we cannot measure time since the previous exam', () => {
@@ -131,7 +133,7 @@ describe('an unmeasurable requirement is UNKNOWN, never a pass and never a fail'
   it('an unregistered plugin requirement is unknown, not silently satisfied', () => {
     const p: RankProgression = {
       id: 'test',
-      rules: [{ from: 2, to: 2, requirements: [{ id: 'x', kind: 'plugin:nobody:thing' }] }],
+      rules: [{ from: 'two', to: 'two', requirements: [{ id: 'x', kind: 'plugin:nobody:thing' }] }],
     }
     const r = rankEligibility({ progression: p, system: SYSTEM, facts: facts() })
     assert.equal(r.eligibility, 'unknown')
@@ -143,8 +145,8 @@ describe('an unmeasurable requirement is UNKNOWN, never a pass and never a fail'
       id: 'test',
       rules: [
         {
-          from: 2,
-          to: 2,
+          from: 'two',
+          to: 'two',
           requirements: [
             { id: 'note', kind: 'sessions_attended', min: 100, since: 'always', advisory: true },
           ],
@@ -161,7 +163,7 @@ describe('an unmeasurable requirement is UNKNOWN, never a pass and never a fail'
 describe('time requirements', () => {
   const timed: RankProgression = {
     id: 'test',
-    rules: [{ from: 2, to: 2, requirements: [{ id: 't', kind: 'time_since_previous_exam', amount: 6, unit: MONTH }] }],
+    rules: [{ from: 'two', to: 'two', requirements: [{ id: 't', kind: 'time_since_previous_exam', amount: 6, unit: MONTH }] }],
   }
 
   it('short of the deadline reports how many months remain, and WHEN', () => {
@@ -195,8 +197,8 @@ describe('participation requirements', () => {
     id: 'test',
     rules: [
       {
-        from: 2,
-        to: 2,
+        from: 'two',
+        to: 'two',
         requirements: [
           {
             id: 'camp',
@@ -242,8 +244,8 @@ describe('participation requirements', () => {
       id: 'test',
       rules: [
         {
-          from: 2,
-          to: 2,
+          from: 'two',
+          to: 'two',
           requirements: [
             {
               id: 'camp',
@@ -268,8 +270,8 @@ describe('participation requirements', () => {
       id: 'test',
       rules: [
         {
-          from: 2,
-          to: 2,
+          from: 'two',
+          to: 'two',
           requirements: [
             {
               id: 'tourn',
@@ -316,8 +318,8 @@ describe('qualifying years — a year that does not count stretches the clock', 
     id: 'test',
     rules: [
       {
-        from: 2,
-        to: 2,
+        from: 'two',
+        to: 'two',
         requirements: [{ id: 'years', kind: 'qualifying_years', minYears: 2, perYear: ONE_ONE_ONE }],
       },
     ],
@@ -387,8 +389,8 @@ describe('promotion readiness is a SECOND gate, asked later', () => {
     id: 'test',
     rules: [
       {
-        from: 2,
-        to: 2,
+        from: 'two',
+        to: 'two',
         requirements: [],
         promotionDelay: {
           amount: 12,
@@ -407,7 +409,7 @@ describe('promotion readiness is a SECOND gate, asked later', () => {
   }
 
   it('a band with no delay is ready at the exam', () => {
-    const none: RankProgression = { id: 'test', rules: [{ from: 2, to: 2, requirements: [] }] }
+    const none: RankProgression = { id: 'test', rules: [{ from: 'two', to: 'two', requirements: [] }] }
     const r = promotionReadiness({
       progression: none,
       system: SYSTEM,

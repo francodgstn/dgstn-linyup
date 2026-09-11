@@ -1,5 +1,7 @@
 'use client'
 
+import { findRankLevel, rankLevelKey } from '@linyup/shared'
+
 import { useState } from 'react'
 import type { Route } from 'next'
 import { useTranslations } from 'next-intl'
@@ -7,7 +9,7 @@ import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useRankingSystems } from '@/hooks/useRankingSystems'
-import type { RankingSystem } from '@linyup/shared'
+import type { RankingSystem, RankRef } from '@linyup/shared'
 
 export function ExamCheckinForm({
   contact,
@@ -33,11 +35,13 @@ export function ExamCheckinForm({
   // add a system on.
   const { managedByOrg, orgId } = useRankingSystems()
 
-  const existingDisciplines = (existing?.disciplines as Record<string, number>) ?? {}
+  // A RankRef per system: the level's id (what this form writes), or a legacy
+  // number on a check-in recorded before ids existed.
+  const existingDisciplines = (existing?.disciplines as Record<string, RankRef>) ?? {}
 
-  const [disciplines, setDisciplines] = useState<Record<string, number>>(existingDisciplines)
+  const [disciplines, setDisciplines] = useState<Record<string, RankRef>>(existingDisciplines)
 
-  function setLevel(systemId: string, level: number | null) {
+  function setLevel(systemId: string, level: RankRef | null) {
     setDisciplines((prev) => {
       const next = { ...prev }
       if (level === null) delete next[systemId]
@@ -99,10 +103,10 @@ export function ExamCheckinForm({
               </button>
               {levels.map((lvl) => (
                 <button
-                  key={lvl.value}
-                  onClick={() => setLevel(sys.id, lvl.value)}
+                  key={lvl.id ?? lvl.value}
+                  onClick={() => setLevel(sys.id, rankLevelKey(lvl))}
                   className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1.5 ${
-                    disciplines[sys.id] === lvl.value
+                    findRankLevel(levels, disciplines[sys.id]) === lvl
                       ? 'border-primary bg-primary/10 text-primary font-medium'
                       : 'hover:bg-muted border-border'
                   }`}

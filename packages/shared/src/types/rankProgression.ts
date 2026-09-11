@@ -1,4 +1,6 @@
 import type { Timestamp } from './common'
+import type { RankRef } from './team'
+import { rankRefWithin } from '../utils/rankLevels'
 import type { RankLevel, RankingSystem } from './team'
 
 /**
@@ -125,10 +127,14 @@ export type RankRequirement =
 // ─── The rule ─────────────────────────────────────────────────────────────────
 
 export interface RankLevelRule {
-  /** The TARGET level band this governs, inclusive. A band lets "every kyu needs
-   *  three months" be one entry rather than six. */
-  from: number
-  to: number
+  /**
+   * The TARGET level band this governs, inclusive, by LADDER POSITION of the two
+   * named levels. A band lets "every kyu needs three months" be one entry rather
+   * than six. Each end is a `RankRef` — the level's id, or a legacy value on a
+   * document seeded before ids existed.
+   */
+  from: RankRef
+  to: RankRef
   requirements: RankRequirement[]
   /**
    * How long AFTER the exam the level is actually conferred, and the
@@ -196,8 +202,8 @@ export interface RankFactsSnapshot {
    *  same discipline `waiverAcceptanceState` follows, and what makes the
    *  fixtures deterministic. */
   nowMs: number
-  /** Current level per system id (Contact.ranks). */
-  ranks: Record<string, number>
+  /** Current level per system id (Contact.ranks) — a RankRef each. */
+  ranks: Record<string, RankRef>
   /**
    * Every COMPLETED check-in, flattened to what a rule can ask about. Sorted
    * ascending by `atMs`.
@@ -287,8 +293,8 @@ export type RankEligibility =
 export interface RankEligibilityResult {
   eligibility: RankEligibility
   systemId: string
-  currentLevel: number | null
-  targetLevel: number | null
+  currentLevel: RankRef | null
+  targetLevel: RankRef | null
   /** EVERY requirement in rule order, met and unmet alike — the UI shows a
    *  checklist, not a verdict. */
   requirements: RequirementResult[]
@@ -304,36 +310,24 @@ export interface RankEligibilityResult {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** The band governing `targetLevel`, or null when the organisation set none. */
+/**
+ * The band governing `targetLevel`, or null when the organisation set none.
+ *
+ * Bands are matched by LADDER POSITION: the target sits between `from` and `to`
+ * in `system.levels`. A band whose bound names a level the ladder no longer has
+ * matches nothing — a rule pointing at a deleted grade governs no grade.
+ */
 export function ruleForLevel(
   progression: RankProgression | null | undefined,
-  targetLevel: number,
+  targetLevel: RankRef,
+  system: Pick<RankingSystem, 'levels'>,
 ): RankLevelRule | null {
   if (!progression) return null
-  return progression.rules.find((r) => targetLevel >= r.from && targetLevel <= r.to) ?? null
+  const levels = system.levels ?? []
+  return progression.rules.find((r) => rankRefWithin(levels, targetLevel, r.from, r.to)) ?? null
 }
 
-/** Levels ascending by `value`. The scale's own order — see the note on
- *  `nextLevel` about why this is read rather than assumed from array order. */
-export function orderedLevels(system: RankingSystem): RankLevel[] {
-  return [...(system.levels ?? [])].sort((a, b) => a.value - b.value)
-}
-
-/**
- * The level immediately above `current`, or null at the top.
- *
- * Reads the SCALE rather than adding one: a scale's values need not be
- * contiguous, and assuming they are is how a gap in the numbering silently
- * becomes a promotion nobody offered.
- */
-export function nextLevel(system: RankingSystem, current: number | null): RankLevel | null {
-  const levels = orderedLevels(system)
-  if (current == null) return levels[0] ?? null
-  return levels.find((l) => l.value > current) ?? null
-}
-
-/** The label of `value` in this system, or null when the scale has no such
- *  level — which happens to a record written before the scale changed. */
-export function levelLabel(system: RankingSystem, value: number): string | null {
-  return orderedLevels(system).find((l) => l.value === value)?.label ?? null
-}
+// `orderedLevels`, `nextLevel` and `levelLabel` moved to utils/rankLevels.ts,
+// where the rule about order (array position, not `value`) is written down
+// once. They reach the package surface through that module's export; a second
+// re-export here would make the two `export *` in index.ts ambiguous.

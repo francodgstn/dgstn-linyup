@@ -1,5 +1,5 @@
 import type { MigrationConfig } from '../config'
-import { targetDb, RANKING_HMD, RANKING_KD } from '../config'
+import { targetDb, RANKING_HMD, RANKING_KD, rankingSystemLevelId } from '../config'
 import { BatchWriter } from '../batch-writer'
 
 /**
@@ -57,8 +57,8 @@ const LEGACY_PAYLOAD_FIELDS = ['exams', 'is_hmd_exam', 'is_kd_exam', 'is_graded'
  * A level of 0 IS a result: every ranking preset's first level is `value: 0`
  * (HMD "No belt"), so "not examined" is the ABSENCE of the discipline key.
  */
-function examCheckinIsCompleted(disciplines: Record<string, number>): boolean {
-  return Object.values(disciplines).some((v) => typeof v === 'number' && Number.isFinite(v))
+function examCheckinIsCompleted(disciplines: Record<string, string | number>): boolean {
+  return Object.values(disciplines).some((v) => typeof v === 'string' || (typeof v === 'number' && Number.isFinite(v)))
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -110,7 +110,7 @@ export async function pass09ExamCheckins(cfg: MigrationConfig): Promise<void> {
         continue
       }
 
-      const disciplines: Record<string, number> = {}
+      const disciplines: Record<string, string | number> = {}
       for (const { legacyKey, systemId } of LEGACY_EXAM_DISCIPLINES) {
         const raw = exams[legacyKey]
         if (raw == null) continue
@@ -122,7 +122,9 @@ export async function pass09ExamCheckins(cfg: MigrationConfig): Promise<void> {
           )
           continue
         }
-        disciplines[systemId] = level
+        // The LEVEL'S ID, as every rank record is written since the scale
+        // decoupling; the source's number stays only when the scale lacks it.
+        disciplines[systemId] = rankingSystemLevelId(systemId, level) ?? level
       }
 
       // A discipline slug this migration has no ranking system for would be

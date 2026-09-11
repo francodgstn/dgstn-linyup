@@ -26,8 +26,9 @@ import type {
   RequirementResult,
   TimeUnit,
 } from '../types/rankProgression'
-import { DEFAULT_PARTICIPATION_ROLE, nextLevel, orderedLevels, ruleForLevel } from '../types/rankProgression'
-import type { RankingSystem } from '../types/team'
+import { DEFAULT_PARTICIPATION_ROLE, ruleForLevel } from '../types/rankProgression'
+import type { RankRef, RankingSystem } from '../types/team'
+import { findRankLevel, nextLevel, rankLevelKey } from './rankLevels'
 import { pluginIdOfNamespacedId } from '../types/plugin'
 
 // ─── Plugin requirement registry ──────────────────────────────────────────────
@@ -40,7 +41,7 @@ export interface PluginRequirementInput {
    *  `unknown`, never a guess. */
   pluginFacts: unknown
   systemId: string
-  targetLevel: number
+  targetLevel: RankRef
 }
 
 export type PluginRequirementResolver = (input: PluginRequirementInput) => {
@@ -149,7 +150,7 @@ function evaluateRequirement(
   req: RankRequirement,
   facts: RankFactsSnapshot,
   systemId: string,
-  targetLevel: number,
+  targetLevel: RankRef,
 ): { result: RequirementResult; satisfiedAtMs?: number | null } {
   const base = { id: req.id, kind: req.kind, advisory: req.advisory === true }
 
@@ -343,23 +344,27 @@ export function rankEligibility(input: {
   facts: RankFactsSnapshot
   /** Defaults to the level above the current one. Explicit for "could they skip
    *  to X?" */
-  targetLevel?: number
+  targetLevel?: RankRef
 }): RankEligibilityResult {
   const { progression, system, facts } = input
   const systemId = system.id
   const currentLevel = facts.ranks[systemId] ?? null
 
-  const target =
-    input.targetLevel ?? nextLevel(system, currentLevel)?.value ?? null
+  // The next rung is READ off the ladder and named by its identity — never
+  // `current + 1`, which is how a gap in a numbering became a promotion nobody
+  // offered, and never a number at all now that levels have ids.
+  const above = input.targetLevel === undefined ? nextLevel(system, currentLevel) : null
+  const target: RankRef | null =
+    input.targetLevel !== undefined ? input.targetLevel : above ? rankLevelKey(above) : null
 
   const empty = { systemId, currentLevel, requirements: [], missing: [], eligibleFromMs: null }
 
   if (target == null) return { ...empty, eligibility: 'at_top', targetLevel: null }
-  if (!orderedLevels(system).some((l) => l.value === target)) {
+  if (!findRankLevel(system.levels, target)) {
     return { ...empty, eligibility: 'not_configured', targetLevel: target }
   }
 
-  const rule = ruleForLevel(progression, target)
+  const rule = ruleForLevel(progression, target, system)
   if (!rule) return { ...empty, eligibility: 'not_configured', targetLevel: target }
 
   const evaluated = rule.requirements.map((r) => evaluateRequirement(r, facts, systemId, target))
@@ -403,7 +408,7 @@ export function promotionReadiness(input: {
   system: RankingSystem
   facts: RankFactsSnapshot
   /** The level that was examined, and the instant of that exam. */
-  examinedLevel: number
+  examinedLevel: RankRef
   examAtMs: number
 }): RankEligibilityResult {
   const { progression, system, facts, examinedLevel, examAtMs } = input
@@ -414,7 +419,7 @@ export function promotionReadiness(input: {
     targetLevel: examinedLevel,
   }
 
-  const rule = ruleForLevel(progression, examinedLevel)
+  const rule = ruleForLevel(progression, examinedLevel, system)
   const delay = rule?.promotionDelay
   if (!delay) {
     return { ...base, eligibility: 'eligible', requirements: [], missing: [], eligibleFromMs: null }

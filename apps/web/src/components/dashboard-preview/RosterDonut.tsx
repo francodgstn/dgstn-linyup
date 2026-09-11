@@ -77,7 +77,7 @@ import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslations } from 'next-intl'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank, rankLevelKey, orderedLevels } from '@linyup/shared'
 import {
   Select,
   SelectContent,
@@ -287,14 +287,14 @@ export function RosterDonut({
           unranked++
           continue
         }
-        const k = `${result.system.id}:${result.level.value}`
+        const k = `${result.system.id}:${rankLevelKey(result.level)}`
         counts[k] = (counts[k] ?? 0) + 1
       }
-      data = (primary?.levels ?? [])
+      data = orderedLevels(primary ?? { levels: [] })
         .map((l) => ({
           name: l.label,
           color: l.color ?? '#9CA3AF',
-          value: counts[`${primary.id}:${l.value}`] ?? 0,
+          value: counts[`${primary.id}:${rankLevelKey(l)}`] ?? 0,
         }))
         .filter((d) => d.value > 0)
       if (unranked > 0) data.push({ name: tc('rankUnranked'), color: '#E5E7EB', value: unranked })

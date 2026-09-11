@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { EventCategory, Contact } from '@linyup/shared'
+import type { EventCategory, Contact, RankingSystem } from '@linyup/shared'
+import { rankLevelIndex } from '@linyup/shared'
+import { useRankingSystems } from '@/hooks/useRankingSystems'
 import { useFightingCupCategories } from './useCategories'
 
 function contactAge(contact: Contact): number | null {
@@ -20,7 +22,12 @@ function contactAge(contact: Contact): number | null {
   return age
 }
 
-function filterCategories(categories: EventCategory[], contact: Contact, weight: number | null): EventCategory[] {
+function filterCategories(
+  categories: EventCategory[],
+  contact: Contact,
+  weight: number | null,
+  rankingSystems: RankingSystem[],
+): EventCategory[] {
   const age = contactAge(contact)
   const gender = contact.gender
 
@@ -41,12 +48,26 @@ function filterCategories(categories: EventCategory[], contact: Contact, weight:
       if (cat.min_weight != null && weight < cat.min_weight) return false
       if (cat.max_weight != null && weight > cat.max_weight) return false
     }
-    // Rank filtering: if category defines ranking_system_id + range, check contact rank
+    // Rank filtering: a category's `min_rank`/`max_rank` are LEGACY numbers
+    // (the category schema predates level ids) and the contact's rank is a
+    // RankRef; both resolve to a position on the ladder and are compared there.
+    // A ladder we cannot find leaves the rank unchecked, exactly as an absent
+    // rank does today.
     if (cat.ranking_system_id && contact.ranks) {
-      const rank = (contact.ranks as Record<string, number>)[cat.ranking_system_id]
-      if (rank !== undefined) {
-        if (cat.min_rank != null && rank < cat.min_rank) return false
-        if (cat.max_rank != null && rank > cat.max_rank) return false
+      const rank = contact.ranks[cat.ranking_system_id]
+      const ladder = rankingSystems.find((s) => s.id === cat.ranking_system_id)?.levels
+      if (rank !== undefined && ladder) {
+        const at = rankLevelIndex(ladder, rank)
+        if (at >= 0) {
+          if (cat.min_rank != null) {
+            const lo = rankLevelIndex(ladder, cat.min_rank)
+            if (lo >= 0 && at < lo) return false
+          }
+          if (cat.max_rank != null) {
+            const hi = rankLevelIndex(ladder, cat.max_rank)
+            if (hi >= 0 && at > hi) return false
+          }
+        }
       }
     }
     return true
@@ -69,6 +90,7 @@ export function CheckinForm({
   busy?: boolean
 }) {
   const { data: allCategories = [], isLoading } = useFightingCupCategories(eventId)
+  const { rankingSystems } = useRankingSystems()
   const [weight, setWeight] = useState<string>(
     String((existing?.weight as number | undefined) ?? contact.weight ?? ''),
   )
@@ -79,8 +101,8 @@ export function CheckinForm({
   const weightNum = weight ? parseFloat(weight) : null
 
   const eligibleCategories = useMemo(
-    () => filterCategories(allCategories, contact, weightNum),
-    [allCategories, contact, weightNum],
+    () => filterCategories(allCategories, contact, weightNum, rankingSystems),
+    [allCategories, contact, weightNum, rankingSystems],
   )
 
   // Fields needed to place a competitor accurately. Surfaced as a warning so the

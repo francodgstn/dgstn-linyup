@@ -2208,7 +2208,11 @@ async function seedDemoTeam(profile: SectorProfile) {
               subscription_type_updated_at: ts(daysFromNow(-30)),
             }
           : {}),
-        ...(rank != null && rankSystemId ? { ranks: { [rankSystemId]: rank } } : {}),
+        // The LEVEL'S ID (docs/rank-scale-decoupling.md): `rank` is an index into
+        // the ladder, and the ladder was written with these same ids.
+        ...(rank != null && rankSystemId && rankingSystem
+          ? { ranks: { [rankSystemId]: withRankLevelIds(rankingSystem.levels)[rank]?.id ?? rank } }
+          : {}),
         tags,
       })
 

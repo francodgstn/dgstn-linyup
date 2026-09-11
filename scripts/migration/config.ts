@@ -186,6 +186,17 @@ export const HMD_ORG_RANKING_SYSTEMS = [
  */
 const levelValueCache = new Map<string, Set<number>>()
 
+/**
+ * The stable id of the level `value` names on `systemId`, or null when the
+ * scale has no such level (reported by the caller) or this migration does not
+ * create that system. Records are written with the ID since the scale
+ * decoupling (docs/rank-scale-decoupling.md); the value is the source's word.
+ */
+export function rankingSystemLevelId(systemId: string, value: number): string | null {
+  const system = HMD_ORG_RANKING_SYSTEMS.find((s) => s.id === systemId)
+  return system?.levels.find((l) => l.value === value)?.id ?? null
+}
+
 export function rankingSystemLevelValues(systemId: string): Set<number> | null {
   const cached = levelValueCache.get(systemId)
   if (cached) return cached

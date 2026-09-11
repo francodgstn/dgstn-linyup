@@ -490,8 +490,10 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
   }
 
   // Rank changes — one log entry per system that changed
-  const oldRanks = (oldData.ranks ?? {}) as Record<string, number>
-  const newRanks = (newData.ranks ?? {}) as Record<string, number>
+  // A rank is a RankRef (level id, or a legacy number) — the diff is by
+  // identity either way, and the log records what was stored.
+  const oldRanks = (oldData.ranks ?? {}) as Record<string, string | number>
+  const newRanks = (newData.ranks ?? {}) as Record<string, string | number>
   const allSystems = new Set([...Object.keys(oldRanks), ...Object.keys(newRanks)])
   for (const systemId of allSystems) {
     const before = oldRanks[systemId] ?? null

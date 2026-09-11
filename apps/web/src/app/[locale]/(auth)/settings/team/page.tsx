@@ -68,6 +68,8 @@ import {
   DEFAULT_ENGAGEMENT_THRESHOLDS,
   TEAM_INTEGRATIONS_SUBCOLLECTION,
   newRankLevelId,
+  rankLevelKey,
+  sameRankRef,
 } from '@linyup/shared'
 import type {
   Team,
@@ -1193,16 +1195,17 @@ function RankSystemDialog({
   // renders as the nearest level below it (see `primaryRank` in @linyup/shared). So ask — but
   // only where somebody can actually be holding it.
   const requestRemoveLevel = (idx: number) => {
-    const value = form.levels[idx]?.value
-    const wasSaved = isEdit && initial?.levels.some((l) => l.value === value)
+    const level = form.levels[idx]
+    const key = level ? rankLevelKey(level) : undefined
+    const wasSaved = isEdit && initial?.levels.some((l) => sameRankRef(rankLevelKey(l), key))
     // A level added in this dialog has never been written, so no contact can
     // hold it. Confirming that would be pure noise plus a wasted round trip.
-    if (value === undefined || !wasSaved) {
+    if (key === undefined || !wasSaved) {
       removeLevel(idx)
       return
     }
     setPendingRemove(idx)
-    levelHolders.start(holderTeamIds, form.id, [value])
+    levelHolders.start(holderTeamIds, form.id, [key, level.value].filter((r, j, a) => a.indexOf(r) === j))
   }
 
   const closeRemoveConfirm = () => {

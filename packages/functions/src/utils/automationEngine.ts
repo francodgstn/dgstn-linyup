@@ -25,7 +25,7 @@ import {
 } from '@linyup/shared'
 import { loadConsentLedgers } from '../waivers/consentLedger'
 import { resolveRankingSystems } from './ranking'
-import { isKnownRankingSystem, pluginIdOfNamespacedId } from '@linyup/shared'
+import { findRankLevel, isKnownRankingSystem, pluginIdOfNamespacedId, rankLevelKey } from '@linyup/shared'
 import { pluginIsActive } from './plugins'
 
 // ---------------------------------------------------------------------------
@@ -221,7 +221,7 @@ export interface ContactData {
   // ContactFilterSubject — a dynamic group's rule may filter on any of these.
   group_ids?: string[]
   source?: string
-  ranks?: Record<string, number>
+  ranks?: Record<string, string | number>
   custom_fields?: Record<string, string | number | boolean>
   alerts_count?: number
   // Read by the shared `matchesFilter` for the `hasNotes` dimension. Absent
@@ -961,9 +961,9 @@ async function executeActionsForContact(
         // alone, and an org-managed tenant keeps its systems on the ORG, so the
         // list was empty and every rank automation was silently dropped below.
         const rankSystemId = field.startsWith('ranks.') ? field.slice('ranks.'.length) : null
+        const rankingSystems = rankSystemId != null ? await resolveRankingSystems(teamData) : []
         const isKnownRank =
-          rankSystemId != null &&
-          isKnownRankingSystem(await resolveRankingSystems(teamData), rankSystemId)
+          rankSystemId != null && isKnownRankingSystem(rankingSystems, rankSystemId)
         const allowed =
           customDef != null ||
           isKnownRank ||
@@ -974,11 +974,23 @@ async function executeActionsForContact(
           )
         } else {
           // The builder stores values as strings — coerce per field type
-          // (CustomFieldType: text | number | date | select | checkbox; ranks: number).
+          // (CustomFieldType: text | number | date | select | checkbox).
           let value: string | number | boolean | null = action.value
           if (field === 'lead_acknowledged' || customDef?.type === 'checkbox') {
             value = value === true || value === 'true'
-          } else if (customDef?.type === 'number' || isKnownRank) {
+          } else if (isKnownRank) {
+            // A rank is written as the LEVEL'S ID. The builder offers ids, so
+            // the value normally is one; a rule saved before ids existed holds
+            // the old number, which is upgraded here rather than stored — the
+            // one place a legacy number is still accepted on the way in. A
+            // value naming no level of the ladder is dropped, never written.
+            const ladder = rankingSystems.find((r) => r.id === rankSystemId)?.levels ?? []
+            const raw = typeof value === 'string' && value !== '' && Number.isFinite(Number(value)) && !findRankLevel(ladder, value)
+              ? Number(value)
+              : value
+            const level = typeof raw === 'string' || typeof raw === 'number' ? findRankLevel(ladder, raw) : undefined
+            value = level ? rankLevelKey(level) : null
+          } else if (customDef?.type === 'number') {
             const n = Number(value)
             value = Number.isFinite(n) ? n : null
           }
