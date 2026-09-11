@@ -5,7 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrg } from '@/contexts/OrgContext'
-import { resolveAffiliationTerm } from '@linyup/shared'
+import {  resolveAffiliationTerm, ORGANIZATIONS_COLLECTION } from '@linyup/shared'
 import { orgIdFromPath } from '@/contexts/ScopeContext'
 import { usePathname } from '@/i18n/navigation'
 import { useLocale } from 'next-intl'
@@ -51,7 +51,7 @@ export function useAffiliationTerm(): string {
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       if (!fallbackOrgId) return 'Affiliation'
-      const snap = await getDoc(doc(db, 'organizations', fallbackOrgId))
+      const snap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, fallbackOrgId))
       if (!snap.exists()) return 'Affiliation'
       const data = snap.data() as { affiliation_term?: Partial<Record<string, string>> }
       return resolveAffiliationTerm(data.affiliation_term, locale)

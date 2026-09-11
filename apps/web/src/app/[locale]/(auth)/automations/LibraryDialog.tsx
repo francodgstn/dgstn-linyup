@@ -17,7 +17,7 @@ import {
   Check, Plus, Lock,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { TEAMS_COLLECTION, PLAN_ORDER, type SaasPlan } from '@linyup/shared'
+import {  TEAMS_COLLECTION, PLAN_ORDER, type SaasPlan, AUTOMATION_RULES_SUBCOLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION } from '@linyup/shared'
 import { usePlan } from '@/hooks/usePlan'
 import { usePlanName } from '@/hooks/usePlanName'
 import { useUpgradeModal } from '@/contexts/UpgradeModalContext'
@@ -153,8 +153,8 @@ async function installItems(
     ? (teamLanguage as SupportedLanguage)
     : 'en'
 
-  const templatesRef = collection(db, TEAMS_COLLECTION, teamId, 'outreach_templates')
-  const rulesRef     = collection(db, TEAMS_COLLECTION, teamId, 'automation_rules')
+  const templatesRef = collection(db, TEAMS_COLLECTION, teamId, OUTREACH_TEMPLATES_SUBCOLLECTION)
+  const rulesRef     = collection(db, TEAMS_COLLECTION, teamId, AUTOMATION_RULES_SUBCOLLECTION)
 
   // Resolve template_key → installed templateId (team-language variant)
   const teamLangTemplateId: Record<string, string> = {}
@@ -276,7 +276,7 @@ export function LibraryDialog({
     enabled: open && !!teamId,
     queryFn: async () => {
       const snap = await getDocs(
-        query(collection(db, TEAMS_COLLECTION, teamId, 'outreach_templates'), orderBy('name', 'asc'))
+        query(collection(db, TEAMS_COLLECTION, teamId, OUTREACH_TEMPLATES_SUBCOLLECTION), orderBy('name', 'asc'))
       )
       return snap.docs.map(d => ({ ...d.data(), id: d.id }) as InstalledTemplate)
     },

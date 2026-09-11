@@ -30,7 +30,7 @@ import {
 } from 'firebase/firestore'
 import { marked } from 'marked'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION, wrapInLayout, buildTeamFooter } from '@linyup/shared'
+import {  TEAMS_COLLECTION, wrapInLayout, buildTeamFooter, OUTREACH_TEMPLATES_SUBCOLLECTION } from '@linyup/shared'
 import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -303,7 +303,7 @@ export function TemplateEditor({
   const onSave = async (vals: TmplFormValues) => {
     setSubmitErr('')
     try {
-      const tmplRef = collection(db, TEAMS_COLLECTION, teamId, 'outreach_templates')
+      const tmplRef = collection(db, TEAMS_COLLECTION, teamId, OUTREACH_TEMPLATES_SUBCOLLECTION)
       if (editing) {
         await updateDoc(doc(tmplRef, editing.id), { ...vals, active: true })
       } else {

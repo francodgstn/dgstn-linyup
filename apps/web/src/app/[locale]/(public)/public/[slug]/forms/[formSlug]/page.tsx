@@ -15,6 +15,7 @@ import type { FormPublicProfile, FormAccess } from '@linyup/shared'
 import { FieldInput } from '@/components/forms/FieldInput'
 import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpaceAuth } from '../../space/SpaceAuthProvider'
+import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 
 // ─── Form loader ────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function usePublicForm(teamId: string, formSlug: string): LoadState {
       try {
         const snap = await getDocs(
           query(
-            collectionGroup(db, 'public_profile'),
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
             where('teamId', '==', teamId),
             where('type', '==', 'form'),
             where('slug', '==', formSlug),

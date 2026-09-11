@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase'
 import { useOrgRole } from '@/hooks/useOrgRole'
 import { useLocale } from 'next-intl'
 import type { Organization, SaasSubscription, OrgRole } from '@linyup/shared'
-import { resolveAffiliationTerm } from '@linyup/shared'
+import {  resolveAffiliationTerm, ORGANIZATIONS_COLLECTION, SAAS_SUBSCRIPTIONS_COLLECTION } from '@linyup/shared'
 
 interface OrgContextValue {
   org: Organization | null
@@ -33,7 +33,7 @@ export function OrgProvider({ orgId, children }: { orgId: string; children: Reac
   const { data: org, isLoading: orgLoading } = useQuery<Organization | null>({
     queryKey: ['org', orgId],
     queryFn: async () => {
-      const snap = await getDoc(doc(db, 'organizations', orgId))
+      const snap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId))
       return snap.exists() ? ({ id: snap.id, ...snap.data() } as Organization) : null
     },
   })
@@ -52,7 +52,7 @@ export function OrgProvider({ orgId, children }: { orgId: string; children: Reac
     queryKey: ['org-subscription', orgId],
     enabled: isOrgAdmin,
     queryFn: async () => {
-      const snap = await getDoc(doc(db, 'saas_subscriptions', orgId))
+      const snap = await getDoc(doc(db, SAAS_SUBSCRIPTIONS_COLLECTION, orgId))
       return snap.exists() ? (snap.data() as SaasSubscription) : null
     },
   })

@@ -30,7 +30,7 @@ import { db } from '@/lib/firebase'
 import { Link } from '@/i18n/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EVENTS_COLLECTION } from '@linyup/shared'
+import { EVENTS_COLLECTION, EVENT_ATTENDEES_SUBCOLLECTION, EVENT_INVITATIONS_SUBCOLLECTION } from '@linyup/shared'
 import type { Timestamp } from 'firebase/firestore'
 
 // The row shapes, owned HERE because both readers now live here. They were
@@ -137,7 +137,7 @@ export function EventRsvpList({
     queryKey: ['event-attendees', eventId],
     enabled: !!eventId,
     queryFn: async () => {
-      const snap = await getDocs(collection(db, EVENTS_COLLECTION, eventId, 'attendees'))
+      const snap = await getDocs(collection(db, EVENTS_COLLECTION, eventId, EVENT_ATTENDEES_SUBCOLLECTION))
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as EventAttendee)
     },
   })
@@ -189,7 +189,7 @@ export function EventInvitationList({
     enabled: !!eventId,
     queryFn: async () => {
       const snap = await getDocs(
-        query(collection(db, EVENTS_COLLECTION, eventId, 'invitations'), orderBy('sentAt', 'desc'))
+        query(collection(db, EVENTS_COLLECTION, eventId, EVENT_INVITATIONS_SUBCOLLECTION), orderBy('sentAt', 'desc'))
       )
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as EventInvitation)
     },

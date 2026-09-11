@@ -3820,7 +3820,8 @@
     "alsoSellHint": "Anyone can buy it once, for lifetime access. Your plans can still include it free or reduce the price, in the table below.",
     "access_subscription": "Specific subscriptions",
     "access_purchase": "Sold",
-    "planLinksLabel": "What each plan does about it"
+    "planLinksLabel": "What each plan does about it",
+    "videoEmbedOnlyHint": "Video is embedded from YouTube, Vimeo or a direct link — Linyup doesn't host video files."
   },
   "Auth": {
     "orWithEmail": "or with email",

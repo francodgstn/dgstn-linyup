@@ -77,6 +77,7 @@ import {
   reverseGiftCardDrawdown,
   voidGiftCardValue,
 } from './giftCards'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 // The promo lifecycle's two webhook entry points. Both are best-effort and
 // carry their own try/catch: a promo commit that throws must not stop a booking
 // from confirming — the customer paid the discounted price, and owning the seat
@@ -324,7 +325,7 @@ async function writeContactMembership(
     .collection(CONTACTS_COLLECTION)
     .doc(contactId)
     .collection('activity_log')
-    .add({
+    .add(withLedgerExpiry('activity_log', {
       type: 'payment_received',
       source: 'stripe_connect',
       message: `Membership payment received${md.subscriptionTypeName ? ` · ${md.subscriptionTypeName}` : ''}`,
@@ -332,7 +333,7 @@ async function writeContactMembership(
       // so the contact timeline could not link back to the exact payment.
       ...(opts.paymentIntentId ? { payment_id: opts.paymentIntentId } : {}),
       timestamp: FieldValue.serverTimestamp(),
-    })
+    }))
 }
 
 /** Apply membership to an EXISTING contact (resolved by id/email). Used by the
@@ -1757,12 +1758,12 @@ async function handleProductCheckout(
     .collection(CONTACTS_COLLECTION)
     .doc(contactId)
     .collection('activity_log')
-    .add({
+    .add(withLedgerExpiry('activity_log', {
       type: 'product_purchased',
       source: 'stripe_connect',
       message: `Product purchased · ${label}`,
       timestamp: FieldValue.serverTimestamp(),
-    })
+    }))
 }
 
 /**
@@ -1860,12 +1861,12 @@ async function handleCourseCheckout(
     .collection(CONTACTS_COLLECTION)
     .doc(contactId)
     .collection('activity_log')
-    .add({
+    .add(withLedgerExpiry('activity_log', {
       type: 'course_purchased',
       source: 'stripe_connect',
       message: `Course purchased · ${md.courseTitle ?? 'Course'}`,
       timestamp: FieldValue.serverTimestamp(),
-    })
+    }))
 }
 
 /**
@@ -2310,12 +2311,12 @@ async function handleDropInCheckout(
     .collection(CONTACTS_COLLECTION)
     .doc(contactId)
     .collection('activity_log')
-    .add({
+    .add(withLedgerExpiry('activity_log', {
       type: 'drop_in_booked',
       source: 'stripe_connect',
       message: `Drop-in booking · ${md.activityName ?? 'Class'}`,
       timestamp: FieldValue.serverTimestamp(),
-    })
+    }))
 }
 
 /**
@@ -2607,12 +2608,12 @@ async function handleAppointmentCheckout(
     .collection(CONTACTS_COLLECTION)
     .doc(contactId)
     .collection('activity_log')
-    .add({
+    .add(withLedgerExpiry('activity_log', {
       type: 'appointment_booked',
       source: 'stripe_connect',
       message: `Appointment booked · ${md.activityName ?? 'Appointment'}`,
       timestamp: FieldValue.serverTimestamp(),
-    })
+    }))
 
   // Emails — reload the now-confirmed session for the what/when + the team for
   // name/language/slug (not carried on TeamRef).

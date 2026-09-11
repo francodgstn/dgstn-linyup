@@ -11,6 +11,14 @@ export type LessonType = 'text' | 'audio' | 'video'
 
 // Where a lesson's media comes from. 'upload' = a Firebase Storage download URL;
 // everything else is an external embed/link.
+//
+// VIDEO IS EMBED-ONLY (2026-09-11): `storage.rules` refuses `video/*` uploads
+// and the editor offers no upload for a video lesson — a hosted video is billed
+// per byte delivered to every member who watches it, which is the largest line
+// on a studio's bill (docs/scalability-2026-09.md §12). 'upload' therefore
+// means AUDIO today; a video lesson stored with 'upload' predates the rule and
+// still plays. Hosted video, if it comes, is a paid add-on on zero-egress
+// infrastructure, not this bucket.
 export type MediaSource = 'youtube' | 'vimeo' | 'url' | 'upload'
 
 // Access gating for a course, enforced by Firestore/Storage rules and the public

@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import BioLinkHome from '../../../(public)/public/[slug]/BioLinkHome'
 import { toast } from 'sonner'
-import { TEAMS_COLLECTION, SYSTEM_LINK_META, resolveSystemLinkTarget } from '@linyup/shared'
+import {  TEAMS_COLLECTION, SYSTEM_LINK_META, resolveSystemLinkTarget, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import type {
   Team,
   SocialPlatform,
@@ -757,7 +757,7 @@ export default function TeamBioLinkEditorPage() {
     try {
       // ① Write public_profile first — only needs team-member permission, source of
       //    truth for the public bio-link. Must succeed.
-      const profileRef = doc(db, TEAMS_COLLECTION, currentTeamId, 'public_profile', currentTeamId)
+      const profileRef = doc(db, TEAMS_COLLECTION, currentTeamId, PUBLIC_PROFILE_SUBCOLLECTION, currentTeamId)
       await setDoc(
         profileRef,
         stripUndefined({

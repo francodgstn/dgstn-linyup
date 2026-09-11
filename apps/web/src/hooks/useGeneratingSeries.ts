@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { collection, query, where, limit, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { SESSION_SERIES_COLLECTION } from '@linyup/shared'
 
 /**
  * Recurring series whose occurrences are still being materialised.
@@ -47,7 +48,7 @@ export function useGeneratingSeries(teamId: string | null) {
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collection(db, 'session_series'),
+          collection(db, SESSION_SERIES_COLLECTION),
           where('teamId', '==', teamId),
           where('status', '==', 'active'),
           where('lastGeneratedUntil', '==', null),

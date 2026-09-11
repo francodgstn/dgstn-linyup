@@ -23,6 +23,7 @@ import { brevoSmsProvider } from './brevoSmsProvider'
 import { applySmsPolicy, envDefaultMode, resolveMessagingPolicy } from './messagingPolicy'
 import { ledgerRowSpendsKey } from './mailService'
 import type { OutboundSms, SmsProvider } from './smsTypes'
+import { ledgerExpiry } from '../utils/ledgerRetention'
 
 // Master kill switch. Unlike mail this DEFAULTS OFF: SMS sends spend prepaid
 // Brevo credits, so an environment must opt in explicitly.
@@ -208,7 +209,7 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
       updated_at: now,
       // Stamped once, at creation — a resend after a 'failed' row must not move
       // the send date onto the retry. Same rule as mailService.
-      ...(ledgerIsNew ? { created_at: now } : {}),
+      ...(ledgerIsNew ? { created_at: now, expires_at: ledgerExpiry('mail_sends') } : {}),
     },
     { merge: true },
   )

@@ -40,6 +40,8 @@ import { useWaiverGate } from '@/hooks/useWaiverGate'
 import { waiverErrorMessage } from '@/lib/waiver'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { usePublicTeam } from '../PublicTeamProvider'
+import { usePublicFormat } from '../usePublicFormat'
+import { type RegionalFormatter } from '@linyup/shared'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,21 +86,15 @@ interface ClaimResult {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function formatSessionDate(iso: string | null, locale: string): string {
+function formatSessionDate(fmt: RegionalFormatter, iso: string | null): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString(locale, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  return fmt.custom(new Date(iso), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function formatSessionTime(startIso: string | null, endIso: string | null, locale: string): string {
+function formatSessionTime(fmt: RegionalFormatter, startIso: string | null, endIso: string | null): string {
   if (!startIso) return ''
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-  return endIso ? `${fmt(startIso)} – ${fmt(endIso)}` : fmt(startIso)
+  const start = fmt.time(new Date(startIso))
+  return endIso ? `${start} – ${fmt.time(new Date(endIso))}` : start
 }
 
 /**
@@ -181,6 +177,7 @@ export default function WaitlistPage() {
   const tShop = useTranslations('Shop')
   const tWaiver = useTranslations('Waiver')
   const locale = useLocale()
+  const fmt = usePublicFormat()
   const { slug, team } = usePublicTeam()
   const searchParams = useSearchParams()
   const token = searchParams.get('token') ?? ''
@@ -428,10 +425,10 @@ export default function WaitlistPage() {
         <div>
           <p className="text-sm font-medium">{entry.session.activityName ?? entry.team.name}</p>
           <p className="text-sm text-muted-foreground">
-            {formatSessionDate(entry.session.start, locale)}
+            {formatSessionDate(fmt, entry.session.start)}
           </p>
           <p className="text-sm text-muted-foreground">
-            {formatSessionTime(entry.session.start, entry.session.end, locale)}
+            {formatSessionTime(fmt, entry.session.start, entry.session.end)}
           </p>
         </div>
       </div>

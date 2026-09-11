@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import {  ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
 
 // ─── palettes ────────────────────────────────────────────────────────────────
 

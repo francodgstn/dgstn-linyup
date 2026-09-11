@@ -56,6 +56,7 @@ import {
   AVAILABILITY_EXCEPTIONS_COLLECTION,
   SESSIONS_COLLECTION,
   isExpiredAppointmentHold,
+  SESSION_BOOKINGS_SUBCOLLECTION,
 } from '@linyup/shared'
 import type { Availability, AvailabilityException, AppointmentBooking, Session, Activity, Place } from '@linyup/shared'
 import { useActivities } from '@/hooks/useActivities'
@@ -880,7 +881,7 @@ export function AppointmentDetail({ slot, onClose, onCancelled }: {
     if (!slot) return
     setLoadingBookings(true)
     try {
-      const snap = await getDocs(collection(db, SESSIONS_COLLECTION, slot.id, 'bookings'))
+      const snap = await getDocs(collection(db, SESSIONS_COLLECTION, slot.id, SESSION_BOOKINGS_SUBCOLLECTION))
       setBookings(
         snap.docs
           .map((d) => ({ ...d.data(), id: d.id }) as AppointmentBooking & { id: string })

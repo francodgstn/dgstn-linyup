@@ -17,6 +17,7 @@ import { useCapabilities } from '@/hooks/useCapabilities'
 import {
   CONTACTS_COLLECTION, ORGANIZATIONS_COLLECTION, ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
   DEFAULT_ORG_AFFILIATION_STATUSES, AFFILIATION_TYPES_SUBCOLLECTION, CONTACT_AFFILIATIONS_SUBCOLLECTION,
+  TEAMS_COLLECTION,
 } from '@linyup/shared'
 import { contactLifecycle } from '@linyup/shared'
 import type { Contact, OrgAffiliationStatusDef, Affiliation, AffiliationType } from '@linyup/shared'
@@ -123,7 +124,7 @@ function useAffiliationTypes(teamId: string | null, orgId: string | null | undef
       }
       if (teamId) {
         const snap = await getDocs(
-          collection(db, 'teams', teamId, AFFILIATION_TYPES_SUBCOLLECTION),
+          collection(db, TEAMS_COLLECTION, teamId, AFFILIATION_TYPES_SUBCOLLECTION),
         )
         snap.docs.forEach((d) => {
           if (!results.find((r) => r.id === d.id)) {
@@ -729,7 +730,7 @@ export default function TeamAffiliationsPage() {
             <DialogHeader className="border-b px-4 py-3 pr-12">
               <DialogTitle className="text-base">{t('manageTypes')}</DialogTitle>
             </DialogHeader>
-            <DialogBody className="p-4">
+            <DialogBody className="p-4 mr-0">
               <AffiliationTypesManager team={team} teamId={currentTeamId} />
             </DialogBody>
           </DialogContent>

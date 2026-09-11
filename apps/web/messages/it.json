@@ -3820,7 +3820,8 @@
     "alsoSellHint": "Chiunque può acquistarlo una volta, con accesso a vita. I tuoi piani possono comunque includerlo gratis o ridurne il prezzo, nella tabella qui sotto.",
     "access_subscription": "Abbonamenti specifici",
     "access_purchase": "In vendita",
-    "planLinksLabel": "Cosa fa ogni piano al riguardo"
+    "planLinksLabel": "Cosa fa ogni piano al riguardo",
+    "videoEmbedOnlyHint": "Il video viene incorporato da YouTube, Vimeo o da un link diretto — Linyup non ospita file video."
   },
   "Auth": {
     "orWithEmail": "o con l'e-mail",

@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION } from '@linyup/shared'
+import {  TEAMS_COLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import type { BookingSettings } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext'
 // anymore; if you find a reader, it is a bug, not a fallback (UX-6).
 
 export function bookingSettingsRef(teamId: string) {
-  return doc(db, TEAMS_COLLECTION, teamId, 'public_profile', teamId)
+  return doc(db, TEAMS_COLLECTION, teamId, PUBLIC_PROFILE_SUBCOLLECTION, teamId)
 }
 
 export function useBookingSettings(teamId?: string | null) {

@@ -15,6 +15,7 @@ import {
   holdsPartnerPlan,
   partnerSubscriptionTypeIds,
 } from '@linyup/shared'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 // The acquisition funnel only ever advances forward by design, so a stage that
 // moves to a LOWER ordinal is a deliberate manual correction (e.g. undoing a
@@ -35,10 +36,12 @@ async function logActivity(teamId: string, entry: Record<string, unknown>): Prom
       .collection('teams')
       .doc(teamId)
       .collection('activity_log')
-      .add({
-        ...entry,
-        created_at: FieldValue.serverTimestamp(),
-      })
+      .add(
+        withLedgerExpiry('activity_log', {
+          ...entry,
+          created_at: FieldValue.serverTimestamp(),
+        }),
+      )
   )
   if (err) console.error('logActivity error:', err)
 }

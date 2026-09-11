@@ -1,6 +1,7 @@
 import { doc, getDoc } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from './firebase'
+import { USERS_COLLECTION } from '@linyup/shared'
 
 /**
  * Account/team provisioning shared by the signup wizard and the social-auth
@@ -19,7 +20,7 @@ import { db, functions } from './firebase'
 
 /** Whether the user already has a team (i.e. has finished signup before). */
 export async function userHasTeam(uid: string): Promise<boolean> {
-  const snap = await getDoc(doc(db, 'users', uid))
+  const snap = await getDoc(doc(db, USERS_COLLECTION, uid))
   return snap.exists() && !!snap.data()?.currentTeam
 }
 

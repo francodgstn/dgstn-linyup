@@ -30,6 +30,9 @@ import {
   type FormField,
   parseDateKey,
   parseDocId,
+  PUBLIC_PROFILE_SUBCOLLECTION,
+  SESSIONS_COLLECTION,
+  type RegionalFormatter,
 } from '@linyup/shared'
 import { FieldInput, isFieldAnswered } from '@/components/forms/FieldInput'
 import { publicHref, publicHrefLocalized, returnHref } from '@/lib/publicRoutes'
@@ -75,6 +78,7 @@ import {
   useAcceptedPrice,
   type AppliedPromo,
 } from '@/components/booking/PromoCodeField'
+import { usePublicFormat } from '../usePublicFormat'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -207,24 +211,23 @@ function toDateKey(ts: Timestamp): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** A day key as an instant for DISPLAY — noon, not midnight: the formatter
+ *  renders in the studio's zone, and a device far east or west of it would
+ *  otherwise see the neighbouring day. */
 function dateKeyToDate(key: string): Date {
-  return new Date(key + 'T00:00:00')
+  return new Date(key + 'T12:00:00')
 }
 
-function formatDate(ts: Timestamp, locale?: string): string {
-  return ts.toDate().toLocaleDateString(locale ?? [], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
+function formatDate(fmt: RegionalFormatter, ts: Timestamp): string {
+  return fmt.custom(ts, { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
-function formatDateFull(d: Date): string {
-  return d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+function formatDateFull(fmt: RegionalFormatter, d: Date): string {
+  return fmt.custom(d, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function formatTime(ts: Timestamp): string {
-  return ts.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function formatTime(fmt: RegionalFormatter, ts: Timestamp): string {
+  return fmt.time(ts)
 }
 
 function sessionDuration(
@@ -394,6 +397,7 @@ export default function BookingForm({
   const exitFlow = useExitFlow()
   const router = useRouter()
   const locale = useLocale()
+  const fmt = usePublicFormat()
   const t = useTranslations('PublicBooking')
   const tShop = useTranslations('Shop')
   // The promo widget's own namespace — a promo is not a shop item, and the copy
@@ -596,7 +600,7 @@ export default function BookingForm({
 
         // Load activities
         const actQ = query(
-          collectionGroup(db, 'public_profile'),
+          collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('type', '==', 'activity')
         )
@@ -644,7 +648,7 @@ export default function BookingForm({
         windowEnd.setDate(windowEnd.getDate() + windowMonths * 30)
 
         const sessQ = query(
-          collectionGroup(db, 'public_profile'),
+          collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('type', '==', 'session'),
           where('allowBooking', '==', true),
@@ -717,7 +721,7 @@ export default function BookingForm({
       if (!target) {
         try {
           const snap = await getDoc(
-            doc(db, 'sessions', initialSession, 'public_profile', initialSession)
+            doc(db, SESSIONS_COLLECTION, initialSession, PUBLIC_PROFILE_SUBCOLLECTION, initialSession)
           )
           const data = snap.data()
           // Never trust a session id from the URL to belong to this tenant.
@@ -1827,7 +1831,7 @@ export default function BookingForm({
               }
               dateTimeLabel={
                 selectedSession
-                  ? `${formatDate(selectedSession.start)} · ${formatTime(selectedSession.start)}–${formatTime(selectedSession.end)}`
+                  ? `${formatDate(fmt, selectedSession.start)} · ${formatTime(fmt, selectedSession.start)}–${formatTime(fmt, selectedSession.end)}`
                   : null
               }
               location={selectedSession?.location ?? null}
@@ -2247,7 +2251,7 @@ export default function BookingForm({
             <div>
               {selectedDate && (
                 <p className="text-sm font-medium mb-3 text-muted-foreground">
-                  {formatDateFull(dateKeyToDate(selectedDate))}
+                  {formatDateFull(fmt, dateKeyToDate(selectedDate))}
                 </p>
               )}
 
@@ -2300,7 +2304,7 @@ export default function BookingForm({
                           </p>
                         )}
                         <p className="font-semibold text-sm">
-                          {formatTime(s.start)} – {formatTime(s.end)}
+                          {formatTime(fmt, s.start)} – {formatTime(fmt, s.end)}
                         </p>
                         {s.headline && (
                           <p className="text-xs text-amber-700 mt-0.5">{s.headline}</p>
@@ -2960,11 +2964,11 @@ export default function BookingForm({
             <div className="text-sm space-y-1.5 text-muted-foreground">
               <p>
                 <span className="font-medium text-foreground">{t('labelDate')}</span>
-                {formatDate(selectedSession.start)}
+                {formatDate(fmt, selectedSession.start)}
               </p>
               <p>
                 <span className="font-medium text-foreground">{t('labelTime')}</span>
-                {formatTime(selectedSession.start)} – {formatTime(selectedSession.end)}
+                {formatTime(fmt, selectedSession.start)} – {formatTime(fmt, selectedSession.end)}
               </p>
               {selectedSession.location && (
                 <p>
@@ -3052,11 +3056,11 @@ export default function BookingForm({
             <div className="text-sm space-y-1.5 text-muted-foreground">
               <p>
                 <span className="font-medium text-foreground">{t('labelDate')}</span>
-                {formatDate(confirmedSession.start)}
+                {formatDate(fmt, confirmedSession.start)}
               </p>
               <p>
                 <span className="font-medium text-foreground">{t('labelTime')}</span>
-                {formatTime(confirmedSession.start)} – {formatTime(confirmedSession.end)}
+                {formatTime(fmt, confirmedSession.start)} – {formatTime(fmt, confirmedSession.end)}
               </p>
               {confirmedSession.providerName && (
                 <p>

@@ -2,6 +2,13 @@
 
 export const USERS_COLLECTION = 'users'
 export const USER_PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile'
+// THE public mirror subcollection — `teams|organizations|sessions|events|courses|
+// documents/{id}/public_profile/{id}`, the world-readable summary every public
+// surface queries (`collectionGroup(PUBLIC_PROFILE_SUBCOLLECTION)` filtered on
+// `type`). Same string as the user mirror above, named for its own use: it was
+// hand-typed at every public read site, and a lint rule now refuses a literal
+// where a constant here exists (docs/scalability-2026-09.md §7, item 25).
+export const PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile'
 
 export const TEAMS_COLLECTION = 'teams'
 export const TEAM_MEMBERS_SUBCOLLECTION = 'team_members'
@@ -29,10 +36,13 @@ export const ROLE_CONFIG_SUBCOLLECTION = 'role_config'
 export const SUBSCRIPTION_TYPES_SUBCOLLECTION = 'subscription_types'
 export const PRODUCTS_SUBCOLLECTION = 'products'
 export const CONTACT_FILTERS_SUBCOLLECTION = 'contact_filters'
+/** The one doc in `contact_filters` that is not a filter: which presets are pinned. */
+export const CONTACT_FILTER_PRESET_PINS_DOC = '_preset_pins'
 export const CONTACT_GROUPS_SUBCOLLECTION = 'contact_groups'
 export const OUTREACH_TEMPLATES_SUBCOLLECTION = 'outreach_templates'
 export const AUTOMATION_RULES_SUBCOLLECTION = 'automation_rules'
 export const AUTOMATION_LOGS_SUBCOLLECTION = 'automation_logs'
+export const WEBHOOK_ENDPOINTS_SUBCOLLECTION = 'webhook_endpoints'
 export const TEAM_REBUILD_JOBS_SUBCOLLECTION = 'rebuild_jobs'
 // The monthly leaderboard: one denormalised document per team (see
 // types/leaderboard.ts), plus a per-month history written at month end.
@@ -108,6 +118,8 @@ export const ORG_TEAMS_SUBCOLLECTION = 'org_teams'
 export const ORG_INVITATIONS_SUBCOLLECTION = 'org_invitations'
 export const ORG_MEMBER_INVITATIONS_SUBCOLLECTION = 'org_member_invitations'
 export const ORG_ACCESS_REQUESTS_SUBCOLLECTION = 'org_access_requests'
+/** A studio asking to join the organisation — `organizations/{id}/team_access_requests`. */
+export const ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION = 'team_access_requests'
 export const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 export const ORG_PLACES_SUBCOLLECTION = 'org_places'
 // Affiliation type catalog — same subcollection name under organizations/{orgId}
@@ -230,6 +242,10 @@ export const AVAILABILITY_COLLECTION = 'availability'
 export const AVAILABILITY_EXCEPTIONS_COLLECTION = 'availability_exceptions'
 export const COACH_SLOTS_COLLECTION = 'coach_slots'
 export const COACH_SLOT_BOOKINGS_SUBCOLLECTION = 'bookings'
+// `sessions/{id}/bookings` — the seat ledger every booking rail writes and
+// `trackBookings` recounts. Same string as the coach-slot one above, named for
+// its own use (see PUBLIC_PROFILE_SUBCOLLECTION for why a twin is deliberate).
+export const SESSION_BOOKINGS_SUBCOLLECTION = 'bookings'
 
 export const CATEGORIES_COLLECTION = 'categories'
 

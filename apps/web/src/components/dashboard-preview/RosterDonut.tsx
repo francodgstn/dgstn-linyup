@@ -63,7 +63,7 @@ import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslations } from 'next-intl'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import {  ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
 import {
   Select,
   SelectContent,

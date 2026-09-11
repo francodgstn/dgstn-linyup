@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react'
 import { collectionGroup, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { browseDurationMinutes, mergeAvailabilitySlots } from '@linyup/shared'
+import {  browseDurationMinutes, mergeAvailabilitySlots, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { db, functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import type { KioskSession } from './useKioskSessions'
@@ -60,7 +60,7 @@ export function useKioskAvailability(teamId: string, enabled: boolean, days = 7)
       // firestore.index.json — deleting it puts the silence back.
       const offerings = await getDocs(
         query(
-          collectionGroup(db, 'public_profile'),
+          collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('type', '==', 'activity'),
           where('activityType', '==', 'appointment')

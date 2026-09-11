@@ -66,6 +66,7 @@ import {
   readPaymentIntentEmail,
   reportStripeShape,
 } from '../utils/stripe/objectShape'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 // Stripe SDK instance used ONLY for webhook signature verification. Verification
 // is pure crypto (HMAC of the raw body against the signing secret) — no API key is
@@ -308,12 +309,12 @@ async function enrichPaymentRow(
       .collection(CONTACTS_COLLECTION)
       .doc(contactId)
       .collection('activity_log')
-      .add({
+      .add(withLedgerExpiry('activity_log', {
         type: 'payment_received',
         source: 'stripe',
         message: 'Payment confirmed via Stripe',
         timestamp: FieldValue.serverTimestamp(),
-      })
+      }))
   )
   // Keep the journal from disagreeing with payment_events: the charge row was
   // booked unassigned by the recording event, so stamp the contact onto it too.
@@ -478,12 +479,12 @@ export const handleTeamStripeWebhook = onRequest({ invoker: 'public' }, async (r
           .collection(CONTACTS_COLLECTION)
           .doc(contactId)
           .collection('activity_log')
-          .add({
+          .add(withLedgerExpiry('activity_log', {
             type: 'payment_received',
             source: 'stripe',
             message: 'Payment confirmed via Stripe',
             timestamp: FieldValue.serverTimestamp(),
-          })
+          }))
       )
     }
 

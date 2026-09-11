@@ -10,6 +10,7 @@ import { to } from '../utils/async'
 import { isTeamMember } from '../utils/teams'
 import { requirePlan } from '../utils/plan'
 import { normalizeRule, runRule, type ContactData } from '../utils/automationEngine'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 export const triggerAutomationRule = onCall(async (request) => {
   if (!request.auth) {
@@ -83,7 +84,7 @@ export const triggerAutomationRule = onCall(async (request) => {
   })
 
   // Persist log and update rule metadata
-  await to(db.collection('teams').doc(teamId).collection('automation_logs').add(log))
+  await to(db.collection('teams').doc(teamId).collection('automation_logs').add(withLedgerExpiry('automation_logs', log)))
   await to(
     db.collection('teams').doc(teamId).collection('automation_rules').doc(ruleId).update({
       last_run_at: FieldValue.serverTimestamp(),

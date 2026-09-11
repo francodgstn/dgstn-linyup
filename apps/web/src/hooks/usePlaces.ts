@@ -28,6 +28,7 @@ import {
   ORGANIZATIONS_COLLECTION,
   ORG_PLACES_SUBCOLLECTION,
   ORG_TEAMS_SUBCOLLECTION,
+  PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 import type { OrgTeam, Place } from '@linyup/shared'
 
@@ -137,7 +138,7 @@ export function useOrgTeamPlaces(orgId: string | null) {
             // one.
             const [placesSnap, profileSnap] = await Promise.all([
               getDocs(teamPlacesCol(teamId)),
-              getDoc(doc(db, TEAMS_COLLECTION, teamId, 'public_profile', teamId)).catch(
+              getDoc(doc(db, TEAMS_COLLECTION, teamId, PUBLIC_PROFILE_SUBCOLLECTION, teamId)).catch(
                 () => null,
               ),
             ])

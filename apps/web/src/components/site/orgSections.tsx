@@ -12,7 +12,7 @@ import { publicHrefLocalized } from '@/lib/publicRoutes'
 // Type-only — avoids a real runtime circular import (sections.tsx imports the
 // blocks below as values).
 import type { RenderCtx } from './sections'
-import { nameInitials } from '@linyup/shared'
+import { nameInitials, PUBLIC_PROFILE_SUBCOLLECTION, TEAMS_COLLECTION } from '@linyup/shared'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Organization site — aggregate blocks (clubs / locations / coaches).
@@ -85,7 +85,7 @@ function ClubsBlock({ section, ctx }: { section: ClubsSection; ctx: RenderCtx })
     Promise.all(
       teams.map(async (t): Promise<ClubEntry> => {
         try {
-          const snap = await getDoc(doc(db, 'teams', t.teamId, 'public_profile', t.teamId))
+          const snap = await getDoc(doc(db, TEAMS_COLLECTION, t.teamId, PUBLIC_PROFILE_SUBCOLLECTION, t.teamId))
           const data = snap.data() as TeamPublicProfile | undefined
           return {
             teamId: t.teamId,
@@ -303,7 +303,7 @@ function LocationsBlock({ section, ctx }: { section: LocationsSection; ctx: Rend
     Promise.all(
       teams.map(async (t): Promise<LocationEntry | null> => {
         try {
-          const snap = await getDoc(doc(db, 'teams', t.teamId, 'public_profile', t.teamId))
+          const snap = await getDoc(doc(db, TEAMS_COLLECTION, t.teamId, PUBLIC_PROFILE_SUBCOLLECTION, t.teamId))
           const data = snap.data() as TeamPublicProfile | undefined
           const main = data?.mainAddress
           if (!main) return null
@@ -435,7 +435,7 @@ function CoachesBlock({ section, ctx }: { section: CoachesSection; ctx: RenderCt
     Promise.all(
       teams.map(async (t): Promise<CoachEntry[]> => {
         try {
-          const snap = await getDoc(doc(db, 'teams', t.teamId, 'public_profile', t.teamId))
+          const snap = await getDoc(doc(db, TEAMS_COLLECTION, t.teamId, PUBLIC_PROFILE_SUBCOLLECTION, t.teamId))
           const data = snap.data() as TeamPublicProfile | undefined
           const clubName = data?.name || t.name
           return (data?.coaches ?? []).map((c) => ({ ...c, clubName }))

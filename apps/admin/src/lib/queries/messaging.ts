@@ -1,10 +1,12 @@
 import 'server-only'
-import { AggregateField, Timestamp, type Query } from 'firebase-admin/firestore'
+import { AggregateField, FieldPath, Timestamp, type Query } from 'firebase-admin/firestore'
 import {
   MESSAGING_POLICIES_COLLECTION,
   MAIL_SENDS_COLLECTION,
   APP_SETTINGS_COLLECTION,
   type MessagingPolicy,
+  LEDGER_RETENTION_DAYS,
+  PLATFORM_METRICS_COLLECTION,
 } from '@linyup/shared'
 import { adminDb } from '@/lib/firebase-admin'
 
@@ -59,15 +61,19 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
  * There is no backfill because the sends were never recorded.
  */
 export const MAIL_LEDGER_NOTE =
-  'Counts sends recorded since the ledger became complete (2026-08); earlier sends were only recorded when the call site passed an idempotency key.'
+  `Counts sends recorded since the ledger became complete (2026-08); earlier sends were only recorded when the call site passed an idempotency key. Ledger rows age out after ${LEDGER_RETENTION_DAYS.mail_sends} days, so a studio's figures cover that window; the platform total is carried forward nightly.`
+
+const RETENTION_MS = LEDGER_RETENTION_DAYS.mail_sends * 86_400_000
 
 export interface MailVolume {
   /** Addresses handed to the provider in the last 30 days. */
   last30d: number
   /** Of the last 30 days, how many SENDS were dropped before the provider. */
   suppressed30d: number
-  /** Every address this tenant has mailed. See MAIL_LEDGER_NOTE. */
-  lifetime: number
+  /** Every address this tenant has mailed within the ledger's retention window
+   *  (`LEDGER_RETENTION_DAYS.mail_sends`) — the ledger holds no more than that,
+   *  and no per-tenant running total is kept (see mail/mailMetrics.ts for why). */
+  retained: number
 }
 
 export interface MessagingVolume {
@@ -115,8 +121,11 @@ export async function getMessagingInfo(entityId: string): Promise<MessagingInfo>
   const email = tenant.where('channel', '==', 'email')
   const cut = Timestamp.fromMillis(Date.now() - THIRTY_DAYS_MS)
   const email30d = email.where('created_at', '>=', cut)
+  // The retention window, explicitly — so the figure is what its label says
+  // even before the TTL policy has aged the older rows out.
+  const emailRetained = email.where('created_at', '>=', Timestamp.fromMillis(Date.now() - RETENTION_MS))
 
-  const [policySnap, sendsSnap, envSnap, emailLifetime, email30dSent, email30dSuppressed, smsLast30d] =
+  const [policySnap, sendsSnap, envSnap, emailRetainedSent, email30dSent, email30dSuppressed, smsLast30d] =
     await Promise.all([
       adminDb.collection(MESSAGING_POLICIES_COLLECTION).doc(entityId).get(),
       tenant
@@ -130,7 +139,7 @@ export async function getMessagingInfo(entityId: string): Promise<MessagingInfo>
       // carries `recipient_count: 0`. Which is just as well: an inequality drops
       // documents where the field is absent, and it cannot be combined with the
       // `created_at` range anyway.
-      sumRecipientsOrNull(email),
+      sumRecipientsOrNull(emailRetained),
       sumRecipientsOrNull(email30d),
       countOrNull(email30d.where('status', '==', 'suppressed')),
       sumRecipientsOrNull(tenant.where('channel', '==', 'sms').where('created_at', '>=', cut)),
@@ -176,11 +185,11 @@ export async function getMessagingInfo(entityId: string): Promise<MessagingInfo>
 
   const volume: MessagingVolume = {
     email:
-      emailLifetime != null && email30dSent != null && email30dSuppressed != null
+      emailRetainedSent != null && email30dSent != null && email30dSuppressed != null
         ? {
             last30d: email30dSent,
             suppressed30d: email30dSuppressed,
-            lifetime: emailLifetime,
+            retained: emailRetainedSent,
           }
         : null,
     smsLast30d,
@@ -199,8 +208,32 @@ export async function getMessagingInfo(entityId: string): Promise<MessagingInfo>
 export interface PlatformMailVolume {
   /** Addresses mailed in the last 30 days. null when the aggregation failed. */
   last30d: number | null
-  /** Addresses mailed since the ledger became complete. See MAIL_LEDGER_NOTE. */
+  /** Addresses mailed since the ledger became complete — the running total the
+   *  nightly snapshot carries forward (`PlatformMailMetrics.sent_cumulative`),
+   *  NOT a sum over the ledger, which ages out. As of the latest snapshot;
+   *  null when no snapshot carries one yet. */
   lifetime: number | null
+}
+
+/** How many nightly snapshots back to look for a carried-forward total. */
+const CUMULATIVE_LOOKBACK = 40
+
+async function latestCumulativeOrNull(): Promise<number | null> {
+  try {
+    const snap = await adminDb
+      .collection(PLATFORM_METRICS_COLLECTION)
+      .orderBy(FieldPath.documentId(), 'desc')
+      .limit(CUMULATIVE_LOOKBACK)
+      .get()
+    for (const doc of snap.docs) {
+      const value = doc.get('mail.sent_cumulative') as unknown
+      if (typeof value === 'number') return value
+    }
+    return null
+  } catch (err) {
+    console.warn('[messaging] snapshot read failed:', err)
+    return null
+  }
 }
 
 export async function getPlatformMailVolume(): Promise<PlatformMailVolume> {
@@ -208,7 +241,7 @@ export async function getPlatformMailVolume(): Promise<PlatformMailVolume> {
   const email30d = email.where('created_at', '>=', Timestamp.fromMillis(Date.now() - THIRTY_DAYS_MS))
 
   const [lifetime, last30d] = await Promise.all([
-    sumRecipientsOrNull(email),
+    latestCumulativeOrNull(),
     sumRecipientsOrNull(email30d),
   ])
 

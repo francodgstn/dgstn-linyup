@@ -35,6 +35,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
 import { normalizeRule, runRule, type ContactData, type DelayedRulePayload } from '../utils/automationEngine'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 export const executeDelayedRule = onTaskDispatched(
   {
@@ -138,11 +139,13 @@ export const executeDelayedRule = onTaskDispatched(
 
     // Write idempotency-guarded log entry
     await to(
-      db.collection('teams').doc(teamId).collection('automation_logs').add({
-        ...log,
-        idempotency_key: idempotencyKey,
-        ...(sessionId ? { session_id: sessionId } : {}),
-      })
+      db.collection('teams').doc(teamId).collection('automation_logs').add(
+        withLedgerExpiry('automation_logs', {
+          ...log,
+          idempotency_key: idempotencyKey,
+          ...(sessionId ? { session_id: sessionId } : {}),
+        }),
+      )
     )
     await to(
       db.collection('teams').doc(teamId).collection('automation_rules').doc(ruleId).update({

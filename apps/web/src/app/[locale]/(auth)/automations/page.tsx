@@ -94,7 +94,7 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { TEAMS_COLLECTION, ALERT_PRESETS_SUBCOLLECTION, SUBSCRIPTION_ROLLUP_STATUSES, CONTACT_SOURCES } from '@linyup/shared'
+import {  TEAMS_COLLECTION, ALERT_PRESETS_SUBCOLLECTION, SUBSCRIPTION_ROLLUP_STATUSES, CONTACT_SOURCES, AUTOMATION_RULES_SUBCOLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION, WEBHOOK_ENDPOINTS_SUBCOLLECTION } from '@linyup/shared'
 import type { SubscriptionType, CustomFieldDefinition, RankingSystem, MemberPayment } from '@linyup/shared'
 import { Link, useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
@@ -545,7 +545,7 @@ function useRules(teamId: string | null) {
     queryFn: async () => {
       if (!teamId) return []
       const snap = await getDocs(
-        query(collection(db, TEAMS_COLLECTION, teamId, 'automation_rules'), orderBy('name', 'asc'))
+        query(collection(db, TEAMS_COLLECTION, teamId, AUTOMATION_RULES_SUBCOLLECTION), orderBy('name', 'asc'))
       )
       return snap.docs.map((d) => normaliseRule(d.data() as Record<string, unknown>, d.id))
     },
@@ -560,7 +560,7 @@ function useTemplates(teamId: string | null) {
       if (!teamId) return []
       const snap = await getDocs(
         query(
-          collection(db, TEAMS_COLLECTION, teamId, 'outreach_templates'),
+          collection(db, TEAMS_COLLECTION, teamId, OUTREACH_TEMPLATES_SUBCOLLECTION),
           where('active', '==', true),
           orderBy('name', 'asc')
         )
@@ -1789,7 +1789,7 @@ function RuleDialog({
         updated_at: serverTimestamp(),
       }
 
-      const rulesRef = collection(db, TEAMS_COLLECTION, teamId, 'automation_rules')
+      const rulesRef = collection(db, TEAMS_COLLECTION, teamId, AUTOMATION_RULES_SUBCOLLECTION)
       if (editing) {
         await updateDoc(doc(rulesRef, editing.id), ruleData)
       } else {
@@ -2121,7 +2121,7 @@ export default function AutomationsPage() {
     queryFn: async () => {
       if (!currentTeamId) return []
       const snap = await getDocs(
-        collection(db, TEAMS_COLLECTION, currentTeamId, 'webhook_endpoints')
+        collection(db, TEAMS_COLLECTION, currentTeamId, WEBHOOK_ENDPOINTS_SUBCOLLECTION)
       )
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as WebhookEndpoint)
     },
@@ -2189,7 +2189,7 @@ export default function AutomationsPage() {
     setQuickStarting(true)
     try {
       const snap = await getDocs(
-        collection(db, TEAMS_COLLECTION, currentTeamId, 'outreach_templates')
+        collection(db, TEAMS_COLLECTION, currentTeamId, OUTREACH_TEMPLATES_SUBCOLLECTION)
       )
       const allTmpl = snap.docs.map((d) => ({ ...d.data(), id: d.id }))
       const installedRuleKeys = new Set(rules.flatMap((r) => (r.system_key ? [r.system_key] : [])))
@@ -2204,7 +2204,7 @@ export default function AutomationsPage() {
 
   async function handleToggle(rule: AutomationRule) {
     if (!currentTeamId) return
-    await updateDoc(doc(db, TEAMS_COLLECTION, currentTeamId, 'automation_rules', rule.id), {
+    await updateDoc(doc(db, TEAMS_COLLECTION, currentTeamId, AUTOMATION_RULES_SUBCOLLECTION, rule.id), {
       active: !rule.active,
     })
     invalidateRules()
@@ -2218,7 +2218,7 @@ export default function AutomationsPage() {
       confirmLabel: tCommon('delete'),
     })
     if (!ok) return
-    await deleteDoc(doc(db, TEAMS_COLLECTION, currentTeamId, 'automation_rules', rule.id))
+    await deleteDoc(doc(db, TEAMS_COLLECTION, currentTeamId, AUTOMATION_RULES_SUBCOLLECTION, rule.id))
     invalidateRules()
   }
 

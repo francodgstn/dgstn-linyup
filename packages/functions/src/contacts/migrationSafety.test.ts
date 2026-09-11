@@ -10,7 +10,13 @@ import { join } from 'node:path'
 
 const ROOT = join(__dirname, '..', '..', '..', '..', 'scripts')
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
-const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+// Source with comments stripped, so a pin asserts on CODE and a doesNotMatch
+// cannot be satisfied by prose. `//` is only a comment when it does not follow a
+// colon — otherwise every `https://…` line is truncated at the scheme, which
+// silently hid the URL these pins are about and would let a doesNotMatch pass
+// for a line nobody read.
+const code = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
 
 const CLI = read('migrate-hmd.ts')
 const AUTH = read('migration/passes/00-auth-users.ts')
@@ -58,6 +64,34 @@ describe('the auth pass — logins only for live clubs, never a duplicated email
     assert.match(code(AUTH), /if \(targetUid && targetUid !== u\.localId\) \{\s*collisions\.push/)
     assert.match(code(AUTH), /for \(let i = 0; i < keep\.length; i \+= PAGE_SIZE\)/)
     assert.doesNotMatch(code(AUTH), /active\.slice\(i, i \+ PAGE_SIZE\)/, 'the import loop must iterate the guarded list')
+  })
+
+  it('the SCRYPT config is read from the v2 project config — v1 batchGet does not return it, whatever the caller may', () => {
+    const body = code(AUTH)
+    assert.match(body, /identitytoolkit\.googleapis\.com\/v2\/projects\/\$\{projectId\}\/config/)
+    assert.match(body, /body\.signIn\?\.hashConfig/)
+    // Asked BEFORE the paging loop: the per-page read stays only as a fallback,
+    // and must not overwrite the authoritative answer.
+    assert.ok(
+      body.indexOf('await fetchHashConfig(projectId, credential)') < body.indexOf('accounts:batchGet'),
+      'the config is fetched before the user pages',
+    )
+    assert.match(body, /if \(!hashConfig && data\.hashConfig\) hashConfig = data\.hashConfig/)
+  })
+
+  it('a config without a signer key is refused rather than handed to importUsers as an empty key', () => {
+    assert.match(code(AUTH), /if \(!hc\?\.signerKey \|\| !hc\.algorithm\) \{[\s\S]*?return undefined/)
+  })
+
+  it('the signer key is a secret and is never logged — only whether it arrived', () => {
+    const logs = code(AUTH).match(/console\.(log|warn|error)\([\s\S]*?\)\n/g) ?? []
+    for (const line of logs) {
+      assert.doesNotMatch(line, /signerKey|saltSeparator\b(?!:)/, `a log line must not print the key: ${line.slice(0, 90)}`)
+    }
+  })
+
+  it('a 403 names the exact grant, because that is the difference between keeping a password and resetting it', () => {
+    assert.match(code(AUTH), /res\.status === 403[\s\S]*?Firebase Authentication Admin[\s\S]*?firebaseauth\.configs\.getHashConfig/)
   })
 
   it('a dry run performs the census (the reads) and imports nothing', () => {

@@ -21,6 +21,27 @@ These map the old single `rank` field on contacts to the new `ranks` map.
 
 The organisation document, org_admin member entry, and Firebase Auth users are all migrated automatically. The **auth-users pass** calls the Firebase Identity Toolkit API directly using the source service account, downloads all user records including password hashes and the SCRYPT hash config, then imports them into the target with `importUsers()` — so users log in with the same password they had in the source project. No manual export step needed.
 
+**3. Grant the SOURCE service account `Firebase Authentication Admin`** on the
+`hmd-lineup` project (role `roles/firebaseauth.admin`). Passwords need TWO
+things, from two different APIs: the per-user hash + salt, which
+`v1 …/accounts:batchGet` returns to any reader, and the project's SCRYPT signer
+key, which only `v2 …/projects/{id}/config` returns and only to a caller holding
+`firebaseauth.configs.getHashConfig`. Without the grant the pass falls back to
+creating accounts **with no password** — every migrated owner would need a reset
+link on day 0.
+
+**Confirm it before the real run**, with the dry-run census (reads only, writes
+nothing, and it is the same census the real run performs):
+
+```bash
+pnpm migrate:hmd --source-creds ./keys/hmd-prod-sa.json --target-creds ./keys/linyup-prod-sa.json \
+  --dry-run --only auth-users --live "Basel,Ardovini"
+```
+
+It must print `hash config: SCRYPT, …` and `hashes: true`, and the last line says
+how many accounts would keep their password, how many collided with an existing
+target login, and how many are outside the activation list.
+
 ---
 
 ## Migrating into the local emulator (recommended first step)

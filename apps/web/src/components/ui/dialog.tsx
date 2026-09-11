@@ -193,6 +193,16 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
  * what the negative margin does; `pr-4` then gives the CONTENT back the inset it
  * just lost. This assumes the popup's default `p-4`, the same assumption
  * `DialogFooter` already makes one function below.
+ *
+ * ── A POPUP THAT PASSES `p-0` MUST PASS `mr-0` HERE ────────────────────────
+ *
+ * A full-bleed dialog (its own bordered header, `DialogContent className="…
+ * p-0"`) has no padding for the negative margin to cancel, so the body reaches
+ * 16px PAST the popup's right edge and every child lands flush against the
+ * border — while the left keeps its inset, which is what makes it read as "the
+ * modal lost its padding" rather than as an overflow. Both dialogs that do this
+ * (the affiliations type manager, the website preview) pass `mr-0`; a third one
+ * should too.
  */
 function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
