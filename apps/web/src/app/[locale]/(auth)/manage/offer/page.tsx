@@ -144,6 +144,7 @@ import { OfferFacts, type OfferChip, type OfferFactsProps } from '@/components/o
 import { ActivityDialog } from '@/components/activities/ActivityDialog'
 import { ActivityPricingForm } from '@/components/activities/ActivityPricingForm'
 import { PlanPricingForm } from '@/components/subscriptions/PlanPricingForm'
+import { PlanTemplatesDialog } from '@/components/subscriptions/PlanTemplatesDialog'
 import { SubTypeDialog } from '@/components/subscriptions/SubscriptionTypeDialog'
 import { SubscriptionAutomationsSection } from '@/components/subscriptions/SubscriptionAutomationsSection'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
@@ -333,9 +334,11 @@ export default function CataloguePage() {
   const tNav = useTranslations('Nav')
   const tCommon = useTranslations('Common')
   const tSet = useTranslations('TeamSettings')
+  const tTpl = useTranslations('PlanTemplates')
   const tc = useTranslations('Contacts')
   const { currentTeamId, team, user } = useAuth()
   const canEdit = useCapabilities().can('team.settings')
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   const router = useRouter()
   const params = useSearchParams()
   const qc = useQueryClient()
@@ -1371,6 +1374,19 @@ export default function CataloguePage() {
                   )}
                 />
               )}
+              {/* ALWAYS VISIBLE, not only on an empty rail: a studio adds a pack
+                  in its second season as readily as its first, and a link that
+                  disappears once there is one plan is a link nobody learns. */}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setTemplatesOpen(true)}
+                  className="w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Sparkles className="mr-1.5 inline h-3.5 w-3.5 align-text-bottom" />
+                  {tTpl('railLink')}
+                </button>
+              )}
             </div>
           )}
 
@@ -1760,6 +1776,18 @@ export default function CataloguePage() {
           onSaved={() => {
             void qc.invalidateQueries({ queryKey: ['subscription-types', currentTeamId] })
             void qc.invalidateQueries({ queryKey: ['activities'] })
+          }}
+        />
+      )}
+
+      {currentTeamId && (
+        <PlanTemplatesDialog
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          teamId={currentTeamId}
+          existingCount={plans.length}
+          onCreated={() => {
+            void qc.invalidateQueries({ queryKey: ['subscription-types', currentTeamId] })
           }}
         />
       )}

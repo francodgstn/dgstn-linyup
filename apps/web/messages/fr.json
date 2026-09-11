@@ -8196,5 +8196,20 @@
     "sheetLiveWarning": "{count} tickets restent valables jusqu'à expiration — mieux vaut récupérer la feuille.",
     "sheetSlipHint": "Scannez pour vérifier vos informations",
     "sheetFailed": "La feuille n'a pas pu être créée. Réessayez."
+  },
+  "PlanTemplates": {
+    "railLink": "Partir d'un modèle",
+    "title": "Partir d'un modèle",
+    "intro": "Les formules que la plupart des studios finissent par avoir. Choisissez celles qui vous conviennent — vous pourrez tout renommer et modifier ensuite.",
+    "noPricesNote": "Aucun prix n'est défini — vous ajoutez les vôtres avant tout achat. Rien n'est visible publiquement tant que vous ne l'affichez pas.",
+    "membership_name": "Abonnement",
+    "membership_desc": "Une formule récurrente, facturée au mois ou à l'année.",
+    "class_pack_name": "Carte 10 séances",
+    "class_pack_desc": "Payée une fois, donne 10 crédits de séance.",
+    "complimentary_name": "Offert",
+    "complimentary_desc": "Sans frais — pour les coachs, la famille ou les invités du studio.",
+    "create": "{count, plural, =0 {Créer} one {Créer la formule} other {Créer # formules}}",
+    "creating": "Création…",
+    "cancel": "Annuler"
   }
 }
