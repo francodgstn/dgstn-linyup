@@ -217,12 +217,27 @@ A contact **not covered** by an activity's access rule can pay a **per-class** d
 to book a single **group-class** session, over the same Connect one-off checkout. No
 membership is created — a drop-in is a single paid booking, not a subscription.
 
-- **Config.** Set per class activity (`offer/activities`, an always-visible row in the
-  class settings group since 2026-07): `Activity.dropIn = { enabled, priceAmount }` (major
-  units, the team's currency). Only *effective* on gated tiers (`members` / `subscription`)
-  — an `open` class is free for everyone, so there is nobody to charge. Independent of the
-  `trialEnabled` toggle (a gated class can offer members-free + trial + drop-in at once).
-  Denormalised to the activity `public_profile` for the booking UI.
+- **Config — one default, per-class exceptions (2026-09-11).** The price has a
+  studio-wide default, `BookingSettings.dropIn = { enabled, priceAmount }` (major units,
+  the team's currency), stored with the other booking settings on the team's public
+  profile — the one document the callables, the public pages and the mobile app already
+  read — and edited on **Offerings → Pricing** ("Drop-in" card), because it is a price
+  rather than a booking rule. Each class then says how it relates to it,
+  `Activity.dropIn.mode` (`DropInMode`, `packages/shared/src/types/activity.ts`):
+  `'studio'` follows the default (what a new class starts as), `'custom'` names its own
+  `priceAmount`, `'off'` sells no drop-in even when the studio has a default. A document
+  from before the default (no `mode`) reads as `'custom'` when it named a price and as
+  `'studio'` otherwise — so a class that never named a price follows the studio the day the
+  studio sets one, with no click per class. **THE ONE READER is
+  `resolveActivityDropIn(activity, studioDropIn)`** (`packages/shared/src/utils/dropIn.ts`,
+  with `studioDropInOf(bookingSettings)` for the second argument); nothing that decides may
+  read `activity.dropIn.enabled` / `.priceAmount` directly, because a class that follows the
+  studio stores no price of its own. The activity `public_profile` carries the **RESOLVED**
+  price, so no public reader knows a default exists; `syncStudioDropIn`
+  (`packages/functions/src/sync/`) rewrites the mirrors of every `'studio'` class when the
+  default changes, through the same pure `buildActivityPublicProfile` the per-activity sync
+  uses. Independent of the `trialEnabled` toggle (a gated class can offer members-free +
+  trial + drop-in at once).
 - **Flow (hold-pending → webhook-confirm).** The public **`createDropInCheckout`** callable
   (`booking/dropIn.ts`) resolves/creates the contact (payment is the proof — **no email
   verification**), writes a **PENDING** booking hold

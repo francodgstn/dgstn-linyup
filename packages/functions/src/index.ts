@@ -45,6 +45,7 @@ export { upsertAffiliation, removeAffiliation, approveAffiliation, renewAffiliat
 export { syncTeamPublicProfile } from './sync/syncTeamPublicProfile'
 export { syncSessionPublicProfile } from './sync/syncSessionPublicProfile'
 export { syncActivityPublicProfile } from './sync/syncActivityPublicProfile'
+export { syncStudioDropIn } from './sync/syncStudioDropIn'
 export { syncCoursePublicProfile } from './sync/syncCoursePublicProfile'
 export { syncFormPublicProfile } from './sync/syncFormPublicProfile'
 export { syncDocumentPublicProfile } from './sync/syncDocumentPublicProfile'

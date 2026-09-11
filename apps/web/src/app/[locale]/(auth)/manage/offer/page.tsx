@@ -94,6 +94,8 @@ import {
   type Course,
   type Product,
   type SubscriptionType,
+  resolveActivityDropIn,
+  studioDropInOf,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { refreshQueries } from '@/lib/queryRefresh'
@@ -111,6 +113,7 @@ import {
 import { ActivityScheduleSheet } from '@/components/activities/ActivityScheduleSheet'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { Link, useRouter } from '@/i18n/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -433,6 +436,10 @@ export default function CataloguePage() {
   const [aiOpen, setAiOpen] = useState(false)
 
   const { data: activities = [], isLoading: loadingActivities } = useActivities(currentTeamId)
+  // The studio's default drop-in, for every class that follows it — the rail
+  // chip, the tier and the form all price such a class through it.
+  const { data: bookingSettings } = useBookingSettings(currentTeamId)
+  const studioDropIn = studioDropInOf(bookingSettings)
   const { data: plans = [], isLoading: loadingPlans } = useSubscriptionTypes(currentTeamId)
   const { data: gatewayCurrency } = useGatewayCurrency(currentTeamId)
   // Courses only exist for a studio that installed the plugin, so the group is
@@ -572,10 +579,7 @@ export default function CataloguePage() {
   /** The tier a class's gate actually amounts to — see the chip below. */
   const classTierOf = (a: Activity): 'open' | 'members' | 'subscription' =>
     classAccessTierOf(
-      resolveClassGate(
-        resolveActivityAccessRule(a),
-        a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
-      )
+      resolveClassGate(resolveActivityAccessRule(a), resolveActivityDropIn(a, studioDropIn).enabled)
     )
 
   const activityChips = (a: Activity): OfferChip[] => {
@@ -628,7 +632,10 @@ export default function CataloguePage() {
         : []),
       // "Drop-in {amount}" is one of these — the drop-in fact, with its price.
       ...activityMoneyChipLabels(
-        a,
+        // With the drop-in RESOLVED — a class that follows the studio default
+        // stores no price of its own, and the chip has to say what the door
+        // costs, not what the document happens to contain.
+        { ...a, dropIn: resolveActivityDropIn(a, studioDropIn) },
         currency,
         plans,
         tAct as unknown as (key: string, values?: Record<string, string | number>) => string,

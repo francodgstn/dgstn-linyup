@@ -1,7 +1,18 @@
 // Keeps activities/{activityId}/public_profile/{activityId} in sync
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
-import { normalizeActivityTags, resolveActivityAccessRule, resolveDurationSale } from '@linyup/shared'
+import {
+  normalizeActivityTags,
+  resolveActivityAccessRule,
+  resolveActivityDropIn,
+  resolveDurationSale,
+  studioDropInOf,
+  type ActivityAccessRule,
+  type ActivityDropIn,
+  type ActivityType,
+  type DropInPrice,
+} from '@linyup/shared'
 import { touchTeamForSurfaceRecompute } from '../utils/plugins'
+import { loadBookingSettings } from '../booking/bookingSettings'
 
 // An APPOINTMENT activity is half of what makes the appointment picker live
 // (`ActivePublicSurfaces.appointments`), and that flag is computed by the
@@ -19,21 +30,33 @@ async function touchIfAppointmentActivity(
 }
 
 
-export const syncActivityPublicProfile = onDocumentWritten('activities/{activityId}', async (event) => {
-  const { activityId } = event.params
-  const afterRef = event.data!.after.ref
+/**
+ * The mirror document for one activity — PURE, so the studio-default fan-out
+ * (`syncStudioDropIn`) can rebuild a class's mirror without a write to the
+ * activity itself.
+ *
+ * `studioDropIn` is the studio's default drop-in price (`BookingSettings.dropIn`
+ * narrowed by `studioDropInOf`). The mirror carries the RESOLVED price — the
+ * class's own, or the studio's when the class follows it — so every public
+ * reader keeps reading `dropIn: { enabled, priceAmount }` and none has to know
+ * a default exists.
+ */
+export function buildActivityPublicProfile(
+  data: FirebaseFirestore.DocumentData,
+  studioDropIn: DropInPrice | null
+): Record<string, unknown> {
+  // THE ONE READER (shared/utils/dropIn.ts). An appointment resolves to none.
+  const dropIn = resolveActivityDropIn(
+    {
+      type: data.type as ActivityType | undefined,
+      accessRule: data.accessRule as ActivityAccessRule | undefined,
+      isFreeTrial: data.isFreeTrial as boolean | undefined,
+      dropIn: data.dropIn as ActivityDropIn | undefined,
+    },
+    studioDropIn
+  )
 
-  await touchIfAppointmentActivity(event.data!.before.data(), event.data!.after.data())
-
-  // Remove public profile when document is deleted or activity is deactivated
-  if (!event.data!.after.exists || event.data!.after.data()?.isActive === false) {
-    await afterRef.collection('public_profile').doc(activityId).delete()
-    return
-  }
-
-  const data = event.data!.after.data()!
-
-  const publicProfile = {
+  return {
     type: 'activity',
     teamId: data.teamId,
     // Session category ('class' | 'appointment') so public UIs can route
@@ -59,10 +82,9 @@ export const syncActivityPublicProfile = onDocumentWritten('activities/{activity
     ...(data.type !== 'appointment'
       ? { accessRule: resolveActivityAccessRule({ accessRule: data.accessRule, isFreeTrial: data.isFreeTrial }) }
       : {}),
-    // Drop-in config so the booking UI can offer pay-per-class (only when enabled + priced).
-    ...(data.dropIn?.enabled && typeof data.dropIn.priceAmount === 'number'
-      ? { dropIn: { enabled: true, priceAmount: data.dropIn.priceAmount } }
-      : {}),
+    // The RESOLVED drop-in price, so the booking UI can offer pay-per-class —
+    // present only when there is a price to charge.
+    ...(dropIn.enabled ? { dropIn: { enabled: true, priceAmount: dropIn.priceAmount } } : {}),
     // CLASS-ONLY trial door: without this the public booking flow can't OFFER
     // the trial the admin toggled on — the promise "even when members-only"
     // needs the mirror to carry it.
@@ -116,10 +138,7 @@ export const syncActivityPublicProfile = onDocumentWritten('activities/{activity
     ...(data.type === 'appointment' && data.durationBenefits
       ? { durationBenefits: data.durationBenefits }
       : {}),
-    ...(data.type !== 'appointment' &&
-    data.memberBenefit &&
-    data.dropIn?.enabled &&
-    typeof data.dropIn.priceAmount === 'number'
+    ...(data.type !== 'appointment' && data.memberBenefit && dropIn.enabled
       ? { memberBenefit: data.memberBenefit }
       : {}),
     // Display-only prerequisites shown on the public booking pages.
@@ -146,6 +165,31 @@ export const syncActivityPublicProfile = onDocumentWritten('activities/{activity
       ? { contactFields: data.contactFields }
       : {}),
   }
+}
 
-  await afterRef.collection('public_profile').doc(activityId).set(publicProfile)
+export const syncActivityPublicProfile = onDocumentWritten('activities/{activityId}', async (event) => {
+  const { activityId } = event.params
+  const afterRef = event.data!.after.ref
+
+  await touchIfAppointmentActivity(event.data!.before.data(), event.data!.after.data())
+
+  // Remove public profile when document is deleted or activity is deactivated
+  if (!event.data!.after.exists || event.data!.after.data()?.isActive === false) {
+    await afterRef.collection('public_profile').doc(activityId).delete()
+    return
+  }
+
+  const data = event.data!.after.data()!
+
+  // The studio default, for a class that follows it — one extra document read
+  // per activity write. An appointment never needs it.
+  const studioDropIn =
+    data.type === 'appointment' || !data.teamId
+      ? null
+      : studioDropInOf(await loadBookingSettings(data.teamId as string))
+
+  await afterRef
+    .collection('public_profile')
+    .doc(activityId)
+    .set(buildActivityPublicProfile(data, studioDropIn))
 })

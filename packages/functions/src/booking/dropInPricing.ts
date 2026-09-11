@@ -25,6 +25,10 @@ import {
   type DropInTarget,
   type PaymentContext,
   type PaymentOptionsResult,
+  resolveActivityDropIn,
+  type ActivityDropIn,
+  type ActivityType,
+  type DropInPrice,
 } from '@linyup/shared'
 import { loadContactPaymentSnapshot } from './access'
 
@@ -54,9 +58,23 @@ export type DropInDoor =
  */
 export function buildDropInTarget(
   activity: FirebaseFirestore.DocumentData,
-  opts: { asTrial: boolean }
+  opts: { asTrial: boolean },
+  /** The studio's default drop-in price (`studioDropInOf(bookingSettings)`),
+   *  which a class that names no price of its own follows. REQUIRED, not
+   *  optional: a caller that forgets it would price such a class as having no
+   *  drop-in, silently, and every rail this feeds has the settings in hand. */
+  studioDropIn: DropInPrice | null
 ): DropInDoor {
-  const dropIn = activity.dropIn as { enabled?: boolean; priceAmount?: number } | undefined
+  // THE ONE READER (shared/utils/dropIn.ts).
+  const dropIn = resolveActivityDropIn(
+    {
+      type: activity.type as ActivityType | undefined,
+      accessRule: activity.accessRule as ActivityAccessRule | undefined,
+      isFreeTrial: activity.isFreeTrial as boolean | undefined,
+      dropIn: activity.dropIn as ActivityDropIn | undefined,
+    },
+    studioDropIn
+  )
   const trialPriceAmount = activity.trialPriceAmount as number | null | undefined
   const accessRule = resolveActivityAccessRule({
     accessRule: activity.accessRule as ActivityAccessRule | undefined,
@@ -69,18 +87,18 @@ export function buildDropInTarget(
     if (activity.trialEnabled !== true || typeof trialPriceAmount !== 'number') {
       return { ok: false, reason: 'trial_unavailable' }
     }
-  } else if (!dropIn?.enabled || typeof dropIn.priceAmount !== 'number') {
+  } else if (!dropIn.enabled) {
     return { ok: false, reason: 'drop_in_unavailable' }
   }
 
   return {
     ok: true,
     accessRule,
-    baseMajor: opts.asTrial ? (trialPriceAmount as number) : (dropIn!.priceAmount as number),
+    baseMajor: opts.asTrial ? (trialPriceAmount as number) : (dropIn.priceAmount as number),
     target: {
       kind: 'drop_in',
       accessRule,
-      dropIn: dropIn ?? null,
+      dropIn,
       trial: { enabled: activity.trialEnabled === true, priceAmount: trialPriceAmount ?? null },
       asTrial: opts.asTrial,
       benefit: (activity.memberBenefit as AnyBenefit | undefined) ?? null,

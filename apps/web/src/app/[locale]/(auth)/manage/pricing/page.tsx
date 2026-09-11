@@ -15,7 +15,7 @@
 //   4. Discounts — a modifier of the prices above it, so it reads after them.
 // No editing here — every fix link routes to the surface that owns the data.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import {
@@ -26,8 +26,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Link } from '@/i18n/navigation'
+import { useQueryClient } from '@tanstack/react-query'
+import { setDoc } from 'firebase/firestore'
+import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
+import { bookingSettingsRef, useBookingSettings } from '@/hooks/useBookingSettings'
 import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
 import { useProducts } from '@/plugins/products/hooks'
 import { useCourses } from '@/plugins/online-courses/hooks'
@@ -36,6 +40,8 @@ import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useTeamPromoCodes } from '@/hooks/usePromoCodes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CheckCircle2, AlertTriangle, AlertCircle, BadgePercent, Info } from 'lucide-react'
@@ -43,12 +49,13 @@ import { formatCurrency } from '@/lib/format'
 import type {
   Activity,
   Course,
+  DropInPrice,
   Product,
   PromoCode,
   SubscriptionPrice,
   SubscriptionType,
 } from '@linyup/shared'
-import { isSellableCourse, promoWindowOpen, resolveUsageLimit } from '@linyup/shared'
+import { dropInModeOf, isSellableCourse, promoWindowOpen, resolveUsageLimit, studioDropInOf } from '@linyup/shared'
 import {
   buildPersonas,
   personaSnapshot,
@@ -250,6 +257,115 @@ function ClassDoorsLine({
   return <p className="text-xs text-muted-foreground">{parts.join(' · ')}</p>
 }
 
+// ─── The studio's default drop-in ─────────────────────────────────────────────
+
+/**
+ * ONE price for the door, set once. A studio whose classes all cost the same
+ * at the door used to type it into every class and keep the copies in step by
+ * hand; now every class follows this unless it names its own price or
+ * switches drop-in off (`DropInMode`, @linyup/shared). It is stored with the
+ * booking settings — the one document the callables, the public pages and the
+ * mobile app already read — and edited HERE because it is a price, not a
+ * booking rule; the write merges the one field and leaves the rest of that
+ * object to Settings → Booking.
+ */
+function DropInDefaultCard({
+  teamId,
+  classes,
+  stored,
+  currency,
+}: {
+  teamId: string | null
+  classes: Activity[]
+  stored: DropInPrice | null
+  currency: string
+}) {
+  const t = useTranslations('OfferPricing')
+  const qc = useQueryClient()
+  const storedPrice = stored?.priceAmount ?? null
+  const [enabled, setEnabled] = useState(storedPrice !== null)
+  const [price, setPrice] = useState(storedPrice !== null ? String(storedPrice) : '')
+  const [saving, setSaving] = useState(false)
+  // Re-seed when the store changes under us — a refetch, or a save elsewhere.
+  useEffect(() => {
+    setEnabled(storedPrice !== null)
+    setPrice(storedPrice !== null ? String(storedPrice) : '')
+  }, [storedPrice])
+
+  const parsed = parseFloat(price.replace(',', '.'))
+  const invalid = enabled && !(price.trim() !== '' && parsed >= 0.5)
+  const dirty = enabled !== (storedPrice !== null) || (enabled && parsed !== storedPrice)
+  // How the classes relate to this price — read off each document's own
+  // answer, not the resolved price, so "follow the default" counts even while
+  // the default is off.
+  const counts = classes.reduce(
+    (acc, a) => {
+      acc[dropInModeOf(a.dropIn)] += 1
+      return acc
+    },
+    { studio: 0, custom: 0, off: 0 }
+  )
+
+  async function save() {
+    if (!teamId || invalid || !dirty) return
+    setSaving(true)
+    try {
+      // The ONE field, replaced whole — `mergeFields` so an old price cannot
+      // survive under a switched-off default the way a deep merge would keep it.
+      await setDoc(
+        bookingSettingsRef(teamId),
+        { bookingSettings: { dropIn: enabled ? { enabled: true, priceAmount: parsed } : { enabled: false } } },
+        { mergeFields: ['bookingSettings.dropIn'] }
+      )
+      await qc.invalidateQueries({ queryKey: ['booking-settings', teamId] })
+      toast.success(t('dropInDefaultSaved'))
+    } catch (err) {
+      console.error('[drop-in default save] failed:', err)
+      toast.error(err instanceof Error ? err.message : t('dropInDefaultSaved'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('dropInDefaultTitle')}</CardTitle>
+        <p className="text-sm text-muted-foreground">{t('dropInDefaultSubtitle')}</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+          <label className="flex cursor-pointer items-center gap-3">
+            <Switch checked={enabled} onCheckedChange={setEnabled} />
+            <span className="text-sm font-medium">{t('dropInDefaultToggle')}</span>
+          </label>
+          {enabled && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">{currency}</span>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="h-8 w-28 text-sm"
+                aria-label={t('dropInDefaultToggle')}
+              />
+            </div>
+          )}
+        </div>
+        {invalid && <p className="text-xs text-destructive">{t('dropInDefaultValidation')}</p>}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">{t('dropInDefaultSummary', counts)}</p>
+          <Button size="sm" disabled={!dirty || invalid || saving} onClick={() => void save()}>
+            {t('dropInDefaultSave')}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Price preview section ──────────────────────────────────────────────────────
 
 function PricingPreviewSection({
@@ -260,6 +376,7 @@ function PricingPreviewSection({
   personas,
   subscriptionTypes,
   currency,
+  studioDropIn,
 }: {
   classes: Activity[]
   appointments: Activity[]
@@ -268,6 +385,7 @@ function PricingPreviewSection({
   personas: PricingPersona[]
   subscriptionTypes: SubscriptionType[]
   currency: string
+  studioDropIn: DropInPrice | null
 }) {
   const t = useTranslations('OfferPricing')
   const [selectedId, setSelectedId] = useState(personas[0]?.id ?? 'guest')
@@ -335,10 +453,10 @@ function PricingPreviewSection({
                         <Link href={'/offer/activities' as Route} className="text-sm font-medium hover:underline">
                           {a.name}
                         </Link>
-                        <ClassDoorsLine doors={classDoors(a)} currency={currency} t={t} />
+                        <ClassDoorsLine doors={classDoors(a, studioDropIn)} currency={currency} t={t} />
                       </div>
                       <PriceCellView
-                        cell={resolveClassCell(snapshot, a)}
+                        cell={resolveClassCell(snapshot, a, studioDropIn)}
                         currency={currency}
                         typeNameById={typeNameById}
                         t={t}
@@ -779,6 +897,7 @@ export default function PricingPage() {
   const currency = team?.default_currency ?? 'CHF'
 
   const { data: activities = [], isLoading: activitiesLoading } = useActivities(currentTeamId)
+  const { data: bookingSettings, isLoading: settingsLoading } = useBookingSettings(currentTeamId)
   const { data: subscriptionTypes = [], isLoading: typesLoading } = useSubscriptionTypes(currentTeamId)
   const { data: products = [], isLoading: productsLoading } = useProducts(currentTeamId)
   const { data: allCourses = [], isLoading: coursesLoading } = useCourses(currentTeamId)
@@ -796,12 +915,14 @@ export default function PricingPage() {
   )
 
   const personas = useMemo(() => buildPersonas(subscriptionTypes), [subscriptionTypes])
+  const studioDropIn = useMemo(() => studioDropInOf(bookingSettings), [bookingSettings])
   const warnings = useMemo(
-    () => computePricingHealth(activities, subscriptionTypes, visibleCourses),
-    [activities, subscriptionTypes, visibleCourses]
+    () => computePricingHealth(activities, subscriptionTypes, visibleCourses, studioDropIn),
+    [activities, subscriptionTypes, visibleCourses, studioDropIn]
   )
 
-  const loading = activitiesLoading || typesLoading || productsLoading || coursesLoading
+  const loading =
+    activitiesLoading || typesLoading || productsLoading || coursesLoading || settingsLoading
 
   return (
     <div className="space-y-6">
@@ -826,6 +947,14 @@ export default function PricingPage() {
               page whose problems are reported last is a page whose problems get
               read last. */}
           <HealthSection warnings={warnings} />
+          {/* The door price BEFORE the preview that quotes it — set once here,
+              read by every class below that follows it. */}
+          <DropInDefaultCard
+            teamId={currentTeamId}
+            classes={classes}
+            stored={studioDropIn}
+            currency={currency}
+          />
           <PricingPreviewSection
             classes={classes}
             appointments={appointments}
@@ -834,6 +963,7 @@ export default function PricingPage() {
             personas={personas}
             subscriptionTypes={subscriptionTypes}
             currency={currency}
+            studioDropIn={studioDropIn}
           />
           <WhatYouSellSection
             subscriptionTypes={subscriptionTypes}
