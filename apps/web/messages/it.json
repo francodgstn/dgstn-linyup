@@ -2007,8 +2007,6 @@
     "paymentsDefaultSubscriptionTypeHelpStripe": "Applicato quando un pagamento non contiene i metadati <code>subscriptionTypeId</code>.",
     "paymentsDefaultSubscriptionTypeHelpPayrexx": "Applicato quando il link di pagamento Payrexx non ha <code>referenceId</code>. Imposta <code>referenceId</code> sull'ID del tipo di abbonamento su ogni link Payrexx per un controllo per piano.",
     "tabAffiliations": "Affiliazioni",
-    "affiliationsEnabledLabel": "Abilita affiliazioni",
-    "affiliationsEnabledHelp": "Registra le affiliazioni dei contatti (es. tessera club, licenza federale).",
     "affiliationsUpsell": "Il monitoraggio delle affiliazioni richiede il piano Studio o superiore.",
     "tabBarTitle": "Mostra le schede delle pagine",
     "tabBarHelp": "Mantieni le pagine aperte come schede sopra il contenuto, per passare dall'una all'altra. Questa impostazione vale per dispositivo.",

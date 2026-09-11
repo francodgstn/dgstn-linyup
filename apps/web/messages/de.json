@@ -2007,8 +2007,6 @@
     "paymentsDefaultSubscriptionTypeHelpStripe": "Wird angewendet, wenn eine Zahlung keine <code>subscriptionTypeId</code>-Metadaten enthält.",
     "paymentsDefaultSubscriptionTypeHelpPayrexx": "Wird angewendet, wenn der Payrexx-Zahlungslink keine <code>referenceId</code> hat. Setze <code>referenceId</code> auf jedem Payrexx-Link auf die Abo-Typ-ID, um die Steuerung pro Plan zu ermöglichen.",
     "tabAffiliations": "Affiliationen",
-    "affiliationsEnabledLabel": "Mitgliedschaften aktivieren",
-    "affiliationsEnabledHelp": "Mitgliedschaftsnachweise (z. B. Vereinsmitgliedschaft, Verbandslizenz) für Kontakte verwalten.",
     "affiliationsUpsell": "Mitgliedschaftsverfolgung erfordert das Studio-Abo oder höher.",
     "tabBarTitle": "Seiten-Tabs anzeigen",
     "tabBarHelp": "Geöffnete Seiten als Tabs über dem Inhalt behalten, um zwischen ihnen zu wechseln. Diese Einstellung gilt pro Gerät.",
