@@ -3817,7 +3817,8 @@
     "alsoSellHint": "N'importe qui peut l'acheter une fois, pour un accès à vie. Vos formules peuvent toujours l'inclure gratuitement ou réduire le prix, dans le tableau ci-dessous.",
     "access_subscription": "Abonnements spécifiques",
     "access_purchase": "Vendu",
-    "planLinksLabel": "Ce que chaque formule en fait"
+    "planLinksLabel": "Ce que chaque formule en fait",
+    "videoEmbedOnlyHint": "La vidéo est intégrée depuis YouTube, Vimeo ou un lien direct — Linyup n'héberge pas de fichiers vidéo."
   },
   "Auth": {
     "orWithEmail": "ou avec un e-mail",

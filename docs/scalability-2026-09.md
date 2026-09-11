@@ -9,13 +9,16 @@ Every member-facing feature is therefore written between two and four times, and
 the cost is not the typing. It is that the copies **drift**, and drift in this
 codebase has already destroyed member data.
 
-This document has two parts. **Part 1** (§1–§7) records what the coaching build
-(August–September 2026) taught about that, what has since been fixed, and what
-is still owed — engineering scale, not tenant count. **Part 2** (§8–§14) is the
-runtime side: the scheduled jobs, the ledgers, the cost model and the limits
+This document has three parts. **Part 1** (§1–§7) records what the coaching
+build (August–September 2026) taught about that, what has since been fixed, and
+what is still owed — engineering scale, not tenant count. **Part 2** (§8–§14) is
+the runtime side: the scheduled jobs, the ledgers, the cost model and the limits
 that bind first as the tenant count grows. It was the first analysis of this
 pass and was left out when the file was first assembled; it is restored below
-with what has since been done against it.
+with what has since been done against it. **Part 3** (§15–§19) is the UI: a
+census of every list the apps load, what each one grows with, which ones will
+slow a real studio down, and what to do about each — including the ones that
+cannot be fixed cheaply, so the expectation is set before a customer sets it.
 
 ---
 
@@ -553,6 +556,22 @@ is hit versus tokenised download URLs.
 wrong with it — budget it as a real per-tenant COGS, and note that if SMS
 reminders get adopted the per-message cost in CH is 30–50× email.
 
+**Decided 2026-09-11: video is embed-only, on every plan.** The cost driver is
+egress, not storage, so a storage quota would have capped nothing — 5 GB stored
+and watched by 200 members is a terabyte out of the bucket. `storage.rules` now
+refuses `video/*` uploads under a team (the kiosk's standby media is the one
+exception: it loops on a single tablet, cached), and the course editor offers a
+video lesson only YouTube, Vimeo or a link — `MediaSource` had those from the
+start, and an unlisted YouTube video delivers for free, which is what every
+entry-level course tool does. A lesson stored with an uploaded video before the
+rule still plays; whether any exist in production is a bucket scan owed before
+the rule deploys. **Audio uploads stay** (a 30-minute lesson is ~15–30 MB, the
+same problem an order of magnitude smaller) and are the known residual.
+**Hosted video, if it ever comes, is a paid add-on on zero-egress
+infrastructure** — Cloudflare Stream (per-minute stored + delivered, so the COGS
+is meterable per tenant and priceable above it) or R2 + HLS — never this bucket
+under any quota.
+
 ## 13. Secondary limits, roughly in the order they bind
 
 - **App Check is implemented but off** (`docs/app-check-rollout.md`) ✓. Public
@@ -587,9 +606,170 @@ reminders get adopted the per-message cost in CH is 30–50× email.
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
 | 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check:** follow the runbook; step 1 (register the web app in the Firebase Console) is yours. |
 | 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | Not started. The load-bearing one for growth. |
-| 4 | Decide course-video hosting before the plugin has real usage | decision | Yours. Retrofitting a CDN after members hold URLs is far worse than choosing now. |
+| 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
 | 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
 
 Steps 1, 2 and 5 are small and are in. Step 3 is a week or so. None of it is
 architectural — the data model is sound, and nothing here requires reshaping
 collections or the tenant boundary.
+
+---
+
+# Part 3 — UI lists: census and plan
+
+> Asked for on 2026-09-11: "as soon as the studios start to get real
+> transactions, this might really break and slow down the UI. A risk we cannot
+> take — if somewhere we cannot do anything to improve, we should know it in
+> advance so we can set the right expectations, rather than having a client
+> complaining." Every claim below was checked at source that day; the file
+> paths are the pointers, and the line numbers deliberately are not.
+
+## 15. Method — and the question that actually matters
+
+A scan over `apps/web`, `apps/mobile` and `apps/admin` for every read site
+(`getDocs`, `onSnapshot`, `getCountFromServer`, `useInfiniteQuery`, and the
+operator console's server-side `.get()`) found **323 read sites, 218 of them
+with no `limit`, no range clause and no cursor** on the day of the scan. That
+number is nearly useless on its own, because "has a limit" is the wrong
+question. The right one is **what does the list grow with**, and there are
+four answers:
+
+| Axis | Grows with | Examples | Client-side OK? |
+|---|---|---|---|
+| **CONFIG** | the studio's authoring | activities, plans, places, templates, rules, event types, documents, courses, promo codes, integrations | **Yes.** Tens of rows, bounded by somebody's patience. Never a problem. |
+| **PER-ENTITY** | one entity's size | bookings per session, attendees per event, items per programme, lessons per course | **Yes.** Bounded by capacity or by the event; the multiplier is what to watch (see §17 C). |
+| **ROSTER** | people | contacts, subscriptions, signers, affiliations | **Up to a size** — and that size is the expectation to set. Hundreds to low thousands per studio. |
+| **LOG** | time | notifications, payments, submissions, referrals, events, exceptions, activity | **No.** Every unbounded LOG read is a defect at some date; the only question is which date. |
+
+The large majority of the 218 are CONFIG or PER-ENTITY and are correct as they
+are. What follows is the rest: the ROSTER lists (whose ceiling has to be
+stated), the LOG lists (each of which needs a window or a page), and the
+fan-outs (a bounded list that costs one read per row).
+
+## 16. Already right — the patterns to copy, not reinvent
+
+These are the shapes the fixes in §19 reuse. Each was found working at source.
+
+| Surface | List | Bound | Pattern |
+|---|---|---|---|
+| Schedule / calendar | sessions | `useSessionsRange(from, to)` — the window is in the cache key | **Range keyed** — two views asking for the same window share one fetch |
+| Bookings page | bookings | `useBookingsWindow` — `MAX_WINDOW_SESSIONS`, `MAX_WINDOW_BOOKINGS`, and a `tooWide` refusal | **Honest truncation** — the page says the window is too wide rather than silently dropping rows |
+| Payments | member payments, BYO ledger, partner visits | `useMemberPayments(pageLimit, sinceMs)` + load more; `usePaymentEvents` the same; partner visits current month only | **Time window + page** |
+| Finance plugin | journal, entries | `useFinanceJournal` since + `limit(500)`; `useEntries` per accounting period | **Window + hard cap** |
+| Dashboard | weekly reports, monthly revenue | reports by trend weeks; revenue since the start of last month | **Window** |
+| Contact detail | bookings, recent sessions, weekly reports, activity | `CONTACT_BOOKINGS_LIMIT` with a `truncated` flag; recent sessions by `count`; 16 weeks; activity `PAGE_SIZE` | **Cap + truncated flag** |
+| Activity schedule sheet | upcoming sessions | `start >= now` + `PREVIEW_LIMIT` | **Forward window + cap** |
+| Day sheet, kiosk | sessions | one day | **Window** |
+| Org events print, org dashboard | events | 12-month window; upcoming `limit(UPCOMING_EVENTS_SHOWN)` | **Window / cap** |
+| Space bookings | my bookings | `useInfiniteQuery` over `getMyBookings`' cursor (`MY_BOOKINGS_SCAN_PAGE`) | **The ONE cursor pattern on the web** — reuse it |
+| Mobile | upcoming sessions, check-ins, leaderboard, agenda, attendance calendar | 3 months + `limit(200)`; `limit(10)`; top 50; ±7 days; one month | **Window + cap** |
+| Operator console | account payments | `limit(1000)` | **Cap** |
+
+## 17. The census — every list that grows without a bound
+
+Sizes are estimates. "Risk" is what happens at a real studio: 1,500 live
+contacts, 40 classes a week, three years of history. Fix column vocabulary:
+**window** (a range clause), **cap + more** (`limit` plus a load-more that
+pages on a cursor), **status filter** (query only the live rows), **count**
+(`getCountFromServer` instead of loading rows), **DOM window** (render only the
+visible rows), **server list** (a callable or an index-backed cursor list),
+**expectation** (cannot be fixed cheaply — say so).
+
+### A. ROSTER — grows with contacts
+
+| # | Surface | List (owner) | Today | Risk | Fix | Size |
+|---|---|---|---|---|---|---|
+| A1 | **Contacts page** | `useActiveContacts` — the whole live roster; filter presets, dynamic groups, attention sort and search all run over it in memory; **every row is rendered** (`contacts/page.tsx`, no windowing) | correct to ~2,000; the page is sub-second there | at 5,000 the render is the cost, not the read: seconds per filter change, and a 5,000-doc fetch per cache miss (2 min) | **DOM window** now (the one dependency to add: `@tanstack/react-virtual`, not yet in the tree); **materialized attention score** later (§18) | half a day / a week |
+| A2 | Contacts page, search panel | `useArchivedContacts` — all archived, grows with churn and never shrinks; also read by the command palette once armed | fine for years | a studio's archive outgrows its roster after ~3 years | **cap + more** ordered `archived_at desc`; search stays over the cached page | small |
+| A3 | Contacts page | Deleted tab — all deleted-not-yet-anonymised | shrinks when `anonymizeScheduledContacts` runs | bounded by the anonymisation delay; fine | none — record that the bound is the nightly job | — |
+| A4 | **Dashboard** | `usePreviewContacts` — the whole live roster on the landing page of every login, for the contacts card, demographics and the attention queue; **its own cache key**, so it is a second roster fetch beside A1's | two roster fetches per session, and more below | the roster is fetched once per distinct key: A1's hook, the dashboard, the session-detail / contact-groups / check-in trio, the affiliations page and the referrals page each hold their own copy | **one key** — every roster read goes through `useActiveContacts`, so a session holds ONE copy; **count** for the headcount and a materialized attention queue later | small / with A1 |
+| A5 | Session detail, check-in panel | add-participant dialog + gated-roster badges — whole live roster, on open / when gated | fetched only when opened; a key of its own, shared with the contact-groups page and the check-in panel but not with A1 | fine at the expectation size | route through `useActiveContacts` (A4's one-key fix); a **server list** (prefix search) only if A1's ceiling moves | with A4 |
+| A6 | Payments | `useActiveContacts` for the contact picker | shares A1's key | same as A5 | none | — |
+| A7 | Contact groups | whole live roster for member counts + dynamic-group evaluation (its own query, A5's key) | inherent to lazy derivation (Part 1) | fine at the expectation size | **count** for manual groups; dynamic groups evaluate on A1's cached roster | small |
+| A8 | Gamification | all contacts by `current_month_score`; renders all | correct | 3,000 rows for a leaderboard nobody scrolls | **cap + more** (`limit(100)`) | tiny |
+| A9 | Referrals plugin | ALL contacts (**no `deleted_at` filter**) + all referrals ever | reads deleted people back into memory | roster + a LOG, both unbounded | contacts → `liveContactConstraints()` and only the ids the shown referrals name; referrals → **cap + more** by `created_at desc` | small |
+| A10 | Affiliations | all non-deleted contacts (its own key), sorted in memory, `filtered` rendered whole | correct | same shape as A1 without the attention sort | **DOM window**; status filter in the query; A4's one key | small |
+| A11 | **Org affiliations** | all live contacts with an org affiliation **across every member studio** (`teamId in` chunks of 30) | correct for a 3-studio org | a 30-studio federation lists tens of thousands of people on one page | **expectation** — an org never lists a roster; it gets **counts** per studio and status (`getCountFromServer`) and drills down into one studio's page | a day, and a product decision |
+| A12 | Documents plugin | `WaiverSigners` — all signers per document | correct | one row per member who ever signed; equals the roster | **cap + more** by `accepted_at desc` + search by contact | small |
+| A13 | Payments | `useMemberSubscriptions` — every subscription incl. cancelled; the hook's own header names the fix | correct, and roster-like by design | headcount **plus churn**: after three years the ended rows outnumber the live | **status filter** — live statuses by default, "show ended" pages the rest | small |
+
+### B. LOG — grows with time
+
+| # | Surface | List (owner) | Today | Risk | Fix | Size |
+|---|---|---|---|---|---|---|
+| B1 | **Every authenticated page** | `useTeamNotifications` — **all notifications ever**, `created_at desc`, refetched by the bell and the dashboard banner (stale 60 s); only `status == 'unread'` is rendered | small today | the one LOG read on EVERY page load; a busy studio writes several a day | **status filter** (`unread`) + `limit(50)` for the bell; a history view pages; and **retention** — add `notifications` to `LEDGER_RETENTION_DAYS` (Part 2 §11), 90 days | small |
+| B2 | **Schedule / calendar** | team events + org events — **no time bound**, ordered `start asc` (the sessions beside them are windowed) | fine for a year | every event ever, on every calendar open | **window** — reuse `useSessionsRange`'s shape keyed on the visible range, with a back-margin on `start` for multi-day events | small |
+| B3 | Appointments manager | availability exceptions — all time-off ever, rendered whole | fine for a year | one row per holiday per provider, forever | **window** `end >= today − 30d`; past rows are history nobody edits | tiny |
+| B4 | Contacts page | contact requests — all ever, `requested_at desc` | small | a LOG; each signup form / update request adds a row | **status filter** (`pending`) in the query; history pages | tiny |
+| B5 | Custom forms | submissions — all per form, rendered whole, **and the CSV export reads the same array** | correct | a lead form with 5,000 submissions renders 5,000 rows and builds the CSV in the browser | **cap + more** on the list; export moves to a callable that streams | small / half a day |
+| B6 | Space (member portal) | `listMyContactPayments` — reads **all** of the contact's `member_payments`, sorts in memory, slices 100 | per person, so slow | a five-year member with a weekly drop-in habit is 250 reads for a 100-row answer | `orderBy('created_at','desc') limit(100)` with the composite index (`contactId`, `created_at`) | tiny |
+| B7 | Contact detail (web), Space, mobile | per-contact logs: alerts, notes, affiliations, goals + evaluations, documents, credit grants, subscription history | all unbounded, all per person | years of one person's history are hundreds of rows, not thousands | **accept** — record it; cap if a real contact ever proves otherwise | — |
+| B8 | **Operator console** | `loadAccounts` — every team + org + SaaS subscription, then **one count aggregation per team**; signup allow-list all; feedback all | fine at tens of tenants | grows with TENANTS, the same axis as Part 2 §9: 1,000 studios = 1,000 aggregation queries per page view | contact counts from the nightly `platform_metrics` snapshot (or a per-team stored counter); the accounts table pages; allow-list and feedback **cap + more** | a day |
+
+### C. PER-ENTITY fan-outs — bounded, but with a multiplier
+
+| # | Surface | Fan-out | Multiplier | Fix | Size |
+|---|---|---|---|---|---|
+| C1 | **Mobile** attendance calendar + training chart | `getContactAttendance`: one `participants/{me}` **read per session in the window** — the sessions come from one query, then one `getDoc` each | a month at a busy studio ≈ 150–200 reads per calendar open, per member; the chart adds the same over its weeks | a **`getMyAttendance` callable** (mirror of `getMyBookings`), or a collection-group query on `participants` where `contactId == me` with a `checkedInAt` range — the (`contactId`, `checkedInAt`) index the web's `useContactRecentSessions` already uses, and a contact session may read its own rows. Kills the fan-out outright | a day |
+| C2 | Mobile profile agenda | `getSessionsWithParticipation` — same per-session check for the PAST half of ±7 days | ~20 reads per open | same fix as C1 | with C1 |
+| C3 | Bookings page | per-session `bookings` fetch inside the window | already capped by `MAX_WINDOW_SESSIONS` | none | — |
+| C4 | Session detail / peek, event people lists, check-in panel | participants + bookings per session; attendees + invitations per event | bounded by capacity / by the event; a 500-person camp renders 500 rows | none now; **DOM window** if a camp ever complains | — |
+| C5 | Org teams page | per member studio: one `getDoc` + one members query | bounded by studio count | none | — |
+
+## 18. What cannot be fixed cheaply — set the expectation now
+
+These are the four places where a `limit` is not a fix, because the feature
+*is* the whole set. The right move is to state the ceiling in the plan copy and
+the onboarding conversation before a customer finds it.
+
+1. **The roster pages are client-side by design, and that is the right
+   design up to a size.** Filter presets, dynamic groups, the attention sort,
+   the command palette's search — every one of them answers its question from
+   a position that already holds the data (Part 1 recorded why for groups). At
+   **≤ 3,000 live contacts per studio** this is a sub-second page and nothing
+   in it is wrong. Past that, the attention sort is the first thing to go:
+   it is *derived* (lapsed subscription, missed classes, unsigned waiver),
+   so a server-driven list needs a **materialized attention score** — a
+   nightly field on the contact plus an index — and the page becomes a
+   server list with a search box. **That is a week, not a limit.** The
+   expectation to set: the free, coach and studio tiers are for studios of up
+   to about 3,000 live contacts; larger studios are an organisation-tier
+   conversation, and an organisation lists per studio (next point).
+2. **An organisation never lists a roster.** A11 is the only page that does,
+   and at federation scale it cannot: the org level gets counts per studio and
+   status, and drills into one studio's page. This is a product decision as
+   much as a fix, and it should be made before the first 20-studio org signs.
+3. **Firestore has no text search.** Contact search is a client-side scan of
+   the loaded roster, which is exactly right at the ceiling above and wrong
+   beyond it. The answer past it is an external index (Algolia / Typesense)
+   fed by a sync trigger — real money and real drift surface (Part 1 §6), so
+   **not before a customer needs it**, and the ceiling above is what makes
+   that safe to defer.
+4. **Client-side exports read the loaded array.** The forms CSV (B5) is
+   correct only while the list is whole. The moment a list is paged, its
+   export has to become a callable — build the two together, or the export
+   silently ships the first page. The same rule binds any export added later
+   to a list in §17.
+
+## 19. The plan, in order
+
+| Phase | What | Rows | Size |
+|---|---|---|---|
+| **1 — bound the LOGs** | notifications `unread` + `limit(50)` + retention; events on the schedule windowed like sessions; availability exceptions from today; contact requests `pending`; form submissions cap + more; referrals cap + more and live contacts only; gamification `limit(100)`; waiver signers cap + more; archived tab cap + more; Space payments `orderBy + limit`; member subscriptions live-status default | B1 B2 B3 B4 B5 B6 A2 A8 A9 A12 A13 | **a day** — every one is a query change on the pattern in §16 |
+| **2 — one roster read, windowed** | every roster read goes through `useActiveContacts` (the dashboard, session detail, check-in, contact groups, affiliations and referrals each fetch their own copy today); `@tanstack/react-virtual` on the contacts, affiliations and org-affiliations tables; `getCountFromServer` for the dashboard headcount and manual-group counts | A1 A4 A5 A7 A10 | **two days** |
+| **3 — kill the fan-outs** | `getMyAttendance` callable for the mobile calendar, chart and agenda; operator console counts from the nightly snapshot + a paged accounts table | C1 C2 B8 | **two–three days** |
+| **4 — when a customer approaches the ceiling** | materialized attention score + server-driven roster list; org-level counts + per-studio drill-down; export callables | §18 1, 2, 4 | **a week each**, not before there is a studio that needs it |
+
+Two rules for the work, both learned in Part 1:
+
+- **Honest truncation over silent truncation.** Every cap ships with the
+  `tooWide` / `truncated` posture the bookings page and contact detail already
+  have: the page says when it is not showing everything. A bare `limit` that
+  hides rows without saying which is the one shape not to add (the header of
+  `useMemberSubscriptions` says why in the money context, and it generalises).
+- **A tripwire, so the census does not rot.** The scan that produced §17 is a
+  forty-line script; the follow-up is to check it in (`scripts/census-reads.mjs`)
+  with the LOG collections named and CI failing when a `getDocs` on one of them
+  gains no `limit` — the same shape as the path-literal tripwire in Part 1 §7.
+  Not done in this pass: the plan is the deliverable here, the tripwire lands
+  with Phase 1 so it pins the bounds the moment they exist.
