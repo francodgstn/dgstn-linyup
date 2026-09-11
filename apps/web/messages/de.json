@@ -1068,7 +1068,8 @@
     "markExternalTitle": "{count, plural, one {Diesen Kontakt als extern markieren?} other {# Kontakte als extern markieren?}}",
     "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen.",
     "goalSaveFailed": "Dieses Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
-    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut."
+    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "affiliationValidUntil": "Gültig bis {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",

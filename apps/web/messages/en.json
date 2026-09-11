@@ -1068,7 +1068,8 @@
     "markExternalTitle": "{count, plural, one {Mark this contact as external?} other {Mark # contacts as external?}}",
     "markExternalDesc": "They can still book and attend, and their history stays. They leave the Active list, the contact count, event invitations, automations and Needs attention — until you mark them active again, or they complete your signup form.",
     "goalSaveFailed": "Couldn't save this goal. Please try again.",
-    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again."
+    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again.",
+    "affiliationValidUntil": "Valid until {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
