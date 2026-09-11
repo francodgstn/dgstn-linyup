@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   collection, doc, getDoc, getDocs, query, where, collectionGroup,
@@ -8,6 +8,7 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import { statusBadgeClass, statusFillClass } from '@/lib/affiliationStatusColors'
+import { AffiliationTypePicker } from '@/components/affiliations/AffiliationTypePicker'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
@@ -22,7 +23,6 @@ import {
 } from '@linyup/shared'
 import { contactLifecycle } from '@linyup/shared'
 import type { Contact, OrgAffiliationStatusDef, Affiliation, AffiliationType } from '@linyup/shared'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SearchInput } from '@/components/ui/search-input'
@@ -226,27 +226,6 @@ function StatusBadge({ statusId, defs }: { statusId: string; defs: OrgAffiliatio
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(def.color)}`}>
       {def.label}
     </span>
-  )
-}
-
-// ─── affiliation summary chip (All types view) ────────────────────────────────
-
-function AffiliationSummaryChip({ contact, affiliationTypes }: { contact: Contact; affiliationTypes: AffiliationType[] }) {
-  const summary = contact.affiliation_summary
-  if (!summary?.has_active) {
-    return <span className="text-xs text-muted-foreground">—</span>
-  }
-  const labels = (summary.types ?? []).map(
-    (key) => affiliationTypes.find((t) => t.key === key)?.label ?? key,
-  )
-  return (
-    <div className="flex flex-wrap gap-1">
-      {labels.map((l) => (
-        <span key={l} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass('green')}`}>
-          {l}
-        </span>
-      ))}
-    </div>
   )
 }
 
@@ -459,7 +438,11 @@ export default function TeamAffiliationsPage() {
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('__all__')
-  const [selectedTypeId, setSelectedTypeId] = useState<string>('__all__')
+  // A REAL TYPE, ALWAYS — `null` only until the list has loaded. The old
+  // '__all__' answered `affiliation_summary.has_active` ("any affiliation at
+  // all") while every row beneath it showed one type's status, so the filter,
+  // the counts and the bulk actions each meant something different.
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [renewConfirm, setRenewConfirm] = useState(false)
   const [renewBusy, setRenewBusy] = useState(false)
@@ -474,7 +457,14 @@ export default function TeamAffiliationsPage() {
 
   // For type-specific view: load each contact's affiliation for the selected type
   const contactIds = useMemo(() => contacts?.map((c) => c.id) ?? [], [contacts])
-  const activeTypeId = selectedTypeId !== '__all__' ? selectedTypeId : null
+  const activeTypeId = selectedTypeId
+  // Pre-select as soon as the list arrives — one type is not a choice, and the
+  // first is the studio's own order (the manager sorts them).
+  useEffect(() => {
+    if (selectedTypeId === null && affiliationTypes.length > 0) {
+      setSelectedTypeId(affiliationTypes[0].id)
+    }
+  }, [selectedTypeId, affiliationTypes])
 
   // Fetch affiliations per contact for the selected type using collectionGroup
   const { data: affiliationsByContact = {} } = useQuery<Record<string, Affiliation>>({
@@ -502,19 +492,15 @@ export default function TeamAffiliationsPage() {
   const filtered = useMemo(() => {
     if (!contacts) return []
     return contacts.filter((c) => {
-      // In "all types" view: filter by affiliation_summary.has_active
-      if (selectedTypeId === '__all__') {
-        if (statusFilter === 'affiliated' && !c.affiliation_summary?.has_active) return false
-        if (statusFilter === 'not_affiliated' && c.affiliation_summary?.has_active) return false
-      } else {
-        // In type-specific view: filter by the loaded affiliation's status
-        const aff = affiliationsByContact[c.id]
-        if (statusFilter === '__expiring__') {
-          if (!isExpiringSoon(aff)) return false
-        } else if (statusFilter !== '__all__') {
-          const statusId = aff?.status_id ?? NO_AFFILIATION
-          if (statusId !== statusFilter) return false
-        }
+      // One type at a time, so the filter reads the SAME affiliation the row
+      // shows — `affiliation_summary.has_active` answered "any affiliation at
+      // all", which is a different question from the column beside it.
+      const aff = affiliationsByContact[c.id]
+      if (statusFilter === '__expiring__') {
+        if (!isExpiringSoon(aff)) return false
+      } else if (statusFilter !== '__all__') {
+        const statusId = aff?.status_id ?? NO_AFFILIATION
+        if (statusId !== statusFilter) return false
       }
       if (search) {
         const name = contactName(c).toLowerCase()
@@ -570,7 +556,6 @@ export default function TeamAffiliationsPage() {
   }, [contacts, orgId])
 
   const countsByStatus = useMemo(() => {
-    if (selectedTypeId === '__all__') return {}
     const map: Record<string, number> = {}
     contacts?.forEach((c) => {
       const aff = affiliationsByContact[c.id]
@@ -586,7 +571,6 @@ export default function TeamAffiliationsPage() {
   }
 
   const expiringCount = useMemo(() => {
-    if (selectedTypeId === '__all__') return 0
     let n = 0
     contacts?.forEach((c) => { if (isExpiringSoon(affiliationsByContact[c.id])) n++ })
     return n
@@ -742,62 +726,22 @@ export default function TeamAffiliationsPage() {
         </Dialog>
       )}
 
-      {/* Type selector */}
-      {affiliationTypes.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedTypeId}
-            onValueChange={(v) => {
-              if (!v) return
-              setSelectedTypeId(v)
-              setSelected(new Set())
-              setStatusFilter('__all__')
-            }}
-          >
-            <SelectTrigger className="w-[200px] h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('allTypes')}</SelectItem>
-              {affiliationTypes.map((at) => (
-                <SelectItem key={at.id} value={at.id}>{at.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      {/* Which affiliation — cards, and never "all of them": a contact may hold
+          several at once, so one status column cannot speak for all types. */}
+      <AffiliationTypePicker
+        types={affiliationTypes}
+        selectedId={selectedTypeId}
+        onSelect={(id) => {
+          setSelectedTypeId(id)
+          setSelected(new Set())
+          setStatusFilter('__all__')
+        }}
+      />
 
       {/* Status filter pills — different depending on type selected */}
       {!isLoading && (
         <div className="flex flex-wrap gap-1.5">
-          {selectedTypeId === '__all__' ? (
-            <>
-              <button
-                onClick={() => setStatusFilter('__all__')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  statusFilter === '__all__' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('filterAll')} {contacts ? `(${contacts.length})` : ''}
-              </button>
-              <button
-                onClick={() => setStatusFilter('affiliated')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  statusFilter === 'affiliated' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('filterActive')} ({totalActive})
-              </button>
-              <button
-                onClick={() => setStatusFilter('not_affiliated')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  statusFilter === 'not_affiliated' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('filterNone')} ({(contacts?.length ?? 0) - totalActive})
-              </button>
-            </>
-          ) : (
+          {
             <>
               <button
                 onClick={() => setStatusFilter('__all__')}
@@ -846,7 +790,7 @@ export default function TeamAffiliationsPage() {
                 )
               })}
             </>
-          )}
+          }
         </div>
       )}
 
@@ -868,31 +812,6 @@ export default function TeamAffiliationsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground text-sm">{t('noContacts')}</div>
-        ) : selectedTypeId === '__all__' ? (
-          /* All types — read-only chip overview from affiliation_summary */
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colName')}</th>
-                <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colType')}</th>
-              </tr>
-            </thead>
-            <tbody ref={windowed.listRef}>
-              {windowed.before > 0 && <tr aria-hidden style={{ height: windowed.before }} />}
-              {windowed.rows.map(({ item: c, key }) => (
-                <tr key={key} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <ContactNameLink contact={c} />
-                    {c.email && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{c.email}</div>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <AffiliationSummaryChip contact={c} affiliationTypes={affiliationTypes} />
-                  </td>
-                </tr>
-              ))}
-              {windowed.after > 0 && <tr aria-hidden style={{ height: windowed.after }} />}
-            </tbody>
-          </table>
         ) : (
           /* Type-specific — editable status per contact */
           <table className="w-full text-sm">
@@ -928,7 +847,7 @@ export default function TeamAffiliationsPage() {
                   affiliation={affiliationsByContact[c.id]}
                   defs={defs}
                   canEdit={canEdit}
-                  affiliationTypeId={selectedTypeId}
+                  affiliationTypeId={selectedTypeId!}
                   teamId={currentTeamId!}
                   onUpdated={invalidate}
                   selectable={canEdit && !!affiliationsByContact[c.id]}
