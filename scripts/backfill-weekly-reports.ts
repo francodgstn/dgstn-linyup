@@ -2,8 +2,15 @@
  * RECONSTRUCT THE WEEKLY HISTORY A MIGRATED CLUB NEVER RECORDED — from the
  * facts it did.
  *
- *   pnpm backfill:weekly-reports --team <teamId> --target staging --dry-run
- *   pnpm backfill:weekly-reports --org hmd --target staging
+ *   pnpm backfill:weekly-reports --team <teamId> --project linyup-staging
+ *   pnpm backfill:weekly-reports --org hmd --project linyup-staging --apply --yes
+ *
+ * Name the project with `--project <projectId>` (or this script's older
+ * `--target emulator|staging|production`), and name what to reconstruct with
+ * `--team` or `--org`. It REPORTS unless given `--apply`, and a cloud write
+ * with no terminal to confirm at also needs `--yes`. Dispatchable through
+ * .github/workflows/backfill.yml, which passes the `--project` / `--apply`
+ * pair to every script it runs.
  *
  * ── THE PROBLEM ─────────────────────────────────────────────────────────────
  *
@@ -66,6 +73,8 @@ const { values } = parseArgs({
     team: { type: 'string' },
     org: { type: 'string' },
     target: { type: 'string' },
+    project: { type: 'string' },
+    apply: { type: 'boolean', default: false },
     'dry-run': { type: 'boolean', default: false },
     yes: { type: 'boolean', default: false },
   },
@@ -77,15 +86,60 @@ const TARGETS: Record<string, { projectId: string; emulator: boolean }> = {
   production: { projectId: 'linyup-prod', emulator: false },
 }
 
-const target = TARGETS[values.target ?? '']
-if (!target) {
-  console.error(`❌ --target must be one of: ${Object.keys(TARGETS).join(' | ')}`)
-  process.exit(1)
+// ─── WHICH PROJECT, SAID EITHER WAY ──────────────────────────────────────────
+//
+// `--target staging` is this script's own spelling. `--project linyup-staging`
+// is what the other backfills take and what .github/workflows/backfill.yml
+// passes to every script it dispatches, so accepting it is what lets this one
+// be dispatched there unmodified rather than by a special case in the runner.
+//
+// Two spellings that DISAGREE are an error, never a silent winner: the loser
+// would be a write to the wrong project, and nothing downstream could tell.
+function resolveTarget(): { projectId: string; emulator: boolean } {
+  const named = values.target ? TARGETS[values.target] : null
+  if (values.target && !named) {
+    console.error(`❌ --target must be one of: ${Object.keys(TARGETS).join(' | ')}`)
+    process.exit(1)
+  }
+  // A `demo-` project id is the emulator by convention — see CLAUDE.md.
+  const byProject = values.project
+    ? { projectId: values.project, emulator: values.project.startsWith('demo-') }
+    : null
+  if (named && byProject && named.projectId !== byProject.projectId) {
+    console.error(
+      `❌ --target ${values.target} means ${named.projectId}, but --project says ${byProject.projectId}. Pass one.`,
+    )
+    process.exit(1)
+  }
+  const resolved = named ?? byProject
+  if (!resolved) {
+    console.error(
+      `❌ name the project: --project <projectId>, or --target ${Object.keys(TARGETS).join(' | ')}`,
+    )
+    process.exit(1)
+  }
+  return resolved
 }
+
+const target = resolveTarget()
 if (!values.team && !values.org) {
   console.error('❌ name what to backfill: --team <teamId> or --org <orgId>')
   process.exit(1)
 }
+
+// ─── A DRY RUN UNLESS TOLD OTHERWISE ─────────────────────────────────────────
+//
+// This script used to WRITE by default and take `--dry-run` to hold back — the
+// opposite of every other backfill, and of the workflow, whose `apply` input is
+// off by default precisely so that the obvious way to dispatch one is the safe
+// way. Writing now needs `--apply`; `--dry-run` still works and still means no
+// write. The flip can only ever turn an intended write into a report, never the
+// reverse, which is the direction a surprise is allowed to go.
+if (values.apply && values['dry-run']) {
+  console.error('❌ --apply and --dry-run contradict each other. Pass one.')
+  process.exit(1)
+}
+const dryRun = !values.apply
 
 if (target.emulator) {
   const slot = Number(process.env.LINYUP_SLOT ?? 0) || 0
@@ -238,11 +292,22 @@ async function main() {
     roster.docs.forEach((d) => teamIds.push((d.data().teamId as string) ?? d.id))
   }
 
-  console.log(`Weekly-report backfill — ${teamIds.length} team(s) on ${target.projectId}${values['dry-run'] ? ' (dry run)' : ''}`)
+  console.log(`Weekly-report backfill — ${teamIds.length} team(s) on ${target.projectId}${dryRun ? ' (dry run)' : ''}`)
   console.log('  reconstructs: active_contacts_count, contacts_count_by_stage')
   console.log('  never invents: bookings_count, subscription counts — see this file\'s header')
 
-  if (!values['dry-run'] && !values.yes && !target.emulator) {
+  if (!dryRun && !values.yes && !target.emulator) {
+    // The typed confirmation guards a human at a terminal about to write to a
+    // cloud project. CI has no terminal, and a prompt read from a closed stdin
+    // would drop the guard for exactly the unattended case — so demand that an
+    // unattended caller state it instead. In the Backfill workflow the
+    // environment's reviewer approval is what this stands in for.
+    if (!process.stdin.isTTY) {
+      console.error(
+        `❌ Refusing to write to ${target.projectId} unattended. Pass --yes (via extra_args when dispatching the Backfill workflow).`,
+      )
+      process.exit(1)
+    }
     const rl = createInterface({ input: process.stdin, output: process.stdout })
     const answer = await rl.question(`\nType '${target.projectId}' to write: `)
     rl.close()
@@ -252,7 +317,7 @@ async function main() {
     }
   }
 
-  for (const teamId of teamIds) await backfillTeam(teamId, values['dry-run'] ?? false)
+  for (const teamId of teamIds) await backfillTeam(teamId, dryRun)
   console.log('Done.')
 }
 
