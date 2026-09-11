@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dialog'
 import {  } from 'lucide-react'
 import { renewAffiliationCall } from '@/components/affiliations/renew'
+import { resolveAffiliationValidUntil } from '@linyup/shared'
 import { AffiliationBulkBar, RenewConfirmDialog } from '@/components/affiliations/RenewUI'
 import {
   NO_AFFILIATION,
@@ -456,6 +457,11 @@ export default function OrgAffiliationsPage() {
   // contact may hold several affiliations, so "all types" showed a summary
   // ("any affiliation at all") over rows that each showed one type's status.
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+  // THE FEDERATION WORKS STUDIO BY STUDIO. Renewal season is a club at a time —
+  // one person chasing one studio's members — and an unfiltered list of every
+  // club's contacts is the wrong unit of work for that. Absent ⇒ everything, so
+  // the page opens exactly as it did.
+  const [teamFilter, setTeamFilter] = useState<string>('__all__')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [renewConfirm, setRenewConfirm] = useState(false)
   const [renewBusy, setRenewBusy] = useState(false)
@@ -514,13 +520,14 @@ export default function OrgAffiliationsPage() {
         const statusId = aff?.status_id ?? NO_AFFILIATION
         if (statusId !== statusFilter) return false
       }
+      if (teamFilter !== '__all__' && c.teamId !== teamFilter) return false
       if (search) {
         const name = contactName(c).toLowerCase()
         if (!name.includes(search.toLowerCase())) return false
       }
       return true
     })
-  }, [contacts, statusFilter, search, selectedTypeId, affiliationsByContact])
+  }, [contacts, statusFilter, search, selectedTypeId, teamFilter, affiliationsByContact])
   // Only the rows near the viewport are mounted once the table is long; the
   // filters and the selection still run over the whole list
   // (docs/scalability-2026-09.md §17). Rows are uniform, so no measuring.
@@ -569,6 +576,62 @@ export default function OrgAffiliationsPage() {
       else next.delete(id)
       return next
     })
+  }
+
+  // BULK STATUS — the same job the row dropdown does, for a selection.
+  //
+  // It mirrors the row's rule rather than inventing a second one: a status that
+  // does NOT count as active clears the expiry (a lapsed licence has no
+  // meaningful end date), and a status that DOES count is applied by RENEWING,
+  // so the end date comes from the type's own validity rule — HMD's 1 September
+  // for a fixed-date type — instead of this page guessing a date per contact.
+  const [bulkStatus, setBulkStatus] = useState<OrgAffiliationStatusDef | null>(null)
+  const upsertAffiliationCall = httpsCallable(functions, 'upsertAffiliation')
+
+  async function applyBulkStatus(def: OrgAffiliationStatusDef) {
+    setRenewBusy(true)
+    try {
+      const ids = [...selected].filter((cid) => affiliationsByContact[cid])
+      const type = affiliationTypes.find((at) => at.id === activeTypeId)
+      const now = new Date()
+      const results = await Promise.allSettled(
+        ids.map((cid) => {
+          const aff = affiliationsByContact[cid]!
+          // `renewAffiliation` cannot carry a status, so both arms go through
+          // upsert — and the date comes from `resolveAffiliationValidUntil`,
+          // the SAME resolver the renew dialog previews with, so a bulk change
+          // and a row-by-row one cannot land on different days.
+          const validUntil = def.countsAsActive
+            ? resolveAffiliationValidUntil({
+                type,
+                currentValidUntil: aff.valid_until?.toDate?.() ?? null,
+                now,
+              })
+                .toISOString()
+                .slice(0, 10)
+            : null
+          return upsertAffiliationCall({
+            teamId: aff.teamId,
+            contactId: cid,
+            affiliationId: aff.id,
+            affiliation_type_id: activeTypeId,
+            issuer: 'org',
+            org_id: orgId,
+            status_id: def.id,
+            valid_until: validUntil,
+          })
+        }),
+      )
+      const ok = results.filter((r) => r.status === 'fulfilled').length
+      const failed = results.length - ok
+      invalidate()
+      setSelected(new Set())
+      setBulkStatus(null)
+      setToast(failed ? t('bulkStatusPartial', { ok, failed }) : t('bulkStatusToast', { count: ok, status: def.label }))
+      setTimeout(() => setToast(null), 4000)
+    } finally {
+      setRenewBusy(false)
+    }
   }
 
   async function renewSelected() {
@@ -630,6 +693,33 @@ export default function OrgAffiliationsPage() {
               setStatusFilter('__all__')
             }}
           />
+
+          {/* STUDIO, beside the type — offered only where there is a choice to
+              make. A federation of one studio would get a control whose every
+              option is the whole list. */}
+          {(teams?.length ?? 0) > 1 && (
+            <Select
+              value={teamFilter}
+              onValueChange={(v) => {
+                if (!v) return
+                setTeamFilter(v)
+                setSelected(new Set())
+              }}
+            >
+              <SelectTrigger className="w-[200px] h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">{t('allTeams')}</SelectItem>
+                {(teams ?? [])
+                  .slice()
+                  .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+                  .map((tm) => (
+                    <SelectItem key={tm.id} value={tm.id}>{tm.name || tm.id}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 
@@ -749,8 +839,28 @@ export default function OrgAffiliationsPage() {
           onRenew={() => setRenewConfirm(true)}
           onClear={() => setSelected(new Set())}
           busy={renewBusy}
+          statusLabel={t('bulkSetStatus')}
+          statusActions={defs.map((d) => ({
+            id: d.id,
+            label: d.label,
+            onSelect: () => setBulkStatus(d),
+          }))}
         />
       )}
+      <RenewConfirmDialog
+        open={!!bulkStatus}
+        onOpenChange={(v) => { if (!v) setBulkStatus(null) }}
+        title={t('bulkStatusTitle', { status: bulkStatus?.label ?? '' })}
+        description={
+          bulkStatus?.countsAsActive
+            ? t('bulkStatusDescActive', { count: selected.size, status: bulkStatus?.label ?? '' })
+            : t('bulkStatusDesc', { count: selected.size, status: bulkStatus?.label ?? '' })
+        }
+        confirmLabel={t('bulkSetStatus')}
+        cancelLabel={t('cancel')}
+        onConfirm={() => bulkStatus && void applyBulkStatus(bulkStatus)}
+        busy={renewBusy}
+      />
       <RenewConfirmDialog
         open={renewConfirm}
         onOpenChange={setRenewConfirm}

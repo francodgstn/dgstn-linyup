@@ -3139,7 +3139,14 @@
     "removeAction": "Affiliation entfernen",
     "removeTitle": "Diese Affiliation entfernen?",
     "removeBody": "{name} verschwindet aus der Erfassung dieser Organisation und aus dieser Liste. Der Nachweis einer früheren Affiliation wird gelöscht — um eine abgelaufene Affiliation festzuhalten, stattdessen auf abgelaufen setzen.",
-    "removeConfirm": "Entfernen"
+    "removeConfirm": "Entfernen",
+    "allTeams": "Alle Studios",
+    "bulkSetStatus": "Status setzen",
+    "bulkStatusTitle": "Status auf {status} setzen?",
+    "bulkStatusDesc": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, ein Ablaufdatum wird entfernt.",
+    "bulkStatusDescActive": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, mit dem Ablaufdatum aus den Regeln dieses Typs.",
+    "bulkStatusToast": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} auf {status} gesetzt.",
+    "bulkStatusPartial": "{ok} aktualisiert, {failed} abgelehnt – du verwaltest nur einen Teil dieser Studios."
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliationsstatus",
