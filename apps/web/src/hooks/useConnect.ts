@@ -27,6 +27,7 @@ import {
   type MemberSubscription,
   type PartnerVisit,
   type PaymentLineItem,
+  TEAM_INTEGRATIONS_SUBCOLLECTION,
 } from '@linyup/shared'
 
 /** The browser origin to send to checkout/onboarding callables so Stripe returns
@@ -133,7 +134,7 @@ export function useHasByoGateway(teamId: string | null) {
     queryFn: async (): Promise<boolean> => {
       const snap = await getDocs(
         query(
-          collection(db, TEAMS_COLLECTION, teamId!, 'integrations'),
+          collection(db, TEAMS_COLLECTION, teamId!, TEAM_INTEGRATIONS_SUBCOLLECTION),
           where('type', '==', 'payment_gateway'),
           limit(1)
         )

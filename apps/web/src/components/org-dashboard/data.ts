@@ -70,6 +70,8 @@ import {
   ORG_MEMBER_INVITATIONS_SUBCOLLECTION,
   ORG_TEAMS_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION,
+  PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 import type { OrgAffiliationStatusDef, OrgTeamStatus } from '@linyup/shared'
 
@@ -137,7 +139,7 @@ export function useOrgRoster(orgId: string) {
       })
 
       const profiles = await Promise.allSettled(
-        rows.map((r) => getDoc(doc(db, TEAMS_COLLECTION, r.teamId, 'public_profile', r.teamId)))
+        rows.map((r) => getDoc(doc(db, TEAMS_COLLECTION, r.teamId, PUBLIC_PROFILE_SUBCOLLECTION, r.teamId)))
       )
       profiles.forEach((p, i) => {
         if (p.status !== 'fulfilled' || !p.value.exists()) return
@@ -337,7 +339,7 @@ export function useOrgAttention(orgId: string, enabled: boolean) {
       const [requests, invitations] = await Promise.allSettled([
         getDocs(
           query(
-            collection(db, ORGANIZATIONS_COLLECTION, orgId, 'team_access_requests'),
+            collection(db, ORGANIZATIONS_COLLECTION, orgId, ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION),
             where('status', '==', 'pending')
           )
         ),

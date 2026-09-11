@@ -363,15 +363,18 @@ all eight, and the site count on 21 was low.
 
 ### Worth doing, not urgent
 
-25. **A shared constant for `public_profile` and for session `bookings`, then a
-    sweep.** `packages/shared/src/paths.ts` names the user public profile and
-    the coach-slot bookings and nothing else — so the *general* mirror
-    subcollection every public surface queries, and the session bookings every
-    rail writes, are hand-typed: nineteen `'public_profile'` and five
-    `'bookings'` in the web, plus a local `BOOKINGS_SUB` alias, plus two in
-    mobile. Not urgent because the strings are stable; worth doing because
-    "stable" is exactly what every hand-copied shape in §1 was, until it was
-    not.
+25. **DONE for the web and the app — `PUBLIC_PROFILE_SUBCOLLECTION`,
+    `SESSION_BOOKINGS_SUBCOLLECTION`, and three more the sweep turned up
+    (`ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION`, `WEBHOOK_ENDPOINTS_SUBCOLLECTION`,
+    `CONTACT_FILTER_PRESET_PINS_DOC`).** The sweep was wider than the entry:
+    every string a `collection()` / `doc()` / `collectionGroup()` call was
+    handed that `paths.ts` already named — a hundred and forty of them, in
+    sixty-three web files, plus the two local `BOOKINGS_SUB` aliases; the app
+    had none left. The one deliberate exception is a plugin id that happens
+    to equal a collection name (`installed_plugins/documents`), now a named
+    constant of its own. **Not swept: `packages/functions`**, which holds
+    several hundred more on the Admin SDK's `db.collection('…')` shape — the
+    same rule below is ready for it, but that is its own pass.
 26. Push cannot deliver until an FCM V1 service account and an APNs key are
     uploaded to EAS. Recorded in the mobile-release store-submission checklist.
     Tokens registered before then are still valid; nothing is lost.
@@ -382,6 +385,28 @@ all eight, and the site count on 21 was low.
 29. `resolveAffiliationTerm` resolves over a studio-authored map using the
     *device* locale, outside React. Rewiring it to the app's chosen locale is
     a behaviour change, not a string migration — separate from item 11.
+
+### Tripwires — so the ledger does not regrow (2026-09-11)
+
+Two of the patterns above were swept by hand more than once. Both are now lint
+errors, so the next copy fails CI rather than waiting for the next sweep:
+
+- **A Firestore path segment typed as a string where `paths.ts` names it**
+  (item 25) — `no-restricted-syntax` on every string handed directly to
+  `collection()`, `doc()` or `collectionGroup()`, in the web and the app. The
+  forbidden set is **read from `@linyup/shared`'s build**
+  (`apps/web/eslint.firestorePaths.mjs`, shared by both configs), never listed
+  in the rule, so adding a constant to `paths.ts` is what extends it. Lint runs
+  after `^build` under turbo, so the file is always there.
+- **A bare `toLocale*String()` on a public route** (item 13) — scoped to
+  `src/app/*/(public)/**`. The twenty-five sites still there (kiosk, booking
+  form, waitlist, manage-booking, appointments, the event programme print, the
+  invitation token page) went through `usePublicFormat` first; two day-key
+  displays moved to noon so a studio-zone formatter cannot land on the
+  neighbouring day. **Out of scope, on purpose:** the admin tree (`useTeamFormat`
+  exists; a hundred-plus sites, its own pass) and the member app (thirty-one
+  sites; it can now read `TeamPublicProfile.regional`, so adopting
+  `createRegionalFormatter` there is the natural next step).
 
 ### Decide, do not drift
 

@@ -26,6 +26,10 @@ import {
   confirmClearedHoldFields,
   buildParticipantDoc,
   type Booking,
+  CONTACTS_COLLECTION,
+  PARTICIPANTS_SUBCOLLECTION,
+  SESSIONS_COLLECTION,
+  SESSION_BOOKINGS_SUBCOLLECTION,
 } from '@linyup/shared'
 
 export type BookingAction = 'confirm' | 'no_show' | 'cancel' | 'revert'
@@ -52,8 +56,8 @@ export function useBookingAction(teamId: string | null) {
   return useMutation({
     mutationFn: async ({ booking, action }: { booking: Booking; action: BookingAction }) => {
       if (!booking.session) throw new Error('Missing session ID on booking')
-      const bookingRef = doc(db, 'sessions', booking.session, 'bookings', booking.id)
-      const sessionRef = doc(db, 'sessions', booking.session)
+      const bookingRef = doc(db, SESSIONS_COLLECTION, booking.session, SESSION_BOOKINGS_SUBCOLLECTION, booking.id)
+      const sessionRef = doc(db, SESSIONS_COLLECTION, booking.session)
       const batch = writeBatch(db)
 
       if (action === 'confirm') {
@@ -76,7 +80,7 @@ export function useBookingAction(teamId: string | null) {
         // `checkedInBy` — so the same act produced a different document here
         // than it did one click away on the session.
         const contactId = bookingContactId(booking)
-        const participantRef = doc(db, 'sessions', booking.session, 'participants', contactId)
+        const participantRef = doc(db, SESSIONS_COLLECTION, booking.session, PARTICIPANTS_SUBCOLLECTION, contactId)
         batch.set(
           participantRef,
           buildParticipantDoc({
@@ -96,7 +100,7 @@ export function useBookingAction(teamId: string | null) {
           conversions_count: increment(1),
         })
         if (booking.contact) {
-          batch.update(doc(db, 'contacts', booking.contact), {
+          batch.update(doc(db, CONTACTS_COLLECTION, booking.contact), {
             pending_bookings_count: increment(-1),
           })
         }
@@ -109,9 +113,9 @@ export function useBookingAction(teamId: string | null) {
         // Remove participant doc — same id the confirm above wrote it under.
         const participantRef = doc(
           db,
-          'sessions',
+          SESSIONS_COLLECTION,
           booking.session,
-          'participants',
+          PARTICIPANTS_SUBCOLLECTION,
           bookingContactId(booking)
         )
         batch.delete(participantRef)
@@ -120,7 +124,7 @@ export function useBookingAction(teamId: string | null) {
           conversions_count: increment(-1),
         })
         if (booking.contact) {
-          batch.update(doc(db, 'contacts', booking.contact), {
+          batch.update(doc(db, CONTACTS_COLLECTION, booking.contact), {
             pending_bookings_count: increment(1),
           })
         }
@@ -130,7 +134,7 @@ export function useBookingAction(teamId: string | null) {
         if (wasPending) {
           // The freed seat is trackBookings' recount to write — see above.
           if (booking.contact) {
-            batch.update(doc(db, 'contacts', booking.contact), {
+            batch.update(doc(db, CONTACTS_COLLECTION, booking.contact), {
               pending_bookings_count: increment(-1),
             })
           }
@@ -145,7 +149,7 @@ export function useBookingAction(teamId: string | null) {
         if (wasPending) {
           // The freed seat is trackBookings' recount to write — see above.
           if (booking.contact) {
-            batch.update(doc(db, 'contacts', booking.contact), {
+            batch.update(doc(db, CONTACTS_COLLECTION, booking.contact), {
               pending_bookings_count: increment(-1),
             })
           }

@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { TEAMS_COLLECTION } from '@linyup/shared'
+import {  TEAMS_COLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { resolveBookingContactFields } from '@linyup/shared'
 import type {
   Team,
@@ -607,7 +607,7 @@ export default function BookingSettingsPage() {
       // ONE write, to the one store — team-member writable, world-readable, and
       // what the booking callables read. There is no second write to fail
       // silently behind it.
-      const profileRef = doc(db, TEAMS_COLLECTION, currentTeamId, 'public_profile', currentTeamId)
+      const profileRef = doc(db, TEAMS_COLLECTION, currentTeamId, PUBLIC_PROFILE_SUBCOLLECTION, currentTeamId)
       await setDoc(
         profileRef,
         { type: 'team', slug: team?.slug ?? '', name: team?.name ?? '', bookingSettings },

@@ -35,7 +35,7 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
 import { GraduationCap, CreditCard, ChevronRight, ShoppingBag, Ticket, CalendarDays } from 'lucide-react'
-import { resolvePaymentOptions, heldSubscriptionTypeIds, type CourseAccessRule } from '@linyup/shared'
+import {  resolvePaymentOptions, heldSubscriptionTypeIds, type CourseAccessRule, COURSE_PURCHASES_SUBCOLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { loadFailureDetail, reportPublicLoadFailure } from '@/lib/publicQueryError'
@@ -184,7 +184,7 @@ export default function SpaceHome() {
     }
     let cancelled = false
     const q = query(
-      collectionGroup(db, 'public_profile'),
+      collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('type', '==', 'course'),
       where('teamId', '==', teamId)
     )
@@ -226,7 +226,7 @@ export default function SpaceHome() {
     }
     let cancelled = false
     const q = query(
-      collectionGroup(db, 'purchases'),
+      collectionGroup(db, COURSE_PURCHASES_SUBCOLLECTION),
       where('contactId', '==', contact.id),
       where('teamId', '==', teamId)
     )

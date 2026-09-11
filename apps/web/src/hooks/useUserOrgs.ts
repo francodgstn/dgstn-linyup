@@ -5,6 +5,7 @@ import { collectionGroup, query, where, getDocs, doc, getDoc } from 'firebase/fi
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Organization } from '@linyup/shared'
+import { ORGANIZATIONS_COLLECTION, ORG_MEMBERS_SUBCOLLECTION } from '@linyup/shared'
 
 interface UserOrg extends Organization {
   id: string
@@ -23,7 +24,7 @@ export function useUserOrgs() {
       // Find all org_members docs where this user is a member
       const membershipsSnap = await getDocs(
         query(
-          collectionGroup(db, 'org_members'),
+          collectionGroup(db, ORG_MEMBERS_SUBCOLLECTION),
           where('userId', '==', user.uid)
         )
       )
@@ -35,7 +36,7 @@ export function useUserOrgs() {
         membershipsSnap.docs.map(async (memberDoc) => {
           const orgId = memberDoc.ref.parent.parent?.id
           if (!orgId) return null
-          const orgSnap = await getDoc(doc(db, 'organizations', orgId))
+          const orgSnap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId))
           if (!orgSnap.exists()) return null
           return {
             id: orgSnap.id,

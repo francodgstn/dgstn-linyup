@@ -42,6 +42,7 @@ import {
   ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION,
   TEAMS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION,
   USERS_COLLECTION, CONTACTS_COLLECTION,
+  ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION,
 } from '@linyup/shared'
 import type { OrgTeam, TeamAccessRequest, TeamAccessType } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
@@ -59,7 +60,7 @@ function useTeamAccessRequests(orgId: string) {
     queryKey: ['team-access-requests', orgId],
     queryFn: async () => {
       const snap = await getDocs(
-        collection(db, ORGANIZATIONS_COLLECTION, orgId, 'team_access_requests'),
+        collection(db, ORGANIZATIONS_COLLECTION, orgId, ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION),
       )
       const result: Record<string, TeamAccessRequest> = {}
       snap.docs.forEach((d) => { result[d.id] = { ...d.data() } as TeamAccessRequest })

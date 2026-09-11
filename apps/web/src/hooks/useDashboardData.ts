@@ -18,6 +18,8 @@ import {
   ACTIVITIES_COLLECTION,
   TEAM_WEEKLY_REPORTS_SUBCOLLECTION,
   isoWeekKey,
+  SESSION_BOOKINGS_SUBCOLLECTION,
+  SUBSCRIPTION_TYPES_SUBCOLLECTION,
 } from '@linyup/shared'
 
 export interface WeeklyReport {
@@ -170,7 +172,7 @@ export function useDashboardData(
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collectionGroup(db, 'bookings'),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('joinedAt', '>=', Timestamp.fromDate(mainStart)),
           orderBy('joinedAt', 'asc')
@@ -187,7 +189,7 @@ export function useDashboardData(
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collectionGroup(db, 'bookings'),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('is_new_contact', '==', true),
           where('joinedAt', '>=', Timestamp.fromDate(mainStart)),
@@ -205,7 +207,7 @@ export function useDashboardData(
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collectionGroup(db, 'bookings'),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('joinedAt', '>=', Timestamp.fromDate(compStart!)),
           where('joinedAt', '<', Timestamp.fromDate(compEnd!)),
@@ -223,7 +225,7 @@ export function useDashboardData(
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collectionGroup(db, 'bookings'),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('is_new_contact', '==', true),
           where('joinedAt', '>=', Timestamp.fromDate(compStart!)),
@@ -254,7 +256,7 @@ export function useDashboardData(
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collection(db, TEAMS_COLLECTION, teamId!, 'subscription_types'),
+          collection(db, TEAMS_COLLECTION, teamId!, SUBSCRIPTION_TYPES_SUBCOLLECTION),
           orderBy('name', 'asc')
         )
       )

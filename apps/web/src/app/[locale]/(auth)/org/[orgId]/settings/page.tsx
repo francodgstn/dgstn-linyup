@@ -491,7 +491,7 @@ export default function OrgSettingsPage() {
     if (!name.trim()) return
     setSaving(true)
     try {
-      await updateDoc(doc(db, 'organizations', orgId), {
+      await updateDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId), {
         name: name.trim(), description: description.trim(), language,
       })
       qc.invalidateQueries({ queryKey: ['org', orgId] })

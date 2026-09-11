@@ -17,6 +17,7 @@ import {
   type Team,
   type TeamLink,
   type TeamPublicProfile,
+  PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 
 /**
@@ -267,7 +268,7 @@ async function hasBookableFutureSession(teamId: string, nowTs: Timestamp): Promi
 
 /** The public mirror of the team, read for its FIELDS — never for its existence. */
 async function readPublicProfile(teamId: string): Promise<TeamPublicProfile | null> {
-  const snap = await getDoc(doc(db, TEAMS_COLLECTION, teamId, 'public_profile', teamId))
+  const snap = await getDoc(doc(db, TEAMS_COLLECTION, teamId, PUBLIC_PROFILE_SUBCOLLECTION, teamId))
   return snap.exists() ? (snap.data() as TeamPublicProfile) : null
 }
 

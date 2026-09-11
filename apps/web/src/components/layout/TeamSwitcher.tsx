@@ -65,7 +65,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { AlertTriangle, Building2, Check, Landmark, Loader2, Plus } from 'lucide-react'
 import type { Route } from 'next'
-import { TEAMS_COLLECTION, USERS_COLLECTION } from '@linyup/shared'
+import { TEAMS_COLLECTION, USERS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrgLinks } from '@/hooks/useOrgLinks'
@@ -110,7 +110,7 @@ export function useMyTeams() {
     queryFn: async () => {
       if (!uid) return []
       const snap = await getDocs(
-        query(collectionGroup(db, 'team_members'), where('userId', '==', uid))
+        query(collectionGroup(db, TEAM_MEMBERS_SUBCOLLECTION), where('userId', '==', uid))
       )
       const ids = Array.from(
         new Set(

@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, CalendarDays, MapPin, Users, Check, X, Copy } from 'lucide-react'
 import { Link, useRouter } from '@/i18n/navigation'
-import { EVENTS_COLLECTION, CHECKINS_COLLECTION, personInitials } from '@linyup/shared'
+import {  EVENTS_COLLECTION, CHECKINS_COLLECTION, personInitials, TEAMS_COLLECTION } from '@linyup/shared'
 import type { Event, EventCheckin, EventType } from '@linyup/shared'
 import type { Route } from 'next'
 import { ProgramTab } from '@/components/events/program/ProgramTab'
@@ -68,7 +68,7 @@ function useOrgTeams(orgId: string) {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const snap = await getDocs(query(
-        collection(db, 'teams'),
+        collection(db, TEAMS_COLLECTION),
         where('org_id', '==', orgId),
       ))
       return snap.docs.map((d) => ({ id: d.id, name: d.data().name as string }))

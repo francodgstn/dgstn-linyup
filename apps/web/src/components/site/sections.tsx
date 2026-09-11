@@ -79,6 +79,8 @@ import {
   type Benefit,
   isHexColor,
   isLightColor,
+  PUBLIC_PROFILE_SUBCOLLECTION,
+  TEAMS_COLLECTION,
 } from '@linyup/shared'
 import {
   resolveActivityTerms,
@@ -718,11 +720,11 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
   useEffect(() => {
     let alive = true
     const q = query(
-      collectionGroup(db, 'public_profile'),
+      collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('teamId', '==', teamId),
       where('type', '==', 'activity')
     )
-    Promise.all([getDocs(q), getDoc(doc(db, 'teams', teamId!, 'public_profile', teamId!))])
+    Promise.all([getDocs(q), getDoc(doc(db, TEAMS_COLLECTION, teamId!, PUBLIC_PROFILE_SUBCOLLECTION, teamId!))])
       .then(([snap, teamSnap]) => {
         if (!alive) return
         const list = snap.docs
@@ -1284,10 +1286,10 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
     // 'pricing' section type), so teamId is always defined here. Plans live on
     // the team's single public_profile doc; the pay-per-visit prices come from
     // the per-activity mirrors (same query the Activities block reads).
-    const planP = getDoc(doc(db, 'teams', teamId!, 'public_profile', teamId!))
+    const planP = getDoc(doc(db, TEAMS_COLLECTION, teamId!, PUBLIC_PROFILE_SUBCOLLECTION, teamId!))
     const actP = getDocs(
       query(
-        collectionGroup(db, 'public_profile'),
+        collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
         where('teamId', '==', teamId),
         where('type', '==', 'activity')
       )
@@ -1609,7 +1611,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
     // the CURRENT week (not "now"): the calendar doubles as a timetable, showing
     // this week's already-run sessions muted.
     const q = query(
-      collectionGroup(db, 'public_profile'),
+      collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('teamId', '==', teamId),
       where('type', '==', 'session'),
       where('allowBooking', '==', true),
@@ -1664,7 +1666,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
       // firestore.index.json — deleting it puts the silence back.
       const offerings = await getDocs(
         query(
-          collectionGroup(db, 'public_profile'),
+          collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('type', '==', 'activity'),
           where('activityType', '==', 'appointment')
