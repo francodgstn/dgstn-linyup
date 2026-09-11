@@ -79,6 +79,13 @@ jobs:
       - name: Locales
         run: pnpm i18n:check
 
+      # The LOG-list tripwire (docs/scalability-2026-09.md §19): a direct read
+      # of a collection that grows with time must carry a bound, or be
+      # acknowledged in the script with a reason. Needs @linyup/shared built,
+      # which the lint step's ^build dependency already did.
+      - name: Unbounded reads
+        run: pnpm census:reads
+
       # scripts/ is not a workspace, so `turbo run typecheck` never sees the
       # seeders, the backfills or the HMD migration — which is a root cause of
       # the drift docs/seed-truth-2026-08.md catalogues. This is the only place

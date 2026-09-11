@@ -9,6 +9,23 @@ import { getAuth } from 'firebase-admin/auth'
 export const ORG_ID = 'hmd'
 export const ORG_NAME = 'HMD'
 
+/**
+ * THE FEDERATION'S OTHER ADMINS — people who run HMD itself, beyond whoever
+ * ran the migration (`--org-admin-email`, the org's `createdBy`).
+ *
+ * A standing fact about the organisation, not a property of a run: these people
+ * are org admins whoever launches the import and however often it is re-run, so
+ * it belongs here with the other HMD facts rather than on the command line
+ * where it could be forgotten on the wave that matters.
+ *
+ * Resolved the same way the primary admin is — the TARGET's login first (see
+ * migration/orgAdmin.ts) — and written idempotently: an existing `org_members`
+ * row is never overwritten, so a role changed in the app survives a re-run.
+ */
+export const ADDITIONAL_ORG_ADMIN_EMAILS: string[] = [
+  'mcmxc@hotmail.it', // Ardovini — studio owner AND an HMD org admin (Franco, 2026-09-11)
+]
+
 // Ranking system IDs used in dgstn-lineup
 export const RANKING_HMD = 'hmd'   // Hwal Moo Do
 export const RANKING_KD  = 'kd'    // Korean Dragon

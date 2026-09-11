@@ -202,17 +202,27 @@ export function useMemberPayments(
  * bounded instead.
  *
  * Cancelled subscriptions accumulate, so this is headcount plus churn rather
- * than headcount alone. If it ever becomes a problem the fix is a status filter
- * in the query, not a bare limit that hides rows without saying which.
+ * than headcount alone — and after a few years the ended rows outnumber the
+ * live. So the query carries the STATUS FILTER this header always named as the
+ * fix (never a bare limit that hides rows without saying which): the one reader
+ * (the payments page) only ever rendered the live ones, dropping the rest in
+ * memory after reading them, so nothing it shows changes — only what it reads.
+ * `in` on the (`status`, `created_at`) index (firestore.index.json).
  */
+/** The statuses a subscription is LIVE under — what the payments page lists.
+ *  `paused` is not in `MemberSubscriptionStatus` (Stripe's `pause_collection`
+ *  keeps `active`), kept for a doc that carries it anyway. */
+export const LIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due', 'paused'] as const
+
 export function useMemberSubscriptions(teamId: string | null) {
   return useQuery({
-    queryKey: ['member-subscriptions', teamId],
+    queryKey: ['member-subscriptions', teamId, 'live'],
     enabled: !!teamId,
     queryFn: async (): Promise<MemberSubscription[]> => {
       const snap = await getDocs(
         query(
           collection(db, TEAMS_COLLECTION, teamId!, MEMBER_SUBSCRIPTIONS_SUBCOLLECTION),
+          where('status', 'in', [...LIVE_SUBSCRIPTION_STATUSES]),
           orderBy('created_at', 'desc')
         )
       )

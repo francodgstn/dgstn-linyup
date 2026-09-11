@@ -47,13 +47,13 @@ import { Bell, Inbox, X } from 'lucide-react'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
-import { useTeamNotifications } from '@/hooks/useTeamNotifications'
-import type { TeamNotification } from '@linyup/shared'
+import { useTeamNotifications, UNREAD_NOTIFICATIONS_LIMIT } from '@/hooks/useTeamNotifications'
+import { LEDGER_RETENTION_DAYS, type TeamNotification } from '@linyup/shared'
 
 export function NotificationsBell({ showLabel }: { showLabel?: boolean }) {
   const t = useTranslations('Notifications')
   const [open, setOpen] = useState(false)
-  const { canRead, unread, isLoading, markRead } = useTeamNotifications()
+  const { canRead, unread, truncated, isLoading, markRead } = useTeamNotifications()
 
   // No role, no bell — see the module header. Hooks above still ran
   // unconditionally, so this early return is safe.
@@ -111,6 +111,17 @@ export function NotificationsBell({ showLabel }: { showLabel?: boolean }) {
                     onNavigate={() => setOpen(false)}
                   />
                 ))}
+                {/* HONEST TRUNCATION — the page is capped, and a full page
+                    means there may be older unread items behind it. Dismissing
+                    these pulls the next ones forward; the rest age out. */}
+                {truncated && (
+                  <p className="pt-2 text-xs text-muted-foreground">
+                    {t('showingLatest', {
+                      count: UNREAD_NOTIFICATIONS_LIMIT,
+                      days: LEDGER_RETENTION_DAYS.notifications,
+                    })}
+                  </p>
+                )}
               </div>
             )}
           </div>

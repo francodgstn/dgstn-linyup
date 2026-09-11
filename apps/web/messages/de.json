@@ -23,7 +23,10 @@
     "delete": "Löschen",
     "remove": "Entfernen",
     "reset": "Zurücksetzen",
-    "ratingAriaLabel": "Bewerte {n} von 5"
+    "ratingAriaLabel": "Bewerte {n} von 5",
+    "loadMore": "Mehr laden",
+    "showingCount": "{count} geladen",
+    "showingOf": "{shown} von {total} geladen"
   },
   "Plans": {
     "free": "Free",
@@ -2007,8 +2010,6 @@
     "paymentsDefaultSubscriptionTypeHelpStripe": "Wird angewendet, wenn eine Zahlung keine <code>subscriptionTypeId</code>-Metadaten enthält.",
     "paymentsDefaultSubscriptionTypeHelpPayrexx": "Wird angewendet, wenn der Payrexx-Zahlungslink keine <code>referenceId</code> hat. Setze <code>referenceId</code> auf jedem Payrexx-Link auf die Abo-Typ-ID, um die Steuerung pro Plan zu ermöglichen.",
     "tabAffiliations": "Affiliationen",
-    "affiliationsEnabledLabel": "Mitgliedschaften aktivieren",
-    "affiliationsEnabledHelp": "Mitgliedschaftsnachweise (z. B. Vereinsmitgliedschaft, Verbandslizenz) für Kontakte verwalten.",
     "affiliationsUpsell": "Mitgliedschaftsverfolgung erfordert das Studio-Abo oder höher.",
     "tabBarTitle": "Seiten-Tabs anzeigen",
     "tabBarHelp": "Geöffnete Seiten als Tabs über dem Inhalt behalten, um zwischen ihnen zu wechseln. Diese Einstellung gilt pro Gerät.",
@@ -2539,7 +2540,8 @@
     "cancelSlotClosesLink": "Der an die Kundin oder den Kunden gesendete Zahlungslink wird geschlossen und kann nicht mehr bezahlt werden.",
     "cancelSlotPaidInWindow": "Die Kundin oder der Kunde hat soeben bezahlt, daher wurde nichts storniert. Der Termin ist bestätigt — erstatte den Betrag in Stripe, wenn du ihn trotzdem absagen willst.",
     "cancelSlotLinkStillOpen": "Storniert, aber der Zahlungslink konnte nicht geschlossen werden — er ist möglicherweise noch bezahlbar. Beende ihn in deinem Stripe-Dashboard.",
-    "cancelSlotFailed": "Der Termin konnte nicht storniert werden."
+    "cancelSlotFailed": "Der Termin konnte nicht storniert werden.",
+    "timeOffWindowHint": "Abwesenheiten, die vor mehr als {days} Tagen endeten, werden nicht mehr angezeigt."
   },
   "AppointmentForm": {
     "durationBenefitOnly": "Mit Abo",
@@ -4629,7 +4631,8 @@
     "panelTitle": "Benachrichtigungen",
     "unreadCount": "{count, plural, =0 {Keine ungelesenen Benachrichtigungen} one {# ungelesene Benachrichtigung} other {# ungelesene Benachrichtigungen}}",
     "emptyTitle": "Alles erledigt",
-    "emptyBody": "Neue Benachrichtigungen werden hier angezeigt."
+    "emptyBody": "Neue Benachrichtigungen werden hier angezeigt.",
+    "showingLatest": "Die neuesten {count} ungelesenen werden angezeigt. Schliesse einige, um ältere zu sehen; ungelesene Benachrichtigungen verfallen nach {days} Tagen."
   },
   "Affiliations": {
     "tabLabel": "Affiliationen",
@@ -4842,7 +4845,8 @@
     "thankYouBody": "Deine Antwort ist eingegangen.",
     "unpublishConfirmTitle": "Dieses Formular offline nehmen?",
     "unpublishConfirmBody": "Der von Ihnen geteilte Link funktioniert sofort nicht mehr, und ein darauf verweisender Bio-Link-Eintrag wird nicht mehr angezeigt. Es geht nichts verloren: Felder, Einstellungen und alle bisher erhaltenen Antworten bleiben erhalten, und Sie können jederzeit wieder veröffentlichen.",
-    "unpublishConfirmAction": "Offline nehmen"
+    "unpublishConfirmAction": "Offline nehmen",
+    "exportFailed": "Der Export konnte nicht erstellt werden. Bitte erneut versuchen."
   },
   "Documents": {
     "title": "Dokumente",
@@ -8196,5 +8200,20 @@
     "sheetLiveWarning": "{count} Zettel sind bis zum Ablauf gültig — das Blatt am besten wieder einsammeln.",
     "sheetSlipHint": "Scannen und Daten prüfen",
     "sheetFailed": "Das Blatt konnte nicht erstellt werden. Bitte erneut versuchen."
+  },
+  "PlanTemplates": {
+    "railLink": "Mit einer Vorlage starten",
+    "title": "Mit einer Vorlage starten",
+    "intro": "Die Formen, bei denen die meisten Studios landen. Wähle aus, was du brauchst – umbenennen und anpassen kannst du danach alles.",
+    "noPricesNote": "Es werden keine Preise gesetzt – du trägst deine ein, bevor jemand kaufen kann. Öffentlich sichtbar wird nichts, bis du es freigibst.",
+    "membership_name": "Mitgliedschaft",
+    "membership_desc": "Ein wiederkehrender Plan, monatlich oder jährlich abgerechnet.",
+    "class_pack_name": "10er-Karte",
+    "class_pack_desc": "Einmal bezahlt, gibt 10 Guthaben für Kurse.",
+    "complimentary_name": "Gratis",
+    "complimentary_desc": "Kostenlos – für Trainer, Familie oder alle, die das Studio einlädt.",
+    "create": "{count, plural, =0 {Erstellen} one {Plan erstellen} other {# Pläne erstellen}}",
+    "creating": "Wird erstellt…",
+    "cancel": "Abbrechen"
   }
 }
