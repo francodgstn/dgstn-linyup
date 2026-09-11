@@ -84,6 +84,7 @@ export function MessagingPolicyCard({
   const [allowPhones, setAllowPhones] = useState((saved?.allowPhones ?? []).join('\n'))
   const [redirectEmail, setRedirectEmail] = useState(saved?.redirectEmail ?? '')
   const [redirectPhone, setRedirectPhone] = useState(saved?.redirectPhone ?? '')
+  const [ignoreTestMode, setIgnoreTestMode] = useState(saved?.ignoreTestMode === true)
 
   function beginEdit() {
     setMode(saved?.mode ?? 'allowlist')
@@ -91,6 +92,7 @@ export function MessagingPolicyCard({
     setAllowPhones((saved?.allowPhones ?? []).join('\n'))
     setRedirectEmail(saved?.redirectEmail ?? '')
     setRedirectPhone(saved?.redirectPhone ?? '')
+    setIgnoreTestMode(saved?.ignoreTestMode === true)
     setError(null)
     setEditing(true)
   }
@@ -105,12 +107,24 @@ export function MessagingPolicyCard({
     ) {
       return
     }
+    // A SECOND confirmation, because this one is not about who a message goes
+    // to — it is about whether the ENVIRONMENT still catches it at all.
+    if (
+      ignoreTestMode &&
+      saved?.ignoreTestMode !== true &&
+      !window.confirm(
+        'Exempt this tenant from TEST_MODE? Its own policy will decide delivery, exactly as in production — real people will receive what this tenant sends, in an environment where everything else is redirected.',
+      )
+    ) {
+      return
+    }
     const input: MessagingPolicyInput = {
       mode,
       allowEmails: allowEmails.split(/[\n,;]+/),
       allowPhones: allowPhones.split(/[\n,;]+/),
       redirectEmail,
       redirectPhone,
+      ignoreTestMode,
     }
     setError(null)
     startTransition(async () => {
@@ -126,6 +140,7 @@ export function MessagingPolicyCard({
         allowPhones: input.allowPhones.map((p) => p.replace(/[\s\-()]/g, '')).filter(Boolean),
         ...(redirectEmail ? { redirectEmail } : {}),
         ...(redirectPhone ? { redirectPhone } : {}),
+        ...(ignoreTestMode ? { ignoreTestMode: true } : {}),
       })
       setEditing(false)
     })
@@ -315,6 +330,30 @@ export function MessagingPolicyCard({
                 />
               </label>
             </div>
+          )}
+
+          {/* THE ENVIRONMENT EXEMPTION — offered only while TEST_MODE is
+              actually on, because everywhere else it is a switch with no
+              observable effect, and a control that does nothing teaches people
+              to ignore it. Sandbox tenants are refused server-side too. */}
+          {env?.testMode && !entityId.startsWith('sandbox-') && (
+            <label className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs dark:border-amber-900 dark:bg-amber-950/40">
+              <input
+                type="checkbox"
+                checked={ignoreTestMode}
+                onChange={(e) => setIgnoreTestMode(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Exempt this tenant from TEST_MODE</span>
+                <span className="mt-0.5 block text-muted-foreground">
+                  Its own policy above decides delivery, exactly as in production — so real
+                  recipients are reached while everything else in this environment is redirected
+                  to <code>{env.testEmail ?? '(unset)'}</code>. Synthetic and suppressed addresses
+                  stay blocked.
+                </span>
+              </span>
+            </label>
           )}
 
           <div className="flex items-center gap-2">
