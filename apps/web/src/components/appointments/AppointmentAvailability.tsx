@@ -190,14 +190,22 @@ export function useAvailabilityTemplates(teamId: string | null) {
  *  the templates above (see AvailabilityException). `listAvailability`
  *  already subtracts these server-side; this hook just backs the manager's
  *  CRUD list. */
+/** Time off whose `end` is older than this is history nobody edits, and it is
+ *  not listed: one row per holiday per provider, forever, was a LOG read on the
+ *  bookable-hours surface (docs/scalability-2026-09.md §17 B3). The window
+ *  runs on the (`teamId`, `end`) index. */
+export const TIME_OFF_LOOKBACK_DAYS = 30
+
 export function useAvailabilityExceptions(teamId: string | null) {
   return useQuery<(AvailabilityException & { id: string })[]>({
     queryKey: ['availabilityExceptions', teamId],
     enabled: !!teamId,
     queryFn: async () => {
+      const since = Timestamp.fromDate(new Date(Date.now() - TIME_OFF_LOOKBACK_DAYS * 86_400_000))
       const q = query(
         collection(db, AVAILABILITY_EXCEPTIONS_COLLECTION),
         where('teamId', '==', teamId),
+        where('end', '>=', since),
       )
       const snap = await getDocs(q)
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as AvailabilityException & { id: string })
@@ -1550,6 +1558,9 @@ export function AppointmentAvailabilityManager({ teamId, userId, variant = 'page
                       <div className="border-t p-4 space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           {t('timeOffTitle')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('timeOffWindowHint', { days: TIME_OFF_LOOKBACK_DAYS })}
                         </p>
                         {exceptionsQ.isLoading ? (
                           <p className="text-xs text-muted-foreground">{t('loading')}</p>

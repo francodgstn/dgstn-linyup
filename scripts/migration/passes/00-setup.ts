@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import type { MigrationConfig } from '../config'
-import { sourceDb, targetDb, ORG_ID, ORG_NAME, HMD_ORG_RANKING_SYSTEMS, EXPECTED_HMD_MODULES } from '../config'
-import { resolveOrgAdmin } from '../orgAdmin'
+import { sourceDb, targetDb, ORG_ID, ORG_NAME, HMD_ORG_RANKING_SYSTEMS, EXPECTED_HMD_MODULES, ADDITIONAL_ORG_ADMIN_EMAILS } from '../config'
+import { resolveOrgAdmin, resolveIdentity } from '../orgAdmin'
 
 /** The bundle container HMD installs at org level. Its members are EXPECTED_HMD_MODULES. */
 const CONTAINER_PLUGIN_ID = 'hmd'
@@ -28,8 +28,25 @@ const DEFAULT_ORG_AFFILIATION_STATUSES = [
   { id: 'expired',      label: 'Expired',      description: 'Membership period has ended. Renewal required.',     color: 'red',    order: 4, isBuiltIn: true, countsAsActive: false, isFinal: true },
 ] as const
 
+// HMD'S OWN CARD, named as HMD names it — not a generic "club membership".
+//
+// `fixed_date` + `reset_month_day: '09-01'` is HMD's actual rule: the whole
+// federation runs to 1 September, whoever you are and whenever you joined
+// (Franco, 2026-09-05). It is NOT an auto-renewal — nothing renews anybody.
+// It is the date `resolveAffiliationValidUntil` hands the renew dialog and the
+// issue path when somebody IS renewed: the next 1 September strictly after the
+// later of today and what they already hold, so renewing early never costs the
+// member the time they had left.
 const ORG_CLUB_AFFILIATION_TYPE = {
-  id: 'club', key: 'club', label: 'Club membership', default_issuer: 'org', org_id: ORG_ID, active: true, order: 0,
+  id: 'hmd-affiliation',
+  key: 'hmd-affiliation',
+  label: 'HMD Affiliation',
+  default_issuer: 'org',
+  org_id: ORG_ID,
+  validity_mode: 'fixed_date',
+  reset_month_day: '09-01',
+  active: true,
+  order: 0,
 }
 
 export async function pass00Setup(cfg: MigrationConfig): Promise<void> {
@@ -105,7 +122,7 @@ export async function pass00Setup(cfg: MigrationConfig): Promise<void> {
     .collection(AFFILIATION_TYPES_SUBCOLLECTION)
     .doc(ORG_CLUB_AFFILIATION_TYPE.id)
     .set(ORG_CLUB_AFFILIATION_TYPE)
-  console.log(`  seeded ${DEFAULT_ORG_AFFILIATION_STATUSES.length} membership statuses + org 'club' affiliation type`)
+  console.log(`  seeded ${DEFAULT_ORG_AFFILIATION_STATUSES.length} membership statuses + the '${ORG_CLUB_AFFILIATION_TYPE.id}' affiliation type`)
 
   // Create the org_admin member doc (idempotent)
   if (adminUid) {
@@ -122,6 +139,26 @@ export async function pass00Setup(cfg: MigrationConfig): Promise<void> {
       })
       console.log(`  created org_members/${adminUid} (org_admin)`)
     }
+  }
+
+  // The federation's OTHER admins — people who run HMD itself and are not
+  // whoever launched this run. Same resolution (target login first), same
+  // idempotence: an existing row is left exactly as it is, so a role changed in
+  // the app is never reset by a re-run.
+  for (const email of ADDITIONAL_ORG_ADMIN_EMAILS) {
+    if (email.toLowerCase() === cfg.orgAdminEmail.toLowerCase()) continue
+    const who = await resolveIdentity(email)
+    if (!who.uid) {
+      console.warn(`  WARN: ${email} is an org admin but has no login on either side — no org_members row written`)
+      continue
+    }
+    const ref = orgRef.collection('org_members').doc(who.uid)
+    if ((await ref.get()).exists) {
+      console.log(`  org_members/${who.uid} (${email}) already exists — skipping`)
+      continue
+    }
+    await ref.set({ userId: who.uid, email, role: 'org_admin', joined: FieldValue.serverTimestamp() })
+    console.log(`  created org_members/${who.uid} (org_admin — ${email})`)
   }
 
   // Pre-install the HMD plugin CONTAINER at org level (idempotent).

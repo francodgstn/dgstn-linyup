@@ -20,17 +20,26 @@
 // rather than shown as zero: a count of notices nothing sends is a false
 // reassurance, not a placeholder.)
 //
+// ── WHY THE READ IS WHOLE AND THE TABLE IS NOT ────────────────────────────────
+// The standing line above is a count over the whole signed population, and no
+// cheap query reproduces it (valid-under-the-floor AND below-a-silent-version is
+// two ranges on two fields). So the read stays whole — it is roster-scale, one
+// row per member who ever signed — and what is paged is the TABLE: a page at a
+// time, with the footer saying how many of how many
+// (docs/scalability-2026-09.md §17 A12).
+//
 // ── WHY IT IS A CLIENT READ ─────────────────────────────────────────────────
 // `firestore.rules` grants a team member read on `documents/{d}/signers` and on
 // the version subcollection. The no-client-reads discipline covers the PUBLIC
 // surfaces, where the reader is a visitor with no membership.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Skeleton } from '@/components/ui/skeleton'
+import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 import {
   DOCUMENTS_COLLECTION,
   DOCUMENT_SIGNERS_SUBCOLLECTION,
@@ -40,6 +49,9 @@ import {
   type WaiverSignerState,
 } from '@linyup/shared'
 import { useDocumentVersions } from './hooks'
+
+/** Rows mounted per "show more". */
+const SIGNERS_PAGE_SIZE = 100
 
 const STATE_TONE: Record<WaiverAcceptanceState, string> = {
   valid: 'text-green-700',
@@ -65,6 +77,7 @@ export function WaiverSigners({ document }: { document: StudioDocument }) {
     },
   })
   const versionsQ = useDocumentVersions(document.id)
+  const [shown, setShown] = useState(SIGNERS_PAGE_SIZE)
 
   const rows = useMemo(() => {
     const nowMs = Date.now()
@@ -125,7 +138,7 @@ export function WaiverSigners({ document }: { document: StudioDocument }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ signer, state }) => (
+              {rows.slice(0, shown).map(({ signer, state }) => (
                 <tr key={signer.contactId} className="border-b last:border-0">
                   <td className="py-1.5 pr-3">
                     <span className="font-medium">{signer.contact_name}</span>
@@ -161,6 +174,13 @@ export function WaiverSigners({ document }: { document: StudioDocument }) {
               ))}
             </tbody>
           </table>
+          <LoadMoreFooter
+            shown={Math.min(shown, rows.length)}
+            total={rows.length}
+            hasMore={shown < rows.length}
+            loading={false}
+            onLoadMore={() => setShown((n) => n + SIGNERS_PAGE_SIZE)}
+          />
         </div>
       )}
     </div>

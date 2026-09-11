@@ -32,8 +32,9 @@ import {
 } from 'lucide-react'
 import type { Form, FormField, FormFieldType, FormAccess, FormStatus } from '@linyup/shared'
 import {
-  useForm, useSubmissions, updateForm, deleteForm, setSubmissionStatus, makeField,
+  useForm, useSubmissionsPage, fetchAllSubmissions, updateForm, deleteForm, setSubmissionStatus, makeField,
 } from '@/plugins/custom-forms/hooks'
+import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 import { getCustomFormsLimits } from '@/plugins/custom-forms/limits'
 
 const FIELD_TYPES: FormFieldType[] = [
@@ -194,8 +195,22 @@ function exportCsv(form: Form, submissions: { answers: Record<string, unknown>; 
 
 function ResponsesTab({ form }: { form: Form }) {
   const t = useTranslations('CustomForms')
-  const { data: submissions, isLoading } = useSubmissions(form.id)
+  const { rows: submissions, isLoading, hasMore, loadMore, isLoadingMore } = useSubmissionsPage(form.id)
   const queryClient = useQueryClient()
+  const [exporting, setExporting] = useState(false)
+
+  // The export reads EVERY response itself — the list is a page, and exporting
+  // the page would silently ship the first fifty. One whole read, on the click.
+  async function exportAll() {
+    setExporting(true)
+    try {
+      exportCsv(form, await fetchAllSubmissions(form.id))
+    } catch {
+      toast.error(t('exportFailed'))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'reviewed' | 'archived' | 'new' }) =>
@@ -204,14 +219,14 @@ function ResponsesTab({ form }: { form: Form }) {
   })
 
   if (isLoading) return <Skeleton className="h-40 w-full" />
-  if (!submissions || submissions.length === 0) {
+  if (submissions.length === 0) {
     return <p className="text-sm text-muted-foreground">{t('noResponses')}</p>
   }
 
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => exportCsv(form, submissions)}>
+        <Button variant="outline" size="sm" disabled={exporting} onClick={() => void exportAll()}>
           <Download className="mr-1.5 h-4 w-4" />
           {t('exportCsv')}
         </Button>
@@ -262,6 +277,13 @@ function ResponsesTab({ form }: { form: Form }) {
             ))}
           </TableBody>
         </Table>
+        <LoadMoreFooter
+          shown={submissions.length}
+          hasMore={hasMore}
+          loading={isLoadingMore}
+          onLoadMore={loadMore}
+          className="border-t"
+        />
       </div>
     </div>
   )

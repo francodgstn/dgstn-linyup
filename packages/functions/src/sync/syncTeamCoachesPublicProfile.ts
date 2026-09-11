@@ -6,7 +6,9 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
-import { TEAMS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION } from '@linyup/shared'
+import { TEAMS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION, userFullName,
+  type UserNameFields,
+} from '@linyup/shared'
 import type { PublicCoach } from '@linyup/shared'
 
 /**
@@ -60,7 +62,9 @@ export async function rebuildTeamPublicCoaches(teamId: string): Promise<void> {
       const userDoc = userById.get(uid)
       const u = userDoc?.exists ? userDoc.data()! : null
       // NEVER fall back to the coach's email — this roster is world-readable.
-      const name = ((u?.displayName as string | undefined) || uid) as string
+      // Name, else the uid — NEVER the email, see the note above. The name
+      // now includes firstname+lastname, which is all a migrated coach has.
+      const name = userFullName(u as UserNameFields | null) ?? uid
       const photoUrl = u?.photoURL as string | undefined
       return photoUrl ? { uid, name, photoUrl } : { uid, name }
     })
