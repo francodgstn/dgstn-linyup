@@ -23,7 +23,10 @@
     "delete": "Löschen",
     "remove": "Entfernen",
     "reset": "Zurücksetzen",
-    "ratingAriaLabel": "Bewerte {n} von 5"
+    "ratingAriaLabel": "Bewerte {n} von 5",
+    "loadMore": "Mehr laden",
+    "showingCount": "{count} geladen",
+    "showingOf": "{shown} von {total} geladen"
   },
   "Plans": {
     "free": "Free",
@@ -2539,7 +2542,8 @@
     "cancelSlotClosesLink": "Der an die Kundin oder den Kunden gesendete Zahlungslink wird geschlossen und kann nicht mehr bezahlt werden.",
     "cancelSlotPaidInWindow": "Die Kundin oder der Kunde hat soeben bezahlt, daher wurde nichts storniert. Der Termin ist bestätigt — erstatte den Betrag in Stripe, wenn du ihn trotzdem absagen willst.",
     "cancelSlotLinkStillOpen": "Storniert, aber der Zahlungslink konnte nicht geschlossen werden — er ist möglicherweise noch bezahlbar. Beende ihn in deinem Stripe-Dashboard.",
-    "cancelSlotFailed": "Der Termin konnte nicht storniert werden."
+    "cancelSlotFailed": "Der Termin konnte nicht storniert werden.",
+    "timeOffWindowHint": "Abwesenheiten, die vor mehr als {days} Tagen endeten, werden nicht mehr angezeigt."
   },
   "AppointmentForm": {
     "durationBenefitOnly": "Mit Abo",
@@ -4629,7 +4633,8 @@
     "panelTitle": "Benachrichtigungen",
     "unreadCount": "{count, plural, =0 {Keine ungelesenen Benachrichtigungen} one {# ungelesene Benachrichtigung} other {# ungelesene Benachrichtigungen}}",
     "emptyTitle": "Alles erledigt",
-    "emptyBody": "Neue Benachrichtigungen werden hier angezeigt."
+    "emptyBody": "Neue Benachrichtigungen werden hier angezeigt.",
+    "showingLatest": "Die neuesten {count} ungelesenen werden angezeigt. Schliesse einige, um ältere zu sehen; ungelesene Benachrichtigungen verfallen nach {days} Tagen."
   },
   "Affiliations": {
     "tabLabel": "Affiliationen",
@@ -4842,7 +4847,8 @@
     "thankYouBody": "Deine Antwort ist eingegangen.",
     "unpublishConfirmTitle": "Dieses Formular offline nehmen?",
     "unpublishConfirmBody": "Der von Ihnen geteilte Link funktioniert sofort nicht mehr, und ein darauf verweisender Bio-Link-Eintrag wird nicht mehr angezeigt. Es geht nichts verloren: Felder, Einstellungen und alle bisher erhaltenen Antworten bleiben erhalten, und Sie können jederzeit wieder veröffentlichen.",
-    "unpublishConfirmAction": "Offline nehmen"
+    "unpublishConfirmAction": "Offline nehmen",
+    "exportFailed": "Der Export konnte nicht erstellt werden. Bitte erneut versuchen."
   },
   "Documents": {
     "title": "Dokumente",

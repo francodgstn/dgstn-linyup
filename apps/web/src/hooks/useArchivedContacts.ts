@@ -30,11 +30,66 @@
 // broad query above is DENIED for a coach by the Firestore rules (they may read
 // only their assigned contacts), so running it would fail rather than return
 // less, and a coach's book is the people they teach now.
+//
+// TWO READERS, TWO SHAPES (2026-09-11, docs/scalability-2026-09.md §17 A2).
+// An archive grows with churn and never shrinks, so the Archived TAB reads it a
+// page at a time (`useArchivedContactsPage`) with a count beside it, and says
+// what it is showing. The sidebar SEARCH keeps the whole read (`useArchivedContacts`):
+// a former member is exactly who you look up when they come back (UX-21), and
+// a search that only finds the recently archived would have quietly stopped
+// answering that. It is armed only once a real query is typed — one read per
+// panel session — which is the cost the decision accepts. The two share the
+// same shape and ordering, and both sit under the `['contacts', …]` key that
+// every contact mutation invalidates.
 
 import { useQuery } from '@tanstack/react-query'
-import { collection, getDocs, orderBy, query, where } from 'firebase/firestore'
+import {
+  collection,
+  getCountFromServer,
+  getDocs,
+  orderBy,
+  query,
+  where,
+  type Query,
+  type DocumentData,
+} from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { CONTACTS_COLLECTION, type Contact } from '@linyup/shared'
+import { usePagedQuery } from './usePagedQuery'
+
+/** The Archived tab's page. The archive is roster-scale, so the page is wide. */
+export const ARCHIVED_PAGE_SIZE = 200
+
+function archivedQuery(teamId: string): Query<DocumentData> {
+  return query(
+    collection(db, CONTACTS_COLLECTION),
+    where('teamId', '==', teamId),
+    where('archived_at', '!=', null),
+    where('deleted_at', '==', null),
+    orderBy('archived_at', 'desc')
+  )
+}
+
+/** The Archived tab: newest archive first, a page at a time. */
+export function useArchivedContactsPage(teamId: string | null, pageSize = ARCHIVED_PAGE_SIZE) {
+  return usePagedQuery<Contact>({
+    queryKey: ['contacts', 'archived', 'page', teamId],
+    enabled: !!teamId,
+    pageSize,
+    base: () => archivedQuery(teamId!),
+    map: (d) => ({ ...(d.data() as Contact), id: d.id }),
+  })
+}
+
+/** How many are archived in all — the tab's count, without loading them. */
+export function useArchivedContactsCount(teamId: string | null) {
+  return useQuery<number>({
+    queryKey: ['contacts', 'archived', 'count', teamId],
+    enabled: !!teamId,
+    staleTime: 60_000,
+    queryFn: async () => (await getCountFromServer(archivedQuery(teamId!))).data().count,
+  })
+}
 
 export function useArchivedContacts(teamId: string | null) {
   return useQuery<Contact[]>({
@@ -42,15 +97,7 @@ export function useArchivedContacts(teamId: string | null) {
     enabled: !!teamId,
     queryFn: async () => {
       if (!teamId) return []
-      const snap = await getDocs(
-        query(
-          collection(db, CONTACTS_COLLECTION),
-          where('teamId', '==', teamId),
-          where('archived_at', '!=', null),
-          where('deleted_at', '==', null),
-          orderBy('archived_at', 'desc')
-        )
-      )
+      const snap = await getDocs(archivedQuery(teamId))
       return snap.docs.map((d) => ({ ...(d.data() as Contact), id: d.id }))
     },
   })
