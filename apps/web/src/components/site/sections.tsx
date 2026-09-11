@@ -77,6 +77,8 @@ import {
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
+  isHexColor,
+  isLightColor,
 } from '@linyup/shared'
 import {
   resolveActivityTerms,
@@ -273,17 +275,14 @@ export function bookProps(href: string | undefined, ctx: RenderCtx, intent: Book
 
 // ─── Hero ───────────────────────────────────────────────────────────────────
 
-/** Perceived brightness of a hex colour — enough to pick readable text over a
- *  solid hero background. Self-contained so this file needs no colour dep. */
+/** Readable text over a solid hero background — THE shared contrast rule
+ *  (`isLightColor`, WCAG), not a local YIQ guess with its own threshold. A
+ *  value that is not a hex at all (unset, a CSS keyword) reads as light, as
+ *  before, so the hero keeps dark text rather than vanishing. */
 function hexIsLight(hex: string): boolean {
-  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m) return true
-  let h = m[1]
-  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]
-  const r = parseInt(h.slice(0, 2), 16)
-  const g = parseInt(h.slice(2, 4), 16)
-  const b = parseInt(h.slice(4, 6), 16)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.6
+  const h = hex.trim()
+  const normalised = h.startsWith('#') ? h : `#${h}`
+  return isHexColor(normalised) ? isLightColor(normalised) : true
 }
 
 function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {

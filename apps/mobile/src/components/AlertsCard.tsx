@@ -17,7 +17,7 @@ import {
   useTheme,
 } from 'react-native-paper';
 import { ContactAlert } from '../types';
-import { withAlpha } from '../utils/color';
+import { withAlpha } from '@linyup/shared';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {

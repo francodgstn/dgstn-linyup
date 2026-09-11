@@ -6,6 +6,7 @@ import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { User, Pencil, Check } from 'lucide-react'
 import { loadFailureDetail } from '@/lib/publicQueryError'
+import { toDateInputValue } from '@/lib/format'
 import { SpaceWaiverCard } from '../SpaceWaiverCard'
 import { SpaceMembershipCard } from '../SpaceMembershipCard'
 import SpaceSignInWall from '../SpaceSignInWall'
@@ -13,26 +14,27 @@ import { ConsentHistoryDownload } from './ConsentHistoryDownload'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceContact } from '../useSpaceContact'
+import { usePublicFormat } from '../../usePublicFormat'
 
-function toDateInputValue(v: unknown): string {
-  if (!v) return ''
+/** Whatever a birthdate has been stored as — a Timestamp, a `{seconds}` map,
+ *  an ISO string — as a Date, or null. The `<input type="date">` value is then
+ *  the app's LOCAL-parts `toDateInputValue`, not a UTC slice: the copy that
+ *  used to live here serialised through `toISOString()`, which for any zone
+ *  ahead of UTC turned a midnight birthdate into the previous day. */
+function toDate(v: unknown): Date | null {
+  if (!v) return null
   let d: Date | null = null
   if (typeof v === 'string') d = new Date(v)
   else if (typeof (v as { toDate?: unknown }).toDate === 'function') d = (v as { toDate(): Date }).toDate()
   else if (typeof (v as { seconds?: unknown }).seconds === 'number') d = new Date((v as { seconds: number }).seconds * 1000)
-  if (!d || isNaN(d.getTime())) return ''
-  return d.toISOString().slice(0, 10)
-}
-
-function formatDateDisplay(v: unknown): string {
-  const s = toDateInputValue(v)
-  return s ? new Date(s).toLocaleDateString() : '—'
+  return d && !isNaN(d.getTime()) ? d : null
 }
 
 export default function AccountHome() {
   const t = useTranslations('Space')
   const { isAuthenticated } = useSpaceAuth()
   const { accent, onDark, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   // Same read, same rule as the membership card: a failure here means we do not
   // know what this contact holds, which is a different statement from "they hold
   // nothing" — and this page renders it to the member's own face.
@@ -49,7 +51,7 @@ export default function AccountHome() {
       firstname: contact.firstname ?? '',
       lastname: contact.lastname ?? '',
       phone: contact.phone ?? '',
-      birthdate: toDateInputValue(contact.birthdate),
+      birthdate: toDateInputValue(toDate(contact.birthdate)),
       note: '',
     })
   }, [contact])
@@ -193,7 +195,7 @@ export default function AccountHome() {
             <Row label={t('fieldName')} value={`${contact?.firstname ?? ''} ${contact?.lastname ?? ''}`.trim() || '—'} textMain={textMain} textMuted={textMuted} />
             <Row label={t('fieldEmail')} value={contact?.email || '—'} textMain={textMain} textMuted={textMuted} />
             <Row label={t('fieldPhone')} value={contact?.phone || '—'} textMain={textMain} textMuted={textMuted} />
-            <Row label={t('fieldBirthdate')} value={formatDateDisplay(contact?.birthdate)} textMain={textMain} textMuted={textMuted} />
+            <Row label={t('fieldBirthdate')} value={fmt.date(toDate(contact?.birthdate)) || '—'} textMain={textMain} textMuted={textMuted} />
           </dl>
         )}
       </section>

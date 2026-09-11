@@ -39,6 +39,7 @@ import {
   CONTACT_FILTERS_SUBCOLLECTION, contactUsageForPlan, PLAN_ORDER, contactOverageForPlan,
   planHasHardContactCap, resolveIntroOffer,
   personInitials,
+  primaryRank,
 } from '@linyup/shared'
 import type { Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
 import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle, planGrantExpiryMs } from '@linyup/shared'
@@ -81,7 +82,6 @@ import type { Route } from 'next'
 import { writeQrSheetSelection } from '@/lib/qrSheetSelection'
 import { RosterCard } from '@/components/dashboard/RosterCard'
 import { DemographicsCard } from '@/components/dashboard/DemographicsCard'
-import { getPrimaryRank } from '@/lib/rank-utils'
 import { QUICK_ACTION_PARAM } from '@/lib/quickActions'
 import { Tip } from '@/components/ui/tip'
 
@@ -1829,7 +1829,7 @@ function ContactRow({
   // The whole LEVEL, not just its colour — a level may identify itself by an
   // emoji or uploaded artwork instead, and RankBadge decides which one wins.
   const rankLevel = rankingSystems.length > 0
-    ? getPrimaryRank(contact, rankingSystems)?.level
+    ? primaryRank(contact, rankingSystems)?.level
     : undefined
 
   return (

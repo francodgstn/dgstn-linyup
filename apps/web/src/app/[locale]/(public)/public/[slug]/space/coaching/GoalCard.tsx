@@ -51,6 +51,7 @@ import { useSpaceCoachingLabels } from './useSpaceCoachingLabels'
 import { useAddGoalEvaluation, useGoalEvaluations } from './useSpaceGoals'
 import type { SpaceGoalsState } from './useSpaceGoals'
 import { Tip } from '@/components/ui/tip'
+import { usePublicFormat } from '../../usePublicFormat'
 
 const STATUS_KEYS: Record<GoalStatus, string> = {
   open: 'statusOpen',
@@ -79,6 +80,7 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
   const t = useTranslations('SpaceCoaching')
   const tCommon = useTranslations('Common')
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const labels = useSpaceCoachingLabels()
 
   const [expanded, setExpanded] = useState(false)
@@ -197,12 +199,12 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
           )}
           {goal.start_date && (
             <span className="text-[10px]" style={{ color: textMuted }}>
-              {t('startDateLabel', { date: goal.start_date.toDate().toLocaleDateString() })}
+              {t('startDateLabel', { date: fmt.date(goal.start_date) })}
             </span>
           )}
           {goal.target_date && (
             <span className="text-[10px]" style={{ color: textMuted }}>
-              {t('targetDateLabel', { date: goal.target_date.toDate().toLocaleDateString() })}
+              {t('targetDateLabel', { date: fmt.date(goal.target_date) })}
             </span>
           )}
         </div>
@@ -297,7 +299,7 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
                   )}
                 </div>
                 <span className="shrink-0" style={{ color: textMuted }}>
-                  {ev.evaluated_at.toDate().toLocaleDateString()} ·{' '}
+                  {fmt.date(ev.evaluated_at)} ·{' '}
                   {ev.evaluated_by === 'coach' ? t('evaluatedByCoach') : t('evaluatedBySelf')}
                 </span>
               </div>

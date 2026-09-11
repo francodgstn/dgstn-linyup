@@ -48,6 +48,7 @@ import { useSpaceTheme } from './useSpaceTheme'
 import { useSpaceContact } from './useSpaceContact'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicEvents } from '@/components/events/program/usePublicEvents'
+import { usePublicFormat } from '../usePublicFormat'
 
 // ─── Public course card data (from public_profile subcollection) ───────────────
 
@@ -148,6 +149,7 @@ export default function SpaceHome() {
   const tEvents = useTranslations('EventProgram')
   const { slug, teamId, isAuthenticated, contact } = useSpaceAuth()
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const { team } = usePublicTeam()
   const {
     data: fullContact,
@@ -410,7 +412,7 @@ export default function SpaceHome() {
                     {entry.next_expires_at && (
                       <>
                         {' '}
-                        · {t('creditsExpiresOn', { date: entry.next_expires_at.toDate().toLocaleDateString() })}
+                        · {t('creditsExpiresOn', { date: fmt.date(entry.next_expires_at) })}
                       </>
                     )}
                   </span>
@@ -503,7 +505,7 @@ export default function SpaceHome() {
                     <p className="truncate text-sm font-medium">{ev.title}</p>
                     {start && (
                       <p className="text-xs" style={{ color: textMuted }}>
-                        {start.toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}
+                        {fmt.dayMonthLong(start)}
                       </p>
                     )}
                   </div>

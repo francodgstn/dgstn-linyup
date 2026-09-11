@@ -2,64 +2,10 @@ import { useRef, useState } from 'react'
 import { collection, getCountFromServer, query, where, FieldPath } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { CONTACTS_COLLECTION } from '@linyup/shared'
-import type { Contact, RankingSystem, RankLevel } from '@linyup/shared'
 
-/**
- * THE one rank a contact is displayed by — the contacts list, the dashboard
- * roster donut, the dashboard preview.
- *
- * Picking it is a question about SYSTEMS, never a comparison of numbers. A rank
- * value is an ordinal INSIDE its own system and means nothing outside it: a 7
- * in Korean Dragon and a 3 in Hwal Moo Do are each "the level at that step of
- * that scale", so the larger number is not the higher rank — it is a different
- * scale, with a different number of steps and a different starting point. This
- * used to fall back to `Object.entries(ranks).sort(([, a], [, b]) => b - a)`,
- * i.e. biggest number wins, which quietly let a beginner in a long scale
- * outrank a black belt in a short one and decided which belt the contact
- * appeared to hold everywhere.
- *
- * The replacement invents no ranking at all: the tenant's own `is_primary`
- * flag if one is set, otherwise the FIRST system in the tenant's configured
- * order that this contact holds a rank in. That order is the studio's own
- * editorial decision and it is stable, so the same contact shows the same belt
- * on every surface and between renders.
- */
-export function getPrimaryRank(
-  contact: Contact,
-  systems: RankingSystem[],
-): { system: RankingSystem; level: RankLevel } | null {
-  const ranks = contact.ranks ?? {}
-  if (!systems.length || !Object.keys(ranks).length) return null
-
-  // A flagged primary wins outright, even for a contact who holds no rank in
-  // it — that contact then shows no belt. Back-filling from another system
-  // would override an explicit tenant decision about which scale identifies a
-  // person here.
-  const primary = systems.find((s) => s.is_primary)
-  const system = primary ?? systems.find((s) => ranks[s.id] !== undefined)
-  if (!system) return null
-
-  const value = ranks[system.id]
-  if (value === undefined) return null
-
-  const level =
-    system.levels.find((l) => l.value === value) ??
-    // Best-effort display for an ORPHANED rank: the contact holds a value that
-    // no level carries any more, because a level was deleted from the system
-    // under them. Falling to the nearest level at or below shows a DIFFERENT
-    // belt than the one they were awarded — wrong, but the alternative is a
-    // blank, which hides the damage instead of showing it oddly. The cure is
-    // upstream, where the levels are edited: `settings/team` → RankingTab and
-    // `org/[orgId]/ranking` now count the holders and warn before a delete
-    // orphans anybody.
-    system.levels
-      .slice()
-      .sort((a, b) => b.value - a.value)
-      .find((l) => l.value <= value)
-  if (!level) return null
-
-  return { system, level }
-}
+// The primary-rank rule itself lives in @linyup/shared (`primaryRank`) — one
+// resolver for the web and the member app. This module keeps the web-only
+// holder counting behind the ranking editors' destructive confirms.
 
 // ─── who is affected by a destructive ranking edit ────────────────────────────
 

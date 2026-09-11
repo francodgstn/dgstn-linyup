@@ -1045,6 +1045,14 @@ export interface TeamPublicProfile {
   // Absent/null until the next sync; readers fall back through
   // resolveSiteSourceLocale (shared/utils/siteTranslation.ts), never inline.
   language?: UiLanguage | null
+  // How the studio RENDERS dates and times — mirrors `Team.regional` (zone,
+  // week start, date order, hour cycle; see that field), written by
+  // syncTeamPublicProfile. Nothing private: it is how a member's booking time
+  // is printed. Public surfaces read it through `usePublicFormat`, never a
+  // bare `toLocaleDateString()` — a browser's locale is neither the studio's
+  // shape nor the reader's language. Null until the next sync; `resolveRegional`
+  // fills the gaps with the Swiss defaults either way.
+  regional?: Partial<RegionalSettings> | null
   links?: TeamLink[]
   sport_type?: string
   profileImage?: string
@@ -1267,9 +1275,9 @@ export interface TeamPublicProfile {
   ranking_systems?: RankingSystem[]
   // The organisation's custom label for the affiliation concept (e.g.
   // "Membership", "Lizenz") — mirrors `Organization.affiliation_term`, null
-  // when independent or when the org has set none (readers resolve
-  // term[locale] ?? term['en'] ?? a hardcoded default themselves, same as the
-  // org-facing surfaces do). Same staleness limitation as `ranking_systems`
+  // when independent or when the org has set none (every reader resolves it
+  // through the shared `resolveAffiliationTerm`, never inline — its fallback
+  // chain had drifted between the web and the app). Same staleness limitation as `ranking_systems`
   // above: an org-only write does not re-trigger this team mirror.
   affiliation_term?: Partial<Record<'en' | 'de' | 'fr' | 'it', string>> | null
 }

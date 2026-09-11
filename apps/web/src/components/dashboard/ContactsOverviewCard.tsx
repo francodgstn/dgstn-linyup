@@ -40,8 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact } from '@linyup/shared'
-import { getPrimaryRank } from '@/lib/rank-utils'
+import {  ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
 
 // ─── palettes ────────────────────────────────────────────────────────────────
 
@@ -334,7 +333,7 @@ export function ContactsOverviewCard({
     const counts: Record<string, number> = {}
     let unranked = 0
     for (const c of active) {
-      const result = getPrimaryRank(c, rankingSystems)
+      const result = primaryRank(c, rankingSystems)
       if (!result) {
         unranked++
         continue

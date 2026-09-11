@@ -63,8 +63,7 @@ import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslations } from 'next-intl'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact } from '@linyup/shared'
-import { getPrimaryRank } from '@/lib/rank-utils'
+import {  ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank } from '@linyup/shared'
 import {
   Select,
   SelectContent,
@@ -225,7 +224,7 @@ export function RosterDonut({
       const counts: Record<string, number> = {}
       let unranked = 0
       for (const c of live) {
-        const result = getPrimaryRank(c, systems)
+        const result = primaryRank(c, systems)
         if (!result) {
           unranked++
           continue

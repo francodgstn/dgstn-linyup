@@ -16,7 +16,6 @@ import Svg, { Circle, Line, Polygon, Polyline, Text as SvgText } from 'react-nat
 import { FirestoreService } from '../../services/firestore';
 import { PerformanceIndicator, PerformanceCheckin, ProfileKey } from '../../types';
 import { PERFORMANCE_PROFILE_COLORS } from '../../utils/goalContract';
-import { Timestamp } from 'firebase/firestore';
 import { useTranslations } from '../../i18n';
 
 interface Props {
@@ -296,7 +295,10 @@ const CheckinHistoryRow: React.FC<{
           {abbreviated}
         </Text>
       </View>
-      {checkin.profile_key && checkin.profile_key !== 'default' && (() => {
+      {/* `default` included — a check-in that matched no named pattern still
+          has a (deliberately unexciting) label, and the portal and the coach's
+          tab both show it; hiding it here was the one surface that differed. */}
+      {checkin.profile_key && (() => {
         const display = profileDisplay(t, checkin.profile_key);
         return (
           <Chip
@@ -571,10 +573,9 @@ export const PerformanceProfileSection: React.FC<Props> = ({ contactId, teamId }
 
   const handleSubmit = async (scores: Record<string, number>, notes: string, context: PerformanceContextValue) => {
     await FirestoreService.addPerformanceCheckin(contactId, {
-      taken_at: Timestamp.now(),
       filled_by: 'student',
       scores,
-      notes: notes || null,
+      notes,
       context,
     });
     setShowModal(false);

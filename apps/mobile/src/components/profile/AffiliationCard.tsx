@@ -8,8 +8,8 @@ import {
   getAffiliationColors,
   calculateAge,
   formatGender,
-  resolvePrimaryRank,
 } from '../../utils/profileUtils';
+import { primaryRank, rankLevelBadge } from '@linyup/shared';
 import { BeltBadge } from './BeltBadge';
 import { useTranslations } from '../../i18n';
 
@@ -83,15 +83,16 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
     outputRange: ['0deg', '180deg'],
   });
 
-  // Resolved against the tenant's CONFIGURED ranking systems. This read
-  // `contact.rank`, a scalar the HMD migration deletes, so every migrated
-  // member saw "NO BELT"; null now means genuinely nothing to show.
-  const rankInfo = resolvePrimaryRank(contact, rankingSystems);
+  // THE shared rule (`primaryRank`) — the same belt the coach's screen shows.
+  // This once read `contact.rank`, a scalar the HMD migration deletes, so every
+  // migrated member saw "NO BELT"; null now means genuinely nothing to show.
+  const rankInfo = primaryRank(contact, rankingSystems);
+  const rankBadge = rankInfo ? rankLevelBadge(rankInfo.level) : null;
 
   const age = calculateAge(contact.birthdate);
   const genderLabel = formatGender(t, contact.gender);
 
-  const rankTitle = rankInfo?.label ?? t('noRank');
+  const rankTitle = rankInfo?.level.label ?? t('noRank');
   const studentName = [contact.firstname, contact.lastname].filter(Boolean).join(' ').toUpperCase();
   const rankSub = t('memberPrefix', { name: studentName });
   const affiliationSummary = contact.affiliation_summary;
@@ -114,7 +115,7 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
           style={styles.collapsedGradient}
         >
           <View style={styles.collapsedTopRow}>
-            <BeltBadge badge={rankInfo?.badge} size={26} />
+            <BeltBadge badge={rankBadge} size={26} />
             <Text style={styles.collapsedRank}>{rankTitle.toUpperCase()}</Text>
             <TouchableRipple onPress={onShowStatusModal} style={styles.statusBadgeContainer}>
               <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
@@ -168,7 +169,7 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
               </Text>
             </View>
             <View style={styles.rankTitleRow}>
-              <BeltBadge badge={rankInfo?.badge} size={32} />
+              <BeltBadge badge={rankBadge} size={32} />
               <Text variant="headlineMedium" style={styles.rankTitle}>
                 {rankTitle.toUpperCase()}
               </Text>

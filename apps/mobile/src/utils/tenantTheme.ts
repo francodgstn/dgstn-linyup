@@ -20,7 +20,7 @@
 // §5) — `app.config.js`'s `APP_VARIANT` is the seam for it, deliberately left
 // with one entry.
 import { resolveSurfacePalette, surfaceThemePreset, type SurfacePalette } from '@linyup/shared';
-import { contrastText, isHexColor, mix, parseHex, toHex } from './color';
+import { contrastText, isHexColor, mix, parseHex, toHex } from '@linyup/shared';
 
 /** What the app keeps about the signed-in member's studio, persisted so a
  *  cold start opens in the studio's look rather than flashing Linyup purple. */

@@ -215,7 +215,7 @@ describe('matchesFilter — rank', () => {
   it('THE CROSS-SYSTEM TRAP: a high rank in another system is invisible to the band', () => {
     // The 12 is a beginner's ordinal in a long scale; the band is about `hwal`.
     // If this ever passes, someone has hoisted the threshold out of the
-    // per-system value and rebuilt the getPrimaryRank bug in a filter.
+    // per-system value and rebuilt the old web primary-rank bug (see `primaryRank`) in a filter.
     const f = filter({ rankRanges: { hwal: { min: 5, max: null } } })
     assert.equal(
       matchesFilter(contact({ ranks: { hwal: 1, dragon: 12 } }), f, { nowMs: NOW }),

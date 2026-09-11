@@ -7,17 +7,7 @@ import { db } from '@/lib/firebase'
 import { useOrgRole } from '@/hooks/useOrgRole'
 import { useLocale } from 'next-intl'
 import type { Organization, SaasSubscription, OrgRole } from '@linyup/shared'
-
-export function resolveAffiliationTerm(
-  termObj: Partial<Record<string, string>> | undefined,
-  locale: string,
-): string {
-  if (!termObj) return 'Affiliation'
-  // Viewer locale → English → any filled language → default. The last fallback
-  // lets a studio that entered only one translation have it apply everywhere.
-  const firstFilled = Object.values(termObj).find((v) => v && v.trim())
-  return termObj[locale] ?? termObj['en'] ?? firstFilled ?? 'Affiliation'
-}
+import { resolveAffiliationTerm } from '@linyup/shared'
 
 interface OrgContextValue {
   org: Organization | null

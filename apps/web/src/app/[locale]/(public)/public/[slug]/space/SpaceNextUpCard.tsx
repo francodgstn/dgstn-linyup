@@ -28,6 +28,7 @@ import { loadFailureDetail } from '@/lib/publicQueryError'
 import { useSpaceAuth } from './SpaceAuthProvider'
 import { useSpaceTheme } from './useSpaceTheme'
 import { useSpaceNextBooking } from './useSpaceNextBooking'
+import { usePublicFormat } from '../usePublicFormat'
 
 interface Props {
   /** Whether `/public/{slug}/booking` is actually live for this studio — from
@@ -40,6 +41,7 @@ export function SpaceNextUpCard({ bookingLive }: Props) {
   const t = useTranslations('Space')
   const { slug, contact } = useSpaceAuth()
   const { accent, textMain, textMuted, cardBg, cardBorder } = useSpaceTheme()
+  const fmt = usePublicFormat()
   const { data: next, isPending, isError, error, refetch } = useSpaceNextBooking()
 
   const cardStyle = { background: cardBg, border: `1px solid ${cardBorder}` }
@@ -91,19 +93,9 @@ export function SpaceNextUpCard({ bookingLive }: Props) {
                   (next.kind === 'appointment' ? t('bookingsAppointment') : t('bookingsSession'))}
               </p>
               <p className="text-sm" style={{ color: textMain }}>
-                {validStart
-                  ? validStart.toLocaleDateString(undefined, {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                    })
-                  : ''}
-                {validStart
-                  ? ` · ${validStart.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
-                  : ''}
-                {validEnd
-                  ? `–${validEnd.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
-                  : ''}
+                {validStart ? fmt.custom(validStart, { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
+                {validStart ? ` · ${fmt.time(validStart)}` : ''}
+                {validEnd ? `–${fmt.time(validEnd)}` : ''}
               </p>
               {/* The provider is what tells two otherwise identical appointment
                   slots apart, so an appointment never drops it. */}

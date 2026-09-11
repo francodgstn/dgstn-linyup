@@ -247,49 +247,58 @@ default preset, and `#7c3aed` to `violet`. The Space *matches* the default. The
 tenant accent, which mobile resolves through the same preset registry. Nothing
 to do, and worth recording so nobody "fixes" it into being wrong.
 
-### Drifted, still owed — each needs care, not a sed
+### Drifted — closed (2026-09-10), each with its care taken
 
-10. **Primary rank resolves differently.** Web's `getPrimaryRank` picks the
-    first system the contact *holds a rank in* and, for an orphaned value, the
-    nearest lower level; mobile's `resolvePrimaryRank` picks the first
-    *configured* system and shows nothing for an orphan. A member ranked only
-    in a studio's second scale has a belt in admin and none in the app. Belongs
-    in `packages/shared/src/utils/rankingSystems.ts`; the return shapes differ.
-11. **`resolveAffiliationTerm` has two fallback chains.** Web falls through to
-    the first *filled* translation so a studio that entered only German gets it
-    everywhere; mobile falls straight to the English word "Affiliation". The
-    device-vs-chosen locale question is item 18; the missing fallback arm is a
-    plain bug regardless of it.
-12. **"One check-in per day per author" is implemented three ways.** Mobile
-    runs a real range query; the Space scans the ten most recent in memory;
-    the admin does not dedupe at all, so a coach can leave several 1:1
-    check-ins on one day. The timestamp source differs too (client clock,
-    server timestamp, caller-supplied), which is precisely what the day-window
-    compares. The payload builder and the same-day predicate are pure and
-    belong in shared; the query strategy can legitimately differ.
-13. **The Space never uses the regional formatter.** Twelve bare
-    `toLocaleDateString()` calls, which `lib/format.ts` warns against in its
-    own header — an en-US browser shows US dates and 12-hour times inside a
-    German portal. Mobile pins `hour12: false` in seven places; the Space omits
-    it. The same goal reads "15 Sep 2026" on the coach's tab and in the app,
-    and "9/15/2026" on the member's portal. `createRegionalFormatter` is
-    already in shared; the Space needs a `useSpaceFormat` built on the public
-    team's regional settings.
-14. **The luminance formula exists four times with two thresholds** — three
-    YIQ copies (`> 0.5`, `> 0.5`, `>= 0.6`) deciding black-vs-white text on the
-    same studio accent, plus a fourth, correct WCAG pair in
-    `apps/mobile/src/utils/color.ts` that disagrees with the other three for
-    mid-tones. Promote the WCAG pair to shared; retire the rest.
-15. **Two ISO-week key generators.** `apps/web/src/lib/isoWeek.ts` (UTC
-    midnight) and shared's `isoWeeks.ts` (UTC noon, "to avoid DST edges") emit
-    the same key grammar today. The shared one also carries
-    `densifyWeeklyCounts`, whose absence is the exact "flat, healthy sixteen-
-    week line" bug its header documents — and the dashboard trend cards still
-    build sparse windows by hand.
-16. **The `default` performance profile is shown on two surfaces and hidden on
-    the third.** A member whose check-in matched no pattern sees an
-    explanatory card on the portal and nothing in the app. A copy decision;
-    the vocabulary map is the thing to share (item 22).
+These had already parted in behaviour. Each was read at source on every
+surface before the shared owner was written, and the tests pin the rule the
+surfaces now share rather than the copy either one had.
+
+10. **DONE — `primaryRank`** (`packages/shared/src/utils/rankingSystems.ts`),
+    the web's rule: a flagged primary, else the first CONFIGURED system the
+    contact holds a rank in; an orphaned value shows the nearest level at or
+    below and says so (`orphaned`). The web's `getPrimaryRank` and mobile's
+    `resolvePrimaryRank` are gone; the app's rank badges position on
+    `level.value`, so an orphan sits where it is drawn. A member ranked only in
+    a studio's second scale now has the same belt in the app as on the coach's
+    screen.
+11. **DONE — `resolveAffiliationTerm`** in shared: the reader's language →
+    English → any FILLED translation → "Affiliation", and a blank string is
+    not a translation at any step (the web's `??` chain would have printed an
+    empty noun for a cleared `de`). The web imports it; the app keeps a
+    one-line wrapper whose only contribution is the DEVICE-locale default —
+    item 29, still separate.
+12. **DONE — `buildPerformanceCheckin` + `sameDayCheckin` / `localDayBounds`**
+    (`shared/utils/performanceCheckins.ts`): one payload (trimmed notes → null,
+    the profile heuristic run once) and one same-day predicate. The app keeps
+    its range query, over the shared bounds; the Space asks the shared
+    predicate of the rows it already holds; the coach's tab now dedupes too —
+    a second 1:1 check-in on the same day overwrites the first, as the member
+    surfaces already did for theirs. `taken_at`'s source still differs per
+    writer, on purpose, and the module header says why the day window
+    tolerates it.
+13. **DONE — `usePublicFormat`** (`[slug]/usePublicFormat.ts`, beside the
+    team provider so any public surface can use it): the reader's UI language
+    over the studio's regional settings, which now ride the public profile
+    (`TeamPublicProfile.regional`, mirrored by `syncTeamPublicProfile`). Every
+    `toLocale*` call in the Space is gone. Two things found on the way: the
+    leaderboard's month label is now built from a mid-month noon-UTC instant,
+    because a studio-zone formatter given local midnight on the 1st can land
+    on the neighbouring month; and the Account page's birthdate field carried
+    a second `toISOString().slice(0, 10)` copy of the item-4 bug.
+14. **DONE — `shared/utils/color.ts`**: the WCAG pair (`relativeLuminance`,
+    `contrastRatio`, `contrastText`, `isLightColor`) and the hex helpers,
+    moved whole from the app. The YIQ copies — the bio-link's text colour, the
+    site hero's, and a `contrastTextColor` nothing called — are retired;
+    mid-tones now get the same answer on every surface.
+15. **DONE — one ISO-week generator.** `apps/web/src/lib/isoWeek.ts` keeps
+    only its date-fns LABELS: `dateToIsoWeek` is shared's `isoWeekKey`, and
+    `buildWeekKeys` a thin offset wrapper over `isoWeekKeysBack`, so the
+    dashboard's trend windows come from the generator the reports are written
+    with. The cards' own per-week count maps were already dense (they map over
+    the window), so `densifyWeeklyCounts` stays where the sparse rows are.
+16. **DONE — the app shows the `default` profile** in its check-in history,
+    as the portal and the coach's tab do; it already had the copy and hid it
+    on one line.
 
 ### Not yet drifted, cheap — closed before they could (2026-09-10)
 
