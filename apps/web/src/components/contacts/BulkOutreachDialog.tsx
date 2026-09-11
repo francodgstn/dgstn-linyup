@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
-import { TEAMS_COLLECTION } from '@linyup/shared'
+import { TEAMS_COLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION } from '@linyup/shared'
 import type { Contact } from '@linyup/shared'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -81,7 +81,7 @@ export function BulkOutreachDialog({
     enabled: open && !!teamId,
     queryFn: async () => {
       const snap = await getDocs(
-        query(collection(db, TEAMS_COLLECTION, teamId!, 'outreach_templates'), orderBy('name', 'asc')),
+        query(collection(db, TEAMS_COLLECTION, teamId!, OUTREACH_TEMPLATES_SUBCOLLECTION), orderBy('name', 'asc')),
       )
       return snap.docs
         .map((d) => ({ id: d.id, ...(d.data() as { name?: string; active?: boolean }) }) as OutreachTemplateOption)

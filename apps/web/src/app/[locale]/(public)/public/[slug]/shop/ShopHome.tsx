@@ -46,6 +46,9 @@ import {
   type ActivityMemberBenefit,
   type Benefit,
   type CourseAccessRule,
+  COURSE_PURCHASES_SUBCOLLECTION,
+  PUBLIC_PROFILE_SUBCOLLECTION,
+  TEAMS_COLLECTION,
 } from '@linyup/shared'
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { QueryErrorState } from '@/components/ui/query-error'
@@ -289,10 +292,10 @@ export default function ShopHome({
     // world-readable per-course public_profile summaries (same collection-group query
     // the Space uses). The shop is the courses' home, so it lists EVERY tier — only
     // courses the studio explicitly hid from the catalogue are dropped.
-    const profileP = getDoc(doc(db, 'teams', teamId, 'public_profile', teamId))
+    const profileP = getDoc(doc(db, TEAMS_COLLECTION, teamId, PUBLIC_PROFILE_SUBCOLLECTION, teamId))
     const coursesP = getDocs(
       query(
-        collectionGroup(db, 'public_profile'),
+        collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
         where('type', '==', 'course'),
         where('teamId', '==', teamId)
       )
@@ -301,7 +304,7 @@ export default function ShopHome({
     // read — filtered down (below) to the ones with an actual money story.
     const activitiesP = getDocs(
       query(
-        collectionGroup(db, 'public_profile'),
+        collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
         where('type', '==', 'activity'),
         where('teamId', '==', teamId)
       )
@@ -394,7 +397,7 @@ export default function ShopHome({
     // render on which the contact changed.
     getDocs(
       query(
-        collectionGroup(db, 'purchases'),
+        collectionGroup(db, COURSE_PURCHASES_SUBCOLLECTION),
         where('contactId', '==', contact.id),
         where('teamId', '==', teamId)
       )

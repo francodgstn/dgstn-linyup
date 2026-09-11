@@ -8,6 +8,7 @@ import { Clock, MapPin, User, X } from 'lucide-react'
 import { WeeklyCalendar, type PlannerSession } from '@/components/schedule/WeeklyCalendar'
 import { useKioskAvailability } from './useKioskAvailability'
 import type { KioskSession } from './useKioskSessions'
+import { usePublicFormat } from '../usePublicFormat'
 
 interface DayGroup {
   key: string
@@ -29,9 +30,6 @@ function groupByDay(sessions: KioskSession[]): DayGroup[] {
   }
   return [...groups.values()].sort((a, b) => a.date.getTime() - b.date.getTime())
 }
-
-const fmtTime = (d: Date) =>
-  d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 
 interface Props {
   sessions: KioskSession[]
@@ -142,10 +140,11 @@ export default function KioskSchedule({ sessions, loading, view, teamId, error, 
 }
 
 function DayDivider({ date }: { date: Date }) {
+  const fmt = usePublicFormat()
   return (
     <div className="flex items-center gap-3 pt-4 first:pt-0">
       <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-        {date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+        {fmt.custom(date, { weekday: 'long', day: 'numeric', month: 'short' })}
       </span>
       <span className="h-px flex-1 bg-border" />
     </div>
@@ -153,6 +152,7 @@ function DayDivider({ date }: { date: Date }) {
 }
 
 function SessionRow({ s, onSelect }: { s: KioskSession; onSelect: (s: KioskSession) => void }) {
+  const fmt = usePublicFormat()
   return (
     <button
       type="button"
@@ -170,7 +170,7 @@ function SessionRow({ s, onSelect }: { s: KioskSession; onSelect: (s: KioskSessi
         </p>
         {s.location && <p className="truncate text-sm text-muted-foreground">{s.location}</p>}
       </div>
-      <p className="shrink-0 text-base font-semibold tabular-nums">{fmtTime(s.start.toDate())}</p>
+      <p className="shrink-0 text-base font-semibold tabular-nums">{fmt.time(s.start)}</p>
     </button>
   )
 }
@@ -200,6 +200,7 @@ function SessionModal({
   onClose: () => void
   closeLabel: string
 }) {
+  const fmt = usePublicFormat()
   const start = s.start.toDate()
   const end = s.end?.toDate()
   return (
@@ -219,7 +220,7 @@ function SessionModal({
           <div className="min-w-0 flex-1">
             <h3 className="text-xl font-bold">{s.activityName ?? 'Session'}</h3>
             <p className="mt-1 text-sm capitalize text-muted-foreground">
-              {start.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              {fmt.custom(start, { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
           </div>
           <button
@@ -235,8 +236,8 @@ function SessionModal({
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="font-medium tabular-nums">
-              {fmtTime(start)}
-              {end ? ` – ${fmtTime(end)}` : ''}
+              {fmt.time(start)}
+              {end ? ` – ${fmt.time(end)}` : ''}
             </span>
           </div>
           {s.providerName && (

@@ -21,6 +21,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
+import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 
 export interface KioskSession {
   id: string
@@ -62,7 +63,7 @@ export function useKioskSessions(teamId: string) {
       // Group classes AND appointment slots — the front desk sees private lessons
       // too. `in` runs on the same (teamId,type,allowBooking,start) index.
       const q = query(
-        collectionGroup(db, 'public_profile'),
+        collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
         where('teamId', '==', teamId),
         where('type', 'in', ['session', 'appointment_session']),
         where('allowBooking', '==', true),

@@ -43,6 +43,7 @@ import { Search, Hash, AlertTriangle } from 'lucide-react'
 import { QuickLinks } from '@/components/layout/QuickLinks'
 import type { Route } from 'next'
 import { PublicSurfaceLink } from '@/components/layout/PublicSurfaceLink'
+import { SESSIONS_COLLECTION } from '@linyup/shared'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 // `tsToDate`/`formatDate`/`formatTime`/`formatIso`/`initials`/`avatarColor`,
@@ -231,7 +232,7 @@ function useSessionMap(bookings: Booking[]) {
     enabled: sessionIds.length > 0,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const docs = await Promise.all(sessionIds.map((id) => getDoc(doc(db, 'sessions', id))))
+      const docs = await Promise.all(sessionIds.map((id) => getDoc(doc(db, SESSIONS_COLLECTION, id))))
       const map: Record<string, SessionInfo> = {}
       for (const d of docs) {
         if (d.exists()) {

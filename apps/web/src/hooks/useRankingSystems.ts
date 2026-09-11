@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
-import { effectiveRankingSystems, rankingSystemsManagedByOrg } from '@linyup/shared'
+import {  effectiveRankingSystems, rankingSystemsManagedByOrg, ORGANIZATIONS_COLLECTION } from '@linyup/shared'
 import type { RankingSystem, Organization } from '@linyup/shared'
 
 interface RankingSystemsResult {
@@ -41,7 +41,7 @@ export function useRankingSystems(): RankingSystemsResult {
     enabled: !!orgId,
     queryFn: async () => {
       if (!orgId) return []
-      const snap = await getDoc(doc(db, 'organizations', orgId))
+      const snap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId))
       if (!snap.exists()) return []
       const org = snap.data() as Organization
       return org.ranking_systems ?? []

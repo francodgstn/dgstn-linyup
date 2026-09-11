@@ -5,18 +5,17 @@ import { useTranslations } from 'next-intl'
 import { CalendarClock, MapPin } from 'lucide-react'
 import type { KioskSession } from './useKioskSessions'
 import { useClock } from './useClock'
+import { usePublicFormat } from '../usePublicFormat'
 
 interface Props {
   sessions: KioskSession[]
 }
 
-const fmtTime = (d: Date) =>
-  d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-
 // "Ongoing / next class" widget. Re-derived every 30s from the shared session
 // feed (useKioskSessions) rather than its own query.
 export default function NowNext({ sessions }: Props) {
   const t = useTranslations('Kiosk')
+  const fmt = usePublicFormat()
   const now = useClock(30_000)
 
   const { current, next } = useMemo(() => {
@@ -54,7 +53,7 @@ export default function NowNext({ sessions }: Props) {
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-muted-foreground">
         <span className="flex items-center gap-1.5 text-lg font-semibold tabular-nums">
           <CalendarClock className="h-5 w-5" />
-          {fmtTime(featured.start.toDate())} – {fmtTime(featured.end.toDate())}
+          {fmt.time(featured.start)} – {fmt.time(featured.end)}
         </span>
         {featured.location && (
           <span className="flex items-center gap-1.5 text-lg">

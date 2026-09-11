@@ -40,6 +40,7 @@ import {
   planHasHardContactCap, resolveIntroOffer,
   personInitials,
   primaryRank,
+  CONTACT_FILTER_PRESET_PINS_DOC,
 } from '@linyup/shared'
 import type { Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
 import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle, planGrantExpiryMs } from '@linyup/shared'
@@ -683,7 +684,7 @@ function useSavedQueries(teamId: string | null) {
     const next = pinnedPresets.includes(id)
       ? pinnedPresets.filter((p) => p !== id)
       : [...pinnedPresets, id]
-    setDoc(doc(db, TEAMS_COLLECTION, teamId, CONTACT_FILTERS_SUBCOLLECTION, '_preset_pins'), { ids: next })
+    setDoc(doc(db, TEAMS_COLLECTION, teamId, CONTACT_FILTERS_SUBCOLLECTION, CONTACT_FILTER_PRESET_PINS_DOC), { ids: next })
   }
 
   return { saved, save, remove, togglePin, pinnedPresets, togglePresetPin }

@@ -11,7 +11,7 @@ import {
   doc, orderBy, query, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION } from '@linyup/shared'
+import {  TEAMS_COLLECTION, WEBHOOK_ENDPOINTS_SUBCOLLECTION } from '@linyup/shared'
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -90,7 +90,7 @@ export function WebhookEndpointsDialog({
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
 
-  const endpointsRef = () => collection(db, TEAMS_COLLECTION, teamId, 'webhook_endpoints')
+  const endpointsRef = () => collection(db, TEAMS_COLLECTION, teamId, WEBHOOK_ENDPOINTS_SUBCOLLECTION)
 
   const { data: endpoints = [], isLoading } = useQuery<WebhookEndpoint[]>({
     queryKey: ['webhook_endpoints', teamId],

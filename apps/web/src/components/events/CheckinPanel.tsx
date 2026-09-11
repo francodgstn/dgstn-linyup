@@ -147,7 +147,7 @@ function useOrgTeams(orgId: string | undefined, enabled: boolean) {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const snap = await getDocs(query(
-        collection(db, 'teams'),
+        collection(db, TEAMS_COLLECTION),
         where('org_id', '==', orgId),
       ))
       return snap.docs.map((d) => ({ id: d.id, name: d.data().name as string }))

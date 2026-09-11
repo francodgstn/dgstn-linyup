@@ -38,6 +38,9 @@ import {
   PLAN_PRICING,
   subscriptionEndsAt,
   subscriptionIsCancelling,
+  ORGANIZATIONS_COLLECTION,
+  SAAS_SUBSCRIPTIONS_COLLECTION,
+  TEAM_MEMBERS_SUBCOLLECTION,
 } from '@linyup/shared'
 import type { SaasSubscription, SaasPlan, Team } from '@linyup/shared'
 import {
@@ -89,7 +92,7 @@ function useSubscription(teamId: string | null) {
     enabled: !!teamId,
     queryFn: async () => {
       if (!teamId) return null
-      const snap = await getDoc(doc(db, 'saas_subscriptions', teamId))
+      const snap = await getDoc(doc(db, SAAS_SUBSCRIPTIONS_COLLECTION, teamId))
       return snap.exists() ? (snap.data() as SaasSubscription) : null
     },
   })
@@ -101,7 +104,7 @@ function useIsOwner(teamId: string | null, userId: string | null) {
     enabled: !!teamId && !!userId,
     queryFn: async () => {
       if (!teamId || !userId) return false
-      const snap = await getDoc(doc(db, TEAMS_COLLECTION, teamId, 'team_members', userId))
+      const snap = await getDoc(doc(db, TEAMS_COLLECTION, teamId, TEAM_MEMBERS_SUBCOLLECTION, userId))
       return snap.exists() && snap.data()?.role === 'owner'
     },
   })
@@ -703,7 +706,7 @@ function ManagedByOrgBanner({ orgId }: { orgId: string }) {
   const { data: orgDoc } = useQuery<{ name: string } | null>({
     queryKey: ['org-name', orgId],
     queryFn: async () => {
-      const snap = await getDoc(doc(db, 'organizations', orgId))
+      const snap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId))
       return snap.exists() ? { name: snap.data().name as string } : null
     },
   })

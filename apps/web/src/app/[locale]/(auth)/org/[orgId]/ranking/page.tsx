@@ -316,7 +316,7 @@ export default function OrgRankingPage() {
   async function saveToFirestore(next: RankingSystem[]) {
     setSaving(true)
     try {
-      await updateDoc(doc(db, 'organizations', orgId), { ranking_systems: next })
+      await updateDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId), { ranking_systems: next })
       qc.invalidateQueries({ queryKey: ['org', orgId] })
       qc.invalidateQueries({ queryKey: ['org-ranking-systems', orgId] })
       showToast(t('toastSaved'))

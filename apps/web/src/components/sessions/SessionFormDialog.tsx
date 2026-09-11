@@ -32,6 +32,7 @@ import {
   resolveAutoConfirm,
   isPastSession,
   weekdayOrder,
+  SESSION_SERIES_COLLECTION,
 } from '@linyup/shared'
 import type { Session, Activity } from '@linyup/shared'
 import { Loader2, Repeat2, Plus, AlertTriangle, MapPin } from 'lucide-react'
@@ -667,7 +668,7 @@ export function SessionFormDialog({
       // which reads the `lastGeneratedUntil: null` this write leaves behind.
       setBusyMsg(t('creatingSeries'))
       try {
-        const seriesRef = await addDoc(collection(db, 'session_series'), {
+        const seriesRef = await addDoc(collection(db, SESSION_SERIES_COLLECTION), {
           teamId, teacher: userId, createdBy: userId,
           template: {
             activityId: values.activityId || null,

@@ -17,6 +17,7 @@ import {
   type Benefit,
   type BookingContactField,
   type PublicFrom,
+  type RegionalFormatter,
 } from '@linyup/shared'
 import {
   PromoCodeField,
@@ -57,6 +58,7 @@ import {
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { CalendarClock, MapPin, Video, Clock, User, Check, ChevronRight, Tag } from 'lucide-react'
+import { usePublicFormat } from '../usePublicFormat'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 // Mirrors the listAvailability callable's contract: availability is the ONLY
@@ -301,10 +303,9 @@ type CheckoutExtras = { promoCode?: string; quotedAmount?: number }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const fmtDateFull = (ms: number) =>
-  new Date(ms).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
-const fmtTime = (ms: number) =>
-  new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const fmtDateFull = (fmt: RegionalFormatter, ms: number) =>
+  fmt.custom(ms, { weekday: 'long', day: 'numeric', month: 'long' })
+const fmtTime = (fmt: RegionalFormatter, ms: number) => fmt.time(ms)
 
 function fmtDuration(mins: number): string {
   if (mins < 60) return `${mins} min`
@@ -1645,6 +1646,7 @@ function TimePicker({
   onDateChange: (dateKey: string | null) => void
   onPick: (startMs: number, duration: AvailDuration) => void
 }) {
+  const fmt = usePublicFormat()
   const t = useTranslations('AppointmentBooking')
   const tPublic = useTranslations('PublicBooking')
   const setDuration = onDurationChange
@@ -1728,7 +1730,7 @@ function TimePicker({
 
           {selectedDateKey && (
             <p className="text-sm font-medium mb-3 text-muted-foreground">
-              {fmtDateFull(new Date(selectedDateKey + 'T00:00:00').getTime())}
+              {fmtDateFull(fmt, new Date(selectedDateKey + 'T12:00:00').getTime())}
             </p>
           )}
 
@@ -1743,7 +1745,7 @@ function TimePicker({
                   onClick={() => onPick(startMs, chosenDuration)}
                   className="rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5"
                 >
-                  {fmtTime(startMs)}
+                  {fmtTime(fmt, startMs)}
                 </button>
               ))}
             </div>
@@ -1790,6 +1792,7 @@ export default function AppointmentPicker({
   const t = useTranslations('AppointmentBooking')
   const tPublic = useTranslations('PublicBooking')
   const locale = useLocale()
+  const fmt = usePublicFormat()
   // 'page' unless an overlay host wraps this flow — see BookingChrome.
   const chrome = useBookingChrome()
   const router = useRouter()
@@ -2126,7 +2129,7 @@ export default function AppointmentPicker({
               }
               dateTimeLabel={
                 step === 'book' && windowBooking
-                  ? `${fmtDateFull(windowBooking.startMs)} · ${fmtTime(windowBooking.startMs)}–${fmtTime(windowBooking.startMs + windowBooking.durationMinutes * 60_000)}`
+                  ? `${fmtDateFull(fmt, windowBooking.startMs)} · ${fmtTime(fmt, windowBooking.startMs)}–${fmtTime(fmt, windowBooking.startMs + windowBooking.durationMinutes * 60_000)}`
                   : null
               }
               location={step === 'book' ? (windowBooking?.location ?? null) : null}

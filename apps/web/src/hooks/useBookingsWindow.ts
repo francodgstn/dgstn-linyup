@@ -36,9 +36,8 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { SESSIONS_COLLECTION, type Booking } from '@linyup/shared'
+import {  SESSIONS_COLLECTION, type Booking, SESSION_BOOKINGS_SUBCOLLECTION } from '@linyup/shared'
 
-const BOOKINGS_SUB = 'bookings'
 
 /** Longest window either axis will accept, in days. Bounds the fan-out below and
  *  the manual From/To edits on the page. */
@@ -145,7 +144,7 @@ async function loadByClassDate(
     const chunk = snap.docs.slice(i, i + CLASS_FANOUT_CHUNK)
     const perSession = await Promise.all(
       chunk.map(async (d) => {
-        const seats = await getDocs(collection(db, SESSIONS_COLLECTION, d.id, BOOKINGS_SUB))
+        const seats = await getDocs(collection(db, SESSIONS_COLLECTION, d.id, SESSION_BOOKINGS_SUBCOLLECTION))
         return seats.docs
           .map((b) => ({ ...b.data(), id: b.id }) as Booking)
           .sort((a, b) => joinedMillis(b) - joinedMillis(a))
@@ -172,7 +171,7 @@ async function loadByBookingDate(
 ): Promise<BookingsWindow> {
   const snap = await getDocs(
     query(
-      collectionGroup(db, BOOKINGS_SUB),
+      collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
       where('teamId', '==', teamId),
       where('joinedAt', '>=', from),
       where('joinedAt', '<=', to),
@@ -249,7 +248,7 @@ export function useBookingReference(teamId: string | null, code: string | null) 
       if (!teamId || !code) return { bookings: [], sessions: {} }
       const snap = await getDocs(
         query(
-          collectionGroup(db, BOOKINGS_SUB),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('booking_reference', '==', code),
           limit(MAX_REFERENCE_MATCHES)
@@ -297,7 +296,7 @@ export function useContactBookedSessions(teamId: string | null, contactId: strin
       if (!teamId || !contactId) return new Set<string>()
       const snap = await getDocs(
         query(
-          collectionGroup(db, BOOKINGS_SUB),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('contact', '==', contactId),
           orderBy('joinedAt', 'desc'),

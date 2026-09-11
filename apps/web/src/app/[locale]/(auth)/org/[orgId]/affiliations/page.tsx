@@ -18,6 +18,7 @@ import {
   ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION,
   CONTACTS_COLLECTION, ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
   DEFAULT_ORG_AFFILIATION_STATUSES, AFFILIATION_TYPES_SUBCOLLECTION, CONTACT_AFFILIATIONS_SUBCOLLECTION,
+  TEAMS_COLLECTION,
 } from '@linyup/shared'
 import type { Contact, OrgAffiliationStatusDef, Affiliation, AffiliationType } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
@@ -64,7 +65,7 @@ function useOrgTeamIds(orgId: string) {
       const rows = snap.docs.map((d) => ({ id: d.data().teamId as string, name: '' }))
       await Promise.all(
         rows.map(async (row) => {
-          const teamSnap = await getDocs(query(collection(db, 'teams'), where('__name__', '==', row.id)))
+          const teamSnap = await getDocs(query(collection(db, TEAMS_COLLECTION), where('__name__', '==', row.id)))
           if (!teamSnap.empty) row.name = teamSnap.docs[0].data().name ?? row.id
         }),
       )

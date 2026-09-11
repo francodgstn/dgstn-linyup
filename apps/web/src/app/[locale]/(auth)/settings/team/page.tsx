@@ -66,6 +66,7 @@ import {
   ALERT_PRESETS_SUBCOLLECTION,
   isReservedSlug,
   DEFAULT_ENGAGEMENT_THRESHOLDS,
+  TEAM_INTEGRATIONS_SUBCOLLECTION,
 } from '@linyup/shared'
 import type {
   Team,
@@ -270,7 +271,7 @@ function useGatewayIntegrations(teamId: string | null, enabled: boolean) {
       if (!teamId) return []
       const snap = await getDocs(
         query(
-          collection(db, TEAMS_COLLECTION, teamId, 'integrations'),
+          collection(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION),
           where('type', '==', 'payment_gateway')
         )
       )
@@ -1759,12 +1760,12 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
             }
 
       if (editingId) {
-        await updateDoc(doc(db, TEAMS_COLLECTION, teamId, 'integrations', editingId), {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION, editingId), {
           config,
           updated_at: serverTimestamp(),
         })
       } else {
-        await addDoc(collection(db, TEAMS_COLLECTION, teamId, 'integrations'), {
+        await addDoc(collection(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION), {
           teamId,
           type: 'payment_gateway',
           enabled: true,
@@ -1785,7 +1786,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
   async function handleToggleEnabled(item: TeamIntegration) {
     if (!canEdit) return
     try {
-      await updateDoc(doc(db, TEAMS_COLLECTION, teamId, 'integrations', item.id), {
+      await updateDoc(doc(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION, item.id), {
         enabled: !item.enabled,
         updated_at: serverTimestamp(),
       })
@@ -1798,7 +1799,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
   async function handleDelete() {
     if (!deleteTarget || !canEdit) return
     try {
-      await deleteDoc(doc(db, TEAMS_COLLECTION, teamId, 'integrations', deleteTarget))
+      await deleteDoc(doc(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION, deleteTarget))
       await qc.invalidateQueries({ queryKey: ['gateway-integrations', teamId] })
     } catch {
       toast.error(t('saveError'))

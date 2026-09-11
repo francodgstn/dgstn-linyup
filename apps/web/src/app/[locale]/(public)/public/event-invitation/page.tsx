@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { CalendarDays, MapPin, CreditCard, CheckCircle2, AlertCircle, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { createRegionalFormatter, type RegionalFormatter } from '@linyup/shared'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,19 +46,12 @@ type RsvpStatus = 'none' | 'attending' | 'declined'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleDateString([], {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+function formatDate(fmt: RegionalFormatter, iso: string) {
+  return fmt.custom(new Date(iso), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function formatTime(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function formatTime(fmt: RegionalFormatter, iso: string) {
+  return fmt.time(new Date(iso))
 }
 
 function eventDurationLabel(start: string, end: string): string {
@@ -73,6 +67,11 @@ function eventDurationLabel(start: string, end: string): string {
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function EventInvitationPage() {
+  // A token route outside any studio's `[slug]` tree, so there is no public
+  // profile (and no regional settings) in scope: the reader's language over the
+  // platform defaults, which is still the studio's zone for every Swiss tenant.
+  const locale = useLocale()
+  const fmt = useMemo(() => createRegionalFormatter(locale, null), [locale])
   const params = useSearchParams()
   const token = params.get('token') ?? ''
   const t = useTranslations('Events')
@@ -214,11 +213,11 @@ export default function EventInvitationPage() {
                     <div className="flex items-start gap-2.5">
                       <CalendarDays className="h-4 w-4 shrink-0 mt-0.5 text-foreground/40" />
                       <div>
-                        <p className="text-foreground font-medium">{formatDate(event!.start)}</p>
+                        <p className="text-foreground font-medium">{formatDate(fmt, event!.start)}</p>
                         <p>
-                          {formatTime(event!.start)}
+                          {formatTime(fmt, event!.start)}
                           {' – '}
-                          {formatTime(event!.end)}
+                          {formatTime(fmt, event!.end)}
                           <span className="text-muted-foreground/60 ml-1.5">
                             ({eventDurationLabel(event!.start, event!.end)})
                           </span>

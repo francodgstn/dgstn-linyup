@@ -5,6 +5,7 @@ import { collectionGroup, query, where, limit, getDocs } from 'firebase/firestor
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import type { TeamPublicProfile } from '@linyup/shared'
+import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 
 // Resolved team public_profile summary (world-readable). Carries the bio-link
 // fields plus the routing fields (`default_public_surface`, `active_public_surfaces`).
@@ -46,7 +47,7 @@ export function PublicTeamProvider({ slug, children }: Props) {
     let cancelled = false
     setStatus('loading')
     const q = query(
-      collectionGroup(db, 'public_profile'),
+      collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('slug', '==', slug),
       where('type', '==', 'team'),
       limit(1)
