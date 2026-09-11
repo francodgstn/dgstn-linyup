@@ -13,6 +13,7 @@ import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { useAffiliationTerm } from '@/hooks/useAffiliationTerm'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWindowedList } from '@/hooks/useWindowedList'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import {
   CONTACTS_COLLECTION, ORGANIZATIONS_COLLECTION, ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
@@ -522,6 +523,10 @@ export default function TeamAffiliationsPage() {
       return true
     })
   }, [contacts, statusFilter, search, selectedTypeId, affiliationsByContact])
+  // Only the rows near the viewport are mounted once the table is long; the
+  // filters and the selection still run over the whole list
+  // (docs/scalability-2026-09.md §17). Rows are uniform, so no measuring.
+  const windowed = useWindowedList(filtered, { estimateSize: 57, getKey: (c) => c.id })
 
   const totalActive = useMemo(
     () => contacts?.filter((c) => c.affiliation_summary?.has_active).length ?? 0,
@@ -872,9 +877,10 @@ export default function TeamAffiliationsPage() {
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colType')}</th>
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+            <tbody ref={windowed.listRef}>
+              {windowed.before > 0 && <tr aria-hidden style={{ height: windowed.before }} />}
+              {windowed.rows.map(({ item: c, key }) => (
+                <tr key={key} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3">
                     <ContactNameLink contact={c} />
                     {c.email && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{c.email}</div>}
@@ -884,6 +890,7 @@ export default function TeamAffiliationsPage() {
                   </td>
                 </tr>
               ))}
+              {windowed.after > 0 && <tr aria-hidden style={{ height: windowed.after }} />}
             </tbody>
           </table>
         ) : (
@@ -912,10 +919,11 @@ export default function TeamAffiliationsPage() {
                 <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{t('colExpires')}</th>
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((c) => (
+            <tbody ref={windowed.listRef}>
+              {windowed.before > 0 && <tr aria-hidden style={{ height: windowed.before }} />}
+              {windowed.rows.map(({ item: c, key }) => (
                 <ContactAffiliationRow
-                  key={c.id}
+                  key={key}
                   contact={c}
                   affiliation={affiliationsByContact[c.id]}
                   defs={defs}
@@ -928,6 +936,7 @@ export default function TeamAffiliationsPage() {
                   onToggleSelect={(checked) => toggleOne(c.id, checked)}
                 />
               ))}
+              {windowed.after > 0 && <tr aria-hidden style={{ height: windowed.after }} />}
             </tbody>
           </table>
         )}

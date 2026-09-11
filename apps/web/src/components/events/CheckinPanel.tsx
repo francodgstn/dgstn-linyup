@@ -10,6 +10,7 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { useEventCheckins as useCheckins } from '@/hooks/useEventCheckins'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -28,7 +29,9 @@ import {
 } from '@/components/ui/select'
 import { Check, Search, Download, UserPlus, ClipboardList, Loader2 } from 'lucide-react'
 import {
-  CONTACTS_COLLECTION, CHECKINS_COLLECTION, TEAMS_COLLECTION, EVENT_TYPES_SUBCOLLECTION,
+  CHECKINS_COLLECTION,
+  TEAMS_COLLECTION,
+  EVENT_TYPES_SUBCOLLECTION,
   isCheckinCompleted,
   personInitials,
 } from '@linyup/shared'
@@ -224,22 +227,9 @@ function AddCheckinDialog({
       return next
     })
 
-  const contactsQ = useQuery<Contact[]>({
-    queryKey: ['contacts', 'active', teamId],
-    enabled: !!teamId,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const snap = await getDocs(query(
-        collection(db, CONTACTS_COLLECTION),
-        where('teamId', '==', teamId),
-        where('deleted_at', '==', null),
-        where('archived_at', '==', null),
-        orderBy('lastname'),
-        orderBy('firstname'),
-      ))
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Contact)
-    },
-  })
+  // The roster, through the one hook — this panel used to declare its own copy
+  // of the query under its own key (docs/scalability-2026-09.md §17 A5).
+  const contactsQ = useActiveContacts(teamId)
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()

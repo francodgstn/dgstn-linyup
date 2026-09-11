@@ -4,10 +4,17 @@
  * DATA FOR THE PREVIEW DASHBOARD — deliberately a COPY, not a refactor.
  *
  * This lane exists to be compared against the incumbent dashboard, not merged
- * into it, so it does not reach into `(auth)/dashboard/page.tsx` for the two
- * queries it needs. They are re-declared here with the SAME query keys, which
- * means TanStack hands whichever route mounts second the first one's cache:
- * copying the code did not copy the network.
+ * into it, so it does not reach into `(auth)/dashboard/page.tsx` for the
+ * queries it needs. The day's sessions are re-declared here with the SAME
+ * query key as the incumbent's agenda, which means TanStack hands whichever
+ * route mounts second the first one's cache: copying the code did not copy
+ * the network.
+ *
+ * The ROSTER is not declared here at all any more. It came with its own key
+ * (`['contacts', teamId]`), which made the dashboard a second whole-roster
+ * fetch beside the contacts page's — one of several copies the census found
+ * (docs/scalability-2026-09.md §17 A4). The dashboard reads
+ * `useActiveContacts` now, the one roster hook, and shares its cache entry.
  *
  * Everything else this page reads (`useDashboardData`, `useMonthlyRevenue`,
  * `useSetupChecklist`, `useMemberPayments`, `usePaymentEvents`) is an existing
@@ -18,8 +25,8 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { collection, getDocs, limit, orderBy, query, where, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CONTACTS_COLLECTION, SESSIONS_COLLECTION } from '@linyup/shared'
-import type { Contact, Session } from '@linyup/shared'
+import { SESSIONS_COLLECTION } from '@linyup/shared'
+import type { Session } from '@linyup/shared'
 import { useMemberPayments, usePaymentEvents } from '@/hooks/useConnect'
 import {
   byoToUnified,
@@ -40,25 +47,6 @@ export function startOfWeek(): Date {
   const d = startOfToday()
   d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1))
   return d
-}
-
-/** The team's live contacts. Same key as the incumbent's `useContacts`. */
-export function usePreviewContacts(teamId: string | null) {
-  return useQuery({
-    queryKey: ['contacts', teamId],
-    enabled: !!teamId,
-    staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-      const snap = await getDocs(
-        query(
-          collection(db, CONTACTS_COLLECTION),
-          where('teamId', '==', teamId),
-          where('deleted_at', '==', null)
-        )
-      )
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Contact)
-    },
-  })
 }
 
 /** Sessions of one calendar day. Same key + index as the incumbent's agenda. */
