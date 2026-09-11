@@ -3156,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, e ogni data di scadenza verrà rimossa.",
     "bulkStatusDescActive": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, con la scadenza prevista dalle regole di questo tipo.",
     "bulkStatusToast": "{count, plural, one {# affiliazione impostata} other {# affiliazioni impostate}} su {status}.",
-    "bulkStatusPartial": "{ok} aggiornate, {failed} rifiutate — gestisci solo una parte di questi studi."
+    "bulkStatusPartial": "{ok} aggiornate, {failed} rifiutate — gestisci solo una parte di questi studi.",
+    "subtitleOrg": "{total} nei registri di {studios} studi",
+    "allTeamsTooLarge": "Tutti gli studi (troppi da elencare)",
+    "studioSummaryLead": "{total} persone sono nei registri di questa organizzazione, più delle {cap} che un elenco può contenere. Scegli uno studio per lavorare sui suoi membri.",
+    "colOnBooks": "Nei registri"
   },
   "OrgAffiliationStatuses": {
     "title": "Stati di affiliazione",

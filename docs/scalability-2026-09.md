@@ -691,7 +691,7 @@ visible rows), **server list** (a callable or an index-backed cursor list),
 | A8 | Gamification | all contacts by `current_month_score`; renders all | correct | 3,000 rows for a leaderboard nobody scrolls | **cap + more** (`limit(100)`) | tiny — **DONE 2026-09-11.** `limit(50)` per ranked field, each on its own index; the copy already said top 50. |
 | A9 | Referrals plugin | ALL contacts (**no `deleted_at` filter**) + all referrals ever | reads deleted people back into memory | roster + a LOG, both unbounded | contacts → `liveContactConstraints()` and only the ids the shown referrals name; referrals → **cap + more** by `created_at desc` | small — **DONE 2026-09-11.** Referrals paged with the status filter in the query; the names come by id (`useContactsByIds`), so an archived referrer still resolves. |
 | A10 | Affiliations | all non-deleted contacts (its own key), sorted in memory, `filtered` rendered whole | correct | same shape as A1 without the attention sort | **DOM window**; status filter in the query; A4's one key | small — **DONE 2026-09-11.** DOM-windowed tables (`useWindowedList`, uniform rows, no measuring). It keeps its OWN read, deliberately: it needs the archived too (a person who left may still hold a federation affiliation, and its notice reasons over every lifecycle), so `useActiveContacts` would be the wrong set. |
-| A11 | **Org affiliations** | all live contacts with an org affiliation **across every member studio** (`teamId in` chunks of 30) | correct for a 3-studio org | a 30-studio federation lists tens of thousands of people on one page | **expectation** — an org never lists a roster; it gets **counts** per studio and status (`getCountFromServer`) and drills down into one studio's page | a day, and a product decision — **Tables DOM-windowed 2026-09-11**; the counts + per-studio drill-down stay the Phase 4 decision. |
+| A11 | **Org affiliations** | all live contacts with an org affiliation **across every member studio** (`teamId in` chunks of 30) | correct for a 3-studio org | a 30-studio federation lists tens of thousands of people on one page | **expectation** — an org never lists a roster; it gets **counts** per studio and status (`getCountFromServer`) and drills down into one studio's page | a day, and a product decision — **Tables DOM-windowed 2026-09-11**; the counts + per-studio drill-down stay the Phase 4 decision. **The counts + per-studio drill-down landed 2026-09-11** — see §18.2. |
 | A12 | Documents plugin | `WaiverSigners` — all signers per document | correct | one row per member who ever signed; equals the roster | **cap + more** by `accepted_at desc` + search by contact | small — **DONE 2026-09-11.** DIFFERENTLY: the READ stays whole — the evidence line is a count over the whole signed population that no cheap query reproduces, and it is roster-scale — while the TABLE pages a hundred rows at a time. |
 | A13 | Payments | `useMemberSubscriptions` — every subscription incl. cancelled; the hook's own header names the fix | correct, and roster-like by design | headcount **plus churn**: after three years the ended rows outnumber the live | **status filter** — live statuses by default, "show ended" pages the rest | small — **DONE 2026-09-11.** `status in` the live set (`LIVE_SUBSCRIPTION_STATUSES`, now on the hook); the page never listed an ended row, so only the read changed. |
 
@@ -737,10 +737,44 @@ the onboarding conversation before a customer finds it.
    expectation to set: the free, coach and studio tiers are for studios of up
    to about 3,000 live contacts; larger studios are an organisation-tier
    conversation, and an organisation lists per studio (next point).
+
+   **Still open after Phase 4, and deliberately — it has a precondition.** A
+   nightly field means a nightly pass over every live contact of every tenant,
+   which is a NEW instance of the single-instance sequential scan Part 2 §9
+   names as the load-bearing problem, added before §14 step 3 (the Cloud Tasks
+   dispatchers) has fixed the ones already there. Building it now would put the
+   week of work on the foundation this document says breaks first.
+
+   There is also a design that needs NO sweep, and it is written down here so
+   that when the ceiling arrives the week is a week of typing rather than a week
+   of deciding. Of the reasons `contactAttentionReasons` returns, only two move
+   with the clock (`gone_quiet`, `checkin_lapsed`); the other seven change only
+   on a write, which `trackContacts` already sees. So: store the write-driven
+   score on the contact (fixed-point guard, as `onEmbedWidgetsWritten` does), and
+   express the two clock reasons as RANGE queries on the timestamps they already
+   compare — `last_session_at` and `last_checkin_at`. The list is then three
+   bounded queries merged, with the exact reasons recomputed on the ≤3N documents
+   loaded, so it is not an approximation of the client answer but the same
+   answer. What it costs is a SECOND roster path beside the client one, which is
+   Part 1's whole subject — so it is worth building once, late, and not twice.
 2. **An organisation never lists a roster.** A11 is the only page that does,
    and at federation scale it cannot: the org level gets counts per studio and
    status, and drills into one studio's page. This is a product decision as
    much as a fix, and it should be made before the first 20-studio org signs.
+
+   **DONE 2026-09-11.** The studio picker now scopes the QUERY rather than
+   filtering rows the page already downloaded, so choosing a studio reads that
+   studio's people and nobody else's. Above `ORG_ROSTER_CAP` people on the
+   federation's books, "all studios" is refused — with a route, never silently:
+   the page shows one row per member studio with its count, and each row is the
+   way in. The counts are one `count()` per studio, bounded by the studio count
+   inside one organisation rather than by the contact count.
+
+   Per studio and NOT per studio × status, which is the one deviation from the
+   sentence above: the status lives on the affiliation document rather than the
+   contact, so a status breakdown would be an aggregation per pair — the very
+   fan-out this replaces. The breakdown appears once a studio is chosen, from
+   the affiliations that view already holds.
 3. **Firestore has no text search.** Contact search is a client-side scan of
    the loaded roster, which is exactly right at the ceiling above and wrong
    beyond it. The answer past it is an external index (Algolia / Typesense)
@@ -753,6 +787,15 @@ the onboarding conversation before a customer finds it.
    silently ships the first page. The same rule binds any export added later
    to a list in §17.
 
+   **DONE 2026-09-11, and it was mostly already true.** The three exports over
+   unbounded sets — contacts, the finance report, a member's consent history —
+   were callables before this pass; the forms CSV was fixed in Phase 1; every
+   remaining browser-built CSV reads one entity's rows or one period's. What was
+   missing was the GATE, since the forms case proves the rule is easy to break
+   silently: `contacts/exportSites.test.ts` enumerates every CSV the web app
+   builds and the reason each is bounded, and a new one fails the build until it
+   is justified or moved to a callable.
+
 ## 19. The plan, in order
 
 | Phase | What | Rows | Size |
@@ -760,7 +803,7 @@ the onboarding conversation before a customer finds it.
 | **1 — bound the LOGs** | notifications `unread` + `limit(50)` + retention; events on the schedule windowed like sessions; availability exceptions from today; contact requests `pending`; form submissions cap + more; referrals cap + more and names by id; gamification `limit(50)`; waiver signers paged; archived tab cap + more; Space payments `orderBy + limit`; member subscriptions live-status default | B1 B2 B3 B4 B5 B6 A2 A8 A9 A12 A13 | **DONE 2026-09-11**, a day as sized. Two deviations, each recorded on its row: A2's sidebar search keeps the whole read; A12's read stays whole and its table pages. |
 | **2 — one roster read, windowed** | every roster read goes through `useActiveContacts` (the dashboard, session detail, check-in, contact groups, affiliations and referrals each fetch their own copy today); `@tanstack/react-virtual` on the contacts, affiliations and org-affiliations tables; `getCountFromServer` for the dashboard headcount and manual-group counts | A1 A4 A5 A7 A10 | **DONE 2026-09-11**, under the two days. Two decisions, each on its row: the count aggregations were not added (A4, A7 — the pages hold the roster anyway, so a count is a read on top of the read, not instead of it); the affiliations page keeps its own read (A10 — it needs the archived). |
 | **3 — kill the fan-outs** | `getMyAttendance` callable for the mobile calendar, chart and agenda; operator console counts from a stored per-team counter + a paged accounts table | C1 C2 B8 | **DONE 2026-09-11**, except the accounts table (below). |
-| **4 — when a customer approaches the ceiling** | materialized attention score + server-driven roster list; org-level counts + per-studio drill-down; export callables | §18 1, 2, 4 | **a week each**, not before there is a studio that needs it |
+| **4 — when a customer approaches the ceiling** | materialized attention score + server-driven roster list; org-level counts + per-studio drill-down; export callables | §18 1, 2, 4 | **PARTLY DONE 2026-09-11.** §18.2 (org counts + drill-down) and §18.4 (exports, plus the gate that keeps them honest) shipped. §18.1 is the one left, and it stays left: it needs an all-tenant nightly pass, which is §14 step 3's job to make safe first. Its no-sweep design is written down in §18.1 so the wait costs nothing. |
 
 **Deferred out of Phase 3, with the reason: the operator console's accounts
 table.** The plan said page it. Paging it saves nothing while the OVERVIEW on

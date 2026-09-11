@@ -3156,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, and any expiry date cleared.",
     "bulkStatusDescActive": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, with the expiry date this type's rules give them.",
     "bulkStatusToast": "{count, plural, one {# affiliation set} other {# affiliations set}} to {status}.",
-    "bulkStatusPartial": "{ok} updated, {failed} refused — you manage only some of these studios."
+    "bulkStatusPartial": "{ok} updated, {failed} refused — you manage only some of these studios.",
+    "subtitleOrg": "{total} on the books across {studios} studios",
+    "allTeamsTooLarge": "All studios (too many to list)",
+    "studioSummaryLead": "{total} people are on this organisation's books, more than the {cap} one list can hold. Choose a studio to work through its members.",
+    "colOnBooks": "On the books"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliation Statuses",
