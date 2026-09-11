@@ -257,6 +257,40 @@ Checks doc counts (source vs target) for all top-level collections, plus spot-ch
 
 ---
 
+## Post-import backfills
+
+The migration writes what the source holds. Two things the source does *not* hold
+are reconstructed afterwards, by hand, in this order:
+
+```bash
+# reports first, writes only with --apply
+pnpm backfill:affiliation-active-orgs --project linyup-staging --apply
+
+# writes by default, so preview with --dry-run first
+pnpm backfill:weekly-reports --org hmd --target staging --dry-run
+pnpm backfill:weekly-reports --org hmd --target staging
+```
+
+**Affiliation active-orgs** re-derives `affiliation_summary.active_org_ids` from the
+affiliation rows pass 05 wrote. Skip it and an affiliated contact reads as unaffiliated
+everywhere the denormalised array is the query — the org affiliations list, its filters,
+the dashboard's affiliation trend.
+
+**Weekly reports** reconstructs `active_contacts_count` and `contacts_count_by_stage` on
+the migrated `team_weekly_reports`. HMD Basel arrives with 272 of them going back to 2022
+and neither field was ever written by the old system, so four dashboard trends read
+nothing from five years of history. It fills only what the migrated dates DETERMINE, never
+overwrites a measured value, and stamps every row it touches. It deliberately does **not**
+invent `bookings_count` (HMD recorded attendance, not bookings) or subscription counts
+(`active_subscriptions` is a current snapshot with no history) — so **Sessions > Engagement
+rate comes back and the Experimental engagement matrix stays empty**. The full reasoning is
+in the header of `scripts/backfill-weekly-reports.ts`.
+
+Both are re-runnable and both are per-target: a staging rehearsal does not backfill
+production.
+
+---
+
 ## What is and isn't migrated
 
 | Collection | Action |
