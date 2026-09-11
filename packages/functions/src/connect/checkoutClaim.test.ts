@@ -167,8 +167,21 @@ describe('A CONTACT’S BOOKINGS ARE FOUND BY THE FIELD BOOKINGS CARRY', () => {
     // Scoped to the bookings query itself. The `participants` collection group
     // one file over DOES carry `contactId` (analytics/index.ts writes it), so a
     // blanket ban on that string would fail on correct code.
-    const bookingsQuery = /collectionGroup\(db, 'bookings'\)[\s\S]{0,300}/.exec(page)?.[0]
-    assert.ok(bookingsQuery, 'the bookings collection-group query is still there')
+    //
+    // ANCHORED ON EITHER SPELLING. This pin read the LITERAL `'bookings'`, and
+    // #292 ("one constant per Firestore path segment") replaced it with
+    // `SESSION_BOOKINGS_SUBCOLLECTION` — so the regex stopped matching, the
+    // `assert.ok` fired, and main went red for a page that was correct. A pin
+    // whose subject is a field name must not also depend on how the collection
+    // beside it is spelled.
+    const bookingsQuery =
+      /collectionGroup\(db, (?:SESSION_BOOKINGS_SUBCOLLECTION|BOOKINGS_SUBCOLLECTION|'bookings')\)[\s\S]{0,300}/.exec(
+        page,
+      )?.[0]
+    assert.ok(
+      bookingsQuery,
+      'the bookings collection-group query is still there — if it was renamed again, add the new spelling here rather than deleting the pin',
+    )
     assert.match(bookingsQuery!, /where\('contact', '==', contactId\)/)
     assert.doesNotMatch(bookingsQuery!, /where\('contactId'/)
   })
