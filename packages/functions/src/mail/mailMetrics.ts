@@ -7,8 +7,11 @@
 // write per team per quarter of an hour. So the ledger is aggregated directly:
 // an aggregation costs no extra write and cannot drift out of sync with the
 // rows it aggregates. The platform DAILY snapshot below is stored anyway,
-// because a day that has passed can no longer be re-derived if the raw ledger
-// is ever given a retention policy.
+// because a day that has passed can no longer be re-derived now that the raw
+// ledger HAS a retention policy (LEDGER_RETENTION_DAYS.mail_sends, a TTL on
+// `expires_at`) — and for the same reason the running total is CARRIED FORWARD
+// from snapshot to snapshot rather than re-summed over the ledger, which would
+// otherwise shrink to the retention window the day the policy first bites.
 //
 // A ROW IS A PROVIDER CALL, NOT AN EMAIL. `msg.to` may be an array, so one call
 // can carry several addresses; the addresses are the figure an operator reads as
@@ -20,8 +23,8 @@
 // collection and is reported as its own figure — a studio's mail volume and its
 // SMS spend are different questions with different costs.
 import * as admin from 'firebase-admin'
-import { AggregateField, Timestamp } from 'firebase-admin/firestore'
-import { MAIL_SENDS_COLLECTION, type PlatformMailMetrics } from '@linyup/shared'
+import { AggregateField, FieldPath, Timestamp } from 'firebase-admin/firestore'
+import { MAIL_SENDS_COLLECTION, PLATFORM_METRICS_COLLECTION, type PlatformMailMetrics } from '@linyup/shared'
 import { to } from '../utils/async'
 
 const TIMEZONE = 'Europe/Zurich'
@@ -55,6 +58,12 @@ function zurichMidnightUtc(year: number, month: number, day: number): Date {
     parts.second!,
   )
   return new Date(guess + (guess - local))
+}
+
+/** Zurich midnight that opens the calendar day `date` ('YYYY-MM-DD'). */
+function zurichDayStart(date: string): Date {
+  const [year, month, day] = date.split('-').map(Number)
+  return zurichMidnightUtc(year!, month!, day!)
 }
 
 /**
@@ -97,6 +106,43 @@ async function sumRecipientsOrNull(query: FirebaseFirestore.Query): Promise<numb
   return snap.data().recipients
 }
 
+/** How many snapshots back to look for a running total before concluding
+ *  there is none. A gap this long means the capture cron has been dead for
+ *  weeks; the seed below then re-derives from what the ledger still holds. */
+const CUMULATIVE_LOOKBACK = 40
+
+type PriorCumulative = { date: string; value: number } | null | 'unreadable'
+
+/**
+ * The most recent snapshot BEFORE `date` that carries a running total. `null`
+ * means none does (the first capture after this landed, or a gap longer than
+ * the lookback); `'unreadable'` means the read itself failed — which must NOT
+ * become a fresh seed, because seeding from a ledger that ages out would write
+ * a smaller total over a larger one and every later day would carry it.
+ */
+async function priorCumulative(
+  db: admin.firestore.Firestore,
+  date: string,
+): Promise<PriorCumulative> {
+  const [err, snap] = await to(
+    db
+      .collection(PLATFORM_METRICS_COLLECTION)
+      .where(FieldPath.documentId(), '<', date)
+      .orderBy(FieldPath.documentId(), 'desc')
+      .limit(CUMULATIVE_LOOKBACK)
+      .get(),
+  )
+  if (err || !snap) {
+    console.warn('[mail-metrics] prior snapshot read failed:', err)
+    return 'unreadable'
+  }
+  for (const doc of snap.docs) {
+    const value = doc.get('mail.sent_cumulative') as unknown
+    if (typeof value === 'number') return { date: doc.id, value }
+  }
+  return null
+}
+
 /**
  * Called by `capturePlatformMetrics` (`../analytics/platformMetrics.ts`, the
  * 00:15 Europe/Zurich cron), between `platformMetricsToDoc` and the `set()`.
@@ -132,16 +178,29 @@ export async function capturePlatformMailMetrics(
   // `status != 'suppressed'` filter — which is just as well: an inequality drops
   // documents where the field is absent, and it cannot be combined with the
   // `created_at` range anyway.
-  const [daySent, daySuppressed, allSent] = await Promise.all([
+  // The running total: the last snapshot's total plus the addresses sent since
+  // the day that snapshot closed — a window the ledger always still holds (the
+  // capture runs nightly; the retention is ninety days). Only with NO prior
+  // total anywhere is it seeded from the whole ledger, which is why this code
+  // went live before the TTL policy did.
+  const prior = await priorCumulative(db, date)
+  if (prior === 'unreadable') return null
+  const since = prior
+    ? email
+        .where('created_at', '>=', Timestamp.fromDate(zurichDayStart(prior.date)))
+        .where('created_at', '<', Timestamp.fromDate(end))
+    : email
+
+  const [daySent, daySuppressed, sinceSent] = await Promise.all([
     sumRecipientsOrNull(day),
     countOrNull(day.where('status', '==', 'suppressed')),
-    sumRecipientsOrNull(email),
+    sumRecipientsOrNull(since),
   ])
-  if (daySent == null || daySuppressed == null || allSent == null) return null
+  if (daySent == null || daySuppressed == null || sinceSent == null) return null
 
   return {
     sent_yesterday: daySent,
     suppressed_yesterday: daySuppressed,
-    sent_cumulative: allSent,
+    sent_cumulative: (prior?.value ?? 0) + sinceSent,
   }
 }

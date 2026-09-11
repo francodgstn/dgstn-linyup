@@ -19,6 +19,7 @@ import type { MailProvider, OutboundMessage, ResolvedSender } from './types'
 import { rewriteTenantPublicLinks } from '@linyup/shared'
 import { activeCustomDomainHost } from '../domains/activeDomain'
 import { getHostingUrl } from '../utils/env'
+import { ledgerExpiry } from '../utils/ledgerRetention'
 
 const testModeEnabled = defineString('TEST_MODE', {
   description: 'Redirect all outbound mail to a single test address',
@@ -182,7 +183,7 @@ function ledgerFields(
     // be re-stamped on every merge, so a resend after the webhook marked a row
     // 'failed' silently moved the send date onto the retry — and a send-time
     // window is exactly what the volume counts range over.
-    ...(slot.isNew ? { created_at: now } : {}),
+    ...(slot.isNew ? { created_at: now, expires_at: ledgerExpiry('mail_sends') } : {}),
   }
 }
 

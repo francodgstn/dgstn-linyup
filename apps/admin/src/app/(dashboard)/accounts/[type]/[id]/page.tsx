@@ -22,6 +22,7 @@ import { InternalCard } from './internal-card'
 import { ConnectToggle } from './connect-toggle'
 import { DisconnectConnect } from './disconnect-connect'
 import { MessagingPolicyCard } from './messaging-policy-card'
+import { LEDGER_RETENTION_DAYS } from '@linyup/shared'
 
 export const dynamic = 'force-dynamic'
 
@@ -354,7 +355,7 @@ export default async function AccountDetailPage({
                     : undefined
                 }
               />
-              <Figure label="Email · total" value={messaging.volume.email?.lifetime ?? null} />
+              <Figure label={`Email · ${LEDGER_RETENTION_DAYS.mail_sends}d`} value={messaging.volume.email?.retained ?? null} />
               {/* SMS stays its own figure — it spends prepaid credits, mail does not. */}
               <Figure label="SMS · 30d" value={messaging.volume.smsLast30d} />
             </div>

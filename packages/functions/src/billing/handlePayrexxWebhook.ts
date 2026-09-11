@@ -45,6 +45,7 @@ import {
 } from '@linyup/shared'
 import type { PayrexxGatewayConfig } from '@linyup/shared'
 import { recordFinanceTransaction } from '../finance/journal'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 export const handlePayrexxWebhook = onRequest(
   { invoker: 'public' },
@@ -289,12 +290,12 @@ export const handlePayrexxWebhook = onRequest(
 
       await to(
         db.collection(CONTACTS_COLLECTION).doc(contactId)
-          .collection('activity_log').add({
+          .collection('activity_log').add(withLedgerExpiry('activity_log', {
             type: 'payment_received',
             source: 'payrexx',
             message: activityMsg,
             timestamp: FieldValue.serverTimestamp(),
-          })
+          }))
       )
     }
 

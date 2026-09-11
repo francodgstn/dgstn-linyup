@@ -99,7 +99,7 @@ export default async function OverviewPage() {
         {/* Platform mail — studio sends AND Linyup's own system mail. A studio's
             own figure is on its account page and is team-scoped, so smaller. */}
         <Kpi label="Emails (30d)" value={numOrDash(mail.last30d)} sub="all streams" />
-        <Kpi label="Emails (total)" value={numOrDash(mail.lifetime)} sub="since the ledger" />
+        <Kpi label="Emails (total)" value={numOrDash(mail.lifetime)} sub="as of last night" />
       </section>
       <p className="-mt-4 text-xs text-muted-foreground">{MAIL_LEDGER_NOTE}</p>
 

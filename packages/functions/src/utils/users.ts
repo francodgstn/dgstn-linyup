@@ -11,6 +11,8 @@ import {
 
 const TEAMS_COLLECTION = 'teams'
 const WEEKLY_REPORTS_SUBCOLLECTION = 'weekly_reports'
+import { withLedgerExpiry } from './ledgerRetention'
+
 const ACTIVITY_LOG_SUBCOLLECTION = 'activity_log'
 const ISO_WEEK_FORMAT = `R-'W'II`
 
@@ -93,7 +95,8 @@ export async function getOrCreateTeamWeeklyReport(
 }
 
 /**
- * Writes an entry to the team's activity_log subcollection.
+ * Writes an entry to the team's activity_log subcollection — with its
+ * `expires_at`, so the TTL policy retires it (LEDGER_RETENTION_DAYS).
  */
 export async function logActivity(teamId: string, logData: Record<string, unknown>): Promise<void> {
   const activityLogRef = admin
@@ -103,7 +106,7 @@ export async function logActivity(teamId: string, logData: Record<string, unknow
     .collection(ACTIVITY_LOG_SUBCOLLECTION)
     .doc()
 
-  const [createErr] = await to(activityLogRef.set(logData))
+  const [createErr] = await to(activityLogRef.set(withLedgerExpiry('activity_log', logData)))
   if (createErr) {
     console.error('Error creating activity_log entry', createErr.message || createErr)
     throw createErr
