@@ -719,10 +719,11 @@ So a scheduled job is a **dispatcher**: `dispatchTenantJob`
 reasoning) lists the tenants and enqueues one Cloud Task each, and a
 `…ForTeam(teamId)` function does one tenant's work. That same function is what
 the dispatcher runs inline on a machine with no Cloud Tasks emulator, so there
-is never a second implementation to drift. Converted: `sendBookingReminders`,
-`markNoShowBookings`, `runScheduledRules`, `weeklyReports` — each with its own
-handler in `dailyTasks/tenantWorkers.ts`, hence its own queue and its own retry
-and concurrency settings.
+is never a second implementation to drift. Converted:
+`sendBookingReminders`, `markNoShowBookings`, `runScheduledRules`,
+`weeklyReports`, `monthlyFinanceReports` — each with its own handler in
+`dailyTasks/tenantWorkers.ts`, hence its own queue and its own retry and
+concurrency settings.
 
 Two rules when adding one:
 
@@ -734,9 +735,12 @@ Two rules when adding one:
   flipped from `pending`.
 - **`teams where archived_at == null` matches almost nothing.** A Firestore
   `== null` filter matches an explicit null and NOT a missing field, and no
-  team writer sets that field. Project it and filter in memory. The identical
-  clause against `contacts` IS correct — see `apps/web/src/lib/liveContacts.ts`
-  for why the two collections differ.
+  team writer sets that field. Project it and filter in memory —
+  `listFanOutTeamIds` does. This was not hypothetical:
+  `monthlyFinanceReports` had that clause and nothing else, so it wrote almost
+  no monthly finance reports for its whole life while logging a clean zero.
+  The identical clause against `contacts` IS correct — see
+  `apps/web/src/lib/liveContacts.ts` for why the two collections differ.
 
 ### Comments must not assert a COUNT of code sites
 
