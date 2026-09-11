@@ -729,7 +729,7 @@ export default function TeamAffiliationsPage() {
             <DialogHeader className="border-b px-4 py-3 pr-12">
               <DialogTitle className="text-base">{t('manageTypes')}</DialogTitle>
             </DialogHeader>
-            <DialogBody className="p-4">
+            <DialogBody className="p-4 mr-0">
               <AffiliationTypesManager team={team} teamId={currentTeamId} />
             </DialogBody>
           </DialogContent>
