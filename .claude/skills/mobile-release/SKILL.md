@@ -56,6 +56,22 @@ Until the next store binary comes from a `mobile-v*` tag, publish updates the wa
 production` from the machine that built them. The switchover costs one release,
 once.
 
+**The CI builds already exist. SUBMIT them, do not rebuild.** The tag
+`mobile-v1.0.1-ci1` produced iOS **1.0.1(5)** (`b817ef4f…`) and Android
+**1.0.1(5), version code 5** (`a4093b56…`) — both finished, both carrying the
+runner's fingerprints. They are held only by the App Store review and the Play
+fourteen-day clock. When those close:
+
+```bash
+cd apps/mobile
+npx eas-cli submit --profile store --platform ios --latest
+npx eas-cli submit --profile store --platform android --latest
+```
+
+Building a fresh binary instead — from the laptop especially — puts this back
+exactly where it started. The whole value of those two artefacts is that CI made
+them, so an OTA CI publishes reaches the phone that installed them.
+
 A local `eas build` is still right for anything you are NOT shipping: a
 `preview` build for your own phone, or reproducing a build failure.
 
