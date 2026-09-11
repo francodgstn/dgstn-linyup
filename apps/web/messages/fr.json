@@ -3577,7 +3577,10 @@
     "editorOrgClubsLayout": "Disposition",
     "editorOrgClubsLayoutCards": "Cartes",
     "editorOrgClubsLayoutList": "Liste défilante",
-    "editorOrgClubsSearchable": "Permettre aux visiteurs de rechercher un club"
+    "editorOrgClubsSearchable": "Permettre aux visiteurs de rechercher un club",
+    "embedBookTitle": "Bouton de réservation",
+    "embedBookBody": "Collez ceci n'importe où sur votre propre site. La réservation s'ouvre en pop-up par-dessus votre page, sans que vos visiteurs la quittent. Vous pouvez changer le texte du bouton.",
+    "embedModalNote": "Avec le script sur la page, les boutons Réserver d'un embed ouvrent ce même pop-up au lieu d'un nouvel onglet."
   },
   "Kiosk": {
     "title": "Kiosque",

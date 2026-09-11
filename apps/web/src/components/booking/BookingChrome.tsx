@@ -1,6 +1,8 @@
 'use client'
 
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, type ReactNode } from 'react'
+import type { Route } from 'next'
+import { useRouter } from '@/i18n/navigation'
 
 // ─── Booking chrome ───────────────────────────────────────────────────────────
 //
@@ -50,6 +52,30 @@ const BookingChromeContext = createContext<BookingChromeValue>(PAGE_CHROME)
 /** Defaults to page chrome, so an unwrapped flow behaves exactly as before. */
 export function useBookingChrome(): BookingChromeValue {
   return useContext(BookingChromeContext)
+}
+
+/**
+ * "I am done with this flow — get me out."
+ *
+ * In a panel that means CLOSE: the visitor came from the page behind it (the
+ * studio's website, on a Linyup site or on their own), and it is already showing
+ * whatever `href` would navigate to. As a page it means going there.
+ *
+ * Every exit goes through here rather than deciding for itself, because getting
+ * it wrong is invisible on a page and fatal in a frame: in the embed `href` is
+ * an app page that sends `X-Frame-Options: DENY`, so navigating to it does not
+ * merely lose the visitor's place — it blanks the panel they are standing in.
+ */
+export function useExitFlow(): (href: Route) => void {
+  const chrome = useBookingChrome()
+  const router = useRouter()
+  return useCallback(
+    (href: Route) => {
+      if (chrome.kind === 'overlay') chrome.onClose?.()
+      else router.push(href)
+    },
+    [chrome, router]
+  )
 }
 
 export function BookingChromeProvider({

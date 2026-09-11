@@ -3577,7 +3577,10 @@
     "editorOrgClubsLayout": "Darstellung",
     "editorOrgClubsLayoutCards": "Karten",
     "editorOrgClubsLayoutList": "Scrollende Liste",
-    "editorOrgClubsSearchable": "Besucher die Clubs durchsuchen lassen"
+    "editorOrgClubsSearchable": "Besucher die Clubs durchsuchen lassen",
+    "embedBookTitle": "Buchungs-Button",
+    "embedBookBody": "Füge das an beliebiger Stelle auf deiner eigenen Website ein. Die Buchung öffnet sich als Pop-up über deiner Seite, sodass Besucher sie nie verlassen. Den Button-Text kannst du frei ändern.",
+    "embedModalNote": "Ist das Skript auf der Seite eingebunden, öffnen Buchen-Buttons in einem Embed dasselbe Pop-up statt eines neuen Tabs."
   },
   "Kiosk": {
     "title": "Kiosk",
