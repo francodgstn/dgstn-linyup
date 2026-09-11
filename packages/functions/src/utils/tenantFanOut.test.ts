@@ -85,14 +85,18 @@ describe('tenant fan-out', () => {
   })
 })
 
-describe('the four converted crons', () => {
+describe('the converted crons', () => {
   // Named rather than counted, per CLAUDE.md: each entry is the job's source
-  // file, the per-tenant function it must expose, and the worker that calls it.
+  // file and the per-tenant function it must expose. `monthlyFinanceReports`
+  // joined them after the fact — it was the one carrying the `archived_at`
+  // clause the fan-out was written to avoid, so it wrote almost no reports at
+  // all until it was converted.
   const JOBS = [
     { file: '../dailyTasks/sendBookingReminders.ts', perTeam: 'sendBookingRemindersForTeam' },
     { file: '../dailyTasks/markNoShowBookings.ts', perTeam: 'markNoShowBookingsForTeam' },
     { file: '../dailyTasks/runScheduledRules.ts', perTeam: 'runScheduledRulesForTeam' },
     { file: '../analytics/index.ts', perTeam: 'weeklyReportsForTeam' },
+    { file: '../finance/monthlyReports.ts', perTeam: 'monthlyFinanceReportsForTeam' },
   ]
 
   it('every one dispatches per tenant instead of looping them', () => {
@@ -107,7 +111,14 @@ describe('the four converted crons', () => {
     const workers = src('../dailyTasks/tenantWorkers.ts')
     for (const job of JOBS) assert.match(workers, new RegExp(job.perTeam))
     // The worker names the dispatchers enqueue into must be the ones deployed.
-    for (const name of ['remindersForTeam', 'noShowsForTeam', 'scheduledRulesForTeam', 'weeklyReportForTeam']) {
+    const WORKERS = [
+      'remindersForTeam',
+      'noShowsForTeam',
+      'scheduledRulesForTeam',
+      'weeklyReportForTeam',
+      'financeReportForTeam',
+    ]
+    for (const name of WORKERS) {
       assert.match(workers, new RegExp(`export const ${name} = onTaskDispatched`), `${name} is not a task handler`)
       assert.match(src('../index.ts'), new RegExp(`\\b${name}\\b`), `${name} is not exported for deploy`)
     }

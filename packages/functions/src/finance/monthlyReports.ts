@@ -26,6 +26,7 @@ import {
   type FinanceReportRow,
 } from '@linyup/shared'
 import { to } from '../utils/async'
+import { dispatchTenantJob } from '../utils/tenantFanOut'
 
 /** 'YYYY-MM' → the previous month's key. */
 export function prevMonthKey(month: string): string {
@@ -137,28 +138,70 @@ export async function generateMonthlyFinanceReport(teamId: string, month: string
   return true
 }
 
+/**
+ * The two months one run regenerates, derived from the day it ran for.
+ *
+ * FROM THE RUN SLOT AND NOT FROM `Date.now()`, because a Cloud Task can execute
+ * minutes or (on a retry with backoff) hours after the schedule fired, and a
+ * worker that recomputed from its own clock could land on a different pair
+ * across a month boundary. The run id IS the date the schedule fired for, so
+ * every task of one run — and every retry of one task — regenerates the same
+ * two months.
+ */
+export function reportMonthsForRun(runId: string | undefined): string[] {
+  const ms = runId ? Date.parse(`${runId}T12:00:00Z`) : NaN
+  const prev = prevMonthKey(monthKey(Number.isNaN(ms) ? Date.now() : ms))
+  return [prevMonthKey(prev), prev] // late events can land in either
+}
+
+/** ONE tenant's two months. The worker body and the dispatcher's inline path. */
+export async function monthlyFinanceReportsForTeam(
+  teamId: string,
+  runId?: string
+): Promise<number> {
+  let written = 0
+  for (const month of reportMonthsForRun(runId)) {
+    try {
+      if (await generateMonthlyFinanceReport(teamId, month)) written += 1
+    } catch (err) {
+      console.error(`[finance] monthly report failed team=${teamId} month=${month}:`, err)
+    }
+  }
+  return written
+}
+
+/**
+ * THE DISPATCHER — one task per tenant.
+ *
+ * ── IT USED TO SKIP ALMOST EVERY STUDIO ─────────────────────────────────────
+ *
+ * This listed tenants with `teams where archived_at == null`. A Firestore
+ * `== null` filter matches an EXPLICIT null and NOT a missing field, and on
+ * `teams` that field is missing — nothing writes it on create, and `Team` does
+ * not declare it. So the clause matched almost nothing and this job wrote
+ * almost no monthly finance reports, for as long as it has existed, while
+ * logging a clean `0 team-months written`. Found while converting the four
+ * scheduled fan-outs (docs/scalability-2026-09.md §9); `listFanOutTeamIds`
+ * projects the field and filters in memory, where an absent marker correctly
+ * reads as "not archived".
+ *
+ * The identical clause against `contacts` IS correct and is not this bug —
+ * contact writers always set the field, which is what
+ * `apps/web/src/lib/liveContacts.ts` exists to guarantee.
+ *
+ * Regeneration is the correctness mechanism here (the journal is the source of
+ * truth and a report is always overwritten), so a redelivered task is a no-op
+ * by construction — this job needed no idempotence work of its own.
+ */
 export const monthlyFinanceReports = onSchedule(
   { schedule: '0 3 3 * *', timeZone: FINANCE_TIMEZONE, timeoutSeconds: 540, memory: '512MiB' },
   async () => {
-    const db = admin.firestore()
-    const prev = prevMonthKey(monthKey(Date.now()))
-    const months = [prevMonthKey(prev), prev] // late events can land in either
-
-    const [teamsErr, teamsSnap] = await to(
-      db.collection(TEAMS_COLLECTION).where('archived_at', '==', null).get()
-    )
-    if (teamsErr || !teamsSnap || teamsSnap.empty) return
-
-    let written = 0
-    for (const teamDoc of teamsSnap.docs) {
-      for (const month of months) {
-        try {
-          if (await generateMonthlyFinanceReport(teamDoc.id, month)) written += 1
-        } catch (err) {
-          console.error(`[finance] monthly report failed team=${teamDoc.id} month=${month}:`, err)
-        }
-      }
-    }
-    console.log(`[finance] monthly reports: ${written} team-months written for ${months.join(', ')}`)
+    const result = await dispatchTenantJob({
+      functionName: 'financeReportForTeam',
+      granularity: 'day',
+      perTeam: (teamId) => monthlyFinanceReportsForTeam(teamId),
+      label: 'financeReports',
+    })
+    console.log('[finance] monthly reports dispatched:', result)
   }
 )

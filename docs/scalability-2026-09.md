@@ -453,6 +453,7 @@ loop:
 | `sendBookingReminders` | hourly | global sessions scan over a 15-day window (`MAX_OFFSET_HOURS = 14*24` + 24 h catch-up), then an N+1 bookings fetch per session | the worst one — runs 24×/day |
 | `markNoShowBookings` | daily | global sessions where `end` in the last 7 days + per-session bookings | N+1 |
 | `capturePlatformMetrics` | daily | all teams + a `count()` per team | cheap-ish (aggregations) |
+| `monthlyFinanceReports` | monthly | for every team: two months of journal + payments | **missed by this table when it was written** — same shape, found on 2026-09-11 |
 
 None of these has a budget or a cursor. At ~500 tenants × 300 contacts,
 `runScheduledRules` is ~150k sequential reads and `weeklyReports` is worse —
@@ -488,6 +489,7 @@ concurrency settings that suit its own work.
 | `markNoShowBookings` (daily) | `noShowsForTeam` | `markNoShowBookingsForTeam` |
 | `runScheduledRules` (daily) | `scheduledRulesForTeam` | `runScheduledRulesForTeam` |
 | `weeklyReports` (weekly) | `weeklyReportForTeam` | `weeklyReportsForTeam` |
+| `monthlyFinanceReports` (monthly) | `financeReportForTeam` | `monthlyFinanceReportsForTeam` |
 
 Both narrowings landed with the reminders: the scan window is now the team's
 OWN longest configured offset plus the catch-up (a studio with no steps, or
@@ -511,10 +513,36 @@ built on it would enqueue nothing for nearly everybody while reporting a clean
 run — the exact silent half-run this conversion exists to end. The fan-out
 projects the field and filters in memory, where an absent marker correctly reads
 as "not archived". `weeklyReports` carried the clause and is fixed by the
-conversion; **`finance/monthlyReports.ts` still has it and is a live defect**,
-out of this change's reach. (The identical clause against `contacts` is correct
-and must be left alone — contact writers always set the field explicitly, which
-is what `apps/web/src/lib/liveContacts.ts` exists to guarantee.)
+conversion.
+
+**`monthlyFinanceReports` was the worst case of it, and is now fixed too
+(2026-09-11).** That job had the clause and nothing else — no second tenant
+source, no fallback — so it has been writing almost no monthly finance reports
+for as long as it has existed, while logging a clean `0 team-months written`.
+It is converted onto the same fan-out, which fixes the listing by construction
+and removes a fifth instance of this section's own problem. Its months now come
+from the RUN SLOT rather than the worker's clock, so a task retried hours or
+days later still regenerates the pair the schedule fired for.
+
+**A studio that ran on this needs its history regenerated**: the job overwrites
+by design (the journal is the source of truth), so re-running it is the repair
+— but only the two most recent months are in scope on any given run. Older
+months have no report and no job that will produce one.
+
+**A third instance, found by sweeping for the rest of the class.**
+`syncTeamPublicProfile`'s forms probe asked `forms where status == 'published'
+and archived_at == null`, and no form document has ever carried that field —
+`Form.archived_at` is declared optional, `createForm` does not write it, and
+nothing archives a form at all. So `formsActive` was false for every studio, and
+a published form never appeared in `active_public_surfaces` — which is what the
+public tenant root and the site menu read to decide a surface is live. Fixed the
+same way, in memory.
+
+(The identical clause against `contacts` is correct and must be left alone —
+contact writers always set the field explicitly, which is what
+`apps/web/src/lib/liveContacts.ts` exists to guarantee. Those, plus the fixed
+sites, are the whole class: `handleTrialLifecycle` queries teams narrowly with
+its own cap and is not of this shape.)
 
 ## 10. Write amplification per booking
 

@@ -222,6 +222,7 @@ export {
   noShowsForTeam,
   scheduledRulesForTeam,
   weeklyReportForTeam,
+  financeReportForTeam,
 } from './dailyTasks/tenantWorkers'
 
 // Auth / Membership

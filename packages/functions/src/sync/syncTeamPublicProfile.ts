@@ -45,6 +45,12 @@ import type {
 import { rebuildTeamPublicCoaches } from './syncTeamCoachesPublicProfile'
 import { resolveActivePluginInstalls } from '../utils/plugins'
 
+/** How many published forms the liveness probe looks at before giving up.
+ *  One would do while nothing archives a form; a small page keeps the answer
+ *  right if archiving is added and a studio's most recent published forms are
+ *  all archived. */
+const PUBLISHED_FORM_PROBE = 10
+
 export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (event) => {
   const { teamId } = event.params
   const afterRef = event.data!.after.ref
@@ -116,17 +122,30 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
   // available to every team's contacts → always live, plugin-free.
   const spaceActive = true
 
-  // forms: custom-forms plugin active AND ≥1 published, non-archived form
+  // forms: custom-forms plugin active AND ≥1 published, non-archived form.
+  //
+  // THE ARCHIVED TEST IS IN MEMORY, and that is a fix rather than a style
+  // choice. It was a `where('archived_at', '==', null)` clause, which matches an
+  // EXPLICIT null and NOT a missing field — and no form document has ever
+  // carried the field: `Form.archived_at` is declared optional, `createForm`
+  // does not write it, and nothing archives a form at all. So the clause matched
+  // nothing, `formsActive` was false for every studio, and a published form
+  // never appeared in `active_public_surfaces` — which is what the public tenant
+  // root and the site menu read to decide a surface is live.
+  //
+  // Same trap as `teams where archived_at == null` (see utils/tenantFanOut.ts,
+  // and the monthly finance reports it silently emptied). Asked in memory, an
+  // absent marker correctly reads as "not archived", and the test keeps working
+  // if archiving is ever added.
   let formsActive = false
   if (pluginInstalls.get('custom-forms') !== null) {
     const publishedFormSnap = await db
       .collection(FORMS_COLLECTION)
       .where('teamId', '==', teamId)
       .where('status', '==', 'published')
-      .where('archived_at', '==', null)
-      .limit(1)
+      .limit(PUBLISHED_FORM_PROBE)
       .get()
-    formsActive = !publishedFormSnap.empty
+    formsActive = publishedFormSnap.docs.some((d) => d.data()?.archived_at == null)
   }
 
   // documents: NO PLUGIN PROBE — Documents is a default feature on every plan.

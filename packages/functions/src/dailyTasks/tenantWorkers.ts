@@ -29,6 +29,7 @@ import { sendBookingRemindersForTeam } from './sendBookingReminders'
 import { markNoShowBookingsForTeam } from './markNoShowBookings'
 import { runScheduledRulesForTeam } from './runScheduledRules'
 import { weeklyReportsForTeam } from '../analytics'
+import { monthlyFinanceReportsForTeam } from '../finance/monthlyReports'
 
 /** Reads the tenant off a task payload, or null when the payload is unusable. */
 function teamOf(data: TenantTaskPayload | undefined, label: string): string | null {
@@ -102,6 +103,29 @@ export const scheduledRulesForTeam = onTaskDispatched<TenantTaskPayload>(
     if (!teamId) return
     const stats = await runScheduledRulesForTeam(teamId)
     if (stats.rules > 0) console.log(`[scheduledRulesForTeam] ${teamId}:`, stats)
+  }
+)
+
+/**
+ * The monthly finance reports for ONE tenant — two months per run, so a late
+ * event in either is picked up.
+ *
+ * `runId` is passed through so the months come from the DAY THE SCHEDULE FIRED
+ * FOR rather than from this task's own clock: a retry hours or days later still
+ * regenerates the same pair. Regeneration is the correctness mechanism (the
+ * journal is the source of truth), so a redelivery is a no-op by construction.
+ */
+export const financeReportForTeam = onTaskDispatched<TenantTaskPayload>(
+  {
+    timeoutSeconds: 540,
+    retryConfig: { maxAttempts: 3, minBackoffSeconds: 120 },
+    rateLimits: { maxConcurrentDispatches: 10 },
+  },
+  async (req) => {
+    const teamId = teamOf(req.data, 'financeReportForTeam')
+    if (!teamId) return
+    const written = await monthlyFinanceReportsForTeam(teamId, req.data?.runId)
+    if (written > 0) console.log(`[financeReportForTeam] ${teamId}: ${written} month(s)`)
   }
 )
 
