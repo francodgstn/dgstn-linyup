@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Es ist noch nichts passiert, also gibt es nichts zu zählen. Schliesse die Einrichtung ab, und diese Seite füllt sich von selbst.",
     "seriesSubscribed": "Abonniert",
     "seriesAffiliated": "Angeschlossen",
-    "seriesViaPartner": "Über eine Partner-App"
+    "seriesViaPartner": "Über eine Partner-App",
+    "chartTitleActivities": "Aktivitäten im Zeitverlauf",
+    "chartEmptyActivities": "In diesem Zeitraum wurden bei keiner Aktivität Check-ins erfasst.",
+    "seriesAllActivities": "Alle Aktivitäten",
+    "activityNone": "Keine Aktivität",
+    "measureCheckins": "Check-ins",
+    "chartTitleDemographics": "Wer trainiert",
+    "demoTrendAgeHint": "Das Alter wird für jede Woche berechnet, nicht für heute.",
+    "demoTrendGenderHint": "Die heutige Angabe, rückwirkend auf jede Woche angewendet.",
+    "demoTrendTotal": "Gesamt"
   },
   "Contacts": {
     "noteColor_none": "Keine Farbe",

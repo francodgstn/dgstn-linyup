@@ -33,6 +33,9 @@ import { ContactsSummaryCard } from '@/components/dashboard/ContactsSummaryCard'
 import { BookingsTrendCard } from '@/components/dashboard/BookingsTrendCard'
 import { TopActivitiesCard } from '@/components/dashboard/TopActivitiesCard'
 import { SessionsHeatmapCard } from '@/components/dashboard/SessionsHeatmapCard'
+import { ActivitiesTrendCard } from '@/components/dashboard/ActivitiesTrendCard'
+import { DemographicsTrendCard } from '@/components/dashboard/DemographicsTrendCard'
+import type { Contact } from '@linyup/shared'
 
 type CompareWith = 'none' | 'prev_period' | 'last_year'
 const WEEKS_OPTIONS = [4, 8, 13, 26, 52]
@@ -77,7 +80,16 @@ function TrendControls({
   )
 }
 
-export function WeekSection({ teamId }: { teamId: string | null }) {
+export function WeekSection({
+  teamId,
+  contacts,
+}: {
+  teamId: string | null
+  /** Passed down rather than re-fetched: the page already holds the roster on
+   *  the contacts page's cache entry, and a second hook here with different
+   *  arguments would be a second QUERY, not a second reader. */
+  contacts?: Contact[]
+}) {
   const t = useTranslations('NewDashboard')
   const [weeks, setWeeks] = useState(13)
   const [compare, setCompare] = useState<CompareWith>('none')
@@ -155,6 +167,20 @@ export function WeekSection({ teamId }: { teamId: string | null }) {
             comparisonSessions={data.comparisonSessions}
             comparisonNewContactBookings={data.comparisonNewContactBookings}
           />
+          {/* `TopActivitiesCard` above ranks activities over the window; this
+              plots the same measure through it. Ranking answers what is
+              popular, the curve answers what is growing — neither substitutes
+              for the other, which is why both are here. */}
+          <ActivitiesTrendCard
+            sessions={data.sessions}
+            comparisonSessions={data.comparisonSessions}
+            activities={data.activities}
+            {...shared}
+          />
+          {/* The one trend NOT backed by weekly reports — see its header. It
+              needs the roster, so it is the only card here that takes anything
+              the dashboard data hook does not return. */}
+          <DemographicsTrendCard contacts={contacts} trendsWeeks={weeks} />
         </div>
       )}
     </section>

@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Non è ancora successo nulla, quindi non c'è nulla da contare. Completa la configurazione e questa pagina si riempirà da sola.",
     "seriesSubscribed": "Abbonati",
     "seriesAffiliated": "Affiliati",
-    "seriesViaPartner": "Tramite un'app partner"
+    "seriesViaPartner": "Tramite un'app partner",
+    "chartTitleActivities": "Attività nel tempo",
+    "chartEmptyActivities": "In questo periodo non è stato registrato alcun check-in su nessuna attività.",
+    "seriesAllActivities": "Tutte le attività",
+    "activityNone": "Nessuna attività",
+    "measureCheckins": "Check-in",
+    "chartTitleDemographics": "Chi si allena",
+    "demoTrendAgeHint": "L'età è calcolata per ogni settimana, non per oggi.",
+    "demoTrendGenderHint": "Il dato di oggi, applicato a ogni settimana passata.",
+    "demoTrendTotal": "Totale"
   },
   "Contacts": {
     "noteColor_none": "Nessun colore",

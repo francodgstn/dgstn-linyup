@@ -288,7 +288,7 @@ export default function DashboardPage() {
           {planLoading ? null : (
             <div className="pt-4">
               {isAtLeast('studio') ? (
-                <WeekSection teamId={currentTeamId} />
+                <WeekSection teamId={currentTeamId} contacts={contacts} />
               ) : (
                 <PlanUpgradeNotice
                   minPlan="studio"
