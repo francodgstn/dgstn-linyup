@@ -1077,7 +1077,8 @@
     "markExternalTitle": "{count, plural, one {Marquer ce contact comme externe ?} other {Marquer # contacts comme externes ?}}",
     "markExternalDesc": "Ils peuvent toujours réserver et participer, et leur historique reste. Ils quittent la liste Actifs, le nombre de contacts, les invitations aux événements, les automatisations et « À traiter » — jusqu'à ce que vous les marquiez actifs à nouveau, ou qu'ils remplissent votre formulaire d'inscription.",
     "goalSaveFailed": "Impossible d'enregistrer cet objectif. Veuillez réessayer.",
-    "goalEvalSaveFailed": "Impossible d'enregistrer cette évaluation. Veuillez réessayer."
+    "goalEvalSaveFailed": "Impossible d'enregistrer cette évaluation. Veuillez réessayer.",
+    "affiliationValidUntil": "Valable jusqu'au {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",

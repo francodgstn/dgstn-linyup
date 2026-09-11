@@ -1077,7 +1077,8 @@
     "markExternalTitle": "{count, plural, one {Segnare questo contatto come esterno?} other {Segnare # contatti come esterni?}}",
     "markExternalDesc": "Possono ancora prenotare e partecipare, e la loro storia resta. Escono dalla lista Attivi, dal conteggio contatti, dagli inviti agli eventi, dalle automazioni e da «Da seguire» — finché non li segni di nuovo come attivi, o compilano il tuo modulo di iscrizione.",
     "goalSaveFailed": "Impossibile salvare questo obiettivo. Riprova.",
-    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova."
+    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova.",
+    "affiliationValidUntil": "Valida fino al {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",

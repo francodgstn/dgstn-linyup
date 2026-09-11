@@ -224,6 +224,7 @@ import {
 } from '@/components/contacts/RelationshipTimeline'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
+import { AffiliationTypeMark } from '@/components/affiliations/AffiliationTypePicker'
 import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
@@ -4634,6 +4635,83 @@ function AffilStatusBadge({
   )
 }
 
+/**
+ * THE AFFILIATION, IN THE HEADER — the type's mark, its label, its status.
+ *
+ * Franco, with the type mini-cards: "we could enhance the affiliation definition
+ * with a logo, shown on the mini card and eventually as a badge+status somewhere
+ * in the contact detail". This is that badge, and it draws the SAME
+ * `AffiliationTypeMark` the picker draws, so a type that gains a logo gains it
+ * in both places at once and neither can drift.
+ *
+ * ── ONE CHIP PER TYPE, THE CURRENT ONE ──
+ *
+ * A contact accumulates a row per season, so the raw list is a HISTORY, not a
+ * state. The header wants the state: the most recent row per type. The query is
+ * already ordered `created_at desc`, so the first row seen for a type is that
+ * one — no sort here, and no second definition of "current" for a later reader
+ * to disagree with. The whole history stays one click away in the tab.
+ *
+ * ── WHY IT SHOWS AN EXPIRED ONE TOO ──
+ *
+ * Filtering to `active` rows would hide exactly the fact an org manager opens
+ * the record for. "HMD Affiliation · Expired" in red IS the answer; an absent
+ * chip reads as "never affiliated", which is a different and wrong thing. The
+ * status def's own colour carries the difference.
+ *
+ * It renders nothing when the contact holds no affiliation, which is the only
+ * gate it needs — a studio that does not use the axis never sees it.
+ */
+function ContactAffiliationBadges({
+  contact,
+  teamId,
+  orgId,
+}: {
+  contact: Contact
+  teamId: string | null
+  orgId?: string | null
+}) {
+  const t = useTranslations('Contacts')
+  const { data: affiliations = [] } = useContactAffiliations(contact.id)
+  const { data: types = [] } = useAffiliationTypes(teamId, orgId)
+  // The BUILT-IN set as the default, exactly as the tab below does it: the query
+  // is `enabled: !!orgId`, so for a studio with no organisation it never runs and
+  // `[]` would print a raw `status_id` where a label belongs.
+  const { data: statuses = DEFAULT_ORG_AFFILIATION_STATUSES } = useOrgAffiliationStatuses(orgId)
+
+  const current = useMemo(() => {
+    const seen = new Map<string, Affiliation>()
+    for (const a of affiliations)
+      if (!seen.has(a.affiliation_type_id)) seen.set(a.affiliation_type_id, a)
+    return [...seen.values()]
+  }, [affiliations])
+
+  if (current.length === 0) return null
+
+  return (
+    <>
+      {current.map((a) => {
+        const type = types.find((x) => x.id === a.affiliation_type_id)
+        const label = type?.label ?? a.label ?? a.type_key ?? a.affiliation_type_id
+        const def = statuses.find((x) => x.id === a.status_id)
+        const color = AFFIL_COLOR_CLASSES[def?.color ?? 'gray'] ?? AFFIL_COLOR_CLASSES.gray
+        const until = formatDate(a.valid_until)
+        return (
+          <span
+            key={a.id}
+            title={until ? t('affiliationValidUntil', { date: until }) : undefined}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text} ${color.border}`}
+          >
+            <AffiliationTypeMark type={{ label, logo_url: type?.logo_url }} size={14} />
+            <span className="max-w-[140px] truncate">{label}</span>
+            <span className="opacity-70">{def?.label ?? a.status_id}</span>
+          </span>
+        )
+      })}
+    </>
+  )
+}
+
 // ─── affiliations tab ─────────────────────────────────────────────────────────
 
 function AffiliationsTab({
@@ -5379,6 +5457,15 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                         {t('newBadge')}
                       </Badge>
                     )}
+                    {/* LAST in the row on purpose. Every chip before it is
+                        something the studio might have to ACT on; belonging is a
+                        standing fact, so it reads as the answer to "and who are
+                        they to us" rather than competing with the to-dos. */}
+                    <ContactAffiliationBadges
+                      contact={contact}
+                      teamId={currentTeamId}
+                      orgId={team?.org_id}
+                    />
                   </>
                 )}
               </div>
