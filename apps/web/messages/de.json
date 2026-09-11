@@ -3817,7 +3817,8 @@
     "alsoSellHint": "Jede Person kann ihn einmal kaufen, mit lebenslangem Zugang. Ihre Pläne können ihn in der Tabelle unten weiterhin kostenlos enthalten oder den Preis reduzieren.",
     "access_subscription": "Bestimmte Abos",
     "access_purchase": "Verkauf",
-    "planLinksLabel": "Was jeder Plan damit macht"
+    "planLinksLabel": "Was jeder Plan damit macht",
+    "videoEmbedOnlyHint": "Videos werden von YouTube, Vimeo oder über einen direkten Link eingebettet — Linyup hostet keine Videodateien."
   },
   "Auth": {
     "orWithEmail": "oder mit E-Mail",

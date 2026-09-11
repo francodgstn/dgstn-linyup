@@ -94,13 +94,30 @@ service firebase.storage {
     // contact of the team read of ANY tier's media, and because Storage read == list and
     // paths are predictable, a free-tier member could enumerate and download a studio's
     // paid subscription/purchase course content for free.
+    // NO VIDEO UPLOADS. Course video is embed-only (YouTube / Vimeo / a link —
+    // `MediaSource`): a video served out of this bucket is billed per byte
+    // delivered, and one studio's members watching hosted lessons costs more in
+    // egress than everything else on that studio's bill combined
+    // (docs/scalability-2026-09.md §12). Hosted video, if it ever comes, is a
+    // paid add-on on zero-egress infrastructure — never this bucket. Audio stays
+    // uploadable and is the known residual exposure.
     match /teams/{teamId}/courses/{courseId}/{allPaths=**} {
       allow read: if isPublishedFreeCourse(courseId)
         || isTeamMemberStorage(teamId)
         || contactMayReadCourseMedia(teamId, courseId);
       allow write: if isTeamMemberStorage(teamId)
         && request.resource.size < 50 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*|audio/.*|video/.*|application/pdf');
+        && request.resource.contentType.matches('image/.*|audio/.*|application/pdf');
+    }
+
+    // Kiosk standby media — the ONE place a hosted video is still allowed: it
+    // loops on a single studio tablet, cached by the browser, so its egress is
+    // bounded by one device rather than by the member count.
+    match /teams/{teamId}/kiosk/{allPaths=**} {
+      allow read: if isTeamMemberStorage(teamId);
+      allow write: if isTeamMemberStorage(teamId)
+        && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|video/.*');
     }
 
     // Product images live under teams/{teamId}/products/{productId}/... They are
@@ -148,11 +165,13 @@ service firebase.storage {
     match /teams/{teamId}/{allPaths=**} {
       // Only members of this specific team may access its files
       allow read: if isTeamMemberStorage(teamId);
-      // Course media (audio/video) lives under teams/{teamId}/courses/... so we allow
-      // larger files and audio/video content types here, scoped to team members.
+      // Course media (audio) lives under teams/{teamId}/courses/... so we allow
+      // larger files and audio content types here, scoped to team members. No
+      // video anywhere under a team but the kiosk match above — see the courses
+      // match for why.
       allow write: if isTeamMemberStorage(teamId)
         && request.resource.size < 50 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*|audio/.*|video/.*|application/pdf');
+        && request.resource.contentType.matches('image/.*|audio/.*|application/pdf');
     }
 
     // Organization website images (hero/gallery) live under

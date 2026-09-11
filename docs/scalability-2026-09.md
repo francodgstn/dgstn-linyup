@@ -553,6 +553,22 @@ is hit versus tokenised download URLs.
 wrong with it — budget it as a real per-tenant COGS, and note that if SMS
 reminders get adopted the per-message cost in CH is 30–50× email.
 
+**Decided 2026-09-11: video is embed-only, on every plan.** The cost driver is
+egress, not storage, so a storage quota would have capped nothing — 5 GB stored
+and watched by 200 members is a terabyte out of the bucket. `storage.rules` now
+refuses `video/*` uploads under a team (the kiosk's standby media is the one
+exception: it loops on a single tablet, cached), and the course editor offers a
+video lesson only YouTube, Vimeo or a link — `MediaSource` had those from the
+start, and an unlisted YouTube video delivers for free, which is what every
+entry-level course tool does. A lesson stored with an uploaded video before the
+rule still plays; whether any exist in production is a bucket scan owed before
+the rule deploys. **Audio uploads stay** (a 30-minute lesson is ~15–30 MB, the
+same problem an order of magnitude smaller) and are the known residual.
+**Hosted video, if it ever comes, is a paid add-on on zero-egress
+infrastructure** — Cloudflare Stream (per-minute stored + delivered, so the COGS
+is meterable per tenant and priceable above it) or R2 + HLS — never this bucket
+under any quota.
+
 ## 13. Secondary limits, roughly in the order they bind
 
 - **App Check is implemented but off** (`docs/app-check-rollout.md`) ✓. Public
@@ -587,7 +603,7 @@ reminders get adopted the per-message cost in CH is 30–50× email.
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
 | 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check:** follow the runbook; step 1 (register the web app in the Firebase Console) is yours. |
 | 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | Not started. The load-bearing one for growth. |
-| 4 | Decide course-video hosting before the plugin has real usage | decision | Yours. Retrofitting a CDN after members hold URLs is far worse than choosing now. |
+| 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
 | 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
 
 Steps 1, 2 and 5 are small and are in. Step 3 is a week or so. None of it is
