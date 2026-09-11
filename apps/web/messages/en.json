@@ -8196,5 +8196,20 @@
     "sheetLiveWarning": "{count} slips are live until they expire — worth collecting the sheet back in.",
     "sheetSlipHint": "Scan to check your details",
     "sheetFailed": "The sheet could not be created. Try again."
+  },
+  "PlanTemplates": {
+    "railLink": "Start from a template",
+    "title": "Start from a template",
+    "intro": "The shapes most studios end up with. Pick the ones you want — you can rename and change everything afterwards.",
+    "noPricesNote": "No prices are set — you add yours before anyone can buy. Nothing is shown publicly until you choose to show it.",
+    "membership_name": "Membership",
+    "membership_desc": "A recurring plan, billed monthly or yearly.",
+    "class_pack_name": "10-class pack",
+    "class_pack_desc": "Paid once, grants 10 class credits.",
+    "complimentary_name": "Complimentary",
+    "complimentary_desc": "No charge — for coaches, family or anyone the studio hosts.",
+    "create": "{count, plural, =0 {Create} one {Create plan} other {Create # plans}}",
+    "creating": "Creating…",
+    "cancel": "Cancel"
   }
 }
