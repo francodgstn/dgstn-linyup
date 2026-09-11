@@ -3142,7 +3142,14 @@
     "removeAction": "Retirer l'affiliation",
     "removeTitle": "Retirer cette affiliation ?",
     "removeBody": "{name} disparaît des registres de cette organisation et de cette liste. La trace d'une affiliation passée est supprimée — pour signaler une affiliation échue, la passer plutôt à expirée.",
-    "removeConfirm": "Retirer"
+    "removeConfirm": "Retirer",
+    "allTeams": "Tous les studios",
+    "bulkSetStatus": "Définir le statut",
+    "bulkStatusTitle": "Définir le statut sur {status} ?",
+    "bulkStatusDesc": "{count, plural, one {# affiliation passera} other {# affiliations passeront}} à {status}, et toute date d'expiration sera effacée.",
+    "bulkStatusDescActive": "{count, plural, one {# affiliation passera} other {# affiliations passeront}} à {status}, avec la date d'expiration prévue par les règles de ce type.",
+    "bulkStatusToast": "{count, plural, one {# affiliation définie} other {# affiliations définies}} sur {status}.",
+    "bulkStatusPartial": "{ok} mises à jour, {failed} refusées — vous ne gérez qu'une partie de ces studios."
   },
   "OrgAffiliationStatuses": {
     "title": "Statuts d'affiliation",

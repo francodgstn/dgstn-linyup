@@ -3142,7 +3142,14 @@
     "removeAction": "Remove affiliation",
     "removeTitle": "Remove this affiliation?",
     "removeBody": "{name} comes off this organisation's records and off this roster. The record that they were ever affiliated is deleted — to mark a lapsed affiliation instead, set it to expired.",
-    "removeConfirm": "Remove"
+    "removeConfirm": "Remove",
+    "allTeams": "All studios",
+    "bulkSetStatus": "Set status",
+    "bulkStatusTitle": "Set status to {status}?",
+    "bulkStatusDesc": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, and any expiry date cleared.",
+    "bulkStatusDescActive": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, with the expiry date this type's rules give them.",
+    "bulkStatusToast": "{count, plural, one {# affiliation set} other {# affiliations set}} to {status}.",
+    "bulkStatusPartial": "{ok} updated, {failed} refused — you manage only some of these studios."
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliation Statuses",
