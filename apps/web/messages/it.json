@@ -1850,7 +1850,12 @@
     "durationsInCatalogue": "Le durate, i loro prezzi e la tariffa per i membri si impostano in Accesso e prezzi, accanto agli abbonamenti a cui si applicano.",
     "accessHint": "Questa è la porta. Quanto si paga si imposta sotto — un piano può renderlo gratuito, tutti gli altri pagano il prezzo drop-in.",
     "accessAllowWithoutPlan": "Consenti la prenotazione ai membri senza abbonamento",
-    "accessAllowWithoutPlanHint": "Attivo, prenotano al prezzo drop-in — o gratis se non ce n'è uno. Disattivo, solo chi ha un piano collegato può prenotare."
+    "accessAllowWithoutPlanHint": "Attivo, prenotano al prezzo drop-in — o gratis se non ce n'è uno. Disattivo, solo chi ha un piano collegato può prenotare.",
+    "dropInModeStudioSetInline": "Imposta",
+    "dropInStudioDefaultEdit": "Modifica il prezzo predefinito dello studio",
+    "dropInStudioDefaultConfirm": "Salva il prezzo predefinito",
+    "dropInStudioDefaultCancel": "Annulla",
+    "dropInStudioDefaultSaved": "Prezzo predefinito salvato — ogni lezione che lo segue ora si vende a questo prezzo."
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",
@@ -5262,7 +5267,8 @@
     "memberPayable": "Questo corso non è incluso nel tuo abbonamento. Puoi prenotarlo per {price}.",
     "memberContinueToPayment": "Prosegui al pagamento",
     "memberSomeoneElseTitle": "Prenota per qualcun altro",
-    "memberSomeoneElseSubtitle": "Prenota questo corso per un'altra persona"
+    "memberSomeoneElseSubtitle": "Prenota questo corso per un'altra persona",
+    "pricingDetailsTrigger": "Prezzi e accesso"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",
@@ -5473,7 +5479,9 @@
     "betaBadge": "Beta",
     "betaBadgeHint": "Pronta all'uso — questa funzione può ancora cambiare.",
     "appointmentsEmptyHint": "Questa opzione è attiva, ma non c'è ancora nulla di prenotabile — servono orari prenotabili attivi collegati a un'attività su appuntamento.",
-    "appointmentsEmptyHintLink": "Configura gli orari prenotabili"
+    "appointmentsEmptyHintLink": "Configura gli orari prenotabili",
+    "toggleShowPricingLabel": "Mostra i prezzi",
+    "toggleShowPricingDesc": "Mostra prezzi e accesso di ogni attività dietro un suggerimento «Prezzi e accesso» nella schermata di selezione — cosa include un abbonamento, il prezzo a lezione, il prezzo di un appuntamento. Disattivato nasconde solo quel suggerimento; il pagamento indica sempre l'importo."
   },
   "SettingsPlaces": {
     "pageTitle": "Sedi",

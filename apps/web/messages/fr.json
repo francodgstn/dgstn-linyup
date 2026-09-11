@@ -1850,7 +1850,12 @@
     "durationsInCatalogue": "Les durées, leurs tarifs et le tarif membre se définissent dans Accès et tarifs, à côté des abonnements auxquels ils s'appliquent.",
     "accessHint": "C'est la porte d'entrée. Ce que les gens paient se règle ci-dessous — un plan peut rendre l'accès gratuit, les autres paient le tarif drop-in.",
     "accessAllowWithoutPlan": "Autoriser la réservation aux membres sans abonnement",
-    "accessAllowWithoutPlanHint": "Activé, ils réservent au tarif drop-in — ou gratuitement s'il n'y en a pas. Désactivé, seuls les détenteurs d'un plan lié peuvent réserver."
+    "accessAllowWithoutPlanHint": "Activé, ils réservent au tarif drop-in — ou gratuitement s'il n'y en a pas. Désactivé, seuls les détenteurs d'un plan lié peuvent réserver.",
+    "dropInModeStudioSetInline": "Définir",
+    "dropInStudioDefaultEdit": "Modifier le tarif par défaut du studio",
+    "dropInStudioDefaultConfirm": "Enregistrer le tarif par défaut",
+    "dropInStudioDefaultCancel": "Annuler",
+    "dropInStudioDefaultSaved": "Tarif par défaut enregistré — chaque cours qui le suit se vend désormais à ce prix."
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
@@ -5262,7 +5267,8 @@
     "memberPayable": "Ce cours n'est pas inclus dans votre abonnement. Vous pouvez le réserver pour {price}.",
     "memberContinueToPayment": "Continuer vers le paiement",
     "memberSomeoneElseTitle": "Réserver pour quelqu'un d'autre",
-    "memberSomeoneElseSubtitle": "Réserver ce cours pour une autre personne"
+    "memberSomeoneElseSubtitle": "Réserver ce cours pour une autre personne",
+    "pricingDetailsTrigger": "Prix & accès"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",
@@ -5473,7 +5479,9 @@
     "betaBadge": "Bêta",
     "betaBadgeHint": "Prêt à l'emploi — cette fonctionnalité peut encore évoluer.",
     "appointmentsEmptyHint": "Ceci est activé, mais rien n'est encore réservable — il vous faut des heures réservables actives liées à une activité sur rendez-vous.",
-    "appointmentsEmptyHintLink": "Configurer les heures réservables"
+    "appointmentsEmptyHintLink": "Configurer les heures réservables",
+    "toggleShowPricingLabel": "Afficher les prix",
+    "toggleShowPricingDesc": "Place les prix et l'accès de chaque activité derrière une info « Prix & accès » sur l'écran de sélection — ce qu'un abonnement inclut, le prix à la séance, le prix d'un rendez-vous. Désactivé, seule cette info disparaît ; le paiement indique toujours le montant."
   },
   "SettingsPlaces": {
     "pageTitle": "Lieux",

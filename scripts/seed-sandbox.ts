@@ -1779,10 +1779,11 @@ async function seedDemoTeam(profile: SectorProfile) {
         ...(dropIn ? { dropIn } : {}),
         base_score: a.base_score,
         type: 'class',
-        // Classes don't auto-confirm: a booking holds a seat but stays
-        // unconfirmed until check-in. Written explicitly (it's the 'class'
-        // default in resolveAutoConfirm) so the seed exercises the field.
-        autoConfirm: false,
+        // Bookings confirm themselves — the default `resolveAutoConfirm` gives
+        // a class too (2026-09-11). Written explicitly so the seed exercises
+        // the field; a class that needs the studio's approval is the exception
+        // a studio sets on purpose, and none of these do.
+        autoConfirm: true,
         isActive: true,
         created_at: ts(daysFromNow(-200)),
       })
@@ -2040,6 +2041,9 @@ async function seedDemoTeam(profile: SectorProfile) {
         hour: s.hour,
         duration: s.dur,
         location: locations[s.locIdx % locations.length],
+        // Every upcoming session is bookable; the `upcomingOnly` Sunday slot is
+        // the one kept OFF the booking calendar on purpose — the showcase of
+        // the exception a studio sets, never a default.
         allowBooking: upcoming && !s.upcomingOnly,
         instructor: instructors[si % instructors.length],
       })
@@ -2070,8 +2074,8 @@ async function seedDemoTeam(profile: SectorProfile) {
         providerName: s.instructor,
         locationAddress: '12 Studio Lane',
         allowBooking: s.allowBooking,
-        // Denormalised from the activity — classes confirm at check-in.
-        autoConfirm: false,
+        // Denormalised from the activity — bookings confirm themselves.
+        autoConfirm: true,
         participants_count: 0,
         created_at: ts(daysFromNow(-200)),
         createdBy: uid,
