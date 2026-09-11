@@ -18,6 +18,7 @@ import {
   type TeamLink,
   type TeamPublicProfile,
   PUBLIC_PROFILE_SUBCOLLECTION,
+  studioDropInOf,
 } from '@linyup/shared'
 
 /**
@@ -237,10 +238,14 @@ async function subcollectionHasAny(teamId: string, sub: string, take = 1): Promi
 /**
  * Is anything the studio sells actually PRICED?
  *
- * Two equality filters and no range, so the automatic single-field indexes
- * serve it — no composite index to add.
+ * The studio DEFAULT counts first: a class that follows it stores no price of
+ * its own (`DropInMode`, @linyup/shared), so the query below would miss the
+ * commonest way a studio prices its door. Then two equality filters and no
+ * range, so the automatic single-field indexes serve it — no composite index.
  */
 async function hasPricedDropIn(teamId: string): Promise<boolean> {
+  const profile = await getDoc(doc(db, TEAMS_COLLECTION, teamId, PUBLIC_PROFILE_SUBCOLLECTION, teamId))
+  if (studioDropInOf(profile.data()?.bookingSettings)) return true
   const snap = await getDocs(
     query(
       collection(db, ACTIVITIES_COLLECTION),

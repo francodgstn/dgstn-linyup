@@ -366,6 +366,20 @@ books free (guests included), priced → anyone pays their effective price.
 paths don't read it, appointment session docs/mirrors don't carry it).
 `cancelBooking` handles both kinds.
 
+**A class's drop-in price is read through ONE resolver.** The price has a
+studio-wide default (`BookingSettings.dropIn`, on the team's public profile
+beside the other booking settings, edited on Offerings → Pricing) and each
+class says how it relates to it — `Activity.dropIn.mode`: `'studio'` (follow
+the default; what a new class starts as), `'custom'` (its own price), `'off'`
+(none, even under a default); a document without `mode` reads as `'custom'`
+when it named a price and `'studio'` otherwise. **`resolveActivityDropIn(activity,
+studioDropInOf(bookingSettings))`** (`packages/shared/src/utils/dropIn.ts`) is
+the only reader — never branch on `activity.dropIn.enabled` / `.priceAmount`,
+since a class that follows the studio stores no price. The activity mirror
+carries the RESOLVED price (public readers and mobile need no default), and
+`syncStudioDropIn` rewrites the mirrors of every following class when the
+default changes. Docs: `docs/payment-contact-studio.md` → "Drop-in".
+
 **Paid appointments** put a base price per duration (`Activity.durations:
 [{minutes, priceAmount?}]`) **and one member rule per duration**
 (`Activity.durationBenefits: [{minutes, benefit}]`) — holders of a listed type
