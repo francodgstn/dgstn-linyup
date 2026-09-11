@@ -27,6 +27,7 @@ import { useWaiverGate } from '@/hooks/useWaiverGate'
 import { waiverErrorMessage } from '@/lib/waiver'
 import { usePublicTeam } from '../PublicTeamProvider'
 import type { KioskSession } from './useKioskSessions'
+import { usePublicFormat } from '../usePublicFormat'
 
 const formSchema = z.object({
   name: z.string().min(1).max(120),
@@ -57,17 +58,6 @@ interface Props {
   walkInActivityIds?: string[]
 }
 
-const fmtDateTime = (d: Date) =>
-  d.toLocaleString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-const fmtTime = (d: Date) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 
 // bookSession requires firstname + lastname separately; split the single "Full
@@ -83,6 +73,9 @@ export default function WalkIn({ teamId, sessions, walkInActivityIds }: Props) {
   const t = useTranslations('Kiosk')
   const tWaiver = useTranslations('Waiver')
   const { team } = usePublicTeam()
+  const fmt = usePublicFormat()
+  const fmtDateTime = (d: Date) =>
+    fmt.custom(d, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>('select')
   const [selected, setSelected] = useState<KioskSession | null>(null)
@@ -294,7 +287,7 @@ export default function WalkIn({ teamId, sessions, walkInActivityIds }: Props) {
                         }`}
                       >
                         <span className="text-xs font-medium uppercase tracking-wide">
-                          {g.date.toLocaleDateString(undefined, { weekday: 'short' })}
+                          {fmt.weekdayShort(g.date)}
                         </span>
                         <span className="text-lg font-bold tabular-nums">{g.date.getDate()}</span>
                       </button>
@@ -320,7 +313,7 @@ export default function WalkIn({ teamId, sessions, walkInActivityIds }: Props) {
                           {s.providerName ? ` · ${s.providerName}` : ''}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {fmtTime(s.start.toDate())}
+                          {fmt.time(s.start)}
                           {s.location ? ` · ${s.location}` : ''}
                         </p>
                       </div>

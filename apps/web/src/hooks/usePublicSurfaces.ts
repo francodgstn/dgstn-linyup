@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION, appointmentPickerLive, routableSurfaces } from '@linyup/shared'
+import {  TEAMS_COLLECTION, appointmentPickerLive, routableSurfaces, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import type { PublicSurface, SaasPlan, ActivePublicSurfaces } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePlan } from '@/hooks/usePlan'
@@ -111,7 +111,7 @@ export function usePublicSurfaces(): UsePublicSurfacesResult {
     enabled: !!currentTeamId,
     staleTime: 60_000,
     queryFn: async () => {
-      const snap = await getDoc(doc(db, TEAMS_COLLECTION, currentTeamId!, 'public_profile', currentTeamId!))
+      const snap = await getDoc(doc(db, TEAMS_COLLECTION, currentTeamId!, PUBLIC_PROFILE_SUBCOLLECTION, currentTeamId!))
       const profile = snap.data()
       return {
         active: (profile?.active_public_surfaces ?? {}) as Partial<ActivePublicSurfaces>,

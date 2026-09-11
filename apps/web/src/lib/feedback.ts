@@ -1,5 +1,6 @@
 import { doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from './firebase'
+import { USERS_COLLECTION } from '@linyup/shared'
 
 /**
  * Helpers for the in-app feedback widget.
@@ -12,7 +13,7 @@ import { db } from './firebase'
 /** Hide a prompt question from the badge/prompt list (still answerable). */
 export async function mutePrompt(uid: string, promptId: string): Promise<void> {
   await setDoc(
-    doc(db, 'users', uid),
+    doc(db, USERS_COLLECTION, uid),
     { feedback: { mutedPrompts: arrayUnion(promptId) } },
     { merge: true }
   )
@@ -21,7 +22,7 @@ export async function mutePrompt(uid: string, promptId: string): Promise<void> {
 /** Bring a muted prompt question back. */
 export async function unmutePrompt(uid: string, promptId: string): Promise<void> {
   await setDoc(
-    doc(db, 'users', uid),
+    doc(db, USERS_COLLECTION, uid),
     { feedback: { mutedPrompts: arrayRemove(promptId) } },
     { merge: true }
   )
@@ -30,7 +31,7 @@ export async function unmutePrompt(uid: string, promptId: string): Promise<void>
 /** Record that the user answered a prompt question (clears it from the badge). */
 export async function markPromptAnswered(uid: string, promptId: string): Promise<void> {
   await setDoc(
-    doc(db, 'users', uid),
+    doc(db, USERS_COLLECTION, uid),
     { feedback: { answeredPrompts: arrayUnion(promptId) } },
     { merge: true }
   )

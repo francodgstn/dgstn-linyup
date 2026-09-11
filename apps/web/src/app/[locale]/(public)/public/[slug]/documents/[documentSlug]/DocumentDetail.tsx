@@ -12,7 +12,7 @@ import type { Route } from 'next'
 import { RichTextContent } from '@/components/RichTextEditor'
 import { useDocumentLinkTargets } from '@/hooks/useDocumentLinkTargets'
 import { ChevronLeft, ExternalLink, FileText, History } from 'lucide-react'
-import { parseDocumentLinkVersion, type DocumentPublicProfile } from '@linyup/shared'
+import {  parseDocumentLinkVersion, type DocumentPublicProfile, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { usePublicTeam } from '../../PublicTeamProvider'
 
 type LoadState =
@@ -29,7 +29,7 @@ function usePublicDocument(teamId: string, documentSlug: string): LoadState {
       try {
         const snap = await getDocs(
           query(
-            collectionGroup(db, 'public_profile'),
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
             where('teamId', '==', teamId),
             where('type', '==', 'document'),
             where('slug', '==', documentSlug),

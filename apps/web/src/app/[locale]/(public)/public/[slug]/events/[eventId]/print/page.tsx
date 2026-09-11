@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { usePublicTeam } from '../../../PublicTeamProvider'
 import { usePublicEvent } from '@/components/events/program/usePublicEvents'
 import { ProgramTimeline } from '@/components/events/program/ProgramTimeline'
+import { usePublicFormat } from '../../../usePublicFormat'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export default function PublicEventProgramPrintPage() {
   const t = useTranslations('EventProgram')
   const { eventId } = useParams<{ eventId: string }>()
   const { teamId, team } = usePublicTeam()
+  const fmt = usePublicFormat()
   const { loading, event } = usePublicEvent(eventId)
 
   const belongsHere =
@@ -58,10 +60,8 @@ export default function PublicEventProgramPrintPage() {
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{team.name}</p>
         <h1 className="text-2xl font-semibold">{event.title}</h1>
         <p className="text-sm text-muted-foreground">
-          {start?.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
-          {end && start && end.toDateString() !== start.toDateString()
-            ? ` – ${end.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}`
-            : ''}
+          {fmt.dayMonthLong(start, true)}
+          {end && start && fmt.isoDate(end) !== fmt.isoDate(start) ? ` – ${fmt.dayMonthLong(end, true)}` : ''}
           {event.location ? ` · ${event.location}` : ''}
         </p>
       </header>

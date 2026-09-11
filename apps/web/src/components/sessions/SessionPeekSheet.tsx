@@ -16,12 +16,11 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SeriesSummary } from '@/components/sessions/SeriesSummary'
-import { SESSIONS_COLLECTION, PARTICIPANTS_SUBCOLLECTION } from '@linyup/shared'
+import { SESSIONS_COLLECTION, PARTICIPANTS_SUBCOLLECTION, SESSION_BOOKINGS_SUBCOLLECTION } from '@linyup/shared'
 import type { Session, Activity, Booking } from '@linyup/shared'
 import type { Route } from 'next'
 import { Tip } from '@/components/ui/tip'
 
-const BOOKINGS_SUB = 'bookings'
 const PARTICIPANTS_PREVIEW_LIMIT = 8
 
 // Matches the palette used in SessionsCalendar / session detail page
@@ -104,7 +103,7 @@ export function SessionPeekSheet({ sessionId, onClose, activities, onEdit, onDel
     queryKey: ['session-bookings', sessionId],
     enabled: open,
     queryFn: async () => {
-      const snap = await getDocs(collection(db, SESSIONS_COLLECTION, sessionId!, BOOKINGS_SUB))
+      const snap = await getDocs(collection(db, SESSIONS_COLLECTION, sessionId!, SESSION_BOOKINGS_SUBCOLLECTION))
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Booking)
     },
   })

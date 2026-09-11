@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl'
 import { collection, doc, getDocs, orderBy, query, updateDoc } from 'firebase/firestore'
 import { FileText, Pencil, Copy, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION } from '@linyup/shared'
+import {  TEAMS_COLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,7 +40,7 @@ export default function SettingsEmailTemplatesPage() {
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collection(db, TEAMS_COLLECTION, currentTeamId!, 'outreach_templates'),
+          collection(db, TEAMS_COLLECTION, currentTeamId!, OUTREACH_TEMPLATES_SUBCOLLECTION),
           orderBy('name', 'asc')
         )
       )
@@ -87,7 +87,7 @@ export default function SettingsEmailTemplatesPage() {
       confirmLabel: tCommon('reset'),
     })
     if (!okReset) return
-    await updateDoc(doc(db, TEAMS_COLLECTION, currentTeamId, 'outreach_templates', tmpl.id), {
+    await updateDoc(doc(db, TEAMS_COLLECTION, currentTeamId, OUTREACH_TEMPLATES_SUBCOLLECTION, tmpl.id), {
       name: def.name,
       subject: def.subject,
       body: def.body,
@@ -104,7 +104,7 @@ export default function SettingsEmailTemplatesPage() {
       confirmLabel: t('deactivateAction'),
     })
     if (!okDeactivate) return
-    await updateDoc(doc(db, TEAMS_COLLECTION, currentTeamId, 'outreach_templates', tmpl.id), {
+    await updateDoc(doc(db, TEAMS_COLLECTION, currentTeamId, OUTREACH_TEMPLATES_SUBCOLLECTION, tmpl.id), {
       active: false,
     })
     invalidate()

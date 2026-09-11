@@ -27,6 +27,7 @@ import {
   SYSTEM_LINK_ROUTE,
   surfaceThemePreset,
   systemLinkIsLive,
+  PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 import { publicHrefLocalized } from '@/lib/publicRoutes'
 import type {
@@ -104,7 +105,7 @@ export default function BioLinkHome({ slug, team: teamProp, onLinkClick }: Props
   useEffect(() => {
     if (teamProp) return // skip fetch when data is provided (admin preview)
     const q = query(
-      collectionGroup(db, 'public_profile'),
+      collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('slug', '==', slug),
       where('type', '==', 'team'),
       limit(1)

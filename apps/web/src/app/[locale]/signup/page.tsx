@@ -12,6 +12,7 @@ import {
   SUPPORTED_CURRENCIES,
   DEFAULT_CURRENCY,
   CURRENT_TERMS_VERSION,
+  USERS_COLLECTION,
 } from '@linyup/shared'
 import { signUp } from '@/lib/auth'
 import { db } from '@/lib/firebase'
@@ -319,7 +320,7 @@ function StepTeam({ user, onComplete }: { user: AuthedUser; onComplete: () => vo
       // signup that failed.
       persistLocale(uiLocale)
       await setDoc(
-        doc(db, 'users', user.uid),
+        doc(db, USERS_COLLECTION, user.uid),
         {
           locale: uiLocale,
           ...(user.firstname ? { firstname: user.firstname } : {}),

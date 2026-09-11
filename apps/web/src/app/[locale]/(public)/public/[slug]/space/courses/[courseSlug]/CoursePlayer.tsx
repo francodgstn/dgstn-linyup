@@ -14,6 +14,7 @@ import {
   COURSES_COLLECTION,
   COURSE_MODULES_SUBCOLLECTION,
   COURSE_LESSONS_SUBCOLLECTION,
+  PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 import { formatCurrency } from '@/lib/format'
 import { sanitizeRichHtml } from '@/lib/sanitizeHtml'
@@ -175,7 +176,7 @@ export default function CoursePlayer({ courseSlug, from }: Props) {
       try {
         const ppSnap = await getDocs(
           query(
-            collectionGroup(db, 'public_profile'),
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
             where('type', '==', 'course'),
             where('teamId', '==', teamId),
             where('slug', '==', courseSlug),

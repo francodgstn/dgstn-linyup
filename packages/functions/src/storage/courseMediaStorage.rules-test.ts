@@ -109,4 +109,46 @@ describe('storage.rules — course media tier gating', function () {
     const s = testEnv.authenticatedContext('staffS').storage()
     await assertSucceeds(getBytes(ref(s, SUB_MEDIA)))
   })
+
+  // ── Uploads: video is embed-only ──────────────────────────────────────────
+  // A video served from this bucket is billed per byte delivered to every
+  // member who watches it (docs/scalability-2026-09.md §12). The rule refuses
+  // it everywhere under a team except the kiosk's standby media, which loops
+  // on one tablet. Audio stays uploadable.
+
+  const staffStorage = () => testEnv.authenticatedContext('staffS').storage()
+  const bytes = new Uint8Array([9, 9, 9])
+
+  it('staff CANNOT upload a video under a course', async () => {
+    await assertFails(
+      uploadBytes(ref(staffStorage(), `teams/${TEAM}/courses/${FREE_COURSE}/lessons/media/z.mp4`), bytes, {
+        contentType: 'video/mp4',
+      }),
+    )
+  })
+
+  it('staff CANNOT upload a video anywhere else under the team', async () => {
+    await assertFails(
+      uploadBytes(ref(staffStorage(), `teams/${TEAM}/misc/z.mp4`), bytes, { contentType: 'video/mp4' }),
+    )
+  })
+
+  it('staff CAN still upload audio, images and PDFs under a course', async () => {
+    await assertSucceeds(
+      uploadBytes(ref(staffStorage(), `teams/${TEAM}/courses/${FREE_COURSE}/lessons/media/a.mp3`), bytes, {
+        contentType: 'audio/mpeg',
+      }),
+    )
+    await assertSucceeds(
+      uploadBytes(ref(staffStorage(), `teams/${TEAM}/courses/${FREE_COURSE}/lessons/images/i.png`), bytes, {
+        contentType: 'image/png',
+      }),
+    )
+  })
+
+  it('the kiosk standby media is the one place a video may be uploaded', async () => {
+    await assertSucceeds(
+      uploadBytes(ref(staffStorage(), `teams/${TEAM}/kiosk/loop.mp4`), bytes, { contentType: 'video/mp4' }),
+    )
+  })
 })

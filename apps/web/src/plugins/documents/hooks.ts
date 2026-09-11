@@ -33,6 +33,9 @@ import type {
   WaiverConfig,
 } from '@linyup/shared'
 
+/** The plugin's id — the doc id under `installed_plugins`, not a collection path. */
+const DOCUMENTS_PLUGIN_ID = 'documents'
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 export function slugify(input: string): string {
@@ -125,7 +128,7 @@ export function useSignupDocumentIds(teamId: string | null) {
     queryFn: async () => {
       const [settings, legacy] = await Promise.all([
         getDoc(doc(db, TEAMS_COLLECTION, teamId!, TEAM_SETTINGS_SUBCOLLECTION, DOCUMENTS_SETTINGS_DOC_ID)),
-        getDoc(doc(db, TEAMS_COLLECTION, teamId!, INSTALLED_PLUGINS_SUBCOLLECTION, 'documents')),
+        getDoc(doc(db, TEAMS_COLLECTION, teamId!, INSTALLED_PLUGINS_SUBCOLLECTION, DOCUMENTS_PLUGIN_ID)),
       ])
       return resolveSignupDocumentIds({
         settings: settings.data() as { signupDocumentIds?: string[] } | undefined,

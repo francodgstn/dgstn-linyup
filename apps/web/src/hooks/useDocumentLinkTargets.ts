@@ -5,6 +5,7 @@ import { collectionGroup, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import type { DocumentLinkTarget, DocumentPublicProfile } from '@linyup/shared'
+import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 
 /**
  * Where a team's document links can point — every one of its world-readable
@@ -33,7 +34,7 @@ export function useDocumentLinkTargets(teamId: string | null): Map<string, Docum
       try {
         const snap = await getDocs(
           query(
-            collectionGroup(db, 'public_profile'),
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
             where('teamId', '==', teamId),
             where('type', '==', 'document'),
           ),

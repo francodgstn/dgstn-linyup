@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { ORGANIZATIONS_COLLECTION } from '@linyup/shared'
 
 interface OrgLink {
   id: string
@@ -39,7 +40,7 @@ export function useOrgLinks() {
 
       const results = await Promise.all(
         [...orgIds].map(async (orgId) => {
-          const snap = await getDoc(doc(db, 'organizations', orgId))
+          const snap = await getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId))
           if (!snap.exists()) return null
           return { id: snap.id, name: snap.data().name as string }
         })

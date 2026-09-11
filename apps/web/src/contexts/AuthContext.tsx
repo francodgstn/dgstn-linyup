@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { LOCALE_COOKIE, persistLocale } from '@/i18n/persistLocale'
 import type { UserProfile, Team, TeamRole, Capability, DataScope } from '@linyup/shared'
+import { ORGANIZATIONS_COLLECTION, ORG_MEMBERS_SUBCOLLECTION, TEAMS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION, USERS_COLLECTION } from '@linyup/shared'
 
 // ─── UI language: the browser decides, the profile remembers ─────────────────
 //
@@ -102,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Keep profile in sync — handles the case where the doc is created after
       // auth (e.g. new user completing signup wizard after magic-link sign-in).
-      profileUnsub = onSnapshot(doc(db, 'users', firebaseUser.uid), (snap) => {
+      profileUnsub = onSnapshot(doc(db, USERS_COLLECTION, firebaseUser.uid), (snap) => {
         setProfile(snap.exists() ? ({ id: snap.id, ...snap.data() } as UserProfile) : null)
         setLoading(false)
       })
@@ -146,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (UI_LOCALES.includes(activeLocale as UiLocale) && activeLocale !== stored) {
       // Best-effort mirror of an explicit choice. `firestore.rules` already lets
       // a user write their own doc, so this needs no callable.
-      setDoc(doc(db, 'users', user.uid), { locale: activeLocale }, { merge: true }).catch(() => {})
+      setDoc(doc(db, USERS_COLLECTION, user.uid), { locale: activeLocale }, { merge: true }).catch(() => {})
     }
   }, [user, profile, activeLocale, pathname, router])
 
@@ -160,14 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTeamScope(null)
       return
     }
-    const unsub = onSnapshot(doc(db, 'teams', currentTeamId), (snap) => {
+    const unsub = onSnapshot(doc(db, TEAMS_COLLECTION, currentTeamId), (snap) => {
       if (snap.exists()) {
         const teamData = { id: snap.id, ...snap.data() } as Team
         setTeam(teamData)
         const orgId = (teamData as unknown as { org_id?: string }).org_id
         const uid = user?.uid
         if (uid) {
-          getDoc(doc(db, 'teams', currentTeamId, 'team_members', uid))
+          getDoc(doc(db, TEAMS_COLLECTION, currentTeamId, TEAM_MEMBERS_SUBCOLLECTION, uid))
             .then((m) => {
               const data = m.exists() ? m.data() : null
               setTeamRole((data?.role as TeamRole) ?? null)
@@ -180,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setTeamScope(null)
             })
           if (orgId) {
-            getDoc(doc(db, 'organizations', orgId, 'org_members', uid))
+            getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId, ORG_MEMBERS_SUBCOLLECTION, uid))
               .then((m) => setIsOrgAdmin(m.exists() && m.data()?.role === 'org_admin'))
               .catch(() => setIsOrgAdmin(false))
           } else {

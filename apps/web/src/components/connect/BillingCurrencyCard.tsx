@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { collection, doc, getDocs, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION, SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '@linyup/shared'
+import { TEAMS_COLLECTION, SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, TEAM_INTEGRATIONS_SUBCOLLECTION } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -29,7 +29,7 @@ export function useGatewayCurrency(teamId: string | null) {
     enabled: !!teamId,
     queryFn: async () => {
       if (!teamId) return null
-      const snap = await getDocs(collection(db, TEAMS_COLLECTION, teamId, 'integrations'))
+      const snap = await getDocs(collection(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION))
       for (const d of snap.docs) {
         const data = d.data() as { type?: string; enabled?: boolean; config?: { currency?: string } }
         if (data.type === 'payment_gateway' && data.enabled && data.config?.currency) {

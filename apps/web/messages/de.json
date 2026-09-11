@@ -3815,7 +3815,8 @@
     "alsoSellHint": "Jede Person kann ihn einmal kaufen, mit lebenslangem Zugang. Ihre Pläne können ihn in der Tabelle unten weiterhin kostenlos enthalten oder den Preis reduzieren.",
     "access_subscription": "Bestimmte Abos",
     "access_purchase": "Verkauf",
-    "planLinksLabel": "Was jeder Plan damit macht"
+    "planLinksLabel": "Was jeder Plan damit macht",
+    "videoEmbedOnlyHint": "Videos werden von YouTube, Vimeo oder über einen direkten Link eingebettet — Linyup hostet keine Videodateien."
   },
   "Auth": {
     "orWithEmail": "oder mit E-Mail",
@@ -8193,5 +8194,20 @@
     "sheetLiveWarning": "{count} Zettel sind bis zum Ablauf gültig — das Blatt am besten wieder einsammeln.",
     "sheetSlipHint": "Scannen und Daten prüfen",
     "sheetFailed": "Das Blatt konnte nicht erstellt werden. Bitte erneut versuchen."
+  },
+  "PlanTemplates": {
+    "railLink": "Mit einer Vorlage starten",
+    "title": "Mit einer Vorlage starten",
+    "intro": "Die Formen, bei denen die meisten Studios landen. Wähle aus, was du brauchst – umbenennen und anpassen kannst du danach alles.",
+    "noPricesNote": "Es werden keine Preise gesetzt – du trägst deine ein, bevor jemand kaufen kann. Öffentlich sichtbar wird nichts, bis du es freigibst.",
+    "membership_name": "Mitgliedschaft",
+    "membership_desc": "Ein wiederkehrender Plan, monatlich oder jährlich abgerechnet.",
+    "class_pack_name": "10er-Karte",
+    "class_pack_desc": "Einmal bezahlt, gibt 10 Guthaben für Kurse.",
+    "complimentary_name": "Gratis",
+    "complimentary_desc": "Kostenlos – für Trainer, Familie oder alle, die das Studio einlädt.",
+    "create": "{count, plural, =0 {Erstellen} one {Plan erstellen} other {# Pläne erstellen}}",
+    "creating": "Wird erstellt…",
+    "cancel": "Abbrechen"
   }
 }
