@@ -84,6 +84,25 @@ From then on, use `pnpm emulators:hmd` to reload this snapshot instead of re-run
 
 ## Migrating into staging / production
 
+### DEPLOY THE TARGET FIRST. This is an ordering rule, not a suggestion.
+
+A cloud import writes to a LIVE project, so every write it makes fires whatever
+triggers that project currently has deployed. The import is not a quiet bulk
+load — it is thousands of ordinary document writes, each one observed.
+
+The case that bit us: the import writes `teams/{teamId}/team_members/*`, and
+`syncTeamCoachesPublicProfile` is `onDocumentWritten` on exactly that path. It
+rebuilds the team's PUBLIC coach roster from whatever the deployed build knows
+how to read. Import against an older deployment and the public roster is built
+by the older code — correctly, from the new data, and wrong. Nothing errors,
+and the damage is on a world-readable mirror.
+
+So: **deploy, confirm the deploy finished, then import.** Not the other way
+round, and not both at once — a deploy racing an import is the same problem with
+worse timing. If code landed after an import, re-run the import (or the specific
+pass) rather than assuming the triggers catch up; a trigger only fires on a
+WRITE, and the write has already happened.
+
 **Always dry-run first:**
 
 ```bash
@@ -254,6 +273,40 @@ pnpm migrate:hmd --source-creds ./keys/hmd-prod-sa.json --target-emulator --only
 ```
 
 Checks doc counts (source vs target) for all top-level collections, plus spot-checks 3 contacts per team (goals + subscription_history subcollections).
+
+---
+
+## Post-import backfills
+
+The migration writes what the source holds. Two things the source does *not* hold
+are reconstructed afterwards, by hand, in this order:
+
+```bash
+# reports first, writes only with --apply
+pnpm backfill:affiliation-active-orgs --project linyup-staging --apply
+
+# writes by default, so preview with --dry-run first
+pnpm backfill:weekly-reports --org hmd --target staging --dry-run
+pnpm backfill:weekly-reports --org hmd --target staging
+```
+
+**Affiliation active-orgs** re-derives `affiliation_summary.active_org_ids` from the
+affiliation rows pass 05 wrote. Skip it and an affiliated contact reads as unaffiliated
+everywhere the denormalised array is the query — the org affiliations list, its filters,
+the dashboard's affiliation trend.
+
+**Weekly reports** reconstructs `active_contacts_count` and `contacts_count_by_stage` on
+the migrated `team_weekly_reports`. HMD Basel arrives with 272 of them going back to 2022
+and neither field was ever written by the old system, so four dashboard trends read
+nothing from five years of history. It fills only what the migrated dates DETERMINE, never
+overwrites a measured value, and stamps every row it touches. It deliberately does **not**
+invent `bookings_count` (HMD recorded attendance, not bookings) or subscription counts
+(`active_subscriptions` is a current snapshot with no history) — so **Sessions > Engagement
+rate comes back and the Experimental engagement matrix stays empty**. The full reasoning is
+in the header of `scripts/backfill-weekly-reports.ts`.
+
+Both are re-runnable and both are per-target: a staging rehearsal does not backfill
+production.
 
 ---
 

@@ -41,6 +41,7 @@
     "stripe:sync": "tsx scripts/stripe-sync.ts",
     "connect:test-account": "tsx scripts/connect-test-account.ts",
     "migrate:hmd": "tsx --tsconfig tsconfig.scripts.json scripts/migrate-hmd.ts",
+    "backfill:weekly-reports": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-weekly-reports.ts",
     "migrate:hmd:sample": "tsx --tsconfig tsconfig.scripts.json scripts/migrate-hmd.ts --target-emulator --reset --teams \"HMD Basel,HMD Team Galli,HMD Team Marzella\"",
     "promote:team": "tsx --tsconfig tsconfig.scripts.json scripts/promote-team.ts",
     "staging:seed": "tsx scripts/seed-staging.ts",
