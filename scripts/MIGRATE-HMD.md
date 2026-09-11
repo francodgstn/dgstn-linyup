@@ -279,16 +279,21 @@ Checks doc counts (source vs target) for all top-level collections, plus spot-ch
 ## Post-import backfills
 
 The migration writes what the source holds. Two things the source does *not* hold
-are reconstructed afterwards, by hand, in this order:
+are reconstructed afterwards, by hand, in this order. Both write nothing until
+given `--apply`, so run each one bare first and read the counts:
 
 ```bash
-# reports first, writes only with --apply
+pnpm backfill:affiliation-active-orgs --project linyup-staging
 pnpm backfill:affiliation-active-orgs --project linyup-staging --apply
 
-# writes by default, so preview with --dry-run first
-pnpm backfill:weekly-reports --org hmd --target staging --dry-run
-pnpm backfill:weekly-reports --org hmd --target staging
+# --yes answers the typed confirmation this one asks for before a cloud write
+pnpm backfill:weekly-reports --org hmd --project linyup-staging
+pnpm backfill:weekly-reports --org hmd --project linyup-staging --apply --yes
 ```
+
+Either can also be dispatched from the **Backfill** workflow
+(`.github/workflows/backfill.yml`) against a deployed project, which is the
+better place for the write: `--org hmd` and `--yes` go in its `extra_args`.
 
 **Affiliation active-orgs** re-derives `affiliation_summary.active_org_ids` from the
 affiliation rows pass 05 wrote. Skip it and an affiliated contact reads as unaffiliated

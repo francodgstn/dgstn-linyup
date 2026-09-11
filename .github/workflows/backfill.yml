@@ -44,6 +44,16 @@ name: Backfill
 #
 # Each script says so in its own header, in full and with the reasoning; this
 # list is a pointer, not a substitute.
+#
+# ── A SCRIPT MAY NEED MORE THAN THESE INPUTS ───────────────────────────────
+#
+# `script` + `project` + `apply` cover most of them. Anything else goes in
+# `extra_args`, and a script that REQUIRES something refuses to start and says
+# what is missing rather than doing part of the job. For example
+# `weekly-reports` reconstructs one named tenant's history, so it needs
+# `--team <teamId>` or `--org <orgId>`, and a real write also needs `--yes`:
+# its typed confirmation has no terminal to prompt at here, and the
+# environment's reviewer gate is what stands in for it.
 
 on:
   workflow_dispatch:
@@ -67,6 +77,7 @@ on:
           - site-translations
           - subscription-lifecycle
           - team-public-profile
+          - weekly-reports
       project:
         description: 'Target Firebase project'
         type: choice
