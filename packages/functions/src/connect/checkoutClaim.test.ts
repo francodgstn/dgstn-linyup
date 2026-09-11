@@ -167,7 +167,10 @@ describe('A CONTACT’S BOOKINGS ARE FOUND BY THE FIELD BOOKINGS CARRY', () => {
     // Scoped to the bookings query itself. The `participants` collection group
     // one file over DOES carry `contactId` (analytics/index.ts writes it), so a
     // blanket ban on that string would fail on correct code.
-    const bookingsQuery = /collectionGroup\(db, 'bookings'\)[\s\S]{0,300}/.exec(page)?.[0]
+    // The path is a constant since the Part 1 §7 sweep (SESSION_BOOKINGS_SUBCOLLECTION);
+    // the literal spelling is kept so an older checkout still matches.
+    const bookingsQuery =
+      /collectionGroup\(db, (?:'bookings'|SESSION_BOOKINGS_SUBCOLLECTION)\)[\s\S]{0,300}/.exec(page)?.[0]
     assert.ok(bookingsQuery, 'the bookings collection-group query is still there')
     assert.match(bookingsQuery!, /where\('contact', '==', contactId\)/)
     assert.doesNotMatch(bookingsQuery!, /where\('contactId'/)

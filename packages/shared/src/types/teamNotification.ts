@@ -57,6 +57,11 @@ export interface TeamNotification {
   link?: string | null
   created_at?: Timestamp | null
   read_at?: Timestamp | null
+  /** TTL stamp — `LEDGER_RETENTION_DAYS.notifications` after creation, written
+   *  by `createTeamNotification` and deleted on by Firestore's TTL policy
+   *  (firestore.index.json). Absent on rows written before the policy existed
+   *  until `pnpm backfill:ledger-ttl` stamps them. */
+  expires_at?: Timestamp | null
 
   // ── Type-specific payload ──────────────────────────────────────────────────
   // Denormalised for display and deep-linking. Readers must treat every one of

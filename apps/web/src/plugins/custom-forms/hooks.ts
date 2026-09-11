@@ -6,6 +6,7 @@ import {
   setDoc, updateDoc, deleteDoc, serverTimestamp, getCountFromServer,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { usePagedQuery } from '@/hooks/usePagedQuery'
 import { FORMS_COLLECTION, FORM_SUBMISSIONS_SUBCOLLECTION } from '@linyup/shared'
 import type { Form, FormField, FormSubmission, FormSubmissionStatus } from '@linyup/shared'
 
@@ -56,15 +57,38 @@ export function useForm(formId: string | null) {
   })
 }
 
-export function useSubmissions(formId: string | null) {
-  return useQuery<FormSubmission[]>({
+/** The Responses tab's page. A lead form fills at a rate a studio never
+ *  predicts, so the list is walked a page at a time
+ *  (docs/scalability-2026-09.md §17 B5). */
+export const SUBMISSIONS_PAGE_SIZE = 50
+
+function submissionsQuery(formId: string) {
+  return query(submissionsCol(formId), orderBy('submitted_at', 'desc'))
+}
+
+function toSubmission(d: { id: string; data: () => unknown }): FormSubmission {
+  return { id: d.id, ...(d.data() as Omit<FormSubmission, 'id'>) }
+}
+
+/** Newest responses first, a page at a time. The query key keeps the
+ *  `['form-submissions', formId]` prefix the status mutation invalidates. */
+export function useSubmissionsPage(formId: string | null, pageSize = SUBMISSIONS_PAGE_SIZE) {
+  return usePagedQuery<FormSubmission>({
     queryKey: ['form-submissions', formId],
     enabled: !!formId,
-    queryFn: async () => {
-      const snap = await getDocs(query(submissionsCol(formId!), orderBy('submitted_at', 'desc')))
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FormSubmission, 'id'>) }))
-    },
+    pageSize,
+    base: () => submissionsQuery(formId!),
+    map: toSubmission,
   })
+}
+
+/** EVERY response, for the CSV export — its own read, made when the studio
+ *  clicks Export, never on a page load. The list is paged, so exporting what
+ *  the list holds would silently ship the first page (§18); an export reads
+ *  the whole set by definition, and one explicit read per export is the cost. */
+export async function fetchAllSubmissions(formId: string): Promise<FormSubmission[]> {
+  const snap = await getDocs(submissionsQuery(formId))
+  return snap.docs.map(toSubmission)
 }
 
 // ─── Mutations (plain async helpers; call from useMutation in components) ──────
@@ -158,8 +182,8 @@ export async function updateForm(formId: string, patch: FormPatch): Promise<void
 }
 
 export async function deleteForm(formId: string): Promise<void> {
-  // Submissions are a subcollection; Firestore doesn't cascade. Delete them first
-  // (form submission counts are bounded; safe to batch client-side).
+  // Submissions are a subcollection; Firestore doesn't cascade. Delete them first.
+  // A whole read, on an explicit destructive action rather than a page load.
   const subs = await getDocs(submissionsCol(formId))
   await Promise.all(subs.docs.map((d) => deleteDoc(d.ref)))
   await deleteDoc(doc(formsCol(), formId))

@@ -139,7 +139,6 @@ type PaymentsTabId = (typeof PAYMENTS_TABS)[number]
 
 /** Anything Stripe can still charge for. Same set the contact page's cancel
  *  control uses; a paused subscription is one resume away from billing. */
-const LIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due', 'paused'])
 import { useAuth } from '@/contexts/AuthContext'
 import {
   useContactPayments,
@@ -148,6 +147,7 @@ import {
   usePartnerVisits,
   usePaymentEvents,
   useCreateMembershipPayment,
+  LIVE_SUBSCRIPTION_STATUSES,
 } from '@/hooks/useConnect'
 import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { useTabParam } from '@/hooks/useTabParam'
@@ -205,6 +205,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { QUICK_ACTION_PARAM } from '@/lib/quickActions'
+
+// The statuses the subscriptions tab lists — ONE definition, on the hook that
+// now queries by it, so the query and this page can never disagree.
+const LIVE_SUBSCRIPTION_SET = new Set<string>(LIVE_SUBSCRIPTION_STATUSES)
 
 // ─── awaiting-payment appointments ───────────────────────────────────────────
 // Manually booked appointments (AppointmentFormDialog → createStaffAppointment)
@@ -351,7 +355,7 @@ export default function PaymentsDashboardPage() {
     const byContact = new Map<string, MemberSubscription>()
     for (const sub of subscriptions) {
       if (sub.duplicate || !sub.contactId) continue
-      if (!LIVE_SUBSCRIPTION_STATUSES.has(sub.status as string)) continue
+      if (!LIVE_SUBSCRIPTION_SET.has(sub.status as string)) continue
       // The most live one wins when a contact somehow holds several.
       if (!byContact.has(sub.contactId)) byContact.set(sub.contactId, sub)
     }

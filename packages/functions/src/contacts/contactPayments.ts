@@ -76,18 +76,29 @@ function paymentLabel(d: FirebaseFirestore.DocumentData): string {
   return (d.purpose as string) || 'Payment'
 }
 
+/** How much of a contact's payment history the Space shows — the newest rows. */
+export const SPACE_PAYMENTS_PAGE = 100
+
 /** The contact's own payment history + billing-portal availability. */
 export const listMyContactPayments = onCall(async (request) => {
   const { contactId, teamId } = requireContactSession(request)
   const db = admin.firestore()
 
-  // Query by contactId only (single-field index) and sort/limit in memory — avoids
-  // a composite index (and the emulator-hides-missing-index trap).
+  // Newest first, capped at the page the Space renders. This used to read EVERY
+  // payment of the contact and slice in memory to avoid a composite index; a
+  // member with a weekly drop-in habit was then a few hundred reads for a
+  // hundred-row answer, growing with every year they stay
+  // (docs/scalability-2026-09.md §17 B6). The (`contactId`, `created_at`)
+  // index is declared in firestore.index.json — and because the emulator does
+  // not enforce indexes, a deployment that drops it fails HERE, on a real
+  // project, not in any test.
   const paySnap = await db
     .collection(TEAMS_COLLECTION)
     .doc(teamId)
     .collection(MEMBER_PAYMENTS_SUBCOLLECTION)
     .where('contactId', '==', contactId)
+    .orderBy('created_at', 'desc')
+    .limit(SPACE_PAYMENTS_PAGE)
     .get()
 
   const payments: ContactPayment[] = paySnap.docs
@@ -105,8 +116,6 @@ export const listMyContactPayments = onCall(async (request) => {
         promoCode: (d.line_item as { promoCode?: string } | undefined)?.promoCode ?? null,
       }
     })
-    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-    .slice(0, 100)
 
   // Billing portal is offered only to contacts with a Connect Stripe customer —
   // i.e. a recurring subscription. Cash / BYO / one-off payers have none, so the

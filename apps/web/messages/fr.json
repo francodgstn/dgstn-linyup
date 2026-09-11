@@ -23,7 +23,10 @@
     "delete": "Supprimer",
     "remove": "Retirer",
     "reset": "Réinitialiser",
-    "ratingAriaLabel": "Noter {n} sur 5"
+    "ratingAriaLabel": "Noter {n} sur 5",
+    "loadMore": "Charger plus",
+    "showingCount": "{count} chargés",
+    "showingOf": "{shown} sur {total} chargés"
   },
   "Plans": {
     "free": "Free",
@@ -2539,7 +2542,8 @@
     "cancelSlotClosesLink": "Le lien de paiement envoyé au client sera fermé et ne pourra plus être payé.",
     "cancelSlotPaidInWindow": "Le client vient de payer, rien n'a donc été annulé. Le rendez-vous est confirmé — remboursez-le dans Stripe si vous voulez quand même l'annuler.",
     "cancelSlotLinkStillOpen": "Annulé, mais le lien de paiement n'a pas pu être fermé — il est peut-être encore payable. Faites-le expirer dans votre tableau de bord Stripe.",
-    "cancelSlotFailed": "Le rendez-vous n'a pas pu être annulé."
+    "cancelSlotFailed": "Le rendez-vous n'a pas pu être annulé.",
+    "timeOffWindowHint": "Les absences terminées depuis plus de {days} jours ne sont plus affichées."
   },
   "AppointmentForm": {
     "durationBenefitOnly": "Avec un abonnement",
@@ -4629,7 +4633,8 @@
     "panelTitle": "Notifications",
     "unreadCount": "{count, plural, =0 {Aucune notification non lue} one {# notification non lue} other {# notifications non lues}}",
     "emptyTitle": "Tout est à jour",
-    "emptyBody": "Les nouvelles notifications s'afficheront ici."
+    "emptyBody": "Les nouvelles notifications s'afficheront ici.",
+    "showingLatest": "Les {count} dernières non lues sont affichées. Fermez-en pour voir les plus anciennes ; les notifications non lues expirent après {days} jours."
   },
   "Affiliations": {
     "tabLabel": "Affiliations",
@@ -4842,7 +4847,8 @@
     "thankYouBody": "Votre réponse a bien été reçue.",
     "unpublishConfirmTitle": "Mettre ce formulaire hors ligne ?",
     "unpublishConfirmBody": "Le lien que vous avez partagé cesse de fonctionner immédiatement et toute entrée de bio-link qui y renvoie n'est plus affichée. Rien n'est perdu : les champs, les réglages et toutes les réponses déjà reçues sont conservés, et vous pouvez republier quand vous voulez.",
-    "unpublishConfirmAction": "Mettre hors ligne"
+    "unpublishConfirmAction": "Mettre hors ligne",
+    "exportFailed": "L'export n'a pas pu être préparé. Veuillez réessayer."
   },
   "Documents": {
     "title": "Documents",
