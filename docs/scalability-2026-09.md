@@ -471,6 +471,51 @@ the largest offset any team has actually configured rather than the theoretical
 14-day ceiling, and skip the per-session bookings fetch when
 `bookings_count === 0`.
 
+### DONE 2026-09-11 — all four, plus both narrowings
+
+`packages/functions/src/utils/tenantFanOut.ts` is the shared machinery and its
+header carries the reasoning. Each job is now a dispatcher that lists the
+tenants and enqueues one task each; the work lives in a `…ForTeam(teamId)`
+function that BOTH the task worker and the dispatcher's local-dev inline path
+call, so there is one implementation and not two. The workers are four separate
+handlers (`dailyTasks/tenantWorkers.ts`) and therefore four queues: the hourly
+reminder flood never sits behind Monday's reports, and each gets retry and
+concurrency settings that suit its own work.
+
+| Job | Dispatcher enqueues into | Per-tenant work |
+|---|---|---|
+| `sendBookingReminders` (hourly) | `remindersForTeam` | `sendBookingRemindersForTeam` |
+| `markNoShowBookings` (daily) | `noShowsForTeam` | `markNoShowBookingsForTeam` |
+| `runScheduledRules` (daily) | `scheduledRulesForTeam` | `runScheduledRulesForTeam` |
+| `weeklyReports` (weekly) | `weeklyReportForTeam` | `weeklyReportsForTeam` |
+
+Both narrowings landed with the reminders: the scan window is now the team's
+OWN longest configured offset plus the catch-up (a studio with no steps, or
+reminders off, reads no sessions at all), and a session whose `bookings_count`
+is zero costs no subcollection read — in `markNoShowBookings` too.
+
+Three properties make at-least-once delivery safe, and each is the JOB's own
+rather than something the dispatcher asserts: per-step `reminders_sent` markers,
+a weekly report that refuses to overwrite an existing week, and a no-show pass
+that only ever flips a `pending` booking. The deterministic task id
+(`{teamId}-{runId}`, tenant first — a run id is the most sequential prefix
+available, and Cloud Tasks degrades on those) is a cheap first line of defence
+on top, never the guarantee. `utils/tenantFanOut.test.ts` pins all of it.
+
+**A bug found while wiring it, worth its own paragraph.** The obvious tenant
+list is `teams where archived_at == null` — which three jobs already used. But a
+Firestore `== null` filter matches an **explicit null and not a missing field**,
+and on `teams` that field is missing: nothing writes it on create and `Team`
+does not declare it. So the clause matches almost no studio, and a dispatcher
+built on it would enqueue nothing for nearly everybody while reporting a clean
+run — the exact silent half-run this conversion exists to end. The fan-out
+projects the field and filters in memory, where an absent marker correctly reads
+as "not archived". `weeklyReports` carried the clause and is fixed by the
+conversion; **`finance/monthlyReports.ts` still has it and is a live defect**,
+out of this change's reach. (The identical clause against `contacts` is correct
+and must be left alone — contact writers always set the field explicitly, which
+is what `apps/web/src/lib/liveContacts.ts` exists to guarantee.)
+
 ## 10. Write amplification per booking
 
 One member booking one class costs roughly five document writes and ~12 reads:
@@ -605,13 +650,24 @@ under any quota.
 |---|---|---|---|
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
 | 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check:** follow the runbook; step 1 (register the web app in the Firebase Console) is yours. |
-| 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | Not started. The load-bearing one for growth. |
+| 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | **DONE 2026-09-11** — all four, plus both of the reminder narrowings, on shared machinery (`utils/tenantFanOut.ts`). See §9 for the table and for the `archived_at` bug the wiring turned up. |
 | 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
 | 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
 
-Steps 1, 2 and 5 are small and are in. Step 3 is a week or so. None of it is
-architectural — the data model is sound, and nothing here requires reshaping
-collections or the tenant boundary.
+Steps 1, 2, 3 and 5 are done. What remains on this list is **App Check**
+enforcement (step 2's third part, which starts with registering the web app in
+the Firebase Console) and confirming the prod budget's amount and recipients.
+None of it was architectural — the data model is sound, and nothing here
+required reshaping collections or the tenant boundary.
+
+One consequence worth stating for whoever deploys: the four scheduled jobs now
+depend on Cloud Tasks, so their IAM and quota matter where they did not before.
+The two pre-existing task functions (`executeDelayedRule`, `runSeriesTeardown`)
+already prove the service account can enqueue. A dispatcher that cannot enqueue
+ANY tenant throws rather than reporting a clean run, so the failure is visible
+in the scheduler rather than silent. Locally, `firebase emulators:start` does
+not run Cloud Tasks unless asked, and the dispatchers fall back to running the
+tenants inline so a developer's machine still exercises them.
 
 ---
 

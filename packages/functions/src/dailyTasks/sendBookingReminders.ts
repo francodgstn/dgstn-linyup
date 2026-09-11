@@ -13,6 +13,28 @@
 // window; the sent marker guarantees once-only). SMS steps additionally respect
 // quiet hours (08:00–21:00 Europe/Zurich) — outside them the step defers to the
 // next in-window run.
+//
+// ── ONE TASK PER TENANT, NOT ONE LOOP OVER ALL OF THEM ──────────────────────
+//
+// `sendBookingReminders` is now a DISPATCHER and
+// `sendBookingRemindersForTeam` is the work. This was the worst of the four
+// scheduled fan-outs (docs/scalability-2026-09.md §9): it ran twenty-four times
+// a day, scanned EVERY tenant's sessions in one global query, and died partway
+// once that took longer than five minutes — silently, having reminded some
+// studios' members and not others. See utils/tenantFanOut.ts.
+//
+// Two things got cheaper by being asked per tenant rather than globally, and
+// both were named in §9:
+//
+//   • THE SCAN WINDOW IS THE TEAM'S OWN. The global scan had to cover the
+//     largest offset ANY team could author — fourteen days — because it could
+//     not know whose sessions it was looking at. A tenant's own longest
+//     configured offset is usually 24 or 48 hours, so the window is now days
+//     narrower for almost every studio, and a team with reminders off or no
+//     steps at all reads no sessions whatsoever.
+//   • A SESSION WITH NO BOOKINGS COSTS NO SUBCOLLECTION READ. `bookings_count`
+//     is already on the session (trackBookings owns it); zero means there is
+//     nobody to remind.
 import * as admin from 'firebase-admin'
 import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
@@ -29,6 +51,7 @@ import {
   type BookingReminderStep,
   localizedPublicUrl,
 } from '@linyup/shared'
+import { dispatchTenantJob, type FanOutResult } from '../utils/tenantFanOut'
 
 type Lang = 'en' | 'de' | 'fr' | 'it'
 
@@ -91,67 +114,71 @@ async function getTeamReminderSettings(
   }
 }
 
-export async function sendBookingReminders(): Promise<{
+export interface ReminderRunStats {
   processed: number
   sent: number
   skipped: number
   errors: number
-}> {
-  console.log('sendBookingReminders task started')
+}
 
+/**
+ * The scan window for ONE team: from now to its own longest configured offset
+ * plus the catch-up. Exported and pure so the narrowing is testable — it is the
+ * difference between reading fourteen days of a studio's calendar every hour
+ * and reading two.
+ */
+export function reminderWindowHours(steps: BookingReminderStep[]): number {
+  const longest = steps.reduce((max, s) => Math.max(max, s.offsetHours), 0)
+  return Math.min(longest, MAX_OFFSET_HOURS) + CATCH_UP_HOURS
+}
+
+/** ONE tenant's reminders. The task-queue worker's body, and the dispatcher's
+ *  inline path on a developer's machine — never two implementations. */
+export async function sendBookingRemindersForTeam(teamId: string): Promise<ReminderRunStats> {
   const db = admin.firestore()
   const now = new Date()
   const smsWindowOpen = isWithinSmsSendingHours(now)
-
-  // Cast a net covering every supported offset; per team we then check the
-  // configured steps. (Upper bound = the max authorable offset + catch-up.)
-  const windowStart = now
-  const windowEnd = new Date(now.getTime() + (MAX_OFFSET_HOURS + CATCH_UP_HOURS) * 60 * 60 * 1000)
 
   let processed = 0
   let sent = 0
   let skipped = 0
   let errors = 0
 
+  const team = await getTeamReminderSettings(db, teamId)
+  // Reminders off, or no authored steps: nothing is due and nothing is read.
+  if (!team.enabled || team.steps.length === 0) {
+    return { processed, sent, skipped, errors }
+  }
+
+  const windowStart = now
+  const windowEnd = new Date(now.getTime() + reminderWindowHours(team.steps) * 60 * 60 * 1000)
+
   const [sessionsErr, sessionsSnap] = await to(
     db
       .collection(SESSIONS_COLLECTION)
+      .where('teamId', '==', teamId)
       .where('start', '>=', Timestamp.fromDate(windowStart))
       .where('start', '<', Timestamp.fromDate(windowEnd))
       .get()
   )
 
   if (sessionsErr) {
-    console.error('sendBookingReminders: error fetching sessions:', sessionsErr)
+    console.error(`sendBookingReminders: error fetching sessions for team ${teamId}:`, sessionsErr)
     throw sessionsErr
   }
 
-  console.log(`sendBookingReminders: found ${sessionsSnap!.size} sessions in scan window`)
-
-  // Cache team settings to avoid re-fetching per session
-  const teamCache: Record<string, TeamReminderSettings> = {}
+  console.log(
+    `sendBookingReminders: team ${teamId} — ${sessionsSnap!.size} session(s) in a ${Math.round(
+      reminderWindowHours(team.steps)
+    )}h window`
+  )
 
   for (const sessionDoc of sessionsSnap!.docs) {
     const sessionId = sessionDoc.id
     const sessionData = sessionDoc.data()
-    const teamId = (sessionData.teamId || sessionData.teacher) as string | undefined
 
-    if (!teamId) {
-      skipped++
-      continue
-    }
     // Cancelled sessions (appointment status or exception flag) get no reminders.
     if (sessionData.status === 'cancelled') {
-      skipped++
-      continue
-    }
-
-    if (!teamCache[teamId]) {
-      teamCache[teamId] = await getTeamReminderSettings(db, teamId)
-    }
-    const team = teamCache[teamId]
-
-    if (!team.enabled || team.steps.length === 0) {
       skipped++
       continue
     }
@@ -160,6 +187,14 @@ export async function sendBookingReminders(): Promise<{
       (sessionData.start.toDate().getTime() - now.getTime()) / (60 * 60 * 1000)
     const dueSteps = team.steps.filter((s) => isStepDue(s.offsetHours, hoursUntilSession))
     if (dueSteps.length === 0) {
+      skipped++
+      continue
+    }
+
+    // NOBODY TO REMIND COSTS NO READ. `bookings_count` is maintained by
+    // trackBookings as an absolute value, so zero is trustworthy; an ABSENT
+    // count is not the same claim and still reads the subcollection.
+    if (sessionData.bookings_count === 0) {
       skipped++
       continue
     }
@@ -316,7 +351,25 @@ export async function sendBookingReminders(): Promise<{
     }
   }
 
-  const result = { processed, sent, skipped, errors }
-  console.log('sendBookingReminders task completed:', result)
+  return { processed, sent, skipped, errors }
+}
+
+/**
+ * THE DISPATCHER. Lists the tenants and enqueues one task each; the work is
+ * `sendBookingRemindersForTeam`, called by the `remindersForTeam` worker.
+ *
+ * Hourly granularity on the run id: a retried firing addresses the same task
+ * ids and Cloud Tasks refuses the duplicates, so a retry cannot double-send —
+ * and even if it could, the per-step `reminders_sent` markers already say once.
+ */
+export async function sendBookingReminders(): Promise<FanOutResult> {
+  console.log('sendBookingReminders dispatch started')
+  const result = await dispatchTenantJob({
+    functionName: 'remindersForTeam',
+    granularity: 'hour',
+    perTeam: sendBookingRemindersForTeam,
+    label: 'reminders',
+  })
+  console.log('sendBookingReminders dispatch completed:', result)
   return result
 }

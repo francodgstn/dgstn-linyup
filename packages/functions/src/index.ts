@@ -210,6 +210,19 @@ export { handleAppStoreWebhook } from './appstores/webhook'
 
 // Daily maintenance tasks + the hourly multi-step booking-reminder scan
 export { dailyTasks, bookingRemindersHourly } from './dailyTasks'
+// …and the per-tenant WORKERS those schedules now dispatch to. Each scheduled
+// job lists the tenants and enqueues one Cloud Task each instead of looping
+// them inside one 300-second instance, which died partway at a few hundred
+// studios and left some tenants done and some not, silently
+// (docs/scalability-2026-09.md §9; the machinery is utils/tenantFanOut.ts).
+// Four handlers means four queues: the hourly reminder flood never sits behind
+// Monday's reports, and each gets retry settings that suit its own work.
+export {
+  remindersForTeam,
+  noShowsForTeam,
+  scheduledRulesForTeam,
+  weeklyReportForTeam,
+} from './dailyTasks/tenantWorkers'
 
 // Auth / Membership
 export { verifyContactCode, completeSignup } from './auth/completeSignup'
