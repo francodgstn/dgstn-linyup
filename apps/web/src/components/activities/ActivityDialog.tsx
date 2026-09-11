@@ -493,7 +493,9 @@ export function ActivityDialog({
       ...base,
       accessRule: duplicating?.accessRule ?? { type: 'members' as const },
       isFreeTrial: duplicating?.isFreeTrial ?? false,
-      dropIn: duplicating?.dropIn ?? { enabled: false },
+      // A new class FOLLOWS THE STUDIO DEFAULT (`DropInMode`) — it names a
+      // price only when a studio changes it to.
+      dropIn: duplicating?.dropIn ?? { mode: 'studio' as const, enabled: false },
       trialEnabled: duplicating?.trialEnabled ?? false,
       trialPriceAmount: duplicating?.trialPriceAmount ?? null,
       memberBenefit: duplicating?.memberBenefit ?? null,

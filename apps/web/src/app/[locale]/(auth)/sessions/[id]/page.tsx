@@ -13,6 +13,7 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { Badge } from '@/components/ui/badge'
 import { FloatingSlot } from '@/components/layout/FloatingDock'
 import {
@@ -551,22 +552,9 @@ function AddParticipantsDialog({
     !requiredSubscriptionTypeIds?.length ||
     contactHoldsCoveringSubscription(c, requiredSubscriptionTypeIds)
 
-  const { data: contacts = [], isLoading } = useQuery<Contact[]>({
-    queryKey: ['contacts', 'active', teamId],
-    enabled: open,
-    queryFn: async () => {
-      const q = query(
-        collection(db, CONTACTS_COLLECTION),
-        where('teamId', '==', teamId),
-        where('deleted_at', '==', null),
-        where('archived_at', '==', null),
-        orderBy('lastname'),
-        orderBy('firstname'),
-      )
-      const snap = await getDocs(q)
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Contact)
-    },
-  })
+  // The roster, through the one hook and on the contacts page's cache entry —
+  // fetched only once the dialog is open (a null team is the hook's "not yet").
+  const { data: contacts = [], isLoading } = useActiveContacts(open ? teamId : null)
 
   const filtered = contacts.filter((c) => {
     if (existingIds.has(c.id)) return false
@@ -1078,23 +1066,9 @@ export default function SessionDetailPage() {
   const requiredSubIds = activityRequiresSubscription(accessRule)
 
   // Contact docs (subscription snapshots included) for the roster coverage badges.
-  // Shares the add-dialog's cache key; only fetched when the activity is gated.
-  const rosterContactsQ = useQuery<Contact[]>({
-    queryKey: ['contacts', 'active', currentTeamId],
-    enabled: !!currentTeamId && !!requiredSubIds?.length,
-    queryFn: async () => {
-      const q = query(
-        collection(db, CONTACTS_COLLECTION),
-        where('teamId', '==', currentTeamId),
-        where('deleted_at', '==', null),
-        where('archived_at', '==', null),
-        orderBy('lastname'),
-        orderBy('firstname'),
-      )
-      const snap = await getDocs(q)
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Contact)
-    },
-  })
+  // The one roster hook, on the shared cache entry; only fetched when the
+  // activity is gated.
+  const rosterContactsQ = useActiveContacts(requiredSubIds?.length ? currentTeamId : null)
 
   // contactId → covered; contacts we can't see (archived etc.) get no badge.
   const rosterCoverage = new Map<string, boolean>(

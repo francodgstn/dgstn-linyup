@@ -63,6 +63,9 @@ import {
   resolveBookingContactFields,
   type BookingContactField,
   type CustomFieldDefinition,
+  resolveActivityDropIn,
+  studioDropInOf,
+  type ActivityDropIn,
 } from '@linyup/shared'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -792,7 +795,7 @@ export const bookSession = onCall(async (request) => {
   // The class's paid door, read for the GATE (not for pricing — bookSession is
   // the free path). It is what tells "books free" apart from "must go and pay"
   // for someone no plan covers: with no price there is nowhere to send her.
-  let activityDropIn: { enabled?: boolean; priceAmount?: number } | null = null
+  let activityDropIn: ActivityDropIn | null = null
 
   if (sessionData.activityId) {
     try {
@@ -808,8 +811,7 @@ export const bookSession = onCall(async (request) => {
           accessRule: actData.accessRule as ActivityAccessRule | undefined,
           isFreeTrial: actData.isFreeTrial as boolean | undefined,
         })
-        activityDropIn =
-          (actData.dropIn as { enabled?: boolean; priceAmount?: number } | undefined) ?? null
+        activityDropIn = (actData.dropIn as ActivityDropIn | undefined) ?? null
         activityInstructions = (actData.confirmationInstructions as string) || null
         activityCancellationPolicy = (actData.cancellationPolicy as string) || null
         activityBookingQuestions = Array.isArray(actData.bookingQuestions)
@@ -973,6 +975,13 @@ export const bookSession = onCall(async (request) => {
   }
 
   const gateAccessRule: ActivityAccessRule = isTrialDoor ? { type: 'open' } : accessRule
+  // THE ONE READER of the drop-in price: a class that follows the studio
+  // default stores no price of its own, so the raw field is not the answer
+  // (shared/utils/dropIn.ts).
+  const resolvedDropIn = resolveActivityDropIn(
+    { type: activityTypeVal, accessRule, dropIn: activityDropIn },
+    studioDropInOf(bookingSettings)
+  )
   const { matchedSubscriptionTypeId, creditSpendTypeId, usageSpend } = await resolveBookingAccessGate({
     teamId: data.teamId,
     accessRule: gateAccessRule,
@@ -983,7 +992,7 @@ export const bookSession = onCall(async (request) => {
     usageAt: (sessionData.start as Timestamp).toDate(),
     // The trial door is its own free path (`gateAccessRule` is forced open
     // above), so it must not be told a paid door exists.
-    dropIn: isTrialDoor ? null : activityDropIn,
+    dropIn: isTrialDoor ? null : resolvedDropIn,
   })
 
   // ── The waiver gate ────────────────────────────────────────────────────────

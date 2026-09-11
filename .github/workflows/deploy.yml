@@ -25,17 +25,16 @@ permissions:
   id-token: write
 
 
-# One staging deploy at a time, in order. Two merges minutes apart used to run
-# two concurrent `firebase deploy`s against the same project (2026-08-26/27);
-# the second now waits for the first. Never cancel a deploy in flight.
-concurrency:
-  group: deploy-staging
-  cancel-in-progress: false
+# THE SERIALISATION IS ON THE DEPLOY JOB, NOT ON THE WORKFLOW — see below.
 
 jobs:
   # Gate: the same checks a pull request gets. This workflow fires on every push
   # to main, including pushes that never went through a PR, so without this the
   # staging deploy is the first thing to ever run the code.
+  #
+  # It is also the ONLY thing that verifies `main` itself (verify.yml's own
+  # triggers are `pull_request` and `workflow_call`), which is why it must not
+  # be inside a queue that drops runs — see the deploy job's concurrency.
   verify:
     uses: ./.github/workflows/verify.yml
 
@@ -44,6 +43,26 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     environment: staging
+
+    # One staging deploy at a time, in order. Two merges minutes apart used to
+    # run two concurrent `firebase deploy`s against the same project
+    # (2026-08-26/27); the second now waits for the first. Never cancel a deploy
+    # in flight.
+    #
+    # ON THE JOB, because as a WORKFLOW-level group it also queued the `verify`
+    # job above — and a concurrency group holds exactly ONE pending run, so a
+    # third merge cancels the second while it waits. On 2026-09-11, eight
+    # commits reached `main` and five of their runs were cancelled before
+    # anything ran: those commits were never checked by anything.
+    #
+    # Serialising the DEPLOY alone keeps the invariant this group exists for
+    # while letting every commit's checks run. Dropping a queued deploy is fine
+    # and always was — the run that replaces it deploys a tree containing the
+    # one it displaced. Dropping a queued VERIFY is not: the commit simply goes
+    # unchecked, and when `main` does break, nothing names which merge did it.
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v7

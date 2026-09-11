@@ -42,6 +42,9 @@ import {
   type AnyBenefit,
   type DropInTarget,
   type SeatHold,
+  resolveActivityDropIn,
+  studioDropInOf,
+  type ActivityDropIn,
 } from '@linyup/shared'
 import { denialMessage, loadContactPaymentContext } from '../access'
 import { loadBookingSettings } from '../bookingSettings'
@@ -182,12 +185,22 @@ export const claimWaitlistSeat = onCall(async (request) => {
     accessRule: activity.accessRule as ActivityAccessRule | undefined,
     isFreeTrial: activity.isFreeTrial as boolean | undefined,
   })
-  const dropIn = activity.dropIn as { enabled?: boolean; priceAmount?: number } | undefined
+  // THE ONE READER of the drop-in price (shared/utils/dropIn.ts) — the studio
+  // default, read from the same settings the cutoff above came from.
+  const dropIn = resolveActivityDropIn(
+    {
+      type: activity.type as ActivityType | undefined,
+      accessRule: activity.accessRule as ActivityAccessRule | undefined,
+      isFreeTrial: activity.isFreeTrial as boolean | undefined,
+      dropIn: activity.dropIn as ActivityDropIn | undefined,
+    },
+    studioDropInOf(bookingSettings)
+  )
   const benefit = (activity.memberBenefit as AnyBenefit | undefined) ?? null
   const target: DropInTarget = {
     kind: 'drop_in',
     accessRule,
-    dropIn: dropIn ?? null,
+    dropIn,
     // A waitlist claim is never a trial: a trial is a newcomer's first class,
     // and the trial door is a guest path with its own once-per-person gate.
     trial: null,

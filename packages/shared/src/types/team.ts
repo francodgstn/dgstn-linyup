@@ -873,6 +873,17 @@ export interface BookingSettings {
    *  (types/session.ts); this setting only configures the threshold. */
   cutoffMinutes?: number
   /**
+   * The studio-wide DEFAULT drop-in price, followed by every class that has
+   * not named its own (`ActivityDropIn.mode`, types/activity.ts). Absent or
+   * disabled ⇒ no default, and a class that follows the studio sells no
+   * drop-in. Read ONLY through `resolveActivityDropIn` (utils/dropIn.ts); a
+   * change here fans out to the activity mirrors via `syncStudioDropIn`.
+   * Edited on Offerings → Pricing, not on Settings → Booking — it is a price,
+   * and it lives here only because this is the one document every reader of a
+   * class's price already loads.
+   */
+  dropIn?: { enabled: boolean; priceAmount?: number }
+  /**
    * Whether the studio uses waitlists at all — a VISIBILITY switch, not an
    * enforcement one.
    *

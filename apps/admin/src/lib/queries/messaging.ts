@@ -155,6 +155,7 @@ export async function getMessagingInfo(entityId: string): Promise<MessagingInfo>
       ...(d.allowPhones ? { allowPhones: d.allowPhones } : {}),
       ...(d.redirectEmail ? { redirectEmail: d.redirectEmail } : {}),
       ...(d.redirectPhone ? { redirectPhone: d.redirectPhone } : {}),
+      ...(d.ignoreTestMode ? { ignoreTestMode: true } : {}),
       ...(d.note ? { note: d.note } : {}),
     }
   }

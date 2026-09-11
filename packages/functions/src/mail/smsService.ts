@@ -160,8 +160,15 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
   }
 
   // Recipient: normalize, then test-mode redirect, else policy → suppression.
+  //
+  // Resolved BEFORE the branch for the same reason as in mailService: a tenant
+  // the operator has exempted (`ignoreTestMode`) skips the environment-wide
+  // redirect and is decided by its own policy instead. Absent ⇒ unchanged.
+  const policy = await resolveMessagingPolicy(teamId)
+  const bypassTestMode = testMode && policy?.ignoreTestMode === true
+
   let recipient = normalizePhoneE164(msg.to)
-  if (testMode) {
+  if (testMode && !bypassTestMode) {
     // Local-dev/CI convenience — bypasses the per-tenant policy layer.
     const redirect = normalizePhoneE164(testSmsNumber.value())
     console.log(`[sms] TEST MODE → redirecting ${msg.to} to ${redirect ?? '(drop: no TEST_SMS_NUMBER)'}`)
@@ -170,10 +177,15 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
     console.warn(`[sms] unusable phone number '${msg.to}' — skipping`)
     return { skipped: true }
   } else {
+    if (bypassTestMode) {
+      console.warn(
+        `[sms] TEST_MODE is on but '${teamId}' is exempt (ignoreTestMode) — its own policy ` +
+          `'${policy?.mode ?? envDefaultMode()}' decides, and a real number may be reached`,
+      )
+    }
     // Per-tenant delivery policy (operator-set; env default when absent). The
     // seeded demo phones are REAL routable Swiss numbers, so this — not a
     // synthetic-pattern guard — is what keeps them silent.
-    const policy = await resolveMessagingPolicy(teamId)
     const decision = applySmsPolicy(recipient, policy, envDefaultMode())
     if (!decision.recipient) {
       console.log(`[sms] policy '${policy?.mode ?? envDefaultMode()}' for '${teamId}' dropped recipient (${decision.droppedReason})`)

@@ -21,6 +21,7 @@ import { useActiveContacts } from '@/hooks/useActiveContacts'
 // The Archived tab's query moved to a hook of its own so the sidebar search can
 // run the SAME one — same shape, same key, one cache entry (UX-21).
 import { useArchivedContactsPage, useArchivedContactsCount } from '@/hooks/useArchivedContacts'
+import { useWindowedList } from '@/hooks/useWindowedList'
 import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 import { useCoaches, coachLabel } from '@/hooks/useCoaches'
 import { usePlan } from '@/hooks/usePlan'
@@ -1841,7 +1842,7 @@ function ContactRow({
     : undefined
 
   return (
-    <div className="flex items-center border-b last:border-0 hover:bg-muted/50 transition-colors">
+    <div className="flex items-center hover:bg-muted/50 transition-colors">
       <button
         onClick={(e) => {
           if (e.metaKey || e.ctrlKey) {
@@ -1983,7 +1984,7 @@ function DeletedRow({
   const days = daysUntilAnonymisation(contact.deleted_at)
 
   return (
-    <div className="flex items-center gap-1 border-b last:border-0 px-4 py-3">
+    <div className="flex items-center gap-1 px-4 py-3">
       <label className="mr-2 cursor-pointer">
         <input
           type="checkbox"
@@ -2845,6 +2846,14 @@ export default function ContactsPage() {
       (a, b) => (resolveTimestampMs(b.created_at) ?? 0) - (resolveTimestampMs(a.created_at) ?? 0)
     )
   }, [currentListUnsorted, sortMode, filterContext])
+  // Only the rows near the viewport are mounted once the list is long — the
+  // filters, the sort and the selection all still run over the whole list
+  // (docs/scalability-2026-09.md §17 A1). Rows vary in height (an attention
+  // line, chips), so each one is measured.
+  const windowed = useWindowedList(currentList as Contact[], {
+    estimateSize: 64,
+    getKey: (c) => c.id,
+  })
   // The same tab BEFORE filtering — a dynamic rule can resolve wider than the
   // current view (it can't keep the `groups` dimension), so previewing it
   // against `currentList` would understate the group.
@@ -3293,30 +3302,38 @@ export default function ContactsPage() {
             </div>
           )}
 
-          {!isLoading && tab !== 'deleted' && (currentList as Contact[]).map((c) => (
-            <ContactRow
-              key={c.id}
-              contact={c}
-              selectable={selectable}
-              selected={selected.has(c.id)}
-              onSelect={toggleSelect}
-              rankingSystems={rankingSystems}
-              attentionReason={
-                sortMode === 'attention'
-                  ? contactAttentionReasons(c, filterContext)[0]
-                  : undefined
-              }
-            />
-          ))}
-
-          {!isLoading && tab === 'deleted' && (currentList as Contact[]).map((c) => (
-            <DeletedRow
-              key={c.id}
-              contact={c}
-              selected={selected.has(c.id)}
-              onSelect={toggleSelect}
-            />
-          ))}
+          {!isLoading && (
+            <div ref={windowed.listRef}>
+              {windowed.before > 0 && <div aria-hidden style={{ height: windowed.before }} />}
+              {windowed.rows.map(({ item: c, index, key }) => (
+                // The row border lives HERE, not on the row: with one row per
+                // wrapper, `last:` on the row itself would match every one.
+                <div key={key} data-index={index} ref={windowed.measure} className="border-b last:border-0">
+                  {tab !== 'deleted' ? (
+                    <ContactRow
+                      contact={c}
+                      selectable={selectable}
+                      selected={selected.has(c.id)}
+                      onSelect={toggleSelect}
+                      rankingSystems={rankingSystems}
+                      attentionReason={
+                        sortMode === 'attention'
+                          ? contactAttentionReasons(c, filterContext)[0]
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <DeletedRow
+                      contact={c}
+                      selected={selected.has(c.id)}
+                      onSelect={toggleSelect}
+                    />
+                  )}
+                </div>
+              ))}
+              {windowed.after > 0 && <div aria-hidden style={{ height: windowed.after }} />}
+            </div>
+          )}
 
           {/* The archive is paged (see useArchivedContactsPage): the search and
               filters above run over the LOADED rows, and this line says how many

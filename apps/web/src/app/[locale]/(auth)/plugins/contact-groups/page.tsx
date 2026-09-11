@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import {
-  collection, query, where, orderBy, getDocs, doc, updateDoc, arrayUnion, arrayRemove,
+  doc, updateDoc, arrayUnion, arrayRemove,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { Route } from 'next'
@@ -42,26 +43,14 @@ const GROUP_COLORS = [
 ]
 
 
-// Same query + key as the contacts list page so the TanStack cache is shared.
-function useActiveContacts(teamId: string | null) {
-  return useQuery<Contact[]>({
-    queryKey: ['contacts', 'active', teamId],
-    enabled: !!teamId,
-    queryFn: async () => {
-      if (!teamId) return []
-      const q = query(
-        collection(db, CONTACTS_COLLECTION),
-        where('teamId', '==', teamId),
-        where('deleted_at', '==', null),
-        where('archived_at', '==', null),
-        orderBy('lastname'),
-        orderBy('firstname'),
-      )
-      const snap = await getDocs(q)
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Contact)
-    },
-  })
-}
+// The roster comes through the ONE hook (`@/hooks/useActiveContacts`). This
+// page declared a copy "with the same key as the contacts page" — but the key
+// had drifted (three segments to the hook's four), so it was a second fetch of
+// the whole roster after all (docs/scalability-2026-09.md §17 A7). A count
+// aggregation for the manual groups was considered and not added: the page
+// holds the roster anyway — the dynamic groups and the member list are derived
+// from it, lazily, by design — so a count query would be a read on top of the
+// read, not instead of it.
 
 // ─── create / rename dialog ───────────────────────────────────────────────────
 

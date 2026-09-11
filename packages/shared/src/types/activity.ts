@@ -46,6 +46,32 @@ export type ActivityType = 'class' | 'appointment'
 // because classes use it, but appointment booking paths ignore it everywhere.
 export type ActivityAccessTier = 'open' | 'members' | 'subscription'
 
+// ─── THE DROP-IN PRICE, ANSWERED THREE WAYS ──────────────────────────────────
+//
+// A studio whose classes all cost the same at the door used to type that price
+// into every class and keep the copies in step by hand. The price now has a
+// studio-wide default (`BookingSettings.dropIn`, on the team's public profile
+// beside the other booking settings) and each class says how it relates to it:
+//
+//   'studio'  follow the studio default — the state a new class starts in
+//   'custom'  this class names its own `priceAmount`
+//   'off'     no drop-in on this class, even when the studio has a default
+//
+// ABSENT `mode` is the pre-2026-09-11 document, read by `dropInModeOf`: a
+// class that named a price is 'custom'; anything else is 'studio'. That is
+// what makes the default apply on the day it is set, with no click per class.
+export type DropInMode = 'studio' | 'custom' | 'off'
+
+export interface ActivityDropIn {
+  mode?: DropInMode
+  /** LEGACY + 'custom' only: true when the class names its own price. Derived
+   *  by every reader from whether there is a price to charge — never trusted
+   *  on its own. */
+  enabled: boolean
+  /** Major units, the team's currency. Meaningful under 'custom' only. */
+  priceAmount?: number
+}
+
 /** Who is allowed through the door — free path and paid path alike. */
 export type ActivityAudience = 'anyone' | 'members'
 
@@ -334,8 +360,13 @@ export interface Activity {
   accessRule?: ActivityAccessRule
   /** Drop-in / pay-per-class: a contact not covered by the access rule may pay this
    *  one-off price to book a single session. Charged via Stripe Connect; no membership
-   *  is created. Group-class only for now. Price is major units (team default_currency). */
-  dropIn?: { enabled: boolean; priceAmount?: number }
+   *  is created. CLASS-ONLY.
+   *
+   *  NEVER READ THE FIELDS DIRECTLY on a path that decides anything — a class
+   *  that follows the studio default stores no price of its own. THE ONE READER
+   *  is `resolveActivityDropIn(activity, bookingSettings.dropIn)` in
+   *  utils/dropIn.ts; see `ActivityDropIn`. */
+  dropIn?: ActivityDropIn
   /** CLASS-ONLY. Independent of `accessRule`: when true, a gated class
    *  ('members' | 'subscription') still accepts a newcomer's trial booking —
    *  the guest path is IDENTICAL to the 'open' tier's (provisional trial
@@ -438,7 +469,10 @@ export interface ActivityPublicProfile {
   order?: number
   /** Denormalised access gate so booking UIs can render lock state and rules can gate. */
   accessRule?: ActivityAccessRule
-  /** Denormalised drop-in config so the booking UI can offer pay-per-class. */
+  /** The RESOLVED drop-in price — the class's own, or the studio default when
+   *  the class follows it (`resolveActivityDropIn`). Present only when there
+   *  is a price to charge, so no public reader has to know a default exists;
+   *  `syncStudioDropIn` rewrites it when the default changes. */
   dropIn?: { enabled: boolean; priceAmount?: number }
   /** CLASS-ONLY. Mirrored so the public flow can OFFER the newcomer trial door
    *  on a gated class ("even when members-only") — present only when true. */

@@ -62,6 +62,31 @@ export interface MessagingPolicy {
   // redirect mode: every email/SMS is delivered to this target instead.
   redirectEmail?: string
   redirectPhone?: string
+  /**
+   * IGNORE THE ENVIRONMENT'S TEST_MODE REDIRECT FOR THIS TENANT — so the policy
+   * above is what decides, exactly as it would in production.
+   *
+   * `TEST_MODE=true` redirects EVERY message in an environment to one inbox and
+   * deliberately bypasses this document (see mailService). That is right for a
+   * staging environment full of real imported addresses — and wrong for the one
+   * studio you have asked a real person to test, who then never receives the
+   * confirmation they are testing.
+   *
+   * So this is a per-tenant hole in an environment-wide guard, and it is built
+   * to be hard to open by accident:
+   *   • ABSENT ⇒ false ⇒ today's behaviour. Never defaulted on, never inherited.
+   *   • OPERATOR-ONLY, like the rest of this document: rules deny every client
+   *     write, and the console surfaces it only while TEST_MODE is actually on.
+   *   • It does NOT bypass the layers that protect recipients rather than
+   *     redirect them: synthetic addresses (@example.com and friends) are still
+   *     dropped, suppressed addresses are still skipped, and `mode: 'silent'`
+   *     still sends nothing. It removes the environment's redirect, not the
+   *     tenant's own policy.
+   *
+   * Real mail to real people follows from setting this. That is the point, and
+   * it is why the copy beside it says so.
+   */
+  ignoreTestMode?: boolean
   // Operator context, e.g. "founder demo — deliver to Ash only".
   note?: string
   updated_at?: Timestamp

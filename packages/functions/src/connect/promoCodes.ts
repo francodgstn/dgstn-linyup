@@ -193,6 +193,7 @@ import {
   type PromoScopeKind,
   type PromoTargetScope,
   type SaasPlan,
+  studioDropInOf,
 } from '@linyup/shared'
 import { generateSecureToken, sha256Hex } from '../utils/crypto'
 import { assertPluginInstalled } from '../utils/plugins'
@@ -202,6 +203,7 @@ import { giftCardCurrency } from './giftCards'
 import { loadCoursePricing } from './coursePricing'
 import { loadContactPaymentSnapshot } from '../booking/access'
 import { buildDropInTarget, resolveDropInForContact } from '../booking/dropInPricing'
+import { loadBookingSettings } from '../booking/bookingSettings'
 import { loadAppointmentBookingContext } from '../appointments/booking'
 import { optionalContactSessionFromRequest } from '../utils/contactSession'
 import { APP_CHECK_ENFORCE, monitorAppCheck } from '../utils/appCheck'
@@ -2150,7 +2152,14 @@ async function loadPreviewRail(params: {
       if (!activityId) return null
       const actSnap = await db.collection('activities').doc(activityId).get()
       if (!actSnap.exists) return null
-      const door = buildDropInTarget(actSnap.data()!, { asTrial: t.trial === true })
+      // The studio default, for a class that follows it — the same settings
+      // read createDropInCheckout makes, so a quote and a charge resolve the
+      // same price.
+      const door = buildDropInTarget(
+        actSnap.data()!,
+        { asTrial: t.trial === true },
+        studioDropInOf(await loadBookingSettings(teamId))
+      )
       if (!door.ok) return null
       // The class's OWN start — the divergence N22 exists to prevent.
       const usageAt = (sessionData.start as Timestamp | undefined)?.toDate()

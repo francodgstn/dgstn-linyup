@@ -90,7 +90,8 @@ import { RosterDonut } from '@/components/dashboard-preview/RosterDonut'
 import { DailyAside } from '@/components/dashboard-preview/DailyAside'
 import { WeekSection } from '@/components/dashboard-preview/WeekSection'
 import { ExtraSection } from '@/components/dashboard-preview/ExtraSection'
-import { usePreviewContacts } from '@/components/dashboard-preview/preview-data'
+import { useActiveContacts } from '@/hooks/useActiveContacts'
+import { useCapabilities } from '@/hooks/useCapabilities'
 
 /**
  * ONE LINE, and it is the whole header.
@@ -133,7 +134,8 @@ function Header({ children }: { children: React.ReactNode }) {
 
 export default function DashboardPage() {
   const t = useTranslations('NewDashboard')
-  const { currentTeamId, team } = useAuth()
+  const { currentTeamId, team, user } = useAuth()
+  const { ownScoped } = useCapabilities()
   // Org-aware: an org-managed tenant keeps its ranking systems on the ORG, and
   // reading `team.ranking_systems` here left the donut's Level view empty.
   const { rankingSystems } = useRankingSystems()
@@ -142,7 +144,11 @@ export default function DashboardPage() {
   // them; see ExtraSection.
   const { isEnabled } = useExperimentalFeatures()
 
-  const { data: contacts, isLoading: contactsLoading } = usePreviewContacts(currentTeamId)
+  // THE roster hook, on the contacts page's cache entry — not a second fetch
+  // of its own. Same coach scope as the contacts page: an own-scoped coach's
+  // broad query is denied by the rules, so they read their book instead.
+  const coachScopeUid = ownScoped ? (user?.uid ?? null) : null
+  const { data: contacts, isLoading: contactsLoading } = useActiveContacts(currentTeamId, coachScopeUid)
   const {
     steps: setupSteps,
     hasContacts,
