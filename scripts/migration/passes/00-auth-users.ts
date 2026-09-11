@@ -44,6 +44,58 @@ interface BatchGetResponse {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * THE PROJECT'S SCRYPT PARAMETERS, from the endpoint that actually has them.
+ *
+ * Two different things are needed to re-create a password on the target: the
+ * PER-USER hash + salt, and the PROJECT's signer key / salt separator / rounds /
+ * memory cost. They come from two different APIs, and this pass asked only the
+ * first — `v1 …/accounts:batchGet` returns `{kind, users, nextPageToken}` and no
+ * `hashConfig`, whatever the caller's permissions. So the fallback branch below
+ * fired on every run: 47 HMD accounts carried a hash and a salt, and every one
+ * of them would have been created on the target WITHOUT A PASSWORD, silently,
+ * behind a warning that blamed the source project.
+ *
+ * The config lives on `v2 …/projects/{id}/config` → `signIn.hashConfig`, gated
+ * by `firebaseauth.configs.getHashConfig` — i.e. the source service account
+ * needs **Firebase Authentication Admin** on the SOURCE project. A 403 here is
+ * therefore the one failure worth reading aloud: it names the exact grant, and
+ * it is the difference between "everyone keeps their password" and "every owner
+ * needs a reset link on day 0".
+ *
+ * The signer key is a SECRET and is never logged — not in the success line, not
+ * in the error. Only whether it arrived.
+ */
+async function fetchHashConfig(
+  projectId: string,
+  credential: { getAccessToken(): Promise<{ access_token: string }> },
+): Promise<HashConfig | undefined> {
+  const { access_token } = await credential.getAccessToken()
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v2/projects/${projectId}/config`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  })
+
+  if (!res.ok) {
+    const hint =
+      res.status === 403
+        ? ` — grant the source service account the 'Firebase Authentication Admin' role on project '${projectId}' (permission firebaseauth.configs.getHashConfig)`
+        : ''
+    console.warn(`  WARN: could not read the project hash config (HTTP ${res.status})${hint}`)
+    return undefined
+  }
+
+  const body = (await res.json()) as { signIn?: { hashConfig?: HashConfig } }
+  const hc = body.signIn?.hashConfig
+  // A config missing its signer key cannot re-create a password; treating it as
+  // present would hand `importUsers` an empty key and fail the whole batch.
+  if (!hc?.signerKey || !hc.algorithm) {
+    console.warn('  WARN: the project hash config carries no signer key — passwords cannot be migrated')
+    return undefined
+  }
+  console.log(`  hash config: ${hc.algorithm}, rounds=${hc.rounds}, memoryCost=${hc.memoryCost}`)
+  return hc
+}
+
 async function fetchSourceUsers(sourceCredsPath: string): Promise<{
   users: IdentityUser[]
   hashConfig: HashConfig | undefined
@@ -57,7 +109,10 @@ async function fetchSourceUsers(sourceCredsPath: string): Promise<{
   }
 
   const allUsers: IdentityUser[]   = []
-  let hashConfig: HashConfig | undefined
+  // The authoritative source, asked once. The per-page read below stays as a
+  // fallback: it costs nothing, and an API that starts returning it there again
+  // would be honoured without a change here.
+  let hashConfig: HashConfig | undefined = await fetchHashConfig(projectId, credential)
   let pageToken:  string | undefined
 
   do {
@@ -77,7 +132,7 @@ async function fetchSourceUsers(sourceCredsPath: string): Promise<{
 
     const data = (await res.json()) as BatchGetResponse
     allUsers.push(...(data.users ?? []))
-    if (data.hashConfig) hashConfig = data.hashConfig
+    if (!hashConfig && data.hashConfig) hashConfig = data.hashConfig
     pageToken = data.nextPageToken
   } while (pageToken)
 
@@ -179,7 +234,12 @@ export async function pass00AuthUsers(cfg: MigrationConfig): Promise<void> {
   }
 
   if (cfg.dryRun) {
-    console.log(`  [dry-run] would import ${keep.length} account(s); ${collisions.length} collision(s) skipped; ${active.length - candidates.length} outside the activation list`)
+    const withPassword = keep.filter((u) => !!u.passwordHash).length
+    console.log(
+      `  [dry-run] would import ${keep.length} account(s) — ${withPassword} keeping their password` +
+        `${hashConfig ? '' : ' (NO — the hash config is missing, they would need a reset)'}; ` +
+        `${collisions.length} collision(s) skipped; ${active.length - candidates.length} outside the activation list`,
+    )
     return
   }
 
@@ -256,6 +316,11 @@ export async function pass00AuthUsers(cfg: MigrationConfig): Promise<void> {
 
   console.log(`  → imported ${totalImported}, skipped ${totalSkipped}, errored ${totalErrored}`)
   if (!hashConfig) {
-    console.warn('  WARN: source returned no hash config — users have no password and cannot sign in with email/password')
+    const withPassword = keep.filter((u) => !!u.passwordHash).length
+    console.warn(
+      `  WARN: no hash config — ${withPassword} of ${keep.length} imported account(s) carry a password hash ` +
+        `that cannot be re-created without it, so they were created WITHOUT a password and must reset it to sign in. ` +
+        `See fetchHashConfig above for the grant that fixes this.`,
+    )
   }
 }
