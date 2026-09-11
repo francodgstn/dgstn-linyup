@@ -105,8 +105,13 @@ describe('the auth pass — logins only for live clubs, never a duplicated email
 
 describe('the org admin — the login they will actually type', () => {
   it('is resolved from the TARGET auth first, the source users second', () => {
+    // ONE resolver for every email — the primary admin and the federation's
+    // other admins ask it the same way, so the order is pinned once, here.
     const body = code(ORG_ADMIN)
-    assert.ok(body.indexOf('targetAuth().getUserByEmail(cfg.orgAdminEmail)') < body.indexOf("collection('users').where('email', '==', cfg.orgAdminEmail)"))
+    const targetAt = body.indexOf('targetAuth().getUserByEmail(email)')
+    const sourceAt = body.indexOf("collection('users').where('email', '==', email)")
+    assert.ok(targetAt > 0 && sourceAt > 0, 'both lookups live in resolveIdentity')
+    assert.ok(targetAt < sourceAt, 'the target login is asked first')
     assert.match(body, /uid: targetUid \?\? sourceUid/)
   })
 
@@ -163,6 +168,28 @@ describe('affiliations re-sync — the migration\'s rows only', () => {
   })
 })
 
+describe("the federation's admins", () => {
+  const CONFIG = read('migration/config.ts')
+
+  it('an org admin who did not run the migration is a standing fact, not a flag', () => {
+    assert.match(code(CONFIG), /ADDITIONAL_ORG_ADMIN_EMAILS: string\[\] = \[/)
+    assert.match(code(SETUP), /for \(const email of ADDITIONAL_ORG_ADMIN_EMAILS\)/)
+  })
+
+  it('resolves their TARGET login, like the primary admin — a row against an unused uid grants nothing', () => {
+    assert.match(code(SETUP), /const who = await resolveIdentity\(email\)/)
+    assert.match(code(read('migration/orgAdmin.ts')), /export async function resolveIdentity\(email: string\)/)
+  })
+
+  it('never overwrites an existing row, so a role changed in the app survives a re-run', () => {
+    assert.match(code(SETUP), /if \(\(await ref\.get\(\)\)\.exists\) \{[\s\S]*?continue/)
+  })
+
+  it('skips the primary admin rather than writing their row twice', () => {
+    assert.match(code(SETUP), /if \(email\.toLowerCase\(\) === cfg\.orgAdminEmail\.toLowerCase\(\)\) continue/)
+  })
+})
+
 describe('the federation card and the partner plans — what the org can see, and what lets a visitor in', () => {
   const TRANSFORM = read('migration/transforms/contacts.ts')
   const SUBS_TRANSFORM = read('migration/transforms/subscriptions.ts')
@@ -174,6 +201,22 @@ describe('the federation card and the partner plans — what the org can see, an
     assert.doesNotMatch(body, /pushAffiliation\(out\.org_membership_status/)
     assert.doesNotMatch(body, /'team', TEAM_CLUB_TYPE/)
     assert.match(body, /if \(issuer === 'org'\) doc\.org_id = ORG_ID/)
+  })
+
+  it("the type is HMD's own card, by id, key and label — not a generic club membership", () => {
+    const setup = code(SETUP)
+    assert.match(setup, /id: 'hmd-affiliation',\s*key: 'hmd-affiliation',\s*label: 'HMD Affiliation'/)
+    assert.match(
+      code(TRANSFORM),
+      /ORG_CLUB_TYPE = \{ id: 'hmd-affiliation', key: 'hmd-affiliation', label: 'HMD Affiliation' \}/,
+    )
+  })
+
+  it('expires on 1 September — the federation-wide reset, not a per-member clock, and nothing auto-renews', () => {
+    const setup = code(SETUP)
+    assert.match(setup, /validity_mode: 'fixed_date'/)
+    assert.match(setup, /reset_month_day: '09-01'/)
+    assert.doesNotMatch(setup, /default_validity_months/)
   })
 
   it('no team-local "Club membership" type is seeded beside it any more', () => {
