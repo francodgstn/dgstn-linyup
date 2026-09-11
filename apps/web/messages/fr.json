@@ -7536,7 +7536,8 @@
     "seatsAttended": "présents",
     "metaAttended": "{count} présents",
     "startsInHours": "Dans {hours} h",
-    "startsInHoursMinutes": "Dans {hours} h {minutes} min"
+    "startsInHoursMinutes": "Dans {hours} h {minutes} min",
+    "rosterSeveral": "Plusieurs"
   },
   "BookingContactFields": {
     "title": "Coordonnées à collecter",
