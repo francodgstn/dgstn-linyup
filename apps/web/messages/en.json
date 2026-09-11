@@ -7536,7 +7536,8 @@
     "seatsAttended": "attended",
     "metaAttended": "{count} attended",
     "startsInHours": "In {hours}h",
-    "startsInHoursMinutes": "In {hours}h {minutes}min"
+    "startsInHoursMinutes": "In {hours}h {minutes}min",
+    "rosterSeveral": "More than one"
   },
   "BookingContactFields": {
     "title": "Contact details to collect",

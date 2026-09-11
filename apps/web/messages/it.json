@@ -7536,7 +7536,8 @@
     "seatsAttended": "presenti",
     "metaAttended": "{count} presenti",
     "startsInHours": "Tra {hours} h",
-    "startsInHoursMinutes": "Tra {hours} h {minutes} min"
+    "startsInHoursMinutes": "Tra {hours} h {minutes} min",
+    "rosterSeveral": "Più di uno"
   },
   "BookingContactFields": {
     "title": "Dati di contatto da raccogliere",
