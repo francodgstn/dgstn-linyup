@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { getTeamRole } from '../utils/teams'
 import { to } from '../utils/async'
+import { userFullName, type UserNameFields } from '@linyup/shared'
 
 export interface TeamMemberRecord {
   userId: string
@@ -61,7 +62,9 @@ export const listTeamMembers = onCall(async (request) => {
       role: m.role as string,
       joined,
       addedBy: (m.addedBy as string | undefined) ?? null,
-      displayName: (u?.displayName as string | undefined) ?? null,
+      // firstname+lastname first — a migrated account has those and no
+      // `displayName`, which is why this page showed coaches by email.
+      displayName: userFullName(u as UserNameFields | null),
       email: (u?.email as string | undefined) ?? null,
       isCoach: m.is_coach !== false, // absent ⇒ coach by default
     }

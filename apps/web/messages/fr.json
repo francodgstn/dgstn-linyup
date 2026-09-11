@@ -2010,8 +2010,6 @@
     "paymentsDefaultSubscriptionTypeHelpStripe": "Appliqué lorsqu'un paiement ne contient pas de métadonnée <code>subscriptionTypeId</code>.",
     "paymentsDefaultSubscriptionTypeHelpPayrexx": "Appliqué lorsque le lien de paiement Payrexx ne contient pas de <code>referenceId</code>. Définissez <code>referenceId</code> sur l'ID du type d'abonnement pour chaque lien Payrexx afin d'obtenir un contrôle par formule.",
     "tabAffiliations": "Affiliations",
-    "affiliationsEnabledLabel": "Activer les affiliations",
-    "affiliationsEnabledHelp": "Suivre les affiliations (ex. adhésion au club, licence fédérale) des contacts.",
     "affiliationsUpsell": "Le suivi des affiliations nécessite l'abonnement Studio ou supérieur.",
     "tabBarTitle": "Afficher les onglets de page",
     "tabBarHelp": "Conserver les pages ouvertes sous forme d'onglets au-dessus du contenu, pour passer de l'une à l'autre. Ce réglage s'applique par appareil.",
