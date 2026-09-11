@@ -106,7 +106,7 @@ export function PreviewOverlay({
 
         {/* The muted surround is what makes the mobile view read as a device
             rather than as a site that failed to fill the window. */}
-        <DialogBody className="bg-muted/40 p-4">
+        <DialogBody className="bg-muted/40 p-4 mr-0">
           <div
             // NO transition on max-width, deliberately. It animates a
             // percentage to a length, which forces a full layout of the whole

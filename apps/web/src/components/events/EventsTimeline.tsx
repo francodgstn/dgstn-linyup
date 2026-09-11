@@ -209,7 +209,13 @@ export function EventsTimeline({
   // like `zoom` and the legend's filtering, and for the same reason: it is how
   // one reader is looking at the page right now, not something a pasted link
   // should carry.
-  const [bandMode, setBandMode] = useState<TimelineBandMode>('type')
+  // PACKED BY DEFAULT. Bands answer "what kind of thing is this", which the bar
+  // colour already says; what a planner opens this for is HOW FULL THE YEAR IS,
+  // and one band per type spreads a dozen events down a tall, mostly-empty grid
+  // to say it. Packed puts the same events in as few rows as they fit, so the
+  // busy weeks are visible without scrolling. The banded views are one click
+  // away and the choice is remembered for as long as the page is open.
+  const [bandMode, setBandMode] = useState<TimelineBandMode>('none')
   const [peekId, setPeekId] = useState<string | null>(null)
   // TODAY IS CAPTURED ONCE. It anchors the range and draws the marker, and a
   // timeline that silently re-based itself at midnight would move under anyone
@@ -402,6 +408,36 @@ export function EventsTimeline({
     }
     return out
   }, [ticks, scrollPx, viewPx, trackPx, measured])
+
+  // ── WHEEL TO SCROLL SIDEWAYS, for the mouse that has only one wheel ───────
+  //
+  // A trackpad swipes this timeline horizontally already; a mouse wheel does
+  // not, and dragging is the only way across a year — fine once, tiring as the
+  // way you always move. So a VERTICAL wheel over the track scrolls it
+  // sideways.
+  //
+  // A NATIVE listener with `{ passive: false }`, not `onWheel`: React registers
+  // its wheel handler at the root as PASSIVE, where `preventDefault()` is
+  // ignored (with a console warning) — the timeline would scroll sideways AND
+  // the page would scroll down.
+  //
+  // It gives the gesture back rather than swallowing it, in three cases, so the
+  // page never feels stuck: nothing to scroll, a horizontal gesture the browser
+  // already handles, and either end of the track reached.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      const max = el.scrollWidth - el.clientWidth
+      if (max <= 0) return
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+      if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= max - 1)) return
+      e.preventDefault()
+      el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft + e.deltaY))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
 
   // ── DRAG TO SCROLL, for mice ───────────────────────────────────────────────
   //
