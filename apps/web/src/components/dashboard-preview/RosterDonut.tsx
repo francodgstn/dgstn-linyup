@@ -427,7 +427,16 @@ export function RosterDonut({
               </div>
             </div>
 
-            <ul className="min-w-0 flex-1 space-y-1.5 overflow-y-auto py-0.5">
+            {/* `max-h-full` is what makes `overflow-y-auto` mean anything here.
+                The row above is `items-center`, so this list is NEVER stretched
+                to the box — its height is its content's, and an unbounded list
+                simply grew past 150px and, being centred, spilled EQUALLY above
+                and below: over the view Select above it and the quote below,
+                covering the one control that changes what is drawn. A rank
+                system with fourteen belts reaches that on the Level view.
+                `max-h-full` resolves against the box's definite height and caps
+                it; a short legend still centres on the ring. */}
+            <ul className="min-w-0 max-h-full flex-1 space-y-1.5 overflow-y-auto py-0.5">
               {data.map((d) => (
                 <li key={d.name} className="flex items-center gap-2 text-sm">
                   <span
