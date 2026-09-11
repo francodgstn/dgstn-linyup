@@ -212,7 +212,6 @@ export const ProfileScreen: React.FC = () => {
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + 7);
         const agenda = await FirestoreService.getSessionsWithParticipation(
-          contact.id,
           contact.teamId,
           startDate,
           endDate
@@ -339,7 +338,7 @@ export const ProfileScreen: React.FC = () => {
     startDate.setDate(startDate.getDate() - 7);
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 7);
-    const agenda = await FirestoreService.getSessionsWithParticipation(contact.id, contact.teamId, startDate, endDate);
+    const agenda = await FirestoreService.getSessionsWithParticipation(contact.teamId, startDate, endDate);
     setAgendaSessions(agenda);
   }, [contact?.id, contact?.teamId]);
 

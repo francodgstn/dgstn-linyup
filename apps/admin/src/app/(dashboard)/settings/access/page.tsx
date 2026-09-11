@@ -1,5 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getPublicSignupSettings, listSignupAllowlist } from '@/lib/queries/access'
+import {
+  getPublicSignupSettings,
+  listSignupAllowlist,
+  ALLOWLIST_PAGE,
+  ALLOWLIST_TRUNCATED_NOTE,
+} from '@/lib/queries/access'
 import { formatDate } from '@/lib/format'
 import { PublicSignupToggle } from './toggle-form'
 import { AllowlistManager } from './allowlist-manager'
@@ -45,6 +50,10 @@ export default async function AccessSettingsPage() {
         </CardHeader>
         <CardContent>
           <AllowlistManager entries={allowlist} />
+          {/* A capped list says so — see ALLOWLIST_PAGE. */}
+          {allowlist.length >= ALLOWLIST_PAGE && (
+            <p className="mt-2 text-xs text-muted-foreground">{ALLOWLIST_TRUNCATED_NOTE}</p>
+          )}
         </CardContent>
       </Card>
     </div>

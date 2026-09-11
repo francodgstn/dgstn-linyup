@@ -48,8 +48,8 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
       const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
       const [attended, booked] = await Promise.all([
-        FirestoreService.getContactAttendance(contactId, startDate, endDate, teamId),
-        FirestoreService.getContactBookings(contactId, startDate, endDate, teamId)
+        FirestoreService.getContactAttendance(startDate, endDate, teamId),
+        FirestoreService.getContactBookings(startDate, endDate, teamId)
       ]);
       setAttendedSessions(attended);
       setBookedSessions(booked);

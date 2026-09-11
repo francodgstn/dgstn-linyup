@@ -18,6 +18,8 @@ import {
   buildPerformanceCheckin,
   localDayBounds,
   type PerformanceCheckinInput,
+  type MyAttendance,
+  type MyAttendanceResult,
 } from '@linyup/shared';
 import {
   Contact,
@@ -57,6 +59,23 @@ const BOOKINGS_SUBCOLLECTION = 'bookings';
 const PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile';
 
 /** Map one `sessions/{id}/public_profile/{id}` mirror doc to the app's view. */
+/** A `getMyAttendance` row as the app's session shape. The callable answers
+ *  from the SESSION documents (the Admin SDK reads them directly), so a session
+ *  the studio never put on sale is present here exactly as it should be — the
+ *  public mirror's liveness stops mattering, same as for getMyBookings. */
+function mapAttendance(teamId: string, a: MyAttendance): HydratedSession {
+  return {
+    id: a.sessionId,
+    activityId: a.activityId ?? undefined,
+    activityName: a.activityName ?? '',
+    teamId,
+    start: a.start ? new Date(a.start) : new Date(0),
+    end: a.end ? new Date(a.end) : new Date(0),
+    location: a.location,
+    providerName: a.providerName ?? undefined,
+  };
+}
+
 function mapSessionPublicProfile(sessionId: string, data: Record<string, unknown>): HydratedSession {
   const start = data.start as { toDate?: () => Date } | undefined;
   const end = data.end as { toDate?: () => Date } | undefined;
@@ -364,36 +383,36 @@ export const FirestoreService = {
     }
   },
 
-  // Get attended sessions for a contact within a date range. Attendance is a
-  // fact the member surface cannot get from `getMyBookings` (that callable
-  // answers UPCOMING bookings only), so this is the one place a per-session
-  // fan-out remains legitimate — it checks her own `participants` doc, which
-  // firestore.rules permits for a contact session (doc id == her contactId).
+  // The sessions SHE ATTENDED in a window — ONE call, through `getMyAttendance`.
+  //
+  // This used to list the TEAM's sessions in the window and then read her
+  // `participants/{contactId}` document once per session to ask "was I there?".
+  // A month at a busy studio is 150–200 document reads per calendar open, per
+  // member, and the training chart repeated it over its weeks
+  // (docs/scalability-2026-09.md §17 C1). The rules do permit each of those
+  // reads — that is why the shape survived so long — but permitted is not the
+  // same as affordable.
+  //
+  // Identity comes from the contact session on the callable, never from a
+  // parameter: a contactId on the wire would make it an attendance enumerator
+  // for the whole team (packages/functions/src/booking/myAttendance.ts).
   async getContactAttendance(
-    contactId: string,
     startDate: Date,
     endDate: Date,
     teamId?: string
   ): Promise<HydratedSession[]> {
     try {
-      const sessions = await this.getTeamSessionsInRange(teamId ?? '', startDate, endDate);
-
-      const attendedSessions: HydratedSession[] = [];
-      await Promise.all(
-        sessions.map(async (session) => {
-          try {
-            const participantRef = doc(db, SESSIONS_COLLECTION, session.id, PARTICIPANTS_SUBCOLLECTION, contactId);
-            const participantSnap = await getDoc(participantRef);
-            if (participantSnap.exists()) {
-              attendedSessions.push(session);
-            }
-          } catch (e) {
-            console.warn(`Failed to check participation for session ${session.id}`, e);
-          }
-        })
-      );
-
-      return attendedSessions;
+      if (!teamId) return [];
+      const fn = httpsCallable<
+        { teamId: string; fromMs: number; toMs: number },
+        MyAttendanceResult
+      >(getFunctions(), 'getMyAttendance');
+      const res = await fn({
+        teamId,
+        fromMs: startDate.getTime(),
+        toMs: endDate.getTime(),
+      });
+      return (res.data?.attended ?? []).map((a) => mapAttendance(teamId, a));
     } catch (error) {
       console.error('Error fetching contact attendance:', error);
       return [];
@@ -438,15 +457,17 @@ export const FirestoreService = {
    * upcoming bookings.
    */
   async getSessionsWithParticipation(
-    contactId: string,
     teamId: string,
     startDate: Date,
     endDate: Date
   ): Promise<(HydratedSession & { status: SessionParticipationStatus })[]> {
     try {
-      const [sessions, bookingsResult] = await Promise.all([
+      const [sessions, bookingsResult, attended] = await Promise.all([
         this.getTeamSessionsInRange(teamId, startDate, endDate),
         this.getMyBookings(teamId).catch(() => ({ bookings: [], cursor: null, scanned: 0 }) as MyBookingsResult),
+        // The past half, from the ONE attendance call rather than a
+        // `participants/{me}` read per past session — see getContactAttendance.
+        this.getContactAttendance(startDate, endDate, teamId),
       ]);
 
       const bookedSessionIds = new Set(
@@ -454,19 +475,7 @@ export const FirestoreService = {
       );
 
       const now = new Date();
-      const pastSessions = sessions.filter(s => s.start < now);
-      const attendedIds = new Set<string>();
-      await Promise.all(
-        pastSessions.map(async (session) => {
-          try {
-            const participantRef = doc(db, SESSIONS_COLLECTION, session.id, PARTICIPANTS_SUBCOLLECTION, contactId);
-            const participantSnap = await getDoc(participantRef);
-            if (participantSnap.exists()) attendedIds.add(session.id);
-          } catch (e) {
-            console.warn(`Failed to check participation for session ${session.id}`, e);
-          }
-        })
-      );
+      const attendedIds = new Set(attended.map(a => a.id));
 
       return sessions.map((session) => {
         const isPast = session.start < now;
@@ -645,7 +654,6 @@ export const FirestoreService = {
   // `getMyBookings` (ONE call) rather than a `bookings/{contactId}` fan-out
   // per session in range.
   async getContactBookings(
-    contactId: string,
     startDate: Date,
     endDate: Date,
     teamId?: string

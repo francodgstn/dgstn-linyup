@@ -1159,6 +1159,19 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Server-maintained counters for the team — today `counters/contacts`,
+      // the live-contact count the operator console reads instead of running a
+      // count() aggregation per tenant (packages/shared/src/utils/contactCounter.ts).
+      // Written by the trackContacts trigger and reconciled nightly, both with
+      // the Admin SDK; the console also reads it with the Admin SDK, so nothing
+      // here needs client READ either. A client that could write it could
+      // misreport a studio's size to the operator, which is why this is stated
+      // rather than left to the block's implicit deny.
+      match /counters/{counter} {
+        allow read: if isTeamMember(teamId);
+        allow write: if false;
+      }
+
       // Org access requests — org admins request view/manage access to this team.
       // Owners and managers can read requests and approve/deny server-side;
       // only cloud functions write (requestTeamAccess creates, approveTeamAccess updates).

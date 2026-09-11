@@ -13,6 +13,8 @@ import {
   PLATFORM_METRICS_COLLECTION,
   SAAS_SUBSCRIPTIONS_COLLECTION,
   TEAMS_COLLECTION,
+  TEAM_COUNTERS_SUBCOLLECTION,
+  TEAM_CONTACT_COUNTER_DOC,
   ORGANIZATIONS_COLLECTION,
   CONTACTS_COLLECTION,
 } from '@linyup/shared'
@@ -87,6 +89,36 @@ export const capturePlatformMetrics = onSchedule(
     const counts = await Promise.all(teamIds.map((id) => countActiveContacts(db, id)))
     const contactCount = new Map<string, number>()
     teamIds.forEach((id, i) => contactCount.set(id, counts[i] ?? 0))
+
+    // RECONCILE THE STORED COUNTER while the authoritative number is in hand.
+    //
+    // `trackContacts` keeps `teams/{id}/counters/contacts` fresh with deltas so
+    // the operator console needs no aggregation per tenant, and a delta counter
+    // drifts — a missed event, a retry, a repair. This is the repair: drift
+    // lasts at most one night and cannot compound. Absolute values from the
+    // count() above, never an increment. Failures are logged and ignored: a
+    // counter that could not be written is stale, which is the state the
+    // console already renders honestly, and must never cost the snapshot.
+    await Promise.all(
+      teamIds.map(async (id) => {
+        const [err] = await to(
+          db
+            .collection(TEAMS_COLLECTION)
+            .doc(id)
+            .collection(TEAM_COUNTERS_SUBCOLLECTION)
+            .doc(TEAM_CONTACT_COUNTER_DOC)
+            .set(
+              {
+                live: contactCount.get(id) ?? 0,
+                updated_at: FieldValue.serverTimestamp(),
+                reconciled_at: FieldValue.serverTimestamp(),
+              },
+              { merge: true },
+            ),
+        )
+        if (err) console.warn(`capturePlatformMetrics: counter write failed for ${id}`, err)
+      }),
+    )
 
     for (const doc of teamsSnap.docs) {
       const team = doc.data()
