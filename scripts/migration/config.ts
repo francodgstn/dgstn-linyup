@@ -30,23 +30,29 @@ export const ADDITIONAL_ORG_ADMIN_EMAILS: string[] = [
 export const RANKING_HMD = 'hmd'   // Hwal Moo Do
 export const RANKING_KD  = 'kd'    // Korean Dragon
 
-// Belt levels — same scale for both HMD and KD disciplines (hardcoded in hmd-lineup)
+// Belt levels — same scale for both HMD and KD disciplines (hardcoded in hmd-lineup).
+//
+// Each carries its stable `id` LITERALLY rather than through `withRankLevelIds`:
+// a migration must be reproducible by reading it, and these fifteen strings are
+// exactly what that helper derives from the labels — which is what makes a fresh
+// migration and `backfill:rank-level-ids` over an older one agree. If a label is
+// ever changed here, the id stays; that is the whole point of having one.
 const HMD_BELT_LEVELS = [
-  { value:  0, label: 'No belt',       color: '#AAAAAA' },
-  { value:  1, label: 'White',         color: '#DDDDDD' },
-  { value:  2, label: 'Yellow',        color: '#FFDC00' },
-  { value:  3, label: 'Orange',        color: '#FF851B' },
-  { value:  4, label: 'Orange/Green',  color: '#FF851B', secondColor: '#1c9c2b' },
-  { value:  5, label: 'Green',         color: '#1c9c2b' },
-  { value:  6, label: 'Green/Blue',    color: '#1c9c2b', secondColor: '#0074D9' },
-  { value:  7, label: 'Blue',          color: '#0074D9' },
-  { value:  8, label: 'Blue/Red',      color: '#0074D9', secondColor: '#d41010' },
-  { value:  9, label: 'Red',           color: '#d41010' },
-  { value: 10, label: 'Red/Black',     color: '#d41010', secondColor: '#111111' },
-  { value: 11, label: 'Black I Dan',   color: '#111111' },
-  { value: 12, label: 'Black II Dan',  color: '#111111' },
-  { value: 13, label: 'Black III Dan', color: '#111111' },
-  { value: 14, label: 'Master',        color: '#111111' },
+  { id: 'no-belt',       value:  0, label: 'No belt',       color: '#AAAAAA' },
+  { id: 'white',         value:  1, label: 'White',         color: '#DDDDDD' },
+  { id: 'yellow',        value:  2, label: 'Yellow',        color: '#FFDC00' },
+  { id: 'orange',        value:  3, label: 'Orange',        color: '#FF851B' },
+  { id: 'orange-green',  value:  4, label: 'Orange/Green',  color: '#FF851B', secondColor: '#1c9c2b' },
+  { id: 'green',         value:  5, label: 'Green',         color: '#1c9c2b' },
+  { id: 'green-blue',    value:  6, label: 'Green/Blue',    color: '#1c9c2b', secondColor: '#0074D9' },
+  { id: 'blue',          value:  7, label: 'Blue',          color: '#0074D9' },
+  { id: 'blue-red',      value:  8, label: 'Blue/Red',      color: '#0074D9', secondColor: '#d41010' },
+  { id: 'red',           value:  9, label: 'Red',           color: '#d41010' },
+  { id: 'red-black',     value: 10, label: 'Red/Black',     color: '#d41010', secondColor: '#111111' },
+  { id: 'black-i-dan',   value: 11, label: 'Black I Dan',   color: '#111111' },
+  { id: 'black-ii-dan',  value: 12, label: 'Black II Dan',  color: '#111111' },
+  { id: 'black-iii-dan', value: 13, label: 'Black III Dan', color: '#111111' },
+  { id: 'master',        value: 14, label: 'Master',        color: '#111111' },
 ]
 
 // Ranking systems to write to organizations/hmd — hardcoded because hmd-lineup

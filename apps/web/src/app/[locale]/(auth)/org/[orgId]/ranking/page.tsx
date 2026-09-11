@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Shield } from 'lucide-react'
-import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION } from '@linyup/shared'
+import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, newRankLevelId } from '@linyup/shared'
 import type { OrgTeam, RankingSystem, RankLevel } from '@linyup/shared'
 import { RANK_PRESETS } from '@/lib/rank-presets'
 import { useRankHolderCount } from '@/lib/rank-utils'
@@ -106,6 +106,8 @@ function RankSystemDialog({
       levels: [
         ...prev.levels,
         {
+          // A stable identity from the first keystroke — see newRankLevelId.
+          id: newRankLevelId(),
           // ONE ABOVE THE HIGHEST, not the array length. `prev.levels.length`
           // mints a duplicate as soon as a level has been removed — [0,1,2],
           // remove the middle, add: two levels then share value 2, and the
@@ -204,13 +206,15 @@ function RankSystemDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>{t('labelLevels')}</Label>
-              <Button type="button" size="sm" variant="outline" onClick={addLevel} disabled={form.levels.length >= 10}>
+              {/* No cap. There was one at ten, with no reason recorded, and HMD's
+                  ladder has fifteen — the list scrolls. */}
+              <Button type="button" size="sm" variant="outline" onClick={addLevel}>
                 <Plus className="h-3.5 w-3.5 mr-1" />{t('addLevel')}
               </Button>
             </div>
             {form.levels.map((l, i) => (
               <RankLevelFields
-                key={i}
+                key={l.id ?? i}
                 level={l}
                 index={i}
                 storagePath={storagePath}
@@ -453,7 +457,7 @@ export default function OrgRankingPage() {
                   whenever the two differed. */}
               <div className="flex gap-1 flex-wrap">
                 {[...s.levels].sort((a, b) => a.value - b.value).map((l) => (
-                  <div key={l.value} className="flex items-center gap-1">
+                  <div key={l.id ?? l.value} className="flex items-center gap-1">
                     <RankBadge level={l} size="sm" />
                     <span className="text-xs text-muted-foreground">{l.label}</span>
                   </div>
