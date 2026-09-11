@@ -161,14 +161,23 @@ export function EmbedWidgets({
   }
   const snippetFor = (id: string, locale?: 'auto' | UiLanguage) =>
     `<iframe src="${embedPathFor(id, locale)}" data-linyup-embed style="width:100%;border:0" loading="lazy"></iframe>\n<script src="${origin}/embed.js" async></script>`
-  async function copy(id: string, locale?: 'auto' | UiLanguage) {
+
+  // The booking launcher. It is an ORDINARY LINK to the canonical booking page,
+  // marked for embed.js to intercept — so with the script it opens the funnel in
+  // a pop-up over the studio's own page, and without it (still loading, blocked,
+  // JS off, a middle-click) it is a link that works. Same principle as
+  // `bookProps` in components/site/sections.tsx: the href always stays.
+  const bookSnippet = `<a href="${origin}/public/${slug}/booking" data-linyup-book>Book now</a>\n<script src="${origin}/embed.js" async></script>`
+
+  async function copyText(text: string) {
     try {
-      await navigator.clipboard.writeText(snippetFor(id, locale))
+      await navigator.clipboard.writeText(text)
       toast.success(t('embedCopied'))
     } catch {
       toast.error(t('embedCopyError'))
     }
   }
+  const copy = (id: string, locale?: 'auto' | UiLanguage) => copyText(snippetFor(id, locale))
 
   if (isLoading || !widgets) {
     return <div className="h-40 animate-pulse rounded-lg bg-muted/40" />
@@ -366,7 +375,24 @@ export function EmbedWidgets({
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <div className="space-y-2 rounded-lg border bg-card p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{t('embedBookTitle')}</p>
+            <p className="text-xs text-muted-foreground">{t('embedBookBody')}</p>
+          </div>
+          <Button variant="outline" size="sm" disabled={!slug} onClick={() => copyText(bookSnippet)}>
+            <Copy className="mr-1 h-3.5 w-3.5" />
+            {t('embedCopy')}
+          </Button>
+        </div>
+        <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs text-muted-foreground">
+          <code>{bookSnippet}</code>
+        </pre>
+      </div>
+
       <p className="text-xs text-muted-foreground">{t('embedScriptNote')}</p>
+      <p className="text-xs text-muted-foreground">{t('embedModalNote')}</p>
 
       <AlertDialog
         open={!!deleteId}

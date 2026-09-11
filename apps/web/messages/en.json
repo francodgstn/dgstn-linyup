@@ -3571,7 +3571,10 @@
     "editorOrgClubsLayout": "Layout",
     "editorOrgClubsLayoutCards": "Cards",
     "editorOrgClubsLayoutList": "Scrolling list",
-    "editorOrgClubsSearchable": "Let visitors search the clubs"
+    "editorOrgClubsSearchable": "Let visitors search the clubs",
+    "embedBookTitle": "Booking button",
+    "embedBookBody": "Paste this anywhere on your own site. It opens your booking flow in a pop-up over your page, so visitors never leave it. Change the button text to whatever you like.",
+    "embedModalNote": "With the script on the page, Book buttons inside an embed open the same pop-up instead of a new tab."
   },
   "Kiosk": {
     "title": "Kiosk",

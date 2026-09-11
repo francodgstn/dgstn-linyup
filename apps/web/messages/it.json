@@ -3571,7 +3571,10 @@
     "editorOrgClubsLayout": "Disposizione",
     "editorOrgClubsLayoutCards": "Schede",
     "editorOrgClubsLayoutList": "Elenco scorrevole",
-    "editorOrgClubsSearchable": "Consenti ai visitatori di cercare i club"
+    "editorOrgClubsSearchable": "Consenti ai visitatori di cercare i club",
+    "embedBookTitle": "Pulsante di prenotazione",
+    "embedBookBody": "Incolla questo codice ovunque sul tuo sito. La prenotazione si apre in un pop-up sopra la tua pagina, così i visitatori non la lasciano mai. Puoi cambiare il testo del pulsante.",
+    "embedModalNote": "Con lo script sulla pagina, i pulsanti Prenota dentro un embed aprono lo stesso pop-up invece di una nuova scheda."
   },
   "Kiosk": {
     "title": "Kiosk",

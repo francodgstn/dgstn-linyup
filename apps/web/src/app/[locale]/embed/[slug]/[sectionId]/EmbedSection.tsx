@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { collection, doc, getDoc, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -22,6 +22,7 @@ import type {
 } from '@linyup/shared'
 import { SectionBlock, type RenderCtx } from '@/components/site/sections'
 import { buildPalette, FONT_STACK } from '@/components/site/theme'
+import { EMBED_MESSAGE, isBookableAppHref, postToHost } from '@/lib/embedBridge'
 
 // What we render once resolution settles, independent of where it came from.
 interface Resolved {
@@ -52,6 +53,11 @@ export default function EmbedSection({ slug, sectionId }: { slug: string; sectio
   const [resolved, setResolved] = useState<Resolved | null>(null)
   const [loading, setLoading] = useState(true)
   const [systemDark, setSystemDark] = useState(false)
+  // Does this page carry embed.js, and can it open a booking panel? Until it
+  // says so, a Book click opens a tab — which is what every already-pasted
+  // snippet in the wild does, and must keep doing. A ref as well as state,
+  // because the click listener below is a NATIVE one registered once.
+  const hostModal = useRef(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -146,6 +152,83 @@ export default function EmbedSection({ slug, sectionId }: { slug: string; sectio
     }
   }, [slug, sectionId, locale])
 
+  // The launcher handshake. A message only ever GRANTS the in-page panel — there
+  // is nothing a hostile parent can turn off, and nothing it can make this frame
+  // do.
+  //
+  // ASKING IS RETRIED, because neither side can be sure it is second. embed.js
+  // is loaded `async` and announces itself to each widget frame; a frame that is
+  // still `about:blank` when it does never gets that message (and a `loading=
+  // "lazy"` widget below the fold may not exist yet at all). One unanswered
+  // hello would then cost the panel for the life of the page — for a handful of
+  // messages, we simply keep asking until someone answers, then stop.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let attempts = 0
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window.parent) return
+      const data = event.data as { type?: string; modal?: boolean } | null
+      if (data?.type !== EMBED_MESSAGE.host || !data.modal) return
+      hostModal.current = true
+      if (timer) clearTimeout(timer)
+    }
+    const ask = () => {
+      postToHost({ type: EMBED_MESSAGE.hello })
+      // ~6s, front-loaded: a launcher that is going to load has loaded by then,
+      // and a page without one must stop talking to itself.
+      if (++attempts < 12 && !hostModal.current) timer = setTimeout(ask, 500)
+    }
+    window.addEventListener('message', onMessage)
+    ask()
+    return () => {
+      window.removeEventListener('message', onMessage)
+      if (timer) clearTimeout(timer)
+    }
+  }, [])
+
+  // ── Where every click in a widget goes ──────────────────────────────────────
+  //
+  // The widget lives in a cross-origin iframe, so a link that navigates in-frame
+  // would try to load a frame-denied app page (booking, sign-up and the studio's
+  // own site all send X-Frame-Options: DENY) and fail into a blank box. So no
+  // link here ever navigates this frame: it opens a top-level tab, or — on a
+  // page carrying embed.js — asks the host to open the booking funnel as a modal
+  // over the studio's own page, which is what a Linyup-hosted website does with
+  // the same click. The host owns the URL mapping and falls back to a tab for
+  // anything it cannot place, so asking is never worse.
+  //
+  // A NATIVE CAPTURE LISTENER, not an onClick on the wrapper, and that is
+  // load-bearing: the schedule block's session-detail card stops propagation on
+  // its own container (it is a hand-rolled backdrop that must not close when the
+  // card is clicked), which silently swallowed the Book button inside it — the
+  // one link a visitor most wants — and let it navigate the frame into the
+  // X-Frame-Options wall. Capturing at the document runs before any React
+  // handler, so no section can opt out of this by accident.
+  const onDocumentClick = useCallback(
+    (e: MouseEvent) => {
+      if (e.defaultPrevented) return
+      const target = e.target as Element | null
+      const anchor = target && typeof target.closest === 'function' ? target.closest('a') : null
+      const href = anchor?.getAttribute('href')
+      if (!anchor || !href || href.startsWith('#')) return
+      e.preventDefault()
+      if (hostModal.current && isBookableAppHref(anchor.href)) {
+        // `locale`, because an English-pinned widget's links are UNPREFIXED
+        // (localePrefix 'as-needed') — without it the panel would re-detect the
+        // language from Accept-Language and could open in another one.
+        postToHost({ type: EMBED_MESSAGE.open, href: anchor.href, hl: locale })
+        return
+      }
+      window.open(anchor.href, '_blank', 'noopener,noreferrer')
+    },
+    [locale]
+  )
+
+  useEffect(() => {
+    document.addEventListener('click', onDocumentClick, true)
+    return () => document.removeEventListener('click', onDocumentClick, true)
+  }, [onDocumentClick])
+
   // Resolve the 'auto' theme against the viewer's system preference.
   useEffect(() => {
     if (resolved?.themeMeta.theme !== 'auto') return
@@ -201,21 +284,10 @@ export default function EmbedSection({ slug, sectionId }: { slug: string; sectio
   // to the iframe width, exactly as they do inside WebsiteRenderer. A transparent
   // background lets the host page show through so the widget blends in.
   //
-  // onClick: the widget lives in a cross-origin iframe, so a link that navigates
-  // in-frame would try to load a frame-denied app page (booking, sign-up and the
-  // studio's own site all send X-Frame-Options: DENY) and silently fail. Open
-  // every link in a new top-level tab instead — delegated here so it catches the
-  // CTA links any section type renders.
+  // Clicks are handled by the document-level listener above, not here.
   return (
     <div
       ref={rootRef}
-      onClick={(e) => {
-        const anchor = (e.target as HTMLElement).closest('a')
-        const href = anchor?.getAttribute('href')
-        if (!anchor || !href || href.startsWith('#')) return
-        e.preventDefault()
-        window.open(anchor.href, '_blank', 'noopener,noreferrer')
-      }}
       className="@container"
       style={{
         background: resolved.transparent ? 'transparent' : palette.bg,

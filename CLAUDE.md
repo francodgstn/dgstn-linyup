@@ -288,6 +288,33 @@ are what Firestore + Storage rules check (`isContactOfTeam` / `canReadPublishedC
 `firestore.rules`; `isContactSessionForTeam` / `isPublishedFreeCourse` in `storage.rules`).
 Enforcement lives in the rules; the UI lock states are UX only.
 
+### Embeds — the booking modal on the studio's OWN website
+
+A studio can put the booking funnel on its own site (Wix, Squarespace, a
+hand-rolled page) as a pop-up over the page the visitor is reading — the same
+panel `BookingOverlay` gives a Linyup-hosted website. Two lines of HTML: a link
+carrying `data-linyup-book`, and `public/embed.js`.
+
+**The modal is drawn by the HOST page, not inside the iframe.** A dialog
+rendered in a content-sized iframe can only ever cover that iframe. So
+`embed.js` owns the backdrop, the dialog/sheet sizing, Escape, the scroll lock
+and the Back-closes-it history entry; `/embed/{slug}/book` is the panel's
+CONTENTS — the funnel with `FlowShell`'s overlay chrome. `/embed/*` is the only
+path served `frame-ancestors *` (proxy.ts); everything else is
+`X-Frame-Options: DENY`, which is why nothing in an embed may ever navigate its
+own frame.
+
+`BookingChrome` gains its third host (page → website overlay → embed panel) and
+nothing about the step machine is duplicated; `useExitFlow` is how a terminal
+step leaves — CLOSE in a panel, navigate on a page. **embed.js owns the
+canonical-link → panel-URL mapping**; the app side (`src/lib/embedBridge.ts`)
+owns the message vocabulary and asks rather than deciding. An already-pasted
+snippet with no script, or an old cached one, still opens a new tab exactly as
+before — the panel is opt-in by handshake. Paying leaves the page (Stripe
+refuses to be framed) and returns to `/pay/result`, not to the studio's page:
+bringing the buyer back there needs a verified origin, like the custom-domain
+rail. Full docs: `docs/embed-booking.md`.
+
 ### Firebase client SDK — server/client split
 
 Next.js SSG/SSR crashes if `getAuth()` is called at module level on the server.

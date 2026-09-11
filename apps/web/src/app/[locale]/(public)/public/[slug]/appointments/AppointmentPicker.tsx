@@ -36,7 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { FlowShell } from '@/components/booking/FlowShell'
-import { useBookingChrome } from '@/components/booking/BookingChrome'
+import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
 import { MiniCalendar, toDateKey } from '@/components/booking/MiniCalendar'
 import {
   GuestDetailsForm,
@@ -440,6 +440,13 @@ function SlotBookingForm({
   const tPublic = useTranslations('PublicBooking')
   const tPromo = useTranslations('Promo')
   const tWaiver = useTranslations('Waiver')
+  // 'page' unless a panel host wraps this flow (the website overlay, or the
+  // embed on a studio's own site). The two checkout handoffs below go through
+  // it, not through `window.location`: inside an iframe that assignment
+  // navigates the FRAME, and Stripe Checkout refuses to be framed — so a paid
+  // appointment booked from an embedded panel would dead-end on a blank box.
+  // The page default IS `window.location.href = href`, so nothing changes here.
+  const chrome = useBookingChrome()
   const { team: publicTeam } = usePublicTeam()
   // The studio's contact fields for THIS booking — team-wide, extended by the
   // activity's own. The same resolver the callables run, so the guest step and
@@ -815,7 +822,7 @@ function SlotBookingForm({
         ...checkoutExtras(payNow),
       })
       if (res?.url) {
-        window.location.href = res.url
+        chrome.navigate(res.url)
         return
       }
       throw new Error('no-url')
@@ -1039,7 +1046,7 @@ function SlotBookingForm({
         ...checkoutExtras(payNow),
       })
       if (res?.url) {
-        window.location.href = res.url
+        chrome.navigate(res.url)
         return
       }
       throw new Error('no-url')
@@ -1835,6 +1842,8 @@ export default function AppointmentPicker({
   // bouncing through the team root's client redirect. Declared with the other
   // hooks — the `confirmed` early return below would otherwise skip it.
   const backTo = useMemo(() => returnHref(team, slug, from), [team, slug, from])
+  // Closes the panel, or navigates the page — see useExitFlow.
+  const exitFlow = useExitFlow()
 
   // DERIVED, not stored: "the coach step was skipped because exactly one coach
   // offers the preselected activity". As one-shot state it survived a history
@@ -2077,8 +2086,10 @@ export default function AppointmentPicker({
   function backFromTime() {
     if (skippedCoachStep) {
       // No step to go back to — leave the flow, to wherever the visitor came
-      // from rather than the team root's default surface.
-      router.push(backTo.href)
+      // from rather than the team root's default surface. In a panel that means
+      // CLOSE: the page behind it is already that surface, and in the embed it
+      // is frame-denied, so navigating there would blank the panel.
+      exitFlow(backTo.href)
       return
     }
     if (presetActivityId) {
