@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -128,6 +127,19 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
           payload,
           { merge: true }
         )
+        // DEFINING A TYPE IS THE DECISION. `Team.affiliations_enabled` is still
+        // the gate four callables and `completeSignup` refuse on — it is not
+        // going away — but nobody should have to answer "do you want this?"
+        // twice, once as a switch and once by naming the thing they want. The
+        // flag is now DERIVED from the act, so the switch could go.
+        //
+        // Never written false here: removing the last type does not revoke the
+        // affiliations a team already granted, and a flag that flickered off
+        // would refuse the callables that maintain them.
+        if (!team.affiliations_enabled) {
+          await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { affiliations_enabled: true })
+          qc.invalidateQueries({ queryKey: ['team', teamId] })
+        }
         invalidate()
         showToast(t('saved'))
         setFormOpen(false)
@@ -248,20 +260,6 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
     )
   }
 
-  // Affiliations enabled toggle
-  const affiliationsEnabled = team.affiliations_enabled ?? false
-  const [enablingAff, setEnablingAff] = useState(false)
-
-  async function toggleAffiliations(next: boolean) {
-    setEnablingAff(true)
-    try {
-      await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { affiliations_enabled: next })
-      qc.invalidateQueries({ queryKey: ['team', teamId] })
-    } finally {
-      setEnablingAff(false)
-    }
-  }
-
   if (!planSupportsAffiliations(team.plan ?? null)) {
     return (
       <div className="rounded-lg border border-dashed py-10 text-center text-muted-foreground text-sm">
@@ -272,21 +270,6 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
 
   return (
     <div className="space-y-5">
-      {/* Enable toggle */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b">
-        <div>
-          <p className="text-sm font-medium">{tSettings('affiliationsEnabledLabel')}</p>
-          <p className="text-xs text-muted-foreground">{tSettings('affiliationsEnabledHelp')}</p>
-        </div>
-        <Switch
-          checked={affiliationsEnabled}
-          onCheckedChange={toggleAffiliations}
-          disabled={enablingAff}
-        />
-      </div>
-
-      {affiliationsEnabled && (
-        <>
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">{t('description')}</p>
             <div className="flex items-center gap-3 shrink-0">
@@ -350,8 +333,6 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
               ))}
             </div>
           )}
-        </>
-      )}
 
       {formOpen && <AffTypeDialog />}
 

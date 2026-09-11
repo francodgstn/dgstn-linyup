@@ -22,6 +22,8 @@ import {
   type Product,
   type SubscriptionType,
   type SubscriptionUsageLimit,
+  resolveActivityDropIn,
+  type DropInPrice,
 } from '@linyup/shared'
 
 // ─── Personas ───────────────────────────────────────────────────────────────────
@@ -170,16 +172,16 @@ export interface ClassDoors {
   dropInAmount: number | null
 }
 
-export function classDoors(activity: Activity): ClassDoors {
+export function classDoors(activity: Activity, studioDropIn: DropInPrice | null = null): ClassDoors {
   const accessRule = resolveActivityAccessRule(activity)
   const trial =
     activity.trialEnabled === true && accessRule.type !== 'open'
       ? { priceAmount: typeof activity.trialPriceAmount === 'number' ? activity.trialPriceAmount : null }
       : null
-  const dropInAmount =
-    activity.dropIn?.enabled && typeof activity.dropIn.priceAmount === 'number'
-      ? activity.dropIn.priceAmount
-      : null
+  // THE ONE READER (shared/utils/dropIn.ts): the studio default when the
+  // class follows it, so the doors line prices such a class like the server.
+  const dropIn = resolveActivityDropIn(activity, studioDropIn)
+  const dropInAmount = dropIn.enabled && typeof dropIn.priceAmount === 'number' ? dropIn.priceAmount : null
   return { trial, dropInAmount }
 }
 
@@ -244,19 +246,23 @@ function fromResult(
 
 /** One resolver call answers the whole class row: covered → free/credit,
  *  uncovered → the drop-in pay path (member rate applied), else blocked. */
-export function resolveClassCell(snapshot: ContactPaymentSnapshot, activity: Activity): PriceCell {
+export function resolveClassCell(
+  snapshot: ContactPaymentSnapshot,
+  activity: Activity,
+  studioDropIn: DropInPrice | null = null
+): PriceCell {
   const accessRule = resolveActivityAccessRule(activity)
   const result = resolvePaymentOptions(snapshot, {
     kind: 'drop_in',
     accessRule,
-    dropIn: activity.dropIn ?? null,
+    dropIn: resolveActivityDropIn(activity, studioDropIn),
     trial: { enabled: activity.trialEnabled === true, priceAmount: activity.trialPriceAmount ?? null },
     asTrial: false,
     benefit: activity.memberBenefit ?? null,
   })
   // Guest-only: the trial door is how a stranger becomes a member, and an
   // authenticated contact is past it.
-  const trialForGuest = snapshot.authenticated ? null : classDoors(activity).trial
+  const trialForGuest = snapshot.authenticated ? null : classDoors(activity, studioDropIn).trial
   return fromResult(result, trialForGuest)
 }
 
@@ -414,7 +420,8 @@ export interface PricingWarning {
 export function computePricingHealth(
   activities: Activity[],
   subscriptionTypes: SubscriptionType[],
-  courses: Course[]
+  courses: Course[],
+  studioDropIn: DropInPrice | null = null
 ): PricingWarning[] {
   const warnings: PricingWarning[] = []
   const knownTypeIds = new Set(subscriptionTypes.map((t) => t.id))
@@ -491,7 +498,7 @@ export function computePricingHealth(
     // anything but 'subscription', which blinded it to 'members': the DEFAULT
     // tier of every new class.
     if (rule.type === 'open') continue
-    const hasDropIn = a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+    const hasDropIn = resolveActivityDropIn(a, studioDropIn).enabled
     const gate = resolveClassGate(rule, hasDropIn)
     if (gate.requirePlan) {
       const allowed = rule.subscriptionTypeIds ?? []

@@ -21,6 +21,7 @@ import {
   type DropInTarget,
   type GiftCardRedemptionPlan,
   type PaymentOptionsResult,
+  studioDropInOf,
 } from '@linyup/shared'
 import { buildDropInTarget, resolveDropInForContact } from './dropInPricing'
 import { loadBookingSettings } from './bookingSettings'
@@ -230,7 +231,7 @@ export const createDropInCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
   // coverage rule, list price and the member rate (Activity.memberBenefit),
   // built by the SAME helper previewPromoCode uses so a quote and a charge can
   // never come from different fields (booking/dropInPricing.ts).
-  const door = buildDropInTarget(activity, { asTrial: isTrial })
+  const door = buildDropInTarget(activity, { asTrial: isTrial }, studioDropInOf(bookingSettings))
   if (!door.ok) {
     throw new HttpsError(
       'failed-precondition',

@@ -45,6 +45,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import type { Route } from 'next'
 import { useQueryClient } from '@tanstack/react-query'
 import { doc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
@@ -60,8 +61,16 @@ import {
   type ActivityAccessRule,
   type ActivityAudience,
   type SubscriptionType,
+  dropInModeOf,
+  resolveActivityDropIn,
+  studioDropInOf,
+  type DropInMode,
+  type DropInPrice,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
+import { formatCurrency } from '@/lib/format'
+import { Link } from '@/i18n/navigation'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { useReportPaneDirty } from '@/components/offer/paneDirty'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -98,7 +107,9 @@ interface Draft {
   requirePlan: boolean
   trialEnabled: boolean
   trialPrice: string
-  dropInEnabled: boolean
+  /** How this class answers the drop-in question — see `DropInMode`. */
+  dropInMode: DropInMode
+  /** 'custom' only. */
   dropInPrice: string
   /** APPOINTMENT-ONLY, and read from the STORED lengths rather than from
    *  `resolveAppointmentDurations`: the fallback 60-minute entry is what a
@@ -114,10 +125,13 @@ interface Draft {
  * The plan matcher stores the pair through the same call, so the two writers
  * of `accessRule` cannot spell one door two ways.
  */
-function audienceDraftOf(a: Activity): { audience: ActivityAudience; requirePlan: boolean } {
+function audienceDraftOf(
+  a: Activity,
+  studioDropIn: DropInPrice | null
+): { audience: ActivityAudience; requirePlan: boolean } {
   return canonicalClassGate(
     resolveActivityAccessRule(a),
-    !!a.dropIn?.enabled && typeof a.dropIn.priceAmount === 'number'
+    resolveActivityDropIn(a, studioDropIn).enabled
   )
 }
 
@@ -131,13 +145,15 @@ function draftAccessRule(d: Pick<Draft, 'audience' | 'requirePlan'>): ActivityAc
   }
 }
 
-function draftOf(a: Activity): Draft {
+function draftOf(a: Activity, studioDropIn: DropInPrice | null): Draft {
+  const dropInMode = dropInModeOf(a.dropIn)
   return {
-    ...audienceDraftOf(a),
+    ...audienceDraftOf(a, studioDropIn),
     trialEnabled: a.trialEnabled ?? false,
     trialPrice: a.trialPriceAmount != null ? String(a.trialPriceAmount) : '',
-    dropInEnabled: a.dropIn?.enabled ?? false,
-    dropInPrice: a.dropIn?.priceAmount != null ? String(a.dropIn.priceAmount) : '',
+    dropInMode,
+    dropInPrice:
+      dropInMode === 'custom' && a.dropIn?.priceAmount != null ? String(a.dropIn.priceAmount) : '',
     durations: toDurationFormValues(a.durations),
   }
 }
@@ -148,7 +164,7 @@ function same(a: Draft, b: Draft): boolean {
     a.requirePlan === b.requirePlan &&
     a.trialEnabled === b.trialEnabled &&
     a.trialPrice === b.trialPrice &&
-    a.dropInEnabled === b.dropInEnabled &&
+    a.dropInMode === b.dropInMode &&
     a.dropInPrice === b.dropInPrice &&
     // Compared by VALUE, not by reference — the draft is rebuilt on every
     // keystroke, so a reference check would report every appointment dirty
@@ -174,8 +190,13 @@ export function ActivityPricingForm({
   const tCat = useTranslations('OfferCatalogue')
   const qc = useQueryClient()
   const invalidateSetupChecklist = useInvalidateSetupChecklist()
+  // The studio's default drop-in, which a class follows unless it says
+  // otherwise — the form opens with it in hand so "Studio default · CHF 25"
+  // names the actual number and the matcher prices a following class by it.
+  const { data: bookingSettings } = useBookingSettings()
+  const studioDropIn = studioDropInOf(bookingSettings)
 
-  const stored = draftOf(activity)
+  const stored = draftOf(activity, studioDropIn)
   const [draft, setDraft] = useState<Draft>(stored)
   const [saving, setSaving] = useState(false)
   /** The matcher's save, handed up so this tab has ONE button — see its
@@ -188,9 +209,9 @@ export function ActivityPricingForm({
   // Re-seed when the selection changes, or when the stored document changes
   // under us (the matcher writes it, and a save here refetches it).
   useEffect(() => {
-    setDraft(draftOf(activity))
+    setDraft(draftOf(activity, studioDropIn))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity.id, JSON.stringify(draftOf(activity))])
+  }, [activity.id, JSON.stringify(draftOf(activity, studioDropIn))])
 
   const isAppointment = isAppointmentActivity(activity)
   // Read from the STORED activity, which is what the matcher below writes and
@@ -213,6 +234,20 @@ export function ActivityPricingForm({
    * still come from the stored activity: the matcher owns those and this form
    * does not.
    */
+  /** What the DRAFT sells at the door — the studio default when the class
+   *  follows it — so the matcher's rate columns light up under a price the
+   *  class does not store itself. Through THE ONE READER, like every surface. */
+  const draftDropIn = resolveActivityDropIn(
+    {
+      ...activity,
+      dropIn: {
+        mode: draft.dropInMode,
+        enabled: draft.dropInMode === 'custom',
+        ...(draft.dropInPrice ? { priceAmount: parsePrice(draft.dropInPrice) } : {}),
+      },
+    },
+    studioDropIn
+  )
   const draftActivity: Activity = isAppointment
     ? // The DRAFT lengths, for the same reason: `rateHasAPriceToApplyTo` reads
       // them, so pricing a length and then reaching for the plan table found
@@ -220,6 +255,10 @@ export function ActivityPricingForm({
       { ...activity, durations: toActivityDurations(draft.durations) }
     : {
         ...activity,
+        dropIn: {
+          enabled: draftDropIn.enabled,
+          ...(draftDropIn.priceAmount != null ? { priceAmount: draftDropIn.priceAmount } : {}),
+        },
         accessRule: {
           ...draftAccessRule(draft),
           ...(resolveActivityAccessRule(activity).subscriptionTypeIds?.length
@@ -240,7 +279,8 @@ export function ActivityPricingForm({
   const openTier = classAccessTierOf(draft) === 'open'
 
   const dropInPriceInvalid =
-    draft.dropInEnabled && !(draft.dropInPrice.trim() !== '' && parsePrice(draft.dropInPrice) >= 0.5)
+    draft.dropInMode === 'custom' &&
+    !(draft.dropInPrice.trim() !== '' && parsePrice(draft.dropInPrice) >= 0.5)
   const trialPriceInvalid =
     draft.trialPrice.trim() !== '' && !(parsePrice(draft.trialPrice) >= 0.5)
   // Through the editor's own predicate, so a length saved from here can never
@@ -284,9 +324,15 @@ export function ActivityPricingForm({
               // disagrees with the two fields above.
               'accessRule.type': draftAccessRule(draft).type,
               isFreeTrial: draft.audience === 'anyone' && !draft.requirePlan,
+              // The three answers (`DropInMode`), written whole: a price is
+              // stored only under 'custom', so a class that follows the studio
+              // carries none and cannot go stale against the default.
               dropIn: {
-                enabled: draft.dropInEnabled,
-                ...(draft.dropInPrice ? { priceAmount: parsePrice(draft.dropInPrice) } : {}),
+                mode: draft.dropInMode,
+                enabled: draft.dropInMode === 'custom',
+                ...(draft.dropInMode === 'custom' && draft.dropInPrice
+                  ? { priceAmount: parsePrice(draft.dropInPrice) }
+                  : {}),
               },
               // Both cleared on an open tier — see `openTier`.
               trialEnabled: openTier ? false : draft.trialEnabled,
@@ -303,8 +349,6 @@ export function ActivityPricingForm({
       setSaving(false)
     }
   }
-
-  const row = 'flex items-center justify-between gap-4 p-3'
 
   return (
     <div className="space-y-4">
@@ -440,35 +484,76 @@ export function ActivityPricingForm({
             )}
 
             <div className="space-y-2 p-3">
-              <div className={row.replace(' p-3', '')}>
-                <div className="min-w-0 pr-4">
-                  <p className="text-sm font-medium">{t('dropInLabel')}</p>
-                  <p className="text-xs text-muted-foreground">{t('dropInHelp')}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="accent-primary"
-                    checked={draft.dropInEnabled}
-                    onChange={(e) => set('dropInEnabled', e.target.checked)}
-                    disabled={!canEdit}
-                  />
-                  {draft.dropInEnabled && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground">{currency}</span>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={draft.dropInPrice}
-                        onChange={(e) => set('dropInPrice', e.target.value)}
-                        placeholder={t('dropInPricePlaceholder')}
-                        className="h-8 w-24 text-sm"
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{t('dropInLabel')}</p>
+                <p className="text-xs text-muted-foreground">{t('dropInHelp')}</p>
+              </div>
+              {/* THREE ANSWERS, not a switch. The studio default is the state a
+                  new class starts in and the one most classes stay in — a class
+                  names a price only when it differs, and says "none" only when
+                  the studio's default must not reach it (`DropInMode`). */}
+              <div className="space-y-1.5">
+                {(['studio', 'custom', 'off'] as const).map((mode) => {
+                  const active = draft.dropInMode === mode
+                  return (
+                    <label
+                      key={mode}
+                      className={`flex items-center gap-2 text-sm ${
+                        canEdit ? 'cursor-pointer' : 'pointer-events-none opacity-60'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="accent-primary"
+                        checked={active}
+                        onChange={() => set('dropInMode', mode)}
                         disabled={!canEdit}
                       />
-                    </div>
-                  )}
-                </div>
+                      {/* Literal keys per branch, never a template-literal key:
+                          i18n:check counts computed keys and never fails them. */}
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        {mode === 'studio' ? (
+                          studioDropIn ? (
+                            t('dropInModeStudio', {
+                              amount: formatCurrency(studioDropIn.priceAmount ?? 0, currency),
+                            })
+                          ) : (
+                            <>
+                              <span>{t('dropInModeStudioNone')}</span>
+                              <Link
+                                href={'/manage/pricing' as Route}
+                                className="text-xs text-primary underline-offset-2 hover:underline"
+                              >
+                                {t('dropInModeStudioSet')}
+                              </Link>
+                            </>
+                          )
+                        ) : mode === 'custom' ? (
+                          <>
+                            <span>{t('dropInModeCustom')}</span>
+                            {active && (
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-xs text-muted-foreground">{currency}</span>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={draft.dropInPrice}
+                                  onChange={(e) => set('dropInPrice', e.target.value)}
+                                  placeholder={t('dropInPricePlaceholder')}
+                                  className="h-8 w-24 text-sm"
+                                  disabled={!canEdit}
+                                />
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          t('dropInModeOff')
+                        )}
+                      </span>
+                    </label>
+                  )
+                })}
               </div>
               {dropInPriceInvalid && (
                 <p className="text-xs text-destructive">{t('dropInPriceValidation')}</p>

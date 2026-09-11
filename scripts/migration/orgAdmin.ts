@@ -33,18 +33,28 @@ export interface OrgAdminIdentity {
 
 let cached: OrgAdminIdentity | null = null
 
-export async function resolveOrgAdmin(cfg: MigrationConfig): Promise<OrgAdminIdentity> {
-  if (cached && cached.email === cfg.orgAdminEmail) return cached
-
+/**
+ * The same target-first resolution for ANY email — used for the federation's
+ * other admins (`ADDITIONAL_ORG_ADMIN_EMAILS`), who need exactly the uid the
+ * primary admin needs and for exactly the same reason: a row written against a
+ * login they do not use grants nothing.
+ */
+export async function resolveIdentity(email: string): Promise<OrgAdminIdentity> {
   let targetUid: string | null = null
   try {
-    targetUid = (await targetAuth().getUserByEmail(cfg.orgAdminEmail)).uid
+    targetUid = (await targetAuth().getUserByEmail(email)).uid
   } catch (e: unknown) {
     if ((e as { code?: string }).code !== 'auth/user-not-found') throw e
   }
-
-  const srcSnap = await sourceDb().collection('users').where('email', '==', cfg.orgAdminEmail).limit(1).get()
+  const srcSnap = await sourceDb().collection('users').where('email', '==', email).limit(1).get()
   const sourceUid = srcSnap.empty ? null : srcSnap.docs[0].id
+  return { email, targetUid, sourceUid, uid: targetUid ?? sourceUid }
+}
+
+export async function resolveOrgAdmin(cfg: MigrationConfig): Promise<OrgAdminIdentity> {
+  if (cached && cached.email === cfg.orgAdminEmail) return cached
+
+  const { targetUid, sourceUid } = await resolveIdentity(cfg.orgAdminEmail)
 
   cached = { email: cfg.orgAdminEmail, targetUid, sourceUid, uid: targetUid ?? sourceUid }
 
