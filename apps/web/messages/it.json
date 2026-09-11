@@ -3147,7 +3147,14 @@
     "removeAction": "Rimuovi affiliazione",
     "removeTitle": "Rimuovere questa affiliazione?",
     "removeBody": "{name} esce dai registri di questa organizzazione e da questo elenco. La traccia di un'affiliazione passata viene eliminata — per registrare un'affiliazione scaduta, impostarla invece su scaduta.",
-    "removeConfirm": "Rimuovi"
+    "removeConfirm": "Rimuovi",
+    "allTeams": "Tutti gli studi",
+    "bulkSetStatus": "Imposta stato",
+    "bulkStatusTitle": "Impostare lo stato su {status}?",
+    "bulkStatusDesc": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, e ogni data di scadenza verrà rimossa.",
+    "bulkStatusDescActive": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, con la scadenza prevista dalle regole di questo tipo.",
+    "bulkStatusToast": "{count, plural, one {# affiliazione impostata} other {# affiliazioni impostate}} su {status}.",
+    "bulkStatusPartial": "{ok} aggiornate, {failed} rifiutate — gestisci solo una parte di questi studi."
   },
   "OrgAffiliationStatuses": {
     "title": "Stati di affiliazione",

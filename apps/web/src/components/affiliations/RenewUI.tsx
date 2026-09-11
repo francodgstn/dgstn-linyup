@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, X } from 'lucide-react'
+import { ChevronDown, RefreshCw, Tag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FloatingSlot } from '@/components/layout/FloatingDock'
 
 // Shared, namespace-agnostic UI for the renew action (used by the contact detail
@@ -26,6 +27,8 @@ export function AffiliationBulkBar({
   onRenew,
   onClear,
   busy,
+  statusActions,
+  statusLabel,
 }: {
   selectedLabel: string
   renewLabel: string
@@ -33,6 +36,11 @@ export function AffiliationBulkBar({
   onRenew: () => void
   onClear: () => void
   busy?: boolean
+  /** Every status the federation defines — renewing is the common move, but
+   *  "these twelve are under review now" is the same job done in bulk, and it
+   *  was a row-at-a-time click before. Absent ⇒ the bar is exactly as it was. */
+  statusActions?: { id: string; label: string; onSelect: () => void }[]
+  statusLabel?: string
 }) {
   return (
     <FloatingSlot lane="page-bar">
@@ -46,6 +54,29 @@ export function AffiliationBulkBar({
           <RefreshCw className={`h-3.5 w-3.5 ${busy ? 'animate-spin' : ''}`} />
           {renewLabel}
         </button>
+        {statusActions && statusActions.length > 0 && (
+          <Popover>
+            <PopoverTrigger
+              disabled={busy}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              <Tag className="h-3.5 w-3.5" />
+              {statusLabel}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </PopoverTrigger>
+            <PopoverContent side="top" align="center" className="w-52 p-1">
+              {statusActions.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={a.onSelect}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                >
+                  {a.label}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        )}
         <button
           onClick={onClear}
           className="p-1.5 rounded-full hover:bg-muted transition-colors ml-0.5 text-muted-foreground"
