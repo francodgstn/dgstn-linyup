@@ -84,6 +84,25 @@ From then on, use `pnpm emulators:hmd` to reload this snapshot instead of re-run
 
 ## Migrating into staging / production
 
+### DEPLOY THE TARGET FIRST. This is an ordering rule, not a suggestion.
+
+A cloud import writes to a LIVE project, so every write it makes fires whatever
+triggers that project currently has deployed. The import is not a quiet bulk
+load — it is thousands of ordinary document writes, each one observed.
+
+The case that bit us: the import writes `teams/{teamId}/team_members/*`, and
+`syncTeamCoachesPublicProfile` is `onDocumentWritten` on exactly that path. It
+rebuilds the team's PUBLIC coach roster from whatever the deployed build knows
+how to read. Import against an older deployment and the public roster is built
+by the older code — correctly, from the new data, and wrong. Nothing errors,
+and the damage is on a world-readable mirror.
+
+So: **deploy, confirm the deploy finished, then import.** Not the other way
+round, and not both at once — a deploy racing an import is the same problem with
+worse timing. If code landed after an import, re-run the import (or the specific
+pass) rather than assuming the triggers catch up; a trigger only fires on a
+WRITE, and the write has already happened.
+
 **Always dry-run first:**
 
 ```bash
