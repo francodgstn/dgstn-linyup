@@ -194,7 +194,29 @@
       '.linyup-modal__panel{max-width:672px;height:min(92vh,860px);border-radius:16px}}' +
       '@media (prefers-reduced-motion:reduce){' +
       '.linyup-modal,.linyup-modal__panel,.linyup-modal__frame{transition:none}' +
-      '.linyup-modal__spinner{animation:none}}'
+      '.linyup-modal__spinner{animation:none}}' +
+      // ── Frosted glass, and the flat overlay it falls back to ──────────────
+      //
+      // The rules ABOVE are the fallback and stay first: a browser without
+      // backdrop-filter keeps the dark scrim, which is what separates a white
+      // panel from the studio's page when nothing can be blurred.
+      //
+      // The panel's border is what does that separating over LIGHT glass, so it
+      // also takes `box-sizing`: the base rule is `width:100%`, and with the
+      // host page's own box model unknown to us, a content-box panel would
+      // come out two pixels wider than the sheet it sits in and clip its own
+      // rounded corners on a phone.
+      '@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){' +
+      '.linyup-modal{background:rgba(240,244,255,.35);' +
+      'backdrop-filter:blur(12px) saturate(160%);-webkit-backdrop-filter:blur(12px) saturate(160%)}' +
+      '.linyup-modal__panel{box-sizing:border-box;border:1px solid rgba(255,255,255,.6);' +
+      'box-shadow:0 20px 60px rgba(15,23,42,.18),inset 0 1px 0 rgba(255,255,255,.8)}}' +
+      // LAST, so it wins over the glass above. Forced colors replaces the
+      // palette but does NOT turn off a backdrop-filter, so naming the
+      // background alone would leave a system-coloured scrim over a blurred
+      // page — the one thing high contrast exists to prevent.
+      '@media (forced-colors:active){' +
+      '.linyup-modal{background:Canvas;backdrop-filter:none;-webkit-backdrop-filter:none}}'
     var style = document.createElement('style')
     style.setAttribute('data-linyup', 'embed')
     style.appendChild(document.createTextNode(css))
