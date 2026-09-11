@@ -3156,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# affiliation passera} other {# affiliations passeront}} à {status}, et toute date d'expiration sera effacée.",
     "bulkStatusDescActive": "{count, plural, one {# affiliation passera} other {# affiliations passeront}} à {status}, avec la date d'expiration prévue par les règles de ce type.",
     "bulkStatusToast": "{count, plural, one {# affiliation définie} other {# affiliations définies}} sur {status}.",
-    "bulkStatusPartial": "{ok} mises à jour, {failed} refusées — vous ne gérez qu'une partie de ces studios."
+    "bulkStatusPartial": "{ok} mises à jour, {failed} refusées — vous ne gérez qu'une partie de ces studios.",
+    "subtitleOrg": "{total} au registre dans {studios} studios",
+    "allTeamsTooLarge": "Tous les studios (trop nombreux à lister)",
+    "studioSummaryLead": "{total} personnes figurent au registre de cette organisation, plus que les {cap} qu'une liste peut contenir. Choisissez un studio pour traiter ses membres.",
+    "colOnBooks": "Au registre"
   },
   "OrgAffiliationStatuses": {
     "title": "Statuts d'affiliation",

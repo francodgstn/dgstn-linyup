@@ -5,7 +5,7 @@ import type { Route } from 'next'
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  collection, getDocs, query, where, collectionGroup,
+  collection, getCountFromServer, getDocs, query, where, collectionGroup,
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
@@ -99,8 +99,72 @@ function useOrgTeamIds(orgId: string) {
  * manager there has never been able to create the first row. This page manages
  * the affiliations that exist.
  */
-function useOrgContacts(orgId: string, teams: TeamMeta[] | undefined) {
-  const teamIds = teams?.map((t) => t.id) ?? []
+/**
+ * ABOVE THIS MANY PEOPLE ON THE FEDERATION'S BOOKS, THERE IS NO "ALL STUDIOS".
+ *
+ * A studio's roster is client-side by design and correct up to a size
+ * (docs/scalability-2026-09.md §18); an ORGANISATION's roster is the sum of its
+ * studios', so the same design reaches the same ceiling several times faster —
+ * a thirty-studio federation would download tens of thousands of contacts to
+ * draw one table. Past this the page stops offering the whole list and offers
+ * the studios instead, which is the unit renewal season is worked in anyway.
+ *
+ * It is a REFUSAL WITH A ROUTE, never a silent truncation: nothing is hidden,
+ * the list is reached one studio at a time.
+ */
+export const ORG_ROSTER_CAP = 2000
+
+/**
+ * How many people each member studio has on the federation's books.
+ *
+ * One `count()` per studio rather than the contacts themselves — bounded by the
+ * STUDIO count (tens, inside one organisation), not by the contact count, and
+ * it runs on the same index the roster query uses. This is what lets the page
+ * show a federation its shape without downloading it, and what decides whether
+ * "all studios" is offered at all.
+ *
+ * Per studio and NOT per studio × status: the status lives on the affiliation
+ * document rather than the contact, so a status breakdown would be one
+ * aggregation per pair — the very fan-out this replaces. The breakdown appears
+ * once a studio is chosen, from the affiliations that page then holds.
+ */
+function useOrgAffiliatedCounts(orgId: string, teams: TeamMeta[] | undefined) {
+  const teamIds = (teams ?? []).map((t) => t.id)
+  return useQuery<Record<string, number>>({
+    queryKey: ['org-affiliated-counts', orgId, teamIds],
+    enabled: teamIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        teamIds.map(async (teamId) => {
+          const agg = await getCountFromServer(
+            query(
+              collection(db, CONTACTS_COLLECTION),
+              where('teamId', '==', teamId),
+              ...liveContactConstraints(),
+              where('affiliation_summary.org_ids', 'array-contains', orgId),
+            ),
+          )
+          return [teamId, agg.data().count] as const
+        }),
+      )
+      return Object.fromEntries(entries)
+    },
+  })
+}
+
+/** `teamFilter` scopes the QUERY, not just the rendered rows — picking a studio
+ *  reads that studio's people and no one else's. `null` means "do not read":
+ *  the federation is too large for one list and the caller is showing the
+ *  studio summary instead. */
+function useOrgContacts(
+  orgId: string,
+  teams: TeamMeta[] | undefined,
+  teamFilter: string | null,
+) {
+  const allTeamIds = teams?.map((t) => t.id) ?? []
+  const teamIds =
+    teamFilter === null ? [] : teamFilter === '__all__' ? allTeamIds : [teamFilter]
   return useQuery<ContactRow[]>({
     queryKey: ['org-contacts', orgId, teamIds],
     enabled: teamIds.length > 0,
@@ -468,12 +532,26 @@ export default function OrgAffiliationsPage() {
   const [toast, setToast] = useState<string | null>(null)
 
   const { data: teams, isLoading: teamsLoading } = useOrgTeamIds(orgId)
-  const { data: contacts, isLoading: contactsLoading } = useOrgContacts(orgId, teams)
+  const { data: affiliatedCounts, isLoading: countsLoading } = useOrgAffiliatedCounts(orgId, teams)
+  // THE SHAPE OF THE FEDERATION, BEFORE ANY OF IT IS DOWNLOADED. The counts are
+  // aggregations; this total is what decides whether the whole list may be
+  // asked for at all.
+  const affiliatedTotal = useMemo(
+    () => Object.values(affiliatedCounts ?? {}).reduce((n, c) => n + c, 0),
+    [affiliatedCounts],
+  )
+  const tooLargeForOneList = !!affiliatedCounts && affiliatedTotal > ORG_ROSTER_CAP
+  const showStudioSummary = tooLargeForOneList && teamFilter === '__all__'
+  const { data: contacts, isLoading: contactsLoading } = useOrgContacts(
+    orgId,
+    teams,
+    showStudioSummary ? null : teamFilter,
+  )
   const { data: rawDefs } = useStatusDefs(orgId)
   const { data: affiliationTypes = [], isLoading: typesLoading } = useOrgAffiliationTypes(orgId)
 
   const defs: OrgAffiliationStatusDef[] = rawDefs ?? DEFAULT_ORG_AFFILIATION_STATUSES
-  const isLoading = teamsLoading || contactsLoading || typesLoading
+  const isLoading = teamsLoading || countsLoading || (!showStudioSummary && contactsLoading) || typesLoading
 
   const activeTypeId = selectedTypeId
   useEffect(() => {
@@ -520,14 +598,13 @@ export default function OrgAffiliationsPage() {
         const statusId = aff?.status_id ?? NO_AFFILIATION
         if (statusId !== statusFilter) return false
       }
-      if (teamFilter !== '__all__' && c.teamId !== teamFilter) return false
       if (search) {
         const name = contactName(c).toLowerCase()
         if (!name.includes(search.toLowerCase())) return false
       }
       return true
     })
-  }, [contacts, statusFilter, search, selectedTypeId, teamFilter, affiliationsByContact])
+  }, [contacts, statusFilter, search, selectedTypeId, affiliationsByContact])
   // Only the rows near the viewport are mounted once the table is long; the
   // filters and the selection still run over the whole list
   // (docs/scalability-2026-09.md §17). Rows are uniform, so no measuring.
@@ -667,7 +744,11 @@ export default function OrgAffiliationsPage() {
       <PageHeader
         title={affiliationTerm}
         subtitle={
-          contacts ? t('subtitle', { total: contacts.length, active: totalActive }) : undefined
+          affiliatedCounts
+            ? teamFilter === '__all__'
+              ? t('subtitleOrg', { total: affiliatedTotal, studios: teams?.length ?? 0 })
+              : t('subtitle', { total: contacts?.length ?? 0, active: totalActive })
+            : undefined
         }
         // THE ROSTER, AND THE WAY TO WHAT DEFINES IT. The statuses and types
         // used to render beneath this list, which made a roster you scrolled
@@ -710,7 +791,11 @@ export default function OrgAffiliationsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">{t('allTeams')}</SelectItem>
+                {/* Refused WITH A ROUTE past the cap — every studio is still
+                    reachable, one at a time. See ORG_ROSTER_CAP. */}
+                <SelectItem value="__all__" disabled={tooLargeForOneList}>
+                  {tooLargeForOneList ? t('allTeamsTooLarge') : t('allTeams')}
+                </SelectItem>
                 {(teams ?? [])
                   .slice()
                   .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
@@ -723,8 +808,55 @@ export default function OrgAffiliationsPage() {
         </div>
       )}
 
+      {/* THE FEDERATION, STUDIO BY STUDIO — the view that replaces a roster the
+          organisation is too large to list (docs/scalability-2026-09.md §18).
+          It is not a fallback screen: each row is the way INTO that studio's
+          people, which is the unit renewal season is worked in anyway. Nothing
+          below it renders, because there is no list to filter or search yet. */}
+      {showStudioSummary && (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {t('studioSummaryLead', { total: affiliatedTotal, cap: ORG_ROSTER_CAP })}
+          </p>
+          <div className="rounded-md border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colTeam')}</th>
+                  <th className="text-right font-medium text-muted-foreground px-4 py-3">{t('colOnBooks')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(teams ?? [])
+                  .slice()
+                  .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+                  .map((tm) => (
+                    <tr key={tm.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          className="font-medium hover:underline"
+                          onClick={() => {
+                            setTeamFilter(tm.id)
+                            setSelected(new Set())
+                          }}
+                        >
+                          {tm.name || tm.id}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                        {affiliatedCounts?.[tm.id] ?? 0}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Status filter pills */}
-      {!isLoading && (
+      {!showStudioSummary && !isLoading && (
         <div className="flex flex-wrap gap-1.5">
           {
             <>
@@ -767,16 +899,19 @@ export default function OrgAffiliationsPage() {
       )}
 
       {/* Search */}
-      <div className="max-w-xs">
-        <SearchInput
-          className="h-9 text-sm"
-          placeholder={t('searchPlaceholder')}
-          value={search}
-          onValueChange={setSearch}
-        />
-      </div>
+      {!showStudioSummary && (
+        <div className="max-w-xs">
+          <SearchInput
+            className="h-9 text-sm"
+            placeholder={t('searchPlaceholder')}
+            value={search}
+            onValueChange={setSearch}
+          />
+        </div>
+      )}
 
       {/* Table */}
+      {!showStudioSummary && (
       <div className="rounded-md border overflow-hidden">
         {isLoading ? (
           <div className="p-4 space-y-3">
@@ -830,6 +965,7 @@ export default function OrgAffiliationsPage() {
           </table>
         )}
       </div>
+      )}
 
       {selected.size > 0 && (
         <AffiliationBulkBar

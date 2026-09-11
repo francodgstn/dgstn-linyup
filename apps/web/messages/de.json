@@ -3156,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, ein Ablaufdatum wird entfernt.",
     "bulkStatusDescActive": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, mit dem Ablaufdatum aus den Regeln dieses Typs.",
     "bulkStatusToast": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} auf {status} gesetzt.",
-    "bulkStatusPartial": "{ok} aktualisiert, {failed} abgelehnt – du verwaltest nur einen Teil dieser Studios."
+    "bulkStatusPartial": "{ok} aktualisiert, {failed} abgelehnt – du verwaltest nur einen Teil dieser Studios.",
+    "subtitleOrg": "{total} in den Büchern über {studios} Studios",
+    "allTeamsTooLarge": "Alle Studios (zu viele für eine Liste)",
+    "studioSummaryLead": "{total} Personen stehen in den Büchern dieser Organisation, mehr als die {cap}, die eine Liste fassen kann. Wähle ein Studio, um dessen Mitglieder zu bearbeiten.",
+    "colOnBooks": "In den Büchern"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliationsstatus",
