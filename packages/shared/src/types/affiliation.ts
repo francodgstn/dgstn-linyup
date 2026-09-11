@@ -107,6 +107,17 @@ export interface AffiliationType {
   // `issuer_url` optionally points to where the member pays / renews with the issuer.
   fee_amount?: number
   issuer_url?: string
+  /**
+   * The issuer's mark, shown on the type picker and beside a contact's row.
+   *
+   * A federation licence, a club membership and a governing body's registration
+   * are told apart by their BADGE long before their name — which is most of why
+   * a plain dropdown of type names reads as bureaucracy. A URL rather than an
+   * upload: these are public marks a studio already has somewhere, and an
+   * uploader is a Storage path, a rules change and a lifecycle for something
+   * that is display-only. Absent ⇒ the picker falls back to the label's initial.
+   */
+  logo_url?: string
   active?: boolean
   order?: number
 }
