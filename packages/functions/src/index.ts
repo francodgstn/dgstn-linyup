@@ -91,6 +91,11 @@ export { createDropInCheckout } from './booking/dropIn'
 // surface adds: a booking on a session the STUDIO entered has no public mirror
 // to be found through, because a session is mirrored only while it is on sale.
 export { getMyBookings } from './booking/myBookings'
+// The member's own ATTENDANCE — the same rules split one collection over
+// (a contact may GET her own participant row, never LIST across sessions), and
+// the reason the member app no longer reads one document per session in a
+// window to draw its calendar. See booking/myAttendance.ts.
+export { getMyAttendance } from './booking/myAttendance'
 // Waitlist (class-only) — join/leave the queue for a full class, and the
 // promoter that offers a seat to the front of it. The promoter is a session
 // TRIGGER, not a call site hook: every event that frees a seat converges on a
@@ -205,6 +210,20 @@ export { handleAppStoreWebhook } from './appstores/webhook'
 
 // Daily maintenance tasks + the hourly multi-step booking-reminder scan
 export { dailyTasks, bookingRemindersHourly } from './dailyTasks'
+// …and the per-tenant WORKERS those schedules now dispatch to. Each scheduled
+// job lists the tenants and enqueues one Cloud Task each instead of looping
+// them inside one 300-second instance, which died partway at a few hundred
+// studios and left some tenants done and some not, silently
+// (docs/scalability-2026-09.md §9; the machinery is utils/tenantFanOut.ts).
+// Four handlers means four queues: the hourly reminder flood never sits behind
+// Monday's reports, and each gets retry settings that suit its own work.
+export {
+  remindersForTeam,
+  noShowsForTeam,
+  scheduledRulesForTeam,
+  weeklyReportForTeam,
+  financeReportForTeam,
+} from './dailyTasks/tenantWorkers'
 
 // Auth / Membership
 export { verifyContactCode, completeSignup } from './auth/completeSignup'

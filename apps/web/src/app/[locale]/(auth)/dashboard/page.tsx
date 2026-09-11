@@ -60,9 +60,10 @@
  *   - **Recent payments as a five-row table.** The one thing about payments that
  *     is a MORNING task — money with nobody attached to it — is a figure AND a
  *     queue row, not a table. (The table itself survives in `ExtraSection`.)
- *   - **The demographics half of the contacts card**, and the multi-valued
- *     roster views with it — see `RosterDonut` for why a bar list cannot share
- *     the chart-left/legend-right geometry.
+ *   - **The demographics half of the contacts card.** The multi-valued roster
+ *     views came with it and were bars for a while; since 2026-09-11 they are
+ *     rings too — see `RosterDonut` for the partition that made a true
+ *     denominator available, and for what it costs.
  *   - **The subscription/affiliation overlap bar**, removed by decision. Its job
  *     passes to the two subtitles, which are now load-bearing copy.
  *
@@ -288,7 +289,7 @@ export default function DashboardPage() {
           {planLoading ? null : (
             <div className="pt-4">
               {isAtLeast('studio') ? (
-                <WeekSection teamId={currentTeamId} />
+                <WeekSection teamId={currentTeamId} contacts={contacts} />
               ) : (
                 <PlanUpgradeNotice
                   minPlan="studio"

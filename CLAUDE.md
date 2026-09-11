@@ -707,6 +707,41 @@ recorded decision). Full docs: `docs/site-translations.md` (incl. the embed
 `?hl=en` pinning, the switcher/cookie change, and
 `pnpm backfill:site-translations`).
 
+### Scheduled jobs fan out — one Cloud Task per tenant, never a loop
+
+A cron that loops tenants with `await` inside the loop is one instance, one
+timeout and one point of failure for every studio at once. Past a few hundred
+tenants it does not slow down, it **dies partway** — some tenants done, some
+not, with nothing on any screen to say which (`docs/scalability-2026-09.md` §9).
+
+So a scheduled job is a **dispatcher**: `dispatchTenantJob`
+(`packages/functions/src/utils/tenantFanOut.ts`, whose header owns the
+reasoning) lists the tenants and enqueues one Cloud Task each, and a
+`…ForTeam(teamId)` function does one tenant's work. That same function is what
+the dispatcher runs inline on a machine with no Cloud Tasks emulator, so there
+is never a second implementation to drift. Converted:
+`sendBookingReminders`, `markNoShowBookings`, `runScheduledRules`,
+`weeklyReports`, `monthlyFinanceReports` — each with its own handler in
+`dailyTasks/tenantWorkers.ts`, hence its own queue and its own retry and
+concurrency settings.
+
+Two rules when adding one:
+
+- **Idempotence is the JOB's, not the queue's.** Cloud Tasks is at-least-once.
+  The deterministic task id (`{teamId}-{runId}`, tenant first because a run id
+  is a sequential prefix and Cloud Tasks degrades on those) is a first line of
+  defence; the guarantee has to be the job's own marker — a `reminders_sent`
+  key, a report that refuses to overwrite its week, a status that is only ever
+  flipped from `pending`.
+- **`teams where archived_at == null` matches almost nothing.** A Firestore
+  `== null` filter matches an explicit null and NOT a missing field, and no
+  team writer sets that field. Project it and filter in memory —
+  `listFanOutTeamIds` does. This was not hypothetical:
+  `monthlyFinanceReports` had that clause and nothing else, so it wrote almost
+  no monthly finance reports for its whole life while logging a clean zero.
+  The identical clause against `contacts` IS correct — see
+  `apps/web/src/lib/liveContacts.ts` for why the two collections differ.
+
 ### Comments must not assert a COUNT of code sites
 
 A comment saying "the two X", "all three Y", "six copies" or "the only Z" is a
@@ -1114,6 +1149,15 @@ Quality / CI checks (run anytime): `pnpm build` · `pnpm lint` · `pnpm typechec
 tripwire — a direct read of a collection that grows with time must carry a bound;
 `docs/scalability-2026-09.md` §17 is the census it guards). Cloud/data ops live under `seed:*` / `reset:*` /
 `migrate:hmd` / `stripe:sync` / `emulators:export:*` — not part of day-to-day startup.
+
+**Deploy preconditions owed by the scalability work** (`docs/scalability-2026-09.md`
+Part 2 §14, Part 3 §19): `pnpm backfill:ledger-ttl` before the TTL index overrides,
+and `pnpm backfill:contact-counts` after the functions deploy — the operator console
+reads a per-team contact counter that only exists once its trigger or the nightly
+reconciliation has written it. Against a deployed project run them through the
+**Backfill** workflow (`.github/workflows/backfill.yml`, dispatch-only, dry run by
+default, reviewer-gated per project) rather than from a laptop holding ADC; each
+script's own header owns its place in the release.
 
 ---
 

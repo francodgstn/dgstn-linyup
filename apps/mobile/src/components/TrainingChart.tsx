@@ -40,7 +40,6 @@ export const TrainingChart: React.FC<TrainingChartProps> = ({ contactId, teamId,
         startDate.setHours(0, 0, 0, 0);
 
         const sessions = await FirestoreService.getContactAttendance(
-          contactId,
           startDate,
           endDate,
           teamId

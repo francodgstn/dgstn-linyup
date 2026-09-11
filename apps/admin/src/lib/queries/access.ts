@@ -34,11 +34,20 @@ export async function getPublicSignupSettings(): Promise<PublicSignupView> {
   }
 }
 
+/** How many allow-list entries the settings page shows. It grows with every
+ *  manual authorisation and never shrinks, so it is a LOG, not config — small
+ *  for a limited launch and unbounded in principle. */
+export const ALLOWLIST_PAGE = 200
+
+/** The line the page shows when the cap bit — a capped list says so. */
+export const ALLOWLIST_TRUNCATED_NOTE = `Showing the ${ALLOWLIST_PAGE} most recently added addresses.`
+
 // Lists the manually-authorized signup emails, newest first.
 export async function listSignupAllowlist(): Promise<AllowlistRow[]> {
   const snap = await adminDb
     .collection(SIGNUP_ALLOWLIST_COLLECTION)
     .orderBy('added_at', 'desc')
+    .limit(ALLOWLIST_PAGE)
     .get()
   return snap.docs.map((doc) => {
     const d = doc.data() as SignupAllowlistEntry

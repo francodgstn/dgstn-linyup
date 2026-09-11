@@ -14,8 +14,14 @@ import {
   holdsOwnPlan,
   holdsPartnerPlan,
   partnerSubscriptionTypeIds,
+  TEAMS_COLLECTION,
+  TEAM_COUNTERS_SUBCOLLECTION,
+  TEAM_CONTACT_COUNTER_DOC,
+  liveContactCountDeltas,
+  type ContactLivenessFields,
 } from '@linyup/shared'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
+import { dispatchTenantJob } from '../utils/tenantFanOut'
 
 // The acquisition funnel only ever advances forward by design, so a stage that
 // moves to a LOWER ordinal is a deliberate manual correction (e.g. undoing a
@@ -211,11 +217,51 @@ export const trackSessions = onDocumentWritten('sessions/{sessionId}', async (ev
   )
 })
 
+// ─── the live-contact counter ─────────────────────────────────────────────────
+//
+// `teams/{teamId}/counters/contacts` — see utils/contactCounter.ts in shared for
+// why it is stored, why it is a subcollection and why drift is survivable. This
+// is the DELTA writer; `capturePlatformMetrics` is the reconciler.
+async function applyContactCountDeltas(
+  before: FirebaseFirestore.DocumentData | null,
+  after: FirebaseFirestore.DocumentData | null,
+): Promise<void> {
+  const deltas = liveContactCountDeltas(
+    before as ContactLivenessFields | null,
+    after as ContactLivenessFields | null,
+  )
+  if (deltas.length === 0) return
+  const db = admin.firestore()
+  await Promise.all(
+    deltas.map(({ teamId, delta }) =>
+      to(
+        db
+          .collection(TEAMS_COLLECTION)
+          .doc(teamId)
+          .collection(TEAM_COUNTERS_SUBCOLLECTION)
+          .doc(TEAM_CONTACT_COUNTER_DOC)
+          .set(
+            { live: FieldValue.increment(delta), updated_at: FieldValue.serverTimestamp() },
+            { merge: true },
+          ),
+      ),
+    ),
+  )
+}
+
 // ─── trackContacts ────────────────────────────────────────────────────────────
 
 export const trackContacts = onDocumentWritten('contacts/{contactId}', async (event) => {
   const newData = event.data?.after.exists ? event.data.after.data() : null
   const oldData = event.data?.before.exists ? event.data.before.data() : null
+
+  // THE LIVE-CONTACT COUNTER, before anything else — it is the one effect here
+  // that must survive every early return below. An anonymised contact still
+  // leaves the live set, and a contact created with no name still joins it, so
+  // gating this on the activity-log conditions would drift the counter by
+  // exactly the cases nobody looks at. One rule, in @linyup/shared, so the
+  // nightly reconciliation and the backfill cannot express it differently.
+  await applyContactCountDeltas(oldData ?? null, newData ?? null)
 
   const teamId = (newData?.teamId || newData?.teacher || oldData?.teamId || oldData?.teacher) as
     | string
@@ -598,171 +644,183 @@ export const trackSessionParticipants = onDocumentWritten(
 
 // getActiveContacts and countByField are imported from '../utils/contacts'
 
+/**
+ * ONE tenant's weekly report. The worker body and the dispatcher's inline path.
+ *
+ * This read every active contact of every studio plus a week of its sessions,
+ * sequentially, in one 300-second instance — the second-heaviest of the four
+ * scheduled fan-outs (docs/scalability-2026-09.md §9). Per tenant it is the
+ * same work with a per-tenant timeout and a per-tenant retry.
+ *
+ * IDEMPOTENT BY ITS OWN RULE, which is what makes at-least-once delivery safe
+ * here: an existing report for the week is never overwritten, because event
+ * triggers increment it mid-week and a regenerated one would erase that.
+ */
+export async function weeklyReportsForTeam(teamId: string, now: Date = new Date()): Promise<void> {
+  const db = admin.firestore()
+  const weekLabel = format(now, `R-'W'II`)
+
+    const reportRef = db
+      .collection('teams')
+      .doc(teamId)
+      .collection(TEAM_WEEKLY_REPORTS_SUBCOLLECTION)
+      .doc(weekLabel)
+
+    // If a report already exists for this week, skip — never overwrite, to preserve
+    // any increments applied mid-week by event triggers (trackContacts, trackSessions).
+    // THIS IS ALSO WHAT MAKES THE TASK SAFE TO REDELIVER: Cloud Tasks is
+    // at-least-once, and a second run for the same week must add nothing.
+    const [existErr, existSnap] = await to(reportRef.get())
+    if (!existErr && existSnap?.exists) return
+
+    const contacts = await getActiveContacts(db, teamId)
+    const active_contacts_count = contacts.length
+
+    const contacts_count_by_stage = countByField(contacts, 'acquisition_stage')
+    const contacts_with_active_affiliation = contacts.filter(
+      (c) => (c.affiliation_summary as { has_active?: boolean } | undefined)?.has_active === true
+    ).length
+    const contacts_count_by_affiliation_type = countByDistinctKeys(contacts, (c) => {
+      return (c.affiliation_summary as { types?: string[] } | undefined)?.types ?? []
+    })
+    // "Subscribed" means ON ONE OF THE STUDIO'S OWN PLANS. A partner-app
+    // type (source: 'aggregator' — FitPass, ClassPass…) is a subscription
+    // the studio did not sell, so a contact whose only live plan is one of
+    // those is counted apart, under contacts_with_aggregator_subscription,
+    // never in the headline. The per-type map below keeps every type by id
+    // — a partner type is honest by name. ONE predicate: subscriptionSource.ts
+    // in shared. A failed types read leaves the set empty (partner plans
+    // then read as own for that week) and says so in the log.
+    const [typesErr, typesSnap] = await to(
+      db.collection('teams').doc(teamId).collection('subscription_types').get()
+    )
+    if (typesErr) console.warn(`weeklyReports: subscription_types read failed for team=${teamId}`, typesErr)
+    const partnerIds = partnerSubscriptionTypeIds(
+      (typesSnap?.docs ?? []).map((d) => ({ id: d.id, source: (d.data() as { source?: string }).source }))
+    )
+    const liveSubs = (c: admin.firestore.DocumentData) =>
+      (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
+    const contacts_with_active_subscription = contacts.filter((c) => holdsOwnPlan(liveSubs(c), partnerIds)).length
+    const contacts_with_aggregator_subscription = contacts.filter((c) => holdsPartnerPlan(liveSubs(c), partnerIds)).length
+    const contacts_count_by_subscription_type = countByDistinctKeys(contacts, (c) => {
+      const subs = (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
+      return subs.map((s) => s.subscription_type_id)
+    })
+
+    const weekStart = Timestamp.fromMillis(now.getTime() - 7 * 24 * 3600 * 1000)
+    const [, sessionsSnap] = await to(
+      db
+        .collection('sessions')
+        .where('teamId', '==', teamId)
+        .where('start', '>=', weekStart)
+        .where('start', '<=', Timestamp.fromDate(now))
+        .get()
+    )
+    const sessions_count = sessionsSnap?.size ?? 0
+
+    // Per-type breakdown: class vs appointment (and any future types)
+    const sessions_count_by_type: Record<string, number> = {}
+    if (sessionsSnap) {
+      for (const s of sessionsSnap.docs) {
+        const t = (s.data().activityType as string | undefined) || 'class'
+        sessions_count_by_type[t] = (sessions_count_by_type[t] ?? 0) + 1
+      }
+    }
+
+    // Bookings in the same window — count by session type
+    const [, bookingsSnap] = await to(
+      db
+        .collectionGroup('bookings')
+        .where('teamId', '==', teamId)
+        .where('joinedAt', '>=', weekStart)
+        .where('joinedAt', '<=', Timestamp.fromDate(now))
+        .where('status', '==', 'confirmed')
+        .get()
+    )
+    const bookings_count_by_type: Record<string, number> = {}
+    const bookings_count = bookingsSnap?.size ?? 0
+    if (bookingsSnap) {
+      // Resolve activityType per booking via parent session
+      const sessionTypeCache: Record<string, string> = {}
+      for (const b of bookingsSnap.docs) {
+        const sessionRef = b.ref.parent.parent
+        if (!sessionRef) continue
+        if (!sessionTypeCache[sessionRef.id]) {
+          const [, sDoc] = await to(sessionRef.get())
+          sessionTypeCache[sessionRef.id] =
+            (sDoc?.data()?.activityType as string | undefined) || 'class'
+        }
+        const t = sessionTypeCache[sessionRef.id]
+        bookings_count_by_type[t] = (bookings_count_by_type[t] ?? 0) + 1
+      }
+    }
+
+    await reportRef.set({
+      iso_week: weekLabel,
+      generated_at: FieldValue.serverTimestamp(),
+      active_contacts_count,
+      contacts_count_by_stage,
+      contacts_with_active_affiliation,
+      contacts_count_by_affiliation_type,
+      contacts_with_active_subscription,
+      contacts_with_aggregator_subscription,
+      contacts_count_by_subscription_type,
+      sessions_count,
+      sessions_count_by_type,
+      bookings_count,
+      bookings_count_by_type,
+      // Start at 0; incremented by trackContacts triggers as events occur during the week
+      trial_conversions_count: 0,
+      trial_dropouts_count: 0,
+    })
+
+    // Per-contact weekly reports — feeds the StatsPanel trend chart
+    if (sessionsSnap && !sessionsSnap.empty) {
+      const contactSessionCounts: Record<string, number> = {}
+
+      for (const sessionDoc of sessionsSnap.docs) {
+        const [, partsSnap] = await to(
+          sessionDoc.ref.collection(PARTICIPANTS_SUBCOLLECTION).get()
+        )
+        if (!partsSnap || partsSnap.empty) continue
+        for (const partDoc of partsSnap.docs) {
+          // Participant doc ID is contactId; fallback to 'contact' field for safety
+          const contactId = partDoc.id || (partDoc.data().contact as string | undefined)
+          if (contactId) {
+            contactSessionCounts[contactId] = (contactSessionCounts[contactId] ?? 0) + 1
+          }
+        }
+      }
+
+      for (const [contactId, sessions_count_contact] of Object.entries(contactSessionCounts)) {
+        const contactReportRef = db
+          .collection('contacts')
+          .doc(contactId)
+          .collection(CONTACT_WEEKLY_REPORTS_SUBCOLLECTION)
+          .doc(weekLabel)
+        const [, existSnap] = await to(contactReportRef.get())
+        if (existSnap?.exists) continue // never overwrite mid-week increments
+        await to(
+          contactReportRef.set({
+            iso_week: weekLabel,
+            sessions_count: sessions_count_contact,
+            generated_at: FieldValue.serverTimestamp(),
+          })
+        )
+      }
+    }
+}
+
+/** THE DISPATCHER — one task per tenant, weekly. The run id is the DAY slot:
+ *  the schedule fires once a week, so the day it fires on identifies it. */
 export const weeklyReports = onSchedule(
   { schedule: 'every monday 00:05', timeZone: 'UTC', timeoutSeconds: 300, memory: '512MiB' },
   async () => {
-    const db = admin.firestore()
-    const now = new Date()
-    const weekLabel = format(now, `R-'W'II`)
-
-    const [teamsErr, teamsSnap] = await to(
-      db.collection('teams').where('archived_at', '==', null).get()
-    )
-    if (teamsErr || !teamsSnap || teamsSnap.empty) return
-
-    for (const teamDoc of teamsSnap.docs) {
-      const teamId = teamDoc.id
-      try {
-        const reportRef = db
-          .collection('teams')
-          .doc(teamId)
-          .collection(TEAM_WEEKLY_REPORTS_SUBCOLLECTION)
-          .doc(weekLabel)
-
-        // If a report already exists for this week, skip — never overwrite, to preserve
-        // any increments applied mid-week by event triggers (trackContacts, trackSessions).
-        const [existErr, existSnap] = await to(reportRef.get())
-        if (!existErr && existSnap?.exists) continue
-
-        const contacts = await getActiveContacts(db, teamId)
-        const active_contacts_count = contacts.length
-
-        const contacts_count_by_stage = countByField(contacts, 'acquisition_stage')
-        const contacts_with_active_affiliation = contacts.filter(
-          (c) => (c.affiliation_summary as { has_active?: boolean } | undefined)?.has_active === true
-        ).length
-        const contacts_count_by_affiliation_type = countByDistinctKeys(contacts, (c) => {
-          return (c.affiliation_summary as { types?: string[] } | undefined)?.types ?? []
-        })
-        // "Subscribed" means ON ONE OF THE STUDIO'S OWN PLANS. A partner-app
-        // type (source: 'aggregator' — FitPass, ClassPass…) is a subscription
-        // the studio did not sell, so a contact whose only live plan is one of
-        // those is counted apart, under contacts_with_aggregator_subscription,
-        // never in the headline. The per-type map below keeps every type by id
-        // — a partner type is honest by name. ONE predicate: subscriptionSource.ts
-        // in shared. A failed types read leaves the set empty (partner plans
-        // then read as own for that week) and says so in the log.
-        const [typesErr, typesSnap] = await to(
-          db.collection('teams').doc(teamId).collection('subscription_types').get()
-        )
-        if (typesErr) console.warn(`weeklyReports: subscription_types read failed for team=${teamId}`, typesErr)
-        const partnerIds = partnerSubscriptionTypeIds(
-          (typesSnap?.docs ?? []).map((d) => ({ id: d.id, source: (d.data() as { source?: string }).source }))
-        )
-        const liveSubs = (c: admin.firestore.DocumentData) =>
-          (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
-        const contacts_with_active_subscription = contacts.filter((c) => holdsOwnPlan(liveSubs(c), partnerIds)).length
-        const contacts_with_aggregator_subscription = contacts.filter((c) => holdsPartnerPlan(liveSubs(c), partnerIds)).length
-        const contacts_count_by_subscription_type = countByDistinctKeys(contacts, (c) => {
-          const subs = (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
-          return subs.map((s) => s.subscription_type_id)
-        })
-
-        const weekStart = Timestamp.fromMillis(now.getTime() - 7 * 24 * 3600 * 1000)
-        const [, sessionsSnap] = await to(
-          db
-            .collection('sessions')
-            .where('teamId', '==', teamId)
-            .where('start', '>=', weekStart)
-            .where('start', '<=', Timestamp.fromDate(now))
-            .get()
-        )
-        const sessions_count = sessionsSnap?.size ?? 0
-
-        // Per-type breakdown: class vs appointment (and any future types)
-        const sessions_count_by_type: Record<string, number> = {}
-        if (sessionsSnap) {
-          for (const s of sessionsSnap.docs) {
-            const t = (s.data().activityType as string | undefined) || 'class'
-            sessions_count_by_type[t] = (sessions_count_by_type[t] ?? 0) + 1
-          }
-        }
-
-        // Bookings in the same window — count by session type
-        const [, bookingsSnap] = await to(
-          db
-            .collectionGroup('bookings')
-            .where('teamId', '==', teamId)
-            .where('joinedAt', '>=', weekStart)
-            .where('joinedAt', '<=', Timestamp.fromDate(now))
-            .where('status', '==', 'confirmed')
-            .get()
-        )
-        const bookings_count_by_type: Record<string, number> = {}
-        const bookings_count = bookingsSnap?.size ?? 0
-        if (bookingsSnap) {
-          // Resolve activityType per booking via parent session
-          const sessionTypeCache: Record<string, string> = {}
-          for (const b of bookingsSnap.docs) {
-            const sessionRef = b.ref.parent.parent
-            if (!sessionRef) continue
-            if (!sessionTypeCache[sessionRef.id]) {
-              const [, sDoc] = await to(sessionRef.get())
-              sessionTypeCache[sessionRef.id] =
-                (sDoc?.data()?.activityType as string | undefined) || 'class'
-            }
-            const t = sessionTypeCache[sessionRef.id]
-            bookings_count_by_type[t] = (bookings_count_by_type[t] ?? 0) + 1
-          }
-        }
-
-        await reportRef.set({
-          iso_week: weekLabel,
-          generated_at: FieldValue.serverTimestamp(),
-          active_contacts_count,
-          contacts_count_by_stage,
-          contacts_with_active_affiliation,
-          contacts_count_by_affiliation_type,
-          contacts_with_active_subscription,
-          contacts_with_aggregator_subscription,
-          contacts_count_by_subscription_type,
-          sessions_count,
-          sessions_count_by_type,
-          bookings_count,
-          bookings_count_by_type,
-          // Start at 0; incremented by trackContacts triggers as events occur during the week
-          trial_conversions_count: 0,
-          trial_dropouts_count: 0,
-        })
-
-        // Per-contact weekly reports — feeds the StatsPanel trend chart
-        if (sessionsSnap && !sessionsSnap.empty) {
-          const contactSessionCounts: Record<string, number> = {}
-
-          for (const sessionDoc of sessionsSnap.docs) {
-            const [, partsSnap] = await to(
-              sessionDoc.ref.collection(PARTICIPANTS_SUBCOLLECTION).get()
-            )
-            if (!partsSnap || partsSnap.empty) continue
-            for (const partDoc of partsSnap.docs) {
-              // Participant doc ID is contactId; fallback to 'contact' field for safety
-              const contactId = partDoc.id || (partDoc.data().contact as string | undefined)
-              if (contactId) {
-                contactSessionCounts[contactId] = (contactSessionCounts[contactId] ?? 0) + 1
-              }
-            }
-          }
-
-          for (const [contactId, sessions_count_contact] of Object.entries(contactSessionCounts)) {
-            const contactReportRef = db
-              .collection('contacts')
-              .doc(contactId)
-              .collection(CONTACT_WEEKLY_REPORTS_SUBCOLLECTION)
-              .doc(weekLabel)
-            const [, existSnap] = await to(contactReportRef.get())
-            if (existSnap?.exists) continue // never overwrite mid-week increments
-            await to(
-              contactReportRef.set({
-                iso_week: weekLabel,
-                sessions_count: sessions_count_contact,
-                generated_at: FieldValue.serverTimestamp(),
-              })
-            )
-          }
-        }
-      } catch (err) {
-        console.error(`weeklyReports: error for team ${teamId}:`, err)
-      }
-    }
+    await dispatchTenantJob({
+      functionName: 'weeklyReportForTeam',
+      granularity: 'day',
+      perTeam: (teamId) => weeklyReportsForTeam(teamId),
+      label: 'weeklyReports',
+    })
   }
 )

@@ -320,6 +320,12 @@ export const WAIVER_POLICY_DOC_ID = 'current'
 // rule for it landed. It arrived in the SAME commit as the first writer — split,
 // a studio's first save fails outright with a permission error.
 export const TEAM_SETTINGS_SUBCOLLECTION = 'settings'
+
+// Server-maintained counters for a team — `teams/{teamId}/counters/{name}`.
+// A SUBCOLLECTION and not fields on the team document, because a team write
+// rebuilds the whole public mirror (see utils/contactCounter.ts).
+export const TEAM_COUNTERS_SUBCOLLECTION = 'counters'
+export const TEAM_CONTACT_COUNTER_DOC = 'contacts'
 /** teams/{teamId}/settings/documents — `TeamDocumentsSettings`. Readers must
  *  fall back to the retired `installed_plugins/documents.config` until every
  *  team is migrated; `resolveSignupDocumentIds` in types/team.ts is that read,

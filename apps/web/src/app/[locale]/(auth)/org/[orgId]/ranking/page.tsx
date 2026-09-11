@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Shield } from 'lucide-react'
-import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION } from '@linyup/shared'
+import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, newRankLevelId } from '@linyup/shared'
 import type { OrgTeam, RankingSystem, RankLevel } from '@linyup/shared'
 import { RANK_PRESETS } from '@/lib/rank-presets'
 import { useRankHolderCount } from '@/lib/rank-utils'
@@ -106,6 +106,8 @@ function RankSystemDialog({
       levels: [
         ...prev.levels,
         {
+          // A stable identity from the first keystroke — see newRankLevelId.
+          id: newRankLevelId(),
           // ONE ABOVE THE HIGHEST, not the array length. `prev.levels.length`
           // mints a duplicate as soon as a level has been removed — [0,1,2],
           // remove the middle, add: two levels then share value 2, and the
@@ -204,13 +206,15 @@ function RankSystemDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>{t('labelLevels')}</Label>
-              <Button type="button" size="sm" variant="outline" onClick={addLevel} disabled={form.levels.length >= 10}>
+              {/* No cap. There was one at ten, with no reason recorded, and HMD's
+                  ladder has fifteen — the list scrolls. */}
+              <Button type="button" size="sm" variant="outline" onClick={addLevel}>
                 <Plus className="h-3.5 w-3.5 mr-1" />{t('addLevel')}
               </Button>
             </div>
             {form.levels.map((l, i) => (
               <RankLevelFields
-                key={i}
+                key={l.id ?? i}
                 level={l}
                 index={i}
                 storagePath={storagePath}
@@ -274,6 +278,8 @@ export default function OrgRankingPage() {
   const qc = useQueryClient()
 
   const [dialogOpen, setDialogOpen] = useState(false)
+  /** Remount token for the dialog — see `openAdd` / `openEdit`. */
+  const [dialogKey, setDialogKey] = useState(0)
   const [editing, setEditing] = useState<RankSystemFormState | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -356,9 +362,22 @@ export default function OrgRankingPage() {
     systemHolders.reset()
   }
 
-  const openAdd = () => { setEditing(null); setDialogOpen(true) }
+  // THE DIALOG IS ALWAYS MOUNTED, so its `useState(initial ?? emptyForm())`
+  // runs exactly ONCE — on the page's first render, when nothing is being
+  // edited. Without a changing key it therefore showed the EMPTY form under an
+  // "Edit" title for the life of the page, and saving from there replaced the
+  // real system with a blank one (`handleSave` substitutes by `editing.id`, and
+  // the write is a whole-array `updateDoc`), destroying the ladder and orphaning
+  // every `Contact.ranks` key that pointed at it.
+  //
+  // Bumping a counter on every open remounts it, so the form is built from the
+  // CURRENT `initial` each time. A counter rather than `editing?.id` because
+  // re-opening Add must also start clean: keyed on the id alone, two successive
+  // Adds share one mount and the second inherits the first's abandoned input.
+  const openAdd = () => { setEditing(null); setDialogKey((n) => n + 1); setDialogOpen(true) }
   const openEdit = (s: RankingSystem) => {
     setEditing({ id: s.id, name: s.name, levels: s.levels.map((l) => ({ ...l })), is_primary: s.is_primary ?? false })
+    setDialogKey((n) => n + 1)
     setDialogOpen(true)
   }
 
@@ -414,10 +433,20 @@ export default function OrgRankingPage() {
                 )}
                 {isAdmin && (
                   <>
-                    <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-muted">
+                    {/* Icon-only, so they need a name spoken aloud. Both
+                        strings already exist in all four locales — no new key. */}
+                    <button
+                      onClick={() => openEdit(s)}
+                      aria-label={t('dialogTitleEdit')}
+                      className="p-1.5 rounded hover:bg-muted"
+                    >
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => openDelete(s)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive">
+                    <button
+                      onClick={() => openDelete(s)}
+                      aria-label={t('delete')}
+                      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive"
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </>
@@ -428,7 +457,7 @@ export default function OrgRankingPage() {
                   whenever the two differed. */}
               <div className="flex gap-1 flex-wrap">
                 {[...s.levels].sort((a, b) => a.value - b.value).map((l) => (
-                  <div key={l.value} className="flex items-center gap-1">
+                  <div key={l.id ?? l.value} className="flex items-center gap-1">
                     <RankBadge level={l} size="sm" />
                     <span className="text-xs text-muted-foreground">{l.label}</span>
                   </div>
@@ -440,6 +469,7 @@ export default function OrgRankingPage() {
       )}
 
       <RankSystemDialog
+        key={dialogKey}
         open={dialogOpen}
         onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null) }}
         initial={editing}

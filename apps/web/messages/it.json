@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Non è ancora successo nulla, quindi non c'è nulla da contare. Completa la configurazione e questa pagina si riempirà da sola.",
     "seriesSubscribed": "Abbonati",
     "seriesAffiliated": "Affiliati",
-    "seriesViaPartner": "Tramite un'app partner"
+    "seriesViaPartner": "Tramite un'app partner",
+    "chartTitleActivities": "Attività nel tempo",
+    "chartEmptyActivities": "In questo periodo non è stato registrato alcun check-in su nessuna attività.",
+    "seriesAllActivities": "Tutte le attività",
+    "activityNone": "Nessuna attività",
+    "measureCheckins": "Check-in",
+    "chartTitleDemographics": "Chi si allena",
+    "demoTrendAgeHint": "L'età è calcolata per ogni settimana, non per oggi.",
+    "demoTrendGenderHint": "Il dato di oggi, applicato a ogni settimana passata.",
+    "demoTrendTotal": "Totale"
   },
   "Contacts": {
     "noteColor_none": "Nessun colore",
@@ -1068,7 +1077,8 @@
     "markExternalTitle": "{count, plural, one {Segnare questo contatto come esterno?} other {Segnare # contatti come esterni?}}",
     "markExternalDesc": "Possono ancora prenotare e partecipare, e la loro storia resta. Escono dalla lista Attivi, dal conteggio contatti, dagli inviti agli eventi, dalle automazioni e da «Da seguire» — finché non li segni di nuovo come attivi, o compilano il tuo modulo di iscrizione.",
     "goalSaveFailed": "Impossibile salvare questo obiettivo. Riprova.",
-    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova."
+    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova.",
+    "affiliationValidUntil": "Valida fino al {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -3146,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, e ogni data di scadenza verrà rimossa.",
     "bulkStatusDescActive": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, con la scadenza prevista dalle regole di questo tipo.",
     "bulkStatusToast": "{count, plural, one {# affiliazione impostata} other {# affiliazioni impostate}} su {status}.",
-    "bulkStatusPartial": "{ok} aggiornate, {failed} rifiutate — gestisci solo una parte di questi studi."
+    "bulkStatusPartial": "{ok} aggiornate, {failed} rifiutate — gestisci solo una parte di questi studi.",
+    "subtitleOrg": "{total} nei registri di {studios} studi",
+    "allTeamsTooLarge": "Tutti gli studi (troppi da elencare)",
+    "studioSummaryLead": "{total} persone sono nei registri di questa organizzazione, più delle {cap} che un elenco può contenere. Scegli uno studio per lavorare sui suoi membri.",
+    "colOnBooks": "Nei registri"
   },
   "OrgAffiliationStatuses": {
     "title": "Stati di affiliazione",
@@ -7536,7 +7550,8 @@
     "seatsAttended": "presenti",
     "metaAttended": "{count} presenti",
     "startsInHours": "Tra {hours} h",
-    "startsInHoursMinutes": "Tra {hours} h {minutes} min"
+    "startsInHoursMinutes": "Tra {hours} h {minutes} min",
+    "rosterSeveral": "Più di uno"
   },
   "BookingContactFields": {
     "title": "Dati di contatto da raccogliere",

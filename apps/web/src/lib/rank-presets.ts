@@ -1,11 +1,15 @@
-import type { RankLevel } from '@linyup/shared'
+import { withRankLevelIds, type RankLevel } from '@linyup/shared'
 
 export interface RankPreset {
   name: string
   levels: RankLevel[]
 }
 
-export const RANK_PRESETS: RankPreset[] = [
+// Every preset level carries a deterministic id (see `withRankLevelIds`), so a
+// system created from a preset is born with stable identities and two studios
+// applying the same preset get the same ids — the exported list is the RAW one
+// below, mapped once at module load.
+const RAW_PRESETS: RankPreset[] = [
   {
     name: 'Hwal Moo Do',
     levels: [
@@ -135,3 +139,8 @@ export const RANK_PRESETS: RankPreset[] = [
     ],
   },
 ]
+
+export const RANK_PRESETS: RankPreset[] = RAW_PRESETS.map((p) => ({
+  ...p,
+  levels: withRankLevelIds(p.levels),
+}))

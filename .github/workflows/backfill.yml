@@ -18,8 +18,9 @@ name: Backfill
 # ── DISPATCH ONLY, AND A DRY RUN BY DEFAULT ─────────────────────────────────
 #
 # Nothing here fires on a push. A backfill is a deliberate act with a person
-# behind it, and one that follows a deploy rather than accompanying it — the
-# trigger and the indexes have to be live before repairing data against them.
+# behind it, and one that usually follows a deploy rather than accompanying it
+# — the trigger and the indexes have to be live before repairing data against
+# them. Usually: see the next section, and the script's own header.
 #
 # `apply` defaults to FALSE, so the obvious way to run this is the safe one:
 # every script reports what it WOULD write and exits. Run it that way first and
@@ -29,6 +30,30 @@ name: Backfill
 # The `environment` follows the project, so whatever reviewer gates protect a
 # deploy to that project protect a backfill of it too. That matters most for
 # production, which is precisely where nobody should be able to start one alone.
+#
+# ── WHERE A BACKFILL SITS IN A RELEASE IS THE SCRIPT'S OWN PROPERTY ─────────
+#
+# "After the deploy" is the usual case but not the rule, and an exception got
+# wrong is silent, so READ THE TARGET SCRIPT'S HEADER before dispatching rather
+# than assuming. Deploy order, for the ones in this list that turn on it:
+#
+#   * `ledger-ttl` runs BETWEEN two deploys — after the functions that stamp
+#     new rows, before the `ttl: true` field overrides in firestore.index.json.
+#   * `contact-counts` runs AFTER the functions deploy, so the trigger is live
+#     and nothing written during the pass goes uncounted.
+#
+# Each script says so in its own header, in full and with the reasoning; this
+# list is a pointer, not a substitute.
+#
+# ── A SCRIPT MAY NEED MORE THAN THESE INPUTS ───────────────────────────────
+#
+# `script` + `project` + `apply` cover most of them. Anything else goes in
+# `extra_args`, and a script that REQUIRES something refuses to start and says
+# what is missing rather than doing part of the job. For example
+# `weekly-reports` reconstructs one named tenant's history, so it needs
+# `--team <teamId>` or `--org <orgId>`, and a real write also needs `--yes`:
+# its typed confirmation has no terminal to prompt at here, and the
+# environment's reviewer gate is what stands in for it.
 
 on:
   workflow_dispatch:
@@ -41,15 +66,18 @@ on:
           - affiliation-active-orgs
           - activity-type-mirrors
           - booking-joined-at
+          - contact-counts
           - contact-notes-count
           - document-mirrors
           - document-versions
           - finance
           - gateway-data
+          - ledger-ttl
           - partner-apps
           - site-translations
           - subscription-lifecycle
           - team-public-profile
+          - weekly-reports
       project:
         description: 'Target Firebase project'
         type: choice

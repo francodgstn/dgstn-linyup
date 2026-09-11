@@ -12,9 +12,10 @@ import {
 } from '@linyup/shared'
 import {
   TEAMS_COLLECTION,
+  TEAM_COUNTERS_SUBCOLLECTION,
+  TEAM_CONTACT_COUNTER_DOC,
   ORGANIZATIONS_COLLECTION,
   SAAS_SUBSCRIPTIONS_COLLECTION,
-  CONTACTS_COLLECTION,
   USERS_COLLECTION,
 } from '@linyup/shared'
 import { adminDb } from '@/lib/firebase-admin'
@@ -59,20 +60,62 @@ function teamPaymentsStatus(team: Team): PaymentsStatus {
   return (p.connectStatus as PaymentsStatus | undefined) ?? 'pending'
 }
 
-export type OverviewMetrics = PlatformMetrics & { recentSignups: AccountRow[] }
+export type OverviewMetrics = PlatformMetrics & {
+  recentSignups: AccountRow[]
+  /**
+   * Teams whose contact counter has not been written yet, and which therefore
+   * contribute NOTHING to `contacts.totalActive`.
+   *
+   * Reported rather than hidden. The total is a sum of stored counters now, so
+   * a tenant without one understates it — silently, and upwards-looking numbers
+   * are the ones least likely to be questioned (the same failure
+   * `lib/liveContacts.ts` in the web app exists to prevent). Nonzero here means
+   * the nightly reconciliation has not run since those teams appeared; the
+   * overview says so instead of quietly reporting a smaller platform.
+   */
+  contactCountsMissing: number
+}
 
-/** Count active contacts for a team — canonical definition (matches the
- *  getActiveContacts util used by the Cloud Functions): deleted_at and
- *  archived_at both null. Equality-only filters need no composite index. */
-async function countActiveContacts(teamId: string): Promise<number> {
-  const agg = await adminDb
-    .collection(CONTACTS_COLLECTION)
-    .where('teamId', '==', teamId)
-    .where('deleted_at', '==', null)
-    .where('archived_at', '==', null)
-    .count()
-    .get()
-  return agg.data().count
+/** The line the overview shows when some counters are missing. */
+export const CONTACT_COUNTER_NOTE =
+  'Contact totals come from per-team counters, reconciled nightly. Teams counted as unknown are excluded from the total until then.'
+
+/**
+ * Live contacts per team, READ rather than counted.
+ *
+ * This ran one `count()` aggregation PER TEAM, in parallel, on every page view
+ * of both the overview and the accounts table — a per-request fan-out that
+ * grows with the TENANT count, which is the axis the platform actually scales
+ * on (docs/scalability-2026-09.md §17 B8). The number now lives on
+ * `teams/{id}/counters/contacts`, written by the `trackContacts` trigger and
+ * reconciled nightly from an authoritative `count()`; see
+ * `utils/contactCounter.ts` in shared.
+ *
+ * A MISSING counter is `null`, never 0. A team whose counter has never been
+ * written (created since the last reconciliation, or predating the counter) is
+ * not an empty studio, and a zero here would read as one — on the screen an
+ * operator uses to decide who is close to their plan's cap.
+ */
+async function readContactCounters(teamIds: string[]): Promise<Map<string, number | null>> {
+  const out = new Map<string, number | null>()
+  if (teamIds.length === 0) return out
+  const refs = teamIds.map((id) =>
+    adminDb
+      .collection(TEAMS_COLLECTION)
+      .doc(id)
+      .collection(TEAM_COUNTERS_SUBCOLLECTION)
+      .doc(TEAM_CONTACT_COUNTER_DOC),
+  )
+  // One round trip per chunk instead of one per team.
+  const CHUNK = 300
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const snaps = await adminDb.getAll(...refs.slice(i, i + CHUNK))
+    for (const snap of snaps) {
+      const live = snap.exists ? (snap.data()?.live as unknown) : undefined
+      out.set(snap.ref.parent.parent!.id, typeof live === 'number' ? live : null)
+    }
+  }
+  return out
 }
 
 interface LoadResult {
@@ -107,11 +150,9 @@ async function loadAccounts(): Promise<LoadResult> {
     }
   }
 
-  // Active-contact counts per team, in parallel.
+  // Live-contact counts per team, read from the stored counters.
   const teamIds = teamsSnap.docs.map((d) => d.id)
-  const counts = await Promise.all(teamIds.map((id) => countActiveContacts(id)))
-  const contactCount = new Map<string, number>()
-  teamIds.forEach((id, i) => contactCount.set(id, counts[i]!))
+  const contactCount = await readContactCounters(teamIds)
 
   // Studios per organisation — the organisation tier is priced per studio, so
   // this is its subscription amount rather than a statistic. Counted from the
@@ -138,7 +179,7 @@ async function loadAccounts(): Promise<LoadResult> {
       plan,
       status,
       trialEndsAtMs,
-      contactCount: contactCount.get(doc.id) ?? 0,
+      contactCount: contactCount.get(doc.id) ?? null,
       includedContacts: plan ? PLAN_PRICING[plan].includedContacts : null,
       ownerEmail: ownerEmail.get(team.createdBy) ?? null,
       createdMs: team.created?.toMillis?.() ?? 0,
@@ -221,7 +262,10 @@ export async function getOverviewMetrics(nowMs: number): Promise<OverviewMetrics
   // in these KPIs, and the two disagreed by exactly one studio.
   const counted = rows.filter((r) => !r.internal)
   const metrics = computePlatformMetrics(counted.map(toMetricInput), nowMs)
+  const contactCountsMissing = counted.filter(
+    (r) => r.type === 'team' && r.contactCount == null,
+  ).length
   // Recent signups is a LIST, not a metric — it keeps every row, so a newly
   // provisioned demo tenant is visible to the operator who just made it.
-  return { ...metrics, recentSignups: rows.slice(0, 8) }
+  return { ...metrics, recentSignups: rows.slice(0, 8), contactCountsMissing }
 }

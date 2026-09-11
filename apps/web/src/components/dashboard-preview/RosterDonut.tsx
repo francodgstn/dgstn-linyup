@@ -21,29 +21,43 @@
  *  - **The total in the hole.** A hole in the ring is the one place a donut can
  *    state its own denominator, which the legend's percentages leave implicit.
  *
- * ── TWO SHAPES, AND WHY BOTH ARE NEEDED ──────────────────────────────────────
+ * ── ONE SHAPE, AND WHAT IT COST TO GET THERE ────────────────────────────────
  *
  * All seven of the incumbent card's views are here (Franco, 2026-08-18: "in the
- * chart, include all visualizations like for the old"). They do not all fit one
- * shape, and that is a fact about the DATA, not a styling preference:
+ * chart, include all visualizations like for the old"), and since 2026-09-11
+ * every one of them is a RING (Franco: "donut for all dimensions in contact
+ * snapshot"). Getting there was not a styling decision — it needed a change
+ * to what the multi-hold views COUNT.
  *
  *  - **Exclusive** dimensions — engagement, funnel stage, age, gender, level —
- *    partition the roster. Every contact lands in exactly one slice, the parts
- *    sum to the whole, and a ring is an honest picture of that.
- *  - **Multi-hold** dimensions — affiliation TYPES and subscription TYPES — do
- *    not. One contact can hold three affiliations, so the parts sum PAST 100%.
- *    A ring of overlapping parts states a false denominator. These render as
- *    BARS, each measured against the largest single value, which claims nothing
- *    about a total. The incumbent card reached the same conclusion independently.
+ *    partition the roster already. Every contact lands in exactly one slice and
+ *    the parts sum to the whole.
+ *  - **Multi-hold** dimensions — affiliation TYPES and subscription TYPES — did
+ *    not. One contact can hold three affiliations, so counting holders per type
+ *    sums PAST 100% and a ring of those parts states a false denominator. That
+ *    is why they used to be bars, and the objection was correct.
+ *
+ * `partitionByHeld` answers that objection rather than overriding it: a contact
+ * with ONE value lands on that value, a contact with SEVERAL lands in one "more
+ * than one" slice, and a contact with none lands in "none". Every contact is in
+ * exactly one slice again, so the ring's denominator is true by construction.
+ *
+ * **The cost, stated plainly:** a type's slice is now the contacts who hold ONLY
+ * it, not everyone who holds it. A studio where multi-holding is common reads a
+ * big "more than one" slice and small per-type ones — a true picture of the
+ * roster, but NOT the per-type holder count, and nothing on this block shows
+ * that any more. If somebody needs holders-per-type back it belongs in
+ * `/contacts`, where a filter can show the actual people, not as a second shape
+ * here.
  *
  * ── THE FIXED HEIGHT IS LOAD-BEARING ─────────────────────────────────────────
  *
- * `CHART_AREA` is a hard height both shapes live inside, and it is not
+ * `CHART_AREA` is a hard height every view lives inside, and it is not
  * cosmetic. The quote at the foot of this column ends ~21px above a 720px fold
  * (measured in a browser, not computed). If switching views changed this
  * block's height, picking "subscription types" would push the sign-off off the
- * first screen. So: the donut is centred in the box, and a bar list longer than
- * the box scrolls inside it with a "+N more" foot rather than growing it.
+ * first screen. So: the donut is centred in the box, and a legend longer than
+ * the box scrolls inside it rather than growing it.
  *
  * If a future view genuinely cannot fit, take the space from the QUEUE, never
  * from the quote — see the rule beside the height in the page source. The quote
@@ -77,13 +91,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 type Datum = { name: string; value: number; color: string }
 
-/** Partition the roster — a ring is honest. */
+/** Already a partition of the roster: one contact, one slice. */
 type ExclusiveView = 'engagement' | 'acquisition' | 'age' | 'gender' | 'level'
-/** A contact can hold several — the parts sum past 100%, so bars. */
+/** A contact can hold several — made into a partition by `partitionByHeld`. */
 type MultiView = 'affiliation' | 'subscription'
 type View = ExclusiveView | MultiView
-
-const MULTI_VIEWS: readonly View[] = ['affiliation', 'subscription']
 
 /** The one height both shapes live inside. See the header — this is not cosmetic. */
 const CHART_AREA = 'h-[150px]'
@@ -130,6 +142,10 @@ const SERIES_COLORS = [
   '#14B8A6',
 ]
 const NONE_COLOR = '#D1D5DB'
+/** Deliberately a NEUTRAL, like `NONE_COLOR`: "more than one" is an answer about
+ *  the shape of the roster, not one of the types being compared, and a series
+ *  colour would put it in the running with them. */
+const SEVERAL_COLOR = '#94A3B8'
 
 function tsToMs(ts: unknown): number | null {
   if (!ts) return null
@@ -150,6 +166,48 @@ function calcAge(birthdate: { toDate(): Date } | string | null | undefined): num
 function humanizeKey(k: string): string {
   const s = k.replace(/[_-]+/g, ' ').trim()
   return s ? s[0].toUpperCase() + s.slice(1) : k
+}
+
+/**
+ * Turn a MULTI-HOLD dimension into a partition, so a ring can state a true
+ * denominator for it. See the header for what this costs.
+ *
+ * `held` returns the DISTINCT values one contact holds; the contact then lands
+ * in exactly one slice: that value if there is one of them, "more than one" if
+ * there are several, "none" if there are none.
+ */
+function partitionByHeld(
+  live: Contact[],
+  held: (c: Contact) => { id: string; name: string }[],
+  labels: { several: string; none: string },
+): Datum[] {
+  const only = new Map<string, { name: string; count: number }>()
+  let several = 0
+  let none = 0
+  for (const c of live) {
+    const values = held(c)
+    if (values.length === 0) {
+      none++
+    } else if (values.length > 1) {
+      several++
+    } else {
+      const cur = only.get(values[0].id) ?? { name: values[0].name, count: 0 }
+      cur.count++
+      only.set(values[0].id, cur)
+    }
+  }
+  const data: Datum[] = [...only.values()]
+    .sort((a, b) => b.count - a.count)
+    .map((e, i) => ({
+      name: e.name,
+      value: e.count,
+      color: SERIES_COLORS[i % SERIES_COLORS.length],
+    }))
+  // Both tails go LAST and in this order, so the two neutral slices sit
+  // together at the end of every legend rather than sorted among the types.
+  if (several > 0) data.push({ name: labels.several, value: several, color: SEVERAL_COLOR })
+  if (none > 0) data.push({ name: labels.none, value: none, color: NONE_COLOR })
+  return data
 }
 
 export function RosterDonut({
@@ -242,64 +300,36 @@ export function RosterDonut({
       if (unranked > 0) data.push({ name: tc('rankUnranked'), color: '#E5E7EB', value: unranked })
       break
     }
-    case 'affiliation': {
-      const counts = new Map<string, number>()
-      let none = 0
-      for (const c of live) {
-        const types = Array.from(new Set(c.affiliation_summary?.types ?? []))
-        if (types.length === 0) {
-          none++
-          continue
-        }
-        types.forEach((k) => counts.set(k, (counts.get(k) ?? 0) + 1))
-      }
-      data = [...counts.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(([key, value], i) => ({
-          name: humanizeKey(key),
-          value,
-          color: SERIES_COLORS[i % SERIES_COLORS.length],
-        }))
-      if (none > 0) data.push({ name: tc('filterAffiliationNone'), value: none, color: NONE_COLOR })
+    case 'affiliation':
+      data = partitionByHeld(
+        live,
+        (c) =>
+          Array.from(new Set(c.affiliation_summary?.types ?? [])).map((k) => ({
+            id: k,
+            name: humanizeKey(k),
+          })),
+        { several: t('rosterSeveral'), none: tc('filterAffiliationNone') },
+      )
       break
-    }
-    case 'subscription': {
-      const counts = new Map<string, { name: string; count: number }>()
-      let none = 0
-      for (const c of live) {
-        // A type counts ONCE per contact, however many subscriptions of it they hold.
-        const distinct = new Map<string, string>()
-        for (const s of c.active_subscriptions ?? []) {
-          if (!distinct.has(s.subscription_type_id))
-            distinct.set(s.subscription_type_id, s.subscription_type_name ?? '—')
-        }
-        if (distinct.size === 0) {
-          none++
-          continue
-        }
-        for (const [id, name] of distinct) {
-          const cur = counts.get(id) ?? { name, count: 0 }
-          cur.count++
-          counts.set(id, cur)
-        }
-      }
-      data = [...counts.values()]
-        .sort((a, b) => b.count - a.count)
-        .map((e, i) => ({
-          name: e.name,
-          value: e.count,
-          color: SERIES_COLORS[i % SERIES_COLORS.length],
-        }))
-      if (none > 0) data.push({ name: tc('filterSubscriptionNone'), value: none, color: NONE_COLOR })
+    case 'subscription':
+      data = partitionByHeld(
+        live,
+        (c) => {
+          // A TYPE counts once per contact, however many subscriptions of it
+          // they hold — two Essential plans is one type, not "more than one".
+          const distinct = new Map<string, string>()
+          for (const sub of c.active_subscriptions ?? []) {
+            if (!distinct.has(sub.subscription_type_id))
+              distinct.set(sub.subscription_type_id, sub.subscription_type_name ?? '—')
+          }
+          return [...distinct].map(([id, name]) => ({ id, name }))
+        },
+        { several: t('rosterSeveral'), none: tc('filterSubscriptionNone') },
+      )
       break
-    }
   }
 
-  const isMulti = MULTI_VIEWS.includes(view)
   const plotted = data.reduce((sum, d) => sum + d.value, 0)
-  // Bars measure against the LARGEST VALUE, never a total — the whole reason
-  // these views are not a ring is that their total is not meaningful.
-  const peak = data.reduce((max, d) => Math.max(max, d.value), 0)
 
   return (
     <div className="flex h-full flex-col">
@@ -350,35 +380,9 @@ export function RosterDonut({
           </div>
         ) : plotted === 0 ? (
           <p className="pt-6 text-sm text-muted-foreground">{t('rosterEmpty')}</p>
-        ) : isMulti ? (
-          /* MULTI-HOLD: bars. No ring, no denominator, no percentages — the
-             count and its share OF THE LARGEST bar is all that can honestly be
-             said when one contact may appear in several rows. Scrolls inside
-             the fixed box; it never grows it. */
-          <ul className="h-full space-y-2 overflow-y-auto pr-1">
-            {data.map((d) => (
-              <li key={d.name} className="min-w-0">
-                <div className="flex items-baseline gap-2 text-sm">
-                  <span className="min-w-0 flex-1 truncate" title={d.name}>
-                    {d.name}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">{d.value}</span>
-                </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${peak > 0 ? Math.max(2, (d.value / peak) * 100) : 0}%`,
-                      background: d.color,
-                    }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
         ) : (
-          /* EXCLUSIVE: chart left, legend right. `items-center` so a two-row
-             legend still reads as belonging to the ring rather than floating. */
+          /* Chart left, legend right. `items-center` so a two-row legend still
+             reads as belonging to the ring rather than floating. */
           <div className="flex h-full items-center gap-5">
             <div className="relative h-[150px] w-[150px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -398,7 +402,15 @@ export function RosterDonut({
                       <Cell key={d.name} fill={d.color} stroke="none" />
                     ))}
                   </Pie>
+                  {/* `wrapperStyle` is the fix for a real defect, not polish:
+                      the centre figure below is an absolutely-positioned
+                      sibling that comes LATER in the DOM, so with both at
+                      `z-index: auto` it painted OVER the tooltip and a slice
+                      hovered near the middle showed its label behind the big
+                      number. Giving the tooltip a stacking order beats the
+                      overlay without reordering anything. */}
                   <Tooltip
+                    wrapperStyle={{ zIndex: 10 }}
                     formatter={(value, name) => [
                       `${value} (${Math.round((Number(value) / plotted) * 100)}%)`,
                       name,
@@ -415,7 +427,16 @@ export function RosterDonut({
               </div>
             </div>
 
-            <ul className="min-w-0 flex-1 space-y-1.5 overflow-y-auto py-0.5">
+            {/* `max-h-full` is what makes `overflow-y-auto` mean anything here.
+                The row above is `items-center`, so this list is NEVER stretched
+                to the box — its height is its content's, and an unbounded list
+                simply grew past 150px and, being centred, spilled EQUALLY above
+                and below: over the view Select above it and the quote below,
+                covering the one control that changes what is drawn. A rank
+                system with fourteen belts reaches that on the Level view.
+                `max-h-full` resolves against the box's definite height and caps
+                it; a short legend still centres on the ring. */}
+            <ul className="min-w-0 max-h-full flex-1 space-y-1.5 overflow-y-auto py-0.5">
               {data.map((d) => (
                 <li key={d.name} className="flex items-center gap-2 text-sm">
                   <span

@@ -453,6 +453,7 @@ loop:
 | `sendBookingReminders` | hourly | global sessions scan over a 15-day window (`MAX_OFFSET_HOURS = 14*24` + 24 h catch-up), then an N+1 bookings fetch per session | the worst one — runs 24×/day |
 | `markNoShowBookings` | daily | global sessions where `end` in the last 7 days + per-session bookings | N+1 |
 | `capturePlatformMetrics` | daily | all teams + a `count()` per team | cheap-ish (aggregations) |
+| `monthlyFinanceReports` | monthly | for every team: two months of journal + payments | **missed by this table when it was written** — same shape, found on 2026-09-11 |
 
 None of these has a budget or a cursor. At ~500 tenants × 300 contacts,
 `runScheduledRules` is ~150k sequential reads and `weeklyReports` is worse —
@@ -470,6 +471,78 @@ parallelism, per-tenant retries, and isolation of one tenant's failure.
 the largest offset any team has actually configured rather than the theoretical
 14-day ceiling, and skip the per-session bookings fetch when
 `bookings_count === 0`.
+
+### DONE 2026-09-11 — all four, plus both narrowings
+
+`packages/functions/src/utils/tenantFanOut.ts` is the shared machinery and its
+header carries the reasoning. Each job is now a dispatcher that lists the
+tenants and enqueues one task each; the work lives in a `…ForTeam(teamId)`
+function that BOTH the task worker and the dispatcher's local-dev inline path
+call, so there is one implementation and not two. The workers are four separate
+handlers (`dailyTasks/tenantWorkers.ts`) and therefore four queues: the hourly
+reminder flood never sits behind Monday's reports, and each gets retry and
+concurrency settings that suit its own work.
+
+| Job | Dispatcher enqueues into | Per-tenant work |
+|---|---|---|
+| `sendBookingReminders` (hourly) | `remindersForTeam` | `sendBookingRemindersForTeam` |
+| `markNoShowBookings` (daily) | `noShowsForTeam` | `markNoShowBookingsForTeam` |
+| `runScheduledRules` (daily) | `scheduledRulesForTeam` | `runScheduledRulesForTeam` |
+| `weeklyReports` (weekly) | `weeklyReportForTeam` | `weeklyReportsForTeam` |
+| `monthlyFinanceReports` (monthly) | `financeReportForTeam` | `monthlyFinanceReportsForTeam` |
+
+Both narrowings landed with the reminders: the scan window is now the team's
+OWN longest configured offset plus the catch-up (a studio with no steps, or
+reminders off, reads no sessions at all), and a session whose `bookings_count`
+is zero costs no subcollection read — in `markNoShowBookings` too.
+
+Three properties make at-least-once delivery safe, and each is the JOB's own
+rather than something the dispatcher asserts: per-step `reminders_sent` markers,
+a weekly report that refuses to overwrite an existing week, and a no-show pass
+that only ever flips a `pending` booking. The deterministic task id
+(`{teamId}-{runId}`, tenant first — a run id is the most sequential prefix
+available, and Cloud Tasks degrades on those) is a cheap first line of defence
+on top, never the guarantee. `utils/tenantFanOut.test.ts` pins all of it.
+
+**A bug found while wiring it, worth its own paragraph.** The obvious tenant
+list is `teams where archived_at == null` — which three jobs already used. But a
+Firestore `== null` filter matches an **explicit null and not a missing field**,
+and on `teams` that field is missing: nothing writes it on create and `Team`
+does not declare it. So the clause matches almost no studio, and a dispatcher
+built on it would enqueue nothing for nearly everybody while reporting a clean
+run — the exact silent half-run this conversion exists to end. The fan-out
+projects the field and filters in memory, where an absent marker correctly reads
+as "not archived". `weeklyReports` carried the clause and is fixed by the
+conversion.
+
+**`monthlyFinanceReports` was the worst case of it, and is now fixed too
+(2026-09-11).** That job had the clause and nothing else — no second tenant
+source, no fallback — so it has been writing almost no monthly finance reports
+for as long as it has existed, while logging a clean `0 team-months written`.
+It is converted onto the same fan-out, which fixes the listing by construction
+and removes a fifth instance of this section's own problem. Its months now come
+from the RUN SLOT rather than the worker's clock, so a task retried hours or
+days later still regenerates the pair the schedule fired for.
+
+**A studio that ran on this needs its history regenerated**: the job overwrites
+by design (the journal is the source of truth), so re-running it is the repair
+— but only the two most recent months are in scope on any given run. Older
+months have no report and no job that will produce one.
+
+**A third instance, found by sweeping for the rest of the class.**
+`syncTeamPublicProfile`'s forms probe asked `forms where status == 'published'
+and archived_at == null`, and no form document has ever carried that field —
+`Form.archived_at` is declared optional, `createForm` does not write it, and
+nothing archives a form at all. So `formsActive` was false for every studio, and
+a published form never appeared in `active_public_surfaces` — which is what the
+public tenant root and the site menu read to decide a surface is live. Fixed the
+same way, in memory.
+
+(The identical clause against `contacts` is correct and must be left alone —
+contact writers always set the field explicitly, which is what
+`apps/web/src/lib/liveContacts.ts` exists to guarantee. Those, plus the fixed
+sites, are the whole class: `handleTrialLifecycle` queries teams narrowly with
+its own cap and is not of this shape.)
 
 ## 10. Write amplification per booking
 
@@ -605,13 +678,24 @@ under any quota.
 |---|---|---|---|
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
 | 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check:** follow the runbook; step 1 (register the web app in the Firebase Console) is yours. |
-| 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | Not started. The load-bearing one for growth. |
+| 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | **DONE 2026-09-11** — all four, plus both of the reminder narrowings, on shared machinery (`utils/tenantFanOut.ts`). See §9 for the table and for the `archived_at` bug the wiring turned up. |
 | 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
 | 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
 
-Steps 1, 2 and 5 are small and are in. Step 3 is a week or so. None of it is
-architectural — the data model is sound, and nothing here requires reshaping
-collections or the tenant boundary.
+Steps 1, 2, 3 and 5 are done. What remains on this list is **App Check**
+enforcement (step 2's third part, which starts with registering the web app in
+the Firebase Console) and confirming the prod budget's amount and recipients.
+None of it was architectural — the data model is sound, and nothing here
+required reshaping collections or the tenant boundary.
+
+One consequence worth stating for whoever deploys: the four scheduled jobs now
+depend on Cloud Tasks, so their IAM and quota matter where they did not before.
+The two pre-existing task functions (`executeDelayedRule`, `runSeriesTeardown`)
+already prove the service account can enqueue. A dispatcher that cannot enqueue
+ANY tenant throws rather than reporting a clean run, so the failure is visible
+in the scheduler rather than silent. Locally, `firebase emulators:start` does
+not run Cloud Tasks unless asked, and the dispatchers fall back to running the
+tenants inline so a developer's machine still exercises them.
 
 ---
 
@@ -691,7 +775,7 @@ visible rows), **server list** (a callable or an index-backed cursor list),
 | A8 | Gamification | all contacts by `current_month_score`; renders all | correct | 3,000 rows for a leaderboard nobody scrolls | **cap + more** (`limit(100)`) | tiny — **DONE 2026-09-11.** `limit(50)` per ranked field, each on its own index; the copy already said top 50. |
 | A9 | Referrals plugin | ALL contacts (**no `deleted_at` filter**) + all referrals ever | reads deleted people back into memory | roster + a LOG, both unbounded | contacts → `liveContactConstraints()` and only the ids the shown referrals name; referrals → **cap + more** by `created_at desc` | small — **DONE 2026-09-11.** Referrals paged with the status filter in the query; the names come by id (`useContactsByIds`), so an archived referrer still resolves. |
 | A10 | Affiliations | all non-deleted contacts (its own key), sorted in memory, `filtered` rendered whole | correct | same shape as A1 without the attention sort | **DOM window**; status filter in the query; A4's one key | small — **DONE 2026-09-11.** DOM-windowed tables (`useWindowedList`, uniform rows, no measuring). It keeps its OWN read, deliberately: it needs the archived too (a person who left may still hold a federation affiliation, and its notice reasons over every lifecycle), so `useActiveContacts` would be the wrong set. |
-| A11 | **Org affiliations** | all live contacts with an org affiliation **across every member studio** (`teamId in` chunks of 30) | correct for a 3-studio org | a 30-studio federation lists tens of thousands of people on one page | **expectation** — an org never lists a roster; it gets **counts** per studio and status (`getCountFromServer`) and drills down into one studio's page | a day, and a product decision — **Tables DOM-windowed 2026-09-11**; the counts + per-studio drill-down stay the Phase 4 decision. |
+| A11 | **Org affiliations** | all live contacts with an org affiliation **across every member studio** (`teamId in` chunks of 30) | correct for a 3-studio org | a 30-studio federation lists tens of thousands of people on one page | **expectation** — an org never lists a roster; it gets **counts** per studio and status (`getCountFromServer`) and drills down into one studio's page | a day, and a product decision — **Tables DOM-windowed 2026-09-11**; the counts + per-studio drill-down stay the Phase 4 decision. **The counts + per-studio drill-down landed 2026-09-11** — see §18.2. |
 | A12 | Documents plugin | `WaiverSigners` — all signers per document | correct | one row per member who ever signed; equals the roster | **cap + more** by `accepted_at desc` + search by contact | small — **DONE 2026-09-11.** DIFFERENTLY: the READ stays whole — the evidence line is a count over the whole signed population that no cheap query reproduces, and it is roster-scale — while the TABLE pages a hundred rows at a time. |
 | A13 | Payments | `useMemberSubscriptions` — every subscription incl. cancelled; the hook's own header names the fix | correct, and roster-like by design | headcount **plus churn**: after three years the ended rows outnumber the live | **status filter** — live statuses by default, "show ended" pages the rest | small — **DONE 2026-09-11.** `status in` the live set (`LIVE_SUBSCRIPTION_STATUSES`, now on the hook); the page never listed an ended row, so only the read changed. |
 
@@ -706,14 +790,14 @@ visible rows), **server list** (a callable or an index-backed cursor list),
 | B5 | Custom forms | submissions — all per form, rendered whole, **and the CSV export reads the same array** | correct | a lead form with 5,000 submissions renders 5,000 rows and builds the CSV in the browser | **cap + more** on the list; export moves to a callable that streams | small / half a day — **DONE 2026-09-11.** Paged at 50 with the footer; the export reads the whole set ITSELF, on the click — §18 point 4, built together. |
 | B6 | Space (member portal) | `listMyContactPayments` — reads **all** of the contact's `member_payments`, sorts in memory, slices 100 | per person, so slow | a five-year member with a weekly drop-in habit is 250 reads for a 100-row answer | `orderBy('created_at','desc') limit(100)` with the composite index (`contactId`, `created_at`) | tiny — **DONE 2026-09-11.** `orderBy created_at desc limit 100` on a new (`contactId`, `created_at`) index; the emulator will not miss it, so the index declaration is the test. |
 | B7 | Contact detail (web), Space, mobile | per-contact logs: alerts, notes, affiliations, goals + evaluations, documents, credit grants, subscription history | all unbounded, all per person | years of one person's history are hundreds of rows, not thousands | **accept** — record it; cap if a real contact ever proves otherwise | — |
-| B8 | **Operator console** | `loadAccounts` — every team + org + SaaS subscription, then **one count aggregation per team**; signup allow-list all; feedback all | fine at tens of tenants | grows with TENANTS, the same axis as Part 2 §9: 1,000 studios = 1,000 aggregation queries per page view | contact counts from the nightly `platform_metrics` snapshot (or a per-team stored counter); the accounts table pages; allow-list and feedback **cap + more** | a day |
+| B8 | **Operator console** | `loadAccounts` — every team + org + SaaS subscription, then **one count aggregation per team**; signup allow-list all; feedback all | fine at tens of tenants | grows with TENANTS, the same axis as Part 2 §9: 1,000 studios = 1,000 aggregation queries per page view | contact counts from the nightly `platform_metrics` snapshot (or a per-team stored counter); the accounts table pages; allow-list and feedback **cap + more** | a day — **DONE 2026-09-11.** The per-tenant `count()` is gone: the console reads `teams/{id}/counters/contacts`, batched. `trackContacts` applies deltas (ONE rule, `liveContactCountDeltas` in shared, so a studio move is two deltas and not one), and the nightly job — which already computes the authoritative number — writes it back ABSOLUTE, so drift lasts at most a night. A missing counter is unknown, never zero, and the overview names how many tenants are uncounted rather than quietly reporting a smaller platform. `pnpm backfill:contact-counts` closes the window after deploy. The allow-list is capped and says so; feedback was already capped at 100. **The accounts TABLE still loads every tenant** — see below. |
 
 ### C. PER-ENTITY fan-outs — bounded, but with a multiplier
 
 | # | Surface | Fan-out | Multiplier | Fix | Size |
 |---|---|---|---|---|---|
-| C1 | **Mobile** attendance calendar + training chart | `getContactAttendance`: one `participants/{me}` **read per session in the window** — the sessions come from one query, then one `getDoc` each | a month at a busy studio ≈ 150–200 reads per calendar open, per member; the chart adds the same over its weeks | a **`getMyAttendance` callable** (mirror of `getMyBookings`), or a collection-group query on `participants` where `contactId == me` with a `checkedInAt` range — the (`contactId`, `checkedInAt`) index the web's `useContactRecentSessions` already uses, and a contact session may read its own rows. Kills the fan-out outright | a day |
-| C2 | Mobile profile agenda | `getSessionsWithParticipation` — same per-session check for the PAST half of ±7 days | ~20 reads per open | same fix as C1 | with C1 |
+| C1 | **Mobile** attendance calendar + training chart | `getContactAttendance`: one `participants/{me}` **read per session in the window** — the sessions come from one query, then one `getDoc` each | a month at a busy studio ≈ 150–200 reads per calendar open, per member; the chart adds the same over its weeks | a **`getMyAttendance` callable** (mirror of `getMyBookings`), or a collection-group query on `participants` where `contactId == me` with a `checkedInAt` range — the (`contactId`, `checkedInAt`) index the web's `useContactRecentSessions` already uses, and a contact session may read its own rows. Kills the fan-out outright | a day — **DONE 2026-09-11.** The `getMyAttendance` callable answers it in one collection-group query over her own rows plus one batched session read. The WINDOW is on the session's clock and the SCAN on the row's (`checkedInAt` ± 90 days), because a row confirmed from a booking is stamped BEFORE its session and a retroactive confirm after it; a scan that hits its cap says so. `myAttendance.test.ts` derives the set of member-app functions that touch a participant document and pins it by name, so the fan-out cannot return quietly. |
+| C2 | Mobile profile agenda | `getSessionsWithParticipation` — same per-session check for the PAST half of ±7 days | ~20 reads per open | same fix as C1 | with C1 — **DONE 2026-09-11.** Same call — the agenda's past half comes from `getContactAttendance` rather than a read per past session. |
 | C3 | Bookings page | per-session `bookings` fetch inside the window | already capped by `MAX_WINDOW_SESSIONS` | none | — |
 | C4 | Session detail / peek, event people lists, check-in panel | participants + bookings per session; attendees + invitations per event | bounded by capacity / by the event; a 500-person camp renders 500 rows | none now; **DOM window** if a camp ever complains | — |
 | C5 | Org teams page | per member studio: one `getDoc` + one members query | bounded by studio count | none | — |
@@ -737,10 +821,44 @@ the onboarding conversation before a customer finds it.
    expectation to set: the free, coach and studio tiers are for studios of up
    to about 3,000 live contacts; larger studios are an organisation-tier
    conversation, and an organisation lists per studio (next point).
+
+   **Still open after Phase 4, and deliberately — it has a precondition.** A
+   nightly field means a nightly pass over every live contact of every tenant,
+   which is a NEW instance of the single-instance sequential scan Part 2 §9
+   names as the load-bearing problem, added before §14 step 3 (the Cloud Tasks
+   dispatchers) has fixed the ones already there. Building it now would put the
+   week of work on the foundation this document says breaks first.
+
+   There is also a design that needs NO sweep, and it is written down here so
+   that when the ceiling arrives the week is a week of typing rather than a week
+   of deciding. Of the reasons `contactAttentionReasons` returns, only two move
+   with the clock (`gone_quiet`, `checkin_lapsed`); the other seven change only
+   on a write, which `trackContacts` already sees. So: store the write-driven
+   score on the contact (fixed-point guard, as `onEmbedWidgetsWritten` does), and
+   express the two clock reasons as RANGE queries on the timestamps they already
+   compare — `last_session_at` and `last_checkin_at`. The list is then three
+   bounded queries merged, with the exact reasons recomputed on the ≤3N documents
+   loaded, so it is not an approximation of the client answer but the same
+   answer. What it costs is a SECOND roster path beside the client one, which is
+   Part 1's whole subject — so it is worth building once, late, and not twice.
 2. **An organisation never lists a roster.** A11 is the only page that does,
    and at federation scale it cannot: the org level gets counts per studio and
    status, and drills into one studio's page. This is a product decision as
    much as a fix, and it should be made before the first 20-studio org signs.
+
+   **DONE 2026-09-11.** The studio picker now scopes the QUERY rather than
+   filtering rows the page already downloaded, so choosing a studio reads that
+   studio's people and nobody else's. Above `ORG_ROSTER_CAP` people on the
+   federation's books, "all studios" is refused — with a route, never silently:
+   the page shows one row per member studio with its count, and each row is the
+   way in. The counts are one `count()` per studio, bounded by the studio count
+   inside one organisation rather than by the contact count.
+
+   Per studio and NOT per studio × status, which is the one deviation from the
+   sentence above: the status lives on the affiliation document rather than the
+   contact, so a status breakdown would be an aggregation per pair — the very
+   fan-out this replaces. The breakdown appears once a studio is chosen, from
+   the affiliations that view already holds.
 3. **Firestore has no text search.** Contact search is a client-side scan of
    the loaded roster, which is exactly right at the ceiling above and wrong
    beyond it. The answer past it is an external index (Algolia / Typesense)
@@ -753,14 +871,33 @@ the onboarding conversation before a customer finds it.
    silently ships the first page. The same rule binds any export added later
    to a list in §17.
 
+   **DONE 2026-09-11, and it was mostly already true.** The three exports over
+   unbounded sets — contacts, the finance report, a member's consent history —
+   were callables before this pass; the forms CSV was fixed in Phase 1; every
+   remaining browser-built CSV reads one entity's rows or one period's. What was
+   missing was the GATE, since the forms case proves the rule is easy to break
+   silently: `contacts/exportSites.test.ts` enumerates every CSV the web app
+   builds and the reason each is bounded, and a new one fails the build until it
+   is justified or moved to a callable.
+
 ## 19. The plan, in order
 
 | Phase | What | Rows | Size |
 |---|---|---|---|
 | **1 — bound the LOGs** | notifications `unread` + `limit(50)` + retention; events on the schedule windowed like sessions; availability exceptions from today; contact requests `pending`; form submissions cap + more; referrals cap + more and names by id; gamification `limit(50)`; waiver signers paged; archived tab cap + more; Space payments `orderBy + limit`; member subscriptions live-status default | B1 B2 B3 B4 B5 B6 A2 A8 A9 A12 A13 | **DONE 2026-09-11**, a day as sized. Two deviations, each recorded on its row: A2's sidebar search keeps the whole read; A12's read stays whole and its table pages. |
 | **2 — one roster read, windowed** | every roster read goes through `useActiveContacts` (the dashboard, session detail, check-in, contact groups, affiliations and referrals each fetch their own copy today); `@tanstack/react-virtual` on the contacts, affiliations and org-affiliations tables; `getCountFromServer` for the dashboard headcount and manual-group counts | A1 A4 A5 A7 A10 | **DONE 2026-09-11**, under the two days. Two decisions, each on its row: the count aggregations were not added (A4, A7 — the pages hold the roster anyway, so a count is a read on top of the read, not instead of it); the affiliations page keeps its own read (A10 — it needs the archived). |
-| **3 — kill the fan-outs** | `getMyAttendance` callable for the mobile calendar, chart and agenda; operator console counts from the nightly snapshot + a paged accounts table | C1 C2 B8 | **two–three days** |
-| **4 — when a customer approaches the ceiling** | materialized attention score + server-driven roster list; org-level counts + per-studio drill-down; export callables | §18 1, 2, 4 | **a week each**, not before there is a studio that needs it |
+| **3 — kill the fan-outs** | `getMyAttendance` callable for the mobile calendar, chart and agenda; operator console counts from a stored per-team counter + a paged accounts table | C1 C2 B8 | **DONE 2026-09-11**, except the accounts table (below). |
+| **4 — when a customer approaches the ceiling** | materialized attention score + server-driven roster list; org-level counts + per-studio drill-down; export callables | §18 1, 2, 4 | **PARTLY DONE 2026-09-11.** §18.2 (org counts + drill-down) and §18.4 (exports, plus the gate that keeps them honest) shipped. §18.1 is the one left, and it stays left: it needs an all-tenant nightly pass, which is §14 step 3's job to make safe first. Its no-sweep design is written down in §18.1 so the wait costs nothing. |
+
+**Deferred out of Phase 3, with the reason: the operator console's accounts
+table.** The plan said page it. Paging it saves nothing while the OVERVIEW on
+the same request needs every tenant to compute the platform metrics — the table
+would page and the read behind it would not. What actually made that page cheap
+was the per-team counter (B8), which removed the aggregation per tenant; what
+remains is one document read per tenant, which is the same axis as §9's
+scheduled jobs and wants the same answer. Page the table when the overview
+stops summing rows — i.e. when it reads the nightly snapshot instead — and do
+the two together rather than shipping the half that looks like progress.
 
 Two rules for the work, both learned in Part 1:
 

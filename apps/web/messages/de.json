@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Es ist noch nichts passiert, also gibt es nichts zu zählen. Schliesse die Einrichtung ab, und diese Seite füllt sich von selbst.",
     "seriesSubscribed": "Abonniert",
     "seriesAffiliated": "Angeschlossen",
-    "seriesViaPartner": "Über eine Partner-App"
+    "seriesViaPartner": "Über eine Partner-App",
+    "chartTitleActivities": "Aktivitäten im Zeitverlauf",
+    "chartEmptyActivities": "In diesem Zeitraum wurden bei keiner Aktivität Check-ins erfasst.",
+    "seriesAllActivities": "Alle Aktivitäten",
+    "activityNone": "Keine Aktivität",
+    "measureCheckins": "Check-ins",
+    "chartTitleDemographics": "Wer trainiert",
+    "demoTrendAgeHint": "Das Alter wird für jede Woche berechnet, nicht für heute.",
+    "demoTrendGenderHint": "Die heutige Angabe, rückwirkend auf jede Woche angewendet.",
+    "demoTrendTotal": "Gesamt"
   },
   "Contacts": {
     "noteColor_none": "Keine Farbe",
@@ -1068,7 +1077,8 @@
     "markExternalTitle": "{count, plural, one {Diesen Kontakt als extern markieren?} other {# Kontakte als extern markieren?}}",
     "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen.",
     "goalSaveFailed": "Dieses Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
-    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut."
+    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "affiliationValidUntil": "Gültig bis {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -3146,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, ein Ablaufdatum wird entfernt.",
     "bulkStatusDescActive": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, mit dem Ablaufdatum aus den Regeln dieses Typs.",
     "bulkStatusToast": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} auf {status} gesetzt.",
-    "bulkStatusPartial": "{ok} aktualisiert, {failed} abgelehnt – du verwaltest nur einen Teil dieser Studios."
+    "bulkStatusPartial": "{ok} aktualisiert, {failed} abgelehnt – du verwaltest nur einen Teil dieser Studios.",
+    "subtitleOrg": "{total} in den Büchern über {studios} Studios",
+    "allTeamsTooLarge": "Alle Studios (zu viele für eine Liste)",
+    "studioSummaryLead": "{total} Personen stehen in den Büchern dieser Organisation, mehr als die {cap}, die eine Liste fassen kann. Wähle ein Studio, um dessen Mitglieder zu bearbeiten.",
+    "colOnBooks": "In den Büchern"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliationsstatus",
@@ -7536,7 +7550,8 @@
     "seatsAttended": "anwesend",
     "metaAttended": "{count} anwesend",
     "startsInHours": "In {hours} h",
-    "startsInHoursMinutes": "In {hours} h {minutes} min"
+    "startsInHoursMinutes": "In {hours} h {minutes} min",
+    "rosterSeveral": "Mehrere"
   },
   "BookingContactFields": {
     "title": "Zu erfassende Kontaktdaten",

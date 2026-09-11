@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Nothing has happened yet, so there is nothing to count. Finish setting up and this page fills itself in.",
     "seriesSubscribed": "Subscribed",
     "seriesAffiliated": "Affiliated",
-    "seriesViaPartner": "Via a partner app"
+    "seriesViaPartner": "Via a partner app",
+    "chartTitleActivities": "Activities over time",
+    "chartEmptyActivities": "No check-ins were recorded on any activity in this period.",
+    "seriesAllActivities": "All activities",
+    "activityNone": "No activity",
+    "measureCheckins": "Check-ins",
+    "chartTitleDemographics": "Who is training",
+    "demoTrendAgeHint": "Age is worked out for each week, not today.",
+    "demoTrendGenderHint": "Today's answer, read back across every week.",
+    "demoTrendTotal": "Total"
   },
   "Contacts": {
     "noteColor_none": "No colour",
@@ -1068,7 +1077,8 @@
     "markExternalTitle": "{count, plural, one {Mark this contact as external?} other {Mark # contacts as external?}}",
     "markExternalDesc": "They can still book and attend, and their history stays. They leave the Active list, the contact count, event invitations, automations and Needs attention — until you mark them active again, or they complete your signup form.",
     "goalSaveFailed": "Couldn't save this goal. Please try again.",
-    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again."
+    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again.",
+    "affiliationValidUntil": "Valid until {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -3146,7 +3156,11 @@
     "bulkStatusDesc": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, and any expiry date cleared.",
     "bulkStatusDescActive": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, with the expiry date this type's rules give them.",
     "bulkStatusToast": "{count, plural, one {# affiliation set} other {# affiliations set}} to {status}.",
-    "bulkStatusPartial": "{ok} updated, {failed} refused — you manage only some of these studios."
+    "bulkStatusPartial": "{ok} updated, {failed} refused — you manage only some of these studios.",
+    "subtitleOrg": "{total} on the books across {studios} studios",
+    "allTeamsTooLarge": "All studios (too many to list)",
+    "studioSummaryLead": "{total} people are on this organisation's books, more than the {cap} one list can hold. Choose a studio to work through its members.",
+    "colOnBooks": "On the books"
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliation Statuses",
@@ -7536,7 +7550,8 @@
     "seatsAttended": "attended",
     "metaAttended": "{count} attended",
     "startsInHours": "In {hours}h",
-    "startsInHoursMinutes": "In {hours}h {minutes}min"
+    "startsInHoursMinutes": "In {hours}h {minutes}min",
+    "rosterSeveral": "More than one"
   },
   "BookingContactFields": {
     "title": "Contact details to collect",

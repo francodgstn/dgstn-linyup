@@ -67,6 +67,7 @@ import {
   isReservedSlug,
   DEFAULT_ENGAGEMENT_THRESHOLDS,
   TEAM_INTEGRATIONS_SUBCOLLECTION,
+  newRankLevelId,
 } from '@linyup/shared'
 import type {
   Team,
@@ -1160,7 +1161,8 @@ function RankSystemDialog({
     const nextVal = form.levels.length > 0 ? Math.max(...form.levels.map((l) => l.value)) + 1 : 0
     setForm((f) => ({
       ...f,
-      levels: [...f.levels, { value: nextVal, label: '', color: '#9CA3AF' }],
+      // A stable identity from the first keystroke — see newRankLevelId.
+      levels: [...f.levels, { id: newRankLevelId(), value: nextVal, label: '', color: '#9CA3AF' }],
     }))
   }
 
@@ -1292,7 +1294,7 @@ function RankSystemDialog({
               <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                 {form.levels.map((level, idx) => (
                   <RankLevelFields
-                    key={idx}
+                    key={level.id ?? idx}
                     level={level}
                     index={idx}
                     storagePath={storagePath}
