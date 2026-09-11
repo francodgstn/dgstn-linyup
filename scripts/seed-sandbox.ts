@@ -48,7 +48,7 @@
 
 import admin from 'firebase-admin'
 import { applicationDefault } from 'firebase-admin/app'
-import { DEFAULT_PAYMENT_MODES, normalizeActivityTags } from '@linyup/shared'
+import { DEFAULT_PAYMENT_MODES, normalizeActivityTags, withRankLevelIds } from '@linyup/shared'
 import {
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
   AFFILIATION_TYPES_SUBCOLLECTION,
@@ -1595,7 +1595,9 @@ async function seedDemoTeam(profile: SectorProfile) {
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       // Standalone Studio demo teams enable the affiliation axis (team-local 'club').
       affiliations_enabled: true,
-      ranking_systems: rankingSystem ? [{ ...rankingSystem, is_primary: true }] : [],
+      ranking_systems: rankingSystem
+        ? [{ ...rankingSystem, is_primary: true, levels: withRankLevelIds(rankingSystem.levels) }]
+        : [],
       settings: { gamification: gamificationSettings, teamEmail: email },
       bioLinkTheme: 'light',
       bioLinkAccentColor: accentColor,

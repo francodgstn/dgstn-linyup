@@ -73,6 +73,7 @@ import {
   // Taken from the shared constant rather than hand-copied, so the seeded rule
   // stays the same rule onTeamCreated provisions.
   TRIAL_CLEANUP_RULE,
+  withRankLevelIds,
 } from '@linyup/shared'
 // The document/version/mirror writer moved to lib/fixtures/documents.ts, and the
 // sanitizer + hasher moved with it — a stored fingerprint must not depend on
@@ -621,7 +622,9 @@ async function seedTeam(opts: {
       ...(trialEndsAt ? { trial_ends_at: trialEndsAt } : {}),
       ...(affiliationsEnabled ? { affiliations_enabled: true } : {}),
       ...(teamOrgId ? { organization_ids: [teamOrgId] } : {}),
-      ranking_systems: rankingSystemDefs,
+      // Levels carry deterministic ids so a re-seed ranks contacts against the
+      // same identities as the last one (see withRankLevelIds in shared).
+      ranking_systems: rankingSystemDefs.map((s) => ({ ...s, levels: withRankLevelIds(s.levels) })),
       settings: {
         gamification: gamificationSettings,
         giftCards: giftCardSettings,
@@ -2645,7 +2648,7 @@ async function seedOrg() {
       description: 'The Titan organization — managing Iron Circle Gym and Titan Combat Sports.',
       plan: 'organization',
       plan_status: 'active',
-      ranking_systems: bjjBelt,
+      ranking_systems: bjjBelt.map((s) => ({ ...s, levels: withRankLevelIds(s.levels) })),
       created: ts(daysFromNow(-180)),
       createdBy: ORG_ADMIN,
     })

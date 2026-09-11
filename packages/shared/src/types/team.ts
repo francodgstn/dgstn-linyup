@@ -183,6 +183,25 @@ export function resolveSignupDocumentIds(input: {
  * than each renderer inventing its own.
  */
 export interface RankLevel {
+  /**
+   * THE level's identity — opaque, assigned once, never reused and never
+   * renumbered. This is what records will point at, so that inserting or
+   * reordering levels moves nothing that is stored.
+   *
+   * Optional during the transition recorded in docs/rank-scale-decoupling.md:
+   * a document written before Phase 1 has none, and `withRankLevelIds` (or the
+   * `backfill:rank-level-ids` script) mints one deterministically from the
+   * label. It becomes required when `value` is dropped in Phase 4.
+   *
+   * Mint one with `newRankLevelId()` in an editor and `withRankLevelIds()` for
+   * seeds, presets and backfills — never by hand.
+   */
+  id?: string
+  /**
+   * TRANSITIONAL. Today this is still the identity records store and the order
+   * the ladder is sorted by; both jobs are moving to `id` and to array position
+   * respectively. Do not add a new reader of it — see the plan above.
+   */
   value: number
   label: string
   /** Primary colour. The belt, or the background behind an emoji. */

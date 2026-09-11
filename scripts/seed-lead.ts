@@ -63,6 +63,7 @@ import {
   PUBLIC_LOCALES,
   siteI18nDocId,
   normalizeActivityTags,
+  withRankLevelIds,
 } from '@linyup/shared'
 import {
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
@@ -854,7 +855,9 @@ async function seedLeadTenant(profile: LeadProfile) {
       default_currency: profile.currency,
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       affiliations_enabled: true,
-      ranking_systems: rankingSystem ? [{ ...rankingSystem, is_primary: true }] : [],
+      ranking_systems: rankingSystem
+        ? [{ ...rankingSystem, is_primary: true, levels: withRankLevelIds(rankingSystem.levels) }]
+        : [],
       settings: {
         gamification: profile.gamification,
         teamEmail: profile.contactEmail,

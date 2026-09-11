@@ -1,6 +1,11 @@
 # Decoupling the rank scale — a plan
 
-**Status: recorded design, not started.** Written 2026-09-11 after the HMD belt
+**Status: Phase 1 shipped 2026-09-11 (ids introduced, `value` still
+authoritative); Phases 2–5 in progress; Phase 6 blocked on the reassignment
+decision.** Decided the same day: ids are opaque strings, not a reinterpreted
+`value`, and installed mobile apps will show no belt between the Phase 2 data
+flip and their update — so that flip is a script run on Franco's timing, never
+a merge side effect. Written 2026-09-11 after the HMD belt
 scale change was found to have no implementation, and after Franco asked whether
 the progression dimension should be decoupled so the ladder can be changed at any
 time, "considering also that ranks might be changed in order, i.e. with
