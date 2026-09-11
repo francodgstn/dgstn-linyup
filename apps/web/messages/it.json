@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Non è ancora successo nulla, quindi non c'è nulla da contare. Completa la configurazione e questa pagina si riempirà da sola.",
     "seriesSubscribed": "Abbonati",
     "seriesAffiliated": "Affiliati",
-    "seriesViaPartner": "Tramite un'app partner"
+    "seriesViaPartner": "Tramite un'app partner",
+    "chartTitleActivities": "Attività nel tempo",
+    "chartEmptyActivities": "In questo periodo non è stato registrato alcun check-in su nessuna attività.",
+    "seriesAllActivities": "Tutte le attività",
+    "activityNone": "Nessuna attività",
+    "measureCheckins": "Check-in",
+    "chartTitleDemographics": "Chi si allena",
+    "demoTrendAgeHint": "L'età è calcolata per ogni settimana, non per oggi.",
+    "demoTrendGenderHint": "Il dato di oggi, applicato a ogni settimana passata.",
+    "demoTrendTotal": "Totale"
   },
   "Contacts": {
     "noteColor_none": "Nessun colore",
@@ -1068,15 +1077,14 @@
     "markExternalTitle": "{count, plural, one {Segnare questo contatto come esterno?} other {Segnare # contatti come esterni?}}",
     "markExternalDesc": "Possono ancora prenotare e partecipare, e la loro storia resta. Escono dalla lista Attivi, dal conteggio contatti, dagli inviti agli eventi, dalle automazioni e da «Da seguire» — finché non li segni di nuovo come attivi, o compilano il tuo modulo di iscrizione.",
     "goalSaveFailed": "Impossibile salvare questo obiettivo. Riprova.",
-    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova."
+    "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova.",
+    "affiliationValidUntil": "Valida fino al {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
     "subtitle": "{total} contatti · {active} affiliati",
     "searchPlaceholder": "Cerca per nome…",
     "filterAll": "Tutti",
-    "filterActive": "Affiliato",
-    "filterNone": "Non affiliato",
     "colName": "Nome",
     "colStatus": "Stato",
     "colType": "Tipo",
@@ -1090,7 +1098,6 @@
     "expirationSave": "Conferma",
     "cancel": "Annulla",
     "typeSelector": "Tutti i tipi",
-    "allTypes": "Tutti i tipi",
     "noOrg": "Questo team non appartiene a nessuna organizzazione. I tipi di affiliazione devono essere configurati nelle impostazioni del team.",
     "bulkSelected": "{count} selezionati",
     "bulkRenew": "Rinnova",
@@ -1116,8 +1123,6 @@
     "subtitle": "{total} contatti · {active} con abbonamento · {none} senza",
     "searchPlaceholder": "Cerca per nome…",
     "filterAll": "Tutti",
-    "filterActive": "Con abbonamento",
-    "filterNone": "Senza abbonamento",
     "colName": "Nome",
     "colSubscription": "Abbonamento",
     "colRecurrence": "Cadenza",
@@ -3117,8 +3122,6 @@
     "subtitle": "{total} contatti · {active} affiliati",
     "searchPlaceholder": "Cerca per nome…",
     "filterAll": "Tutti",
-    "filterActive": "Affiliato",
-    "filterNone": "Non affiliato",
     "colName": "Nome",
     "colTeam": "Team",
     "colStatus": "Stato",
@@ -3133,7 +3136,6 @@
     "expirationSave": "Conferma",
     "cancel": "Annulla",
     "typeSelector": "Tutti i tipi",
-    "allTypes": "Tutti i tipi",
     "bulkSelected": "{count} selezionati",
     "bulkRenew": "Rinnova",
     "bulkRenewTitle": "Rinnova affiliazioni",
@@ -3147,7 +3149,14 @@
     "removeAction": "Rimuovi affiliazione",
     "removeTitle": "Rimuovere questa affiliazione?",
     "removeBody": "{name} esce dai registri di questa organizzazione e da questo elenco. La traccia di un'affiliazione passata viene eliminata — per registrare un'affiliazione scaduta, impostarla invece su scaduta.",
-    "removeConfirm": "Rimuovi"
+    "removeConfirm": "Rimuovi",
+    "allTeams": "Tutti gli studi",
+    "bulkSetStatus": "Imposta stato",
+    "bulkStatusTitle": "Impostare lo stato su {status}?",
+    "bulkStatusDesc": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, e ogni data di scadenza verrà rimossa.",
+    "bulkStatusDescActive": "{count, plural, one {# affiliazione passerà} other {# affiliazioni passeranno}} a {status}, con la scadenza prevista dalle regole di questo tipo.",
+    "bulkStatusToast": "{count, plural, one {# affiliazione impostata} other {# affiliazioni impostate}} su {status}.",
+    "bulkStatusPartial": "{ok} aggiornate, {failed} rifiutate — gestisci solo una parte di questi studi."
   },
   "OrgAffiliationStatuses": {
     "title": "Stati di affiliazione",
@@ -3578,7 +3587,10 @@
     "editorOrgClubsLayout": "Disposizione",
     "editorOrgClubsLayoutCards": "Schede",
     "editorOrgClubsLayoutList": "Elenco scorrevole",
-    "editorOrgClubsSearchable": "Consenti ai visitatori di cercare i club"
+    "editorOrgClubsSearchable": "Consenti ai visitatori di cercare i club",
+    "embedBookTitle": "Pulsante di prenotazione",
+    "embedBookBody": "Incolla questo codice ovunque sul tuo sito. La prenotazione si apre in un pop-up sopra la tua pagina, così i visitatori non la lasciano mai. Puoi cambiare il testo del pulsante.",
+    "embedModalNote": "Con lo script sulla pagina, i pulsanti Prenota dentro un embed aprono lo stesso pop-up invece di una nuova scheda."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -4674,7 +4686,6 @@
     "validFromLabel": "Dal {date}",
     "ongoingLabel": "Senza scadenza",
     "typeSelector": "Seleziona un tipo…",
-    "allTypes": "Tutti i tipi",
     "statusSelector": "Seleziona uno stato…",
     "lockNotice": "La modifica delle affiliazioni è riservata agli amministratori dell'organizzazione.",
     "cancel": "Annulla",
@@ -4722,7 +4733,10 @@
     "feeAmountHelp": "Mostrato solo a titolo informativo — Linyup non addebita mai questo importo. I membri pagano direttamente l'emittente.",
     "issuerUrlLabel": "Link pagamento / info (facoltativo)",
     "issuerUrlPlaceholder": "https://…",
-    "manageMembersLink": "Gestisci le affiliazioni dei membri"
+    "manageMembersLink": "Gestisci le affiliazioni dei membri",
+    "logoUrlLabel": "Logo (facoltativo)",
+    "logoUrlPlaceholder": "https://example.org/badge.png",
+    "logoUrlHelp": "Il badge dell'ente, mostrato quando scegli questa affiliazione e accanto allo stato di un contatto. Senza logo viene usata l'iniziale."
   },
   "OrgAffiliationTypes": {
     "title": "Tipi di affiliazione",
@@ -7532,7 +7546,8 @@
     "seatsAttended": "presenti",
     "metaAttended": "{count} presenti",
     "startsInHours": "Tra {hours} h",
-    "startsInHoursMinutes": "Tra {hours} h {minutes} min"
+    "startsInHoursMinutes": "Tra {hours} h {minutes} min",
+    "rosterSeveral": "Più di uno"
   },
   "BookingContactFields": {
     "title": "Dati di contatto da raccogliere",

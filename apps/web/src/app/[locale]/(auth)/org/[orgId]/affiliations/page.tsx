@@ -2,7 +2,7 @@
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import type { Route } from 'next'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   collection, getDocs, query, where, collectionGroup,
@@ -11,6 +11,7 @@ import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import { useWindowedList } from '@/hooks/useWindowedList'
 import { statusBadgeClass, statusFillClass } from '@/lib/affiliationStatusColors'
+import { AffiliationTypePicker } from '@/components/affiliations/AffiliationTypePicker'
 import { liveContactConstraints } from '@/lib/liveContacts'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/dialog'
 import {  } from 'lucide-react'
 import { renewAffiliationCall } from '@/components/affiliations/renew'
+import { resolveAffiliationValidUntil } from '@linyup/shared'
 import { AffiliationBulkBar, RenewConfirmDialog } from '@/components/affiliations/RenewUI'
 import {
   NO_AFFILIATION,
@@ -451,7 +453,15 @@ export default function OrgAffiliationsPage() {
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('__all__')
-  const [selectedTypeId, setSelectedTypeId] = useState<string>('__all__')
+  // A REAL TYPE, ALWAYS — see the team page and the picker's own header: a
+  // contact may hold several affiliations, so "all types" showed a summary
+  // ("any affiliation at all") over rows that each showed one type's status.
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+  // THE FEDERATION WORKS STUDIO BY STUDIO. Renewal season is a club at a time —
+  // one person chasing one studio's members — and an unfiltered list of every
+  // club's contacts is the wrong unit of work for that. Absent ⇒ everything, so
+  // the page opens exactly as it did.
+  const [teamFilter, setTeamFilter] = useState<string>('__all__')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [renewConfirm, setRenewConfirm] = useState(false)
   const [renewBusy, setRenewBusy] = useState(false)
@@ -465,7 +475,12 @@ export default function OrgAffiliationsPage() {
   const defs: OrgAffiliationStatusDef[] = rawDefs ?? DEFAULT_ORG_AFFILIATION_STATUSES
   const isLoading = teamsLoading || contactsLoading || typesLoading
 
-  const activeTypeId = selectedTypeId !== '__all__' ? selectedTypeId : null
+  const activeTypeId = selectedTypeId
+  useEffect(() => {
+    if (selectedTypeId === null && affiliationTypes.length > 0) {
+      setSelectedTypeId(affiliationTypes[0].id)
+    }
+  }, [selectedTypeId, affiliationTypes])
 
   // Load affiliations by type for the org
   const { data: affiliationsByContact = {} } = useQuery<Record<string, Affiliation>>({
@@ -498,32 +513,27 @@ export default function OrgAffiliationsPage() {
   const filtered = useMemo(() => {
     if (!contacts) return []
     return contacts.filter((c) => {
-      if (selectedTypeId === '__all__') {
-        if (statusFilter === 'affiliated' && !c.affiliation_summary?.has_active) return false
-        if (statusFilter === 'not_affiliated' && c.affiliation_summary?.has_active) return false
-      } else {
-        const aff = affiliationsByContact[c.id]
-        if (statusFilter === '__expiring__') {
-          if (!isExpiringSoon(aff)) return false
-        } else if (statusFilter !== '__all__') {
-          const statusId = aff?.status_id ?? NO_AFFILIATION
-          if (statusId !== statusFilter) return false
-        }
+      const aff = affiliationsByContact[c.id]
+      if (statusFilter === '__expiring__') {
+        if (!isExpiringSoon(aff)) return false
+      } else if (statusFilter !== '__all__') {
+        const statusId = aff?.status_id ?? NO_AFFILIATION
+        if (statusId !== statusFilter) return false
       }
+      if (teamFilter !== '__all__' && c.teamId !== teamFilter) return false
       if (search) {
         const name = contactName(c).toLowerCase()
         if (!name.includes(search.toLowerCase())) return false
       }
       return true
     })
-  }, [contacts, statusFilter, search, selectedTypeId, affiliationsByContact])
+  }, [contacts, statusFilter, search, selectedTypeId, teamFilter, affiliationsByContact])
   // Only the rows near the viewport are mounted once the table is long; the
   // filters and the selection still run over the whole list
   // (docs/scalability-2026-09.md §17). Rows are uniform, so no measuring.
   const windowed = useWindowedList(filtered, { estimateSize: 57, getKey: (c) => c.id })
 
   const countsByStatus = useMemo(() => {
-    if (selectedTypeId === '__all__') return {}
     const map: Record<string, number> = {}
     contacts?.forEach((c) => {
       const aff = affiliationsByContact[c.id]
@@ -539,7 +549,6 @@ export default function OrgAffiliationsPage() {
   }
 
   const expiringCount = useMemo(() => {
-    if (selectedTypeId === '__all__') return 0
     let n = 0
     contacts?.forEach((c) => { if (isExpiringSoon(affiliationsByContact[c.id])) n++ })
     return n
@@ -567,6 +576,62 @@ export default function OrgAffiliationsPage() {
       else next.delete(id)
       return next
     })
+  }
+
+  // BULK STATUS — the same job the row dropdown does, for a selection.
+  //
+  // It mirrors the row's rule rather than inventing a second one: a status that
+  // does NOT count as active clears the expiry (a lapsed licence has no
+  // meaningful end date), and a status that DOES count is applied by RENEWING,
+  // so the end date comes from the type's own validity rule — HMD's 1 September
+  // for a fixed-date type — instead of this page guessing a date per contact.
+  const [bulkStatus, setBulkStatus] = useState<OrgAffiliationStatusDef | null>(null)
+  const upsertAffiliationCall = httpsCallable(functions, 'upsertAffiliation')
+
+  async function applyBulkStatus(def: OrgAffiliationStatusDef) {
+    setRenewBusy(true)
+    try {
+      const ids = [...selected].filter((cid) => affiliationsByContact[cid])
+      const type = affiliationTypes.find((at) => at.id === activeTypeId)
+      const now = new Date()
+      const results = await Promise.allSettled(
+        ids.map((cid) => {
+          const aff = affiliationsByContact[cid]!
+          // `renewAffiliation` cannot carry a status, so both arms go through
+          // upsert — and the date comes from `resolveAffiliationValidUntil`,
+          // the SAME resolver the renew dialog previews with, so a bulk change
+          // and a row-by-row one cannot land on different days.
+          const validUntil = def.countsAsActive
+            ? resolveAffiliationValidUntil({
+                type,
+                currentValidUntil: aff.valid_until?.toDate?.() ?? null,
+                now,
+              })
+                .toISOString()
+                .slice(0, 10)
+            : null
+          return upsertAffiliationCall({
+            teamId: aff.teamId,
+            contactId: cid,
+            affiliationId: aff.id,
+            affiliation_type_id: activeTypeId,
+            issuer: 'org',
+            org_id: orgId,
+            status_id: def.id,
+            valid_until: validUntil,
+          })
+        }),
+      )
+      const ok = results.filter((r) => r.status === 'fulfilled').length
+      const failed = results.length - ok
+      invalidate()
+      setSelected(new Set())
+      setBulkStatus(null)
+      setToast(failed ? t('bulkStatusPartial', { ok, failed }) : t('bulkStatusToast', { count: ok, status: def.label }))
+      setTimeout(() => setToast(null), 4000)
+    } finally {
+      setRenewBusy(false)
+    }
   }
 
   async function renewSelected() {
@@ -616,62 +681,52 @@ export default function OrgAffiliationsPage() {
         ]}
       />
 
-      {/* Type selector */}
+      {/* Which affiliation — cards, never "all of them". */}
       {affiliationTypes.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedTypeId}
-            onValueChange={(v) => {
-              if (!v) return
-              setSelectedTypeId(v)
+        <div className="flex flex-wrap items-center gap-2">
+          <AffiliationTypePicker
+            types={affiliationTypes}
+            selectedId={selectedTypeId}
+            onSelect={(id) => {
+              setSelectedTypeId(id)
               setSelected(new Set())
               setStatusFilter('__all__')
             }}
-          >
-            <SelectTrigger className="w-[200px] h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('allTypes')}</SelectItem>
-              {affiliationTypes.map((at) => (
-                <SelectItem key={at.id} value={at.id}>{at.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
+
+          {/* STUDIO, beside the type — offered only where there is a choice to
+              make. A federation of one studio would get a control whose every
+              option is the whole list. */}
+          {(teams?.length ?? 0) > 1 && (
+            <Select
+              value={teamFilter}
+              onValueChange={(v) => {
+                if (!v) return
+                setTeamFilter(v)
+                setSelected(new Set())
+              }}
+            >
+              <SelectTrigger className="w-[200px] h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">{t('allTeams')}</SelectItem>
+                {(teams ?? [])
+                  .slice()
+                  .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+                  .map((tm) => (
+                    <SelectItem key={tm.id} value={tm.id}>{tm.name || tm.id}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 
       {/* Status filter pills */}
       {!isLoading && (
         <div className="flex flex-wrap gap-1.5">
-          {selectedTypeId === '__all__' ? (
-            <>
-              <button
-                onClick={() => setStatusFilter('__all__')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  statusFilter === '__all__' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('filterAll')} {contacts ? `(${contacts.length})` : ''}
-              </button>
-              <button
-                onClick={() => setStatusFilter('affiliated')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  statusFilter === 'affiliated' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('filterActive')} ({totalActive})
-              </button>
-              <button
-                onClick={() => setStatusFilter('not_affiliated')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  statusFilter === 'not_affiliated' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t('filterNone')} ({(contacts?.length ?? 0) - totalActive})
-              </button>
-            </>
-          ) : (
+          {
             <>
               <button
                 onClick={() => setStatusFilter('__all__')}
@@ -707,7 +762,7 @@ export default function OrgAffiliationsPage() {
                 )
               })}
             </>
-          )}
+          }
         </div>
       )}
 
@@ -729,32 +784,6 @@ export default function OrgAffiliationsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground text-sm">{t('noContacts')}</div>
-        ) : selectedTypeId === '__all__' ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colName')}</th>
-                <th className="text-left font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{t('colTeam')}</th>
-                <th className="text-left font-medium text-muted-foreground px-4 py-3">{t('colType')}</th>
-              </tr>
-            </thead>
-            <tbody ref={windowed.listRef}>
-              {windowed.before > 0 && <tr aria-hidden style={{ height: windowed.before }} />}
-              {windowed.rows.map(({ item: c, key }) => (
-                <tr key={key} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-sm">{contactName(c)}</div>
-                    {c.email && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{c.email}</div>}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">{(c as ContactRow).teamName ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <AffiliationSummaryChip contact={c} affiliationTypes={affiliationTypes} />
-                  </td>
-                </tr>
-              ))}
-              {windowed.after > 0 && <tr aria-hidden style={{ height: windowed.after }} />}
-            </tbody>
-          </table>
         ) : (
           <table className="w-full text-sm">
             <thead>
@@ -789,7 +818,7 @@ export default function OrgAffiliationsPage() {
                   defs={defs}
                   isAdmin={isAdmin}
                   orgId={orgId}
-                  affiliationTypeId={selectedTypeId}
+                  affiliationTypeId={selectedTypeId!}
                   onUpdated={invalidate}
                   selectable={isAdmin && !!affiliationsByContact[c.id]}
                   selected={selected.has(c.id)}
@@ -810,8 +839,28 @@ export default function OrgAffiliationsPage() {
           onRenew={() => setRenewConfirm(true)}
           onClear={() => setSelected(new Set())}
           busy={renewBusy}
+          statusLabel={t('bulkSetStatus')}
+          statusActions={defs.map((d) => ({
+            id: d.id,
+            label: d.label,
+            onSelect: () => setBulkStatus(d),
+          }))}
         />
       )}
+      <RenewConfirmDialog
+        open={!!bulkStatus}
+        onOpenChange={(v) => { if (!v) setBulkStatus(null) }}
+        title={t('bulkStatusTitle', { status: bulkStatus?.label ?? '' })}
+        description={
+          bulkStatus?.countsAsActive
+            ? t('bulkStatusDescActive', { count: selected.size, status: bulkStatus?.label ?? '' })
+            : t('bulkStatusDesc', { count: selected.size, status: bulkStatus?.label ?? '' })
+        }
+        confirmLabel={t('bulkSetStatus')}
+        cancelLabel={t('cancel')}
+        onConfirm={() => bulkStatus && void applyBulkStatus(bulkStatus)}
+        busy={renewBusy}
+      />
       <RenewConfirmDialog
         open={renewConfirm}
         onOpenChange={setRenewConfirm}

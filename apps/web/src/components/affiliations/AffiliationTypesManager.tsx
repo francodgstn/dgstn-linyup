@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { AffiliationTypeMark } from './AffiliationTypePicker'
 
 /**
  * Manage the team's affiliation TYPES (e.g. club membership, federation licence).
@@ -98,6 +99,7 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
     )
     const [feeAmount, setFeeAmount] = useState(editing?.fee_amount?.toString() ?? '')
     const [issuerUrl, setIssuerUrl] = useState(editing?.issuer_url ?? '')
+    const [logoUrl, setLogoUrl] = useState(editing?.logo_url ?? '')
     const [active, setActive] = useState(editing?.active ?? true)
     const [saving, setSaving] = useState(false)
 
@@ -119,6 +121,7 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
           ...(validityMonths ? { default_validity_months: Number(validityMonths) } : {}),
           ...(feeAmount ? { fee_amount: Number(feeAmount) } : {}),
           ...(issuerUrl.trim() ? { issuer_url: issuerUrl.trim() } : {}),
+          ...(logoUrl.trim() ? { logo_url: logoUrl.trim() } : {}),
           active,
           order: editing?.order ?? types.length,
         }
@@ -229,6 +232,19 @@ export function AffiliationTypesManager({ team, teamId }: { team: Team; teamId: 
                 onChange={(e) => setIssuerUrl(e.target.value)}
                 placeholder={t('issuerUrlPlaceholder')}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('logoUrlLabel')}</Label>
+              <div className="flex items-center gap-2">
+                <AffiliationTypeMark type={{ label: label || key, logo_url: logoUrl.trim() || undefined }} />
+                <Input
+                  type="url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder={t('logoUrlPlaceholder')}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{t('logoUrlHelp')}</p>
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input

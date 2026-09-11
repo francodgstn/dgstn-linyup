@@ -256,14 +256,32 @@ async function dispatch(
   }
 
   // ── Recipients: test-mode redirect, else synthetic guard → policy → suppression ──
+  //
+  // The policy is resolved BEFORE the test-mode branch, because one field on it
+  // decides which branch this tenant takes: `ignoreTestMode` lets an operator
+  // exempt a single studio from the environment-wide redirect so its own policy
+  // applies — the case being "a real person is testing THIS studio on staging
+  // and must receive what they trigger". Absent ⇒ false ⇒ unchanged behaviour,
+  // and the extra read costs one document on a path that already reads it in
+  // every non-test send.
+  const entityId = stream === 'system' ? 'system' : (teamId ?? 'system')
+  const policy = await resolveMessagingPolicy(entityId)
+  const bypassTestMode = testMode && policy?.ignoreTestMode === true
+
   let recipients = requested
-  if (testMode) {
+  if (testMode && !bypassTestMode) {
     // Local-dev/CI convenience: redirect everything to one inbox. Deliberately
     // BYPASSES the per-tenant policy layer below.
     const redirect = testEmail.value()
     console.log(`[mail] TEST MODE → redirecting ${recipients.join(', ')} to ${redirect}`)
     recipients = redirect ? [redirect] : []
   } else {
+    if (bypassTestMode) {
+      console.warn(
+        `[mail] TEST_MODE is on but '${entityId}' is exempt (ignoreTestMode) — its own policy ` +
+          `'${policy?.mode ?? envDefaultMode()}' decides, and real recipients may be reached`,
+      )
+    }
     // Layer 1 — synthetic recipients (RFC-2606 reserved domains, i.e. seeded demo
     // contacts) never reach the provider, in ANY environment. Protects the Brevo
     // sender reputation from @example.com bounces on reseeds/automations.
@@ -275,9 +293,8 @@ async function dispatch(
       return { skipped: true }
     }
 
-    // Layer 2 — per-tenant delivery policy (operator-set; env default when absent).
-    const entityId = stream === 'system' ? 'system' : (teamId ?? 'system')
-    const policy = await resolveMessagingPolicy(entityId)
+    // Layer 2 — per-tenant delivery policy (operator-set; env default when
+    // absent), resolved above because the test-mode branch depends on it.
     const decision = applyEmailPolicy(recipients, policy, envDefaultMode())
     if (decision.droppedAll) {
       console.log(`[mail] policy '${policy?.mode ?? envDefaultMode()}' for '${entityId}' dropped all recipients (${decision.droppedAll})`)

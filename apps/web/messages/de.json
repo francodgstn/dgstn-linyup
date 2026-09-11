@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Es ist noch nichts passiert, also gibt es nichts zu zählen. Schliesse die Einrichtung ab, und diese Seite füllt sich von selbst.",
     "seriesSubscribed": "Abonniert",
     "seriesAffiliated": "Angeschlossen",
-    "seriesViaPartner": "Über eine Partner-App"
+    "seriesViaPartner": "Über eine Partner-App",
+    "chartTitleActivities": "Aktivitäten im Zeitverlauf",
+    "chartEmptyActivities": "In diesem Zeitraum wurden bei keiner Aktivität Check-ins erfasst.",
+    "seriesAllActivities": "Alle Aktivitäten",
+    "activityNone": "Keine Aktivität",
+    "measureCheckins": "Check-ins",
+    "chartTitleDemographics": "Wer trainiert",
+    "demoTrendAgeHint": "Das Alter wird für jede Woche berechnet, nicht für heute.",
+    "demoTrendGenderHint": "Die heutige Angabe, rückwirkend auf jede Woche angewendet.",
+    "demoTrendTotal": "Gesamt"
   },
   "Contacts": {
     "noteColor_none": "Keine Farbe",
@@ -1068,15 +1077,14 @@
     "markExternalTitle": "{count, plural, one {Diesen Kontakt als extern markieren?} other {# Kontakte als extern markieren?}}",
     "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen.",
     "goalSaveFailed": "Dieses Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
-    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut."
+    "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "affiliationValidUntil": "Gültig bis {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
     "subtitle": "{total} Kontakte · {active} affiliiert",
     "searchPlaceholder": "Nach Name suchen…",
     "filterAll": "Alle",
-    "filterActive": "Affiliiert",
-    "filterNone": "Nicht affiliiert",
     "colName": "Name",
     "colStatus": "Status",
     "colType": "Typ",
@@ -1090,7 +1098,6 @@
     "expirationSave": "Bestätigen",
     "cancel": "Abbrechen",
     "typeSelector": "Alle Typen",
-    "allTypes": "Alle Typen",
     "noOrg": "Dieses Team gehört keiner Organisation an. Affiliationstypen müssen in den Teameinstellungen konfiguriert werden.",
     "bulkSelected": "{count} ausgewählt",
     "bulkRenew": "Verlängern",
@@ -1116,8 +1123,6 @@
     "subtitle": "{total} Kontakte · {active} mit Abonnement · {none} ohne",
     "searchPlaceholder": "Nach Name suchen…",
     "filterAll": "Alle",
-    "filterActive": "Mit Abonnement",
-    "filterNone": "Kein Abonnement",
     "colName": "Name",
     "colSubscription": "Abonnement",
     "colRecurrence": "Turnus",
@@ -3117,8 +3122,6 @@
     "subtitle": "{total} Kontakte · {active} affiliiert",
     "searchPlaceholder": "Nach Name suchen…",
     "filterAll": "Alle",
-    "filterActive": "Affiliiert",
-    "filterNone": "Nicht affiliiert",
     "colName": "Name",
     "colTeam": "Team",
     "colStatus": "Status",
@@ -3133,7 +3136,6 @@
     "expirationSave": "Bestätigen",
     "cancel": "Abbrechen",
     "typeSelector": "Alle Typen",
-    "allTypes": "Alle Typen",
     "bulkSelected": "{count} ausgewählt",
     "bulkRenew": "Verlängern",
     "bulkRenewTitle": "Affiliationen verlängern",
@@ -3147,7 +3149,14 @@
     "removeAction": "Affiliation entfernen",
     "removeTitle": "Diese Affiliation entfernen?",
     "removeBody": "{name} verschwindet aus der Erfassung dieser Organisation und aus dieser Liste. Der Nachweis einer früheren Affiliation wird gelöscht — um eine abgelaufene Affiliation festzuhalten, stattdessen auf abgelaufen setzen.",
-    "removeConfirm": "Entfernen"
+    "removeConfirm": "Entfernen",
+    "allTeams": "Alle Studios",
+    "bulkSetStatus": "Status setzen",
+    "bulkStatusTitle": "Status auf {status} setzen?",
+    "bulkStatusDesc": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, ein Ablaufdatum wird entfernt.",
+    "bulkStatusDescActive": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} werden auf {status} gesetzt, mit dem Ablaufdatum aus den Regeln dieses Typs.",
+    "bulkStatusToast": "{count, plural, one {# Mitgliedschaft} other {# Mitgliedschaften}} auf {status} gesetzt.",
+    "bulkStatusPartial": "{ok} aktualisiert, {failed} abgelehnt – du verwaltest nur einen Teil dieser Studios."
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliationsstatus",
@@ -3578,7 +3587,10 @@
     "editorOrgClubsLayout": "Darstellung",
     "editorOrgClubsLayoutCards": "Karten",
     "editorOrgClubsLayoutList": "Scrollende Liste",
-    "editorOrgClubsSearchable": "Besucher die Clubs durchsuchen lassen"
+    "editorOrgClubsSearchable": "Besucher die Clubs durchsuchen lassen",
+    "embedBookTitle": "Buchungs-Button",
+    "embedBookBody": "Füge das an beliebiger Stelle auf deiner eigenen Website ein. Die Buchung öffnet sich als Pop-up über deiner Seite, sodass Besucher sie nie verlassen. Den Button-Text kannst du frei ändern.",
+    "embedModalNote": "Ist das Skript auf der Seite eingebunden, öffnen Buchen-Buttons in einem Embed dasselbe Pop-up statt eines neuen Tabs."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -4674,7 +4686,6 @@
     "validFromLabel": "Ab {date}",
     "ongoingLabel": "Unbefristet",
     "typeSelector": "Typ auswählen…",
-    "allTypes": "Alle Typen",
     "statusSelector": "Status auswählen…",
     "lockNotice": "Die Bearbeitung von Affiliationen ist auf Org-Admins beschränkt.",
     "cancel": "Abbrechen",
@@ -4722,7 +4733,10 @@
     "feeAmountHelp": "Nur zur Information — Linyup zieht diesen Betrag nie ein. Mitglieder zahlen direkt an den Aussteller.",
     "issuerUrlLabel": "Zahlungs-/Info-Link (optional)",
     "issuerUrlPlaceholder": "https://…",
-    "manageMembersLink": "Affiliationen der Mitglieder verwalten"
+    "manageMembersLink": "Affiliationen der Mitglieder verwalten",
+    "logoUrlLabel": "Logo (optional)",
+    "logoUrlPlaceholder": "https://example.org/badge.png",
+    "logoUrlHelp": "Das Abzeichen des Ausstellers – erscheint bei der Auswahl dieser Mitgliedschaft und neben dem Status eines Kontakts. Ohne Logo wird der Anfangsbuchstabe verwendet."
   },
   "OrgAffiliationTypes": {
     "title": "Affiliationstypen",
@@ -7532,7 +7546,8 @@
     "seatsAttended": "anwesend",
     "metaAttended": "{count} anwesend",
     "startsInHours": "In {hours} h",
-    "startsInHoursMinutes": "In {hours} h {minutes} min"
+    "startsInHoursMinutes": "In {hours} h {minutes} min",
+    "rosterSeveral": "Mehrere"
   },
   "BookingContactFields": {
     "title": "Zu erfassende Kontaktdaten",

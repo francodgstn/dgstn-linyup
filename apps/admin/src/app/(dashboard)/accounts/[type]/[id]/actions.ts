@@ -217,6 +217,9 @@ export interface MessagingPolicyInput {
   allowPhones: string[]
   redirectEmail: string
   redirectPhone: string
+  /** Exempt this tenant from the environment's TEST_MODE redirect — see
+   *  `MessagingPolicy.ignoreTestMode`. Never defaulted on. */
+  ignoreTestMode: boolean
 }
 
 const EMAIL_RE = /^(@[^\s@]+\.[^\s@]+|[^\s@]+@[^\s@]+\.[^\s@]+)$/ // address or '@domain.tld'
@@ -235,6 +238,12 @@ export async function setMessagingPolicy(
   // full live delivery must never be enabled for them, no matter who asks.
   if (input.mode === 'live' && entityId.startsWith('sandbox-')) {
     return { ok: false, error: 'sandbox-* (/try) tenants cannot be set to live delivery.' }
+  }
+  // The same structural guardrail, one layer down: exempting a /try tenant from
+  // TEST_MODE would let its own policy deliver, which is the thing the rule
+  // above exists to prevent — and those teams have PUBLIC shared owner logins.
+  if (input.ignoreTestMode && entityId.startsWith('sandbox-')) {
+    return { ok: false, error: 'sandbox-* (/try) tenants cannot be exempted from TEST_MODE.' }
   }
 
   const allowEmails = [
@@ -271,6 +280,9 @@ export async function setMessagingPolicy(
       ...(allowPhones.length ? { allowPhones } : {}),
       ...(redirectEmail ? { redirectEmail } : {}),
       ...(redirectPhone ? { redirectPhone } : {}),
+      // Written only when true, so an absent field keeps meaning "no exemption"
+      // and a policy nobody exempted carries nothing to misread.
+      ...(input.ignoreTestMode ? { ignoreTestMode: true } : {}),
       updated_at: FieldValue.serverTimestamp(),
       updated_by: operator.email,
     })

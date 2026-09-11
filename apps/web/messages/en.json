@@ -433,7 +433,16 @@
     "firstRunSetupBody": "Nothing has happened yet, so there is nothing to count. Finish setting up and this page fills itself in.",
     "seriesSubscribed": "Subscribed",
     "seriesAffiliated": "Affiliated",
-    "seriesViaPartner": "Via a partner app"
+    "seriesViaPartner": "Via a partner app",
+    "chartTitleActivities": "Activities over time",
+    "chartEmptyActivities": "No check-ins were recorded on any activity in this period.",
+    "seriesAllActivities": "All activities",
+    "activityNone": "No activity",
+    "measureCheckins": "Check-ins",
+    "chartTitleDemographics": "Who is training",
+    "demoTrendAgeHint": "Age is worked out for each week, not today.",
+    "demoTrendGenderHint": "Today's answer, read back across every week.",
+    "demoTrendTotal": "Total"
   },
   "Contacts": {
     "noteColor_none": "No colour",
@@ -1068,15 +1077,14 @@
     "markExternalTitle": "{count, plural, one {Mark this contact as external?} other {Mark # contacts as external?}}",
     "markExternalDesc": "They can still book and attend, and their history stays. They leave the Active list, the contact count, event invitations, automations and Needs attention — until you mark them active again, or they complete your signup form.",
     "goalSaveFailed": "Couldn't save this goal. Please try again.",
-    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again."
+    "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again.",
+    "affiliationValidUntil": "Valid until {date}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
     "subtitle": "{total} contacts · {active} affiliated",
     "searchPlaceholder": "Search by name…",
     "filterAll": "All",
-    "filterActive": "Affiliated",
-    "filterNone": "Not affiliated",
     "colName": "Name",
     "colStatus": "Status",
     "colType": "Type",
@@ -1090,7 +1098,6 @@
     "expirationSave": "Confirm",
     "cancel": "Cancel",
     "typeSelector": "All types",
-    "allTypes": "All types",
     "noOrg": "This team is not part of an organisation. Affiliation types must be configured in team settings.",
     "bulkSelected": "{count} selected",
     "bulkRenew": "Renew",
@@ -1116,8 +1123,6 @@
     "subtitle": "{total} contacts · {active} with subscription · {none} without",
     "searchPlaceholder": "Search by name…",
     "filterAll": "All",
-    "filterActive": "With subscription",
-    "filterNone": "No subscription",
     "colName": "Name",
     "colSubscription": "Subscription",
     "colRecurrence": "Recurrence",
@@ -3117,8 +3122,6 @@
     "subtitle": "{total} contacts · {active} affiliated",
     "searchPlaceholder": "Search by name…",
     "filterAll": "All",
-    "filterActive": "Affiliated",
-    "filterNone": "Not affiliated",
     "colName": "Name",
     "colTeam": "Team",
     "colStatus": "Status",
@@ -3133,7 +3136,6 @@
     "expirationSave": "Confirm",
     "cancel": "Cancel",
     "typeSelector": "All types",
-    "allTypes": "All types",
     "bulkSelected": "{count} selected",
     "bulkRenew": "Renew",
     "bulkRenewTitle": "Renew affiliations",
@@ -3147,7 +3149,14 @@
     "removeAction": "Remove affiliation",
     "removeTitle": "Remove this affiliation?",
     "removeBody": "{name} comes off this organisation's records and off this roster. The record that they were ever affiliated is deleted — to mark a lapsed affiliation instead, set it to expired.",
-    "removeConfirm": "Remove"
+    "removeConfirm": "Remove",
+    "allTeams": "All studios",
+    "bulkSetStatus": "Set status",
+    "bulkStatusTitle": "Set status to {status}?",
+    "bulkStatusDesc": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, and any expiry date cleared.",
+    "bulkStatusDescActive": "{count, plural, one {# affiliation} other {# affiliations}} will be set to {status}, with the expiry date this type's rules give them.",
+    "bulkStatusToast": "{count, plural, one {# affiliation set} other {# affiliations set}} to {status}.",
+    "bulkStatusPartial": "{ok} updated, {failed} refused — you manage only some of these studios."
   },
   "OrgAffiliationStatuses": {
     "title": "Affiliation Statuses",
@@ -3578,7 +3587,10 @@
     "editorOrgClubsLayout": "Layout",
     "editorOrgClubsLayoutCards": "Cards",
     "editorOrgClubsLayoutList": "Scrolling list",
-    "editorOrgClubsSearchable": "Let visitors search the clubs"
+    "editorOrgClubsSearchable": "Let visitors search the clubs",
+    "embedBookTitle": "Booking button",
+    "embedBookBody": "Paste this anywhere on your own site. It opens your booking flow in a pop-up over your page, so visitors never leave it. Change the button text to whatever you like.",
+    "embedModalNote": "With the script on the page, Book buttons inside an embed open the same pop-up instead of a new tab."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -4674,7 +4686,6 @@
     "validFromLabel": "From {date}",
     "ongoingLabel": "Ongoing",
     "typeSelector": "Select a type…",
-    "allTypes": "All types",
     "statusSelector": "Select a status…",
     "lockNotice": "Affiliation editing is restricted to org admins.",
     "cancel": "Cancel",
@@ -4722,7 +4733,10 @@
     "feeAmountHelp": "Shown for reference only — Linyup never charges this. Members pay the issuer directly.",
     "issuerUrlLabel": "Payment / info link (optional)",
     "issuerUrlPlaceholder": "https://…",
-    "manageMembersLink": "Manage members' affiliations"
+    "manageMembersLink": "Manage members' affiliations",
+    "logoUrlLabel": "Logo (optional)",
+    "logoUrlPlaceholder": "https://example.org/badge.png",
+    "logoUrlHelp": "The issuer's badge, shown when you pick this affiliation and beside a contact's status. Without one, its initial is used."
   },
   "OrgAffiliationTypes": {
     "title": "Affiliation types",
@@ -7532,7 +7546,8 @@
     "seatsAttended": "attended",
     "metaAttended": "{count} attended",
     "startsInHours": "In {hours}h",
-    "startsInHoursMinutes": "In {hours}h {minutes}min"
+    "startsInHoursMinutes": "In {hours}h {minutes}min",
+    "rosterSeveral": "More than one"
   },
   "BookingContactFields": {
     "title": "Contact details to collect",

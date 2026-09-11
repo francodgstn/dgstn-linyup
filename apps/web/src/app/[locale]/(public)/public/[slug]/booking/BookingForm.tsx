@@ -45,7 +45,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { Link, useRouter } from '@/i18n/navigation'
 import { BioLinkButton } from '../BioLinkShell'
 import { FlowShell } from '@/components/booking/FlowShell'
-import { useBookingChrome } from '@/components/booking/BookingChrome'
+import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
@@ -393,6 +393,8 @@ export default function BookingForm({
   const { contact, isAuthenticated } = usePublicContactAuth()
   // 'page' unless an overlay host wraps this flow — see BookingChrome.
   const chrome = useBookingChrome()
+  // Closes the panel, or navigates the page — see useExitFlow.
+  const exitFlow = useExitFlow()
   const router = useRouter()
   const locale = useLocale()
   const fmt = usePublicFormat()
@@ -1545,6 +1547,32 @@ export default function BookingForm({
     else router.push(href as Route)
   }
 
+  /**
+   * The way out of a terminal step ("To the website"). A render helper, not a
+   * component — it holds no state and must not remount the rest of the footer.
+   *
+   * As a page it is a real link. In a panel it is a button that CLOSES: the
+   * surface it names is the page behind the panel, already loaded — and in the
+   * embed it is a frame-denied app page, so following it would replace a
+   * confirmed booking with a blank box.
+   */
+  function exitToSurface() {
+    const className =
+      'block w-full py-2 text-center text-sm text-muted-foreground transition-colors hover:text-foreground'
+    const label = t('toSurface', { name: tSurfaces(backTo.surface) })
+    if (chrome.kind === 'overlay')
+      return (
+        <button type="button" onClick={() => exitFlow(backTo.href)} className={className}>
+          {label}
+        </button>
+      )
+    return (
+      <Link href={backTo.href} className={className}>
+        {label}
+      </Link>
+    )
+  }
+
   // Where leaving the flow goes. `?from=` names the surface the visitor arrived
   // from; absent/dead → the team's default surface, resolved HERE rather than by
   // bouncing through the team root's client redirect.
@@ -1698,11 +1726,8 @@ export default function BookingForm({
     // `isDateFirst` has no activity step in front of it either — the day picker
     // IS the entry step there.
     if (isDateFirst || preSelectedActivitySlug || initialActivityId || activities.length === 1) {
-      // No activity step to go back to — leave the flow. In an overlay that
-      // means CLOSE (the visitor came from the page behind the panel, not from
-      // the team root); as a page it means go to wherever they came from.
-      if (chrome.kind === 'overlay') chrome.onClose?.()
-      else router.push(backTo.href)
+      // No activity step to go back to — leave the flow altogether.
+      exitFlow(backTo.href)
     } else {
       setStep('activities')
     }
@@ -2971,12 +2996,7 @@ export default function BookingForm({
             >
               {t('bookAnotherSession')}
             </button>
-            <Link
-              href={backTo.href}
-              className="block w-full py-2 text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {t('toSurface', { name: tSurfaces(backTo.surface) })}
-            </Link>
+            {exitToSurface()}
           </div>
         </div>
       </FlowShell>
@@ -3078,12 +3098,7 @@ export default function BookingForm({
             </button>
             {/* A booked visitor used to dead-end here with no way out but the
                 header arrow. Send them back where they came from. */}
-            <Link
-              href={backTo.href}
-              className="block w-full py-2 text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {t('toSurface', { name: tSurfaces(backTo.surface) })}
-            </Link>
+            {exitToSurface()}
           </div>
         </div>
       </FlowShell>

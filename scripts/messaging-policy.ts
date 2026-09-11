@@ -31,6 +31,7 @@ const { values: cli } = parseArgs({
     redirect: { type: 'string' },
     'redirect-phone': { type: 'string' },
     note: { type: 'string' },
+    'ignore-test-mode': { type: 'boolean', default: false },
     target: { type: 'string' },
   },
 })
@@ -91,6 +92,7 @@ async function main() {
         ...(cli['allow-phone'] ? { allowPhones: cli['allow-phone'] } : {}),
         ...(cli.redirect ? { redirectEmail: cli.redirect } : {}),
         ...(cli['redirect-phone'] ? { redirectPhone: cli['redirect-phone'] } : {}),
+        ...(cli['ignore-test-mode'] ? { ignoreTestMode: true } : {}),
         ...(cli.note ? { note: cli.note } : {}),
         updated_at: admin.firestore.Timestamp.now(),
         updated_by: 'messaging-policy-cli',
@@ -114,6 +116,7 @@ async function main() {
   if (d.allowPhones?.length) console.log(`  allowPhones:   ${d.allowPhones.join(', ')}`)
   if (d.redirectEmail) console.log(`  redirectEmail: ${d.redirectEmail}`)
   if (d.redirectPhone) console.log(`  redirectPhone: ${d.redirectPhone}`)
+  if (d.ignoreTestMode) console.log(`  ignoreTestMode: true — EXEMPT from the environment's TEST_MODE redirect`)
   if (d.note) console.log(`  note:          ${d.note}`)
   if (d.updated_by) console.log(`  updated_by:    ${d.updated_by}`)
 }
