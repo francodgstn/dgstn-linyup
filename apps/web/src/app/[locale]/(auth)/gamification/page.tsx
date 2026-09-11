@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import {
-  collection, doc, getDoc, getDocs, query, where, orderBy, updateDoc,
+  collection, doc, getDoc, getDocs, query, where, orderBy, updateDoc, limit,
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
@@ -67,9 +67,21 @@ function useTeam(teamId: string | null) {
   })
 }
 
-function useLeaderboardContacts(teamId: string | null) {
+/** How deep the board goes — the copy (`leaderboardMonth`, "top 50") states
+ *  the same number, so the two must move together. */
+const LEADERBOARD_LIMIT = 50
+
+type RankField = 'current_month_score' | 'current_streak' | 'max_streak'
+
+/** The top of the board BY THE FIELD BEING RANKED. This read every contact the
+ *  studio had, ordered by points, and sorted the streak boards from that in
+ *  memory — a roster read for a fifty-row answer (docs/scalability-2026-09.md
+ *  §17 A8). Each field has its own (`deleted_at`, `teamId`, field DESC) index;
+ *  a contact without the field is not on that board, which is what a board of
+ *  zeros would have said anyway. */
+function useLeaderboardContacts(teamId: string | null, field: RankField) {
   return useQuery<Contact[]>({
-    queryKey: ['leaderboard-contacts', teamId],
+    queryKey: ['leaderboard-contacts', teamId, field],
     enabled: !!teamId,
     queryFn: async () => {
       if (!teamId) return []
@@ -77,7 +89,8 @@ function useLeaderboardContacts(teamId: string | null) {
         collection(db, CONTACTS_COLLECTION),
         where('teamId', '==', teamId),
         where('deleted_at', '==', null),
-        orderBy('current_month_score', 'desc'),
+        orderBy(field, 'desc'),
+        limit(LEADERBOARD_LIMIT),
       )
       const snap = await getDocs(q)
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Contact)
@@ -109,8 +122,10 @@ type SortField = 'points' | 'streak' | 'best_streak'
 
 function LeaderboardTab({ teamId }: { teamId: string }) {
   const t = useTranslations('Gamification')
-  const { data: contacts = [], isLoading } = useLeaderboardContacts(teamId)
   const [sortBy, setSortBy] = useState<SortField>('points')
+  const sortField: RankField =
+    sortBy === 'streak' ? 'current_streak' : sortBy === 'best_streak' ? 'max_streak' : 'current_month_score'
+  const { data: contacts = [], isLoading } = useLeaderboardContacts(teamId, sortField)
 
   const month = currentMonth()
 
@@ -128,7 +143,6 @@ function LeaderboardTab({ teamId }: { teamId: string }) {
   }, [scored, sortBy])
 
   // Olympic ranking
-  const sortField = sortBy === 'streak' ? 'current_streak' : sortBy === 'best_streak' ? 'max_streak' : 'current_month_score'
   const ranks: number[] = []
   for (let i = 0; i < sorted.length; i++) {
     if (i === 0) { ranks.push(1); continue }

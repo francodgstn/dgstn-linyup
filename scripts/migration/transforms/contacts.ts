@@ -18,7 +18,9 @@ export const AFFILIATIONS_OUTPUT_KEY = '__affiliations'
 // Affiliation type ids seeded into the type catalog by the migration. The HMD
 // org-level 'club' type lives at organizations/{ORG_ID}/affiliation_types/club;
 // a team-local 'club' type at teams/{teamId}/affiliation_types/club.
-const ORG_CLUB_TYPE = { id: 'club', key: 'club', label: 'Club membership' }
+// Denormalised onto every row the transform derives — the same id/key/label
+// pass 00 seeds into the org's catalog. See ORG_CLUB_AFFILIATION_TYPE there.
+const ORG_CLUB_TYPE = { id: 'hmd-affiliation', key: 'hmd-affiliation', label: 'HMD Affiliation' }
 
 // Only 'active' counts as an active affiliation (mirrors DEFAULT_ORG_AFFILIATION_STATUSES).
 const ACTIVE_COUNTING_STATUS_IDS = new Set(['active'])

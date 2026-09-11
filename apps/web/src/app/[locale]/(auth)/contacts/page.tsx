@@ -20,7 +20,8 @@ import { useCapabilities } from '@/hooks/useCapabilities'
 import { useActiveContacts } from '@/hooks/useActiveContacts'
 // The Archived tab's query moved to a hook of its own so the sidebar search can
 // run the SAME one — same shape, same key, one cache entry (UX-21).
-import { useArchivedContacts } from '@/hooks/useArchivedContacts'
+import { useArchivedContactsPage, useArchivedContactsCount } from '@/hooks/useArchivedContacts'
+import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 import { useCoaches, coachLabel } from '@/hooks/useCoaches'
 import { usePlan } from '@/hooks/usePlan'
 import { useUpgradeModal } from '@/contexts/UpgradeModalContext'
@@ -170,14 +171,20 @@ function useDeletedContacts(teamId: string | null) {
   })
 }
 
+/** The PENDING requests — the work queue, which is all this page shows. Every
+ *  request ever made stays in the subcollection (the update-link rail writes
+ *  its rows already `approved`), and reading them all to count the pending few
+ *  was a LOG read on the contacts page (docs/scalability-2026-09.md §17 B4).
+ *  Runs on the (`status`, `requested_at`) index; every writer stamps a status. */
 function useContactRequests(teamId: string | null) {
   return useQuery<ContactRequest[]>({
-    queryKey: ['contact-requests', teamId],
+    queryKey: ['contact-requests', teamId, 'pending'],
     enabled: !!teamId,
     queryFn: async () => {
       if (!teamId) return []
       const q = query(
         collection(db, TEAMS_COLLECTION, teamId, CONTACT_REQUESTS_SUBCOLLECTION),
+        where('status', '==', 'pending'),
         orderBy('requested_at', 'desc'),
       )
       const snap = await getDocs(q)
@@ -2148,8 +2155,7 @@ function ContactRequestDialog({
 function RequestsTab({ teamId }: { teamId: string }) {
   const t = useTranslations('Contacts')
   const qc = useQueryClient()
-  const { data: allRequests = [], isLoading } = useContactRequests(teamId)
-  const requests = allRequests.filter((r) => (r.status ?? 'pending') === 'pending')
+  const { data: requests = [], isLoading } = useContactRequests(teamId)
   const [selected, setSelected] = useState<ContactRequest | null>(null)
 
   if (isLoading) return (
@@ -2661,7 +2667,12 @@ export default function ContactsPage() {
   const active = useMemo(() => allActive.filter((c) => contactLifecycle(c) === 'active'), [allActive])
   const leads = useMemo(() => allActive.filter((c) => contactLifecycle(c) === 'provisional'), [allActive])
   const external = useMemo(() => allActive.filter((c) => contactLifecycle(c) === 'external'), [allActive])
-  const { data: archived = [], isLoading: loadingArchived } = useArchivedContacts(ownScoped ? null : currentTeamId)
+  // A PAGE of the archive plus its count — see the hook for why the sidebar
+  // search still reads the whole thing and this tab does not.
+  const archivedQ = useArchivedContactsPage(ownScoped ? null : currentTeamId)
+  const archived = archivedQ.rows
+  const loadingArchived = archivedQ.isLoading
+  const { data: archivedTotal } = useArchivedContactsCount(ownScoped ? null : currentTeamId)
   const { data: deleted = [], isLoading: loadingDeleted } = useDeletedContacts(ownScoped ? null : currentTeamId)
   const { data: requests = [] } = useContactRequests(currentTeamId)
   const { data: subscriptionTypes = [] } = useSubscriptionTypes(currentTeamId)
@@ -3027,9 +3038,9 @@ export default function ContactsPage() {
       ? []
       : [{ id: 'external' as TabId, label: t('tabExternal'), count: external.length }]),
     // Archived/deleted are studio-admin views — hidden for own-scoped coaches.
-    ...(ownScoped ? [] : [{ id: 'archived' as TabId, label: t('tabArchived'), count: archived.length }]),
+    ...(ownScoped ? [] : [{ id: 'archived' as TabId, label: t('tabArchived'), count: archivedTotal ?? archived.length }]),
     ...(ownScoped ? [] : [{ id: 'deleted' as TabId, label: t('tabDeleted'), count: deleted.length }]),
-    { id: 'requests', label: t('tabRequests'),  count: requests.filter((r) => (r.status ?? 'pending') === 'pending').length },
+    { id: 'requests', label: t('tabRequests'),  count: requests.length },
   ]
 
   const selectable = tab === 'active' || tab === 'leads' || tab === 'external' || tab === 'archived' || tab === 'deleted'
@@ -3306,6 +3317,20 @@ export default function ContactsPage() {
               onSelect={toggleSelect}
             />
           ))}
+
+          {/* The archive is paged (see useArchivedContactsPage): the search and
+              filters above run over the LOADED rows, and this line says how many
+              that is, of how many there are. */}
+          {!isLoading && tab === 'archived' && (
+            <LoadMoreFooter
+              shown={archived.length}
+              total={archivedTotal}
+              hasMore={archivedQ.hasMore}
+              loading={archivedQ.isLoadingMore}
+              onLoadMore={archivedQ.loadMore}
+              className="border-t"
+            />
+          )}
         </div>
       )}
 

@@ -64,6 +64,7 @@ const DATE_FIELDS: Record<LedgerCollection, readonly string[]> = {
   activity_log: ['created_at', 'timestamp'],
   mail_sends: ['created_at'],
   automation_logs: ['triggered_at'],
+  notifications: ['created_at'],
 }
 
 const { values } = parseArgs({

@@ -1,14 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  collection, doc, getDoc, getDocs, query, updateDoc, where, orderBy,
-} from 'firebase/firestore'
+import { collection, doc, getDoc, query, updateDoc, where, orderBy } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -28,9 +26,13 @@ import {
 import { toast } from 'sonner'
 import { Gift, RefreshCw, Info } from 'lucide-react'
 import {
-  TEAMS_COLLECTION, CONTACTS_COLLECTION, REFERRALS_COLLECTION,
+  TEAMS_COLLECTION,
+  REFERRALS_COLLECTION,
 } from '@linyup/shared'
 import { Tip } from '@/components/ui/tip'
+import { usePagedQuery } from '@/hooks/usePagedQuery'
+import { useContactsByIds } from '@/hooks/useContactsByIds'
+import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 
 /**
  * A referral names two people, and both ids are on the row — so both are links
@@ -61,12 +63,6 @@ interface Referral {
   reward: { reward_type: string; reward_amount: number } | null
   reward_notes: string | null
   created_at: { toDate: () => Date } | null
-}
-
-interface Contact {
-  id: string
-  firstname: string
-  lastname: string
 }
 
 const STATUS_VALUES: ReferralStatus[] = ['friend_booked', 'friend_signed_up', 'pending_reward', 'rewarded']
@@ -301,6 +297,23 @@ function SettingsTab({
   )
 }
 
+const REFERRALS_PAGE_SIZE = 100
+
+function useReferralsPage(teamId: string, status: ReferralStatus | null) {
+  return usePagedQuery<Referral>({
+    queryKey: ['referrals', teamId, status ?? 'all'],
+    pageSize: REFERRALS_PAGE_SIZE,
+    base: () =>
+      query(
+        collection(db, REFERRALS_COLLECTION),
+        where('team_id', '==', teamId),
+        ...(status ? [where('status', '==', status)] : []),
+        orderBy('created_at', 'desc')
+      ),
+    map: (d) => ({ id: d.id, ...(d.data() as Omit<Referral, 'id'>) }),
+  })
+}
+
 // ─── Referrals list tab ───────────────────────────────────────────────────────
 
 function ReferralsTab({
@@ -317,36 +330,25 @@ function ReferralsTab({
   const [selectedAction, setSelectedAction] = useState<ReferralAction | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
 
-  const { data: contacts = [] } = useQuery<Contact[]>({
-    queryKey: ['referral-contacts', teamId],
-    queryFn: async () => {
-      const snap = await getDocs(
-        query(collection(db, CONTACTS_COLLECTION), where('teamId', '==', teamId))
-      )
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Contact, 'id'>) }))
-    },
-  })
-
-  const { data: referrals = [], isLoading } = useQuery<Referral[]>({
-    queryKey: ['referrals', teamId],
-    queryFn: async () => {
-      const snap = await getDocs(
-        query(
-          collection(db, REFERRALS_COLLECTION),
-          where('team_id', '==', teamId),
-          orderBy('created_at', 'desc')
-        )
-      )
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Referral, 'id'>) }))
-    },
-  })
-
-  const contactNames: Record<string, string> = {}
-  for (const c of contacts) {
-    contactNames[c.id] = `${c.firstname || ''} ${c.lastname || ''}`.trim()
+  // A PAGE of referrals, newest first, with the status filter in the QUERY (the
+  // (`team_id`, `status`, `created_at`) index exists for it) — and the names it
+  // needs resolved by id, not by loading every contact the studio ever had
+  // (docs/scalability-2026-09.md §17 A9). A referral may name an archived or
+  // deleted person; a by-id read brings them back, a live-roster read would not.
+  const referralsQ = useReferralsPage(teamId, statusFilter)
+  const referrals = referralsQ.rows
+  const isLoading = referralsQ.isLoading
+  const namedIds = useMemo(
+    () => referrals.flatMap((r) => [r.referrer_contact_id, r.referred_contact_id]),
+    [referrals]
+  )
+  const { data: contactsById } = useContactsByIds(namedIds)
+  const contactName = (contactId: string) => {
+    const c = contactsById?.get(contactId)
+    return c ? `${c.firstname || ''} ${c.lastname || ''}`.trim() || contactId : contactId
   }
 
-  const visible = statusFilter ? referrals.filter((r) => r.status === statusFilter) : referrals
+  const visible = referrals
 
   async function handleConfirm(payload: {
     action: ReferralAction
@@ -363,8 +365,8 @@ function ReferralsTab({
     queryClient.invalidateQueries({ queryKey: ['referrals', teamId] })
   }
 
-  const referrerName = selectedReferral ? (contactNames[selectedReferral.referrer_contact_id] ?? selectedReferral.referrer_contact_id) : ''
-  const referredName = selectedReferral ? (contactNames[selectedReferral.referred_contact_id] ?? selectedReferral.referred_contact_id) : ''
+  const referrerName = selectedReferral ? (contactName(selectedReferral.referrer_contact_id)) : ''
+  const referredName = selectedReferral ? (contactName(selectedReferral.referred_contact_id)) : ''
 
   const filterOptions: (ReferralStatus | null)[] = [null, ...STATUS_VALUES]
 
@@ -425,13 +427,13 @@ function ReferralsTab({
                     <TableCell>
                       <ReferralPersonCell
                         contactId={r.referrer_contact_id}
-                        name={contactNames[r.referrer_contact_id] ?? r.referrer_contact_id}
+                        name={contactName(r.referrer_contact_id)}
                       />
                     </TableCell>
                     <TableCell>
                       <ReferralPersonCell
                         contactId={r.referred_contact_id}
-                        name={contactNames[r.referred_contact_id] ?? r.referred_contact_id}
+                        name={contactName(r.referred_contact_id)}
                       />
                     </TableCell>
                     <TableCell><StatusBadge status={r.status} /></TableCell>
@@ -457,6 +459,13 @@ function ReferralsTab({
               })}
             </TableBody>
           </Table>
+          <LoadMoreFooter
+            shown={visible.length}
+            hasMore={referralsQ.hasMore}
+            loading={referralsQ.isLoadingMore}
+            onLoadMore={referralsQ.loadMore}
+            className="border-t"
+          />
         </div>
       )}
 

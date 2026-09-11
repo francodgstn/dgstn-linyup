@@ -311,18 +311,42 @@ function useActivities(teamId: string | null) {
   })
 }
 
-function useAllEvents(teamId: string | null, orgId: string | null | undefined) {
+/** How far before the visible window an event may START and still be shown —
+ *  a camp that opened last month and runs into this one. Events are keyed on
+ *  `start` (the index the query runs on), so the window is widened backwards
+ *  by this much rather than asking for `end`, which would need a second range
+ *  field Firestore cannot combine with the first. */
+const EVENT_LOOKBACK_DAYS = 31
+
+/** The team's events, and its organisation's, overlapping the visible window.
+ *
+ *  WINDOWED LIKE THE SESSIONS BESIDE THEM. This read every event the team had
+ *  ever held, on every calendar open, while `useSessionsInRange` right above it
+ *  asked for the visible months only (docs/scalability-2026-09.md §17 B2). Same
+ *  bounds-in-the-key shape, same indexes as before — the range on `start` runs
+ *  on the (`teamId`, `deleted_at`, `start`) and (`orgId`, `scope`,
+ *  `deleted_at`, `start`) composites the unbounded query already used. */
+function useEventsInRange(
+  teamId: string | null,
+  orgId: string | null | undefined,
+  from: Date,
+  to: Date
+) {
   return useQuery<Event[]>({
-    queryKey: ['events', 'calendar', teamId, orgId],
+    queryKey: ['events', 'range', teamId, orgId ?? null, from.getTime(), to.getTime()],
     enabled: !!teamId,
     staleTime: 2 * 60_000,
     queryFn: async () => {
       if (!teamId) return []
+      const lower = Timestamp.fromDate(new Date(from.getTime() - EVENT_LOOKBACK_DAYS * 86_400_000))
+      const upper = Timestamp.fromDate(to)
       const teamSnap = await getDocs(
         query(
           collection(db, EVENTS_COLLECTION),
           where('teamId', '==', teamId),
           where('deleted_at', '==', null),
+          where('start', '>=', lower),
+          where('start', '<', upper),
           orderBy('start', 'asc')
         )
       )
@@ -335,6 +359,8 @@ function useAllEvents(teamId: string | null, orgId: string | null | undefined) {
             where('orgId', '==', orgId),
             where('scope', '==', 'org'),
             where('deleted_at', '==', null),
+            where('start', '>=', lower),
+            where('start', '<', upper),
             orderBy('start', 'asc')
           )
         )
@@ -1002,7 +1028,7 @@ export default function CalendarPage() {
 
   const sessionsQ = useSessionsInRange(currentTeamId, range.from, range.to)
   const activitiesQ = useActivities(currentTeamId)
-  const eventsQ = useAllEvents(currentTeamId, orgId)
+  const eventsQ = useEventsInRange(currentTeamId, orgId, range.from, range.to)
   const { data: members = [] } = useTeamMembers(currentTeamId)
   const { pickable: coachRoster } = useCoaches(currentTeamId)
   const availabilityQ = useAvailabilityTemplates(currentTeamId)
@@ -1438,7 +1464,7 @@ export default function CalendarPage() {
           add nothing.
 
           The studio's own events and its organisation's arrive together (see
-          `useAllEvents`), which is what makes the timeline's by-owner banding
+          `useEventsInRange`), which is what makes the timeline's by-owner banding
           worth having: the organisation's dates are the fixed ones to plan
           around. */}
       {view === 'planning' && (

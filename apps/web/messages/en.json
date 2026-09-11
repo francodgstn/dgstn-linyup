@@ -23,7 +23,10 @@
     "delete": "Delete",
     "remove": "Remove",
     "reset": "Reset",
-    "ratingAriaLabel": "Rate {n} out of 5"
+    "ratingAriaLabel": "Rate {n} out of 5",
+    "loadMore": "Load more",
+    "showingCount": "{count} loaded",
+    "showingOf": "{shown} of {total} loaded"
   },
   "Plans": {
     "free": "Free",
@@ -2007,8 +2010,6 @@
     "paymentsDefaultSubscriptionTypeHelpStripe": "Applied when a payment carries no <code>subscriptionTypeId</code> metadata.",
     "paymentsDefaultSubscriptionTypeHelpPayrexx": "Applied when the Payrexx payment link has no <code>referenceId</code>. Set <code>referenceId</code> to the subscription type ID on each Payrexx link for per-plan control.",
     "tabAffiliations": "Affiliations",
-    "affiliationsEnabledLabel": "Enable affiliations",
-    "affiliationsEnabledHelp": "Track affiliation records (e.g. club membership, federation licence) for contacts.",
     "affiliationsUpsell": "Affiliation tracking requires the Studio plan or above.",
     "tabBarTitle": "Show page tabs",
     "tabBarHelp": "Keep opened pages as tabs above the content, so you can switch between them. This is a per-device setting.",
@@ -2539,7 +2540,8 @@
     "cancelSlotClosesLink": "The payment link sent to the client will be closed so it can no longer be paid.",
     "cancelSlotPaidInWindow": "The client paid just now, so nothing was cancelled. The appointment is confirmed — refund them in Stripe if you still want to cancel it.",
     "cancelSlotLinkStillOpen": "Cancelled, but the payment link could not be closed — it may still be payable. Expire it in your Stripe dashboard.",
-    "cancelSlotFailed": "The appointment could not be cancelled."
+    "cancelSlotFailed": "The appointment could not be cancelled.",
+    "timeOffWindowHint": "Time off that ended more than {days} days ago is no longer listed."
   },
   "AppointmentForm": {
     "durationBenefitOnly": "With a plan",
@@ -4629,7 +4631,8 @@
     "panelTitle": "Notifications",
     "unreadCount": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
     "emptyTitle": "You're all caught up",
-    "emptyBody": "New notifications will show up here."
+    "emptyBody": "New notifications will show up here.",
+    "showingLatest": "Showing the latest {count} unread. Dismiss some to see older ones; unread notifications expire after {days} days."
   },
   "Affiliations": {
     "tabLabel": "Affiliations",
@@ -4842,7 +4845,8 @@
     "thankYouBody": "Your response has been received.",
     "unpublishConfirmTitle": "Take this form offline?",
     "unpublishConfirmBody": "The link you have shared stops working immediately, and any bio-link entry pointing at it stops being shown. Nothing is lost: the fields, the settings and every response collected so far are kept, and you can publish again whenever you like.",
-    "unpublishConfirmAction": "Take it offline"
+    "unpublishConfirmAction": "Take it offline",
+    "exportFailed": "The export could not be prepared. Please try again."
   },
   "Documents": {
     "title": "Documents",

@@ -1069,7 +1069,9 @@ studio `linyup-demo` + fixed code that every seeder provisions — are in
 `docs/test-accounts.md`. Never re-derive one from a seeder's source.
 
 Quality / CI checks (run anytime): `pnpm build` · `pnpm lint` · `pnpm typecheck` ·
-`pnpm test` · `pnpm format`. Cloud/data ops live under `seed:*` / `reset:*` /
+`pnpm test` · `pnpm format` · `pnpm i18n:check` · `pnpm census:reads` (the LOG-list
+tripwire — a direct read of a collection that grows with time must carry a bound;
+`docs/scalability-2026-09.md` §17 is the census it guards). Cloud/data ops live under `seed:*` / `reset:*` /
 `migrate:hmd` / `stripe:sync` / `emulators:export:*` — not part of day-to-day startup.
 
 ---

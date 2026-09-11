@@ -23,7 +23,10 @@
     "delete": "Elimina",
     "remove": "Rimuovi",
     "reset": "Reimposta",
-    "ratingAriaLabel": "Valuta {n} su 5"
+    "ratingAriaLabel": "Valuta {n} su 5",
+    "loadMore": "Carica altri",
+    "showingCount": "{count} caricati",
+    "showingOf": "{shown} di {total} caricati"
   },
   "Plans": {
     "free": "Free",
@@ -2007,8 +2010,6 @@
     "paymentsDefaultSubscriptionTypeHelpStripe": "Applicato quando un pagamento non contiene i metadati <code>subscriptionTypeId</code>.",
     "paymentsDefaultSubscriptionTypeHelpPayrexx": "Applicato quando il link di pagamento Payrexx non ha <code>referenceId</code>. Imposta <code>referenceId</code> sull'ID del tipo di abbonamento su ogni link Payrexx per un controllo per piano.",
     "tabAffiliations": "Affiliazioni",
-    "affiliationsEnabledLabel": "Abilita affiliazioni",
-    "affiliationsEnabledHelp": "Registra le affiliazioni dei contatti (es. tessera club, licenza federale).",
     "affiliationsUpsell": "Il monitoraggio delle affiliazioni richiede il piano Studio o superiore.",
     "tabBarTitle": "Mostra le schede delle pagine",
     "tabBarHelp": "Mantieni le pagine aperte come schede sopra il contenuto, per passare dall'una all'altra. Questa impostazione vale per dispositivo.",
@@ -2539,7 +2540,8 @@
     "cancelSlotClosesLink": "Il link di pagamento inviato al cliente verrà chiuso e non potrà più essere pagato.",
     "cancelSlotPaidInWindow": "Il cliente ha appena pagato, quindi non è stato annullato nulla. L'appuntamento è confermato — rimborsalo in Stripe se vuoi comunque annullarlo.",
     "cancelSlotLinkStillOpen": "Annullato, ma il link di pagamento non è stato chiuso — potrebbe essere ancora pagabile. Fallo scadere nella tua dashboard Stripe.",
-    "cancelSlotFailed": "Non è stato possibile annullare l'appuntamento."
+    "cancelSlotFailed": "Non è stato possibile annullare l'appuntamento.",
+    "timeOffWindowHint": "Le assenze terminate da più di {days} giorni non vengono più elencate."
   },
   "AppointmentForm": {
     "durationBenefitOnly": "Con abbonamento",
@@ -4629,7 +4631,8 @@
     "panelTitle": "Notifiche",
     "unreadCount": "{count, plural, =0 {Nessuna notifica non letta} one {# notifica non letta} other {# notifiche non lette}}",
     "emptyTitle": "Tutto aggiornato",
-    "emptyBody": "Le nuove notifiche appariranno qui."
+    "emptyBody": "Le nuove notifiche appariranno qui.",
+    "showingLatest": "Vengono mostrate le ultime {count} non lette. Chiudine alcune per vedere le precedenti; le notifiche non lette scadono dopo {days} giorni."
   },
   "Affiliations": {
     "tabLabel": "Affiliazioni",
@@ -4842,7 +4845,8 @@
     "thankYouBody": "La tua risposta è stata ricevuta.",
     "unpublishConfirmTitle": "Mettere questo modulo offline?",
     "unpublishConfirmBody": "Il link che hai condiviso smette di funzionare subito e ogni voce del bio-link che vi rimanda non viene più mostrata. Non si perde nulla: i campi, le impostazioni e tutte le risposte già ricevute restano, e puoi ripubblicare quando vuoi.",
-    "unpublishConfirmAction": "Metti offline"
+    "unpublishConfirmAction": "Metti offline",
+    "exportFailed": "Impossibile preparare l'esportazione. Riprova."
   },
   "Documents": {
     "title": "Documenti",

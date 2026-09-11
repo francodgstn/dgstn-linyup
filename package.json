@@ -22,6 +22,7 @@
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
     "i18n:check": "node scripts/i18n-check.mjs",
+    "census:reads": "node scripts/census-reads.mjs",
     "i18n:merge": "node scripts/i18n-merge.mjs",
     "functions:build": "pnpm --filter @linyup/shared run build && pnpm --filter @linyup/functions run build",
     "functions:watch": "pnpm --filter @linyup/functions run watch",
