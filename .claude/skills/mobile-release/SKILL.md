@@ -16,7 +16,48 @@ instant and pinnable, a store build takes days and cannot be un-shipped.
 |---|---|---|
 | PR touching `apps/mobile/**` or `packages/shared/**` | lint, jest, `tsc`, `expo config` per project (catches config-time throws) | nothing |
 | `main` merge touching the same | Expo's `continuous-deploy-fingerprint` action against the `preview` profile / `staging` branch: a build with the current fingerprint exists → OTA update; none → a preview build (internal distribution, staging Firebase). It comments the result on the commit. | install the preview build link on your phone |
-| `mobile-v*` tag | same action, `store` profile / `production` branch, `auto-submit-builds` on: OTA when possible, otherwise a store build submitted to TestFlight and the Play internal track | promote in App Store Connect / Play Console once review passes |
+| `mobile-v*` tag | same action, `store` profile / `production` branch: OTA when possible, otherwise a store build. It does **NOT** submit. | approve the `production` gate, then `eas submit` the build CI made |
+
+## Where a store binary must come from
+
+**From CI. Never from `eas build` on your laptop.**
+
+The fingerprint is computed by whichever machine runs the command, and a dev
+machine does not agree with the runner. Same commit, measured:
+
+| | iOS | Android |
+|---|---|---|
+| GitHub runner (Linux) | `b817ef4f…` | `a4093b56…` |
+| Windows checkout | `88d18f6f…` | `4e1cc6df…` |
+
+`.gitattributes` sets `* text=auto`, so a Windows working tree holds CRLF where
+the runner holds LF — and `@expo/fingerprint` reads `.gitignore` to decide what
+to SKIP, so the CRLF copy's patterns stop matching and 172 `node_modules`
+paths get hashed in that CI correctly ignores.
+
+Two consequences, and the second is the one that bites:
+
+- CI will never find a locally-built build, so the lane rebuilds every time
+  instead of publishing an update. Wasteful, visible, harmless.
+- **An OTA only reaches builds carrying ITS fingerprint.** Publish from CI
+  while the store binary was built locally and the update targets a build
+  nobody installed — the lane reports success, the dashboard shows the update,
+  and not one phone changes. Nothing anywhere reports this.
+
+So whichever machine builds the binary that ships must also be the machine that
+publishes updates to it. CI is the one that can do both unattended, which is why
+it is CI and not the laptop.
+
+**Where this stands (2026-09-11).** Both binaries in the stores today were built
+on the Windows checkout — TestFlight 1.0.1(3) (`88d18f6f…`) and Play closed
+testing version code 3 (`4e1cc6df…`) — so a CI-published OTA reaches NEITHER.
+Until the next store binary comes from a `mobile-v*` tag, publish updates the way
+1.0.1's safe-area fix went out: `eas update --branch production --environment
+production` from the machine that built them. The switchover costs one release,
+once.
+
+A local `eas build` is still right for anything you are NOT shipping: a
+`preview` build for your own phone, or reproducing a build failure.
 
 ## OTA or native build? The fingerprint decides — but know the rule
 
@@ -61,9 +102,7 @@ tags). Store build numbers are EAS-managed (`appVersionSource: remote`,
 
 ## An update during the Play closed test (before production access)
 
-While `eas.json`'s `store` profile still targets `linyup-staging` the
-`mobile-v*` lane refuses to run, by design — so a mid-test update is manual,
-and it is a STORE build, not an OTA: Play only sees a new version code on the
+A mid-test update is a STORE build, not an OTA: Play only sees a new version code on the
 closed track, and an EAS Update is invisible to it. Testers who uninstall a
 broken build drop the count below twelve and the fourteen days restart, so the
 order below puts your own phone before theirs.
@@ -74,15 +113,19 @@ pnpm --filter @linyup/mobile version patch --no-git-tag-version
 #    write apps/mobile/store/release-notes/<version>/{en-US,de-DE,fr-FR,it-IT}.txt
 git commit -am "chore(mobile): v1.0.1 — <what testers get>"     # PR, merge
 
-# 2. build + submit to the closed track (submit.store.android.track = alpha)
+# 2. tag — CI builds it. Do NOT `eas build` a store binary from here:
+#    see "Where a store binary must come from".
+git tag -a mobile-v1.0.2 -m "<why>" && git push origin mobile-v1.0.2
+#    then approve the `production` environment gate and wait for the build
+
+# 3. submit the build CI made (submit.store.android.track = alpha)
 cd apps/mobile
-npx eas-cli build --profile store --platform android --wait
 npx eas-cli submit --profile store --platform android --latest
 
-# 3. Play Console → Closed testing → the new release: paste the notes per
+# 4. Play Console → Closed testing → the new release: paste the notes per
 #    language, but install it on YOUR phone from the tester link and sign in
 #    with the review login before rolling it out to the group.
-# 4. Tell the testers what changed and ask for ONE concrete thing
+# 5. Tell the testers what changed and ask for ONE concrete thing
 #    ("switch the phone to German, book a class, reply with what annoyed you") —
 #    the production-access questionnaire asks for feedback and what you changed.
 ```

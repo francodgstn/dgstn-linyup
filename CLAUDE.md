@@ -265,6 +265,14 @@ History: the middle tier was `members` until 2026-06; renamed (value + display) 
 `registered` while pre-launch with seed data only. The stored enum value is the stable
 machine identifier — post-launch, renames must be display-only.
 
+**Video is embed-only** (`MediaSource` `youtube` / `vimeo` / `url`): `storage.rules`
+refuses `video/*` uploads under a team — the kiosk's standby media is the one
+exception — and the course editor offers no upload for a video lesson. A hosted
+video is billed per byte delivered to every member who watches it, the largest line
+on a studio's bill (`docs/scalability-2026-09.md` §12); hosted video, if it ever
+comes, is a paid add-on on zero-egress infrastructure, never this bucket. Audio
+uploads stay and are the known residual.
+
 **Selling courses (the `purchase` tier).** A purchase-tier course carries
 `accessRule.priceAmount` (major units) and is sold one-off in `/public/{slug}/shop`
 **next to products and subscriptions** (a "Courses" tab), while still consumed in

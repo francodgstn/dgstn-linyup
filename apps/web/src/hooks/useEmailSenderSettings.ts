@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import type { EmailSenderConfig } from '@linyup/shared'
+import { EMAIL_SENDER_INTEGRATION_DOC, ORGANIZATIONS_COLLECTION, TEAMS_COLLECTION, TEAM_INTEGRATIONS_SUBCOLLECTION } from '@linyup/shared'
 
 type EmailSenderScope = 'team' | 'org'
 
@@ -69,9 +70,9 @@ export interface UseEmailSenderSettingsResult {
 
 function senderDocRef(scope: EmailSenderScope, entityId: string) {
   if (scope === 'team') {
-    return doc(db, 'teams', entityId, 'integrations', 'email_sender')
+    return doc(db, TEAMS_COLLECTION, entityId, TEAM_INTEGRATIONS_SUBCOLLECTION, EMAIL_SENDER_INTEGRATION_DOC)
   }
-  return doc(db, 'organizations', entityId, 'integrations', 'email_sender')
+  return doc(db, ORGANIZATIONS_COLLECTION, entityId, TEAM_INTEGRATIONS_SUBCOLLECTION, EMAIL_SENDER_INTEGRATION_DOC)
 }
 
 export function useEmailSenderSettings(

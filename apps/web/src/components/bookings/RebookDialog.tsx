@@ -27,6 +27,7 @@ import {
   SelectTrigger,
 } from '@/components/ui/select'
 import { tsToDate } from './BookingRow'
+import { SESSIONS_COLLECTION } from '@linyup/shared'
 
 /** Stable identity for the rebook picker before its exclusion set has loaded. */
 export const EMPTY_SESSION_IDS: ReadonlySet<string> = new Set<string>()
@@ -42,7 +43,7 @@ export function useFutureSessions(teamId: string | null, enabled: boolean) {
       if (!teamId) return []
       const now = new Date()
       const q = query(
-        collection(db, 'sessions'),
+        collection(db, SESSIONS_COLLECTION),
         where('teamId', '==', teamId),
         where('allowBooking', '==', true),
         orderBy('start', 'asc'),

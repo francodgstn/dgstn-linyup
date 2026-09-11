@@ -170,7 +170,6 @@ function LessonPanel({
     }
   }
 
-  const acceptFor = featured === 'video' ? 'video/*' : 'audio/*'
   const mediaIncomplete = featured !== 'none' && !mediaUrl.trim()
   const canSave = !!title.trim() && !mediaIncomplete && !saving && !uploadingMedia && !uploadingAttach
 
@@ -214,7 +213,15 @@ function LessonPanel({
         {/* Featured media (optional) */}
         <div className="space-y-2">
           <Label>{t('fieldFeaturedMedia')}</Label>
-          <Select value={featured} onValueChange={(v) => setFeatured(v as FeaturedKind)}>
+          <Select
+            value={featured}
+            onValueChange={(v) => {
+              setFeatured(v as FeaturedKind)
+              // Video has no upload (see the source picker below); a source
+              // carried over from an audio lesson must not be left dangling.
+              if (v === 'video' && mediaSource === 'upload') setMediaSource('youtube')
+            }}
+          >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">{t('featuredNone')}</SelectItem>
@@ -233,9 +240,17 @@ function LessonPanel({
                     {featured === 'video' && <SelectItem value="youtube">YouTube</SelectItem>}
                     {featured === 'video' && <SelectItem value="vimeo">Vimeo</SelectItem>}
                     <SelectItem value="url">{t('sourceUrl')}</SelectItem>
-                    <SelectItem value="upload">{t('sourceUpload')}</SelectItem>
+                    {/* VIDEO IS EMBED-ONLY — no upload item for it. A lesson
+                        stored with an uploaded video before that rule keeps its
+                        source visible (disabled) rather than showing a blank. */}
+                    {(featured === 'audio' || (featured === 'video' && initial?.mediaSource === 'upload')) && (
+                      <SelectItem value="upload" disabled={featured === 'video'}>{t('sourceUpload')}</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {featured === 'video' && (
+                  <p className="text-xs text-muted-foreground">{t('videoEmbedOnlyHint')}</p>
+                )}
               </div>
 
               {mediaSource === 'upload' ? (
@@ -248,7 +263,7 @@ function LessonPanel({
                     </Button>
                     {mediaUrl && !uploadingMedia && <span className="text-xs text-green-600">{t('fileReady')}</span>}
                   </div>
-                  <input ref={mediaFileRef} type="file" accept={acceptFor} onChange={handleMediaUpload} className="hidden" />
+                  <input ref={mediaFileRef} type="file" accept="audio/*" onChange={handleMediaUpload} className="hidden" />
                 </div>
               ) : (
                 <div className="space-y-1.5">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { EVENTS_COLLECTION } from '@linyup/shared'
+import { EVENTS_COLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import type { EventPublicProfile } from '@linyup/shared'
 
 // Public surfaces read ONLY the world-readable mirrors
@@ -28,7 +28,7 @@ function startMs(e: PublicEventSummary): number {
 async function queryEvents(field: 'teamId' | 'orgId', value: string): Promise<PublicEventSummary[]> {
   const snap = await getDocs(
     query(
-      collectionGroup(db, 'public_profile'),
+      collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('type', '==', 'event'),
       where(field, '==', value),
     ),
@@ -107,7 +107,7 @@ export function usePublicEvent(eventId: string): {
     ;(async () => {
       try {
         const snap = await getDoc(
-          doc(db, EVENTS_COLLECTION, eventId, 'public_profile', eventId),
+          doc(db, EVENTS_COLLECTION, eventId, PUBLIC_PROFILE_SUBCOLLECTION, eventId),
         )
         if (cancelled) return
         setState({

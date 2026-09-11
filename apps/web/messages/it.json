@@ -3817,7 +3817,8 @@
     "alsoSellHint": "Chiunque può acquistarlo una volta, con accesso a vita. I tuoi piani possono comunque includerlo gratis o ridurne il prezzo, nella tabella qui sotto.",
     "access_subscription": "Abbonamenti specifici",
     "access_purchase": "In vendita",
-    "planLinksLabel": "Cosa fa ogni piano al riguardo"
+    "planLinksLabel": "Cosa fa ogni piano al riguardo",
+    "videoEmbedOnlyHint": "Il video viene incorporato da YouTube, Vimeo o da un link diretto — Linyup non ospita file video."
   },
   "Auth": {
     "orWithEmail": "o con l'e-mail",
@@ -8195,5 +8196,20 @@
     "sheetLiveWarning": "{count} foglietti restano validi fino alla scadenza — meglio ritirare il foglio.",
     "sheetSlipHint": "Scansiona per controllare i tuoi dati",
     "sheetFailed": "Non è stato possibile creare il foglio. Riprova."
+  },
+  "PlanTemplates": {
+    "railLink": "Parti da un modello",
+    "title": "Parti da un modello",
+    "intro": "Le formule che quasi tutti gli studi finiscono per avere. Scegli quelle che ti servono — puoi rinominare e modificare tutto dopo.",
+    "noPricesNote": "Nessun prezzo viene impostato — aggiungi i tuoi prima che qualcuno possa acquistare. Niente è visibile pubblicamente finché non lo mostri tu.",
+    "membership_name": "Abbonamento",
+    "membership_desc": "Un piano ricorrente, con addebito mensile o annuale.",
+    "class_pack_name": "Pacchetto da 10 lezioni",
+    "class_pack_desc": "Pagato una volta, dà 10 crediti lezione.",
+    "complimentary_name": "Omaggio",
+    "complimentary_desc": "Senza costi — per coach, famiglia o chiunque lo studio ospiti.",
+    "create": "{count, plural, =0 {Crea} one {Crea il piano} other {Crea # piani}}",
+    "creating": "Creazione…",
+    "cancel": "Annulla"
   }
 }

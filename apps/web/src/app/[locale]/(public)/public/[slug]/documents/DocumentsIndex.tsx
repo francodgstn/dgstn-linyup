@@ -11,6 +11,7 @@ import type { DocumentPublicProfile } from '@linyup/shared'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { loadFailureDetail, reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { usePublicTeam } from '../PublicTeamProvider'
+import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 
 // World-readable summaries only — collection-group query over
 // documents/{id}/public_profile/{id}, never the root `documents` collection.
@@ -28,7 +29,7 @@ function usePublicDocuments(teamId: string) {
       try {
         const snap = await getDocs(
           query(
-            collectionGroup(db, 'public_profile'),
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
             where('teamId', '==', teamId),
             where('type', '==', 'document'),
           ),

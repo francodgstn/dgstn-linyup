@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
 import type { PublicDomainConfig, PublicDomainDnsRecord, PublicDomainStatus } from '@linyup/shared'
+import { PUBLIC_DOMAIN_INTEGRATION_DOC, TEAM_INTEGRATIONS_SUBCOLLECTION } from '@linyup/shared'
 
 // The domain a studio's PUBLIC PAGES are served from — the sibling of
 // useEmailSenderSettings, which owns the domain they SEND from. Two different
@@ -42,7 +43,7 @@ export interface UseCustomDomainResult {
 
 function configDocRef(scope: CustomDomainScope, entityId: string) {
   const collection = scope === 'team' ? 'teams' : 'organizations'
-  return doc(db, collection, entityId, 'integrations', 'public_domain')
+  return doc(db, collection, entityId, TEAM_INTEGRATIONS_SUBCOLLECTION, PUBLIC_DOMAIN_INTEGRATION_DOC)
 }
 
 export function useCustomDomain(

@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CalendarDays, MapPin, CheckCircle2, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
+import { usePublicFormat } from '../usePublicFormat'
+import { type RegionalFormatter } from '@linyup/shared'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,20 +61,12 @@ interface BookingDetails {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function formatSessionDate(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleDateString([], {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+function formatSessionDate(fmt: RegionalFormatter, iso: string): string {
+  return fmt.custom(new Date(iso), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function formatSessionTime(startIso: string, endIso: string): string {
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  return `${fmt(startIso)} – ${fmt(endIso)}`
+function formatSessionTime(fmt: RegionalFormatter, startIso: string, endIso: string): string {
+  return `${fmt.time(new Date(startIso))} – ${fmt.time(new Date(endIso))}`
 }
 
 // The page has no layout of its own, and nothing above it supplies a container:
@@ -106,6 +100,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function ManageBookingPage() {
   const t = useTranslations('ManageBooking')
   const tCancel = useTranslations('BookingCancellation')
+  const fmt = usePublicFormat()
   const searchParams = useSearchParams()
   const token = searchParams.get('token') ?? ''
 
@@ -258,8 +253,8 @@ export default function ManageBookingPage() {
 
   const { booking, session, activity, availableSessions, canCancel, canRebook } = details
   const willReturn = cancelEffectKeys(details.cancelReturns, 'will')
-  const sessionDateStr = formatSessionDate(session.start)
-  const sessionTimeStr = formatSessionTime(session.start, session.end)
+  const sessionDateStr = formatSessionDate(fmt, session.start)
+  const sessionTimeStr = formatSessionTime(fmt, session.start, session.end)
 
   return (
     <Frame className="space-y-6">
@@ -387,8 +382,8 @@ export default function ManageBookingPage() {
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <p className="text-sm font-medium">{formatSessionDate(s.start)}</p>
-                <p className="text-sm text-muted-foreground">{formatSessionTime(s.start, s.end)}</p>
+                <p className="text-sm font-medium">{formatSessionDate(fmt, s.start)}</p>
+                <p className="text-sm text-muted-foreground">{formatSessionTime(fmt, s.start, s.end)}</p>
                 {s.location && (
                   <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
                     <MapPin className="h-3 w-3" /> {s.location}

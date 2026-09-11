@@ -19,6 +19,7 @@ import {
 import { Building2, CheckCircle2, Info, XCircle } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
+import { TEAMS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION } from '@linyup/shared'
 
 interface InvitationDetails {
   orgId: string
@@ -81,7 +82,7 @@ export default function OrgInvitePage() {
 
         const membersSnap = await getDocs(
           query(
-            collection(db, 'teams', profile!.currentTeam ?? '__none__', 'team_members'),
+            collection(db, TEAMS_COLLECTION, profile!.currentTeam ?? '__none__', TEAM_MEMBERS_SUBCOLLECTION),
             where('userId', '==', user!.uid),
             where('role', '==', 'owner')
           )
@@ -90,7 +91,7 @@ export default function OrgInvitePage() {
         // Get all teams where the user is owner via collectionGroup
         const ownerSnap = await getDocs(
           query(
-            (await import('firebase/firestore')).collectionGroup(db, 'team_members'),
+            (await import('firebase/firestore')).collectionGroup(db, TEAM_MEMBERS_SUBCOLLECTION),
             where('userId', '==', user!.uid),
             where('role', '==', 'owner')
           )
@@ -101,7 +102,7 @@ export default function OrgInvitePage() {
           const teamId = memberDoc.ref.parent.parent?.id
           if (!teamId) continue
           const teamDoc = await (await import('firebase/firestore')).getDoc(
-            (await import('firebase/firestore')).doc(db, 'teams', teamId)
+            (await import('firebase/firestore')).doc(db, TEAMS_COLLECTION, teamId)
           )
           if (teamDoc.exists()) {
             teams.push({ id: teamId, name: teamDoc.data().name })

@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import type { KioskMediaItem } from '@linyup/shared'
 import { useClock } from './useClock'
+import { usePublicFormat } from '../usePublicFormat'
 
 interface Props {
   media: KioskMediaItem[]
@@ -89,12 +90,9 @@ function ClockScreensaver({
   tapHint: string
 }) {
   const now = useClock()
-  const time = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  const date = now.toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  const fmt = usePublicFormat()
+  const time = fmt.time(now)
+  const date = fmt.custom(now, { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black text-white">

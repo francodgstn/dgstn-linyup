@@ -98,6 +98,11 @@ import {
   planGrantExpiryMs,
   planGrantIsCurrent,
   personInitials,
+  ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
+  OUTREACH_TEMPLATES_SUBCOLLECTION,
+  PARTICIPANTS_SUBCOLLECTION,
+  SESSIONS_COLLECTION,
+  SESSION_BOOKINGS_SUBCOLLECTION,
 } from '@linyup/shared'
 import type {
   Contact,
@@ -559,7 +564,7 @@ function useContactBookings(contactId: string, teamId: string | null) {
       if (!teamId) return { bookings: [], sessions: {}, truncated: false }
       const snap = await getDocs(
         query(
-          collectionGroup(db, 'bookings'),
+          collectionGroup(db, SESSION_BOOKINGS_SUBCOLLECTION),
           where('teamId', '==', teamId),
           where('contact', '==', contactId),
           orderBy('joinedAt', 'desc'),
@@ -575,7 +580,7 @@ function useContactBookings(contactId: string, teamId: string | null) {
       for (let i = 0; i < sessionIds.length; i += 30) {
         const batch = sessionIds.slice(i, i + 30)
         const sSnap = await getDocs(
-          query(collection(db, 'sessions'), where(documentId(), 'in', batch))
+          query(collection(db, SESSIONS_COLLECTION), where(documentId(), 'in', batch))
         )
         sSnap.docs.forEach((sd) => {
           const s = sd.data()
@@ -644,7 +649,7 @@ function useContactRecentSessions(contactId: string, count: number) {
     queryFn: async () => {
       const snap = await getDocs(
         query(
-          collectionGroup(db, 'participants'),
+          collectionGroup(db, PARTICIPANTS_SUBCOLLECTION),
           where('contactId', '==', contactId),
           orderBy('checkedInAt', 'desc'),
           limit(count)
@@ -745,7 +750,7 @@ function useOrgAffiliationStatuses(orgId?: string | null) {
     queryFn: async () => {
       if (!orgId) return DEFAULT_ORG_AFFILIATION_STATUSES
       const snap = await getDocs(
-        collection(db, ORGANIZATIONS_COLLECTION, orgId, 'affiliation_statuses')
+        collection(db, ORGANIZATIONS_COLLECTION, orgId, ORG_AFFILIATION_STATUSES_SUBCOLLECTION)
       )
       if (snap.empty) return DEFAULT_ORG_AFFILIATION_STATUSES
       const docs = snap.docs
@@ -3094,7 +3099,7 @@ function GamificationTab({ contact, teamId }: { contact: Contact; teamId: string
     enabled: !!teamId,
     queryFn: async () => {
       if (!teamId) return null
-      const d = await getDoc(doc(db, 'teams', teamId))
+      const d = await getDoc(doc(db, TEAMS_COLLECTION, teamId))
       return d.exists() ? d.data() : null
     },
   })
@@ -4151,7 +4156,7 @@ function SendOutreachDialog({
     enabled: open && !!teamId,
     queryFn: async () => {
       const snap = await getDocs(
-        query(collection(db, TEAMS_COLLECTION, teamId!, 'outreach_templates'), orderBy('name', 'asc')),
+        query(collection(db, TEAMS_COLLECTION, teamId!, OUTREACH_TEMPLATES_SUBCOLLECTION), orderBy('name', 'asc')),
       )
       return snap.docs
         .map((d) => ({ id: d.id, ...(d.data() as { name?: string; active?: boolean }) }))

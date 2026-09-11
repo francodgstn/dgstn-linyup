@@ -1,6 +1,7 @@
 'use client'
 
 import { useClock } from './useClock'
+import { usePublicFormat } from '../usePublicFormat'
 
 interface Props {
   title: string
@@ -10,12 +11,9 @@ interface Props {
 // Top bar: kiosk.title (falls back to the team name), team logo, live clock.
 export default function KioskHeader({ title, logoUrl }: Props) {
   const now = useClock()
-  const time = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  const date = now.toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  const fmt = usePublicFormat()
+  const time = fmt.time(now)
+  const date = fmt.custom(now, { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
     <header className="flex shrink-0 items-center justify-between gap-4 border-b bg-card px-6 py-4 sm:px-10">
