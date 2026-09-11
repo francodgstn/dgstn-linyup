@@ -34,6 +34,7 @@ import {
 } from '@linyup/shared'
 import type { firestore } from 'firebase-admin'
 import { recordPlanPurchase } from './planPurchases'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 type Db = firestore.Firestore
 
@@ -97,13 +98,13 @@ async function logPaymentActivity(
     .collection(CONTACTS_COLLECTION)
     .doc(contactId)
     .collection('activity_log')
-    .add({
+    .add(withLedgerExpiry('activity_log', {
       type: entry.type,
       source: entry.source,
       message: entry.message,
       payment_id: entry.paymentRef,
       timestamp: FieldValue.serverTimestamp(),
-    })
+    }))
 }
 
 /** Set the contact's subscription-axis fields (no affiliation/expiry). Single

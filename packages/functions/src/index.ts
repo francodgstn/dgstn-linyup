@@ -6,8 +6,15 @@ if (!admin.apps.length) {
   admin.initializeApp()
 }
 
-// Set region once — individual modules must NOT call setGlobalOptions
-setGlobalOptions({ region: 'europe-west6' })
+// Set region once — individual modules must NOT call setGlobalOptions.
+//
+// `maxInstances` is a COST CEILING, not a capacity plan: it bounds what a
+// trigger loop or a traffic spike can scale into (there was no bound at all —
+// see docs/scalability-2026-09.md, "Secondary limits"). Twenty per function is
+// generous for every path this product runs today; a hot callable that ever
+// needs more sets its own `maxInstances` in its options, which overrides this,
+// and says why. The billing budget (infra/modules/budget) is the other half.
+setGlobalOptions({ region: 'europe-west6', maxInstances: 20 })
 
 // Teams
 export { createTeam } from './teams/createTeam'

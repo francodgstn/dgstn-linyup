@@ -58,6 +58,7 @@ import { resolveDivisible } from './refunds'
 import { applyPaymentEffects, normalizePaymentLineItem } from '../payments/effects'
 import { sendDeskSaleReceipt } from '../payments/deskReceipt'
 import { lineItemForReversal, reversalPlanFor, reversePaymentEffects } from '../payments/reversal'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 const MAX_COMMENT_LEN = 500
 
@@ -311,13 +312,13 @@ export const updatePaymentRecord = onCall(async (request) => {
         .collection(CONTACTS_COLLECTION)
         .doc(targetContactId)
         .collection('activity_log')
-        .add({
+        .add(withLedgerExpiry('activity_log', {
           type: 'payment_assigned',
           source: rowSource,
           message: `Payment assigned to this contact${label ? ` · ${label}` : ''}`,
           payment_id: docRef.id,
           timestamp: now,
-        })
+        }))
     }
   }
 

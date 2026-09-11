@@ -184,7 +184,10 @@ export interface PlatformMailMetrics {
   /** SENDS dropped before the provider. Not addresses: a suppressed row reached
    *  nobody and carries `recipient_count: 0`. */
   suppressed_yesterday: number
-  /** As `sent_yesterday`, over the whole ledger. */
+  /** As `sent_yesterday`, since the ledger became complete — CARRIED FORWARD
+   *  from the previous snapshot plus the days since, never re-summed over the
+   *  ledger, which ages out after `LEDGER_RETENTION_DAYS.mail_sends`. The
+   *  operator console's "total" reads this, not the ledger. */
   sent_cumulative: number
 }
 

@@ -6,6 +6,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
 import { normalizeRule, runRule, type ContactData } from '../utils/automationEngine'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 const TEAMS_COLLECTION = 'teams'
 const AUTOMATION_RULES_SUBCOLLECTION = 'automation_rules'
@@ -101,7 +102,7 @@ export async function runScheduledRules(): Promise<{ teams: number; rules: numbe
 
         // Write log entry and update rule metadata
         await to(
-          db.collection(TEAMS_COLLECTION).doc(teamId).collection('automation_logs').add(log)
+          db.collection(TEAMS_COLLECTION).doc(teamId).collection('automation_logs').add(withLedgerExpiry('automation_logs', log))
         )
         await to(
           db

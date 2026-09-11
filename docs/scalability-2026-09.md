@@ -9,10 +9,13 @@ Every member-facing feature is therefore written between two and four times, and
 the cost is not the typing. It is that the copies **drift**, and drift in this
 codebase has already destroyed member data.
 
-This document records what the coaching build (August–September 2026) taught
-about that, what has since been fixed, and what is still owed. It is about
-engineering scale, not tenant count; where per-tenant limits are relevant they
-are called out under "Runtime rules already in force".
+This document has two parts. **Part 1** (§1–§7) records what the coaching build
+(August–September 2026) taught about that, what has since been fixed, and what
+is still owed — engineering scale, not tenant count. **Part 2** (§8–§14) is the
+runtime side: the scheduled jobs, the ledgers, the cost model and the limits
+that bind first as the tenant count grows. It was the first analysis of this
+pass and was left out when the file was first assembled; it is restored below
+with what has since been done against it.
 
 ---
 
@@ -386,3 +389,182 @@ all eight, and the site count on 21 was low.
     somebody for is a product judgement, and it now ships over the air.
 31. Whether the app's scope should shrink to what only an app can do, rather
     than tracking the portal.
+
+---
+
+# Part 2 — Runtime, cost and operations
+
+> The first analysis of this pass, written before the surfaces work above and
+> restored here on 2026-09-11 after the file had drifted from it. Claims marked
+> ✓ were re-verified at source that day; the cost figures are estimates and are
+> labelled as such. Section 14 records what has been done against it.
+
+## 8. Bottom line
+
+The data model scales fine — the tenant boundary is `teamId`, and nearly every
+composite index leads with it, so index ranges shard per tenant and Firestore
+will carry tens of thousands of studios. Firestore's own cost is genuinely
+small (roughly $0.50 per studio per month at the profile in §12).
+
+The problems are elsewhere, and there are three real ones: **the scheduled jobs
+are single-instance sequential scans over all tenants**, **the append-only
+ledgers had no retention at all**, and **course video egress on Firebase
+Storage is the cost bomb** — bigger than Firestore, Functions and hosting
+combined.
+
+## 9. The hard wall: scheduled fan-out jobs (breaks around 300–800 tenants)
+
+Every cron is one instance with `timeoutSeconds: 300` (three at 540) and
+`memory: '512MiB'` ✓, and loops tenants sequentially with `await` inside the
+loop:
+
+| Job | Schedule | Work per run | Wall |
+|---|---|---|---|
+| `runScheduledRules` | daily | `collectionGroup('automation_rules')` globally, then all contacts of every team loaded into memory | reads = Σ contacts across tenants, sequential |
+| `weeklyReports` (analytics/index.ts) | weekly | for every team: all active contacts + a week of sessions | same |
+| `sendBookingReminders` | hourly | global sessions scan over a 15-day window (`MAX_OFFSET_HOURS = 14*24` + 24 h catch-up), then an N+1 bookings fetch per session | the worst one — runs 24×/day |
+| `markNoShowBookings` | daily | global sessions where `end` in the last 7 days + per-session bookings | N+1 |
+| `capturePlatformMetrics` | daily | all teams + a `count()` per team | cheap-ish (aggregations) |
+
+None of these has a budget or a cursor. At ~500 tenants × 300 contacts,
+`runScheduledRules` is ~150k sequential reads and `weeklyReports` is worse —
+both blow 300 s, and the failure mode is silent: the job dies partway, some
+tenants get their reminders and rules and some do not, with no signal.
+
+`rollSessionSeries` is the one done right — `MAX_SESSIONS_PER_RUN = 2000`, a
+per-series budget, a stable scan order, resumable. That is the template. And the
+machinery to fix the rest already exists: `onTaskDispatched` Cloud Tasks queues
+are in use for `executeDelayedRule` and `runSeriesTeardown` ✓. The fix is to
+make each cron a **dispatcher that enqueues one task per tenant**, which gives
+parallelism, per-tenant retries, and isolation of one tenant's failure.
+
+`sendBookingReminders` additionally wants a narrower scan — bound the window to
+the largest offset any team has actually configured rather than the theoretical
+14-day ceiling, and skip the per-session bookings fetch when
+`bookings_count === 0`.
+
+## 10. Write amplification per booking
+
+One member booking one class costs roughly five document writes and ~12 reads:
+
+1. the booking write fires `trackBookings` and `onBookingWrite`;
+2. `trackBookings` reads the session, then every booking in that session to
+   recount — correct (the absolute-counter rule, §4) but O(N) per booking and
+   so O(N²) to fill a class — then writes the session doc and an
+   `activity_log` row;
+3. that session write fires `syncSessionPublicProfile`, `trackSessions` and
+   `onSessionWrite`;
+4. `onBookingWrite` and `onSessionWrite` each run `fireEventRules`, which
+   re-queries `automation_rules` and the team doc per event.
+
+Fine at current volume, and not worth restructuring the counter. Two cheap wins:
+cache the team doc and its active rules (they change rarely), and have
+`fireEventRules` bail before the rules query when the team has none — today
+every booking in the system pays for a rules lookup whether or not the studio
+uses automations.
+
+## 11. Housekeeping — the ledgers had no retention
+
+`dailyTasks` already purges the transient collections well
+(`purgeVerificationCodes`, `purgeCheckoutAttempts`, `purgeProvisionalContacts`,
+`purgeUnverifiedSignups`, `expirePendingBookings`, `purgeScheduledTeams`,
+`anonymizeScheduledContacts`). Nothing touched the ledgers:
+
+| Collection | Growth | Retention (before) | Now |
+|---|---|---|---|
+| `teams/{id}/activity_log` + `contacts/{id}/activity_log` | every booking, contact, session, payment event | none | **18 months**, TTL |
+| `mail_sends` | every email + SMS, 12 composite indexes | none | **90 days**, TTL; suppressions live elsewhere and never expire |
+| `teams/{id}/automation_logs` | one per rule per run per team | none | **90 days**, TTL |
+| `contact_weekly_reports` / `team_weekly_reports` | N contacts × 52/year | none | policy call, open |
+| `monthly_scores`, check-ins, `subscription_history` | linear with activity | none | policy call, open |
+| `platform_metrics` | 1/day forever | none | fine, tiny |
+
+**Firestore TTL policies are the right tool, and none was in use** — all
+eighteen `fieldOverrides` in `firestore.index.json` said `"ttl": false` ✓. A
+TTL on an `expires_at` field costs nothing to run, needs no job, and deletes
+are billed like ordinary deletes. Strictly better than writing purge tasks.
+
+A second, specific thing in the same place: `capturePlatformMailMetrics`
+aggregated the **entire** `mail_sends` collection with no date bound every
+single day for `sent_cumulative` ✓ — O(all history forever), daily, and once
+the ledger ages out, silently wrong. It now carries a running total forward.
+
+## 12. Cost model (estimates)
+
+Unit rates are Google's list prices for standard regions; `europe-west6`
+(Zurich) carries a regional premium, so multiply by roughly 1.4–1.5 and verify
+in the calculator. Both Firestore and Storage are pinned to `europe-west6` in
+`infra/environments/prod/variables.tf` and are immutable after first apply, so
+this is already decided.
+
+Assumed "average" studio: 200 active contacts, ~130 sessions/month, ~1,500
+bookings/month, 2 staff on the dashboard daily, members using Space/mobile.
+
+| Line | Per studio/month | × 1,000 studios |
+|---|---|---|
+| Firestore reads (~350k — dashboards + contact lists dominate, not bookings) | ~$0.21 | ~$210 |
+| Firestore writes (~30k) | ~$0.05 | ~$55 |
+| Firestore storage + index overhead | ~$0.04, compounding | ~$40/mo, +$40 each year |
+| Cloud Functions (~50k invocations) | ~$0.15 | ~$150 |
+| App Hosting (Cloud Run, `maxInstances: 10`) | — | ~$100–300 |
+| Brevo email (~2,500 sends: reminders + automations) | ~$2.50–4 | ~$2,500–4,000 |
+| Storage egress — course video | ~$10 | ~$10,000 |
+
+Two things jump out. **Firestore is not the scaling risk** — a rounding error
+even at a thousand tenants; the fixes in §9 are about correctness under load,
+not cost. **Course video is.** Storage rules cap uploads at 50 MiB, and media is
+served straight out of the Firebase Storage bucket with no CDN in front. One
+studio with 30 video lessons and 200 members watching ~10 lessons a month is
+~80 GB of egress ≈ $9.60 — more than everything else on that studio's bill
+combined. Worth solving before the online-courses plugin gets real usage: put
+Cloudflare Stream or R2 behind it (zero egress fees, and Cloudflare workers
+already run from `infra/workers/`), or Cloud CDN in front of the bucket. A
+secondary issue in the same place: `contactMayReadCourseMedia` in
+`storage.rules` does up to three `firestore.get()`/`exists()` calls per object
+request, each a billed read with latency — worth confirming how often that path
+is hit versus tokenised download URLs.
+
+**Brevo scales linearly with activity and is the second-biggest line.** Nothing
+wrong with it — budget it as a real per-tenant COGS, and note that if SMS
+reminders get adopted the per-message cost in CH is 30–50× email.
+
+## 13. Secondary limits, roughly in the order they bind
+
+- **App Check is implemented but off** (`docs/app-check-rollout.md`) ✓. Public
+  routes query Firestore directly from the browser via
+  `collectionGroup('public_profile')`. Until enforcement is on, anyone can drive
+  unmetered reads against the bill from a script. Cheapest risk to close, and
+  the runbook exists; step 1 is a Console registration nobody can script.
+- **There was no `maxInstances` on any Cloud Function** ✓ — `setGlobalOptions`
+  set only the region. A trigger loop or a traffic spike scaled into the
+  regional quota with no ceiling. Now capped (§14); the billing budget module is
+  applied in prod terraform (`infra/environments/prod/main.tf`, `budget_amount`).
+- **`apps/web` prod is `maxInstances: 10` × `concurrency: 80` ≈ 800 concurrent
+  requests.** Fine for a long time; just know the number.
+- **158 composite indexes** ✓ (152 at the time of the analysis), 23 on
+  `contacts` and 19 on `sessions`. Index storage will exceed document storage,
+  and every contact write updates all of them. Worth an audit for unused
+  indexes before adding more.
+- **One genuine index hotspot:** `mail_sends` has indexes leading with
+  `channel` (two values) then `created_at` — a low-cardinality prefix followed
+  by a monotonically increasing value, which caps that index range at ~500
+  writes/sec. That is 43M messages/day, so a marker not a worry, but it is the
+  one index that is not tenant-sharded.
+- **Hot-document contention is low.** Booking writes are transactional on the
+  session doc, and a class holds tens of bookings, not thousands — well under
+  the ~1 write/sec/document sustained limit except for a genuinely viral
+  drop-in.
+
+## 14. What to do, in order — and where each stands (2026-09-11)
+
+| # | Step | Size | Status |
+|---|---|---|---|
+| 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
+| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check:** follow the runbook; step 1 (register the web app in the Firebase Console) is yours. |
+| 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | Not started. The load-bearing one for growth. |
+| 4 | Decide course-video hosting before the plugin has real usage | decision | Yours. Retrofitting a CDN after members hold URLs is far worse than choosing now. |
+| 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
+
+Steps 1, 2 and 5 are small and are in. Step 3 is a week or so. None of it is
+architectural — the data model is sound, and nothing here requires reshaping
+collections or the tenant boundary.

@@ -78,6 +78,7 @@ import {
   parseWaiverSubmissions,
   type WaiverGateOutcome,
 } from '../waivers/gate'
+import { withLedgerExpiry } from '../utils/ledgerRetention'
 import { recordWaiverEvents } from '../waivers/accept'
 // The paid booking's receipt, shared with the Connect webhook's drop-in confirm
 // — always on, outside the `booking_confirmation` toggle. See its header.
@@ -958,12 +959,12 @@ export const createDropInCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
       .collection('contacts')
       .doc(contactId)
       .collection('activity_log')
-      .add({
+      .add(withLedgerExpiry('activity_log', {
         type: 'drop_in_booked',
         source: 'gift_card',
         message: `Drop-in booking · ${activityName}`,
         timestamp: FieldValue.serverTimestamp(),
-      })
+      }))
     // Commit + journal in one call. Nothing else records this sale: a
     // full-cover booking creates no Stripe session, so handleCheckoutCompleted
     // never runs and there is no member_payments doc either.

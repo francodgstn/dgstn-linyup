@@ -60,6 +60,7 @@
     "backfill:booking-joined-at": "tsx scripts/backfill-booking-joined-at.ts",
     "backfill:partner-apps": "tsx scripts/backfill-partner-apps.ts",
     "backfill:contact-notes-count": "tsx scripts/backfill-contact-notes-count.ts",
+    "backfill:ledger-ttl": "tsx scripts/backfill-ledger-ttl.ts",
     "backfill:affiliation-active-orgs": "tsx scripts/backfill-affiliation-active-orgs.ts",
     "backfill:activity-type-mirrors": "tsx scripts/backfill-activity-type-mirrors.ts",
     "backfill:site-translations": "tsx scripts/backfill-site-translations.ts",
