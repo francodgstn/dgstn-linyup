@@ -793,6 +793,22 @@ re-run (endpoints are pinned to the SDK's version at creation). The full
 reasoning is in the header of `utils/connect/client.ts`; the fixtures are real
 captured payloads in `utils/stripe/dahlia-payloads.json`.
 
+### Tarif 595 — a receipt is an ATTESTATION, never a money event
+
+The `tarif-595` plugin issues Swiss health-insurance reimbursement receipts
+(Rückforderungsbeleg, Forum Datenaustausch XML 5.0) for label-certified studios.
+A receipt states what a member bought and when; the money moved when they paid.
+So the plugin writes **no finance journal row**, prices nothing through
+`resolvePaymentOptions`, and voiding a receipt moves no money — pinned by
+`packages/functions/src/tarif595/noJournal.test.ts`. Its creditor identity
+(name, address, IBAN, VAT) is the **shared legal profile**
+(`teams/{t}/settings/legal_profile`, `types/legalProfile.ts`), owned by neither
+plugin; `packages/functions/src/pdf/` is the shared PDF + Swiss QR-bill rail.
+Issuing is two-phase (number allocated as an absolute counter value inside the
+transaction that freezes the snapshot; files rendered from the frozen snapshot
+afterwards, so a crash resumes to byte-identical output). Creation is
+plugin-gated, download/void/email are not. Full doc: `docs/tarif-595.md`.
+
 ### A cancellation is a RECORD, not a boolean
 
 "Cancels at period end" is a **third state** — still live, will not renew — and

@@ -115,6 +115,7 @@ import { QueryErrorState } from '@/components/ui/query-error'
 import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
 import { ConnectPaymentsCard } from '@/components/connect/ConnectPaymentsCard'
 import { PaymentModesCard } from '@/components/payments/PaymentModesCard'
+import { LegalProfileCard } from '@/components/payments/LegalProfileCard'
 import { BillingCurrencyCard, useGatewayCurrency } from '@/components/connect/BillingCurrencyCard'
 import { RANK_PRESETS } from '@/lib/rank-presets'
 import { useRankHolderCount } from '@/lib/rank-utils'
@@ -2075,6 +2076,11 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
         </CardContent>
       </Card>
       </div>
+
+      {/* The creditor identity printed on documents (Tarif 595 receipts today,
+          QR-bill invoices later) — SHARED, not owned by either plugin. Owner
+          write, member read: see components/payments/LegalProfileCard.tsx. */}
+      <LegalProfileCard teamId={teamId} />
 
       {/* Add/edit dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

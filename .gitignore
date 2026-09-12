@@ -88,3 +88,6 @@ apps/web/messages/_pending/*.json
 
 # Cloudflare Worker local state/cache (infra/workers/*)
 .wrangler/
+
+# Tarif 595 sample renders (pnpm --filter @linyup/functions tarif595:sample)
+packages/functions/tmp/
