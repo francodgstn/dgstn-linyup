@@ -258,6 +258,7 @@ export interface PlatformProviderCosts {
   gcp?: GcpCostSnapshot
   brevo?: BrevoCreditSnapshot
   deepl?: DeeplUsageSnapshot
+  stripe?: StripeCostSnapshot
 }
 
 /**
@@ -323,6 +324,78 @@ export interface DeeplUsageSnapshot {
   /** The key's period cap; null when the plan reports none (unlimited). */
   character_limit: number | null
   fetched_at_ms: number
+}
+
+/**
+ * STRIPE — and the only question that matters here is WHOSE COST IT IS.
+ *
+ * ── THE SPLIT, AND WHY IT IS NOT A PRESENTATION CHOICE ──────────────────────
+ * Linyup runs Connect as DIRECT CHARGES on the connected account with
+ * `fees_collector: 'stripe'` — Stripe collects its processing fee FROM THE
+ * STUDIO (see the header of `functions/src/utils/connect/client.ts`). So on the
+ * member→studio rail **Linyup pays Stripe nothing**. A single "Stripe fees"
+ * figure on an operator cost page would therefore be wrong by the whole width
+ * of the platform's payment volume, and wrong in the direction that makes COGS
+ * look catastrophic.
+ *
+ *   `platform` — Linyup's OWN Stripe bill: fees on the PLATFORM account, which
+ *                in practice is SaaS billing (Linyup charging studios). This is
+ *                the COGS line.
+ *   `studios`  — what studios paid Stripe on their own charges. Passes THROUGH
+ *                the platform and is never Linyup's money. Shown because it is
+ *                what the platform costs its customers — strategically the more
+ *                interesting number — but it must never be added to the first.
+ *
+ * They are deliberately two fields rather than one with a label, so no caller
+ * can sum them by accident.
+ *
+ * ── SIGNS AND UNITS ─────────────────────────────────────────────────────────
+ * Both are POSITIVE minor units (Rappen) representing an amount PAID. The
+ * finance journal stores fees signed-negative-when-a-cost from the studio's
+ * point of view (`types/finance.ts`), so the studio figure is negated on the
+ * way in. A cost page rendering "−1,234" invites the reader to think money came
+ * back.
+ *
+ * ── PERIOD ──────────────────────────────────────────────────────────────────
+ * The LAST COMPLETED month, named in `month`, NOT month-to-date — the studio
+ * side is summed from `finance_monthly_reports`, which are written after a
+ * month closes and which have already excluded corrected rows. This is a
+ * different period from `GcpCostSnapshot.month_to_date`, which is exactly why
+ * each carries its own period and the UI states it.
+ *
+ * ── WHAT IS NOT COUNTED, AND SAYS SO ────────────────────────────────────────
+ * Only the `connect` source carries fee data: BYO Stripe and Payrexx are the
+ * studio's own gateway and are fee-blind by design, contributing zero rather
+ * than an estimate. `teams_missing_report` reports how many tenants had no
+ * report for the month, so a partial total is visibly partial instead of
+ * quietly small.
+ */
+export interface StripeCostSnapshot {
+  /** The completed month both figures cover, 'YYYY-MM'. */
+  month: string
+  /** LINYUP'S OWN Stripe bill. Null when the platform call failed. */
+  platform: StripePlatformCost | null
+  /** What STUDIOS paid Stripe. NOT Linyup's cost — never add it to `platform`. */
+  studios: StripeStudioCost | null
+  fetched_at_ms: number
+}
+
+export interface StripePlatformCost {
+  /** Positive minor units paid to Stripe from the platform account. */
+  fees_minor: number
+  currency: string
+  /** True when the page cap was hit, so the figure is a floor, not a total. */
+  truncated: boolean
+}
+
+export interface StripeStudioCost {
+  /** Positive minor units studios paid Stripe on the Connect rail. */
+  fees_minor: number
+  currency: string
+  /** Tenants whose month report was found and counted. */
+  teams_counted: number
+  /** Tenants with no report for the month — the total is short by their share. */
+  teams_missing_report: number
 }
 
 export interface PlatformMetricsDoc {

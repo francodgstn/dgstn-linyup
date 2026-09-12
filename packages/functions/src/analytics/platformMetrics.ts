@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
 import { captureBrevoCredits, captureDeeplUsage } from './providerUsage'
+import { captureStripeCosts } from './stripeCosts'
 import { capturePlatformMailMetrics } from '../mail/mailMetrics'
 import { capturePlatformMobileMetrics } from './mobileAdoptionMetrics'
 import {
@@ -184,10 +185,19 @@ export const capturePlatformMetrics = onSchedule(
     // hence `providers` is assembled from only the keys we actually got, and
     // the `merge: true` below deep-merges the map. Same null-means-omit
     // contract as `mail` and `mobile`.
-    const [brevo, deepl] = await Promise.all([captureBrevoCredits(nowMs), captureDeeplUsage(nowMs)])
+    // Stripe is split by WHOSE cost it is — Linyup pays Stripe nothing on the
+    // member→studio rail (direct charges, studio is the fee payer), so a single
+    // total would be wrong by the whole width of payment volume. See
+    // `StripeCostSnapshot` in @linyup/shared.
+    const [brevo, deepl, stripe] = await Promise.all([
+      captureBrevoCredits(nowMs),
+      captureDeeplUsage(nowMs),
+      captureStripeCosts(nowMs, db),
+    ])
     const providers = {
       ...(brevo ? { brevo } : {}),
       ...(deepl ? { deepl } : {}),
+      ...(stripe ? { stripe } : {}),
     }
 
     const [writeErr] = await to(

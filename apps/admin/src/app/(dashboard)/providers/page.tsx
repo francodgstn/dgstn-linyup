@@ -10,6 +10,17 @@ export const metadata = { title: 'Providers · Linyup Ops' }
 // The page reads live figures, so it must not be cached into a stale cost.
 export const dynamic = 'force-dynamic'
 
+/** Minor units → a readable amount. Never rounded to zero: a small real fee is
+ *  not the same statement as no fee, and this page exists to be believed. */
+function money(minor: number, currency: string): string {
+  const major = minor / 100
+  const digits = major !== 0 && Math.abs(major) < 1 ? 2 : major % 1 === 0 ? 0 : 2
+  return `${major.toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: 2,
+  })} ${currency}`
+}
+
 function ageLabel(fromDate: string | null, fetchedAtMs: number): string {
   const days = Math.floor((Date.now() - fetchedAtMs) / 86_400_000)
   if (days <= 0) return 'today'
@@ -81,6 +92,47 @@ function CostLine({ provider, costs }: { provider: Provider; costs: ProviderCost
           </span>
         ))}
         <span className="text-muted-foreground">{ageLabel(costs.from.brevo, b.fetched_at_ms)}</span>
+      </div>
+    )
+  }
+
+  if (provider.costFeed === 'stripe') {
+    const st = costs.stripe
+    if (!st) {
+      return (
+        <div className="mt-0.5 text-xs text-muted-foreground/80">
+          Fees not measured — needs a completed month of finance reports, or the platform call
+          failed.
+        </div>
+      )
+    }
+    // TWO LINES, NEVER ONE TOTAL. Linyup runs Connect as direct charges with the
+    // studio as fee payer, so it pays Stripe nothing on the member→studio rail:
+    // adding these together would overstate COGS by the whole width of payment
+    // volume. They are rendered on separate rows, differently weighted and
+    // separately labelled, so the page cannot be misread as one figure.
+    return (
+      <div className="mt-0.5 flex flex-col gap-0.5 text-xs">
+        <div>
+          <span className="font-medium tabular-nums">
+            {st.platform ? money(st.platform.fees_minor, st.platform.currency) : '—'}
+          </span>{' '}
+          <span className="text-muted-foreground">
+            Linyup’s own Stripe bill (SaaS billing) · {st.month}
+            {st.platform?.truncated && ' · at least, page cap hit'}
+            {!st.platform && ' not measured'}
+          </span>
+        </div>
+        <div>
+          <span className="tabular-nums">
+            {st.studios ? money(st.studios.fees_minor, st.studios.currency) : '—'}
+          </span>{' '}
+          <span className="text-muted-foreground">
+            paid to Stripe by studios — their cost, not ours
+            {st.studios && st.studios.teams_missing_report > 0 &&
+              ` · ${st.studios.teams_missing_report} tenant(s) had no report, so this is short`}
+          </span>
+        </div>
       </div>
     )
   }
