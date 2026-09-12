@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   Tooltip,
@@ -7,6 +8,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '@/components/ui/tooltip'
+import { Segmented } from '@/components/ui/segmented'
 
 // ─── Relationship timeline (lifeline ribbon) ────────────────────────────────────
 // A compact, read-only overview of a contact's whole business relationship:
@@ -30,6 +32,9 @@ export interface TimelineSpan {
 }
 
 const DAY = 86_400_000
+
+/** What the ribbon draws: both lanes, or one of them on its own. */
+type Lane = 'all' | 'subscriptions' | 'affiliations'
 
 // Acquisition-stage markers use the accent colour (matching the stepper in the
 // Acquisition card); only a dropout stands out in red.
@@ -125,17 +130,26 @@ export function RelationshipTimeline({
   affiliations: TimelineSpan[]
 }) {
   const t = useTranslations('Contacts')
+  const tCommon = useTranslations('Common')
+  // Which lanes to draw. A filter, not a setting: it resets with the page, and
+  // it is offered only while there are two lanes to choose between.
+  const [lane, setLane] = useState<Lane>('all')
 
   // Nothing span-shaped to show → the acquisition funnel above already covers it.
   if (subscriptions.length === 0 && affiliations.length === 0) return null
 
+  const canFilter = subscriptions.length > 0 && affiliations.length > 0
+  const shownSubs = canFilter && lane === 'affiliations' ? [] : subscriptions
+  const shownAffs = canFilter && lane === 'subscriptions' ? [] : affiliations
+
   const now = new Date()
   const nowMs = now.getTime()
 
+  // The window follows what is shown, so a lane on its own fills the width.
   const points: number[] = [
     ...milestones.map((m) => m.date.getTime()),
-    ...subscriptions.flatMap((s) => [s.start.getTime(), (s.end ?? now).getTime()]),
-    ...affiliations.flatMap((a) => [a.start.getTime(), (a.end ?? now).getTime()]),
+    ...shownSubs.flatMap((s) => [s.start.getTime(), (s.end ?? now).getTime()]),
+    ...shownAffs.flatMap((a) => [a.start.getTime(), (a.end ?? now).getTime()]),
     nowMs,
   ]
   let min = Math.min(...points)
@@ -159,8 +173,8 @@ export function RelationshipTimeline({
     }
   }
 
-  const subRows = packRows(subscriptions, nowMs)
-  const affRows = packRows(affiliations, nowMs)
+  const subRows = packRows(shownSubs, nowMs)
+  const affRows = packRows(shownAffs, nowMs)
   const nowPct = pct(nowMs)
 
   const LaneCaption = ({ children, swatch }: { children: React.ReactNode; swatch: string }) => (
@@ -175,9 +189,23 @@ export function RelationshipTimeline({
   return (
     <TooltipProvider delay={200}>
     <div className="space-y-3 rounded-xl border bg-card p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {t('relationshipTimeline')}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {t('relationshipTimeline')}
+        </p>
+        {canFilter && (
+          <Segmented<Lane>
+            size="sm"
+            value={lane}
+            onChange={setLane}
+            options={[
+              { value: 'all', label: tCommon('all') },
+              { value: 'subscriptions', label: t('tabSubscriptions') },
+              { value: 'affiliations', label: t('tabAffiliations') },
+            ]}
+          />
+        )}
+      </div>
 
       <div className="relative">
         {/* gridlines + now marker (behind everything) */}

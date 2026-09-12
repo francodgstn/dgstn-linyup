@@ -227,7 +227,6 @@ import {
 } from '@/components/contacts/RelationshipTimeline'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
-import { AffiliationTypeMark } from '@/components/affiliations/AffiliationTypePicker'
 import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
