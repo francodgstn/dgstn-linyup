@@ -159,20 +159,32 @@ async function main() {
   console.log(`Rank ref backfill — ${target.projectId}${dryRun ? ' (dry run)' : ''}`)
 
   // ── ladders, and precondition 1 ────────────────────────────────────────────
+  // The precondition is checked on the STORED documents, before anything is
+  // resolved through `effectiveRankingSystems` — which mints a missing id on
+  // read (Phase 4) and would otherwise make this check pass on a ladder that
+  // has never been backfilled. The org ladders are then normalised the same
+  // way the team ladders are, so an org-scoped record (a cup event with no
+  // team) resolves against levels that carry ids; before this, every bound on
+  // staging's 971 categories came back an "orphan" for exactly that reason.
+  const idless: string[] = []
+  const idlessIn = (owner: string, systems: RankingSystem[]) => {
+    for (const s of systems) if ((s.levels ?? []).some((l) => !l.id)) idless.push(`${owner}/${s.id}`)
+  }
   const orgSystems = new Map<string, RankingSystem[]>()
   for (const doc of (await db.collection('organizations').get()).docs) {
-    orgSystems.set(doc.id, (doc.data().ranking_systems as RankingSystem[] | undefined) ?? [])
+    const raw = (doc.data().ranking_systems as RankingSystem[] | undefined) ?? []
+    idlessIn(`organizations/${doc.id}`, raw)
+    orgSystems.set(doc.id, effectiveRankingSystems(undefined, raw))
   }
   const teamLadder = new Map<string, RankingSystem[]>()
   const teamOrg = new Map<string, string | undefined>()
-  const idless: string[] = []
   for (const doc of (await db.collection('teams').get()).docs) {
     const data = doc.data()
     const orgId = data.org_id as string | undefined
-    const eff = effectiveRankingSystems(data.ranking_systems as RankingSystem[] | undefined, orgId ? orgSystems.get(orgId) : [])
-    teamLadder.set(doc.id, eff)
+    const own = (data.ranking_systems as RankingSystem[] | undefined) ?? []
+    idlessIn(`teams/${doc.id}`, own)
+    teamLadder.set(doc.id, effectiveRankingSystems(own, orgId ? orgSystems.get(orgId) : []))
     teamOrg.set(doc.id, orgId)
-    for (const s of eff) if ((s.levels ?? []).some((l) => !l.id)) idless.push(`${doc.id}/${s.id}`)
   }
   if (idless.length) {
     console.error(`❌ ${idless.length} ranking system(s) still have levels without ids — run backfill:rank-level-ids first:\n   ${idless.slice(0, 10).join('\n   ')}`)
