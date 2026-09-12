@@ -1,4 +1,5 @@
-import type { RankingSystem, RankLevel } from '../types/team'
+import type { RankingSystem, RankLevel, RankRef } from '../types/team'
+import { findRankLevel } from './rankLevels'
 
 /**
  * THE rule for which ranking systems apply to a team — the organisation's, or
@@ -51,13 +52,16 @@ export function isKnownRankingSystem(
 /** THE one rank a contact is displayed by — see `primaryRank`. */
 export interface PrimaryRank {
   system: RankingSystem
-  /** The level shown: the exact one, or — for an orphaned value — the nearest
-   *  level at or below it (`orphaned` says which). */
+  /** The level shown: the exact one, or — for an orphaned LEGACY NUMBER — the
+   *  nearest level at or below it (`orphaned` says which). */
   level: RankLevel
-  /** The stored value. Differs from `level.value` only when `orphaned`. */
-  value: number
-  /** The contact holds a value no level of the scale carries any more (a
-   *  level was deleted under them); `level` is a best-effort stand-in. */
+  /** The stored ref: the level's id, or a legacy number on a record the Phase 2
+   *  data flip has not reached. Differs from `rankLevelKey(level)` only when
+   *  `orphaned`. */
+  value: RankRef
+  /** The contact holds a number no level of the scale carries any more (a
+   *  level was deleted under them); `level` is a best-effort stand-in. An
+   *  orphaned ID has no stand-in — it resolves to null, see below. */
   orphaned: boolean
 }
 
@@ -102,7 +106,7 @@ export interface PrimaryRank {
  * than inventing a default belt table.
  */
 export function primaryRank(
-  contact: { ranks?: Record<string, number> | null },
+  contact: { ranks?: Record<string, RankRef> | null },
   systems: RankingSystem[] | undefined | null,
 ): PrimaryRank | null {
   const list = systems ?? []
@@ -117,14 +121,21 @@ export function primaryRank(
   if (value === undefined || value === null) return null
 
   const levels = system.levels ?? []
-  const exact = levels.find((l) => l.value === value)
-  const level =
-    exact ??
-    levels
-      .slice()
-      .sort((a, b) => b.value - a.value)
-      .find((l) => l.value <= value)
+  const exact = findRankLevel(levels, value)
+  if (exact) return { system, level: exact, value, orphaned: false }
+
+  // ORPHANS. A legacy NUMBER keeps the nearest-level-below stand-in described
+  // above: it is the transitional shape and its scale still carries numbers.
+  // An ID that no level carries has no "nearest" — identities do not sort — so
+  // it resolves to nothing. That is the honest answer for a grade that was
+  // deleted from the ladder, and the editors' holder-count warning is the
+  // guard that keeps it rare.
+  if (typeof value !== 'number') return null
+  const level = levels
+    .slice()
+    .sort((a, b) => b.value - a.value)
+    .find((l) => l.value <= value)
   if (!level) return null
 
-  return { system, level, value, orphaned: !exact }
+  return { system, level, value, orphaned: true }
 }

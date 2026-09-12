@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { collection, getCountFromServer, query, where, FieldPath } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { CONTACTS_COLLECTION } from '@linyup/shared'
+import type { RankRef } from '@linyup/shared'
 
 // The primary-rank rule itself lives in @linyup/shared (`primaryRank`) — one
 // resolver for the web and the member app. This module keeps the web-only
@@ -27,7 +28,11 @@ import { CONTACTS_COLLECTION } from '@linyup/shared'
 const MAX_HOLDER_COUNT_QUERIES = 64
 
 /**
- * How many contacts of `teamIds` currently sit at one of `values` in `systemId`.
+ * How many contacts of `teamIds` currently sit at one of `refs` in `systemId`.
+ *
+ * Pass EVERY ref a level may be stored under — its id AND its legacy value —
+ * while the data flip is in progress: a contact holds exactly one, so summing
+ * the two equality queries is still a headcount.
  *
  * `null` means "could not be established" — the rules refused the read, or the
  * fan-out was too large to be worth taking. Callers MUST distinguish it from
@@ -40,9 +45,9 @@ const MAX_HOLDER_COUNT_QUERIES = 64
 export async function countRankHolders(
   teamIds: string[],
   systemId: string,
-  values: number[],
+  refs: RankRef[],
 ): Promise<number | null> {
-  const distinct = [...new Set(values)]
+  const distinct = [...new Set(refs.filter((r) => r != null))]
   if (!teamIds.length || !distinct.length) return 0
   if (teamIds.length * distinct.length > MAX_HOLDER_COUNT_QUERIES) return null
 
@@ -110,7 +115,7 @@ export function useRankHolderCount() {
    * answers "unknown", never "none" — counting over an empty list would return
    * a reassuring zero for a question nobody actually asked.
    */
-  const start = (teamIds: string[] | null, systemId: string, values: number[]) => {
+  const start = (teamIds: string[] | null, systemId: string, values: RankRef[]) => {
     const mine = ++token.current
     setCount(undefined)
     if (!teamIds) {

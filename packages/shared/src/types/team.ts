@@ -182,6 +182,15 @@ export function resolveSignupDocumentIds(input: {
  * together and resolve through ONE precedence rule (`rankLevelBadge`) rather
  * than each renderer inventing its own.
  */
+/**
+ * What a record stores to name a level: the level's `id`, or — on a record
+ * written before ids existed — its legacy numeric `value`. Resolve it with
+ * `findRankLevel`; never read `value` off a level to compare it. The numeric arm
+ * is transitional and goes with `value` in Phase 4 of
+ * docs/rank-scale-decoupling.md.
+ */
+export type RankRef = string | number
+
 export interface RankLevel {
   /**
    * THE level's identity — opaque, assigned once, never reused and never

@@ -21,7 +21,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { collection, documentId, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CONTACTS_COLLECTION, TEAMS_COLLECTION } from '@linyup/shared'
+import { CONTACTS_COLLECTION, TEAMS_COLLECTION, findRankLevel } from '@linyup/shared'
 import type { Contact, EventCheckin, RankingSystem } from '@linyup/shared'
 
 export interface CompetitorDetail {
@@ -101,8 +101,8 @@ export function useCompetitorDetails(
         let belt: string | null = null
         for (const sys of rankingSystems) {
           const level = c.ranks?.[sys.id]
-          if (typeof level !== 'number') continue
-          belt = sys.levels?.find((l) => l.value === level)?.label ?? String(level)
+          if (level == null) continue
+          belt = findRankLevel(sys.levels, level)?.label ?? String(level)
           break
         }
         out.set(id, {

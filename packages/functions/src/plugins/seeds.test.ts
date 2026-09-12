@@ -101,8 +101,14 @@ describe("HMD's ladder, as the organisation grades", () => {
     // UI must not render that as a refusal. A permissive band here would be a
     // claim HMD never made.
     const hmdSystem = hmd!.rankProgressions!.find((r) => r.systemId === 'hmd')!
-    const lowest = Math.min(...hmdSystem.progression.rules.map((r) => r.from))
-    assert.equal(lowest, 11, 'a band reaches below Black I Dan (value 11)')
+    // Bands name levels by ID since the scale decoupling. None may name a
+    // colour belt — those are graded by judgement, and the engine must answer
+    // `not_configured` for them.
+    const colourBelts = ['no-belt', 'white', 'yellow', 'orange', 'orange-green', 'green', 'green-blue', 'blue', 'blue-red', 'red', 'red-black']
+    for (const r of hmdSystem.progression.rules) {
+      assert.ok(!colourBelts.includes(String(r.from)) && !colourBelts.includes(String(r.to)), `a band reaches a colour belt: ${r.from}–${r.to}`)
+    }
+    assert.ok(hmdSystem.progression.rules.some((r) => r.from === 'black-i-dan'), 'Black I Dan has a band')
   })
 
   it('YEARS REQUIRED = THE DAN BEING TAKEN, and the time matches it', () => {
@@ -110,16 +116,16 @@ describe("HMD's ladder, as the organisation grades", () => {
     // 1st Dan is the exception: six months, and three flat participation
     // requirements rather than qualifying years — the window is shorter than a
     // year, so the year machinery has nothing to measure.
-    const first = rules.find((r) => r.from === 11)!
+    const first = rules.find((r) => r.from === 'black-i-dan')!
     const firstTime = first.requirements.find((r) => r.kind === 'time_since_previous_exam')!
     assert.equal((firstTime as { amount: number }).amount, 6)
     assert.ok(!first.requirements.some((r) => r.kind === 'qualifying_years'))
 
     // 2nd, 3rd, Master: n years elapsed AND n qualifying years.
     for (const [level, years] of [
-      [12, 2],
-      [13, 3],
-      [14, 4],
+      ['black-ii-dan', 2],
+      ['black-iii-dan', 3],
+      ['master', 4],
     ] as const) {
       const band = rules.find((r) => r.from === level)
       assert.ok(band, `no band for level ${level}`)
@@ -166,7 +172,7 @@ describe("HMD's ladder, as the organisation grades", () => {
 
   it('the cup counts as a tournament, without core knowing what a synonym is', () => {
     const rules = hmd!.rankProgressions!.find((r) => r.systemId === 'hmd')!.progression.rules
-    const band = rules.find((r) => r.from === 11)!
+    const band = rules.find((r) => r.from === 'black-i-dan')!
     const specs = band.requirements
       .filter((r) => r.kind === 'event_participation')
       .map((r) => (r as { spec: { eventTypes: string[] } }).spec)

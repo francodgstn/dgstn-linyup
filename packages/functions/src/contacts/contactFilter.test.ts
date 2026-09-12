@@ -324,11 +324,20 @@ describe('expandRankRange — the mirror an older resolver reads', () => {
     assert.deepEqual(expandRankRange(HWAL, { min: 20, max: null }), [])
   })
 
-  it('orders by VALUE, not by position in the levels array', () => {
-    // Nothing sorts or validates `levels` on write, so a scale can be stored out
-    // of order. The mirror must still come back ascending by value.
+  it('orders by POSITION in the ladder, never by value — the scale decoupling reversed this', () => {
+    // Array order IS the order since docs/rank-scale-decoupling.md: a studio
+    // that reorders its belts (Phase 5) means the new order, and `value` is an
+    // identity of no rank. A band "from 1" therefore covers whatever sits at
+    // and after the level whose value is 1 — here, only itself.
     const jumbled = [{ value: 9 }, { value: 0 }, { value: 5 }, { value: 2 }, { value: 1 }]
-    assert.deepEqual(expandRankRange(jumbled, { min: 1, max: null }), [1, 2, 5, 9])
+    assert.deepEqual(expandRankRange(jumbled, { min: 1, max: null }), [1])
+    assert.deepEqual(expandRankRange(jumbled, { min: null, max: 5 }), [9, 0, 5])
+  })
+
+  it('a level with an id is mirrored BY ITS ID, a legacy one by its value', () => {
+    const mixed = [{ id: 'white', value: 0 }, { value: 1 }, { id: 'blue', value: 2 }]
+    assert.deepEqual(expandRankRange(mixed, { min: null, max: null }), ['white', 1, 'blue'])
+    assert.deepEqual(expandRankRange(mixed, { min: 1, max: 'blue' }), [1, 'blue'])
   })
 
   it('THE MIRROR AND THE BAND AGREE while the scale is unchanged', () => {

@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Shield } from 'lucide-react'
-import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, newRankLevelId } from '@linyup/shared'
+import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, newRankLevelId, rankLevelKey, sameRankRef, orderedLevels } from '@linyup/shared'
 import type { OrgTeam, RankingSystem, RankLevel } from '@linyup/shared'
 import { RANK_PRESETS } from '@/lib/rank-presets'
 import { useRankHolderCount } from '@/lib/rank-utils'
@@ -50,7 +50,8 @@ interface RankSystemFormState {
 }
 
 function emptyForm(): RankSystemFormState {
-  return { id: '', name: '', levels: [{ value: 0, label: '', color: '#6b7280' }], is_primary: false }
+  // The starter level carries an id from birth, like every level an editor adds.
+  return { id: '', name: '', levels: [{ id: newRankLevelId(), value: 0, label: '', color: '#6b7280' }], is_primary: false }
 }
 
 // ─── RankSystemDialog (reused pattern from team settings) ─────────────────────
@@ -128,16 +129,18 @@ function RankSystemDialog({
   // renders as the nearest level below it (see `primaryRank` in @linyup/shared). So ask — but
   // only where somebody can actually be holding it.
   const requestRemoveLevel = (i: number) => {
-    const value = form.levels[i]?.value
-    const wasSaved = isEdit && initial?.levels.some((l) => l.value === value)
+    const level = form.levels[i]
+    const key = level ? rankLevelKey(level) : undefined
+    const wasSaved = isEdit && initial?.levels.some((l) => sameRankRef(rankLevelKey(l), key))
     // A level added in this dialog has never been written, so no contact can
     // hold it. Confirming that would be pure noise plus a wasted round trip.
-    if (value === undefined || !wasSaved) {
+    if (key === undefined || !wasSaved) {
       removeLevel(i)
       return
     }
     setPendingRemove(i)
-    levelHolders.start(holderTeamIds, form.id, [value])
+    // Both refs a contact may still hold it under, while the data flip runs.
+    levelHolders.start(holderTeamIds, form.id, [key, level.value].filter((r, j, a) => a.indexOf(r) === j))
   }
 
   const closeRemoveConfirm = () => {
@@ -456,7 +459,7 @@ export default function OrgRankingPage() {
                   array order made this strip disagree with the dashboard donut
                   whenever the two differed. */}
               <div className="flex gap-1 flex-wrap">
-                {[...s.levels].sort((a, b) => a.value - b.value).map((l) => (
+                {orderedLevels(s).map((l) => (
                   <div key={l.id ?? l.value} className="flex items-center gap-1">
                     <RankBadge level={l} size="sm" />
                     <span className="text-xs text-muted-foreground">{l.label}</span>

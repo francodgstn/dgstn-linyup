@@ -125,19 +125,18 @@ const ONE_ONE_ONE = [
  * toward the next dan — the one place a year is deliberately shared between two
  * gradings, which `rankEligibility`'s own header warns is not a bug to fix.
  *
- * ── THE BAND NUMBERS ARE SCALE-DEPENDENT, AND THE SCALE IS ABOUT TO MOVE ────
- * `from`/`to` are `RankLevel.value`s, and value is simultaneously identity,
- * order and the number stored on a contact. Inserting a belt renumbers
- * everything above it, so these bands would then govern the wrong grades.
+ * ── THE BANDS NAME LEVELS BY IDENTITY ───────────────────────────────────────
+ * `from`/`to` are the levels' stable ids (docs/rank-scale-decoupling.md), the
+ * same strings scripts/migration/config.ts writes on the HMD ladder. Inserting
+ * or reordering a belt moves nothing here, which is the whole point of the
+ * change from the numbers these used to be.
  *
- * That is survivable HERE precisely because these rules are seed data: the
- * remap bumps `version` below and re-seeds, and the new numbers arrive with it.
- * The hazard is rule 2 — an organisation that EDITED its ladder is skipped by
- * the re-seed and keeps bands pointing at the old numbering. Any remap has to
- * report those documents rather than assume it fixed them.
- *
- * Current scale (scripts/migration/config.ts): 0 No belt … 10 Red/Black,
- * 11 Black I Dan, 12 Black II Dan, 13 Black III Dan, 14 Master.
+ * Seed `version` was bumped to 2 with that change so every organisation on
+ * version 1 is re-seeded with ids. The one hazard the reconciler cannot fix:
+ * an organisation whose progression a HUMAN edited (`updated_by` set) is never
+ * rewritten, and keeps its old numeric bands. Those still evaluate — the
+ * matcher resolves a legacy number by `value` while `value` exists — but the
+ * Phase 2 data flip must report them so they are converted by hand.
  */
 const HMD_BELT_RULES: RankProgressionSeed = {
   systemId: 'hmd',
@@ -147,8 +146,8 @@ const HMD_BELT_RULES: RankProgressionSeed = {
       // qualifying-year machinery describes, so it is three flat participation
       // requirements rather than `qualifying_years`.
       {
-        from: 11,
-        to: 11,
+        from: 'black-i-dan',
+        to: 'black-i-dan',
         requirements: [
           { id: 'time', kind: 'time_since_previous_exam', amount: 6, unit: 'months' },
           ...ONE_ONE_ONE.map((spec, i) => ({
@@ -171,8 +170,8 @@ const HMD_BELT_RULES: RankProgressionSeed = {
       },
       // → Black II Dan. Two years, two qualifying years.
       {
-        from: 12,
-        to: 12,
+        from: 'black-ii-dan',
+        to: 'black-ii-dan',
         requirements: [
           { id: 'time', kind: 'time_since_previous_exam', amount: 24, unit: 'months' },
           { id: 'active', kind: 'qualifying_years', minYears: 2, perYear: ONE_ONE_ONE },
@@ -190,8 +189,8 @@ const HMD_BELT_RULES: RankProgressionSeed = {
       },
       // → Black III Dan. Three years, three qualifying years.
       {
-        from: 13,
-        to: 13,
+        from: 'black-iii-dan',
+        to: 'black-iii-dan',
         requirements: [
           { id: 'time', kind: 'time_since_previous_exam', amount: 36, unit: 'months' },
           { id: 'active', kind: 'qualifying_years', minYears: 3, perYear: ONE_ONE_ONE },
@@ -212,8 +211,8 @@ const HMD_BELT_RULES: RankProgressionSeed = {
       // in `not_configured` at its top step — which would read as "no rule"
       // where the organisation does in fact have one.
       {
-        from: 14,
-        to: 14,
+        from: 'master',
+        to: 'master',
         requirements: [
           { id: 'time', kind: 'time_since_previous_exam', amount: 48, unit: 'months' },
           { id: 'active', kind: 'qualifying_years', minYears: 4, perYear: ONE_ONE_ONE },
@@ -253,7 +252,8 @@ const KD_BELT_RULES: RankProgressionSeed = {
  */
 export const PLUGIN_SEEDS: Partial<Record<PluginId, PluginSeedBundle>> = {
   'hmd-belts': {
-    version: 1,
+    // 2: the bands name levels by id instead of by number — see HMD_BELT_RULES.
+    version: 2,
     rankProgressions: [HMD_BELT_RULES, KD_BELT_RULES],
   },
 }

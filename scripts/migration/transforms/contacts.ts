@@ -1,4 +1,4 @@
-import { RANKING_HMD, RANKING_KD, ORG_ID, rankingSystemLevelValues } from '../config'
+import { RANKING_HMD, RANKING_KD, ORG_ID, rankingSystemLevelValues, rankingSystemLevelId } from '../config'
 import { matchSubscriptionType, pickSubscriptionPrice, isPartnerSourceType } from './subscriptions'
 import { buildAffiliationSummary, type AffiliationSummaryInput } from '../../lib/affiliations'
 
@@ -106,15 +106,18 @@ function reportInvalidRank(src: Record<string, unknown>, systemId: string, raw: 
   }
 }
 
-/** Numeric rank for `ranks[systemId]`, warning when the scale has no such level. */
-function validatedRank(src: Record<string, unknown>, systemId: string, raw: unknown): number {
+/**
+ * The rank ref for `ranks[systemId]`: the LEVEL'S ID, warning when the scale
+ * has no such level. A value the scale does not contain is written as the
+ * number it was — the only honest handle for it — so the warning above is what
+ * makes it visible; a null `levels` means this migration does not create that
+ * system at all, and the value passes through unremarked.
+ */
+function validatedRank(src: Record<string, unknown>, systemId: string, raw: unknown): string | number {
   const value = Number(raw)
   const levels = rankingSystemLevelValues(systemId)
-  // A null `levels` means this migration does not create that system at all —
-  // a different problem, and one this function is not the place to invent an
-  // answer for, so the value passes through unremarked.
   if (levels && !levels.has(value)) reportInvalidRank(src, systemId, raw)
-  return value
+  return rankingSystemLevelId(systemId, value) ?? value
 }
 
 /**
@@ -204,7 +207,7 @@ export function transformContact(
   // Build ranks map from all available rank sources:
   //   - contact.rank            → primary HMD belt rank
   //   - contact.disciplines.hmd_rank / .kd_rank  → per-discipline ranks (newer hmd-lineup)
-  const ranks: Record<string, number> = {}
+  const ranks: Record<string, string | number> = {}
 
   const disciplines = src.disciplines as Record<string, unknown> | undefined
   const hmdRank = disciplines?.hmd_rank ?? src.rank

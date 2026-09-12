@@ -103,6 +103,8 @@ import {
   PARTICIPANTS_SUBCOLLECTION,
   SESSIONS_COLLECTION,
   SESSION_BOOKINGS_SUBCOLLECTION,
+  findRankLevel,
+  rankLevelKey,
 } from '@linyup/shared'
 import type {
   Contact,
@@ -443,7 +445,9 @@ const profileSchema = z.object({
   trial_booked_at: z.date().optional(),
   trial_attended_at: z.date().optional(),
   converted_at: z.date().optional(),
-  ranks: z.record(z.string(), z.number()).optional(),
+  // A RankRef per system: the level's id (what this form writes), or a legacy
+  // number on a contact the data flip has not reached yet.
+  ranks: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
   custom_fields: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
     .optional(),
@@ -1761,17 +1765,19 @@ function ProfileTab({
                         {useButtons ? (
                           <div className="flex flex-wrap gap-1.5">
                             {system.levels.map((level) => {
-                              const selected = currentValue === level.value
+                              // Selected when the STORED ref resolves to this level —
+                              // an id, or a legacy number still on the record.
+                              const selected = findRankLevel(system.levels, currentValue) === level
                               return (
                                 <button
-                                  key={level.value}
+                                  key={level.id ?? level.value}
                                   type="button"
                                   onClick={() => {
                                     const next = { ...field.value }
                                     if (selected) {
                                       delete next[system.id]
                                     } else {
-                                      next[system.id] = level.value
+                                      next[system.id] = rankLevelKey(level)
                                     }
                                     field.onChange(next)
                                   }}
@@ -1789,13 +1795,16 @@ function ProfileTab({
                           </div>
                         ) : (
                           <Select
-                            value={currentValue !== undefined ? String(currentValue) : ''}
+                            value={currentValue !== undefined ? String(rankLevelKey(findRankLevel(system.levels, currentValue) ?? { value: currentValue as number, label: '' })) : ''}
                             onValueChange={(val) => {
                               const next = { ...field.value }
-                              if (val === '') {
+                              // Item values are the levels' keys as strings; map back
+                              // to the level so an id-less level still writes its value.
+                              const picked = system.levels.find((l) => String(rankLevelKey(l)) === val)
+                              if (val === '' || !picked) {
                                 delete next[system.id]
                               } else {
-                                next[system.id] = Number(val)
+                                next[system.id] = rankLevelKey(picked)
                               }
                               field.onChange(next)
                             }}
@@ -1804,7 +1813,7 @@ function ProfileTab({
                               <span className="flex flex-1 text-left text-sm truncate">
                                 {currentValue !== undefined ? (
                                   (() => {
-                                    const lvl = system.levels.find((l) => l.value === currentValue)
+                                    const lvl = findRankLevel(system.levels, currentValue)
                                     return lvl ? (
                                       <span className="flex items-center gap-2">
                                         {lvl.color && (

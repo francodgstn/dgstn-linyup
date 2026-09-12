@@ -1467,7 +1467,17 @@ async function seedTeam(opts: {
                 : {}),
             }
           : {}),
-        ...(rankValue != null ? { ranks: { [rankSystemId]: rankValue } } : {}),
+        // The LEVEL'S ID (docs/rank-scale-decoupling.md), looked up by the index
+        // the map above assigns, on the same ids the team's ladder was written with.
+        ...(rankValue != null
+          ? {
+              ranks: {
+                [rankSystemId]:
+                  withRankLevelIds(rankingSystemDefs.find((s) => s.id === rankSystemId)?.levels ?? [])[rankValue]?.id ??
+                  rankValue,
+              },
+            }
+          : {}),
       })
 
     if (affiliationDoc) {

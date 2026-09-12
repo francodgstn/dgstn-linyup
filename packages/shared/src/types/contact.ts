@@ -1,3 +1,4 @@
+import type { RankRef } from './team'
 import type { Timestamp } from './common'
 import type { AffiliationSummary } from './affiliation'
 import type { ContactFilter } from '../utils/contactFilter'
@@ -417,7 +418,9 @@ export interface Contact {
   group_ids?: string[]
 
   // Ranking — keyed by RankingSystem.id (e.g. { "hmd": 5, "internal": 2 })
-  ranks?: Record<string, number>
+  /** systemId → the level held, as a RankRef (its id; a legacy number until the
+   *  Phase 2 data flip). See utils/rankLevels.ts. */
+  ranks?: Record<string, RankRef>
 
   // Custom Fields plugin — keyed by CustomFieldDefinition.id. Dates are stored
   // as ISO 'YYYY-MM-DD' strings to keep the map JSON-flat.

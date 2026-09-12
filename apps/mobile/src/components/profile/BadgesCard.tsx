@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Icon, Surface, Text, useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
-import { mergeBadgeThresholds, primaryRank } from '@linyup/shared';
+import { mergeBadgeThresholds, orderedLevels, primaryRank, rankLevelKey } from '@linyup/shared';
 import { Contact, GamificationBadgeThresholds, GamificationCoachBadge, RankingSystem } from '../../types';
 import { useTranslations } from '../../i18n';
 
@@ -83,10 +83,12 @@ const getBadgeGroups = (
   rankingSystems: RankingSystem[],
 ): BadgeGroup[] => {
   const resolved = primaryRank(contact, rankingSystems);
-  const levels = [...(resolved?.system.levels ?? [])].sort((a, b) => a.value - b.value);
-  // `level.value`, not the stored value: an orphaned rank resolves to the
-  // nearest level below, and that is the position on the scale it shows as.
-  const position = resolved ? levels.findIndex((l) => l.value === resolved.level.value) : -1;
+  // The ladder in ITS OWN order (array position, since the scale decoupling).
+  const levels = resolved ? orderedLevels(resolved.system) : [];
+  // The RESOLVED level's identity, not the stored ref: an orphaned legacy
+  // number resolves to the nearest level below, and that is the position on
+  // the scale it shows as.
+  const position = resolved ? levels.findIndex((l) => rankLevelKey(l) === rankLevelKey(resolved.level)) : -1;
   const top = levels.length - 1;
   const fraction = position >= 0 && top > 0 ? position / top : 0;
   /** The label a tenant's own scale gives the level at `f` — so the badge says

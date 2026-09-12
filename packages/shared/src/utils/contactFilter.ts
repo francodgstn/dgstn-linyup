@@ -1,3 +1,4 @@
+import type { RankLevel, RankRef, RankingSystem } from '../types/team'
 // The ONE contact predicate — "does this contact match this filter?" — shared by
 // every surface: the contacts list, saved filter presets, dynamic contact groups,
 // and the automation engine's `in_group` condition. Pure function of
@@ -32,7 +33,7 @@ import { expandGroupSelection } from './contactGroups'
 export type InactivityPreset = 'never' | '30d' | '60d' | '90d'
 
 /** systemId → selected level values */
-export type RankFilter = Record<string, number[]>
+export type RankFilter = Record<string, RankRef[]>
 
 /**
  * systemId → an inclusive band on that system's level VALUES. `null` on either
@@ -96,26 +97,28 @@ export type RankFilter = Record<string, number[]>
  * differently for old and new readers — a real divergence rather than mere
  * staleness. It needs its own decision; see docs/open-defects.md.
  */
+import { findRankLevel, rankLevelKey, rankRefWithin, sameRankRef, type RankLevelLike } from './rankLevels'
+
 export interface RankRangeFilter {
-  min: number | null
-  max: number | null
+  /** Each end a RankRef — the level's id, or a legacy value on a filter saved
+   *  before ids existed. Inclusive, by ladder position. */
+  min: RankRef | null
+  max: RankRef | null
 }
 
 /**
- * The levels of `system` that fall inside the band, as stored values.
+ * The levels of `system` that fall inside the band, as the refs a record stores.
  *
- * ORDER IS BY `value`, NOT BY POSITION in the levels array. `value` is the
- * scale's order — `orderedLevels` sorts by it before any progression reader
- * touches the array, and `nextLevel` finds `l.value > current` with the note
- * that a scale's values need not be contiguous. Nothing sorts or validates
- * `levels` on write, so array position is not authoritative and a band computed
- * from it would quietly disagree with the belt engine.
+ * ORDER IS ARRAY POSITION. This reversed on 2026-09-11 with the scale
+ * decoupling: it used to sort by `value` because nothing validated the array on
+ * write, and now `value` is not consulted for order anywhere — see
+ * utils/rankLevels.ts for why array order is safe to trust and why it has to be
+ * (a drag-and-drop reorder makes it the studio's explicit intent).
  *
  * It takes the levels rather than a `RankingSystem` so that a caller holding a
- * mirror, a seed fixture or a test double can use it too; it sorts internally
- * for the same reason, since it cannot assume the caller came through
- * `orderedLevels`. Callers that DO hold a system should still order their own
- * UI with `orderedLevels` rather than re-sorting.
+ * mirror, a seed fixture or a test double can use it too. The refs come back in
+ * ladder order. A bound naming a level the ladder no longer has yields NOTHING:
+ * a deleted bound must never widen a saved filter.
  *
  * THE PAIRING IS A WRITER'S OBLIGATION, and this module cannot check it: the
  * mirror can only be produced from the tenant's ranking systems, which a filter
@@ -125,13 +128,12 @@ export interface RankRangeFilter {
  * mirror exists for.
  */
 export function expandRankRange(
-  levels: ReadonlyArray<{ value: number }>,
+  levels: ReadonlyArray<RankLevelLike>,
   range: RankRangeFilter,
-): number[] {
+): RankRef[] {
   return levels
-    .map((l) => l.value)
-    .filter((v) => (range.min == null || v >= range.min) && (range.max == null || v <= range.max))
-    .sort((a, b) => a - b)
+    .filter((l) => rankRefWithin(levels, rankLevelKey(l), range.min, range.max))
+    .map((l) => rankLevelKey(l))
 }
 
 /** A band that constrains nothing is not a filter — both ends open means "any". */
@@ -505,7 +507,8 @@ export interface ContactFilterSubject {
   last_checkin_at?: TimestampLike
   created_at?: TimestampLike
   birthdate?: TimestampLike
-  ranks?: Record<string, number>
+  /** systemId → RankRef (the level's id, or a legacy number). */
+  ranks?: Record<string, RankRef>
   custom_fields?: Record<string, string | number | boolean>
 }
 
@@ -513,6 +516,14 @@ export interface ContactFilterContext {
   /** All groups of the team — needed to expand parents and resolve dynamic rules. */
   groups?: ContactGroup[]
   engagementThresholds?: EngagementThresholds
+  /**
+   * The tenant's EFFECTIVE ranking systems, so a rank band can be evaluated by
+   * ladder position and a legacy numeric rank compared with an id-based mirror.
+   * Optional: without it the matcher falls back to the band's stored mirror
+   * (exact refs) and, for a numeric band against a numeric rank, to the old
+   * numeric compare — it never widens a result for lack of context.
+   */
+  rankingSystems?: RankingSystem[]
   /**
    * documentId → that document's whole signature ledger, for every document the
    * `consent` dimension (or a dynamic group's consent rule) names.
@@ -1042,13 +1053,34 @@ export function matchesFilter(
       const range = f.rankRanges?.[systemId]
       const rank = subject.ranks?.[systemId]
       if (rank == null) return false
+      const ladder = ctx.rankingSystems?.find((s) => s.id === systemId)?.levels
       if (rankRangeIsActive(range)) {
-        if (range!.min != null && rank < range!.min) return false
-        if (range!.max != null && rank > range!.max) return false
-        return true
+        // With the ladder in hand the band is answered by POSITION, which is
+        // what makes a legacy number and an id comparable and what survives a
+        // level being inserted. Without it, a numeric band against a numeric
+        // rank keeps the old compare; a band naming ids cannot be evaluated
+        // and falls through to its mirror below.
+        if (ladder) return rankRefWithin(ladder, rank, range!.min, range!.max)
+        const numeric =
+          typeof rank === 'number' &&
+          (range!.min == null || typeof range!.min === 'number') &&
+          (range!.max == null || typeof range!.max === 'number')
+        if (numeric) {
+          if (range!.min != null && rank < (range!.min as number)) return false
+          if (range!.max != null && rank > (range!.max as number)) return false
+          return true
+        }
       }
       const levels = f.rankFilter?.[systemId]
-      return !!levels?.length && levels.includes(rank)
+      if (!levels?.length) return false
+      // The mirror holds refs. Resolve both sides through the ladder when we
+      // have it, so a contact still on a legacy number matches an id-based
+      // mirror and vice versa; otherwise compare refs as stored.
+      if (ladder) {
+        const held = findRankLevel(ladder, rank)
+        return !!held && levels.some((ref) => findRankLevel(ladder, ref) === held)
+      }
+      return levels.some((ref) => sameRankRef(ref, rank))
     })
     if (!matched) return false
   }

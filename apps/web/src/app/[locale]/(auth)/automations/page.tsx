@@ -94,7 +94,7 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import {  TEAMS_COLLECTION, ALERT_PRESETS_SUBCOLLECTION, SUBSCRIPTION_ROLLUP_STATUSES, CONTACT_SOURCES, AUTOMATION_RULES_SUBCOLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION, WEBHOOK_ENDPOINTS_SUBCOLLECTION } from '@linyup/shared'
+import {  TEAMS_COLLECTION, ALERT_PRESETS_SUBCOLLECTION, SUBSCRIPTION_ROLLUP_STATUSES, CONTACT_SOURCES, AUTOMATION_RULES_SUBCOLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION, WEBHOOK_ENDPOINTS_SUBCOLLECTION, orderedLevels, rankLevelKey } from '@linyup/shared'
 import type { SubscriptionType, CustomFieldDefinition, RankingSystem, MemberPayment } from '@linyup/shared'
 import { Link, useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
@@ -1111,13 +1111,14 @@ function customFieldOption(d: CustomFieldDefinition): UpdateFieldOption {
 
 /** Map a ranking system to an update_field option (dotted path `ranks.{id}`). */
 function rankSystemOption(r: RankingSystem): UpdateFieldOption {
-  const levels = [...(r.levels ?? [])].sort((a, b) => a.value - b.value)
+  // Ladder order, and the level's KEY (its id) as the value the engine writes.
+  const levels = orderedLevels(r)
   return {
     value: `ranks.${r.id}`,
     label: r.name || r.id,
     kind: 'enum',
-    values: levels.map((l) => String(l.value)),
-    valueLabels: Object.fromEntries(levels.map((l) => [String(l.value), l.label])),
+    values: levels.map((l) => String(rankLevelKey(l))),
+    valueLabels: Object.fromEntries(levels.map((l) => [String(rankLevelKey(l)), l.label])),
   }
 }
 

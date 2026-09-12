@@ -44,7 +44,8 @@ import {
   primaryRank,
   CONTACT_FILTER_PRESET_PINS_DOC,
 } from '@linyup/shared'
-import type { Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
+import type {
+  RankRef, Contact, ContactGroup, AcquisitionStage, ContactEntry, ContactSource, ContactRequest, RankingSystem, SubscriptionType, SubscriptionPrice, OrgAffiliationStatusDef, SaasPlan, EngagementBand, EngagementThresholds, CustomFieldDefinition, CustomFieldType } from '@linyup/shared'
 import { ACQUISITION_STAGES, CONTACT_ENTRIES, CONTACT_SOURCES, ENGAGEMENT_BANDS, contactLifecycle, planGrantExpiryMs } from '@linyup/shared'
 // The ONE contact predicate — see packages/shared/src/utils/contactFilter.ts.
 // Never re-implement matching here; extend the resolver instead.
@@ -52,7 +53,7 @@ import {
   EMPTY_CONTACT_FILTER, emptyContactFilter, normalizeContactFilter, countActiveFilters,
   filterContacts, flattenGroupTree, isDynamicGroup, toGroupRule, ruleWouldDropGroups,
   compareContactsByAttention, contactAttentionReasons, resolveTimestampMs,
-  GROUP_NONE, COACH_NONE, expandRankRange, rankFilterIsActive, orderedLevels,
+  GROUP_NONE, COACH_NONE, expandRankRange, rankFilterIsActive, orderedLevels, rankLevelKey, findRankLevel, sameRankRef,
 } from '@linyup/shared'
 import type {
   ContactAttentionReason,
@@ -808,11 +809,10 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
   const selected = rankFilter?.[activeId] ?? []
   const range = rankRanges?.[activeId] ?? null
 
-  // Ascending by VALUE — the scale's own order — through the shared helper that
-  // every progression reader already uses, rather than a second sort here.
-  // Nothing sorts `levels` on write, so the stored array can be out of order;
-  // BOTH views below render from this one, so the tick-list and the range picker
-  // cannot disagree about which belt is higher.
+  // The ladder in ITS OWN order, through the shared helper every rank reader
+  // uses (array position is the order since the scale decoupling — see
+  // utils/rankLevels.ts in shared). BOTH views below render from this one, so
+  // the tick-list and the range picker cannot disagree about which belt is higher.
   const ordered = useMemo(() => (system ? orderedLevels(system) : []), [system])
 
   // MODE IS STATE, NOT A DERIVATION of "is a band stored". Deriving it meant the
@@ -826,7 +826,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
   // instead of handing back the band's EXPANSION — which is every level the band
   // covered, and would silently widen a two-belt filter to "anyone with a rank"
   // (and any dynamic group saved from it).
-  const ticksBeforeRange = useRef<number[] | null>(null)
+  const ticksBeforeRange = useRef<RankRef[] | null>(null)
 
   /**
    * ONE writer of both keys.
@@ -836,7 +836,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
    * correctly during a deploy skew (see RankRangeFilter in @linyup/shared).
    * Writing the mirror anywhere else, or by hand, is how the two drift.
    */
-  function commit(nextLevels: number[], nextRange: RankRangeFilter | null) {
+  function commit(nextLevels: RankRef[], nextRange: RankRangeFilter | null) {
     const filters: RankFilter = { ...(rankFilter ?? {}) }
     const ranges: Record<string, RankRangeFilter> = { ...(rankRanges ?? {}) }
 
@@ -869,8 +869,9 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
     )
   }
 
-  function toggle(value: number) {
-    const next = selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]
+  function toggle(ref: RankRef) {
+    const has = selected.some((v) => sameRankRef(v, ref))
+    const next = has ? selected.filter((v) => !sameRankRef(v, ref)) : [...selected, ref]
     commit(next, null)
   }
 
@@ -882,7 +883,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
       // actually filters — an all-open one would store nothing and leave the
       // panel looking broken.
       ticksBeforeRange.current = selected
-      commit([], { min: ordered[0]?.value ?? null, max: null })
+      commit([], { min: ordered[0] ? rankLevelKey(ordered[0]) : null, max: null })
     } else {
       commit(ticksBeforeRange.current ?? [], null)
       ticksBeforeRange.current = null
@@ -934,7 +935,10 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
               <Select
                 value={range?.[end] == null ? '' : String(range[end])}
                 onValueChange={(v) => {
-                  const picked = v === '' ? null : Number(v)
+                  // Item values are level keys as strings; map back to the level's
+                  // own ref so a legacy numeric bound never becomes a string.
+                  const level = v === '' ? null : ordered.find((l) => String(rankLevelKey(l)) === v) ?? null
+                  const picked: RankRef | null = level ? rankLevelKey(level) : null
                   const next: RankRangeFilter = {
                     min: range?.min ?? null,
                     max: range?.max ?? null,
@@ -949,8 +953,10 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
                   // whole design exists to rule out. Dragging one end past the
                   // other pushes the other end with it, as a range picker should.
                   if (picked != null) {
-                    if (end === 'min' && next.max != null && next.max < picked) next.max = picked
-                    if (end === 'max' && next.min != null && next.min > picked) next.min = picked
+                    // Compared by LADDER POSITION, never by the ref itself.
+                    const at = (r: RankRef | null) => (r == null ? -1 : ordered.findIndex((l) => sameRankRef(rankLevelKey(l), r)))
+                    if (end === 'min' && next.max != null && at(next.max) < at(picked)) next.max = picked
+                    if (end === 'max' && next.min != null && at(next.min) > at(picked)) next.min = picked
                   }
                   commit([], next)
                 }}
@@ -959,7 +965,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
                   <span className="flex flex-1 text-left text-xs truncate">
                     {range?.[end] == null
                       ? t('filterRankAny')
-                      : (ordered.find((l) => l.value === range[end])?.label ?? t('filterRankAny'))}
+                      : (findRankLevel(ordered, range[end])?.label ?? t('filterRankAny'))}
                   </span>
                 </SelectTrigger>
                 <SelectContent>
@@ -967,7 +973,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
                       option with a label, never an empty trigger. */}
                   <SelectItem value="" className="text-xs">{t('filterRankAny')}</SelectItem>
                   {ordered.map((level) => (
-                    <SelectItem key={level.value} value={String(level.value)} className="text-xs">
+                    <SelectItem key={level.id ?? level.value} value={String(rankLevelKey(level))} className="text-xs">
                       {level.label}
                     </SelectItem>
                   ))}
@@ -977,14 +983,16 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
           ))}
         </div>
       ) : (
-        ordered.map((level) => (
-          <button key={level.value} type="button" onClick={() => toggle(level.value)}
+        ordered.map((level) => {
+          const ticked = selected.some((v) => sameRankRef(v, rankLevelKey(level)))
+          return (
+          <button key={level.id ?? level.value} type="button" onClick={() => toggle(rankLevelKey(level))}
             className="flex items-center gap-2.5 w-full px-2 py-1.5 text-sm rounded hover:bg-accent transition-colors text-left"
           >
             <span className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-              selected.includes(level.value) ? 'bg-primary border-primary' : 'border-input'
+              ticked ? 'bg-primary border-primary' : 'border-input'
             }`}>
-              {selected.includes(level.value) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+              {ticked && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
             </span>
             {level.color && (
               <span className="h-3 w-3 rounded-full shrink-0 border border-border/30"
@@ -992,7 +1000,8 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
             )}
             <span>{level.label}</span>
           </button>
-        ))
+          )
+        })
       )}
     </div>
   )
@@ -1396,8 +1405,8 @@ function FilterChips({
           // detail of it that also goes stale the moment a belt is added.
           const range = f.rankRanges?.[systemId]
           if (sys && range && (range.min != null || range.max != null)) {
-            const name = (v: number | null) =>
-              v == null ? null : sys.levels.find((l) => l.value === v)?.label ?? null
+            const name = (v: RankRef | null) =>
+              v == null ? null : findRankLevel(sys.levels, v)?.label ?? null
             const lo = name(range.min)
             const hi = name(range.max)
             // A bound whose level was deleted has no name; fall back rather than
@@ -1407,7 +1416,7 @@ function FilterChips({
             if (lo && hi) return `${prefix}${t('filterRankBetween', { from: lo, to: hi })}`
           }
           if (sys && levels.length === 1)
-            return sys.levels.find((l) => l.value === levels[0])?.label ?? t('filterRanksCount', { count: 1 })
+            return findRankLevel(sys.levels, levels[0])?.label ?? t('filterRanksCount', { count: 1 })
           return `${prefix}${t('filterRanksCount', { count: levels.length })}`
         }
         return t('filterRanksCount', { count: total })
@@ -2931,7 +2940,7 @@ export default function ContactsPage() {
   // Org-level ranking systems override team-level ones (per CLAUDE.md spec)
   const rankingSystems = orgRankingSystems ?? team?.ranking_systems ?? []
 
-  const bulkSetRank = async (systemId: string, value: number | null) => {
+  const bulkSetRank = async (systemId: string, value: RankRef | null) => {
     const fieldKey = `ranks.${systemId}`
     await Promise.all([...selected].map((id) =>
       updateDoc(doc(db, CONTACTS_COLLECTION, id), {
