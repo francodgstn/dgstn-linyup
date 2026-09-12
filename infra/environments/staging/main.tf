@@ -154,6 +154,12 @@ module "budget" {
   env             = "staging"
   budget_amount   = var.budget_amount
 
+  # Budget alerts go to the SAME channel as the error and uptime alerts. Empty
+  # when alert_email is unset, in which case the budget falls back to GCP's
+  # billing-admin default — `terraform output budget_alerts_named_recipient`
+  # is the honest answer to "would anyone hear about a runaway bill?".
+  notification_channels = module.monitoring.notification_channel_ids
+
   depends_on = [module.services]
 }
 

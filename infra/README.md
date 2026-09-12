@@ -432,6 +432,59 @@ $GITHUB_SHA`). So the prod web app can never ship ahead of the backend it calls.
 
 ---
 
+## Billing budget — what it guards, and what it does not
+
+`modules/budget` attaches one monthly budget per environment, filtered to that
+project, with alert rules at 50 / 90 / 100 % of **actual** spend plus one at
+100 % of **forecast** spend. Two things are worth knowing before trusting it.
+
+**It covers the GOOGLE bill only.** Firestore, Functions, App Hosting /
+Cloud Run, Storage egress, Cloud Tasks, Vertex AI, Cloud Translation. It does
+**not** see Brevo or Stripe, which are separate vendors billed separately — and
+per `docs/scalability-2026-09.md` §12 Brevo is the *second-largest* COGS line at
+scale (~$2,500–4,000/month at a thousand studios, against a few hundred dollars
+of Google spend). So the budget is not a cap on what the business costs to run;
+it is a runaway detector for the Google part. Watch Brevo's own dashboard for
+the other half.
+
+**A budget with no named channel still mails somebody — just not anybody this
+repo names.** GCP's default is to mail whoever holds Billing Account
+Administrator/User. The budget now also routes to the same ops-email channel as
+the error and uptime alerts, and keeps the billing-admin default on top (a cost
+runaway is the one alert where two independent paths to a human is right).
+`terraform output budget_alerts_named_recipient` answers it honestly:
+
+```bash
+cd infra/environments/prod
+terraform output budget_amount                     # the ceiling
+terraform output budget_alerts_named_recipient     # false = billing admins only
+terraform output monitoring_alerting_enabled       # false = nothing pages anyone
+```
+
+Both recipient outputs hang off the same `alert_email` in `terraform.tfvars`, so
+setting it once fixes errors, uptime AND budget alerts together.
+
+### Picking `budget_amount`
+
+Default **500 CHF/month** (`variables.tf`). The number only does work if it is
+close to reality, because the first actual-spend alert fires at half of it:
+
+- **Set it from the last full month's Google spend, not from a forecast of the
+  business.** Console → Billing → Reports, filtered to the project. Round up to
+  give a few times headroom and no more.
+- **A ceiling far above the real bill detects nothing.** At 500 CHF the first
+  alert lands at 250 CHF spent; if the real bill is single-digit, something has
+  gone 25× wrong before anyone hears. Pre-launch, a much lower ceiling is
+  strictly better — it is an early-warning line, not a spending permission.
+- **Raise it deliberately as tenants arrive**, and re-check after anything that
+  changes the egress or invocation shape. The forecast rule is what gives you
+  mid-month warning; the actual-spend rules are the record.
+- A budget **does not stop spending** — nothing here caps anything. The per-
+  function `maxInstances: 20` and App Hosting's `maxInstances` are the actual
+  ceilings.
+
+---
+
 ## Sandbox environment (demo playground)
 
 `linyup-sandbox` is a throwaway environment that powers the public `/try` page:
