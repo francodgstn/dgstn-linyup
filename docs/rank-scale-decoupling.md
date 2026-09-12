@@ -9,7 +9,10 @@ is the field a ladder document written before Phase 4 still carries, read by
 `legacyRankValue` alone (`rankValueCensus.test.ts` pins its callers) until
 `backfill:rank-refs --strip-values` removes it — Phase 4b, run after the flip.
 Phase 5 shipped the same day: both editors reorder by drag-and-drop and insert a
-level at any position. Phase 6 blocked on the reassignment decision.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
+level at any position. Phase 6, the same day: the migration ladder carries
+White/Yellow and Yellow/Orange, and `backfill:rank-reassign` applies the
+reassignment — which stays a dry run until HMD's decision is recorded beside
+the map in `HMD_BELT_REASSIGNMENT`.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
 `value`, and installed mobile apps will show no belt between the Phase 2 data
 flip and their update — so that flip is a script run on Franco's timing, never
 a merge side effect. Written 2026-09-11 after the HMD belt
@@ -222,6 +225,25 @@ ref moves.
 
 **Phase 6 — add the two HMD belts** as a plain ladder edit, and apply whatever
 reassignment Phase 0 decided as a separate, explicit, auditable step.
+
+*Shipped 2026-09-12, with the decision still open.* The ladder edit: `HMD_BELT_LEVELS`
+in `scripts/migration/config.ts` carries `white-yellow` after White and
+`yellow-orange` after Yellow, with no legacy value (the source never had them),
+so a fresh import writes the seventeen-level ladder and an org that already
+exists adds the two rows in the ranking editor. The reassignment: `pnpm
+backfill:rank-reassign --target <env>` moves every ref equal to a map source
+onto its target — contacts, exam check-ins, saved filters, group rules,
+human-edited bands, cup categories — on the org's teams only, stamps each moved
+contact with `ranks_reassigned[system] = {from, to, at, decided_by, decided_on}`,
+and records the run (map, decision, counts) under
+`organizations/hmd/rank_reassignments/`, which is also the inverse map if it
+ever has to be undone. **It refuses to write while `HMD_BELT_REASSIGNMENT.decidedBy`
+/ `decidedOn` are null**, and refuses to apply a map a recorded run already
+applied (once applied, the old id is a real belt again — a newcomer graded
+Yellow next month holds `yellow` — so a second pass would move the wrong
+people). The map holds HMD's stated intent, `yellow → yellow-orange`; a dry run
+prints the holders per level. `snapshot:ranks --apply` first, so what everyone
+held is on record by label.
 
 ## What decoupling does not solve
 

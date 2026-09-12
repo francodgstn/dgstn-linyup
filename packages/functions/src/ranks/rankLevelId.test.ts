@@ -62,19 +62,21 @@ describe('withRankLevelIds', () => {
   })
 
   it('agrees with the ids the HMD migration writes literally', () => {
-    // scripts/migration/config.ts carries these fifteen strings by hand so the
+    // scripts/migration/config.ts carries these strings by hand so the
     // migration is reproducible by reading it. If this derivation ever drifts
     // from them, a backfilled staging org and a freshly migrated one disagree.
+    // White/Yellow and Yellow/Orange are the Phase 6 belts, in the positions
+    // HMD inserted them.
     const labels = [
-      'No belt', 'White', 'Yellow', 'Orange', 'Orange/Green', 'Green', 'Green/Blue',
-      'Blue', 'Blue/Red', 'Red', 'Red/Black', 'Black I Dan', 'Black II Dan',
-      'Black III Dan', 'Master',
+      'No belt', 'White', 'White/Yellow', 'Yellow', 'Yellow/Orange', 'Orange', 'Orange/Green',
+      'Green', 'Green/Blue', 'Blue', 'Blue/Red', 'Red', 'Red/Black', 'Black I Dan',
+      'Black II Dan', 'Black III Dan', 'Master',
     ]
-    const ids = withRankLevelIds(labels.map((label, value) => ({ value, label }))).map((l) => l.id)
+    const ids = withRankLevelIds(labels.map((label) => ({ label }))).map((l) => l.id)
     assert.deepStrictEqual(ids, [
-      'no-belt', 'white', 'yellow', 'orange', 'orange-green', 'green', 'green-blue',
-      'blue', 'blue-red', 'red', 'red-black', 'black-i-dan', 'black-ii-dan',
-      'black-iii-dan', 'master',
+      'no-belt', 'white', 'white-yellow', 'yellow', 'yellow-orange', 'orange', 'orange-green',
+      'green', 'green-blue', 'blue', 'blue-red', 'red', 'red-black', 'black-i-dan',
+      'black-ii-dan', 'black-iii-dan', 'master',
     ])
   })
 })
