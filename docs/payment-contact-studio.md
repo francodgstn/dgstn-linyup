@@ -454,8 +454,14 @@ default `lib_trial_cleanup` automation rule (installed active for every new team
 `onTeamCreated`; editable/pausable in the Automations UI).
 Guards on shop registration: the plan's hard cap (Free 15, measured against
 *counted* actives → `failed-precondition` with `reason: 'contact_cap'`), a per-team
-daily registration budget (20/day), a per-IP hourly OTP-send limit, and App Check on
-both auth callables.
+daily registration budget (20/day), and a per-IP hourly OTP-send limit.
+
+**App Check is NOT one of these guards** — an earlier version of this list named it.
+It is implemented but enforcement is deferred by decision, so it stops nothing today
+(`docs/app-check-rollout.md` → "Why it is still off"). The two auth callables it would
+cover are the mobile-reachable ones, which sit on the separate `APP_CHECK_ENFORCE_MOBILE`
+flag and stay unguarded even after a web flip — they need native attestation first. The
+budget and the OTP limit above are the whole of it.
 
 **Contact-capture modes.** `checkout_contact_mode` `'off'`/`'minimal'` are obsolete
 under login-first (the buyer is always a real contact); **`'full'`** survives as the

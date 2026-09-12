@@ -5,6 +5,11 @@
 > archive) because other documents cite its findings by number — notably
 > `app-check-rollout.md`, which depends on finding #3 — so the numbering must keep
 > resolving. **Verify any finding against the code before acting on it.**
+>
+> The FINDINGS are frozen; the **Status column and the follow-up list are kept
+> current**, with a date on anything resolved after the audit ran. A status of
+> ▶ Deferred or ▶ Accepted is a decision that was taken, not a task nobody got
+> to — the linked detail says who decided what and what would re-open it.
 
 A full read-through of every externally reachable surface of the Linyup platform:
 Firestore rules (~1,260 lines), Storage rules, all Cloud Functions exports, every public
@@ -35,7 +40,7 @@ or hardening gap · **L** = low-risk / defense-in-depth.
 | 1 | H | Cross-tenant LIST on `courses`/`forms`/`documents` | ✅ Fixed |
 | 2 | H | `createDropInCheckout` trusts client `authenticatedContactId` | ✅ Fixed |
 | 2b | H | Same pattern missed in `bookSession` / `bookAppointment` | ✅ Fixed (2026-07-17) |
-| 3 | M | App Check absent on all callables | ✅ Implemented (web provider + staged monitor→enforce on web-only callables) |
+| 3 | M | App Check absent on all callables | ✅ Implemented (web provider + web-only callables) · ▶ **enforcement deferred by decision 2026-09-12** — see #3 |
 | 4 | M | Event-invitation tokens never expire + leak PII | ✅ Fixed |
 | 5 | M | Unescaped user content in email HTML | ✅ Fixed |
 | 6 | M | Brevo/inbound webhooks: non-constant-time token / secret in logs | ✅ Fixed |
@@ -100,22 +105,36 @@ there is no session to derive from and the code must remain the proof. Signed-in
 (mobile) send no `authenticatedContactId` at all and are identified by their contact
 session. Every real caller already sent both fields, so no client changed.
 
-### 3 — App Check (M, implemented — staged)
+### 3 — App Check (M, implemented; enforcement DEFERRED by decision 2026-09-12)
 No `enforceAppCheck` existed anywhere; unauthenticated Firestore-writing callables were
-defended only by per-IP hourly rate limits. **Implemented:** a reCAPTCHA v3 App Check
+defended only by per-IP hourly rate limits. **Implemented:** a reCAPTCHA Enterprise App Check
 provider on the web client (`apps/web/src/lib/app-check.ts` + `AppCheckProvider`, mounted in
 the locale layout; no-ops under the emulator or when the key is unset), and App Check on the
-**web-only** public callables — `createDropInCheckout`, `createMembershipCheckout`,
-`createProductCheckout`, `createCourseCheckout`, and `submitForm` — via
-`enforceAppCheck: process.env.APP_CHECK_ENFORCE === 'true'` with a `monitorAppCheck()` log in
-each (`utils/appCheck.ts`). **Ships in monitor mode** (`APP_CHECK_ENFORCE=false` in all
-`.env.*`): missing tokens are logged, not rejected. Rollout: provision the reCAPTCHA key →
-confirm `[appcheck-monitor]` logs show tokens → set `APP_CHECK_ENFORCE=true` (staging first).
-`sendContactVerificationCode` is deliberately **excluded** because the Expo mobile app calls
-it and cannot produce attestation tokens; mobile enforcement needs native App Check
-(`@react-native-firebase/app-check` + an EAS dev build) as a separate phase. Turning
-enforcement on is a staged, manual procedure — see the runbook:
-[`app-check-rollout.md`](./app-check-rollout.md).
+**web-only** public callables via `enforceAppCheck: APP_CHECK_ENFORCE` with a
+`monitorAppCheck()` log in each (`utils/appCheck.ts`). **Derive that callable set by grep, not
+from a list here** — an earlier version of this paragraph named five of them and went stale:
+
+```bash
+grep -rn 'enforceAppCheck: APP_CHECK_ENFORCE' packages/functions/src | grep -v _MOBILE
+```
+
+**Ships in monitor mode** (`APP_CHECK_ENFORCE=false` in all `.env.*`): missing tokens are
+logged, not rejected.
+
+The mobile-reachable callables — `sendContactVerificationCode` and `loginContactWithCode`,
+the member app's only login path, which the Expo JS SDK cannot attest — are **on a separate
+flag**, `APP_CHECK_ENFORCE_MOBILE`, which `APP_CHECK_ENFORCE=true` cannot reach.
+(This paragraph previously said they were "deliberately excluded" while the code had them on
+the SAME flag as the web callables, so turning web enforcement on would have locked the app
+out. The split is the fix; `auth/appCheckMobile.test.ts` re-derives the set from source and
+fails the build if a mobile-reachable callable lands on the bare web flag.) Mobile
+enforcement additionally needs native App Check (`@react-native-firebase/app-check` + an EAS
+dev build) as a separate phase.
+
+**Enforcement is deferred by decision, not merely un-done** — reCAPTCHA Enterprise is a
+third-party provider with its own billing, and these callables are already IP-rate-limited.
+The reasoning, the residual risk and the triggers that change the answer are in the runbook:
+[`app-check-rollout.md`](./app-check-rollout.md) → "Why it is still off".
 
 ### 4 — Event-invitation tokens never expired + PII leak (M, fixed)
 `events/index.ts` minted `crypto.randomBytes(32)` tokens with no expiry, and
@@ -224,7 +243,16 @@ noted for awareness.
   courses/forms/documents; `sharesContactEmail` denies an unverified-email caller. (Not
   added here to avoid a new test-infra dependency mid-audit; rules were validated to
   compile via the emulator and reviewed manually.)
-- Land App Check (finding 3) with a staged log-only rollout.
+- ~~Land App Check (finding 3) with a staged log-only rollout.~~ **Closed 2026-09-12 as a
+  deliberate deferral, not as done.** reCAPTCHA Enterprise is a third-party provider with
+  its own billing (the Console no longer offers plain v3), and the callables it would guard
+  are already IP-rate-limited behind a `payments_enabled` gate that fails closed — so
+  enforcement buys defence against an attacker who defeats IP keying, and nothing else.
+  Nothing is half-adopted: no site key, both flags false, the key slot and the provider's
+  two Google APIs commented out. Reasoning, residual risk, the two triggers that change the
+  answer, and a provider-free mitigation for the first of them are in
+  [`app-check-rollout.md`](./app-check-rollout.md) → "Why it is still off". **Re-open this
+  when gift cards sell for real money** — `checkGiftCard` is a balance oracle.
 - Land the mobile SecureStore migration (finding 9) with device testing.
 - Provision the `saas_operator` custom claim for operators and, once done, consider removing
   the email-allowlist fallback (finding 8).

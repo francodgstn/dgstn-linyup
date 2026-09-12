@@ -56,8 +56,8 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  # Firebase App Check — the reCAPTCHA v3 SITE KEY (public, safe to embed), the
-  # one piece of deployment wiring the App Check rollout needs from this file.
+  # Firebase App Check — the reCAPTCHA ENTERPRISE SITE KEY (public, safe to embed),
+  # the one piece of deployment wiring the App Check rollout needs from this file.
   # Commented out because the key does not exist until the project is registered
   # in the Console (docs/app-check-rollout.md step 1), and App Hosting rejects
   # `value: ""` — so the slot cannot be pre-declared empty, only pre-described.
@@ -69,7 +69,7 @@ env:
   # and looks exactly like a bad registration, which is what the runbook's "watch
   # the monitor logs" step would have you conclude. Set it here and redeploy web.
   # - variable: NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY
-  #   value: <reCAPTCHA v3 site key for linyup-prod>
+  #   value: <reCAPTCHA Enterprise site key for linyup-prod>
   #   availability:
   #     - BUILD
   #     - RUNTIME

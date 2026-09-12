@@ -6,12 +6,56 @@ enforcement on before the client can produce tokens locks out real users.
 
 See finding #3 in [`security-audit-2026-07.md`](./security-audit-2026-07.md) for the why.
 
+## Why it is still off — a decision, not a backlog item (2026-09-12)
+
+**reCAPTCHA Enterprise is a third-party provider with its own billing, and adopting one
+before there is a threat to answer is a cost with no return.** Deferred deliberately, and
+nothing in the tree moves toward it: no site key is deployed, both enforce flags are false,
+the `apphosting` key slot is commented out, and even the two Google APIs it would need are
+left commented in `infra/environments/*/main.tf`. There is no half-adopted state to
+maintain, and the runbook below is a cold start whenever you want it.
+
+**What already defends the same callables**, which is why deferring is safe rather than
+merely cheap — every one of them is IP-rate-limited:
+
+| Rail | Limit |
+|---|---|
+| Checkouts — drop-in, membership, product, course, appointment, gift-card buy | 30 / IP / hour, a separate bucket per rail (`CHECKOUT_RATE_LIMIT_PER_HOUR`) |
+| `checkGiftCard`, `previewPromoCode` | 30 / IP / hour, own buckets |
+| `submitForm` | 10 / form / IP / hour (its own limiter, `SUBMIT_RATE_LIMIT_MAX`) |
+| `listAvailability` | 240 / IP / hour |
+
+Plus `payments_enabled` **fails closed**, so a tenant with no chargeable Connect account
+has no priced door to attack at all.
+
+App Check buys exactly ONE thing over that: defence against an attacker who defeats IP
+keying — a botnet or a rotating residential proxy pool, for whom 30/hour becomes
+30,000/hour. **That attacker, and only that attacker, is what this defers.**
+
+**The triggers that mean "now":**
+
+1. **Gift cards go on sale for real money.** `checkGiftCard` is an oracle — a code in, valid
+   + balance out — so rotating IPs can enumerate live cards and drain them, and you would
+   learn about it from a balance rather than an alert. The risk scales with outstanding
+   gift-card value, which is why it is nil today and first to bite.
+2. **First real payment volume, or a public marketing push.** Junk contacts through
+   `submitForm`, and Stripe Session floods that park appointment holds on real slots for the
+   hold window.
+
+**A provider is not the only answer to trigger 1.** The gift-card oracle can be closed
+without adopting anything: count attempts **per CODE** as well as per IP (an enumeration
+sweep is many codes from many IPs but few hits, which a per-code counter sees and a per-IP
+one cannot), or stop returning the balance to an unauthenticated caller. Prefer that first —
+it is targeted at the actual risk, costs nothing per month, and needs no third party. Reach
+for App Check when the threat is broad rather than one endpoint.
+
 ## Current state (as shipped)
 
 App Check is inert today — nothing is rejected:
 
 - **Web** — `initAppCheck()` (`apps/web/src/lib/app-check.ts`, mounted via `AppCheckProvider`
-  in the locale layout) **no-ops** unless `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` is set,
+  in the locale layout, provider `ReCaptchaEnterpriseProvider`) **no-ops** unless
+  `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` is set,
   and it is always skipped under the emulator. With no key, the browser sends no token — and
   no deployed environment sets one yet: the slot sits commented out in
   `apps/web/apphosting{,.prod,.sandbox}.yaml`, ready for step 2.
@@ -46,8 +90,20 @@ enforcement is the separate `APP_CHECK_ENFORCE_MOBILE` flip (see Caveats).
 > client is not yet sending tokens rejects every legitimate web request.
 
 1. **Register App Check in the Firebase Console.** App Check → your **Web app** → register
-   with **reCAPTCHA v3** (or reCAPTCHA Enterprise). This produces a reCAPTCHA v3 **site key**
-   (public — safe to embed) linked to the project. Do this for the **staging** project first.
+   with **reCAPTCHA Enterprise**. This produces an Enterprise **site key** (public — safe to
+   embed) linked to the project. Do this for the **staging** project first.
+
+   The two APIs it needs — `firebaseappcheck.googleapis.com` and
+   `recaptchaenterprise.googleapis.com` — sit **commented out** in the `apis` list of
+   `infra/environments/*/main.tf` (see the deferral note above). Uncomment both and
+   `terraform apply` the environment BEFORE registering, so the declared state of the
+   project stays complete rather than the Console enabling them behind Terraform's back.
+
+   **Enterprise, not plain v3 — this matters to the client code.** The Console no longer
+   offers reCAPTCHA v3 for a new web registration, and `apps/web/src/lib/app-check.ts` uses
+   `ReCaptchaEnterpriseProvider` to match. The two are not interchangeable: an Enterprise key
+   handed to `ReCaptchaV3Provider` fails at token exchange, and the symptom is "no token
+   arrives" — indistinguishable from having configured no key at all.
 
 2. **Give the web client the key (staging).** Uncomment the
    `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` block in **`apps/web/apphosting.yaml`**
@@ -87,8 +143,14 @@ monitor mode instantly). The web key can stay set — it's harmless without enfo
 
 ## Caveats
 
-- **reCAPTCHA v3 false positives.** It scores requests; a small fraction of real users can be
+- **reCAPTCHA false positives.** It scores requests; a small fraction of real users can be
   rejected. Watch error rates after step 4; keep the rollback (above) handy.
+- **reCAPTCHA Enterprise is a billed product**, unlike the plain v3 this started out on — it
+  has a free monthly assessment allowance and per-assessment pricing above it (check the
+  current Google Cloud pricing page; do not trust a figure quoted in a doc). The volume is
+  driven by token MINTS, not by callable invocations: `isTokenAutoRefreshEnabled: true` means
+  roughly one assessment per browser session per token lifetime, not one per checkout. Worth
+  a glance at the bill after the prod flip all the same, alongside the budget alert.
 - **Mobile is not covered, and cannot be flipped on by accident.** The mobile-reachable
   callables sit behind their own `APP_CHECK_ENFORCE_MOBILE` flag (default false), so the web
   flip above leaves them alone. Enforcing them needs native attestation —
