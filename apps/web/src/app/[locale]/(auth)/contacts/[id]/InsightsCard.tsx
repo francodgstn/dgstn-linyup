@@ -6,12 +6,13 @@
  *
  * Top, the AI summary — an experiment (`contact-summary`). While the switch is
  * off the block is ABSENT, not empty, so a studio that never opted in sees a
- * card of numbers and nothing that hints at a model. Under it, straight away:
- * the three counters, then the attendance sparkline growing into whatever
- * height the card has left, with the engagement meter beside them — the foot
- * of the old single header card, no longer docked to the bottom edge (that
- * left a dead band under a short summary). Nothing here is new data; the
- * summary is the one write, and it goes through `generateContactSummary`.
+ * card of numbers and nothing that hints at a model. Under it: four figures
+ * in a row — the three counters and the engagement band as a coloured dot
+ * with its name (it used to be a vertical meter beside the strip, a fill
+ * level for something that has four words and no level) — then the
+ * attendance sparkline on the card's bottom edge. The foot of the old single
+ * header card, rearranged. Nothing here is new data; the summary is the one
+ * write, and it goes through `generateContactSummary`.
  */
 
 import { useState } from 'react'
@@ -22,7 +23,7 @@ import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { Sparkles, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { computeEngagementBand } from '@linyup/shared'
-import type { Contact, EngagementBand, EngagementThresholds } from '@linyup/shared'
+import type { Contact, EngagementThresholds } from '@linyup/shared'
 import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
@@ -62,12 +63,9 @@ export function InsightsCard({
         // the next contact this component happens to be re-rendered for.
         <SummaryBlock key={contact.id} contact={contact} />
       )}
-      <div className={`flex ${summaryOn ? '' : 'mt-auto'}`}>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <StatsRow contact={contact} />
-          <Sparkline contactId={contact.id} />
-        </div>
-        <EngagementIndicator contact={contact} thresholds={thresholds} />
+      <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'mt-auto'}`}>
+        <StatsRow contact={contact} thresholds={thresholds} />
+        <Sparkline contactId={contact.id} />
       </div>
     </div>
   )
@@ -158,10 +156,16 @@ function SummaryBlock({ contact }: { contact: Contact }) {
 
 // ─── Counters + sparkline ─────────────────────────────────────────────────────
 
-function StatsRow({ contact }: { contact: Contact }) {
+function StatsRow({
+  contact,
+  thresholds,
+}: {
+  contact: Contact
+  thresholds?: EngagementThresholds
+}) {
   const t = useTranslations('Contacts')
   return (
-    <div className="grid grid-cols-3 divide-x">
+    <div className="grid grid-cols-4 divide-x">
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
         <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
@@ -181,6 +185,7 @@ function StatsRow({ contact }: { contact: Contact }) {
           {t('statMonthScore')}
         </p>
       </div>
+      <EngagementCell contact={contact} thresholds={thresholds} />
     </div>
   )
 }
@@ -255,9 +260,12 @@ function Sparkline({ contactId }: { contactId: string }) {
   )
 }
 
-// ─── Engagement meter ─────────────────────────────────────────────────────────
+// ─── Engagement cell ──────────────────────────────────────────────────────────
 
-function EngagementIndicator({
+/** The fourth figure: a dot in the band's colour and the band's name, sized
+ *  to sit level with the three numbers. A band is one of four words, so a
+ *  meter was showing a fill level for something that has no level. */
+function EngagementCell({
   contact,
   thresholds,
 }: {
@@ -269,31 +277,16 @@ function EngagementIndicator({
   const refMs = lastMs ?? toDate(contact.created_at)?.getTime() ?? null
   const band = computeEngagementBand(refMs, thresholds)
   const daysAgo = lastMs != null ? Math.floor((Date.now() - lastMs) / 86_400_000) : null
-  const tip = `${t('engagementLabel')} · ${
-    daysAgo == null ? t('engagementNoSessions') : t('engagementLastSession', { days: daysAgo })
-  }`
-  const fill: Record<EngagementBand, string> = {
-    active: '100%',
-    low: '75%',
-    at_risk: '50%',
-    inactive: '25%',
-  }
+  const tip = daysAgo == null ? t('engagementNoSessions') : t('engagementLastSession', { days: daysAgo })
   return (
-    <div
-      title={tip}
-      className="flex shrink-0 cursor-default flex-col items-center justify-end gap-1.5 border-l px-3 py-3"
-    >
-      <div className="relative max-h-40 min-h-[40px] w-2 flex-1 overflow-hidden rounded-full bg-muted">
-        <div
-          className={`absolute bottom-0 left-0 right-0 rounded-full transition-all ${ENGAGEMENT_BAR[band]}`}
-          style={{ height: fill[band] }}
-        />
-      </div>
-      <span
-        className={`hidden whitespace-nowrap text-[10px] font-medium sm:block ${ENGAGEMENT_TEXT[band]}`}
+    <div title={tip} className="cursor-default px-4 py-3 text-center">
+      <p
+        className={`flex h-8 items-center justify-center gap-1.5 text-sm font-semibold ${ENGAGEMENT_TEXT[band]}`}
       >
-        {t(`engagement_${band}` as Parameters<typeof t>[0])}
-      </span>
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ENGAGEMENT_BAR[band]}`} aria-hidden />
+        <span className="truncate">{t(`engagement_${band}` as Parameters<typeof t>[0])}</span>
+      </p>
+      <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">{t('engagementLabel')}</p>
     </div>
   )
 }
