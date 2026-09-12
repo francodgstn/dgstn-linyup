@@ -223,10 +223,113 @@ export interface PlatformMobileMetrics {
   embedded: number
 }
 
+/**
+ * PROVIDER COST / USAGE — what each third-party vendor will tell us about what
+ * we are spending with them, rendered on the operator console's Providers page.
+ *
+ * ── ONE RULE, AND IT IS THE WHOLE DESIGN ────────────────────────────────────
+ * **Never render a number the provider did not give us.** Every block here is
+ * OPTIONAL, for the same reason `PlatformMailMetrics` and
+ * `PlatformMobileMetrics` are: a vendor call that fails, a key that is not
+ * configured, and a bill of zero are three different facts, and only the last
+ * one is a zero. A cost page that quietly shows 0 or a stale figure is worse
+ * than no cost page — it is the one screen whose whole job is to be believed.
+ * So an absent block means "we could not measure", the UI says so, and each
+ * block carries the instant it was obtained rather than inheriting the
+ * snapshot's date.
+ *
+ * ── THESE ARE NOT ALL THE SAME KIND OF NUMBER ───────────────────────────────
+ * Deliberately not normalised into one "spend" figure, because they are not
+ * comparable and pretending otherwise would invent precision:
+ *
+ *   - GCP reports MONTH-TO-DATE MONEY against a budget.
+ *   - Brevo reports CREDITS REMAINING on a plan — not a currency amount at all.
+ *   - DeepL reports CHARACTERS used against a cap.
+ *
+ * ── WHAT IT DOES NOT COVER ──────────────────────────────────────────────────
+ * Stripe is absent on purpose. Connect processing fees are the STUDIO's cost,
+ * not Linyup's, so a single "Stripe fees" total would conflate two parties'
+ * money and overstate platform COGS. Adding Stripe means first deciding whether
+ * the page shows Linyup's own cost only, or splits platform-vs-studio
+ * explicitly. Cloudflare (flat-rate Workers), PostHog and EAS expose nothing
+ * usable; the Providers page states that per card rather than leaving a blank.
+ */
+export interface PlatformProviderCosts {
+  gcp?: GcpCostSnapshot
+  brevo?: BrevoCreditSnapshot
+  deepl?: DeeplUsageSnapshot
+}
+
+/**
+ * Google Cloud spend, taken from the BILLING BUDGET's Pub/Sub notification
+ * rather than from any cost API.
+ *
+ * There is no Cloud Billing API call that returns consumption — `cloudbilling`
+ * serves account metadata and the SKU price catalogue, and real cost data
+ * otherwise means enabling a BigQuery billing export (opt-in, hours of delay,
+ * and billable itself). The budget we already run publishes `costAmount` and
+ * `budgetAmount` to a topic for free, several times a day, so that is the
+ * source: `handleBudgetNotification` writes this block.
+ *
+ * `month_to_date` IS MONTH-TO-DATE, not a daily figure — the budget reports
+ * against the billing period, so a snapshot dated the 20th carries the month's
+ * spend so far, and a series of these shows the month building rather than a
+ * per-day cost. `interval_start` names the period so that can never be
+ * misread.
+ */
+export interface GcpCostSnapshot {
+  /** Spend so far in the billing period named by `interval_start`. */
+  month_to_date: number
+  /** The budget it is measured against; null if the notification omitted it. */
+  budget_amount: number | null
+  /** ISO currency code as the notification reported it (e.g. 'CHF'). */
+  currency: string
+  /** First day of the billing period, 'YYYY-MM-DD'; null if not reported. */
+  interval_start: string | null
+  /** When the notification arrived — NOT the snapshot's date. */
+  received_at_ms: number
+}
+
+/**
+ * Brevo, from `GET /v3/account`: CREDITS REMAINING per plan line, which is what
+ * the API actually returns. There is no currency figure to be had, and
+ * converting credits to francs here would be a guess presented as a fact.
+ *
+ * One line per plan the account holds, so a `sendLimit` line and an `sms` line
+ * appear separately — worth keeping distinct, since CH SMS runs 30–50× email
+ * per message (`docs/scalability-2026-09.md` §12).
+ */
+export interface BrevoCreditSnapshot {
+  plans: BrevoPlanLine[]
+  fetched_at_ms: number
+}
+
+export interface BrevoPlanLine {
+  /** Brevo's plan type: 'payAsYouGo' | 'free' | 'subscription' | 'sms'. */
+  type: string
+  /** Credits left on this line. */
+  credits: number
+  /** Brevo's credit type, e.g. 'sendLimit'. */
+  credits_type: string
+}
+
+/**
+ * DeepL, from `GET /v2/usage` — characters translated against the key's cap.
+ * Present only when DeepL is the configured translation provider AND a key is
+ * set; absent otherwise, which is a configuration fact, not a failure.
+ */
+export interface DeeplUsageSnapshot {
+  characters_used: number
+  /** The key's period cap; null when the plan reports none (unlimited). */
+  character_limit: number | null
+  fetched_at_ms: number
+}
+
 export interface PlatformMetricsDoc {
   date: string
   mail?: PlatformMailMetrics
   mobile?: PlatformMobileMetrics
+  providers?: PlatformProviderCosts
   accounts: {
     total: number
     teams: number

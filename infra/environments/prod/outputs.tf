@@ -34,3 +34,17 @@ output "monitoring_alerting_enabled" {
   description = "False = nothing pages anyone. Set alert_email in terraform.tfvars."
   value       = module.monitoring.alerting_enabled
 }
+
+# The cost ceiling and whether a runaway would reach anyone this config NAMES.
+# Same shape of trap as monitoring_alerting_enabled above: a budget with no
+# named channel still mails the billing admins, so the Console looks configured
+# while nothing states who is actually watching.
+output "budget_amount" {
+  description = "Configured monthly budget ceiling for this environment."
+  value       = module.budget.budget_amount
+}
+
+output "budget_alerts_named_recipient" {
+  description = "False = budget alerts reach only GCP's billing-admin default, not the ops address. Set alert_email in terraform.tfvars."
+  value       = module.budget.budget_alerts_named_recipient
+}

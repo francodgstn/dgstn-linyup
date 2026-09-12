@@ -197,6 +197,9 @@ export {
   trackSessionParticipants,
 } from './analytics'
 export { capturePlatformMetrics } from './analytics/platformMetrics'
+// Google Cloud spend, pushed by the billing budget's Pub/Sub topic rather than
+// polled — see analytics/budgetNotification.ts for why no cost API is involved.
+export { handleBudgetNotification } from './analytics/budgetNotification'
 
 // App-store presence (App Store Connect + Google Play → store_presence/*).
 // Read-only; gated by STORE_INGEST_ENABLED, which is 'false' everywhere until

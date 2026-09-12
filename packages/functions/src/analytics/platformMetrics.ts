@@ -2,6 +2,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { to } from '../utils/async'
+import { captureBrevoCredits, captureDeeplUsage } from './providerUsage'
 import { capturePlatformMailMetrics } from '../mail/mailMetrics'
 import { capturePlatformMobileMetrics } from './mobileAdoptionMetrics'
 import {
@@ -176,6 +177,19 @@ export const capturePlatformMetrics = onSchedule(
     // Same null-means-omit contract as `mail` above.
     const mobile = await capturePlatformMobileMetrics(db, nowMs)
 
+    // PROVIDER USAGE we have to ask for — Brevo credits and DeepL characters.
+    // Google Cloud spend is NOT fetched here: the billing budget pushes it to
+    // `providers.gcp` on this same doc several times a day
+    // (analytics/budgetNotification.ts), so this write must not clobber it —
+    // hence `providers` is assembled from only the keys we actually got, and
+    // the `merge: true` below deep-merges the map. Same null-means-omit
+    // contract as `mail` and `mobile`.
+    const [brevo, deepl] = await Promise.all([captureBrevoCredits(nowMs), captureDeeplUsage(nowMs)])
+    const providers = {
+      ...(brevo ? { brevo } : {}),
+      ...(deepl ? { deepl } : {}),
+    }
+
     const [writeErr] = await to(
       db
         .collection(PLATFORM_METRICS_COLLECTION)
@@ -185,6 +199,7 @@ export const capturePlatformMetrics = onSchedule(
             ...docData,
             ...(mail ? { mail } : {}),
             ...(mobile ? { mobile } : {}),
+            ...(Object.keys(providers).length > 0 ? { providers } : {}),
             captured_at: FieldValue.serverTimestamp(),
           },
           { merge: true },

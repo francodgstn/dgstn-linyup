@@ -645,6 +645,47 @@ infrastructure** — Cloudflare Stream (per-minute stored + delivered, so the CO
 is meterable per tenant and priceable above it) or R2 + HLS — never this bucket
 under any quota.
 
+### Where the cost numbers actually come from (added 2026-09-12)
+
+The figures above are ESTIMATES from list prices. What the platform now measures,
+on the operator console's **Providers** page, is whatever each vendor will
+actually tell us — and that is three vendors out of nine:
+
+| Vendor | What it reports | How |
+|---|---|---|
+| Google Cloud | month-to-date money vs the budget | the billing budget's Pub/Sub notification (`handleBudgetNotification`) |
+| Brevo | credits remaining, per plan line | `GET /v3/account` on the existing key |
+| DeepL | characters used vs the key's cap | `GET /v2/usage` |
+
+Recorded onto the daily `platform_metrics/{date}` snapshot, so the page shows
+history rather than a spot reading, and every block carries the instant it was
+obtained.
+
+**Three rules this follows, each of which is the reason it is worth trusting:**
+
+- **Nothing is normalised into one "spend" number.** Money, credits and
+  characters are not comparable, and adding them would invent precision the
+  inputs do not have.
+- **An absent block means "not measured", never zero** — the same contract
+  `PlatformMailMetrics` already has. A vendor call that failed, a key that is not
+  configured, and a genuine zero are three different facts; a cost screen is the
+  one place a confident wrong number does real damage. Pinned by a test that
+  refuses a `?? 0` on any of these fields.
+- **Google needs no cost API, and there isn't one anyway.** `cloudbilling`
+  returns account metadata and the price catalogue, not consumption; the
+  alternative is a BigQuery billing export (opt-in, delayed, billable). The
+  budget already evaluates several times a day and its notification carries the
+  cost, so the alarm and the feed are one mechanism.
+
+**Stripe is deliberately absent.** Connect processing fees are the STUDIO's cost,
+not Linyup's, so a single "Stripe fees" total would conflate two parties' money
+and overstate platform COGS. Adding it means first deciding whether the page
+shows Linyup's own cost only or splits platform-vs-studio explicitly.
+**Cloudflare, PostHog and EAS expose nothing usable**, and the two store portals
+report revenue rather than cost — each of those cards says so in place of a
+number, because an unexplained blank on a cost page invites the reader to assume
+zero.
+
 ## 13. Secondary limits, roughly in the order they bind
 
 - **App Check is implemented but off**, deferred by decision
@@ -661,7 +702,9 @@ under any quota.
 - **There was no `maxInstances` on any Cloud Function** ✓ — `setGlobalOptions`
   set only the region. A trigger loop or a traffic spike scaled into the
   regional quota with no ceiling. Now capped (§14); the billing budget module is
-  applied in prod terraform (`infra/environments/prod/main.tf`, `budget_amount`).
+  applied in prod terraform (`infra/environments/prod/main.tf`, `budget_amount`),
+  and note a budget ALERTS, it does not cap — `maxInstances` is the actual
+  ceiling.
 - **`apps/web` prod is `maxInstances: 10` × `concurrency: 80` ≈ 800 concurrent
   requests.** Fine for a long time; just know the number.
 - **158 composite indexes** ✓ (152 at the time of the analysis), 23 on
@@ -683,15 +726,16 @@ under any quota.
 | # | Step | Size | Status |
 |---|---|---|---|
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
-| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check: DEFERRED by decision** (2026-09-12), not pending. reCAPTCHA Enterprise is a third-party provider with its own billing, and the web-flagged callables (grep them — see the runbook's Scope) are already IP-rate-limited (30/IP/hour, `submitForm` 10/form/IP/hour) behind a `payments_enabled` gate that fails closed — App Check adds defence against an attacker who defeats IP keying, and nothing else. Nothing is half-adopted: no key, flags false, key slot and both Google APIs commented out. The triggers and the provider-free alternative for the gift-card oracle are in `docs/app-check-rollout.md` → "Why it is still off". The rollout wiring it needed (the key's deployment slot, the BUILD-availability trap, the Enterprise provider swap) is done, so the flip is a cold start whenever wanted. |
+| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget: the alert PATH is fixed** (2026-09-12) — the budget carried no `all_updates_rule` at all, so alerts fell back to GCP's implicit billing-admin default and never reached the `alert_email` the error and uptime alerts use; they now route to that same channel with the billing-admin default kept on top. Every threshold was also `CURRENT_SPEND` (money already gone), so a `FORECASTED_SPEND` rule was added — the only kind that arrives in time to stop a runaway. `terraform output budget_alerts_named_recipient` is the honest answer, and one `alert_email` now fixes errors, uptime and budget together. **`budget_amount` remains a judgement call**: the 500 CHF default puts the first alert at 250 CHF spent, which detects nothing while the real bill is small. Set it from the last full month's Google spend (`infra/README.md` → "Picking `budget_amount`"), and note it sees the GOOGLE bill only — Brevo, the second-largest COGS line in §12, is a separate vendor and invisible to it. **App Check: DEFERRED by decision** (2026-09-12), not pending. reCAPTCHA Enterprise is a third-party provider with its own billing, and the web-flagged callables (grep them — see the runbook's Scope) are already IP-rate-limited (30/IP/hour, `submitForm` 10/form/IP/hour) behind a `payments_enabled` gate that fails closed — App Check adds defence against an attacker who defeats IP keying, and nothing else. Nothing is half-adopted: no key, flags false, key slot and both Google APIs commented out. The triggers and the provider-free alternative for the gift-card oracle are in `docs/app-check-rollout.md` → "Why it is still off". The rollout wiring it needed (the key's deployment slot, the BUILD-availability trap, the Enterprise provider swap) is done, so the flip is a cold start whenever wanted. |
 | 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | **DONE 2026-09-11** — all four, plus both of the reminder narrowings, on shared machinery (`utils/tenantFanOut.ts`). See §9 for the table and for the `archived_at` bug the wiring turned up. |
 | 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
 | 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
 
-Steps 1, 3, 4 and 5 are done, and step 2 is done but for two open items, only
-one of which is work: **confirming the prod budget's amount and recipients**,
-and **App Check, which is deferred by decision rather than outstanding** — see
-the row above and the runbook's "Why it is still off". None of it was
+Steps 1, 3, 4 and 5 are done, and step 2 is done but for two open items,
+neither of which is code: **choosing the prod budget's amount** (its alert path
+is fixed; the number wants one look at last month's bill) and **App Check, which
+is deferred by decision rather than outstanding** — see the row above and the
+runbook's "Why it is still off". None of it was
 architectural — the data model is sound, and nothing here
 required reshaping collections or the tenant boundary.
 
