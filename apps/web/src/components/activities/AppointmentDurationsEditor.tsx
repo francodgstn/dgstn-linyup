@@ -202,18 +202,18 @@ export function AppointmentDurationsEditor({
           benefit below. There is still no access rule on an appointment — the
           third mode says only that there is no individual price to quote. */}
       {value.length > 0 && (
-        <div className="space-y-2 rounded-md bg-muted/30 p-2.5">
+        // Rows, not cards: one hairline between lengths and no fill behind
+        // them — a border here carried no state, see offer/FormLayout.tsx.
+        <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{t('durationPriceHint')}</p>
+          <div className="divide-y">
           {[...value]
             .sort((a, b) => a.minutes - b.minutes)
             .map((d) => {
               const idx = value.findIndex((x) => x.minutes === d.minutes)
               const priceError = errorFor?.(idx)
               return (
-                <div
-                  key={d.minutes}
-                  className="space-y-1.5 rounded-md border bg-background p-2"
-                >
+                <div key={d.minutes} className="space-y-1.5 py-2.5 first:pt-0 last:pb-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-medium">{formatDuration(d.minutes)}</span>
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -275,6 +275,7 @@ export function AppointmentDurationsEditor({
                 </div>
               )
             })}
+          </div>
         </div>
       )}
     </div>

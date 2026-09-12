@@ -76,6 +76,8 @@ import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { FormSection, FormSections, SettingRow, SettingRows } from '@/components/offer/FormLayout'
 import { ActivityPlanLinks } from '@/components/offer/ActivityPlanLinks'
 import {
   AppointmentDurationsEditor,
@@ -395,6 +397,7 @@ export function ActivityPricingForm({
       }
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const dropInId = useId()
+  const rowId = useId()
   /**
    * THE TRIAL DOOR EXISTS ONLY ON A GATED CLASS. `bookSession` opens it for a
    * guest when `accessRule.type !== 'open'` and treats it as fully inert
@@ -481,7 +484,8 @@ export function ActivityPricingForm({
   return (
     <div className="space-y-4">
       {!isAppointment && (
-        <>
+        <FormSections>
+          <FormSection>
           <div className="space-y-2">
             <Label>{t('accessLabel')}</Label>
             <p className="text-xs text-muted-foreground">{t('accessHint')}</p>
@@ -538,52 +542,49 @@ export function ActivityPricingForm({
                 )
               })}
             </div>
-            {/* Only under MEMBERS ONLY: a guest holds no plan by definition, so
-                "anyone may book" and "a plan is required" cannot both be true.
-                And it is a separate control from the table on purpose — ticking
-                a plan there must never silently narrow the door. */}
-            {draft.audience === 'members' && (
-              <label
-                className={`flex items-start gap-2 rounded-lg border p-2.5 text-sm ${
-                  canEdit ? 'cursor-pointer' : 'pointer-events-none opacity-60'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  className="mt-0.5 accent-primary"
+          </div>
+          {/* Only under MEMBERS ONLY: a guest holds no plan by definition, so
+              "anyone may book" and "a plan is required" cannot both be true.
+              And it is a separate control from the table on purpose — ticking
+              a plan there must never silently narrow the door. */}
+          {draft.audience === 'members' && (
+            <SettingRow
+              htmlFor={`${rowId}-allow`}
+              label={t('accessAllowWithoutPlan')}
+              hint={t('accessAllowWithoutPlanHint')}
+              disabled={!canEdit}
+              control={
+                <Switch
+                  id={`${rowId}-allow`}
                   checked={!draft.requirePlan}
-                  onChange={(e) => set('requirePlan', !e.target.checked)}
+                  onCheckedChange={(on) => set('requirePlan', !on)}
                   disabled={!canEdit}
                 />
-                <span>
-                  <span className="font-medium">{t('accessAllowWithoutPlan')}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {t('accessAllowWithoutPlanHint')}
-                  </span>
-                </span>
-              </label>
-            )}
-          </div>
+              }
+            />
+          )}
+          </FormSection>
 
-          <div className="divide-y rounded-lg border">
-            {/* Independent of WHICH gate is above — a members-only class and a
-                plan-required one both take a newcomer's trial booking. Absent
-                on an open class: see `openTier`. */}
-            {!openTier && (
-              <div className="space-y-2 p-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0 pr-4">
-                    <p className="text-sm font-medium">{t('fieldTrialEnabled')}</p>
-                    <p className="text-xs text-muted-foreground">{t('trialEnabledHint')}</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    className="shrink-0 accent-primary"
-                    checked={draft.trialEnabled}
-                    onChange={(e) => set('trialEnabled', e.target.checked)}
-                    disabled={!canEdit}
-                  />
-                </div>
+          <FormSection>
+            <SettingRows>
+              {/* Independent of WHICH gate is above — a members-only class and a
+                  plan-required one both take a newcomer's trial booking. Absent
+                  on an open class: see `openTier`. */}
+              {!openTier && (
+                <SettingRow
+                  htmlFor={`${rowId}-trial`}
+                  label={t('fieldTrialEnabled')}
+                  hint={t('trialEnabledHint')}
+                  disabled={!canEdit}
+                  control={
+                    <Switch
+                      id={`${rowId}-trial`}
+                      checked={draft.trialEnabled}
+                      onCheckedChange={(on) => set('trialEnabled', on)}
+                      disabled={!canEdit}
+                    />
+                  }
+                >
                 {draft.trialEnabled && (
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 pr-4">
@@ -605,14 +606,13 @@ export function ActivityPricingForm({
                     </div>
                   </div>
                 )}
-                {trialPriceInvalid && (
-                  <p className="text-xs text-destructive">{t('trialPriceValidation')}</p>
-                )}
-              </div>
-            )}
+                  {trialPriceInvalid && (
+                    <p className="text-xs text-destructive">{t('trialPriceValidation')}</p>
+                  )}
+                </SettingRow>
+              )}
 
-            <div className="space-y-2 p-3">
-              {/* THE SAME SHAPE AS THE TRIAL ABOVE: the tick on the right says
+              {/* THE SAME SHAPE AS THE TRIAL ABOVE: the switch on the right says
                   whether this class sells a drop-in at all, and only then do
                   the two ways of pricing it appear. The three answers of
                   `DropInMode` are all still written — off ⇒ 'off' (none, even
@@ -620,19 +620,20 @@ export function ActivityPricingForm({
                   starts as) until the class names its own — it is only the
                   control that stopped being three radios, because "no
                   drop-in" is a switch, not a third kind of price. */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0 pr-4">
-                  <p className="text-sm font-medium">{t('dropInLabel')}</p>
-                  <p className="text-xs text-muted-foreground">{t('dropInHelp')}</p>
-                </div>
-                <input
-                  type="checkbox"
-                  className="shrink-0 accent-primary"
-                  checked={draft.dropInMode !== 'off'}
-                  onChange={(e) => set('dropInMode', e.target.checked ? 'studio' : 'off')}
-                  disabled={!canEdit}
-                />
-              </div>
+              <SettingRow
+                htmlFor={`${rowId}-dropin`}
+                label={t('dropInLabel')}
+                hint={t('dropInHelp')}
+                disabled={!canEdit}
+                control={
+                  <Switch
+                    id={`${rowId}-dropin`}
+                    checked={draft.dropInMode !== 'off'}
+                    onCheckedChange={(on) => set('dropInMode', on ? 'studio' : 'off')}
+                    disabled={!canEdit}
+                  />
+                }
+              >
               {draft.dropInMode !== 'off' && (
                 <div className="space-y-1.5">
                   {(['studio', 'custom'] as const).map((mode) => {
@@ -701,21 +702,20 @@ export function ActivityPricingForm({
                   })}
                 </div>
               )}
-              {dropInPriceInvalid && (
-                <p className="text-xs text-destructive">{t('dropInPriceValidation')}</p>
-              )}
-            </div>
-          </div>
-
-        </>
+                {dropInPriceInvalid && (
+                  <p className="text-xs text-destructive">{t('dropInPriceValidation')}</p>
+                )}
+              </SettingRow>
+            </SettingRows>
+          </FormSection>
+        </FormSections>
       )}
 
       {/* THE LENGTHS AND WHAT EACH COSTS — first, because everything below it
           is a rule ABOUT these prices. A plan cannot be said to include or
           discount a session length that has not been chosen yet. */}
       {isAppointment && (
-        <div className="rounded-lg border p-3">
-          <AppointmentDurationsEditor
+        <AppointmentDurationsEditor
             value={draft.durations}
             onChange={(next) => set('durations', next)}
             currency={currency}
@@ -726,8 +726,7 @@ export function ActivityPricingForm({
                 ? t('durationPriceValidation')
                 : undefined
             }
-          />
-        </div>
+        />
       )}
 
       {/* WHERE THE MATCHER WOULD BE, on a class no plan can bear on. An open
