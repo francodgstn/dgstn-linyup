@@ -108,6 +108,7 @@ import {
 } from '@linyup/shared'
 import type {
   Contact,
+  ActiveSubscriptionSummary,
   AcquisitionStage,
   ContactEntry,
   ContactSource,
@@ -1090,6 +1091,51 @@ function AcquisitionTimeline({
 
 // Round icon button for the header action cluster (notes + alerts), with an
 // optional count badge. Kept generic so both surfaces share one look.
+/**
+ * The plans a contact is on right now, for the chip row. `active_subscriptions`
+ * is the live, webhook-maintained list; a contact from before it existed
+ * carries only the legacy `subscription_type_name`, which is shown the same
+ * way so an old record does not read as "no plan".
+ */
+function livePlans(contact: Contact): ActiveSubscriptionSummary[] {
+  if (contact.active_subscriptions?.length) return contact.active_subscriptions
+  if (!contact.subscription_type_name) return []
+  return [
+    {
+      subscription_type_id: 'legacy',
+      subscription_type_name: contact.subscription_type_name,
+      recurrence: null,
+      amount: 0,
+      status: contact.subscription_status ?? 'active',
+    },
+  ]
+}
+
+/** One live plan as a chip: green while it bills, amber when it is past due
+ *  or winding down (with the end date), muted while paused. */
+function PlanChip({ sub }: { sub: ActiveSubscriptionSummary }) {
+  const t = useTranslations('Contacts')
+  const winding = sub.cancelling === true || !!sub.cancels_at_ms
+  const tone =
+    winding || sub.status === 'past_due'
+      ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800'
+      : sub.status === 'paused'
+        ? 'bg-muted text-muted-foreground border-border'
+        : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+  const ends = sub.cancels_at_ms
+    ? new Date(sub.cancels_at_ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    : null
+  return (
+    <Badge className={`gap-1 ${tone}`}>
+      <BookOpen className="h-3 w-3" />
+      {sub.subscription_type_name ?? t('subscriptionHeadingCard')}
+      {winding && ends && (
+        <span className="font-normal opacity-80">· {t('planChipEnds', { date: ends })}</span>
+      )}
+    </Badge>
+  )
+}
+
 function HeaderActionButton({
   icon: Icon,
   label,
@@ -4512,83 +4558,6 @@ function AffilStatusBadge({
   )
 }
 
-/**
- * THE AFFILIATION, IN THE HEADER — the type's mark, its label, its status.
- *
- * Franco, with the type mini-cards: "we could enhance the affiliation definition
- * with a logo, shown on the mini card and eventually as a badge+status somewhere
- * in the contact detail". This is that badge, and it draws the SAME
- * `AffiliationTypeMark` the picker draws, so a type that gains a logo gains it
- * in both places at once and neither can drift.
- *
- * ── ONE CHIP PER TYPE, THE CURRENT ONE ──
- *
- * A contact accumulates a row per season, so the raw list is a HISTORY, not a
- * state. The header wants the state: the most recent row per type. The query is
- * already ordered `created_at desc`, so the first row seen for a type is that
- * one — no sort here, and no second definition of "current" for a later reader
- * to disagree with. The whole history stays one click away in the tab.
- *
- * ── WHY IT SHOWS AN EXPIRED ONE TOO ──
- *
- * Filtering to `active` rows would hide exactly the fact an org manager opens
- * the record for. "HMD Affiliation · Expired" in red IS the answer; an absent
- * chip reads as "never affiliated", which is a different and wrong thing. The
- * status def's own colour carries the difference.
- *
- * It renders nothing when the contact holds no affiliation, which is the only
- * gate it needs — a studio that does not use the axis never sees it.
- */
-function ContactAffiliationBadges({
-  contact,
-  teamId,
-  orgId,
-}: {
-  contact: Contact
-  teamId: string | null
-  orgId?: string | null
-}) {
-  const t = useTranslations('Contacts')
-  const { data: affiliations = [] } = useContactAffiliations(contact.id)
-  const { data: types = [] } = useAffiliationTypes(teamId, orgId)
-  // The BUILT-IN set as the default, exactly as the tab below does it: the query
-  // is `enabled: !!orgId`, so for a studio with no organisation it never runs and
-  // `[]` would print a raw `status_id` where a label belongs.
-  const { data: statuses = DEFAULT_ORG_AFFILIATION_STATUSES } = useOrgAffiliationStatuses(orgId)
-
-  const current = useMemo(() => {
-    const seen = new Map<string, Affiliation>()
-    for (const a of affiliations)
-      if (!seen.has(a.affiliation_type_id)) seen.set(a.affiliation_type_id, a)
-    return [...seen.values()]
-  }, [affiliations])
-
-  if (current.length === 0) return null
-
-  return (
-    <>
-      {current.map((a) => {
-        const type = types.find((x) => x.id === a.affiliation_type_id)
-        const label = type?.label ?? a.label ?? a.type_key ?? a.affiliation_type_id
-        const def = statuses.find((x) => x.id === a.status_id)
-        const color = AFFIL_COLOR_CLASSES[def?.color ?? 'gray'] ?? AFFIL_COLOR_CLASSES.gray
-        const until = formatDate(a.valid_until)
-        return (
-          <span
-            key={a.id}
-            title={until ? t('affiliationValidUntil', { date: until }) : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text} ${color.border}`}
-          >
-            <AffiliationTypeMark type={{ label, logo_url: type?.logo_url }} size={14} />
-            <span className="max-w-[140px] truncate">{label}</span>
-            <span className="opacity-70">{def?.label ?? a.status_id}</span>
-          </span>
-        )
-      })}
-    </>
-  )
-}
-
 // ─── affiliations tab ─────────────────────────────────────────────────────────
 
 function AffiliationsTab({
@@ -5349,15 +5318,17 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       {t('newBadge')}
                     </Badge>
                   )}
-                  {/* LAST in the row on purpose. Every chip before it is
-                      something the studio might have to ACT on; belonging is a
-                      standing fact, so it reads as the answer to "and who are
-                      they to us" rather than competing with the to-dos. */}
-                  <ContactAffiliationBadges
-                    contact={contact}
-                    teamId={currentTeamId}
-                    orgId={team?.org_id}
-                  />
+                  {/* LAST in the row on purpose: what they HOLD. Every chip
+                      before it is something the studio might have to act on;
+                      a plan is a standing fact, so it reads as "and what are
+                      they on" rather than competing with the to-dos. One chip
+                      per live plan, coloured by its billing state; a plan that
+                      is winding down says when it ends. Affiliation left this
+                      row on 2026-09-13: it is the secondary fact, and the
+                      panel below still links to it. */}
+                  {livePlans(contact).map((sub) => (
+                    <PlanChip key={sub.subscription_type_id} sub={sub} />
+                  ))}
                 </>
               )}
             </div>
