@@ -165,18 +165,19 @@ service firebase.storage {
     match /teams/{teamId}/{allPaths=**} {
       // Only members of this specific team may access its files.
       //
-      // teams/{teamId}/tarif595/** is excluded on BOTH axes here, because Storage
+      // teams/{teamId}/tarif595/** and teams/{teamId}/invoices/** are excluded on
+      // BOTH axes here, because Storage
       // grants if ANY rule allows — a separate `write: if false` match could not
       // subtract from this one. Those objects are Tarif 595 receipts (AHV numbers,
       // birthdates), manager-only in Firestore, written by the Admin SDK and served
       // only through downloadTarif595Receipt, which re-checks the sha256.
-      allow read: if isTeamMemberStorage(teamId) && allPaths[0] != 'tarif595';
+      allow read: if isTeamMemberStorage(teamId) && allPaths[0] != 'tarif595' && allPaths[0] != 'invoices';
       // Course media (audio) lives under teams/{teamId}/courses/... so we allow
       // larger files and audio content types here, scoped to team members. No
       // video anywhere under a team but the kiosk match above — see the courses
       // match for why.
       allow write: if isTeamMemberStorage(teamId)
-        && allPaths[0] != 'tarif595'
+        && allPaths[0] != 'tarif595' && allPaths[0] != 'invoices'
         && request.resource.size < 50 * 1024 * 1024
         && request.resource.contentType.matches('image/.*|audio/.*|application/pdf');
     }

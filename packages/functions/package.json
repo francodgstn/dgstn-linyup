@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test:integration": "firebase emulators:exec --only auth,firestore,functions --project demo-linyup \"node integration/coaching.integration.mjs && node integration/coachingSweep.integration.mjs\"",
     "tarif595:sample": "ts-node scripts/tarif595-sample.ts",
-    "test:integration:tarif595": "firebase emulators:exec --only auth,firestore,functions,storage --project demo-linyup \"node integration/tarif595.integration.mjs\""
+    "test:integration:tarif595": "firebase emulators:exec --only auth,firestore,functions,storage --project demo-linyup \"node integration/tarif595.integration.mjs\"",
+    "test:integration:invoices": "firebase emulators:exec --only auth,firestore,functions,storage --project demo-linyup \"node integration/invoices.integration.mjs\""
   },
   "engines": {
     "node": "22"

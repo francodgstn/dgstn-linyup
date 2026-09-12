@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, Loader2, Plus, Copy, Check, Search } from 'lucide-react'
+import { ChevronDown, FileText, Loader2, Plus, Copy, Check, Search } from 'lucide-react'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { toast } from 'sonner'
@@ -174,6 +174,7 @@ import { VoidPaymentDialog } from '@/components/payments/VoidPaymentDialog'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { PaymentsTable } from '@/components/payments/PaymentsTable'
 import { GiftCardsSection } from '@/components/payments/GiftCardsSection'
+import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
@@ -261,8 +262,10 @@ export default function PaymentsDashboardPage() {
   const tRecurrence = useTranslations('Contacts')
   const tNav = useTranslations('Nav')
   const tPlugins = useTranslations('Plugins')
-  const { currentTeamId, team } = useAuth()
+  const tInvoices = useTranslations('QrInvoices')
+  const { currentTeamId, team, teamRole } = useAuth()
   const teamId = currentTeamId ?? null
+  const canManage = teamRole === 'owner' || teamRole === 'manager'
   const connectReady = !!team?.payments?.connectAccountId
 
   // Progressive page size — "Load more" bumps it and both rails refetch. Real
@@ -330,6 +333,7 @@ export default function PaymentsDashboardPage() {
     () => quickActionParams.get(QUICK_ACTION_PARAM) === '1'
   )
   const [markPaidTarget, setMarkPaidTarget] = useState<PendingAppointment | null>(null)
+  const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'unassigned'>('all')
   const [search, setSearch] = useState('')
 
@@ -531,6 +535,12 @@ export default function PaymentsDashboardPage() {
         action={
           <>
             {teamId && isInstalled('finance') && <ExportFinanceCsvButton teamId={teamId} />}
+            {teamId && isInstalled('qr-invoices') && canManage && (
+              <Button size="sm" variant="outline" onClick={() => setCreateInvoiceOpen(true)}>
+                <FileText className="h-4 w-4 mr-1" />
+                {tInvoices('createButton')}
+              </Button>
+            )}
             {teamId && (
               <Button size="sm" variant="outline" onClick={() => setRecordOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />
@@ -1058,6 +1068,14 @@ export default function PaymentsDashboardPage() {
           teamId={teamId}
           target={markPaidTarget}
           onClose={() => setMarkPaidTarget(null)}
+        />
+      )}
+
+      {teamId && isInstalled('qr-invoices') && (
+        <CreateInvoiceDialog
+          teamId={teamId}
+          open={createInvoiceOpen}
+          onOpenChange={setCreateInvoiceOpen}
         />
       )}
 

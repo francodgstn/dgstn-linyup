@@ -9,7 +9,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import { getBytes, listAll, ref, uploadBytes } from 'firebase/storage'
 
-// Security-rules test for teams/{teamId}/tarif595/** in storage.rules.
+// Security-rules test for teams/{teamId}/tarif595/** and teams/{teamId}/invoices/** in storage.rules.
 //
 // Storage grants if ANY matching rule allows, so the broad teams/{teamId}
 // member match cannot be overridden by a narrower deny — it has to exclude the
@@ -36,6 +36,7 @@ const STORAGE_RULES = readRules('storage.rules')
 const TEAM = 'teamT595'
 const RECEIPT_PDF = `teams/${TEAM}/tarif595/receipt123/receipt.pdf`
 const RECEIPT_DIR = `teams/${TEAM}/tarif595/receipt123`
+const INVOICE_PDF = `teams/${TEAM}/invoices/invoice123/invoice.pdf`
 const OTHER_PDF = `teams/${TEAM}/documents/handout.pdf`
 const PDF_BYTES = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34])
 
@@ -65,6 +66,7 @@ describe('storage.rules — tarif595 receipts are not client-readable', function
       await setDoc(doc(ctx.firestore(), 'users', 'managerT595'), { currentTeam: TEAM })
       await uploadBytes(ref(ctx.storage(), RECEIPT_PDF), PDF_BYTES, { contentType: 'application/pdf' })
       await uploadBytes(ref(ctx.storage(), OTHER_PDF), PDF_BYTES, { contentType: 'application/pdf' })
+      await uploadBytes(ref(ctx.storage(), INVOICE_PDF), PDF_BYTES, { contentType: 'application/pdf' })
     })
   })
 
@@ -73,6 +75,12 @@ describe('storage.rules — tarif595 receipts are not client-readable', function
     await assertFails(getBytes(ref(storage, RECEIPT_PDF)))
     await assertFails(listAll(ref(storage, RECEIPT_DIR)))
     await assertFails(uploadBytes(ref(storage, `teams/${TEAM}/tarif595/forged/receipt.pdf`), PDF_BYTES, { contentType: 'application/pdf' }))
+  })
+
+  it('…and the same holds for invoices/ (the QR-invoice PDFs)', async () => {
+    const storage = testEnv.authenticatedContext('managerT595').storage()
+    await assertFails(getBytes(ref(storage, INVOICE_PDF)))
+    await assertFails(uploadBytes(ref(storage, `teams/${TEAM}/invoices/forged/invoice.pdf`), PDF_BYTES, { contentType: 'application/pdf' }))
   })
 
   it('…while the same manager still reads and uploads under any other team prefix', async () => {
