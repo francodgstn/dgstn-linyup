@@ -12,7 +12,9 @@ App Check is inert today — nothing is rejected:
 
 - **Web** — `initAppCheck()` (`apps/web/src/lib/app-check.ts`, mounted via `AppCheckProvider`
   in the locale layout) **no-ops** unless `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` is set,
-  and it is always skipped under the emulator. With no key, the browser sends no token.
+  and it is always skipped under the emulator. With no key, the browser sends no token — and
+  no deployed environment sets one yet: the slot sits commented out in
+  `apps/web/apphosting{,.prod,.sandbox}.yaml`, ready for step 2.
 - **Functions** — `APP_CHECK_ENFORCE=false` in every `packages/functions/.env.*`, so
   `monitorAppCheck()` (`packages/functions/src/utils/appCheck.ts`) only **logs**
   `[appcheck-monitor] <fn>: request without a valid App Check token`. Nothing is blocked.
@@ -47,10 +49,26 @@ enforcement is the separate `APP_CHECK_ENFORCE_MOBILE` flip (see Caveats).
    with **reCAPTCHA v3** (or reCAPTCHA Enterprise). This produces a reCAPTCHA v3 **site key**
    (public — safe to embed) linked to the project. Do this for the **staging** project first.
 
-2. **Give the web client the key (staging).** Set
-   `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY=<site key>` in the staging web app's
-   environment and redeploy web. The browser now attaches App Check tokens to callable
-   requests. (`APP_CHECK_ENFORCE` is still `false`, so this changes nothing user-facing yet.)
+2. **Give the web client the key (staging).** Uncomment the
+   `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` block in **`apps/web/apphosting.yaml`**
+   (that file is staging; `apphosting.prod.yaml` and `apphosting.sandbox.yaml` carry the
+   same commented block), fill in the site key, and redeploy web. The browser now attaches
+   App Check tokens to callable requests. (`APP_CHECK_ENFORCE` is still `false`, so this
+   changes nothing user-facing yet.)
+
+   ⚠️ **Keep `availability: [BUILD, RUNTIME]`** — BUILD is the load-bearing half.
+   `NEXT_PUBLIC_*` is inlined into the JS bundle at build time, so a key supplied only at
+   runtime (a variable added in the Console without BUILD, for instance) never reaches the
+   browser: `initAppCheck()` reads `undefined`, no-ops, and the client sends no token. The
+   failure is silent and looks exactly like a bad registration — which is what step 3 below
+   would then have you conclude. If step 3's warnings do not fall, check that the key is in
+   the *bundle* before re-doing the registration: open the deployed app and run
+   `performance.getEntriesByType('resource').some(r => r.name.includes('recaptcha'))` in the
+   console, or grep the served JS for the key.
+
+   Only `apps/web` needs it. The operator console and the landing site call none of the
+   enforced callables, and the member app's two are on the mobile flag (see Scope above) —
+   verify rather than trust this: `grep -rl '<callable>' apps/*/src`.
 
 3. **Watch the monitor logs.** In Cloud Functions logs, filter for `[appcheck-monitor]`. On
    real staging traffic through the web-enforced callables (grep above), these warnings should
@@ -58,10 +76,11 @@ enforcement is the separate `APP_CHECK_ENFORCE_MOBILE` flip (see Caveats).
    key/registration is wrong — fix before proceeding.
 
 4. **Flip enforcement (staging → prod).** Set `APP_CHECK_ENFORCE=true` in
-   `packages/functions/.env.staging`, redeploy functions, and smoke-test a drop-in checkout +
-   a form submission. When staging is clean, repeat steps 1–2 for the **production** project
-   (register App Check, set the prod web key) and set `APP_CHECK_ENFORCE=true` in
-   `.env.production`.
+   `packages/functions/.env.staging` (the neighbouring `APP_CHECK_ENFORCE_MOBILE` stays
+   `false` — it is a separate decision, see Caveats), redeploy functions, and smoke-test a
+   drop-in checkout + a form submission. When staging is clean, repeat steps 1–2 for the
+   **production** project (register App Check, set the prod web key) and set
+   `APP_CHECK_ENFORCE=true` in `.env.production`.
 
 To roll back at any point: set `APP_CHECK_ENFORCE=false` and redeploy functions (back to
 monitor mode instantly). The web key can stay set — it's harmless without enforcement.
