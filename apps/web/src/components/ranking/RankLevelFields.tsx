@@ -12,8 +12,14 @@
 // together: a colour, a second colour for a split belt, an emoji (a swim
 // school's sea animal), or the club's own uploaded artwork. Precedence when more
 // than one is set is decided by `rankLevelBadge` in @linyup/shared, never here.
+//
+// ORDER IS THE ROW'S PLACE IN THE LIST (docs/rank-scale-decoupling.md, Phase
+// 5): the host renders the rows inside a SortableList and hands each one its
+// drag `handle`; "insert a level below" splices a fresh one in at that place.
+// Neither moves anything a contact holds — a level is named by its id, and the
+// ladder's array order is the order.
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage } from '@/lib/firebase'
@@ -21,7 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ColorPicker } from '@/components/ui/color-picker'
 import { RankBadge } from '@/components/ranking/RankBadge'
-import { Trash2, ImagePlus, Loader2, X } from 'lucide-react'
+import { Trash2, ImagePlus, Loader2, X, Plus } from 'lucide-react'
 import type { RankLevel } from '@linyup/shared'
 
 /** Badge artwork is small by design — the Storage rule caps it at 2 MB. */
@@ -34,6 +40,8 @@ export function RankLevelFields({
   canRemove,
   onChange,
   onRemove,
+  onInsertBelow,
+  handle,
 }: {
   level: RankLevel
   index: number
@@ -43,6 +51,10 @@ export function RankLevelFields({
   canRemove: boolean
   onChange: (field: keyof RankLevel, value: string | number | undefined) => void
   onRemove: () => void
+  /** Splice a new level in right after this one. */
+  onInsertBelow?: () => void
+  /** The drag handle the host's SortableItem renders — first thing in the row. */
+  handle?: ReactNode
 }) {
   const t = useTranslations('Ranking')
   const [uploading, setUploading] = useState(false)
@@ -78,8 +90,9 @@ export function RankLevelFields({
   }
 
   return (
-    <div className="space-y-1.5 rounded-md border p-2">
+    <div className="space-y-1.5 rounded-md border bg-background p-2">
       <div className="flex items-center gap-2">
+        {handle}
         {/* Live preview — the same component every read-only surface uses, so
             what the studio picks here is exactly what a member will see. */}
         <RankBadge level={level} size="md" />
@@ -92,6 +105,19 @@ export function RankLevelFields({
           required
         />
 
+        {onInsertBelow && (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={onInsertBelow}
+            aria-label={t('insertLevelBelow')}
+            title={t('insertLevelBelow')}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        )}
         {canRemove && (
           <Button
             type="button"

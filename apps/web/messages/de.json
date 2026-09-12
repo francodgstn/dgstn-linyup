@@ -7812,7 +7812,10 @@
     "imageAdd": "Bild",
     "imageRemove": "Bild entfernen",
     "imageTooLarge": "Dieses Bild ist zu gross — maximal 2 MB.",
-    "imageUploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte erneut versuchen."
+    "imageUploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte erneut versuchen.",
+    "dragToReorder": "Ziehen zum Umsortieren",
+    "insertLevelBelow": "Stufe darunter einfügen",
+    "reorderHint": "Die Reihenfolge hier ist die Reihenfolge der Skala — ziehe eine Stufe, um sie zu verschieben. Was jemand bereits hat, ändert sich dadurch nicht."
   },
   "CoachingSettings": {
     "title": "Coaching-Dimensionen",

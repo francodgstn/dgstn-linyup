@@ -7812,7 +7812,10 @@
     "imageAdd": "Immagine",
     "imageRemove": "Rimuovi immagine",
     "imageTooLarge": "Immagine troppo grande — massimo 2 MB.",
-    "imageUploadFailed": "Impossibile caricare l'immagine. Riprova."
+    "imageUploadFailed": "Impossibile caricare l'immagine. Riprova.",
+    "dragToReorder": "Trascina per riordinare",
+    "insertLevelBelow": "Inserisci un livello sotto",
+    "reorderHint": "L'ordine qui è l'ordine della scala — trascina un livello per spostarlo. Ciò che ognuno possiede non cambia."
   },
   "CoachingSettings": {
     "title": "Dimensioni di coaching",

@@ -7812,7 +7812,10 @@
     "imageAdd": "Image",
     "imageRemove": "Remove image",
     "imageTooLarge": "That image is too large — 2 MB maximum.",
-    "imageUploadFailed": "The image could not be uploaded. Please try again."
+    "imageUploadFailed": "The image could not be uploaded. Please try again.",
+    "dragToReorder": "Drag to reorder",
+    "insertLevelBelow": "Insert a level below",
+    "reorderHint": "The order here is the order of the scale — drag a level to move it. Nothing held by anyone changes."
   },
   "CoachingSettings": {
     "title": "Coaching dimensions",
