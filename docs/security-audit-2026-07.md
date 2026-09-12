@@ -102,7 +102,7 @@ session. Every real caller already sent both fields, so no client changed.
 
 ### 3 — App Check (M, implemented — staged)
 No `enforceAppCheck` existed anywhere; unauthenticated Firestore-writing callables were
-defended only by per-IP hourly rate limits. **Implemented:** a reCAPTCHA v3 App Check
+defended only by per-IP hourly rate limits. **Implemented:** a reCAPTCHA Enterprise App Check
 provider on the web client (`apps/web/src/lib/app-check.ts` + `AppCheckProvider`, mounted in
 the locale layout; no-ops under the emulator or when the key is unset), and App Check on the
 **web-only** public callables — `createDropInCheckout`, `createMembershipCheckout`,

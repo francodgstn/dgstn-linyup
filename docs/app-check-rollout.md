@@ -11,7 +11,8 @@ See finding #3 in [`security-audit-2026-07.md`](./security-audit-2026-07.md) for
 App Check is inert today — nothing is rejected:
 
 - **Web** — `initAppCheck()` (`apps/web/src/lib/app-check.ts`, mounted via `AppCheckProvider`
-  in the locale layout) **no-ops** unless `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` is set,
+  in the locale layout, provider `ReCaptchaEnterpriseProvider`) **no-ops** unless
+  `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` is set,
   and it is always skipped under the emulator. With no key, the browser sends no token — and
   no deployed environment sets one yet: the slot sits commented out in
   `apps/web/apphosting{,.prod,.sandbox}.yaml`, ready for step 2.
@@ -46,8 +47,20 @@ enforcement is the separate `APP_CHECK_ENFORCE_MOBILE` flip (see Caveats).
 > client is not yet sending tokens rejects every legitimate web request.
 
 1. **Register App Check in the Firebase Console.** App Check → your **Web app** → register
-   with **reCAPTCHA v3** (or reCAPTCHA Enterprise). This produces a reCAPTCHA v3 **site key**
-   (public — safe to embed) linked to the project. Do this for the **staging** project first.
+   with **reCAPTCHA Enterprise**. This produces an Enterprise **site key** (public — safe to
+   embed) linked to the project. Do this for the **staging** project first.
+
+   The two APIs it needs — `firebaseappcheck.googleapis.com` and
+   `recaptchaenterprise.googleapis.com` — are declared in `infra/environments/*/main.tf`, so
+   `terraform apply` for the environment enables them ahead of the registration. If the
+   Console still offers to enable one, that environment has not been applied since they were
+   added; enabling it there is harmless and Terraform will converge.
+
+   **Enterprise, not plain v3 — this matters to the client code.** The Console no longer
+   offers reCAPTCHA v3 for a new web registration, and `apps/web/src/lib/app-check.ts` uses
+   `ReCaptchaEnterpriseProvider` to match. The two are not interchangeable: an Enterprise key
+   handed to `ReCaptchaV3Provider` fails at token exchange, and the symptom is "no token
+   arrives" — indistinguishable from having configured no key at all.
 
 2. **Give the web client the key (staging).** Uncomment the
    `NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY` block in **`apps/web/apphosting.yaml`**
@@ -87,8 +100,14 @@ monitor mode instantly). The web key can stay set — it's harmless without enfo
 
 ## Caveats
 
-- **reCAPTCHA v3 false positives.** It scores requests; a small fraction of real users can be
+- **reCAPTCHA false positives.** It scores requests; a small fraction of real users can be
   rejected. Watch error rates after step 4; keep the rollback (above) handy.
+- **reCAPTCHA Enterprise is a billed product**, unlike the plain v3 this started out on — it
+  has a free monthly assessment allowance and per-assessment pricing above it (check the
+  current Google Cloud pricing page; do not trust a figure quoted in a doc). The volume is
+  driven by token MINTS, not by callable invocations: `isTokenAutoRefreshEnabled: true` means
+  roughly one assessment per browser session per token lifetime, not one per checkout. Worth
+  a glance at the bill after the prod flip all the same, alongside the budget alert.
 - **Mobile is not covered, and cannot be flipped on by accident.** The mobile-reachable
   callables sit behind their own `APP_CHECK_ENFORCE_MOBILE` flag (default false), so the web
   flip above leaves them alone. Enforcing them needs native attestation —

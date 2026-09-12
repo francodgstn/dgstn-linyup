@@ -1,8 +1,18 @@
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 import app from './firebase'
 
-// Firebase App Check (reCAPTCHA v3) for the web client. Attests that requests to
-// enforced Cloud Functions come from our real app, not a script.
+// Firebase App Check (reCAPTCHA Enterprise) for the web client. Attests that
+// requests to enforced Cloud Functions come from our real app, not a script.
+//
+// ENTERPRISE, not the plain v3 this started as: the Firebase Console no longer
+// offers reCAPTCHA v3 when registering a web app for App Check, so the key a
+// registration produces today is an Enterprise site key and only
+// ReCaptchaEnterpriseProvider can exchange it. Feeding an Enterprise key to
+// ReCaptchaV3Provider fails at token exchange, which surfaces as the same "no
+// token" symptom as having no key at all — see docs/app-check-rollout.md.
+//
+// Still a PUBLIC key, still safe to embed. The API it needs
+// (recaptchaenterprise.googleapis.com) is enabled in infra/environments/*.
 //
 // No-op unless we're in the browser, outside the emulator, and a site key is
 // configured — so local dev, preview builds, and any deploy where the key isn't
@@ -26,7 +36,7 @@ export function initAppCheck(): void {
   }
 
   initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(siteKey),
+    provider: new ReCaptchaEnterpriseProvider(siteKey),
     isTokenAutoRefreshEnabled: true,
   })
   initialized = true
