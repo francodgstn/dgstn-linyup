@@ -56,6 +56,24 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  # Firebase App Check — the reCAPTCHA v3 SITE KEY (public, safe to embed), the
+  # one piece of deployment wiring the App Check rollout needs from this file.
+  # Commented out because the key does not exist until the project is registered
+  # in the Console (docs/app-check-rollout.md step 1), and App Hosting rejects
+  # `value: ""` — so the slot cannot be pre-declared empty, only pre-described.
+  #
+  # BUILD availability is the LOAD-BEARING part. NEXT_PUBLIC_* is inlined into the
+  # JS bundle at build time, so a value supplied only at runtime — a variable added
+  # in the Console without BUILD, say — never reaches the browser: initAppCheck()
+  # reads undefined, no-ops, and the client sends no token. That failure is silent
+  # and looks exactly like a bad registration, which is what the runbook's "watch
+  # the monitor logs" step would have you conclude. Set it here and redeploy web.
+  # - variable: NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_KEY
+  #   value: <reCAPTCHA v3 site key for linyup-prod>
+  #   availability:
+  #     - BUILD
+  #     - RUNTIME
+
   # PostHog product analytics — public project key (safe to embed, like the
   # Firebase keys above). Paste your prod PostHog project key (phc_…) here to turn
   # analytics on; while empty, initPostHog() stays a no-op.
