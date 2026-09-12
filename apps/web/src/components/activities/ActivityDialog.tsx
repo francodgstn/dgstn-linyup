@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo } from 'react'
+import { useId, useState, useRef, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { FormSection, FormSections, SettingRow, SettingRows } from '@/components/offer/FormLayout'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { ACTIVITIES_COLLECTION, resolveAutoConfirm } from '@linyup/shared'
 import { resolveBookingContactFields } from '@linyup/shared'
@@ -285,6 +287,7 @@ export function ActivityDialog({
     [isInstalled, team?.custom_field_definitions]
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const rowId = useId()
   // Does the mounted plan editor hold ticks it has not written yet? It reports
   // this upward because THIS form's Save writes the same document and carries
   // the STORED plan list through — so pressing it would discard them.
@@ -607,6 +610,7 @@ export function ActivityDialog({
     <>
       {section === 'details' && (
         <>
+          <FormSection>
           <div className="space-y-1.5">
             <Label htmlFor="act-name">{t('fieldName')}</Label>
             <Input id="act-name" {...register('name')} autoFocus />
@@ -700,94 +704,18 @@ export function ActivityDialog({
               />
             </div>
           </div>
+          </FormSection>
 
-          {/* ── The decisions ──────────────────────────────────────────────
-              Access, price, the trial door and the queue: what someone is
-              charged and who can get in. Grouped and ordered here, and never
-              hidden behind a disclosure — UX-11 is the public half of the same
-              rule. This form no longer has one at all. */}
-          {/* WHAT IS LEFT AFTER THE MONEY MOVED OUT. The access tier, the
-              newcomer trial and the drop-in price now live in the catalogue
-              beside the plan matcher that reprices them — see
-              components/activities/ActivityPricingForm.tsx for why. What stays
-              here is not about money: whether a booking confirms itself,
-              whether a full session keeps a queue, and how long an appointment
-              runs. */}
-        </>
-      )}
-
-      {/* NO SECTION HEADINGS. Each tab now holds a handful of fields about one
-          thing, and a heading over four rows names what the tab already names
-          — chrome restating its own container (Franco, 2026-09-02). */}
-      {section === 'booking' && (
-        <div className="divide-y rounded-lg border">
-              {/* A field, not implied by type: either kind may require a review step. */}
-              <Controller
-                name="autoConfirm"
-                control={control}
-                render={({ field }) => (
-                  <label className="flex cursor-pointer items-center justify-between gap-4 p-3">
-                    <span className="text-sm font-medium">{t('fieldAutoConfirm')}</span>
-                    <input
-                      type="checkbox"
-                      className="accent-primary shrink-0"
-                      checked={field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                    />
-                  </label>
-                )}
-              />
-
-
-              {/* CLASS-ONLY: the queue behind a full session. Independent of every
-                  other door here — a members-only class, a drop-in class and an
-                  open one all fill up the same way. Appointments have none: an
-                  appointment session does not exist until it is booked, so
-                  "this one is full" has no meaning there. */}
-              {type === 'class' && (waitlistOffered || editing?.waitlistEnabled === true) && (
-                <div className="p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 pr-4">
-                      <p className="text-sm font-medium">{t('waitlistEnabledLabel')}</p>
-                      <p className="text-xs text-muted-foreground">{t('waitlistEnabledHint')}</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      {...register('waitlistEnabled')}
-                      disabled={!waitlistAllowed}
-                      className="accent-primary shrink-0 disabled:opacity-40"
-                    />
-                  </div>
-                  {/* The plan gate, on the control that writes the flag. */}
-                  {!waitlistAllowed && (
-                    <p className="text-xs text-muted-foreground">
-                      {t('waitlistRequiresPlan', { plan: planName(WAITLIST_MIN_PLAN) })}
-                    </p>
-                  )}
-                  {/* Not a validation error: the limit lives on each SESSION, not
-                      here, so the form cannot know whether any of them has one. */}
-                  {waitlistAllowed && waitlistEnabled && (
-                    <p className="text-xs text-muted-foreground">{t('waitlistRequiresCapacity')}</p>
-                  )}
-                </div>
-              )}
-
-
-        </div>
-      )}
-
-      {section === 'details' && (
-        <>
-              {/* CREATE ONLY. An appointment is invalid with no length at
-                  all, so the create dialog has to ask — but on an EDIT the
-                  lengths and their prices are one control on Access & pricing,
-                  and asking here too would give `durations` a second writer:
-                  this form is seeded when the pane mounts, so a Save from
-                  Details would put the pre-edit lengths back over the ones just
-                  set next door. Exactly the clobber the field split exists to
-                  prevent. */}
-              {type === 'appointment' && !editing && (
-                <div className="p-3">
+          {/* CREATE ONLY. An appointment is invalid with no length at
+              all, so the create dialog has to ask — but on an EDIT the
+              lengths and their prices are one control on Access & pricing,
+              and asking here too would give `durations` a second writer:
+              this form is seeded when the pane mounts, so a Save from
+              Details would put the pre-edit lengths back over the ones just
+              set next door. Exactly the clobber the field split exists to
+              prevent. */}
+          {type === 'appointment' && !editing && (
+            <FormSection>
                   <AppointmentDurationsEditor
                     value={durations}
                     onChange={(next) => setValue('durations', next)}
@@ -799,17 +727,18 @@ export function ActivityDialog({
                   {errors.durations?.message && (
                     <p className="text-destructive text-xs pt-2">{errors.durations.message}</p>
                   )}
-                </div>
-              )}
+            </FormSection>
+          )}
 
-              {/* APPOINTMENT-ONLY: the pointer to where the money is decided —
-                  the session lengths and their prices, and the one
-                  member-benefit rule that applies to every priced one. All of
-                  it is set in Offerings, beside the plans it names, because it
-                  is ONE rule shared by all of them and a change here would
-                  silently reprice the rest. */}
-              {type === 'appointment' && (
-                <div className="space-y-2 p-3">
+          {/* APPOINTMENT-ONLY: the pointer to where the money is decided —
+              the session lengths and their prices, and the one
+              member-benefit rule that applies to every priced one. All of
+              it is set in Offerings, beside the plans it names, because it
+              is ONE rule shared by all of them and a change here would
+              silently reprice the rest. */}
+          {type === 'appointment' && (
+            <FormSection>
+              <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
                     {editing ? t('durationsInCatalogue') : t('benefitInCatalogue')}
                   </p>
@@ -823,15 +752,16 @@ export function ActivityDialog({
                   >
                     {t('accessOpenCatalogue')}
                   </Link>
-                </div>
-              )}
-        </>
-      )}
+              </div>
+            </FormSection>
+          )}
 
-      {section === 'details' && (
-        <div className="divide-y rounded-lg border">
-            <div className="flex items-center justify-between gap-4 p-3">
-              <Label htmlFor="act-color" className="font-medium">{t('fieldColor')}</Label>
+          <FormSection>
+            <SettingRows>
+              <SettingRow
+                htmlFor="act-color"
+                label={t('fieldColor')}
+                control={
               <Controller
                 name="color"
                 control={control}
@@ -844,11 +774,10 @@ export function ActivityDialog({
                   />
                 )}
               />
-            </div>
-
-            {/* Display-only, like `prerequisites` below — which is why it sits
-                behind the disclosure and not among the decisions above. */}
-            <div className="p-3">
+                }
+              />
+            </SettingRows>
+            {/* Display-only, like `prerequisites` on the Booking tab. */}
               <Controller
                 name="tags"
                 control={control}
@@ -859,22 +788,91 @@ export function ActivityDialog({
                   />
                 )}
               />
-            </div>
-        </div>
+          </FormSection>
+        </>
       )}
 
+      {/* NO SECTION HEADINGS. Each tab now holds a handful of fields about one
+          thing, and a heading over four rows names what the tab already names
+          — chrome restating its own container (Franco, 2026-09-02). And NO
+          BOXES either (2026-09-12): the groups are set apart by a hairline and
+          their spacing — see components/offer/FormLayout.tsx for the rule.
+
+          WHAT IS LEFT AFTER THE MONEY MOVED OUT. The access tier, the
+          newcomer trial and the drop-in price live in the catalogue beside
+          the plan matcher that reprices them — see
+          components/activities/ActivityPricingForm.tsx for why. What stays
+          here is not about money: whether a booking confirms itself, whether
+          a full session keeps a queue, and the prose a visitor meets. */}
       {section === 'booking' && (
-        <div className="space-y-4">
+        <>
+          <FormSection>
+            <SettingRows>
+              {/* A field, not implied by type: either kind may require a review step. */}
+              <SettingRow
+                htmlFor={`${rowId}-auto`}
+                label={t('fieldAutoConfirm')}
+                control={
+                  <Controller
+                    name="autoConfirm"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        id={`${rowId}-auto`}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                }
+              />
 
-          {/* Secondary prose — side by side when the dialog is wide */}
+              {/* CLASS-ONLY: the queue behind a full session. Independent of every
+                  other door here — a members-only class, a drop-in class and an
+                  open one all fill up the same way. Appointments have none: an
+                  appointment session does not exist until it is booked, so
+                  "this one is full" has no meaning there. */}
+              {type === 'class' && (waitlistOffered || editing?.waitlistEnabled === true) && (
+                <SettingRow
+                  htmlFor={`${rowId}-wait`}
+                  label={t('waitlistEnabledLabel')}
+                  hint={t('waitlistEnabledHint')}
+                  control={
+                    <Controller
+                      name="waitlistEnabled"
+                      control={control}
+                      render={({ field }) => (
+                        <Switch
+                          id={`${rowId}-wait`}
+                          checked={!!field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!waitlistAllowed}
+                        />
+                      )}
+                    />
+                  }
+                >
+                  {/* The plan gate, on the control that writes the flag. */}
+                  {!waitlistAllowed && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('waitlistRequiresPlan', { plan: planName(WAITLIST_MIN_PLAN) })}
+                    </p>
+                  )}
+                  {/* Not a validation error: the limit lives on each SESSION, not
+                      here, so the form cannot know whether any of them has one. */}
+                  {waitlistAllowed && waitlistEnabled && (
+                    <p className="text-xs text-muted-foreground">{t('waitlistRequiresCapacity')}</p>
+                  )}
+                </SettingRow>
+              )}
+            </SettingRows>
+          </FormSection>
+
           {/* THE SHORT CONTROL FIRST, THEN THE FORM, THEN THE PROSE — and the
-              prose runs FULL WIDTH, one field per row.
-
-              Two columns halved every textarea, so six paragraphs of public
-              copy were written in boxes narrower than the sentences going into
-              them; and a one-line input sat among them, putting a small control
-              after a tall one so the two columns never lined up (Franco,
-              2026-09-02). */}
+              prose runs FULL WIDTH, one field per row. Two columns halved every
+              textarea, so six paragraphs of public copy were written in boxes
+              narrower than the sentences going into them (Franco, 2026-09-02). */}
+          <FormSection>
 <div className="space-y-1.5">
               <Label htmlFor="act-meeting-point">{t('fieldMeetingPoint')}</Label>
               <Input
@@ -909,8 +907,9 @@ export function ActivityDialog({
                 />
               )}
             />
+          </FormSection>
 
-          <div className="space-y-4">
+          <FormSection>
 <div className="space-y-1.5">
               <Label htmlFor="act-prereq">{t('fieldPrerequisites')}</Label>
               <textarea
@@ -974,19 +973,21 @@ export function ActivityDialog({
               />
               <p className="text-xs text-muted-foreground">{t('cancellationPolicyHelp')}</p>
             </div>
-          </div>
-        </div>
+          </FormSection>
+        </>
       )}
     </>
   )
 
+  // ONE `FormSections` per host: the pane shows one tab, the dialog both, and
+  // the hairlines between the groups run through the whole of either.
   const fields = section ? (
-    fieldsFor(section)
+    <FormSections>{fieldsFor(section)}</FormSections>
   ) : (
-    <>
+    <FormSections>
       {fieldsFor('details')}
       {fieldsFor('booking')}
-    </>
+    </FormSections>
   )
 
   // ONE LABEL, ONE SIZE, on every tab — the pricing tab's button says the same
