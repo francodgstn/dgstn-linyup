@@ -101,6 +101,9 @@ export const CONTACT_IDENTIFYING_FIELDS = [
   'notes',
   'custom_fields',
   'tags',
+  // …and what a model wrote about them from those notes. Prose about a person
+  // is a description of the person; it goes with the name it uses.
+  'ai_summary',
   // Consent and marketing state carry the address they were given for.
   'consent',
   'source_detail',

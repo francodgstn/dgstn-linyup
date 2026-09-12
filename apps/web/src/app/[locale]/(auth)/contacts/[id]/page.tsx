@@ -206,7 +206,6 @@ import {
   TooltipProvider,
 } from '@/components/ui/tooltip'
 
-import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { GoalsTab } from './GoalsTab'
 import { NotesTab, useContactNotesCount, useContactNotes, noteColorClasses, type ContactNote } from './NotesTab'
 import { PaymentsTab } from './PaymentsTab'
@@ -215,7 +214,8 @@ import {
   RollupBadge,
   useContactMemberSubscriptions,
 } from '@/components/contacts/MemberSubscriptionsSection'
-import { isoWeekLabel, useContactWeeklyReports } from './AttendanceTrendCard'
+import { InsightsCard } from './InsightsCard'
+import { ENGAGEMENT_BAR, ENGAGEMENT_TEXT } from './engagement'
 import { PlanGate } from '@/components/plan/PlanGate'
 import {
   RelationshipTimeline,
@@ -326,19 +326,6 @@ const ENGAGEMENT_LEVEL: Record<EngagementBand, number> = {
   at_risk: 2,
   inactive: 1,
 }
-const ENGAGEMENT_BAR: Record<EngagementBand, string> = {
-  active: 'bg-emerald-500',
-  low: 'bg-amber-500',
-  at_risk: 'bg-red-500',
-  inactive: 'bg-muted-foreground/40',
-}
-const ENGAGEMENT_TEXT: Record<EngagementBand, string> = {
-  active: 'text-emerald-600 dark:text-emerald-400',
-  low: 'text-amber-600 dark:text-amber-500',
-  at_risk: 'text-red-600 dark:text-red-400',
-  inactive: 'text-muted-foreground',
-}
-
 function EngagementBadge({
   contact,
   thresholds,
@@ -372,40 +359,6 @@ function EngagementBadge({
         {t(`engagement_${band}` as Parameters<typeof t>[0])}
       </span>
     </span>
-  )
-}
-
-function EngagementIndicator({
-  contact,
-  thresholds,
-}: {
-  contact: Contact
-  thresholds?: EngagementThresholds
-}) {
-  const t = useTranslations('Contacts')
-  const lastMs = tsToDate(contact.last_session_at)?.getTime() ?? null
-  const refMs = lastMs ?? tsToDate(contact.created_at)?.getTime() ?? null
-  const band = computeEngagementBand(refMs, thresholds)
-  const daysAgo = lastMs != null ? Math.floor((Date.now() - lastMs) / 86_400_000) : null
-  const tip = `${t('engagementLabel')} · ${
-    daysAgo == null ? t('engagementNoSessions') : t('engagementLastSession', { days: daysAgo })
-  }`
-  const fill: Record<EngagementBand, string> = { active: '100%', low: '75%', at_risk: '50%', inactive: '25%' }
-  return (
-    <div
-      title={tip}
-      className="flex flex-col items-center justify-end gap-1.5 px-3 py-3 shrink-0 cursor-default"
-    >
-      <div className="relative w-2 flex-1 min-h-[40px] rounded-full bg-muted overflow-hidden">
-        <div
-          className={`absolute bottom-0 left-0 right-0 rounded-full transition-all ${ENGAGEMENT_BAR[band]}`}
-          style={{ height: fill[band] }}
-        />
-      </div>
-      <span className={`hidden sm:block text-[10px] font-medium whitespace-nowrap ${ENGAGEMENT_TEXT[band]}`}>
-        {t(`engagement_${band}` as Parameters<typeof t>[0])}
-      </span>
-    </div>
   )
 }
 
@@ -4491,102 +4444,6 @@ function ArchivedContactView({
 
 // ─── header stats bar ────────────────────────────────────────────────────────
 
-function ContactHeaderStats({ contact }: { contact: Contact }) {
-  const t = useTranslations('Contacts')
-  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contact.id)
-
-  const chartData = weeklyReports.map((r) => ({
-    label: isoWeekLabel(r.iso_week),
-    sessions: r.sessions_count,
-  }))
-
-  const tooltipStyle = {
-    fontSize: 11,
-    padding: '4px 8px',
-    borderRadius: 6,
-    border: '1px solid hsl(var(--border))',
-    backgroundColor: 'hsl(var(--card) / 0.85)',
-    backdropFilter: 'blur(4px)',
-    color: 'hsl(var(--card-foreground))',
-  }
-
-  return (
-    <div className="flex-1 min-w-0">
-      {/* 3 key stats */}
-      <div className="grid grid-cols-3 divide-x">
-        <div className="text-center px-4 py-3">
-          <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-            {t('statTotalSessions')}
-          </p>
-        </div>
-        <div className="text-center px-4 py-3">
-          <p className="text-2xl font-bold tabular-nums">
-            {contact.current_streak ?? 0}
-            <span className="text-sm font-normal">w</span>
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-            {t('statStreak')}
-          </p>
-        </div>
-        <div className="text-center px-4 py-3">
-          <p className="text-2xl font-bold tabular-nums">{contact.current_month_score ?? 0}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-            {t('statMonthScore')}
-          </p>
-        </div>
-      </div>
-
-      {/* Attendance sparkline — bleeds to card edges, no padding */}
-      <div className="h-[52px]">
-        {isLoading ? (
-          <div className="h-full bg-muted/40 animate-pulse" />
-        ) : chartData.length === 0 ? (
-          <div className="h-full bg-muted/20" />
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 6, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="hdrSparkGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="label" hide />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null
-                  return (
-                    <div style={{ ...tooltipStyle, textAlign: 'center', lineHeight: 1.4 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#6366f1' }}>
-                        {payload[0].value}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }}>
-                        {label}
-                      </div>
-                    </div>
-                  )
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="sessions"
-                stroke="#6366f1"
-                strokeWidth={1.5}
-                fill="url(#hdrSparkGrad)"
-                dot={false}
-                activeDot={{ r: 3, fill: '#6366f1' }}
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── affiliation status badge (reuses OrgAffiliationStatusDef color system) ────
 
 const AFFIL_COLOR_CLASSES: Record<string, { bg: string; text: string; border: string }> = {
@@ -5378,251 +5235,253 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         {isHistoryBack ? tCommon('back') : t('title')}
       </button>
 
-      {/* Header card */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="flex flex-col lg:flex-row">
-          {/* Identity — left */}
-          <div className="p-5 flex-1 min-w-0">
-            {/* Avatar + name share the top row; everything else flows full-width
-                below so the avatar never shifts content sideways on mobile. */}
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-xl font-bold">
-                {personInitials(contact)}
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold min-w-0 break-words">
-                  {contact.firstname} {contact.lastname}
-                </h1>
-                {/* Sits with the name because it acts ON the person — "send this
-                    contact a link to update their own details" — rather than
-                    describing them like the status and contact lines below. */}
-                {team?.slug && !contact.archived_at && !contact.deleted_at && (
-                  <Tip label={t('sendLinkTip')}>
-                    <button
-                      onClick={handleCopyUpdateLink}
-                      className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label={t('copyUpdateLink')}
-                    >
-                      <Link2 className="h-3.5 w-3.5 shrink-0" />
-                      {linkCopied ? t('updateLinkCopied') : t('copyUpdateLink')}
-                    </button>
-                  </Tip>
-                )}
-              </div>
-            </div>
-            <div className="flex-1 min-w-0 mt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {/* A member has asked to close their own account. It sits with
-                    the lifecycle badges because that is what it is — but ABOVE
-                    the stage chips, because it outranks anything about chasing
-                    them. The studio can do nothing about it and should not try;
-                    it is here so the roster stops being a surprise. */}
-                {contactDeletionState(contact, Date.now()) === 'scheduled' && (
-                  <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
-                    {t('deletionScheduledBadge', {
-                      date: formatDate(contact.deletion_scheduled_for) ?? '',
-                    })}
-                  </Badge>
-                )}
-                {contact.deleted_at ? (
-                  <Badge variant="destructive">{t('deletedBadge')}</Badge>
-                ) : contact.archived_at ? (
-                  <Badge variant="secondary">{t('archivedBadge')}</Badge>
-                ) : (
-                  <>
-                    {/* Off the roster (Contact.external): trains here, not
-                        looked after. Read with the stage chip beside it —
-                        "External · Trial attended" is exactly the ClassPass
-                        visitor this bucket was made for. */}
-                    {contact.external === true && (
-                      <Badge variant="outline" className="gap-1" title={t('externalHint')}>
-                        <DoorOpen className="h-3 w-3" />
-                        {t('externalBadge')}
-                      </Badge>
-                    )}
-                    {/* Only the IN-PROGRESS stages get a chip. "Joined" is the
-                        settled, expected state — badging it says nothing, and
-                        "Joined on {date}" below already carries it. Absence of a
-                        chip is the signal that nothing needs chasing. */}
-                    {contact.acquisition_stage && contact.acquisition_stage !== 'joined' && (
-                      <Badge variant="outline">{t(`stage_${contact.acquisition_stage}` as Parameters<typeof t>[0])}</Badge>
-                    )}
-                    {contact.pending_signup && (
-                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
-                        {t('pendingSignup')}
-                      </Badge>
-                    )}
-                    {contact.lead_acknowledged === false && (
-                      <Badge className="bg-blue-500 text-white border-blue-500">
-                        {t('newBadge')}
-                      </Badge>
-                    )}
-                    {/* LAST in the row on purpose. Every chip before it is
-                        something the studio might have to ACT on; belonging is a
-                        standing fact, so it reads as the answer to "and who are
-                        they to us" rather than competing with the to-dos. */}
-                    <ContactAffiliationBadges
-                      contact={contact}
-                      teamId={currentTeamId}
-                      orgId={team?.org_id}
-                    />
-                  </>
-                )}
-              </div>
-              <div className="flex flex-col gap-1 mt-2">
-                {contact.email && (
-                  <span className="group/email flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Mail className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{contact.email}</span>
-                    <Tip label={emailCopied ? t('emailCopied') : t('copyEmail')}>
-                      <button
-                        type="button"
-                        onClick={handleCopyEmail}
-                        aria-label={emailCopied ? t('emailCopied') : t('copyEmail')}
-                        className="shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
-   >
-                        {emailCopied ? (
-                          <Check className="h-3 w-3 text-green-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    </Tip>
-                  </span>
-                )}
-                {contact.phone && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Phone className="h-3 w-3 shrink-0" /> {contact.phone}
-                  </span>
-                )}
-                {/* Off the roster since — a fact line like "Joined on", because
-                    the date matters: it is where this person's reminders and
-                    invitations stopped. */}
-                {contact.external === true && contact.external_since && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <DoorOpen className="h-3 w-3 shrink-0" />
-                    <span>
-                      {t('externalSince')} {formatDate(contact.external_since)}
-                    </span>
-                  </span>
-                )}
-                {contact.created_at && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CalendarDays className="h-3 w-3 shrink-0" />
-                    <span>
-                      {t('joinedOn')} {formatDate(contact.created_at)}
-                      {(() => {
-                        const joined = tsToDate(contact.created_at)
-                        if (!joined) return ''
-                        const days = daysSince(joined)
-                        let span: string
-                        if (days < 1) span = t('timespanToday')
-                        else if (days >= 365) span = t('timespanYears', { count: Math.floor(days / 365) })
-                        else if (days >= 30) span = t('timespanMonths', { count: Math.floor(days / 30) })
-                        else if (days >= 7) span = t('timespanWeeks', { count: Math.floor(days / 7) })
-                        else span = t('timespanDays', { count: days })
-                        return ` · ${span}`
-                      })()}
-                    </span>
-                  </span>
-                )}
-                {/* What they hold, read as part of the same factual list as the
-                    email / phone / joined-on lines rather than as status badges
-                    up top — they describe the relationship, not its state.
-                    Both jump to the Membership tab's matching segment. */}
-                {!contact.archived_at && !contact.deleted_at && (
-                  <>
-                    {/* Primary live subscription + "+N" when the contact holds several
-                        types (the full list lives in the Membership tab). */}
-                    {((contact.active_subscriptions?.length ?? 0) > 0 ||
-                      contact.subscription_type_name) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMembershipSeg('plans')
-                          setTab('payments')
-                        }}
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <BookOpen className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          {t('subscriptionHeadingCard')}:{' '}
-                          {(contact.active_subscriptions?.length ?? 0) > 0
-                            ? `${contact.active_subscriptions![0].subscription_type_name ?? contact.subscription_type_name}${
-                                contact.active_subscriptions!.length > 1
-                                  ? ` +${contact.active_subscriptions!.length - 1}`
-                                  : ''
-                              }`
-                            : contact.subscription_type_name}
-                        </span>
-                      </button>
-                    )}
-                    {contact.affiliation_summary?.has_active && (
-                      <button
-                        type="button"
-                        // Affiliations is its own tab now — no segment to pick.
-                        onClick={() => setTab('affiliation')}
-                        className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-colors"
-                      >
-                        <CheckCircle className="h-3 w-3 shrink-0" />
-                        <span>{t('affiliationHeadingCard')}</span>
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              {/* Contact Groups plugin — membership chips */}
-              {isInstalled('contact-groups') && !contact.archived_at && !contact.deleted_at && (
-                <ContactGroupsChips contact={contact} onChanged={invalidate} />
-              )}
-            </div>
-            {/* Header action cluster — alerts jump to the Follow-ups tab; notes
-                open the editor sheet (also glanced in the profile column).
-                Margin so the buttons don't crowd the detail lines above them. */}
-            {!contact.archived_at && !contact.deleted_at && (
-              <div className="mt-4 flex items-center gap-2 shrink-0">
-                {/* Opens the alerts PANEL, not a tab. It used to jump to
-                    Follow-ups, which is where alerts used to live. */}
-                <HeaderActionButton
-                  icon={Bell}
-                  label={t('tabAlerts')}
-                  count={contactAlerts.length}
-                  onClick={() => setAlertsOpen(true)}
-                />
-                <HeaderActionButton
-                  icon={StickyNote}
-                  label={t('tabNotes')}
-                  count={notesCount}
-                  onClick={() => setNotesOpen(true)}
-                />
-                {/* Hand the person a QR and let them fill in their own details
-                    — the only route in for a contact with no email on file,
-                    since every other one authenticates by emailed code. */}
-                <HeaderActionButton
-                  icon={QrCode}
-                  label={tLink('headerTip')}
-                  onClick={() => setUpdateLinkOpen(true)}
-                />
-                {/* Roster ↔ external. One button whose meaning flips with the
-                    state: on the roster it offers the door, off it the way
-                    back. See Contact.external for what each side excludes. */}
-                <HeaderActionButton
-                  icon={contact.external === true ? UserCheck : DoorOpen}
-                  label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
-                  onClick={() =>
-                    contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
-                  }
-                />
-              </div>
+      {/* Header — TWO cards. Left, the profile: who they are, in the shape a
+          profile is expected to take — a round picture overlapping the card's
+          top edge, the name under it, everything centred. Right, the insights
+          card: what the studio reads about them (InsightsCard.tsx). A quarter
+          and three quarters at `lg`, stacked below it. The grid carries top
+          padding so the avatar can sit above the card without touching the
+          back button. */}
+      <div className="grid gap-4 pt-10 lg:grid-cols-4 lg:items-stretch">
+        <div className="relative rounded-xl border bg-card px-5 pb-5 pt-12 text-center lg:col-span-1">
+          <div
+            className="absolute left-1/2 -top-10 flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground ring-4 ring-card"
+            aria-hidden
+          >
+            {personInitials(contact)}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold min-w-0 break-words">
+              {contact.firstname} {contact.lastname}
+            </h1>
+            {/* Sits with the name because it acts ON the person — "send this
+                contact a link to update their own details" — rather than
+                describing them like the status and contact lines below. */}
+            {team?.slug && !contact.archived_at && !contact.deleted_at && (
+              <Tip label={t('sendLinkTip')}>
+                <button
+                  onClick={handleCopyUpdateLink}
+                  className="mx-auto mt-1 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={t('copyUpdateLink')}
+                >
+                  <Link2 className="h-3.5 w-3.5 shrink-0" />
+                  {linkCopied ? t('updateLinkCopied') : t('copyUpdateLink')}
+                </button>
+              </Tip>
             )}
           </div>
+          <div className="flex-1 min-w-0 mt-3">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {/* A member has asked to close their own account. It sits with
+                  the lifecycle badges because that is what it is — but ABOVE
+                  the stage chips, because it outranks anything about chasing
+                  them. The studio can do nothing about it and should not try;
+                  it is here so the roster stops being a surprise. */}
+              {contactDeletionState(contact, Date.now()) === 'scheduled' && (
+                <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                  {t('deletionScheduledBadge', {
+                    date: formatDate(contact.deletion_scheduled_for) ?? '',
+                  })}
+                </Badge>
+              )}
+              {contact.deleted_at ? (
+                <Badge variant="destructive">{t('deletedBadge')}</Badge>
+              ) : contact.archived_at ? (
+                <Badge variant="secondary">{t('archivedBadge')}</Badge>
+              ) : (
+                <>
+                  {/* Off the roster (Contact.external): trains here, not
+                      looked after. Read with the stage chip beside it —
+                      "External · Trial attended" is exactly the ClassPass
+                      visitor this bucket was made for. */}
+                  {contact.external === true && (
+                    <Badge variant="outline" className="gap-1" title={t('externalHint')}>
+                      <DoorOpen className="h-3 w-3" />
+                      {t('externalBadge')}
+                    </Badge>
+                  )}
+                  {/* Only the IN-PROGRESS stages get a chip. "Joined" is the
+                      settled, expected state — badging it says nothing, and
+                      "Joined on {date}" below already carries it. Absence of a
+                      chip is the signal that nothing needs chasing. */}
+                  {contact.acquisition_stage && contact.acquisition_stage !== 'joined' && (
+                    <Badge variant="outline">{t(`stage_${contact.acquisition_stage}` as Parameters<typeof t>[0])}</Badge>
+                  )}
+                  {contact.pending_signup && (
+                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                      {t('pendingSignup')}
+                    </Badge>
+                  )}
+                  {contact.lead_acknowledged === false && (
+                    <Badge className="bg-blue-500 text-white border-blue-500">
+                      {t('newBadge')}
+                    </Badge>
+                  )}
+                  {/* LAST in the row on purpose. Every chip before it is
+                      something the studio might have to ACT on; belonging is a
+                      standing fact, so it reads as the answer to "and who are
+                      they to us" rather than competing with the to-dos. */}
+                  <ContactAffiliationBadges
+                    contact={contact}
+                    teamId={currentTeamId}
+                    orgId={team?.org_id}
+                  />
+                </>
+              )}
+            </div>
+            <div className="flex flex-col items-center gap-1 mt-2">
+              {contact.email && (
+                <span className="group/email flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
+                  <Mail className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{contact.email}</span>
+                  <Tip label={emailCopied ? t('emailCopied') : t('copyEmail')}>
+                    <button
+                      type="button"
+                      onClick={handleCopyEmail}
+                      aria-label={emailCopied ? t('emailCopied') : t('copyEmail')}
+                      className="shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+   >
+                      {emailCopied ? (
+                        <Check className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                  </Tip>
+                </span>
+              )}
+              {contact.phone && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Phone className="h-3 w-3 shrink-0" /> {contact.phone}
+                </span>
+              )}
+              {/* Off the roster since — a fact line like "Joined on", because
+                  the date matters: it is where this person's reminders and
+                  invitations stopped. */}
+              {contact.external === true && contact.external_since && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <DoorOpen className="h-3 w-3 shrink-0" />
+                  <span>
+                    {t('externalSince')} {formatDate(contact.external_since)}
+                  </span>
+                </span>
+              )}
+              {contact.created_at && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CalendarDays className="h-3 w-3 shrink-0" />
+                  <span>
+                    {t('joinedOn')} {formatDate(contact.created_at)}
+                    {(() => {
+                      const joined = tsToDate(contact.created_at)
+                      if (!joined) return ''
+                      const days = daysSince(joined)
+                      let span: string
+                      if (days < 1) span = t('timespanToday')
+                      else if (days >= 365) span = t('timespanYears', { count: Math.floor(days / 365) })
+                      else if (days >= 30) span = t('timespanMonths', { count: Math.floor(days / 30) })
+                      else if (days >= 7) span = t('timespanWeeks', { count: Math.floor(days / 7) })
+                      else span = t('timespanDays', { count: days })
+                      return ` · ${span}`
+                    })()}
+                  </span>
+                </span>
+              )}
+              {/* What they hold, read as part of the same factual list as the
+                  email / phone / joined-on lines rather than as status badges
+                  up top — they describe the relationship, not its state.
+                  Both jump to the Membership tab's matching segment. */}
+              {!contact.archived_at && !contact.deleted_at && (
+                <>
+                  {/* Primary live subscription + "+N" when the contact holds several
+                      types (the full list lives in the Membership tab). */}
+                  {((contact.active_subscriptions?.length ?? 0) > 0 ||
+                    contact.subscription_type_name) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMembershipSeg('plans')
+                        setTab('payments')
+                      }}
+                      className="flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <BookOpen className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {t('subscriptionHeadingCard')}:{' '}
+                        {(contact.active_subscriptions?.length ?? 0) > 0
+                          ? `${contact.active_subscriptions![0].subscription_type_name ?? contact.subscription_type_name}${
+                              contact.active_subscriptions!.length > 1
+                                ? ` +${contact.active_subscriptions!.length - 1}`
+                                : ''
+                            }`
+                          : contact.subscription_type_name}
+                      </span>
+                    </button>
+                  )}
+                  {contact.affiliation_summary?.has_active && (
+                    <button
+                      type="button"
+                      // Affiliations is its own tab now — no segment to pick.
+                      onClick={() => setTab('affiliation')}
+                      className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-colors"
+                    >
+                      <CheckCircle className="h-3 w-3 shrink-0" />
+                      <span>{t('affiliationHeadingCard')}</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+            {/* Contact Groups plugin — membership chips */}
+            {isInstalled('contact-groups') && !contact.archived_at && !contact.deleted_at && (
+              <ContactGroupsChips contact={contact} onChanged={invalidate} />
+            )}
+          </div>
+          {/* Header action cluster — alerts jump to the Follow-ups tab; notes
+              open the editor sheet (also glanced in the profile column).
+              Margin so the buttons don't crowd the detail lines above them. */}
+          {!contact.archived_at && !contact.deleted_at && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {/* Opens the alerts PANEL, not a tab. It used to jump to
+                  Follow-ups, which is where alerts used to live. */}
+              <HeaderActionButton
+                icon={Bell}
+                label={t('tabAlerts')}
+                count={contactAlerts.length}
+                onClick={() => setAlertsOpen(true)}
+              />
+              <HeaderActionButton
+                icon={StickyNote}
+                label={t('tabNotes')}
+                count={notesCount}
+                onClick={() => setNotesOpen(true)}
+              />
+              {/* Hand the person a QR and let them fill in their own details
+                  — the only route in for a contact with no email on file,
+                  since every other one authenticates by emailed code. */}
+              <HeaderActionButton
+                icon={QrCode}
+                label={tLink('headerTip')}
+                onClick={() => setUpdateLinkOpen(true)}
+              />
+              {/* Roster ↔ external. One button whose meaning flips with the
+                  state: on the roster it offers the door, off it the way
+                  back. See Contact.external for what each side excludes. */}
+              <HeaderActionButton
+                icon={contact.external === true ? UserCheck : DoorOpen}
+                label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
+                onClick={() =>
+                  contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
+                }
+              />
+            </div>
+          )}
         </div>
 
-        {/* Stats bar + sparkline — full-width, docked to bottom of header card */}
-        <div className="flex border-t">
-          <ContactHeaderStats contact={contact} />
-          <EngagementIndicator contact={contact} thresholds={team?.engagement_thresholds} />
-        </div>
+        <InsightsCard
+          contact={contact}
+          thresholds={team?.engagement_thresholds}
+          className="lg:col-span-3"
+        />
       </div>
 
       {/* Archived / deleted → read-only summary; active → full tabbed view */}
