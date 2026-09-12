@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -48,8 +49,17 @@ export function useRankingSystems(): RankingSystemsResult {
     },
   })
 
+  // MEMOISED, because the resolver now returns a NEW array every call (it
+  // guarantees every level an id on the way out) — handed straight to
+  // consumers, a fresh identity per render would re-run every effect and
+  // memo keyed on it.
+  const rankingSystems = useMemo(
+    () => effectiveRankingSystems(team?.ranking_systems, orgRankingSystems),
+    [team?.ranking_systems, orgRankingSystems]
+  )
+
   return {
-    rankingSystems: effectiveRankingSystems(team?.ranking_systems, orgRankingSystems),
+    rankingSystems,
     managedByOrg: rankingSystemsManagedByOrg(orgRankingSystems),
     orgId,
     loading: orgId ? orgLoading : false,

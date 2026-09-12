@@ -1,9 +1,10 @@
 /**
- * THE PHASE 2 DATA FLIP — every stored rank NUMBER becomes the level's ID.
+ * THE DATA FLIP — every stored rank NUMBER becomes the level's ID.
  * docs/rank-scale-decoupling.md, run on YOUR timing against the mobile release.
  *
  *   pnpm backfill:rank-refs --target staging --dry-run
  *   pnpm backfill:rank-refs --target staging
+ *   pnpm backfill:rank-refs --target staging --strip-values    # Phase 4b, see below
  *
  * ── WHAT IT CONVERTS ────────────────────────────────────────────────────────
  *
@@ -15,16 +16,28 @@
  *   organizations/{id}/rank_progressions/{id}     bands a HUMAN edited (`updated_by`
  *                                           set), which the seed reconciler
  *                                           refuses to touch by design
+ *   events/{id}/categories/{id}             a cup category's min_rank / max_rank
+ *                                           on its ranking_system_id (Phase 4)
  *
- * A number is resolved by `value` against the EFFECTIVE ladder of the record's
- * tenant and rewritten as that level's `id`. A number the ladder does not carry
- * is left as it is and counted — it was already an orphan, and turning it into
- * nothing would hide that. A ref that is already a string is never touched, so
- * the script is re-runnable.
+ * A number is resolved against the `value` the EFFECTIVE ladder of the
+ * record's tenant still carries (`legacyRankValue` — `RankLevel` itself no
+ * longer declares the field) and rewritten as that level's `id`. A number the
+ * ladder does not carry is left as it is and counted — it was already an
+ * orphan, and turning it into nothing would hide that. A ref that is already a
+ * string is never touched, so the script is re-runnable.
  *
- * NOT converted, deliberately: event-category `min_rank`/`max_rank` (the cup
- * plugin). Those are numbers by schema and every reader resolves them by value
- * on the ladder; they convert when `value` is dropped in Phase 4, not before.
+ * ── --strip-values: PHASE 4b, THE FIELD LEAVES THE LADDERS ─────────────────
+ *
+ * Once every record above holds an id, the `value` still sitting on each
+ * ladder level is dead weight — and the one thing that would let a stray
+ * number resolve again by accident. `--strip-values` removes it from every
+ * `ranking_systems[].levels[]` on organisations and teams, and rewrites each
+ * team's public mirror, AFTER the conversion in the same run. It REFUSES when
+ * that run left any orphan number behind: with the values gone those records
+ * could never be resolved, so they are fixed or accepted first. Run it once
+ * per environment, after the flip; it is a no-op on a ladder that carries no
+ * values. An installed member app that still writes numbers is unaffected —
+ * it reads the mirror, and the mirror has resolved by id since Phase 2.
  *
  * ── PRECONDITIONS IT CHECKS ─────────────────────────────────────────────────
  *
@@ -54,6 +67,7 @@ const { values } = parseArgs({
   options: {
     target: { type: 'string' },
     'dry-run': { type: 'boolean', default: false },
+    'strip-values': { type: 'boolean', default: false },
     yes: { type: 'boolean', default: false },
   },
 })
@@ -89,6 +103,8 @@ const stats = {
   filters: 0, filtersConverted: 0,
   groups: 0, groupsConverted: 0,
   progressions: 0, progressionsConverted: 0,
+  categories: 0, categoriesConverted: 0, categoriesOrphans: 0,
+  laddersStripped: 0, mirrorsRefreshed: 0,
 }
 
 /** A number → the level's id on `ladder`; a string, or an unknown number, unchanged. */
@@ -260,13 +276,89 @@ async function main() {
     }
   }
 
+  // ── cup categories ─────────────────────────────────────────────────────────
+  // `events/{id}/categories/{id}` — the root `categories` collection is
+  // something else and is skipped by its parent. The ladder is the event's
+  // tenant's: a team event resolves through its team, an org-scoped one
+  // (teamId null) through the organisation's own systems.
+  const eventLadder = new Map<string, RankingSystem[] | undefined>()
+  for (const doc of (await db.collectionGroup('categories').get()).docs) {
+    const eventRef = doc.ref.parent.parent
+    if (!eventRef || eventRef.parent.id !== 'events') continue
+    const data = doc.data()
+    const systemId = data.ranking_system_id as string | undefined
+    if (!systemId || (data.min_rank == null && data.max_rank == null)) continue
+    stats.categories++
+    if (!eventLadder.has(eventRef.id)) {
+      const ev = (await eventRef.get()).data()
+      const teamId = ev?.teamId as string | null | undefined
+      const orgId = ev?.orgId as string | null | undefined
+      eventLadder.set(eventRef.id, teamId ? teamLadder.get(teamId) : orgId ? orgSystems.get(orgId) : undefined)
+    }
+    const ladder = eventLadder.get(eventRef.id)
+    const patch: Record<string, unknown> = {}
+    for (const key of ['min_rank', 'max_rank'] as const) {
+      const ref = data[key] as RankRef | undefined
+      if (ref == null) continue
+      const c = convert(ladder, systemId, ref)
+      if (c.orphan) stats.categoriesOrphans++
+      if (c.changed) patch[key] = c.ref
+    }
+    if (!Object.keys(patch).length) continue
+    stats.categoriesConverted++
+    await write(doc.ref, patch)
+  }
+
   if (!dryRun && ops > 0) await batch.commit()
+
+  // ── --strip-values ─────────────────────────────────────────────────────────
+  if (values['strip-values']) {
+    const remaining = stats.contactsOrphans + stats.checkinsOrphans + stats.categoriesOrphans
+    if (remaining > 0) {
+      console.error(`\n❌ --strip-values refused: ${remaining} record(s) still hold a number no level carries. Once the values are gone they could never be resolved — fix or accept them first.`)
+      process.exit(1)
+    }
+    type StoredLevel = RankingSystem['levels'][number] & { value?: unknown }
+    const carriesValues = (systems: RankingSystem[]) => systems.some((s) => (s.levels ?? []).some((l) => 'value' in (l as StoredLevel)))
+    const strip = (systems: RankingSystem[]): RankingSystem[] =>
+      systems.map((s) => ({ ...s, levels: (s.levels ?? []).map((l) => { const { value: _gone, ...rest } = l as StoredLevel; return rest }) }))
+    const stripped = new Map<string, RankingSystem[]>()
+    for (const doc of (await db.collection('organizations').get()).docs) {
+      const systems = (doc.data().ranking_systems as RankingSystem[] | undefined) ?? []
+      if (!carriesValues(systems)) continue
+      stats.laddersStripped++
+      stripped.set(`org:${doc.id}`, strip(systems))
+      if (!dryRun) await doc.ref.update({ ranking_systems: strip(systems) })
+    }
+    for (const doc of (await db.collection('teams').get()).docs) {
+      const data = doc.data()
+      const own = (data.ranking_systems as RankingSystem[] | undefined) ?? []
+      const orgId = data.org_id as string | undefined
+      const ownStripped = carriesValues(own) ? strip(own) : own
+      if (carriesValues(own)) {
+        stats.laddersStripped++
+        if (!dryRun) await doc.ref.update({ ranking_systems: ownStripped })
+      }
+      const orgStripped = orgId ? (stripped.get(`org:${orgId}`) ?? orgSystems.get(orgId) ?? []) : []
+      // The mirror the public pages and the member app read — rewritten whole,
+      // through the one resolver, exactly as backfill:rank-level-ids does.
+      const effective = effectiveRankingSystems(ownStripped, orgStripped)
+      if (!effective.length) continue
+      stats.mirrorsRefreshed++
+      if (!dryRun) await db.collection('teams').doc(doc.id).collection('public_profile').doc(doc.id).set({ ranking_systems: effective }, { merge: true })
+    }
+  }
+
   const v = dryRun ? 'would convert' : 'converted'
   console.log(`\ncontacts        ${stats.contactsConverted}/${stats.contacts} ${v}, ${stats.contactsOrphans} orphan number(s) left as they are`)
   console.log(`exam check-ins  ${stats.checkinsConverted}/${stats.checkins} ${v}, ${stats.checkinsOrphans} orphan(s)`)
   console.log(`saved filters   ${stats.filtersConverted}/${stats.filters} ${v}`)
   console.log(`group rules     ${stats.groupsConverted}/${stats.groups} ${v}`)
   console.log(`edited bands    ${stats.progressionsConverted}/${stats.progressions} ${v}`)
+  console.log(`cup categories  ${stats.categoriesConverted}/${stats.categories} ${v}, ${stats.categoriesOrphans} orphan bound(s)`)
+  if (values['strip-values']) {
+    console.log(`ladders         ${stats.laddersStripped} ${dryRun ? 'would lose' : 'lost'} their level values, ${stats.mirrorsRefreshed} public mirror(s) ${dryRun ? 'would be refreshed' : 'refreshed'}`)
+  }
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1) })

@@ -87,7 +87,7 @@ import {
 } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { partnerAppNames } from './lib/partnerApps'
-import { normalizeActivityTags } from '@linyup/shared'
+import { normalizeActivityTags, withRankLevelIds } from '@linyup/shared'
 import {
   appointmentOccurrences,
   buildAppointmentSessionDocs,
@@ -757,10 +757,10 @@ async function seedTeam(opts: TeamSeed) {
             name: 'Training Level',
             is_primary: true,
             levels: [
-              { value: 0, label: 'Beginner', color: '#6b7280' },
-              { value: 1, label: 'Intermediate', color: '#2563eb' },
-              { value: 2, label: 'Advanced', color: '#7c3aed' },
-              { value: 3, label: 'Expert', color: '#dc2626' },
+              { label: 'Beginner', color: '#6b7280' },
+              { label: 'Intermediate', color: '#2563eb' },
+              { label: 'Advanced', color: '#7c3aed' },
+              { label: 'Expert', color: '#dc2626' },
             ],
           },
         ]
@@ -770,11 +770,11 @@ async function seedTeam(opts: TeamSeed) {
             name: 'BJJ Belt',
             is_primary: true,
             levels: [
-              { value: 0, label: 'White Belt', color: '#e5e7eb' },
-              { value: 1, label: 'Blue Belt', color: '#1d4ed8' },
-              { value: 2, label: 'Purple Belt', color: '#7e22ce' },
-              { value: 3, label: 'Brown Belt', color: '#78350f' },
-              { value: 4, label: 'Black Belt', color: '#111827' },
+              { label: 'White Belt', color: '#e5e7eb' },
+              { label: 'Blue Belt', color: '#1d4ed8' },
+              { label: 'Purple Belt', color: '#7e22ce' },
+              { label: 'Brown Belt', color: '#78350f' },
+              { label: 'Black Belt', color: '#111827' },
             ],
           },
         ]
@@ -857,7 +857,7 @@ async function seedTeam(opts: TeamSeed) {
       ...(affiliationsEnabled ? { affiliations_enabled: true } : {}),
       ...(orgId
         ? { org_id: orgId, organization_ids: [orgId], ranking_systems: [] }
-        : { ranking_systems: rankingSystemDefs }),
+        : { ranking_systems: rankingSystemDefs.map((s) => ({ ...s, levels: withRankLevelIds(s.levels) })) }),
       settings: { gamification: gamificationSettings, teamEmail: email },
       bioLinkTheme: 'light',
       bioLinkAccentColor: accentColor,
@@ -1506,7 +1506,16 @@ async function seedTeam(opts: TeamSeed) {
               subscription_type_updated_at: ts(daysFromNow(-30)),
             }
           : {}),
-        ...(rank != null ? { ranks: { [rankSystemId]: rank } } : {}),
+        // The LEVEL'S ID (docs/rank-scale-decoupling.md): `rank` is an index
+        // into the ladder, and the ladder was written with these same ids.
+        ...(rank != null
+          ? {
+              ranks: {
+                [rankSystemId]:
+                  withRankLevelIds(rankingSystemDefs.find((s) => s.id === rankSystemId)?.levels ?? [])[rank]?.id ?? rank,
+              },
+            }
+          : {}),
         tags,
       })
 
@@ -2155,11 +2164,11 @@ async function seedOrg(opts: {
       name: 'BJJ Belt',
       is_primary: true,
       levels: [
-        { value: 0, label: 'White Belt', color: '#e5e7eb' },
-        { value: 1, label: 'Blue Belt', color: '#1d4ed8' },
-        { value: 2, label: 'Purple Belt', color: '#7e22ce' },
-        { value: 3, label: 'Brown Belt', color: '#78350f' },
-        { value: 4, label: 'Black Belt', color: '#111827' },
+        { label: 'White Belt', color: '#e5e7eb' },
+        { label: 'Blue Belt', color: '#1d4ed8' },
+        { label: 'Purple Belt', color: '#7e22ce' },
+        { label: 'Brown Belt', color: '#78350f' },
+        { label: 'Black Belt', color: '#111827' },
       ],
     },
   ]
@@ -2173,7 +2182,7 @@ async function seedOrg(opts: {
       description: `${orgName} — multi-team organization managed with Linyup.`,
       plan: 'organization',
       plan_status: 'active',
-      ranking_systems: bjjBelt,
+      ranking_systems: bjjBelt.map((s) => ({ ...s, levels: withRankLevelIds(s.levels) })),
       created: ts(daysFromNow(-260)),
       createdBy: adminUid,
     })

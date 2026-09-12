@@ -1,29 +1,33 @@
 import * as assert from 'node:assert'
 import { primaryRank } from '@linyup/shared'
-import type { RankingSystem } from '@linyup/shared'
+import type { RankLevel, RankingSystem } from '@linyup/shared'
 
 // THE primary-rank rule — one for the coach's screen and the member's app. The
 // two used to disagree on which system and on what an orphaned value shows.
 //
 // Since the scale decoupling a contact names a level by RankRef: its id, or a
 // legacy number on a record the data flip has not reached. Both arms are pinned
-// here because both are live during the transition.
+// here because both are live during the transition. `RankLevel` has no `value`
+// (Phase 4); `legacy` puts the number back the way a ladder document written
+// before then still hands it over.
+
+const legacy = (level: RankLevel, value: number): RankLevel => Object.assign({ ...level }, { value })
 
 const belts: RankingSystem = {
   id: 'belts',
   name: 'Belts',
   levels: [
-    { id: 'white', value: 1, label: 'White', color: '#fff' },
-    { id: 'blue', value: 2, label: 'Blue', color: '#00f' },
-    { id: 'black', value: 4, label: 'Black', color: '#000' },
+    { id: 'white', label: 'White', color: '#fff' },
+    legacy({ id: 'blue', label: 'Blue', color: '#00f' }, 2),
+    { id: 'black', label: 'Black', color: '#000' },
   ],
 }
 const swim: RankingSystem = {
   id: 'swim',
   name: 'Swim',
   levels: [
-    { id: 'penguin', value: 1, label: 'Penguin', emoji: '🐧' },
-    { id: 'crab', value: 2, label: 'Crab', emoji: '🦀' },
+    { id: 'penguin', label: 'Penguin', emoji: '🐧' },
+    { id: 'crab', label: 'Crab', emoji: '🦀' },
   ],
 }
 
@@ -56,23 +60,21 @@ describe('primaryRank', () => {
     assert.strictEqual(primaryRank({ ranks: { belts: 'black' } }, systems), null)
   })
 
-  it('an orphaned NUMBER shows the nearest level at or below, and says so', () => {
-    const r = primaryRank({ ranks: { belts: 3 } }, [belts])
-    assert.strictEqual(r?.level.label, 'Blue')
-    assert.strictEqual(r?.value, 3)
-    assert.strictEqual(r?.orphaned, true)
-    // Below every level: nothing to stand in.
+  it('AN ORPHAN RESOLVES TO NOTHING — a number no level carries used to demote to the level below', () => {
+    // The stand-in was the silent demotion docs/rank-scale-decoupling.md
+    // names; since Phase 4 neither kind of ref has one.
+    assert.strictEqual(primaryRank({ ranks: { belts: 3 } }, [belts]), null)
     assert.strictEqual(primaryRank({ ranks: { belts: 0 } }, [belts]), null)
-  })
-
-  it('an orphaned ID has no stand-in — identities do not sort — so it resolves to nothing', () => {
     assert.strictEqual(primaryRank({ ranks: { belts: 'purple' } }, [belts]), null)
   })
 
-  it('an exact match is not orphaned', () => {
+  it('an exact match carries the stored ref beside the level', () => {
     const r = primaryRank({ ranks: { belts: 'black' } }, [belts])
     assert.strictEqual(r?.level.label, 'Black')
-    assert.strictEqual(r?.orphaned, false)
+    assert.strictEqual(r?.value, 'black')
+    const viaNumber = primaryRank({ ranks: { belts: 2 } }, [belts])
+    assert.strictEqual(viaNumber?.level.label, 'Blue')
+    assert.strictEqual(viaNumber?.value, 2)
   })
 
   it('a numeric STRING is an id, never coerced to a value', () => {

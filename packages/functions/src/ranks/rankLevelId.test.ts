@@ -1,6 +1,6 @@
 import * as assert from 'node:assert'
 import { newRankLevelId, slugRankLevelId, withRankLevelIds } from '@linyup/shared'
-import type { RankLevel } from '@linyup/shared'
+import type { RankLevel, RankLevelInput } from '@linyup/shared'
 
 // Stable level identities — Phase 1 of docs/rank-scale-decoupling.md. The
 // property that matters most is DETERMINISM: a re-seed, a re-run backfill and a
@@ -31,16 +31,16 @@ describe('slugRankLevelId', () => {
 })
 
 describe('withRankLevelIds', () => {
-  const ladder: RankLevel[] = [
-    { value: 0, label: 'White', color: '#fff' },
-    { value: 1, label: 'Blue', color: '#00f' },
-    { value: 2, label: 'Blue', color: '#00e' },
+  const ladder: RankLevelInput[] = [
+    { label: 'White', color: '#fff' },
+    { label: 'Blue', color: '#00f' },
+    { label: 'Blue', color: '#00e' },
   ]
 
   it('fills every missing id deterministically and preserves order', () => {
     const out = withRankLevelIds(ladder)
     assert.deepStrictEqual(out.map((l) => l.id), ['white', 'blue', 'blue-2'])
-    assert.deepStrictEqual(out.map((l) => l.value), [0, 1, 2])
+    assert.deepStrictEqual(out.map((l) => l.label), ['White', 'Blue', 'Blue'])
   })
 
   it('is idempotent — a second pass changes nothing', () => {
@@ -49,14 +49,14 @@ describe('withRankLevelIds', () => {
   })
 
   it('never replaces an id that is already there, even when the label changed', () => {
-    const renamed: RankLevel[] = [{ id: 'yellow', value: 1, label: 'Gold' }]
+    const renamed: RankLevel[] = [{ id: 'yellow', label: 'Gold' }]
     assert.strictEqual(withRankLevelIds(renamed)[0].id, 'yellow')
   })
 
   it('treats an existing id as taken when minting the others', () => {
-    const mixed: RankLevel[] = [
-      { id: 'blue', value: 0, label: 'White' },
-      { value: 1, label: 'Blue' },
+    const mixed: RankLevelInput[] = [
+      { id: 'blue', label: 'White' },
+      { label: 'Blue' },
     ]
     assert.deepStrictEqual(withRankLevelIds(mixed).map((l) => l.id), ['blue', 'blue-2'])
   })

@@ -1,10 +1,14 @@
 # Decoupling the rank scale — a plan
 
-**Status: Phase 1 shipped 2026-09-11 (#322). Phases 2+3 in review (every
-reader resolves a level by `RankRef` — its id, or a legacy number — and order
-is array position; `value` still present, no longer consulted for order;
-`backfill:rank-refs` is the data flip and is run by hand). Phases 4–5 next;
-Phase 6 blocked on the reassignment decision.** Decided the same day: ids are opaque strings, not a reinterpreted
+**Status: Phases 1–4 shipped — #322 (ids), #324 (every reader resolves a
+level by `RankRef` and order is array position), and Phase 4 on 2026-09-12
+(`RankLevel` has no `value`; `id` is required; `effectiveRankingSystems` mints
+a missing id on read; the orphan stand-in in `primaryRank` is gone; cup
+categories' `min_rank`/`max_rank` are `RankRef`s). What remains of the number
+is the field a ladder document written before Phase 4 still carries, read by
+`legacyRankValue` alone (`rankValueCensus.test.ts` pins its callers) until
+`backfill:rank-refs --strip-values` removes it — Phase 4b, run after the flip.
+Phase 5 next; Phase 6 blocked on the reassignment decision.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
 `value`, and installed mobile apps will show no belt between the Phase 2 data
 flip and their update — so that flip is a script run on Franco's timing, never
 a merge side effect. Written 2026-09-11 after the HMD belt
@@ -88,6 +92,9 @@ const level = exact ?? levels.slice().sort((a, b) => b.value - a.value).find((l)
 That fallback exists for good reason, and it means a renumber does not throw, does
 not blank a badge, and does not fail a test. It **demotes**. A contact resolves to
 a real, plausible, lower belt, and the only signal is a flag almost nothing reads.
+
+*(Removed in Phase 4: an orphan of either kind now resolves to nothing, and the
+`orphaned` flag is gone with the stand-in.)*
 
 ## The design
 
@@ -175,6 +182,25 @@ rewritten. This is the one irreversible step and wants its own review.
 **Phase 4 — drop `value` from the stored shape**, once nothing reads it. Assert
 it in a source-scanning test in `packages/functions`, the way
 `connect/commitSites.test.ts` pins call sites across the functions/web boundary.
+
+*Shipped 2026-09-12, in two halves.* The SHAPE half is code: `RankLevel` declares
+no `value`, `id` is required, every seed, preset and the migration write
+id-only ladders (the migration keeps the source ordinal as `legacyValue` in its
+own table, never on the ladder), and the type system refuses every ordinary
+read. The DATA half waits for the flip: a ladder document written before Phase
+4 still carries the number, `legacyRankValue` is the one sanctioned peek at it
+— the resolver's numeric arm and the two editors' holder counts, which must
+still find a contact holding the number — and `backfill:rank-refs
+--strip-values` removes the field from every ladder and refreshes the public
+mirrors once no record holds a number any more (Phase 4b; it refuses while any
+orphan number remains). Two consequences to know: `primaryRank` no longer
+stands an orphaned number in at the nearest level below — an orphan of either
+kind resolves to nothing, which is the honest answer — and
+`effectiveRankingSystems` mints a missing id on read with the same slug the
+backfill writes, so a ladder nobody backfilled still resolves (and the id it
+stores is the one the backfill would have put there). **Deploy order:**
+`backfill:rank-level-ids` is no longer a precondition of resolving, but it is
+still owed before `backfill:rank-refs`, which refuses an id-less ladder.
 
 **Phase 5 — the UI.** Drag-and-drop reorder and insert-at-position, which are now
 ordinary array edits. Also raise or remove the 10-level cap.

@@ -67,7 +67,9 @@ const db = admin.firestore()
 
 interface RankLevelLike {
   id?: string
-  value: number
+  /** Present on a ladder written before Phase 4 — this script reads what is
+   *  STORED, which is exactly the number it exists to snapshot. */
+  value?: number
   label: string
 }
 interface RankingSystemLike {

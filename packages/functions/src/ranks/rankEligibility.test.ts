@@ -20,19 +20,19 @@ import {
 
 const MONTH = 'months' as const
 
-/** A scale whose values are deliberately NOT contiguous and NOT in array
- *  order, so anything assuming `next = current + 1` — or sorting by value —
- *  fails here rather than in front of a customer. Levels are named by id;
- *  the values are legacy and never consulted for order. */
+/** A scale whose ids are named after numbers that are deliberately NOT
+ *  contiguous, so anything assuming `next = current + 1` fails here rather
+ *  than in front of a customer. Levels are named by id and ordered by
+ *  position; there is no number on a level at all (Phase 4). */
 const SYSTEM: RankingSystem = {
   id: 'test',
   name: 'Test scale',
   is_primary: true,
   levels: [
-    { id: 'none', value: 0, label: 'None' },
-    { id: 'one', value: 1, label: 'One' },
-    { id: 'two', value: 2, label: 'Two' },
-    { id: 'five', value: 5, label: 'Five' },
+    { id: 'none', label: 'None' },
+    { id: 'one', label: 'One' },
+    { id: 'two', label: 'Two' },
+    { id: 'five', label: 'Five' },
   ],
 }
 
@@ -414,7 +414,7 @@ describe('promotion readiness is a SECOND gate, asked later', () => {
       progression: none,
       system: SYSTEM,
       facts: facts(),
-      examinedLevel: 2,
+      examinedLevel: 'two',
       examAtMs: NOW,
     })
     assert.equal(r.eligibility, 'eligible')
@@ -425,7 +425,7 @@ describe('promotion readiness is a SECOND gate, asked later', () => {
       progression: withDelay,
       system: SYSTEM,
       facts: facts({ examsAtMs: [monthsAgo(5)], participation: [part('camp', 2)] }),
-      examinedLevel: 2,
+      examinedLevel: 'two',
       examAtMs: monthsAgo(5),
     })
     assert.equal(r.eligibility, 'not_eligible')
@@ -438,7 +438,7 @@ describe('promotion readiness is a SECOND gate, asked later', () => {
       progression: withDelay,
       system: SYSTEM,
       facts: facts({ examsAtMs: [monthsAgo(13)], participation: [] }),
-      examinedLevel: 2,
+      examinedLevel: 'two',
       examAtMs: monthsAgo(13),
     })
     assert.equal(r.eligibility, 'not_eligible')
@@ -451,7 +451,7 @@ describe('promotion readiness is a SECOND gate, asked later', () => {
       progression: withDelay,
       system: SYSTEM,
       facts: facts({ examsAtMs: [monthsAgo(13)], participation: [part('camp', 4)] }),
-      examinedLevel: 2,
+      examinedLevel: 'two',
       examAtMs: monthsAgo(13),
     })
     assert.equal(r.eligibility, 'eligible')

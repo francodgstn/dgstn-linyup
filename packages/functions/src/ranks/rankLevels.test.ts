@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {
   expandRankRange,
   findRankLevel,
+  legacyRankValue,
   levelLabel,
   matchesFilter,
   nextLevel,
@@ -11,31 +12,43 @@ import {
   rankRefWithin,
   ruleForLevel,
   sameRankRef,
+  type RankLevel,
   type RankProgression,
   type RankingSystem,
 } from '@linyup/shared'
 
-// Phase 2 of docs/rank-scale-decoupling.md — levels are named by identity and
-// ordered by ladder position. The ladder here is deliberately NOT in `value`
-// order, so anything still sorting by value fails here rather than in front of
+// Phases 2–4 of docs/rank-scale-decoupling.md — levels are named by identity
+// and ordered by ladder position, and `RankLevel` has no `value` at all. A
+// ladder DOCUMENT written before Phase 4 may still carry the number, which is
+// what `legacy` below stands for: the field is put back the way Firestore
+// would hand it over, outside the type, so the legacy arm is exercised on
+// exactly the shape it exists for. The values are deliberately NOT in ladder
+// order, so anything still sorting by them fails here rather than in front of
 // a studio that reordered its belts.
+
+const legacy = (level: RankLevel, value: number): RankLevel => Object.assign({ ...level }, { value })
 
 const LADDER: RankingSystem = {
   id: 'hmd',
   name: 'HMD',
   levels: [
-    { id: 'white', value: 1, label: 'White' },
-    { id: 'white-yellow', value: 15, label: 'White-Yellow' }, // inserted later: high value, early position
-    { id: 'yellow', value: 2, label: 'Yellow' },
-    { id: 'orange', value: 3, label: 'Orange' },
-    { value: 9, label: 'Legacy only' }, // an unbackfilled level keeps working by value
+    { id: 'white', label: 'White' },
+    { id: 'white-yellow', label: 'White-Yellow' }, // inserted later: no ordinal anywhere, only a position
+    legacy({ id: 'yellow', label: 'Yellow' }, 2),
+    legacy({ id: 'orange', label: 'Orange' }, 3),
+    legacy({ id: 'legacy-only', label: 'Legacy only' }, 9),
   ],
 }
 
 describe('rankLevelKey / sameRankRef / findRankLevel', () => {
-  it('a level is keyed by its id, or its value while it has none', () => {
+  it('a level is keyed by its id, and by nothing else', () => {
     assert.equal(rankLevelKey(LADDER.levels[0]), 'white')
-    assert.equal(rankLevelKey(LADDER.levels[4]), 9)
+    assert.equal(rankLevelKey(LADDER.levels[4]), 'legacy-only')
+  })
+
+  it('legacyRankValue is the one reader of the number a stored ladder still carries', () => {
+    assert.equal(legacyRankValue(LADDER.levels[4]), 9)
+    assert.equal(legacyRankValue(LADDER.levels[0]), undefined)
   })
 
   it('resolves a string as an id and a number as a legacy value, and never crosses', () => {

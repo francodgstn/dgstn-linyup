@@ -1770,7 +1770,7 @@ function ProfileTab({
                               const selected = findRankLevel(system.levels, currentValue) === level
                               return (
                                 <button
-                                  key={level.id ?? level.value}
+                                  key={level.id}
                                   type="button"
                                   onClick={() => {
                                     const next = { ...field.value }
@@ -1795,7 +1795,7 @@ function ProfileTab({
                           </div>
                         ) : (
                           <Select
-                            value={currentValue !== undefined ? String(rankLevelKey(findRankLevel(system.levels, currentValue) ?? { value: currentValue as number, label: '' })) : ''}
+                            value={currentValue !== undefined ? (findRankLevel(system.levels, currentValue)?.id ?? '') : ''}
                             onValueChange={(val) => {
                               const next = { ...field.value }
                               // Item values are the levels' keys as strings; map back
@@ -1836,7 +1836,7 @@ function ProfileTab({
                             <SelectContent>
                               <SelectItem value="">—</SelectItem>
                               {system.levels.map((level) => (
-                                <SelectItem key={level.value} value={String(level.value)} textValue={level.label}>
+                                <SelectItem key={level.id} value={level.id} textValue={level.label}>
                                   <span className="flex items-center gap-2">
                                     {level.color && (
                                       <span

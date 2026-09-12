@@ -48,9 +48,9 @@ function filterCategories(
       if (cat.min_weight != null && weight < cat.min_weight) return false
       if (cat.max_weight != null && weight > cat.max_weight) return false
     }
-    // Rank filtering: a category's `min_rank`/`max_rank` are LEGACY numbers
-    // (the category schema predates level ids) and the contact's rank is a
-    // RankRef; both resolve to a position on the ladder and are compared there.
+    // Rank filtering: a category's `min_rank`/`max_rank` and the contact's rank
+    // are RankRefs (an id, or a legacy number on a record the data flip has not
+    // reached); both resolve to a position on the ladder and are compared there.
     // A ladder we cannot find leaves the rank unchecked, exactly as an absent
     // rank does today.
     if (cat.ranking_system_id && contact.ranks) {

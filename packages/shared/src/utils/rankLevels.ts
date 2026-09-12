@@ -26,23 +26,38 @@ import type { RankLevel, RankRef, RankingSystem } from '../types/team'
  *
  * ── THE LEGACY ARM IS NOT A CONVENIENCE ─────────────────────────────────────
  *
- * A number is resolved by `value` so that a record the Phase 2 data flip has
- * not yet reached, and an installed member app that still writes numbers, keep
- * resolving to the right belt. It exists for the transition and is removed with
- * `value` in Phase 4. Nothing new may write a number.
+ * A number is resolved against the `value` a ladder document written before
+ * Phase 4 still carries, so that a record the data flip (`backfill:rank-refs`)
+ * has not yet reached, and an installed member app that still writes numbers,
+ * keep resolving to the right belt. `RankLevel` no longer declares that field
+ * (Phase 4): `legacyRankValue` below is the ONE place that peeks at it, and
+ * `rankValueCensus.test.ts` pins who may call it. Both go when the flip has
+ * run everywhere and `backfill:rank-refs --strip-values` has removed the field
+ * from the ladders (Phase 4b). Nothing new may write a number.
  */
 
 /**
- * The two fields identity resolution needs, and no more. Every helper below
- * takes this rather than a full `RankLevel`, so a mirror, a fixture or a test
- * double that carries only `value` (and maybe `id`) can be resolved against.
+ * The one field identity resolution needs. Every helper below takes this
+ * rather than a full `RankLevel`, so a mirror, a fixture or a test double
+ * that carries only an `id` can be resolved against.
  */
-export type RankLevelLike = { id?: string; value: number }
+export type RankLevelLike = { id: string }
 
-/** The ref a writer stores for `level`: its id, or the legacy value while a
- *  ladder is still unbackfilled. */
+/**
+ * The ordinal a ladder document written before Phase 4 still carries on a
+ * level, or undefined. THE ONE READER of the field `RankLevel` no longer
+ * declares — for resolving a record that still holds a number, and for the
+ * two ranking editors' holder counts, which must still find those records.
+ * Deleted with the field in Phase 4b; see the module header.
+ */
+export function legacyRankValue(level: RankLevelLike): number | undefined {
+  const v = (level as { value?: unknown }).value
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined
+}
+
+/** The ref a writer stores for `level`: its id. Nothing else, any more. */
 export function rankLevelKey(level: RankLevelLike): RankRef {
-  return level.id ?? level.value
+  return level.id
 }
 
 /** Same level? Compares identities, never values, once ids exist. */
@@ -62,7 +77,7 @@ export function findRankLevel<L extends RankLevelLike>(
 ): L | undefined {
   if (ref == null || !levels) return undefined
   if (typeof ref === 'string') return levels.find((l) => l.id === ref)
-  return levels.find((l) => l.value === ref)
+  return levels.find((l) => legacyRankValue(l) === ref)
 }
 
 /** Position of `ref` in the ladder, or -1. Array order IS the order. */

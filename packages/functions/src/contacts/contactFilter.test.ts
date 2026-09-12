@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {
+  type RankLevel,
   EMPTY_CONTACT_FILTER,
   activeFilterKeys,
   calcAgeYears,
@@ -167,10 +168,12 @@ describe('matchesFilter — age', () => {
 })
 
 describe('matchesFilter — rank', () => {
-  // A level VALUE is an ordinal inside its own system and means nothing across
-  // systems. Two scales of different lengths, deliberately non-contiguous, so a
-  // band cannot be mistaken for "every integer between".
-  const HWAL = [{ value: 0 }, { value: 1 }, { value: 2 }, { value: 5 }, { value: 9 }]
+  // THE LEGACY ARM: records still holding NUMBERS, matched with NO ladder in
+  // context — the numeric-vs-numeric compare a record the data flip has not
+  // reached still gets. A number is an ordinal inside its own system and means
+  // nothing across systems; the scales here are deliberately non-contiguous,
+  // so a band cannot be mistaken for "every integer between". The id arm, with
+  // a ladder in context, is pinned in ranks/rankLevels.test.ts.
 
   it('exact levels still match only what was ticked', () => {
     const f = filter({ rankFilter: { hwal: [2, 5] } })
@@ -302,54 +305,66 @@ describe('rankFilterIsActive — ONE answer, because there was briefly two', () 
 })
 
 describe('expandRankRange — the mirror an older resolver reads', () => {
-  const HWAL = [{ value: 0 }, { value: 1 }, { value: 2 }, { value: 5 }, { value: 9 }]
+  // Five levels named so their POSITION is legible: a mirror is a list of ids
+  // in ladder order and nothing about it is arithmetic (Phase 4 — there is no
+  // number left on a level to order by).
+  const HWAL: RankLevel[] = [
+    { id: 'l0', label: 'L0' },
+    { id: 'l1', label: 'L1' },
+    { id: 'l2', label: 'L2' },
+    { id: 'l5', label: 'L5' },
+    { id: 'l9', label: 'L9' },
+  ]
+  const ctx = { nowMs: NOW, rankingSystems: [{ id: 'hwal', name: 'Hwal', levels: HWAL }] }
 
-  it('takes the tail of a non-contiguous scale, not every integer', () => {
-    assert.deepEqual(expandRankRange(HWAL, { min: 2, max: null }), [2, 5, 9])
+  it('takes the tail of the ladder from a lower bound', () => {
+    assert.deepEqual(expandRankRange(HWAL, { min: 'l2', max: null }), ['l2', 'l5', 'l9'])
   })
 
   it('takes the head for an upper bound', () => {
-    assert.deepEqual(expandRankRange(HWAL, { min: null, max: 2 }), [0, 1, 2])
+    assert.deepEqual(expandRankRange(HWAL, { min: null, max: 'l2' }), ['l0', 'l1', 'l2'])
   })
 
   it('is inclusive at both ends', () => {
-    assert.deepEqual(expandRankRange(HWAL, { min: 1, max: 5 }), [1, 2, 5])
+    assert.deepEqual(expandRankRange(HWAL, { min: 'l1', max: 'l5' }), ['l1', 'l2', 'l5'])
   })
 
   it('an all-open band mirrors the whole scale', () => {
-    assert.deepEqual(expandRankRange(HWAL, { min: null, max: null }), [0, 1, 2, 5, 9])
+    assert.deepEqual(expandRankRange(HWAL, { min: null, max: null }), ['l0', 'l1', 'l2', 'l5', 'l9'])
   })
 
   it('a band matching nothing mirrors an empty list', () => {
-    assert.deepEqual(expandRankRange(HWAL, { min: 20, max: null }), [])
+    assert.deepEqual(expandRankRange(HWAL, { min: 'l20', max: null }), [])
   })
 
-  it('orders by POSITION in the ladder, never by value — the scale decoupling reversed this', () => {
-    // Array order IS the order since docs/rank-scale-decoupling.md: a studio
-    // that reorders its belts (Phase 5) means the new order, and `value` is an
-    // identity of no rank. A band "from 1" therefore covers whatever sits at
-    // and after the level whose value is 1 — here, only itself.
-    const jumbled = [{ value: 9 }, { value: 0 }, { value: 5 }, { value: 2 }, { value: 1 }]
-    assert.deepEqual(expandRankRange(jumbled, { min: 1, max: null }), [1])
-    assert.deepEqual(expandRankRange(jumbled, { min: null, max: 5 }), [9, 0, 5])
+  it('orders by POSITION in the ladder — the scale decoupling made array order the order', () => {
+    // A studio that reorders its belts (Phase 5) means the new order. A band
+    // "from l1" therefore covers whatever sits at and after l1 — here, only
+    // itself — and "up to l5" whatever sits before it, in that order.
+    const jumbled: RankLevel[] = [
+      { id: 'l9', label: 'L9' }, { id: 'l0', label: 'L0' }, { id: 'l5', label: 'L5' }, { id: 'l2', label: 'L2' }, { id: 'l1', label: 'L1' },
+    ]
+    assert.deepEqual(expandRankRange(jumbled, { min: 'l1', max: null }), ['l1'])
+    assert.deepEqual(expandRankRange(jumbled, { min: null, max: 'l5' }), ['l9', 'l0', 'l5'])
   })
 
-  it('a level with an id is mirrored BY ITS ID, a legacy one by its value', () => {
-    const mixed = [{ id: 'white', value: 0 }, { value: 1 }, { id: 'blue', value: 2 }]
-    assert.deepEqual(expandRankRange(mixed, { min: null, max: null }), ['white', 1, 'blue'])
-    assert.deepEqual(expandRankRange(mixed, { min: 1, max: 'blue' }), [1, 'blue'])
+  it('a legacy NUMBER as a bound still names the level whose document carries it — mirrored BY ID', () => {
+    const legacy = (level: RankLevel, value: number): RankLevel => Object.assign({ ...level }, { value })
+    const mixed = [{ id: 'white', label: 'White' }, legacy({ id: 'yellow', label: 'Yellow' }, 1), { id: 'blue', label: 'Blue' }]
+    assert.deepEqual(expandRankRange(mixed, { min: null, max: null }), ['white', 'yellow', 'blue'])
+    assert.deepEqual(expandRankRange(mixed, { min: 1, max: 'blue' }), ['yellow', 'blue'])
   })
 
   it('THE MIRROR AND THE BAND AGREE while the scale is unchanged', () => {
     // The property the whole two-key design rests on: an old resolver reading
     // the mirror reaches the same verdict as a new one reading the band.
-    const range = { min: 2, max: null }
+    const range = { min: 'l2', max: null }
     const mirror = expandRankRange(HWAL, range)
-    for (const { value } of HWAL) {
-      const c = contact({ ranks: { hwal: value } })
-      const viaMirror = matchesFilter(c, filter({ rankFilter: { hwal: mirror } }), { nowMs: NOW })
-      const viaBand = matchesFilter(c, filter({ rankRanges: { hwal: range } }), { nowMs: NOW })
-      assert.equal(viaMirror, viaBand, `disagreed at level ${value}`)
+    for (const { id } of HWAL) {
+      const c = contact({ ranks: { hwal: id } })
+      const viaMirror = matchesFilter(c, filter({ rankFilter: { hwal: mirror } }), ctx)
+      const viaBand = matchesFilter(c, filter({ rankRanges: { hwal: range } }), ctx)
+      assert.equal(viaMirror, viaBand, `disagreed at level ${id}`)
     }
   })
 })

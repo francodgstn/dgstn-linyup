@@ -64,7 +64,14 @@ import {
   siteI18nDocId,
   normalizeActivityTags,
   withRankLevelIds,
+  type RankLevelInput,
 } from '@linyup/shared'
+
+/** A lead profile may still list a `value` on its levels (older profiles do);
+ *  the ladder is written WITHOUT it — docs/rank-scale-decoupling.md, Phase 4. */
+function leadLevels(levels: ReadonlyArray<{ value?: number; label: string; color: string }>): RankLevelInput[] {
+  return levels.map(({ value: _legacy, ...level }) => level)
+}
 import {
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
   AFFILIATION_TYPES_SUBCOLLECTION,
@@ -856,7 +863,7 @@ async function seedLeadTenant(profile: LeadProfile) {
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       affiliations_enabled: true,
       ranking_systems: rankingSystem
-        ? [{ ...rankingSystem, is_primary: true, levels: withRankLevelIds(rankingSystem.levels) }]
+        ? [{ ...rankingSystem, is_primary: true, levels: withRankLevelIds(leadLevels(rankingSystem.levels)) }]
         : [],
       settings: {
         gamification: profile.gamification,
@@ -1836,7 +1843,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         // The LEVEL'S ID (docs/rank-scale-decoupling.md): `rank` is an index into
         // the ladder, and the ladder was written with these same ids.
         ...(rank != null && rankSystemId && rankingSystem
-          ? { ranks: { [rankSystemId]: withRankLevelIds(rankingSystem.levels)[rank]?.id ?? rank } }
+          ? { ranks: { [rankSystemId]: withRankLevelIds(leadLevels(rankingSystem.levels))[rank]?.id ?? rank } }
           : {}),
         tags,
       })

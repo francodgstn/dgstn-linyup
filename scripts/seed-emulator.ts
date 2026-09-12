@@ -457,10 +457,10 @@ async function seedTeam(opts: {
             name: 'Training Level',
             is_primary: true,
             levels: [
-              { value: 0, label: 'Beginner', color: '#6b7280' },
-              { value: 1, label: 'Intermediate', color: '#2563eb' },
-              { value: 2, label: 'Advanced', color: '#7c3aed' },
-              { value: 3, label: 'Expert', color: '#dc2626' },
+              { label: 'Beginner', color: '#6b7280' },
+              { label: 'Intermediate', color: '#2563eb' },
+              { label: 'Advanced', color: '#7c3aed' },
+              { label: 'Expert', color: '#dc2626' },
             ],
           },
         ]
@@ -470,11 +470,11 @@ async function seedTeam(opts: {
             name: 'BJJ Belt',
             is_primary: true,
             levels: [
-              { value: 0, label: 'White Belt', color: '#e5e7eb' },
-              { value: 1, label: 'Blue Belt', color: '#1d4ed8' },
-              { value: 2, label: 'Purple Belt', color: '#7e22ce' },
-              { value: 3, label: 'Brown Belt', color: '#78350f' },
-              { value: 4, label: 'Black Belt', color: '#111827' },
+              { label: 'White Belt', color: '#e5e7eb' },
+              { label: 'Blue Belt', color: '#1d4ed8' },
+              { label: 'Purple Belt', color: '#7e22ce' },
+              { label: 'Brown Belt', color: '#78350f' },
+              { label: 'Black Belt', color: '#111827' },
             ],
           },
         ]
@@ -2642,11 +2642,11 @@ async function seedOrg() {
       name: 'BJJ Belt',
       is_primary: true,
       levels: [
-        { value: 0, label: 'White Belt', color: '#e5e7eb' },
-        { value: 1, label: 'Blue Belt', color: '#1d4ed8' },
-        { value: 2, label: 'Purple Belt', color: '#7e22ce' },
-        { value: 3, label: 'Brown Belt', color: '#78350f' },
-        { value: 4, label: 'Black Belt', color: '#111827' },
+        { label: 'White Belt', color: '#e5e7eb' },
+        { label: 'Blue Belt', color: '#1d4ed8' },
+        { label: 'Purple Belt', color: '#7e22ce' },
+        { label: 'Brown Belt', color: '#78350f' },
+        { label: 'Black Belt', color: '#111827' },
       ],
     },
   ]

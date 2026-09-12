@@ -973,7 +973,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
                       option with a label, never an empty trigger. */}
                   <SelectItem value="" className="text-xs">{t('filterRankAny')}</SelectItem>
                   {ordered.map((level) => (
-                    <SelectItem key={level.id ?? level.value} value={String(rankLevelKey(level))} className="text-xs">
+                    <SelectItem key={level.id} value={String(rankLevelKey(level))} className="text-xs">
                       {level.label}
                     </SelectItem>
                   ))}
@@ -986,7 +986,7 @@ function RankFilterContent({ rankingSystems, rankFilter, rankRanges, onChange }:
         ordered.map((level) => {
           const ticked = selected.some((v) => sameRankRef(v, rankLevelKey(level)))
           return (
-          <button key={level.id ?? level.value} type="button" onClick={() => toggle(rankLevelKey(level))}
+          <button key={level.id} type="button" onClick={() => toggle(rankLevelKey(level))}
             className="flex items-center gap-2.5 w-full px-2 py-1.5 text-sm rounded hover:bg-accent transition-colors text-left"
           >
             <span className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
@@ -2214,11 +2214,11 @@ function BulkSetRankDialog({
 }: {
   open: boolean; onOpenChange: (v: boolean) => void
   rankingSystems: RankingSystem[]; count: number
-  onConfirm: (systemId: string, value: number | null) => Promise<void>
+  onConfirm: (systemId: string, value: RankRef | null) => Promise<void>
 }) {
   const t = useTranslations('Contacts')
   const [systemId, setSystemId] = useState(rankingSystems[0]?.id ?? '')
-  const [level, setLevel] = useState<number | 'clear' | null>(null)
+  const [level, setLevel] = useState<RankRef | 'clear' | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -2262,10 +2262,10 @@ function BulkSetRankDialog({
               {useButtons ? (
                 <div className="flex flex-wrap gap-1.5">
                   {system.levels.map((l) => (
-                    <button key={l.value}
-                      onClick={() => setLevel(level === l.value ? null : l.value)}
+                    <button key={l.id}
+                      onClick={() => setLevel(sameRankRef(level, rankLevelKey(l)) ? null : rankLevelKey(l))}
                       className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg border text-sm font-medium transition-colors ${
-                        level === l.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground'
+                        sameRankRef(level, rankLevelKey(l)) ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       {l.color && <div className="h-2.5 w-2.5 rounded-full shrink-0 border border-border" style={{ background: l.color }} />}
@@ -2275,13 +2275,16 @@ function BulkSetRankDialog({
                 </div>
               ) : (
                 <Select
-                  value={typeof level === 'number' ? String(level) : ''}
-                  onValueChange={(v) => setLevel(v === '' ? null : Number(v))}
+                  value={level != null && level !== 'clear' ? String(level) : ''}
+                  onValueChange={(v) => {
+                    const picked = system.levels.find((l) => String(rankLevelKey(l)) === v)
+                    setLevel(picked ? rankLevelKey(picked) : null)
+                  }}
                 >
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {system.levels.map((l) => (
-                      <SelectItem key={l.value} value={String(l.value)} textValue={l.label}>
+                      <SelectItem key={l.id} value={String(rankLevelKey(l))} textValue={l.label}>
                         <span className="flex items-center gap-2">
                           {l.color && <span className="inline-block h-2.5 w-2.5 rounded-full border border-border" style={{ background: l.color }} />}
                           {l.label}

@@ -553,7 +553,6 @@ interface SubDef {
   price: number | null
 }
 interface RankLevel {
-  value: number
   label: string
   color: string
 }
@@ -589,11 +588,11 @@ interface SectorProfile {
 }
 
 const BELT_LEVELS: RankLevel[] = [
-  { value: 0, label: 'White Belt', color: '#e5e7eb' },
-  { value: 1, label: 'Blue Belt', color: '#1d4ed8' },
-  { value: 2, label: 'Purple Belt', color: '#7e22ce' },
-  { value: 3, label: 'Brown Belt', color: '#78350f' },
-  { value: 4, label: 'Black Belt', color: '#111827' },
+  { label: 'White Belt', color: '#e5e7eb' },
+  { label: 'Blue Belt', color: '#1d4ed8' },
+  { label: 'Purple Belt', color: '#7e22ce' },
+  { label: 'Brown Belt', color: '#78350f' },
+  { label: 'Black Belt', color: '#111827' },
 ]
 
 const SECTOR_PROFILES: SectorProfile[] = [
@@ -801,10 +800,10 @@ const SECTOR_PROFILES: SectorProfile[] = [
       id: 'performance-level',
       name: 'Performance Level',
       levels: [
-        { value: 0, label: 'Foundations', color: '#94a3b8' },
-        { value: 1, label: 'Scaled', color: '#2563eb' },
-        { value: 2, label: 'Rx', color: '#b45309' },
-        { value: 3, label: 'Elite', color: '#dc2626' },
+        { label: 'Foundations', color: '#94a3b8' },
+        { label: 'Scaled', color: '#2563eb' },
+        { label: 'Rx', color: '#b45309' },
+        { label: 'Elite', color: '#dc2626' },
       ],
     },
     subscriptions: [
@@ -951,10 +950,10 @@ const SECTOR_PROFILES: SectorProfile[] = [
       id: 'rating-band',
       name: 'Rating Band',
       levels: [
-        { value: 0, label: '1.0–2.0 Beginner', color: '#94a3b8' },
-        { value: 1, label: '2.5–3.0 Improver', color: '#2563eb' },
-        { value: 2, label: '3.5–4.0 Intermediate', color: '#16a34a' },
-        { value: 3, label: '4.5–5.0 Advanced', color: '#dc2626' },
+        { label: '1.0–2.0 Beginner', color: '#94a3b8' },
+        { label: '2.5–3.0 Improver', color: '#2563eb' },
+        { label: '3.5–4.0 Intermediate', color: '#16a34a' },
+        { label: '4.5–5.0 Advanced', color: '#dc2626' },
       ],
     },
     subscriptions: [
@@ -1236,9 +1235,9 @@ const SECTOR_PROFILES: SectorProfile[] = [
       id: 'reformer-level',
       name: 'Reformer Level',
       levels: [
-        { value: 0, label: 'Level 1', color: '#94a3b8' },
-        { value: 1, label: 'Level 2', color: '#0d9488' },
-        { value: 2, label: 'Level 3', color: '#7c3aed' },
+        { label: 'Level 1', color: '#94a3b8' },
+        { label: 'Level 2', color: '#0d9488' },
+        { label: 'Level 3', color: '#7c3aed' },
       ],
     },
     subscriptions: [
@@ -1385,10 +1384,10 @@ const SECTOR_PROFILES: SectorProfile[] = [
       id: 'dance-grade',
       name: 'Grade',
       levels: [
-        { value: 0, label: 'Pre-Bronze', color: '#a16207' },
-        { value: 1, label: 'Bronze', color: '#b45309' },
-        { value: 2, label: 'Silver', color: '#94a3b8' },
-        { value: 3, label: 'Gold', color: '#eab308' },
+        { label: 'Pre-Bronze', color: '#a16207' },
+        { label: 'Bronze', color: '#b45309' },
+        { label: 'Silver', color: '#94a3b8' },
+        { label: 'Gold', color: '#eab308' },
       ],
     },
     subscriptions: [
