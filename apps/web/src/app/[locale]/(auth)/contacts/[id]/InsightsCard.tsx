@@ -117,7 +117,7 @@ function SummaryBlock({ contact }: { contact: Contact }) {
     // flex-1 so any height the card has to spare lands here rather than in
     // the gap above the chart. A real four-to-six-sentence summary grows past
     // the floor on its own.
-    <div className="min-h-32 flex-1 border-b p-5">
+    <div className="min-h-32 flex-1 p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-primary" />
