@@ -93,43 +93,6 @@ export function countByField(
 }
 
 /**
- * Count active contacts by acquisition stage
- * ('trial_booked' | 'trial_attended' | 'joined').
- */
-export async function countContactsByStage(
-  db: admin.firestore.Firestore,
-  teamId: string,
-): Promise<Record<string, number>> {
-  const contacts = await getActiveContacts(db, teamId)
-  return countByField(contacts, 'acquisition_stage')
-}
-
-/**
- * Count active contacts by subscription_type_id.
- */
-export async function countContactsBySubscriptionType(
-  db: admin.firestore.Firestore,
-  teamId: string,
-): Promise<Record<string, number>> {
-  const contacts = await getActiveContacts(db, teamId)
-  return countByField(contacts, 'subscription_type_id')
-}
-
-/**
- * Count active contacts (with a subscription) by subscription_recurrence.
- */
-export async function countContactsByRecurrence(
-  db: admin.firestore.Firestore,
-  teamId: string,
-): Promise<Record<string, number>> {
-  const contacts = await getActiveContacts(db, teamId)
-  return countByField(
-    contacts.filter((c) => c.subscription_type_id),
-    'subscription_recurrence',
-  )
-}
-
-/**
  * Counts contacts by a set of keys derived from each contact via `getKeys`.
  * Each key returned by `getKeys` is deduplicated per contact (using a Set)
  * before incrementing, so a contact that maps to the same key twice counts once.

@@ -6,7 +6,7 @@
  *
  * ── WHY THIS SERIES AND NOT A REVENUE OR BOOKINGS TREND ─────────────────────
  *
- * A studio's trends read `weekly_reports` — a per-team rollup that no
+ * A studio's trends read `team_weekly_reports` — a per-team rollup that no
  * organisation has an equivalent of. Aggregating sixteen studios' weeks in the
  * browser to draw one line is a fan-out this page deliberately refuses (see the
  * counts note in `data.ts`), and doing it properly means a Cloud Function
