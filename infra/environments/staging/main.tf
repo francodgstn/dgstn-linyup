@@ -31,14 +31,20 @@ locals {
     "billingbudgets.googleapis.com",
     "aiplatform.googleapis.com", # Vertex AI — in-app assistant
     "translate.googleapis.com",  # Cloud Translation — site translation Google provider
-    # App Check (docs/app-check-rollout.md). BOTH are needed to register the web
-    # app: firebaseappcheck serves App Check itself, and the web provider is
-    # reCAPTCHA ENTERPRISE — the Console no longer offers plain reCAPTCHA v3 for a
-    # new web registration, and an Enterprise key lives in its own API. Declared
-    # here rather than clicked through the Console's "enable this API?" prompt, so
-    # a rebuilt project can register App Check without that detour.
-    "firebaseappcheck.googleapis.com",
-    "recaptchaenterprise.googleapis.com",
+    # App Check — NOT ENABLED, deliberately (docs/app-check-rollout.md).
+    #
+    # App Check is implemented and inert: no site key is deployed, both enforce
+    # flags are false. reCAPTCHA Enterprise is a THIRD-PARTY PROVIDER with its own
+    # billing, and adopting one before there is a threat to answer is the cost
+    # this defers — so the APIs it needs stay undeclared too, rather than the
+    # project carrying an enabled dependency nothing calls.
+    #
+    # Uncomment BOTH when you do step 1 of the runbook (register the web app):
+    # firebaseappcheck serves App Check itself, and an Enterprise site key lives
+    # in its own API. Enabling them here rather than through the Console's
+    # "enable this API?" prompt keeps the declared state of the project complete.
+    # "firebaseappcheck.googleapis.com",
+    # "recaptchaenterprise.googleapis.com",
   ]
 }
 

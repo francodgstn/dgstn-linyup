@@ -6,6 +6,49 @@ enforcement on before the client can produce tokens locks out real users.
 
 See finding #3 in [`security-audit-2026-07.md`](./security-audit-2026-07.md) for the why.
 
+## Why it is still off — a decision, not a backlog item (2026-09-12)
+
+**reCAPTCHA Enterprise is a third-party provider with its own billing, and adopting one
+before there is a threat to answer is a cost with no return.** Deferred deliberately, and
+nothing in the tree moves toward it: no site key is deployed, both enforce flags are false,
+the `apphosting` key slot is commented out, and even the two Google APIs it would need are
+left commented in `infra/environments/*/main.tf`. There is no half-adopted state to
+maintain, and the runbook below is a cold start whenever you want it.
+
+**What already defends the same callables**, which is why deferring is safe rather than
+merely cheap — every one of them is IP-rate-limited:
+
+| Rail | Limit |
+|---|---|
+| Checkouts — drop-in, membership, product, course, appointment, gift-card buy | 30 / IP / hour, a separate bucket per rail (`CHECKOUT_RATE_LIMIT_PER_HOUR`) |
+| `checkGiftCard`, `previewPromoCode` | 30 / IP / hour, own buckets |
+| `submitForm` | 10 / form / IP / hour (its own limiter, `SUBMIT_RATE_LIMIT_MAX`) |
+| `listAvailability` | 240 / IP / hour |
+
+Plus `payments_enabled` **fails closed**, so a tenant with no chargeable Connect account
+has no priced door to attack at all.
+
+App Check buys exactly ONE thing over that: defence against an attacker who defeats IP
+keying — a botnet or a rotating residential proxy pool, for whom 30/hour becomes
+30,000/hour. **That attacker, and only that attacker, is what this defers.**
+
+**The triggers that mean "now":**
+
+1. **Gift cards go on sale for real money.** `checkGiftCard` is an oracle — a code in, valid
+   + balance out — so rotating IPs can enumerate live cards and drain them, and you would
+   learn about it from a balance rather than an alert. The risk scales with outstanding
+   gift-card value, which is why it is nil today and first to bite.
+2. **First real payment volume, or a public marketing push.** Junk contacts through
+   `submitForm`, and Stripe Session floods that park appointment holds on real slots for the
+   hold window.
+
+**A provider is not the only answer to trigger 1.** The gift-card oracle can be closed
+without adopting anything: count attempts **per CODE** as well as per IP (an enumeration
+sweep is many codes from many IPs but few hits, which a per-code counter sees and a per-IP
+one cannot), or stop returning the balance to an unauthenticated caller. Prefer that first —
+it is targeted at the actual risk, costs nothing per month, and needs no third party. Reach
+for App Check when the threat is broad rather than one endpoint.
+
 ## Current state (as shipped)
 
 App Check is inert today — nothing is rejected:
@@ -51,10 +94,10 @@ enforcement is the separate `APP_CHECK_ENFORCE_MOBILE` flip (see Caveats).
    embed) linked to the project. Do this for the **staging** project first.
 
    The two APIs it needs — `firebaseappcheck.googleapis.com` and
-   `recaptchaenterprise.googleapis.com` — are declared in `infra/environments/*/main.tf`, so
-   `terraform apply` for the environment enables them ahead of the registration. If the
-   Console still offers to enable one, that environment has not been applied since they were
-   added; enabling it there is harmless and Terraform will converge.
+   `recaptchaenterprise.googleapis.com` — sit **commented out** in the `apis` list of
+   `infra/environments/*/main.tf` (see the deferral note above). Uncomment both and
+   `terraform apply` the environment BEFORE registering, so the declared state of the
+   project stays complete rather than the Console enabling them behind Terraform's back.
 
    **Enterprise, not plain v3 — this matters to the client code.** The Console no longer
    offers reCAPTCHA v3 for a new web registration, and `apps/web/src/lib/app-check.ts` uses

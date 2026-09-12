@@ -647,12 +647,17 @@ under any quota.
 
 ## 13. Secondary limits, roughly in the order they bind
 
-- **App Check is implemented but off** (`docs/app-check-rollout.md`) ✓. Public
-  routes query Firestore directly from the browser via
-  `collectionGroup('public_profile')`. Until enforcement is on, anyone can drive
-  unmetered reads against the bill from a script. Cheapest risk to close, and
-  the runbook exists; what is left is a Console registration nobody can script
-  (the code, the key's deployment slot and the runbook are all in place).
+- **App Check is implemented but off**, deferred by decision
+  (`docs/app-check-rollout.md` → "Why it is still off") ✓. Public routes query
+  Firestore directly from the browser via `collectionGroup('public_profile')`,
+  so a script can drive unmetered reads against the bill. **Correction:
+  enforcement as built does NOT close that** — `enforceAppCheck` guards
+  CALLABLES, while direct browser reads need App Check enforced on the Cloud
+  Firestore API, a per-API Console toggle that is **blocked until the member app
+  ships native attestation** (the Expo app reads Firestore directly and cannot
+  attest, and that toggle cannot distinguish callers). So the callable flip
+  answers the fraud axis; this cost axis waits on the mobile native build either
+  way.
 - **There was no `maxInstances` on any Cloud Function** ✓ — `setGlobalOptions`
   set only the region. A trigger loop or a traffic spike scaled into the
   regional quota with no ceiling. Now capped (§14); the billing budget module is
@@ -678,16 +683,16 @@ under any quota.
 | # | Step | Size | Status |
 |---|---|---|---|
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
-| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check: everything scriptable is now done** (2026-09-12) — the deployment slot for the site key exists in `apps/web/apphosting{,.prod,.sandbox}.yaml`, the mobile flag is declared beside the web flag in every deployed `.env`, and the runbook's step 2 names the file and warns that BUILD availability is the load-bearing half. What is left is not code: register the web app in the Firebase Console (step 1), paste the key, redeploy, watch `[appcheck-monitor]`, then flip. |
+| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget:** the module is applied in prod terraform — confirm `budget_amount` and the alert recipients. **App Check: DEFERRED by decision** (2026-09-12), not pending. reCAPTCHA Enterprise is a third-party provider with its own billing, and the web-flagged callables (grep them — see the runbook's Scope) are already IP-rate-limited (30/IP/hour, `submitForm` 10/form/IP/hour) behind a `payments_enabled` gate that fails closed — App Check adds defence against an attacker who defeats IP keying, and nothing else. Nothing is half-adopted: no key, flags false, key slot and both Google APIs commented out. The triggers and the provider-free alternative for the gift-card oracle are in `docs/app-check-rollout.md` → "Why it is still off". The rollout wiring it needed (the key's deployment slot, the BUILD-availability trap, the Enterprise provider swap) is done, so the flip is a cold start whenever wanted. |
 | 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | **DONE 2026-09-11** — all four, plus both of the reminder narrowings, on shared machinery (`utils/tenantFanOut.ts`). See §9 for the table and for the `archived_at` bug the wiring turned up. |
 | 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
 | 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
 
-Steps 1, 2, 3 and 5 are done. What remains on this list needs a human in a
-console, not a commit: **turning App Check enforcement on** (step 2's third
-part — register the web app, paste the site key into the slot that now exists,
-confirm tokens arrive, flip the flag) and confirming the prod budget's amount
-and recipients. None of it was architectural — the data model is sound, and nothing here
+Steps 1, 3, 4 and 5 are done, and step 2 is done but for two open items, only
+one of which is work: **confirming the prod budget's amount and recipients**,
+and **App Check, which is deferred by decision rather than outstanding** — see
+the row above and the runbook's "Why it is still off". None of it was
+architectural — the data model is sound, and nothing here
 required reshaping collections or the tenant boundary.
 
 One consequence worth stating for whoever deploys: the four scheduled jobs now

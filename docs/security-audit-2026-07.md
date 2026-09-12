@@ -105,17 +105,31 @@ No `enforceAppCheck` existed anywhere; unauthenticated Firestore-writing callabl
 defended only by per-IP hourly rate limits. **Implemented:** a reCAPTCHA Enterprise App Check
 provider on the web client (`apps/web/src/lib/app-check.ts` + `AppCheckProvider`, mounted in
 the locale layout; no-ops under the emulator or when the key is unset), and App Check on the
-**web-only** public callables — `createDropInCheckout`, `createMembershipCheckout`,
-`createProductCheckout`, `createCourseCheckout`, and `submitForm` — via
-`enforceAppCheck: process.env.APP_CHECK_ENFORCE === 'true'` with a `monitorAppCheck()` log in
-each (`utils/appCheck.ts`). **Ships in monitor mode** (`APP_CHECK_ENFORCE=false` in all
-`.env.*`): missing tokens are logged, not rejected. Rollout: provision the reCAPTCHA key →
-confirm `[appcheck-monitor]` logs show tokens → set `APP_CHECK_ENFORCE=true` (staging first).
-`sendContactVerificationCode` is deliberately **excluded** because the Expo mobile app calls
-it and cannot produce attestation tokens; mobile enforcement needs native App Check
-(`@react-native-firebase/app-check` + an EAS dev build) as a separate phase. Turning
-enforcement on is a staged, manual procedure — see the runbook:
-[`app-check-rollout.md`](./app-check-rollout.md).
+**web-only** public callables via `enforceAppCheck: APP_CHECK_ENFORCE` with a
+`monitorAppCheck()` log in each (`utils/appCheck.ts`). **Derive that callable set by grep, not
+from a list here** — an earlier version of this paragraph named five of them and went stale:
+
+```bash
+grep -rn 'enforceAppCheck: APP_CHECK_ENFORCE' packages/functions/src | grep -v _MOBILE
+```
+
+**Ships in monitor mode** (`APP_CHECK_ENFORCE=false` in all `.env.*`): missing tokens are
+logged, not rejected.
+
+The mobile-reachable callables — `sendContactVerificationCode` and `loginContactWithCode`,
+the member app's only login path, which the Expo JS SDK cannot attest — are **on a separate
+flag**, `APP_CHECK_ENFORCE_MOBILE`, which `APP_CHECK_ENFORCE=true` cannot reach.
+(This paragraph previously said they were "deliberately excluded" while the code had them on
+the SAME flag as the web callables, so turning web enforcement on would have locked the app
+out. The split is the fix; `auth/appCheckMobile.test.ts` re-derives the set from source and
+fails the build if a mobile-reachable callable lands on the bare web flag.) Mobile
+enforcement additionally needs native App Check (`@react-native-firebase/app-check` + an EAS
+dev build) as a separate phase.
+
+**Enforcement is deferred by decision, not merely un-done** — reCAPTCHA Enterprise is a
+third-party provider with its own billing, and these callables are already IP-rate-limited.
+The reasoning, the residual risk and the triggers that change the answer are in the runbook:
+[`app-check-rollout.md`](./app-check-rollout.md) → "Why it is still off".
 
 ### 4 — Event-invitation tokens never expired + PII leak (M, fixed)
 `events/index.ts` minted `crypto.randomBytes(32)` tokens with no expiry, and
