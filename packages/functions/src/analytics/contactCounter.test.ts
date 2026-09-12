@@ -12,6 +12,17 @@ import { contactIsLiveForCount, liveContactCountDeltas } from '@linyup/shared'
 
 const live = (teamId: string) => ({ teamId, deleted_at: null, archived_at: null })
 
+/** Index just past the `)` that balances the `(` opening the call at `open`. */
+function closeOfCall(src: string, open: number): number {
+  assert.notStrictEqual(open, -1, 'the reconciliation is still one Promise.all call')
+  let depth = 0
+  for (let i = src.indexOf('(', open); i < src.length; i++) {
+    if (src[i] === '(') depth++
+    else if (src[i] === ')' && --depth === 0) return i + 1
+  }
+  return assert.fail('the reconciliation call never closes')
+}
+
 describe('live contact counter', () => {
   it('counts a contact with both markers clear, and nothing else', () => {
     assert.strictEqual(contactIsLiveForCount(live('t1')), true)
@@ -52,10 +63,18 @@ describe('live contact counter', () => {
   })
 
   it('the nightly reconciliation writes an absolute value, never an increment', () => {
-    const src = readFileSync(resolve(__dirname, 'platformMetrics.ts'), 'utf8')
-    const block = /RECONCILE THE STORED COUNTER[\s\S]*?\n    \)\n/.exec(src)?.[0]
-    assert.ok(block, 'the reconciliation block is still there')
-    assert.match(block!, /live: contactCount\.get\(id\) \?\? 0/)
-    assert.doesNotMatch(block!, /FieldValue\.increment/)
+    // Read as LF whatever the checkout: `core.autocrlf` hands a Windows working
+    // tree CRLF, and a `\n` in a source anchor then never matches — the same
+    // normalisation `commitSites.test.ts` and `gate.test.ts` do.
+    const src = readFileSync(resolve(__dirname, 'platformMetrics.ts'), 'utf8').replace(/\r\n/g, '\n')
+    const start = src.indexOf('RECONCILE THE STORED COUNTER')
+    assert.notStrictEqual(start, -1, 'the reconciliation block is still there')
+    // The block is the marker comment plus the ONE statement after it, ending
+    // at the balanced close of that `Promise.all(` — not at a `)` on some
+    // indentation, which a reformat moves and which then reports the block
+    // gone while it stands.
+    const block = src.slice(start, closeOfCall(src, src.indexOf('Promise.all(', start)))
+    assert.match(block, /live: contactCount\.get\(id\) \?\? 0/)
+    assert.doesNotMatch(block, /FieldValue\.increment/)
   })
 })
