@@ -54,12 +54,51 @@ resource "google_billing_budget" "this" {
     }
   }
 
+  # An `all_updates_rule` is needed for EITHER a named channel or the cost-feed
+  # topic, so the block is emitted when either is asked for and each field is
+  # filled independently. Without the block GCP still mails billing admins, but
+  # nothing is routed to the ops channel and nothing is published.
   dynamic "all_updates_rule" {
-    for_each = length(var.notification_channels) > 0 ? [1] : []
+    for_each = (length(var.notification_channels) > 0 || var.cost_feed_topic) ? [1] : []
     content {
       monitor_notification_channels = var.notification_channels
+      pubsub_topic                  = var.cost_feed_topic ? google_pubsub_topic.budget[0].id : null
       # Billing admins keep their default mail too — see the header.
       disable_default_iam_recipients = false
     }
   }
+}
+
+# ── The budget as a COST FEED, not just an alarm ─────────────────────────────
+# A budget notification carries `costAmount` and `budgetAmount`, and GCP
+# publishes one several times a day — which makes this topic the cheapest
+# possible source of "what are we spending on Google right now". The
+# alternative is a BigQuery billing export: opt-in, hours of delay, and
+# billable itself, for one number on one page.
+#
+# `handleBudgetNotification` (packages/functions/src/analytics/) subscribes and
+# writes the figure onto the daily `platform_metrics/{date}` snapshot, so the
+# operator console's Providers page gets history for free rather than a spot
+# reading. Created only when `cost_feed_topic` is true, so an environment that
+# just wants the alarm pays for nothing extra.
+#
+# THE TOPIC NAME IS A CONTRACT with that function's BILLING_BUDGET_TOPIC
+# constant — a rename here silently stops the feed, since a Pub/Sub trigger on
+# a topic that never publishes is indistinguishable from a quiet month.
+resource "google_pubsub_topic" "budget" {
+  count = var.cost_feed_topic ? 1 : 0
+
+  project = var.project_id
+  name    = var.cost_feed_topic_name
+}
+
+# Cloud Billing publishes as its own service agent, which must be a publisher on
+# the topic or the budget silently fails to deliver.
+resource "google_pubsub_topic_iam_member" "budget_publisher" {
+  count = var.cost_feed_topic ? 1 : 0
+
+  project = var.project_id
+  topic   = google_pubsub_topic.budget[0].name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:billing-budgets@system.gserviceaccount.com"
 }

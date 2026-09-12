@@ -161,6 +161,12 @@ module "budget" {
   # is the honest answer to "would anyone hear about a runaway bill?".
   notification_channels = module.monitoring.notification_channel_ids
 
+  # Publish budget evaluations to Pub/Sub so the operator console's Providers
+  # page can show Google month-to-date spend (handleBudgetNotification). The
+  # budget is the cost feed as well as the alarm — see the module header.
+  project_id      = var.project_id
+  cost_feed_topic = true
+
   depends_on = [module.services]
 }
 

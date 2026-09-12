@@ -464,6 +464,36 @@ terraform output monitoring_alerting_enabled       # false = nothing pages anyon
 Both recipient outputs hang off the same `alert_email` in `terraform.tfvars`, so
 setting it once fixes errors, uptime AND budget alerts together.
 
+### The budget is also the cost feed
+
+`cost_feed_topic = true` (set in all three environments) creates a Pub/Sub topic
+and has the budget publish its evaluations to it. `handleBudgetNotification`
+(`packages/functions/src/analytics/`) subscribes and records the month-to-date
+figure onto the daily `platform_metrics/{date}` snapshot, which the operator
+console's **Providers** page reads.
+
+This exists because **there is no Cloud Billing API that returns consumption** —
+`cloudbilling` serves account metadata and the SKU price catalogue, and real cost
+data otherwise means a BigQuery billing export: opt-in, hours of delay, and
+billable itself. The budget already evaluates several times a day and its
+notification carries `costAmount` and `budgetAmount`, so it does double duty and
+nothing new is provisioned but a topic.
+
+Two things that fail silently if disturbed:
+
+- **The topic name is a contract** with `BILLING_BUDGET_TOPIC` in that function.
+  A Pub/Sub trigger on a topic nobody publishes to is indistinguishable from a
+  quiet month, so the pair is pinned by
+  `packages/functions/src/analytics/providerCosts.test.ts` rather than by a
+  comment.
+- **Cloud Billing publishes as its own service agent**
+  (`billing-budgets@system.gserviceaccount.com`), which the module grants
+  `roles/pubsub.publisher` on the topic. Without it the budget just does not
+  deliver.
+
+`terraform output cost_feed_topic` is null when the feed is off, and the Providers
+page then shows Google spend as "not measured" rather than as zero.
+
 ### Picking `budget_amount`
 
 Default **500 CHF/month** (`variables.tf`). The number only does work if it is

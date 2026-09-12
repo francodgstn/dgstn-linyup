@@ -645,6 +645,47 @@ infrastructure** — Cloudflare Stream (per-minute stored + delivered, so the CO
 is meterable per tenant and priceable above it) or R2 + HLS — never this bucket
 under any quota.
 
+### Where the cost numbers actually come from (added 2026-09-12)
+
+The figures above are ESTIMATES from list prices. What the platform now measures,
+on the operator console's **Providers** page, is whatever each vendor will
+actually tell us — and that is three vendors out of nine:
+
+| Vendor | What it reports | How |
+|---|---|---|
+| Google Cloud | month-to-date money vs the budget | the billing budget's Pub/Sub notification (`handleBudgetNotification`) |
+| Brevo | credits remaining, per plan line | `GET /v3/account` on the existing key |
+| DeepL | characters used vs the key's cap | `GET /v2/usage` |
+
+Recorded onto the daily `platform_metrics/{date}` snapshot, so the page shows
+history rather than a spot reading, and every block carries the instant it was
+obtained.
+
+**Three rules this follows, each of which is the reason it is worth trusting:**
+
+- **Nothing is normalised into one "spend" number.** Money, credits and
+  characters are not comparable, and adding them would invent precision the
+  inputs do not have.
+- **An absent block means "not measured", never zero** — the same contract
+  `PlatformMailMetrics` already has. A vendor call that failed, a key that is not
+  configured, and a genuine zero are three different facts; a cost screen is the
+  one place a confident wrong number does real damage. Pinned by a test that
+  refuses a `?? 0` on any of these fields.
+- **Google needs no cost API, and there isn't one anyway.** `cloudbilling`
+  returns account metadata and the price catalogue, not consumption; the
+  alternative is a BigQuery billing export (opt-in, delayed, billable). The
+  budget already evaluates several times a day and its notification carries the
+  cost, so the alarm and the feed are one mechanism.
+
+**Stripe is deliberately absent.** Connect processing fees are the STUDIO's cost,
+not Linyup's, so a single "Stripe fees" total would conflate two parties' money
+and overstate platform COGS. Adding it means first deciding whether the page
+shows Linyup's own cost only or splits platform-vs-studio explicitly.
+**Cloudflare, PostHog and EAS expose nothing usable**, and the two store portals
+report revenue rather than cost — each of those cards says so in place of a
+number, because an unexplained blank on a cost page invites the reader to assume
+zero.
+
 ## 13. Secondary limits, roughly in the order they bind
 
 - **App Check is implemented but off**, deferred by decision

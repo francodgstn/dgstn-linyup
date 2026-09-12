@@ -1,10 +1,19 @@
 // Third-party providers / vendors the platform depends on.
 //
-// For now this is a static directory whose purpose is to get you into each
-// vendor's control panel in one click. It is deliberately structured so that
-// live data (account status, usage, spend) can be attached later via each
-// vendor's API without reshaping the UI: add the fields to `Provider`, fetch
-// them in a server component, and render them on the card.
+// A directory whose first job is to get you into each vendor's control panel in
+// one click, and whose second is to show what that vendor will tell us about
+// what we are spending with them.
+//
+// ── COST: THREE VENDORS ANSWER, THE REST DO NOT ─────────────────────────────
+// `costFeed` marks a card that carries a live figure (recorded onto the daily
+// `platform_metrics` snapshot; see queries/providerCosts.ts). `costNote` is the
+// honest alternative for everyone else — a card with neither reads as an
+// unexplained blank, which on a cost page invites the reader to assume zero.
+//
+// The three units are deliberately NOT normalised into one "spend" number: GCP
+// reports month-to-date money, Brevo credits remaining, DeepL characters. See
+// `PlatformProviderCosts` in @linyup/shared for why converting them would be
+// inventing precision.
 
 export type ProviderCategory =
   | 'Infrastructure'
@@ -28,6 +37,17 @@ export interface Provider {
   docsUrl?: string
   /** Optional public status page. */
   statusUrl?: string
+  /**
+   * This card shows a live cost/usage figure from that vendor, keyed to the
+   * matching block on the platform snapshot. Absent = nothing is fetched.
+   */
+  costFeed?: 'gcp' | 'brevo' | 'deepl'
+  /**
+   * Why this card shows no figure — a missing API, or a bill that appears on
+   * another card. Rendered in place of a number so the blank is explained.
+   * Set this on every provider WITHOUT a `costFeed`.
+   */
+  costNote?: string
 }
 
 // Order within a category is preserved; categories render in CATEGORY_ORDER.
@@ -50,6 +70,8 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://console.firebase.google.com/project/linyup-prod/overview',
     docsUrl: 'https://firebase.google.com/docs',
     statusUrl: 'https://status.firebase.google.com/',
+    costNote:
+      'Billed together with Google Cloud — the spend is on that card, not counted twice here.',
   },
   {
     id: 'google-cloud',
@@ -59,6 +81,7 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://console.cloud.google.com/home/dashboard?project=linyup-prod',
     docsUrl: 'https://cloud.google.com/docs',
     statusUrl: 'https://status.cloud.google.com/',
+    costFeed: 'gcp',
   },
   {
     id: 'cloudflare',
@@ -69,6 +92,8 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://dash.cloudflare.com/',
     docsUrl: 'https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/',
     statusUrl: 'https://www.cloudflarestatus.com/',
+    costNote:
+      'No usable cost API. Workers and Cloudflare for SaaS are flat-rate; the analytics API reports requests, not money.',
   },
   {
     id: 'stripe',
@@ -78,6 +103,8 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://dashboard.stripe.com/',
     docsUrl: 'https://docs.stripe.com/',
     statusUrl: 'https://status.stripe.com/',
+    costNote:
+      'Deliberately not shown: Connect processing fees are the STUDIO’s cost, not Linyup’s, so one total would conflate two parties’ money. Needs a platform-vs-studio split first.',
   },
   {
     id: 'brevo',
@@ -87,6 +114,7 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://app.brevo.com/',
     docsUrl: 'https://developers.brevo.com/',
     statusUrl: 'https://status.brevo.com/',
+    costFeed: 'brevo',
   },
   {
     id: 'posthog',
@@ -96,6 +124,8 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://eu.posthog.com/',
     docsUrl: 'https://posthog.com/docs',
     statusUrl: 'https://status.posthog.com/',
+    costNote:
+      'No usable cost API — usage is visible in their panel only.',
   },
   {
     id: 'deepl',
@@ -106,6 +136,7 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://www.deepl.com/your-account/summary',
     docsUrl: 'https://developers.deepl.com/docs',
     statusUrl: 'https://status.deepl.com/',
+    costFeed: 'deepl',
   },
   // The two store portals. What the console can show WITHOUT opening them lives
   // on the Member app page; these rows are the one-click route to the things it
@@ -121,6 +152,8 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://appstoreconnect.apple.com/apps/6808572774/distribution',
     docsUrl: 'https://developer.apple.com/documentation/appstoreconnectapi',
     statusUrl: 'https://developer.apple.com/system-status/',
+    costNote:
+      'Revenue, not cost. What the console can show without opening it is on the Member app page.',
   },
   {
     id: 'google-play',
@@ -131,5 +164,7 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://play.google.com/console',
     docsUrl: 'https://developers.google.com/android-publisher',
     statusUrl: 'https://status.play.google.com/',
+    costNote:
+      'Revenue, not cost. What the console can show without opening it is on the Member app page.',
   },
 ]

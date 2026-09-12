@@ -12,3 +12,8 @@ output "budget_amount" {
   description = "The configured monthly budget, echoed so `terraform output` answers \"what is the ceiling?\" without opening a tfvars file."
   value       = "${var.budget_amount} ${var.currency_code}"
 }
+
+output "cost_feed_topic" {
+  description = "The Pub/Sub topic budget evaluations publish to, or null when the cost feed is off. Null means the Providers page will show Google spend as not measured."
+  value       = var.cost_feed_topic ? google_pubsub_topic.budget[0].id : null
+}
