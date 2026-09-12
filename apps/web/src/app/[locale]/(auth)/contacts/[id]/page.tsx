@@ -5563,7 +5563,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             }
 
             return (
-              <div className="flex items-stretch gap-1 border-b">
+              // Extra room above the strip: the header cards are heavy, and
+              // the page's default rhythm put the tabs right under them.
+              <div className="mt-10 flex items-stretch gap-1 border-b">
                 <div className="flex flex-1 gap-1 overflow-x-auto overflow-y-hidden no-scrollbar">
                   {editingTabs ? (
                     <SortableList
