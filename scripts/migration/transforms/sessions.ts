@@ -1,5 +1,17 @@
 import { buildParticipantDoc } from '@linyup/shared'
 
+/** A Firestore Timestamp (admin or client shape), a Date, or nothing → epoch ms. */
+function toMillis(v: unknown): number | null {
+  if (v instanceof Date) return v.getTime()
+  if (v && typeof v === 'object') {
+    const t = v as { toMillis?: () => number; seconds?: number; _seconds?: number }
+    if (typeof t.toMillis === 'function') return t.toMillis()
+    const secs = t.seconds ?? t._seconds
+    if (typeof secs === 'number') return secs * 1000
+  }
+  return null
+}
+
 export function transformSession(
   src: Record<string, unknown>,
   activityMap: Map<string, { name: string; type: string }>
@@ -38,8 +50,21 @@ export function transformSession(
   out.activityName = act?.name ?? null
   out.activityType = act?.type ?? 'class'
 
-  // New fields
-  out.allowBooking = !!(src.portal_bookings_count ?? false)
+  // New fields.
+  //
+  // `allowBooking` is the per-session online-booking door (server readers
+  // require `=== true`). It used to be derived from whether the OLD portal had
+  // ever taken a booking for the session — which closed every upcoming class
+  // nobody had happened to book yet, so a freshly imported studio's calendar
+  // was empty on the public page until someone re-saved each session. The rule
+  // now: an upcoming session is bookable, and being outside the booking
+  // calendar is the exception a studio sets on purpose (2026-09-11). A past
+  // session stays closed — the public queries bound on `start`, so nothing
+  // past is bookable anyway, and closing it keeps the mirror honest — and so
+  // does a cancelled one.
+  const startMs = toMillis(src.start)
+  const cancelled = src.status === 'cancelled' || src.cancelled === true
+  out.allowBooking = !cancelled && startMs != null && startMs >= Date.now()
   out.createdBy = out.createdBy ?? null
 
   return out

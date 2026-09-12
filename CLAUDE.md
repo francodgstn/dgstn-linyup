@@ -395,7 +395,8 @@ paths don't read it, appointment session docs/mirrors don't carry it).
 
 **A class's drop-in price is read through ONE resolver.** The price has a
 studio-wide default (`BookingSettings.dropIn`, on the team's public profile
-beside the other booking settings, edited on Offerings → Pricing) and each
+beside the other booking settings, edited on Offerings → Pricing or in place from
+a class's pricing tab) and each
 class says how it relates to it — `Activity.dropIn.mode`: `'studio'` (follow
 the default; what a new class starts as), `'custom'` (its own price), `'off'`
 (none, even under a default); a document without `mode` reads as `'custom'`

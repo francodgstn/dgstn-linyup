@@ -1850,7 +1850,12 @@
     "durationsInCatalogue": "Dauern, ihre Preise und der Mitgliederpreis werden unter Zugang & Preise festgelegt, neben den Abos, für die sie gelten.",
     "accessHint": "Das ist die Tür. Was bezahlt wird, legen Sie unten fest — ein Abo kann es gratis machen, alle anderen zahlen den Drop-in-Preis.",
     "accessAllowWithoutPlan": "Buchung für Mitglieder ohne Abo erlauben",
-    "accessAllowWithoutPlanHint": "Aktiv buchen sie zum Drop-in-Preis — oder gratis, wenn keiner gesetzt ist. Inaktiv können nur Inhaber eines verknüpften Abos buchen."
+    "accessAllowWithoutPlanHint": "Aktiv buchen sie zum Drop-in-Preis — oder gratis, wenn keiner gesetzt ist. Inaktiv können nur Inhaber eines verknüpften Abos buchen.",
+    "dropInModeStudioSetInline": "Festlegen",
+    "dropInStudioDefaultEdit": "Studio-Standard ändern",
+    "dropInStudioDefaultConfirm": "Studio-Standard speichern",
+    "dropInStudioDefaultCancel": "Abbrechen",
+    "dropInStudioDefaultSaved": "Studio-Standard gespeichert — jede Klasse, die ihm folgt, wird jetzt zu diesem Preis verkauft."
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",
@@ -5262,7 +5267,8 @@
     "memberPayable": "Diese Klasse ist nicht in deiner Mitgliedschaft enthalten. Du kannst sie für {price} buchen.",
     "memberContinueToPayment": "Weiter zur Zahlung",
     "memberSomeoneElseTitle": "Für jemand anderen buchen",
-    "memberSomeoneElseSubtitle": "Diese Klasse stattdessen für eine andere Person buchen"
+    "memberSomeoneElseSubtitle": "Diese Klasse stattdessen für eine andere Person buchen",
+    "pricingDetailsTrigger": "Preise & Zugang"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Probetraining buchen",
@@ -5473,7 +5479,9 @@
     "betaBadge": "Beta",
     "betaBadgeHint": "Einsatzbereit — diese Funktion kann sich noch ändern.",
     "appointmentsEmptyHint": "Dies ist aktiviert, aber es ist noch nichts buchbar — Sie brauchen aktive buchbare Zeiten, die mit einer Termin-Aktivität verknüpft sind.",
-    "appointmentsEmptyHintLink": "Buchbare Zeiten einrichten"
+    "appointmentsEmptyHintLink": "Buchbare Zeiten einrichten",
+    "toggleShowPricingLabel": "Preise anzeigen",
+    "toggleShowPricingDesc": "Zeigt Preise und Zugang jeder Aktivität hinter einem Hinweis «Preise & Zugang» auf der Aktivitätsauswahl — was ein Abo einschliesst, der Drop-in-Preis, der Preis eines Termins. Aus blendet nur diesen Hinweis aus; die Kasse nennt den Betrag immer."
   },
   "SettingsPlaces": {
     "pageTitle": "Standorte",

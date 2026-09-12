@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
@@ -351,10 +351,9 @@ export function ActivityDialog({
           color: DEFAULT_ACCENT,
           waitlistEnabled: false,
           durations: [],
-          // TRUE for a new activity of either kind. `resolveAutoConfirm` is left
-          // alone on purpose: it answers what a STORED doc means, and flipping
-          // its fallback would silently reinterpret every existing class that
-          // never set the field. This is only the form's starting point.
+          // TRUE for a new activity of either kind — the same answer
+          // `resolveAutoConfirm` gives a stored doc that never set the field,
+          // so the form's starting point and the booking path agree.
           autoConfirm: true,
         },
   })
@@ -373,20 +372,10 @@ export function ActivityDialog({
   // options" tail? If so the disclosure opens showing it — a field the studio
   // filled in and then cannot find is worse than the long form this replaces.
 
-  // Re-default autoConfirm when the studio flips the type — but only while the
-  // toggle hasn't been touched by hand, so an explicit override survives a type
-  // change. `prevTypeRef` guards the mount-time run (editing already carries the
-  // resolved value in defaultValues; don't clobber an explicit override on open).
-  const [autoConfirmTouched, setAutoConfirmTouched] = useState(false)
-  const prevTypeRef = useRef(type)
-  useEffect(() => {
-    if (prevTypeRef.current === type) return
-    prevTypeRef.current = type
-    // A NEW activity keeps the true default across a type flip; an existing one
-    // re-derives from what its kind means, which is the stored-doc question.
-    if (!autoConfirmTouched)
-      setValue('autoConfirm', editing ? resolveAutoConfirm({ type }) : true)
-  }, [type, autoConfirmTouched, setValue, editing])
+  // There is deliberately NO re-defaulting of `autoConfirm` on a type flip any
+  // more: the default no longer depends on the kind (`resolveAutoConfirm` is
+  // on for both), so a flip has nothing to re-derive, and resetting the switch
+  // on an existing activity would silently undo a studio's explicit choice.
 
   // Inline quick-create: "create or link a subscription to this activity" without
   // leaving the form. Writes a minimal type (pricing is configured later in the
@@ -743,10 +732,7 @@ export function ActivityDialog({
                       type="checkbox"
                       className="accent-primary shrink-0"
                       checked={field.value}
-                      onChange={(e) => {
-                        setAutoConfirmTouched(true)
-                        field.onChange(e.target.checked)
-                      }}
+                      onChange={(e) => field.onChange(e.target.checked)}
                     />
                   </label>
                 )}

@@ -833,8 +833,8 @@ export const bookSession = onCall(async (request) => {
 
   // Does this booking confirm itself on the spot? The session's own field wins
   // (denormalised by whoever created it); otherwise fall back through the
-  // parent activity — resolveAutoConfirm's by-kind default (class => false)
-  // applies when neither is set.
+  // parent activity — resolveAutoConfirm's default (on) applies when neither
+  // is set.
   const autoConfirm =
     typeof sessionData.autoConfirm === 'boolean'
       ? (sessionData.autoConfirm as boolean)

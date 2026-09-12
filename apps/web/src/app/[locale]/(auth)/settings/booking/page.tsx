@@ -62,6 +62,7 @@ function createBookingSchema(t: ReturnType<typeof useTranslations>) {
     showPhone: z.boolean(),
     contactFields: z.array(z.object({ key: z.string(), required: z.boolean().optional() })),
     showActivityDescription: z.boolean(),
+    showPricing: z.boolean(),
     showFitnessAppField: z.boolean(),
     ctaUrl: createSafeUrlSchema(t),
     ctaLabel: z.string().optional(),
@@ -122,6 +123,10 @@ function getDefaults(stored: Partial<BookingSettings> | undefined): FormData {
         null
       ),
       showActivityDescription: rawBooking.showActivityDescription !== false,
+      // Defaults ON — `!== false` — and the public form reads it the same way
+      // (BookingForm's `showPricing`): the prices are the studio's, and a
+      // studio that never opened this page still shows them.
+      showPricing: rawBooking.showPricing !== false,
       // Defaults ON, like showActivityDescription above and unlike showPhone:
       // `!== false` so an absent flag reads as shown. A studio that does not
       // want the field switches it off; a studio that has never opened this
@@ -221,7 +226,11 @@ function ToggleRow({
   children,
 }: {
   control: ReturnType<typeof useForm<FormData>>['control']
-  name: 'booking.showActivityDescription' | 'booking.showFitnessAppField' | 'booking.appointmentsEnabled'
+  name:
+    | 'booking.showActivityDescription'
+    | 'booking.showPricing'
+    | 'booking.showFitnessAppField'
+    | 'booking.appointmentsEnabled'
   label: string
   desc: string
   /** Rendered under the row, inside its border — the settings this switch owns. */
@@ -481,6 +490,12 @@ function BookingForm({
         />
         <ToggleRow
           control={control}
+          name="booking.showPricing"
+          label={t('toggleShowPricingLabel')}
+          desc={t('toggleShowPricingDesc')}
+        />
+        <ToggleRow
+          control={control}
           name="booking.showFitnessAppField"
           label={t('toggleShowFitnessAppLabel')}
           desc={t('toggleShowFitnessAppDesc')}
@@ -586,6 +601,7 @@ export default function BookingSettingsPage() {
       showPhone: data.booking.contactFields.some((f) => f.key === 'phone'),
       contactFields: data.booking.contactFields,
       showActivityDescription: data.booking.showActivityDescription,
+      showPricing: data.booking.showPricing,
       showFitnessAppField: data.booking.showFitnessAppField,
       ctaUrl: data.booking.ctaUrl || null,
       ctaLabel: data.booking.ctaLabel || null,

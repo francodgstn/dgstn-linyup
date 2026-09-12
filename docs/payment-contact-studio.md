@@ -222,7 +222,12 @@ membership is created — a drop-in is a single paid booking, not a subscription
   the team's currency), stored with the other booking settings on the team's public
   profile — the one document the callables, the public pages and the mobile app already
   read — and edited on **Offerings → Pricing** ("Drop-in" card), because it is a price
-  rather than a booking rule. Each class then says how it relates to it,
+  rather than a booking rule; a class's own pricing tab can also set or change it IN
+  PLACE (the "Studio default" option carries a pencil, or "Set one" while there is
+  none — `StudioDropInDefault` in `ActivityPricingForm.tsx`), writing the same field the
+  same way, so nobody is sent to another page to answer a question asked here. Only the
+  Pricing page can switch the default OFF: doing that from inside one class would silently
+  change every other class that follows it. Each class then says how it relates to it,
   `Activity.dropIn.mode` (`DropInMode`, `packages/shared/src/types/activity.ts`):
   `'studio'` follows the default (what a new class starts as), `'custom'` names its own
   `priceAmount`, `'off'` sells no drop-in even when the studio has a default. A document

@@ -1054,10 +1054,11 @@ async function seedTeam(opts: TeamSeed) {
       .set({
         ...a,
         teamId,
-        // Classes don't auto-confirm: a booking holds a seat but stays
-        // unconfirmed until check-in. Written explicitly (it's the 'class'
-        // default in resolveAutoConfirm) so the seed exercises the field.
-        autoConfirm: false,
+        // Bookings confirm themselves — the default `resolveAutoConfirm` gives
+        // a class too (2026-09-11). Written explicitly so the seed exercises
+        // the field; a class that needs the studio's approval is the exception
+        // a studio sets on purpose, and none of these do.
+        autoConfirm: true,
         isActive: true,
         created_at: ts(daysFromNow(-200)),
       })
@@ -1314,6 +1315,9 @@ async function seedTeam(opts: TeamSeed) {
       [3, `${teamId}-act-kickbox`, 'Kickboxing', 19, 1, 'Dojo B', true, instructors[1]],
       [5, `${teamId}-act-bjj`, 'Brazilian Jiu-Jitsu', 7, 1, 'Dojo A', true, instructors[0]],
       [6, `${teamId}-act-mma`, 'MMA', 10, 2, 'Main Hall', true, instructors[1]],
+      // The Sunday yoga stays OFF the booking calendar on purpose — the one
+      // showcase of a session a studio keeps outside it, which is the
+      // exception, never the state a class lands in by default.
       [0, `${teamId}-act-yoga`, 'Yoga & Mobility', 10, 1.5, 'Studio', false, 'Aiko Tanaka'],
     ] as const) {
       sessionDefs.push({
@@ -1353,8 +1357,8 @@ async function seedTeam(opts: TeamSeed) {
         providerName: s.instructor ?? null,
         locationAddress: '123 Fighter St',
         allowBooking: s.allowBooking,
-        // Denormalised from the activity — classes confirm at check-in.
-        autoConfirm: false,
+        // Denormalised from the activity — bookings confirm themselves.
+        autoConfirm: true,
         participants_count: 0,
         created_at: ts(daysFromNow(-200)),
         createdBy: uid,

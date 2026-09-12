@@ -41,7 +41,7 @@ import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { resolveActivityPricingDisplay, type SubLookup } from '@/lib/activityTerms'
 import { formatCurrency } from '@/lib/format'
 import { useLocale, useTranslations } from 'next-intl'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Info } from 'lucide-react'
 import { Link, useRouter } from '@/i18n/navigation'
 import { BioLinkButton } from '../BioLinkShell'
 import { FlowShell } from '@/components/booking/FlowShell'
@@ -49,6 +49,7 @@ import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrom
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   GuestDetailsForm,
   type GuestDetailsFormHandle,
@@ -442,6 +443,10 @@ export default function BookingForm({
   const bookingWindowMonths = bookingSettings?.windowMonths ?? 2
   const showPhone = bookingSettings?.showPhone !== false
   const showDesc = bookingSettings?.showActivityDescription !== false
+  // Same spelling, same reason: absent means SHOWN, and Settings → Booking's
+  // toggle reads it the same way. Display only — the checkout quotes the real
+  // amount whatever this says.
+  const showPricing = bookingSettings?.showPricing !== false
   // `!== false`, matching the settings form's default: absent means SHOWN. The
   // two must agree — the admin toggle reading one way and the public form the
   // other is a field a studio believes is on and visitors never see.
@@ -2102,18 +2107,35 @@ export default function BookingForm({
                             {a.prerequisites}
                           </p>
                         )}
-                        {/* Pricing last, set apart from the prose above it: each way
-                            to pay is its own row with a hairline between, so a card
-                            offering three of them reads as a list rather than a
-                            paragraph of prices. */}
-                        {lines.length > 0 && (
-                          <div className="mt-3 divide-y divide-border/60 border-t border-border/60">
-                            {lines.map((line, i) => (
-                              <p key={i} className="py-1.5 text-xs text-muted-foreground">
-                                {line}
-                              </p>
-                            ))}
-                          </div>
+                        {/* Pricing last, and BEHIND a tooltip rather than printed:
+                            a class can carry four or five of these lines ("Included
+                            with X", "Y per class", a discount, an appointment
+                            range), and stacked under every card they made the
+                            selection screen a price list. One quiet trigger per
+                            card; the lines stay a list inside it. The trigger is a
+                            span (`render`) because the card itself is a <button>
+                            and a button may not nest one. Hover/focus only, by
+                            the tooltip's nature — on a phone the sessions step
+                            and the checkout still state the amount. */}
+                        {showPricing && lines.length > 0 && (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={<span />}
+                              className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-2"
+                            >
+                              <Info aria-hidden className="h-3.5 w-3.5" />
+                              {t('pricingDetailsTrigger')}
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" align="start" className="max-w-xs px-3 py-2">
+                              <div className="divide-y divide-background/20">
+                                {lines.map((line, i) => (
+                                  <p key={i} className="py-1 text-xs">
+                                    {line}
+                                  </p>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </>
                     )

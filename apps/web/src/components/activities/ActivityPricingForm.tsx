@@ -43,13 +43,12 @@
  * `AppointmentDurationsEditor`.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import type { Route } from 'next'
 import { useQueryClient } from '@tanstack/react-query'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, setDoc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
-import { DoorOpen, Users } from 'lucide-react'
+import { Check, DoorOpen, Pencil, Users, X } from 'lucide-react'
 import {
   ACTIVITIES_COLLECTION,
   benefitOpensDoorAt,
@@ -69,8 +68,8 @@ import {
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
-import { Link } from '@/i18n/navigation'
-import { useBookingSettings } from '@/hooks/useBookingSettings'
+import { useAuth } from '@/contexts/AuthContext'
+import { bookingSettingsRef, useBookingSettings } from '@/hooks/useBookingSettings'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { useReportPaneDirty } from '@/components/offer/paneDirty'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -173,6 +172,134 @@ function same(a: Draft, b: Draft): boolean {
   )
 }
 
+/**
+ * THE STUDIO DEFAULT, CHANGED IN PLACE. This option used to send the studio to
+ * Offerings → Pricing to set or change the number — but a class's pricing tab
+ * is where the question comes up, so the answer is taken here: a pencil (or
+ * "Set one" while there is none), a price, a tick. It writes THE SAME FIELD the
+ * Pricing page writes, the same way — `bookingSettings.dropIn` replaced whole
+ * under `mergeFields`, so no stale price can survive beneath it — and
+ * `syncStudioDropIn` fans the change out to every following class's mirror
+ * exactly as it would from there. Only ever writes an ENABLED default: the one
+ * way to switch the studio default off is still the Pricing page, because
+ * doing it from inside one class's form would silently change every other
+ * class that follows it.
+ */
+function StudioDropInDefault({
+  studioDropIn,
+  currency,
+  canEdit,
+}: {
+  studioDropIn: DropInPrice | null
+  currency: string
+  canEdit: boolean
+}) {
+  const t = useTranslations('Activities')
+  const { currentTeamId } = useAuth()
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [price, setPrice] = useState('')
+  const [saving, setSaving] = useState(false)
+  const parsed = parsePrice(price)
+  const invalid = !(price.trim() !== '' && parsed >= 0.5)
+
+  function open() {
+    setPrice(studioDropIn?.priceAmount != null ? String(studioDropIn.priceAmount) : '')
+    setEditing(true)
+  }
+
+  async function confirm() {
+    if (!currentTeamId || invalid || saving) return
+    setSaving(true)
+    try {
+      await setDoc(
+        bookingSettingsRef(currentTeamId),
+        { bookingSettings: { dropIn: { enabled: true, priceAmount: parsed } } },
+        { mergeFields: ['bookingSettings.dropIn'] }
+      )
+      await qc.invalidateQueries({ queryKey: ['booking-settings', currentTeamId] })
+      toast.success(t('dropInStudioDefaultSaved'))
+      setEditing(false)
+    } catch (err) {
+      console.error('[drop-in default save] failed:', err)
+      toast.error(err instanceof Error ? err.message : t('dropInStudioDefaultSaved'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!canEdit) return null
+
+  if (editing) {
+    return (
+      <span className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">{currency}</span>
+        <Input
+          type="number"
+          min={0}
+          step="0.01"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              void confirm()
+            } else if (e.key === 'Escape') {
+              setEditing(false)
+            }
+          }}
+          placeholder={t('dropInPricePlaceholder')}
+          aria-label={t('dropInStudioDefaultEdit')}
+          className="h-8 w-24 text-sm"
+          autoFocus
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          disabled={invalid || saving}
+          onClick={() => void confirm()}
+          aria-label={t('dropInStudioDefaultConfirm')}
+        >
+          <Check aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          disabled={saving}
+          onClick={() => setEditing(false)}
+          aria-label={t('dropInStudioDefaultCancel')}
+        >
+          <X aria-hidden />
+        </Button>
+        {invalid && price.trim() !== '' && (
+          <span className="basis-full text-xs text-destructive">{t('dropInPriceValidation')}</span>
+        )}
+      </span>
+    )
+  }
+
+  return studioDropIn ? (
+    <button
+      type="button"
+      onClick={open}
+      aria-label={t('dropInStudioDefaultEdit')}
+      className="text-muted-foreground transition-colors hover:text-foreground"
+    >
+      <Pencil aria-hidden className="h-3.5 w-3.5" />
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={open}
+      className="text-xs text-primary underline-offset-2 hover:underline"
+    >
+      {t('dropInModeStudioSetInline')}
+    </button>
+  )
+}
+
 export function ActivityPricingForm({
   activity,
   plans,
@@ -267,6 +394,7 @@ export function ActivityPricingForm({
         },
       }
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }))
+  const dropInId = useId()
   /**
    * THE TRIAL DOOR EXISTS ONLY ON A GATED CLASS. `bookSession` opens it for a
    * guest when `accessRule.type !== 'open'` and treats it as fully inert
@@ -484,53 +612,73 @@ export function ActivityPricingForm({
             )}
 
             <div className="space-y-2 p-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{t('dropInLabel')}</p>
-                <p className="text-xs text-muted-foreground">{t('dropInHelp')}</p>
+              {/* THE SAME SHAPE AS THE TRIAL ABOVE: the tick on the right says
+                  whether this class sells a drop-in at all, and only then do
+                  the two ways of pricing it appear. The three answers of
+                  `DropInMode` are all still written — off ⇒ 'off' (none, even
+                  under a studio default), on ⇒ 'studio' (what a new class
+                  starts as) until the class names its own — it is only the
+                  control that stopped being three radios, because "no
+                  drop-in" is a switch, not a third kind of price. */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 pr-4">
+                  <p className="text-sm font-medium">{t('dropInLabel')}</p>
+                  <p className="text-xs text-muted-foreground">{t('dropInHelp')}</p>
+                </div>
+                <input
+                  type="checkbox"
+                  className="shrink-0 accent-primary"
+                  checked={draft.dropInMode !== 'off'}
+                  onChange={(e) => set('dropInMode', e.target.checked ? 'studio' : 'off')}
+                  disabled={!canEdit}
+                />
               </div>
-              {/* THREE ANSWERS, not a switch. The studio default is the state a
-                  new class starts in and the one most classes stay in — a class
-                  names a price only when it differs, and says "none" only when
-                  the studio's default must not reach it (`DropInMode`). */}
-              <div className="space-y-1.5">
-                {(['studio', 'custom', 'off'] as const).map((mode) => {
-                  const active = draft.dropInMode === mode
-                  return (
-                    <label
-                      key={mode}
-                      className={`flex items-center gap-2 text-sm ${
-                        canEdit ? 'cursor-pointer' : 'pointer-events-none opacity-60'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        className="accent-primary"
-                        checked={active}
-                        onChange={() => set('dropInMode', mode)}
-                        disabled={!canEdit}
-                      />
-                      {/* Literal keys per branch, never a template-literal key:
-                          i18n:check counts computed keys and never fails them. */}
-                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              {draft.dropInMode !== 'off' && (
+                <div className="space-y-1.5">
+                  {(['studio', 'custom'] as const).map((mode) => {
+                    const active = draft.dropInMode === mode
+                    const id = `${dropInId}-${mode}`
+                    return (
+                      // A div with id/htmlFor rather than a wrapping <label>: the
+                      // studio option carries a pencil BUTTON, and a button inside
+                      // a label also fires the label's activation — the radio
+                      // would flip under the click.
+                      <div
+                        key={mode}
+                        className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm ${
+                          canEdit ? '' : 'pointer-events-none opacity-60'
+                        }`}
+                      >
+                        <input
+                          id={id}
+                          type="radio"
+                          className="accent-primary"
+                          checked={active}
+                          onChange={() => set('dropInMode', mode)}
+                          disabled={!canEdit}
+                        />
+                        {/* Literal keys per branch, never a template-literal key:
+                            i18n:check counts computed keys and never fails them. */}
                         {mode === 'studio' ? (
-                          studioDropIn ? (
-                            t('dropInModeStudio', {
-                              amount: formatCurrency(studioDropIn.priceAmount ?? 0, currency),
-                            })
-                          ) : (
-                            <>
-                              <span>{t('dropInModeStudioNone')}</span>
-                              <Link
-                                href={'/manage/pricing' as Route}
-                                className="text-xs text-primary underline-offset-2 hover:underline"
-                              >
-                                {t('dropInModeStudioSet')}
-                              </Link>
-                            </>
-                          )
-                        ) : mode === 'custom' ? (
                           <>
-                            <span>{t('dropInModeCustom')}</span>
+                            <label htmlFor={id} className={canEdit ? 'cursor-pointer' : ''}>
+                              {studioDropIn
+                                ? t('dropInModeStudio', {
+                                    amount: formatCurrency(studioDropIn.priceAmount ?? 0, currency),
+                                  })
+                                : t('dropInModeStudioNone')}
+                            </label>
+                            <StudioDropInDefault
+                              studioDropIn={studioDropIn}
+                              currency={currency}
+                              canEdit={canEdit}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <label htmlFor={id} className={canEdit ? 'cursor-pointer' : ''}>
+                              {t('dropInModeCustom')}
+                            </label>
                             {active && (
                               <span className="flex items-center gap-1.5">
                                 <span className="text-xs text-muted-foreground">{currency}</span>
@@ -547,14 +695,12 @@ export function ActivityPricingForm({
                               </span>
                             )}
                           </>
-                        ) : (
-                          t('dropInModeOff')
                         )}
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
               {dropInPriceInvalid && (
                 <p className="text-xs text-destructive">{t('dropInPriceValidation')}</p>
               )}

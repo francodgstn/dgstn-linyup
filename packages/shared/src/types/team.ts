@@ -863,6 +863,14 @@ export interface BookingSettings {
    *  EXTENDS this one — see `resolveBookingContactFields`. */
   contactFields?: BookingContactField[]
   showActivityDescription?: boolean
+  /**
+   * Whether the activity cards on the public booking page carry their pricing
+   * lines ("Included with X", "CHF 25 per class", "From CHF 80"). ABSENT ⇒ ON,
+   * spelt `!== false` like `showActivityDescription` — a studio that never
+   * opened Settings → Booking shows its prices, and hiding them is the
+   * deliberate act. Display only: the checkout still quotes the real amount.
+   */
+  showPricing?: boolean
   showFitnessAppField?: boolean
   ctaUrl?: string | null
   ctaLabel?: string | null

@@ -106,17 +106,21 @@ export function resolveActivityAccessRule(a: {
   return { type: a.isFreeTrial === false ? 'members' : 'open' }
 }
 
-/** Does a booking for this offering confirm itself? Falls back to the kind's
- *  default when the field is unset: appointments auto-confirm (a 1:1 slot has no
- *  roster-review step — the time is taken the moment it's booked), classes don't
- *  (the studio confirms via check-in). Keep this the single source of truth so
- *  the booking callables, the seeds, and the UI agree. */
+/** Does a booking for this offering confirm itself? Falls back to ON when the
+ *  field is unset, for BOTH kinds (2026-09-11). A booking that sits unconfirmed
+ *  until somebody at the studio finds it is the exception a studio sets on
+ *  purpose, not what a class gets for never having opened the form — the
+ *  previous class ⇒ false default meant every imported and seeded class held
+ *  seats nobody had confirmed. Keep this the single source of truth so the
+ *  booking callables, the seeds, the migration and the UI agree; `type` is
+ *  still accepted so a caller need not know the fallback no longer depends
+ *  on it. */
 export function resolveAutoConfirm(a: {
   autoConfirm?: boolean
   type?: ActivityType
 }): boolean {
   if (typeof a.autoConfirm === 'boolean') return a.autoConfirm
-  return a.type === 'appointment'
+  return true
 }
 
 /** One bookable session length of an appointment offering, with its pricing.
@@ -346,10 +350,11 @@ export interface Activity {
   /** Does a booking confirm itself, or does the studio decide?
    *  - `true`  → the booking is written `status: 'confirmed'` on the spot.
    *  - `false` → it stays unconfirmed until the studio confirms/checks them in.
-   *  Defaults by kind when unset (appointment → true, class → false) via
-   *  `resolveAutoConfirm`, but it is a FIELD, not a type rule: a class may
-   *  auto-confirm, and an appointment may require approval. Denormalised onto
-   *  each Session at booking time. */
+   *  Defaults to `true` when unset via `resolveAutoConfirm` — a class that
+   *  needs the studio's approval is the deliberate exception, not the state a
+   *  class lands in by never having been edited. It is a FIELD, not a type
+   *  rule: an appointment may require approval too. Denormalised onto each
+   *  Session at booking time. */
   autoConfirm?: boolean
   base_score?: number | null
   /** Legacy trial toggle. Superseded by `accessRule` but kept in sync

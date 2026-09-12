@@ -1850,7 +1850,12 @@
     "durationsInCatalogue": "Session lengths, their prices and the member rate are set under Access & pricing, beside the plans they apply to.",
     "accessHint": "This is the door. What people pay is set below — a plan can make it free, everyone else pays the drop-in price.",
     "accessAllowWithoutPlan": "Allow booking for members without a subscription",
-    "accessAllowWithoutPlanHint": "On, they book at the drop-in price — or free if there is none. Off, only holders of a linked plan can book at all."
+    "accessAllowWithoutPlanHint": "On, they book at the drop-in price — or free if there is none. Off, only holders of a linked plan can book at all.",
+    "dropInModeStudioSetInline": "Set one",
+    "dropInStudioDefaultEdit": "Change the studio default",
+    "dropInStudioDefaultConfirm": "Save studio default",
+    "dropInStudioDefaultCancel": "Cancel",
+    "dropInStudioDefaultSaved": "Studio default saved — every class that follows it now sells at this price."
   },
   "Benefit": {
     "fieldLabel": "Member benefit",
@@ -5262,7 +5267,8 @@
     "memberPayable": "Your membership doesn't include this class. You can book it for {price}.",
     "memberContinueToPayment": "Continue to payment",
     "memberSomeoneElseTitle": "Booking for someone else",
-    "memberSomeoneElseSubtitle": "Book this class for another person instead"
+    "memberSomeoneElseSubtitle": "Book this class for another person instead",
+    "pricingDetailsTrigger": "Prices & access"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",
@@ -5473,7 +5479,9 @@
     "betaBadge": "Beta",
     "betaBadgeHint": "Ready to use — this feature may still change.",
     "appointmentsEmptyHint": "This is on, but nothing is bookable yet — you need active bookable hours linked to an appointment activity.",
-    "appointmentsEmptyHintLink": "Set up bookable hours"
+    "appointmentsEmptyHintLink": "Set up bookable hours",
+    "toggleShowPricingLabel": "Show prices",
+    "toggleShowPricingDesc": "Put each activity's prices and access behind a \"Prices & access\" hint on the activity selection screen — what a plan includes, the drop-in price, an appointment's price. Off hides the hint there only; checkout always states the amount."
   },
   "SettingsPlaces": {
     "pageTitle": "Places",
