@@ -656,6 +656,7 @@ actually tell us — and that is three vendors out of nine:
 | Google Cloud | month-to-date money vs the budget | the billing budget's Pub/Sub notification (`handleBudgetNotification`) |
 | Brevo | credits remaining, per plan line | `GET /v3/account` on the existing key |
 | DeepL | characters used vs the key's cap | `GET /v2/usage` |
+| Stripe | **two figures, never one** — see below | platform account via the API; studio side from our OWN monthly finance reports |
 
 Recorded onto the daily `platform_metrics/{date}` snapshot, so the page shows
 history rather than a spot reading, and every block carries the instant it was
@@ -677,10 +678,50 @@ obtained.
   budget already evaluates several times a day and its notification carries the
   cost, so the alarm and the feed are one mechanism.
 
-**Stripe is deliberately absent.** Connect processing fees are the STUDIO's cost,
-not Linyup's, so a single "Stripe fees" total would conflate two parties' money
-and overstate platform COGS. Adding it means first deciding whether the page
-shows Linyup's own cost only or splits platform-vs-studio explicitly.
+#### Stripe: the split is a fact about the charge model, not a presentation choice
+
+Linyup runs Connect as **direct charges on the connected account with
+`fees_collector: 'stripe'`** — Stripe collects its processing fee FROM THE STUDIO
+(the header of `functions/src/utils/connect/client.ts` owns that decision). So on
+the member→studio rail **Linyup pays Stripe nothing**, and a single "Stripe fees"
+figure would be wrong by the whole width of payment volume, in the direction that
+makes COGS look catastrophic. Hence two fields, two rendered lines, and a test
+that fails if any source adds one to the other:
+
+- **`platform`** — Linyup's own Stripe bill: fees on the PLATFORM account's
+  balance transactions, which in practice is SaaS billing. **This is the COGS
+  line.** One paginated API call with no `stripeAccount` header (passing one
+  would silently return a studio's transactions and turn this into the other
+  half).
+- **`studios`** — what studios paid Stripe on their own charges. Passes THROUGH
+  the platform and is never Linyup's money; shown because it is what the platform
+  costs its customers, which is the more strategically interesting number.
+
+**The studio side needs no Stripe call at all.** It is
+`by_source.connect.stripe_fees` summed from the tenants' own
+`finance_monthly_reports` — one collection-group query, because those rows were
+built from those same balance transactions in the first place
+(`finance/journal.ts` → `retrieveChargeFees`). Listing balance transactions on
+every connected account would be a per-tenant fan-out to a rate-limited external
+API: the exact shape §9 spent a week removing, and no more accurate.
+
+Two consequences worth knowing:
+
+- **It is the LAST COMPLETED month**, not month-to-date, because the monthly
+  reports are written after a month closes and have already dropped
+  `status: 'corrected'` rows. Deriving month-to-date from the raw journal would
+  need `where('status', '!=', 'corrected')`, which **matches nothing when the
+  field is absent** — as it is on almost every row. Same trap as
+  `archived_at == null`, and here it would have reported a tiny fraction of the
+  real fees while looking fine.
+- **The journal signs a fee negative** (a cost, from the studio's point of view),
+  so the studio figure is negated into an amount PAID. A cost page showing
+  "−145" reads as money coming back. Pinned by a test.
+
+BYO Stripe and Payrexx are the studio's own gateway and **fee-blind by design**,
+contributing zero rather than an estimate; `teams_missing_report` names how many
+tenants had no report, so a partial total is visibly partial.
+
 **Cloudflare, PostHog and EAS expose nothing usable**, and the two store portals
 report revenue rather than cost — each of those cards says so in place of a
 number, because an unexplained blank on a cost page invites the reader to assume

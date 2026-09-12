@@ -4,6 +4,7 @@ import type {
   DeeplUsageSnapshot,
   GcpCostSnapshot,
   PlatformMetricsDoc,
+  StripeCostSnapshot,
 } from '@linyup/shared'
 import { PLATFORM_METRICS_COLLECTION } from '@linyup/shared'
 import { adminDb } from '@/lib/firebase-admin'
@@ -36,15 +37,17 @@ export interface ProviderCosts {
   gcp: GcpCostSnapshot | null
   brevo: BrevoCreditSnapshot | null
   deepl: DeeplUsageSnapshot | null
+  stripe: StripeCostSnapshot | null
   /** The snapshot date each block came from, for "as of" display. */
-  from: { gcp: string | null; brevo: string | null; deepl: string | null }
+  from: { gcp: string | null; brevo: string | null; deepl: string | null; stripe: string | null }
 }
 
 const EMPTY: ProviderCosts = {
   gcp: null,
   brevo: null,
   deepl: null,
-  from: { gcp: null, brevo: null, deepl: null },
+  stripe: null,
+  from: { gcp: null, brevo: null, deepl: null, stripe: null },
 }
 
 export async function getProviderCosts(): Promise<ProviderCosts> {
@@ -80,6 +83,10 @@ export async function getProviderCosts(): Promise<ProviderCosts> {
     if (!out.deepl && p.deepl) {
       out.deepl = p.deepl
       out.from.deepl = m.date
+    }
+    if (!out.stripe && p.stripe) {
+      out.stripe = p.stripe
+      out.from.stripe = m.date
     }
   }
 

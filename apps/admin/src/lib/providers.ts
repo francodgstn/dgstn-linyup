@@ -41,7 +41,7 @@ export interface Provider {
    * This card shows a live cost/usage figure from that vendor, keyed to the
    * matching block on the platform snapshot. Absent = nothing is fetched.
    */
-  costFeed?: 'gcp' | 'brevo' | 'deepl'
+  costFeed?: 'gcp' | 'brevo' | 'deepl' | 'stripe'
   /**
    * Why this card shows no figure — a missing API, or a bill that appears on
    * another card. Rendered in place of a number so the blank is explained.
@@ -103,8 +103,7 @@ export const PROVIDERS: Provider[] = [
     panelUrl: 'https://dashboard.stripe.com/',
     docsUrl: 'https://docs.stripe.com/',
     statusUrl: 'https://status.stripe.com/',
-    costNote:
-      'Deliberately not shown: Connect processing fees are the STUDIO’s cost, not Linyup’s, so one total would conflate two parties’ money. Needs a platform-vs-studio split first.',
+    costFeed: 'stripe',
   },
   {
     id: 'brevo',
