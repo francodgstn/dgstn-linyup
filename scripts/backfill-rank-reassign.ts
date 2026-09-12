@@ -167,6 +167,14 @@ async function main() {
   const orgSnap = await orgRef.get()
   if (!orgSnap.exists) { console.error(`❌ organizations/${ORG_ID} does not exist on ${target.projectId}`); process.exit(1) }
   const systems = ((orgSnap.data()?.ranking_systems as System[] | undefined) ?? []).filter((s) => decision.systems.includes(s.id))
+  // The STORED ladder must carry ids — this script names levels by them and
+  // writes them onto people. A ladder that predates Phase 1 is not "missing
+  // Yellow"; it is missing every id, and the fix is the id backfill.
+  const idless = systems.filter((s) => (s.levels ?? []).some((l) => !l.id)).map((s) => s.id)
+  if (idless.length) {
+    console.error(`❌ ${idless.join(', ')}: levels without ids on organizations/${ORG_ID} — run backfill:rank-level-ids --target ${values.target} first`)
+    process.exit(1)
+  }
   const labelOf = new Map<string, Map<string, string>>()
   for (const s of systems) {
     const ids = new Set((s.levels ?? []).map((l) => l.id).filter((id): id is string => !!id))
