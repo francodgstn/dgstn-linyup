@@ -42,6 +42,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Segmented } from '@/components/ui/segmented'
 import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory'
 import { LedgerSegment } from './LedgerSegment'
+import { ReceiptsSegment } from './ReceiptsSegment'
 import {
   Dialog,
   DialogContent,
@@ -2223,11 +2224,23 @@ function MembershipTab({
   onSegChange: (s: MembershipSeg) => void
 }) {
   const t = useTranslations('Contacts')
+  const { isInstalled, isLoading: pluginsLoading } = useInstalledPlugins()
+  const tarif595Installed = isInstalled('tarif-595')
   const SEGMENTS = [
-    { id: 'overview', label: t('segOverview') },
-    { id: 'plans', label: t('segPlans') },
-    { id: 'payments', label: t('segPayments') },
-  ] as const
+    { id: 'overview' as const, label: t('segOverview') },
+    { id: 'plans' as const, label: t('segPlans') },
+    { id: 'payments' as const, label: t('segPayments') },
+    ...(tarif595Installed ? [{ id: 'receipts' as const, label: t('segReceipts') }] : []),
+  ]
+
+  // A stale `?seg=receipts` (the plugin was uninstalled, or the link is
+  // shared with someone on a team that never installed it) falls back to
+  // Overview — the same "unknown/gated value" rule `useTabParam` applies to
+  // `?tab=`, one level down. Held off until the plugin list has actually
+  // loaded, so a fast reload never bounces a real install back to Overview.
+  useEffect(() => {
+    if (!pluginsLoading && seg === 'receipts' && !tarif595Installed) onSegChange('overview')
+  }, [pluginsLoading, seg, tarif595Installed, onSegChange])
 
   // Relationship timeline data — subscription + affiliation periods as spans, and
   // the acquisition milestones as points. Concurrent spans are packed by the ribbon.
@@ -2280,6 +2293,7 @@ function MembershipTab({
         </PlanGate>
       )}
       {seg === 'payments' && <PaymentsTab contact={contact} teamId={teamId} />}
+      {seg === 'receipts' && tarif595Installed && <ReceiptsSegment contact={contact} teamId={teamId} />}
     </div>
   )
 }
@@ -5204,7 +5218,12 @@ type TabId = (typeof TAB_IDS)[number]
 // The segments of the "Plans & Payments" tab, carried in `?seg=` so a refresh, a
 // shared link and a reopened tab all land where the reader was — the same UX-22
 // argument `useTabParam` was written for, one level down.
-const MEMBERSHIP_SEGMENTS = ['overview', 'plans', 'payments'] as const
+// 'receipts' is always in the URL vocabulary (so a direct `?seg=receipts` link
+// is read on mount) even though the tab strip only offers it once the plugin
+// is installed — MembershipTab's own effect bounces a stale value back to
+// Overview. Keeping the plugin's gate out of this array would instead make a
+// still-loading `isInstalled()` swallow a legitimate deep link on first paint.
+const MEMBERSHIP_SEGMENTS = ['overview', 'plans', 'payments', 'receipts'] as const
 type MembershipSeg = (typeof MEMBERSHIP_SEGMENTS)[number]
 
 export default function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {

@@ -47,6 +47,10 @@ rmSync(vendorDir, { recursive: true, force: true })
 mkdirSync(vendorDir, { recursive: true })
 cpSync(sharedDist, join(vendorDir, 'dist'), { recursive: true })
 cpSync(join(sharedDir, 'package.json'), join(vendorDir, 'package.json'))
+// The node10-resolution subpath stubs (see packages/shared/tarif595-positions.js).
+for (const stub of ['tarif595-positions.js', 'tarif595-positions.d.ts']) {
+  cpSync(join(sharedDir, stub), join(vendorDir, stub))
+}
 
 // 3. Rewrite the functions package.json dependency to the vendored copy so the
 //    npm install Cloud Build runs no longer chokes on `workspace:*`.

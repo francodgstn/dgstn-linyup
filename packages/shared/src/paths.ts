@@ -331,6 +331,10 @@ export const TEAM_CONTACT_COUNTER_DOC = 'contacts'
  *  team is migrated; `resolveSignupDocumentIds` in types/team.ts is that read,
  *  written once so the client and the sync cannot disagree about it. */
 export const DOCUMENTS_SETTINGS_DOC_ID = 'documents'
+/** teams/{teamId}/settings/legal_profile — `StudioLegalProfile` (types/legalProfile.ts):
+ *  the creditor identity printed on receipts and invoices. Shared by the Tarif 595
+ *  and QR-invoice plugins; owned by neither. */
+export const LEGAL_PROFILE_SETTINGS_DOC_ID = 'legal_profile'
 
 // Website plugin (studio site builder)
 // site_drafts: PRIVATE working copy (manager+). site_published: PUBLIC snapshot
@@ -435,3 +439,22 @@ export const ACCOUNTING_ENTRY_TEMPLATES_SUBCOLLECTION = 'accounting_entry_templa
 // behind the statement of assets. Owner-written from the client; REGISTER-ONLY
 // in cash mode — no ledger writer reads it until accrual mode lands.
 export const ASSET_REGISTER_SUBCOLLECTION = 'asset_register'
+
+// Tarif 595 (health-insurance receipts plugin — see types/tarif595.ts and
+// docs/tarif-595.md). settings: singleton config, manager+. contacts: per-contact
+// insurer + AHV data, manager+ (never on the contact doc). receipts: frozen
+// snapshots, function-written only; a voided receipt is kept, never deleted.
+export const TARIF595_SETTINGS_SUBCOLLECTION = 'tarif595_settings'
+export const TARIF595_SETTINGS_DOC = 'config'
+export const TARIF595_CONTACTS_SUBCOLLECTION = 'tarif595_contacts'
+export const TARIF595_RECEIPTS_SUBCOLLECTION = 'tarif595_receipts'
+/** teams/{teamId}/counters/tarif595_receipts — `{last, year}`, an ABSOLUTE
+ *  value written in the same transaction as the receipt it numbers. */
+export const TEAM_TARIF595_RECEIPT_COUNTER_DOC = 'tarif595_receipts'
+/** Storage: teams/{teamId}/tarif595/{receiptId}/receipt.pdf|receipt.xml — Admin
+ *  SDK writes; storage.rules excludes the prefix from the broad team match, so
+ *  the bytes are only ever served by the download callable (sha256-verified). */
+export const TARIF595_STORAGE_SEGMENT = 'tarif595'
+export function tarif595StoragePath(teamId: string, receiptId: string, kind: 'pdf' | 'xml'): string {
+  return `${TEAMS_COLLECTION}/${teamId}/${TARIF595_STORAGE_SEGMENT}/${receiptId}/receipt.${kind}`
+}

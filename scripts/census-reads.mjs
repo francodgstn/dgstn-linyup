@@ -30,9 +30,12 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '')
+// fileURLToPath (not URL.pathname), and forward slashes in every relative path
+// below, so the census runs the same on a Windows checkout as in CI.
+const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]+$/, '')
 const paths = require(join(ROOT, 'packages/shared/dist/paths.js'))
 
 /** The LOG collections — one row per event, growing with time. A constant
@@ -55,6 +58,7 @@ const LOG_COLLECTIONS = [
   'AUTOMATION_LOGS_SUBCOLLECTION',
   'TEAM_WEEKLY_REPORTS_SUBCOLLECTION',
   'CONTACT_WEEKLY_REPORTS_SUBCOLLECTION',
+  'TARIF595_RECEIPTS_SUBCOLLECTION',
 ]
 
 /**
@@ -177,7 +181,7 @@ const flagged = []
 for (const root of SCAN_ROOTS) {
   for (const file of walk(join(ROOT, root))) {
     const src = readFileSync(file, 'utf8')
-    const rel = relative(ROOT, file)
+    const rel = relative(ROOT, file).split('\\').join('/')
     let m
     READ_CALL.lastIndex = 0
     while ((m = READ_CALL.exec(src))) {

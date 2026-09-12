@@ -304,7 +304,9 @@ consolidation, AR aging (nothing to age).
 
 - **AR / invoicing / dunning** — no invoice-now-pay-later culture in this
   product; manual rows keep covering offline money. Receivable/payable accounts
-  stay manual-use.
+  stay manual-use. The Tarif 595 plugin (`docs/tarif-595.md`) is not an
+  exception: a health-insurance reimbursement receipt is an attestation of a
+  purchase already paid and writes no journal row.
 - **VAT computation/filing** — schema readiness stays (`tax_code`,
   `tax_rate_bp`), nothing computes. The DE/IT low-threshold caveat in
   `docs/accounting.md` stands.

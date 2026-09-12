@@ -103,7 +103,7 @@ service cloud.firestore {
     // honest (a test that reads the manifests, that file and this one).
     function clientInstallableRank(pluginId) {
       return pluginId in ['gift-cards'] ? 0
-           : pluginId in ['asset-register', 'contact-groups', 'custom-fields'] ? 1
+           : pluginId in ['asset-register', 'contact-groups', 'custom-fields', 'tarif-595'] ? 1
            : 2;
     }
 
@@ -1091,6 +1091,26 @@ service cloud.firestore {
         allow write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
       }
 
+      // Tarif 595 (health-insurance receipts plugin — docs/tarif-595.md).
+      // settings: the plugin's own identifiers (GLN/ZSR) and the offering →
+      // position map. Manager+ on both axes: the person mapping offerings is the
+      // manager, and none of it is coach data. The creditor identity (name,
+      // address, IBAN, VAT) lives in settings/legal_profile above, not here.
+      match /tarif595_settings/{docId} {
+        allow read, write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+      }
+      // Per-contact insurer data — AHV number, insurer GLN, insured number.
+      // Manager+, and NEVER on the contact document or any mirror.
+      match /tarif595_contacts/{contactId} {
+        allow read, write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+      }
+      // Issued receipts — frozen snapshots numbered from counters/tarif595_receipts.
+      // Cloud Functions only; a receipt is voided, never edited or deleted.
+      match /tarif595_receipts/{receiptId} {
+        allow read:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+
       // THE booking gate's authorization source: which waivers a booking here
       // requires, and at what version floor. Server-written by
       // publishDocumentVersion / setWaiverRequirement / archiveWaiver, each
@@ -1893,10 +1913,15 @@ service cloud.firestore {
     // refused. packages/functions/src/connect/coursePurchaseAccess.test.ts fails
     // if this block or either of its two constraints goes missing.
     match /{path=**}/purchases/{purchaseId} {
+      // A contact lists their own purchases (the Space); a manager of the
+      // purchase's own team lists a contact's purchases (the Tarif 595 receipts
+      // segment picks a bought course to attest). Every row carries teamId.
       allow list: if request.auth != null
-                  && request.auth.token.contactId != null
-                  && resource.data.contactId == request.auth.token.contactId
-                  && isContactOfTeam(resource.data.teamId);
+                  && ((request.auth.token.contactId != null
+                       && resource.data.contactId == request.auth.token.contactId
+                       && isContactOfTeam(resource.data.teamId))
+                      || hasTeamRole(resource.data.teamId, 'manager')
+                      || hasTeamRole(resource.data.teamId, 'owner'));
       allow write: if false;  // Connect webhook (Admin SDK) only
     }
 

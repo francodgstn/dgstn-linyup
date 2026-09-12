@@ -458,6 +458,17 @@ export { createManualEntry, reverseEntry } from './accounting/manualEntries'
 export { closeFiscalYear } from './accounting/close'
 export { setChartTemplate } from './accounting/settings'
 
+// Tarif 595 (health-insurance receipts plugin) — creation is plugin-gated;
+// download, void and re-send of an existing receipt are not (docs/plugins.md,
+// "The server gate"). No finance journal row: a receipt is an attestation.
+export {
+  previewTarif595Receipt,
+  issueTarif595Receipt,
+  voidTarif595Receipt,
+  downloadTarif595Receipt,
+  emailTarif595Receipt,
+} from './tarif595'
+
 // In-app feedback — ops email notification on new submissions
 export { onFeedbackCreated } from './feedback/onFeedbackCreated'
 

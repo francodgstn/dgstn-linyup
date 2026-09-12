@@ -1,0 +1,615 @@
+type	chapter_no	service_no	description_de	description_fr	description_it	valid_from	valid_until
+chp	0		Allgemeines	Généralités	In generale	2027-01-01	2999-12-31
+chp	1		Allgemeine Tarifziffern und Zusätze	Chiffres tarifaires généraux et compléments	Cifre tariffarie generali e supplementi	2021-01-01	9998-12-31
+srv	1	1100	Administrative Gebühr, pauschal	Frais administratifs, forfait	Tassa amministrativa, forfait	2019-01-01	9998-12-31
+srv	1	1101	Verpasster Termin, pauschal	Rendez-vous manqué, forfait	Appuntamento mancato, forfait	2019-01-01	9998-12-31
+srv	1	1102	Nahrungsergänzungsmittel, pauschal	Compléments alimentaires, forfait	Integratori alimentari, forfait	2027-01-01	9998-12-31
+srv	1	1103	Kinderbetreuung, pauschal	Garde d’enfants, forfait	Assistenza ai bambini, forfait	2027-01-01	9998-12-31
+srv	1	1104	Trainingsmaterial, pauschal	Matériel d’entraînement, forfait	Materiali per l’allenamento, forfait	2027-01-01	9998-12-31
+srv	1	1105	Aufgezeichnetes Onlinetraining	Entraînement en ligne enregistré	Allenamento online registrato	2027-01-01	9998-12-31
+srv	1	1011	Solarium, Einzeleintritt	Solarium, entrée individuelle	Solarium, entrata singola	2019-01-01	9998-12-31
+srv	1	9999	Angebote, die keiner Tarifziffer entsprechen	Offres qui ne correspondent à aucune position tarifaire	Offerte che non corrispondono a nessuna posizione tariffale	2022-01-01	9998-12-31
+srv	1	9998	Livestream- und Livecoaching-Angebote	Offres de streaming et de coaching en direct	Offerte di livestreaming e livecoaching	2022-01-01	2026-12-31
+chp	2		Pauschalangebote	Forfaits	Offerte forfettarie	2021-01-01	9998-12-31
+chp	2.1		Fitness- und Gesundheitscenter und Bewegungsstudios	Centres de fitness et de santé, salles de sport	Centri fitness, centri per la salute e palestre	2027-01-01	9998-12-31
+srv	2.1	1000	Training auf der Trainingsfläche, pro 1 Jahr	Entraînement dans l’espace dédié, par an	Allenamento in area apposita, 1 anno	2027-01-01	9998-12-31
+srv	2.1	1001	Training auf der Trainingsfläche, pro 1 Monat	Entraînement dans l’espace dédié, par mois	Allenamento in area apposita, 1 mese	2019-01-01	9998-12-31
+srv	2.1	1004	Training auf der Trainingsfläche, Einzeleintritt	Entraînement dans l’espace dédié, entrée individuelle	Allenamento in area apposita, entrata singola	2019-01-01	9998-12-31
+srv	2.1	1014	Training auf der Trainingsfläche und Wellness, pro 1 Jahr	Entraînement dans l’espace dédié et bien-être, par an	Allenamento in area apposita e wellness, 1 anno	2027-01-01	9998-12-31
+srv	2.1	1002	Training auf der Trainingsfläche und Wellness, pro 1 Monat	Entraînement dans l’espace dédié et bien-être, par mois	Allenamento in area apposita e wellness, 1 mese	2019-01-01	9998-12-31
+srv	2.1	1005	Training auf der Trainingsfläche und Wellness, Einzeleintritt	Entraînement dans l’espace dédié et bien-être, entrée individuelle	Allenamento in area apposita e wellness, entrata singola	2019-01-01	9998-12-31
+srv	2.1	1015	Training auf der Trainingsfläche und Groupfitness, pro 1 Jahr	Entraînement dans l’espace dédié et fitness en groupe, par an	Allenamento in area apposita e fitness di gruppo, 1 anno	2027-01-01	9998-12-31
+srv	2.1	1016	Training auf der Trainingsfläche und Groupfitness, pro 1 Monat	Entraînement dans l’espace dédié et fitness en groupe, par mois	Allenamento in area apposita e fitness di gruppo, 1 mese	2027-01-01	9998-12-31
+srv	2.1	1017	Training auf der Trainingsfläche und Groupfitness, Einzeleintritt	Entraînement dans l’espace dédié et fitness en groupe, entrée individuelle	Allenamento in area apposita e fitness di gruppo, entrata singola	2027-01-01	9998-12-31
+srv	2.1	1018	Training auf der Trainingsfläche, Groupfitness und Wellness, pro 1 Jahr	Entraînement dans l’espace dédié, fitness en groupe et bien-être, par an	Allenamento in area apposita, fitness di gruppo e wellness, 1 anno	2027-01-01	9998-12-31
+srv	2.1	1019	Training auf der Trainingsfläche, Groupfitness und Wellness, pro 1 Monat	Entraînement dans l’espace dédié, fitness en groupe et bien-être, par mois	Allenamento in area apposita, fitness di gruppo e wellness, 1 mese	2027-01-01	9998-12-31
+srv	2.1	1020	Training auf der Trainingsfläche, Groupfitness und Wellness, Einzeleintritt	Entraînement dans l’espace dédié, fitness en groupe et bien-être, entrée individuelle	Allenamento in area apposita, fitness di gruppo e wellness, entrata singola	2027-01-01	9998-12-31
+srv	2.1	1003	Wellness im Fitnesscenter, Abonnement pro 1 Monat	Bien-être dans un centre de fitness, abonnement par mois	Wellness nel centro fitness, abbonamento 1 mese	2019-01-01	2026-12-31
+srv	2.1	1006	Wellness im Fitnesscenter, Einzeleintritt	Bien-être dans un centre de fitness, entrée individuelle	Wellness nel centro fitness, entrata singola	2019-01-01	2026-12-31
+srv	2.1	1007	Personal Training im Fitnesscenter, pauschal	Entraînement personnalisé en centre de fitness, forfait	Personal training nel centro fitness, forfait	2019-01-01	2026-12-31
+chp	2.2		Groupfitness	Fitness en groupe	Fitness di gruppo	2027-01-01	9998-12-31
+srv	2.2	1021	Groupfitness, pro 1 Jahr	Fitness en groupe, par an	Fitness di gruppo, 1 anno	2027-01-01	9998-12-31
+srv	2.2	1022	Groupfitness, pro 1 Monat	Fitness en groupe, par mois	Fitness di gruppo, 1 mese	2027-01-01	9998-12-31
+srv	2.2	1023	Groupfitness, Einzeleintritt	Fitness en groupe, entrée individuelle	Fitness di gruppo, entrata singola	2027-01-01	9998-12-31
+srv	2.2	1024	Groupfitness, online live, pro 1 Jahr	Fitness en groupe, en ligne et en direct, par an	Fitness di gruppo, online live, 1 anno	2027-01-01	9998-12-31
+srv	2.2	1025	Groupfitness, online live, pro 1 Monat	Fitness en groupe, en ligne en direct, par mois	Fitness di gruppo, online live, 1 mese	2027-01-01	9998-12-31
+srv	2.2	1026	Groupfitness, online live, Einzeleintritt	Fitness en groupe, en ligne et en direct, entrée individuelle	Fitness di gruppo, online live, entrata singola	2027-01-01	9998-12-31
+srv	2.2	1027	Groupfitness und Wellness, pro 1 Jahr	Fitness en groupe et bien-être, par an	Fitness di gruppo e wellness, 1 anno	2027-01-01	9998-12-31
+srv	2.2	1028	Groupfitness und Wellness, pro 1 Monat	Fitness en groupe et bien-être, par mois	Fitness di gruppo e wellness, 1 mese	2027-01-01	9998-12-31
+srv	2.2	1029	Groupfitness und Wellness, Einzeleintritt	Fitness en groupe et bien-être, entrée individuelle	Fitness di gruppo e wellness, entrata singola	2027-01-01	9998-12-31
+chp	2.3		Andere Trainingsanlagen ohne Kurse (indoor und outdoor)	Autres installations d’entraînement sans cours (en salle et en plein air)	Altre strutture per allenamento senza corsi (indoor e outdoor)	2027-01-01	9998-12-31
+srv	2.3	1009	Wohlfühlbehandlungen und Wellness, pauschal	Traitements bien-être, forfait	Trattamenti benessere e wellness, forfait	2019-01-01	9998-12-31
+srv	2.3	1010	Kosmetikbehandlungen im Fitnesscenter, pro 5 Min.	Traitements cosmétiques en centre de fitness, par périodes de cinq minutes	Trattamenti cosmetici nel centro fitness, 5 min.	2019-01-01	2026-12-31
+srv	2.3	1012	Hallen- und Freibad, pro 1 Monat	Piscine couverte et en plein air, par mois	Piscina coperta e all’aperto, 1 mese	2019-01-01	9998-12-31
+srv	2.3	1013	Hallen- und Freibad, Einzeleintritt	Piscine couverte et en plein air, entrée individuelle	Piscina coperta e all’aperto, entrata singola	2019-01-01	9998-12-31
+srv	2.3	1030	Klettern und Bouldern in der Halle, pro 1 Monat	Escalade et bloc en salle, par mois	Arrampicata e bouldering in palestra, 1 mese	2027-01-01	9998-12-31
+srv	2.3	1031	Klettern und Bouldern in der Halle, Einzeleintritt	Escalade et bloc en salle, entrée individuelle	Arrampicata e bouldering in palestra, entrata singola	2027-01-01	9998-12-31
+srv	2.3	1032	Loipen-Pass, pauschal	Carte d’accès aux pistes de ski, forfait	Pass per le piste da sci di fondo, forfait	2027-01-01	9998-12-31
+srv	2.3	1033	Eishalle, pro 1 Monat	Patinoire, par mois	Palaghiaccio, 1 mese	2027-01-01	9998-12-31
+srv	2.3	1034	Eishalle, Einzeleintritt	Patinoire, entrée individuelle	Palaghiaccio, entrata singola	2027-01-01	9998-12-31
+chp	2.4		Vereine und Sportförderung (Einzel- und Mannschaftssportarten)	Associations et promotion du sport (sports individuels et en équipe)	Associazioni e promozione dello sport (Sport individuali e di squadra)	2027-01-01	9998-12-31
+srv	2.4	1035	Mitgliedschaft im Sportverein, pauschal	Affiliation à un club de sport, forfait	Affiliazione a un’associazione sportiva, forfait	2027-01-01	9998-12-31
+chp	3		Gruppenkurse und Personaltraining	Cours collectifs et entraînement personnalisé	Corsi di gruppo e personal training	2021-01-01	9998-12-31
+chp	3.1		Ausdauer und Kraft	Endurance et musculation	Resistenza e forza	2027-01-01	9998-12-31
+srv	3.1	3031	Zumba, Einzel- und Gruppenunterricht, Abonnement pro 1 Monat	Zumba, cours particuliers et collectifs, abonnement par mois	Zumba, lezioni individuali e di gruppo, abbonamento 1 mese	2021-01-01	2022-12-31
+srv	3.1	3032	Zumba, Einzel- und Gruppenunterricht, pro 1 Lektion	Zumba, cours particuliers et collectifs, par leçon	Zumba, lezioni individuali e di gruppo, 1 lezione	2021-01-01	2022-12-31
+srv	3.1	3001	Antara, pro 1 Monat	Antara, par mois	Antara, 1 mese	2021-01-01	2026-12-31
+srv	3.1	3002	Antara, pro 1 Lektion	Antara, par leçon	Antara, 1 lezione	2021-01-01	2026-12-31
+srv	3.1	3009	Körper- und Bewegungsschulung, pro 1 Monat	Entraînement physique et moteur, par mois	Rieducazione fisica e al movimento, 1 mese	2021-01-01	2026-12-31
+srv	3.1	3010	Körper- und Bewegungsschulung, pro 1 Lektion	Entraînement physique et moteur, par leçon	Rieducazione fisica e al movimento, 1 lezione	2021-01-01	2026-12-31
+srv	3.1	3015	Pilates, pro 1 Monat	Pilates, par mois	Pilates, 1 mese	2021-01-01	2026-12-31
+srv	3.1	3016	Pilates, pro 1 Lektion	Pilates, par leçon	Pilates, 1 lezione	2021-01-01	2026-12-31
+srv	3.1	3017	Rhythmisches Bewegungsangebot, pro 1 Monat	Offre d’activité physique rythmée, par mois	Offerta di attività fisica ritmica, 1 mese	2021-01-01	2026-12-31
+srv	3.1	3018	Rhythmisches Bewegungsangebot, pro 1 Lektion	Offre d’activité physique rythmée, par leçon	Offerta di attività fisica ritmica, 1 lezione	2021-01-01	2026-12-31
+srv	3.1	7002	Babyschwimmen, pro 1 Monat	Bébés nageurs, par mois	Nuoto per neonati, 1 mese	2021-01-01	2026-12-31
+srv	3.1	7003	Babyschwimmen, pro 1 Lektion	Bébés nageurs, par leçon	Nuoto per neonati, 1 lezione	2021-01-01	2026-12-31
+srv	3.1	7004	Kinderschwimmkurs, pro 1 Monat	Cours de natation pour enfants, par mois	Corso di nuoto per bambini, 1 mese	2021-01-01	2026-12-31
+srv	3.1	7005	Kinderschwimmkurs, pro 1 Lektion	Cours de natation pour enfants, par leçon	Corso di nuoto per bambini, 1 lezione	2021-01-01	2026-12-31
+srv	3.1	3033	Aerobic, pro 1 Lektion	Aérobic, par leçon	Aerobica, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3034	Aerobic, online live, pro 1 Lektion	Aérobic, en ligne et en direct, par leçon	Aerobica, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3035	Aerobic, pro 1 Monat	Aérobic, par mois	Aerobica, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3036	Aerobic, online live, pro 1 Monat	Aérobic, en ligne et en direct, par mois	Aerobica, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3037	Aerobic, Personal Training	Aérobic, entraînement personnalisé	Aerobica, personal training	2027-01-01	9998-12-31
+srv	3.1	3038	Aerobic, Personal Training, online live	Aérobic, entraînement personnalisé, en ligne et en direct	Aerobica, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3039	Krafttraining Gruppe 1, pro 1 Lektion	Musculation, groupe 1, par leçon	Allenamento della forza, gruppo 1, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3040	Krafttraining Gruppe 1, online live, pro 1 Lektion	Musculation, groupe 1, en ligne et en direct, par leçon	Allenamento della forza, gruppo 1, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3041	Krafttraining Gruppe 1, pro 1 Monat	Musculation, groupe 1, par mois	Allenamento della forza, gruppo 1, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3042	Krafttraining Gruppe 1, online live, pro 1 Monat	Musculation, groupe 1, en ligne et en direct, par mois	Allenamento della forza, gruppo 1, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3043	Krafttraining Gruppe 1, Personal Training	Musculation, groupe 1, entraînement personnalisé	Allenamento della forza, gruppo 1, personal training	2027-01-01	9998-12-31
+srv	3.1	3044	Krafttraining Gruppe 1, Personal Training, online live	Musculation, groupe 1, entraînement personnalisé, en ligne et en direct	Allenamento della forza, gruppo 1, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3045	Krafttraining Gruppe 2, pro 1 Lektion	Musculation, groupe 2, par leçon	Allenamento della forza, gruppo 2, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3046	Krafttraining Gruppe 2, online live, pro 1 Lektion	Musculation, groupe 2, en ligne et en direct, par leçon	Allenamento della forza, gruppo 2, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3047	Krafttraining Gruppe 2, pro 1 Monat	Musculation, groupe 2, par mois	Allenamento della forza, gruppo 2, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3048	Krafttraining Gruppe 2, online live, pro 1 Monat	Musculation, groupe 2, en ligne et en direct, par mois	Allenamento della forza, gruppo 2, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3049	Krafttraining Gruppe 2, Personal Training	Musculation, groupe 2, entraînement personnalisé	Allenamento della forza, gruppo 2, personal training	2027-01-01	9998-12-31
+srv	3.1	3050	Krafttraining Gruppe 2, Personal Training, online live	Musculation, groupe 2, entraînement personnalisé, en ligne et en direct	Allenamento della forza, gruppo 2, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3051	Ausdauertraining, pro 1 Lektion	Endurance, par leçon	Allenamento della resistenza, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3052	Ausdauertraining, online live, pro 1 Lektion	Endurance, en ligne et en direct, par leçon	Allenamento della resistenza, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3053	Ausdauertraining, pro 1 Monat	Endurance, par mois	Allenamento della resistenza, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3054	Ausdauertraining, online live, pro 1 Monat	Endurance, en ligne en direct, par mois	Allenamento della resistenza, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3055	Ausdauertraining, Personal Training	Endurance, entraînement personnalisé	Allenamento della resistenza, personal training	2027-01-01	9998-12-31
+srv	3.1	3056	Ausdauertraining, Personal Training, online live	Endurance, entraînement personnalisé, en ligne et en direct	Allenamento della resistenza, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3057	Bewegung und Koordination Gruppe 1, pro 1 Lektion	Activité physique et coordination, groupe 1, par leçon	Esercizio fisico e coordinazione, gruppo 1, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3058	Bewegung und Koordination Gruppe 1, online live, pro 1 Lektion	Activité physique et coordination, groupe 1, en ligne et en direct, par leçon	Esercizio fisico e coordinazione, gruppo 1, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3059	Bewegung und Koordination Gruppe 1, pro 1 Monat	Activité physique et coordination, groupe 1, par mois	Esercizio fisico e coordinazione, gruppo 1, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3060	Bewegung und Koordination Gruppe 1, online live, pro 1 Monat	Activité physique et coordination, groupe 1, en ligne et en direct, par mois	Esercizio fisico e coordinazione, gruppo 1, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3061	Bewegung und Koordination Gruppe 1, Personal Training	Activité physique et coordination, groupe 1, entraînement personnalisé	Esercizio fisico e coordinazione, gruppo 1, personal training	2027-01-01	9998-12-31
+srv	3.1	3062	Bewegung und Koordination Gruppe 1, Personal Training, online live	Activité physique et coordination, groupe 1, entraînement personnalisé, en ligne et en direct	Esercizio fisico e coordinazione, gruppo 1, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3063	Bewegung und Koordination Gruppe 2, pro 1 Lektion	Activité physique et coordination, groupe 2, par leçon	Esercizio fisico e coordinazione, gruppo 2, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3064	Bewegung und Koordination Gruppe 2, online live, pro 1 Lektion	Activité physique et coordination, groupe 2, en ligne et en direct, par leçon	Esercizio fisico e coordinazione, gruppo 2, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3065	Bewegung und Koordination Gruppe 2, pro 1 Monat	Activité physique et coordination, groupe 2, par mois	Esercizio fisico e coordinazione, gruppo 2, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3066	Bewegung und Koordination Gruppe 2, online live, pro 1 Monat	Activité physique et coordination, groupe 2, en ligne et en direct, par mois	Esercizio fisico e coordinazione, gruppo 2, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3067	Bewegung und Koordination Gruppe 2, Personal Training	Activité physique et coordination, groupe 2, entraînement personnalisé	Esercizio fisico e coordinazione, gruppo 2, personal training	2027-01-01	9998-12-31
+srv	3.1	3068	Bewegung und Koordination Gruppe 2, Personal Training, online live	Activité physique et coordination, groupe 2, entraînement personnalisé, en ligne et en direct	Esercizio fisico e coordinazione, gruppo 2, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3014	Paartanz, pro 1 Lektion	Danse en couple, par leçon	Ballo di coppia, 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3069	Paartanz, online live, pro 1 Lektion	Danse en couple, en ligne et en direct, par leçon	Ballo di coppia, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3013	Paartanz, pro 1 Monat	Danse en couple, par mois	Ballo di coppia, 1 mese	2021-01-01	9998-12-31
+srv	3.1	3070	Paartanz, online live, pro 1 Monat	Danse en couple, en ligne et en direct, par mois	Ballo di coppia, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3071	Paartanz, Personal Training	Danse en couple, entraînement personnalisé	Ballo di coppia, personal training	2027-01-01	9998-12-31
+srv	3.1	3072	Paartanz, Personal Training, online live	Danse en couple, entraînement personnalisé, en ligne et en direct	Ballo di coppia, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3022	Solotanz, pro 1 Lektion	Danse en solo, par leçon	Danza individuale, 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3073	Solotanz, online live, pro 1 Lektion	Danse en solo, en ligne et en direct, par leçon	Danza individuale, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3021	Solotanz, pro 1 Monat	Danse en solo, par mois	Danza individuale, 1 mese	2021-01-01	9998-12-31
+srv	3.1	3074	Solotanz, online live, pro 1 Monat	Danse en solo, en ligne et en direct, par mois	Danza individuale, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3075	Solotanz, Personal Training	Danse en solo, entraînement personnalisé	Danza individuale, personal training	2027-01-01	9998-12-31
+srv	3.1	3076	Solotanz, Personal Training, online live	Danse en solo, entraînement personnalisé, en ligne et en direct	Danza individuale, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3077	Hip-Hop, pro 1 Lektion	Danse hip-hop, par leçon	Hip hop, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3078	Hip-Hop, online live, pro 1 Lektion	Danse hip-hop, en ligne et en direct, par leçon	Hip hop, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3079	Hip-Hop, pro 1 Monat	Danse hip-hop, par mois	Hip hop, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3080	Hip-Hop, online live, pro 1 Monat	Danse hip-hop, en ligne et en direct, par mois	Hip hop, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3081	Hip-Hop, Personal Training	Danse hip-hop, entraînement personnalisé	Hip hop, personal training	2027-01-01	9998-12-31
+srv	3.1	3082	Hip-Hop, Personal Training, online live	Danse hip-hop, entraînement personnalisé, en ligne et en direct	Hip hop, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3008	Kampfsport Light (ohne Körperkontakt), pro 1 Lektion	Sports de combat light (sans contact physique), par leçon	Sport da combattimento light (senza contatto fisico), 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3083	Kampfsport Light (ohne Körperkontakt), online live, pro 1 Lektion	Sports de combat light (sans contact physique), en ligne et en direct, par leçon	Sport da combattimento light (senza contatto fisico), online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3007	Kampfsport Light (ohne Körperkontakt), pro 1 Monat	Sports de combat light (sans contact physique), par mois	Sport da combattimento light (senza contatto fisico), 1 mese	2021-01-01	9998-12-31
+srv	3.1	3084	Kampfsport Light (ohne Körperkontakt), online live, pro 1 Monat	Sports de combat light (sans contact physique), en ligne et en direct, par mois	Sport da combattimento light (senza contatto fisico), online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3085	Kampfsport Light (ohne Körperkontakt), Personal Training	Sports de combat light (sans contact physique), entraînement personnalisé	Sport da combattimento light (senza contatto fisico), personal training	2027-01-01	9998-12-31
+srv	3.1	3086	Kampfsport Light (ohne Körperkontakt), Personal Training, online live	Sports de combat light (sans contact physique), entraînement personnalisé, en ligne et en direct	Sport da combattimento light (senza contatto fisico), personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3087	Karate Light (ohne Körperkontakt), pro 1 Lektion	Karaté light (sans contact physique), par leçon	Karate light (senza contatto fisico), 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3088	Karate Light (ohne Körperkontakt), online live, pro 1 Lektion	Karaté light (sans contact physique), en ligne et en direct, par leçon	Karate light (senza contatto fisico), online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3089	Karate Light (ohne Körperkontakt), pro 1 Monat	Karaté light (sans contact physique), par mois	Karate light (senza contatto fisico), 1 mese	2027-01-01	9998-12-31
+srv	3.1	3090	Karate Light (ohne Körperkontakt), online live, pro 1 Monat	Karaté light (sans contact physique), en ligne et en direct, par mois	Karate light (senza contatto fisico), online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3091	Karate Light (ohne Körperkontakt), Personal Training	Karaté light (sans contact physique), entraînement personnalisé	Karate light (senza contatto fisico), personal training	2027-01-01	9998-12-31
+srv	3.1	3092	Karate Light (ohne Körperkontakt), Personal Training, online live	Karaté light (sans contact physique), entraînement personnalisé, en ligne et en direct	Karate light (senza contatto fisico), personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3093	Bewegungsangebote für Kinder mit Begleitung, pro 1 Lektion	Offres d’activités physiques pour enfants avec accompagnement, par leçon	Offerte di attività fisica per bambini accompagnati, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3094	Bewegungsangebote für Kinder mit Begleitung, online live, pro 1 Lektion	Offres d’activités physiques pour enfants avec accompagnement, en ligne et en direct, par leçon	Offerte di attività fisica per bambini accompagnati, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3095	Bewegungsangebote für Kinder mit Begleitung, pro 1 Monat	Offres d’activités physiques pour enfants avec accompagnement, par mois	Offerte di attività fisica per bambini accompagnati, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3096	Bewegungsangebote für Kinder mit Begleitung, online live, pro 1 Monat	Offres d’activités physiques pour enfants avec accompagnement, en ligne et en direct, par mois	Offerte di attività fisica per bambini accompagnati, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3097	Bewegungsangebote für Kinder mit Begleitung, Personal Training	Offres d’activités physiques pour enfants avec accompagnement, entraînement personnalisé	Offerte di attività fisica per bambini accompagnati, personal training	2027-01-01	9998-12-31
+srv	3.1	3098	Bewegungsangebote für Kinder mit Begleitung, Personal Training, online live	Offres d’activités physiques pour enfants avec accompagnement, entraînement personnalisé, en ligne et en direct	Offerte di attività fisica per bambini accompagnati, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3099	Bewegungsangebote Indoor für Erwachsene mit Babys/Kindern, pro 1 Lektion	Offres d’activités physiques en salle pour adultes avec bébés/enfants, par leçon	Offerte di attività fisica indoor per adulti con neonati/bambini, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3100	Bewegungsangebote Indoor für Erwachsene mit Babys/Kindern, online live, pro 1 Lektion	Offres d’activités physiques en salle pour adultes avec bébés/enfants, en ligne et en direct, par leçon	Offerte di attività fisica indoor per adulti con neonati/bambini, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3101	Bewegungsangebote Indoor für Erwachsene mit Babys/Kindern, pro 1 Monat	Offres d’activités physiques en salle pour adultes avec bébés/enfants, par mois	Offerte di attività fisica indoor per adulti con neonati/bambini, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3102	Bewegungsangebote Indoor für Erwachsene mit Babys/Kindern, online live, pro 1 Monat	Offres d’activités physiques en salle pour adultes avec bébés/enfants, en ligne et en direct, par mois	Offerte di attività fisica indoor per adulti con neonati/bambini, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3103	Bewegungsangebote Indoor für Erwachsene mit Babys/Kindern, Personal Training	Offres d’activités physiques en salle pour adultes avec bébés/enfants, entraînement personnalisé	Offerte di attività fisica indoor per adulti con neonati/bambini, personal training	2027-01-01	9998-12-31
+srv	3.1	3104	Bewegungsangebote Indoor für Erwachsene mit Babys/Kindern, Personal Training, online live	Offres d’activités physiques en salle pour adultes avec bébés/enfants, entraînement personnalisé, en ligne et en direct	Offerte di attività fisica indoor per adulti con neonati/bambini, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3105	Indoorcycling, pro 1 Lektion	Vélo en salle, par leçon	Indoor cycling, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3106	Indoorcycling, online live, pro 1 Lektion	Vélo en salle, en ligne et en direct, par leçon	Indoor cycling, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3107	Indoorcycling, pro 1 Monat	Vélo en salle, par mois	Indoor cycling, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3108	Indoorcycling, online live, pro 1 Monat	Vélo en salle, en ligne et en direct, par mois	Indoor cycling, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3109	Indoorcycling, Personal Training	Vélo en salle, entraînement personnalisé	Indoor cycling, personal training	2027-01-01	9998-12-31
+srv	3.1	3110	Indoorcycling, Personal Training, online live	Vélo en salle, entraînement personnalisé, en ligne et en direct	Indoor cycling, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3111	Rudern, pro 1 Lektion	Aviron, par leçon	Canottaggio, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3112	Rudern, online live, pro 1 Lektion	Aviron, en ligne et en direct, par leçon	Canottaggio, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3113	Rudern, pro 1 Monat	Aviron, par mois	Canottaggio, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3114	Rudern, online live, pro 1 Monat	Aviron, en ligne et en direct, par mois	Canottaggio, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3115	Rudern, Personal Training	Aviron, entraînement personnalisé	Canottaggio, personal training	2027-01-01	9998-12-31
+srv	3.1	3116	Rudern, Personal Training, online live	Aviron, entraînement personnalisé, en ligne et en direct	Canottaggio, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3117	Trampolintraining, pro 1 Lektion	Entraînement sur trampoline, par leçon	Allenamento sui tappeti elastici, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3118	Trampolintraining, online live, pro 1 Lektion	Entraînement sur trampoline, en ligne et en direct, par leçon	Allenamento sui tappeti elastici, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3119	Trampolintraining, pro 1 Monat	Entraînement sur trampoline, par mois	Allenamento sui tappeti elastici, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3120	Trampolintraining, online live, pro 1 Monat	Entraînement sur trampoline, en ligne et en direct, par mois	Allenamento sui tappeti elastici, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3121	Trampolintraining, Personal Training	Entraînement sur trampoline, entraînement personnalisé	Allenamento sui tappeti elastici, personal training	2027-01-01	9998-12-31
+srv	3.1	3122	Trampolintraining, Personal Training, online live	Entraînement sur trampoline, entraînement personnalisé, en ligne et en direct	Allenamento sui tappeti elastici, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3026	Vibrationstraining, pro 1 Lektion	Entraînement par vibrations, par leçon	Allenamento vibratorio, 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3123	Vibrationstraining, online live, pro 1 Lektion	Entraînement par vibrations, en ligne et en direct, par leçon	Allenamento vibratorio, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3025	Vibrationstraining, pro 1 Monat	Entraînement par vibrations, par mois	Allenamento vibratorio, 1 mese	2021-01-01	9998-12-31
+srv	3.1	3124	Vibrationstraining, online live, pro 1 Monat	Entraînement par vibrations, en ligne et en direct, par mois	Allenamento vibratorio, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3125	Vibrationstraining, Personal Training	Entraînement par vibrations, entraînement personnalisé	Allenamento vibratorio, personal training	2027-01-01	9998-12-31
+srv	3.1	3126	Vibrationstraining, Personal Training, online live	Entraînement par vibrations, entraînement personnalisé, en ligne et en direct	Allenamento vibratorio, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3127	Elektromagnetische Stimulation Beckenboden, pro 1 Lektion	Stimulation électromagnétique du périnée, par leçon	Stimolazione elettromagnetica del pavimento pelvico, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3128	Elektromagnetische Stimulation Beckenboden, pro 1 Monat	Stimulation électromagnétique du périnée, par mois	Stimolazione elettromagnetica del pavimento pelvico, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3129	Elektromagnetische Stimulation andere Körperteile, pro 1 Lektion	Stimulation électromagnétique d’autres parties du corps, par leçon	Stimolazione elettromagnetica di altre parti del corpo, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3130	Elektromagnetische Stimulation andere Körperteile, pro 1 Monat	Stimulation électromagnétique d’autres parties du corps, par mois	Stimolazione elettromagnetica di altre parti del corpo, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3006	Elektrische Stimulation (EMS), pro 1 Lektion	Stimulation électrique (EMS), par leçon	Stimolazione elettrica (EMS), 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3005	Elektrische Stimulation (EMS), pro 1 Monat	Stimulation électrique (EMS), par mois	Stimolazione elettrica (EMS), 1 mese	2021-01-01	9998-12-31
+srv	3.1	3131	Elektrische Stimulation (EMS), Personal Training	Stimulation électrique (EMS), entraînement personnalisé	Stimolazione elettrica (EMS), personal training	2027-01-01	9998-12-31
+srv	3.1	3132	Isokinetisches Training, pro 1 Lektion	Entraînement isocinétique, par leçon	Training isocinetico, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3133	Isokinetisches Training, pro 1 Monat	Entraînement isocinétique, par mois	Training isocinetico, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3134	Isokinetisches Training, Personal Training	Entraînement isocinétique, entraînement personnalisé	Training isocinetico, personal training	2027-01-01	9998-12-31
+srv	3.1	3135	Klettern und Bouldern in der Halle, pro 1 Lektion	Escalade et bloc en salle, par leçon	Arrampicata e bouldering in palestra, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3136	Klettern und Bouldern in der Halle, pro 1 Monat	Escalade et bloc en salle, par mois	Arrampicata e bouldering in palestra, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3137	Klettern und Bouldern in der Halle, Personal Training	Escalade et bloc en salle, entraînement personnalisé	Arrampicata e bouldering in palestra, personal training	2027-01-01	9998-12-31
+srv	3.1	3028	Walking, pro 1 Lektion	Marche, par leçon	Camminata, 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3138	Walking, online live, pro 1 Lektion	Marche, en ligne et en direct, par leçon	Camminata, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3027	Walking, pro 1 Monat	Marche, par mois	Camminata, 1 mese	2021-01-01	9998-12-31
+srv	3.1	3139	Walking, online live, pro 1 Monat	Marche, en ligne et en direct, par mois	Camminata, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3140	Walking, Personal Training	Marche, entraînement personnalisé	Camminata, personal training	2027-01-01	9998-12-31
+srv	3.1	3141	Walking, Personal Training, online live	Marche, entraînement personnalisé, en ligne et en direct	Camminata, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3020	Running, pro 1 Lektion	Course à pied, par leçon	Running, 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3142	Running, online live, pro 1 Lektion	Course à pied, en ligne et en direct, par leçon	Running, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3019	Running, pro 1 Monat	Course à pied, par mois	Running, 1 mese	2021-01-01	9998-12-31
+srv	3.1	3143	Running, online live, pro 1 Monat	Course à pied, en ligne et en direct, par mois	Running, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3144	Running, Personal Training	Course à pied, entraînement personnalisé	Running, personal training	2027-01-01	9998-12-31
+srv	3.1	3145	Running, Personal Training, online live	Course à pied, entraînement personnalisé, en ligne et en direct	Running, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3146	Wandern, pro 1 Lektion	Randonnée, par leçon	Escursionismo, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3147	Wandern, online live, pro 1 Lektion	Randonnée, en ligne et en direct, par leçon	Escursionismo, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3148	Wandern, pro 1 Monat	Randonnée, par mois	Escursionismo, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3149	Wandern, online live, pro 1 Monat	Randonnée, en ligne et en direct, par mois	Escursionismo, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3150	Wandern, Personal Training	Randonnée, entraînement personnalisé	Escursionismo, personal training	2027-01-01	9998-12-31
+srv	3.1	3151	Wandern, Personal Training, online live	Randonnée, entraînement personnalisé, en ligne et en direct	Escursionismo, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3152	Radsport, pro 1 Lektion	Cyclisme, par leçon	Ciclismo, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3153	Radsport, online live, pro 1 Lektion	Cyclisme, en ligne et en direct, par leçon	Ciclismo, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3154	Radsport, pro 1 Monat	Cyclisme, par mois	Ciclismo, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3155	Radsport, online live, pro 1 Monat	Cyclisme, en ligne et en direct, par mois	Ciclismo, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3156	Radsport, Personal Training	Cyclisme, entraînement personnalisé	Ciclismo, personal training	2027-01-01	9998-12-31
+srv	3.1	3157	Radsport, Personal Training, online live	Cyclisme, entraînement personnalisé, en ligne et en direct	Ciclismo, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3158	Rollsport, pro 1 Lektion	Sports à roulettes, par leçon	Sport su rotelle, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3159	Rollsport, online live, pro 1 Lektion	Sports à roulettes, en ligne et en direct, par leçon	Sport su rotelle, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3160	Rollsport, pro 1 Monat	Sports à roulettes, par mois	Sport su rotelle, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3161	Rollsport, online live, pro 1 Monat	Sports à roulettes, en ligne et en direct, par mois	Sport su rotelle, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3162	Rollsport, Personal Training	Sports à roulettes, entraînement personnalisé	Sport su rotelle, personal training	2027-01-01	9998-12-31
+srv	3.1	3163	Rollsport, Personal Training, online live	Sports à roulettes, entraînement personnalisé, en ligne et en direct	Sport su rotelle, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3164	Rudern Outdoor, pro 1 Lektion	Aviron en plein air, par leçon	Canottaggio all’aperto, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3165	Rudern Outdoor, online live, pro 1 Lektion	Aviron en plein air, en ligne et en direct, par leçon	Canottaggio all’aperto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3166	Rudern Outdoor, pro 1 Monat	Aviron en plein air, par mois	Canottaggio all’aperto, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3167	Rudern Outdoor, online live, pro 1 Monat	Aviron en plein air, en ligne et en direct, par mois	Canottaggio all’aperto, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3168	Rudern Outdoor, Personal Training	Aviron en plein air, entraînement personnalisé	Canottaggio all’aperto, personal training	2027-01-01	9998-12-31
+srv	3.1	3169	Rudern Outdoor, Personal Training, online live	Aviron en plein air, entraînement personnalisé, en ligne et en direct	Canottaggio all’aperto, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3170	Outdoor-Krafttraining, pro 1 Lektion	Musculation en plein air, par leçon	Allenamento della forza all’aperto, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3171	Outdoor-Krafttraining, online live, pro 1 Lektion	Musculation en plein air, en ligne et en direct, par leçon	Allenamento della forza all’aperto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3172	Outdoor-Krafttraining, pro 1 Monat	Musculation en plein air, par mois	Allenamento della forza all’aperto, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3173	Outdoor-Krafttraining, online live, pro 1 Monat	Musculation en plein air, en ligne et en direct, par mois	Allenamento della forza all’aperto, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3174	Outdoor-Krafttraining, Personal Training	Musculation en plein air, entraînement personnalisé	Allenamento della forza all’aperto, personal training	2027-01-01	9998-12-31
+srv	3.1	3175	Outdoor-Krafttraining, Personal Training, online live	Musculation en plein air, entraînement personnalisé, en ligne et en direct	Allenamento della forza all’aperto, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3176	Langlaufen, pro 1 Lektion	Ski de fond, par leçon	Sci di fondo, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3177	Langlaufen, online live, pro 1 Lektion	Ski de fond, en ligne et en direct, par leçon	Sci di fondo, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3178	Langlaufen, pro 1 Monat	Ski de fond, par mois	Sci di fondo, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3179	Langlaufen, online live, pro 1 Monat	Ski de fond, en ligne et en direct, par mois	Sci di fondo, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3180	Langlaufen, Personal Training	Ski de fond, entraînement personnalisé	Sci di fondo, personal training	2027-01-01	9998-12-31
+srv	3.1	3181	Langlaufen, Personal Training, online live	Ski de fond, entraînement personnalisé, en ligne et en direct	Sci di fondo, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3182	Schneeschuhwandern, pro 1 Lektion	Randonnée en raquettes, par leçon	Escursioni con le ciaspole, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3183	Schneeschuhwandern, online live, pro 1 Lektion	Randonnée en raquettes, en ligne et en direct, par leçon	Escursioni con le ciaspole, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3184	Schneeschuhwandern, pro 1 Monat	Randonnée en raquettes, par mois	Escursioni con le ciaspole, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3185	Schneeschuhwandern, online live, pro 1 Monat	Randonnée en raquettes, en ligne et en direct, par mois	Escursioni con le ciaspole, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3186	Schneeschuhwandern, Personal Training	Randonnée en raquettes, entraînement personnalisé	Escursioni con le ciaspole, personal training	2027-01-01	9998-12-31
+srv	3.1	3187	Schneeschuhwandern, Personal Training, online live	Randonnée en raquettes, entraînement personnalisé, en ligne et en direct	Escursioni con le ciaspole, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3188	Bewegungsangebote Outdoor für Erwachsene mit Babys/Kindern, pro 1 Lektion	Offres d’activités physiques en plein air pour adultes avec bébés/enfants, par leçon	Offerte di attività fisica outdoor per adulti con neonati/bambini, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3189	Bewegungsangebote Outdoor für Erwachsene mit Babys/Kindern, online live, pro 1 Lektion	Offres d’activités physiques en plein air pour adultes avec bébés/enfants, en ligne et en direct, par leçon	Offerte di attività fisica outdoor per adulti con neonati/bambini, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3190	Bewegungsangebote Outdoor für Erwachsene mit Babys/Kindern, pro 1 Monat	Offres d’activités physiques en plein air pour adultes avec bébés/enfants, par mois	Offerte di attività fisica outdoor per adulti con neonati/bambini, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3191	Bewegungsangebote Outdoor für Erwachsene mit Babys/Kindern, online live, pro 1 Monat	Offres d’activités physiques en plein air pour adultes avec bébés/enfants, en ligne et en direct, par mois	Offerte di attività fisica outdoor per adulti con neonati/bambini, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3192	Bewegungsangebote Outdoor für Erwachsene mit Babys/Kindern, Personal Training	Offres d’activités physiques en plein air pour adultes avec bébés/enfants, entraînement personnalisé	Offerte di attività fisica outdoor per adulti con neonati/bambini, personal training	2027-01-01	9998-12-31
+srv	3.1	3193	Bewegungsangebote Outdoor für Erwachsene mit Babys/Kindern, Personal Training, online live	Offres d’activités physiques en plein air pour adultes avec bébés/enfants, entraînement personnalisé, en ligne et en direct	Offerte di attività fisica outdoor per adulti con neonati/bambini, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3194	Eislaufen, pro 1 Lektion	Patinage, par leçon	Pattinaggio sul ghiaccio, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3195	Eislaufen, online live, pro 1 Lektion	Patinage, en ligne et en direct, par leçon	Pattinaggio sul ghiaccio, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3196	Eislaufen, pro 1 Monat	Patinage, par mois	Pattinaggio sul ghiaccio, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3197	Eislaufen, online live, pro 1 Monat	Patinage, en ligne et en direct, par mois	Pattinaggio sul ghiaccio, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3198	Eislaufen, Personal Training	Patinage, entraînement personnalisé	Pattinaggio sul ghiaccio, personal training	2027-01-01	9998-12-31
+srv	3.1	3199	Eislaufen, Personal Training, online live	Patinage, entraînement personnalisé, en ligne et en direct	Pattinaggio sul ghiaccio, personal training, online live	2027-01-01	9998-12-31
+srv	3.1	3012	Aquafitness, pro 1 Lektion	Aquagym, par leçon	Aquafitness, 1 lezione	2021-01-01	9998-12-31
+srv	3.1	3011	Aquafitness, pro 1 Monat	Aquagym, par mois	Aquafitness, 1 mese	2021-01-01	9998-12-31
+srv	3.1	3200	Aquafitness, Personal Training	Aquagym, entraînement personnalisé	Aquafitness, personal training	2027-01-01	9998-12-31
+srv	3.1	3201	Schwimmen, pro 1 Lektion	Natation, par leçon	Nuoto, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3202	Schwimmen, pro 1 Monat	Natation, par mois	Nuoto, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3203	Schwimmen, Personal Training	Natation, entraînement personnalisé	Nuoto, personal training	2027-01-01	9998-12-31
+srv	3.1	3204	Bewegungsangebote im Wasser für Erwachsene mit Babys/Kindern, pro 1 Lektion	Offres d’activités physiques dans l’eau pour adultes avec bébés/enfants, par leçon	Offerte di attività fisica in acqua per adulti con neonati/bambini, 1 lezione	2027-01-01	9998-12-31
+srv	3.1	3205	Bewegungsangebote im Wasser für Erwachsene mit Babys/Kindern, pro 1 Monat	Offres d’activités physiques dans l’eau pour adultes avec bébés/enfants, par mois	Offerte di attività fisica in acqua per adulti con neonati/bambini, 1 mese	2027-01-01	9998-12-31
+srv	3.1	3206	Bewegungsangebote im Wasser für Erwachsene mit Babys/Kindern, Personal Training	Offres d’activités physiques dans l’eau pour adultes avec bébés/enfants, entraînement personnalisé	Offerte di attività fisica in acqua per adulti con neonati/bambini, personal training	2027-01-01	9998-12-31
+chp	3.2		Body-and-Mind-Training	Entraînement physique et mental	Body and mind training	2027-01-01	9998-12-31
+srv	3.2	3030	Yoga, pro 1 Lektion	Yoga, par leçon	Yoga, 1 lezione	2021-01-01	9998-12-31
+srv	3.2	3207	Yoga, online live, pro 1 Lektion	Yoga, en ligne et en direct, par leçon	Yoga, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3029	Yoga, pro 1 Monat	Yoga, par mois	Yoga, 1 mese	2021-01-01	9998-12-31
+srv	3.2	3208	Yoga, online live, pro 1 Monat	Yoga, en ligne et en direct, par mois	Yoga, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3209	Yoga, Personal Training	Yoga, entraînement personnalisé	Yoga, personal training	2027-01-01	9998-12-31
+srv	3.2	3210	Yoga, Personal Training, online live	Yoga, entraînement personnalisé, en ligne et en direct	Yoga, personal training, online live	2027-01-01	9998-12-31
+srv	3.2	3211	Gehirnfitness-Training, pro 1 Lektion	Entraînement de fitness cérébral, par leçon	Allenamento fitness cerebrale, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3212	Gehirnfitness-Training, online live, pro 1 Lektion	Entraînement de fitness cérébral, en ligne et en direct, par leçon	Allenamento fitness cerebrale, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3213	Gehirnfitness-Training, pro 1 Monat	Entraînement de fitness cérébral, par mois	Allenamento fitness cerebrale, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3214	Gehirnfitness-Training, online live, pro 1 Monat	Entraînement de fitness cérébral, en ligne et en direct, par mois	Allenamento fitness cerebrale, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3215	Gehirnfitness-Training, Personal Training	Entraînement de fitness cérébral, entraînement personnalisé	Allenamento fitness cerebrale, personal training	2027-01-01	9998-12-31
+srv	3.2	3216	Gehirnfitness-Training, Personal Training, online live	Entraînement de fitness cérébral, entraînement personnalisé, en ligne et en direct	Allenamento fitness cerebrale, personal training, online live	2027-01-01	9998-12-31
+srv	3.2	5002	Achtsamkeitstraining für Stressreduktion und Resilienz, pro 1 Lektion	Entraînement à la pleine conscience pour la réduction du stress et la résilience, par leçon	Allenamento dell’attenzione consapevole per la riduzione dello stress e la resilienza, 1 lezione	2021-01-01	9998-12-31
+srv	3.2	3217	Achtsamkeitstraining für Stressreduktion und Resilienz, online live, pro 1 Lektion	Entraînement à la pleine conscience pour la réduction du stress et la résilience, en ligne et en direct, par leçon	Allenamento dell’attenzione consapevole per la riduzione dello stress e la resilienza, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	5001	Achtsamkeitstraining für Stressreduktion und Resilienz, pro 1 Monat	Entraînement à la pleine conscience pour la réduction du stress et la résilience, par mois	Allenamento dell’attenzione consapevole per la riduzione dello stress e la resilienza, 1 mese	2021-01-01	9998-12-31
+srv	3.2	3218	Achtsamkeitstraining für Stressreduktion und Resilienz, online live, pro 1 Monat	Entraînement à la pleine conscience pour la réduction du stress et la résilience, en ligne et en direct, par mois	Allenamento dell’attenzione consapevole per la riduzione dello stress e la resilienza, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3219	Achtsamkeitstraining für Stressreduktion und Resilienz, Personal Training	Entraînement à la pleine conscience pour la réduction du stress et la résilience, entraînement personnalisé	Allenamento dell’attenzione consapevole per la riduzione dello stress e la resilienza, personal training	2027-01-01	9998-12-31
+srv	3.2	3220	Achtsamkeitstraining für Stressreduktion und Resilienz, Personal Training, online live	Entraînement à la pleine conscience pour la réduction du stress et la résilience, entraînement personnalisé, en ligne et en direct	Allenamento dell’attenzione consapevole per la riduzione dello stress e la resilienza, personal training, online live	2027-01-01	9998-12-31
+srv	3.2	3221	Achtsamkeitstraining für Schlaf und Entspannung, pro 1 Lektion	Entraînement à la pleine conscience pour le sommeil et la relaxation, par leçon	Allenamento dell’attenzione consapevole per il sonno e il rilassamento, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3222	Achtsamkeitstraining für Schlaf und Entspannung, online live, pro 1 Lektion	Entraînement à la pleine conscience pour le sommeil et la relaxation, en ligne et en direct, par leçon	Allenamento dell’attenzione consapevole per il sonno e il rilassamento, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3223	Achtsamkeitstraining für Schlaf und Entspannung, pro 1 Monat	Entraînement à la pleine conscience pour le sommeil et la relaxation, par mois	Allenamento dell’attenzione consapevole per il sonno e il rilassamento, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3224	Achtsamkeitstraining für Schlaf und Entspannung, online live, pro 1 Monat	Entraînement à la pleine conscience pour le sommeil et la relaxation, en ligne et en direct, par mois	Allenamento dell’attenzione consapevole per il sonno e il rilassamento, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3225	Achtsamkeitstraining für Schlaf und Entspannung, Personal Training	Entraînement à la pleine conscience pour le sommeil et la relaxation, entraînement personnalisé	Allenamento dell’attenzione consapevole per il sonno e il rilassamento, personal training	2027-01-01	9998-12-31
+srv	3.2	3226	Achtsamkeitstraining für Schlaf und Entspannung, Personal Training, online live	Entraînement à la pleine conscience pour le sommeil et la relaxation, entraînement personnalisé, en ligne et en direct	Allenamento dell’attenzione consapevole per il sonno e il rilassamento, personal training, online live	2027-01-01	9998-12-31
+srv	3.2	3227	Achtsamkeitstraining für Körperwahrnehmung und Bewegung, pro 1 Lektion	Entraînement à la pleine conscience pour la perception corporelle et l’activité physique, par leçon	Allenamento dell’attenzione consapevole per la percezione del corpo e l’esercizio fisico, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3228	Achtsamkeitstraining für Körperwahrnehmung und Bewegung, online live, pro 1 Lektion	Entraînement à la pleine conscience pour la perception corporelle et l’activité physique, en ligne et en direct, par leçon	Allenamento dell’attenzione consapevole per la percezione del corpo e l’esercizio fisico, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3229	Achtsamkeitstraining für Körperwahrnehmung und Bewegung, pro 1 Monat	Entraînement à la pleine conscience pour la perception corporelle et l’activité physique, par mois	Allenamento dell’attenzione consapevole per la percezione del corpo e l’esercizio fisico, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3230	Achtsamkeitstraining für Körperwahrnehmung und Bewegung, online live, pro 1 Monat	Entraînement à la pleine conscience pour la perception corporelle et l’activité physique, en ligne et en direct, par mois	Allenamento dell’attenzione consapevole per la percezione del corpo e l’esercizio fisico, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3231	Achtsamkeitstraining für Körperwahrnehmung und Bewegung, Personal Training	Entraînement à la pleine conscience pour la perception corporelle et l’activité physique, entraînement personnalisé	Allenamento dell’attenzione consapevole per la percezione del corpo e l’esercizio fisico, personal training	2027-01-01	9998-12-31
+srv	3.2	3232	Achtsamkeitstraining für Körperwahrnehmung und Bewegung, Personal Training, online live	Entraînement à la pleine conscience pour la perception corporelle et l’activité physique, entraînement personnalisé, en ligne et en direct	Allenamento dell’attenzione consapevole per la percezione del corpo e l’esercizio fisico, personal training, online live	2027-01-01	9998-12-31
+srv	3.2	3233	Body-and-Mind-Training für Erwachsene mit Babys/Kindern, pro 1 Lektion	Entraînement physique et mental pour adultes avec bébés/enfants, par leçon	Training body and mind per adulti con neonati/bambini, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3234	Body-and-Mind-Training für Erwachsene mit Babys/Kindern, online live, pro 1 Lektion	Entraînement physique et mental pour adultes avec bébés/enfants, en ligne et en direct, par leçon	Training body and mind per adulti con neonati/bambini, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3235	Body-and-Mind-Training für Erwachsene mit Babys/Kindern, pro 1 Monat	Entraînement physique et mental pour adultes avec bébés/enfants, par mois	Training body and mind per adulti con neonati/bambini, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3236	Body-and-Mind-Training für Erwachsene mit Babys/Kindern, online live, pro 1 Monat	Entraînement physique et mental pour adultes avec bébés/enfants, en ligne et en direct, par mois	Training body and mind per adulti con neonati/bambini, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3237	Body-and-Mind-Training für Erwachsene mit Babys/Kindern, Personal Training	Entraînement physique et mental pour adultes avec bébés/enfants, entraînement personnalisé	Training body and mind per adulti con neonati/bambini, personal training	2027-01-01	9998-12-31
+srv	3.2	3238	Body-and-Mind-Training für Erwachsene mit Babys/Kindern, Personal Training, online live	Entraînement physique et mental pour adultes avec bébés/enfants, entraînement personnalisé, en ligne et en direct	Training body and mind per adulti con neonati/bambini, personal training, online live	2027-01-01	9998-12-31
+srv	3.2	3239	Waldbaden, pro 1 Lektion	Bain de forêt, par leçon	Bagno nella foresta, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3240	Waldbaden, online live, pro 1 Lektion	Bain de forêt, en ligne et en direct, par leçon	Bagno nella foresta, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.2	3241	Waldbaden, pro 1 Monat	Bain de forêt, par mois	Bagno nella foresta, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3242	Waldbaden, online live, pro 1 Monat	Bain de forêt, en ligne et en direct, par mois	Bagno nella foresta, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.2	3243	Waldbaden, Personal Training	Bain de forêt, entraînement personnalisé	Bagno nella foresta, personal training	2027-01-01	9998-12-31
+srv	3.2	3244	Waldbaden, Personal Training, online live	Bain de forêt, entraînement personnalisé, en ligne et en direct	Bagno nella foresta, personal training, online live	2027-01-01	9998-12-31
+chp	3.3		Diverse Kursangebote	Diverses offres de cours	Offerte di corsi varie	2027-01-01	9998-12-31
+srv	3.3	3024	Qigong, pro 1 Lektion	Qi gong, par leçon	Qigong, 1 lezione	2021-01-01	9998-12-31
+srv	3.3	3245	Qigong, online live, pro 1 Lektion	Qi gong, en ligne et en direct, par leçon	Qigong, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3023	Qigong, pro 1 Monat	Qi gong, par mois	Qigong, 1 mese	2021-01-01	9998-12-31
+srv	3.3	3246	Qigong, online live, pro 1 Monat	Qi gong, en ligne et en direct, par mois	Qigong, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3247	Qigong, Personal Training	Qi gong, entraînement personnalisé	Qigong, personal training	2027-01-01	9998-12-31
+srv	3.3	3248	Qigong, Personal Training, online live	Qi gong, entraînement personnalisé, en ligne et en direct	Qigong, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3249	Tai-Chi, pro 1 Lektion	Tai-chi, par leçon	Tai chi, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3250	Tai-Chi, online live, pro 1 Lektion	Tai-chi, en ligne et en direct, par leçon	Tai chi, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3251	Tai-Chi, pro 1 Monat	Tai-chi, par mois	Tai chi, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3252	Tai-Chi, online live, pro 1 Monat	Tai-chi, en ligne et en direct, par mois	Tai chi, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3253	Tai-Chi, Personal Training	Tai-chi, entraînement personnalisé	Tai chi, personal training	2027-01-01	9998-12-31
+srv	3.3	3254	Tai-Chi, Personal Training, online live	Tai-chi, entraînement personnalisé, en ligne et en direct	Tai chi, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	5004	Atemgymnastik, pro 1 Lektion	Gymnastique respiratoire, par leçon	Ginnastica respiratoria, 1 lezione	2021-01-01	9998-12-31
+srv	3.3	3255	Atemgymnastik, online live, pro 1 Lektion	Gymnastique respiratoire, en ligne et en direct, par leçon	Ginnastica respiratoria, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	5003	Atemgymnastik, pro 1 Monat	Gymnastique respiratoire, par mois	Ginnastica respiratoria, 1 mese	2021-01-01	9998-12-31
+srv	3.3	3256	Atemgymnastik, online live, pro 1 Monat	Gymnastique respiratoire, en ligne et en direct, par mois	Ginnastica respiratoria, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3257	Atemgymnastik, Personal Training	Gymnastique respiratoire, entraînement personnalisé	Ginnastica respiratoria, personal training	2027-01-01	9998-12-31
+srv	3.3	3258	Atemgymnastik, Personal Training, online live	Gymnastique respiratoire, entraînement personnalisé, en ligne et en direct	Ginnastica respiratoria, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3259	Sophrologie, pro 1 Lektion	Sophrologie, par leçon	Sofrologia, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3260	Sophrologie, online live, pro 1 Lektion	Sophrologie, en ligne et en direct, par leçon	Sofrologia, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3261	Sophrologie, pro 1 Monat	Sophrologie, par mois	Sofrologia, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3262	Sophrologie, online live, pro 1 Monat	Sophrologie, en ligne et en direct, par mois	Sofrologia, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3263	Sophrologie, Personal Training	Sophrologie, entraînement personnalisé	Sofrologia, personal training	2027-01-01	9998-12-31
+srv	3.3	3264	Sophrologie, Personal Training, online live	Sophrologie, entraînement personnalisé, en ligne et en direct	Sofrologia, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3004	Autogenes Training, pro 1 Lektion	Training autogène, par leçon	Training autogeno, 1 lezione	2021-01-01	9998-12-31
+srv	3.3	3265	Autogenes Training, online live, pro 1 Lektion	Training autogène, en ligne et en direct, par leçon	Training autogeno, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3003	Autogenes Training, pro 1 Monat	Training autogène, par mois	Training autogeno, 1 mese	2021-01-01	9998-12-31
+srv	3.3	3266	Autogenes Training, online live, pro 1 Monat	Training autogène, en ligne et en direct, par mois	Training autogeno, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3267	Autogenes Training, Personal Training	Training autogène, entraînement personnalisé	Training autogeno, personal training	2027-01-01	9998-12-31
+srv	3.3	3268	Autogenes Training, Personal Training, online live	Training autogène, entraînement personnalisé, en ligne et en direct	Training autogeno, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3269	Eutonie, pro 1 Lektion	Eutonie, par leçon	Eutonia, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3270	Eutonie, online live, pro 1 Lektion	Eutonie, en ligne et en direct, par leçon	Eutonia, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3271	Eutonie, pro 1 Monat	Eutonie, par mois	Eutonia, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3272	Eutonie, online live, pro 1 Monat	Eutonie, en ligne et en direct, par mois	Eutonia, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3273	Eutonie, Personal Training	Eutonie, entraînement personnalisé	Eutonia, personal training	2027-01-01	9998-12-31
+srv	3.3	3274	Eutonie, Personal Training, online live	Eutonie, entraînement personnalisé, en ligne et en direct	Eutonia, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3275	Alexander-Technik, pro 1 Lektion	Technique Alexander, par leçon	Tecnica di Alexander, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3276	Alexander-Technik, online live, pro 1 Lektion	Technique Alexander, en ligne et en direct, par leçon	Tecnica di Alexander, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3277	Alexander-Technik, pro 1 Monat	Technique Alexander, par mois	Tecnica di Alexander, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3278	Alexander-Technik, online live, pro 1 Monat	Technique Alexander, en ligne et en direct, par mois	Tecnica di Alexander, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3279	Alexander-Technik, Personal Training	Technique Alexander, entraînement personnalisé	Tecnica di Alexander, personal training	2027-01-01	9998-12-31
+srv	3.3	3280	Alexander-Technik, Personal Training, online live	Technique Alexander, entraînement personnalisé, en ligne et en direct	Tecnica di Alexander, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	5017	Spiraldynamik, pro 1 Lektion	Spiraldynamik, par leçon	Spiraldynamik, 1 lezione	2021-01-01	9998-12-31
+srv	3.3	3281	Spiraldynamik, online live, pro 1 Lektion	Spiraldynamik, en ligne et en direct, par leçon	Spiraldynamik, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3282	Spiraldynamik, pro 1 Monat	Spiraldynamik, par mois	Spiraldynamik, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3283	Spiraldynamik, online live, pro 1 Monat	Spiraldynamik, en ligne et en direct, par mois	Spiraldynamik, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3284	Spiraldynamik, Personal Training	Spiraldynamik, entraînement personnalisé	Spiraldynamik, personal training	2027-01-01	9998-12-31
+srv	3.3	3285	Spiraldynamik, Personal Training, online live	Spiraldynamik, entraînement personnalisé, en ligne et en direct	Spiraldynamik, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3286	Feldenkrais, pro 1 Lektion	Méthode Feldenkrais, par leçon	Feldenkrais, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3287	Feldenkrais, online live, pro 1 Lektion	Méthode Feldenkrais, en ligne et en direct, par leçon	Feldenkrais, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3288	Feldenkrais, pro 1 Monat	Méthode Feldenkrais, par mois	Feldenkrais, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3289	Feldenkrais, online live, pro 1 Monat	Méthode Feldenkrais, en ligne et en direct, par mois	Feldenkrais, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3290	Feldenkrais, Personal Training	Méthode Feldenkrais, entraînement personnalisé	Feldenkrais, personal training	2027-01-01	9998-12-31
+srv	3.3	3291	Feldenkrais, Personal Training, online live	Méthode Feldenkrais, entraînement personnalisé, en ligne et en direct	Feldenkrais, personal training, online live	2027-01-01	9998-12-31
+srv	3.3	3292	Zilgrei, pro 1 Lektion	Méthode Zilgrei, par leçon	Zilgrei, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3293	Zilgrei, online live, pro 1 Lektion	Méthode Zilgrei, en ligne et en direct, par leçon	Zilgrei, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.3	3294	Zilgrei, pro 1 Monat	Méthode Zilgrei, par mois	Zilgrei, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3295	Zilgrei, online live, pro 1 Monat	Méthode Zilgrei, en ligne et en direct, par mois	Zilgrei, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.3	3296	Zilgrei, Personal Training	Méthode Zilgrei, entraînement personnalisé	Zilgrei, personal training	2027-01-01	9998-12-31
+srv	3.3	3297	Zilgrei, Personal Training, online live	Méthode Zilgrei, entraînement personnalisé, en ligne et en direct	Zilgrei, personal training, online live	2027-01-01	9998-12-31
+chp	3.4		Spezifische Trainingsangebote	Offres d’entraînements spécifiques	Offerte di training specifici	2027-01-01	9998-12-31
+srv	3.4	5008	Trainingsangebote für Herzkranke, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant de maladies cardiaques, par leçon	Offerte di allenamento per persone affette da malattie cardiache, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	3298	Trainingsangebote für Herzkranke, online live, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant de maladies cardiaques, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da malattie cardiache, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	5007	Trainingsangebote für Herzkranke, pro 1 Monat	Offres d’entraînement pour les personnes souffrant de maladies cardiaques, par mois	Offerte di allenamento per persone affette da malattie cardiache, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3299	Trainingsangebote für Herzkranke, online live, pro 1 Monat	Offres d’entraînement pour les personnes souffrant de maladies cardiaques, en ligne et en direct, par mois	Offerte di allenamento per persone affette da malattie cardiache, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3300	Trainingsangebote für Herzkranke, Personal Training	Offres d’entraînement pour les personnes souffrant de maladies cardiaques, entraînement personnalisé	Offerte di allenamento per persone affette da malattie cardiache, personal training	2027-01-01	9998-12-31
+srv	3.4	3301	Trainingsangebote für Herzkranke, Personal Training, online live	Offres d’entraînement pour les personnes souffrant de maladies cardiaques, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da malattie cardiache, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3302	Trainingsangebote für Lungenkranke, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant de maladies pulmonaires, par leçon	Offerte di allenamento per persone affette da malattie polmonari, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3303	Trainingsangebote für Lungenkranke, online live, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant de maladies pulmonaires, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da malattie polmonari, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3304	Trainingsangebote für Lungenkranke, pro 1 Monat	Offres d’entraînement pour les personnes souffrant de maladies pulmonaires, par mois	Offerte di allenamento per persone affette da malattie polmonari, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3305	Trainingsangebote für Lungenkranke, online live, pro 1 Monat	Offres d’entraînement pour les personnes souffrant de maladies pulmonaires, en ligne et en direct, par mois	Offerte di allenamento per persone affette da malattie polmonari, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3306	Trainingsangebote für Lungenkranke, Personal Training	Offres d’entraînement pour les personnes souffrant de maladies pulmonaires, entraînement personnalisé	Offerte di allenamento per persone affette da malattie polmonari, personal training	2027-01-01	9998-12-31
+srv	3.4	3307	Trainingsangebote für Lungenkranke, Personal Training, online live	Offres d’entraînement pour les personnes souffrant de maladies pulmonaires, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da malattie polmonari, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3308	Trainingsangebote für Rheumakranke, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant de rhumatismes, par leçon	Offerte di allenamento per persone affette da reumatismi, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3309	Trainingsangebote für Rheumakranke, online live, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant de rhumatismes, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da reumatismi, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3310	Trainingsangebote für Rheumakranke, pro 1 Monat	Offres d’entraînement pour les personnes souffrant de rhumatismes, par mois	Offerte di allenamento per persone affette da reumatismi, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3311	Trainingsangebote für Rheumakranke, online live, pro 1 Monat	Offres d’entraînement pour les personnes souffrant de rhumatismes, en ligne et en direct, par mois	Offerte di allenamento per persone affette da reumatismi, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3312	Trainingsangebote für Rheumakranke, Personal Training	Offres d’entraînement pour les personnes souffrant de rhumatismes, entraînement personnalisé	Offerte di allenamento per persone affette da reumatismi, personal training	2027-01-01	9998-12-31
+srv	3.4	3313	Trainingsangebote für Rheumakranke, Personal Training, online live	Offres d’entraînement pour les personnes souffrant de rhumatismes, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da reumatismi, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3314	Bechterew-Gymnastik für Rheumakranke, pro 1 Lektion	Gymnastique Bechterew pour les personnes souffrant de rhumatismes, par leçon	Ginnastica Bechterew per persone affette da reumatismi, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3315	Bechterew-Gymnastik für Rheumakranke, online live, pro 1 Lektion	Gymnastique Bechterew pour les personnes souffrant de rhumatismes, en ligne et en direct, par leçon	Ginnastica Bechterew per persone affette da reumatismi, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3316	Bechterew-Gymnastik für Rheumakranke, pro 1 Monat	Gymnastique Bechterew pour les personnes souffrant de rhumatismes, par mois	Ginnastica Bechterew per persone affette da reumatismi, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3317	Bechterew-Gymnastik für Rheumakranke, online live, pro 1 Monat	Gymnastique Bechterew pour les personnes souffrant de rhumatismes, en ligne et en direct, par mois	Ginnastica Bechterew per persone affette da reumatismi, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3318	Bechterew-Gymnastik für Rheumakranke, Personal Training	Gymnastique Bechterew pour les personnes souffrant de rhumatismes, entraînement personnalisé	Ginnastica Bechterew per persone affette da reumatismi, personal training	2027-01-01	9998-12-31
+srv	3.4	3319	Bechterew-Gymnastik für Rheumakranke, Personal Training, online live	Gymnastique Bechterew pour les personnes souffrant de rhumatismes, entraînement personnalisé, en ligne et en direct	Ginnastica Bechterew per persone affette da reumatismi, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	5012	Trainingsangebote für Osteoporosekranke, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant d’ostéoporose, par leçon	Offerte di allenamento per persone affette da osteoporosi, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	3320	Trainingsangebote für Osteoporosekranke, online live, pro 1 Lektion	Offres d’entraînement pour les personnes souffrant d’ostéoporose, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da osteoporosi, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	5011	Trainingsangebote für Osteoporosekranke, pro 1 Monat	Offres d’entraînement pour les personnes souffrant d’ostéoporose, par mois	Offerte di allenamento per persone affette da osteoporosi, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3321	Trainingsangebote für Osteoporosekranke, online live, pro 1 Monat	Offres d’entraînement pour les personnes souffrant d’ostéoporose, en ligne et en direct, par mois	Offerte di allenamento per persone affette da osteoporosi, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3322	Trainingsangebote für Osteoporosekranke, Personal Training	Offres d’entraînement pour les personnes souffrant d’ostéoporose, entraînement personnalisé	Offerte di allenamento per persone affette da osteoporosi, personal training	2027-01-01	9998-12-31
+srv	3.4	3323	Trainingsangebote für Osteoporosekranke, Personal Training, online live	Offres d’entraînement pour les personnes souffrant d’ostéoporose, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da osteoporosi, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	5010	Trainingsangebote für Krebskranke, pro 1 Lektion	Offres d’entraînement pour les personnes atteintes d’un cancer, par leçon	Offerte di allenamento per persone malate di cancro, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	3324	Trainingsangebote für Krebskranke, online live, pro 1 Lektion	Offres d’entraînement pour les personnes atteintes d’un cancer, en ligne et en direct, par leçon	Offerte di allenamento per persone malate di cancro, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	5009	Trainingsangebote für Krebskranke, pro 1 Monat	Offres d’entraînement pour les personnes atteintes d’un cancer, par mois	Offerte di allenamento per persone malate di cancro, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3325	Trainingsangebote für Krebskranke, online live, pro 1 Monat	Offres d’entraînement pour les personnes atteintes d’un cancer, en ligne et en direct, par mois	Offerte di allenamento per persone malate di cancro, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3326	Trainingsangebote für Krebskranke, Personal Training	Offres d’entraînement pour les personnes atteintes d’un cancer, entraînement personnalisé	Offerte di allenamento per persone malate di cancro, personal training	2027-01-01	9998-12-31
+srv	3.4	3327	Trainingsangebote für Krebskranke, Personal Training, online live	Offres d’entraînement pour les personnes atteintes d’un cancer, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone malate di cancro, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	5016	Trainingsangebote bei Rückenbeschwerden, pro 1 Lektion	Offres d’entraînement en cas de problèmes de dos, par leçon	Offerte di allenamento per persone che soffrono di disturbi alla schiena, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	3328	Trainingsangebote bei Rückenbeschwerden, online live, pro 1 Lektion	Offres d’entraînement en cas de problèmes de dos, en ligne et en direct, par leçon	Offerte di allenamento per persone che soffrono di disturbi alla schiena, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	5015	Trainingsangebote bei Rückenbeschwerden, pro 1 Monat	Offres d’entraînement en cas de problèmes de dos, par mois	Offerte di allenamento per persone che soffrono di disturbi alla schiena, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3329	Trainingsangebote bei Rückenbeschwerden, online live, pro 1 Monat	Offres d’entraînement en cas de problèmes de dos, en ligne et en direct, par mois	Offerte di allenamento per persone che soffrono di disturbi alla schiena, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3330	Trainingsangebote bei Rückenbeschwerden, Personal Training	Offres d’entraînement en cas de problèmes de dos, entraînement personnalisé	Offerte di allenamento per persone che soffrono di disturbi alla schiena, personal training	2027-01-01	9998-12-31
+srv	3.4	3331	Trainingsangebote bei Rückenbeschwerden, Personal Training, online live	Offres d’entraînement en cas de problèmes de dos, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone che soffrono di disturbi alla schiena, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	5006	Trainingsangebote bei Beckenbodenbeschwerden, pro 1 Lektion	Offres d’entraînement en cas de troubles du périnée, par leçon	Offerte di allenamento per persone che soffrono di disturbi del pavimento pelvico, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	3332	Trainingsangebote bei Beckenbodenbeschwerden, online live, pro 1 Lektion	Offres d’entraînement en cas de troubles du périnée, en ligne et en direct, par leçon	Offerte di allenamento per persone che soffrono di disturbi del pavimento pelvico, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	5005	Trainingsangebote bei Beckenbodenbeschwerden, pro 1 Monat	Offres d’entraînement en cas de troubles du périnée, par mois	Offerte di allenamento per persone che soffrono di disturbi del pavimento pelvico, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3333	Trainingsangebote bei Beckenbodenbeschwerden, online live, pro 1 Monat	Offres d’entraînement en cas de troubles du périnée, en ligne et en direct, par mois	Offerte di allenamento per persone che soffrono di disturbi del pavimento pelvico, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3334	Trainingsangebote bei Beckenbodenbeschwerden, Personal Training	Offres d’entraînement en cas de troubles du périnée, entraînement personnalisé	Offerte di allenamento per persone che soffrono di disturbi del pavimento pelvico, personal training	2027-01-01	9998-12-31
+srv	3.4	3335	Trainingsangebote bei Beckenbodenbeschwerden, Personal Training, online live	Offres d’entraînement en cas de troubles du périnée, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone che soffrono di disturbi del pavimento pelvico, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	5023	Sturzprophylaxe, pro 1 Lektion	Prévention des chutes, par leçon	Prevenzione delle cadute, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	3336	Sturzprophylaxe, online live, pro 1 Lektion	Prévention des chutes, en ligne et en direct, par leçon	Prevenzione delle cadute, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	5022	Sturzprophylaxe, pro 1 Monat	Prévention des chutes, par mois	Prevenzione delle cadute, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3337	Sturzprophylaxe, online live, pro 1 Monat	Prévention des chutes, en ligne et en direct, par mois	Prevenzione delle cadute, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3338	Sturzprophylaxe, Personal Training	Prévention des chutes, entraînement personnalisé	Prevenzione delle cadute, personal training	2027-01-01	9998-12-31
+srv	3.4	3339	Sturzprophylaxe, Personal Training, online live	Prévention des chutes, entraînement personnalisé, en ligne et en direct	Prevenzione delle cadute, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3340	Trainingsangebote bei Stoffwechselerkrankungen, pro 1 Lektion	Offres d’entraînement en cas de troubles métaboliques, par leçon	Offerte di allenamento per persone affette da malattie metaboliche, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3341	Trainingsangebote bei Stoffwechselerkrankungen, online live, pro 1 Lektion	Offres d’entraînement en cas de troubles métaboliques, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da malattie metaboliche, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3342	Trainingsangebote bei Stoffwechselerkrankungen, pro 1 Monat	Offres d’entraînement en cas de troubles métaboliques, par mois	Offerte di allenamento per persone affette da malattie metaboliche, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3343	Trainingsangebote bei Stoffwechselerkrankungen, online live, pro 1 Monat	Offres d’entraînement en cas de troubles métaboliques, en ligne et en direct, par mois	Offerte di allenamento per persone affette da malattie metaboliche, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3344	Trainingsangebote bei Stoffwechselerkrankungen, Personal Training	Offres d’entraînement en cas de troubles métaboliques, entraînement personnalisé	Offerte di allenamento per persone affette da malattie metaboliche, personal training	2027-01-01	9998-12-31
+srv	3.4	3345	Trainingsangebote bei Stoffwechselerkrankungen, Personal Training, online live	Offres d’entraînement en cas de troubles métaboliques, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da malattie metaboliche, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3346	Trainingsangebote bei neurodegenerativen Erkrankungen, pro 1 Lektion	Offres d’entraînement en cas de maladies neurodégénératives, par leçon	Offerte di allenamento per persone affette da malattie neurodegenerative, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3347	Trainingsangebote bei neurodegenerativen Erkrankungen, online live, pro 1 Lektion	Offres d’entraînement en cas de maladies neurodégénératives, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da malattie neurodegenerative, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3348	Trainingsangebote bei neurodegenerativen Erkrankungen, pro 1 Monat	Offres d’entraînement en cas de maladies neurodégénératives, par mois	Offerte di allenamento per persone affette da malattie neurodegenerative, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3349	Trainingsangebote bei neurodegenerativen Erkrankungen, online live, pro 1 Monat	Offres d’entraînement en cas de maladies neurodégénératives, en ligne et en direct, par mois	Offerte di allenamento per persone affette da malattie neurodegenerative, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3350	Trainingsangebote bei neurodegenerativen Erkrankungen, Personal Training	Offres d’entraînement en cas de maladies neurodégénératives, entraînement personnalisé	Offerte di allenamento per persone affette da malattie neurodegenerative, personal training	2027-01-01	9998-12-31
+srv	3.4	3351	Trainingsangebote bei neurodegenerativen Erkrankungen, Personal Training, online live	Offres d’entraînement en cas de maladies neurodégénératives, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da malattie neurodegenerative, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3352	Trainingsangebote bei Demenz/Alzheimer, pro 1 Lektion	Offres d’entraînement en cas de démence et d’Alzheimer, par leçon	Offerte di allenamento per persone affette da demenza/Alzheimer, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3353	Trainingsangebote bei Demenz/Alzheimer, online live, pro 1 Lektion	Offres d’entraînement en cas de démence et d’Alzheimer, en ligne et en direct, par leçon	Offerte di allenamento per persone affette da demenza/Alzheimer, online live, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3354	Trainingsangebote bei Demenz/Alzheimer, pro 1 Monat	Offres d’entraînement en cas de démence et d’Alzheimer, par mois	Offerte di allenamento per persone affette da demenza/Alzheimer, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3355	Trainingsangebote bei Demenz/Alzheimer, online live, pro 1 Monat	Offres d’entraînement en cas de démence et d’Alzheimer, en ligne et en direct, par mois	Offerte di allenamento per persone affette da demenza/Alzheimer, online live, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3356	Trainingsangebote bei Demenz/Alzheimer, Personal Training	Offres d’entraînement en cas de démence et d’Alzheimer, entraînement personnalisé	Offerte di allenamento per persone affette da demenza/Alzheimer, personal training	2027-01-01	9998-12-31
+srv	3.4	3357	Trainingsangebote bei Demenz/Alzheimer, Personal Training, online live	Offres d’entraînement en cas de démence et d’Alzheimer, entraînement personnalisé, en ligne et en direct	Offerte di allenamento per persone affette da demenza/Alzheimer, personal training, online live	2027-01-01	9998-12-31
+srv	3.4	3358	Trainingsangebote für Lungenkranke im Wasser, pro 1 Lektion	Offres d’entraînement dans l’eau pour les personnes souffrant de maladies pulmonaires, par leçon	Offerte di allenamento in acqua per persone affette da malattie polmonari, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3359	Trainingsangebote für Lungenkranke im Wasser, pro 1 Monat	Offres d’entraînement dans l’eau pour les personnes souffrant de maladies pulmonaires, par mois	Offerte di allenamento in acqua per persone affette da malattie polmonari, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3360	Trainingsangebote für Lungenkranke im Wasser, Personal Training	Offres d’entraînement dans l’eau pour les personnes souffrant de maladies pulmonaires, entraînement personnalisé	Offerte di allenamento in acqua per persone affette da malattie polmonari, personal training	2027-01-01	9998-12-31
+srv	3.4	5014	Trainingsangebote für Rheumakranke im Wasser, pro 1 Lektion	Offres d’entraînement dans l’eau pour les personnes souffrant de rhumatismes, par leçon	Offerte di allenamento in acqua per persone affette da reumatismi, 1 lezione	2021-01-01	9998-12-31
+srv	3.4	5013	Trainingsangebote für Rheumakranke im Wasser, pro 1 Monat	Offres d’entraînement dans l’eau pour les personnes souffrant de rhumatismes, par mois	Offerte di allenamento in acqua per persone affette da reumatismi, 1 mese	2021-01-01	9998-12-31
+srv	3.4	3361	Trainingsangebote für Rheumakranke im Wasser, Personal Training	Offres d’entraînement dans l’eau pour les personnes souffrant de rhumatismes, entraînement personnalisé	Offerte di allenamento in acqua per persone affette da reumatismi, personal training	2027-01-01	9998-12-31
+srv	3.4	3362	Bechterew-Schwimmen für Rheumakranke, pro 1 Lektion	Natation Bechterew pour les personnes souffrant de rhumatismes, par leçon	Nuoto Bechterew per persone affette da reumatismi, 1 lezione	2027-01-01	9998-12-31
+srv	3.4	3363	Bechterew-Schwimmen für Rheumakranke, pro 1 Monat	Natation Bechterew pour les personnes souffrant de rhumatismes, par mois	Nuoto Bechterew per persone affette da reumatismi, 1 mese	2027-01-01	9998-12-31
+srv	3.4	3364	Bechterew-Schwimmen für Rheumakranke, Personal Training	Natation Bechterew pour les personnes souffrant de rhumatismes, entraînement personnalisé	Nuoto Bechterew per persone affette da reumatismi, personal training	2027-01-01	9998-12-31
+chp	4		Ernährung	Nutrition	Alimentazione	2021-01-01	9998-12-31
+srv	4	4001	Ernährungsberatung präventiv, pro 1 Sitzung	Conseil en nutrition préventive, par séance	Consulenza nutrizionale preventiva, 1 seduta	2021-01-01	9998-12-31
+srv	4	4002	Ernährungsberatung präventiv, online live, pro 1 Sitzung	Conseil en nutrition préventive, en ligne et en direct, par séance	Consulenza nutrizionale preventiva, online live, 1 seduta	2027-01-01	9998-12-31
+srv	4	4003	Ernährungsberatung präventiv, pro 1 Monat	Conseil en nutrition préventive, par mois	Consulenza nutrizionale preventiva, 1 mese	2027-01-01	9998-12-31
+srv	4	4004	Ernährungsberatung präventiv, online live, pro 1 Monat	Conseil en nutrition préventive, en ligne et en direct, par mois	Consulenza nutrizionale preventiva, online live, 1 mese	2027-01-01	9998-12-31
+srv	4	4005	Ernährungsberatung präventiv, Einzelsetting	Conseil en nutrition préventive, séance individuelle	Consulenza nutrizionale preventiva, seduta individuale	2027-01-01	9998-12-31
+srv	4	4006	Ernährungsberatung präventiv, Einzelsetting, online live	Conseil en nutrition préventive, séance individuelle, en ligne et en direct	Consulenza nutrizionale preventiva, seduta individuale, online live	2027-01-01	9998-12-31
+srv	4	4007	Ernährungskurse, pro 1 Sitzung	Cours de nutrition, par séance	Corsi di alimentazione, 1 seduta	2027-01-01	9998-12-31
+srv	4	4008	Ernährungskurse, online live, pro 1 Sitzung	Cours de nutrition, en ligne et en direct, par séance	Corsi di alimentazione, online live, 1 seduta	2027-01-01	9998-12-31
+srv	4	4009	Ernährungskurse, pro 1 Monat	Cours de nutrition, par mois	Corsi di alimentazione, 1 mese	2027-01-01	9998-12-31
+srv	4	4010	Ernährungskurse, online live, pro 1 Monat	Cours de nutrition, en ligne et en direct, par mois	Corsi di alimentazione, online live, 1 mese	2027-01-01	9998-12-31
+srv	4	4011	Ernährungskurse, Einzelsetting	Cours de nutrition, séance individuelle	Corsi di alimentazione, seduta individuale	2027-01-01	9998-12-31
+srv	4	4012	Ernährungskurse, Einzelsetting, online live	Cours de nutrition, séance individuelle, en ligne et en direct	Corsi di alimentazione, seduta individuale, online live	2027-01-01	9998-12-31
+srv	4	4013	Ernährungs- und Abnehmprogramme, pro 1 Sitzung	Programmes de nutrition et de perte de poids, par séance	Programmi di alimentazione e dimagrimento, 1 seduta	2027-01-01	9998-12-31
+srv	4	4014	Ernährungs- und Abnehmprogramme, online live, pro 1 Sitzung	Programmes de nutrition et de perte de poids, en ligne et en direct, par séance	Programmi di alimentazione e dimagrimento, online live, 1 seduta	2027-01-01	9998-12-31
+srv	4	4015	Ernährungs- und Abnehmprogramme, pro 1 Monat	Programmes de nutrition et de perte de poids, par mois	Programmi di alimentazione e dimagrimento, 1 mese	2027-01-01	9998-12-31
+srv	4	4016	Ernährungs- und Abnehmprogramme, online live, pro 1 Monat	Programmes de nutrition et de perte de poids, en ligne et en direct, par mois	Programmi di alimentazione e dimagrimento, online live, 1 mese	2027-01-01	9998-12-31
+srv	4	4017	Ernährungs- und Abnehmprogramme, Einzelsetting	Programmes de nutrition et de perte de poids, séance individuelle	Programmi di alimentazione e dimagrimento, seduta individuale	2027-01-01	9998-12-31
+srv	4	4018	Ernährungs- und Abnehmprogramme, Einzelsetting, online live	Programmes de nutrition et de perte de poids, séance individuelle, en ligne et en direct	Programmi di alimentazione e dimagrimento, seduta individuale, online live	2027-01-01	9998-12-31
+srv	4	4019	Ernährungs- und Abnehmprogramme (Apps), pauschal	Programmes de nutrition et de perte de poids (applications), forfait	Programmi di alimentazione e dimagrimento (app), forfait	2027-01-01	9998-12-31
+chp	5		Lebensstil Gruppenkurse und Einzelberatung	Santé en général	Salute in generale	2021-01-01	9998-12-31
+srv	5	5024	ABS Präventivcoaching, pro 1 Lektion	Coaching préventif ABS, par leçon	Coaching preventivo ABS, 1 lezione	2022-01-01	2026-12-31
+srv	5	5019	Gesundheitscoaching und Lebensstilberatung, pro 1 Lektion	Coaching santé et conseils sur le mode de vie, par leçon	Coaching sulla salute e consulenza sullo stile di vita, 1 lezione	2021-01-01	9998-12-31
+srv	5	5026	Gesundheitscoaching und Lebensstilberatung, online live, pro 1 Lektion	Coaching santé et conseils sur le mode de vie, en ligne et en direct, par leçon	Coaching sulla salute e consulenza sullo stile di vita, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5018	Gesundheitscoaching und Lebensstilberatung, pro 1 Monat	Coaching santé et conseils sur le mode de vie, par mois	Coaching sulla salute e consulenza sullo stile di vita, 1 mese	2021-01-01	9998-12-31
+srv	5	5027	Gesundheitscoaching und Lebensstilberatung, online live, pro 1 Monat	Coaching santé et conseil sur le mode de vie, en ligne et en direct, par mois	Coaching sulla salute e consulenza sullo stile di vita, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5028	Gesundheitscoaching und Lebensstilberatung, Einzelsetting	Coaching santé et conseils sur le mode de vie, séance individuelle	Coaching sulla salute e consulenza sullo stile di vita, seduta individuale	2027-01-01	9998-12-31
+srv	5	5029	Gesundheitscoaching und Lebensstilberatung, Einzelsetting, online live	Coaching santé et conseils sur le mode de vie, séance individuelle, en ligne et en direct	Coaching sulla salute e consulenza sullo stile di vita, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5025	Psychologische Gesundheitsberatung, pro 1 Lektion	Conseils de santé mentale, par leçon	Consulenza sulla salute psicologica, 1 lezione	2022-01-01	9998-12-31
+srv	5	5030	Psychologische Gesundheitsberatung, online live, pro 1 Lektion	Conseils de santé mentale, en ligne et en direct, par leçon	Consulenza sulla salute psicologica, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5031	Psychologische Gesundheitsberatung, pro 1 Monat	Conseils de santé mentale, par mois	Consulenza sulla salute psicologica, 1 mese	2027-01-01	9998-12-31
+srv	5	5032	Psychologische Gesundheitsberatung, online live, pro 1 Monat	Conseils de santé mentale, en ligne et en direct, par mois	Consulenza sulla salute psicologica, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5033	Psychologische Gesundheitsberatung, Einzelsetting	Conseils de santé mentale, séance individuelle	Consulenza sulla salute psicologica, seduta individuale	2027-01-01	9998-12-31
+srv	5	5034	Psychologische Gesundheitsberatung, Einzelsetting, online live	Conseils de santé mentale, séance individuelle, en ligne et en direct	Consulenza sulla salute psicologica, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5021	Selbstmanagement und Steigerung der Gesundheitskompetenz, pro 1 Lektion	Autogestion et amélioration des compétences en matière de santé, par leçon	Autogestione e incremento delle competenze in materia di salute, 1 lezione	2021-01-01	9998-12-31
+srv	5	5035	Selbstmanagement und Steigerung der Gesundheitskompetenz, online live, pro 1 Lektion	Autogestion et amélioration des compétences en matière de santé, en ligne et en direct, par leçon	Autogestione e incremento delle competenze in materia di salute, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5020	Selbstmanagement und Steigerung der Gesundheitskompetenz, pro 1 Monat	Autogestion et amélioration des compétences en matière de santé, par mois	Autogestione e incremento delle competenze in materia di salute, 1 mese	2021-01-01	9998-12-31
+srv	5	5036	Selbstmanagement und Steigerung der Gesundheitskompetenz, online live, pro 1 Monat	Autogestion et amélioration des compétences en matière de santé, en ligne et en direct, par mois	Autogestione e incremento delle competenze in materia di salute, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5037	Selbstmanagement und Steigerung der Gesundheitskompetenz, Einzelsetting	Autogestion et amélioration des compétences en matière de santé, séance individuelle	Autogestione e incremento delle competenze in materia di salute, seduta individuale	2027-01-01	9998-12-31
+srv	5	5038	Selbstmanagement und Steigerung der Gesundheitskompetenz, Einzelsetting, online live	Autogestion et amélioration des compétences en matière de santé, séance individuelle, en ligne et en direct	Autogestione e incremento delle competenze in materia di salute, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5039	Angebote für pflegende Angehörige, pro 1 Lektion	Offres pour les proches aidants, par leçon	Offerte per familiari curanti, 1 lezione	2027-01-01	9998-12-31
+srv	5	5040	Angebote für pflegende Angehörige, online live, pro 1 Lektion	Offre pour les proches aidants, en ligne et en direct, par leçon	Offerte per familiari curanti, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5041	Angebote für pflegende Angehörige, pro 1 Monat	Offres pour les proches aidants, par mois	Offerta per familiari curanti, 1 mese	2027-01-01	9998-12-31
+srv	5	5042	Angebote für pflegende Angehörige, online live, pro 1 Monat	Offre pour les proches aidants, en ligne et en direct, par mois	Offerta per familiari curanti, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5043	Angebote für pflegende Angehörige, Einzelsetting	Offre pour les proches aidants, séance individuelle	Offerta per familiari curanti, seduta individuale	2027-01-01	9998-12-31
+srv	5	5044	Angebote für pflegende Angehörige, Einzelsetting, online live	Offre pour les proches aidants, séance individuelle, en ligne et en direct	Offerta per familiari curanti, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5045	Schulung für Menschen mit chronischer Erkrankung, pro 1 Lektion	Formation pour les personnes souffrant de maladies chroniques, par leçon	Formazione per persone affette da malattie croniche, 1 lezione	2027-01-01	9998-12-31
+srv	5	5046	Schulung für Menschen mit chronischer Erkrankung, online live, pro 1 Lektion	Formation pour les personnes souffrant de maladies chroniques, en ligne et en direct, par leçon	Formazione per persone affette da malattie croniche, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5047	Schulung für Menschen mit chronischer Erkrankung, pro 1 Monat	Formation pour les personnes souffrant de maladies chroniques, par mois	Formazione per persone affette da malattie croniche, 1 mese	2027-01-01	9998-12-31
+srv	5	5048	Schulung für Menschen mit chronischer Erkrankung, online live, pro 1 Monat	Formation pour les personnes souffrant de maladies chroniques, en ligne et en direct, par mois	Formazione per persone affette da malattie croniche, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5049	Schulung für Menschen mit chronischer Erkrankung, Einzelsetting	Formation pour les personnes souffrant de maladies chroniques, séance individuelle	Formazione per persone affette da malattie croniche, seduta individuale	2027-01-01	9998-12-31
+srv	5	5050	Schulung für Menschen mit chronischer Erkrankung, Einzelsetting, online live	Formation pour les personnes souffrant de maladies chroniques, séance individuelle, en ligne et en direct	Formazione per persone affette da malattie croniche, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5051	Kurs Raucherentwöhnung, pro 1 Lektion	Cours de désaccoutumance au tabac, par leçon	Corso per la disassuefazione dal fumo, 1 lezione	2027-01-01	9998-12-31
+srv	5	5052	Kurs Raucherentwöhnung, online live, pro 1 Lektion	Cours de désaccoutumance au tabac, en ligne et en direct, par leçon	Corso per la disassuefazione dal fumo, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5053	Kurs Raucherentwöhnung, pro 1 Monat	Cours de désaccoutumance au tabac, par mois	Corso per la disassuefazione dal fumo, 1 mese	2027-01-01	9998-12-31
+srv	5	5054	Kurs Raucherentwöhnung, online live, pro 1 Monat	Cours de désaccoutumance au tabac, en ligne et en direct, par mois	Corso per la disassuefazione dal fumo, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5055	Kurs Raucherentwöhnung, Einzelsetting	Cours de désaccoutumance au tabac, séance individuelle	Corso per la disassuefazione dal fumo, seduta individuale	2027-01-01	9998-12-31
+srv	5	5056	Kurs Raucherentwöhnung, Einzelsetting, online live	Cours de désaccoutumance au tabac, séance individuelle, en ligne et en direct	Corso per la disassuefazione dal fumo, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5057	Nothelferkurse Kleinkinder, pro 1 Lektion	Cours de secourisme pour les jeunes enfants, par leçon	Corsi di primo soccorso per bambini piccoli, 1 lezione	2027-01-01	9998-12-31
+srv	5	5058	Nothelferkurse Kleinkinder, online live, pro 1 Lektion	Cours de secourisme pour les jeunes enfants, en ligne et en direct, par leçon	Corsi di primo soccorso per bambini piccoli, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5059	Nothelferkurse Kleinkinder, pro 1 Monat	Cours de secourisme pour les jeunes enfants, par mois	Corsi di primo soccorso per bambini piccoli, 1 mese	2027-01-01	9998-12-31
+srv	5	5060	Nothelferkurse Kleinkinder, online live, pro 1 Monat	Cours de secourisme pour les jeunes enfants, en ligne et en direct, par mois	Corsi di primo soccorso per bambini piccoli, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5061	Nothelferkurse Kleinkinder, Einzelsetting	Cours de secourisme pour les jeunes enfants, séance individuelle	Corsi di primo soccorso per bambini piccoli, seduta individuale	2027-01-01	9998-12-31
+srv	5	5062	Nothelferkurse Kleinkinder, Einzelsetting, online live	Cours de secourisme pour les jeunes enfants, séance individuelle, en ligne et en direct	Corsi di primo soccorso per bambini piccoli, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5063	Nothelferkurse, pro 1 Lektion	Cours de secourisme, par leçon	Corsi di primo soccorso, 1 lezione	2027-01-01	9998-12-31
+srv	5	5064	Nothelferkurse, online live, pro 1 Lektion	Cours de secourisme, en ligne et en direct, par leçon	Corsi di primo soccorso, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5065	Nothelferkurse, pro 1 Monat	Cours de secourisme, par mois	Corsi di primo soccorso, 1 mese	2027-01-01	9998-12-31
+srv	5	5066	Nothelferkurse, online live, pro 1 Monat	Cours de secourisme, en ligne et en direct, par mois	Corsi di primo soccorso, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5067	Nothelferkurse, Einzelsetting	Cours de secourisme, séance individuelle	Corsi di primo soccorso, seduta individuale	2027-01-01	9998-12-31
+srv	5	5068	Nothelferkurse, Einzelsetting, online live	Cours de secourisme, séance individuelle, en ligne et en direct	Corsi di primo soccorso, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5069	Säuglingspflegekurse, pro 1 Lektion	Cours de puériculture, par leçon	Corsi per la cura dei neonati, 1 lezione	2027-01-01	9998-12-31
+srv	5	5070	Säuglingspflegekurse, online live, pro 1 Lektion	Cours de puériculture, en ligne et en direct, par leçon	Corsi per la cura dei neonati, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5071	Säuglingspflegekurse, pro 1 Monat	Cours de puériculture, par mois	Corsi per la cura dei neonati, 1 mese	2027-01-01	9998-12-31
+srv	5	5072	Säuglingspflegekurse, online live, pro 1 Monat	Cours de puériculture, en ligne et en direct, par mois	Corsi per la cura dei neonati, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5073	Säuglingspflegekurse, Einzelsetting	Cours de puériculture, séance individuelle	Corsi per la cura dei neonati, seduta individuale	2027-01-01	9998-12-31
+srv	5	5074	Säuglingspflegekurse, Einzelsetting, online live	Cours de puériculture, séance individuelle, en ligne et en direct	Corsi per la cura dei neonati, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5075	Adipositasprogramme, pro 1 Lektion	Programmes de lutte contre l’obésité, par leçon	Programmi contro l’obesità, 1 lezione	2027-01-01	9998-12-31
+srv	5	5076	Adipositasprogramme, online live, pro 1 Lektion	Programmes de lutte contre l’obésité, en ligne et en direct, par leçon	Programmi contro l’obesità, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5077	Adipositasprogramme, pro 1 Monat	Programmes de lutte contre l’obésité, par mois	Programmi contro l’obesità, 1 mese	2027-01-01	9998-12-31
+srv	5	5078	Adipositasprogramme, online live, pro 1 Monat	Programmes de lutte contre l’obésité, en ligne et en direct, par mois	Programmi contro l’obesità, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5079	Adipositasprogramme, Einzelsetting	Programmes de lutte contre l’obésité, séance individuelle	Programmi contro l’obesità, seduta individuale	2027-01-01	9998-12-31
+srv	5	5080	Adipositasprogramme, Einzelsetting, online live	Programmes de lutte contre l’obésité, séance individuelle, en ligne et en direct	Programmi contro l’obesità, seduta individuale, online live	2027-01-01	9998-12-31
+srv	5	5081	Diabetesprogramme, pro 1 Lektion	Programmes de lutte contre le diabète, par leçon	Programmi per il diabete, 1 lezione	2027-01-01	9998-12-31
+srv	5	5082	Diabetesprogramme, online live, pro 1 Lektion	Programmes de lutte contre le diabète, en ligne et en direct, par leçon	Programmi per il diabete, online live, 1 lezione	2027-01-01	9998-12-31
+srv	5	5083	Diabetesprogramme, pro 1 Monat	Programmes de lutte contre le diabète, par mois	Programmi per il diabete, 1 mese	2027-01-01	9998-12-31
+srv	5	5084	Diabetesprogramme, online live, pro 1 Monat	Programmes de lutte contre le diabète, en ligne et en direct, par mois	Programmi per il diabete, online live, 1 mese	2027-01-01	9998-12-31
+srv	5	5085	Diabetesprogramme, Einzelsetting	Programmes de lutte contre le diabète, séance individuelle	Programmi per il diabete, seduta individuale	2027-01-01	9998-12-31
+srv	5	5086	Diabetesprogramme, Einzelsetting, online live	Programmes de lutte contre le diabète, séance individuelle, en ligne et en direct	Programmi per il diabete, seduta individuale, online live	2027-01-01	9998-12-31
+chp	6		Mutterschaftsangebote	Maternité	Maternità	2021-01-01	9998-12-31
+chp	6.1		Pränatal	Prénatal	Prenatale	2027-01-01	9998-12-31
+srv	6.1	6001	Geburtsvorbereitung, pro 1 Lektion	Préparation à l’accouchement, par leçon	Preparazione al parto, 1 lezione	2021-01-01	9998-12-31
+srv	6.1	6005	Geburtsvorbereitung, online live, pro 1 Lektion	Préparation à l’accouchement, en ligne et en direct, par leçon	Preparazione al parto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6006	Geburtsvorbereitung, pro 1 Monat	Préparation à l’accouchement, par mois	Preparazione al parto, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6007	Geburtsvorbereitung, online live, pro 1 Monat	Préparation à l’accouchement, en ligne et en direct, par mois	Preparazione al parto, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6008	Geburtsvorbereitung, Personal Training	Préparation à l’accouchement, entraînement personnalisé	Preparazione al parto, personal training	2027-01-01	9998-12-31
+srv	6.1	6009	Geburtsvorbereitung, Personal Training, online live	Préparation à l’accouchement, entraînement personnalisé, en ligne et en direct	Preparazione al parto, personal training, online live	2027-01-01	9998-12-31
+srv	6.1	6010	Geburtshypnose, pro 1 Lektion	Accouchement sous hypnose, par leçon	Ipnosi per il parto, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6011	Geburtshypnose, online live, pro 1 Lektion	Accouchement sous hypnose, en ligne et en direct, par leçon	Ipnosi per il parto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6012	Geburtshypnose, pro 1 Monat	Accouchement sous hypnose, par mois	Ipnosi per il parto, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6013	Geburtshypnose, online live, pro 1 Monat	Accouchement sous hypnose, en ligne et en direct, par mois	Ipnosi per il parto, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6014	Geburtshypnose, Personal Training	Accouchement sous hypnose, entraînement personnalisé	Ipnosi per il parto, personal training	2027-01-01	9998-12-31
+srv	6.1	6015	Geburtshypnose, Personal Training, online live	Accouchement sous hypnose, entraînement personnalisé, en ligne et en direct	Ipnosi per il parto, personal training, online live	2027-01-01	9998-12-31
+srv	6.1	6003	Schwangerschaftsgymnastik, pro 1 Lektion	Gymnastique prénatale, par leçon	Ginnastica per la gravidanza, 1 lezione	2021-01-01	9998-12-31
+srv	6.1	6016	Schwangerschaftsgymnastik, online live, pro 1 Lektion	Gymnastique prénatale, en ligne et en direct, par leçon	Ginnastica per la gravidanza, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6017	Schwangerschaftsgymnastik, pro 1 Monat	Gymnastique prénatale, par mois	Ginnastica per la gravidanza, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6018	Schwangerschaftsgymnastik, online live, pro 1 Monat	Gymnastique prénatale, en ligne et en direct, par mois	Ginnastica per la gravidanza, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6019	Schwangerschaftsgymnastik, Personal Training	Gymnastique prénatale, entraînement personnalisé	Ginnastica per la gravidanza, personal training	2027-01-01	9998-12-31
+srv	6.1	6020	Schwangerschaftsgymnastik, Personal Training, online live	Gymnastique prénatale, entraînement personnalisé, en ligne et en direct	Ginnastica per la gravidanza, personal training, online live	2027-01-01	9998-12-31
+srv	6.1	6021	Schwangerschaftspilates, pro 1 Lektion	Pilates prénatal, par leçon	Pilates per la gravidanza, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6022	Schwangerschaftspilates, online live, pro 1 Lektion	Pilates prénatal, en ligne et en direct, par leçon	Pilates per la gravidanza, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6023	Schwangerschaftspilates, pro 1 Monat	Pilates prénatal, par mois	Pilates per la gravidanza, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6024	Schwangerschaftspilates, online live, pro 1 Monat	Pilates prénatal, en ligne et en direct, par mois	Pilates per la gravidanza, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6025	Schwangerschaftspilates, Personal Training	Pilates prénatal, entraînement personnalisé	Pilates per la gravidanza, personal training	2027-01-01	9998-12-31
+srv	6.1	6026	Schwangerschaftspilates, Personal Training, online live	Pilates prénatal, entraînement personnalisé, en ligne et en direct	Pilates per la gravidanza, personal training, online live	2027-01-01	9998-12-31
+srv	6.1	6027	Schwangerschaftsyoga, pro 1 Lektion	Yoga prénatal, par leçon	Yoga per la gravidanza, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6028	Schwangerschaftsyoga, online live, pro 1 Lektion	Yoga prénatal, en ligne et en direct, par leçon	Yoga per la gravidanza, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6029	Schwangerschaftsyoga, pro 1 Monat	Yoga prénatal, par mois	Yoga per la gravidanza, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6030	Schwangerschaftsyoga, online live, pro 1 Monat	Yoga prénatal, en ligne et en direct, par mois	Yoga per la gravidanza, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6031	Schwangerschaftsyoga, Personal Training	Yoga prénatal, entraînement personnalisé	Yoga per la gravidanza, personal training	2027-01-01	9998-12-31
+srv	6.1	6032	Schwangerschaftsyoga, Personal Training, online live	Yoga prénatal, entraînement personnalisé, en ligne et en direct	Yoga per la gravidanza, personal training, online live	2027-01-01	9998-12-31
+srv	6.1	6033	Achtsamkeit mit Fokus Schwangerschaft und Geburt, pro 1 Sitzung	Pleine conscience axée sur la grossesse et l’accouchement, par séance	Attenzione consapevole con focus su gravidanza e parto, 1 seduta	2027-01-01	9998-12-31
+srv	6.1	6034	Achtsamkeit mit Fokus Schwangerschaft und Geburt, online live, pro 1 Sitzung	Pleine conscience axée sur la grossesse et l’accouchement, en ligne et en direct, par séance	Attenzione consapevole con focus su gravidanza e parto, online live, 1 seduta	2027-01-01	9998-12-31
+srv	6.1	6035	Achtsamkeit mit Fokus Schwangerschaft und Geburt, pro 1 Monat	Pleine conscience axée sur la grossesse et l’accouchement, par mois	Attenzione consapevole con focus su gravidanza e parto, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6036	Achtsamkeit mit Fokus Schwangerschaft und Geburt, online live, pro 1 Monat	Pleine conscience axée sur la grossesse et l’accouchement, en ligne et en direct, par mois	Attenzione consapevole con focus su gravidanza e parto, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6037	Achtsamkeit mit Fokus Schwangerschaft und Geburt, Personal Training	Pleine conscience axée sur la grossesse et l’accouchement, entraînement personnalisé	Attenzione consapevole con focus su gravidanza e parto, personal training	2027-01-01	9998-12-31
+srv	6.1	6038	Achtsamkeit mit Fokus Schwangerschaft und Geburt, Personal Training, online live	Pleine conscience axée sur la grossesse et l’accouchement, entraînement personnalisé, en ligne et en direct	Attenzione consapevole con focus su gravidanza e parto, personal training, online live	2027-01-01	9998-12-31
+srv	6.1	6039	Schwangerschaftsgymnastik im Wasser, pro 1 Lektion	Gymnastique prénatale dans l’eau, par leçon	Ginnastica per la gravidanza in acqua, 1 lezione	2027-01-01	9998-12-31
+srv	6.1	6040	Schwangerschaftsgymnastik im Wasser, pro 1 Monat	Gymnastique prénatale dans l’eau, par mois	Ginnastica per la gravidanza in acqua, 1 mese	2027-01-01	9998-12-31
+srv	6.1	6041	Schwangerschaftsgymnastik im Wasser, Personal Training	Gymnastique prénatale dans l’eau, entraînement personnalisé	Ginnastica per la gravidanza in acqua, personal training	2027-01-01	9998-12-31
+chp	6.2		Postnatal	Postnatal	Postnatale	2027-01-01	9998-12-31
+srv	6.2	6002	Rückbildungsgymnastik, pro 1 Lektion	Gymnastique postnatale, par leçon	Ginnastica post parto, 1 lezione	2021-01-01	9998-12-31
+srv	6.2	6042	Rückbildungsgymnastik, online live, pro 1 Lektion	Gymnastique postnatale, en ligne et en direct, par leçon	Ginnastica post parto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.2	6043	Rückbildungsgymnastik, pro 1 Monat	Gymnastique postnatale, par mois	Ginnastica post parto, 1 mese	2027-01-01	9998-12-31
+srv	6.2	6044	Rückbildungsgymnastik, online live, pro 1 Monat	Gymnastique postnatale, en ligne et en direct, par mois	Ginnastica post parto, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.2	6045	Rückbildungsgymnastik, Personal Training	Gymnastique postnatale, entraînement personnalisé	Ginnastica post parto, personal training	2027-01-01	9998-12-31
+srv	6.2	6046	Rückbildungsgymnastik, Personal Training, online live	Gymnastique postnatale, entraînement personnalisé, en ligne et en direct	Ginnastica post parto, personal training, online live	2027-01-01	9998-12-31
+srv	6.2	6047	Rückbildungspilates, pro 1 Lektion	Pilates postnatal, par leçon	Pilates post parto, 1 lezione	2027-01-01	9998-12-31
+srv	6.2	6048	Rückbildungspilates, online live, pro 1 Lektion	Pilates postnatal, en ligne et en direct, par leçon	Pilates post parto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.2	6049	Rückbildungspilates, pro 1 Monat	Pilates postnatal, par mois	Pilates post parto, 1 mese	2027-01-01	9998-12-31
+srv	6.2	6050	Rückbildungspilates, online live, pro 1 Monat	Pilates postnatal, en ligne et en direct, par mois	Pilates post parto, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.2	6051	Rückbildungspilates, Personal Training	Pilates postnatal, entraînement personnalisé	Pilates post parto, personal training	2027-01-01	9998-12-31
+srv	6.2	6052	Rückbildungspilates, Personal Training, online live	Pilates postnatal, entraînement personnalisé, en ligne et en direct	Pilates post parto, personal training, online live	2027-01-01	9998-12-31
+srv	6.2	6053	Rückbildungsyoga, pro 1 Lektion	Yoga postnatal, par leçon	Yoga post parto, 1 lezione	2027-01-01	9998-12-31
+srv	6.2	6054	Rückbildungsyoga, online live, pro 1 Lektion	Yoga postnatal, en ligne et en direct, par leçon	Yoga post parto, online live, 1 lezione	2027-01-01	9998-12-31
+srv	6.2	6055	Rückbildungsyoga, pro 1 Monat	Yoga postnatal, par mois	Yoga post parto, 1 mese	2027-01-01	9998-12-31
+srv	6.2	6056	Rückbildungsyoga, online live, pro 1 Monat	Yoga postnatal, en ligne et en direct, par mois	Yoga post parto, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.2	6057	Rückbildungsyoga, Personal Training	Yoga postnatal, entraînement personnalisé	Yoga post parto, personal training	2027-01-01	9998-12-31
+srv	6.2	6058	Rückbildungsyoga, Personal Training, online live	Yoga postnatal, entraînement personnalisé, en ligne et en direct	Yoga post parto, personal training, online live	2027-01-01	9998-12-31
+chp	6.3		Beratung, Coaching und Behandlungen	Conseil, coaching et traitements	Consulenza, coaching e trattamenti	2027-01-01	9998-12-31
+srv	6.3	6004	Stillberatung, pro 1 Sitzung	Conseil en allaitement, par séance	Consulenza per l’allattamento, 1 seduta	2021-01-01	9998-12-31
+srv	6.3	6059	Stillberatung, online live, pro 1 Sitzung	Conseil en allaitement, en ligne et en direct, par séance	Consulenza per l’allattamento, online live, 1 seduta	2027-01-01	9998-12-31
+srv	6.3	6060	Stillberatung, pro 1 Monat	Conseil en allaitement, par mois	Consulenza per l’allattamento, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6061	Stillberatung, online live, pro 1 Monat	Conseil en allaitement, en ligne et en direct, par mois	Consulenza per l’allattamento, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6062	Stillberatung, Einzelsetting	Conseil en allaitement, séance individuelle	Consulenza per l’allattamento, seduta individuale	2027-01-01	9998-12-31
+srv	6.3	6063	Stillberatung, Einzelsetting, online live	Conseil en allaitement, séance individuelle, en ligne et en direct	Consulenza per l’allattamento, seduta individuale, online live	2027-01-01	9998-12-31
+srv	6.3	6064	Trageberatung, pro 1 Sitzung	Conseil de portage, par séance	Consulenza per il trasporto dei neonati, 1 seduta	2027-01-01	9998-12-31
+srv	6.3	6065	Trageberatung, online live, pro 1 Sitzung	Conseil de portage, en ligne et en direct, par séance	Consulenza per il trasporto dei neonati, online live, 1 seduta	2027-01-01	9998-12-31
+srv	6.3	6066	Trageberatung, pro 1 Monat	Conseil de portage, par mois	Consulenza per il trasporto dei neonati, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6067	Trageberatung, online live, pro 1 Monat	Conseil de portage, en ligne et en direct, par mois	Consulenza per il trasporto dei neonati, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6068	Trageberatung, Einzelsetting	Conseil de portage, séance individuelle	Consulenza per il trasporto dei neonati, seduta individuale	2027-01-01	9998-12-31
+srv	6.3	6069	Trageberatung, Einzelsetting, online live	Conseil de portage, séance individuelle, en ligne et en direct	Consulenza per il trasporto dei neonati, seduta individuale, online live	2027-01-01	9998-12-31
+srv	6.3	7001	Babymassage-Kurs, pro 1 Sitzung	Cours de massage pour bébé, par séance	Corso di massaggi per neonati, 1 seduta	2021-01-01	9998-12-31
+srv	6.3	6070	Babymassage-Kurs, online live, pro 1 Sitzung	Cours de massage pour bébé, en ligne et en direct, par séance	Corso di massaggi per neonati, online live, 1 seduta	2027-01-01	9998-12-31
+srv	6.3	6071	Babymassage-Kurs, pro 1 Monat	Cours de massage pour bébé, par mois	Corso di massaggi per neonati, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6072	Babymassage-Kurs, online live, pro 1 Monat	Cours de massage pour bébé, en ligne et en direct, par mois	Corso di massaggi per neonati, online live, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6073	Babymassage-Kurs, Personal Training	Cours de massage pour bébé, entraînement personnalisé	Corso di massaggi per neonati, personal training	2027-01-01	9998-12-31
+srv	6.3	6074	Babymassage-Kurs, Personal Training, online live	Cours de massage pour bébé, entraînement personnalisé, en ligne et en direct	Corso di massaggi per neonati, personal training, online live	2027-01-01	9998-12-31
+srv	6.3	6075	Geburtsbegleitung, pauschal	Accompagnement lors de l’accouchement, forfait	Assistenza al parto, forfait	2027-01-01	9998-12-31
+srv	6.3	6076	Geburtsmassage, pro 1 Sitzung	Massage obstétrical, par séance	Massaggio per il parto, 1 seduta	2027-01-01	9998-12-31
+srv	6.3	6077	Geburtsmassage, pro 1 Monat	Massage obstétrical, par mois	Massaggio per il parto, 1 mese	2027-01-01	9998-12-31
+srv	6.3	6078	Akupunktur zur Geburtsvorbereitung, pro 1 Sitzung	Acupuncture pour la préparation à l’accouchement, par séance	Agopuntura in preparazione al parto, 1 seduta	2027-01-01	9998-12-31
+srv	6.3	6079	Akupunktur zur Geburtsvorbereitung, pro 1 Monat	Acupuncture pour la préparation à l’accouchement, par mois	Agopuntura in preparazione al parto, 1 mese	2027-01-01	9998-12-31

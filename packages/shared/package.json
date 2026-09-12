@@ -4,6 +4,14 @@
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./tarif595-positions": {
+      "types": "./dist/data/tarif595/positions.d.ts",
+      "default": "./dist/data/tarif595/positions.js"
+    },
+    "./dist/*": "./dist/*"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"

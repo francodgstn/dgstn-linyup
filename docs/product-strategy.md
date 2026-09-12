@@ -518,7 +518,9 @@ modules (gamification, referrals, courses, …) are gated by **plugin installati
 To avoid scope creep:
 
 * ❌ Horizontal/statutory accounting suite — AR/AP & invoicing, VAT filing,
-  payroll, bank reconciliation, statutory exports stay external. ✅ In scope
+  payroll, bank reconciliation, statutory exports stay external. (Tarif 595
+  reimbursement receipts, `docs/tarif-595.md`, are a plugin that attests a paid
+  purchase and posts nothing — not invoicing.) ✅ In scope
   instead: the studio-shaped finance layer — money journal, cash double-entry
   ledger, and the planned accrual layer + asset register (docs/finance-accrual.md),
   which feeds the fiduciary's tool rather than replacing it. (This line

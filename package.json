@@ -24,6 +24,7 @@
     "i18n:check": "node scripts/i18n-check.mjs",
     "census:reads": "node scripts/census-reads.mjs",
     "i18n:merge": "node scripts/i18n-merge.mjs",
+    "tarif595:positions": "node scripts/build-tarif595-positions.mjs",
     "functions:build": "pnpm --filter @linyup/shared run build && pnpm --filter @linyup/functions run build",
     "functions:watch": "pnpm --filter @linyup/functions run watch",
     "local": "node scripts/local-env.mjs",
