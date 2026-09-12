@@ -1093,11 +1093,15 @@ function AcquisitionTimeline({
 function HeaderActionButton({
   icon: Icon,
   label,
+  shortLabel,
   count = 0,
   onClick,
 }: {
   icon: React.ElementType
   label: string
+  /** A caption under the icon. The long `label` stays the tooltip and the
+   *  accessible name; this is the two-word version that fits a tile. */
+  shortLabel?: string
   count?: number
   onClick: () => void
 }) {
@@ -1109,9 +1113,16 @@ function HeaderActionButton({
         type="button"
         onClick={onClick}
         aria-label={label}
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className={
+          shortLabel
+            ? 'relative flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+            : 'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+        }
       >
         <Icon className="h-4 w-4" />
+        {shortLabel && (
+          <span className="max-w-full truncate text-[10px] leading-tight">{shortLabel}</span>
+        )}
         {count > 0 && (
           <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
             {count}
@@ -5247,20 +5258,32 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       {/* Header — TWO cards. Left, the profile: who they are, in the shape a
           profile is expected to take — a round picture overlapping the card's
           top edge, the name under it, everything centred. Right, the insights
-          card: what the studio reads about them (InsightsCard.tsx). A quarter
-          and three quarters at `lg`, stacked below it. The grid carries top
+          card: what the studio reads about them (InsightsCard.tsx). A third
+          and two thirds at `lg`, stacked below it. The grid carries top
           padding so the avatar can sit above the card without touching the
           back button. */}
-      <div className="grid gap-4 pt-10 lg:grid-cols-4 lg:items-stretch">
-        <div className="relative rounded-xl border bg-card px-5 pb-5 pt-12 text-center lg:col-span-1">
+      <div className="grid gap-5 pt-12 lg:grid-cols-3 lg:items-stretch">
+        <div className="relative flex flex-col rounded-2xl border border-border/60 bg-card px-6 pb-6 pt-16 text-center shadow-xl shadow-black/[0.06] dark:shadow-black/40 lg:col-span-1">
+          {/* The card's only decoration: a tinted band along the top and a
+              soft glow behind the avatar. Both sit behind everything else
+              (the content blocks are positioned so they paint on top) and
+              take no clicks. */}
           <div
-            className="absolute left-1/2 -top-10 flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground ring-4 ring-card"
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-2xl bg-gradient-to-b from-primary/10 to-transparent"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute left-1/2 -top-14 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/25 blur-2xl"
+            aria-hidden
+          />
+          <div
+            className="absolute left-1/2 -top-12 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-card"
             aria-hidden
           >
             {personInitials(contact)}
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold min-w-0 break-words">
+          <div className="relative min-w-0">
+            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">
               {contact.firstname} {contact.lastname}
             </h1>
             {/* Sits with the name because it acts ON the person — "send this
@@ -5279,7 +5302,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               </Tip>
             )}
           </div>
-          <div className="flex-1 min-w-0 mt-3">
+          <div className="relative mt-4 flex-1 min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2">
               {/* A member has asked to close their own account. It sits with
                   the lifecycle badges because that is what it is — but ABOVE
@@ -5338,7 +5361,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 </>
               )}
             </div>
-            <div className="flex flex-col items-center gap-1 mt-2">
+            {/* The facts as a list: left-aligned inside a quiet panel so the
+                icons line up and a long email has room, centred as a block. */}
+            <div className="mt-4 flex flex-col gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-left">
               {contact.email && (
                 <span className="group/email flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
                   <Mail className="h-3 w-3 shrink-0" />
@@ -5449,18 +5474,20 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               open the editor sheet (also glanced in the profile column).
               Margin so the buttons don't crowd the detail lines above them. */}
           {!contact.archived_at && !contact.deleted_at && (
-            <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="mt-auto grid grid-cols-4 gap-1.5 pt-5">
               {/* Opens the alerts PANEL, not a tab. It used to jump to
                   Follow-ups, which is where alerts used to live. */}
               <HeaderActionButton
                 icon={Bell}
                 label={t('tabAlerts')}
+                shortLabel={t('tabAlerts')}
                 count={contactAlerts.length}
                 onClick={() => setAlertsOpen(true)}
               />
               <HeaderActionButton
                 icon={StickyNote}
                 label={t('tabNotes')}
+                shortLabel={t('tabNotes')}
                 count={notesCount}
                 onClick={() => setNotesOpen(true)}
               />
@@ -5470,6 +5497,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <HeaderActionButton
                 icon={QrCode}
                 label={tLink('headerTip')}
+                shortLabel={t('actionQr')}
                 onClick={() => setUpdateLinkOpen(true)}
               />
               {/* Roster ↔ external. One button whose meaning flips with the
@@ -5478,6 +5506,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <HeaderActionButton
                 icon={contact.external === true ? UserCheck : DoorOpen}
                 label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
+                shortLabel={contact.external === true ? t('actionActive') : t('actionExternal')}
                 onClick={() =>
                   contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
                 }
@@ -5489,7 +5518,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         <InsightsCard
           contact={contact}
           thresholds={team?.engagement_thresholds}
-          className="lg:col-span-3"
+          className="lg:col-span-2"
         />
       </div>
 
