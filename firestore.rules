@@ -103,7 +103,7 @@ service cloud.firestore {
     // honest (a test that reads the manifests, that file and this one).
     function clientInstallableRank(pluginId) {
       return pluginId in ['gift-cards'] ? 0
-           : pluginId in ['asset-register', 'contact-groups', 'custom-fields', 'tarif-595'] ? 1
+           : pluginId in ['asset-register', 'contact-groups', 'custom-fields', 'tarif-595', 'qr-invoices'] ? 1
            : 2;
     }
 
@@ -1107,6 +1107,18 @@ service cloud.firestore {
       // Issued receipts — frozen snapshots numbered from counters/tarif595_receipts.
       // Cloud Functions only; a receipt is voided, never edited or deleted.
       match /tarif595_receipts/{receiptId} {
+        allow read:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+
+      // QR-bill invoices (plugin — types/invoice.ts). Settings manager+; the
+      // invoices themselves are frozen snapshots numbered from counters/invoices,
+      // Cloud Functions only — voided or marked paid through callables, never
+      // edited. Read manager+ (an invoice names a member's debt).
+      match /invoice_settings/{docId} {
+        allow read, write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+      }
+      match /invoices/{invoiceId} {
         allow read:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
         allow write: if false;
       }

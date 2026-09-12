@@ -135,3 +135,28 @@ Phase 2: bulk issuing (job doc + Cloud Task rounds), the member's own copy in th
 (contact self-write of insurer data, `listMyTarif595Receipts`), the anonymisation arm.
 Phase 3: eTG/MediData behind a provider seam. Before launch: a sample PDF + XML accepted by
 one insurer (the owner's external action).
+
+## QR-bill invoices (`qr-invoices`) — the sibling plugin on the same rails
+
+**The claim before a payment.** A studio that takes bank transfers issues a numbered
+invoice with a Swiss QR-bill payment part (amount SET; QRR reference when the legal
+profile carries a QR-IBAN, else an ISO 11649 `RF` reference on the plain IBAN), the
+member pays, the studio marks it paid. **Mark-as-paid records the manual payment
+through `writeManualPaymentEvent`** — the same writer the Record-payment dialog uses —
+so entitlements and the finance journal behave exactly as for a hand-recorded payment,
+keyed `invoice-{invoiceId}` so a retry is a no-op. **The invoice itself writes no journal
+row** (`invoices/noJournal.test.ts`). This is the ONE recorded exception to the "no AR"
+non-goal, and it stops here: no reminders, no dunning, no bank-file reconciliation.
+
+| Path | Rules | Notes |
+|---|---|---|
+| `invoice_settings/config` | manager+ | prefix (default `INV`), due days (30), footer text, language |
+| `invoices/{invoiceId}` | manager+ read, write false | frozen snapshot: creditor (legal profile at creation), debtor, one `PaymentLineItem`, amount, VAT, due date, reference, `status pending → open → paid \| void` |
+| `counters/invoices` | member read, write false | absolute `{last, year}` |
+| Storage `teams/{t}/invoices/{id}/invoice.pdf` | excluded from the broad rule | served only by `downloadInvoice` |
+
+`invoiceId = sha256(invoice:teamId:contactId:requestKey)` from a per-attempt client key, so a
+retried create resumes its own `pending` document instead of taking a second number — the
+same two-phase shape as the receipts. Gate: `createInvoice` is plugin-gated; `voidInvoice`
+(open only — a paid invoice is reversed through the payment, not the invoice),
+`downloadInvoice`, `emailInvoice`, `markInvoicePaid` are not (`invoices/gate.test.ts`).
