@@ -1240,12 +1240,15 @@ service cloud.firestore {
       // (trackGoals / trackPerformanceCheckins, coaching/) and `alerts_count`
       // (trackContactAlerts, contacts/) are denormalized by Cloud Functions
       // ONLY — no branch above may forge them, same guard shape as `tags` on
-      // a session below.
+      // a session below. `ai_summary` (generateContactSummary, contacts/
+      // aiSummary.ts) joins them for a different reason: it is a callable's
+      // write, and a client that could set it would be labelling its own
+      // prose as the model's.
       allow update: if (canWriteContact(resource)
                        || hasRole('admin')
                        || (isSelfContact(contactId)
                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'last_seen_at', 'mobile_app'])))
-                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count']);
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary']);
       allow delete: if (canAccessContact(resource)
                           && hasTeamCapability(resource.data.teamId, 'contacts.delete'))
                        || hasRole('admin');

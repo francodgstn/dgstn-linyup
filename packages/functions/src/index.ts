@@ -271,6 +271,11 @@ export { assistantChat } from './assistant'
 // `applyOfferingDraft` writes and runs no model. The seam between them is where
 // a human decides.
 export { draftOfferings, applyOfferingDraft } from './offer/draftOfferings'
+// AI summary of a contact — the second experiment on the Vertex rail. ONE
+// callable: it reads, asks the model, and writes ONE field the rules deny to
+// every client (`Contact.ai_summary`). Manual trigger only; its header owns the
+// scheduled refresh it deliberately does not build yet.
+export { generateContactSummary } from './contacts/aiSummary'
 
 // Kiosk mode (entrance-tablet PIN unlock)
 export { unlockKiosk } from './kiosk'

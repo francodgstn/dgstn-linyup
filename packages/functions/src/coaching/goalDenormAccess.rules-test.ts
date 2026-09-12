@@ -171,6 +171,18 @@ describe('firestore.rules — coaching denormalized fields', function () {
     await assertFails(updateDoc(doc(db, 'contacts', CONTACT), { alerts_count: 99 }))
   })
 
+  // Not a counter but the same guard: `ai_summary` is written by the
+  // generateContactSummary callable only, so what the page labels "written by
+  // AI" was. A client that could set it would be labelling its own prose.
+  it('a team owner CANNOT forge ai_summary on the contact', async () => {
+    const db = ownerSession()
+    await assertFails(
+      updateDoc(doc(db, 'contacts', CONTACT), {
+        ai_summary: { text: 'A model wrote this', generated_by: OWNER, model: 'x', language: 'en' },
+      })
+    )
+  })
+
   it('a team owner CAN still update ordinary contact fields', async () => {
     const db = ownerSession()
     await assertSucceeds(updateDoc(doc(db, 'contacts', CONTACT), { firstname: 'Nadège' }))

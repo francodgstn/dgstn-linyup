@@ -34,7 +34,11 @@ import type { SaasPlan } from './team'
  * Stable machine identifier for one experiment. Kebab-case, matching plugin ids.
  * These are stored in Firestore, so a rename is a migration, not an edit.
  */
-export type ExperimentalFeatureId = 'extra-dashboard' | 'waitlist' | 'offer-drafting'
+export type ExperimentalFeatureId =
+  | 'extra-dashboard'
+  | 'waitlist'
+  | 'offer-drafting'
+  | 'contact-summary'
 
 /**
  * WHERE an experiment's on/off state lives.
@@ -153,6 +157,27 @@ export const EXPERIMENTAL_FEATURES: readonly ExperimentalFeature[] = [
     // A NOTE, not a gate — same rule as the others. The drafting itself costs
     // model calls, so it is pointed at the tiers that have an offer worth
     // drafting; the switch stays live below it.
+    minPlan: 'studio',
+  },
+  {
+    // Reader: the summary block on the contact detail insights card
+    // (app/[locale]/(auth)/contacts/[id]/InsightsCard.tsx), mounted only while
+    // this is on — and `generateContactSummary`
+    // (packages/functions/src/contacts/aiSummary.ts), which re-checks the flag
+    // server-side so a client cannot spend model calls on a switch that is off.
+    //
+    // AN EXPERIMENT for the same reason offer drafting is: the model's output
+    // is the thing being tuned, and the stored record may change shape.
+    // Regeneration is MANUAL — a button on the card. A scheduled refresh is the
+    // decision this entry keeps open; it would key on `ai_summary.generated_at`
+    // and write the same record, not on anything stored here.
+    id: 'contact-summary',
+    nameKey: 'contactSummaryName',
+    descriptionKey: 'contactSummaryDescription',
+    surfaceKey: 'contactSummarySurface',
+    // A NOTE, not a gate — same rule as the others. "AI insights" is the
+    // Studio+ row on the plan comparison, so the list says so; the switch
+    // stays live below it.
     minPlan: 'studio',
   },
 ]

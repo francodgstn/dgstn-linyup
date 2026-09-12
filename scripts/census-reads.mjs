@@ -30,9 +30,12 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '')
+// fileURLToPath, not `.pathname`: on Windows the latter is `/C:/…`, which
+// `join` turns into `\C:\…` and `require` cannot find.
+const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '')
 const paths = require(join(ROOT, 'packages/shared/dist/paths.js'))
 
 /** The LOG collections — one row per event, growing with time. A constant
@@ -177,7 +180,9 @@ const flagged = []
 for (const root of SCAN_ROOTS) {
   for (const file of walk(join(ROOT, root))) {
     const src = readFileSync(file, 'utf8')
-    const rel = relative(ROOT, file)
+    // Forward slashes whatever the OS, so a Windows run matches the same
+    // acknowledgements CI does.
+    const rel = relative(ROOT, file).replaceAll('\\', '/')
     let m
     READ_CALL.lastIndex = 0
     while ((m = READ_CALL.exec(src))) {

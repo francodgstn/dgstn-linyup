@@ -138,6 +138,21 @@ export interface MobileAppTelemetry {
   ota_update_id?: string | null
 }
 
+/**
+ * The AI-written briefing stored on a contact — see `Contact.ai_summary`.
+ * `text` is the whole summary, already cut to a few sentences server-side;
+ * `language` is the studio's authoring language it was written in;
+ * `generated_by` is the uid that asked for it, or `'schedule'` once a scheduled
+ * refresh exists.
+ */
+export interface ContactAiSummary {
+  text: string
+  generated_at: Timestamp
+  generated_by: string
+  model: string
+  language: string
+}
+
 export interface Contact {
   id: string
   teamId: string
@@ -394,6 +409,16 @@ export interface Contact {
   // this document — so "has notes" is answerable only if the answer is already
   // here. Same shape and same reasoning as `alerts_count` one field up.
   notes_count?: number
+
+  // AI summary — two or three sentences about the person, written ONLY by the
+  // `generateContactSummary` callable (packages/functions/src/contacts/aiSummary.ts)
+  // and denied to every client write by the same field guard as `notes_count`,
+  // so what the page labels "written by AI" was. Regeneration is MANUAL today
+  // (a button on the contact's insights card); a scheduled refresh, when it
+  // comes, keys on `generated_at` and writes this same record — nothing needs
+  // to change shape for it. Wiped with the identifying fields on anonymisation:
+  // it is prose ABOUT the person.
+  ai_summary?: ContactAiSummary
 
   // Coaching (denormalized by the onGoalWrite / check-in triggers).
   //
