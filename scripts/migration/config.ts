@@ -85,14 +85,15 @@ function hmdLevel({ legacyValue: _source, ...level }: HmdBeltLevel) {
  * WRITE while `decidedBy` / `decidedOn` are null. A dry run is always allowed
  * and shows exactly whom the map would move.
  *
- * The map below is HMD's stated intent as of 2026-09 ("old Yellow → Yellow/
- * Orange, might change"). It is not a decision until the two fields say so.
+ * DECIDED 2026-09-12: the map stands as stated — old Yellow becomes
+ * Yellow/Orange, nothing else moves (HMD, relayed by Franco). The two fields
+ * below are what the script reads; the sentence above is why they are set.
  */
 export const HMD_BELT_REASSIGNMENT = {
   /** Who at HMD confirmed the map (a name), and when (an ISO date). BOTH null
    *  until the federation answers; fill both from that answer, never guess. */
-  decidedBy: null as string | null,
-  decidedOn: null as string | null,
+  decidedBy: 'HMD (relayed by Franco)' as string | null,
+  decidedOn: '2026-09-12' as string | null,
   /** Old level id → new level id. Applied per system in `systems`. */
   map: { yellow: 'yellow-orange' } as Record<string, string>,
   /** The systems the map applies to — both run on the one belt table. */

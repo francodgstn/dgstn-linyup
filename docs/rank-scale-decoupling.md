@@ -11,8 +11,9 @@ is the field a ladder document written before Phase 4 still carries, read by
 Phase 5 shipped the same day: both editors reorder by drag-and-drop and insert a
 level at any position. Phase 6, the same day: the migration ladder carries
 White/Yellow and Yellow/Orange, and `backfill:rank-reassign` applies the
-reassignment — which stays a dry run until HMD's decision is recorded beside
-the map in `HMD_BELT_REASSIGNMENT`.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
+reassignment. HMD confirmed the map on 2026-09-12 — old Yellow → Yellow/Orange,
+nothing else moves — and it is recorded in `HMD_BELT_REASSIGNMENT`; the script
+runs on Franco's timing, after the flip.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
 `value`, and installed mobile apps will show no belt between the Phase 2 data
 flip and their update — so that flip is a script run on Franco's timing, never
 a merge side effect. Written 2026-09-11 after the HMD belt
@@ -241,9 +242,9 @@ ever has to be undone. **It refuses to write while `HMD_BELT_REASSIGNMENT.decide
 / `decidedOn` are null**, and refuses to apply a map a recorded run already
 applied (once applied, the old id is a real belt again — a newcomer graded
 Yellow next month holds `yellow` — so a second pass would move the wrong
-people). The map holds HMD's stated intent, `yellow → yellow-orange`; a dry run
-prints the holders per level. `snapshot:ranks --apply` first, so what everyone
-held is on record by label.
+people). The map is `yellow → yellow-orange`, confirmed by HMD on 2026-09-12 as
+the only move; a dry run prints the holders per level. `snapshot:ranks --apply`
+first, so what everyone held is on record by label.
 
 ## What decoupling does not solve
 
