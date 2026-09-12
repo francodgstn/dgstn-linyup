@@ -21,6 +21,8 @@ import { db } from '@/lib/firebase'
 import { checkTeamSlug } from '@/lib/teamSlug'
 import { useAuth } from '@/contexts/AuthContext'
 import { RankLevelFields } from '@/components/ranking/RankLevelFields'
+import { SortableItem, SortableList } from '@/components/ui/sortable'
+import { arrayMove } from '@dnd-kit/sortable'
 import { RankBadge } from '@/components/ranking/RankBadge'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
@@ -107,6 +109,7 @@ import {
   Clock,
   XCircle,
   Zap,
+  GripVertical,
 } from 'lucide-react'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
@@ -1161,6 +1164,8 @@ function RankSystemDialog({
     }
   }
 
+  const tRanking = useTranslations('Ranking')
+
   const addLevel = () => {
     setForm((f) => ({
       ...f,
@@ -1191,6 +1196,19 @@ function RankSystemDialog({
   const removeLevel = (idx: number) => {
     setForm((f) => ({ ...f, levels: f.levels.filter((_, i) => i !== idx) }))
   }
+
+  // ORDER IS THE ARRAY (docs/rank-scale-decoupling.md, Phases 3–5): moving a
+  // row or splicing one in changes what "Blue and above" covers — because the
+  // ladder changed — and nothing a contact holds, because a level is named by
+  // its id. Both are therefore plain array edits.
+  const moveLevel = (from: number, to: number) =>
+    setForm((f) => ({ ...f, levels: arrayMove(f.levels, from, to) }))
+  const insertLevelBelow = (idx: number) =>
+    setForm((f) => {
+      const levels = [...f.levels]
+      levels.splice(idx + 1, 0, { id: newRankLevelId(), label: '', color: '#9CA3AF' })
+      return { ...f, levels }
+    })
 
   // Removing a level is destructive to CONTACTS, not just to this form: every
   // `Contact.ranks[systemId]` naming that level is orphaned and thereafter
@@ -1299,18 +1317,41 @@ function RankSystemDialog({
                   {t('rankingNoSystems')}
                 </p>
               )}
+              {form.levels.length > 1 && (
+                <p className="text-xs text-muted-foreground">{tRanking('reorderHint')}</p>
+              )}
               <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                {form.levels.map((level, idx) => (
-                  <RankLevelFields
-                    key={level.id ?? idx}
-                    level={level}
-                    index={idx}
-                    storagePath={storagePath}
-                    canRemove
-                    onChange={(field, value) => updateLevel(idx, { [field]: value } as Partial<RankLevel>)}
-                    onRemove={() => requestRemoveLevel(idx)}
-                  />
-                ))}
+                <SortableList ids={form.levels.map((l) => l.id)} onReorder={moveLevel}>
+                  {form.levels.map((level, idx) => (
+                    <SortableItem key={level.id} id={level.id}>
+                      {({ setNodeRef, style, attributes, listeners, isDragging }) => (
+                        <div ref={setNodeRef} style={style} className={isDragging ? 'opacity-70' : undefined}>
+                          <RankLevelFields
+                            level={level}
+                            index={idx}
+                            storagePath={storagePath}
+                            canRemove
+                            onChange={(field, value) => updateLevel(idx, { [field]: value } as Partial<RankLevel>)}
+                            onRemove={() => requestRemoveLevel(idx)}
+                            onInsertBelow={() => insertLevelBelow(idx)}
+                            handle={
+                            <button
+                              type="button"
+                              aria-label={tRanking('dragToReorder')}
+                              title={tRanking('dragToReorder')}
+                              className="cursor-grab touch-none p-1 text-muted-foreground/50 hover:text-foreground active:cursor-grabbing"
+                              {...attributes}
+                              {...listeners}
+                            >
+                              <GripVertical className="h-3.5 w-3.5" />
+                            </button>
+                            }
+                          />
+                        </div>
+                      )}
+                    </SortableItem>
+                  ))}
+                </SortableList>
               </div>
             </div>
           </DialogBody>

@@ -8,7 +8,8 @@ categories' `min_rank`/`max_rank` are `RankRef`s). What remains of the number
 is the field a ladder document written before Phase 4 still carries, read by
 `legacyRankValue` alone (`rankValueCensus.test.ts` pins its callers) until
 `backfill:rank-refs --strip-values` removes it — Phase 4b, run after the flip.
-Phase 5 next; Phase 6 blocked on the reassignment decision.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
+Phase 5 shipped the same day: both editors reorder by drag-and-drop and insert a
+level at any position. Phase 6 blocked on the reassignment decision.** Decided 2026-09-11: ids are opaque strings, not a reinterpreted
 `value`, and installed mobile apps will show no belt between the Phase 2 data
 flip and their update — so that flip is a script run on Franco's timing, never
 a merge side effect. Written 2026-09-11 after the HMD belt
@@ -127,6 +128,11 @@ position and no stored value moves. Reordering costs nothing for the same reason
 
 ## Two things the editor cannot do today
 
+*(Both shipped: the cap went in Phase 1, insert-at-position and drag-and-drop in
+Phase 5 — `RankLevelFields` takes a `handle` and an `onInsertBelow`, and both
+editors wrap the rows in the house `SortableList`. Kept as written because it
+records why they were load-bearing.)*
+
 Worth knowing before planning UI work, because both are load-bearing for HMD:
 
 - **`addLevel` only appends.** It assigns `Math.max(...values) + 1`, so there is
@@ -204,6 +210,15 @@ still owed before `backfill:rank-refs`, which refuses an id-less ladder.
 
 **Phase 5 — the UI.** Drag-and-drop reorder and insert-at-position, which are now
 ordinary array edits. Also raise or remove the 10-level cap.
+
+*Shipped 2026-09-12.* `arrayMove` and a `splice` — nothing else, which is the
+whole point of Phases 1–4. The handle is the same `SortableList` the bio-link,
+website and task editors use (drag-by-handle, keyboard reorder); the "+" on a
+row inserts an empty level right below it, minted with `newRankLevelId`. A
+reorder is saved with the rest of the form and reaches every reader through
+`orderedLevels`: the badge strips, the contacts filter band, the progression
+bands and the dashboard donut change meaning together, and no contact's stored
+ref moves.
 
 **Phase 6 — add the two HMD belts** as a plain ladder edit, and apply whatever
 reassignment Phase 0 decided as a separate, explicit, auditable step.
