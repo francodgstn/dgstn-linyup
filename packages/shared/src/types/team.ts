@@ -194,24 +194,25 @@ export type RankRef = string | number
 export interface RankLevel {
   /**
    * THE level's identity — opaque, assigned once, never reused and never
-   * renumbered. This is what records will point at, so that inserting or
-   * reordering levels moves nothing that is stored.
+   * renumbered. This is what every record points at, so that inserting or
+   * reordering levels moves nothing that is stored. Order is the level's
+   * POSITION in `RankingSystem.levels`, and nothing else.
    *
-   * Optional during the transition recorded in docs/rank-scale-decoupling.md:
-   * a document written before Phase 1 has none, and `withRankLevelIds` (or the
-   * `backfill:rank-level-ids` script) mints one deterministically from the
-   * label. It becomes required when `value` is dropped in Phase 4.
+   * Required since Phase 4 of docs/rank-scale-decoupling.md. A ladder written
+   * before Phase 1 has none in the database; `effectiveRankingSystems` mints
+   * one on read with `withRankLevelIds` — the same deterministic slug
+   * `backfill:rank-level-ids` writes — so a reader never meets a level without
+   * one. Mint one with `newRankLevelId()` in an editor and `withRankLevelIds()`
+   * for seeds, presets and backfills — never by hand.
    *
-   * Mint one with `newRankLevelId()` in an editor and `withRankLevelIds()` for
-   * seeds, presets and backfills — never by hand.
+   * There is NO `value` any more. The ordinal that used to be the identity,
+   * the order and the progression key all at once is gone from the shape. A
+   * ladder document written before Phase 4 may still carry the field, and the
+   * ONE reader of it is `legacyRankValue` (utils/rankLevels.ts), for records
+   * `backfill:rank-refs` has not reached; `rankValueCensus.test.ts` pins who
+   * may call it. Do not add another.
    */
-  id?: string
-  /**
-   * TRANSITIONAL. Today this is still the identity records store and the order
-   * the ladder is sorted by; both jobs are moving to `id` and to array position
-   * respectively. Do not add a new reader of it — see the plan above.
-   */
-  value: number
+  id: string
   label: string
   /** Primary colour. The belt, or the background behind an emoji. */
   color?: string

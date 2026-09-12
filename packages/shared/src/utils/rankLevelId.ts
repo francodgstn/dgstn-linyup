@@ -67,12 +67,16 @@ export function newRankLevelId(): string {
  * same result — which is what lets the backfill be re-run and lets a fresh
  * migration agree with a backfilled one.
  */
-export function withRankLevelIds(levels: ReadonlyArray<RankLevel>): RankLevel[] {
+export function withRankLevelIds(levels: ReadonlyArray<RankLevelInput>): RankLevel[] {
   const taken = new Set(levels.map((l) => l.id).filter((id): id is string => !!id))
   return levels.map((level, i) => {
-    if (level.id) return level
+    if (level.id) return level as RankLevel
     const id = slugRankLevelId(level.label, taken, i)
     taken.add(id)
     return { ...level, id }
   })
 }
+
+/** A level as a seed, a preset or a pre-Phase-1 document states it: everything
+ *  but the identity, which `withRankLevelIds` supplies. */
+export type RankLevelInput = Omit<RankLevel, 'id'> & { id?: string }

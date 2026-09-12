@@ -9,6 +9,7 @@
 // Team tab's coaches/links sections) must be mapped here — a field
 // dropped here is a silent regression identical to the ones this lane exists
 // to close (see docs/mobile-roadmap-2026-09.md §1.3).
+import { withRankLevelIds } from '@linyup/shared';
 import type { TeamPublicProfile } from '../types';
 
 export function mapPublicProfileMirror(teamId: string, data: Record<string, unknown>): TeamPublicProfile {
@@ -36,7 +37,13 @@ export function mapPublicProfileMirror(teamId: string, data: Record<string, unkn
     goal_categories: data.goal_categories as TeamPublicProfile['goal_categories'],
     gamificationEnabled: data.gamificationEnabled as boolean | undefined,
     gamification_settings: data.gamification_settings as TeamPublicProfile['gamification_settings'],
-    ranking_systems: (data.ranking_systems as TeamPublicProfile['ranking_systems']) || [],
+    // Every level with an id (docs/rank-scale-decoupling.md) — the same
+    // deterministic slug the web resolver and the backfill mint, so a mirror
+    // written before the ids existed still resolves a member's belt.
+    ranking_systems: ((data.ranking_systems as TeamPublicProfile['ranking_systems']) || []).map((s) => ({
+      ...s,
+      levels: withRankLevelIds(s.levels ?? []),
+    })),
     affiliation_term: data.affiliation_term as TeamPublicProfile['affiliation_term'],
     // BOTH HALVES, composed here once — this flag says the appointments UI is
     // worth PROMOTING, not that a toggle is on. It gates invitations to book

@@ -1,4 +1,5 @@
 import type { Timestamp } from './common'
+import type { RankRef } from './team'
 
 // Built-in event types — hardcoded, always available.
 //
@@ -327,7 +328,10 @@ export interface EventCategory {
   min_weight?: number
   max_weight?: number
   ranking_system_id?: string   // link to team ranking system for rank-based filtering
-  min_rank?: number
-  max_rank?: number
+  /** Bounds on that ladder, inclusive, as `RankRef`s — a level id, or a legacy
+   *  number on a category `backfill:rank-refs` has not reached. Compared by
+   *  ladder POSITION, never as numbers (see the cup check-in form). */
+  min_rank?: RankRef
+  max_rank?: RankRef
   sort_order?: number
 }

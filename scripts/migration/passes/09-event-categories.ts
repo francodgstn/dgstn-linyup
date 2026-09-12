@@ -1,5 +1,5 @@
 import type { MigrationConfig } from '../config'
-import { sourceDb, targetDb, RANKING_HMD } from '../config'
+import { sourceDb, targetDb, RANKING_HMD, rankingSystemLevelId } from '../config'
 import { BatchWriter } from '../batch-writer'
 
 /**
@@ -124,8 +124,12 @@ function mapCategory(
 
   if (rank.min !== undefined || rank.max !== undefined) {
     out.ranking_system_id = RANK_RANGE_SYSTEM_ID
-    if (rank.min !== undefined) out.min_rank = rank.min
-    if (rank.max !== undefined) out.max_rank = rank.max
+    // The LEVEL'S ID (docs/rank-scale-decoupling.md), like every other rank
+    // ref this migration writes; a source ordinal the ladder does not carry is
+    // written as the number it was, which the check-in form then cannot
+    // resolve — an unrestricted bound rather than a silently wrong one.
+    if (rank.min !== undefined) out.min_rank = rankingSystemLevelId(RANK_RANGE_SYSTEM_ID, rank.min) ?? rank.min
+    if (rank.max !== undefined) out.max_rank = rankingSystemLevelId(RANK_RANGE_SYSTEM_ID, rank.max) ?? rank.max
   }
 
   // NOT MAPPED, deliberately:

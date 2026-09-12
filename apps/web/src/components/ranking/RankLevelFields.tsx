@@ -65,7 +65,7 @@ export function RankLevelFields({
       const ext = file.name.split('.').pop() ?? 'png'
       // Named by the level's IDENTITY, so a reorder or an insert never repoints
       // a badge at a different grade. An existing image keeps its stored URL.
-      const sRef = storageRef(storage, `${storagePath}/level-${level.id ?? level.value}.${ext}`)
+      const sRef = storageRef(storage, `${storagePath}/level-${level.id}.${ext}`)
       await uploadBytes(sRef, file)
       onChange('imageUrl', await getDownloadURL(sRef))
     } catch (err) {

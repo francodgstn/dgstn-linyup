@@ -103,7 +103,7 @@ export function ExamCheckinForm({
               </button>
               {levels.map((lvl) => (
                 <button
-                  key={lvl.id ?? lvl.value}
+                  key={lvl.id}
                   onClick={() => setLevel(sys.id, rankLevelKey(lvl))}
                   className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1.5 ${
                     findRankLevel(levels, disciplines[sys.id]) === lvl

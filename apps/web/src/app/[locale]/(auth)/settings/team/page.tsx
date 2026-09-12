@@ -68,8 +68,10 @@ import {
   DEFAULT_ENGAGEMENT_THRESHOLDS,
   TEAM_INTEGRATIONS_SUBCOLLECTION,
   newRankLevelId,
+  legacyRankValue,
   rankLevelKey,
   sameRankRef,
+  orderedLevels,
 } from '@linyup/shared'
 import type {
   Team,
@@ -1160,11 +1162,11 @@ function RankSystemDialog({
   }
 
   const addLevel = () => {
-    const nextVal = form.levels.length > 0 ? Math.max(...form.levels.map((l) => l.value)) + 1 : 0
     setForm((f) => ({
       ...f,
-      // A stable identity from the first keystroke — see newRankLevelId.
-      levels: [...f.levels, { id: newRankLevelId(), value: nextVal, label: '', color: '#9CA3AF' }],
+      // A stable identity from the first keystroke — see newRankLevelId. Its
+      // place in the array is its order; nothing else is minted.
+      levels: [...f.levels, { id: newRankLevelId(), label: '', color: '#9CA3AF' }],
     }))
   }
 
@@ -1191,9 +1193,9 @@ function RankSystemDialog({
   }
 
   // Removing a level is destructive to CONTACTS, not just to this form: every
-  // `Contact.ranks[systemId]` sitting on that value is orphaned and thereafter
-  // renders as the nearest level below it (see `primaryRank` in @linyup/shared). So ask — but
-  // only where somebody can actually be holding it.
+  // `Contact.ranks[systemId]` naming that level is orphaned and thereafter
+  // renders NO belt (see `primaryRank` in @linyup/shared). So ask — but only
+  // where somebody can actually be holding it.
   const requestRemoveLevel = (idx: number) => {
     const level = form.levels[idx]
     const key = level ? rankLevelKey(level) : undefined
@@ -1205,7 +1207,10 @@ function RankSystemDialog({
       return
     }
     setPendingRemove(idx)
-    levelHolders.start(holderTeamIds, form.id, [key, level.value].filter((r, j, a) => a.indexOf(r) === j))
+    // Both refs a contact may still hold it under: the id, and — until
+    // `backfill:rank-refs` has run — the number the ladder document still
+    // carries (`legacyRankValue`, the one sanctioned reader of it).
+    levelHolders.start(holderTeamIds, form.id, [key, legacyRankValue(level)].flatMap((r) => (r == null ? [] : [r])))
   }
 
   const closeRemoveConfirm = () => {
@@ -1473,10 +1478,11 @@ function RankingTab({
     // exist", so a contact orphaned at a value this system no longer carries
     // falls outside the count — which is why the copy says "holding one of its
     // levels" rather than "in this system".
+    // Per level, under both refs a contact may hold it — see requestRemoveLevel.
     systemHolders.start(
       [teamId],
       s.id,
-      s.levels.map((l) => l.value),
+      s.levels.flatMap((l) => [rankLevelKey(l), legacyRankValue(l)]).flatMap((r) => (r == null ? [] : [r])),
     )
   }
   const closeDelete = () => {
@@ -1595,12 +1601,11 @@ function RankingTab({
                 )}
               </div>
 
-              {/* Level strip, sorted by VALUE — the scale's own order. Array
-                  order made this disagree with the other surfaces whenever the
-                  two differed. */}
+              {/* Level strip in ladder order — array position, through the
+                  same `orderedLevels` every other surface reads. */}
               <div className="flex gap-1 flex-wrap">
-                {[...s.levels].sort((a, b) => a.value - b.value).map((l) => (
-                  <div key={l.value} className="flex items-center gap-1">
+                {orderedLevels(s).map((l) => (
+                  <div key={l.id} className="flex items-center gap-1">
                     <RankBadge level={l} size="sm" />
                     <span className="text-xs text-muted-foreground">{l.label}</span>
                   </div>

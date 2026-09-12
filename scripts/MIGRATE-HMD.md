@@ -291,6 +291,15 @@ pnpm backfill:weekly-reports --org hmd --project linyup-staging
 pnpm backfill:weekly-reports --org hmd --project linyup-staging --apply --yes
 ```
 
+The rank ladders need nothing after a fresh import — the migration writes level
+ids and id-based refs directly (docs/rank-scale-decoupling.md). Two rank scripts
+exist for data that predates that, and both refuse a cloud write without a typed
+confirmation: `pnpm backfill:rank-level-ids --target staging` (ids onto a ladder
+that has none) and `pnpm backfill:rank-refs --target staging` (numbers on
+contacts, exam check-ins, filters, group rules, edited bands and cup categories
+→ ids; add `--strip-values` once no number remains, to drop the legacy ordinal
+from the ladders). Neither is part of the import itself.
+
 Either can also be dispatched from the **Backfill** workflow
 (`.github/workflows/backfill.yml`) against a deployed project, which is the
 better place for the write: `--org hmd` and `--yes` go in its `extra_args`.

@@ -638,7 +638,10 @@ export interface LeadProfile {
   rankingSystem: {
     id: string
     name: string
-    levels: { value: number; label: string; color: string }[]
+    /** `value` is IGNORED since Phase 4 of docs/rank-scale-decoupling.md and
+     *  kept optional only so an older profile still typechecks; a level is
+     *  identified by the id minted from its label and ordered by position. */
+    levels: { value?: number; label: string; color: string }[]
   } | null
   /** settings.gamification payload (enabled, base score, multipliers, …). */
   gamification: Record<string, unknown>

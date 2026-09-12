@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Pencil, Trash2, Shield } from 'lucide-react'
-import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, newRankLevelId, rankLevelKey, sameRankRef, orderedLevels } from '@linyup/shared'
+import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, newRankLevelId, rankLevelKey, sameRankRef, orderedLevels, legacyRankValue } from '@linyup/shared'
 import type { OrgTeam, RankingSystem, RankLevel } from '@linyup/shared'
 import { RANK_PRESETS } from '@/lib/rank-presets'
 import { useRankHolderCount } from '@/lib/rank-utils'
@@ -51,7 +51,7 @@ interface RankSystemFormState {
 
 function emptyForm(): RankSystemFormState {
   // The starter level carries an id from birth, like every level an editor adds.
-  return { id: '', name: '', levels: [{ id: newRankLevelId(), value: 0, label: '', color: '#6b7280' }], is_primary: false }
+  return { id: '', name: '', levels: [{ id: newRankLevelId(), label: '', color: '#6b7280' }], is_primary: false }
 }
 
 // ─── RankSystemDialog (reused pattern from team settings) ─────────────────────
@@ -108,13 +108,9 @@ function RankSystemDialog({
         ...prev.levels,
         {
           // A stable identity from the first keystroke — see newRankLevelId.
+          // Nothing else identifies or orders a level: its place in the array
+          // is its order (docs/rank-scale-decoupling.md, Phases 3–4).
           id: newRankLevelId(),
-          // ONE ABOVE THE HIGHEST, not the array length. `prev.levels.length`
-          // mints a duplicate as soon as a level has been removed — [0,1,2],
-          // remove the middle, add: two levels then share value 2, and the
-          // lookup that resolves a contact's rank picks whichever comes first.
-          // The team-settings editor already did it this way; this one did not.
-          value: prev.levels.length ? Math.max(...prev.levels.map((l) => l.value)) + 1 : 0,
           label: '',
           color: '#6b7280',
         },
@@ -125,9 +121,9 @@ function RankSystemDialog({
     setForm((prev) => ({ ...prev, levels: prev.levels.filter((_, j) => j !== i) }))
 
   // Removing a level is destructive to CONTACTS, not just to this form: every
-  // `Contact.ranks[systemId]` sitting on that value is orphaned and thereafter
-  // renders as the nearest level below it (see `primaryRank` in @linyup/shared). So ask — but
-  // only where somebody can actually be holding it.
+  // `Contact.ranks[systemId]` naming that level is orphaned and thereafter
+  // renders NO belt (see `primaryRank` in @linyup/shared). So ask — but only
+  // where somebody can actually be holding it.
   const requestRemoveLevel = (i: number) => {
     const level = form.levels[i]
     const key = level ? rankLevelKey(level) : undefined
@@ -139,8 +135,10 @@ function RankSystemDialog({
       return
     }
     setPendingRemove(i)
-    // Both refs a contact may still hold it under, while the data flip runs.
-    levelHolders.start(holderTeamIds, form.id, [key, level.value].filter((r, j, a) => a.indexOf(r) === j))
+    // Both refs a contact may still hold it under: the id, and — until
+    // `backfill:rank-refs` has run — the number the ladder document still
+    // carries (`legacyRankValue`, the one sanctioned reader of it).
+    levelHolders.start(holderTeamIds, form.id, [key, legacyRankValue(level)].flatMap((r) => (r == null ? [] : [r])))
   }
 
   const closeRemoveConfirm = () => {
@@ -358,7 +356,12 @@ export default function OrgRankingPage() {
     // exist", so a contact orphaned at a value this system no longer carries is
     // outside the count — which is why the copy says "holding one of its
     // levels" rather than "in this system".
-    systemHolders.start(holderTeamIds, s.id, s.levels.map((l) => l.value))
+    // Per level, under both refs a contact may hold it — see requestRemoveLevel.
+    systemHolders.start(
+      holderTeamIds,
+      s.id,
+      s.levels.flatMap((l) => [rankLevelKey(l), legacyRankValue(l)]).flatMap((r) => (r == null ? [] : [r]))
+    )
   }
   const closeDelete = () => {
     setDeleting(null)
@@ -455,12 +458,11 @@ export default function OrgRankingPage() {
                   </>
                 )}
               </div>
-              {/* Sorted by VALUE, which is the scale's own order. Rendering in
-                  array order made this strip disagree with the dashboard donut
-                  whenever the two differed. */}
+              {/* In ladder order — array position, through the same
+                  `orderedLevels` the dashboard donut reads, so the two agree. */}
               <div className="flex gap-1 flex-wrap">
                 {orderedLevels(s).map((l) => (
-                  <div key={l.id ?? l.value} className="flex items-center gap-1">
+                  <div key={l.id} className="flex items-center gap-1">
                     <RankBadge level={l} size="sm" />
                     <span className="text-xs text-muted-foreground">{l.label}</span>
                   </div>

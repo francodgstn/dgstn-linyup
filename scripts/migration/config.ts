@@ -37,23 +37,33 @@ export const RANKING_KD  = 'kd'    // Korean Dragon
 // exactly what that helper derives from the labels — which is what makes a fresh
 // migration and `backfill:rank-level-ids` over an older one agree. If a label is
 // ever changed here, the id stays; that is the whole point of having one.
+//
+// `legacyValue` is the number hmd-lineup stored on a contact (`rank`), an exam
+// (`hmd_rank` / `kd_rank`) and a cup category (`rank_range`). It is the SOURCE
+// side of the mapping and nothing more: the ladder written to the org carries
+// no `value` since Phase 4 of docs/rank-scale-decoupling.md (see `hmdLevel`).
 const HMD_BELT_LEVELS = [
-  { id: 'no-belt',       value:  0, label: 'No belt',       color: '#AAAAAA' },
-  { id: 'white',         value:  1, label: 'White',         color: '#DDDDDD' },
-  { id: 'yellow',        value:  2, label: 'Yellow',        color: '#FFDC00' },
-  { id: 'orange',        value:  3, label: 'Orange',        color: '#FF851B' },
-  { id: 'orange-green',  value:  4, label: 'Orange/Green',  color: '#FF851B', secondColor: '#1c9c2b' },
-  { id: 'green',         value:  5, label: 'Green',         color: '#1c9c2b' },
-  { id: 'green-blue',    value:  6, label: 'Green/Blue',    color: '#1c9c2b', secondColor: '#0074D9' },
-  { id: 'blue',          value:  7, label: 'Blue',          color: '#0074D9' },
-  { id: 'blue-red',      value:  8, label: 'Blue/Red',      color: '#0074D9', secondColor: '#d41010' },
-  { id: 'red',           value:  9, label: 'Red',           color: '#d41010' },
-  { id: 'red-black',     value: 10, label: 'Red/Black',     color: '#d41010', secondColor: '#111111' },
-  { id: 'black-i-dan',   value: 11, label: 'Black I Dan',   color: '#111111' },
-  { id: 'black-ii-dan',  value: 12, label: 'Black II Dan',  color: '#111111' },
-  { id: 'black-iii-dan', value: 13, label: 'Black III Dan', color: '#111111' },
-  { id: 'master',        value: 14, label: 'Master',        color: '#111111' },
+  { id: 'no-belt',       legacyValue:  0, label: 'No belt',       color: '#AAAAAA' },
+  { id: 'white',         legacyValue:  1, label: 'White',         color: '#DDDDDD' },
+  { id: 'yellow',        legacyValue:  2, label: 'Yellow',        color: '#FFDC00' },
+  { id: 'orange',        legacyValue:  3, label: 'Orange',        color: '#FF851B' },
+  { id: 'orange-green',  legacyValue:  4, label: 'Orange/Green',  color: '#FF851B', secondColor: '#1c9c2b' },
+  { id: 'green',         legacyValue:  5, label: 'Green',         color: '#1c9c2b' },
+  { id: 'green-blue',    legacyValue:  6, label: 'Green/Blue',    color: '#1c9c2b', secondColor: '#0074D9' },
+  { id: 'blue',          legacyValue:  7, label: 'Blue',          color: '#0074D9' },
+  { id: 'blue-red',      legacyValue:  8, label: 'Blue/Red',      color: '#0074D9', secondColor: '#d41010' },
+  { id: 'red',           legacyValue:  9, label: 'Red',           color: '#d41010' },
+  { id: 'red-black',     legacyValue: 10, label: 'Red/Black',     color: '#d41010', secondColor: '#111111' },
+  { id: 'black-i-dan',   legacyValue: 11, label: 'Black I Dan',   color: '#111111' },
+  { id: 'black-ii-dan',  legacyValue: 12, label: 'Black II Dan',  color: '#111111' },
+  { id: 'black-iii-dan', legacyValue: 13, label: 'Black III Dan', color: '#111111' },
+  { id: 'master',        legacyValue: 14, label: 'Master',        color: '#111111' },
 ]
+
+/** The level as the org ladder stores it — the source ordinal stripped. */
+function hmdLevel({ legacyValue: _source, ...level }: (typeof HMD_BELT_LEVELS)[number]) {
+  return level
+}
 
 // Ranking systems to write to organizations/hmd — hardcoded because hmd-lineup
 // never persisted these to Firestore; they lived only in the JS app config.
@@ -167,8 +177,8 @@ export function mapSourceEventType(raw: unknown): string {
 }
 
 export const HMD_ORG_RANKING_SYSTEMS = [
-  { id: RANKING_HMD, name: 'Hwal Moo Do',    is_primary: true,  levels: HMD_BELT_LEVELS },
-  { id: RANKING_KD,  name: 'Korean Dragon',  is_primary: false, levels: HMD_BELT_LEVELS },
+  { id: RANKING_HMD, name: 'Hwal Moo Do',    is_primary: true,  levels: HMD_BELT_LEVELS.map(hmdLevel) },
+  { id: RANKING_KD,  name: 'Korean Dragon',  is_primary: false, levels: HMD_BELT_LEVELS.map(hmdLevel) },
 ]
 
 /**
@@ -193,16 +203,16 @@ const levelValueCache = new Map<string, Set<number>>()
  * decoupling (docs/rank-scale-decoupling.md); the value is the source's word.
  */
 export function rankingSystemLevelId(systemId: string, value: number): string | null {
-  const system = HMD_ORG_RANKING_SYSTEMS.find((s) => s.id === systemId)
-  return system?.levels.find((l) => l.value === value)?.id ?? null
+  if (!HMD_ORG_RANKING_SYSTEMS.some((s) => s.id === systemId)) return null
+  // Both systems run on the one belt table, so the source ordinal maps the same way.
+  return HMD_BELT_LEVELS.find((l) => l.legacyValue === value)?.id ?? null
 }
 
 export function rankingSystemLevelValues(systemId: string): Set<number> | null {
   const cached = levelValueCache.get(systemId)
   if (cached) return cached
-  const system = HMD_ORG_RANKING_SYSTEMS.find((s) => s.id === systemId)
-  if (!system) return null
-  const values = new Set(system.levels.map((l) => l.value))
+  if (!HMD_ORG_RANKING_SYSTEMS.some((s) => s.id === systemId)) return null
+  const values = new Set(HMD_BELT_LEVELS.map((l) => l.legacyValue))
   levelValueCache.set(systemId, values)
   return values
 }

@@ -1,5 +1,6 @@
 import type { RankingSystem, RankLevel, RankRef } from '../types/team'
 import { findRankLevel } from './rankLevels'
+import { withRankLevelIds } from './rankLevelId'
 
 /**
  * THE rule for which ranking systems apply to a team — the organisation's, or
@@ -24,8 +25,14 @@ export function effectiveRankingSystems(
   teamSystems: RankingSystem[] | undefined | null,
   orgSystems: RankingSystem[] | undefined | null,
 ): RankingSystem[] {
-  if (orgSystems && orgSystems.length > 0) return orgSystems
-  return teamSystems ?? []
+  const chosen = orgSystems && orgSystems.length > 0 ? orgSystems : (teamSystems ?? [])
+  // EVERY LEVEL LEAVES HERE WITH AN ID. A ladder document written before
+  // Phase 1 of docs/rank-scale-decoupling.md has none; minting it on read with
+  // the SAME deterministic slug `backfill:rank-level-ids` writes means a
+  // reader never meets an id-less level, and the id it resolves or stores is
+  // the one the backfill will put on the document. Idempotent, so a ladder
+  // that already carries ids passes through unchanged in content.
+  return chosen.map((s) => ({ ...s, levels: withRankLevelIds(s.levels ?? []) }))
 }
 
 /** True when the ORGANISATION owns the systems, so a team-level editor locks. */
@@ -52,17 +59,12 @@ export function isKnownRankingSystem(
 /** THE one rank a contact is displayed by — see `primaryRank`. */
 export interface PrimaryRank {
   system: RankingSystem
-  /** The level shown: the exact one, or — for an orphaned LEGACY NUMBER — the
-   *  nearest level at or below it (`orphaned` says which). */
+  /** The level the stored ref names — always an exact match; see the note on
+   *  orphans below for why there is no stand-in any more. */
   level: RankLevel
-  /** The stored ref: the level's id, or a legacy number on a record the Phase 2
-   *  data flip has not reached. Differs from `rankLevelKey(level)` only when
-   *  `orphaned`. */
+  /** The stored ref: the level's id, or a legacy number on a record the data
+   *  flip has not reached (resolved through `legacyRankValue`). */
   value: RankRef
-  /** The contact holds a number no level of the scale carries any more (a
-   *  level was deleted under them); `level` is a best-effort stand-in. An
-   *  orphaned ID has no stand-in — it resolves to null, see below. */
-  orphaned: boolean
 }
 
 /**
@@ -93,13 +95,15 @@ export interface PrimaryRank {
  * another system would override an explicit tenant decision about which scale
  * identifies a person here.
  *
- * ORPHANED VALUES are shown, oddly, rather than hidden: the contact holds a
- * value no level carries any more, because a level was deleted from the system
- * under them. Falling to the nearest level at or below shows a DIFFERENT belt
- * than the one they were awarded — wrong, but the alternative is a blank, which
- * hides the damage instead of showing it. The cure is upstream, where the
- * levels are edited: the team and org ranking editors count the holders and
- * warn before a delete orphans anybody. `orphaned` lets a surface say so.
+ * AN ORPHAN RESOLVES TO NOTHING. A contact holding a ref no level carries any
+ * more (a level deleted under them) used to be shown at the nearest level
+ * BELOW the old number, behind an `orphaned` flag almost nothing read — a
+ * silent demotion, which docs/rank-scale-decoupling.md names as the failure
+ * the whole decoupling exists to remove. Identities do not sort, so since
+ * Phase 4 there is no stand-in for either kind of ref: the badge is blank,
+ * which shows the damage instead of disguising it. The cure is upstream,
+ * where the levels are edited: both ranking editors count the holders and
+ * warn before a delete orphans anybody.
  *
  * No sport-specific fallback: a tenant that has not configured any ranking
  * system simply has nothing to show, and the caller hides the badge rather
@@ -120,22 +124,6 @@ export function primaryRank(
   const value = ranks[system.id]
   if (value === undefined || value === null) return null
 
-  const levels = system.levels ?? []
-  const exact = findRankLevel(levels, value)
-  if (exact) return { system, level: exact, value, orphaned: false }
-
-  // ORPHANS. A legacy NUMBER keeps the nearest-level-below stand-in described
-  // above: it is the transitional shape and its scale still carries numbers.
-  // An ID that no level carries has no "nearest" — identities do not sort — so
-  // it resolves to nothing. That is the honest answer for a grade that was
-  // deleted from the ladder, and the editors' holder-count warning is the
-  // guard that keeps it rare.
-  if (typeof value !== 'number') return null
-  const level = levels
-    .slice()
-    .sort((a, b) => b.value - a.value)
-    .find((l) => l.value <= value)
-  if (!level) return null
-
-  return { system, level, value, orphaned: true }
+  const exact = findRankLevel(system.levels ?? [], value)
+  return exact ? { system, level: exact, value } : null
 }
