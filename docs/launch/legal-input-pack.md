@@ -122,7 +122,11 @@ everything is a button.
 - Rate limiting on every public callable, per-surface.
 - PITR enabled. **A restore has never been rehearsed** — `readiness-2026-08.md`
   lists this as still open. Do not let the DPA imply a tested RTO/RPO.
-- App Check: partial. See `docs/app-check-rollout.md`.
+- **App Check is implemented but NOT enforced** — deferred by decision, so it is not a
+  live control. **Do not let the DPA or any customer answer imply active bot / automated-
+  abuse protection from it.** What IS live is the per-surface rate limiting above. See
+  `docs/app-check-rollout.md` → "Why it is still off". ("Partial", the earlier wording
+  here, reads as *in place, partially* — it is not in place.)
 
 ---
 

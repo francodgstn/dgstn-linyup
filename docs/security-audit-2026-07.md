@@ -5,6 +5,11 @@
 > archive) because other documents cite its findings by number — notably
 > `app-check-rollout.md`, which depends on finding #3 — so the numbering must keep
 > resolving. **Verify any finding against the code before acting on it.**
+>
+> The FINDINGS are frozen; the **Status column and the follow-up list are kept
+> current**, with a date on anything resolved after the audit ran. A status of
+> ▶ Deferred or ▶ Accepted is a decision that was taken, not a task nobody got
+> to — the linked detail says who decided what and what would re-open it.
 
 A full read-through of every externally reachable surface of the Linyup platform:
 Firestore rules (~1,260 lines), Storage rules, all Cloud Functions exports, every public
@@ -35,7 +40,7 @@ or hardening gap · **L** = low-risk / defense-in-depth.
 | 1 | H | Cross-tenant LIST on `courses`/`forms`/`documents` | ✅ Fixed |
 | 2 | H | `createDropInCheckout` trusts client `authenticatedContactId` | ✅ Fixed |
 | 2b | H | Same pattern missed in `bookSession` / `bookAppointment` | ✅ Fixed (2026-07-17) |
-| 3 | M | App Check absent on all callables | ✅ Implemented (web provider + staged monitor→enforce on web-only callables) |
+| 3 | M | App Check absent on all callables | ✅ Implemented (web provider + web-only callables) · ▶ **enforcement deferred by decision 2026-09-12** — see #3 |
 | 4 | M | Event-invitation tokens never expire + leak PII | ✅ Fixed |
 | 5 | M | Unescaped user content in email HTML | ✅ Fixed |
 | 6 | M | Brevo/inbound webhooks: non-constant-time token / secret in logs | ✅ Fixed |
@@ -100,7 +105,7 @@ there is no session to derive from and the code must remain the proof. Signed-in
 (mobile) send no `authenticatedContactId` at all and are identified by their contact
 session. Every real caller already sent both fields, so no client changed.
 
-### 3 — App Check (M, implemented — staged)
+### 3 — App Check (M, implemented; enforcement DEFERRED by decision 2026-09-12)
 No `enforceAppCheck` existed anywhere; unauthenticated Firestore-writing callables were
 defended only by per-IP hourly rate limits. **Implemented:** a reCAPTCHA Enterprise App Check
 provider on the web client (`apps/web/src/lib/app-check.ts` + `AppCheckProvider`, mounted in
@@ -238,7 +243,16 @@ noted for awareness.
   courses/forms/documents; `sharesContactEmail` denies an unverified-email caller. (Not
   added here to avoid a new test-infra dependency mid-audit; rules were validated to
   compile via the emulator and reviewed manually.)
-- Land App Check (finding 3) with a staged log-only rollout.
+- ~~Land App Check (finding 3) with a staged log-only rollout.~~ **Closed 2026-09-12 as a
+  deliberate deferral, not as done.** reCAPTCHA Enterprise is a third-party provider with
+  its own billing (the Console no longer offers plain v3), and the callables it would guard
+  are already IP-rate-limited behind a `payments_enabled` gate that fails closed — so
+  enforcement buys defence against an attacker who defeats IP keying, and nothing else.
+  Nothing is half-adopted: no site key, both flags false, the key slot and the provider's
+  two Google APIs commented out. Reasoning, residual risk, the two triggers that change the
+  answer, and a provider-free mitigation for the first of them are in
+  [`app-check-rollout.md`](./app-check-rollout.md) → "Why it is still off". **Re-open this
+  when gift cards sell for real money** — `checkGiftCard` is a balance oracle.
 - Land the mobile SecureStore migration (finding 9) with device testing.
 - Provision the `saas_operator` custom claim for operators and, once done, consider removing
   the email-allowlist fallback (finding 8).
