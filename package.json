@@ -44,6 +44,7 @@
     "backfill:weekly-reports": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-weekly-reports.ts",
     "backfill:rank-level-ids": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-rank-level-ids.ts",
     "backfill:rank-refs": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-rank-refs.ts",
+    "backfill:rank-reassign": "tsx --tsconfig tsconfig.scripts.json scripts/backfill-rank-reassign.ts",
     "migrate:hmd:sample": "tsx --tsconfig tsconfig.scripts.json scripts/migrate-hmd.ts --target-emulator --reset --teams \"HMD Basel,HMD Team Galli,HMD Team Marzella\"",
     "promote:team": "tsx --tsconfig tsconfig.scripts.json scripts/promote-team.ts",
     "staging:seed": "tsx scripts/seed-staging.ts",

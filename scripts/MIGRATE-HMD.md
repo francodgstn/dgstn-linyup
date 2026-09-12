@@ -17,7 +17,11 @@ To generate the key: Firebase Console → select the `hmd-lineup` project → Pr
 > `keys/` is gitignored. Never commit service account files.
 
 **2. Confirm ranking system IDs** in `scripts/migration/config.ts` (`RANKING_HMD`, `RANKING_KD`).
-These map the old single `rank` field on contacts to the new `ranks` map.
+These map the old single `rank` field on contacts to the new `ranks` map. The ladder
+written to the org (`HMD_BELT_LEVELS`) already carries HMD's two inserted belts,
+White/Yellow and Yellow/Orange; whether anyone's existing belt moves onto one of them is
+NOT part of the import — it is `pnpm backfill:rank-reassign`, gated on the federation's
+decision being recorded in `HMD_BELT_REASSIGNMENT` (docs/rank-scale-decoupling.md, Phase 6).
 
 The organisation document, org_admin member entry, and Firebase Auth users are all migrated automatically. The **auth-users pass** calls the Firebase Identity Toolkit API directly using the source service account, downloads all user records including password hashes and the SCRYPT hash config, then imports them into the target with `importUsers()` — so users log in with the same password they had in the source project. No manual export step needed.
 

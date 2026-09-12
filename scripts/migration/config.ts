@@ -33,8 +33,8 @@ export const RANKING_KD  = 'kd'    // Korean Dragon
 // Belt levels — same scale for both HMD and KD disciplines (hardcoded in hmd-lineup).
 //
 // Each carries its stable `id` LITERALLY rather than through `withRankLevelIds`:
-// a migration must be reproducible by reading it, and these fifteen strings are
-// exactly what that helper derives from the labels — which is what makes a fresh
+// a migration must be reproducible by reading it, and these strings are exactly
+// what that helper derives from the labels — which is what makes a fresh
 // migration and `backfill:rank-level-ids` over an older one agree. If a label is
 // ever changed here, the id stays; that is the whole point of having one.
 //
@@ -42,10 +42,19 @@ export const RANKING_KD  = 'kd'    // Korean Dragon
 // (`hmd_rank` / `kd_rank`) and a cup category (`rank_range`). It is the SOURCE
 // side of the mapping and nothing more: the ladder written to the org carries
 // no `value` since Phase 4 of docs/rank-scale-decoupling.md (see `hmdLevel`).
-const HMD_BELT_LEVELS = [
+//
+// WHITE/YELLOW and YELLOW/ORANGE are HMD's scale change (Phase 6 of the same
+// plan): inserted where they sit, with NO legacy value — the source never had
+// them, so no imported record can name them. Whether anyone's EXISTING belt
+// moves onto one of them is a separate, recorded decision — see
+// `HMD_BELT_REASSIGNMENT` below — never a side effect of this table.
+type HmdBeltLevel = { id: string; legacyValue?: number; label: string; color: string; secondColor?: string }
+const HMD_BELT_LEVELS: HmdBeltLevel[] = [
   { id: 'no-belt',       legacyValue:  0, label: 'No belt',       color: '#AAAAAA' },
   { id: 'white',         legacyValue:  1, label: 'White',         color: '#DDDDDD' },
+  { id: 'white-yellow',                   label: 'White/Yellow',  color: '#DDDDDD', secondColor: '#FFDC00' },
   { id: 'yellow',        legacyValue:  2, label: 'Yellow',        color: '#FFDC00' },
+  { id: 'yellow-orange',                  label: 'Yellow/Orange', color: '#FFDC00', secondColor: '#FF851B' },
   { id: 'orange',        legacyValue:  3, label: 'Orange',        color: '#FF851B' },
   { id: 'orange-green',  legacyValue:  4, label: 'Orange/Green',  color: '#FF851B', secondColor: '#1c9c2b' },
   { id: 'green',         legacyValue:  5, label: 'Green',         color: '#1c9c2b' },
@@ -61,8 +70,33 @@ const HMD_BELT_LEVELS = [
 ]
 
 /** The level as the org ladder stores it — the source ordinal stripped. */
-function hmdLevel({ legacyValue: _source, ...level }: (typeof HMD_BELT_LEVELS)[number]) {
+function hmdLevel({ legacyValue: _source, ...level }: HmdBeltLevel) {
   return level
+}
+
+/**
+ * THE REASSIGNMENT — Phase 6 of docs/rank-scale-decoupling.md, applied by
+ * `pnpm backfill:rank-reassign`, never by the migration.
+ *
+ * Adding a belt nobody holds is a ladder edit. Deciding that everyone who holds
+ * Yellow today holds Yellow/Orange tomorrow is a claim about what real people
+ * have earned, and the federation makes it, not this file. So the map lives
+ * here as data, next to who confirmed it and when — and the script REFUSES TO
+ * WRITE while `decidedBy` / `decidedOn` are null. A dry run is always allowed
+ * and shows exactly whom the map would move.
+ *
+ * The map below is HMD's stated intent as of 2026-09 ("old Yellow → Yellow/
+ * Orange, might change"). It is not a decision until the two fields say so.
+ */
+export const HMD_BELT_REASSIGNMENT = {
+  /** Who at HMD confirmed the map (a name), and when (an ISO date). BOTH null
+   *  until the federation answers; fill both from that answer, never guess. */
+  decidedBy: null as string | null,
+  decidedOn: null as string | null,
+  /** Old level id → new level id. Applied per system in `systems`. */
+  map: { yellow: 'yellow-orange' } as Record<string, string>,
+  /** The systems the map applies to — both run on the one belt table. */
+  systems: [RANKING_HMD, RANKING_KD],
 }
 
 // Ranking systems to write to organizations/hmd — hardcoded because hmd-lineup
@@ -212,7 +246,8 @@ export function rankingSystemLevelValues(systemId: string): Set<number> | null {
   const cached = levelValueCache.get(systemId)
   if (cached) return cached
   if (!HMD_ORG_RANKING_SYSTEMS.some((s) => s.id === systemId)) return null
-  const values = new Set(HMD_BELT_LEVELS.map((l) => l.legacyValue))
+  // Only the levels the source could name; the two inserted belts have none.
+  const values = new Set(HMD_BELT_LEVELS.flatMap((l) => (l.legacyValue == null ? [] : [l.legacyValue])))
   levelValueCache.set(systemId, values)
   return values
 }
