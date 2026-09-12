@@ -808,6 +808,9 @@ Issuing is two-phase (number allocated as an absolute counter value inside the
 transaction that freezes the snapshot; files rendered from the frozen snapshot
 afterwards, so a crash resumes to byte-identical output). Creation is
 plugin-gated, download/void/email are not. Full doc: `docs/tarif-595.md`.
+The sibling `qr-invoices` plugin (an invoice with a Swiss QR-bill, the ONE
+recorded AR exception) sits on the same rails; "mark as paid" records the
+payment through `writeManualPaymentEvent`, and the invoice itself posts nothing.
 
 ### A cancellation is a RECORD, not a boolean
 

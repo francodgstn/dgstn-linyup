@@ -11,8 +11,9 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CreditCard, Plus } from 'lucide-react'
+import { CreditCard, FileText, Plus } from 'lucide-react'
 import type { Contact } from '@linyup/shared'
+import { useAuth } from '@/contexts/AuthContext'
 import { useContactPayments } from '@/hooks/useConnect'
 import {
   connectToUnified,
@@ -31,6 +32,9 @@ import { RefundPaymentDialog } from '@/components/payments/RefundPaymentDialog'
 import { useFinanceJournal } from '@/plugins/finance/hooks'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { PaymentsTable } from '@/components/payments/PaymentsTable'
+import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
+import { InvoiceActions, InvoiceStatusBadge } from '@/plugins/qr-invoices/InvoiceActions'
+import { useContactInvoices } from '@/plugins/qr-invoices/hooks'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -45,7 +49,10 @@ export function PaymentsTab({
   teamId: string | null | undefined
 }) {
   const t = useTranslations('PaymentsDashboard')
+  const tInvoices = useTranslations('QrInvoices')
   const tid = teamId ?? null
+  const { teamRole } = useAuth()
+  const canManage = teamRole === 'owner' || teamRole === 'manager'
   const { data, isLoading } = useContactPayments(tid, contact.id)
   const [assignTarget, setAssignTarget] = useState<AssignPaymentTarget | null>(null)
   const [voidTarget, setVoidTarget] = useState<UnifiedPaymentRow | null>(null)
@@ -53,6 +60,10 @@ export function PaymentsTab({
   const { isInstalled } = useInstalledPlugins()
   const { data: journal } = useFinanceJournal(tid, null, isInstalled('finance'))
   const [recordOpen, setRecordOpen] = useState(false)
+  const invoicesInstalled = isInstalled('qr-invoices')
+  const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false)
+  const { data: invoices = [] } = useContactInvoices(tid, invoicesInstalled ? contact.id : null)
+  const contactName = `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim() || contact.email
 
   const rows = useMemo(
     () =>
@@ -84,12 +95,20 @@ export function PaymentsTab({
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {t('paymentsHeading')}
         </p>
-        {tid && (
-          <Button size="sm" variant="outline" onClick={() => setRecordOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            {t('recordButton')}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {tid && invoicesInstalled && canManage && (
+            <Button size="sm" variant="outline" onClick={() => setCreateInvoiceOpen(true)}>
+              <FileText className="h-4 w-4 mr-1" />
+              {tInvoices('createButton')}
+            </Button>
+          )}
+          {tid && (
+            <Button size="sm" variant="outline" onClick={() => setRecordOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              {t('recordButton')}
+            </Button>
+          )}
+        </div>
       </div>
       {rows.length === 0 ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
@@ -117,6 +136,42 @@ export function PaymentsTab({
           onRefund={setRefundTarget}
           onVoid={setVoidTarget}
         />
+      )}
+
+      {/* ── QR-bill invoices ── the claim BEFORE a payment; only when the plugin
+          is installed, and never for a contact page nobody manages. */}
+      {tid && invoicesInstalled && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {tInvoices('invoicesTitle')}
+          </p>
+          {invoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{tInvoices('contactInvoicesEmpty')}</p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {invoices.map((inv) => (
+                <li key={inv.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-sm font-medium">{inv.number}</span>
+                      <InvoiceStatusBadge status={inv.status} />
+                    </div>
+                    {inv.description && (
+                      <div className="truncate text-xs text-muted-foreground">{inv.description}</div>
+                    )}
+                    <div className="text-xs text-muted-foreground">{inv.due_on}</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-sm font-medium tabular-nums">
+                      {formatMoneyMinor(inv.amount_minor, inv.currency)}
+                    </span>
+                    <InvoiceActions teamId={tid} invoice={inv} canManage={canManage} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {tid && (
@@ -151,6 +206,16 @@ export function PaymentsTab({
           open={recordOpen}
           onClose={() => setRecordOpen(false)}
           contactId={contact.id}
+        />
+      )}
+
+      {tid && invoicesInstalled && (
+        <CreateInvoiceDialog
+          teamId={tid}
+          contactId={contact.id}
+          contactName={contactName}
+          open={createInvoiceOpen}
+          onOpenChange={setCreateInvoiceOpen}
         />
       )}
     </div>

@@ -469,6 +469,11 @@ export {
   emailTarif595Receipt,
 } from './tarif595'
 
+// QR-bill invoices (plugin) — creation is plugin-gated; void, download, email
+// and mark-as-paid are not. Mark-as-paid records the payment through the ONE
+// manual-payment writer; the invoice itself writes no journal row.
+export { createInvoice, voidInvoice, downloadInvoice, emailInvoice, markInvoicePaid } from './invoices'
+
 // In-app feedback — ops email notification on new submissions
 export { onFeedbackCreated } from './feedback/onFeedbackCreated'
 

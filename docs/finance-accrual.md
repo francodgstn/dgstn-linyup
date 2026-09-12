@@ -306,7 +306,10 @@ consolidation, AR aging (nothing to age).
   product; manual rows keep covering offline money. Receivable/payable accounts
   stay manual-use. The Tarif 595 plugin (`docs/tarif-595.md`) is not an
   exception: a health-insurance reimbursement receipt is an attestation of a
-  purchase already paid and writes no journal row.
+  purchase already paid and writes no journal row. The `qr-invoices` plugin IS
+  the one recorded exception — issue a QR-bill invoice and mark it paid, which
+  records the manual payment; no reminders, no dunning, no bank-file
+  reconciliation (`docs/tarif-595.md` → "QR-bill invoices").
 - **VAT computation/filing** — schema readiness stays (`tax_code`,
   `tax_rate_bp`), nothing computes. The DE/IT low-threshold caveat in
   `docs/accounting.md` stands.
