@@ -52,10 +52,11 @@ export function InsightsCard({
       {/* Keyed so a summary just generated for one contact never shows over
           the next contact this component happens to be re-rendered for. */}
       <SummaryBlock key={contact.id} contact={contact} />
-      {/* The counters follow the summary directly; the sparkline takes whatever
-          height is left. Docking the strip to the bottom edge left a dead band
-          between the two whenever the summary was short — the chart grows
-          instead, which is the better use of the room anyway. */}
+      {/* The counters follow the summary directly. The sparkline sits on the
+          card's bottom edge, capped in height, so the room between the two is
+          clear space rather than a chart climbing up to the figures — the
+          strip used to be docked as one block, which read bottom-heavy under
+          a short summary. */}
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
           <StatsRow contact={contact} />
@@ -188,9 +189,10 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** Attendance over the last 16 weeks — bleeds to the card edges, no padding,
- *  and grows with the card: never shorter than 72px, as tall as the room left
- *  under the counters. */
+/** Attendance over the last 16 weeks — bleeds to the card edges, no padding.
+ *  Docked to the card's bottom edge and capped at 128px, so however tall the
+ *  card is, a band of clear space stays between the counters and the chart
+ *  rather than the area fill climbing up to the figures. Never under 72px. */
 function Sparkline({ contactId }: { contactId: string }) {
   const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId)
   const chartData = weeklyReports.map((r) => ({
@@ -199,7 +201,7 @@ function Sparkline({ contactId }: { contactId: string }) {
   }))
 
   return (
-    <div className="min-h-[72px] flex-1">
+    <div className="mt-auto max-h-32 min-h-[72px] flex-1">
       {isLoading ? (
         <div className="h-full animate-pulse bg-muted/40" />
       ) : chartData.length === 0 ? (
