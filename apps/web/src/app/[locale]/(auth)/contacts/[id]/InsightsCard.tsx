@@ -6,11 +6,12 @@
  *
  * Top, the AI summary — an experiment (`contact-summary`). While the switch is
  * off the block is ABSENT, not empty, so a studio that never opted in sees a
- * card of numbers and nothing that hints at a model. Bottom, docked: the three
- * counters, the attendance sparkline and the engagement meter that were the
- * foot of the old single header card, the sparkline given the height the
- * wider card affords. Nothing here is new data; the summary is the one write,
- * and it goes through `generateContactSummary`.
+ * card of numbers and nothing that hints at a model. Under it, straight away:
+ * the three counters, then the attendance sparkline growing into whatever
+ * height the card has left, with the engagement meter beside them — the foot
+ * of the old single header card, no longer docked to the bottom edge (that
+ * left a dead band under a short summary). Nothing here is new data; the
+ * summary is the one write, and it goes through `generateContactSummary`.
  */
 
 import { useState } from 'react'
@@ -51,8 +52,12 @@ export function InsightsCard({
       {/* Keyed so a summary just generated for one contact never shows over
           the next contact this component happens to be re-rendered for. */}
       <SummaryBlock key={contact.id} contact={contact} />
-      <div className="mt-auto flex">
-        <div className="min-w-0 flex-1">
+      {/* The counters follow the summary directly; the sparkline takes whatever
+          height is left. Docking the strip to the bottom edge left a dead band
+          between the two whenever the summary was short — the chart grows
+          instead, which is the better use of the room anyway. */}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           <StatsRow contact={contact} />
           <Sparkline contactId={contact.id} />
         </div>
@@ -183,7 +188,9 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** Attendance over the last 16 weeks — bleeds to the card edges, no padding. */
+/** Attendance over the last 16 weeks — bleeds to the card edges, no padding,
+ *  and grows with the card: never shorter than 72px, as tall as the room left
+ *  under the counters. */
 function Sparkline({ contactId }: { contactId: string }) {
   const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId)
   const chartData = weeklyReports.map((r) => ({
@@ -192,7 +199,7 @@ function Sparkline({ contactId }: { contactId: string }) {
   }))
 
   return (
-    <div className="h-[72px]">
+    <div className="min-h-[72px] flex-1">
       {isLoading ? (
         <div className="h-full animate-pulse bg-muted/40" />
       ) : chartData.length === 0 ? (
