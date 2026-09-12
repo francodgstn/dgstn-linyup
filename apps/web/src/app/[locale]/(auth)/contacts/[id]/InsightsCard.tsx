@@ -6,11 +6,12 @@
  *
  * Top, the AI summary — an experiment (`contact-summary`). While the switch is
  * off the block is ABSENT, not empty, so a studio that never opted in sees a
- * card of numbers and nothing that hints at a model. Bottom, docked: the three
- * counters, the attendance sparkline and the engagement meter that were the
- * foot of the old single header card, the sparkline given the height the
- * wider card affords. Nothing here is new data; the summary is the one write,
- * and it goes through `generateContactSummary`.
+ * card of numbers and nothing that hints at a model. Under it, straight away:
+ * the three counters, then the attendance sparkline growing into whatever
+ * height the card has left, with the engagement meter beside them — the foot
+ * of the old single header card, no longer docked to the bottom edge (that
+ * left a dead band under a short summary). Nothing here is new data; the
+ * summary is the one write, and it goes through `generateContactSummary`.
  */
 
 import { useState } from 'react'
@@ -44,15 +45,25 @@ export function InsightsCard({
   thresholds?: EngagementThresholds
   className?: string
 }) {
+  const { isEnabled } = useExperimentalFeatures()
+  const summaryOn = isEnabled('contact-summary')
   return (
     <div
       className={`flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card ${className}`}
     >
-      {/* Keyed so a summary just generated for one contact never shows over
-          the next contact this component happens to be re-rendered for. */}
-      <SummaryBlock key={contact.id} contact={contact} />
-      <div className="mt-auto flex">
-        <div className="min-w-0 flex-1">
+      {/* WHERE SPARE HEIGHT GOES. The card is stretched to the profile card's
+          height, so there is usually room to spare. The summary block takes
+          it (flex-1): the counters follow the summary, the chart sits a fixed
+          32px under the counters at a fixed 128px, and the bottoms of the two
+          cards still meet. With the experiment off there is no summary block
+          to grow, so the strip docks to the bottom edge instead. */}
+      {summaryOn && (
+        // Keyed so a summary just generated for one contact never shows over
+        // the next contact this component happens to be re-rendered for.
+        <SummaryBlock key={contact.id} contact={contact} />
+      )}
+      <div className={`flex ${summaryOn ? '' : 'mt-auto'}`}>
+        <div className="flex min-w-0 flex-1 flex-col">
           <StatsRow contact={contact} />
           <Sparkline contactId={contact.id} />
         </div>
@@ -68,14 +79,11 @@ type SummaryResult = { text: string; language: string; model: string }
 
 function SummaryBlock({ contact }: { contact: Contact }) {
   const t = useTranslations('Contacts')
-  const { isEnabled } = useExperimentalFeatures()
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   // What the callable just returned, shown until the contact query refetches
   // and the stored record catches up.
   const [fresh, setFresh] = useState<string | null>(null)
-
-  if (!isEnabled('contact-summary')) return null
 
   const stored = contact.ai_summary
   const text = fresh ?? stored?.text ?? null
@@ -105,7 +113,11 @@ function SummaryBlock({ contact }: { contact: Contact }) {
   }
 
   return (
-    <div className="border-b p-5">
+    // A floor of 8rem (the empty state was cramped at its natural ~97px), and
+    // flex-1 so any height the card has to spare lands here rather than in
+    // the gap above the chart. A real four-to-six-sentence summary grows past
+    // the floor on its own.
+    <div className="min-h-32 flex-1 border-b p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -183,7 +195,10 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** Attendance over the last 16 weeks — bleeds to the card edges, no padding. */
+/** Attendance over the last 16 weeks — bleeds to the card edges, no padding.
+ *  A fixed 128px, a fixed 32px under the counters: the area fill never
+ *  climbs up to the figures, and the gap never balloons either, because the
+ *  card's spare height goes to the summary block (see InsightsCard). */
 function Sparkline({ contactId }: { contactId: string }) {
   const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId)
   const chartData = weeklyReports.map((r) => ({
@@ -192,7 +207,7 @@ function Sparkline({ contactId }: { contactId: string }) {
   }))
 
   return (
-    <div className="h-[72px]">
+    <div className="mt-8 h-32 shrink-0">
       {isLoading ? (
         <div className="h-full animate-pulse bg-muted/40" />
       ) : chartData.length === 0 ? (
@@ -268,7 +283,7 @@ function EngagementIndicator({
       title={tip}
       className="flex shrink-0 cursor-default flex-col items-center justify-end gap-1.5 border-l px-3 py-3"
     >
-      <div className="relative min-h-[40px] w-2 flex-1 overflow-hidden rounded-full bg-muted">
+      <div className="relative max-h-40 min-h-[40px] w-2 flex-1 overflow-hidden rounded-full bg-muted">
         <div
           className={`absolute bottom-0 left-0 right-0 rounded-full transition-all ${ENGAGEMENT_BAR[band]}`}
           style={{ height: fill[band] }}
