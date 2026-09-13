@@ -491,8 +491,18 @@ Two things that fail silently if disturbed:
   `roles/pubsub.publisher` on the topic. Without it the budget just does not
   deliver.
 
-`terraform output cost_feed_topic` is null when the feed is off, and the Providers
-page then shows Google spend as "not measured" rather than as zero.
+After the apply, the four outputs together answer "is any of this actually on?":
+
+```bash
+cd infra/environments/prod
+terraform output cost_feed_topic               # null = the budget publishes nowhere
+terraform output budget_alerts_named_recipient # false = billing admins only
+terraform output monitoring_alerting_enabled   # false = nothing pages anyone
+terraform output budget_amount                 # the ceiling
+```
+
+A null `cost_feed_topic` means the Providers page shows Google spend as "not
+measured" rather than as zero.
 
 ### Picking `budget_amount`
 
