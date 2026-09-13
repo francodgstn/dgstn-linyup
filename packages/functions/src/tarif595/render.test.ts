@@ -22,6 +22,19 @@ describe('tarif595 render — the three-sheet PDF', function () {
     assert.equal(sha(again), sha(pdf), 'a resume after a crash must re-render byte-identical files')
   })
 
+  // The twice-render above only catches nondeterminism when the timing happens
+  // to go wrong, so a regression would come back as a flake, not a failure.
+  // This pins the cause structurally: PDFKit decodes a PNG WITH an alpha
+  // channel asynchronously and writes the image and its /SMask in callback
+  // order (see drawQrSheet in render.ts). No soft mask means no alpha, which
+  // means the synchronous embed path.
+  it('embeds its QR images without an alpha channel, so the object order is the call order', async () => {
+    const r = monthlyReceipt()
+    const text = (await renderTarif595Pdf(r, buildTarif595Xml(r))).toString('latin1')
+    assert.ok(/\/Subtype\s*\/Image/.test(text), 'the QR sheet embeds its codes as images')
+    assert.doesNotMatch(text, /\/SMask/, 'an image with an alpha channel is embedded asynchronously and lands in decode order')
+  })
+
   it('renders the VAT-registered attendance receipt in every language', async () => {
     for (const language of ['de', 'fr', 'it'] as const) {
       const r = { ...attendanceReceipt(), language }
