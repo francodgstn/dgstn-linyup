@@ -1,7 +1,11 @@
-// Tarif 595 — previewTarif595Receipt + issueTarif595Receipt.
+// Tarif 595 — previewTarif595Receipt + issueTarif595Receipt, and the ONE
+// issue implementation (`issueReceipt`) that the callable and the bulk worker
+// (bulk.ts) both run — so a receipt issued for a hundred members at year end
+// is byte-for-byte the receipt the same member would get from their detail
+// page, and there is no second path to drift.
 //
-// Both are CREATION and therefore plugin-gated (assertPluginInstalled); the
-// download, void and email callables consume what exists and are not
+// Both callables are CREATION and therefore plugin-gated (assertPluginInstalled);
+// the download, void and email callables consume what exists and are not
 // (docs/plugins.md, "The server gate"; pinned by gate.test.ts).
 //
 // ── The two-phase issue ──────────────────────────────────────────────────────
@@ -40,10 +44,13 @@ import {
   tarif595StoragePath,
   type Tarif595IssueRequest,
   type Tarif595IssueResult,
+  type Tarif595PreviewIssue,
   type Tarif595PreviewResult,
+  type Tarif595PreviewWarning,
   type Tarif595ReceiptDoc,
   type Tarif595ReceiptRequest,
   type Tarif595Source,
+  type Tarif595WarningCode,
 } from '@linyup/shared'
 import { assertManager } from '../connect/access'
 import { allocateNumber } from '../pdf/numbering'
@@ -103,14 +110,34 @@ async function renderAndStore(ref: FirebaseFirestore.DocumentReference, receipt:
   await ref.update({ status: 'issued', issued_at: FieldValue.serverTimestamp(), files: { pdf: pdfRef, xml: xmlRef } })
 }
 
-export const issueTarif595Receipt = onCall(async (request): Promise<Tarif595IssueResult> => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Authentication required')
-  const uid = request.auth.uid
-  const req = parseRequest(request.data)
-  const wantEmail = (request.data as Partial<Tarif595IssueRequest>)?.email === true
-  await assertManager(uid, req.teamId)
-  await assertPluginInstalled(req.teamId, TARIF595_PLUGIN_ID)
+/**
+ * What one issue attempt came to. `issued` covers a fresh number AND a resumed
+ * pending row (the caller cannot tell them apart and should not); `existing`
+ * is an already-issued receipt for this very source/period (no new number, the
+ * retry case); `refused` is the draft's refusal — the same blocking list the
+ * preview shows, so a bulk run can record WHY a member got nothing.
+ */
+export type IssueOutcome =
+  | { kind: 'issued'; result: Tarif595IssueResult }
+  | { kind: 'existing'; result: Tarif595IssueResult }
+  | { kind: 'refused'; blocking: Tarif595PreviewIssue[]; warnings: Tarif595PreviewWarning[] }
 
+export interface IssueOptions {
+  /** Also email the member the PDF + XML once issued. */
+  email?: boolean
+  /** Warnings the caller wants treated as refusals — a bulk run refuses on
+   *  `overlapping_receipt` rather than attest a period twice; a manager on
+   *  the detail page sees the warning and decides. */
+  refuseOnWarnings?: ReadonlySet<Tarif595WarningCode>
+}
+
+/**
+ * THE issue implementation. Gates (auth, manager role, plugin install) are the
+ * CALLER's — the callable runs them on its request, the bulk worker on the job
+ * it was started from — so this function only ever answers "issue this
+ * source/period for this contact, as `uid`".
+ */
+export async function issueReceipt(req: Tarif595ReceiptRequest, uid: string, opts: IssueOptions = {}): Promise<IssueOutcome> {
   const { result, frozen, setup } = await buildReceiptDraft(req)
   const db = admin.firestore()
   const teamRef = db.collection(TEAMS_COLLECTION).doc(req.teamId)
@@ -123,17 +150,22 @@ export const issueTarif595Receipt = onCall(async (request): Promise<Tarif595Issu
     const existing = snap.data() as Tarif595ReceiptDoc | undefined
     if (existing?.status === 'pending') {
       await renderAndStore(ref, existing)
-      const emailed = wantEmail ? (await sendReceiptEmail(req.teamId, existing.id)).sent : false
-      return { receiptId: existing.id, number: existing.number, status: 'issued', resumed: true, emailed }
+      const emailed = opts.email ? (await sendReceiptEmail(req.teamId, existing.id)).sent : false
+      return { kind: 'issued', result: { receiptId: existing.id, number: existing.number, status: 'issued', resumed: true, emailed } }
     }
-    return { receiptId: result.existing.receiptId, number: result.existing.number, status: result.existing.status, resumed: false, emailed: false }
+    return {
+      kind: 'existing',
+      result: { receiptId: result.existing.receiptId, number: result.existing.number, status: result.existing.status, resumed: false, emailed: false },
+    }
   }
   if (!result.ok || !frozen || !setup) {
-    throw new HttpsError('failed-precondition', 'The receipt cannot be issued', {
-      reason: result.blocking[0]?.code ?? 'no_lines',
-      blocking: result.blocking,
-      warnings: result.warnings,
-    })
+    return { kind: 'refused', blocking: result.blocking.length ? result.blocking : [{ code: 'no_lines' }], warnings: result.warnings }
+  }
+  const refusedWarning = opts.refuseOnWarnings ? result.warnings.find((w) => opts.refuseOnWarnings!.has(w.code)) : undefined
+  if (refusedWarning) {
+    // Reported under its own code (a warning code, not a blocking one) so the
+    // record says "skipped because another receipt overlaps", not "refused".
+    return { kind: 'refused', blocking: [], warnings: [refusedWarning, ...result.warnings.filter((w) => w !== refusedWarning)] }
   }
 
   const ref = teamRef.collection(TARIF595_RECEIPTS_SUBCOLLECTION).doc(frozen.id)
@@ -175,6 +207,25 @@ export const issueTarif595Receipt = onCall(async (request): Promise<Tarif595Issu
   console.log(
     `[tarif595] issued team=${req.teamId} receipt=${receipt.id} number=${receipt.number} contact=${req.contactId} resumed=${outcome.resumed} by=${uid}`
   )
-  const emailed = wantEmail ? (await sendReceiptEmail(req.teamId, receipt.id)).sent : false
-  return { receiptId: receipt.id, number: receipt.number, status: 'issued', resumed: outcome.resumed, emailed }
+  const emailed = opts.email ? (await sendReceiptEmail(req.teamId, receipt.id)).sent : false
+  return { kind: 'issued', result: { receiptId: receipt.id, number: receipt.number, status: 'issued', resumed: outcome.resumed, emailed } }
+}
+
+export const issueTarif595Receipt = onCall(async (request): Promise<Tarif595IssueResult> => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Authentication required')
+  const uid = request.auth.uid
+  const req = parseRequest(request.data)
+  const wantEmail = (request.data as Partial<Tarif595IssueRequest>)?.email === true
+  await assertManager(uid, req.teamId)
+  await assertPluginInstalled(req.teamId, TARIF595_PLUGIN_ID)
+
+  const outcome = await issueReceipt(req, uid, { email: wantEmail })
+  if (outcome.kind === 'refused') {
+    throw new HttpsError('failed-precondition', 'The receipt cannot be issued', {
+      reason: outcome.blocking[0]?.code ?? 'no_lines',
+      blocking: outcome.blocking,
+      warnings: outcome.warnings,
+    })
+  }
+  return outcome.result
 })

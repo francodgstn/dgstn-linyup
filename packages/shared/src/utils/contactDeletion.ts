@@ -110,6 +110,26 @@ export const CONTACT_IDENTIFYING_FIELDS = [
 ] as const
 
 /**
+ * RECORDS OUTSIDE THE CONTACT DOCUMENT — the census of plugin-owned rows about
+ * the person, kept here beside the field list because the failure mode is the
+ * same (silent, and nobody re-reads a contact they believe is gone). The sweep
+ * (`packages/functions/src/dailyTasks/anonymizeScheduledContacts.ts`) acts on
+ * each one in the same batch as the patch below; add to this list AND to the
+ * sweep, never to one alone.
+ *
+ *   • `teams/{teamId}/tarif595_contacts/{contactId}` — the Tarif 595 insurer
+ *     row (AHV number, insurer, insured number). DELETED. The issued receipts
+ *     in `tarif595_receipts` are KEPT: they are records of documents handed
+ *     out, like the finance rows (docs/tarif-595.md → "Decisions"); the
+ *     patient block frozen inside them is what was printed, and the privacy
+ *     policy says so.
+ *
+ * Not on this list, and deliberately: `invoices` (a claim the studio made —
+ * an accounting record), `member_payments`, the waiver ledger.
+ */
+export const CONTACT_PLUGIN_RECORDS = ['tarif595_contacts'] as const
+
+/**
  * The patch that anonymises a contact. Values are `null` (not `undefined`) so
  * the write is explicit — a merge that omits a key leaves it standing, which is
  * exactly the bug this list exists to prevent.

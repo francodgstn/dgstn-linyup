@@ -473,3 +473,120 @@ export interface Tarif595EmailResult {
   sent: boolean
   send_count: number
 }
+
+// ─── Phase 2: bulk issuing, the member's own copy, the self-write ────────────
+
+/**
+ * The fields a CONTACT may write on their own `tarif595_contacts/{contactId}`
+ * document from the Space (rules: the `isContactOfTeam` arm on that match).
+ * Insurer GLN, sex override and guardian stay manager-only — a member does not
+ * know their insurer's GLN, and the other two decide what a legal document
+ * says about them. `firestore.rules` names this list literally;
+ * `tarif595/selfWrite.test.ts` pins the two copies to each other.
+ */
+export const TARIF595_CONTACT_SELF_FIELDS = ['ahv_number', 'insurer_name', 'insured_number', 'updated_at'] as const
+
+/** What `listMyTarif595Receipts` returns per receipt — the member's own copy,
+ *  with nothing the manager's row carries that is not theirs to see (no
+ *  `created_by`, no file paths, no sha256). */
+export interface Tarif595MyReceipt {
+  id: string
+  number: string
+  status: Tarif595ReceiptStatus
+  period: { from: string; to: string }
+  totals: { amount_minor: number; vat_minor: number }
+  language: Tarif595Lang
+  /** Epoch ms of `issued_at`, null while pending. */
+  issuedAt: number | null
+  /** The number of the receipt this one replaced, when it is a re-issue. */
+  replacesNumber: string | null
+}
+
+export interface Tarif595MyReceiptsRequest {
+  teamId: string
+}
+
+export interface Tarif595MyReceiptsResult {
+  /** Whether the studio has the plugin installed — what the Space gates its
+   *  insurance section on (it cannot read `installed_plugins` itself). */
+  enabled: boolean
+  receipts: Tarif595MyReceipt[]
+}
+
+/**
+ * Bulk issuing — one receipt per subscription-history row of a mapped plan
+ * that overlaps the window, for every live contact of the team. Runs as a JOB
+ * (`tarif595_jobs/{jobId}`) drained by Cloud Task rounds, the shape of the
+ * series teardown (types/sessionSeriesJob.ts); the client follows the document.
+ *
+ * `total` is the live-contact count measured once at start; `processed` counts
+ * contacts walked, whatever the outcome for each. Every non-issue is recorded
+ * with its reason so the manager can see WHY a member has no receipt — the
+ * codes are the same ones the single-contact preview shows.
+ */
+export type Tarif595BulkStatus = 'running' | 'completed' | 'completed_with_errors' | 'failed'
+
+export interface Tarif595BulkSkip {
+  contactId: string
+  historyId: string
+  code: Tarif595BlockingCode | Tarif595WarningCode
+}
+
+export interface Tarif595BulkJob {
+  id: string
+  teamId: string
+  /** The window, YYYY-MM-DD inclusive. A row's receipt period is the overlap
+   *  of the row with the window (an open row ends at the run day). */
+  from: string
+  to: string
+  status: Tarif595BulkStatus
+  total: number
+  processed: number
+  issued: number
+  skipped: number
+  failed: number
+  /** Contacts whose issue THREW (an infrastructure failure, not a refusal). */
+  failed_ids: string[]
+  /** Refusals, capped at TARIF595_BULK_SKIPS_MAX — the rest is counted only. */
+  skips: Tarif595BulkSkip[]
+  /** Paging cursor: the last contact id walked. */
+  cursor: string | null
+  rounds: number
+  created_at: Timestamp
+  updated_at: Timestamp
+  finished_at?: Timestamp | null
+  createdBy: string
+  error?: string | null
+}
+
+/** Contacts walked per round. A contact costs a history read plus, per row,
+ *  a draft (five reads), a PDF render and two uploads — a few seconds. */
+export const TARIF595_BULK_BATCH = 20
+/** Hard stop on the chain: 20 × 500 = 10 000 contacts, far past any studio. */
+export const TARIF595_BULK_MAX_ROUNDS = 500
+/** Past this many failed contacts the run stops rather than grinding on. */
+export const TARIF595_BULK_MAX_FAILURES = 25
+/** Recorded refusals kept on the job document (the counter keeps counting). */
+export const TARIF595_BULK_SKIPS_MAX = 200
+/** A `running` job without a heartbeat for this long is presumed dead, and a
+ *  fresh run may start — a round that exhausts its retries leaves `running`
+ *  with nothing behind it. Same reasoning as SERIES_TEARDOWN_STALE_MS. */
+export const TARIF595_BULK_STALE_MS = 60 * 60 * 1000
+
+export interface Tarif595BulkRequest {
+  teamId: string
+  from: string
+  to: string
+}
+
+export interface Tarif595BulkResult {
+  jobId: string
+  /** `background` = a Cloud Task chain is draining it; `inline` = it ran to
+   *  the end inside the call (a local emulator without Cloud Tasks). */
+  mode: 'background' | 'inline'
+  total: number
+}
+
+export function tarif595BulkIsTerminal(status: Tarif595BulkStatus): boolean {
+  return status !== 'running'
+}

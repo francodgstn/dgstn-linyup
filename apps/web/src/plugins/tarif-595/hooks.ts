@@ -7,6 +7,7 @@
 // typed callables below. Line math never happens here — `previewTarif595Receipt`
 // returns the lines the server would issue, and the UI renders exactly those.
 
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   collection,
@@ -14,6 +15,7 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -25,10 +27,14 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import {
   TARIF595_CONTACTS_SUBCOLLECTION,
+  TARIF595_JOBS_SUBCOLLECTION,
   TARIF595_RECEIPTS_SUBCOLLECTION,
   TARIF595_SETTINGS_DOC,
   TARIF595_SETTINGS_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  type Tarif595BulkJob,
+  type Tarif595BulkRequest,
+  type Tarif595BulkResult,
   type Tarif595Config,
   type Tarif595ContactData,
   type Tarif595DownloadRequest,
@@ -51,6 +57,7 @@ export const TARIF595_CONFIG_KEY = 'tarif595-config'
 export const TARIF595_CONTACT_KEY = 'tarif595-contact'
 export const TARIF595_RECEIPTS_KEY = 'tarif595-receipts'
 export const TARIF595_CONTACT_RECEIPTS_KEY = 'tarif595-contact-receipts'
+export const TARIF595_JOBS_KEY = 'tarif595-jobs'
 export const TARIF595_RECEIPTS_PAGE_SIZE = 25
 
 function configRef(teamId: string) {
@@ -152,11 +159,55 @@ export function useContactTarif595Receipts(teamId: string | null, contactId: str
   })
 }
 
+// ─── Bulk jobs (read-only from the client; the worker writes) ─────────────────
+
+export type Tarif595JobRow = Tarif595BulkJob & { id: string }
+
+const JOBS_LIMIT = 5
+
+function jobsCol(teamId: string) {
+  return collection(db, TEAMS_COLLECTION, teamId, TARIF595_JOBS_SUBCOLLECTION)
+}
+
+/** The newest few runs — a LOG list, bounded by the limit. */
+export function useTarif595Jobs(teamId: string | null) {
+  return useQuery<Tarif595JobRow[]>({
+    queryKey: [TARIF595_JOBS_KEY, teamId],
+    enabled: !!teamId,
+    queryFn: async () => {
+      const snap = await getDocs(query(jobsCol(teamId!), orderBy('created_at', 'desc'), limit(JOBS_LIMIT)))
+      return snap.docs.map((d) => ({ ...(d.data() as Tarif595BulkJob), id: d.id }))
+    },
+  })
+}
+
+/** Follow ONE run live — the document the callable returned the id of (a
+ *  get, never a list; the SessionDeleteDialog shape). Null until the first
+ *  snapshot, or when nothing is followed. */
+export function useTarif595Job(teamId: string | null, jobId: string | null): Tarif595JobRow | null {
+  const [job, setJob] = useState<Tarif595JobRow | null>(null)
+  useEffect(() => {
+    setJob(null)
+    if (!teamId || !jobId) return
+    return onSnapshot(
+      doc(db, TEAMS_COLLECTION, teamId, TARIF595_JOBS_SUBCOLLECTION, jobId),
+      (snap) => {
+        if (snap.exists()) setJob({ ...(snap.data() as Tarif595BulkJob), id: snap.id })
+      },
+      // Losing the listener says nothing about the job, which runs server-side
+      // regardless; the recent-runs list is where it lands.
+      () => setJob(null)
+    )
+  }, [teamId, jobId])
+  return job
+}
+
 export function useInvalidateTarif595(teamId: string | null) {
   const qc = useQueryClient()
   return (contactId?: string | null) => {
     void qc.invalidateQueries({ queryKey: [TARIF595_CONFIG_KEY, teamId] })
     void qc.invalidateQueries({ queryKey: [TARIF595_RECEIPTS_KEY, teamId] })
+    void qc.invalidateQueries({ queryKey: [TARIF595_JOBS_KEY, teamId] })
     if (contactId) {
       void qc.invalidateQueries({ queryKey: [TARIF595_CONTACT_KEY, teamId, contactId] })
       void qc.invalidateQueries({ queryKey: [TARIF595_CONTACT_RECEIPTS_KEY, teamId, contactId] })
@@ -187,6 +238,10 @@ export const callDownloadTarif595Receipt = httpsCallable<Tarif595DownloadRequest
 export const callEmailTarif595Receipt = httpsCallable<Tarif595EmailRequest, Tarif595EmailResult>(
   functions,
   'emailTarif595Receipt'
+)
+export const callStartTarif595BulkIssue = httpsCallable<Tarif595BulkRequest, Tarif595BulkResult>(
+  functions,
+  'startTarif595BulkIssue'
 )
 
 /** Turn a download result into a browser download (the ExportFinanceCsvButton shape). */

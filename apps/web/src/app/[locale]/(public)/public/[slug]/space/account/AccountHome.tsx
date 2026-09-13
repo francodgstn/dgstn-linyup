@@ -11,6 +11,7 @@ import { SpaceWaiverCard } from '../SpaceWaiverCard'
 import { SpaceMembershipCard } from '../SpaceMembershipCard'
 import SpaceSignInWall from '../SpaceSignInWall'
 import { ConsentHistoryDownload } from './ConsentHistoryDownload'
+import { InsuranceCard } from './InsuranceCard'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceContact } from '../useSpaceContact'
@@ -210,6 +211,12 @@ export default function AccountHome() {
           one in the profile form above is an optional profile field; the one
           compliance ask lives inside the waiver step and nowhere else. */}
       <SpaceWaiverCard variant="card" />
+
+      {/* Health-insurance details for the Tarif 595 receipts — renders only
+          when the studio has the plugin installed (the card decides from the
+          same read the Receipts tab uses), so nobody is asked for an AHV
+          number by a studio that never issues receipts. */}
+      <InsuranceCard />
 
       {/* The member's own copy, free once the operator export exists — and
           scoped by the SERVER to the session's own contact, so it can only ever

@@ -3,22 +3,25 @@
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import type { Route } from 'next'
-import { Home, CalendarClock, Flag, User, Receipt, Trophy } from 'lucide-react'
+import { Home, CalendarClock, Flag, User, Receipt, Trophy, HeartPulse } from 'lucide-react'
 import { useSpaceAuth } from './SpaceAuthProvider'
 import { useSpaceTheme } from './useSpaceTheme'
 import { useSpacePayments } from './useSpacePayments'
+import { useSpaceReceipts } from './useSpaceReceipts'
 import { usePublicTeam } from '../PublicTeamProvider'
 
 // Portal module tabs — the whole portal is a signed-in, personal area (home is the
 // member dashboard, not a public course library), so the tabs only render once
 // there's a session. Payments is conditional: shown only when the contact has any
 // payment history OR a Stripe billing account (hidden for cash / other payers).
+// Receipts (Tarif 595) likewise: shown once the member has been issued one.
 export default function SpacePortalNav() {
   const t = useTranslations('Space')
   const { slug, isAuthenticated, isRestoring } = useSpaceAuth()
   const { accent, textMuted, cardBg, cardBorder } = useSpaceTheme()
   const pathname = usePathname()
   const { data: paymentsData, isError: paymentsFailed } = useSpacePayments()
+  const { data: receiptsData, isError: receiptsFailed } = useSpaceReceipts()
   const { team } = usePublicTeam()
 
   // While a stored session is still being checked, keep the tab bar's SPACE
@@ -44,6 +47,9 @@ export default function SpacePortalNav() {
     paymentsFailed ||
     (paymentsData?.payments.length ?? 0) > 0 ||
     paymentsData?.billingAvailable === true
+  // Same rule for receipts: a failed read keeps the tab (the page says so and
+  // offers a retry); only an EMPTY answer hides it.
+  const hasReceipts = receiptsFailed || (receiptsData?.receipts.length ?? 0) > 0
 
   const base = `/public/${slug}/space`
   const items = [
@@ -58,6 +64,7 @@ export default function SpacePortalNav() {
       ? [{ href: `${base}/gamification`, label: t('navGamification'), icon: Trophy }]
       : []),
     ...(hasPayments ? [{ href: `${base}/payments`, label: t('navPayments'), icon: Receipt }] : []),
+    ...(hasReceipts ? [{ href: `${base}/receipts`, label: t('navReceipts'), icon: HeartPulse }] : []),
     { href: `${base}/account`, label: t('navAccount'), icon: User },
   ]
 

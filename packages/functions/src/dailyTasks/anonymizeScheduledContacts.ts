@@ -11,9 +11,22 @@
 // Deliberately NOT a hard delete, unlike `purgeProvisionalContacts` next door.
 // That one removes abandoned registrations holding nothing; this one is a person
 // who trained, paid and signed things.
+//
+// PLUGIN-OWNED RECORDS ABOUT THE PERSON go in the same batch — the census of
+// them is the "Records outside the contact document" note in
+// `utils/contactDeletion.ts`, beside the field list, for the same reason the
+// field list lives there: missing one is silent. Today that is the Tarif 595
+// insurer row (`teams/{t}/tarif595_contacts/{contactId}` — AHV number, insurer,
+// insured number), which is DELETED, while the issued receipts are kept: they
+// are records of documents handed out (docs/tarif-595.md → "Decisions").
 import * as admin from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
-import { CONTACTS_COLLECTION, anonymizedContactPatch } from '@linyup/shared'
+import {
+  CONTACTS_COLLECTION,
+  TARIF595_CONTACTS_SUBCOLLECTION,
+  TEAMS_COLLECTION,
+  anonymizedContactPatch,
+} from '@linyup/shared'
 
 const BATCH_SIZE = 100
 
@@ -42,6 +55,13 @@ export async function anonymizeScheduledContacts(): Promise<{ anonymized: number
       if (!data.deletion_scheduled_for) continue
       if (data.anonymized_at) continue
       batch.update(doc.ref, anonymizedContactPatch(nowMs))
+      // The plugin-owned insurer row goes with the identity. A delete of a
+      // document that never existed is a no-op inside a batch, so this costs
+      // nothing for the many contacts who never had one.
+      const teamId = typeof data.teamId === 'string' ? data.teamId : null
+      if (teamId) {
+        batch.delete(db.collection(TEAMS_COLLECTION).doc(teamId).collection(TARIF595_CONTACTS_SUBCOLLECTION).doc(doc.id))
+      }
       anonymized++
     }
     await batch.commit()

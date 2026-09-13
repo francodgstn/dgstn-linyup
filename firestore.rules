@@ -1101,12 +1101,41 @@ service cloud.firestore {
       }
       // Per-contact insurer data — AHV number, insurer GLN, insured number.
       // Manager+, and NEVER on the contact document or any mirror.
+      //
+      // The contact writes their OWN row from the Space, and only the fields a
+      // member can know: the AHV number, the insurer's name, the insured
+      // number (+ updated_at). The insurer GLN, the sex override and the
+      // guardian stay manager-only — they decide what a legal document says.
+      // The list is TARIF595_CONTACT_SELF_FIELDS in @linyup/shared; the two
+      // copies are pinned to each other by tarif595/selfWrite.test.ts. A
+      // create is checked on its keys, an update on the keys it touches, so a
+      // member cannot smuggle a field in by writing the whole document. The
+      // contact never deletes it — the anonymisation sweep does, server-side.
       match /tarif595_contacts/{contactId} {
-        allow read, write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+        allow read: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner')
+                       || (isContactOfTeam(teamId) && request.auth.token.contactId == contactId);
+        allow create: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner')
+                         || (isContactOfTeam(teamId) && request.auth.token.contactId == contactId
+                             && request.resource.data.keys().hasOnly(['ahv_number', 'insurer_name', 'insured_number', 'updated_at']));
+        allow update: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner')
+                         || (isContactOfTeam(teamId) && request.auth.token.contactId == contactId
+                             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ahv_number', 'insurer_name', 'insured_number', 'updated_at']));
+        allow delete: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
       }
       // Issued receipts — frozen snapshots numbered from counters/tarif595_receipts.
-      // Cloud Functions only; a receipt is voided, never edited or deleted.
+      // Cloud Functions only; a receipt is voided, never edited or deleted. The
+      // member's own copy is served by listMyTarif595Receipts (a callable), not
+      // by a contact arm here: a receipt row carries the manager's uid and the
+      // storage paths, which are not the member's to read.
       match /tarif595_receipts/{receiptId} {
+        allow read:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+      // Bulk-issue jobs — the progress record of "issue receipts for every
+      // member". Manager+ read (the page follows the one it started and lists
+      // the newest few); every client write denied — the document is the
+      // job's own state machine, and only the worker advances it.
+      match /tarif595_jobs/{jobId} {
         allow read:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
         allow write: if false;
       }
