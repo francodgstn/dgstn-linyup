@@ -756,10 +756,12 @@ So, in order of preference:
    `packages/functions/src/appointments/holdRelease.ts`'s module header (every
    site that can release an appointment hold), `docs/promo-codes.md`
    ("The census — every site that removes a reservation", "The ownership rules",
-   "The mounts"), and `packages/functions/src/waivers/gate.ts`'s module header
+   "The mounts"), `packages/functions/src/waivers/gate.ts`'s module header
    (every site that puts a person in a room, with its re-derivation recipe and
-   the exemptions stated as explicitly as the inclusions). Add to the owner;
-   never copy it.
+   the exemptions stated as explicitly as the inclusions), and
+   `packages/functions/src/contacts/legacyPlanSlot.test.ts` (every site that
+   writes a contact's legacy `subscription_type_*` plan slot, which
+   `docs/multi-plan-holdings.md` retires). Add to the owner; never copy it.
 2. **Name the members and drop the number** — a claim checkable by reading the
    names beside it fails visibly rather than silently.
 3. **Assert it in a test.** `packages/functions/src/connect/commitSites.test.ts`
