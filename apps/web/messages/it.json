@@ -772,7 +772,7 @@
     "summaryRegenerate": "Rigenera",
     "summaryEmpty": "Nessun riepilogo ancora. Generane uno da presenze, abbonamento e note di questa persona.",
     "summaryUpdatedOn": "Aggiornato il {date}",
-    "summaryDisclaimer": "Scritto dall'IA da questa scheda. Verifica prima di agire.",
+    "summaryDisclaimer": "Generato dall'IA, verifica prima di agire",
     "summaryGenerated": "Riepilogo aggiornato.",
     "summaryFailed": "Impossibile generare il riepilogo. Riprova tra poco.",
     "performanceProfileLockedTitle": "Profilo di performance",

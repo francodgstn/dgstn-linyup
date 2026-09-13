@@ -409,8 +409,14 @@ function unfence(text: string): string {
  * anyway); then at most `SUMMARY_MAX_SENTENCES` sentences and never more than
  * `SUMMARY_MAX_CHARS`, cut at a sentence boundary where one exists. Empty in,
  * empty out — the caller decides what an empty summary means.
+ *
+ * `cut` says the model was STOPPED (it hit the output cap), so its last
+ * sentence may be unfinished. An unfinished last sentence is then dropped when
+ * a whole one comes before it; when it is all there is, it keeps a trailing
+ * "…" so it never reads as a complete statement. A reply that ended on its own
+ * keeps its last sentence, punctuated or not.
  */
-export function normaliseSummary(raw: string): string {
+export function normaliseSummary(raw: string, opts: { cut?: boolean } = {}): string {
   const flat = unfence(raw ?? '')
     .replace(/^\s*#{1,6}\s+.*$/gm, '')
     .replace(/^\s*(?:[-*•]|\d+[.)])\s+/gm, '')
@@ -419,11 +425,16 @@ export function normaliseSummary(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim()
   if (!flat) return ''
-  const sentences =
+  let sentences =
     flat
       .match(/[^.!?]+(?:[.!?]+|$)/g)
       ?.map((s) => s.trim())
       .filter(Boolean) ?? [flat]
+  let unfinished = false
+  if (opts.cut && !/[.!?]$/.test(sentences[sentences.length - 1] ?? '')) {
+    if (sentences.length > 1) sentences = sentences.slice(0, -1)
+    else unfinished = true
+  }
   let out = ''
   let count = 0
   for (const sentence of sentences) {
@@ -436,6 +447,7 @@ export function normaliseSummary(raw: string): string {
   // Nothing fit whole (one enormous sentence): hard-cut rather than return
   // nothing, since something is still more useful than a failure.
   if (!out) out = `${flat.slice(0, SUMMARY_MAX_CHARS - 1).trimEnd()}…`
+  else if (unfinished) out = `${out.replace(/[\s,;:–—-]+$/, '')}…`
   return out
 }
 
