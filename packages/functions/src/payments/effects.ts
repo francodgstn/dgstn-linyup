@@ -34,6 +34,7 @@ import {
 } from '@linyup/shared'
 import type { firestore } from 'firebase-admin'
 import { recordPlanPurchase } from './planPurchases'
+import { planGrantSourceForRail, writePaymentPlanGrant } from '../contacts/planGrants'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
 
 type Db = firestore.Firestore
@@ -302,6 +303,20 @@ export async function applyPaymentEffects(db: Db, input: ApplyPaymentEffectsInpu
         // This payment owns the fields it just wrote — reversing it may clear them.
         sourcePaymentRef: paymentRef,
         expiresAt: planGrantExpiry(price),
+      })
+      // The grant this payment made (docs/multi-plan-holdings.md), keyed by the
+      // payment so a refund ends exactly it. The slot write above is the bridge
+      // until the readers move — see contacts/planGrants.ts.
+      await writePaymentPlanGrant(db, contactId, {
+        teamId,
+        subscriptionTypeId: li.subscriptionTypeId,
+        subscriptionTypeName: typeName,
+        priceId: li.priceId ?? null,
+        recurrence: price?.recurrence ?? null,
+        amountMajor,
+        expiresAt: planGrantExpiry(price),
+        source: planGrantSourceForRail(source),
+        paymentRef,
       })
       // Counts toward the price's per-contact purchase cap. Recorded on EVERY
       // rail (a manager's cash entry included), enforced on the self-service one

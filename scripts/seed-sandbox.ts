@@ -99,6 +99,7 @@ import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
+import { importPlanGrants } from './lib/planGrantImport'
 
 const USE_EMULATOR = !!process.env.FIRESTORE_EMULATOR_HOST
 // Emulator convenience: the Auth host is required alongside Firestore — default
@@ -3263,6 +3264,12 @@ async function main() {
   // reseed refreshes its window, so on the sandbox it never lapses.
   const memberApp = await seedReviewTenant({ db, seededBy: 'seed-sandbox' })
   await seedMobileSettings({ db, seededBy: 'seed-sandbox' })
+
+  // Every seeded plan as a plan grant, and every plan list built
+  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
+  // migration run, so a seeded tenant starts in the shape production will have.
+  const planGrants = await importPlanGrants(db, { teamIds: SECTOR_PROFILES.map((p) => `sandbox-${p.key}`), apply: true })
+  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
 
   console.log('\n✅ Demo playground seeded successfully!\n')
   console.log('   ┌──────────┬──────────────────────────┬────────────────────────┬────────────┐')

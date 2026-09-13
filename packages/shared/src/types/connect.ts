@@ -250,6 +250,11 @@ export interface MemberPayment {
   /** kind 'membership': the subscription type's display name (also stamped onto
    *  recurring invoice charges by the webhook, which carry no metadata of their own). */
   subscriptionTypeName?: string | null
+  /** kind 'membership' on a subscription's charges: WHICH Stripe subscription
+   *  it paid — stamped on the first charge by checkout and on every renewal by
+   *  handleInvoice — so a payment links to its plan card exactly, not by plan
+   *  type (docs/multi-plan-holdings.md §5). Absent on rows written before. */
+  subscriptionId?: string | null
   /** Set for drop-in (pay-per-class) charges — the booked session. */
   sessionId?: string | null
   /**
@@ -305,6 +310,7 @@ export type ReversalTargetOutcome =
   | 'cleared' // subscription fields
   | 'reduced' // credit grant
   | 'deleted' // course entitlement
+  | 'ended' // plan grant — the row stays, with ended_at set
 
 export interface MemberPaymentEffectsReversal {
   /** 'done' — the transaction committed. 'failed' — the MONEY moved and this
@@ -320,6 +326,8 @@ export interface MemberPaymentEffectsReversal {
   /** Credits taken back by this reversal (0 when none were). */
   credits_revoked?: number
   course?: ReversalTargetOutcome
+  /** The plan grant the refunded payment made (docs/multi-plan-holdings.md). */
+  plan_grant?: ReversalTargetOutcome
   /** Present only when state === 'failed'. */
   error?: string | null
 }

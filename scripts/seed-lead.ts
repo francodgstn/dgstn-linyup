@@ -89,6 +89,7 @@ import {
   linkSeedConnectAccount,
   reportSeedConnectAccounts,
 } from './lib/connect'
+import { importPlanGrants } from './lib/planGrantImport'
 import { requireConsentExport } from './lib/exportConsentLedger'
 import {
   appointmentOccurrences,
@@ -3306,6 +3307,12 @@ async function main() {
   }
 
   const { studentEmail, sessionCount, demoContact } = await seedLeadTenant(profile)
+
+  // Every seeded plan as a plan grant, and every plan list built
+  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
+  // migration run, so a seeded tenant starts in the shape production will have.
+  const planGrants = await importPlanGrants(db, { teamIds: [teamId], apply: true })
+  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
 
   console.log(
     `\n✅ Lead tenant seeded — ${profile.contacts.length} contacts, ${sessionCount} sessions\n`

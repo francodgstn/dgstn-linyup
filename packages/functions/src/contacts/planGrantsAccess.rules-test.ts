@@ -133,4 +133,29 @@ describe('firestore.rules — plan grants and the held_plans mirror', function (
   it('a team owner CAN still update an ordinary contact field', async () => {
     await assertSucceeds(updateDoc(doc(ownerDb(), 'contacts', CONTACT), { firstname: 'Sam' }))
   })
+
+  // ── the legacy plan slot, server-written since phase 2 ────────────────────
+
+  it('a team owner CANNOT write the legacy plan slot — plans go through the plan callables', async () => {
+    const db = ownerDb()
+    await assertFails(updateDoc(doc(db, 'contacts', CONTACT), { subscription_type_id: 'plan-x' }))
+    await assertFails(updateDoc(doc(db, 'contacts', CONTACT), { subscription_expires_at: null }))
+    await assertFails(updateDoc(doc(db, 'contacts', CONTACT), { subscription_source_ref: 'pay_1' }))
+  })
+
+  it('a team owner CANNOT create a contact that already holds a plan', async () => {
+    await assertFails(
+      setDoc(doc(ownerDb(), 'contacts', 'contactWithPlan'), {
+        teamId: TEAM,
+        firstname: 'Kim',
+        subscription_type_id: 'plan-x',
+      })
+    )
+  })
+
+  it('a team owner CAN still create an ordinary contact', async () => {
+    await assertSucceeds(
+      setDoc(doc(ownerDb(), 'contacts', 'contactPlain'), { teamId: TEAM, firstname: 'Kim' })
+    )
+  })
 })

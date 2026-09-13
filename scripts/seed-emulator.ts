@@ -132,6 +132,7 @@ import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { partnerAppNames } from './lib/partnerApps'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
+import { importPlanGrants } from './lib/planGrantImport'
 
 admin.initializeApp({ projectId: 'demo-linyup' })
 
@@ -3286,6 +3287,12 @@ async function main() {
   console.log('\n📱  Seeding the member-app review studio (linyup-demo)…')
   const memberApp = await seedReviewTenant({ db, seededBy: 'seed-emulator' })
   await seedMobileSettings({ db, seededBy: 'seed-emulator' })
+
+  // Every seeded plan as a plan grant, and every plan list built
+  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
+  // migration run, so a seeded tenant starts in the shape production will have.
+  const planGrants = await importPlanGrants(db, { apply: true })
+  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
 
   console.log('\n✅ Emulator seeded successfully!\n')
   console.log('   ┌─────────────────────┬──────────────────────┬──────────────┬────────────┐')

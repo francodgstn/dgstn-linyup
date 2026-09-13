@@ -49,6 +49,11 @@ export interface PlanGrant {
   ended_reason: PlanGrantEndedReason | null
   created_by: string | null
   created_at: Timestamp
+  /** uid of the staff member who ended it; null when a refund or a change did. */
+  ended_by?: string | null
+  /** Set when a manager re-linked the payment that made it to another plan —
+   *  the one edit a grant takes, because the purchase never was the old plan. */
+  corrected_at?: Timestamp
 }
 
 /** Which store an entry of `Contact.held_plans` comes from. */

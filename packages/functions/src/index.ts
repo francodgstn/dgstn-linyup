@@ -80,6 +80,9 @@ export {
   heldPlansOnCreditGrantWrite,
   heldPlansOnMemberSubscriptionWrite,
 } from './sync/heldPlans'
+// Staff plan changes (docs/multi-plan-holdings.md, phase 2) — the callables
+// that replaced the browser's writes to the legacy plan slot.
+export { assignPlan, changePlan, endPlan } from './contacts/planCallables'
 // Availability writes re-run the team sync so the appointment picker's liveness
 // flag (active_public_surfaces.appointments) can't go stale — see the file.
 export { onAvailabilityWrite } from './sync/onAvailabilityWrite'
