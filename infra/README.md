@@ -479,6 +479,14 @@ billable itself. The budget already evaluates several times a day and its
 notification carries `costAmount` and `budgetAmount`, so it does double duty and
 nothing new is provisioned but a topic.
 
+**Two creators, and Terraform wins by going first.** `firebase deploy` also
+tries to create the topic for the `onMessagePublished` trigger, so the deploy SA
+needs `roles/pubsub.admin` — `handleBudgetNotification` is the first Pub/Sub
+function here, and without it the deploy dies on "Unexpected error creating
+Pub/Sub topic" (a 403). With the role, the CLI finds the topic Terraform already
+made and moves on. **Apply Terraform before deploying functions**, which is the
+order the runbook already gives.
+
 Two things that fail silently if disturbed:
 
 - **The topic name is a contract** with `BILLING_BUDGET_TOPIC` in that function.
