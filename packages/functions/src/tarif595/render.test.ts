@@ -11,15 +11,43 @@ const pageCount = (pdf: Buffer) => (pdf.toString('latin1').match(/\/Type\s*\/Pag
 describe('tarif595 render — the three-sheet PDF', function () {
   this.timeout(20_000)
 
-  it('is a PDF with the invoice sheet, the form and the QR pages, and renders identically twice', async () => {
+  it('is a PDF with the invoice sheet, the form and the QR pages, and re-renders byte-identically', async () => {
     const r = monthlyReceipt()
     const xml = buildTarif595Xml(r)
     const pdf = await renderTarif595Pdf(r, xml)
     assert.ok(pdf.subarray(0, 5).toString() === '%PDF-')
     const qrPages = Math.ceil(buildQrSheetChunks(xml).length / QR_CODES_PER_PAGE)
     assert.equal(pageCount(pdf), 2 + qrPages)
-    const again = await renderTarif595Pdf(r, xml)
-    assert.equal(sha(again), sha(pdf), 'a resume after a crash must re-render byte-identical files')
+    // SEVERAL renders, not two. Comparing exactly two SAMPLES the race this
+    // guards — at the rate it actually occurred (about one pair in twelve) a
+    // two-render check passed locally, passed most CI runs, and failed the one
+    // that mattered. Cheap: a render is ~40ms.
+    for (let i = 0; i < 6; i++) {
+      const again = await renderTarif595Pdf(r, xml)
+      assert.equal(sha(again), sha(pdf), 'a resume after a crash must re-render byte-identical files')
+    }
+  })
+
+  it('embeds the QR images with NO alpha channel — no /SMask', async () => {
+    // THE DETERMINISTIC GUARD for the race above, and the reason it is worth a
+    // second test: the fix is one option (`rendererOpts: { colorType: 2 }`)
+    // travelling through qrcode → pngjs → PDFKit. If any link in that chain
+    // stops honouring it the alpha channel returns, PDFKit goes back to
+    // embedding each image through an async `splitAlphaChannel` decode, and the
+    // object order races again — while the repeat check above would only catch
+    // it sometimes.
+    //
+    // An alpha channel shows up as an /SMask entry per image (and doubles the
+    // image objects, since each mask is its own XObject), so its ABSENCE is the
+    // exact signature of the fix still working. Verified by removing the option:
+    // /SMask appears and the image count goes 2 → 4.
+    const r = monthlyReceipt()
+    const pdf = await renderTarif595Pdf(r, buildTarif595Xml(r))
+    assert.doesNotMatch(
+      pdf.toString('latin1'),
+      /\/SMask/,
+      'an alpha channel is back in the QR PNGs — PDFKit will embed them asynchronously and two renders can differ',
+    )
   })
 
   it('renders the VAT-registered attendance receipt in every language', async () => {
