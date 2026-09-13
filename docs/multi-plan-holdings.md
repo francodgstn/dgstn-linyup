@@ -43,6 +43,10 @@ overwrite each other:
 - **Scripts**: the HMD migration transform, `repair-hmd-subscriptions`, every
   seeder, and `ops/demoTenant`.
 
+The authoritative list is `packages/functions/src/contacts/legacyPlanSlot.test.ts`
+(phase 0). The bullets above are its narrative; where they disagree, the test
+is right.
+
 What already works on the full set: booking coverage, drop-in and appointment
 pricing, the contact filter, automations, the session roster check, and
 `subscription_history` (one row per held type since 2026-08-29). They union the
@@ -125,19 +129,25 @@ interface HeldPlan {
   source: 'grant' | 'stripe' | 'credits'
   grant_source?: PlanGrant['source']
   status: 'active' | 'trialing' | 'past_due' | 'paused' | 'cancelling'
-  starts_at: Timestamp | null
-  ends_at: Timestamp | null        // grant expiry, Stripe end date, next credit expiry
-  price_id?: string | null
-  amount?: number | null
-  recurrence?: string | null
+  starts_at_ms: number | null
+  ends_at_ms: number | null          // grant expiry, Stripe end date, next credit expiry
+  next_charge_at_ms?: number | null  // Stripe only: the period end it renews at
+  price_id: string | null
+  amount: number | null
+  recurrence: string | null
   credits_remaining?: number
-  ref: string                      // grant id, Stripe subscription id, or type id for credits
+  ref: string                        // grant id, Stripe subscription id, or type id for credits
 }
 
 Contact.held_plans?: HeldPlan[]
-Contact.held_plan_type_ids?: string[]        // flat, for rules hasAny + array-contains queries
-Contact.held_plans_next_expiry_at?: Timestamp | null
+Contact.held_plan_type_ids?: string[]          // flat, for rules hasAny + array-contains queries
+Contact.held_plans_next_change_at_ms?: number | null
 ```
+
+Times are **epoch milliseconds**, not Timestamps, for the reason
+`ActiveSubscriptionSummary.cancels_at_ms` gives: this is a display mirror
+inside an array, compared whole by value, and a pure builder in
+`@linyup/shared` cannot mint an SDK Timestamp.
 
 - **`recomputeHeldPlans(contactId)`** is the ONE writer. It reads the three
   sources and writes the three fields whole. The existing credit-grant and
@@ -146,8 +156,10 @@ Contact.held_plans_next_expiry_at?: Timestamp | null
   reader has moved.
 - An entry is **current at recompute time**: ended grants, lapsed grant expiries
   and exhausted or expired credits are left out.
-- `held_plans_next_expiry_at` is the earliest future `ends_at` among grants and
-  credits, so a sweep can find the contacts whose mirror is about to go stale.
+- `held_plans_next_change_at_ms` is the earliest future instant the list changes
+  on its own — a grant starting or ending, a credit pack expiring — so a sweep
+  can find the contacts whose mirror is about to go stale. Stripe changes arrive
+  as webhook events and trigger a recompute, so they are not counted.
 
 ### 2.3 Expiry stays lazy where it can, and refreshes where it cannot
 
@@ -158,7 +170,7 @@ reader — they compare `ends_at` live, generalised as `holdingIsCurrent(entry, 
 Security rules cannot compare per list element. So `held_plan_type_ids` is only
 as fresh as the last recompute, and a **daily per-tenant job** (the
 `dispatchTenantJob` pattern) recomputes every contact whose
-`held_plans_next_expiry_at` has passed. The recompute also closes the lapsed
+`held_plans_next_change_at_ms` has passed. The recompute also closes the lapsed
 plan's history row, which fixes the "a lapsed grant still shows Active" defect
 for free. See decision D1.
 
@@ -254,9 +266,8 @@ Fixtures in `functions/src/booking/paymentOptions.test.ts` pin each ordering.
 
 Each phase is its own PR and leaves `main` shippable.
 
-0. **Guard.** Decisions are settled (§7). A census test (in the style of
-   `connect/commitSites.test.ts`) that pins every writer of the legacy slot, so a
-   new one fails the build.
+0. **Guard.** Decisions are settled (§7). `contacts/legacyPlanSlot.test.ts`
+   pins every writer of the legacy slot, so a new one fails the build (PR #348).
 1. **Store and mirror.** `PlanGrant` and `HeldPlan` types; rules for
    `plan_grants`; `recomputeHeldPlans` with its triggers; a backfill that
    creates one grant per contact from today's slot
