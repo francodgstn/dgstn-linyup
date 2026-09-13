@@ -8,7 +8,8 @@
 // tab — under the same heading, with the same actions, from the same hook. Two
 // copies of a control are two places for it to drift, and a reader who found
 // both had no way to know they were the same thing. It now has one home (the
-// Plans segment of "Plans & Payments") and one definition.
+// Current segment of "Plans & Payments", which was the Plans segment until
+// 2026-09-13) and one definition.
 //
 // It belongs with PLANS rather than with payments: it describes what Stripe will
 // bill next month, and its buttons change which plan the member will hold. A

@@ -1090,7 +1090,14 @@
     "markExternalDesc": "Sie können weiterhin buchen und teilnehmen, und ihre Historie bleibt. Sie verschwinden aus der Aktiv-Liste, der Kontaktzahl, den Event-Einladungen, den Automationen und aus «Braucht Aufmerksamkeit» – bis du sie wieder als aktiv markierst oder sie dein Anmeldeformular ausfüllen.",
     "goalSaveFailed": "Dieses Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
-    "affiliationValidUntil": "Gültig bis {date}"
+    "affiliationValidUntil": "Gültig bis {date}",
+    "segCurrent": "Aktuell",
+    "segHistory": "Verlauf",
+    "paymentsViewList": "Liste",
+    "paymentsViewStatement": "Auszug",
+    "currentNextCharge": "Nächste Belastung",
+    "currentLastPayment": "Letzte Zahlung",
+    "currentCreditsLeft": "Lektionen übrig"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",

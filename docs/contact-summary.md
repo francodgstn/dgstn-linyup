@@ -35,10 +35,12 @@ the profile — an elevated card with a tinted band along the top, a round
 gradient avatar overlapping the top edge with a soft glow behind it, the name,
 chips, the contact lines in a quiet panel, groups, and four captioned action
 tiles pinned to the bottom edge. Right, two thirds: the insights card — the
-summary block on top (absent, not empty, while the experiment is off), and
-docked at the bottom the three counters, the attendance sparkline and the
-engagement meter that used to be the foot of the old card. Below `lg` the two
-stack. `page.tsx` keeps the profile card inline (it reads a dozen pieces of
+summary block on top (absent, not empty, while the experiment is off), four
+figures under it (the three counters and the engagement band as a coloured dot
+with its name), and on the bottom edge the attendance chart over the last year
+with the plan periods drawn behind it as faint bands. Those bands replaced the
+relationship ribbon that used to open the Plans & Payments tab. Below `lg` the
+two stack. `page.tsx` keeps the profile card inline (it reads a dozen pieces of
 page state); the insights card is its own file because it needs only the
 contact.
 
