@@ -772,7 +772,7 @@
     "summaryRegenerate": "Neu erstellen",
     "summaryEmpty": "Noch keine Zusammenfassung. Erstellen Sie eine aus Anwesenheit, Abo und Notizen dieser Person.",
     "summaryUpdatedOn": "Aktualisiert am {date}",
-    "summaryDisclaimer": "Von KI aus diesem Datensatz verfasst. Vor dem Handeln prüfen.",
+    "summaryDisclaimer": "KI-generiert, vor dem Handeln prüfen",
     "summaryGenerated": "Zusammenfassung aktualisiert.",
     "summaryFailed": "Die Zusammenfassung konnte nicht erstellt werden. Versuchen Sie es gleich noch einmal.",
     "performanceProfileLockedTitle": "Leistungsprofil",

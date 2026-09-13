@@ -216,6 +216,7 @@ export const generateContactSummary = onCall(async (request) => {
   })
 
   let raw = ''
+  let cut = false
   try {
     const response = await getGenAI().models.generateContent({
       model: ASSISTANT_MODEL,
@@ -225,6 +226,12 @@ export const generateContactSummary = onCall(async (request) => {
         // Six sentences in German run past 256 tokens; the cap on the way back
         // is `normaliseSummary`, not this.
         maxOutputTokens: 512,
+        // NO THINKING. On this model thinking is on by default and its tokens
+        // count against `maxOutputTokens`, so a reply the model had reasoned
+        // about for a few hundred tokens was stopped mid-sentence — and stored
+        // ending in a fragment ("…with her last session almost two weeks").
+        // Two to six sentences from a prepared dossier need no reasoning budget.
+        thinkingConfig: { thinkingBudget: 0 },
         // An analysis, not a brainstorm — warm enough to interpret, not so
         // warm it invents.
         temperature: 0.4,
@@ -233,12 +240,16 @@ export const generateContactSummary = onCall(async (request) => {
     // `response.text`, not a walk down candidates[0].content.parts — see
     // vertexClient for why.
     raw = response.text ?? ''
+    // Still possible without thinking (a very long reply), so the reply says
+    // whether it was stopped, and `normaliseSummary` never stores the fragment.
+    cut = String(response.candidates?.[0]?.finishReason ?? '') === 'MAX_TOKENS'
+    if (cut) console.warn(`[generateContactSummary] reply hit the output cap (contact=${contactId})`)
   } catch (err) {
     console.error('[generateContactSummary] Vertex error:', (err as Error).message)
     throw new HttpsError('internal', 'The summary service is unavailable right now.')
   }
 
-  const text = normaliseSummary(raw)
+  const text = normaliseSummary(raw, { cut })
   if (!text) throw new HttpsError('internal', 'The summary came back empty.')
 
   await contactRef.update({

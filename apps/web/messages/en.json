@@ -772,7 +772,7 @@
     "summaryRegenerate": "Regenerate",
     "summaryEmpty": "No summary yet. Generate one from this person's attendance, plan and notes.",
     "summaryUpdatedOn": "Updated {date}",
-    "summaryDisclaimer": "Written by AI from this record. Check before acting on it.",
+    "summaryDisclaimer": "AI generated, verify before acting",
     "summaryGenerated": "Summary updated.",
     "summaryFailed": "The summary could not be generated. Try again in a moment.",
     "performanceProfileLockedTitle": "Performance profile",

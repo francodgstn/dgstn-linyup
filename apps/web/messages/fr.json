@@ -772,7 +772,7 @@
     "summaryRegenerate": "Régénérer",
     "summaryEmpty": "Pas encore de résumé. Générez-en un à partir de la présence, de l'abonnement et des notes de cette personne.",
     "summaryUpdatedOn": "Mis à jour le {date}",
-    "summaryDisclaimer": "Rédigé par l'IA à partir de cette fiche. À vérifier avant d'agir.",
+    "summaryDisclaimer": "Généré par l'IA, à vérifier avant d'agir",
     "summaryGenerated": "Résumé mis à jour.",
     "summaryFailed": "Le résumé n'a pas pu être généré. Réessayez dans un instant.",
     "performanceProfileLockedTitle": "Profil de performance",
