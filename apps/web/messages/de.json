@@ -1098,7 +1098,23 @@
     "paymentsViewStatement": "Auszug",
     "currentNextCharge": "Nächste Belastung",
     "currentLastPayment": "Letzte Zahlung",
-    "currentCreditsLeft": "Lektionen übrig"
+    "currentCreditsLeft": "Lektionen übrig",
+    "cardMoreActions": "Weitere Aktionen",
+    "menuUpdateDetails": "Daten aktualisieren",
+    "menuCustomiseActions": "Schnellaktionen anpassen",
+    "quickActionsTitle": "Schnellaktionen",
+    "quickActionsIntro": "Wähle die vier Aktionen auf der Kontaktkarte. Wird in diesem Browser gespeichert.",
+    "quickActionSlot": "Platz {number}",
+    "quickActionsReset": "Standard wiederherstellen",
+    "actionRecordPayment": "Zahlung",
+    "actionRecordPaymentTip": "Zahlung erfassen",
+    "actionSendEmail": "E-Mail",
+    "actionAddPlan": "Abo",
+    "actionGrantCredits": "Credits",
+    "actionUpdateDetails": "Daten",
+    "rosterLabel": "Stamm",
+    "rosterActive": "Aktiv",
+    "rosterActiveHint": "Gehört zu deinem Stamm – Erinnerungen, Einladungen und Automationen erreichen sie."
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -8291,7 +8307,12 @@
     "sheetPrint": "Drucken",
     "sheetLiveWarning": "{count} Zettel sind bis zum Ablauf gültig — das Blatt am besten wieder einsammeln.",
     "sheetSlipHint": "Scannen und Daten prüfen",
-    "sheetFailed": "Das Blatt konnte nicht erstellt werden. Bitte erneut versuchen."
+    "sheetFailed": "Das Blatt konnte nicht erstellt werden. Bitte erneut versuchen.",
+    "updateTitle": "Daten aktualisieren",
+    "modeLink": "Link senden",
+    "modeQr": "QR-Code zeigen",
+    "linkIntro": "Sende diesen Link an {name}. Die Bestätigung erfolgt mit einem Code per E-Mail, danach können die Daten selbst ergänzt werden.",
+    "linkNeedsEmail": "Für {name} ist keine E-Mail hinterlegt, daher kann ein Link nicht bestätigen, wer ihn öffnet. Zeige stattdessen einen QR-Code."
   },
   "PlanTemplates": {
     "railLink": "Mit einer Vorlage starten",

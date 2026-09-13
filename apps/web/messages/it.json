@@ -1098,7 +1098,23 @@
     "paymentsViewStatement": "Estratto",
     "currentNextCharge": "Prossimo addebito",
     "currentLastPayment": "Ultimo pagamento",
-    "currentCreditsLeft": "Lezioni rimaste"
+    "currentCreditsLeft": "Lezioni rimaste",
+    "cardMoreActions": "Altre azioni",
+    "menuUpdateDetails": "Aggiorna i dati",
+    "menuCustomiseActions": "Personalizza le azioni rapide",
+    "quickActionsTitle": "Azioni rapide",
+    "quickActionsIntro": "Scegli le quattro azioni della scheda contatto. Salvate in questo browser.",
+    "quickActionSlot": "Posizione {number}",
+    "quickActionsReset": "Ripristina i predefiniti",
+    "actionRecordPayment": "Pagamento",
+    "actionRecordPaymentTip": "Registra un pagamento",
+    "actionSendEmail": "Email",
+    "actionAddPlan": "Abbonamento",
+    "actionGrantCredits": "Crediti",
+    "actionUpdateDetails": "Dati",
+    "rosterLabel": "Gruppo",
+    "rosterActive": "Attivo",
+    "rosterActiveHint": "Fa parte del tuo gruppo — promemoria, inviti e automazioni lo raggiungono."
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -8291,7 +8307,12 @@
     "sheetPrint": "Stampa",
     "sheetLiveWarning": "{count} foglietti restano validi fino alla scadenza — meglio ritirare il foglio.",
     "sheetSlipHint": "Scansiona per controllare i tuoi dati",
-    "sheetFailed": "Non è stato possibile creare il foglio. Riprova."
+    "sheetFailed": "Non è stato possibile creare il foglio. Riprova.",
+    "updateTitle": "Aggiorna i dati",
+    "modeLink": "Invia un link",
+    "modeQr": "Mostra un QR",
+    "linkIntro": "Invia questo link a {name}. La persona conferma con un codice ricevuto via email e poi inserisce i propri dati.",
+    "linkNeedsEmail": "Per {name} non è registrata alcuna email, quindi un link non può confermare chi lo apre. Mostra invece un QR."
   },
   "PlanTemplates": {
     "railLink": "Parti da un modello",
