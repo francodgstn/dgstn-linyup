@@ -31,8 +31,28 @@ describe('billing budget topic name — a contract with Terraform', () => {
     assert.match(tf, /pubsub_topic\s*=/, 'all_updates_rule does not set pubsub_topic')
     assert.match(
       tf,
-      /billing-budgets@system\.gserviceaccount\.com/,
-      'the billing service agent is not a publisher on the topic, so delivery would fail silently',
+      /resource "google_pubsub_topic" "budget"/,
+      'the module does not create the topic it publishes to',
+    )
+  })
+
+  it('does NOT grant Pub/Sub IAM to a billing service agent', () => {
+    // This was in here once and broke a real apply:
+    //   Error 400: Service account billing-budgets@system.gserviceaccount.com
+    //   does not exist.
+    // Cloud Billing's budget service agent is a billing-account-level identity
+    // that project IAM cannot resolve, and the provider's own canonical Pub/Sub
+    // budget example (a live acceptance test) creates only the topic and the
+    // budget. Pinned so nobody helpfully adds the grant back.
+    const tf = readFileSync(join(REPO_ROOT, 'infra/modules/budget/main.tf'), 'utf8')
+    const code = tf
+      .split('\n')
+      .filter((l) => !l.trim().startsWith('#'))
+      .join('\n')
+    assert.doesNotMatch(
+      code,
+      /google_pubsub_topic_iam/,
+      'a Pub/Sub IAM binding is back in the budget module — it fails the apply',
     )
   })
 })
