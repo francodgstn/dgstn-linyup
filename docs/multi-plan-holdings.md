@@ -1,7 +1,8 @@
 # Multi-plan holdings — a contact holds a LIST of plans
 
 Status: **design, not built.** Option B, chosen by Franco on 2026-09-13 over the
-minimal option (stop Stripe events writing the single plan slot).
+minimal option (stop Stripe events writing the single plan slot). All four
+decisions settled the same day — see §7.
 
 **Why this is worth the work.** Pricing and offer flexibility is where Linyup
 should be strongest: a member can hold a studio membership, a partner-app pass,
@@ -161,13 +162,13 @@ as fresh as the last recompute, and a **daily per-tenant job** (the
 plan's history row, which fixes the "a lapsed grant still shows Active" defect
 for free. See decision D1.
 
-### 2.4 The legacy slot is derived, then retired
+### 2.4 The legacy slot is removed, not derived
 
-During the transition `recomputeHeldPlans` keeps writing the single
-`subscription_type_*` fields as a derived **primary** (decision D2). Nothing new
-reads them. They exist for installed mobile app versions and for any reader not
-yet moved, and stop being written once the mobile release that reads
-`held_plans` has adoption.
+Linyup is pre-launch: the only data is seeds, lead sandboxes and the HMD
+migration, and no member app is installed anywhere that matters (decision D2).
+So there is no transition to carry. Readers move to `held_plans`, the
+`subscription_type_*` fields stop being written and read, and the backfill
+converts what the existing datasets hold. No derived "primary" is kept.
 
 ### 2.5 Best plan, not first plan
 
@@ -194,6 +195,7 @@ Fixtures in `functions/src/booking/paymentOptions.test.ts` pin each ordering.
 | Connect recurring `handleSubscription` | writes the slot on every active event | writes nothing on the contact; the member-subscription mirror covers it |
 | Own-gateway webhooks | overwrite the plan id only | create a grant, id = payment event id |
 | `reversePaymentEffects` | clears the slot on a matching ref | ends the grant whose `source_ref` matches |
+| Connect `handleInvoice` (renewal charges) | stamps plan type and name on the payment | also stamps the Stripe subscription id, so a charge links to its plan card exactly (§5) |
 | HMD migration, seeds, demo tenant | write the slot | write grants |
 
 ---
@@ -217,6 +219,20 @@ Fixtures in `functions/src/booking/paymentOptions.test.ts` pin each ordering.
 
 ## 5. UI
 
+- **A plan and the billing that pays for it are ONE card.** A Stripe
+  subscription is how a plan is paid for, not a separate thing, so it is never
+  listed apart from its plan. The card leads with the plan — its name and what
+  it gives — and then its billing: amount and interval, status, next charge or
+  end date, and the actions that act on that subscription alone (freeze,
+  resume, cancel). A one-off purchase reads "Bought {date} for {amount}" and
+  links to that payment; a staff grant says who assigned it and when. Every
+  card lists its own payments, and every payment row on the Payments tab links
+  back to the plan card it paid for.
+  - *Exact for grants* — the grant's `source_ref` is the payment.
+  - *Exact for Stripe charges* once renewal payments record their subscription:
+    today `handleInvoice` stamps the plan type and name on the payment but not
+    the subscription id, so phase 2 adds it. Rows written before that fall back
+    to matching by plan type.
 - **Current segment — one Plans list.** A card per holding, labelled by source
   (assigned, bought, Stripe billing, credit pack), with its own status, next
   charge or end date, lessons left where relevant, and its own actions: end or
@@ -238,17 +254,18 @@ Fixtures in `functions/src/booking/paymentOptions.test.ts` pin each ordering.
 
 Each phase is its own PR and leaves `main` shippable.
 
-0. **Sign-off and guard.** Decisions D1–D4 below. A census test (in the style of
+0. **Guard.** Decisions are settled (§7). A census test (in the style of
    `connect/commitSites.test.ts`) that pins every writer of the legacy slot, so a
    new one fails the build.
 1. **Store and mirror.** `PlanGrant` and `HeldPlan` types; rules for
-   `plan_grants`; `recomputeHeldPlans` with its triggers; the derived legacy
-   slot; a backfill that creates one grant per contact from today's slot
+   `plan_grants`; `recomputeHeldPlans` with its triggers; a backfill that
+   creates one grant per contact from today's slot
    (`source: 'import'`, source ref preserved). Deploy rules, then functions, then
    the backfill through the Backfill workflow. Nothing reads the new fields yet.
 2. **Writers.** The staff callables; payment effects, Connect one-off and
    own-gateway webhooks create grants; reversal ends grants; recurring Stripe
-   events stop touching the contact; client writes to the slot denied by rules.
+   events stop touching the contact; renewal charges record their Stripe
+   subscription id; client writes to the slot denied by rules.
    The HMD migration transform and seeders write grants, so a re-import after the
    production cutover produces the new shape.
 3. **Readers.** Snapshots and the best-plan resolver; rules and storage rules;
@@ -257,35 +274,33 @@ Each phase is its own PR and leaves `main` shippable.
    refresh job.
 4. **UI.** The Current Plans list and dialogs; header, list, Space, Payments tab
    and dashboard; mobile profile.
-5. **Retire.** Stop deriving the legacy slot once the mobile release that reads
-   `held_plans` has adoption; remove the last slot readers; leave the fields on
-   old documents.
+5. **Remove the slot.** Delete the `subscription_type_*` fields from the
+   Contact type, the rules and every remaining reader; the census test's
+   allow-list ends empty. No adoption wait — nothing is live.
 
 ---
 
-## 7. Decisions needed
+## 7. Decisions (settled by Franco, 2026-09-13)
 
-- **D1 — rules freshness.** Recommended: the daily per-tenant refresh, accepting
-  that a rules-gated course read can outlive a lapsed grant by up to a day while
-  bookings and pricing compare live. Alternative: move course content reads
-  behind a callable, which removes the lag and adds a round trip to every lesson.
-- **D2 — the derived primary** for the legacy slot during the transition.
-  Recommended: the most recently started current holding, preferring a grant
-  over a Stripe plan of the same start, so the mobile profile shows what the
-  studio last assigned.
-- **D3 — best-plan order**, as in 2.5.
-- **D4 — two grants of the same type at once** (for example two overlapping
-  intro offers). Recommended: allowed as rows, merged in the mirror into one
-  entry per type with the latest end.
+- **D1 — rules freshness: the daily per-tenant refresh.** A rules-gated course
+  read can outlive a lapsed grant by up to a day; bookings and pricing compare
+  live. Rejected: course content behind a callable (a round trip per lesson).
+- **D2 — no derived primary.** Pre-launch, so there is no installed base to
+  carry: the slot is removed rather than kept in sync (§2.4, phase 5).
+- **D3 — best-plan order** as in §2.5: unlimited, then limited with the most
+  allowance left, then the credit pack expiring soonest, then the lowest
+  benefit price.
+- **D4 — two grants of the same type may coexist** as rows, merged in the
+  mirror into one entry per type with the latest end.
 
 ## 8. Risks
 
 - **Double counting during the transition** if a reader unions the mirror with
   the slot it is replacing. Each reader moves to the mirror alone.
-- **Backfill against production HMD data.** Idempotent by grant id derived from
-  the contact, dry run first, and run after the cutover import.
-- **Installed mobile versions** read the slot until they update; the derived
-  primary covers them.
+- **Backfill against the existing datasets** — seed snapshots, the sandbox lead
+  tenants (preserved across resets, so they need the backfill or a lead
+  reseed) and the HMD migration data. Idempotent by grant id derived from the
+  contact, dry run first.
 - **Pricing behaviour changes for members holding several plans** once the
   resolver picks the best plan. Intended, but visible: it belongs in the release
   note.
