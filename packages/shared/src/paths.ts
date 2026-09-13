@@ -458,3 +458,18 @@ export const TARIF595_STORAGE_SEGMENT = 'tarif595'
 export function tarif595StoragePath(teamId: string, receiptId: string, kind: 'pdf' | 'xml'): string {
   return `${TEAMS_COLLECTION}/${teamId}/${TARIF595_STORAGE_SEGMENT}/${receiptId}/receipt.${kind}`
 }
+
+// QR-bill invoices (plugin — see types/invoice.ts). settings: singleton,
+// manager+. invoices: frozen snapshots, function-written only; an invoice is
+// voided, never deleted. counters/invoices: absolute `{last, year}` in the
+// allocating transaction. Storage teams/{teamId}/invoices/{id}/invoice.pdf is
+// excluded from the broad team rule like the receipts and served only by the
+// download callable.
+export const INVOICE_SETTINGS_SUBCOLLECTION = 'invoice_settings'
+export const INVOICE_SETTINGS_DOC = 'config'
+export const INVOICES_SUBCOLLECTION = 'invoices'
+export const TEAM_INVOICE_COUNTER_DOC = 'invoices'
+export const INVOICES_STORAGE_SEGMENT = 'invoices'
+export function invoiceStoragePath(teamId: string, invoiceId: string): string {
+  return `${TEAMS_COLLECTION}/${teamId}/${INVOICES_STORAGE_SEGMENT}/${invoiceId}/invoice.pdf`
+}

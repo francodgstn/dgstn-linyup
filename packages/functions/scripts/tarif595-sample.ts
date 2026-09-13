@@ -1,4 +1,4 @@
-// Renders the Tarif 595 fixture receipts to PDF + XML files for eyeballing
+// Renders the Tarif 595 fixture receipts (and the QR-bill invoice fixtures) to PDF + XML files for eyeballing
 // against the Forum's print templates (and for handing to an insurer for
 // validation). Dev-only; nothing here runs in production.
 //
@@ -9,6 +9,8 @@ import { join } from 'node:path'
 import { attendanceReceipt, monthlyReceipt } from '../src/tarif595/fixtures/receipts'
 import { renderTarif595Pdf } from '../src/tarif595/render'
 import { buildTarif595Xml } from '../src/tarif595/xml'
+import { openInvoice, vatQrrInvoice } from '../src/invoices/fixtures/invoices'
+import { renderInvoicePdf } from '../src/invoices/render'
 
 async function main() {
   const out = process.argv[2] ?? join(__dirname, '..', 'tmp', 'tarif595')
@@ -20,6 +22,14 @@ async function main() {
     const xml = buildTarif595Xml(receipt)
     const pdf = await renderTarif595Pdf(receipt, xml)
     writeFileSync(join(out, `${name}.xml`), xml)
+    writeFileSync(join(out, `${name}.pdf`), pdf)
+    console.log(`${name}: ${pdf.length} bytes → ${join(out, `${name}.pdf`)}`)
+  }
+  for (const [name, invoice] of [
+    ['invoice-scor', openInvoice()],
+    ['invoice-qrr', vatQrrInvoice()],
+  ] as const) {
+    const pdf = await renderInvoicePdf(invoice)
     writeFileSync(join(out, `${name}.pdf`), pdf)
     console.log(`${name}: ${pdf.length} bytes → ${join(out, `${name}.pdf`)}`)
   }
