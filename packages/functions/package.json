@@ -9,7 +9,9 @@
     "test": "mocha --require ts-node/register 'src/**/*.test.ts'",
     "test:rules": "firebase emulators:exec --only firestore,storage --project demo-linyup \"mocha --spec 'src/**/*.rules-test.ts' --ignore 'src/**/*.test.ts'\"",
     "typecheck": "tsc --noEmit",
-    "test:integration": "firebase emulators:exec --only auth,firestore,functions --project demo-linyup \"node integration/coaching.integration.mjs && node integration/coachingSweep.integration.mjs\""
+    "test:integration": "firebase emulators:exec --only auth,firestore,functions --project demo-linyup \"node integration/coaching.integration.mjs && node integration/coachingSweep.integration.mjs\"",
+    "tarif595:sample": "ts-node scripts/tarif595-sample.ts",
+    "test:integration:tarif595": "firebase emulators:exec --only auth,firestore,functions,storage --project demo-linyup \"node integration/tarif595.integration.mjs\""
   },
   "engines": {
     "node": "22"
@@ -24,15 +26,20 @@
     "firebase-functions": "^6.3.0",
     "google-auth-library": "^9.15.1",
     "marked": "^15.0.0",
+    "pdfkit": "^0.20.2",
     "posthog-node": "^5.35.6",
+    "qrcode": "^1.5.4",
     "sanitize-html": "^2.14.0",
     "stripe": "^22.1.1",
+    "swissqrbill": "^4.4.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.5",
+    "@types/pdfkit": "^0.17.6",
+    "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.13.0",
     "firebase": "^12.16.0",
     "mocha": "^10.8.2",

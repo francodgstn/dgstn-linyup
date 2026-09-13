@@ -55,6 +55,7 @@ export const CLIENT_INSTALLABLE_FROM: Readonly<Record<string, SaasPlan>> = {
   'asset-register': 'coach',
   'contact-groups': 'coach',
   'custom-fields': 'coach',
+  'tarif-595': 'coach',
 }
 
 /** The tier every other plugin is client-installable from. */

@@ -26,6 +26,7 @@ import { financeManifest } from './finance/manifest'
 import { assetRegisterManifest } from './asset-register/manifest'
 import { giftCardsManifest } from './gift-cards/manifest'
 import { promoCodesManifest } from './promo-codes/manifest'
+import { tarif595Manifest } from './tarif-595/manifest'
 
 export const PLUGIN_REGISTRY: PluginManifest[] = [
   aiAssistantManifest,
@@ -47,6 +48,7 @@ export const PLUGIN_REGISTRY: PluginManifest[] = [
   assetRegisterManifest,
   giftCardsManifest,
   promoCodesManifest,
+  tarif595Manifest,
 ]
 
 /** All plugin-contributed event type IDs (built-in type IDs from installed plugins). */
