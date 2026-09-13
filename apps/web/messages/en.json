@@ -8561,7 +8561,29 @@
     "errorNoOfferings": "Map at least one subscription, class or course to a position",
     "positionPlaceholder": "Select a position…",
     "positionSearchPlaceholder": "Search positions…",
-    "positionEmpty": "No matching position."
+    "positionEmpty": "No matching position.",
+    "table": {
+      "state": "State",
+      "stateMapped": "Mapped",
+      "stateSuggested": "Suggested — review before saving",
+      "stateUnmapped": "Not mapped yet",
+      "searchPlaceholder": "Search offerings…",
+      "unmappedOnly": "Unmapped only ({count})",
+      "summary": "{mapped} of {total} mapped",
+      "allMapped": "Every offering is mapped."
+    },
+    "suggest": {
+      "button": "Suggest positions",
+      "running": "Suggesting…",
+      "notice": "Suggestions are generated automatically from your plan and class names. Review every suggested row against the methods your label body certified before saving — the receipt states what you choose, not what was suggested.",
+      "rowLabel": "Suggested",
+      "lowConfidence": "uncertain",
+      "applied": "{count} suggestions filled in. Rows you had already mapped were left as they are.",
+      "nothingToFill": "Nothing to suggest — every offering is already mapped.",
+      "noneFound": "No position could be suggested for the unmapped offerings.",
+      "unavailable": "Suggestions aren't available right now. You can still pick positions by hand.",
+      "rateLimited": "You've reached the hourly limit for suggestions. Try again later."
+    }
   },
   "QrInvoices": {
     "title": "QR-bill invoices",

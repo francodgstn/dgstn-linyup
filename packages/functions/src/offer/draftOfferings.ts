@@ -237,14 +237,16 @@ async function assertAllowed(uid: string, teamId: string) {
   }
 }
 
-async function assertUnderRateLimit(uid: string, teamId: string, bucket: string) {
+/** Per user + team + hour, in `bucket`. Exported for the other model-backed
+ *  callables (tarif595/suggest.ts) so there is ONE limiter, not a copy. */
+export async function assertUnderRateLimit(uid: string, teamId: string, bucket: string, max = RATE_LIMIT_MAX) {
   const db = admin.firestore()
   const windowKey = Math.floor(Date.now() / RATE_WINDOW_MS).toString()
   const ref = db.collection('rate_limits').doc(uid).collection(bucket).doc(`${teamId}_${windowKey}`)
   const allowed = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref)
     const count = snap.exists ? ((snap.data()!.count as number) ?? 0) : 0
-    if (count >= RATE_LIMIT_MAX) return false
+    if (count >= max) return false
     tx.set(ref, { count: count + 1, updated_at: FieldValue.serverTimestamp() }, { merge: true })
     return true
   })

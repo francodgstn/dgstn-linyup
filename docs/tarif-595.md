@@ -48,6 +48,29 @@ only), `entries` (for `entry`). The position table is generated data
 beside it; `pnpm tarif595:positions`) exposed on `@linyup/shared/tarif595-positions` and
 imported lazily by the settings page only — never re-exported from the shared index.
 
+## Mapping suggestions — the unit is derived, the position is proposed
+
+Mapping every plan and class to a position is the most tedious step of the setup, and it
+splits into two halves of different certainty:
+
+- **The unit is derived** (`suggestTarif595Unit`, shared, pure): a monthly price bills per
+  month, an annual one per year, a credit pack per entry sized by the pack, a class per
+  lesson, a course flat. The settings page prefills it on every unmapped row; a row without
+  a position is never saved, so a derived unit alone never reaches the config.
+- **The position is proposed** (`suggestTarif595Mappings`, `tarif595/suggest.ts`): the
+  model (the shared Vertex client) reads the offering names and descriptions against the
+  positions valid today, in the receipt language, and answers with a code, a confidence
+  and a one-line reason per offering. **The parser is the boundary**: a code the table does
+  not know or one not valid today becomes `null`, never an error and never a mapping. The
+  callable writes nothing, is gated like creation (manager + plugin installed) and
+  rate-limited through the one limiter in `offer/draftOfferings.ts`.
+
+On the page, "Suggest positions" fills **empty** rows only, tints them, shows the reason
+under the picker and a notice above the table: the studio must check every suggested row
+against the methods its label body certified, because the insurer reimburses per certified
+method and the receipt states what the studio chose, not what was suggested. Editing a
+suggested row's position clears the mark; nothing is saved until Save.
+
 ## Line rules (Qualitop FAQ 3.3–3.7, Helsana §4; `lines.ts`, pure)
 
 | Unit | Lines | Quantity | Line date |
@@ -111,6 +134,7 @@ insured number missing, insurer unknown, unit price zero.
 | Callable | Gate |
 |---|---|
 | `previewTarif595Receipt`, `issueTarif595Receipt`, `startTarif595BulkIssue` | `assertManager` + `assertPluginInstalled('tarif-595')` — creation |
+| `suggestTarif595Mappings` | the same pair, plus an hourly rate limit — it spends the studio's model budget; writes nothing |
 | `voidTarif595Receipt`, `emailTarif595Receipt` | `assertManager` only — consumption of an existing receipt |
 | `downloadTarif595Receipt` | **two doors, decided by the token**: `assertManager`, OR the contact session (`requireContactSessionForTeam`) on a receipt whose `contact_id` is its own — any other id answers `not-found` |
 | `listMyTarif595Receipts` | the contact session only — no role, no install gate (consumption); `enabled` in the answer is a read of the install state, not a gate |

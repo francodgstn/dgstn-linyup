@@ -8561,7 +8561,29 @@
     "errorNoOfferings": "Ordnen Sie mindestens ein Abo, einen Kurs oder Onlinekurs einer Position zu",
     "positionPlaceholder": "Position wählen…",
     "positionSearchPlaceholder": "Positionen durchsuchen…",
-    "positionEmpty": "Keine passende Position."
+    "positionEmpty": "Keine passende Position.",
+    "table": {
+      "state": "Status",
+      "stateMapped": "Zugeordnet",
+      "stateSuggested": "Vorgeschlagen – vor dem Speichern prüfen",
+      "stateUnmapped": "Noch nicht zugeordnet",
+      "searchPlaceholder": "Angebote suchen…",
+      "unmappedOnly": "Nur nicht zugeordnete ({count})",
+      "summary": "{mapped} von {total} zugeordnet",
+      "allMapped": "Alle Angebote sind zugeordnet."
+    },
+    "suggest": {
+      "button": "Positionen vorschlagen",
+      "running": "Vorschläge werden erstellt…",
+      "notice": "Die Vorschläge werden automatisch aus den Namen Ihrer Abos und Kurse erstellt. Prüfen Sie jede vorgeschlagene Zeile vor dem Speichern anhand der von Ihrer Labelstelle anerkannten Methoden – auf dem Beleg steht, was Sie wählen, nicht was vorgeschlagen wurde.",
+      "rowLabel": "Vorgeschlagen",
+      "lowConfidence": "unsicher",
+      "applied": "{count} Vorschläge eingetragen. Bereits zugeordnete Zeilen wurden nicht verändert.",
+      "nothingToFill": "Nichts vorzuschlagen – alle Angebote sind bereits zugeordnet.",
+      "noneFound": "Für die nicht zugeordneten Angebote konnte keine Position vorgeschlagen werden.",
+      "unavailable": "Vorschläge sind im Moment nicht verfügbar. Sie können die Positionen weiterhin manuell wählen.",
+      "rateLimited": "Sie haben das Stundenlimit für Vorschläge erreicht. Versuchen Sie es später erneut."
+    }
   },
   "QrInvoices": {
     "title": "QR-Rechnungen",
