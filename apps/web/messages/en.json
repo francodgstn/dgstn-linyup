@@ -1091,7 +1091,14 @@
     "goalSaveFailed": "Couldn't save this goal. Please try again.",
     "goalEvalSaveFailed": "Couldn't save this evaluation. Please try again.",
     "affiliationValidUntil": "Valid until {date}",
-    "segReceipts": "Receipts"
+    "segReceipts": "Receipts",
+    "segCurrent": "Current",
+    "segHistory": "History",
+    "paymentsViewList": "List",
+    "paymentsViewStatement": "Statement",
+    "currentNextCharge": "Next charge",
+    "currentLastPayment": "Last payment",
+    "currentCreditsLeft": "Lessons left"
   },
   "TeamAffiliations": {
     "title": "Affiliations",

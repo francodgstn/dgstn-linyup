@@ -10,8 +10,9 @@
  * in a row — the three counters and the engagement band as a coloured dot
  * with its name (it used to be a vertical meter beside the strip, a fill
  * level for something that has four words and no level) — then the
- * attendance sparkline on the card's bottom edge. The foot of the old single
- * header card, rearranged. Nothing here is new data; the summary is the one
+ * attendance chart on the card's bottom edge: the last year, with the plan
+ * periods drawn behind it as bands (since 2026-09-13; they were a ribbon on
+ * the Plans & Payments tab). Nothing here is new data; the summary is the one
  * write, and it goes through `generateContactSummary`.
  */
 
@@ -19,14 +20,15 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { httpsCallable } from 'firebase/functions'
-import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceArea } from 'recharts'
 import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity } from 'lucide-react'
 import { toast } from 'sonner'
-import { computeEngagementBand } from '@linyup/shared'
+import { computeEngagementBand, isoWeekKey } from '@linyup/shared'
 import type { Contact, EngagementThresholds } from '@linyup/shared'
 import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
+import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory'
 import { isoWeekLabel, useContactWeeklyReports } from './AttendanceTrendCard'
 import { ENGAGEMENT_BAR, ENGAGEMENT_TEXT } from './engagement'
 
@@ -207,16 +209,82 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** Attendance over the last 16 weeks — bleeds to the card edges, no padding.
- *  A fixed 128px, a fixed 32px under the counters: the area fill never
- *  climbs up to the figures, and the gap never balloons either, because the
- *  card's spare height goes to the summary block (see InsightsCard). */
+/** How much of the relationship the header chart shows: a year, so a plan
+ *  change — and whether attendance moved with it — is on screen. */
+const CHART_WEEKS = 52
+/** The fewest weeks a plan band needs before it carries the plan's name. */
+const BAND_LABEL_MIN_WEEKS = 8
+/** The subscription colour the old relationship ribbon gave its plan lane. */
+const PLAN_BAND_COLOR = '#3b82f6'
+
+interface PlanBand {
+  key: string
+  name: string
+  /** The period's own weeks, unclamped — for "which plan covered this week". */
+  from: string
+  to: string
+  /** Clamped to the chart window — for drawing. */
+  x1: string
+  x2: string
+  weeks: number
+}
+
+/** Plan periods from the subscription history as week ranges on the chart's
+ *  window. An open period runs to this week. ISO week keys are zero-padded
+ *  (`2026-W05`), so they order correctly as strings. */
+function planBands(
+  history: readonly {
+    id: string
+    subscription_type_name?: string
+    start_date?: unknown
+    end_date?: unknown
+  }[],
+  weekKeys: readonly string[]
+): PlanBand[] {
+  if (!weekKeys.length) return []
+  const first = weekKeys[0]
+  const last = weekKeys[weekKeys.length - 1]
+  return history.flatMap((h) => {
+    const start = toDate(h.start_date)
+    if (!start) return []
+    const from = isoWeekKey(start)
+    const to = isoWeekKey(toDate(h.end_date) ?? new Date())
+    if (to < first || from > last) return []
+    const x1 = from < first ? first : from
+    const x2 = to > last ? last : to
+    return [
+      {
+        key: h.id,
+        name: h.subscription_type_name ?? '',
+        from,
+        to,
+        x1,
+        x2,
+        weeks: weekKeys.indexOf(x2) - weekKeys.indexOf(x1) + 1,
+      },
+    ]
+  })
+}
+
+/** Attendance over the last year, bleeding to the card edges, with the plan
+ *  periods drawn behind it as faint bands — so "did they stop coming when the
+ *  plan ended" is one glance instead of two tabs. Subscriptions only;
+ *  affiliations are their own tab's. A fixed 128px, a fixed 32px under the
+ *  counters: the area fill never climbs up to the figures, and the gap never
+ *  balloons either, because the card's spare height goes to the summary block
+ *  (see InsightsCard). */
 function Sparkline({ contactId }: { contactId: string }) {
-  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId)
+  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId, CHART_WEEKS)
+  const { data: history = [] } = useSubscriptionHistory(contactId)
   const chartData = weeklyReports.map((r) => ({
+    week: r.iso_week,
     label: isoWeekLabel(r.iso_week),
     sessions: r.sessions_count,
   }))
+  const bands = planBands(
+    history,
+    chartData.map((d) => d.week)
+  )
 
   return (
     <div className="mt-8 h-32 shrink-0">
@@ -233,19 +301,51 @@ function Sparkline({ contactId }: { contactId: string }) {
                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="label" hide />
+            {/* The week KEY on the axis, not its label: a band's edges are
+                week keys, and a Monday's short date can repeat across years. */}
+            <XAxis dataKey="week" hide />
+            {/* Before the line, so the attendance reads over the bands. */}
+            {bands.map((b) => (
+              <ReferenceArea
+                key={b.key}
+                x1={b.x1}
+                x2={b.x2}
+                fill={PLAN_BAND_COLOR}
+                fillOpacity={0.1}
+                stroke="none"
+                label={
+                  b.name && b.weeks >= BAND_LABEL_MIN_WEEKS
+                    ? {
+                        value: b.name,
+                        position: 'insideTopLeft' as const,
+                        fontSize: 10,
+                        fill: PLAN_BAND_COLOR,
+                      }
+                    : undefined
+                }
+              />
+            ))}
             <Tooltip
               contentStyle={tooltipStyle}
-              content={({ active, payload, label }) => {
+              content={({ active, payload }) => {
                 if (!active || !payload?.length) return null
+                const row = payload[0].payload as { week: string; label: string }
+                const plans = bands
+                  .filter((b) => b.name && b.from <= row.week && row.week <= b.to)
+                  .map((b) => b.name)
                 return (
                   <div style={{ ...tooltipStyle, textAlign: 'center', lineHeight: 1.4 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#6366f1' }}>
                       {payload[0].value}
                     </div>
                     <div style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }}>
-                      {label}
+                      {row.label}
                     </div>
+                    {plans.length > 0 && (
+                      <div style={{ fontSize: 10, color: PLAN_BAND_COLOR }}>
+                        {plans.join(' · ')}
+                      </div>
+                    )}
                   </div>
                 )
               }}

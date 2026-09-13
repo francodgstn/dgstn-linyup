@@ -1091,7 +1091,14 @@
     "goalSaveFailed": "Impossibile salvare questo obiettivo. Riprova.",
     "goalEvalSaveFailed": "Impossibile salvare questa valutazione. Riprova.",
     "affiliationValidUntil": "Valida fino al {date}",
-    "segReceipts": "Ricevute"
+    "segReceipts": "Ricevute",
+    "segCurrent": "Attuale",
+    "segHistory": "Cronologia",
+    "paymentsViewList": "Elenco",
+    "paymentsViewStatement": "Estratto",
+    "currentNextCharge": "Prossimo addebito",
+    "currentLastPayment": "Ultimo pagamento",
+    "currentCreditsLeft": "Lezioni rimaste"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
