@@ -6,11 +6,13 @@
  *
  * Top, the AI summary — an experiment (`contact-summary`). While the switch is
  * off the block is ABSENT, not empty, so a studio that never opted in sees a
- * card of numbers and nothing that hints at a model. Bottom, docked: the three
- * counters, the attendance sparkline and the engagement meter that were the
- * foot of the old single header card, the sparkline given the height the
- * wider card affords. Nothing here is new data; the summary is the one write,
- * and it goes through `generateContactSummary`.
+ * card of numbers and nothing that hints at a model. Under it: four figures
+ * in a row — the three counters and the engagement band as a coloured dot
+ * with its name (it used to be a vertical meter beside the strip, a fill
+ * level for something that has four words and no level) — then the
+ * attendance sparkline on the card's bottom edge. The foot of the old single
+ * header card, rearranged. Nothing here is new data; the summary is the one
+ * write, and it goes through `generateContactSummary`.
  */
 
 import { useState } from 'react'
@@ -18,10 +20,10 @@ import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { httpsCallable } from 'firebase/functions'
 import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-import { Sparkles, RefreshCw } from 'lucide-react'
+import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity } from 'lucide-react'
 import { toast } from 'sonner'
 import { computeEngagementBand } from '@linyup/shared'
-import type { Contact, EngagementBand, EngagementThresholds } from '@linyup/shared'
+import type { Contact, EngagementThresholds } from '@linyup/shared'
 import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
@@ -44,19 +46,26 @@ export function InsightsCard({
   thresholds?: EngagementThresholds
   className?: string
 }) {
+  const { isEnabled } = useExperimentalFeatures()
+  const summaryOn = isEnabled('contact-summary')
   return (
     <div
       className={`flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card ${className}`}
     >
-      {/* Keyed so a summary just generated for one contact never shows over
-          the next contact this component happens to be re-rendered for. */}
-      <SummaryBlock key={contact.id} contact={contact} />
-      <div className="mt-auto flex">
-        <div className="min-w-0 flex-1">
-          <StatsRow contact={contact} />
-          <Sparkline contactId={contact.id} />
-        </div>
-        <EngagementIndicator contact={contact} thresholds={thresholds} />
+      {/* WHERE SPARE HEIGHT GOES. The card is stretched to the profile card's
+          height, so there is usually room to spare. The summary block takes
+          it (flex-1): the counters follow the summary, the chart sits a fixed
+          32px under the counters at a fixed 128px, and the bottoms of the two
+          cards still meet. With the experiment off there is no summary block
+          to grow, so the strip docks to the bottom edge instead. */}
+      {summaryOn && (
+        // Keyed so a summary just generated for one contact never shows over
+        // the next contact this component happens to be re-rendered for.
+        <SummaryBlock key={contact.id} contact={contact} />
+      )}
+      <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'mt-auto'}`}>
+        <StatsRow contact={contact} thresholds={thresholds} />
+        <Sparkline contactId={contact.id} />
       </div>
     </div>
   )
@@ -68,14 +77,11 @@ type SummaryResult = { text: string; language: string; model: string }
 
 function SummaryBlock({ contact }: { contact: Contact }) {
   const t = useTranslations('Contacts')
-  const { isEnabled } = useExperimentalFeatures()
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   // What the callable just returned, shown until the contact query refetches
   // and the stored record catches up.
   const [fresh, setFresh] = useState<string | null>(null)
-
-  if (!isEnabled('contact-summary')) return null
 
   const stored = contact.ai_summary
   const text = fresh ?? stored?.text ?? null
@@ -105,7 +111,11 @@ function SummaryBlock({ contact }: { contact: Contact }) {
   }
 
   return (
-    <div className="border-b p-5">
+    // A floor of 8rem (the empty state was cramped at its natural ~97px), and
+    // flex-1 so any height the card has to spare lands here rather than in
+    // the gap above the chart. A real four-to-six-sentence summary grows past
+    // the floor on its own.
+    <div className="min-h-32 flex-1 p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -146,13 +156,22 @@ function SummaryBlock({ contact }: { contact: Contact }) {
 
 // ─── Counters + sparkline ─────────────────────────────────────────────────────
 
-function StatsRow({ contact }: { contact: Contact }) {
+function StatsRow({
+  contact,
+  thresholds,
+}: {
+  contact: Contact
+  thresholds?: EngagementThresholds
+}) {
   const t = useTranslations('Contacts')
   return (
-    <div className="grid grid-cols-3 divide-x">
+    <div className="grid grid-cols-4 divide-x">
+      {/* The same icons and colours the Gamification tab gives these figures,
+          so the two readings of one number look like one number. */}
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
-        <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+          <Trophy className="h-3 w-3 text-primary" />
           {t('statTotalSessions')}
         </p>
       </div>
@@ -161,14 +180,19 @@ function StatsRow({ contact }: { contact: Contact }) {
           {contact.current_streak ?? 0}
           <span className="text-sm font-normal">w</span>
         </p>
-        <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">{t('statStreak')}</p>
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+          <Flame className="h-3 w-3 text-orange-500" />
+          {t('statStreak')}
+        </p>
       </div>
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.current_month_score ?? 0}</p>
-        <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+          <Star className="h-3 w-3 text-yellow-500" />
           {t('statMonthScore')}
         </p>
       </div>
+      <EngagementCell contact={contact} thresholds={thresholds} />
     </div>
   )
 }
@@ -183,7 +207,10 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** Attendance over the last 16 weeks — bleeds to the card edges, no padding. */
+/** Attendance over the last 16 weeks — bleeds to the card edges, no padding.
+ *  A fixed 128px, a fixed 32px under the counters: the area fill never
+ *  climbs up to the figures, and the gap never balloons either, because the
+ *  card's spare height goes to the summary block (see InsightsCard). */
 function Sparkline({ contactId }: { contactId: string }) {
   const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId)
   const chartData = weeklyReports.map((r) => ({
@@ -192,7 +219,7 @@ function Sparkline({ contactId }: { contactId: string }) {
   }))
 
   return (
-    <div className="h-[72px]">
+    <div className="mt-8 h-32 shrink-0">
       {isLoading ? (
         <div className="h-full animate-pulse bg-muted/40" />
       ) : chartData.length === 0 ? (
@@ -240,9 +267,12 @@ function Sparkline({ contactId }: { contactId: string }) {
   )
 }
 
-// ─── Engagement meter ─────────────────────────────────────────────────────────
+// ─── Engagement cell ──────────────────────────────────────────────────────────
 
-function EngagementIndicator({
+/** The fourth figure: a dot in the band's colour and the band's name, sized
+ *  to sit level with the three numbers. A band is one of four words, so a
+ *  meter was showing a fill level for something that has no level. */
+function EngagementCell({
   contact,
   thresholds,
 }: {
@@ -254,31 +284,19 @@ function EngagementIndicator({
   const refMs = lastMs ?? toDate(contact.created_at)?.getTime() ?? null
   const band = computeEngagementBand(refMs, thresholds)
   const daysAgo = lastMs != null ? Math.floor((Date.now() - lastMs) / 86_400_000) : null
-  const tip = `${t('engagementLabel')} · ${
-    daysAgo == null ? t('engagementNoSessions') : t('engagementLastSession', { days: daysAgo })
-  }`
-  const fill: Record<EngagementBand, string> = {
-    active: '100%',
-    low: '75%',
-    at_risk: '50%',
-    inactive: '25%',
-  }
+  const tip = daysAgo == null ? t('engagementNoSessions') : t('engagementLastSession', { days: daysAgo })
   return (
-    <div
-      title={tip}
-      className="flex shrink-0 cursor-default flex-col items-center justify-end gap-1.5 border-l px-3 py-3"
-    >
-      <div className="relative min-h-[40px] w-2 flex-1 overflow-hidden rounded-full bg-muted">
-        <div
-          className={`absolute bottom-0 left-0 right-0 rounded-full transition-all ${ENGAGEMENT_BAR[band]}`}
-          style={{ height: fill[band] }}
-        />
-      </div>
-      <span
-        className={`hidden whitespace-nowrap text-[10px] font-medium sm:block ${ENGAGEMENT_TEXT[band]}`}
+    <div title={tip} className="cursor-default px-4 py-3 text-center">
+      <p
+        className={`flex h-8 items-center justify-center gap-1.5 text-sm font-semibold ${ENGAGEMENT_TEXT[band]}`}
       >
-        {t(`engagement_${band}` as Parameters<typeof t>[0])}
-      </span>
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ENGAGEMENT_BAR[band]}`} aria-hidden />
+        <span className="truncate">{t(`engagement_${band}` as Parameters<typeof t>[0])}</span>
+      </p>
+      <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <Activity className="h-3 w-3" />
+        {t('engagementLabel')}
+      </p>
     </div>
   )
 }

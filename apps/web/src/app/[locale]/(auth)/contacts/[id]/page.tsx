@@ -109,6 +109,7 @@ import {
 } from '@linyup/shared'
 import type {
   Contact,
+  ActiveSubscriptionSummary,
   AcquisitionStage,
   ContactEntry,
   ContactSource,
@@ -227,7 +228,6 @@ import {
 } from '@/components/contacts/RelationshipTimeline'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
-import { AffiliationTypeMark } from '@/components/affiliations/AffiliationTypePicker'
 import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
@@ -1091,14 +1091,63 @@ function AcquisitionTimeline({
 
 // Round icon button for the header action cluster (notes + alerts), with an
 // optional count badge. Kept generic so both surfaces share one look.
+/**
+ * The plans a contact is on right now, for the chip row. `active_subscriptions`
+ * is the live, webhook-maintained list; a contact from before it existed
+ * carries only the legacy `subscription_type_name`, which is shown the same
+ * way so an old record does not read as "no plan".
+ */
+function livePlans(contact: Contact): ActiveSubscriptionSummary[] {
+  if (contact.active_subscriptions?.length) return contact.active_subscriptions
+  if (!contact.subscription_type_name) return []
+  return [
+    {
+      subscription_type_id: 'legacy',
+      subscription_type_name: contact.subscription_type_name,
+      recurrence: null,
+      amount: 0,
+      status: contact.subscription_status ?? 'active',
+    },
+  ]
+}
+
+/** One live plan as a chip: green while it bills, amber when it is past due
+ *  or winding down (with the end date), muted while paused. */
+function PlanChip({ sub }: { sub: ActiveSubscriptionSummary }) {
+  const t = useTranslations('Contacts')
+  const winding = sub.cancelling === true || !!sub.cancels_at_ms
+  const tone =
+    winding || sub.status === 'past_due'
+      ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800'
+      : sub.status === 'paused'
+        ? 'bg-muted text-muted-foreground border-border'
+        : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+  const ends = sub.cancels_at_ms
+    ? new Date(sub.cancels_at_ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    : null
+  return (
+    <Badge className={`gap-1 ${tone}`}>
+      <BookOpen className="h-3 w-3" />
+      {sub.subscription_type_name ?? t('subscriptionHeadingCard')}
+      {winding && ends && (
+        <span className="font-normal opacity-80">· {t('planChipEnds', { date: ends })}</span>
+      )}
+    </Badge>
+  )
+}
+
 function HeaderActionButton({
   icon: Icon,
   label,
+  shortLabel,
   count = 0,
   onClick,
 }: {
   icon: React.ElementType
   label: string
+  /** A caption under the icon. The long `label` stays the tooltip and the
+   *  accessible name; this is the two-word version that fits a tile. */
+  shortLabel?: string
   count?: number
   onClick: () => void
 }) {
@@ -1110,9 +1159,16 @@ function HeaderActionButton({
         type="button"
         onClick={onClick}
         aria-label={label}
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className={
+          shortLabel
+            ? 'relative flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+            : 'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+        }
       >
         <Icon className="h-4 w-4" />
+        {shortLabel && (
+          <span className="max-w-full truncate text-[10px] leading-tight">{shortLabel}</span>
+        )}
         {count > 0 && (
           <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
             {count}
@@ -4515,83 +4571,6 @@ function AffilStatusBadge({
   )
 }
 
-/**
- * THE AFFILIATION, IN THE HEADER — the type's mark, its label, its status.
- *
- * Franco, with the type mini-cards: "we could enhance the affiliation definition
- * with a logo, shown on the mini card and eventually as a badge+status somewhere
- * in the contact detail". This is that badge, and it draws the SAME
- * `AffiliationTypeMark` the picker draws, so a type that gains a logo gains it
- * in both places at once and neither can drift.
- *
- * ── ONE CHIP PER TYPE, THE CURRENT ONE ──
- *
- * A contact accumulates a row per season, so the raw list is a HISTORY, not a
- * state. The header wants the state: the most recent row per type. The query is
- * already ordered `created_at desc`, so the first row seen for a type is that
- * one — no sort here, and no second definition of "current" for a later reader
- * to disagree with. The whole history stays one click away in the tab.
- *
- * ── WHY IT SHOWS AN EXPIRED ONE TOO ──
- *
- * Filtering to `active` rows would hide exactly the fact an org manager opens
- * the record for. "HMD Affiliation · Expired" in red IS the answer; an absent
- * chip reads as "never affiliated", which is a different and wrong thing. The
- * status def's own colour carries the difference.
- *
- * It renders nothing when the contact holds no affiliation, which is the only
- * gate it needs — a studio that does not use the axis never sees it.
- */
-function ContactAffiliationBadges({
-  contact,
-  teamId,
-  orgId,
-}: {
-  contact: Contact
-  teamId: string | null
-  orgId?: string | null
-}) {
-  const t = useTranslations('Contacts')
-  const { data: affiliations = [] } = useContactAffiliations(contact.id)
-  const { data: types = [] } = useAffiliationTypes(teamId, orgId)
-  // The BUILT-IN set as the default, exactly as the tab below does it: the query
-  // is `enabled: !!orgId`, so for a studio with no organisation it never runs and
-  // `[]` would print a raw `status_id` where a label belongs.
-  const { data: statuses = DEFAULT_ORG_AFFILIATION_STATUSES } = useOrgAffiliationStatuses(orgId)
-
-  const current = useMemo(() => {
-    const seen = new Map<string, Affiliation>()
-    for (const a of affiliations)
-      if (!seen.has(a.affiliation_type_id)) seen.set(a.affiliation_type_id, a)
-    return [...seen.values()]
-  }, [affiliations])
-
-  if (current.length === 0) return null
-
-  return (
-    <>
-      {current.map((a) => {
-        const type = types.find((x) => x.id === a.affiliation_type_id)
-        const label = type?.label ?? a.label ?? a.type_key ?? a.affiliation_type_id
-        const def = statuses.find((x) => x.id === a.status_id)
-        const color = AFFIL_COLOR_CLASSES[def?.color ?? 'gray'] ?? AFFIL_COLOR_CLASSES.gray
-        const until = formatDate(a.valid_until)
-        return (
-          <span
-            key={a.id}
-            title={until ? t('affiliationValidUntil', { date: until }) : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text} ${color.border}`}
-          >
-            <AffiliationTypeMark type={{ label, logo_url: type?.logo_url }} size={14} />
-            <span className="max-w-[140px] truncate">{label}</span>
-            <span className="opacity-70">{def?.label ?? a.status_id}</span>
-          </span>
-        )
-      })}
-    </>
-  )
-}
-
 // ─── affiliations tab ─────────────────────────────────────────────────────────
 
 function AffiliationsTab({
@@ -5266,20 +5245,32 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       {/* Header — TWO cards. Left, the profile: who they are, in the shape a
           profile is expected to take — a round picture overlapping the card's
           top edge, the name under it, everything centred. Right, the insights
-          card: what the studio reads about them (InsightsCard.tsx). A quarter
-          and three quarters at `lg`, stacked below it. The grid carries top
+          card: what the studio reads about them (InsightsCard.tsx). A third
+          and two thirds at `lg`, stacked below it. The grid carries top
           padding so the avatar can sit above the card without touching the
           back button. */}
-      <div className="grid gap-4 pt-10 lg:grid-cols-4 lg:items-stretch">
-        <div className="relative rounded-xl border bg-card px-5 pb-5 pt-12 text-center lg:col-span-1">
+      <div className="grid gap-5 pt-12 lg:grid-cols-3 lg:items-stretch">
+        <div className="relative flex flex-col rounded-2xl border border-border/60 bg-card px-6 pb-6 pt-16 text-center shadow-xl shadow-black/[0.06] dark:shadow-black/40 lg:col-span-1">
+          {/* The card's only decoration: a tinted band along the top and a
+              soft glow behind the avatar. Both sit behind everything else
+              (the content blocks are positioned so they paint on top) and
+              take no clicks. */}
           <div
-            className="absolute left-1/2 -top-10 flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground ring-4 ring-card"
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-2xl bg-gradient-to-b from-primary/10 to-transparent"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute left-1/2 -top-14 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/25 blur-2xl"
+            aria-hidden
+          />
+          <div
+            className="absolute left-1/2 -top-12 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-card"
             aria-hidden
           >
             {personInitials(contact)}
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold min-w-0 break-words">
+          <div className="relative min-w-0">
+            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">
               {contact.firstname} {contact.lastname}
             </h1>
             {/* Sits with the name because it acts ON the person — "send this
@@ -5298,7 +5289,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               </Tip>
             )}
           </div>
-          <div className="flex-1 min-w-0 mt-3">
+          <div className="relative mt-4 flex-1 min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2">
               {/* A member has asked to close their own account. It sits with
                   the lifecycle badges because that is what it is — but ABOVE
@@ -5345,19 +5336,23 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       {t('newBadge')}
                     </Badge>
                   )}
-                  {/* LAST in the row on purpose. Every chip before it is
-                      something the studio might have to ACT on; belonging is a
-                      standing fact, so it reads as the answer to "and who are
-                      they to us" rather than competing with the to-dos. */}
-                  <ContactAffiliationBadges
-                    contact={contact}
-                    teamId={currentTeamId}
-                    orgId={team?.org_id}
-                  />
+                  {/* LAST in the row on purpose: what they HOLD. Every chip
+                      before it is something the studio might have to act on;
+                      a plan is a standing fact, so it reads as "and what are
+                      they on" rather than competing with the to-dos. One chip
+                      per live plan, coloured by its billing state; a plan that
+                      is winding down says when it ends. Affiliation left this
+                      row on 2026-09-13: it is the secondary fact, and the
+                      panel below still links to it. */}
+                  {livePlans(contact).map((sub) => (
+                    <PlanChip key={sub.subscription_type_id} sub={sub} />
+                  ))}
                 </>
               )}
             </div>
-            <div className="flex flex-col items-center gap-1 mt-2">
+            {/* The facts as a list: left-aligned inside a quiet panel so the
+                icons line up and a long email has room, centred as a block. */}
+            <div className="mt-4 flex flex-col gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-left">
               {contact.email && (
                 <span className="group/email flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
                   <Mail className="h-3 w-3 shrink-0" />
@@ -5468,18 +5463,20 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               open the editor sheet (also glanced in the profile column).
               Margin so the buttons don't crowd the detail lines above them. */}
           {!contact.archived_at && !contact.deleted_at && (
-            <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="mt-auto grid grid-cols-4 gap-1.5 pt-5">
               {/* Opens the alerts PANEL, not a tab. It used to jump to
                   Follow-ups, which is where alerts used to live. */}
               <HeaderActionButton
                 icon={Bell}
                 label={t('tabAlerts')}
+                shortLabel={t('tabAlerts')}
                 count={contactAlerts.length}
                 onClick={() => setAlertsOpen(true)}
               />
               <HeaderActionButton
                 icon={StickyNote}
                 label={t('tabNotes')}
+                shortLabel={t('tabNotes')}
                 count={notesCount}
                 onClick={() => setNotesOpen(true)}
               />
@@ -5489,6 +5486,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <HeaderActionButton
                 icon={QrCode}
                 label={tLink('headerTip')}
+                shortLabel={t('actionQr')}
                 onClick={() => setUpdateLinkOpen(true)}
               />
               {/* Roster ↔ external. One button whose meaning flips with the
@@ -5497,6 +5495,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <HeaderActionButton
                 icon={contact.external === true ? UserCheck : DoorOpen}
                 label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
+                shortLabel={contact.external === true ? t('actionActive') : t('actionExternal')}
                 onClick={() =>
                   contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
                 }
@@ -5508,7 +5507,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         <InsightsCard
           contact={contact}
           thresholds={team?.engagement_thresholds}
-          className="lg:col-span-3"
+          className="lg:col-span-2"
         />
       </div>
 
@@ -5553,7 +5552,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             }
 
             return (
-              <div className="flex items-stretch gap-1 border-b">
+              // Extra room above the strip: the header cards are heavy, and
+              // the page's default rhythm put the tabs right under them.
+              <div className="mt-10 flex items-stretch gap-1 border-b">
                 <div className="flex flex-1 gap-1 overflow-x-auto overflow-y-hidden no-scrollbar">
                   {editingTabs ? (
                     <SortableList
