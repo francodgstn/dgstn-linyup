@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: Data Processing Agreement
 description: How Linyup processes personal data on behalf of its customers.
-lastUpdated: 25 August 2026
+lastUpdated: 13 September 2026
 ---
 
 > **DRAFT — NOT YET REVIEWED BY A LAWYER.** This text is a starting point
@@ -48,6 +48,15 @@ and the staff you invite.
   cards. **We never store card numbers** — those are entered directly with
   Stripe;
 - documents you have people sign, with the version and timestamp of acceptance;
+- **health-insurance reimbursement data**, only where you enable the Tarif 595
+  plugin: a contact's AHV social security number, health insurer and insured
+  number, and the receipts (Rückforderungsbelege) and QR-bill invoices you issue
+  from them. The AHV number is subject to the restrictions of the Swiss AHV Act
+  on its systematic use; **you are responsible for the lawful basis for
+  collecting it** and for informing your contacts. We hold it only in a record
+  readable by your managers and owners, print it only on the receipts you issue,
+  and delete it when a contact is anonymised; issued receipts and invoices are
+  kept as your accounting records;
 - **any additional fields you choose to define.** Linyup lets you create custom
   fields, so the categories above cannot be exhaustive. You decide what goes in
   them, and you are responsible for the lawfulness of collecting it.
@@ -87,7 +96,7 @@ their performance**.
 | Sub-processor | Purpose | Location of processing |
 |---|---|---|
 | Google Cloud / Firebase (Google) | Hosting, database, file storage, serverless functions | Switzerland (`europe-west6`, Zurich) |
-| Brevo (Sendinblue SAS) | Transactional email **and SMS** | France (EU) |
+| Brevo (Sendinblue SAS) | Transactional email **and SMS**, including document attachments you choose to send (receipts, invoices) | France (EU) |
 | Stripe Payments Europe, Ltd. | Payment processing | Ireland (EU), with group processing in the United States |
 | PostHog, Inc. | Product analytics (session recording off) | EU region (Frankfurt); provider based in the United States |
 
