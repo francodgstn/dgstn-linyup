@@ -74,6 +74,7 @@ on:
           - gateway-data
           - ledger-ttl
           - partner-apps
+          - plan-grants
           - site-translations
           - subscription-lifecycle
           - team-public-profile

@@ -1304,12 +1304,15 @@ service cloud.firestore {
       // a session below. `ai_summary` (generateContactSummary, contacts/
       // aiSummary.ts) joins them for a different reason: it is a callable's
       // write, and a client that could set it would be labelling its own
-      // prose as the model's.
+      // prose as the model's. `held_plans`, `held_plan_type_ids` and
+      // `held_plans_next_change_at_ms` are `recomputeHeldPlans`'s alone
+      // (sync/heldPlans.ts): the list of plans the contact holds, which phase 3
+      // of docs/multi-plan-holdings.md makes an access input.
       allow update: if (canWriteContact(resource)
                        || hasRole('admin')
                        || (isSelfContact(contactId)
                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'last_seen_at', 'mobile_app'])))
-                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary']);
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms']);
       allow delete: if (canAccessContact(resource)
                           && hasTeamCapability(resource.data.teamId, 'contacts.delete'))
                        || hasRole('admin');
@@ -1467,6 +1470,19 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Plan grants — every holding that is not a Stripe subscription or a
+      // credit pack (docs/multi-plan-holdings.md). Rows are events, written
+      // ONLY by Cloud Functions and the import backfill; `recomputeHeldPlans`
+      // folds them into Contact.held_plans. Readable like credit_grants. Named
+      // in the catch-all's write exclusions below too — rules are additive.
+      match /plan_grants/{grantId} {
+        allow read: if canAccessContact(get(/databases/$(database)/documents/contacts/$(contactId)))
+                      || hasRole('admin')
+                      || isSelfContact(contactId)
+                      || sharesContactEmail(get(/databases/$(database)/documents/contacts/$(contactId)));
+        allow write: if false;
+      }
+
       // Push notification tokens — device registrations for the (not yet
       // built) mobile push feature. See `PushToken`
       // (packages/shared/src/types/push.ts) for why the doc id IS the token.
@@ -1536,6 +1552,7 @@ service cloud.firestore {
         allow write: if subcollection != 'credit_grants'
                       && subcollection != 'usage_windows'
                       && subcollection != 'plan_purchases'
+                      && subcollection != 'plan_grants'
                       && subcollection != 'goals'
                       && subcollection != 'subscription_history'
                       && subcollection != 'push_tokens'
