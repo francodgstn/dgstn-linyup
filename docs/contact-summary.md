@@ -38,11 +38,10 @@ tiles pinned to the bottom edge. Right, two thirds: the insights card — the
 summary block on top (absent, not empty, while the experiment is off), four
 figures under it (the three counters and the engagement band as a coloured dot
 with its name), and on the bottom edge the attendance chart, starting where the
-relationship did (the join, the first plan or the first attended week, at least
-twelve weeks and at most a year), with the plan periods drawn behind it as faint
-bands. Those bands replaced the
-relationship ribbon that used to open the Plans & Payments tab. Below `lg` the
-two stack. `page.tsx` keeps the profile card inline (it reads a dozen pieces of
+relationship did (the join or the first attended week, at least twelve weeks and
+at most a year). Attendance only: plan periods were briefly drawn behind it as
+bands and taken out again, because one small chart reads better telling one
+story. Below `lg` the two stack. `page.tsx` keeps the profile card inline (it reads a dozen pieces of
 page state); the insights card is its own file because it needs only the
 contact.
 

@@ -2262,8 +2262,8 @@ function MembershipTab({
   // question the tab is opened for — what are they on, and what happens next.
   // Current answers it and holds every action on what they hold; History lists
   // the plan periods; Payments is the money, as the list or as the statement.
-  // The plan periods are drawn behind the attendance chart in the header now
-  // (InsightsCard), and affiliations are the Affiliations tab's.
+  // The ribbon went rather than moved: plan periods live in History, and
+  // affiliations are the Affiliations tab's.
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2602,8 +2602,7 @@ function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | 
 
 /**
  * HISTORY — the plan periods from `subscription_history`, newest first, each
- * deletable as a record. The same query the header chart draws its plan bands
- * from, under the same key.
+ * deletable as a record.
  */
 function PlanHistorySegment({ contact, teamId }: { contact: Contact; teamId: string | null }) {
   // Styled confirmation — this delete had none at all before.
