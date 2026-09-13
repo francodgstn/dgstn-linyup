@@ -32,6 +32,19 @@ variable "deploy_sa_roles" {
     # Without these the deploy 403s on dailyTasks/weeklyReports/executeDelayedRule.
     "roles/cloudscheduler.admin",
     "roles/cloudtasks.admin",
+    # Pub/Sub-TRIGGERED functions. `handleBudgetNotification` is the first one
+    # this codebase has (v2 `onMessagePublished`), and the deploy failed on it
+    # with "Unexpected error creating Pub/Sub topic" — a 403, because nothing
+    # here had ever needed a Pub/Sub role: v2 `onSchedule` targets the function
+    # over HTTP through Cloud Scheduler and never touches a topic.
+    #
+    # ADMIN rather than editor: firebase-tools creates the topic AND wires the
+    # Eventarc trigger's subscription to it, which reaches topic IAM —
+    # `roles/pubsub.editor` has no `pubsub.topics.setIamPolicy`. This SA already
+    # holds run.admin, cloudtasks.admin and resourcemanager.projectIamAdmin, so
+    # this is not a step up in posture; it is the same deploy identity gaining
+    # the one product it was missing.
+    "roles/pubsub.admin",
     "roles/cloudbuild.builds.editor",
     "roles/artifactregistry.admin",
     "roles/iam.serviceAccountUser",
