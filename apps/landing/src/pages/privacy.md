@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: Privacy Policy
 description: How Linyup processes personal data for website visitors, customers, and members using the Linyup app.
-lastUpdated: 4 September 2026
+lastUpdated: 13 September 2026
 ---
 
 # 2. Privacy Policy (Datenschutzerklärung / Politique de confidentialité)
@@ -95,6 +95,7 @@ We keep personal data only as long as needed for the purposes above or as requir
 - Website logs: up to 30 days (Google Cloud's default log retention).
 - Contact and waitlist data: until your request is handled, or until you ask us to delete it.
 - Customer account and billing data: for the duration of the contract and for as long as legal retention duties (for example Swiss accounting law, generally 10 years for accounting records) require.
+- Documents a Customer issues through Linyup to its own contacts — health-insurance reimbursement receipts (Tarif 595) and invoices — are accounting records of the Customer and are kept for as long as the Customer's own retention duties require (generally 10 years); see Sections 2.9 and 2.10.
 
 ## 2.6 Your rights
 
@@ -127,6 +128,8 @@ When you use Linyup to manage your own people (your "contacts," such as your mem
 - you decide what data to collect and how to use it, and you are responsible for having a lawful basis and for informing your contacts;
 - we process that data only on your documented instructions, as set out in our [Data Processing Agreement](/dpa);
 - where you store data about minors, you are responsible for any required guardian consent.
+
+**Health-insurance receipts and invoices (Switzerland).** If you enable the Tarif 595 plugin to issue reimbursement receipts (Rückforderungsbelege) for your members' supplementary insurers, you may record, per contact, their **AHV social security number**, their health insurer and their insured number, because the Swiss XML 5.0 invoice standard and the insurers' guidance require them on the receipt. This is your decision as controller: you are responsible for the lawful basis for collecting the AHV number and for telling your members why you hold it. Linyup keeps these values in a record that only your managers and owners can read — never in the member's profile as shown in the member app, and never on any public page — and prints them only on the receipts you issue. A receipt or invoice, once issued, is a frozen document with the details printed on it; it is kept as your accounting record, can be downloaded by your managers, and is sent to the member as a PDF attachment by email through Brevo (Section 2.4) when you choose to send it.
 
 ## 2.10 The Linyup member app
 
@@ -168,6 +171,18 @@ with the app version it registered under. It addresses a device, not you.
 Turning notifications off in your phone's settings stops them, and a token that
 has stopped working is deleted.
 
+**Health-insurance receipts and invoices.** If your studio is recognised by a
+Swiss health-insurer label and uses Linyup to issue the reimbursement receipt
+(Rückforderungsbeleg) you hand to your supplementary insurer, your studio may
+record your **AHV number**, your insurer and your insured number, because the
+Swiss invoicing standard requires them on that document. Your studio decides
+to collect them and must tell you why; ask your studio if you have questions.
+These values are visible only to your studio's managers — they are not shown
+in the app or your member space. The receipt you receive (by email, as a PDF,
+or in your member space) prints them, together with your name, address and
+date of birth. The same applies to invoices your studio issues you with a
+Swiss QR-bill.
+
 **The camera** is used for exactly one thing: scanning your studio's check-in
 QR code. The permission is requested the first time you scan, the image is
 read on your device to find the code, and no photo or video is stored or
@@ -181,7 +196,11 @@ working for that whole window, and signing in and cancelling stops it — so an
 accidental tap costs you nothing. At the deadline your record is
 **anonymised** rather than deleted outright: the details that identify you are
 removed, while your studio's financial and consent records of things that
-actually happened survive with no person attached to them. Your studio is
+actually happened survive with no person attached to them. The insurer data
+described above (AHV number, insurer, insured number) is deleted with the
+identifying details. A receipt or invoice your studio has already issued to
+you is a frozen document and keeps what was printed on it, because your
+studio must keep it as an accounting record. Your studio is
 required by law to keep those, which is why they cannot simply vanish. If you
 want your studio to erase something beyond this, ask the studio directly — as
 controller, that is its decision to make.
