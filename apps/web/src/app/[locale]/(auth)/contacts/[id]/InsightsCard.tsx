@@ -10,8 +10,8 @@
  * in a row — the three counters and the engagement band as a coloured dot
  * with its name (it used to be a vertical meter beside the strip, a fill
  * level for something that has four words and no level) — then the
- * attendance chart on the card's bottom edge: the last year, with the plan
- * periods drawn behind it as bands (since 2026-09-13; they were a ribbon on
+ * attendance chart on the card's bottom edge: since the relationship began,
+ * up to a year, with the plan periods drawn behind it as bands (since 2026-09-13; they were a ribbon on
  * the Plans & Payments tab). Nothing here is new data; the summary is the one
  * write, and it goes through `generateContactSummary`.
  */
@@ -20,7 +20,15 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { httpsCallable } from 'firebase/functions'
-import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceArea } from 'recharts'
+import {
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  ReferenceArea,
+} from 'recharts'
 import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity } from 'lucide-react'
 import { toast } from 'sonner'
 import { computeEngagementBand, isoWeekKey } from '@linyup/shared'
@@ -67,7 +75,7 @@ export function InsightsCard({
       )}
       <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'mt-auto'}`}>
         <StatsRow contact={contact} thresholds={thresholds} />
-        <Sparkline contactId={contact.id} />
+        <Sparkline contact={contact} />
       </div>
     </div>
   )
@@ -209,9 +217,12 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** How much of the relationship the header chart shows: a year, so a plan
+/** The most of the relationship the header chart shows: a year, so a plan
  *  change — and whether attendance moved with it — is on screen. */
 const CHART_WEEKS = 52
+/** The fewest weeks it ever shows, so a brand-new contact still gets a readable
+ *  line rather than two points stretched across the card. */
+const MIN_CHART_WEEKS = 12
 /** The fewest weeks a plan band needs before it carries the plan's name. */
 const BAND_LABEL_MIN_WEEKS = 8
 /** The subscription colour the old relationship ribbon gave its plan lane. */
@@ -266,21 +277,51 @@ function planBands(
   })
 }
 
-/** Attendance over the last year, bleeding to the card edges, with the plan
- *  periods drawn behind it as faint bands — so "did they stop coming when the
- *  plan ended" is one glance instead of two tabs. Subscriptions only;
- *  affiliations are their own tab's. A fixed 128px, a fixed 32px under the
- *  counters: the area fill never climbs up to the figures, and the gap never
- *  balloons either, because the card's spare height goes to the summary block
- *  (see InsightsCard). */
-function Sparkline({ contactId }: { contactId: string }) {
-  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId, CHART_WEEKS)
-  const { data: history = [] } = useSubscriptionHistory(contactId)
-  const chartData = weeklyReports.map((r) => ({
+/**
+ * Where the chart starts: the earliest week anything happened — they joined, a
+ * plan started, or they attended — but never fewer than MIN_CHART_WEEKS from
+ * the end. A fixed year drew a contact who joined two months ago as ten months
+ * of flat line, with the weeks that mattered squeezed against the right edge.
+ * ISO week keys are zero-padded, so they order as strings; a start before the
+ * window lands on its first week.
+ */
+function chartStartIndex(
+  weeks: readonly { week: string; sessions: number }[],
+  history: readonly { start_date?: unknown }[],
+  contact: Pick<Contact, 'created_at'>
+): number {
+  if (!weeks.length) return 0
+  const keys = weeks.map((w) => w.week)
+  const candidates = [contact.created_at, ...history.map((h) => h.start_date)]
+    .map((ts) => toDate(ts))
+    .filter((d): d is Date => !!d)
+    .map((d) => {
+      const key = isoWeekKey(d)
+      const i = keys.findIndex((k) => k >= key)
+      return i === -1 ? keys.length - 1 : i
+    })
+  const firstAttended = weeks.findIndex((w) => w.sessions > 0)
+  if (firstAttended !== -1) candidates.push(firstAttended)
+  const earliest = candidates.length ? Math.min(...candidates) : keys.length - MIN_CHART_WEEKS
+  return Math.max(0, Math.min(earliest, keys.length - MIN_CHART_WEEKS))
+}
+
+/** Attendance since the relationship started, up to a year, bleeding to the
+ *  card edges, with the plan periods drawn behind it as faint bands — so "did
+ *  they stop coming when the plan ended" is one glance instead of two tabs.
+ *  Subscriptions only; affiliations are their own tab's. A fixed 128px, a fixed
+ *  32px under the counters: the area fill never climbs up to the figures, and
+ *  the gap never balloons either, because the card's spare height goes to the
+ *  summary block (see InsightsCard). */
+function Sparkline({ contact }: { contact: Contact }) {
+  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contact.id, CHART_WEEKS)
+  const { data: history = [] } = useSubscriptionHistory(contact.id)
+  const allWeeks = weeklyReports.map((r) => ({
     week: r.iso_week,
     label: isoWeekLabel(r.iso_week),
     sessions: r.sessions_count,
   }))
+  const chartData = allWeeks.slice(chartStartIndex(allWeeks, history, contact))
   const bands = planBands(
     history,
     chartData.map((d) => d.week)
@@ -304,6 +345,9 @@ function Sparkline({ contactId }: { contactId: string }) {
             {/* The week KEY on the axis, not its label: a band's edges are
                 week keys, and a Monday's short date can repeat across years. */}
             <XAxis dataKey="week" hide />
+            {/* Headroom above the tallest week, so a peak never runs into the
+                card's edge or a band's plan name. */}
+            <YAxis hide domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax * 1.35))]} />
             {/* Before the line, so the attendance reads over the bands. */}
             {bands.map((b) => (
               <ReferenceArea
