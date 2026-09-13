@@ -190,6 +190,20 @@ describe('participants_count — ONE writer', () => {
     ].filter((rel) => /total_sessions:\s*(FieldValue\.)?increment\(/.test(code(read(FN, rel))))
     assert.deepEqual(writers, ['analytics/index.ts'])
   })
+
+  it('last_session_at only moves forward — decided inside a transaction', () => {
+    // It was written as whichever row's trigger ran last. An import delivers
+    // years of rows in any order, and contacts who trained last week came out
+    // "Stopped" with a last session years old. The rule itself is unit-tested
+    // in lastSession.test.ts; this pins that the trigger asks it, in a tx.
+    assert.match(trigger, /runTransaction\(/, 'the contact update must run in a transaction')
+    assert.match(trigger, /advancesLastSession\(/, 'last_session_at must go through advancesLastSession')
+    assert.doesNotMatch(
+      trigger,
+      /counterUpdate\.last_session_at\s*=\s*sessionStart/,
+      'an unconditional last_session_at write is back — the last trigger to run would decide it again'
+    )
+  })
 })
 
 describe('CONFIRMING A BOOKING — the same fields, whichever page you are on', () => {

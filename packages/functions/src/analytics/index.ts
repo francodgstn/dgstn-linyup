@@ -22,6 +22,7 @@ import {
 } from '@linyup/shared'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
 import { dispatchTenantJob } from '../utils/tenantFanOut'
+import { advancesLastSession } from './lastSession'
 
 // The acquisition funnel only ever advances forward by design, so a stage that
 // moves to a LOWER ordinal is a deliberate manual correction (e.g. undoing a
@@ -599,9 +600,6 @@ export const trackSessionParticipants = onDocumentWritten(
     const counterUpdate: Record<string, unknown> = {
       total_sessions: FieldValue.increment(activityEvent === 'session_participant_add' ? 1 : -1),
     }
-    if (activityEvent === 'session_participant_add' && sessionStart) {
-      counterUpdate.last_session_at = sessionStart
-    }
     // First attendance promotes the acquisition stage trial_booked → trial_attended.
     // Sticky high-water mark: only advance on attendance, never regress on removal.
     // A STAGE-LESS contact (off-funnel form/shop lead) attending enters the funnel
@@ -619,7 +617,27 @@ export const trackSessionParticipants = onDocumentWritten(
       counterUpdate.provisional = FieldValue.delete()
       counterUpdate.provisional_expires_at = FieldValue.delete()
     }
-    await to(db.collection('contacts').doc(contactId).update(counterUpdate))
+    // THE LAST SESSION ONLY MOVES FORWARD. This used to write the handed row's
+    // session start unconditionally, so the trigger that ran LAST decided it —
+    // right in daily use, arbitrary under an import, which delivers years of
+    // rows in any order (contacts training last week read "Stopped"). Decided
+    // against the value re-read INSIDE the transaction, so two triggers racing
+    // cannot put the older date back. See analytics/lastSession.ts.
+    const contactRef = db.collection('contacts').doc(contactId)
+    await to(
+      db.runTransaction(async (tx) => {
+        const current = await tx.get(contactRef)
+        if (!current.exists) return
+        const update: Record<string, unknown> = { ...counterUpdate }
+        if (
+          activityEvent === 'session_participant_add' &&
+          advancesLastSession(current.data()?.last_session_at, sessionStart)
+        ) {
+          update.last_session_at = sessionStart
+        }
+        tx.update(contactRef, update)
+      })
+    )
 
     const description =
       activityEvent === 'session_participant_add'
