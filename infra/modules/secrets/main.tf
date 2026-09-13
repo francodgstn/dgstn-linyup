@@ -70,9 +70,18 @@ resource "google_secret_manager_secret_iam_member" "admin_viewer" {
 # Same secretAccessor grant, for identities beyond the nominal runtime SA. Kept
 # as its own resource so the existing accessor bindings above are not rekeyed
 # (that would destroy and recreate all of them).
+#
+# `distinct()` on BOTH lists is load-bearing, not tidiness. These are
+# hand-maintained lists in three environment files, and a secret listed twice —
+# which has happened, by two edits each adding it with its own comment — makes
+# this `for` expression produce the same map key twice and FAILS THE PLAN with
+# "Duplicate object key". Every other resource in this module keys off
+# `toset(...)`, which dedupes silently, so a duplicate is invisible until it
+# reaches exactly this one. A list that is merely untidy should not be able to
+# stop an apply.
 resource "google_secret_manager_secret_iam_member" "extra_accessor" {
   for_each = {
-    for pair in setproduct(var.secret_ids, var.extra_accessor_members) :
+    for pair in setproduct(distinct(var.secret_ids), distinct(var.extra_accessor_members)) :
     "${pair[0]}|${pair[1]}" => { secret_id = pair[0], member = pair[1] }
   }
 

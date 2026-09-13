@@ -76,10 +76,13 @@ variable "secret_ids" {
     "smtp-encryption-key",
     "brevo-api-key",        # Brevo transactional API (all outbound mail)
     "brevo-webhook-secret", # authenticates Brevo's bounce/spam event callbacks
-    "deepl-api-key",        # DeepL machine translation (public site/embed localization)
+    # DeepL machine translation for public sites + embed widgets
+    # (docs/site-translations.md). Listed ONCE: a duplicate here is not
+    # harmless — modules/secrets builds a setproduct MAP off this list and
+    # Terraform fails the plan with "Duplicate object key".
+    "deepl-api-key",
     "posthog-api-key",
     "ai-assistant-unlock-key", # strong key to unlock the locked AI assistant plugin
-    "deepl-api-key",           # DeepL machine translation for public sites (docs/site-translations.md)
   ]
 }
 
@@ -93,16 +96,15 @@ variable "admin_writable_secret_ids" {
   default = [
     "brevo-api-key",
     "brevo-webhook-secret",
-    "deepl-api-key", # Translation (Settings → Translation)
+    # Settings → Translation. Without this the save fails with
+    # "PERMISSION_DENIED: secretmanager.versions.add".
+    "deepl-api-key",
     # Payments (Settings → Payments): the key plus BOTH webhook signing secrets.
     # stripe-connect-webhook-secret is the one that was empty in every
     # environment, so member→studio payments never confirmed.
     "stripe-secret-key",
     "stripe-webhook-secret",
     "stripe-connect-webhook-secret",
-    # Settings → Translation: the DeepL key. Without this the save fails with
-    # "PERMISSION_DENIED: secretmanager.versions.add".
-    "deepl-api-key",
   ]
 }
 

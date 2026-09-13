@@ -110,16 +110,15 @@ variable "admin_writable_secret_ids" {
   default = [
     "brevo-api-key",
     "brevo-webhook-secret",
-    "deepl-api-key", # Translation (Settings → Translation)
+    # Settings → Translation. Without this the save fails with
+    # "PERMISSION_DENIED: secretmanager.versions.add".
+    "deepl-api-key",
     # Payments (Settings → Payments): the key plus BOTH webhook signing secrets.
     # stripe-connect-webhook-secret is the one that was empty in every
     # environment, so member→studio payments never confirmed.
     "stripe-secret-key",
     "stripe-webhook-secret",
     "stripe-connect-webhook-secret",
-    # Settings → Translation: the DeepL key. Without this the save fails with
-    # "PERMISSION_DENIED: secretmanager.versions.add".
-    "deepl-api-key",
   ]
 }
 
