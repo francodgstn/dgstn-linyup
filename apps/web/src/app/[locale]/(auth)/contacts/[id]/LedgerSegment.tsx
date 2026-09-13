@@ -1,13 +1,15 @@
 'use client'
 
-// THE OVERVIEW SEGMENT — one dated stream answering the question that used to
+// THE STATEMENT — the second view of the Payments segment, and the Overview
+// segment until 2026-09-13. One dated stream answering the question that used to
 // require switching tabs and searching by hand:
 //
 //     "in period X, what did this contact pay for, and what plan or allowance
 //      did they hold?"
 //
 // It is READ-ONLY on purpose. Every action — assign a plan, grant credits, record
-// or refund a payment — stays on the Plans and Payments segments. Duplicating the
+// or refund a payment — stays on the Current segment and the payments list.
+// Duplicating the
 // dialogs here would re-create, at a new address, the very defect this tab was
 // merged to remove.
 //

@@ -1091,7 +1091,14 @@
     "goalSaveFailed": "Dieses Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "goalEvalSaveFailed": "Diese Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "affiliationValidUntil": "Gültig bis {date}",
-    "segReceipts": "Belege"
+    "segReceipts": "Belege",
+    "segCurrent": "Aktuell",
+    "segHistory": "Verlauf",
+    "paymentsViewList": "Liste",
+    "paymentsViewStatement": "Auszug",
+    "currentNextCharge": "Nächste Belastung",
+    "currentLastPayment": "Letzte Zahlung",
+    "currentCreditsLeft": "Lektionen übrig"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",

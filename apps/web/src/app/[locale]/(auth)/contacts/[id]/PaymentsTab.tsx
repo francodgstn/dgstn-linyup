@@ -6,8 +6,8 @@
 // contact (same updatePaymentRecord callable as the general payments page).
 //
 // It no longer surfaces the Stripe recurring subscriptions: that section was
-// rendered here AND on the Plans side, and now lives once, with Plans — see
-// components/contacts/MemberSubscriptionsSection.tsx.
+// rendered here AND on the Plans side, and now lives once, on the Current
+// segment — see components/contacts/MemberSubscriptionsSection.tsx.
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -83,7 +83,7 @@ export function PaymentsTab({
     <div className="p-4 sm:p-5 space-y-6">
       {/* The "Stripe billing" section used to be repeated here, identical to the
           copy on the Plans segment — same hook, same heading, same freeze/resume/
-          cancel buttons. It now lives once, with Plans, because it describes the
+          cancel buttons. It now lives once, on Current, because it describes the
           recurring AGREEMENT (what will be billed next month) rather than money
           that has already moved. Its heading key `memberSubscriptionsHeading` is
           left unused in the locale files rather than deleted: the four message

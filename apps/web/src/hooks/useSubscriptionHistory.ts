@@ -8,10 +8,9 @@
 // "which plan did they hold on 14 March" is not answerable from it. Anything
 // asking a question about a past date has to come here.
 //
-// Shared between the Plans segment (which lists it), the relationship ribbon
-// (which draws it as spans) and the Overview ledger (which merges it with
-// payments) — one query key, so the three cost one read between them rather than
-// three.
+// Shared between the History segment (which lists it) and the payments statement
+// (which merges it with payments) — one query key, so they cost one read between
+// them rather than one each.
 //
 // Known limit, worth carrying to any reader: the writer keys on the contact's
 // PRIMARY plan, so a contact who held two plans at once has an incomplete record

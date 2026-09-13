@@ -10,8 +10,8 @@
  * in a row — the three counters and the engagement band as a coloured dot
  * with its name (it used to be a vertical meter beside the strip, a fill
  * level for something that has four words and no level) — then the
- * attendance sparkline on the card's bottom edge. The foot of the old single
- * header card, rearranged. Nothing here is new data; the summary is the one
+ * attendance chart on the card's bottom edge, since the relationship began
+ * and up to a year. Nothing here is new data; the summary is the one
  * write, and it goes through `generateContactSummary`.
  */
 
@@ -19,10 +19,17 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { httpsCallable } from 'firebase/functions'
-import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import {
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from 'recharts'
 import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity } from 'lucide-react'
 import { toast } from 'sonner'
-import { computeEngagementBand } from '@linyup/shared'
+import { computeEngagementBand, isoWeekKey } from '@linyup/shared'
 import type { Contact, EngagementThresholds } from '@linyup/shared'
 import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
@@ -65,7 +72,7 @@ export function InsightsCard({
       )}
       <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'mt-auto'}`}>
         <StatsRow contact={contact} thresholds={thresholds} />
-        <Sparkline contactId={contact.id} />
+        <Sparkline contact={contact} />
       </div>
     </div>
   )
@@ -207,16 +214,55 @@ const tooltipStyle = {
   color: 'hsl(var(--card-foreground))',
 }
 
-/** Attendance over the last 16 weeks — bleeds to the card edges, no padding.
- *  A fixed 128px, a fixed 32px under the counters: the area fill never
- *  climbs up to the figures, and the gap never balloons either, because the
- *  card's spare height goes to the summary block (see InsightsCard). */
-function Sparkline({ contactId }: { contactId: string }) {
-  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contactId)
-  const chartData = weeklyReports.map((r) => ({
+/** The most of the relationship the header chart shows: a year, enough to see
+ *  a habit form or fade. */
+const CHART_WEEKS = 52
+/** The fewest weeks it ever shows, so a brand-new contact still gets a readable
+ *  line rather than two points stretched across the card. */
+const MIN_CHART_WEEKS = 12
+
+/**
+ * Where the chart starts: the week they joined or first attended, whichever
+ * came first, but never fewer than MIN_CHART_WEEKS from the end. A fixed year
+ * drew a contact who joined two months ago as ten months of flat line, with the
+ * weeks that mattered squeezed against the right edge. ISO week keys are
+ * zero-padded, so they order as strings; a start before the window lands on its
+ * first week.
+ */
+function chartStartIndex(
+  weeks: readonly { week: string; sessions: number }[],
+  contact: Pick<Contact, 'created_at'>
+): number {
+  if (!weeks.length) return 0
+  const keys = weeks.map((w) => w.week)
+  const candidates: number[] = []
+  const joined = toDate(contact.created_at)
+  if (joined) {
+    const key = isoWeekKey(joined)
+    const i = keys.findIndex((k) => k >= key)
+    candidates.push(i === -1 ? keys.length - 1 : i)
+  }
+  const firstAttended = weeks.findIndex((w) => w.sessions > 0)
+  if (firstAttended !== -1) candidates.push(firstAttended)
+  const earliest = candidates.length ? Math.min(...candidates) : keys.length - MIN_CHART_WEEKS
+  return Math.max(0, Math.min(earliest, keys.length - MIN_CHART_WEEKS))
+}
+
+/** Attendance since the relationship began, up to a year, bleeding to the card
+ *  edges. ATTENDANCE ONLY, by decision (2026-09-13): plan periods drawn behind
+ *  it as bands made one small chart carry two stories, and the plans have their
+ *  own place on the Plans & Payments tab. A fixed 128px, a fixed 32px under the
+ *  counters: the area fill never climbs up to the figures, and the gap never
+ *  balloons either, because the card's spare height goes to the summary block
+ *  (see InsightsCard). */
+function Sparkline({ contact }: { contact: Contact }) {
+  const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contact.id, CHART_WEEKS)
+  const allWeeks = weeklyReports.map((r) => ({
+    week: r.iso_week,
     label: isoWeekLabel(r.iso_week),
     sessions: r.sessions_count,
   }))
+  const chartData = allWeeks.slice(chartStartIndex(allWeeks, contact))
 
   return (
     <div className="mt-8 h-32 shrink-0">
@@ -233,18 +279,24 @@ function Sparkline({ contactId }: { contactId: string }) {
                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="label" hide />
+            {/* The week KEY on the axis, not its label: a Monday's short date
+                can repeat across years. The tooltip shows the label. */}
+            <XAxis dataKey="week" hide />
+            {/* Headroom above the tallest week, so a peak never runs into the
+                card's edge. */}
+            <YAxis hide domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax * 1.35))]} />
             <Tooltip
               contentStyle={tooltipStyle}
-              content={({ active, payload, label }) => {
+              content={({ active, payload }) => {
                 if (!active || !payload?.length) return null
+                const row = payload[0].payload as { label: string }
                 return (
                   <div style={{ ...tooltipStyle, textAlign: 'center', lineHeight: 1.4 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#6366f1' }}>
                       {payload[0].value}
                     </div>
                     <div style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }}>
-                      {label}
+                      {row.label}
                     </div>
                   </div>
                 )
