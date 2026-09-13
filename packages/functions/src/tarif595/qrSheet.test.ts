@@ -22,8 +22,12 @@ describe('tarif595 QR sheet — the encoding the Forum sample uses', () => {
     )
     assert.equal(chunks.length, QR_SHEET_MAX_CODES)
     assert.ok(chunks.every((c) => c.length === QR_SHEET_CHUNK_CHARS))
-    const xml = decodeQrSheetChunks(chunks).toString('utf8')
-    const original = readFileSync(join(FIXTURES, 'sample-G500_05_TP_KVG_de.xml'), 'utf8')
+    // Line endings normalised on both sides: the checkout is CRLF on Windows and
+    // LF on CI, and the XML inside the codes carries its own — a raw length
+    // comparison drifts by the newline count and nothing else.
+    const lf = (s: string) => s.replace(/\r\n/g, '\n')
+    const xml = lf(decodeQrSheetChunks(chunks).toString('utf8'))
+    const original = lf(readFileSync(join(FIXTURES, 'sample-G500_05_TP_KVG_de.xml'), 'utf8'))
     // The sample PDF was generated from the same request as the sample XML but
     // in a separate run (its guid differs), so the proof is structural: a
     // complete invoice:request of the same size and the same patient.
