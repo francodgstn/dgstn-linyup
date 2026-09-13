@@ -322,8 +322,23 @@ function drawReimbursementForm(doc: PDFKit.PDFDocument, r: Tarif595ReceiptDoc, L
 export const QR_CODES_PER_PAGE = 6
 
 async function drawQrSheet(doc: PDFKit.PDFDocument, r: Tarif595ReceiptDoc, chunks: string[], L: Labels): Promise<void> {
+  // RGB, NO ALPHA (pngjs colorType 2, passed through qrcode's rendererOpts):
+  // PDFKit embeds a PNG with an alpha channel through an ASYNC zlib decode
+  // (`splitAlphaChannel`), and allocates the SMask object numbers in whatever
+  // order those callbacks fire — so two renders of the same receipt came out
+  // with the images swapped and different bytes, which is exactly what the
+  // resume-after-crash property forbids. Without alpha the embed is
+  // synchronous and the object order is the call order.
   const images = await Promise.all(
-    chunks.map((c) => QRCode.toBuffer(c, { errorCorrectionLevel: 'M', type: 'png', margin: 1, scale: 4 }))
+    chunks.map((c) =>
+      QRCode.toBuffer(c, {
+        errorCorrectionLevel: 'M',
+        type: 'png',
+        margin: 1,
+        scale: 4,
+        rendererOpts: { colorType: 2 } as QRCode.QRCodeToBufferOptions['rendererOpts'],
+      })
+    )
   )
   const size = 200
   const colX = [MARGIN + 30, MARGIN + 30 + size + 40]

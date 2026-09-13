@@ -448,6 +448,10 @@ export const TARIF595_SETTINGS_SUBCOLLECTION = 'tarif595_settings'
 export const TARIF595_SETTINGS_DOC = 'config'
 export const TARIF595_CONTACTS_SUBCOLLECTION = 'tarif595_contacts'
 export const TARIF595_RECEIPTS_SUBCOLLECTION = 'tarif595_receipts'
+/** teams/{teamId}/tarif595_jobs/{jobId} — bulk-issue progress documents
+ *  (Tarif595BulkJob). Manager+ read (the client follows the one it started);
+ *  Cloud Functions only write. A LOG list: the client reads the newest few. */
+export const TARIF595_JOBS_SUBCOLLECTION = 'tarif595_jobs'
 /** teams/{teamId}/counters/tarif595_receipts — `{last, year}`, an ABSOLUTE
  *  value written in the same transaction as the receipt it numbers. */
 export const TEAM_TARIF595_RECEIPT_COUNTER_DOC = 'tarif595_receipts'

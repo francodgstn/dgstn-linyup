@@ -807,7 +807,12 @@ plugin; `packages/functions/src/pdf/` is the shared PDF + Swiss QR-bill rail.
 Issuing is two-phase (number allocated as an absolute counter value inside the
 transaction that freezes the snapshot; files rendered from the frozen snapshot
 afterwards, so a crash resumes to byte-identical output). Creation is
-plugin-gated, download/void/email are not. Full doc: `docs/tarif-595.md`.
+plugin-gated, download/void/email are not. The year-end **bulk run** is a
+job (`tarif595_jobs`) drained by Cloud Task rounds through the SAME issue
+function; the member's own copy is the Space's contact-session callable
+`listMyTarif595Receipts` plus a self-write arm on `tarif595_contacts` limited
+to `TARIF595_CONTACT_SELF_FIELDS`; anonymisation deletes that row and keeps
+the receipts. Full doc: `docs/tarif-595.md`.
 The sibling `qr-invoices` plugin (an invoice with a Swiss QR-bill, the ONE
 recorded AR exception) sits on the same rails; "mark as paid" records the
 payment through `writeManualPaymentEvent`, and the invoice itself posts nothing.

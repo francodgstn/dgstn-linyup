@@ -6,17 +6,20 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 
-// Security-rules test for the Tarif 595 plugin's three collections and its
-// counter (teams/{id}/tarif595_settings, tarif595_contacts, tarif595_receipts,
-// counters/tarif595_receipts).
+// Security-rules test for the Tarif 595 plugin's collections and its counter
+// (teams/{id}/tarif595_settings, tarif595_contacts, tarif595_receipts,
+// tarif595_jobs, counters/tarif595_receipts).
 //
-// The matrix: settings and per-contact insurer data are MANAGER+ on both axes
-// (the person mapping offerings is the manager; AHV numbers are not coach
-// data); receipts are manager+ READ and nobody's write (Cloud Functions only —
-// a receipt is voided through a callable, never edited); the counter is member
-// read, nobody's write. Everyone outside the team is refused everywhere.
+// The matrix: settings are MANAGER+ on both axes (the person mapping offerings
+// is the manager); per-contact insurer data is manager+ AND the contact's own
+// session on their own row, for the fields a member can know (AHV number,
+// insurer name, insured number) and nothing else — never the insurer GLN, the
+// sex override or the guardian, never another contact's row, never a delete;
+// receipts and jobs are manager+ READ and nobody's write (Cloud Functions
+// only); the counter is member read, nobody's write. Everyone outside the
+// team is refused everywhere.
 //
 //   pnpm --filter @linyup/functions test:rules
 
@@ -34,16 +37,23 @@ const RULES = findRules()
 const TEAM = 'team595'
 const OTHER_TEAM = 'team595b'
 const CONTACT = 'contact595'
+const OTHER_CONTACT = 'contact595b'
 const RECEIPT = 'receipt595'
+const JOB = 'job595'
 
 let testEnv: RulesTestEnvironment
 
 const asUser = (uid: string) => testEnv.authenticatedContext(uid).firestore()
 type Db = ReturnType<typeof asUser>
 
+/** The Space's custom-token session — the claims buildContactSession mints. */
+const asContact = (contactId = CONTACT, teamId = TEAM, expiresIn = 3_600_000) =>
+  testEnv.authenticatedContext('contact:' + contactId, { contactId, teamId, sessionExpires: Date.now() + expiresIn }).firestore()
+
 const settingsDoc = (db: Db, team = TEAM) => doc(db, 'teams', team, 'tarif595_settings', 'config')
-const contactDoc = (db: Db, team = TEAM) => doc(db, 'teams', team, 'tarif595_contacts', CONTACT)
+const contactDoc = (db: Db, team = TEAM, contactId = CONTACT) => doc(db, 'teams', team, 'tarif595_contacts', contactId)
 const receiptDoc = (db: Db, team = TEAM) => doc(db, 'teams', team, 'tarif595_receipts', RECEIPT)
+const jobDoc = (db: Db, team = TEAM) => doc(db, 'teams', team, 'tarif595_jobs', JOB)
 const counterDoc = (db: Db, team = TEAM) => doc(db, 'teams', team, 'counters', 'tarif595_receipts')
 
 describe('firestore.rules — tarif595 access', function () {
@@ -66,6 +76,7 @@ describe('firestore.rules — tarif595 access', function () {
       await setDoc(settingsDoc(db), { language: 'de', numbering: { prefix: '595' }, offerings: {} })
       await setDoc(contactDoc(db), { ahv_number: '7569217076985' })
       await setDoc(receiptDoc(db), { number: '595-2027-00001', status: 'issued', contact_id: CONTACT })
+      await setDoc(jobDoc(db), { status: 'running', total: 10, processed: 0 })
       await setDoc(counterDoc(db), { last: 1, year: '2027' })
       for (const [uid, role] of [
         ['owner595', 'owner'],
@@ -118,5 +129,62 @@ describe('firestore.rules — tarif595 access', function () {
     const db = testEnv.unauthenticatedContext().firestore() as unknown as Db
     await assertFails(getDoc(settingsDoc(db)))
     await assertFails(getDoc(receiptDoc(db)))
+    await assertFails(getDoc(jobDoc(db)))
+  })
+
+  // ── Bulk jobs: manager+ read, nobody's write ─────────────────────────────
+  it('jobs — a manager reads, nobody writes, a coach sees nothing', async () => {
+    await assertSucceeds(getDoc(jobDoc(asUser('manager595'))))
+    await assertFails(updateDoc(jobDoc(asUser('owner595')), { status: 'completed' }))
+    await assertFails(getDoc(jobDoc(asUser('coach595'))))
+    await assertFails(getDoc(jobDoc(asUser('outsider595'))))
+    await assertFails(getDoc(jobDoc(asContact())))
+  })
+
+  // ── The contact's own insurer row, from the Space ────────────────────────
+  it('a contact session reads its OWN row and writes the member-known fields', async () => {
+    const db = asContact()
+    await assertSucceeds(getDoc(contactDoc(db)))
+    await assertSucceeds(updateDoc(contactDoc(db), { ahv_number: '7569217076985', insurer_name: 'Helsana', insured_number: '123', updated_at: new Date() }))
+    await assertSucceeds(setDoc(contactDoc(db), { insured_number: '456' }, { merge: true }))
+  })
+
+  it('a contact session CREATES its own row with the member-known fields only', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(contactDoc(ctx.firestore() as unknown as Db))
+    })
+    const db = asContact()
+    await assertFails(setDoc(contactDoc(db), { ahv_number: '7569217076985', insurer_gln: '7601003000012' }))
+    await assertSucceeds(setDoc(contactDoc(db), { ahv_number: '7569217076985', insurer_name: 'CSS', updated_at: new Date() }))
+  })
+
+  it('a contact session never writes the manager-only fields — alone or beside an allowed one', async () => {
+    const db = asContact()
+    await assertFails(updateDoc(contactDoc(db), { insurer_gln: '7601003000012' }))
+    await assertFails(updateDoc(contactDoc(db), { sex_override: 'male' }))
+    await assertFails(updateDoc(contactDoc(db), { guardian: { familyname: 'X', givenname: 'Y' } }))
+    await assertFails(updateDoc(contactDoc(db), { updated_by: 'manager595' }))
+    // A partial update is ONE allow/deny decision: the allowed key does not
+    // carry the forbidden one through.
+    await assertFails(updateDoc(contactDoc(db), { ahv_number: '7569217076985', sex_override: 'male' }))
+    // Rewriting the whole document is checked on the keys it touches, so a
+    // full setDoc without merge that includes a forbidden key is refused too.
+    await assertFails(setDoc(contactDoc(db), { ahv_number: '7569217076985', insurer_gln: '7601003000012' }))
+  })
+
+  it('a contact session never deletes its row, never touches another contact, another team, a receipt or the settings', async () => {
+    const db = asContact()
+    await assertFails(deleteDoc(contactDoc(db)))
+    await assertFails(getDoc(contactDoc(db, TEAM, OTHER_CONTACT)))
+    await assertFails(setDoc(contactDoc(db, TEAM, OTHER_CONTACT), { ahv_number: '7569217076985' }))
+    await assertFails(getDoc(contactDoc(asContact(CONTACT, OTHER_TEAM), TEAM)))
+    await assertFails(getDoc(receiptDoc(db)))
+    await assertFails(getDoc(settingsDoc(db)))
+  })
+
+  it('an expired contact session is refused', async () => {
+    const db = asContact(CONTACT, TEAM, -1_000)
+    await assertFails(getDoc(contactDoc(db)))
+    await assertFails(updateDoc(contactDoc(db), { insured_number: '9' }))
   })
 })

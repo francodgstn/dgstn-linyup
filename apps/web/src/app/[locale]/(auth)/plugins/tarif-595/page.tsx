@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 import { useTarif595Config, useTarif595Receipts, type Tarif595ReceiptRow } from '@/plugins/tarif-595/hooks'
 import { ReceiptActions, ReceiptStatusBadge } from '@/plugins/tarif-595/ReceiptActions'
+import { BulkIssueCard } from '@/plugins/tarif-595/BulkIssueCard'
 
 // The position table is not needed to answer "is the config complete enough
 // to try" — every position the config could name is treated as valid here,
@@ -149,6 +150,8 @@ export default function Tarif595PluginPage() {
           </CardContent>
         </Card>
       )}
+
+      {canManage && <BulkIssueCard teamId={teamId} setupDone={legalDone && configDone} />}
 
       <Card>
         <CardHeader>

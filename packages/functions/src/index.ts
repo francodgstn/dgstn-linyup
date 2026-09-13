@@ -469,12 +469,21 @@ export { setChartTemplate } from './accounting/settings'
 // Tarif 595 (health-insurance receipts plugin) — creation is plugin-gated;
 // download, void and re-send of an existing receipt are not (docs/plugins.md,
 // "The server gate"). No finance journal row: a receipt is an attestation.
+// `runTarif595BulkIssue` is the Cloud Tasks drain behind startTarif595BulkIssue
+// (one round of contacts per task, chaining itself); Firebase creates its queue
+// under this name, which is why bulk.ts addresses it as
+// locations/europe-west6/functions/runTarif595BulkIssue.
+// `listMyTarif595Receipts` is the member's own copy — a contact-session
+// callable, like listMyContactPayments.
 export {
   previewTarif595Receipt,
   issueTarif595Receipt,
+  startTarif595BulkIssue,
+  runTarif595BulkIssue,
   voidTarif595Receipt,
   downloadTarif595Receipt,
   emailTarif595Receipt,
+  listMyTarif595Receipts,
 } from './tarif595'
 
 // QR-bill invoices (plugin) — creation is plugin-gated; void, download, email
