@@ -194,6 +194,9 @@ export const CONTACT_CREDIT_GRANTS_SUBCOLLECTION = 'credit_grants'
 // the payment ref. Functions-only writes; read to enforce
 // `SubscriptionPrice.maxPurchasesPerContact`. See PlanPurchase.
 export const CONTACT_PLAN_PURCHASES_SUBCOLLECTION = 'plan_purchases'
+// A contact's plan GRANTS — every holding that is not a Stripe subscription
+// or a credit pack (docs/multi-plan-holdings.md). Cloud Functions only.
+export const CONTACT_PLAN_GRANTS_SUBCOLLECTION = 'plan_grants'
 export const SUBSCRIPTION_TRANSITIONS_SUBCOLLECTION = 'subscription_transitions'
 // Affiliation set — a contact may hold several (club + federation licence + grading).
 export const CONTACT_AFFILIATIONS_SUBCOLLECTION = 'affiliations'

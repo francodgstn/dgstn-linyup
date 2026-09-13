@@ -1,5 +1,6 @@
 import type { RankRef } from './team'
 import type { Timestamp } from './common'
+import type { HeldPlan } from './planHoldings'
 import type { AffiliationSummary } from './affiliation'
 import type { ContactFilter } from '../utils/contactFilter'
 
@@ -419,6 +420,14 @@ export interface Contact {
   // to change shape for it. Wiped with the identifying fields on anonymisation:
   // it is prose ABOUT the person.
   ai_summary?: ContactAiSummary
+
+  // Plan holdings (docs/multi-plan-holdings.md) — the LIST of plans this contact
+  // holds, from plan grants, Stripe subscriptions and credit packs. Written
+  // only by `recomputeHeldPlans` (functions/src/sync/heldPlans.ts) and denied
+  // to every client write by the rules. Nothing reads it before phase 3.
+  held_plans?: HeldPlan[]
+  held_plan_type_ids?: string[]
+  held_plans_next_change_at_ms?: number | null
 
   // Coaching (denormalized by the onGoalWrite / check-in triggers).
   //

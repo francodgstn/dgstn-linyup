@@ -66,6 +66,7 @@
     "backfill:booking-joined-at": "tsx scripts/backfill-booking-joined-at.ts",
     "backfill:contact-counts": "tsx scripts/backfill-contact-counts.ts",
     "backfill:partner-apps": "tsx scripts/backfill-partner-apps.ts",
+    "backfill:plan-grants": "tsx scripts/backfill-plan-grants.ts",
     "backfill:contact-notes-count": "tsx scripts/backfill-contact-notes-count.ts",
     "backfill:ledger-ttl": "tsx scripts/backfill-ledger-ttl.ts",
     "backfill:affiliation-active-orgs": "tsx scripts/backfill-affiliation-active-orgs.ts",

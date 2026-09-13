@@ -264,6 +264,11 @@ const CENSUS: Record<string, CensusEntry> = {
   },
 
   // ── scripts ───────────────────────────────────────────────────────────────
+  'scripts/backfill-plan-grants.ts': {
+    sites: 2,
+    writers: [],
+    note: 'the imported plan_grants row names its plan; the slot is only read',
+  },
   'scripts/lib/fixtures/money.ts': {
     sites: 3,
     writers: [],

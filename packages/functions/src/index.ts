@@ -71,6 +71,15 @@ export { onTeamBundleInstallChange, onOrgBundleInstallChange } from './plugins/b
 export { onAffiliationWrite } from './sync/onAffiliationWrite'
 export { syncAffiliationContactLive } from './sync/syncAffiliationContactLive'
 export { onCreditGrantWrite } from './sync/onCreditGrantWrite'
+// Plan holdings (docs/multi-plan-holdings.md) — the ONE writer of
+// Contact.held_plans, run by a write to any of its three stores. Its own
+// triggers on the credit-grant and member-subscription paths, beside the
+// existing ones rather than inside them; the module header says why.
+export {
+  onPlanGrantWrite,
+  heldPlansOnCreditGrantWrite,
+  heldPlansOnMemberSubscriptionWrite,
+} from './sync/heldPlans'
 // Availability writes re-run the team sync so the appointment picker's liveness
 // flag (active_public_surfaces.appointments) can't go stale — see the file.
 export { onAvailabilityWrite } from './sync/onAvailabilityWrite'
