@@ -486,10 +486,18 @@ Two things that fail silently if disturbed:
   quiet month, so the pair is pinned by
   `packages/functions/src/analytics/providerCosts.test.ts` rather than by a
   comment.
-- **Cloud Billing publishes as its own service agent**
-  (`billing-budgets@system.gserviceaccount.com`), which the module grants
-  `roles/pubsub.publisher` on the topic. Without it the budget just does not
-  deliver.
+- **Do NOT add a Pub/Sub IAM binding for the budget.** An earlier version granted
+  `roles/pubsub.publisher` to `billing-budgets@system.gserviceaccount.com` and it
+  **failed the apply** with `Error 400: Service account ... does not exist` — that
+  agent is a billing-account-level identity which project IAM cannot resolve. The
+  provider's own canonical Pub/Sub budget example (a live acceptance test against
+  real GCP) creates only the topic and the budget, so Cloud Billing arranges
+  publish access itself. A test pins the absence so it does not come back.
+
+  If messages never arrive, this is the first thing to check by hand — the
+  symptom is the quiet one: function deployed, topic present, nothing delivered.
+  Confirm with `gcloud pubsub topics list-subscriptions linyup-billing-budget`
+  and the function's logs (`[budget-cost]` should appear within a day).
 
 After the apply, the four outputs together answer "is any of this actually on?":
 
