@@ -48,3 +48,8 @@ output "budget_alerts_named_recipient" {
   description = "False = budget alerts reach only GCP's billing-admin default, not the ops address. Set alert_email in terraform.tfvars."
   value       = module.budget.budget_alerts_named_recipient
 }
+
+output "cost_feed_topic" {
+  description = "Pub/Sub topic the billing budget publishes spend to, or null when the cost feed is off. Null means the operator console's Providers page shows Google spend as not measured."
+  value       = module.budget.cost_feed_topic
+}

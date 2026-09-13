@@ -10,6 +10,10 @@
 # who is looking) for a runaway bill. Passing `notification_channels` routes
 # budget alerts to the SAME channel the error and uptime alerts use.
 #
+# The provider argument is `monitoring_notification_channels` (max 5) — NOT
+# `monitor_notification_channels`, which does not exist and fails at plan time
+# with "An argument named ... is not expected here".
+#
 # `disable_default_iam_recipients` stays FALSE on purpose: billing admins keep
 # getting the mail as well. A cost runaway is the one alert where two
 # independent paths to a human is the right amount of redundancy.
@@ -61,8 +65,8 @@ resource "google_billing_budget" "this" {
   dynamic "all_updates_rule" {
     for_each = (length(var.notification_channels) > 0 || var.cost_feed_topic) ? [1] : []
     content {
-      monitor_notification_channels = var.notification_channels
-      pubsub_topic                  = var.cost_feed_topic ? google_pubsub_topic.budget[0].id : null
+      monitoring_notification_channels = var.notification_channels
+      pubsub_topic                     = var.cost_feed_topic ? google_pubsub_topic.budget[0].id : null
       # Billing admins keep their default mail too — see the header.
       disable_default_iam_recipients = false
     }
