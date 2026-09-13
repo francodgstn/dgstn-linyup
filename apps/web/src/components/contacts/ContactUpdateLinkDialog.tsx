@@ -1,25 +1,32 @@
 'use client'
 
 /**
- * SHARE A ONE-CONTACT UPDATE LINK — QR, copy, optional spoken code, revoke.
+ * UPDATE DETAILS — the one way a studio asks a contact to fill in their own
+ * details, with the two routes side by side.
  *
- * The studio hands this to somebody standing in front of them. Everything about
- * the dialog follows from that: it opens on the QR rather than on a settings
- * pane, the window is minutes by default, and the code (when asked for) is
- * rendered large enough to read aloud across a mat.
+ * ── SEND A LINK ─────────────────────────────────────────────────────────────
+ * The studio's contact-update page for this contact. The person confirms with a
+ * code emailed to them, so it needs an email on file; with none, the dialog says
+ * so and offers the QR instead. It opens on this route when there IS an email,
+ * because a studio asking remotely is the common case.
  *
- * ── THE LINK IS SHOWN ONCE ──────────────────────────────────────────────────
- * The server stores only `sha256(token)`, so nothing can re-display a link
- * after this dialog closes — see @linyup/shared → types/contactLink.ts. Minting
- * again is the way back, and it revokes the previous grant, so the answer to
- * "is the QR still on their camera roll live?" is always no.
+ * ── SHOW A QR ───────────────────────────────────────────────────────────────
+ * A one-contact link for somebody standing in front of the studio: the window is
+ * minutes by default, and the code (when asked for) is rendered large enough to
+ * read aloud across a mat. It works with no email on file.
+ *
+ * The QR link is shown once. The server stores only `sha256(token)`, so nothing
+ * can re-display it after this dialog closes — see @linyup/shared →
+ * types/contactLink.ts. Minting again is the way back, and it revokes the
+ * previous grant, so the answer to "is the QR still on their camera roll live?"
+ * is always no.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { QRCodeCanvas } from 'qrcode.react'
 import { httpsCallable } from 'firebase/functions'
-import { Check, Copy, QrCode, RefreshCw, ShieldOff } from 'lucide-react'
+import { Check, Copy, QrCode, RefreshCw, ShieldOff, UserPen } from 'lucide-react'
 import { functions } from '@/lib/firebase'
 import {
   CONTACT_LINK_DEFAULT_TTL_MINUTES,
@@ -29,6 +36,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Segmented } from '@/components/ui/segmented'
 import {
   Select,
   SelectContent,
@@ -42,6 +50,8 @@ interface Minted {
   otp: string | null
   expiresAt: number
 }
+
+type Mode = 'link' | 'qr'
 
 /** mm:ss remaining, or null once it has run out. */
 function useCountdown(expiresAt: number | undefined): string | null {
@@ -63,34 +73,51 @@ export function ContactUpdateLinkDialog({
   open,
   onClose,
   teamId,
+  teamSlug,
   contactId,
   contactName,
+  contactEmail,
 }: {
   open: boolean
   onClose: () => void
   teamId: string
+  /** The studio's public slug; without one there is no page to link to. */
+  teamSlug?: string | null
   contactId: string
   contactName: string
+  contactEmail?: string | null
 }) {
   const t = useTranslations('ContactLink')
+  const canLink = Boolean(teamSlug)
+  const hasEmail = Boolean(contactEmail)
+  const [mode, setMode] = useState<Mode>(canLink && hasEmail ? 'link' : 'qr')
   const [ttl, setTtl] = useState<number>(CONTACT_LINK_DEFAULT_TTL_MINUTES)
   const [withOtp, setWithOtp] = useState(false)
   const [minted, setMinted] = useState<Minted | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const remaining = useCountdown(minted?.expiresAt)
 
-  // A dialog reopened for the same contact must not show the previous link:
-  // it has been revoked by any later mint, and showing a dead QR is worse than
-  // showing none.
+  // A dialog reopened for the same contact must not show the previous QR: it
+  // has been revoked by any later mint, and showing a dead QR is worse than
+  // showing none. It also reopens on the route that fits the contact.
   useEffect(() => {
     if (!open) {
       setMinted(null)
       setError(null)
       setCopied(false)
+      setLinkCopied(false)
+    } else {
+      setMode(canLink && hasEmail ? 'link' : 'qr')
     }
-  }, [open])
+  }, [open, canLink, hasEmail])
+
+  const plainUrl =
+    canLink && typeof window !== 'undefined'
+      ? `${window.location.origin}/public/${teamSlug}/contact-update?contactId=${contactId}`
+      : ''
 
   const mint = useCallback(async () => {
     setBusy(true)
@@ -133,85 +160,131 @@ export function ContactUpdateLinkDialog({
     setTimeout(() => setCopied(false), 1800)
   }
 
+  async function copyLink() {
+    if (!plainUrl) return
+    await navigator.clipboard.writeText(plainUrl)
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 1800)
+  }
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <QrCode className="h-4 w-4" />
-            {t('title')}
+            <UserPen className="h-4 w-4" />
+            {t('updateTitle')}
           </DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-muted-foreground">{t('intro', { name: contactName })}</p>
+        {canLink && (
+          <Segmented<Mode>
+            options={[
+              { value: 'link', label: t('modeLink') },
+              { value: 'qr', label: t('modeQr') },
+            ]}
+            value={mode}
+            onChange={setMode}
+            ariaLabel={t('updateTitle')}
+            className="self-start"
+          />
+        )}
 
-        {!minted ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ttl">{t('validFor')}</Label>
-              <Select value={String(ttl)} onValueChange={(v) => setTtl(Number(v))}>
-                <SelectTrigger id="ttl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTACT_LINK_TTL_CHOICES.map((m) => (
-                    <SelectItem key={m} value={String(m)}>
-                      {m < 60 ? t('minutes', { count: m }) : t('hours', { count: m / 60 })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <Label htmlFor="otp">{t('requireCode')}</Label>
-                <p className="text-xs text-muted-foreground">{t('requireCodeHint')}</p>
+        {mode === 'link' ? (
+          hasEmail ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t('linkIntro', { name: contactName })}</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{plainUrl}</code>
+                <Button variant="outline" size="icon" onClick={copyLink} aria-label={t('copy')}>
+                  {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
               </div>
-              <Switch id="otp" checked={withOtp} onCheckedChange={setWithOtp} />
             </div>
-
-            <Button onClick={mint} disabled={busy} className="w-full">
-              {busy ? t('minting') : t('createLink')}
-            </Button>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {t('linkNeedsEmail', { name: contactName })}
+              </p>
+              <Button variant="outline" className="w-full" onClick={() => setMode('qr')}>
+                <QrCode className="mr-2 h-4 w-4" />
+                {t('modeQr')}
+              </Button>
+            </div>
+          )
         ) : (
-          <div className="space-y-4">
-            <div className="flex justify-center rounded-lg bg-white p-4">
-              <QRCodeCanvas value={minted.url} size={200} includeMargin />
-            </div>
+          <>
+            <p className="text-sm text-muted-foreground">{t('intro', { name: contactName })}</p>
 
-            {minted.otp && (
-              <div className="rounded-lg border border-dashed p-3 text-center">
-                <p className="text-xs text-muted-foreground">{t('codeToRead')}</p>
-                <p className="font-mono text-3xl tracking-[0.3em] tabular-nums">{minted.otp}</p>
+            {!minted ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ttl">{t('validFor')}</Label>
+                  <Select value={String(ttl)} onValueChange={(v) => setTtl(Number(v))}>
+                    <SelectTrigger id="ttl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONTACT_LINK_TTL_CHOICES.map((m) => (
+                        <SelectItem key={m} value={String(m)}>
+                          {m < 60 ? t('minutes', { count: m }) : t('hours', { count: m / 60 })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="otp">{t('requireCode')}</Label>
+                    <p className="text-xs text-muted-foreground">{t('requireCodeHint')}</p>
+                  </div>
+                  <Switch id="otp" checked={withOtp} onCheckedChange={setWithOtp} />
+                </div>
+
+                <Button onClick={mint} disabled={busy} className="w-full">
+                  {busy ? t('minting') : t('createLink')}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-center rounded-lg bg-white p-4">
+                  <QRCodeCanvas value={minted.url} size={200} includeMargin />
+                </div>
+
+                {minted.otp && (
+                  <div className="rounded-lg border border-dashed p-3 text-center">
+                    <p className="text-xs text-muted-foreground">{t('codeToRead')}</p>
+                    <p className="font-mono text-3xl tracking-[0.3em] tabular-nums">{minted.otp}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">
+                    {minted.url}
+                  </code>
+                  <Button variant="outline" size="icon" onClick={copy} aria-label={t('copy')}>
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                <p className="text-center text-xs text-muted-foreground">
+                  {remaining ? t('expiresIn', { time: remaining }) : t('expired')}
+                </p>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={mint} disabled={busy} className="flex-1">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {t('newLink')}
+                  </Button>
+                  <Button variant="outline" onClick={revoke} disabled={busy} className="flex-1">
+                    <ShieldOff className="mr-2 h-4 w-4" />
+                    {t('revoke')}
+                  </Button>
+                </div>
               </div>
             )}
-
-            <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">
-                {minted.url}
-              </code>
-              <Button variant="outline" size="icon" onClick={copy} aria-label={t('copy')}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-
-            <p className="text-center text-xs text-muted-foreground">
-              {remaining ? t('expiresIn', { time: remaining }) : t('expired')}
-            </p>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={mint} disabled={busy} className="flex-1">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {t('newLink')}
-              </Button>
-              <Button variant="outline" onClick={revoke} disabled={busy} className="flex-1">
-                <ShieldOff className="mr-2 h-4 w-4" />
-                {t('revoke')}
-              </Button>
-            </div>
-          </div>
+          </>
         )}
 
         {error && <p className="text-sm text-destructive">{error}</p>}

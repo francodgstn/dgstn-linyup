@@ -1098,7 +1098,23 @@
     "paymentsViewStatement": "Statement",
     "currentNextCharge": "Next charge",
     "currentLastPayment": "Last payment",
-    "currentCreditsLeft": "Lessons left"
+    "currentCreditsLeft": "Lessons left",
+    "cardMoreActions": "More actions",
+    "menuUpdateDetails": "Update details",
+    "menuCustomiseActions": "Customise quick actions",
+    "quickActionsTitle": "Quick actions",
+    "quickActionsIntro": "Choose the four actions on the contact card. Saved in this browser.",
+    "quickActionSlot": "Slot {number}",
+    "quickActionsReset": "Reset to defaults",
+    "actionRecordPayment": "Payment",
+    "actionRecordPaymentTip": "Record a payment",
+    "actionSendEmail": "Email",
+    "actionAddPlan": "Plan",
+    "actionGrantCredits": "Credits",
+    "actionUpdateDetails": "Update",
+    "rosterLabel": "Roster",
+    "rosterActive": "Active",
+    "rosterActiveHint": "On your roster — reminders, invitations and automations reach them."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -8291,7 +8307,12 @@
     "sheetPrint": "Print",
     "sheetLiveWarning": "{count} slips are live until they expire — worth collecting the sheet back in.",
     "sheetSlipHint": "Scan to check your details",
-    "sheetFailed": "The sheet could not be created. Try again."
+    "sheetFailed": "The sheet could not be created. Try again.",
+    "updateTitle": "Update details",
+    "modeLink": "Send a link",
+    "modeQr": "Show a QR",
+    "linkIntro": "Send this link to {name}. They confirm with a code emailed to them, then fill in their own details.",
+    "linkNeedsEmail": "{name} has no email on file, so a link cannot confirm who opens it. Show a QR instead."
   },
   "PlanTemplates": {
     "railLink": "Start from a template",
