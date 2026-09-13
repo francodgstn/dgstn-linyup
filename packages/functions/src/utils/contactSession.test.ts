@@ -14,11 +14,14 @@ function req(
 }
 
 describe('optionalContactSessionFromRequest', () => {
-  const future = Date.now() + 60_000
-  const past = Date.now() - 60_000
+  // Read the clock when each test RUNS, not when the file loads. Mocha loads
+  // every test file before running any, and a cold ts-node compile of the
+  // suite can outlast a minute — a load-time `future` is then already past.
+  const future = () => Date.now() + 60_000
+  const past = () => Date.now() - 60_000
 
   it('returns the contactId + teamId from a live session token', () => {
-    const r = req({ contactId: 'c1', teamId: 't1', sessionExpires: future })
+    const r = req({ contactId: 'c1', teamId: 't1', sessionExpires: future() })
     assert.deepEqual(optionalContactSessionFromRequest(r), { contactId: 'c1', teamId: 't1' })
   })
 
@@ -27,12 +30,12 @@ describe('optionalContactSessionFromRequest', () => {
   })
 
   it('returns null when the session is expired', () => {
-    const r = req({ contactId: 'c1', teamId: 't1', sessionExpires: past })
+    const r = req({ contactId: 'c1', teamId: 't1', sessionExpires: past() })
     assert.equal(optionalContactSessionFromRequest(r), null)
   })
 
   it('returns null when the token lacks contactId/teamId claims', () => {
-    assert.equal(optionalContactSessionFromRequest(req({ sessionExpires: future })), null)
+    assert.equal(optionalContactSessionFromRequest(req({ sessionExpires: future() })), null)
   })
 
   it('NEVER reads a contactId from the request body (anti-spoofing)', () => {
@@ -53,7 +56,7 @@ describe('optionalContactSessionFromRequest', () => {
 
   it('ignores a body contactId even alongside a session (session wins)', () => {
     const r = req(
-      { contactId: 'real', teamId: 't1', sessionExpires: future },
+      { contactId: 'real', teamId: 't1', sessionExpires: future() },
       { contactId: 'victim', authenticatedContactId: 'victim' },
     )
     assert.deepEqual(optionalContactSessionFromRequest(r), { contactId: 'real', teamId: 't1' })
