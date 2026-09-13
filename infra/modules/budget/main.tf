@@ -10,6 +10,10 @@
 # who is looking) for a runaway bill. Passing `notification_channels` routes
 # budget alerts to the SAME channel the error and uptime alerts use.
 #
+# The provider argument is `monitoring_notification_channels` (max 5) — NOT
+# `monitor_notification_channels`, which does not exist and fails at plan time
+# with "An argument named ... is not expected here".
+#
 # `disable_default_iam_recipients` stays FALSE on purpose: billing admins keep
 # getting the mail as well. A cost runaway is the one alert where two
 # independent paths to a human is the right amount of redundancy.
@@ -61,8 +65,8 @@ resource "google_billing_budget" "this" {
   dynamic "all_updates_rule" {
     for_each = (length(var.notification_channels) > 0 || var.cost_feed_topic) ? [1] : []
     content {
-      monitor_notification_channels = var.notification_channels
-      pubsub_topic                  = var.cost_feed_topic ? google_pubsub_topic.budget[0].id : null
+      monitoring_notification_channels = var.notification_channels
+      pubsub_topic                     = var.cost_feed_topic ? google_pubsub_topic.budget[0].id : null
       # Billing admins keep their default mail too — see the header.
       disable_default_iam_recipients = false
     }
@@ -92,13 +96,22 @@ resource "google_pubsub_topic" "budget" {
   name    = var.cost_feed_topic_name
 }
 
-# Cloud Billing publishes as its own service agent, which must be a publisher on
-# the topic or the budget silently fails to deliver.
-resource "google_pubsub_topic_iam_member" "budget_publisher" {
-  count = var.cost_feed_topic ? 1 : 0
-
-  project = var.project_id
-  topic   = google_pubsub_topic.budget[0].name
-  role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:billing-budgets@system.gserviceaccount.com"
-}
+# ── NO PUB/SUB IAM BINDING HERE, DELIBERATELY ────────────────────────────────
+#
+# An earlier version granted roles/pubsub.publisher to
+# `billing-budgets@system.gserviceaccount.com`. That FAILS THE APPLY:
+#
+#   Error 400: Service account billing-budgets@system.gserviceaccount.com
+#   does not exist.
+#
+# Cloud Billing's budget service agent is a billing-account-level identity, and
+# project-level IAM cannot resolve it. The provider's own canonical Pub/Sub
+# budget example (upstream `billing_budget_optional`, run as a live acceptance
+# test against real GCP) creates ONLY the topic and the budget with
+# `all_updates_rule.pubsub_topic` — no IAM resource of any kind — so Cloud
+# Billing arranges publish access itself when the budget names the topic.
+#
+# IF DELIVERY EVER TURNS OUT NOT TO WORK, this is the first place to look, and
+# the symptom is the quiet one: the function deploys, the topic exists, and
+# nothing ever arrives. `infra/README.md` → "The budget is also the cost feed"
+# carries the check.

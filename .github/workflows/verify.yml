@@ -161,6 +161,38 @@ jobs:
       - name: Rules tests
         run: pnpm --filter @linyup/functions run test:rules
 
+  terraform:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    # WHY THIS EXISTS: a wrong PROVIDER ARGUMENT NAME is invisible to every other
+    # check in this repo — the HCL parses, nothing imports it, no test covers it —
+    # and surfaces only when somebody runs `terraform plan` against a real
+    # project, mid-deploy. `monitoring_notification_channels` shipped once as
+    # `monitor_notification_channels` and failed exactly there.
+    #
+    # `validate` needs the provider SCHEMA, so it downloads providers; it does
+    # NOT need credentials or state, which is what `-backend=false` buys. Nothing
+    # here can reach, read or change a real project.
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.8'
+          terraform_wrapper: false
+
+      - name: Formatting
+        run: terraform fmt -check -recursive infra
+
+      - name: Validate every environment
+        run: |
+          set -euo pipefail
+          for dir in infra/environments/*/; do
+            echo "── ${dir}"
+            terraform -chdir="$dir" init -backend=false -input=false >/dev/null
+            terraform -chdir="$dir" validate
+          done
+
   build-admin:
     name: Build Admin Console
     runs-on: ubuntu-latest

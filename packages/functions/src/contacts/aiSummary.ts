@@ -34,10 +34,12 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import {
   CONTACTS_COLLECTION,
   CONTACT_NOTES_SUBCOLLECTION,
+  CONTACT_SUBSCRIPTION_HISTORY_SUBCOLLECTION,
   CONTACT_WEEKLY_REPORTS_SUBCOLLECTION,
   SESSIONS_COLLECTION,
   SESSION_BOOKINGS_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  computeEngagementBand,
   densifyWeeklyCounts,
   isExperimentalFeatureEnabled,
   isoWeekKeysBack,
@@ -49,6 +51,7 @@ import { bucketRateLimit } from '../utils/rateLimit'
 import { ASSISTANT_MODEL, getGenAI } from '../utils/vertexClient'
 import {
   LANGUAGE_NAMES,
+  STUDIO_TIME_ZONE,
   buildContactDossier,
   coachOwnsContact,
   normaliseSummary,
@@ -57,14 +60,17 @@ import {
   toDate,
   type DossierBooking,
   type DossierNote,
+  type DossierPeriod,
 } from './aiSummaryDossier'
 
 const EXPERIMENT_ID = 'contact-summary'
 const RATE_LIMIT_MAX = 30 // summaries per user + team per hour
-/** The attendance window the model sees — the header sparkline's, near enough. */
-const WEEKS = 12
-const RECENT_BOOKINGS = 10
+/** Half a year of weeks: enough for a trend to mean something (see deriveSignals). */
+const WEEKS = 26
+/** Firestore's `in` takes at most thirty ids, and the session lookup is one such query. */
+const RECENT_BOOKINGS = 30
 const RECENT_NOTES = 3
+const RECENT_PERIODS = 12
 
 type Request = { teamId?: string; contactId?: string }
 
@@ -111,7 +117,7 @@ export const generateContactSummary = onCall(async (request) => {
 
   const now = new Date()
   const window = isoWeekKeysBack(WEEKS, now)
-  const [weeklySnap, bookingsSnap, notesSnap] = await Promise.all([
+  const [weeklySnap, bookingsSnap, notesSnap, periodsSnap] = await Promise.all([
     contactRef
       .collection(CONTACT_WEEKLY_REPORTS_SUBCOLLECTION)
       .where('iso_week', '>=', window[0])
@@ -129,6 +135,13 @@ export const generateContactSummary = onCall(async (request) => {
       .collection(CONTACT_NOTES_SUBCOLLECTION)
       .orderBy('created_at', 'desc')
       .limit(RECENT_NOTES)
+      .get(),
+    // The plan PERIODS — renewals, gaps and how the last one ended — which
+    // the live summary on the contact cannot say.
+    contactRef
+      .collection(CONTACT_SUBSCRIPTION_HISTORY_SUBCOLLECTION)
+      .orderBy('start_date', 'desc')
+      .limit(RECENT_PERIODS)
       .get(),
   ])
 
@@ -173,9 +186,34 @@ export const generateContactSummary = onCall(async (request) => {
     }))
     .filter((n) => n.text)
 
+  const periods: DossierPeriod[] = periodsSnap.docs.map((d) => {
+    const p = d.data()
+    return {
+      plan: (p.subscription_type_name as string | undefined) ?? null,
+      start: toDate(p.start_date),
+      end: toDate(p.end_date),
+      reason: (p.termination_reason as string | undefined) ?? null,
+    }
+  })
+
+  // The same band the page's meter shows, from the same thresholds — so the
+  // model and the coach are looking at one reading, not two.
+  const lastMs = toDate(contact.last_session_at)?.getTime() ?? null
+  const refMs = lastMs ?? toDate(contact.created_at)?.getTime() ?? null
+  const engagementBand = computeEngagementBand(refMs, team?.engagement_thresholds, now.getTime())
+
   const langRaw = String(team?.language ?? 'en')
   const lang = langRaw in LANGUAGE_NAMES ? langRaw : 'en'
-  const dossier = buildContactDossier({ contact, weekly, bookings, notes, now })
+  const dossier = buildContactDossier({
+    contact,
+    weekly,
+    bookings,
+    notes,
+    periods,
+    engagementBand,
+    timeZone: STUDIO_TIME_ZONE,
+    now,
+  })
 
   let raw = ''
   try {
@@ -184,9 +222,12 @@ export const generateContactSummary = onCall(async (request) => {
       contents: [{ role: 'user', parts: [{ text: dossier }] }],
       config: {
         systemInstruction: systemPrompt(LANGUAGE_NAMES[lang]),
-        maxOutputTokens: 256,
-        // A briefing, not a brainstorm — but not so cold it lists the facts back.
-        temperature: 0.3,
+        // Six sentences in German run past 256 tokens; the cap on the way back
+        // is `normaliseSummary`, not this.
+        maxOutputTokens: 512,
+        // An analysis, not a brainstorm — warm enough to interpret, not so
+        // warm it invents.
+        temperature: 0.4,
       },
     })
     // `response.text`, not a walk down candidates[0].content.parts — see

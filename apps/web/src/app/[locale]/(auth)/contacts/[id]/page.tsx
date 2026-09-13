@@ -109,6 +109,7 @@ import {
 } from '@linyup/shared'
 import type {
   Contact,
+  ActiveSubscriptionSummary,
   AcquisitionStage,
   ContactEntry,
   ContactSource,
@@ -140,6 +141,7 @@ import {
   computeEngagementBand,
   MAX_CONTACT_LOGIN_EMAILS,
   SUBSCRIPTION_ROLLUP_STATUSES,
+  subscriptionIsCancelling,
   type SubscriptionRollupStatus,
 } from '@linyup/shared'
 import { usePlan } from '@/hooks/usePlan'
@@ -212,6 +214,13 @@ import {
 import { GoalsTab } from './GoalsTab'
 import { NotesTab, useContactNotesCount, useContactNotes, noteColorClasses, type ContactNote } from './NotesTab'
 import { PaymentsTab } from './PaymentsTab'
+import { useContactPayments } from '@/hooks/useConnect'
+import {
+  byoToUnified,
+  connectToUnified,
+  formatMoneyMinor,
+  mergePaymentRows,
+} from '@/lib/payments'
 import {
   MemberSubscriptionsSection,
   RollupBadge,
@@ -220,14 +229,8 @@ import {
 import { InsightsCard } from './InsightsCard'
 import { ENGAGEMENT_BAR, ENGAGEMENT_TEXT } from './engagement'
 import { PlanGate } from '@/components/plan/PlanGate'
-import {
-  RelationshipTimeline,
-  type TimelineMilestone,
-  type TimelineSpan,
-} from '@/components/contacts/RelationshipTimeline'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
-import { AffiliationTypeMark } from '@/components/affiliations/AffiliationTypePicker'
 import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
@@ -1091,14 +1094,63 @@ function AcquisitionTimeline({
 
 // Round icon button for the header action cluster (notes + alerts), with an
 // optional count badge. Kept generic so both surfaces share one look.
+/**
+ * The plans a contact is on right now, for the chip row. `active_subscriptions`
+ * is the live, webhook-maintained list; a contact from before it existed
+ * carries only the legacy `subscription_type_name`, which is shown the same
+ * way so an old record does not read as "no plan".
+ */
+function livePlans(contact: Contact): ActiveSubscriptionSummary[] {
+  if (contact.active_subscriptions?.length) return contact.active_subscriptions
+  if (!contact.subscription_type_name) return []
+  return [
+    {
+      subscription_type_id: 'legacy',
+      subscription_type_name: contact.subscription_type_name,
+      recurrence: null,
+      amount: 0,
+      status: contact.subscription_status ?? 'active',
+    },
+  ]
+}
+
+/** One live plan as a chip: green while it bills, amber when it is past due
+ *  or winding down (with the end date), muted while paused. */
+function PlanChip({ sub }: { sub: ActiveSubscriptionSummary }) {
+  const t = useTranslations('Contacts')
+  const winding = sub.cancelling === true || !!sub.cancels_at_ms
+  const tone =
+    winding || sub.status === 'past_due'
+      ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800'
+      : sub.status === 'paused'
+        ? 'bg-muted text-muted-foreground border-border'
+        : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+  const ends = sub.cancels_at_ms
+    ? new Date(sub.cancels_at_ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    : null
+  return (
+    <Badge className={`gap-1 ${tone}`}>
+      <BookOpen className="h-3 w-3" />
+      {sub.subscription_type_name ?? t('subscriptionHeadingCard')}
+      {winding && ends && (
+        <span className="font-normal opacity-80">· {t('planChipEnds', { date: ends })}</span>
+      )}
+    </Badge>
+  )
+}
+
 function HeaderActionButton({
   icon: Icon,
   label,
+  shortLabel,
   count = 0,
   onClick,
 }: {
   icon: React.ElementType
   label: string
+  /** A caption under the icon. The long `label` stays the tooltip and the
+   *  accessible name; this is the two-word version that fits a tile. */
+  shortLabel?: string
   count?: number
   onClick: () => void
 }) {
@@ -1110,9 +1162,16 @@ function HeaderActionButton({
         type="button"
         onClick={onClick}
         aria-label={label}
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className={
+          shortLabel
+            ? 'relative flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+            : 'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+        }
       >
         <Icon className="h-4 w-4" />
+        {shortLabel && (
+          <span className="max-w-full truncate text-[10px] leading-tight">{shortLabel}</span>
+        )}
         {count > 0 && (
           <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
             {count}
@@ -2179,88 +2238,199 @@ function MembershipTab({
   const t = useTranslations('Contacts')
   const { isInstalled, isLoading: pluginsLoading } = useInstalledPlugins()
   const tarif595Installed = isInstalled('tarif-595')
+  // How the Payments segment shows its rows. Component state, not the URL: it
+  // is a way of looking at one segment, not a place anybody links to.
+  const [paymentsView, setPaymentsView] = useState<'list' | 'statement'>('list')
   const SEGMENTS = [
-    { id: 'overview' as const, label: t('segOverview') },
-    { id: 'plans' as const, label: t('segPlans') },
+    { id: 'current' as const, label: t('segCurrent') },
+    { id: 'history' as const, label: t('segHistory') },
     { id: 'payments' as const, label: t('segPayments') },
     ...(tarif595Installed ? [{ id: 'receipts' as const, label: t('segReceipts') }] : []),
   ]
 
   // A stale `?seg=receipts` (the plugin was uninstalled, or the link is
   // shared with someone on a team that never installed it) falls back to
-  // Overview — the same "unknown/gated value" rule `useTabParam` applies to
+  // Current — the same "unknown/gated value" rule `useTabParam` applies to
   // `?tab=`, one level down. Held off until the plugin list has actually
-  // loaded, so a fast reload never bounces a real install back to Overview.
+  // loaded, so a fast reload never bounces a real install back to Current.
   useEffect(() => {
-    if (!pluginsLoading && seg === 'receipts' && !tarif595Installed) onSegChange('overview')
+    if (!pluginsLoading && seg === 'receipts' && !tarif595Installed) onSegChange('current')
   }, [pluginsLoading, seg, tarif595Installed, onSegChange])
-
-  // Relationship timeline data — subscription + affiliation periods as spans, and
-  // the acquisition milestones as points. Concurrent spans are packed by the ribbon.
-  const { data: subHistory = [] } = useSubscriptionHistory(contact.id)
-  const { data: affiliations = [] } = useContactAffiliations(contact.id)
-
-  const subscriptionSpans: TimelineSpan[] = subHistory.flatMap((h) => {
-    const start = tsToDate(h.start_date)
-    if (!start) return []
-    return [{ id: h.id, label: h.subscription_type_name ?? '—', start, end: tsToDate(h.end_date) ?? null }]
-  })
-  const affiliationSpans: TimelineSpan[] = affiliations.flatMap((a) => {
-    const start = tsToDate(a.valid_from)
-    if (!start) return []
-    return [{ id: a.id, label: a.label ?? a.type_key ?? '—', start, end: tsToDate(a.valid_until) ?? null }]
-  })
-  const milestones: TimelineMilestone[] = [
-    { ts: contact.trial_booked_at, label: t('stage_trial_booked'), tone: 'neutral' as const },
-    { ts: contact.trial_attended_at, label: t('stage_trial_attended'), tone: 'neutral' as const },
-    { ts: contact.converted_at, label: t('stage_joined'), tone: 'positive' as const },
-    { ts: contact.external_since, label: t('externalBadge'), tone: 'neutral' as const },
-    { ts: contact.archived_at, label: t('archivedBadge'), tone: 'negative' as const },
-  ].flatMap(({ ts, label, tone }) => {
-    const date = tsToDate(ts)
-    return date ? [{ id: label, label, date, tone }] : []
-  })
-
+  // THE SHAPE OF THIS TAB, since 2026-09-13. It used to open on a ribbon of plan
+  // periods, affiliation periods and funnel milestones, above an "Overview" that
+  // was a ledger: several views of the same facts, and none of them answered the
+  // question the tab is opened for — what are they on, and what happens next.
+  // Current answers it and holds every action on what they hold; History lists
+  // the plan periods; Payments is the money, as the list or as the statement.
+  // The ribbon went rather than moved: plan periods live in History, and
+  // affiliations are the Affiliations tab's.
   return (
     <div className="space-y-4">
-      {/* Relationship overview — read-only lifeline of acquisition + subs + affiliations */}
-      <RelationshipTimeline
-        milestones={milestones}
-        subscriptions={subscriptionSpans}
-        affiliations={affiliationSpans}
-      />
-
-      <Segmented
-        options={SEGMENTS.map((s) => ({ value: s.id, label: s.label }))}
-        value={seg}
-        onChange={onSegChange}
-      />
-
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Segmented
+          options={SEGMENTS.map((s) => ({ value: s.id, label: s.label }))}
+          value={seg}
+          onChange={onSegChange}
+        />
+        {seg === 'payments' && (
+          <Segmented
+            size="sm"
+            options={[
+              { value: 'list' as const, label: t('paymentsViewList') },
+              { value: 'statement' as const, label: t('paymentsViewStatement') },
+            ]}
+            value={paymentsView}
+            onChange={setPaymentsView}
+          />
+        )}
+      </div>
       {/* Each segment body mounts only while it is showing, the same way the tabs
-          themselves do — so standing on Overview never pays for the payment
-          dialogs' journal read, and standing on Plans never loads payments. */}
-      {seg === 'overview' && <LedgerSegment contact={contact} teamId={teamId} />}
-      {seg === 'plans' && (
+          themselves do — so standing on History never loads payments. */}
+      {seg === 'current' && <CurrentSegment contact={contact} teamId={teamId} />}
+      {seg === 'history' && (
         <PlanGate feature="subscriptions">
-          <SubscriptionsTab contact={contact} teamId={teamId} />
+          <PlanHistorySegment contact={contact} teamId={teamId} />
         </PlanGate>
       )}
-      {seg === 'payments' && <PaymentsTab contact={contact} teamId={teamId} />}
+      {seg === 'payments' &&
+        (paymentsView === 'statement' ? (
+          <LedgerSegment contact={contact} teamId={teamId} />
+        ) : (
+          <PaymentsTab contact={contact} teamId={teamId} />
+        ))}
       {seg === 'receipts' && tarif595Installed && <ReceiptsSegment contact={contact} teamId={teamId} />}
     </div>
   )
 }
 
-// ─── subscriptions tab ────────────────────────────────────────────────────────
+/**
+ * CURRENT — what this person holds right now and what happens next, with every
+ * action on it. The figures come first; then the assigned plan, the lesson
+ * credits and the Stripe billing, each the one copy of its section and its
+ * controls. The figures sit OUTSIDE the plan gate on purpose: a payment was
+ * received whether or not the studio's tier sells plans.
+ */
+function CurrentSegment({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  return (
+    <div className="space-y-6 pb-16">
+      <CurrentFigures contact={contact} teamId={teamId} />
+      <PlanGate feature="subscriptions">
+        <CurrentPlans contact={contact} teamId={teamId} />
+      </PlanGate>
+    </div>
+  )
+}
 
-function SubscriptionsTab({ contact, teamId }: { contact: Contact; teamId: string | null }) {
-  // Styled confirmation — this delete had none at all before.
-  const { confirm, confirmDialog } = useConfirm()
-  const tCommon = useTranslations('Common')
+function FigureCell({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: React.ElementType
+  label: string
+  value: string
+  detail?: string | null
+}) {
+  return (
+    <div className="min-w-0 px-2 py-3 text-center sm:px-3">
+      {/* Wraps rather than truncating: on a phone each cell is about a third of
+          the screen, and a clipped amount is worse than one on two lines. */}
+      <p className="break-words text-base font-bold leading-tight tabular-nums sm:text-xl">{value}</p>
+      <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <Icon className="h-3 w-3 shrink-0" />
+        <span className="truncate">{label}</span>
+      </p>
+      {detail && <p className="mt-1 truncate text-[11px] text-muted-foreground">{detail}</p>}
+    </div>
+  )
+}
+
+/**
+ * What a manager opens this tab to learn, as figures. Each one is read from a
+ * query something on the tab already makes under the same key: the Stripe
+ * subscriptions (the billing section below), the payments (the Payments segment,
+ * and the Overview this replaced), and the credit summary on the contact.
+ *
+ * "Next charge" is the soonest period end of a subscription Stripe will actually
+ * bill — live, not paused, not winding down. "Last payment" is the newest money
+ * received on either rail: a voided manual row and a failed charge are not
+ * payments, and a fully refunded one is left to the Payments list to explain.
+ */
+function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  const t = useTranslations('Contacts')
+  const { data: subs = [] } = useContactMemberSubscriptions(teamId, contact.id)
+  const { data: payments } = useContactPayments(teamId, contact.id)
+  const fmt = (d: Date) =>
+    d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+
+  const next = subs
+    .filter(
+      (s) =>
+        !!s.subscriptionId &&
+        !s.duplicate &&
+        ['active', 'trialing', 'past_due'].includes(s.status as string) &&
+        !s.pause_collection &&
+        !subscriptionIsCancelling(s) &&
+        !!tsToDate(s.current_period_end)
+    )
+    .sort(
+      (a, b) =>
+        (tsToDate(a.current_period_end)?.getTime() ?? 0) -
+        (tsToDate(b.current_period_end)?.getTime() ?? 0)
+    )[0]
+  const nextDate = next ? tsToDate(next.current_period_end) : undefined
+
+  const lastPayment = useMemo(
+    () =>
+      mergePaymentRows(
+        connectToUnified(payments?.payments ?? []),
+        byoToUnified(payments?.events ?? [])
+      ).find((r) => !r.voided && ['succeeded', 'partially_refunded', 'paid'].includes(r.status)),
+    [payments]
+  )
+  const lastDate = lastPayment?.createdAt?.toDate?.()
+
+  const credits = contact.credit_summary ?? []
+  const lessonsLeft = credits.reduce((n, c) => n + c.remaining, 0)
+  const nextExpiry = credits
+    .map((c) => tsToDate(c.next_expires_at))
+    .filter((d): d is Date => !!d)
+    .sort((a, b) => a.getTime() - b.getTime())[0]
+
+  return (
+    <div className="grid grid-cols-3 divide-x rounded-xl border bg-card">
+      <FigureCell
+        icon={CalendarCheck}
+        label={t('currentNextCharge')}
+        value={next ? formatMoneyMinor(next.amount, next.currency) : '—'}
+        detail={nextDate ? fmt(nextDate) : null}
+      />
+      <FigureCell
+        icon={CreditCard}
+        label={t('currentLastPayment')}
+        value={lastPayment ? formatMoneyMinor(lastPayment.amount, lastPayment.currency) : '—'}
+        detail={lastDate ? fmt(lastDate) : null}
+      />
+      <FigureCell
+        icon={Ticket}
+        label={t('currentCreditsLeft')}
+        value={credits.length ? String(lessonsLeft) : '—'}
+        detail={nextExpiry ? t('creditsExpiresOn', { date: fmt(nextExpiry) }) : null}
+      />
+    </div>
+  )
+}
+
+/**
+ * The assigned plan, the lesson credits and the Stripe billing, with their
+ * dialogs. They moved here from the old Plans segment on 2026-09-13, which kept
+ * only the history — moved, not copied, so each control still has one home.
+ */
+function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | null }) {
   const t = useTranslations('Contacts')
   const tPayments = useTranslations('PaymentsDashboard')
   const qc = useQueryClient()
-  const { data: history = [], isLoading } = useSubscriptionHistory(contact.id)
   const { data: subTypes = [] } = useSubscriptionTypes(teamId)
   const [assignOpen, setAssignOpen] = useState(false)
   const [grantOpen, setGrantOpen] = useState(false)
@@ -2278,17 +2448,8 @@ function SubscriptionsTab({ contact, teamId }: { contact: Contact; teamId: strin
   const invalidateHistory = () =>
     qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
 
-  if (isLoading)
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-14 rounded-lg" />
-        ))}
-      </div>
-    )
-
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-6">
       {/* ── Current type assignment ── */}
       <div className="rounded-xl border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
@@ -2418,89 +2579,6 @@ function SubscriptionsTab({ contact, teamId }: { contact: Contact; teamId: strin
         </div>
       )}
 
-      {/* ── History ── */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {t('subscriptionHistoryTitle')}
-        </p>
-        {history.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground text-sm">
-            {t('noSubscriptions')}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {history.map((entry) => {
-              const isActive = !entry.end_date
-              const typeName =
-                subTypes.find((s) => s.id === entry.subscription_type_id)?.name ??
-                entry.subscription_type_name ??
-                '—'
-              return (
-                <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                  <div
-                    className={`h-2 w-2 rounded-full mt-2 shrink-0 ${isActive ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{typeName}</p>
-                      {isActive && (
-                        <Badge variant="default" className="text-xs">
-                          {t('subscriptionActiveLabel')}
-                        </Badge>
-                      )}
-                    </div>
-                    {entry.recurrence && (
-                      <p className="text-xs text-muted-foreground">
-                        {t(`recurrence_${entry.recurrence}`)}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(entry.start_date)} –{' '}
-                      {entry.end_date ? formatDate(entry.end_date) : t('subscriptionEndNone')}
-                    </p>
-                    {entry.termination_reason && (
-                      <p className="text-xs text-muted-foreground italic">
-                        {entry.termination_reason}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={async () => {
-                      // A history row is the evidence that somebody held a
-                      // plan. Deleting it refunds nothing and changes nothing
-                      // they hold now — it just removes the record, which is
-                      // why the body says exactly that rather than "are you
-                      // sure".
-                      const ok = await confirm({
-                        title: t('subHistoryDeleteTitle'),
-                        description: t('subHistoryDeleteBody', {
-                          name: `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim(),
-                        }),
-                        confirmLabel: tCommon('delete'),
-                      })
-                      if (!ok) return
-                      await deleteDoc(
-                        doc(
-                          db,
-                          CONTACTS_COLLECTION,
-                          contact.id,
-                          CONTACT_SUBSCRIPTION_HISTORY_SUBCOLLECTION,
-                          entry.id
-                        )
-                      )
-                      invalidateHistory()
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
       <SetSubscriptionDialog
         open={assignOpen}
         onOpenChange={setAssignOpen}
@@ -2518,6 +2596,112 @@ function SubscriptionsTab({ contact, teamId }: { contact: Contact; teamId: strin
         subTypes={subTypes}
         onGranted={invalidateContact}
       />
+    </div>
+  )
+}
+
+/**
+ * HISTORY — the plan periods from `subscription_history`, newest first, each
+ * deletable as a record.
+ */
+function PlanHistorySegment({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  // Styled confirmation — this delete had none at all before.
+  const { confirm, confirmDialog } = useConfirm()
+  const tCommon = useTranslations('Common')
+  const t = useTranslations('Contacts')
+  const qc = useQueryClient()
+  const { data: history = [], isLoading } = useSubscriptionHistory(contact.id)
+  const { data: subTypes = [] } = useSubscriptionTypes(teamId)
+  const invalidateHistory = () =>
+    qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
+
+  if (isLoading)
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 rounded-lg" />
+        ))}
+      </div>
+    )
+
+  return (
+    <div className="space-y-2 pb-16">
+      {history.length === 0 ? (
+        <div className="py-8 text-center text-muted-foreground text-sm">
+          {t('noSubscriptions')}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {history.map((entry) => {
+            const isActive = !entry.end_date
+            const typeName =
+              subTypes.find((s) => s.id === entry.subscription_type_id)?.name ??
+              entry.subscription_type_name ??
+              '—'
+            return (
+              <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg border">
+                <div
+                  className={`h-2 w-2 rounded-full mt-2 shrink-0 ${isActive ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{typeName}</p>
+                    {isActive && (
+                      <Badge variant="default" className="text-xs">
+                        {t('subscriptionActiveLabel')}
+                      </Badge>
+                    )}
+                  </div>
+                  {entry.recurrence && (
+                    <p className="text-xs text-muted-foreground">
+                      {t(`recurrence_${entry.recurrence}`)}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(entry.start_date)} –{' '}
+                    {entry.end_date ? formatDate(entry.end_date) : t('subscriptionEndNone')}
+                  </p>
+                  {entry.termination_reason && (
+                    <p className="text-xs text-muted-foreground italic">
+                      {entry.termination_reason}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={async () => {
+                    // A history row is the evidence that somebody held a
+                    // plan. Deleting it refunds nothing and changes nothing
+                    // they hold now — it just removes the record, which is
+                    // why the body says exactly that rather than "are you
+                    // sure".
+                    const ok = await confirm({
+                      title: t('subHistoryDeleteTitle'),
+                      description: t('subHistoryDeleteBody', {
+                        name: `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim(),
+                      }),
+                      confirmLabel: tCommon('delete'),
+                    })
+                    if (!ok) return
+                    await deleteDoc(
+                      doc(
+                        db,
+                        CONTACTS_COLLECTION,
+                        contact.id,
+                        CONTACT_SUBSCRIPTION_HISTORY_SUBCOLLECTION,
+                        entry.id
+                      )
+                    )
+                    invalidateHistory()
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
       {confirmDialog}
     </div>
   )
@@ -4515,83 +4699,6 @@ function AffilStatusBadge({
   )
 }
 
-/**
- * THE AFFILIATION, IN THE HEADER — the type's mark, its label, its status.
- *
- * Franco, with the type mini-cards: "we could enhance the affiliation definition
- * with a logo, shown on the mini card and eventually as a badge+status somewhere
- * in the contact detail". This is that badge, and it draws the SAME
- * `AffiliationTypeMark` the picker draws, so a type that gains a logo gains it
- * in both places at once and neither can drift.
- *
- * ── ONE CHIP PER TYPE, THE CURRENT ONE ──
- *
- * A contact accumulates a row per season, so the raw list is a HISTORY, not a
- * state. The header wants the state: the most recent row per type. The query is
- * already ordered `created_at desc`, so the first row seen for a type is that
- * one — no sort here, and no second definition of "current" for a later reader
- * to disagree with. The whole history stays one click away in the tab.
- *
- * ── WHY IT SHOWS AN EXPIRED ONE TOO ──
- *
- * Filtering to `active` rows would hide exactly the fact an org manager opens
- * the record for. "HMD Affiliation · Expired" in red IS the answer; an absent
- * chip reads as "never affiliated", which is a different and wrong thing. The
- * status def's own colour carries the difference.
- *
- * It renders nothing when the contact holds no affiliation, which is the only
- * gate it needs — a studio that does not use the axis never sees it.
- */
-function ContactAffiliationBadges({
-  contact,
-  teamId,
-  orgId,
-}: {
-  contact: Contact
-  teamId: string | null
-  orgId?: string | null
-}) {
-  const t = useTranslations('Contacts')
-  const { data: affiliations = [] } = useContactAffiliations(contact.id)
-  const { data: types = [] } = useAffiliationTypes(teamId, orgId)
-  // The BUILT-IN set as the default, exactly as the tab below does it: the query
-  // is `enabled: !!orgId`, so for a studio with no organisation it never runs and
-  // `[]` would print a raw `status_id` where a label belongs.
-  const { data: statuses = DEFAULT_ORG_AFFILIATION_STATUSES } = useOrgAffiliationStatuses(orgId)
-
-  const current = useMemo(() => {
-    const seen = new Map<string, Affiliation>()
-    for (const a of affiliations)
-      if (!seen.has(a.affiliation_type_id)) seen.set(a.affiliation_type_id, a)
-    return [...seen.values()]
-  }, [affiliations])
-
-  if (current.length === 0) return null
-
-  return (
-    <>
-      {current.map((a) => {
-        const type = types.find((x) => x.id === a.affiliation_type_id)
-        const label = type?.label ?? a.label ?? a.type_key ?? a.affiliation_type_id
-        const def = statuses.find((x) => x.id === a.status_id)
-        const color = AFFIL_COLOR_CLASSES[def?.color ?? 'gray'] ?? AFFIL_COLOR_CLASSES.gray
-        const until = formatDate(a.valid_until)
-        return (
-          <span
-            key={a.id}
-            title={until ? t('affiliationValidUntil', { date: until }) : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text} ${color.border}`}
-          >
-            <AffiliationTypeMark type={{ label, logo_url: type?.logo_url }} size={14} />
-            <span className="max-w-[140px] truncate">{label}</span>
-            <span className="opacity-70">{def?.label ?? a.status_id}</span>
-          </span>
-        )
-      })}
-    </>
-  )
-}
-
 // ─── affiliations tab ─────────────────────────────────────────────────────────
 
 function AffiliationsTab({
@@ -5074,13 +5181,15 @@ type TabId = (typeof TAB_IDS)[number]
 
 // The segments of the "Plans & Payments" tab, carried in `?seg=` so a refresh, a
 // shared link and a reopened tab all land where the reader was — the same UX-22
-// argument `useTabParam` was written for, one level down.
+// argument `useTabParam` was written for, one level down. Until 2026-09-13 they
+// were overview / plans / payments: an old `?seg=overview` or `?seg=plans` link is
+// an unknown value now and falls back to Current, where the plan card went.
 // 'receipts' is always in the URL vocabulary (so a direct `?seg=receipts` link
 // is read on mount) even though the tab strip only offers it once the plugin
 // is installed — MembershipTab's own effect bounces a stale value back to
-// Overview. Keeping the plugin's gate out of this array would instead make a
+// Current. Keeping the plugin's gate out of this array would instead make a
 // still-loading `isInstalled()` swallow a legitimate deep link on first paint.
-const MEMBERSHIP_SEGMENTS = ['overview', 'plans', 'payments', 'receipts'] as const
+const MEMBERSHIP_SEGMENTS = ['current', 'history', 'payments', 'receipts'] as const
 type MembershipSeg = (typeof MEMBERSHIP_SEGMENTS)[number]
 
 export default function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -5111,7 +5220,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   // exists to remove. `enabled` keeps `?seg=` off the URL of every other tab.
   const [membershipSeg, setMembershipSeg] = useTabParam(
     MEMBERSHIP_SEGMENTS,
-    'overview',
+    'current',
     'seg',
     { enabled: tab === 'payments' }
   )
@@ -5266,20 +5375,32 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       {/* Header — TWO cards. Left, the profile: who they are, in the shape a
           profile is expected to take — a round picture overlapping the card's
           top edge, the name under it, everything centred. Right, the insights
-          card: what the studio reads about them (InsightsCard.tsx). A quarter
-          and three quarters at `lg`, stacked below it. The grid carries top
+          card: what the studio reads about them (InsightsCard.tsx). A third
+          and two thirds at `lg`, stacked below it. The grid carries top
           padding so the avatar can sit above the card without touching the
           back button. */}
-      <div className="grid gap-4 pt-10 lg:grid-cols-4 lg:items-stretch">
-        <div className="relative rounded-xl border bg-card px-5 pb-5 pt-12 text-center lg:col-span-1">
+      <div className="grid gap-5 pt-12 lg:grid-cols-3 lg:items-stretch">
+        <div className="relative flex flex-col rounded-2xl border border-border/60 bg-card px-6 pb-6 pt-16 text-center shadow-xl shadow-black/[0.06] dark:shadow-black/40 lg:col-span-1">
+          {/* The card's only decoration: a tinted band along the top and a
+              soft glow behind the avatar. Both sit behind everything else
+              (the content blocks are positioned so they paint on top) and
+              take no clicks. */}
           <div
-            className="absolute left-1/2 -top-10 flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground ring-4 ring-card"
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-2xl bg-gradient-to-b from-primary/10 to-transparent"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute left-1/2 -top-14 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/25 blur-2xl"
+            aria-hidden
+          />
+          <div
+            className="absolute left-1/2 -top-12 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-card"
             aria-hidden
           >
             {personInitials(contact)}
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold min-w-0 break-words">
+          <div className="relative min-w-0">
+            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">
               {contact.firstname} {contact.lastname}
             </h1>
             {/* Sits with the name because it acts ON the person — "send this
@@ -5298,7 +5419,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               </Tip>
             )}
           </div>
-          <div className="flex-1 min-w-0 mt-3">
+          <div className="relative mt-4 flex-1 min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2">
               {/* A member has asked to close their own account. It sits with
                   the lifecycle badges because that is what it is — but ABOVE
@@ -5345,19 +5466,23 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       {t('newBadge')}
                     </Badge>
                   )}
-                  {/* LAST in the row on purpose. Every chip before it is
-                      something the studio might have to ACT on; belonging is a
-                      standing fact, so it reads as the answer to "and who are
-                      they to us" rather than competing with the to-dos. */}
-                  <ContactAffiliationBadges
-                    contact={contact}
-                    teamId={currentTeamId}
-                    orgId={team?.org_id}
-                  />
+                  {/* LAST in the row on purpose: what they HOLD. Every chip
+                      before it is something the studio might have to act on;
+                      a plan is a standing fact, so it reads as "and what are
+                      they on" rather than competing with the to-dos. One chip
+                      per live plan, coloured by its billing state; a plan that
+                      is winding down says when it ends. Affiliation left this
+                      row on 2026-09-13: it is the secondary fact, and the
+                      panel below still links to it. */}
+                  {livePlans(contact).map((sub) => (
+                    <PlanChip key={sub.subscription_type_id} sub={sub} />
+                  ))}
                 </>
               )}
             </div>
-            <div className="flex flex-col items-center gap-1 mt-2">
+            {/* The facts as a list: left-aligned inside a quiet panel so the
+                icons line up and a long email has room, centred as a block. */}
+            <div className="mt-4 flex flex-col gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-left">
               {contact.email && (
                 <span className="group/email flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
                   <Mail className="h-3 w-3 shrink-0" />
@@ -5427,7 +5552,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     <button
                       type="button"
                       onClick={() => {
-                        setMembershipSeg('plans')
+                        setMembershipSeg('current')
                         setTab('payments')
                       }}
                       className="flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -5468,18 +5593,20 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               open the editor sheet (also glanced in the profile column).
               Margin so the buttons don't crowd the detail lines above them. */}
           {!contact.archived_at && !contact.deleted_at && (
-            <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="mt-auto grid grid-cols-4 gap-1.5 pt-5">
               {/* Opens the alerts PANEL, not a tab. It used to jump to
                   Follow-ups, which is where alerts used to live. */}
               <HeaderActionButton
                 icon={Bell}
                 label={t('tabAlerts')}
+                shortLabel={t('tabAlerts')}
                 count={contactAlerts.length}
                 onClick={() => setAlertsOpen(true)}
               />
               <HeaderActionButton
                 icon={StickyNote}
                 label={t('tabNotes')}
+                shortLabel={t('tabNotes')}
                 count={notesCount}
                 onClick={() => setNotesOpen(true)}
               />
@@ -5489,6 +5616,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <HeaderActionButton
                 icon={QrCode}
                 label={tLink('headerTip')}
+                shortLabel={t('actionQr')}
                 onClick={() => setUpdateLinkOpen(true)}
               />
               {/* Roster ↔ external. One button whose meaning flips with the
@@ -5497,6 +5625,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <HeaderActionButton
                 icon={contact.external === true ? UserCheck : DoorOpen}
                 label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
+                shortLabel={contact.external === true ? t('actionActive') : t('actionExternal')}
                 onClick={() =>
                   contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
                 }
@@ -5508,7 +5637,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         <InsightsCard
           contact={contact}
           thresholds={team?.engagement_thresholds}
-          className="lg:col-span-3"
+          className="lg:col-span-2"
         />
       </div>
 
@@ -5553,7 +5682,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             }
 
             return (
-              <div className="flex items-stretch gap-1 border-b">
+              // Extra room above the strip: the header cards are heavy, and
+              // the page's default rhythm put the tabs right under them.
+              <div className="mt-10 flex items-stretch gap-1 border-b">
                 <div className="flex flex-1 gap-1 overflow-x-auto overflow-y-hidden no-scrollbar">
                   {editingTabs ? (
                     <SortableList
