@@ -1114,7 +1114,10 @@
     "actionUpdateDetails": "Daten",
     "rosterLabel": "Stamm",
     "rosterActive": "Aktiv",
-    "rosterActiveHint": "Gehört zu deinem Stamm – Erinnerungen, Einladungen und Automationen erreichen sie."
+    "rosterActiveHint": "Gehört zu deinem Stamm – Erinnerungen, Einladungen und Automationen erreichen sie.",
+    "summarySectionStatus": "Status:",
+    "summarySectionOutlook": "Ausblick:",
+    "summarySectionNextSession": "Beim nächsten Training:"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",

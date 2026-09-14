@@ -271,7 +271,8 @@ describe('contact summary — what the model says back', () => {
     const source = readFileSync(join(__dirname, 'aiSummary.ts'), 'utf8').replace(/\r\n/g, '\n')
     assert.match(source, /thinkingConfig:\s*\{\s*thinkingBudget:\s*0\s*\}/)
     assert.match(source, /cut = replyWasStopped\(response\)/)
-    assert.match(source, /normaliseSummary\(raw,\s*\{\s*cut\s*\}\)/)
+    assert.match(source, /readSummaryReply\(raw,\s*\{\s*cut\s*\}\)/)
+    assert.match(source, /responseJsonSchema:\s*SUMMARY_SCHEMA/)
   })
 })
 

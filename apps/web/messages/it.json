@@ -1114,7 +1114,10 @@
     "actionUpdateDetails": "Dati",
     "rosterLabel": "Gruppo",
     "rosterActive": "Attivo",
-    "rosterActiveHint": "Fa parte del tuo gruppo — promemoria, inviti e automazioni lo raggiungono."
+    "rosterActiveHint": "Fa parte del tuo gruppo — promemoria, inviti e automazioni lo raggiungono.",
+    "summarySectionStatus": "Stato:",
+    "summarySectionOutlook": "Prospettive:",
+    "summarySectionNextSession": "Alla prossima sessione:"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",

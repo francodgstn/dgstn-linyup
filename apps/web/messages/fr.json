@@ -1114,7 +1114,10 @@
     "actionUpdateDetails": "Infos",
     "rosterLabel": "Effectif",
     "rosterActive": "Actif",
-    "rosterActiveHint": "Fait partie de votre effectif — rappels, invitations et automatisations lui parviennent."
+    "rosterActiveHint": "Fait partie de votre effectif — rappels, invitations et automatisations lui parviennent.",
+    "summarySectionStatus": "Statut :",
+    "summarySectionOutlook": "Perspectives :",
+    "summarySectionNextSession": "À la prochaine séance :"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
