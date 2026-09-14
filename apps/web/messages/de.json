@@ -8706,6 +8706,7 @@
     "secretLabel": "Dein Schlüssel",
     "exampleClaudeCode": "Zu Claude Code hinzufügen",
     "exampleRest": "Im Terminal ausprobieren",
-    "done": "Fertig"
+    "done": "Fertig",
+    "referenceLabel": "API-Referenz (OpenAPI):"
   }
 }

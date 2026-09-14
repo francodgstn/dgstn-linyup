@@ -21,7 +21,20 @@ Second wave: `/v1/activities`, `/v1/plans`, `/v1/sessions/{id}/roster`, `/v1/con
 `/v1/subscriptions?state=`, `/v1/events`, `/v1/reports/weekly`, `/v1/reports/finance`,
 `/v1/insights/class-fill`; MCP tools `list_offerings`, `get_session_roster`, `get_contact_history`,
 `list_memberships`, `list_events`, `get_attendance_trend`, `get_revenue_summary`,
-`get_class_fill_rates`. Not yet: OpenAPI, the Hosting `api` target, OAuth (Phase 2).
+`get_class_fill_rates`. Not yet: the Hosting `api` target, OAuth (Phase 2).
+
+**OpenAPI** — `GET /v1/openapi.json`, unauthenticated (it holds no studio data), OpenAPI 3.0.3,
+built at request time by `api/openapi/document.ts`. It cannot drift by construction: the
+operation table is a `Record<RestRouteKey, …>` over the router's own route keys; query parameters
+are generated from `REST_QUERY`, the shapes the router parses with; and every response schema in
+`api/openapi/components.ts` is written through `objectOf<T>()`, which fails the typecheck unless
+it names every key of the projection type and exactly its optional keys. Linked from
+Settings → API keys.
+
+The document's `servers` URL comes from `publicBaseUrl` (`api/index.ts`): the `API_BASE_URL`
+environment variable when set, otherwise the request's host with the function prefix the runtime
+strips added back (`/<project>/europe-west6/api` on the emulator, `/api` on cloudfunctions.net,
+nothing behind the `api` Hosting target). Set `API_BASE_URL` once the custom domain exists.
 
 Records about people (a roster, a history, a membership) name the person from the CONTACT
 document through `loadPeople` (`api/resources/people.ts`) — never from the copy denormalised on

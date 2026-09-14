@@ -8706,6 +8706,7 @@
     "secretLabel": "Votre clé",
     "exampleClaudeCode": "Ajouter à Claude Code",
     "exampleRest": "Essayer depuis un terminal",
-    "done": "Terminé"
+    "done": "Terminé",
+    "referenceLabel": "Référence de l'API (OpenAPI) :"
   }
 }

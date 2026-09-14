@@ -343,6 +343,17 @@ function ConnectCard() {
       <p className="text-xs text-muted-foreground">
         {t('endpointLabel')} <code className="rounded bg-muted px-1 py-0.5 font-mono">{API_BASE_URL}</code>
       </p>
+      <p className="text-xs text-muted-foreground">
+        {t('referenceLabel')}{' '}
+        <a
+          href={`${API_BASE_URL}/v1/openapi.json`}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono underline underline-offset-2"
+        >
+          {`${API_BASE_URL}/v1/openapi.json`}
+        </a>
+      </p>
       <p className="text-xs text-muted-foreground">{t('connectWebSoon')}</p>
     </div>
   )

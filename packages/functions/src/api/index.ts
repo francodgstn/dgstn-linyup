@@ -26,6 +26,30 @@ const REFUSAL_MESSAGE: Record<ApiAuthRefusal, string> = {
   not_a_member: 'The member this credential acts for is no longer on the team',
 }
 
+/**
+ * The URL clients should call, for the OpenAPI `servers` entry. It cannot be read
+ * off the request path: the functions runtime strips the function's own prefix
+ * (`/<project>/<region>/api` on the emulator, `/api` on cloudfunctions.net)
+ * before the app sees the request, so the path looks the same everywhere.
+ * `API_BASE_URL` wins when the environment sets it.
+ */
+export function publicBaseUrl(
+  req: Pick<ApiRequest, 'get' | 'protocol'>,
+  env: Record<string, string | undefined> = process.env
+): string {
+  if (env.API_BASE_URL) return env.API_BASE_URL.replace(/\/+$/, '')
+  const proto = req.get('x-forwarded-proto')?.split(',')[0]?.trim() || req.protocol
+  const host = req.get('host') ?? 'localhost'
+  if (env.FUNCTIONS_EMULATOR === 'true') {
+    return `${proto}://${host}/${env.GCLOUD_PROJECT ?? 'demo-linyup'}/${API_FUNCTION_REGION}/api`
+  }
+  if (host.endsWith('.cloudfunctions.net')) return `${proto}://${host}/api`
+  return `${proto}://${host}`
+}
+
+/** The region `setGlobalOptions` deploys every function to (functions/src/index.ts). */
+const API_FUNCTION_REGION = 'europe-west6'
+
 function setCommonHeaders(res: ApiResponse): void {
   res.set('Cache-Control', 'private, no-store')
   res.set('Access-Control-Allow-Origin', '*')
@@ -45,6 +69,18 @@ export async function handleApiRequest(req: ApiRequest, res: ApiResponse): Promi
   const path = req.path.replace(/\/+$/, '') || '/'
   if (path === '/' || path === '/health') {
     res.json({ ok: true, service: 'linyup-api' })
+    return
+  }
+  // The reference describes the API and holds no studio data, so it answers
+  // before any credential is asked for.
+  if (path === '/v1/openapi.json') {
+    if (req.method !== 'GET') {
+      res.set('Allow', 'GET').status(405).end()
+      return
+    }
+    const { buildOpenApiDocument } = await import('./openapi/document')
+    res.set('Cache-Control', 'public, max-age=300')
+    res.json(buildOpenApiDocument(publicBaseUrl(req)))
     return
   }
   const surface = path === '/mcp' ? 'mcp' : path.startsWith('/v1/') || path === '/v1' ? 'rest' : null
