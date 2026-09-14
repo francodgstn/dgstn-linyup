@@ -496,6 +496,9 @@ export {
   downloadTarif595Receipt,
   emailTarif595Receipt,
   listMyTarif595Receipts,
+  // A model-backed PROPOSAL of the offering → position map, reviewed on the
+  // settings page before it is saved; writes nothing, rate-limited.
+  suggestTarif595Mappings,
 } from './tarif595'
 
 // QR-bill invoices (plugin) — creation is plugin-gated; void, download, email

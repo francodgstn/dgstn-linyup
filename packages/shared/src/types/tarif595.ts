@@ -590,3 +590,72 @@ export interface Tarif595BulkResult {
 export function tarif595BulkIsTerminal(status: Tarif595BulkStatus): boolean {
   return status !== 'running'
 }
+
+// ─── Mapping suggestions: the unit is DERIVED, the position is PROPOSED ──────
+//
+// Mapping offerings to positions is the most tedious step of the setup, and
+// it splits into two halves of very different certainty. HOW an offering
+// bills (the unit) follows from the offering's own data — a monthly price is
+// billed per month, a credit pack per entry, a class per lesson — so it is a
+// deterministic default, computed here and applied to unmapped rows by the
+// settings page. WHICH method the offering is (the position) is a judgement
+// the studio owns: the insurer reimburses per method its label body certified,
+// and a plan named "Unlimited" says nothing about whether it is fitness or
+// yoga. So the position is only ever PROPOSED (`suggestTarif595Mappings`, a
+// model over the names and descriptions), marked as such on the row, and
+// reviewed before it is saved. Nothing here writes.
+
+export interface Tarif595OfferingFacts {
+  kind: Tarif595OfferingKind
+  /** A plan's price recurrences (`SubscriptionRecurrence` values). */
+  recurrences?: string[]
+  /** The largest credit pack a plan sells, when it sells one. */
+  credits?: number | null
+  activityType?: 'class' | 'appointment' | null
+}
+
+/**
+ * The unit an offering bills in, from its own facts. `null` when the facts do
+ * not decide it (a plan with no prices) — the row then stays empty rather
+ * than carrying a guess.
+ */
+export function suggestTarif595Unit(f: Tarif595OfferingFacts): { unit: Tarif595Unit; entries: number | null } | null {
+  if (f.kind === 'course') return { unit: 'flat', entries: null }
+  if (f.kind === 'activity') return { unit: 'lesson', entries: null }
+  if (f.credits && f.credits > 0) return { unit: 'entry', entries: f.credits }
+  const rec = new Set(f.recurrences ?? [])
+  // A plan sold both monthly and yearly is attested per month: one line with
+  // the number of months covers either purchase (Qualitop FAQ 3.6).
+  if (rec.has('monthly') || rec.has('quarterly') || rec.has('weekly') || rec.has('biweekly')) return { unit: 'month', entries: null }
+  if (rec.has('annual')) return { unit: 'year', entries: null }
+  if (rec.has('per_class')) return { unit: 'lesson', entries: null }
+  if (rec.has('one_time')) return { unit: 'flat', entries: null }
+  return null
+}
+
+export interface Tarif595SuggestRequest {
+  teamId: string
+}
+
+export type Tarif595SuggestionConfidence = 'high' | 'medium' | 'low'
+
+export interface Tarif595Suggestion {
+  /** The offering key (`tarif595OfferingKey`). */
+  key: string
+  /** A position code that exists and is valid today, or null when the model
+   *  could not place the offering — never a code the table does not know. */
+  position: string | null
+  unit: Tarif595Unit | null
+  entries: number | null
+  ptPosition: string | null
+  confidence: Tarif595SuggestionConfidence
+  /** One line, in the receipt language, on why — shown under the row. */
+  reason: string
+}
+
+export interface Tarif595SuggestResult {
+  suggestions: Tarif595Suggestion[]
+  /** Which position list the suggestions were made against. */
+  listVersion: string
+  model: string
+}

@@ -12,16 +12,18 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
-import { ArrowLeft, CheckCircle2, HeartPulse, Loader2, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, HeartPulse, Loader2, Sparkles, XCircle } from 'lucide-react'
 import {
   TARIF595_FREE_TEXT_CODE,
   legalProfileIsComplete,
+  suggestTarif595Unit,
   tarif595LangOf,
   tarif595OfferingKey,
   validateTarif595Config,
   type Tarif595Config,
   type Tarif595ConfigIssueCode,
   type Tarif595Lang,
+  type Tarif595OfferingFacts,
   type Tarif595OfferingKind,
   type Tarif595OfferingMapping,
   type Tarif595Unit,
@@ -32,8 +34,9 @@ import { useLegalProfile } from '@/hooks/useLegalProfile'
 import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
 import { useActivities } from '@/hooks/useActivities'
 import { useCourses } from '@/plugins/online-courses/hooks'
-import { useTarif595Config, saveTarif595Config, useInvalidateTarif595 } from '@/plugins/tarif-595/hooks'
-import { PositionPicker, useTarif595PositionsTable } from '@/plugins/tarif-595/PositionPicker'
+import { useTarif595Config, saveTarif595Config, useInvalidateTarif595, callSuggestTarif595Mappings } from '@/plugins/tarif-595/hooks'
+import { useTarif595PositionsTable } from '@/plugins/tarif-595/PositionPicker'
+import { OfferingsTable, type OfferingRow, type OfferingRowErrors } from '@/plugins/tarif-595/OfferingsTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,7 +45,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { FormSection } from '@/components/ui/form-section'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // ─── Form shape ─────────────────────────────────────────────────────────────
 // Offerings are kept as ONE plain object field (no useFieldArray) — the rows
@@ -153,36 +155,35 @@ function setErrorAtPath(target: Record<string, unknown>, path: string, error: { 
 
 // ─── Offering rows (page state, merged into the `offerings` field on submit) ─
 
-interface OfferingRow {
-  key: string
-  kind: Tarif595OfferingKind
-  id: string
-  name: string
-  position: string | null
-  unit: Tarif595Unit | ''
-  entries: string
-  ptPosition: string | null
-  customName: string
-}
-
+// `OfferingRow` lives with the table (plugins/tarif-595/OfferingsTable.tsx).
+//
+// An UNMAPPED row starts with its unit already derived from the offering's
+// own facts (`suggestTarif595Unit`: a monthly price bills per month, a credit
+// pack per entry, a class per lesson) — the half of a mapping that needs no
+// judgement. The position stays empty until the manager picks one or accepts
+// a suggestion; `rowsToOfferings` skips a row without a position, so a
+// derived unit alone never reaches the saved config.
 function rowFrom(
   kind: Tarif595OfferingKind,
   id: string,
   name: string,
+  facts: Tarif595OfferingFacts,
   offerings: Record<string, Tarif595OfferingMapping>
 ): OfferingRow {
   const key = tarif595OfferingKey(kind, id)
   const m = offerings[key]
+  const derived = m ? null : suggestTarif595Unit(facts)
   return {
     key,
     kind,
     id,
     name,
     position: m?.position ?? null,
-    unit: m?.unit ?? '',
-    entries: m?.entries != null ? String(m.entries) : '',
+    unit: m?.unit ?? derived?.unit ?? '',
+    entries: m?.entries != null ? String(m.entries) : derived?.entries != null ? String(derived.entries) : '',
     ptPosition: m?.ptPosition ?? null,
     customName: m?.customName ?? '',
+    suggestion: null,
   }
 }
 
@@ -198,24 +199,6 @@ function rowsToOfferings(rows: OfferingRow[]): Record<string, Tarif595OfferingMa
     out[r.key] = mapping
   }
   return out
-}
-
-const UNITS: Tarif595Unit[] = ['month', 'year', 'lesson', 'entry', 'flat']
-
-// Literal `t('key')` calls only — no template-literal keys — so every label
-// below is spelled out rather than built from `kind`/`unit`.
-function kindLabel(t: ReturnType<typeof useTranslations>, kind: Tarif595OfferingKind): string {
-  if (kind === 'subscription') return t('kind.subscription')
-  if (kind === 'activity') return t('kind.activity')
-  return t('kind.course')
-}
-
-function unitLabel(t: ReturnType<typeof useTranslations>, unit: Tarif595Unit): string {
-  if (unit === 'month') return t('unit.month')
-  if (unit === 'year') return t('unit.year')
-  if (unit === 'lesson') return t('unit.lesson')
-  if (unit === 'entry') return t('unit.entry')
-  return t('unit.flat')
 }
 
 export default function Tarif595SettingsPage() {
@@ -284,12 +267,25 @@ export default function Tarif595SettingsPage() {
   useEffect(() => {
     if (dataLoading || initialized) return
     reset(defaultFormValues(config, defaultLang))
+    const offerings = config?.offerings ?? {}
     const nextRows: OfferingRow[] = [
-      ...subscriptionTypes.map((s) => rowFrom('subscription', s.id, s.name, config?.offerings ?? {})),
+      ...subscriptionTypes.map((s) =>
+        rowFrom(
+          'subscription',
+          s.id,
+          s.name,
+          {
+            kind: 'subscription',
+            recurrences: (s.prices ?? []).map((p) => p.recurrence),
+            credits: Math.max(0, ...(s.prices ?? []).map((p) => p.credits ?? 0)) || null,
+          },
+          offerings
+        )
+      ),
       ...activities
         .filter((a) => (a.type ?? 'class') === 'class')
-        .map((a) => rowFrom('activity', a.id, a.name, config?.offerings ?? {})),
-      ...courses.map((c) => rowFrom('course', c.id, c.title, config?.offerings ?? {})),
+        .map((a) => rowFrom('activity', a.id, a.name, { kind: 'activity', activityType: 'class' }, offerings)),
+      ...courses.map((c) => rowFrom('course', c.id, c.title, { kind: 'course' }, offerings)),
     ]
     setRows(nextRows)
     setInitialized(true)
@@ -306,6 +302,54 @@ export default function Tarif595SettingsPage() {
 
   function updateRow(key: string, patch: Partial<OfferingRow>) {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+  }
+
+  // ── Suggestions: fill the EMPTY rows from the model, mark them, save nothing ─
+  // A row the manager already mapped is never overwritten — the model proposes
+  // into blanks. Each filled row carries the reason and stays tinted until its
+  // position is touched; the notice above the table says what that means.
+  const [suggesting, setSuggesting] = useState(false)
+  async function suggestPositions() {
+    if (!teamId) return
+    if (!rows.some((r) => !r.position)) {
+      toast.info(t('suggest.nothingToFill'))
+      return
+    }
+    setSuggesting(true)
+    try {
+      const { data } = await callSuggestTarif595Mappings({ teamId })
+      const byKey = new Map(data.suggestions.map((s) => [s.key, s]))
+      let filled = 0
+      setRows((prev) =>
+        prev.map((r) => {
+          if (r.position) return r
+          const s = byKey.get(r.key)
+          if (!s?.position) return r
+          filled += 1
+          return {
+            ...r,
+            position: s.position,
+            unit: s.unit ?? r.unit,
+            entries: s.entries != null ? String(s.entries) : r.entries,
+            ptPosition: s.ptPosition ?? r.ptPosition,
+            suggestion: { confidence: s.confidence, reason: s.reason },
+          }
+        })
+      )
+      // `filled` is counted inside the updater, which React runs synchronously
+      // for a state set outside a render — but say it after the set regardless.
+      setTimeout(() => {
+        if (filled > 0) toast.success(t('suggest.applied', { count: filled }))
+        else toast.info(t('suggest.noneFound'))
+      }, 0)
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? ''
+      if (code.endsWith('resource-exhausted')) toast.error(t('suggest.rateLimited'))
+      else toast.error(t('suggest.unavailable'))
+      console.error('[tarif-595] suggest failed:', err)
+    } finally {
+      setSuggesting(false)
+    }
   }
 
   const language = watch('language')
@@ -354,8 +398,11 @@ export default function Tarif595SettingsPage() {
 
   const legalComplete = legalProfileIsComplete(legalProfile)
 
+  // Wide on purpose: the offerings table below carries two position pickers,
+  // a unit, a count and a text per row, and at 3xl it wrapped into a column of
+  // stacked cells. The identifier sections above are narrow anyway.
   return (
-    <div className="max-w-3xl space-y-6 p-4 sm:p-6">
+    <div className="max-w-6xl space-y-6 p-4 sm:p-6">
       <div className="flex items-center gap-2">
         <Link
           href={'/plugins/tarif-595' as Route}
@@ -509,113 +556,33 @@ export default function Tarif595SettingsPage() {
             </div>
           </FormSection>
 
-          {/* (d) Offerings */}
-          <FormSection title={t('offeringsSectionTitle')} description={t('offeringsSectionDescription')}>
+          {/* (d) Offerings — a data table; the row model and the cells live in
+              plugins/tarif-595/OfferingsTable.tsx. "Suggest positions" fills
+              the EMPTY rows from the model and marks them; nothing is saved
+              until the manager presses Save. */}
+          <FormSection
+            title={t('offeringsSectionTitle')}
+            description={t('offeringsSectionDescription')}
+            action={
+              rows.length > 0 && canEdit ? (
+                <Button type="button" size="sm" variant="outline" onClick={suggestPositions} disabled={suggesting}>
+                  {suggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {suggesting ? t('suggest.running') : t('suggest.button')}
+                </Button>
+              ) : undefined
+            }
+          >
             {offeringsRootError && <p className="text-xs text-destructive">{offeringsRootError}</p>}
+            {rows.some((r) => r.suggestion) && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-300/60 bg-amber-50/60 p-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>{t('suggest.notice')}</p>
+              </div>
+            )}
             {rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('offeringsNone')}</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('offeringName')}</TableHead>
-                    <TableHead>{t('offeringPosition')}</TableHead>
-                    <TableHead>{t('offeringUnit')}</TableHead>
-                    <TableHead>{t('offeringEntries')}</TableHead>
-                    <TableHead>{t('offeringPtPosition')}</TableHead>
-                    <TableHead>{t('offeringCustomText')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => {
-                    const rowErrors = offeringsErrorsByKey[row.key]
-                    return (
-                      <TableRow key={row.key}>
-                        <TableCell className="whitespace-normal">
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="text-[10px] uppercase">
-                              {kindLabel(t, row.kind)}
-                            </Badge>
-                            <span className="text-sm">{row.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="min-w-52">
-                          <PositionPicker
-                            value={row.position}
-                            onChange={(code) => updateRow(row.key, { position: code })}
-                            language={language}
-                            allowExpired
-                          />
-                          {rowErrors?.position?.message && (
-                            <p className="text-xs text-destructive mt-1">{rowErrors.position.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="min-w-36">
-                          <Select
-                            value={row.unit || undefined}
-                            onValueChange={(v) => updateRow(row.key, { unit: v as Tarif595Unit })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('offeringUnitPlaceholder')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UNITS.map((u) => (
-                                <SelectItem key={u} value={u}>
-                                  {unitLabel(t, u)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {rowErrors?.unit?.message && (
-                            <p className="text-xs text-destructive mt-1">{rowErrors.unit.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="min-w-24">
-                          {row.unit === 'entry' && (
-                            <>
-                              <Input
-                                type="number"
-                                min={1}
-                                value={row.entries}
-                                onChange={(e) => updateRow(row.key, { entries: e.target.value })}
-                                className="w-20"
-                              />
-                              {rowErrors?.entries?.message && (
-                                <p className="text-xs text-destructive mt-1">{rowErrors.entries.message}</p>
-                              )}
-                            </>
-                          )}
-                        </TableCell>
-                        <TableCell className="min-w-52">
-                          <PositionPicker
-                            value={row.ptPosition}
-                            onChange={(code) => updateRow(row.key, { ptPosition: code })}
-                            language={language}
-                            allowExpired
-                          />
-                          {rowErrors?.ptPosition?.message && (
-                            <p className="text-xs text-destructive mt-1">{rowErrors.ptPosition.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="min-w-48">
-                          {row.position === TARIF595_FREE_TEXT_CODE && (
-                            <>
-                              <Input
-                                value={row.customName}
-                                onChange={(e) => updateRow(row.key, { customName: e.target.value })}
-                                placeholder={t('offeringCustomTextPlaceholder')}
-                              />
-                              {rowErrors?.customName?.message && (
-                                <p className="text-xs text-destructive mt-1">{rowErrors.customName.message}</p>
-                              )}
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+              <OfferingsTable rows={rows} language={language} errorsByKey={offeringsErrorsByKey} onUpdate={updateRow} />
             )}
           </FormSection>
 

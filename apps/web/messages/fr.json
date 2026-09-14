@@ -8561,7 +8561,29 @@
     "errorNoOfferings": "Associez au moins un abonnement, un cours ou un cours en ligne à une position",
     "positionPlaceholder": "Sélectionner une position…",
     "positionSearchPlaceholder": "Rechercher des positions…",
-    "positionEmpty": "Aucune position correspondante."
+    "positionEmpty": "Aucune position correspondante.",
+    "table": {
+      "state": "État",
+      "stateMapped": "Associé",
+      "stateSuggested": "Suggéré – à vérifier avant d'enregistrer",
+      "stateUnmapped": "Pas encore associé",
+      "searchPlaceholder": "Rechercher une offre…",
+      "unmappedOnly": "Non associés seulement ({count})",
+      "summary": "{mapped} sur {total} associés",
+      "allMapped": "Toutes les offres sont associées."
+    },
+    "suggest": {
+      "button": "Suggérer des positions",
+      "running": "Suggestions en cours…",
+      "notice": "Les suggestions sont générées automatiquement à partir des noms de vos abonnements et cours. Vérifiez chaque ligne suggérée au regard des méthodes reconnues par votre organisme de label avant d'enregistrer – le justificatif indique ce que vous choisissez, pas ce qui a été suggéré.",
+      "rowLabel": "Suggéré",
+      "lowConfidence": "incertain",
+      "applied": "{count} suggestions renseignées. Les lignes déjà associées n'ont pas été modifiées.",
+      "nothingToFill": "Rien à suggérer – toutes les offres sont déjà associées.",
+      "noneFound": "Aucune position n'a pu être suggérée pour les offres non associées.",
+      "unavailable": "Les suggestions ne sont pas disponibles pour le moment. Vous pouvez toujours choisir les positions à la main.",
+      "rateLimited": "Vous avez atteint la limite horaire de suggestions. Réessayez plus tard."
+    }
   },
   "QrInvoices": {
     "title": "Factures QR",

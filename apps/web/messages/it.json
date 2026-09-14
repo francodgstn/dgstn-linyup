@@ -8561,7 +8561,29 @@
     "errorNoOfferings": "Associa almeno un abbonamento, corso o corso online a una posizione",
     "positionPlaceholder": "Seleziona una posizione…",
     "positionSearchPlaceholder": "Cerca posizioni…",
-    "positionEmpty": "Nessuna posizione corrispondente."
+    "positionEmpty": "Nessuna posizione corrispondente.",
+    "table": {
+      "state": "Stato",
+      "stateMapped": "Associato",
+      "stateSuggested": "Suggerito – da verificare prima di salvare",
+      "stateUnmapped": "Non ancora associato",
+      "searchPlaceholder": "Cerca offerte…",
+      "unmappedOnly": "Solo non associati ({count})",
+      "summary": "{mapped} su {total} associati",
+      "allMapped": "Tutte le offerte sono associate."
+    },
+    "suggest": {
+      "button": "Suggerisci posizioni",
+      "running": "Suggerimenti in corso…",
+      "notice": "I suggerimenti sono generati automaticamente dai nomi dei suoi abbonamenti e corsi. Verifichi ogni riga suggerita rispetto ai metodi riconosciuti dal suo ente di certificazione prima di salvare – sul giustificativo compare ciò che sceglie, non ciò che è stato suggerito.",
+      "rowLabel": "Suggerito",
+      "lowConfidence": "incerto",
+      "applied": "{count} suggerimenti inseriti. Le righe già associate non sono state modificate.",
+      "nothingToFill": "Niente da suggerire – tutte le offerte sono già associate.",
+      "noneFound": "Nessuna posizione suggerita per le offerte non associate.",
+      "unavailable": "I suggerimenti non sono disponibili al momento. Può comunque scegliere le posizioni manualmente.",
+      "rateLimited": "Ha raggiunto il limite orario di suggerimenti. Riprovi più tardi."
+    }
   },
   "QrInvoices": {
     "title": "Fatture QR",
