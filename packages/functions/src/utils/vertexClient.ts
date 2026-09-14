@@ -25,6 +25,18 @@
 //   the SECOND line rather than the only one — it still refuses everything it
 //   refused before, because a constrained model is a better first draft and not
 //   a security boundary.
+//
+// ── THINKING SPENDS THE OUTPUT CAP ──────────────────────────────────────────
+//
+// On `gemini-2.5-flash` thinking is ON by default, and thinking tokens count
+// against `maxOutputTokens`. A call that sets a cap and says nothing about
+// thinking can be stopped before its answer is written — which is how contact
+// summaries were stored as sentence fragments. So every call states its
+// thinking budget: 0 where the task needs no reasoning, a bounded number with
+// the cap raised well above it where it does. And every call asks
+// `replyWasStopped` whether the reply was cut, and treats a cut reply as
+// incomplete. `vertexCalls.test.ts` reads each call site from the source and
+// fails the build for one that does neither.
 import { GoogleGenAI } from '@google/genai'
 import { getVertexLocation } from './env'
 
@@ -46,4 +58,18 @@ export function getGenAI(): GoogleGenAI {
   if (!project) throw new Error('GCLOUD_PROJECT not set — cannot init Vertex AI')
   cached = new GoogleGenAI({ vertexai: true, project, location: getVertexLocation() })
   return cached
+}
+
+/** The part of a reply `replyWasStopped` reads. */
+export interface ReplyFinish {
+  candidates?: Array<{ finishReason?: unknown }>
+}
+
+/**
+ * Did the model stop because it reached `maxOutputTokens`? The ONE reader of
+ * `finishReason`. A stopped reply is incomplete whatever its text looks like:
+ * a sentence may be half-written, a JSON array may have closed early.
+ */
+export function replyWasStopped(response: ReplyFinish | null | undefined): boolean {
+  return String(response?.candidates?.[0]?.finishReason ?? '') === 'MAX_TOKENS'
 }

@@ -183,7 +183,6 @@ import {
   BarChart2,
   Lock,
   Flag,
-  Link2,
   Info,
   Pencil,
   ShieldCheck,
@@ -191,7 +190,6 @@ import {
   MoreVertical,
   DoorOpen,
   UserCheck,
-  QrCode,
   User,
   Check,
   IdCard,
@@ -201,6 +199,10 @@ import {
   CheckSquare,
   Search,
   Zap,
+  Ellipsis,
+  Banknote,
+  SlidersHorizontal,
+  UserPen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -231,6 +233,13 @@ import { PlanGate } from '@/components/plan/PlanGate'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { RenewConfirmDialog } from '@/components/affiliations/RenewUI'
 import { ContactUpdateLinkDialog } from '@/components/contacts/ContactUpdateLinkDialog'
+import { RecordPaymentDialog } from '@/components/payments/RecordPaymentDialog'
+import {
+  CustomiseQuickActionsDialog,
+  useContactQuickActions,
+  type QuickActionId,
+  type QuickActionOption,
+} from './quickActions'
 import { renewAffiliationCall, previewRenewedUntil } from '@/components/affiliations/renew'
 import { ContactGroupsChips } from '@/plugins/contact-groups/ContactGroupsChips'
 import { CustomFieldsCardBody } from '@/plugins/custom-fields/CustomFieldsCardBody'
@@ -1143,6 +1152,7 @@ function HeaderActionButton({
   label,
   shortLabel,
   count = 0,
+  disabled = false,
   onClick,
 }: {
   icon: React.ElementType
@@ -1151,6 +1161,8 @@ function HeaderActionButton({
    *  accessible name; this is the two-word version that fits a tile. */
   shortLabel?: string
   count?: number
+  /** Greyed out; the `label` tooltip says why. */
+  disabled?: boolean
   onClick: () => void
 }) {
   // The count badge is a NUMBER, not a label: it says how many notes there are,
@@ -1160,12 +1172,13 @@ function HeaderActionButton({
       <button
         type="button"
         onClick={onClick}
+        disabled={disabled}
         aria-label={label}
-        className={
+        className={`${
           shortLabel
             ? 'relative flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
             : 'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
-        }
+        } disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted-foreground`}
       >
         <Icon className="h-4 w-4" />
         {shortLabel && (
@@ -1179,6 +1192,59 @@ function HeaderActionButton({
       </button>
     </Tip>
   )
+}
+
+/**
+ * Roster ↔ external (Contact.external), for every place that offers the switch:
+ * the card's "More actions" menu and the Profile tab's roster row. Marking
+ * external asks first — it silences every reminder and invitation for this
+ * person; bringing them back does not. `external` is present only when true,
+ * so the way back DELETES the fields rather than writing false. Nothing else
+ * moves. Returns the confirm dialog for the caller to render.
+ */
+function useRosterToggle(contact: Contact | null | undefined, onChanged: () => void) {
+  const t = useTranslations('Contacts')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const isExternal = contact?.external === true
+
+  const write = async (external: boolean) => {
+    if (!contact) return
+    setBusy(true)
+    try {
+      await updateDoc(
+        doc(db, CONTACTS_COLLECTION, contact.id),
+        external
+          ? { external: true, external_since: serverTimestamp(), updatedAt: serverTimestamp() }
+          : { external: deleteField(), external_since: deleteField(), updatedAt: serverTimestamp() }
+      )
+      onChanged()
+      setConfirmOpen(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggle = () => (isExternal ? void write(false) : setConfirmOpen(true))
+
+  const dialog = (
+    <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('markExternalTitle', { count: 1 })}</AlertDialogTitle>
+          <AlertDialogDescription>{t('markExternalDesc')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => void write(true)} disabled={busy}>
+            {t('bulkMarkExternal')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </ConfirmDialog>
+  )
+
+  return { isExternal, toggle, busy, dialog }
 }
 
 // The notes editor lives in a single right-side sheet, opened from the header
@@ -1462,6 +1528,8 @@ function ProfileTab({
   const { team } = useAuth()
   const { isInstalled } = useInstalledPlugins()
   const { data: rankingSystems = [] } = useTeamRankingSystems(teamId, orgId)
+  const { can } = useCapabilities()
+  const roster = useRosterToggle(contact, onSaved)
 
   const GENDERS: ContactGender[] = ['M', 'F', 'other']
 
@@ -1886,6 +1954,38 @@ function ProfileTab({
               <StageCorrectionMenu contact={contact} onCorrected={onSaved} />
             </div>
           </div>
+          {/* On the roster, or external — a lifecycle fact, so it sits with the
+              journey. The card's "More actions" menu offers the same switch. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-sm">
+                <span className="text-muted-foreground">{t('rosterLabel')}: </span>
+                <span className="font-medium">
+                  {roster.isExternal ? t('externalBadge') : t('rosterActive')}
+                </span>
+                {roster.isExternal && contact.external_since && (
+                  <span className="text-muted-foreground">
+                    {' '}
+                    · {t('externalSince')} {formatDate(contact.external_since)}
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {roster.isExternal ? t('externalHint') : t('rosterActiveHint')}
+              </p>
+            </div>
+            {can('contacts.manage') && (
+              <Button size="sm" variant="outline" onClick={roster.toggle} disabled={roster.busy}>
+                {roster.isExternal ? (
+                  <UserCheck className="mr-1.5 h-4 w-4" />
+                ) : (
+                  <DoorOpen className="mr-1.5 h-4 w-4" />
+                )}
+                {roster.isExternal ? t('headerMarkActive') : t('headerMarkExternal')}
+              </Button>
+            )}
+          </div>
+          {roster.dialog}
           {/* Two columns on desktop: inputs left, vertical stage timeline right, with
               a light divider between. Stacks on mobile — inputs first, timeline below. */}
           <div className="grid gap-x-6 gap-y-5 md:grid-cols-[minmax(0,1fr)_1px_minmax(190px,240px)]">
@@ -5225,40 +5325,33 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   )
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
-  const tLink = useTranslations('ContactLink')
   const { goBack, isHistoryBack } = useBack('/contacts' as Route)
   const qc = useQueryClient()
   const { hasFeature } = usePlan()
   const { openUpgradeModal } = useUpgradeModal()
   const { isInstalled } = useInstalledPlugins()
 
-  const [linkCopied, setLinkCopied] = useState(false)
   const [emailCopied, setEmailCopied] = useState(false)
   // Notes editor sheet — opened from the header icon and the profile-column glance.
   const [notesOpen, setNotesOpen] = useState(false)
   const [updateLinkOpen, setUpdateLinkOpen] = useState(false)
   const [alertsOpen, setAlertsOpen] = useState(false)
-  // Roster ↔ external (Contact.external). Marking external asks first — it
-  // silences every reminder and invitation for this person; bringing them
-  // back does not. `external` is present only when true, so the way back
-  // DELETES the fields rather than writing false. Nothing else moves.
-  const [confirmExternalOpen, setConfirmExternalOpen] = useState(false)
-  const [externalBusy, setExternalBusy] = useState(false)
-  const setExternal = async (next: boolean) => {
-    setExternalBusy(true)
-    try {
-      await updateDoc(
-        doc(db, CONTACTS_COLLECTION, id),
-        next
-          ? { external: true, external_since: serverTimestamp(), updatedAt: serverTimestamp() }
-          : { external: deleteField(), external_since: deleteField(), updatedAt: serverTimestamp() }
-      )
-      invalidate()
-      setConfirmExternalOpen(false)
-    } finally {
-      setExternalBusy(false)
-    }
-  }
+  // The card's four quick actions (which ones: quickActions.tsx, per browser)
+  // and the dialogs they open, plus the "More actions" menu's archive.
+  const [quickActions, setQuickActions] = useContactQuickActions()
+  const [customiseOpen, setCustomiseOpen] = useState(false)
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false)
+  const [sendEmailOpen, setSendEmailOpen] = useState(false)
+  const [addPlanOpen, setAddPlanOpen] = useState(false)
+  const [grantCreditsOpen, setGrantCreditsOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const { can } = useCapabilities()
+  const canManage = can('contacts.manage')
+  // Only fetched once a plan or credits dialog is opened from the card.
+  const { data: subTypes = [] } = useSubscriptionTypes(
+    addPlanOpen || grantCreditsOpen ? currentTeamId : null
+  )
   const { data: notesCount = 0 } = useContactNotesCount(id)
   const { data: contactAlerts = [] } = useContactAlerts(id)
 
@@ -5291,21 +5384,27 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     qc.invalidateQueries({ queryKey: ['contact', id] })
     qc.invalidateQueries({ queryKey: ['contacts'] })
   }
+  const roster = useRosterToggle(contact, invalidate)
+
+  const archiveContact = async () => {
+    setArchiving(true)
+    try {
+      await updateDoc(doc(db, CONTACTS_COLLECTION, id), {
+        archived_at: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      invalidate()
+      setArchiveOpen(false)
+    } finally {
+      setArchiving(false)
+    }
+  }
 
   const handleCopyEmail = () => {
     if (!contact?.email) return
     navigator.clipboard.writeText(contact.email).then(() => {
       setEmailCopied(true)
       setTimeout(() => setEmailCopied(false), 2000)
-    })
-  }
-
-  const handleCopyUpdateLink = () => {
-    if (!team?.slug) return
-    const url = `${window.location.origin}/public/${team.slug}/contact-update?contactId=${id}`
-    navigator.clipboard.writeText(url).then(() => {
-      setLinkCopied(true)
-      setTimeout(() => setLinkCopied(false), 2000)
     })
   }
 
@@ -5328,6 +5427,82 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   if (!contact) {
     return <div className="py-16 text-center text-muted-foreground">{t('notFound')}</div>
   }
+
+  // WHAT each quick action does. Which four the card shows is the viewer's
+  // choice (quickActions.tsx); an action this viewer cannot use is left off the
+  // card and out of the choices.
+  const quickActionDefs: Record<
+    QuickActionId,
+    {
+      icon: React.ElementType
+      /** The action's name — the choice list and, unless `tip` says otherwise, the tooltip. */
+      name: string
+      tip?: string
+      shortLabel: string
+      count?: number
+      disabled?: boolean
+      available: boolean
+      onClick: () => void
+    }
+  > = {
+    alerts: {
+      icon: Bell,
+      name: t('tabAlerts'),
+      shortLabel: t('tabAlerts'),
+      count: contactAlerts.length,
+      available: true,
+      onClick: () => setAlertsOpen(true),
+    },
+    notes: {
+      icon: StickyNote,
+      name: t('tabNotes'),
+      shortLabel: t('tabNotes'),
+      count: notesCount,
+      available: true,
+      onClick: () => setNotesOpen(true),
+    },
+    record_payment: {
+      icon: Banknote,
+      name: t('actionRecordPaymentTip'),
+      shortLabel: t('actionRecordPayment'),
+      // As the Payments tab's own Record button: the callable decides.
+      available: !!currentTeamId,
+      onClick: () => setRecordPaymentOpen(true),
+    },
+    send_email: {
+      icon: Mail,
+      name: t('outreachSendTitle'),
+      tip: contact.email ? undefined : t('outreachNoEmail'),
+      shortLabel: t('actionSendEmail'),
+      disabled: !contact.email,
+      available: canManage,
+      onClick: () => setSendEmailOpen(true),
+    },
+    add_plan: {
+      icon: BookOpen,
+      name: t('addSubscription'),
+      shortLabel: t('actionAddPlan'),
+      available: canManage,
+      onClick: () => setAddPlanOpen(true),
+    },
+    grant_credits: {
+      icon: Ticket,
+      name: t('grantCredits'),
+      shortLabel: t('actionGrantCredits'),
+      available: canManage,
+      onClick: () => setGrantCreditsOpen(true),
+    },
+    update_details: {
+      icon: UserPen,
+      name: t('menuUpdateDetails'),
+      shortLabel: t('actionUpdateDetails'),
+      available: true,
+      onClick: () => setUpdateLinkOpen(true),
+    },
+  }
+  const quickActionOptions: QuickActionOption[] = (Object.keys(quickActionDefs) as QuickActionId[])
+    .filter((qa) => quickActionDefs[qa].available)
+    .map((qa) => ({ id: qa, label: quickActionDefs[qa].name, icon: quickActionDefs[qa].icon }))
 
   const TABS: { id: TabId; label: string; icon: React.ElementType; feature?: PlanFeature }[] = [
     { id: 'profile', label: t('tabProfile'), icon: User },
@@ -5398,25 +5573,51 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           >
             {personInitials(contact)}
           </div>
+          {/* The rare actions — the ones that do not earn a tile: asking the
+              person to update their details, the roster switch, archiving, and
+              choosing the tiles themselves. */}
+          {!contact.archived_at && !contact.deleted_at && (
+            <div className="absolute right-3 top-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label={t('cardMoreActions')}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Ellipsis className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setUpdateLinkOpen(true)}>
+                    <UserPen className="h-3.5 w-3.5" />
+                    {t('menuUpdateDetails')}
+                  </DropdownMenuItem>
+                  {canManage && (
+                    <>
+                      <DropdownMenuItem onClick={roster.toggle}>
+                        {roster.isExternal ? (
+                          <UserCheck className="h-3.5 w-3.5" />
+                        ) : (
+                          <DoorOpen className="h-3.5 w-3.5" />
+                        )}
+                        {roster.isExternal ? t('headerMarkActive') : t('headerMarkExternal')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
+                        <Archive className="h-3.5 w-3.5" />
+                        {t('bulkArchive')}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => setCustomiseOpen(true)}>
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    {t('menuCustomiseActions')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           <div className="relative min-w-0">
             <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">
               {contact.firstname} {contact.lastname}
             </h1>
-            {/* Sits with the name because it acts ON the person — "send this
-                contact a link to update their own details" — rather than
-                describing them like the status and contact lines below. */}
-            {team?.slug && !contact.archived_at && !contact.deleted_at && (
-              <Tip label={t('sendLinkTip')}>
-                <button
-                  onClick={handleCopyUpdateLink}
-                  className="mx-auto mt-1 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={t('copyUpdateLink')}
-                >
-                  <Link2 className="h-3.5 w-3.5 shrink-0" />
-                  {linkCopied ? t('updateLinkCopied') : t('copyUpdateLink')}
-                </button>
-              </Tip>
-            )}
           </div>
           <div className="relative mt-4 flex-1 min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -5588,47 +5789,26 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <ContactGroupsChips contact={contact} onChanged={invalidate} />
             )}
           </div>
-          {/* Header action cluster — alerts jump to the Follow-ups tab; notes
-              open the editor sheet (also glanced in the profile column).
-              Margin so the buttons don't crowd the detail lines above them. */}
+          {/* The quick actions: four tiles, chosen per browser from the
+              "More actions" menu. Margin so they don't crowd the detail lines
+              above them. */}
           {!contact.archived_at && !contact.deleted_at && (
             <div className="mt-auto grid grid-cols-4 gap-1.5 pt-5">
-              {/* Opens the alerts PANEL, not a tab. It used to jump to
-                  Follow-ups, which is where alerts used to live. */}
-              <HeaderActionButton
-                icon={Bell}
-                label={t('tabAlerts')}
-                shortLabel={t('tabAlerts')}
-                count={contactAlerts.length}
-                onClick={() => setAlertsOpen(true)}
-              />
-              <HeaderActionButton
-                icon={StickyNote}
-                label={t('tabNotes')}
-                shortLabel={t('tabNotes')}
-                count={notesCount}
-                onClick={() => setNotesOpen(true)}
-              />
-              {/* Hand the person a QR and let them fill in their own details
-                  — the only route in for a contact with no email on file,
-                  since every other one authenticates by emailed code. */}
-              <HeaderActionButton
-                icon={QrCode}
-                label={tLink('headerTip')}
-                shortLabel={t('actionQr')}
-                onClick={() => setUpdateLinkOpen(true)}
-              />
-              {/* Roster ↔ external. One button whose meaning flips with the
-                  state: on the roster it offers the door, off it the way
-                  back. See Contact.external for what each side excludes. */}
-              <HeaderActionButton
-                icon={contact.external === true ? UserCheck : DoorOpen}
-                label={contact.external === true ? t('headerMarkActive') : t('headerMarkExternal')}
-                shortLabel={contact.external === true ? t('actionActive') : t('actionExternal')}
-                onClick={() =>
-                  contact.external === true ? void setExternal(false) : setConfirmExternalOpen(true)
-                }
-              />
+              {quickActions.map((qa) => {
+                const action = quickActionDefs[qa]
+                if (!action.available) return null
+                return (
+                  <HeaderActionButton
+                    key={qa}
+                    icon={action.icon}
+                    label={action.tip ?? action.name}
+                    shortLabel={action.shortLabel}
+                    count={action.count}
+                    disabled={action.disabled}
+                    onClick={action.onClick}
+                  />
+                )
+              })}
             </div>
           )}
         </div>
@@ -5798,19 +5978,74 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             open={updateLinkOpen}
             onClose={() => setUpdateLinkOpen(false)}
             teamId={contact.teamId}
+            teamSlug={team?.slug ?? null}
             contactId={contact.id}
             contactName={`${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim()}
+            contactEmail={contact.email ?? null}
           />
-          <ConfirmDialog open={confirmExternalOpen} onOpenChange={setConfirmExternalOpen}>
+          {roster.dialog}
+          {/* The quick actions' dialogs, mounted only while open: each one
+              fetches (templates, billing, plans) and resets on its next opening. */}
+          {recordPaymentOpen && currentTeamId && (
+            <RecordPaymentDialog
+              teamId={currentTeamId}
+              open
+              onClose={() => setRecordPaymentOpen(false)}
+              contactId={contact.id}
+            />
+          )}
+          {sendEmailOpen && (
+            <SendOutreachDialog
+              open
+              onOpenChange={setSendEmailOpen}
+              contact={contact}
+              teamId={currentTeamId}
+            />
+          )}
+          {addPlanOpen && (
+            <SetSubscriptionDialog
+              open
+              onOpenChange={setAddPlanOpen}
+              contact={contact}
+              teamId={currentTeamId}
+              subTypes={subTypes}
+              currency={(team?.default_currency ?? 'CHF').toUpperCase()}
+              onSaved={() => {
+                invalidate()
+                qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
+              }}
+            />
+          )}
+          {grantCreditsOpen && (
+            <GrantCreditsDialog
+              open
+              onOpenChange={setGrantCreditsOpen}
+              contact={contact}
+              subTypes={subTypes}
+              onGranted={invalidate}
+            />
+          )}
+          <CustomiseQuickActionsDialog
+            open={customiseOpen}
+            onOpenChange={setCustomiseOpen}
+            value={quickActions}
+            options={quickActionOptions}
+            onSave={setQuickActions}
+          />
+          <ConfirmDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t('markExternalTitle', { count: 1 })}</AlertDialogTitle>
-                <AlertDialogDescription>{t('markExternalDesc')}</AlertDialogDescription>
+                <AlertDialogTitle>{t('archiveContactTitle')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('archiveContactDesc', {
+                    name: `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim(),
+                  })}
+                </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => void setExternal(true)} disabled={externalBusy}>
-                  {t('bulkMarkExternal')}
+                <AlertDialogAction onClick={() => void archiveContact()} disabled={archiving}>
+                  {t('bulkArchive')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

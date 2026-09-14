@@ -293,6 +293,12 @@ pnpm backfill:affiliation-active-orgs --project linyup-staging --apply
 # --yes answers the typed confirmation this one asks for before a cloud write
 pnpm backfill:weekly-reports --org hmd --project linyup-staging
 pnpm backfill:weekly-reports --org hmd --project linyup-staging --apply --yes
+
+# the contact's last session + session count, recounted from the attendance rows —
+# a bulk import outruns the per-row trigger, which is what made contacts with a
+# class last week read "Stopped"
+pnpm backfill:contact-attendance --target staging --org hmd --dry-run
+pnpm backfill:contact-attendance --target staging --org hmd --yes
 ```
 
 The rank ladders need nothing after a fresh import — the migration writes level

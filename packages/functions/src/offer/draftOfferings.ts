@@ -33,11 +33,25 @@ import {
 import { to } from '../utils/async'
 import { hasTeamRole, isTeamMember } from '../utils/teams'
 import { Type } from '@google/genai'
-import { getGenAI, ASSISTANT_MODEL } from '../utils/vertexClient'
+import { getGenAI, ASSISTANT_MODEL, replyWasStopped } from '../utils/vertexClient'
 
 const RATE_LIMIT_MAX = 12 // drafts per user + team per hour
 const RATE_WINDOW_MS = 60 * 60 * 1000
 const EXPERIMENT_ID = 'offer-drafting'
+
+/**
+ * THE OUTPUT BUDGET, SPLIT. A draft is a small planning task — activities and
+ * plans that name each other by key, access tiers that need a plan behind them
+ * — so thinking stays on, but BOUNDED, and the cap sits well above it. Thinking
+ * tokens count against `maxOutputTokens` (see vertexClient); with the old cap
+ * of 2048 and unbounded thinking, a draft could be stopped mid-JSON.
+ *
+ * The room left for the answer covers the largest draft `parseOfferingDraft`
+ * accepts (OFFERING_DRAFT_LIMITS: 8 activities and 6 plans, each description
+ * at its full 600 characters), which is under 4000 tokens.
+ */
+export const DRAFT_THINKING_BUDGET = 1024
+export const DRAFT_MAX_OUTPUT_TOKENS = 6144
 
 /**
  * The model is asked for JSON and given the shape by name.
@@ -261,6 +275,22 @@ function unfence(text: string): string {
   return (m ? m[1] : text).trim()
 }
 
+export type DraftReply = { ok: true; json: unknown } | { ok: false; reason: 'stopped' | 'unreadable' }
+
+/**
+ * The model's reply → JSON, or why not. A STOPPED reply is refused before it is
+ * parsed: it is incomplete by definition, and a cut that happens to leave valid
+ * JSON would still be a draft missing whatever came after the cut.
+ */
+export function readDraftReply(raw: string, stopped: boolean): DraftReply {
+  if (stopped) return { ok: false, reason: 'stopped' }
+  try {
+    return { ok: true, json: JSON.parse(unfence(raw)) }
+  } catch {
+    return { ok: false, reason: 'unreadable' }
+  }
+}
+
 export const draftOfferings = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'You must be signed in.')
   const uid = request.auth.uid
@@ -275,13 +305,16 @@ export const draftOfferings = onCall(async (request) => {
   const context = await existingNames(teamId)
 
   let raw = ''
+  let stopped = false
   try {
     const response = await getGenAI().models.generateContent({
       model: ASSISTANT_MODEL,
       contents: [{ role: 'user', parts: [{ text: `${context}\n\nStudio: ${prompt.trim()}` }] }],
       config: {
         systemInstruction: SYSTEM_PROMPT,
-        maxOutputTokens: 2048,
+        // Split between bounded thinking and the answer — see DRAFT_THINKING_BUDGET.
+        maxOutputTokens: DRAFT_MAX_OUTPUT_TOKENS,
+        thinkingConfig: { thinkingBudget: DRAFT_THINKING_BUDGET },
         // Low temperature: this is a structured proposal, not a brainstorm, and
         // a creative model here mostly invents field names.
         temperature: 0.2,
@@ -295,19 +328,22 @@ export const draftOfferings = onCall(async (request) => {
     // `response.text`, not a walk down candidates[0].content.parts — four
     // optional steps that each return undefined silently. See vertexClient.
     raw = response.text ?? ''
+    stopped = replyWasStopped(response)
   } catch (err) {
     console.error('[draftOfferings] Vertex error:', (err as Error).message)
     throw new HttpsError('internal', 'The drafting service is unavailable right now.')
   }
 
-  let parsedJson: unknown
-  try {
-    parsedJson = JSON.parse(unfence(raw))
-  } catch {
+  const reply = readDraftReply(raw, stopped)
+  if (!reply.ok) {
+    if (reply.reason === 'stopped') {
+      console.warn(`[draftOfferings] reply hit the output cap (team=${teamId}, chars=${raw.length})`)
+      throw new HttpsError('internal', 'The draft was too long to finish. Try describing a smaller offer.')
+    }
     throw new HttpsError('internal', 'The draft came back in a shape we could not read.')
   }
 
-  const { draft, problems } = parseOfferingDraft(parsedJson)
+  const { draft, problems } = parseOfferingDraft(reply.json)
   if (!draft) {
     console.warn('[draftOfferings] rejected draft:', JSON.stringify(problems).slice(0, 400))
     throw new HttpsError('internal', 'The draft came back in a shape we could not read.')

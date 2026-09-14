@@ -772,7 +772,7 @@
     "summaryRegenerate": "Régénérer",
     "summaryEmpty": "Pas encore de résumé. Générez-en un à partir de la présence, de l'abonnement et des notes de cette personne.",
     "summaryUpdatedOn": "Mis à jour le {date}",
-    "summaryDisclaimer": "Rédigé par l'IA à partir de cette fiche. À vérifier avant d'agir.",
+    "summaryDisclaimer": "Généré par l'IA, à vérifier avant d'agir",
     "summaryGenerated": "Résumé mis à jour.",
     "summaryFailed": "Le résumé n'a pas pu être généré. Réessayez dans un instant.",
     "performanceProfileLockedTitle": "Profil de performance",
@@ -1098,7 +1098,23 @@
     "paymentsViewStatement": "Relevé",
     "currentNextCharge": "Prochain prélèvement",
     "currentLastPayment": "Dernier paiement",
-    "currentCreditsLeft": "Leçons restantes"
+    "currentCreditsLeft": "Leçons restantes",
+    "cardMoreActions": "Plus d'actions",
+    "menuUpdateDetails": "Mettre à jour les informations",
+    "menuCustomiseActions": "Personnaliser les actions rapides",
+    "quickActionsTitle": "Actions rapides",
+    "quickActionsIntro": "Choisissez les quatre actions de la fiche contact. Enregistré dans ce navigateur.",
+    "quickActionSlot": "Emplacement {number}",
+    "quickActionsReset": "Rétablir les valeurs par défaut",
+    "actionRecordPayment": "Paiement",
+    "actionRecordPaymentTip": "Enregistrer un paiement",
+    "actionSendEmail": "E-mail",
+    "actionAddPlan": "Abonnement",
+    "actionGrantCredits": "Crédits",
+    "actionUpdateDetails": "Infos",
+    "rosterLabel": "Effectif",
+    "rosterActive": "Actif",
+    "rosterActiveHint": "Fait partie de votre effectif — rappels, invitations et automatisations lui parviennent."
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -8291,7 +8307,12 @@
     "sheetPrint": "Imprimer",
     "sheetLiveWarning": "{count} tickets restent valables jusqu'à expiration — mieux vaut récupérer la feuille.",
     "sheetSlipHint": "Scannez pour vérifier vos informations",
-    "sheetFailed": "La feuille n'a pas pu être créée. Réessayez."
+    "sheetFailed": "La feuille n'a pas pu être créée. Réessayez.",
+    "updateTitle": "Mettre à jour les informations",
+    "modeLink": "Envoyer un lien",
+    "modeQr": "Afficher un QR",
+    "linkIntro": "Envoyez ce lien à {name}. La personne confirme avec un code reçu par e-mail, puis complète elle-même ses informations.",
+    "linkNeedsEmail": "Aucun e-mail n'est enregistré pour {name}, un lien ne peut donc pas confirmer qui l'ouvre. Affichez plutôt un QR."
   },
   "PlanTemplates": {
     "railLink": "Partir d'un modèle",

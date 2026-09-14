@@ -103,6 +103,14 @@ an `internal` error rather than storing nothing. The stored record carries
 `text`, `generated_at`, `generated_by` (the uid), `model` and `language`; the
 card shows the text, the date and a one-line disclaimer.
 
+**Thinking is off, and a stopped reply loses its fragment.** On
+`gemini-2.5-flash` thinking is on by default and its tokens count against
+`maxOutputTokens`, so summaries on staging were being stopped mid-sentence and
+stored as a fragment. The call sets `thinkingBudget: 0`, and passes whether the
+reply hit the cap (`finishReason: MAX_TOKENS`) to `normaliseSummary`, which then
+drops an unfinished last sentence, or ends a lone one with "…". A summary stored
+before the fix stays as it is until someone regenerates it.
+
 ## Regeneration: manual now, schedule later
 
 Only the button regenerates. This is the recorded decision: a scheduled refresh

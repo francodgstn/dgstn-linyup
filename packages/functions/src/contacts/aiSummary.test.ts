@@ -1,4 +1,6 @@
 import * as assert from 'node:assert'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { Contact } from '@linyup/shared'
 import {
   NOTE_MAX_CHARS,
@@ -225,6 +227,51 @@ describe('contact summary — what the model says back', () => {
   it('empty in, empty out', () => {
     assert.strictEqual(normaliseSummary('   '), '')
     assert.strictEqual(normaliseSummary('```\n```'), '')
+  })
+
+  // The staging defect: the model was stopped at the output cap and the stored
+  // summary ended "…with her last session almost two weeks".
+  it('a reply stopped at the output cap loses its unfinished last sentence', () => {
+    assert.strictEqual(
+      normaliseSummary(
+        'Annalisa used to come weekly. Her attendance has been slipping, with her last session almost two weeks',
+        { cut: true }
+      ),
+      'Annalisa used to come weekly.'
+    )
+  })
+
+  it('a stopped reply that is one unfinished sentence says so rather than reading as complete', () => {
+    assert.strictEqual(
+      normaliseSummary(
+        "Annalisa's attendance has been slipping significantly, with her last session almost two weeks,",
+        { cut: true }
+      ),
+      "Annalisa's attendance has been slipping significantly, with her last session almost two weeks…"
+    )
+  })
+
+  it('a stopped reply whose last sentence did finish keeps it', () => {
+    assert.strictEqual(
+      normaliseSummary('Anna comes twice a week. She holds Unlimited.', { cut: true }),
+      'Anna comes twice a week. She holds Unlimited.'
+    )
+  })
+
+  it('a reply that ended on its own keeps its last sentence, punctuated or not', () => {
+    assert.strictEqual(
+      normaliseSummary('Anna comes twice a week. She holds Unlimited'),
+      'Anna comes twice a week. She holds Unlimited'
+    )
+  })
+
+  // Read from the SOURCE, because the call itself needs Vertex: thinking tokens
+  // count against the output cap, which is how summaries were being cut short.
+  it('the summary call turns thinking off and tells normaliseSummary when it was stopped', () => {
+    const source = readFileSync(join(__dirname, 'aiSummary.ts'), 'utf8').replace(/\r\n/g, '\n')
+    assert.match(source, /thinkingConfig:\s*\{\s*thinkingBudget:\s*0\s*\}/)
+    assert.match(source, /cut = replyWasStopped\(response\)/)
+    assert.match(source, /normaliseSummary\(raw,\s*\{\s*cut\s*\}\)/)
   })
 })
 
