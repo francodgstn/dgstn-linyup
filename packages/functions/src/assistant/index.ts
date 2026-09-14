@@ -9,7 +9,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { to } from '../utils/async'
 import { isTeamMember } from '../utils/teams'
-import { getGenAI, ASSISTANT_MODEL } from '../utils/vertexClient'
+import { getGenAI, ASSISTANT_MODEL, replyWasStopped } from '../utils/vertexClient'
 import { pluginIsActive } from '../utils/plugins'
 
 const MAX_MESSAGES = 20
@@ -54,6 +54,27 @@ navigation and how-to. Do not invent features that aren't in the app map.
 ${APP_MAP}`
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
+
+/**
+ * A reply the model was stopped in the middle of, made to read as cut rather
+ * than as a finished answer: it ends at its last whole sentence or line, and
+ * says so with "…". A full stop after a digit is not a sentence end — "2." in a
+ * numbered list is how an answer here usually starts a step.
+ */
+export function endStoppedReply(text: string): string {
+  const t = text.trimEnd()
+  if (!t) return t
+  let end = -1
+  let atLineBreak = false
+  for (const m of t.matchAll(/(?<!\d)[.!?](?=\s|$)|\n/g)) {
+    const at = m.index ?? 0
+    atLineBreak = m[0] === '\n'
+    end = atLineBreak ? at : at + 1
+  }
+  if (end <= 0) return `${t.replace(/[\s,;:–—-]+$/, '')}…`
+  const kept = t.slice(0, end).trimEnd()
+  return atLineBreak ? `${kept}\n…` : `${kept} …`
+}
 
 export const assistantChat = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'You must be signed in.')
@@ -109,13 +130,23 @@ export const assistantChat = onCall(async (request) => {
       config: {
         systemInstruction: SYSTEM_PROMPT,
         maxOutputTokens: 1024,
+        // NO THINKING: a how-to answer grounded on the app map needs no
+        // reasoning budget, and thinking tokens would spend this cap before the
+        // answer is written (see vertexClient).
+        thinkingConfig: { thinkingBudget: 0 },
         temperature: 0.3,
       },
     })
     // `response.text` rather than walking candidates[0].content.parts — four
     // optional steps that each return undefined silently. See vertexClient.
-    const reply = (response.text ?? '').trim()
+    let reply = (response.text ?? '').trim()
     if (!reply) throw new HttpsError('internal', 'The assistant returned an empty response.')
+    // A long answer can still reach the cap. It is still worth showing, but as
+    // what it is: cut, never as a finished answer.
+    if (replyWasStopped(response)) {
+      console.warn(`[assistantChat] reply hit the output cap (team=${teamId})`)
+      reply = endStoppedReply(reply)
+    }
     return { reply }
   } catch (err) {
     if (err instanceof HttpsError) throw err

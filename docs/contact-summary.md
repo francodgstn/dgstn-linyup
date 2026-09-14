@@ -96,12 +96,29 @@ English); German asks for Swiss spelling.
 
 ## What comes back
 
-`normaliseSummary` strips fences, heading lines, bullets and emphasis, keeps at
-most six sentences and never more than 900 characters, cutting at a sentence
-boundary where one exists. Empty in, empty out — the callable turns that into
-an `internal` error rather than storing nothing. The stored record carries
-`text`, `generated_at`, `generated_by` (the uid), `model` and `language`; the
-card shows the text, the date and a one-line disclaimer.
+**Three parts, since 2026-09-14: Status, Outlook, At the next session.** The
+prompt always asked for engagement now, what to expect next and one thing to do
+at the next session, in that order; the reply is now those three parts under a
+response schema (`status`, `outlook`, `nextSession`), and the card puts a bold,
+translated label in front of each. The labels are the APP'S, in the reader's
+language — a label the model wrote would drift in wording and language between
+contacts, so one it adds anyway is stripped. "Outlook" rather than
+"Prediction": the prompt makes the model state its confidence and say so when
+the history is thin, which a prediction does not promise.
+
+`readSummaryReply` reads the parts and runs each through `normaliseSummary` at
+two sentences / 300 characters (three parts at the cap stay inside the old
+six-sentence, 900-character paragraph). A reply that is not JSON at all reads
+as the old paragraph; a reply stopped mid-JSON keeps the parts that closed.
+`normaliseSummary` itself still strips fences, heading lines, bullets and
+emphasis and cuts at a sentence boundary where one exists. Empty in, empty out
+— the callable turns that into an `internal` error rather than storing
+nothing. The stored record carries `text` (the parts joined — every reader of
+the paragraph keeps working), `sections` when there are parts, `generated_at`,
+`generated_by` (the uid), `model` and `language`; the card shows the parts (or,
+for a summary written before the change, the paragraph), the date and a
+one-line disclaimer. The record is written whole, so a regenerated summary
+never keeps an older one's parts.
 
 **Thinking is off, and a stopped reply loses its fragment.** On
 `gemini-2.5-flash` thinking is on by default and its tokens count against

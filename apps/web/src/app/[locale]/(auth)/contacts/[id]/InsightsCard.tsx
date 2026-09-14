@@ -30,7 +30,7 @@ import {
 import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity } from 'lucide-react'
 import { toast } from 'sonner'
 import { computeEngagementBand, isoWeekKey } from '@linyup/shared'
-import type { Contact, EngagementThresholds } from '@linyup/shared'
+import type { Contact, ContactAiSummarySections, EngagementThresholds } from '@linyup/shared'
 import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
@@ -80,7 +80,12 @@ export function InsightsCard({
 
 // ─── AI summary ───────────────────────────────────────────────────────────────
 
-type SummaryResult = { text: string; language: string; model: string }
+type SummaryResult = {
+  text: string
+  sections: ContactAiSummarySections | null
+  language: string
+  model: string
+}
 
 function SummaryBlock({ contact }: { contact: Contact }) {
   const t = useTranslations('Contacts')
@@ -88,10 +93,15 @@ function SummaryBlock({ contact }: { contact: Contact }) {
   const [busy, setBusy] = useState(false)
   // What the callable just returned, shown until the contact query refetches
   // and the stored record catches up.
-  const [fresh, setFresh] = useState<string | null>(null)
+  const [fresh, setFresh] = useState<{ text: string; sections: ContactAiSummarySections | null } | null>(
+    null
+  )
 
   const stored = contact.ai_summary
-  const text = fresh ?? stored?.text ?? null
+  const text = fresh?.text ?? stored?.text ?? null
+  // The parts, when the summary has them — one written before 2026-09-14 does
+  // not, and reads as the paragraph it always was.
+  const sections = fresh ? fresh.sections : (stored?.sections ?? null)
   const updated = fresh ? new Date() : toDate(stored?.generated_at)
   // An archived or deleted contact keeps the summary it has; nobody asks for a
   // new one about someone who left.
@@ -106,7 +116,7 @@ function SummaryBlock({ contact }: { contact: Contact }) {
         'generateContactSummary'
       )
       const res = await call({ teamId: contact.teamId, contactId: contact.id })
-      setFresh(res.data.text)
+      setFresh({ text: res.data.text, sections: res.data.sections ?? null })
       toast.success(t('summaryGenerated'))
       qc.invalidateQueries({ queryKey: ['contact', contact.id] })
     } catch (err) {
@@ -144,7 +154,31 @@ function SummaryBlock({ contact }: { contact: Contact }) {
       </div>
       {text ? (
         <>
-          <p className="mt-2 text-sm leading-relaxed">{text}</p>
+          {sections ? (
+            // THE LABELS ARE THE APP'S, in the reader's language; the parts are
+            // the model's, in the studio's. A part the model left empty is
+            // skipped rather than shown as a bare label.
+            <div className="mt-2 space-y-1.5 text-sm leading-relaxed">
+              {sections.status && (
+                <p>
+                  <span className="font-semibold">{t('summarySectionStatus')}</span> {sections.status}
+                </p>
+              )}
+              {sections.outlook && (
+                <p>
+                  <span className="font-semibold">{t('summarySectionOutlook')}</span> {sections.outlook}
+                </p>
+              )}
+              {sections.nextSession && (
+                <p>
+                  <span className="font-semibold">{t('summarySectionNextSession')}</span>{' '}
+                  {sections.nextSession}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-relaxed">{text}</p>
+          )}
           <p className="mt-2 text-[11px] text-muted-foreground">
             {updated
               ? `${t('summaryUpdatedOn', {

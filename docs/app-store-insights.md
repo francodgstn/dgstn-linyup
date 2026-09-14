@@ -157,11 +157,11 @@ uses `newState`. Reading only one stores a silent null.
   store card can never say `READY_FOR_REVIEW` while the log says `REJECTED`.
   The event is written *before* the ingest runs, so a slow or failing Apple API
   cannot lose the notification.
-- **It fails closed.** No secret configured ⇒ 503 and nothing recorded. The
-  setup-phase leniency in `handlePayrexxWebhook.ts` ("no secret? warn and allow")
-  is wrong here: this endpoint is on the open internet and writes to Firestore,
-  and a webhook cannot be registered in ASC without a secret anyway, so the
-  lenient branch could only ever serve an attacker.
+- **It fails closed.** No secret configured ⇒ 503 and nothing recorded. This
+  endpoint is on the open internet and writes to Firestore, and a webhook cannot
+  be registered in ASC without a secret anyway, so a "no secret? warn and allow"
+  branch could only ever serve an attacker. (`handlePayrexxWebhook.ts` had exactly
+  that branch until 2026-09-14; it now fails closed too.)
 - **An unknown event type is KEPT**, as `kind: 'other'` carrying Apple's own
   type string. Apple ships new event types, and a handler that dropped them
   would lose deliveries silently — this also means a ping or test delivery is

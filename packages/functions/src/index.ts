@@ -89,6 +89,9 @@ export {
   heldPlansOnCreditGrantWrite,
   heldPlansOnMemberSubscriptionWrite,
 } from './sync/heldPlans'
+// Staff plan changes (docs/multi-plan-holdings.md, phase 2) — the callables
+// that replaced the browser's writes to the legacy plan slot.
+export { assignPlan, changePlan, endPlan } from './contacts/planCallables'
 // Availability writes re-run the team sync so the appointment picker's liveness
 // flag (active_public_surfaces.appointments) can't go stale — see the file.
 export { onAvailabilityWrite } from './sync/onAvailabilityWrite'
@@ -502,6 +505,9 @@ export {
   downloadTarif595Receipt,
   emailTarif595Receipt,
   listMyTarif595Receipts,
+  // A model-backed PROPOSAL of the offering → position map, reviewed on the
+  // settings page before it is saved; writes nothing, rate-limited.
+  suggestTarif595Mappings,
 } from './tarif595'
 
 // QR-bill invoices (plugin) — creation is plugin-gated; void, download, email

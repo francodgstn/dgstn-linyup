@@ -1,6 +1,8 @@
 # Multi-plan holdings — a contact holds a LIST of plans
 
-Status: **design, not built.** Option B, chosen by Franco on 2026-09-13 over the
+Status: **phases 0–2 and 3a built** — the guard, the store and mirror, the
+writers, and coverage and pricing reading the plan list; the other readers, the UI
+and the slot's removal follow. Option B, chosen by Franco on 2026-09-13 over the
 minimal option (stop Stripe events writing the single plan slot). All four
 decisions settled the same day — see §7.
 
@@ -204,11 +206,16 @@ Fixtures in `functions/src/booking/paymentOptions.test.ts` pin each ordering.
 | Bulk assign | client write replaces the slot | `assignPlan` per contact, adding by default |
 | `applyPaymentEffects` | writes the slot | creates a grant, id = payment ref |
 | Connect one-off `applyMembership` | writes the slot | creates a grant, id = payment ref |
-| Connect recurring `handleSubscription` | writes the slot on every active event | writes nothing on the contact; the member-subscription mirror covers it |
+| Connect recurring `handleSubscription` | writes the slot on every active event | writes nothing on the contact once the rules read the plan list (phase 3); the member-subscription mirror covers it |
 | Own-gateway webhooks | overwrite the plan id only | create a grant, id = payment event id |
 | `reversePaymentEffects` | clears the slot on a matching ref | ends the grant whose `source_ref` matches |
 | Connect `handleInvoice` (renewal charges) | stamps plan type and name on the payment | also stamps the Stripe subscription id, so a charge links to its plan card exactly (§5) |
 | HMD migration, seeds, demo tenant | write the slot | write grants |
+
+**The bridge.** Until phase 3 moves the readers, every server writer keeps
+writing the slot beside its grant, as it did before. Nothing derives the slot
+from the grants, and phase 5 removes it. Recurring Stripe events keep their slot
+write until phase 3b, because the course rules read only the slot until then.
 
 ---
 
@@ -273,16 +280,30 @@ Each phase is its own PR and leaves `main` shippable.
    creates one grant per contact from today's slot
    (`source: 'import'`, source ref preserved). Deploy rules, then functions, then
    the backfill through the Backfill workflow. Nothing reads the new fields yet.
-2. **Writers.** The staff callables; payment effects, Connect one-off and
-   own-gateway webhooks create grants; reversal ends grants; recurring Stripe
-   events stop touching the contact; renewal charges record their Stripe
-   subscription id; client writes to the slot denied by rules.
-   The HMD migration transform and seeders write grants, so a re-import after the
-   production cutover produces the new shape.
-3. **Readers.** Snapshots and the best-plan resolver; rules and storage rules;
-   public shop and booking; the shared reader for filter, automations,
-   analytics, dashboards and CSV; the history reconciler; the daily expiry
-   refresh job.
+2. **Writers.** `assignPlan`, `changePlan` and `endPlan` replace the browser's
+   slot writes; payment effects, Connect one-off and own-gateway webhooks create
+   grants keyed by the payment; reversal ends the payment's grant; first and
+   renewal charges record their Stripe subscription id; client writes to the
+   slot are denied by rules. Every server writer keeps its slot write as the
+   bridge. The seeders, the demo tenant and the HMD migration (pass 17) import
+   the slot as a grant through `scripts/lib/planGrantImport.ts`, so a re-import
+   after the production cutover produces the new shape.
+3. **Readers**, in four PRs. None falls back to the slot for a contact with no
+   `held_plans`: such a contact holds nothing, so the phase 1 backfill
+   (`pnpm backfill:plan-grants`) must have run on a dataset before 3a reaches it.
+   - **3a. Coverage and pricing.** The best-plan resolver (D3).
+     `holdingIsCurrent` is the one "held now" comparison. `heldSubscriptionTypeIds`,
+     the contact filter's subscriptions dimension and `loadContactPaymentSnapshot`
+     read the list; the snapshot classifies every held plan by the price its own
+     entry carries, and gives each credit pack its expiry.
+   - **3b. Rules.** Course read and course media use
+     `held_plan_type_ids.hasAny(...)`; the daily expiry refresh job; the course
+     checkout workaround goes; recurring Stripe events stop writing the slot.
+   - **3c. Public.** The contact session carries the held list; shop, booking
+     form, checkout claim and the Space membership card read it.
+   - **3d. The rest.** Automations and contact-write events, analytics and
+     dashboard figures, CSV, the contacts-list badge, the billing warning, the
+     history reconciler, the AI summary dossier, mobile.
 4. **UI.** The Current Plans list and dialogs; header, list, Space, Payments tab
    and dashboard; mobile profile.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the

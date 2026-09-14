@@ -76,7 +76,6 @@ const GROUPS: { heading: string; rows: CmpRow[] }[] = [
       { label: 'rowKiosk', note: 'kioskNote', values: [false, false, true, true] },
       { label: 'rowAnalytics', values: [false, false, true, true] },
       { label: 'rowApi', values: [false, false, true, true] },
-      { label: 'rowAiInsights', values: [false, false, 'soon', 'soon'] },
       { label: 'rowWhatsapp', values: [false, false, 'soon', 'soon'] },
     ],
   },

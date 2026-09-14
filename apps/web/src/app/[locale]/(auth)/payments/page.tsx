@@ -66,6 +66,7 @@ function SubscriptionPayments({
   onAssign,
   onRefund,
   onVoid,
+  onReceipt,
   t,
 }: {
   teamId: string
@@ -75,6 +76,7 @@ function SubscriptionPayments({
   onAssign: (target: AssignPaymentTarget) => void
   onRefund: (row: UnifiedPaymentRow) => void
   onVoid: (row: UnifiedPaymentRow) => void
+  onReceipt?: (row: UnifiedPaymentRow) => void
   t: ReturnType<typeof useTranslations<'PaymentsDashboard'>>
 }) {
   const { data, isLoading } = useContactPayments(teamId, contactId)
@@ -101,6 +103,7 @@ function SubscriptionPayments({
       onAssign={onAssign}
       onRefund={onRefund}
       onVoid={onVoid}
+      onReceipt={onReceipt}
     />
   )
 }
@@ -175,6 +178,7 @@ import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { PaymentsTable } from '@/components/payments/PaymentsTable'
 import { GiftCardsSection } from '@/components/payments/GiftCardsSection'
 import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
+import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
@@ -334,6 +338,10 @@ export default function PaymentsDashboardPage() {
   )
   const [markPaidTarget, setMarkPaidTarget] = useState<PendingAppointment | null>(null)
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false)
+  // Tarif 595: a Receipt action on each attestable payment row, in the main
+  // table and in the per-member sub-tables alike — one dialog for both.
+  const receiptsInstalled = isInstalled('tarif-595')
+  const [receiptTarget, setReceiptTarget] = useState<UnifiedPaymentRow | null>(null)
   const [filter, setFilter] = useState<'all' | 'unassigned'>('all')
   const [search, setSearch] = useState('')
 
@@ -711,6 +719,7 @@ export default function PaymentsDashboardPage() {
                   onAssign={setAssignTarget}
                   onRefund={setRefundTarget}
                   onVoid={setVoidTarget}
+                  onReceipt={receiptsInstalled && canManage ? setReceiptTarget : undefined}
                 />
 
                 {hasMore && (
@@ -948,6 +957,7 @@ export default function PaymentsDashboardPage() {
                                 onAssign={setAssignTarget}
                                 onRefund={setRefundTarget}
                                 onVoid={setVoidTarget}
+                                onReceipt={receiptsInstalled && canManage ? setReceiptTarget : undefined}
                                 t={t}
                               />
                             </TableCell>
@@ -1076,6 +1086,15 @@ export default function PaymentsDashboardPage() {
           teamId={teamId}
           open={createInvoiceOpen}
           onOpenChange={setCreateInvoiceOpen}
+        />
+      )}
+
+      {teamId && receiptsInstalled && (
+        <CreateReceiptFromPaymentDialog
+          teamId={teamId}
+          row={receiptTarget}
+          contactName={receiptTarget?.contactId ? contactName.get(receiptTarget.contactId) : null}
+          onClose={() => setReceiptTarget(null)}
         />
       )}
 

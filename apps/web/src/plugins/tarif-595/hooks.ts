@@ -46,6 +46,8 @@ import {
   type Tarif595PreviewResult,
   type Tarif595ReceiptDoc,
   type Tarif595ReceiptRequest,
+  type Tarif595SuggestRequest,
+  type Tarif595SuggestResult,
   type Tarif595VoidRequest,
 } from '@linyup/shared'
 import { db, functions } from '@/lib/firebase'
@@ -242,6 +244,12 @@ export const callEmailTarif595Receipt = httpsCallable<Tarif595EmailRequest, Tari
 export const callStartTarif595BulkIssue = httpsCallable<Tarif595BulkRequest, Tarif595BulkResult>(
   functions,
   'startTarif595BulkIssue'
+)
+/** A proposal of the offering → position map; the settings page marks the
+ *  rows it fills as suggested and saves nothing until the manager does. */
+export const callSuggestTarif595Mappings = httpsCallable<Tarif595SuggestRequest, Tarif595SuggestResult>(
+  functions,
+  'suggestTarif595Mappings'
 )
 
 /** Turn a download result into a browser download (the ExportFinanceCsvButton shape). */

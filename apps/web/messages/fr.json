@@ -1116,7 +1116,10 @@
     "actionUpdateDetails": "Infos",
     "rosterLabel": "Effectif",
     "rosterActive": "Actif",
-    "rosterActiveHint": "Fait partie de votre effectif — rappels, invitations et automatisations lui parviennent."
+    "rosterActiveHint": "Fait partie de votre effectif — rappels, invitations et automatisations lui parviennent.",
+    "summarySectionStatus": "Statut :",
+    "summarySectionOutlook": "Perspectives :",
+    "summarySectionNextSession": "À la prochaine séance :"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -2188,7 +2191,9 @@
     "subTypeNoPrices": "Aucun prix pour l'instant — cette formule ne porte qu'un nom.",
     "subTypeIntroSummary": "{amount} pour {periods, plural, one {la première période} other {les # premières périodes}}",
     "subTypeLimitSummary": "Jusqu'à {count, plural, one {# cours} other {# cours}} {per, select, day {par jour} week {par semaine} month {par mois} other {par mois}}",
-    "subTypeNoLimit": "Aucune limite de réservation."
+    "subTypeNoLimit": "Aucune limite de réservation.",
+    "paymentsWebhookSecretRequired": "Payrexx nécessite la clé de signature du webhook. Sans elle, aucun paiement n'est enregistré.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Obligatoire. Utilisée pour vérifier <code>X-Webhook-Signature</code> sur chaque webhook de paiement entrant. Sans elle, aucun paiement n'est enregistré."
   },
   "Bookings": {
     "title": "Réservations",
@@ -2799,7 +2804,6 @@
     "rowCustomFields": "Champs perso",
     "rowForms": "Formulaires",
     "rowAnalytics": "Analyses",
-    "rowAiInsights": "Insights IA",
     "rowWhatsapp": "WhatsApp",
     "rowMultiTeam": "Plusieurs studios",
     "rowCentralAdmin": "Administration centrale & vue unifiée",
@@ -2843,9 +2847,6 @@
     "errorInstall": "Impossible d'installer le plugin. Veuillez réessayer.",
     "errorRemove": "Impossible de supprimer le plugin. Veuillez réessayer.",
     "errorSaveConfig": "Impossible d'enregistrer la configuration. Veuillez réessayer.",
-    "aiInsightsName": "IA Insights",
-    "aiInsightsDescription": "Utilisez Claude IA pour générer des messages personnalisés pour vos membres et résumer les tendances d'engagement.",
-    "aiInsightsActionGenerateMessage": "Générer un message IA",
     "whatsappName": "WhatsApp",
     "whatsappDescription": "Envoyez des messages WhatsApp aux membres en tant qu'actions d'automatisation et déclenchez des règles sur les messages entrants.",
     "whatsappActionSendMessage": "Envoyer un message WhatsApp",
@@ -4548,7 +4549,8 @@
     "journalFeeReturned": "Frais Linyup restitués",
     "journalNetAfterRefund": "Il vous reste",
     "journalStripeFeeKept": "Stripe conserve ses frais de traitement en cas de remboursement.",
-    "journalNetAfterRefundCost": "Cela vous coûte"
+    "journalNetAfterRefundCost": "Cela vous coûte",
+    "receipt": "Justificatif"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
@@ -8473,6 +8475,22 @@
       "membersCount": "{count} membres",
       "skipsMore": "et {count} de plus",
       "openContact": "Ouvrir le contact"
+    },
+    "fromPayment": {
+      "title": "Justificatif Tarif 595 pour ce paiement",
+      "resolving": "Recherche de l'objet de ce paiement…",
+      "previewing": "Préparation du justificatif…",
+      "sourceSubscription": "Abonnement",
+      "sourceCourse": "Cours",
+      "periodFrom": "Période du",
+      "periodTo": "Période au",
+      "alsoEmail": "Envoyer aussi le justificatif par e-mail au membre",
+      "preview": "Aperçu",
+      "issue": "Émettre le justificatif",
+      "cancel": "Annuler",
+      "noHistory": "Ce paiement mentionne un abonnement, mais aucun abonnement de ce plan n'est enregistré pour ce membre. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
+      "unsupported": "Impossible de dériver un justificatif de ce paiement : un paiement à la séance ou de rendez-vous n'indique ni le cours ni la date couverte, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
+      "openSegment": "Ouvrir les justificatifs du membre"
     }
   },
   "LegalProfile": {
@@ -8565,7 +8583,29 @@
     "errorNoOfferings": "Associez au moins un abonnement, un cours ou un cours en ligne à une position",
     "positionPlaceholder": "Sélectionner une position…",
     "positionSearchPlaceholder": "Rechercher des positions…",
-    "positionEmpty": "Aucune position correspondante."
+    "positionEmpty": "Aucune position correspondante.",
+    "table": {
+      "state": "État",
+      "stateMapped": "Associé",
+      "stateSuggested": "Suggéré – à vérifier avant d'enregistrer",
+      "stateUnmapped": "Pas encore associé",
+      "searchPlaceholder": "Rechercher une offre…",
+      "unmappedOnly": "Non associés seulement ({count})",
+      "summary": "{mapped} sur {total} associés",
+      "allMapped": "Toutes les offres sont associées."
+    },
+    "suggest": {
+      "button": "Suggérer des positions",
+      "running": "Suggestions en cours…",
+      "notice": "Les suggestions sont générées automatiquement à partir des noms de vos abonnements et cours. Vérifiez chaque ligne suggérée au regard des méthodes reconnues par votre organisme de label avant d'enregistrer – le justificatif indique ce que vous choisissez, pas ce qui a été suggéré.",
+      "rowLabel": "Suggéré",
+      "lowConfidence": "incertain",
+      "applied": "{count} suggestions renseignées. Les lignes déjà associées n'ont pas été modifiées.",
+      "nothingToFill": "Rien à suggérer – toutes les offres sont déjà associées.",
+      "noneFound": "Aucune position n'a pu être suggérée pour les offres non associées.",
+      "unavailable": "Les suggestions ne sont pas disponibles pour le moment. Vous pouvez toujours choisir les positions à la main.",
+      "rateLimited": "Vous avez atteint la limite horaire de suggestions. Réessayez plus tard."
+    }
   },
   "QrInvoices": {
     "title": "Factures QR",

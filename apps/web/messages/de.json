@@ -1116,7 +1116,10 @@
     "actionUpdateDetails": "Daten",
     "rosterLabel": "Stamm",
     "rosterActive": "Aktiv",
-    "rosterActiveHint": "Gehört zu deinem Stamm – Erinnerungen, Einladungen und Automationen erreichen sie."
+    "rosterActiveHint": "Gehört zu deinem Stamm – Erinnerungen, Einladungen und Automationen erreichen sie.",
+    "summarySectionStatus": "Status:",
+    "summarySectionOutlook": "Ausblick:",
+    "summarySectionNextSession": "Beim nächsten Training:"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -2188,7 +2191,9 @@
     "subTypeNoPrices": "Noch kein Preis — dieser Plan hält nur einen Namen fest.",
     "subTypeIntroSummary": "{amount} für {periods, plural, one {die erste Periode} other {die ersten # Perioden}}",
     "subTypeLimitSummary": "Bis zu {count, plural, one {# Kurs} other {# Kurse}} {per, select, day {pro Tag} week {pro Woche} month {pro Monat} other {pro Monat}}",
-    "subTypeNoLimit": "Keine Buchungsbegrenzung."
+    "subTypeNoLimit": "Keine Buchungsbegrenzung.",
+    "paymentsWebhookSecretRequired": "Payrexx benötigt den Webhook-Signaturschlüssel. Ohne ihn werden keine Zahlungen erfasst.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Erforderlich. Wird verwendet, um <code>X-Webhook-Signature</code> bei jedem eingehenden Zahlungs-Webhook zu prüfen. Ohne ihn werden keine Zahlungen erfasst."
   },
   "Bookings": {
     "title": "Buchungen",
@@ -2799,7 +2804,6 @@
     "rowCustomFields": "Eigene Felder",
     "rowForms": "Formulare",
     "rowAnalytics": "Analysen",
-    "rowAiInsights": "KI-Insights",
     "rowWhatsapp": "WhatsApp",
     "rowMultiTeam": "Mehrere Studios",
     "rowCentralAdmin": "Zentrale Verwaltung & Datenüberblick",
@@ -2843,9 +2847,6 @@
     "errorInstall": "Plugin konnte nicht installiert werden. Bitte erneut versuchen.",
     "errorRemove": "Plugin konnte nicht entfernt werden. Bitte erneut versuchen.",
     "errorSaveConfig": "Konfiguration konnte nicht gespeichert werden. Bitte erneut versuchen.",
-    "aiInsightsName": "KI-Insights",
-    "aiInsightsDescription": "Nutze Claude KI, um personalisierte Nachrichten für deine Mitglieder zu erstellen und Engagement-Trends zusammenzufassen.",
-    "aiInsightsActionGenerateMessage": "KI-Nachricht generieren",
     "whatsappName": "WhatsApp",
     "whatsappDescription": "Sende WhatsApp-Nachrichten an Mitglieder als Automatisierungsaktionen und löse Regeln bei eingehenden Nachrichten aus.",
     "whatsappActionSendMessage": "WhatsApp-Nachricht senden",
@@ -4548,7 +4549,8 @@
     "journalFeeReturned": "Linyup-Gebühr zurück",
     "journalNetAfterRefund": "Dir bleibt",
     "journalStripeFeeKept": "Stripe behält bei einer Erstattung seine Bearbeitungsgebühr.",
-    "journalNetAfterRefundCost": "Das kostet dich"
+    "journalNetAfterRefundCost": "Das kostet dich",
+    "receipt": "Beleg"
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",
@@ -8473,6 +8475,22 @@
       "membersCount": "{count} Mitglieder",
       "skipsMore": "und {count} weitere",
       "openContact": "Kontakt öffnen"
+    },
+    "fromPayment": {
+      "title": "Tarif-595-Beleg für diese Zahlung",
+      "resolving": "Wird ermittelt, wofür diese Zahlung war…",
+      "previewing": "Beleg wird vorbereitet…",
+      "sourceSubscription": "Abo",
+      "sourceCourse": "Kurs",
+      "periodFrom": "Zeitraum von",
+      "periodTo": "Zeitraum bis",
+      "alsoEmail": "Beleg auch per E-Mail an das Mitglied senden",
+      "preview": "Vorschau",
+      "issue": "Beleg ausstellen",
+      "cancel": "Abbrechen",
+      "noHistory": "Diese Zahlung nennt ein Abo, aber für das Mitglied ist kein Abo dieses Plans erfasst, das bescheinigt werden könnte. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
+      "unsupported": "Aus dieser Zahlung lässt sich kein Beleg ableiten: Eine Einzeleintritts- oder Terminzahlung sagt nicht, welchen Kurs oder welches Datum sie abdeckt, und Produkte sind keine Gesundheitsförderung. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
+      "openSegment": "Belege des Mitglieds öffnen"
     }
   },
   "LegalProfile": {
@@ -8565,7 +8583,29 @@
     "errorNoOfferings": "Ordnen Sie mindestens ein Abo, einen Kurs oder Onlinekurs einer Position zu",
     "positionPlaceholder": "Position wählen…",
     "positionSearchPlaceholder": "Positionen durchsuchen…",
-    "positionEmpty": "Keine passende Position."
+    "positionEmpty": "Keine passende Position.",
+    "table": {
+      "state": "Status",
+      "stateMapped": "Zugeordnet",
+      "stateSuggested": "Vorgeschlagen – vor dem Speichern prüfen",
+      "stateUnmapped": "Noch nicht zugeordnet",
+      "searchPlaceholder": "Angebote suchen…",
+      "unmappedOnly": "Nur nicht zugeordnete ({count})",
+      "summary": "{mapped} von {total} zugeordnet",
+      "allMapped": "Alle Angebote sind zugeordnet."
+    },
+    "suggest": {
+      "button": "Positionen vorschlagen",
+      "running": "Vorschläge werden erstellt…",
+      "notice": "Die Vorschläge werden automatisch aus den Namen Ihrer Abos und Kurse erstellt. Prüfen Sie jede vorgeschlagene Zeile vor dem Speichern anhand der von Ihrer Labelstelle anerkannten Methoden – auf dem Beleg steht, was Sie wählen, nicht was vorgeschlagen wurde.",
+      "rowLabel": "Vorgeschlagen",
+      "lowConfidence": "unsicher",
+      "applied": "{count} Vorschläge eingetragen. Bereits zugeordnete Zeilen wurden nicht verändert.",
+      "nothingToFill": "Nichts vorzuschlagen – alle Angebote sind bereits zugeordnet.",
+      "noneFound": "Für die nicht zugeordneten Angebote konnte keine Position vorgeschlagen werden.",
+      "unavailable": "Vorschläge sind im Moment nicht verfügbar. Sie können die Positionen weiterhin manuell wählen.",
+      "rateLimited": "Sie haben das Stundenlimit für Vorschläge erreicht. Versuchen Sie es später erneut."
+    }
   },
   "QrInvoices": {
     "title": "QR-Rechnungen",

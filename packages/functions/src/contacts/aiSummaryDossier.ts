@@ -16,12 +16,21 @@
 // model's job is to say what they mean together. Everything below is
 // deterministic and tested; nothing is invented.
 
-import type { Contact } from '@linyup/shared'
+import type { Contact, ContactAiSummarySections } from '@linyup/shared'
 
 /** A stored summary never exceeds this, in characters. Six sentences fit. */
 export const SUMMARY_MAX_CHARS = 900
 /** …nor this many sentences — a paragraph, not a report. */
 export const SUMMARY_MAX_SENTENCES = 6
+/**
+ * Each part of a SECTIONED summary (status · outlook · at the next session,
+ * since 2026-09-14): at most this many sentences and characters. Three parts
+ * at the cap stay inside the whole-summary caps above.
+ */
+export const SUMMARY_SECTION_MAX_SENTENCES = 2
+export const SUMMARY_SECTION_MAX_CHARS = 300
+/** The parts, in reading order — the model's JSON keys and the card's rows. */
+export const SUMMARY_SECTION_KEYS = ['status', 'outlook', 'nextSession'] as const
 /** How much of one note the model sees. */
 export const NOTE_MAX_CHARS = 240
 /**
@@ -416,7 +425,10 @@ function unfence(text: string): string {
  * "…" so it never reads as a complete statement. A reply that ended on its own
  * keeps its last sentence, punctuated or not.
  */
-export function normaliseSummary(raw: string, opts: { cut?: boolean } = {}): string {
+export function normaliseSummary(
+  raw: string,
+  opts: { cut?: boolean; maxSentences?: number; maxChars?: number } = {}
+): string {
   const flat = unfence(raw ?? '')
     .replace(/^\s*#{1,6}\s+.*$/gm, '')
     .replace(/^\s*(?:[-*•]|\d+[.)])\s+/gm, '')
@@ -425,6 +437,8 @@ export function normaliseSummary(raw: string, opts: { cut?: boolean } = {}): str
     .replace(/\s+/g, ' ')
     .trim()
   if (!flat) return ''
+  const maxSentences = opts.maxSentences ?? SUMMARY_MAX_SENTENCES
+  const maxChars = opts.maxChars ?? SUMMARY_MAX_CHARS
   let sentences =
     flat
       .match(/[^.!?]+(?:[.!?]+|$)/g)
@@ -438,17 +452,89 @@ export function normaliseSummary(raw: string, opts: { cut?: boolean } = {}): str
   let out = ''
   let count = 0
   for (const sentence of sentences) {
-    if (count >= SUMMARY_MAX_SENTENCES) break
+    if (count >= maxSentences) break
     const next = out ? `${out} ${sentence}` : sentence
-    if (next.length > SUMMARY_MAX_CHARS) break
+    if (next.length > maxChars) break
     out = next
     count += 1
   }
   // Nothing fit whole (one enormous sentence): hard-cut rather than return
   // nothing, since something is still more useful than a failure.
-  if (!out) out = `${flat.slice(0, SUMMARY_MAX_CHARS - 1).trimEnd()}…`
+  if (!out) out = `${flat.slice(0, maxChars - 1).trimEnd()}…`
   else if (unfinished) out = `${out.replace(/[\s,;:–—-]+$/, '')}…`
   return out
+}
+
+type SummaryPartKey = (typeof SUMMARY_SECTION_KEYS)[number]
+
+/**
+ * THE SECTIONED REPLY. Since 2026-09-14 the model answers in three parts —
+ * `status`, `outlook`, `nextSession` — under a response schema, and the card
+ * puts a translated label in front of each. The labels are the APP'S: one the
+ * model wrote would drift in wording and language from contact to contact, so
+ * a label it adds anyway is stripped here.
+ *
+ * Each part goes through `normaliseSummary` with the per-part caps; `text` is
+ * the parts joined, for every reader of the plain paragraph.
+ *
+ * A reply that is not JSON at all (a model ignoring the schema) reads as the
+ * old paragraph — no sections, the whole-summary caps. A reply STOPPED mid-JSON
+ * keeps the parts whose string closed before the cap; with none it returns
+ * empty, which the caller refuses rather than storing a fragment.
+ */
+export function readSummaryReply(
+  raw: string,
+  opts: { cut?: boolean } = {}
+): { text: string; sections?: ContactAiSummarySections } {
+  const parts = parseSummaryParts(raw)
+  if (!parts) return { text: normaliseSummary(raw, opts) }
+  const sections: ContactAiSummarySections = { status: '', outlook: '', nextSession: '' }
+  for (const key of SUMMARY_SECTION_KEYS) {
+    sections[key] = normaliseSummary(stripPartLabel(parts[key] ?? ''), {
+      maxSentences: SUMMARY_SECTION_MAX_SENTENCES,
+      maxChars: SUMMARY_SECTION_MAX_CHARS,
+    })
+  }
+  const text = SUMMARY_SECTION_KEYS.map((k) => sections[k]).filter(Boolean).join(' ')
+  return text ? { text, sections } : { text: '' }
+}
+
+/** The part strings of a reply: parsed whole, or salvaged from a truncated one.
+ *  Null when the reply is not JSON at all. */
+function parseSummaryParts(raw: string): Partial<Record<SummaryPartKey, string>> | null {
+  const body = unfence(raw ?? '')
+  if (!body.startsWith('{')) return null
+  const out: Partial<Record<SummaryPartKey, string>> = {}
+  try {
+    const json = JSON.parse(body) as Record<string, unknown>
+    for (const key of SUMMARY_SECTION_KEYS) {
+      if (typeof json[key] === 'string') out[key] = json[key] as string
+    }
+  } catch {
+    // Stopped mid-reply: keep the parts whose string closed.
+    for (const key of SUMMARY_SECTION_KEYS) {
+      const m = body.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`))
+      if (!m) continue
+      try {
+        out[key] = JSON.parse(`"${m[1]}"`) as string
+      } catch {
+        out[key] = m[1]
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * A leading "Status:" or "**Ausblick:**" the model wrote although it was told
+ * the app adds the label. Only the label vocabulary, never a generic "words
+ * then a colon" — that would eat a sentence like "Anna comes steadily: …".
+ */
+function stripPartLabel(text: string): string {
+  return text.replace(
+    /^\s*[*_]*\s*(?:status|stato|statut|outlook|ausblick|perspectives?|prospettive|prediction|next ?session|at the next session|beim nächsten training|in der nächsten stunde|à la prochaine séance|lors de la prochaine séance|alla prossima sessione)\s*[*_]*\s*:\s*[*_]*\s*/iu,
+    ''
+  )
 }
 
 /** Moved to `@linyup/shared` (utils/dataScope.ts) so the public API asks the same question. */
@@ -476,12 +562,12 @@ export const LANGUAGE_NAMES: Record<string, string> = {
 export function systemPrompt(languageName: string): string {
   return `You write a short analysis of one client of a sports, fitness or wellness studio, for the coach who looks after them.
 
-Four to six sentences, at most 130 words, one paragraph of plain prose: no heading, no bullet points, no markdown, no greeting, no sign-off. Refer to the person by first name.
+Answer in three parts, each one or two sentences of plain prose, at most 130 words in total: no heading, no label, no bullet points, no markdown, no greeting, no sign-off — the app puts each part's name in front of it. Refer to the person by first name.
 
-Do not repeat the raw numbers the coach can already see on the same screen — total sessions, streak, the plan's name, the counters. Interpret them. Cover, in this order:
-1. Engagement now, against this person's own history: is attendance rising, steady or slipping, and how regular is the rhythm (which days, times and activities, if a pattern shows).
-2. What to expect next, and why, from the signals: likely to keep coming, at risk of drifting, a plan ending or credits running out, upcoming bookings, a no-show habit. Say how confident you are; when the history is thin, say so rather than guess.
-3. One concrete, specific thing the coach could do or say at the next session, drawn from the notes or from the pattern.
+Do not repeat the raw numbers the coach can already see on the same screen — total sessions, streak, the plan's name, the counters. Interpret them.
+- status: engagement now, against this person's own history — is attendance rising, steady or slipping, and how regular is the rhythm (which days, times and activities, if a pattern shows).
+- outlook: what to expect next, and why, from the signals — likely to keep coming, at risk of drifting, a plan ending or credits running out, upcoming bookings, a no-show habit. Say how confident you are; when the history is thin, say so rather than guess.
+- nextSession: one concrete, specific thing the coach could do or say at the next session, drawn from the notes or from the pattern.
 
 Use only the facts given. Never invent a number, never guess at health, mood or motives, never read a reason into a gap the facts do not explain. Dates are ISO; write them the way a coach would say them.
 

@@ -1116,7 +1116,10 @@
     "actionUpdateDetails": "Dati",
     "rosterLabel": "Gruppo",
     "rosterActive": "Attivo",
-    "rosterActiveHint": "Fa parte del tuo gruppo — promemoria, inviti e automazioni lo raggiungono."
+    "rosterActiveHint": "Fa parte del tuo gruppo — promemoria, inviti e automazioni lo raggiungono.",
+    "summarySectionStatus": "Stato:",
+    "summarySectionOutlook": "Prospettive:",
+    "summarySectionNextSession": "Alla prossima sessione:"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -2188,7 +2191,9 @@
     "subTypeNoPrices": "Ancora nessun prezzo — questo piano tiene solo un nome.",
     "subTypeIntroSummary": "{amount} per {periods, plural, one {il primo periodo} other {i primi # periodi}}",
     "subTypeLimitSummary": "Fino a {count, plural, one {# corso} other {# corsi}} {per, select, day {al giorno} week {a settimana} month {al mese} other {al mese}}",
-    "subTypeNoLimit": "Nessun limite di prenotazione."
+    "subTypeNoLimit": "Nessun limite di prenotazione.",
+    "paymentsWebhookSecretRequired": "Payrexx richiede la chiave di firma del webhook. Senza di essa non viene registrato alcun pagamento.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Obbligatoria. Usata per verificare <code>X-Webhook-Signature</code> su ogni webhook di pagamento in arrivo. Senza di essa non viene registrato alcun pagamento."
   },
   "Bookings": {
     "title": "Prenotazioni",
@@ -2799,7 +2804,6 @@
     "rowCustomFields": "Campi personalizzati",
     "rowForms": "Moduli",
     "rowAnalytics": "Analisi",
-    "rowAiInsights": "Insight AI",
     "rowWhatsapp": "WhatsApp",
     "rowMultiTeam": "Più studi",
     "rowCentralAdmin": "Amministrazione centrale e dati unificati",
@@ -2843,9 +2847,6 @@
     "errorInstall": "Impossibile installare il plugin. Riprova.",
     "errorRemove": "Impossibile rimuovere il plugin. Riprova.",
     "errorSaveConfig": "Impossibile salvare la configurazione. Riprova.",
-    "aiInsightsName": "IA Insights",
-    "aiInsightsDescription": "Usa Claude IA per generare messaggi personalizzati per i tuoi membri e riassumere le tendenze di coinvolgimento.",
-    "aiInsightsActionGenerateMessage": "Genera messaggio IA",
     "whatsappName": "WhatsApp",
     "whatsappDescription": "Invia messaggi WhatsApp ai membri come azioni di automazione e attiva regole sui messaggi in arrivo.",
     "whatsappActionSendMessage": "Invia messaggio WhatsApp",
@@ -4548,7 +4549,8 @@
     "journalFeeReturned": "Commissione Linyup restituita",
     "journalNetAfterRefund": "Ti resta",
     "journalStripeFeeKept": "Stripe trattiene la sua commissione di elaborazione in caso di rimborso.",
-    "journalNetAfterRefundCost": "Ti è costato"
+    "journalNetAfterRefundCost": "Ti è costato",
+    "receipt": "Giustificativo"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
@@ -8473,6 +8475,22 @@
       "membersCount": "{count} membri",
       "skipsMore": "e altri {count}",
       "openContact": "Apri contatto"
+    },
+    "fromPayment": {
+      "title": "Giustificativo Tarif 595 per questo pagamento",
+      "resolving": "Ricerca dell'oggetto di questo pagamento…",
+      "previewing": "Preparazione del giustificativo…",
+      "sourceSubscription": "Abbonamento",
+      "sourceCourse": "Corso",
+      "periodFrom": "Periodo dal",
+      "periodTo": "Periodo al",
+      "alsoEmail": "Invia anche il giustificativo via e-mail al membro",
+      "preview": "Anteprima",
+      "issue": "Emetti giustificativo",
+      "cancel": "Annulla",
+      "noHistory": "Questo pagamento indica un abbonamento, ma per il membro non risulta alcun abbonamento di quel piano da attestare. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
+      "unsupported": "Da questo pagamento non si può derivare un giustificativo: un pagamento a lezione singola o per appuntamento non indica quale corso o data copre, e i prodotti non sono promozione della salute. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
+      "openSegment": "Apri i giustificativi del membro"
     }
   },
   "LegalProfile": {
@@ -8565,7 +8583,29 @@
     "errorNoOfferings": "Associa almeno un abbonamento, corso o corso online a una posizione",
     "positionPlaceholder": "Seleziona una posizione…",
     "positionSearchPlaceholder": "Cerca posizioni…",
-    "positionEmpty": "Nessuna posizione corrispondente."
+    "positionEmpty": "Nessuna posizione corrispondente.",
+    "table": {
+      "state": "Stato",
+      "stateMapped": "Associato",
+      "stateSuggested": "Suggerito – da verificare prima di salvare",
+      "stateUnmapped": "Non ancora associato",
+      "searchPlaceholder": "Cerca offerte…",
+      "unmappedOnly": "Solo non associati ({count})",
+      "summary": "{mapped} su {total} associati",
+      "allMapped": "Tutte le offerte sono associate."
+    },
+    "suggest": {
+      "button": "Suggerisci posizioni",
+      "running": "Suggerimenti in corso…",
+      "notice": "I suggerimenti sono generati automaticamente dai nomi dei suoi abbonamenti e corsi. Verifichi ogni riga suggerita rispetto ai metodi riconosciuti dal suo ente di certificazione prima di salvare – sul giustificativo compare ciò che sceglie, non ciò che è stato suggerito.",
+      "rowLabel": "Suggerito",
+      "lowConfidence": "incerto",
+      "applied": "{count} suggerimenti inseriti. Le righe già associate non sono state modificate.",
+      "nothingToFill": "Niente da suggerire – tutte le offerte sono già associate.",
+      "noneFound": "Nessuna posizione suggerita per le offerte non associate.",
+      "unavailable": "I suggerimenti non sono disponibili al momento. Può comunque scegliere le posizioni manualmente.",
+      "rateLimited": "Ha raggiunto il limite orario di suggerimenti. Riprovi più tardi."
+    }
   },
   "QrInvoices": {
     "title": "Fatture QR",

@@ -1116,7 +1116,10 @@
     "actionUpdateDetails": "Update",
     "rosterLabel": "Roster",
     "rosterActive": "Active",
-    "rosterActiveHint": "On your roster — reminders, invitations and automations reach them."
+    "rosterActiveHint": "On your roster — reminders, invitations and automations reach them.",
+    "summarySectionStatus": "Status:",
+    "summarySectionOutlook": "Outlook:",
+    "summarySectionNextSession": "At the next session:"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -2188,7 +2191,9 @@
     "subTypeNoPrices": "No price yet — this plan tracks a name only.",
     "subTypeIntroSummary": "{amount} for the first {periods, plural, one {period} other {# periods}}",
     "subTypeLimitSummary": "Up to {count, plural, one {# class} other {# classes}} {per, select, day {per day} week {per week} month {per month} other {per month}}",
-    "subTypeNoLimit": "No booking limit."
+    "subTypeNoLimit": "No booking limit.",
+    "paymentsWebhookSecretRequired": "Payrexx needs the webhook signing secret. Without it, no payments are recorded.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Required. Used to verify <code>X-Webhook-Signature</code> on every incoming payment webhook. Payments are not recorded without it."
   },
   "Bookings": {
     "title": "Bookings",
@@ -2799,7 +2804,6 @@
     "rowCustomFields": "Custom fields",
     "rowForms": "Forms",
     "rowAnalytics": "Analytics",
-    "rowAiInsights": "AI insights",
     "rowWhatsapp": "WhatsApp",
     "rowMultiTeam": "Multiple studios",
     "rowCentralAdmin": "Central admin & unified data",
@@ -2843,9 +2847,6 @@
     "errorInstall": "Could not install plugin. Please try again.",
     "errorRemove": "Could not remove plugin. Please try again.",
     "errorSaveConfig": "Could not save configuration. Please try again.",
-    "aiInsightsName": "AI Insights",
-    "aiInsightsDescription": "Use Claude AI to generate personalised messages for your members and summarise engagement trends.",
-    "aiInsightsActionGenerateMessage": "Generate AI message",
     "whatsappName": "WhatsApp",
     "whatsappDescription": "Send WhatsApp messages to members as automation actions and trigger rules on incoming messages.",
     "whatsappActionSendMessage": "Send WhatsApp message",
@@ -4548,7 +4549,8 @@
     "journalFeeReturned": "Linyup fee returned",
     "journalNetAfterRefund": "You keep",
     "journalStripeFeeKept": "Stripe keeps its processing fee on a refund.",
-    "journalNetAfterRefundCost": "This cost you"
+    "journalNetAfterRefundCost": "This cost you",
+    "receipt": "Receipt"
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",
@@ -8473,6 +8475,22 @@
       "membersCount": "{count} members",
       "skipsMore": "and {count} more",
       "openContact": "Open contact"
+    },
+    "fromPayment": {
+      "title": "Tarif 595 receipt for this payment",
+      "resolving": "Finding what this payment was for…",
+      "previewing": "Preparing the receipt…",
+      "sourceSubscription": "Plan",
+      "sourceCourse": "Course",
+      "periodFrom": "Period from",
+      "periodTo": "Period to",
+      "alsoEmail": "Also email the receipt to the member",
+      "preview": "Preview",
+      "issue": "Issue receipt",
+      "cancel": "Cancel",
+      "noHistory": "This payment names a plan, but the member has no subscription of that plan on record to attest. Pick the source by hand on the member's Receipts segment.",
+      "unsupported": "A receipt can't be derived from this payment: a drop-in or appointment payment doesn't say which class or date it covered, and products aren't health promotion. Pick the source by hand on the member's Receipts segment.",
+      "openSegment": "Open the member's receipts"
     }
   },
   "LegalProfile": {
@@ -8565,7 +8583,29 @@
     "errorNoOfferings": "Map at least one subscription, class or course to a position",
     "positionPlaceholder": "Select a position…",
     "positionSearchPlaceholder": "Search positions…",
-    "positionEmpty": "No matching position."
+    "positionEmpty": "No matching position.",
+    "table": {
+      "state": "State",
+      "stateMapped": "Mapped",
+      "stateSuggested": "Suggested — review before saving",
+      "stateUnmapped": "Not mapped yet",
+      "searchPlaceholder": "Search offerings…",
+      "unmappedOnly": "Unmapped only ({count})",
+      "summary": "{mapped} of {total} mapped",
+      "allMapped": "Every offering is mapped."
+    },
+    "suggest": {
+      "button": "Suggest positions",
+      "running": "Suggesting…",
+      "notice": "Suggestions are generated automatically from your plan and class names. Review every suggested row against the methods your label body certified before saving — the receipt states what you choose, not what was suggested.",
+      "rowLabel": "Suggested",
+      "lowConfidence": "uncertain",
+      "applied": "{count} suggestions filled in. Rows you had already mapped were left as they are.",
+      "nothingToFill": "Nothing to suggest — every offering is already mapped.",
+      "noneFound": "No position could be suggested for the unmapped offerings.",
+      "unavailable": "Suggestions aren't available right now. You can still pick positions by hand.",
+      "rateLimited": "You've reached the hourly limit for suggestions. Try again later."
+    }
   },
   "QrInvoices": {
     "title": "QR-bill invoices",

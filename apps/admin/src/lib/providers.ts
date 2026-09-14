@@ -4,16 +4,17 @@
 // one click, and whose second is to show what that vendor will tell us about
 // what we are spending with them.
 //
-// ── COST: THREE VENDORS ANSWER, THE REST DO NOT ─────────────────────────────
-// `costFeed` marks a card that carries a live figure (recorded onto the daily
-// `platform_metrics` snapshot; see queries/providerCosts.ts). `costNote` is the
-// honest alternative for everyone else — a card with neither reads as an
+// ── COST: SOME VENDORS ANSWER, THE REST DO NOT ──────────────────────────────
+// `costFeed` gives a vendor a card in the Providers page's Spend & usage section,
+// carrying a live figure (recorded onto the daily `platform_metrics` snapshot;
+// see queries/providerCosts.ts). `costNote` is the honest alternative for
+// everyone else, listed beneath those cards — a vendor with neither reads as an
 // unexplained blank, which on a cost page invites the reader to assume zero.
 //
-// The three units are deliberately NOT normalised into one "spend" number: GCP
-// reports month-to-date money, Brevo credits remaining, DeepL characters. See
-// `PlatformProviderCosts` in @linyup/shared for why converting them would be
-// inventing precision.
+// The units are deliberately NOT normalised into one "spend" number: GCP reports
+// month-to-date money, Stripe a completed month's money split by whose cost it
+// is, Brevo credits remaining, DeepL characters. See `PlatformProviderCosts` in
+// @linyup/shared for why converting them would be inventing precision.
 
 export type ProviderCategory =
   | 'Infrastructure'
@@ -38,13 +39,13 @@ export interface Provider {
   /** Optional public status page. */
   statusUrl?: string
   /**
-   * This card shows a live cost/usage figure from that vendor, keyed to the
+   * This vendor gets a cost card with a live cost/usage figure, keyed to the
    * matching block on the platform snapshot. Absent = nothing is fetched.
    */
   costFeed?: 'gcp' | 'brevo' | 'deepl' | 'stripe'
   /**
-   * Why this card shows no figure — a missing API, or a bill that appears on
-   * another card. Rendered in place of a number so the blank is explained.
+   * Why this vendor shows no figure — a missing API, or a bill that appears on
+   * another card. Listed beneath the cost cards so the absence is explained.
    * Set this on every provider WITHOUT a `costFeed`.
    */
   costNote?: string

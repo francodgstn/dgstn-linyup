@@ -270,8 +270,9 @@ describe('contact summary — what the model says back', () => {
   it('the summary call turns thinking off and tells normaliseSummary when it was stopped', () => {
     const source = readFileSync(join(__dirname, 'aiSummary.ts'), 'utf8').replace(/\r\n/g, '\n')
     assert.match(source, /thinkingConfig:\s*\{\s*thinkingBudget:\s*0\s*\}/)
-    assert.match(source, /finishReason[^\n]*'MAX_TOKENS'/)
-    assert.match(source, /normaliseSummary\(raw,\s*\{\s*cut\s*\}\)/)
+    assert.match(source, /cut = replyWasStopped\(response\)/)
+    assert.match(source, /readSummaryReply\(raw,\s*\{\s*cut\s*\}\)/)
+    assert.match(source, /responseJsonSchema:\s*SUMMARY_SCHEMA/)
   })
 })
 

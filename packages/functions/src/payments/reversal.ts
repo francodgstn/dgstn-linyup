@@ -73,10 +73,12 @@ import {
   COURSES_COLLECTION,
   COURSE_PURCHASES_SUBCOLLECTION,
   CONTACT_CREDIT_GRANTS_SUBCOLLECTION,
+  CONTACT_PLAN_GRANTS_SUBCOLLECTION,
   type PaymentLineItem,
   type ReversalTargetOutcome,
 } from '@linyup/shared'
 import type { firestore } from 'firebase-admin'
+import { endPlanGrantInTx } from '../contacts/planGrants'
 
 type Db = firestore.Firestore
 
@@ -289,16 +291,22 @@ export interface ReversalOutcome {
   /** Credits actually taken back (0 when none were). */
   creditsRevoked: number
   course: ReversalTargetOutcome
+  /** The plan grant the payment made (contacts/{c}/plan_grants/{paymentRef}). */
+  planGrant: ReversalTargetOutcome
 }
 
 /**
  * Execute a plan in ONE transaction.
  *
- * The read set is BOUNDED AND KNOWABLE BEFORE THE TRANSACTION OPENS: the plan
- * names at most three documents, each addressed by an id computed from
- * (contactId, paymentRef, lineItem.courseId) — never a query, so no read can
- * fan out and the transaction cannot grow with the size of the contact's data.
- * At most 3 reads, at most 3 writes, all reads first.
+ * The read set is BOUNDED AND KNOWABLE BEFORE THE TRANSACTION OPENS: every
+ * document the plan names is addressed by an id computed from (contactId,
+ * paymentRef, lineItem.courseId) — never a query, so no read can fan out and
+ * the transaction cannot grow with the size of the contact's data. All reads
+ * first, and at most one write per document read.
+ *
+ * The plan grant rides with the subscription target: the same plan decision
+ * reads it, and like the credit grant it is keyed by the payment, so its doc id
+ * IS the provenance and ending it needs no ownership check.
  *
  * A batch was right here until `credits_used` had to be read in the same atomic
  * unit that writes `credits_total`: a spend landing between that read and that
@@ -314,6 +322,7 @@ export async function reversePaymentEffects(
   const grantRef = contactRef
     .collection(CONTACT_CREDIT_GRANTS_SUBCOLLECTION)
     .doc(paymentRef)
+  const planGrantRef = contactRef.collection(CONTACT_PLAN_GRANTS_SUBCOLLECTION).doc(paymentRef)
   /** The plan's target `credits_total`, or null when the plan leaves credits alone. */
   const creditsTarget = plan.credits.op === 'reduce_to' ? plan.credits.total : null
   const courseId = input.lineItem?.kind === 'course' ? (input.lineItem.courseId ?? null) : null
@@ -332,10 +341,12 @@ export async function reversePaymentEffects(
       credits: 'left',
       creditsRevoked: 0,
       course: 'left',
+      planGrant: 'left',
     }
 
-    // ── read phase (≤3, all by doc id) ───────────────────────────────────────
+    // ── read phase (all by doc id) ───────────────────────────────────────────
     const contactSnap = plan.subscription === 'clear_if_owned' ? await tx.get(contactRef) : null
+    const planGrantSnap = plan.subscription === 'clear_if_owned' ? await tx.get(planGrantRef) : null
     const grantSnap = creditsTarget !== null ? await tx.get(grantRef) : null
     const purchaseSnap = purchaseRef ? await tx.get(purchaseRef) : null
 
@@ -372,6 +383,19 @@ export async function reversePaymentEffects(
           subscription_type_updated_at: FieldValue.serverTimestamp(),
         })
         outcome.subscription = 'cleared'
+      }
+    }
+
+    if (planGrantSnap) {
+      const grant = planGrantSnap.data()
+      if (!planGrantSnap.exists || !grant || grant.ended_at != null) {
+        // Nothing there, or already ended — by an earlier run of this reversal,
+        // or by staff. Either way there is nothing left to end.
+        outcome.planGrant = 'absent'
+      } else {
+        // The row stays: it is the record that the plan was held, and until when.
+        endPlanGrantInTx(tx, planGrantRef, 'refund', null)
+        outcome.planGrant = 'ended'
       }
     }
 
@@ -441,7 +465,7 @@ export async function reversePaymentEffects(
     console.log(
       `[reversal] team=${teamId} contact=${contactId} ref=${paymentRef} ` +
         `subscription=${outcome.subscription} credits=${outcome.credits}` +
-        `(${outcome.creditsRevoked}) course=${outcome.course}`
+        `(${outcome.creditsRevoked}) course=${outcome.course} planGrant=${outcome.planGrant}`
     )
     return outcome
   })

@@ -5,7 +5,6 @@
 import type { ContactData } from '../utils/automationEngine'
 import type { PluginActionId } from '@linyup/shared'
 
-import { aiInsightsGenerateMessage } from './aiInsights'
 import { whatsappSendMessage } from './whatsapp'
 
 // ─── Handler interface ────────────────────────────────────────────────────────
@@ -24,6 +23,5 @@ export type PluginActionHandler = (ctx: PluginActionContext) => Promise<void>
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 export const pluginActionHandlers: Record<string, PluginActionHandler> = {
-  'plugin:ai-insights:generate_message': aiInsightsGenerateMessage,
   'plugin:whatsapp:send_message':        whatsappSendMessage,
 }

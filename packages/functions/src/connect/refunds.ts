@@ -313,6 +313,7 @@ export const refundMemberPayment = onCall(async (request) => {
           credits: outcome.credits,
           credits_revoked: outcome.creditsRevoked,
           course: outcome.course,
+          plan_grant: outcome.planGrant,
         }
       } catch (err) {
         console.error(

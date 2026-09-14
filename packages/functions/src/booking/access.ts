@@ -8,10 +8,9 @@
 // and resolve through the same shared resolver.
 import * as admin from 'firebase-admin'
 import { HttpsError } from 'firebase-functions/v2/https'
-import type { Timestamp } from 'firebase-admin/firestore'
 import {
   GUEST_SNAPSHOT,
-  planGrantIsCurrent,
+  paymentHoldingsByType,
   resolvePaymentOptions,
   resolveUsageLimit,
   usageWindowDocId,
@@ -25,16 +24,32 @@ import {
 /**
  * Does HOLDING a subscription of this type grant unmetered (non-credit) access?
  * Used by the booking access gate: credit-pack types must not pass on the
- * membership snapshot alone — their access is metered by credit balance.
- *   • The contact's held price is a non-credit price of this type → true.
- *   • The contact's held price is a credit price of this type      → false.
- *   • Price unknown: true unless EVERY active price carries credits (a
+ * plan list alone — their access is metered by credit balance.
+ *   • A held price is a non-credit price of this type        → true.
+ *   • Every held price that still exists is a credit price    → false.
+ *   • No held price known: true unless EVERY active price carries credits (a
  *     credits-only type can only ever grant metered access).
+ *
+ * The held prices come from the ENTRIES of the plan list, so a second or third
+ * plan is classified by the price it was given — not by the legacy slot's.
  */
+export function heldTypeIsUnmetered(
+  prices: readonly SubscriptionPrice[],
+  heldPriceIds: readonly string[]
+): boolean {
+  const active = prices.filter((p) => p.active !== false)
+  if (active.length === 0 || active.every((p) => !p.credits)) return true
+  const held = heldPriceIds
+    .map((id) => active.find((p) => p.id === id))
+    .filter((p): p is SubscriptionPrice => !!p)
+  if (held.length > 0) return held.some((p) => !p.credits)
+  return active.some((p) => !p.credits)
+}
+
 async function classifyHeldType(
   teamId: string,
   subscriptionTypeId: string,
-  contact: FirebaseFirestore.DocumentData
+  heldPriceIds: readonly string[]
 ): Promise<{ unmetered: boolean; limit: SubscriptionUsageLimit | null }> {
   try {
     const snap = await admin
@@ -47,20 +62,8 @@ async function classifyHeldType(
     if (!snap.exists) return { unmetered: true, limit: null } // unknown type — pre-credits behavior
     const data = snap.data()!
     const limit = resolveUsageLimit({ limits: data.limits as SubscriptionUsageLimit[] | undefined })
-    const prices = ((data.prices as SubscriptionPrice[] | undefined) ?? []).filter(
-      (p) => p.active !== false
-    )
-    if (prices.length === 0 || prices.every((p) => !p.credits)) return { unmetered: true, limit }
-    const heldPriceId =
-      contact.subscription_type_id === subscriptionTypeId
-        ? (contact.subscription_price_id as string | undefined)
-        : undefined
-    if (heldPriceId) {
-      const heldPrice = prices.find((p) => p.id === heldPriceId)
-      if (heldPrice) return { unmetered: !heldPrice.credits, limit }
-    }
-    // Held price unknown: lenient unless the type is credits-only.
-    return { unmetered: prices.some((p) => !p.credits), limit }
+    const prices = (data.prices as SubscriptionPrice[] | undefined) ?? []
+    return { unmetered: heldTypeIsUnmetered(prices, heldPriceIds), limit }
   } catch {
     return { unmetered: true, limit: null } // fail open — pre-credits/pre-limits behavior
   }
@@ -122,53 +125,6 @@ export function denialMessage(denial: PaymentDenial, isAppointment: boolean): st
   }
 }
 
-// The "held" shape every coverage/benefit resolution starts from: live
-// subscriptions + the primary snapshot while its grant is still current, and
-// non-exhausted, non-expired lesson-credit balances. Pure, no DB call — the DB
-// call (classifyHeldType, above) happens per-id, because it depends on
-// which id is being checked.
-//
-// The flat grant's expiry runs through `planGrantIsCurrent` (@linyup/shared) —
-// the SAME predicate the client-side union uses, deliberately, because this
-// function and that one answer the same question on the two sides of the wire
-// and a studio would never find out if they disagreed: the member would simply
-// be shown a price the server then refuses (or the reverse).
-function heldAndCreditSets(
-  contact: FirebaseFirestore.DocumentData,
-  nowMs: number
-): {
-  held: Set<string>
-  creditTypes: Set<string>
-} {
-  const held = new Set<string>()
-  const active =
-    (contact.active_subscriptions as Array<{ subscription_type_id?: string }> | undefined) ?? []
-  active.forEach((s) => {
-    if (s.subscription_type_id) held.add(s.subscription_type_id)
-  })
-  if (
-    contact.subscription_type_id &&
-    planGrantIsCurrent(contact as { subscription_expires_at?: Timestamp | null }, nowMs)
-  ) {
-    held.add(contact.subscription_type_id)
-  }
-
-  const creditTypes = new Set(
-    (
-      (contact.credit_summary as
-        | Array<{
-            subscription_type_id: string
-            remaining: number
-            next_expires_at?: Timestamp | null
-          }>
-        | undefined) ?? []
-    )
-      .filter((e) => e.remaining > 0 && (!e.next_expires_at || e.next_expires_at.toMillis() > nowMs))
-      .map((e) => e.subscription_type_id)
-  )
-  return { held, creditTypes }
-}
-
 /**
  * Build the pure snapshot `resolvePaymentOptions` (@linyup/shared) consumes —
  * the AUTHORITATIVE server-side one. This is where the impure part of coverage
@@ -207,46 +163,38 @@ export async function loadContactPaymentContext(params: {
   const { teamId, contact, relevantTypeIds, usageAt } = params
   if (!contact) return { snapshot: GUEST_SNAPSHOT, limitedWindows: {} }
 
+  // WHAT THE CONTACT HOLDS is the plan list (docs/multi-plan-holdings.md,
+  // phase 3), through the SAME `holdingIsCurrent` comparison the client-side
+  // union makes — deliberately, because the two answer one question on the two
+  // sides of the wire, and a studio would never find out if they disagreed: the
+  // member would simply be shown a price the server then refuses, or the reverse.
   const nowMs = Date.now()
-  const { held, creditTypes } = heldAndCreditSets(contact, nowMs)
-  const usableRemaining = (id: string): number => {
-    const entries =
-      (contact.credit_summary as
-        | Array<{
-            subscription_type_id?: string
-            remaining?: number
-            next_expires_at?: Timestamp | null
-          }>
-        | undefined) ?? []
-    return entries
-      .filter(
-        (e) =>
-          e.subscription_type_id === id &&
-          (e.remaining ?? 0) > 0 &&
-          (!e.next_expires_at || e.next_expires_at.toMillis() > nowMs)
-      )
-      .reduce((sum, e) => sum + (e.remaining ?? 0), 0)
-  }
+  const holdings = paymentHoldingsByType({ held_plans: contact.held_plans }, nowMs)
 
   const heldUnmeteredTypeIds: string[] = []
-  const heldCreditTypes: Array<{ subscriptionTypeId: string; remaining: number }> = []
+  const heldCreditTypes: ContactPaymentSnapshot['heldCreditTypes'] = []
   const limited: Array<{ id: string; limit: SubscriptionUsageLimit }> = []
   for (const id of relevantTypeIds) {
-    if (held.has(id)) {
-      const { unmetered, limit } = await classifyHeldType(teamId, id, contact)
+    const holding = holdings.get(id)
+    if (!holding) continue
+    const credits = {
+      subscriptionTypeId: id,
+      remaining: holding.credits?.remaining ?? 0,
+      expiresAtMs: holding.credits?.expiresAtMs ?? null,
+    }
+    if (holding.heldAsPlan) {
+      const { unmetered, limit } = await classifyHeldType(teamId, id, holding.priceIds)
       if (unmetered) {
         heldUnmeteredTypeIds.push(id)
         if (limit) limited.push({ id, limit })
         continue
       }
-      // Mirror-held but credit-metered — attached, possibly with 0 usable left
-      // (drives the no_credits denial).
-      heldCreditTypes.push({ subscriptionTypeId: id, remaining: usableRemaining(id) })
+      // Held as a plan but credit-metered — attached, possibly with 0 usable
+      // left (drives the no_credits denial).
+      heldCreditTypes.push(credits)
       continue
     }
-    if (creditTypes.has(id)) {
-      heldCreditTypes.push({ subscriptionTypeId: id, remaining: usableRemaining(id) })
-    }
+    if (holding.credits) heldCreditTypes.push(credits)
   }
 
   // Current-window consumption for the limited types (one small doc each).

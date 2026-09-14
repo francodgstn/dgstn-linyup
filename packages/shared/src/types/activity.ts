@@ -1,6 +1,7 @@
 import type { Timestamp } from './common'
 import type { BookingContactField } from './team'
 import type { Benefit } from './benefit'
+import { currentHeldPlans, type HeldPlan } from './planHoldings'
 // Type-only — form.ts imports nothing from here, so no runtime cycle. Booking
 // questions deliberately REUSE the Custom Forms field schema rather than
 // inventing a parallel one: same types, same renderer, same answer shape.
@@ -664,15 +665,10 @@ export function activityRequiresSubscription(
 
 // Structural subset of Contact the coverage check reads — typed loosely so it
 // accepts full Contact docs, denormalised snapshots, and test fixtures alike.
+// Since phase 3 of docs/multi-plan-holdings.md that is the plan LIST alone: every
+// holding (grant, Stripe subscription, credit pack) is an entry of `held_plans`.
 export interface SubscriptionCoverageSnapshot {
-  subscription_type_id?: string | null
-  subscription_expires_at?: { toMillis(): number } | null
-  active_subscriptions?: Array<{ subscription_type_id?: string | null }> | null
-  credit_summary?: Array<{
-    subscription_type_id?: string | null
-    remaining?: number
-    next_expires_at?: { toMillis(): number } | null
-  }> | null
+  held_plans?: ReadonlyArray<HeldPlan> | null
 }
 
 /**
@@ -692,7 +688,7 @@ export interface SubscriptionCoverageSnapshot {
  * its own entries when they lapse.
  */
 export function planGrantIsCurrent(
-  contact: Pick<SubscriptionCoverageSnapshot, 'subscription_expires_at'> | null | undefined,
+  contact: { subscription_expires_at?: { toMillis(): number } | null } | null | undefined,
   nowMs: number = Date.now()
 ): boolean {
   const at = contact?.subscription_expires_at
@@ -728,29 +724,16 @@ export function planGrantExpiryMs(
 }
 
 /** The subscription-type ids a contact currently "holds" for coverage purposes:
- *  live subscriptions in `active_subscriptions`, the primary `subscription_type_id`
- *  snapshot while its grant is still current, and non-exhausted, non-expired
- *  lesson-credit balances. Mirrors the coverage union in the bookSession callable
- *  (which stays authoritative — it additionally SPENDS credits). */
+ *  every entry of the plan list held at `nowMs` (`holdingIsCurrent` — a grant
+ *  inside its dates, a live Stripe subscription, a credit pack with credits
+ *  left), once each, in list order. The coverage union in the bookSession
+ *  callable reads the same entries (and stays authoritative — it additionally
+ *  SPENDS credits). */
 export function heldSubscriptionTypeIds(
   contact: SubscriptionCoverageSnapshot | null | undefined,
   nowMs: number = Date.now(),
 ): string[] {
-  if (!contact) return []
-  const held = new Set<string>()
-  for (const s of contact.active_subscriptions ?? []) {
-    if (s.subscription_type_id) held.add(s.subscription_type_id)
-  }
-  if (contact.subscription_type_id && planGrantIsCurrent(contact, nowMs)) {
-    held.add(contact.subscription_type_id)
-  }
-  for (const e of contact.credit_summary ?? []) {
-    if (!e.subscription_type_id) continue
-    if ((e.remaining ?? 0) <= 0) continue
-    if (e.next_expires_at && e.next_expires_at.toMillis() <= nowMs) continue
-    held.add(e.subscription_type_id)
-  }
-  return Array.from(held)
+  return [...new Set(currentHeldPlans(contact, nowMs).map((entry) => entry.subscription_type_id))]
 }
 
 /** Read-only "is this contact covered for these subscription types" check, shared by

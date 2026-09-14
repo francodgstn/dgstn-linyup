@@ -1298,13 +1298,16 @@ service cloud.firestore {
       // Requires the contacts.manage capability (viewers are read-only). Own-scoped
       // members (coach) may only create a contact owned by themselves
       // (uid in assigned_coach_ids, or createdBy == uid) so it lands in their own book.
-      allow create: if (request.resource.data.teamId == getUserCurrentTeam()
+      // No client creates a contact holding a plan: plans are grants, given
+      // through the plan callables (docs/multi-plan-holdings.md, phase 2).
+      allow create: if ((request.resource.data.teamId == getUserCurrentTeam()
                           && isTeamMember(request.resource.data.teamId)
                           && hasTeamCapability(request.resource.data.teamId, 'contacts.manage')
                           && (callerIsAllScoped(request.resource.data.teamId)
                               || callerOwnsContact(request.resource)))
                        || isTeacher(request.resource)
-                       || hasRole('admin');
+                       || hasRole('admin'))
+                       && !request.resource.data.keys().hasAny(['subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
 
       // Read/Update/Delete: Must be member of contact's team (own-scope for a coach)
       // OR old teacher-based access.
@@ -1327,12 +1330,15 @@ service cloud.firestore {
       // prose as the model's. `held_plans`, `held_plan_type_ids` and
       // `held_plans_next_change_at_ms` are `recomputeHeldPlans`'s alone
       // (sync/heldPlans.ts): the list of plans the contact holds, which phase 3
-      // of docs/multi-plan-holdings.md makes an access input.
+      // of docs/multi-plan-holdings.md makes an access input. The legacy
+      // `subscription_*` plan slot is server-written since phase 2: staff change
+      // plans through assignPlan / changePlan / endPlan (contacts/planCallables.ts),
+      // and every other writer is a Cloud Function.
       allow update: if (canWriteContact(resource)
                        || hasRole('admin')
                        || (isSelfContact(contactId)
                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'last_seen_at', 'mobile_app'])))
-                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms']);
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
       allow delete: if (canAccessContact(resource)
                           && hasTeamCapability(resource.data.teamId, 'contacts.delete'))
                        || hasRole('admin');

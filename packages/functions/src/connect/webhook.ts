@@ -68,6 +68,7 @@ import {
 import { persistAccountStatus } from './access'
 import { resolveSingleContact } from '../utils/contacts'
 import { grantCourseEntitlement, writeContactSubscriptionFields } from '../payments/effects'
+import { writePaymentPlanGrant } from '../contacts/planGrants'
 import { recordPlanPurchase } from '../payments/planPurchases'
 import {
   commitGiftCardDrawdown,
@@ -311,6 +312,25 @@ async function writeContactMembership(
     // subscription ERASES the end date an earlier intro purchase left behind.
     expiresAt: grantExpiry,
   })
+  // A ONE-OFF purchase is a plan grant (docs/multi-plan-holdings.md), keyed by
+  // its PaymentIntent, so the checkout and payment_intent events for the same
+  // charge converge on one row and a refund ends exactly it. A RECURRING plan
+  // arrives here with no PaymentIntent and makes no grant: its
+  // member_subscriptions doc is the holding. The slot write above is the bridge
+  // until the readers move — see contacts/planGrants.ts.
+  if (opts.paymentIntentId) {
+    await writePaymentPlanGrant(db, contactId, {
+      teamId,
+      subscriptionTypeId: md.subscriptionTypeId,
+      subscriptionTypeName: md.subscriptionTypeName ?? null,
+      priceId: md.priceId ?? null,
+      recurrence: md.recurrence ?? null,
+      amountMajor: Math.round(opts.amountRappen) / 100,
+      expiresAt: grantExpiry,
+      source: 'purchase',
+      paymentRef: opts.paymentIntentId,
+    })
+  }
   // Counts toward the price's per-contact purchase cap. A renewal carries no
   // paymentIntentId and is deliberately not a purchase — see planPurchases.ts.
   await recordPlanPurchase(db, contactId, {
@@ -1228,6 +1248,9 @@ async function handleInvoice(
       {
         ...(s?.contactId ? { contactId: s.contactId } : {}),
         kind: 'membership',
+        // WHICH subscription this renewal charged, so the payment links to its
+        // plan card exactly rather than by plan type (docs/multi-plan-holdings.md §5).
+        subscriptionId: subId,
         // OMITTED, not nulled, when unknown — the same rule `contactId` above
         // follows and for the same reason. This row is written with
         // `{merge: true}` on a document the checkout path may already have
@@ -1528,6 +1551,8 @@ async function handleCheckoutCompleted(
         {
           contactId,
           kind: 'membership',
+          // The first charge names its subscription too, as renewals do (handleInvoice).
+          subscriptionId: subId,
           subscriptionTypeName: md.subscriptionTypeName ?? null,
           purpose: 'membership',
           ...(lineItemFromMetadata({ ...md, kind: 'membership' })

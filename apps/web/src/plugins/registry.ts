@@ -5,7 +5,6 @@
 import type { PluginId, PluginManifest } from '@linyup/shared'
 import { bundleContaining, bundleMembers, pluginIsInstallable } from '@linyup/shared'
 import { aiAssistantManifest } from './ai-assistant/manifest'
-import { aiInsightsManifest } from './ai-insights/manifest'
 import { whatsappManifest } from './whatsapp/manifest'
 import { websiteManifest } from './website/manifest'
 import { hmdManifest } from './hmd/manifest'
@@ -32,7 +31,6 @@ import { apiConnectorsManifest } from './api-connectors/manifest'
 
 export const PLUGIN_REGISTRY: PluginManifest[] = [
   aiAssistantManifest,
-  aiInsightsManifest,
   whatsappManifest,
   websiteManifest,
   hmdManifest,
