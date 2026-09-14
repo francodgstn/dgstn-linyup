@@ -130,6 +130,8 @@ describe('the honest-blank rule holds across the readers', () => {
     for (const rel of [
       'packages/functions/src/analytics/providerUsage.ts',
       'apps/admin/src/lib/queries/providerCosts.ts',
+      // The Providers page renderer — where an absent block becomes "Not measured".
+      'apps/admin/src/app/(dashboard)/providers/cost-overview.tsx',
     ]) {
       const src = readFileSync(join(REPO_ROOT, rel), 'utf8')
       const code = src
