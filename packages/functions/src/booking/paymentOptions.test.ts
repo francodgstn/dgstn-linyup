@@ -1480,3 +1480,84 @@ describe('resolvePaymentOptions — promo (Phase 3)', () => {
     }
   })
 })
+
+// A member holding several plans that each cover the same thing uses the BEST
+// one, never the first the rule lists (docs/multi-plan-holdings.md §2.5, D3).
+// Every row lists the worse plan first, so first-listed would get it wrong.
+describe('resolvePaymentOptions — best plan, not first plan (D3)', () => {
+  const classWith = (ids: string[]): PaymentTarget => ({
+    kind: 'class_booking',
+    accessRule: { type: 'subscription', subscriptionTypeIds: ids },
+  })
+  runRows([
+    {
+      name: 'an unlimited plan covers before a limited one listed first',
+      snapshot: contact({ heldUnmeteredTypeIds: ['starter', 'gold'], usageRemaining: { starter: 3 } }),
+      target: classWith(['starter', 'gold']),
+      expected: covered({ reason: 'subscription', subscriptionTypeId: 'gold' }),
+    },
+    {
+      name: 'between limited plans, the one with the most allowance left covers',
+      snapshot: contact({ heldUnmeteredTypeIds: ['small', 'big'], usageRemaining: { small: 1, big: 5 } }),
+      target: classWith(['small', 'big']),
+      expected: {
+        options: [
+          { type: 'covered', via: { reason: 'subscription', subscriptionTypeId: 'big' }, remaining: 4 } as never,
+        ],
+        denial: null,
+      },
+    },
+    {
+      name: 'between credit packs, the one lapsing soonest is spent; a pack with no end goes last',
+      snapshot: contact({
+        heldCreditTypes: [
+          { subscriptionTypeId: 'forever', remaining: 9 },
+          { subscriptionTypeId: 'late', remaining: 5, expiresAtMs: 2_000 },
+          { subscriptionTypeId: 'soon', remaining: 2, expiresAtMs: 1_000 },
+        ],
+      }),
+      target: classWith(['forever', 'late', 'soon']),
+      expected: {
+        options: [{ type: 'spend_credits', via: { subscriptionTypeId: 'soon' }, remaining: 2 }],
+        denial: null,
+      },
+    },
+    {
+      name: 'equally good plans keep the rule order',
+      snapshot: contact({ heldUnmeteredTypeIds: ['platinum', 'gold'] }),
+      target: classWith(['gold', 'platinum']),
+      expected: covered({ reason: 'subscription', subscriptionTypeId: 'gold' }),
+    },
+    {
+      name: 'an included benefit is covered by a held subscription before a pack listed first spends a credit',
+      snapshot: contact({
+        heldUnmeteredTypeIds: ['gold'],
+        heldCreditTypes: [{ subscriptionTypeId: 'pack10', remaining: 5 }],
+      }),
+      target: {
+        kind: 'appointment',
+        duration: { minutes: 60, priceAmount: 95 },
+        benefit: { subscriptionTypeIds: ['pack10', 'gold'], effect: 'included' },
+      },
+      expected: covered({ reason: 'benefit_included', subscriptionTypeId: 'gold' }),
+    },
+    {
+      name: 'a spend_credits benefit spends the pack lapsing soonest',
+      snapshot: contact({
+        heldCreditTypes: [
+          { subscriptionTypeId: 'late', remaining: 5, expiresAtMs: 2_000 },
+          { subscriptionTypeId: 'soon', remaining: 3, expiresAtMs: 1_000 },
+        ],
+      }),
+      target: {
+        kind: 'appointment',
+        duration: { minutes: 60, priceAmount: 95 },
+        benefit: { subscriptionTypeIds: ['late', 'soon'], effect: 'spend_credits' },
+      },
+      expected: {
+        options: [{ type: 'spend_credits', via: { subscriptionTypeId: 'soon' }, remaining: 3 }],
+        denial: null,
+      },
+    },
+  ])
+})

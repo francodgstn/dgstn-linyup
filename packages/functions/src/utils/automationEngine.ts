@@ -190,7 +190,7 @@ export interface ContactData {
   //
   // Declared as a real `Timestamp` — NOT the loose `{seconds, nanoseconds}`
   // union its neighbours carry — because `ContactData` must satisfy
-  // `ContactFilterSubject`, whose `planGrantIsCurrent` calls `toMillis()`. The
+  // `ContactFilterSubject`, which declares the field with `toMillis()`. The
   // engine reads contacts through the admin SDK, so that is what the field
   // always is; the loose union would only make a dynamic group's rule and this
   // condition disagree about the same contact.

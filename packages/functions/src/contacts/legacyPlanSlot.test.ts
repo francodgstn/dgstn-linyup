@@ -156,11 +156,6 @@ const CENSUS: Record<string, CensusEntry> = {
     ],
     note: 'the payment_events row names its plan; both contact updates overwrite the slot id, not its name',
   },
-  'packages/functions/src/booking/access.ts': {
-    sites: 1,
-    writers: [],
-    note: 'a type annotation',
-  },
   'packages/functions/src/booking/index.ts': {
     sites: 4,
     writers: [],
@@ -251,11 +246,6 @@ const CENSUS: Record<string, CensusEntry> = {
     sites: 2,
     writers: [],
     note: "the header chips' fallback object is display; the plan dialog saves and clears through the plan callables",
-  },
-  'apps/web/src/app/[locale]/(public)/public/[slug]/space/SpaceHome.tsx': {
-    sites: 1,
-    writers: [],
-    note: 'an argument to the held-plans helper',
   },
   'apps/web/src/app/[locale]/(public)/public/[slug]/space/SpaceMembershipCard.tsx': {
     sites: 2,

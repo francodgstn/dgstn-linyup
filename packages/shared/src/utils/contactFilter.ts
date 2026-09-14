@@ -22,7 +22,8 @@ import type { RankLevel, RankRef, RankingSystem } from '../types/team'
 // the automation scan tests the contact already in hand.
 
 import type { Contact, ContactGroup } from '../types/contact'
-import { planGrantIsCurrent } from '../types/activity'
+import { heldSubscriptionTypeIds } from '../types/activity'
+import type { HeldPlan } from '../types/planHoldings'
 import type { EngagementBand, EngagementThresholds } from '../types/engagement'
 import { computeEngagementBand } from '../types/engagement'
 import { waiverAcceptanceState, type WaiverAcceptanceState, type WaiverSignerFacts } from '../types/waiver'
@@ -482,9 +483,12 @@ export interface ContactFilterSubject {
   source?: string
   affiliation_summary?: { has_active?: boolean }
   subscription_type_id?: string
-  /** End of a one-off plan grant ("2 months included"), compared rather than
-   *  trusted — see `planGrantIsCurrent`. */
+  /** End of a one-off plan grant ("2 months included"). No longer read by the
+   *  subscriptions dimension, which reads `held_plans`; kept for the readers
+   *  phase 3d of docs/multi-plan-holdings.md has still to move. */
   subscription_expires_at?: { toMillis(): number } | null
+  /** The plan list — what the subscriptions dimension reads. */
+  held_plans?: ReadonlyArray<HeldPlan> | null
   /** `cancelling` is read by the attention reasons: a member who has asked
    *  Stripe to stop is still live, still training, and is the one the studio has
    *  the shortest window to talk to. */
@@ -965,22 +969,14 @@ export function matchesFilter(
     if (wantsNone && !wantsActive && subject.affiliation_summary?.has_active === true) return false
   }
 
-  // Subscription — reads BOTH the primary snapshot and active_subscriptions. The
-  // contacts list renders from active_subscriptions, so a contact whose
-  // subscriptions live only in that array used to be misfiltered as "none".
+  // Subscription — the SAME held union the booking gate reads
+  // (`heldSubscriptionTypeIds`: every plan-list entry held at `nowMs`). One union
+  // on both sides, so "on the intro plan" stops meaning someone the moment the
+  // door stops letting them in. Without that, the list and every dynamic group
+  // built on it would keep chasing a lapsed member with plan-holder messaging
+  // that the gate itself refuses.
   if (f.subscriptions.length > 0) {
-    const held = new Set<string>()
-    // The flat grant is honoured only while it is CURRENT — the same
-    // `planGrantIsCurrent` comparison the booking gate makes, so "on the intro
-    // plan" stops meaning her the moment it stops covering her. Without this the
-    // list, and every dynamic group built on it, would keep chasing a lapsed
-    // member with plan-holder messaging that the gate itself refuses.
-    if (subject.subscription_type_id && planGrantIsCurrent(subject, nowMs)) {
-      held.add(subject.subscription_type_id)
-    }
-    for (const s of subject.active_subscriptions ?? []) {
-      if (s?.subscription_type_id) held.add(s.subscription_type_id)
-    }
+    const held = new Set(heldSubscriptionTypeIds(subject, nowMs))
     const wantsNone = f.subscriptions.includes('none')
     const wantedTypes = f.subscriptions.filter((s) => s !== 'none')
     const matched =
