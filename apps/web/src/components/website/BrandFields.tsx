@@ -98,21 +98,38 @@ export function BrandFields({ meta, onChange, sections, uploadImage }: BrandFiel
 
       {/* ── Buttons ──────────────────────────────────────────────────── */}
       <div className="space-y-3 rounded-lg border p-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('brandButtonShape')}</Label>
-          <Select
-            value={meta.buttonShape ?? 'pill'}
-            onValueChange={(v) => onChange({ buttonShape: v as SiteMeta['buttonShape'] })}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pill">{t('brandButtonPill')}</SelectItem>
-              <SelectItem value="rounded">{t('brandButtonRounded')}</SelectItem>
-              <SelectItem value="square">{t('brandButtonSquare')}</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('brandButtonShape')}</Label>
+            <Select
+              value={meta.buttonShape ?? 'pill'}
+              onValueChange={(v) => onChange({ buttonShape: v as SiteMeta['buttonShape'] })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pill">{t('brandButtonPill')}</SelectItem>
+                <SelectItem value="rounded">{t('brandButtonRounded')}</SelectItem>
+                <SelectItem value="square">{t('brandButtonSquare')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('brandCardShape')}</Label>
+            <Select
+              value={meta.cardShape ?? 'rounded'}
+              onValueChange={(v) => onChange({ cardShape: v === 'rounded' ? undefined : (v as SiteMeta['cardShape']) })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rounded">{t('brandCardRounded')}</SelectItem>
+                <SelectItem value="square">{t('brandCardSquare')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <label className="flex items-center justify-between gap-3">
           <span className="text-sm">{t('brandButtonColor')}</span>

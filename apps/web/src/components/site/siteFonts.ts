@@ -66,7 +66,7 @@ const BUTTON_RADIUS: Record<NonNullable<SiteMeta['buttonShape']>, string> = {
   square: '0px',
 }
 
-type BrandMeta = Pick<SiteMeta, 'font' | 'headingFont' | 'headingCase' | 'buttonShape'>
+type BrandMeta = Pick<SiteMeta, 'font' | 'headingFont' | 'headingCase' | 'buttonShape' | 'cardShape'>
 
 /**
  * className + style for a website root element (the full site and an embedded
@@ -84,5 +84,11 @@ export function siteBrandRootProps(meta: BrandMeta): { className: string; style:
   if (headingFont) style['--site-font-heading'] = FONT_STACK[headingFont]
   if (meta.headingCase === 'uppercase') style['--site-heading-case'] = 'uppercase'
   if (meta.buttonShape) style['--site-btn-radius'] = BUTTON_RADIUS[meta.buttonShape]
+  // Cards come in two radii today (large surfaces 1rem, compact tiles 0.75rem),
+  // so 'square' zeroes both and 'rounded' leaves both fallbacks untouched.
+  if (meta.cardShape === 'square') {
+    style['--site-card-radius'] = '0px'
+    style['--site-card-radius-sm'] = '0px'
+  }
   return { className: `site-root ${SITE_FONT_VARIABLE_CLASSES}`, style: style as CSSProperties }
 }

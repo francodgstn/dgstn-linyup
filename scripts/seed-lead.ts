@@ -62,6 +62,7 @@ import {
   SITE_PUBLISHED_COLLECTION,
   PUBLIC_LOCALES,
   siteI18nDocId,
+  findSiteTheme,
   normalizeActivityTags,
   withRankLevelIds,
   type RankLevelInput,
@@ -2778,6 +2779,9 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     // gift cards configured needs it, or the offer silently vanishes from the
     // shop mid prospect demo.
     ...(profile.giftCards?.enabled ? [{ id: 'gift-cards' }] : []),
+    // A profile that names a website theme gets the plugin that unlocks the
+    // theme picker, so the studio can re-apply or switch it in the demo.
+    ...(profile.siteMeta?.appliedTheme ? [{ id: 'site-themes' }] : []),
     // NOT 'documents' — a default feature on every plan, not a plugin. Its
     // signup-consent selection goes to teams/{teamId}/settings/documents below.
   ]
@@ -2811,6 +2815,16 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   // these defaults; header and footer merge field-by-field. The logo asset, when
   // given, is uploaded like every other site image.
   const brand = profile.siteMeta ?? {}
+  // A named theme is layered UNDER the profile: its look below the profile's own
+  // brand values, and its section styles below each section's explicit ones —
+  // the same result as applying the theme in the builder and then editing.
+  const siteTheme = findSiteTheme(typeof brand.appliedTheme === 'string' ? brand.appliedTheme : undefined)
+  if (siteTheme) {
+    const styles = siteTheme.sections as Record<string, Record<string, unknown> | undefined>
+    sections.forEach((section, i) => {
+      sections[i] = { ...(styles[String(section.type)] ?? {}), ...section }
+    })
+  }
   const logoUrl = profile.logoAsset ? await uploadAsset(profile.logoAsset, `teams/${teamId}/site/brand/logo`) : null
   const siteMeta = {
     title: profile.teamName,
@@ -2821,6 +2835,7 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     // custom page background pairs with the light theme's dark text.
     ...(profile.publicBackground ? { background: profile.publicBackground } : {}),
     seo: { title: profile.teamName, description: profile.description },
+    ...(siteTheme ? siteTheme.look : {}),
     ...brand,
     header: { showNav: true, ctaLabel: 'Book now', ctaAction: 'booking', ...(brand.header ?? {}) },
     footer: { showSocial: true, ...(brand.footer ?? {}) },

@@ -26,6 +26,9 @@ export const ORG_SECTION_LIBRARY: {
   labelKey: string
   descKey: string
   icon: string
+  /** See SECTION_LIBRARY (team defaults.ts) — same convention, same default.
+   *  No current type is 'managed'. */
+  maturity?: 'full' | 'basic' | 'managed'
 }[] = [
   { type: 'hero', labelKey: 'sectionHero', descKey: 'sectionHeroDesc', icon: 'Image' },
   { type: 'content', labelKey: 'sectionContent', descKey: 'sectionContentDesc', icon: 'FileText' },
@@ -47,6 +50,7 @@ export const ORG_SECTION_LIBRARY: {
     descKey: 'sectionTestimonialsDesc',
     icon: 'Quote',
   },
+  { type: 'video', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
   { type: 'contact', labelKey: 'sectionContact', descKey: 'sectionContactDesc', icon: 'Mail' },
 ]
 
@@ -98,6 +102,8 @@ export function newOrgSection(
         type,
         items: [{ name: 'Alex', activity: 'Member', feedback: 'Best decision I made.' }],
       }
+    case 'video':
+      return { id, type, heading: '' }
     case 'clubs':
       return { id, type, columns: 3, showAddress: true }
     case 'locations':

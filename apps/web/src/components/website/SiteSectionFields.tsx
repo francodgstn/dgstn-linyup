@@ -52,6 +52,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { ColorPicker } from '@/components/ui/color-picker'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -60,8 +61,10 @@ import type {
   CtaBannerSection,
   FaqSection,
   TestimonialsSection,
+  VideoSection,
   HeroSection, ContentSection, GallerySection, ContactSection,
 } from '@linyup/shared'
+import { parseVideoUrl } from '@linyup/shared'
 import { RichTextEditor } from '@/components/RichTextEditor'
 import { getWebsiteLimits } from '@/plugins/website/limits'
 
@@ -194,6 +197,35 @@ export function HeroFields({
         <Textarea value={s.subheadline ?? ''} onChange={(e) => onChange({ subheadline: e.target.value })} rows={2} />
       </Field>
       <ImageField label={t('editorBackgroundImage')} url={s.bgImageUrl} tenant={tenant} sectionId={s.id} onChange={(u) => onChange({ bgImageUrl: u })} />
+      <Field label={t('editorBgVideoUrl')}>
+        <Input
+          value={s.bgVideoUrl ?? ''}
+          onChange={(e) => onChange({ bgVideoUrl: e.target.value || undefined })}
+          placeholder={t('editorBgVideoUrlPlaceholder')}
+          className="h-9 font-mono text-xs"
+        />
+        <p className="text-xs text-muted-foreground">{t('editorHeroBgVideoHint')}</p>
+      </Field>
+      {/* The colour is read only WHEN THERE IS NO IMAGE (see HeroSection.bgColor) —
+          hidden here the moment one is uploaded, so the control never implies it
+          does something it does not. */}
+      {!s.bgImageUrl && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">{t('editorHeroBgColor')}</Label>
+            {s.bgColor && (
+              <button
+                type="button"
+                onClick={() => onChange({ bgColor: undefined })}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                {t('editorHeroBgColorClear')}
+              </button>
+            )}
+          </div>
+          <ColorPicker value={s.bgColor} onChange={(hex) => onChange({ bgColor: hex })} aria-label={t('editorHeroBgColor')} />
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Field label={t('editorAlignment')}>
           <Select value={s.align} onValueChange={(v) => onChange({ align: v })}>
@@ -204,14 +236,62 @@ export function HeroFields({
             </SelectContent>
           </Select>
         </Field>
-        <Field label={t('editorOverlay', { percent: s.overlay ?? 40 })}>
-          <input
-            type="range" min={0} max={100} value={s.overlay ?? 40}
-            onChange={(e) => onChange({ overlay: Number(e.target.value) })}
-            className="mt-3 w-full accent-primary"
-          />
+        <Field label={t('editorHeroLayout')}>
+          <Select
+            value={s.layout ?? 'full'}
+            onValueChange={(v) => onChange({ layout: v === 'full' ? undefined : (v as HeroSection['layout']) })}
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="full">{t('editorHeroLayoutFull')}</SelectItem>
+              <SelectItem value="card">{t('editorHeroLayoutCard')}</SelectItem>
+            </SelectContent>
+          </Select>
         </Field>
       </div>
+      <Field label={t('editorOverlay', { percent: s.overlay ?? 40 })}>
+        <input
+          type="range" min={0} max={100} value={s.overlay ?? 40}
+          onChange={(e) => onChange({ overlay: Number(e.target.value) })}
+          className="w-full accent-primary"
+        />
+      </Field>
+      {/* How the shading lies over the photo, and its colour. Only meaningful with
+          a background image or video — a solid colour hero has nothing to shade. */}
+      {(s.bgImageUrl || s.bgVideoUrl) && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('editorHeroOverlayStyle')}>
+            <Select
+              value={s.overlayStyle ?? 'solid'}
+              onValueChange={(v) =>
+                onChange({ overlayStyle: v === 'solid' ? undefined : (v as HeroSection['overlayStyle']) })
+              }
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solid">{t('editorHeroOverlaySolid')}</SelectItem>
+                <SelectItem value="gradient-left">{t('editorHeroOverlayGradientLeft')}</SelectItem>
+                <SelectItem value="gradient-bottom">{t('editorHeroOverlayGradientBottom')}</SelectItem>
+                <SelectItem value="gradient-left-bottom">{t('editorHeroOverlayGradientLeftBottom')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label={t('editorHeroOverlayTone')}>
+            <Select
+              value={s.overlayTone ?? 'dark'}
+              onValueChange={(v) =>
+                onChange({ overlayTone: v === 'dark' ? undefined : (v as HeroSection['overlayTone']) })
+              }
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="dark">{t('editorHeroOverlayDark')}</SelectItem>
+                <SelectItem value="light">{t('editorHeroOverlayLight')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      )}
       {cta}
     </div>
   )
@@ -275,6 +355,9 @@ export function GalleryFields({
   const t = useTranslations('Website')
   const addRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const layout = s.layout ?? 'grid'
+  const setCaption = (i: number, caption: string) =>
+    onChange({ images: s.images.map((img, j) => (j === i ? { ...img, caption: caption || undefined } : img)) })
 
   async function addImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -304,29 +387,57 @@ export function GalleryFields({
       <Field label={t('editorHeadingOptional')}>
         <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
       </Field>
-      <Field label={t('editorColumns')}>
-        <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="2">2</SelectItem>
-            <SelectItem value="3">3</SelectItem>
-            <SelectItem value="4">4</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('editorGalleryLayout')}>
+          <Select
+            value={layout}
+            onValueChange={(v) => onChange({ layout: v === 'grid' ? undefined : (v as GallerySection['layout']) })}
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="grid">{t('editorGalleryLayoutGrid')}</SelectItem>
+              <SelectItem value="marquee">{t('editorGalleryLayoutMarquee')}</SelectItem>
+              <SelectItem value="logos">{t('editorGalleryLayoutLogos')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        {/* Logos are never cropped or arranged into columns — the setting would
+            be meaningless there, so it's hidden rather than reset (switching
+            back to grid restores whatever the studio had picked). */}
+        {layout !== 'logos' && (
+          <Field label={t('editorColumns')}>
+            <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+      </div>
       <Field label={t('editorPhotos', { count: s.images.length, max: limits.maxGalleryImages })}>
         <div className="grid grid-cols-3 gap-2">
           {s.images.map((img, i) => (
-            <div key={i} className="relative aspect-square overflow-hidden rounded-md border bg-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt="" className="h-full w-full object-cover" />
-              <button
-                type="button"
-                onClick={() => onChange({ images: s.images.filter((_, j) => j !== i) })}
-                className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 hover:bg-background"
-              >
-                <X className="h-3 w-3" />
-              </button>
+            <div key={i} className="space-y-1">
+              <div className="relative aspect-square overflow-hidden rounded-md border bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => onChange({ images: s.images.filter((_, j) => j !== i) })}
+                  className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 hover:bg-background"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              <Input
+                value={img.caption ?? ''}
+                onChange={(e) => setCaption(i, e.target.value)}
+                placeholder={t('editorGalleryCaption')}
+                className="h-7 text-[11px]"
+              />
             </div>
           ))}
           <button
@@ -381,9 +492,16 @@ export function ContactFields({ s, onChange }: { s: ContactSection; onChange: (p
 // team editor purely because that is where they were written, and the org
 // builder simply predated them.
 
-export function FeaturesFields({ s, onChange }: { s: FeaturesSection; onChange: (p: Patch) => void }) {
+export function FeaturesFields({
+  s, tenant, onChange,
+}: {
+  s: FeaturesSection
+  tenant: SiteEditorTenant
+  onChange: (p: Patch) => void
+}) {
   const t = useTranslations('Website')
   const items = s.items ?? []
+  const style = s.style ?? 'cards'
   const set = (i: number, patch: Partial<(typeof items)[number]>) =>
     onChange({ items: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) })
   return (
@@ -394,24 +512,41 @@ export function FeaturesFields({ s, onChange }: { s: FeaturesSection; onChange: 
       <Field label={t('editorSubheadingOptional')}>
         <Input value={s.subheading ?? ''} onChange={(e) => onChange({ subheading: e.target.value })} className="h-9" />
       </Field>
-      <Field label={t('editorColumns')}>
-        <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="2">2</SelectItem>
-            <SelectItem value="3">3</SelectItem>
-            <SelectItem value="4">4</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('editorColumns')}>
+          <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="3">3</SelectItem>
+              <SelectItem value="4">4</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label={t('editorFeaturesStyle')}>
+          <Select
+            value={style}
+            onValueChange={(v) => onChange({ style: v === 'cards' ? undefined : (v as FeaturesSection['style']) })}
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cards">{t('editorFeaturesStyleCards')}</SelectItem>
+              <SelectItem value="stats">{t('editorFeaturesStyleStats')}</SelectItem>
+              <SelectItem value="checklist">{t('editorFeaturesStyleChecklist')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
       <div className="space-y-3">
         {items.map((item, i) => (
           <div key={i} className="space-y-2 rounded-lg border p-3">
             <div className="flex items-start gap-2">
-              <IconPicker value={item.icon} onChange={(name) => set(i, { icon: name })} />
+              {/* A stats row is figures, not icons — the icon picker only
+                  makes sense for a card or a checklist tick. */}
+              {style !== 'stats' && <IconPicker value={item.icon} onChange={(name) => set(i, { icon: name })} />}
               <Input
                 value={item.title}
-                placeholder={t('editorFeatureTitle')}
+                placeholder={style === 'stats' ? t('editorFeatureFigure') : t('editorFeatureTitle')}
                 onChange={(e) => set(i, { title: e.target.value })}
                 className="h-9"
               />
@@ -427,10 +562,22 @@ export function FeaturesFields({ s, onChange }: { s: FeaturesSection; onChange: 
             </div>
             <Textarea
               value={item.text ?? ''}
-              placeholder={t('editorFeatureText')}
+              placeholder={style === 'stats' ? t('editorFeatureCaption') : t('editorFeatureText')}
               onChange={(e) => set(i, { text: e.target.value })}
               rows={2}
             />
+            {/* An image replaces the icon, so it only means something for the
+                card style — a checklist tick or a stat figure has no top slot
+                to put it in. */}
+            {style === 'cards' && (
+              <ImageField
+                label={t('editorImageOptional')}
+                url={item.imageUrl}
+                tenant={tenant}
+                sectionId={s.id}
+                onChange={(u) => set(i, { imageUrl: u })}
+              />
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Input
                 value={item.linkLabel ?? ''}
@@ -448,6 +595,7 @@ export function FeaturesFields({ s, onChange }: { s: FeaturesSection; onChange: 
           </div>
         ))}
       </div>
+      <p className="text-xs text-muted-foreground">{t('editorFeatureLinkHint')}</p>
       <AddItemButton
         label={t('editorAddFeature')}
         onClick={() => onChange({ items: [...items, { icon: 'Sparkles', title: '' }] })}
@@ -458,10 +606,12 @@ export function FeaturesFields({ s, onChange }: { s: FeaturesSection; onChange: 
 
 export function CtaBannerFields({
   s,
+  tenant,
   onChange,
   cta,
 }: {
   s: CtaBannerSection
+  tenant: SiteEditorTenant
   onChange: (p: Patch) => void
   /** The tenant's own call-to-action control, passed in for the same reason
    *  `HeroFields` takes one: a studio's CTA can point at its booking page or
@@ -469,6 +619,7 @@ export function CtaBannerFields({
   cta: React.ReactNode
 }) {
   const t = useTranslations('Website')
+  const style = s.style ?? 'card'
   return (
     <div className="space-y-3">
       <Field label={t('editorHeading')}>
@@ -477,7 +628,129 @@ export function CtaBannerFields({
       <Field label={t('editorTextOptional')}>
         <Textarea value={s.text ?? ''} onChange={(e) => onChange({ text: e.target.value })} rows={2} />
       </Field>
+      <Field label={t('editorCtaBannerStyle')}>
+        <Select
+          value={style}
+          onValueChange={(v) => onChange({ style: v === 'card' ? undefined : (v as CtaBannerSection['style']) })}
+        >
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="card">{t('editorCtaBannerStyleCard')}</SelectItem>
+            <SelectItem value="band">{t('editorCtaBannerStyleBand')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {/* A band spans the page and can carry a background image (dimmed so the
+          text stays readable); a centred card has no edge-to-edge surface for
+          one to sit on. */}
+      {style === 'band' && (
+        <ImageField
+          label={t('editorBackgroundImage')}
+          url={s.bgImageUrl}
+          tenant={tenant}
+          sectionId={s.id}
+          onChange={(u) => onChange({ bgImageUrl: u })}
+        />
+      )}
       {cta}
+    </div>
+  )
+}
+
+/**
+ * A YouTube/Vimeo film. Only `provider` + `videoId` are ever written — never an
+ * embed URL — so the studio pastes an ordinary share link and `parseVideoUrl`
+ * (the ONE parser, `@linyup/shared`) turns it into the stored pair. The raw
+ * text lives in local state so typing (or a link that briefly looks invalid
+ * mid-paste) is never fought; an empty box clears both stored fields.
+ */
+export function VideoFields({
+  s, tenant, onChange,
+}: {
+  s: VideoSection
+  tenant: SiteEditorTenant
+  onChange: (p: Patch) => void
+}) {
+  const t = useTranslations('Website')
+  const [draft, setDraft] = useState('')
+  const [touched, setTouched] = useState(false)
+  const display = s.display ?? 'inline'
+
+  function handleLink(value: string) {
+    setDraft(value)
+    setTouched(true)
+    const trimmed = value.trim()
+    if (!trimmed) {
+      onChange({ provider: undefined, videoId: undefined })
+      return
+    }
+    const parsed = parseVideoUrl(trimmed)
+    if (parsed) onChange({ provider: parsed.provider, videoId: parsed.videoId })
+  }
+
+  const invalid = touched && draft.trim() !== '' && !parseVideoUrl(draft.trim())
+  const providerLabel = s.provider === 'youtube' ? 'YouTube' : s.provider === 'vimeo' ? 'Vimeo' : null
+
+  return (
+    <div className="space-y-3">
+      <Field label={t('editorVideoLink')}>
+        <Input
+          value={draft}
+          onChange={(e) => handleLink(e.target.value)}
+          placeholder={t('editorVideoLinkPlaceholder')}
+          className="h-9 font-mono text-xs"
+        />
+        {invalid && <p className="text-xs text-destructive">{t('editorVideoLinkInvalid')}</p>}
+        {!invalid && providerLabel && s.videoId && (
+          <p className="text-xs text-muted-foreground">
+            {t('editorVideoCurrent', { provider: providerLabel, id: s.videoId })}
+          </p>
+        )}
+      </Field>
+      <Field label={t('editorHeadingOptional')}>
+        <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
+      </Field>
+      <Field label={t('editorTextOptional')}>
+        <Textarea value={s.text ?? ''} onChange={(e) => onChange({ text: e.target.value })} rows={2} />
+      </Field>
+      <Field label={t('editorVideoDisplay')}>
+        <Select
+          value={display}
+          onValueChange={(v) => onChange({ display: v === 'inline' ? undefined : (v as VideoSection['display']) })}
+        >
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="inline">{t('editorVideoDisplayInline')}</SelectItem>
+            <SelectItem value="lightbox">{t('editorVideoDisplayLightbox')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {display === 'lightbox' && (
+        <Field label={t('editorVideoPlayLabel')}>
+          <Input
+            value={s.playLabel ?? ''}
+            onChange={(e) => onChange({ playLabel: e.target.value })}
+            placeholder={t('editorVideoPlayLabelPlaceholder')}
+            className="h-9"
+          />
+        </Field>
+      )}
+      <Field label={t('editorBgVideoUrl')}>
+        <Input
+          value={s.bgVideoUrl ?? ''}
+          onChange={(e) => onChange({ bgVideoUrl: e.target.value || undefined })}
+          placeholder={t('editorBgVideoUrlPlaceholder')}
+          className="h-9 font-mono text-xs"
+        />
+        <p className="text-xs text-muted-foreground">{t('editorVideoBgVideoHint')}</p>
+      </Field>
+      <ImageField
+        label={t('editorVideoPoster')}
+        url={s.posterUrl}
+        tenant={tenant}
+        sectionId={s.id}
+        onChange={(u) => onChange({ posterUrl: u })}
+      />
     </div>
   )
 }

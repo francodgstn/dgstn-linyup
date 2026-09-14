@@ -19,6 +19,8 @@
 
 import {
   isPublicSurface,
+  isValidVideoId,
+  SITE_THEME_IDS,
   SITE_FONTS,
   SITE_MENU_MAX_DEPTH,
   SURFACE_THEME_PRESETS,
@@ -44,6 +46,7 @@ import type {
   SiteTopBar,
   SurfaceThemePresetId,
   TestimonialsSection,
+  VideoSection,
   WebsiteSection,
   WebsiteSectionType,
 } from '@linyup/shared'
@@ -153,6 +156,9 @@ export function sanitizeHeroSection(d: Dict, id: string): HeroSection | null {
     layout: optOneOf(d.layout, ['full', 'card'] as const),
     align: oneOf(d.align, ['left', 'center'] as const, 'center'),
     cta: sanitizeCta(d.cta),
+    bgVideoUrl: safeVideoFileUrl(d.bgVideoUrl),
+    overlayStyle: optOneOf(d.overlayStyle, ['solid', 'gradient-left', 'gradient-bottom', 'gradient-left-bottom'] as const),
+    overlayTone: optOneOf(d.overlayTone, ['dark', 'light'] as const),
   }) as unknown as HeroSection
 }
 
@@ -184,6 +190,7 @@ export function sanitizeGallerySection(d: Dict, id: string): GallerySection | nu
     heading: optStr(d.heading, 200),
     images,
     columns: columnsOf(d.columns),
+    layout: optOneOf(d.layout, ['grid', 'marquee', 'logos'] as const),
   }) as unknown as GallerySection
 }
 
@@ -204,6 +211,23 @@ export function sanitizeContactSection(d: Dict, id: string): ContactSection {
  *  own icon set, so this only bounds the shape. */
 const FEATURE_ICON = /^[A-Za-z0-9-]{1,64}$/
 
+/** An in-page anchor to a section id. The id charset is the one section ids are
+ *  minted with, so nothing but a same-page jump can be expressed. */
+const SECTION_ANCHOR = /^#[A-Za-z0-9_-]{1,64}$/
+
+/** A link a visitor can follow: an https?:// URL or a `#sectionId` anchor. */
+export function safeLink(v: unknown): string | undefined {
+  if (typeof v === 'string' && SECTION_ANCHOR.test(v)) return v
+  return safeUrl(v)
+}
+
+/** An external background video: https and a video file extension. Anything
+ *  else (a page URL, a YouTube link) would render a broken <video>. */
+function safeVideoFileUrl(v: unknown): string | undefined {
+  const url = safeUrl(v)
+  return url && /^https:\/\/[^?#]+\.(mp4|webm)(\?[^#]*)?$/i.test(url) ? url : undefined
+}
+
 // Each of the item lists below renders NOTHING when empty (see the blocks in
 // apps/web/src/components/site/sections.tsx), so a section whose items all fail
 // validation is dropped rather than published as an empty anchor in the menu.
@@ -220,7 +244,8 @@ export function sanitizeFeaturesSection(d: Dict, id: string): FeaturesSection | 
         title,
         text: optStr(i.text, 600),
         linkLabel: optStr(i.linkLabel, 120),
-        linkUrl: safeUrl(i.linkUrl),
+        linkUrl: safeLink(i.linkUrl),
+        imageUrl: safeUrl(i.imageUrl),
       })
     })
     .filter(nonNull)
@@ -232,6 +257,7 @@ export function sanitizeFeaturesSection(d: Dict, id: string): FeaturesSection | 
     subheading: optStr(d.subheading, 400),
     columns: columnsOf(d.columns),
     items,
+    style: optOneOf(d.style, ['cards', 'stats', 'checklist'] as const),
   }) as unknown as FeaturesSection
 }
 
@@ -242,7 +268,33 @@ export function sanitizeCtaBannerSection(d: Dict, id: string): CtaBannerSection 
     id, type: 'cta_banner', heading,
     text: optStr(d.text, 600),
     cta: sanitizeCta(d.cta),
+    style: optOneOf(d.style, ['card', 'band'] as const),
+    bgImageUrl: safeUrl(d.bgImageUrl),
   }) as unknown as CtaBannerSection
+}
+
+/**
+ * The video block. A section with neither a playable film nor a background loop
+ * renders nothing, so it is dropped. `videoId` is validated against the
+ * provider's real id shape — it is interpolated into a player URL at render.
+ */
+export function sanitizeVideoSection(d: Dict, id: string): VideoSection | null {
+  const provider = optOneOf(d.provider, ['youtube', 'vimeo'] as const)
+  const rawId = optStr(d.videoId, 32)
+  const videoId = provider && rawId && isValidVideoId(provider, rawId) ? rawId : undefined
+  const bgVideoUrl = safeVideoFileUrl(d.bgVideoUrl)
+  if (!videoId && !bgVideoUrl) return null
+  return clean({
+    id, type: 'video',
+    heading: optStr(d.heading, 200),
+    text: optStr(d.text, 600),
+    provider: videoId ? provider : undefined,
+    videoId,
+    display: optOneOf(d.display, ['inline', 'lightbox'] as const),
+    playLabel: optStr(d.playLabel, 80),
+    bgVideoUrl,
+    posterUrl: safeUrl(d.posterUrl),
+  }) as unknown as VideoSection
 }
 
 export function sanitizeFaqSection(d: Dict, id: string): FaqSection | null {
@@ -351,6 +403,7 @@ const SECTION_BUILDERS = {
   cta_banner: sanitizeCtaBannerSection,
   faq: sanitizeFaqSection,
   testimonials: sanitizeTestimonialsSection,
+  video: sanitizeVideoSection,
   activities: sanitizeActivitiesSection,
   pricing: sanitizePricingSection,
   schedule: sanitizeScheduleSection,
@@ -582,6 +635,8 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
     headingFont: optOneOf(d.headingFont, SITE_FONTS),
     headingCase: optOneOf(d.headingCase, ['normal', 'uppercase'] as const),
     buttonShape: optOneOf(d.buttonShape, ['pill', 'rounded', 'square'] as const),
+    cardShape: optOneOf(d.cardShape, ['rounded', 'square'] as const),
+    appliedTheme: optOneOf(d.appliedTheme, SITE_THEME_IDS),
     buttonColor: safeHex(d.buttonColor),
     logoUrl: safeUrl(d.logoUrl),
     background: safeBackground(d.background),

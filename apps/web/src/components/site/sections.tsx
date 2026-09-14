@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   collectionGroup,
@@ -45,8 +45,10 @@ import {
   Plus,
   Minus,
   Quote,
+  Play,
 } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/icon-picker'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import type {
   WebsiteSection,
   OrgSiteSection,
@@ -62,10 +64,12 @@ import type {
   CtaBannerSection,
   FaqSection,
   TestimonialsSection,
+  VideoSection,
   SocialLink,
   OrgSiteTeamRef,
 } from '@linyup/shared'
 import {
+  videoEmbedSrc,
   browseDurationMinutes,
   compareActivities,
   mergeAvailabilitySlots,
@@ -287,6 +291,81 @@ function hexIsLight(hex: string): boolean {
   return isHexColor(normalised) ? isLightColor(normalised) : true
 }
 
+/**
+ * A muted, looping background video that actually plays.
+ *
+ * React sets `muted` as a PROPERTY, never as the HTML attribute, and browsers
+ * only autoplay a video they can see is muted — so `<video autoPlay muted>`
+ * rendered by React sits paused on its first frame. Setting the property again
+ * after mount and calling play() is the dependable way; a refusal (a data-saver
+ * mode, a policy) leaves the poster showing, which is fine.
+ *
+ * ONE ATTEMPT IS NOT ENOUGH. A page opened in a background tab, or a video still
+ * loading, refuses the first play() — and nothing would ask again. So it retries
+ * whenever the video becomes playable, the page becomes visible, or the video
+ * scrolls into view; each retry is a no-op once it is playing.
+ */
+function LoopVideo({ src, poster }: { src: string; poster?: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+    video.muted = true
+    const tryPlay = () => {
+      if (video.paused && !document.hidden) video.play().catch(() => {})
+    }
+    tryPlay()
+    video.addEventListener('canplay', tryPlay)
+    document.addEventListener('visibilitychange', tryPlay)
+    const observer =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) tryPlay()
+          })
+    observer?.observe(video)
+    return () => {
+      video.removeEventListener('canplay', tryPlay)
+      document.removeEventListener('visibilitychange', tryPlay)
+      observer?.disconnect()
+    }
+  }, [src])
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      autoPlay
+      muted
+      loop
+      playsInline
+      aria-hidden
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  )
+}
+
+/** The hero's shading layers — an even wash, or white/black gradients that
+ *  cover the side the copy sits on and leave the rest of the photo clear. */
+function HeroShade({ style, tone, strength }: { style: NonNullable<HeroSection['overlayStyle']>; tone: 'dark' | 'light'; strength: number }) {
+  const rgb = tone === 'light' ? '255,255,255' : '0,0,0'
+  const fade = (deg: number) =>
+    `linear-gradient(${deg}deg, rgba(${rgb},${strength}) 0%, rgba(${rgb},${strength * 0.55}) 35%, rgba(${rgb},0) 70%)`
+  if (style === 'solid') {
+    return <div className="absolute inset-0" style={{ background: `rgba(${rgb},${strength})` }} />
+  }
+  return (
+    <>
+      {(style === 'gradient-left' || style === 'gradient-left-bottom') && (
+        <div className="absolute inset-0" style={{ background: fade(90) }} />
+      )}
+      {(style === 'gradient-bottom' || style === 'gradient-left-bottom') && (
+        <div className="absolute inset-0" style={{ background: fade(0) }} />
+      )}
+    </>
+  )
+}
+
 function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
   const href = ctaHref(section.cta, slug, locale)
@@ -294,6 +373,10 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const overlay = (section.overlay ?? 40) / 100
 
   const hasImage = !!section.bgImageUrl
+  // The loop never plays for a visitor who asked for less motion — the image
+  // (its poster) stands in, which is why the image is still worth setting.
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const showVideo = !!section.bgVideoUrl && !reducedMotion
   // A solid background colour, only when there is no image — an image is its own
   // background. Absent ⇒ the bold accent gradient, today's look.
   const solid = !hasImage && section.bgColor ? section.bgColor : null
@@ -304,13 +387,17 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   // colour it follows the colour's own perceived brightness, so a pale hero gets
   // dark text.
   const solidDarkText = solid ? hexIsLight(solid) : false
-  const fullText = solid ? (solidDarkText ? '#0f172a' : '#ffffff') : '#ffffff'
-  const fullMuted = solid
-    ? solidDarkText
-      ? 'rgba(15,23,42,0.72)'
-      : 'rgba(255,255,255,0.9)'
-    : 'rgba(255,255,255,0.92)'
-  const shadow = solid ? 'none' : '0 2px 18px rgba(0,0,0,0.35)'
+  // Over a photo or loop, a LIGHT wash takes dark copy and no shadow — the
+  // same decision a pale solid colour makes.
+  const lightWash = (hasImage || showVideo) && section.overlayTone === 'light'
+  const darkText = solid ? solidDarkText : lightWash
+  const fullText = darkText ? '#0f172a' : '#ffffff'
+  const fullMuted = darkText
+    ? 'rgba(15,23,42,0.78)'
+    : solid
+      ? 'rgba(255,255,255,0.9)'
+      : 'rgba(255,255,255,0.92)'
+  const shadow = solid || lightWash ? 'none' : '0 2px 18px rgba(0,0,0,0.35)'
 
   // In CARD layout the content sits on the theme's neutral surface, so it reads
   // the same way cards do everywhere — which is what makes a hero legible over a
@@ -365,15 +452,22 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
             : `linear-gradient(135deg, ${palette.accent}, ${palette.accent}99)`,
       }}
     >
-      {hasImage && (
+      {(hasImage || showVideo) && (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={section.bgImageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+          {hasImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={section.bgImageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          {showVideo && <LoopVideo src={section.bgVideoUrl!} poster={section.bgImageUrl} />}
+          <HeroShade
+            style={section.overlayStyle ?? 'solid'}
+            tone={section.overlayTone ?? 'dark'}
+            strength={overlay}
           />
-          <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${overlay})` }} />
         </>
       )}
       <div
@@ -381,7 +475,7 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
       >
         {inCard ? (
           <div
-            className={`rounded-2xl border p-8 shadow-xl @2xl:p-12 ${center ? 'mx-auto max-w-3xl' : 'max-w-3xl'}`}
+            className={`site-card rounded-2xl border p-8 shadow-xl @2xl:p-12 ${center ? 'mx-auto max-w-3xl' : 'max-w-3xl'}`}
             style={{ background: palette.surface, borderColor: palette.border }}
           >
             {content}
@@ -427,7 +521,7 @@ function ContentBlock({ section, ctx }: { section: ContentSection; ctx: RenderCt
         <div className={`grid items-center gap-10 ${section.imageUrl ? '@3xl:grid-cols-2' : ''}`}>
           {section.imageUrl && imageRight && <ContentText section={section} palette={palette} />}
           {section.imageUrl && (
-            <div className="overflow-hidden rounded-2xl">
+            <div className="overflow-hidden site-card rounded-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={section.imageUrl} alt="" className="h-full w-full object-cover" />
             </div>
@@ -465,13 +559,68 @@ function ContentText({ section, palette }: { section: ContentSection; palette: S
 function GalleryBlock({ section, ctx }: { section: GallerySection; ctx: RenderCtx }) {
   const t = useTranslations('Site')
   const { palette } = ctx
+  if (!section.images.length && !section.heading) return null
+
+  if (section.layout === 'logos') {
+    // Partner / certification logos: never cropped, evenly spaced, captions as
+    // the accessible name (a logo's caption is the partner's name).
+    return (
+      <section id={section.id} className="py-16" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-5xl px-6">
+          <Heading text={section.heading} palette={palette} />
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+            {section.images.map((img, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} src={img.url} alt={img.caption ?? ''} className="h-12 w-auto max-w-[160px] object-contain" />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.layout === 'marquee') {
+    // THE LIST TWICE, moved by one copy's width (the keyframes in globals.css),
+    // so the loop has no seam. The second copy is decoration: hidden from
+    // assistive tech so each photo is announced once. The speed scales with the
+    // number of photos, so a short strip does not race past.
+    const duration = `${Math.max(20, section.images.length * 6)}s`
+    return (
+      <section id={section.id} className="py-16" style={{ background: palette.surface }}>
+        {section.heading && (
+          <div className="mx-auto mb-10 max-w-5xl px-6">
+            <Heading text={section.heading} palette={palette} />
+          </div>
+        )}
+        <div className="site-marquee overflow-hidden">
+          <div
+            className="site-marquee-track flex w-max gap-4 px-2"
+            style={{ '--site-marquee-duration': duration } as CSSProperties}
+          >
+            {[0, 1].map((copy) =>
+              section.images.map((img, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${copy}-${i}`}
+                  src={img.url}
+                  alt={copy === 0 ? (img.caption ?? '') : ''}
+                  aria-hidden={copy === 1 ? true : undefined}
+                  className="site-card-sm h-48 w-auto max-w-none rounded-xl object-cover @2xl:h-64"
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   const cols =
     section.columns === 2
       ? '@2xl:grid-cols-2'
       : section.columns === 4
         ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
         : '@2xl:grid-cols-2 @5xl:grid-cols-3'
-  if (!section.images.length && !section.heading) return null
   return (
     <section id={section.id} className="py-20" style={{ background: palette.surface }}>
       <div className="mx-auto max-w-5xl px-6">
@@ -480,7 +629,7 @@ function GalleryBlock({ section, ctx }: { section: GallerySection; ctx: RenderCt
           {section.images.map((img, i) => (
             <figure
               key={i}
-              className="overflow-hidden rounded-xl"
+              className="overflow-hidden site-card-sm rounded-xl"
               style={{ background: palette.bg }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -792,7 +941,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
     : `mt-10 grid grid-cols-1 gap-5 ${cols}`
   // Side-by-side only once there's room; below that a list row stacks like a card.
   const cardClass = isList
-    ? 'flex flex-col overflow-hidden rounded-2xl border @2xl:flex-row'
+    ? 'flex flex-col overflow-hidden site-card rounded-2xl border @2xl:flex-row'
     : 'flex flex-col overflow-hidden rounded-2xl border'
   const mediaClass = isList
     ? 'relative aspect-[4/3] w-full shrink-0 @2xl:aspect-auto @2xl:w-56 @4xl:w-72'
@@ -1173,7 +1322,7 @@ function PricingTable({
     // A wide table scrolls INSIDE its own box — never the page, and never by
     // squeezing the columns until the plan names wrap to one letter.
     <div
-      className="mt-10 overflow-x-auto rounded-2xl border"
+      className="mt-10 overflow-x-auto site-card rounded-2xl border"
       style={{ borderColor: palette.border, background: palette.surface }}
     >
       <table className="w-full min-w-[36rem] border-collapse text-sm">
@@ -1374,7 +1523,7 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             plans.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col rounded-2xl border p-6"
+                className="flex flex-col site-card rounded-2xl border p-6"
                 style={{ borderColor: palette.border, background: palette.surface }}
               >
                 <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
@@ -1443,7 +1592,7 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             activity's booking). */}
         {!loading && ppvActivities.length > 0 && (
           <div
-            className="mt-6 rounded-2xl border p-6"
+            className="mt-6 site-card rounded-2xl border p-6"
             style={{ borderColor: palette.border, background: palette.surface }}
           >
             <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
@@ -1804,7 +1953,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
               key={s.id}
               type="button"
               onClick={() => setSelected(s)}
-              className={`flex w-full items-center gap-4 rounded-xl border px-4 py-3 text-left transition-opacity hover:opacity-80 ${past ? 'opacity-50' : ''}`}
+              className={`flex w-full items-center gap-4 site-card-sm rounded-xl border px-4 py-3 text-left transition-opacity hover:opacity-80 ${past ? 'opacity-50' : ''}`}
               style={{ borderColor: palette.border, background: palette.bg }}
             >
               <div
@@ -2035,7 +2184,7 @@ function SessionDetailModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border p-6 shadow-xl"
+        className="w-full max-w-sm site-card rounded-2xl border p-6 shadow-xl"
         style={{ background: palette.bg, borderColor: palette.border, color: palette.text }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -2163,7 +2312,7 @@ function ContactBlock({ section, ctx }: { section: ContactSection; ctx: RenderCt
           </div>
           {section.mapQuery && (
             <div
-              className="overflow-hidden rounded-2xl border"
+              className="overflow-hidden site-card rounded-2xl border"
               style={{ borderColor: palette.border, minHeight: 240 }}
             >
               <iframe
@@ -2221,7 +2370,7 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
             places.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col rounded-2xl border p-5"
+                className="flex flex-col site-card rounded-2xl border p-5"
                 style={{ borderColor: palette.border, background: palette.surface }}
               >
                 <div className="flex items-center gap-2">
@@ -2261,55 +2410,141 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
 
 // ─── Features (highlight cards) ──────────────────────────────────────────────
 
+/** A feature link: a `#section` anchor stays in the page; anything else is an
+ *  external URL and opens in a new tab. */
+function featureLinkProps(url: string, preview: boolean) {
+  if (url.startsWith('#')) return linkProps(url, preview, false)
+  return linkProps(url, preview, true)
+}
+
 function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: RenderCtx }) {
-  const { palette } = ctx
+  const { palette, preview } = ctx
   const items = section.items ?? []
   if (items.length === 0) return null
   const cols = section.columns ?? 3
+  // CONTAINER queries, like every other block: the builder preview and an embed
+  // iframe are narrower than the viewport, and viewport breakpoints laid the
+  // columns out for a screen the section is not in.
   const gridCols =
-    cols === 2 ? 'sm:grid-cols-2' : cols === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'
+    cols === 2 ? '@2xl:grid-cols-2' : cols === 4 ? '@2xl:grid-cols-2 @4xl:grid-cols-4' : '@2xl:grid-cols-3'
+  const style = section.style ?? 'cards'
+
+  const header = (
+    <>
+      <Heading text={section.heading} palette={palette} />
+      {section.subheading && (
+        <p className="mt-3 text-center text-lg" style={{ color: palette.muted }}>
+          {section.subheading}
+        </p>
+      )}
+    </>
+  )
+
+  const link = (item: (typeof items)[number]) =>
+    item.linkLabel && item.linkUrl ? (
+      <a
+        {...featureLinkProps(item.linkUrl, preview)}
+        className="mt-3 inline-flex items-center gap-1 text-sm font-medium"
+        style={{ color: palette.accent }}
+      >
+        {item.linkLabel}
+        <ArrowRight className="h-3.5 w-3.5" />
+      </a>
+    ) : null
+
+  if (style === 'stats') {
+    // Big figures, no cards — `title` is the figure, `text` its caption.
+    return (
+      <section id={section.id} className="py-16" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-5xl px-6">
+          {header}
+          <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-2 gap-8 ${cols === 2 ? '' : cols === 4 ? '@3xl:grid-cols-4' : '@3xl:grid-cols-3'}`}>
+            {items.map((item, i) => (
+              <div key={i} className="text-center">
+                <p className="text-4xl font-bold tracking-tight @2xl:text-5xl" style={{ color: palette.text }}>
+                  {item.title}
+                </p>
+                {item.text && (
+                  <p className="mt-2 text-sm" style={{ color: palette.muted }}>
+                    {item.text}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (style === 'checklist') {
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-5xl px-6">
+          {header}
+          <ul className={`mt-10 grid grid-cols-1 gap-x-8 gap-y-5 ${gridCols}`}>
+            {items.map((item, i) => (
+              <li key={i} className="flex gap-3">
+                <span
+                  className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                  style={{ background: palette.accent, color: palette.onAccent }}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <div>
+                  <p className="font-semibold" style={{ color: palette.text }}>
+                    {item.title}
+                  </p>
+                  {item.text && (
+                    <p className="mt-1 text-sm" style={{ color: palette.muted }}>
+                      {item.text}
+                    </p>
+                  )}
+                  {link(item)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
       <div className="mx-auto max-w-5xl px-6">
-        <Heading text={section.heading} palette={palette} />
-        {section.subheading && (
-          <p className="mt-3 text-center text-lg" style={{ color: palette.muted }}>
-            {section.subheading}
-          </p>
-        )}
+        {header}
         <div className={`mt-10 grid grid-cols-1 gap-4 ${gridCols}`}>
           {items.map((item, i) => (
             <div
               key={i}
-              className="rounded-xl border p-5 shadow-sm"
+              className={`site-card-sm flex flex-col overflow-hidden rounded-xl border shadow-sm ${item.imageUrl ? '' : 'p-5'}`}
               style={{ background: palette.surface, borderColor: palette.border }}
             >
-              {item.icon && (
-                <span
-                  className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg"
-                  style={{ background: `${palette.accent}1a`, color: palette.accent }}
-                >
-                  <DynamicIcon name={item.icon} className="h-5 w-5" />
-                </span>
+              {item.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+              ) : (
+                item.icon && (
+                  <span
+                    className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg"
+                    style={{ background: `${palette.accent}1a`, color: palette.accent }}
+                  >
+                    <DynamicIcon name={item.icon} className="h-5 w-5" />
+                  </span>
+                )
               )}
-              <h3 className="text-base font-semibold" style={{ color: palette.text }}>
-                {item.title}
-              </h3>
-              {item.text && (
-                <p className="mt-1.5 text-sm" style={{ color: palette.muted }}>
-                  {item.text}
-                </p>
-              )}
-              {item.linkLabel && item.linkUrl && (
-                <a
-                  {...linkProps(item.linkUrl, ctx.preview, true)}
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium"
-                  style={{ color: palette.accent }}
-                >
-                  {item.linkLabel}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </a>
-              )}
+              <div className={item.imageUrl ? 'flex flex-1 flex-col p-5' : ''}>
+                <h3 className="text-base font-semibold" style={{ color: palette.text }}>
+                  {item.title}
+                </h3>
+                {item.text && (
+                  <p className="mt-1.5 text-sm" style={{ color: palette.muted }}>
+                    {item.text}
+                  </p>
+                )}
+                {link(item)}
+              </div>
             </div>
           ))}
         </div>
@@ -2323,11 +2558,57 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
 function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
   const href = ctaHref(section.cta, slug, locale)
+  const ctaButton = section.cta?.label ? (
+    <a
+      {...(section.cta.action === 'booking'
+        ? bookProps(href, ctx, { kind: 'root' })
+        : linkProps(href, preview, section.cta.action === 'url'))}
+      className="site-btn inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] @xl:w-auto @xl:min-w-[16rem]"
+      style={{ background: palette.button, color: palette.onButton }}
+    >
+      {section.cta.label}
+      <ArrowRight className="h-4 w-4" />
+    </a>
+  ) : null
+
+  if (section.style === 'band') {
+    // Edge to edge. Over an image the text is white on a dimmed photo; without
+    // one the band is the accent colour and the text its ink.
+    const onImage = !!section.bgImageUrl
+    const ink = onImage ? '#ffffff' : palette.onAccent
+    return (
+      <section
+        id={section.id}
+        className="relative overflow-hidden py-20"
+        style={{ background: onImage ? '#000000' : palette.accent }}
+      >
+        {onImage && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={section.bgImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />
+          </>
+        )}
+        <div className="relative mx-auto max-w-3xl px-6 text-center">
+          <h2 className="text-3xl font-bold tracking-tight @2xl:text-4xl" style={{ color: ink }}>
+            {section.heading}
+          </h2>
+          {section.text && (
+            <p className="mx-auto mt-3 max-w-xl text-lg" style={{ color: ink, opacity: 0.9 }}>
+              {section.text}
+            </p>
+          )}
+          {ctaButton && <div className="mt-8">{ctaButton}</div>}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id={section.id} className="py-16" style={{ background: palette.bg }}>
       <div className="mx-auto max-w-3xl px-6">
         <div
-          className="rounded-2xl border px-6 py-10 text-center shadow-sm @2xl:px-12"
+          className="site-card rounded-2xl border px-6 py-10 text-center shadow-sm @2xl:px-12"
           style={{ background: palette.surface, borderColor: palette.border }}
         >
           <h2 className="text-2xl font-bold tracking-tight @2xl:text-3xl" style={{ color: palette.text }}>
@@ -2338,20 +2619,7 @@ function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: Rend
               {section.text}
             </p>
           )}
-          {section.cta?.label && (
-            <div className="mt-7">
-              <a
-                {...(section.cta.action === 'booking'
-                  ? bookProps(href, ctx, { kind: 'root' })
-                  : linkProps(href, preview, section.cta.action === 'url'))}
-                className="site-btn inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] sm:w-auto sm:min-w-[16rem]"
-                style={{ background: palette.button, color: palette.onButton }}
-              >
-                {section.cta.label}
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-          )}
+          {ctaButton && <div className="mt-7">{ctaButton}</div>}
         </div>
       </div>
     </section>
@@ -2377,7 +2645,7 @@ function FaqBlock({ section, ctx }: { section: FaqSection; ctx: RenderCtx }) {
             return (
               <div
                 key={i}
-                className="overflow-hidden rounded-xl border shadow-sm"
+                className="overflow-hidden site-card-sm rounded-xl border shadow-sm"
                 style={{ background: palette.surface, borderColor: palette.border }}
               >
                 <button
@@ -2439,7 +2707,7 @@ function TestimonialsBlock({ section, ctx }: { section: TestimonialsSection; ctx
             </button>
           )}
           <div
-            className="flex-1 rounded-2xl border px-6 py-8 text-center shadow-sm"
+            className="flex-1 site-card rounded-2xl border px-6 py-8 text-center shadow-sm"
             style={{ background: palette.surface, borderColor: palette.border }}
           >
             <Quote className="mx-auto h-6 w-6" style={{ color: palette.accent }} />
@@ -2483,6 +2751,137 @@ function TestimonialsBlock({ section, ctx }: { section: TestimonialsSection; ctx
   )
 }
 
+// ─── Video (YouTube / Vimeo, inline or lightbox, optional background loop) ────
+
+function VideoBlock({ section, ctx }: { section: VideoSection; ctx: RenderCtx }) {
+  const t = useTranslations('Site')
+  const { palette, preview } = ctx
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  // The player address is built HERE from the validated pair — a published site
+  // never stores an iframe URL (utils/videoEmbed.ts).
+  const film = section.provider && section.videoId ? { provider: section.provider, videoId: section.videoId } : null
+  if (!film && !section.bgVideoUrl) return null
+  const title = section.heading || t('videoPlayerTitle')
+
+  const player = (autoplay: boolean) =>
+    film ? (
+      <iframe
+        src={videoEmbedSrc(film.provider, film.videoId, { autoplay })}
+        title={title}
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        allowFullScreen
+        loading="lazy"
+        className="h-full w-full"
+      />
+    ) : null
+
+  // INLINE: the player sits in the page under the heading.
+  if (film && section.display !== 'lightbox') {
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-5xl px-6">
+          <Heading text={section.heading} palette={palette} />
+          {section.text && (
+            <p className="mx-auto mt-3 max-w-2xl text-center text-lg" style={{ color: palette.muted }}>
+              {section.text}
+            </p>
+          )}
+          <div
+            className={`site-card ${section.heading || section.text ? 'mt-10' : ''} aspect-video w-full overflow-hidden rounded-2xl border`}
+            style={{ borderColor: palette.border, background: '#000000' }}
+          >
+            {player(false)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // LIGHTBOX (or a background loop on its own): a block over the loop / poster,
+  // with a play button that opens the film over the page.
+  const hasBackdrop = !!section.bgVideoUrl || !!section.posterUrl
+  const showLoop = !!section.bgVideoUrl && !reducedMotion
+  const ink = hasBackdrop ? '#ffffff' : palette.text
+  const mutedInk = hasBackdrop ? 'rgba(255,255,255,0.9)' : palette.muted
+
+  return (
+    <section
+      id={section.id}
+      className="relative flex min-h-[60vh] items-center overflow-hidden"
+      style={{ background: hasBackdrop ? '#000000' : palette.surface }}
+    >
+      {section.posterUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={section.posterUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      )}
+      {showLoop && <LoopVideo src={section.bgVideoUrl!} poster={section.posterUrl} />}
+      {hasBackdrop && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />}
+      <div className="relative mx-auto w-full max-w-3xl px-6 py-20 text-center">
+        {section.heading && (
+          <h2 className="text-3xl font-bold tracking-tight @2xl:text-4xl" style={{ color: ink }}>
+            {section.heading}
+          </h2>
+        )}
+        {section.text && (
+          <p className="mx-auto mt-4 max-w-2xl text-lg" style={{ color: mutedInk }}>
+            {section.text}
+          </p>
+        )}
+        {film && (
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => {
+                if (!preview) setOpen(true)
+              }}
+              className="site-btn inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
+              style={{ background: palette.button, color: palette.onButton }}
+            >
+              <Play className="h-4 w-4" />
+              {section.playLabel || t('videoPlay')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {open && film && (
+        // Hand-rolled rather than the app Dialog: a portal would render outside
+        // .site-root and lose the site's brand variables and container queries.
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div className="relative w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label={t('videoClose')}
+              className="absolute -top-11 right-0 flex h-9 w-9 items-center justify-center rounded-full text-white transition-opacity hover:opacity-70"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="site-card aspect-video w-full overflow-hidden rounded-2xl bg-black">{player(true)}</div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionBlock({
@@ -2518,6 +2917,8 @@ export function SectionBlock({
       return <FaqBlock section={section} ctx={ctx} />
     case 'testimonials':
       return <TestimonialsBlock section={section} ctx={ctx} />
+    case 'video':
+      return <VideoBlock section={section} ctx={ctx} />
     case 'clubs':
       return <ClubsBlock section={section} ctx={ctx} />
     case 'locations':
@@ -2560,6 +2961,8 @@ export function sectionNavLabel(section: WebsiteSection | OrgSiteSection, t: Sit
       return section.heading || t('navFaq')
     case 'testimonials':
       return section.heading || t('navTestimonials')
+    case 'video':
+      return section.heading || t('navVideo')
     case 'clubs':
       return section.heading || t('navClubs')
     case 'locations':

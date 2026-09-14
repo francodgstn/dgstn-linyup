@@ -9,6 +9,15 @@ export const SECTION_LIBRARY: {
   labelKey: string
   descKey: string
   icon: string
+  /**
+   * Absent ⇒ 'full' — offered in the "Add section" menu like every section
+   * today. 'managed' is for a future type authored by Linyup itself (a seed or
+   * an operator tool, not a studio) — it stays out of the Add-section
+   * dropdowns but is still listed and editable in the section list once
+   * present, so an operator-seeded section doesn't vanish from a studio's view.
+   * No current type is 'managed'.
+   */
+  maturity?: 'full' | 'basic' | 'managed'
 }[] = [
   { type: 'hero', labelKey: 'sectionHero', descKey: 'sectionHeroDesc', icon: 'Image' },
   { type: 'content', labelKey: 'sectionContent', descKey: 'sectionContentDesc', icon: 'FileText' },
@@ -37,6 +46,7 @@ export const SECTION_LIBRARY: {
     descKey: 'sectionTestimonialsDesc',
     icon: 'Quote',
   },
+  { type: 'video', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
 ]
 
 /** Client-only unique id for a new section (React key + image path segment + anchor). */
@@ -89,6 +99,8 @@ export function newSection(type: WebsiteSectionType): WebsiteSection {
         type,
         items: [{ name: 'Alex', activity: 'Member', feedback: 'Best decision I made.' }],
       }
+    case 'video':
+      return { id, type, heading: '' }
   }
 }
 

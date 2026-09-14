@@ -57,6 +57,7 @@ export const CLIENT_INSTALLABLE_FROM: Readonly<Record<string, SaasPlan>> = {
   'custom-fields': 'coach',
   'tarif-595': 'coach',
   'qr-invoices': 'coach',
+  'site-themes': 'coach',
 }
 
 /** The tier every other plugin is client-installable from. */

@@ -502,3 +502,32 @@
   border-radius: var(--site-btn-radius, 9999px);
   text-transform: var(--site-heading-case, none);
 }
+
+/* Cards and image tiles on the studio website. Two groups, matching the two
+   radii the blocks were drawn with (large surfaces 1rem, compact tiles
+   0.75rem), so the default look is unchanged; `cardShape: 'square'` zeroes
+   both. Same unlayered reasoning as the button rule above. */
+.site-root .site-card {
+  border-radius: var(--site-card-radius, 1rem);
+}
+.site-root .site-card-sm {
+  border-radius: var(--site-card-radius-sm, 0.75rem);
+}
+
+/* The gallery marquee: the strip is its image list twice, moved by exactly
+   one copy's width, so the loop has no seam. Still for visitors who prefer
+   reduced motion — the strip then scrolls by hand instead. */
+@keyframes site-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.site-root .site-marquee-track {
+  animation: site-marquee var(--site-marquee-duration, 40s) linear infinite;
+}
+.site-root .site-marquee:hover .site-marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-root .site-marquee-track { animation: none; }
+  .site-root .site-marquee { overflow-x: auto; }
+}

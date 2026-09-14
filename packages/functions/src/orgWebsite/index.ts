@@ -25,6 +25,7 @@ import {
   sanitizeCtaBannerSection,
   sanitizeFaqSection,
   sanitizeTestimonialsSection,
+  sanitizeVideoSection,
   type Dict,
 } from '../website'
 import {
@@ -118,6 +119,9 @@ function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
       break
     case 'testimonials':
       section = sanitizeTestimonialsSection(d, id)
+      break
+    case 'video':
+      section = sanitizeVideoSection(d, id)
       break
     case 'clubs':
       section = sanitizeClubsSection(d, id)

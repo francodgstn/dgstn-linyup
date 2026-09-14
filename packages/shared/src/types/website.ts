@@ -1,5 +1,6 @@
 import type { Timestamp } from './common'
 import type { SurfaceThemePresetId } from './themePreset'
+import type { SiteThemeId } from './siteTheme'
 import type { PublicSurface, SocialLink } from './team'
 import type { UiLanguage } from '../utils/regional'
 
@@ -92,16 +93,49 @@ export interface HeroSection extends SectionBase {
   layout?: 'full' | 'card'
   align: SectionAlign
   cta?: SiteCta
+  /**
+   * A muted, looping background video (an https mp4/webm URL). EXTERNAL ONLY —
+   * the studio's own host or CDN, never an upload: hosted video is billed per
+   * byte to every visitor (storage.rules, docs/scalability-2026-09.md §12).
+   * `bgImageUrl` is its poster and what visitors who prefer reduced motion see.
+   */
+  bgVideoUrl?: string
+  /**
+   * How the `overlay` is laid over the image:
+   *  - 'solid' (default): an even wash across the whole hero — today's look.
+   *  - 'gradient-left': strongest behind the text on the left, fading out to
+   *    the right, so the photo stays vivid where there is no copy.
+   *  - 'gradient-bottom': strongest at the bottom, fading upwards.
+   *  - 'gradient-left-bottom': both at once — the corner behind the text is
+   *    covered and the top right of the photo stays clear.
+   * `overlay` still sets how strong the wash is where it is strongest.
+   */
+  overlayStyle?: 'solid' | 'gradient-left' | 'gradient-bottom' | 'gradient-left-bottom'
+  /**
+   * The wash colour. 'dark' (default): black, white text — today's look.
+   * 'light': white, dark text, for a bright, airy hero.
+   */
+  overlayTone?: 'dark' | 'light'
 }
 
-/** A row of highlight cards — icon, title, a short line, an optional link. For
- *  "why us" / feature callouts. Deliberately simple: no rich text, no images. */
+/** A row of highlight items. For "why us" callouts, offer cards, a stats row or
+ *  a checklist — one list of items, drawn in the chosen `style`. No rich text. */
 export interface FeaturesSection extends SectionBase {
   type: 'features'
   heading?: string
   subheading?: string
   columns: 2 | 3 | 4
   items: FeatureItem[]
+  /**
+   * How the items are drawn:
+   *  - 'cards' (default): a card per item — icon, or an image on top when the
+   *    item has one (an offer grid).
+   *  - 'stats': big figures in a row — `title` is the figure ("500 m²"), `text`
+   *    the caption.
+   *  - 'checklist': a tick per item, no cards.
+   * Absent ⇒ 'cards', so existing sections are unaffected.
+   */
+  style?: 'cards' | 'stats' | 'checklist'
 }
 
 export interface FeatureItem {
@@ -110,17 +144,54 @@ export interface FeatureItem {
   title: string
   text?: string
   linkLabel?: string
+  /** An https URL, or `#sectionId` to jump to a section of the same page. */
   linkUrl?: string
+  /** Image across the top of the card ('cards' style). Replaces the icon. */
+  imageUrl?: string
 }
 
-/** One centred card, spaced above and below, with a heading, a line and a wide
- *  button — an offer or a single call to action mid-page. */
+/** A call to action mid-page — a heading, a line and a wide button. */
 export interface CtaBannerSection extends SectionBase {
   type: 'cta_banner'
   heading: string
   text?: string
   cta?: SiteCta
+  /**
+   * - 'card' (default): one centred card, spaced above and below.
+   * - 'band': full width, edge to edge — over `bgImageUrl` when set.
+   */
+  style?: 'card' | 'band'
+  /** Background image, dimmed so the text stays readable. */
+  bgImageUrl?: string
 }
+
+/**
+ * A video block — a YouTube or Vimeo film, shown inline or opened in a lightbox
+ * from a play button, optionally over a muted background loop.
+ *
+ * Only `provider` + `videoId` are stored, never an embed URL: the renderer
+ * builds the privacy-friendly player address itself (utils/videoEmbed.ts), so
+ * no arbitrary iframe source can ever be published.
+ */
+export interface VideoSection extends SectionBase {
+  type: 'video'
+  heading?: string
+  text?: string
+  provider?: VideoProvider
+  videoId?: string
+  /** 'inline' (default): the player sits in the page. 'lightbox': a play button
+   *  opens it over the page. */
+  display?: 'inline' | 'lightbox'
+  /** The play button's label in lightbox mode ("Video abspielen"). */
+  playLabel?: string
+  /** Muted background loop behind the block — external https mp4/webm only,
+   *  like `HeroSection.bgVideoUrl`. */
+  bgVideoUrl?: string
+  /** Still image: the lightbox block's background, and the loop's poster. */
+  posterUrl?: string
+}
+
+export type VideoProvider = 'youtube' | 'vimeo'
 
 /** A list of question/answer pairs, rendered as an accordion. */
 export interface FaqSection extends SectionBase {
@@ -168,6 +239,14 @@ export interface GallerySection extends SectionBase {
   heading?: string
   images: SiteImage[]
   columns: 2 | 3 | 4
+  /**
+   * - 'grid' (default): cropped tiles in `columns`, with captions.
+   * - 'marquee': one endlessly scrolling strip of photos (still for visitors
+   *   who prefer reduced motion).
+   * - 'logos': partner / certification logos — never cropped, evenly spaced.
+   * Absent ⇒ 'grid'.
+   */
+  layout?: 'grid' | 'marquee' | 'logos'
 }
 
 /** Pulls live activities from the team's public_profile mirrors (type: 'activity').
@@ -294,6 +373,7 @@ export type WebsiteSection =
   | CtaBannerSection
   | FaqSection
   | TestimonialsSection
+  | VideoSection
 
 export type WebsiteSectionType = WebsiteSection['type']
 
@@ -571,6 +651,13 @@ export interface SiteMeta {
   headingCase?: 'normal' | 'uppercase'
   /** The shape of every call-to-action button. Absent ⇒ 'pill', today's look. */
   buttonShape?: 'pill' | 'rounded' | 'square'
+  /** The corners of cards and image tiles. Absent ⇒ 'rounded', today's look. */
+  cardShape?: 'rounded' | 'square'
+  /** The theme whose look was last applied (types/siteTheme.ts). A note for the
+   *  builder — which theme to preselect, which section defaults to start new
+   *  sections in — never read by the renderer: the look itself lives in the
+   *  fields above, where the studio may have changed it since. */
+  appliedTheme?: SiteThemeId
   /** Button fill, when it should differ from the accent (a black button on a
    *  blue-accented site). Absent ⇒ the accent colour, today's look. */
   buttonColor?: string

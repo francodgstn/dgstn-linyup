@@ -45,6 +45,8 @@
  *                                   guard fall back to base until re-publish —
  *                                   accepted)
  *   s.{sectionId}.hours             ContactSection free-prose hours
+ *   s.{sectionId}.text              CTA banner / video block body line
+ *   s.{sectionId}.playLabel         video block play-button label
  *
  * EXCLUDED — never extracted, because it is a brand name, data, or a link
  * rather than prose: `SiteMeta.title` and the team/org name, contact
@@ -148,9 +150,11 @@ const SECTION_TEXT_PROPS: ReadonlyArray<{ prop: string; format: 'plain' | 'html'
   { prop: 'subheading', format: 'plain' },
   { prop: 'ctaLabel', format: 'plain' },
   { prop: 'hours', format: 'plain' },
-  // The CTA-banner body line. Only that section carries a top-level `text`; the
+  // A section-level body line — the CTA banner's and the video block's. The
   // per-item `text` (a feature card) is bound by index below, not here.
   { prop: 'text', format: 'plain' },
+  // The video block's play-button label.
+  { prop: 'playLabel', format: 'plain' },
   { prop: 'body', format: 'html' },
 ]
 

@@ -38,6 +38,9 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     layout: 'card',
     align: 'left',
     cta,
+    bgVideoUrl: 'https://cdn.example.ch/drone-loop.mp4',
+    overlayStyle: 'gradient-left-bottom',
+    overlayTone: 'light',
   },
   content: {
     id: 'content', type: 'content', ...nav,
@@ -58,6 +61,7 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     heading: 'Impressionen',
     images: [{ url: 'https://example.ch/1.jpg', caption: 'Rig' }],
     columns: 4,
+    layout: 'marquee',
   },
   features: {
     id: 'features', type: 'features', ...nav,
@@ -65,14 +69,35 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     subheading: 'Drei Werte',
     columns: 3,
     items: [
-      { icon: 'Sparkles', title: 'Exzellenz', text: 'Coaching', linkLabel: 'Mehr', linkUrl: 'https://example.ch/angebot' },
+      {
+        icon: 'Sparkles',
+        title: 'Exzellenz',
+        text: 'Coaching',
+        linkLabel: 'Mehr',
+        linkUrl: '#angebot',
+        imageUrl: 'https://example.ch/crossfit.avif',
+      },
     ],
+    style: 'stats',
   },
   cta_banner: {
     id: 'cta', type: 'cta_banner', ...nav,
     heading: 'Dein kostenloses Erstgespräch wartet',
     text: 'Jetzt Termin buchen',
     cta,
+    style: 'band',
+    bgImageUrl: 'https://example.ch/cta.svg',
+  },
+  video: {
+    id: 'video', type: 'video', ...nav,
+    heading: 'Hier wird dein Training zum Erlebnis',
+    text: 'Ein Blick in die Box',
+    provider: 'vimeo',
+    videoId: '1113155200',
+    display: 'lightbox',
+    playLabel: 'Video abspielen',
+    bgVideoUrl: 'https://cdn.example.ch/drohnenflug.webm',
+    posterUrl: 'https://example.ch/poster.jpg',
   },
   faq: {
     id: 'faq', type: 'faq', ...nav,
@@ -156,6 +181,8 @@ describe('website publish — site meta round-trips', () => {
     headingFont: 'oswald',
     headingCase: 'uppercase',
     buttonShape: 'square',
+    cardShape: 'square',
+    appliedTheme: 'box',
     buttonColor: '#000000',
     logoUrl: 'https://example.ch/logo.svg',
     background: 'linear-gradient(135deg, #fde0dd 0%, rgba(255, 255, 255, 0.8) 100%)',
@@ -244,6 +271,33 @@ describe('website publish — what it refuses', () => {
     for (const k of ['themePreset', 'themeToggle', 'themeSingle', 'themeLighting', 'background']) {
       assert.equal(k in meta, false, k)
     }
+  })
+
+  it('refuses a video it cannot play safely', () => {
+    // A YouTube id in a Vimeo slot, a URL where an id belongs, a page as a loop.
+    assert.equal(sanitizeSection({ id: 'v1', type: 'video', provider: 'vimeo', videoId: 'dQw4w9WgXcQ' }), null)
+    assert.equal(sanitizeSection({ id: 'v2', type: 'video', provider: 'youtube', videoId: 'https://evil.example/x' }), null)
+    assert.equal(sanitizeSection({ id: 'v3', type: 'video', bgVideoUrl: 'https://example.ch/page.html' }), null)
+    // A background loop alone is a valid block.
+    assert.deepEqual(sanitizeSection({ id: 'v4', type: 'video', bgVideoUrl: 'https://cdn.example.ch/loop.mp4?v=2' }), {
+      id: 'v4',
+      type: 'video',
+      bgVideoUrl: 'https://cdn.example.ch/loop.mp4?v=2',
+    })
+    // A hero loop that is not a video file is dropped; the hero stays.
+    const hero = sanitizeSection({ id: 'h', type: 'hero', headline: 'x', bgVideoUrl: 'javascript:alert(1)' }) as unknown as Record<string, unknown>
+    assert.equal('bgVideoUrl' in hero, false)
+  })
+
+  it('a feature link is an https URL or a same-page anchor, nothing else', () => {
+    const linkOf = (linkUrl: string) =>
+      (sanitizeSection({ id: 'f', type: 'features', items: [{ title: 'x', linkUrl }] }) as unknown as {
+        items: { linkUrl?: string }[]
+      }).items[0].linkUrl
+    assert.equal(linkOf('#cfz-angebot'), '#cfz-angebot')
+    assert.equal(linkOf('https://example.ch/a'), 'https://example.ch/a')
+    assert.equal(linkOf('#"><script>'), undefined)
+    assert.equal(linkOf('/relative'), undefined)
   })
 
   it('keeps the menu tree (the draft save used to drop it)', () => {

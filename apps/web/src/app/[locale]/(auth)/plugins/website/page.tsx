@@ -67,8 +67,12 @@ import type {
   WebsiteSectionType,
 } from '@linyup/shared'
 import {
+  applySiteTheme,
   deriveSiteMenu,
+  findSiteTheme,
   resolveThemePreset,
+  themedSection,
+  type SiteThemeDef,
 } from '@linyup/shared'
 import { usePublicSurfaces } from '@/hooks/usePublicSurfaces'
 import { type RenderableSite } from '@/components/site/WebsiteRenderer'
@@ -78,6 +82,7 @@ import { sectionNavLabel } from '@/components/site/sections'
 import { SectionEditor } from '@/plugins/website/SectionEditor'
 import { useSiteDraft, saveSiteDraft, publishSite, unpublishSite, uploadSiteImage } from '@/plugins/website/hooks'
 import { BrandFields } from '@/components/website/BrandFields'
+import { ThemePicker } from '@/components/website/ThemePicker'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
 import { SECTION_LIBRARY, newSection, newSectionId, emptyDraft } from '@/plugins/website/defaults'
 import { getWebsiteLimits } from '@/plugins/website/limits'
@@ -92,11 +97,17 @@ function AppearancePanel({
   onChange,
   sections,
   uploadImage,
+  themesInstalled,
+  onApplyTheme,
 }: {
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
   sections: { id: string; label: string }[]
   uploadImage: (file: File) => Promise<string>
+  /** The Site Themes plugin unlocks the picker. */
+  themesInstalled: boolean
+  /** Applies a theme to the WHOLE draft — look and section styles. */
+  onApplyTheme: (theme: SiteThemeDef) => void
 }) {
   const t = useTranslations('Website')
 
@@ -128,6 +139,13 @@ function AppearancePanel({
           onChange={(e) => onChange({ title: e.target.value })}
           className="h-9"
         />
+      </div>
+
+      {/* Themes first: a theme sets most of what follows, so picking one before
+          fine-tuning is the order that does not undo a studio's own edits. */}
+      <div className="space-y-1.5">
+        <Label className="text-xs">{t('themesTitle')}</Label>
+        <ThemePicker appliedTheme={meta.appliedTheme} installed={themesInstalled} onApply={onApplyTheme} />
       </div>
 
       {/* Theme — TWO COLUMNS: the controls on the left (2/3), a live preview on
@@ -399,7 +417,10 @@ export default function WebsiteBuilderPage() {
       toast.error(t('limitSections', { max: limits.maxSections }))
       return
     }
-    const sec = newSection(type)
+    // Under an applied theme a new section starts in the theme's style (a CTA as
+    // a band, a video as a lightbox) — the same result as applying it afterwards.
+    const theme = findSiteTheme(draft?.meta.appliedTheme)
+    const sec = theme ? themedSection(newSection(type), theme) : newSection(type)
     mutate((d) => ({ ...d, sections: [...d.sections, sec] }))
     setOpenId(sec.id)
     setTab('sections')
@@ -661,6 +682,11 @@ export default function WebsiteBuilderPage() {
               onChange={patchMeta}
               sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
               uploadImage={(file) => uploadSiteImage(currentTeamId!, 'brand', file)}
+              themesInstalled={isInstalled('site-themes')}
+              onApplyTheme={(theme) => {
+                mutate((d) => applySiteTheme(d, theme))
+                toast.success(t('themeAppliedToast'))
+              }}
             />
           ) : tab === 'embed' ? (
             <EmbedWidgets
@@ -804,7 +830,9 @@ export default function WebsiteBuilderPage() {
                   {t('addSection')}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64">
-                  {SECTION_LIBRARY.map((lib) => (
+                  {/* 'managed' sections (none today) are authored by Linyup, not
+                      offered here — but stay editable once present. */}
+                  {SECTION_LIBRARY.filter((lib) => lib.maturity !== 'managed').map((lib) => (
                     <DropdownMenuItem
                       key={lib.type}
                       onClick={() => addSection(lib.type)}

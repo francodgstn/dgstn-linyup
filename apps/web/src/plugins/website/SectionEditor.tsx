@@ -23,6 +23,7 @@ import {
   GalleryFields,
   HeroFields,
   TestimonialsFields,
+  VideoFields,
   type SiteEditorTenant,
 } from '@/components/website/SiteSectionFields'
 
@@ -303,24 +304,21 @@ export function SectionEditor({
     case 'schedule': return <ScheduleFields s={section} onChange={onChange} />
     case 'contact':  return <ContactFields s={section} onChange={onChange} />
     case 'places':   return <PlacesFields s={section} teamId={teamId} onChange={onChange} />
-    // TEAM-ONLY FOR NOW, and only because nobody has done the org half yet.
-    // These four are purely presentational, so nothing about them is
-    // studio-specific the way pricing or schedule are — the org builder
-    // simply predates them. Offering them there means extending
-    // `OrgSiteSection`, `ORG_SECTION_LIBRARY` and `newOrgSection`, which is
-    // its own change; they are kept here so this merge preserves behaviour
-    // exactly rather than quietly widening it.
-    case 'features':    return <FeaturesFields s={section} onChange={onChange} />
+    // Presentational — shared with the org builder via SiteSectionFields, since
+    // none of these say anything commerce-specific about a studio.
+    case 'features':    return <FeaturesFields s={section} tenant={tenant} onChange={onChange} />
     case 'cta_banner':
       return (
         <CtaBannerFields
           s={section}
+          tenant={tenant}
           onChange={onChange}
           cta={<CtaEditor cta={section.cta} onChange={(cta) => onChange({ cta })} />}
         />
       )
     case 'faq':         return <FaqFields s={section} onChange={onChange} />
     case 'testimonials': return <TestimonialsFields s={section} onChange={onChange} />
+    case 'video':        return <VideoFields key={section.id} s={section} tenant={tenant} onChange={onChange} />
     default:         return null
   }
 }
