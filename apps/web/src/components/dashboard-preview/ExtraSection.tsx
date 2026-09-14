@@ -63,9 +63,10 @@
  * weeks. That is the price of the card, and the reason it lives on an opt-in
  * shelf rather than on the page above.
  *
- * AI insights is the intended next tenant — `plugins/ai-insights` is
- * `status: 'coming_soon'` with no card to mount today, so there is nothing to
- * add here yet. Mount it here when it exists.
+ * A team-level AI view, when one is built, starts here behind its own
+ * experiment (types/experimental.ts) and graduates to the page above. The
+ * `ai-insights` plugin that used to reserve this slot was a placeholder with
+ * nothing behind it and was removed on 2026-09-14.
  */
 
 import { useTranslations } from 'next-intl'
