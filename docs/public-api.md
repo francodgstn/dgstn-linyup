@@ -21,7 +21,12 @@ Second wave: `/v1/activities`, `/v1/plans`, `/v1/sessions/{id}/roster`, `/v1/con
 `/v1/subscriptions?state=`, `/v1/events`, `/v1/reports/weekly`, `/v1/reports/finance`,
 `/v1/insights/class-fill`; MCP tools `list_offerings`, `get_session_roster`, `get_contact_history`,
 `list_memberships`, `list_events`, `get_attendance_trend`, `get_revenue_summary`,
-`get_class_fill_rates`. Not yet: the Hosting `api` target, OAuth (Phase 2).
+`get_class_fill_rates`.
+
+Phase 2 (OAuth): discovery metadata, `/oauth/authorize|token|revoke` with Client ID Metadata
+Documents, the consent page at `/oauth/consent`, and Connected apps on Settings → API keys — see
+"OAuth" below. Not yet: the Hosting `api` target, and the connector test in claude.ai / ChatGPT,
+which needs a public https origin.
 
 **OpenAPI** — `GET /v1/openapi.json`, unauthenticated (it holds no studio data), OpenAPI 3.0.3,
 built at request time by `api/openapi/document.ts`. It cannot drift by construction: the
@@ -54,6 +59,8 @@ the record — and a row whose person this connection may not see is left out an
 | HTTPS entry, rate limit, usage | `packages/functions/src/api/index.ts`, `usage.ts` |
 | Read layer | `packages/functions/src/api/resources/` |
 | REST router / MCP server | `packages/functions/src/api/rest.ts`, `mcp/server.ts` |
+| OAuth endpoints, client metadata, consent callables | `packages/functions/src/api/oauth/` |
+| Consent page | `apps/web/src/app/[locale]/oauth/consent/page.tsx` |
 
 **MCP SDK:** `@modelcontextprotocol/sdk` 1.30 (stable, zod 3). The v2 split packages
 (`@modelcontextprotocol/server` 2.0) require zod 4, which the functions do not run; `mcp/server.ts`
@@ -119,13 +126,53 @@ revoked only with `integrations.manage` (owner). The secret (`lyp_live_…`, `ly
 production) is shown once; the credential is stored as its SHA-256 in `api_credentials/{hash}`, so a
 lookup is a direct get.
 
-### OAuth (Phase 2)
+### OAuth
 
 Linyup is its own authorization server with Firebase Auth as the identity: authorization code +
 S256 PKCE, public clients, RFC 8707 `resource` enforced, **Client ID Metadata Documents** for client
 registration (Dynamic Client Registration is deprecated by the 2026-07-28 MCP spec and only added
 if a client we need lacks CIMD). One grant = one user × one team × one client; the user picks the
 team on the consent page. Opaque hashed tokens: code 5 min, access 1 h, refresh 30 d rotating.
+
+The flow, and who owns each step:
+
+| Step | Where |
+|---|---|
+| `POST /mcp` without a token → 401 `WWW-Authenticate: Bearer resource_metadata="…"` | `api/index.ts` |
+| `/.well-known/oauth-protected-resource[/mcp]` (RFC 9728), `/.well-known/oauth-authorization-server` (RFC 8414, `client_id_metadata_document_supported`) | `api/oauth/metadata.ts` |
+| `GET /oauth/authorize` — fetch + validate the client's metadata document, match `redirect_uri`, require S256, check `resource` and scopes, park `oauth_requests/{id}`, 302 to the web consent page | `api/oauth/endpoints.ts`, `clientMetadata.ts` |
+| Consent — sign in, pick one studio, untick scopes | `apps/web/src/app/[locale]/oauth/consent/page.tsx` |
+| `getOAuthAuthorizationRequest` / `approveOAuthAuthorization` / `denyOAuthAuthorization` | `api/oauth/consent.ts` |
+| Consume the request, create the grant, mint the code (one transaction); exchange, refresh, revoke | `api/auth/credentials.ts` (the ONE writer) |
+| `POST /oauth/token`, `POST /oauth/revoke` (RFC 7009) | `api/oauth/endpoints.ts` |
+| Settings → API keys → Connected apps; `revokeOAuthGrant` | `…/settings/api-keys/ConnectedApps.tsx`, `api/oauth/consent.ts` |
+
+Rules the code holds (the pure ones are pinned by `api/oauth/oauth.test.ts`; the transactional
+ones were exercised end to end on the emulator):
+
+- **Until the client and its `redirect_uri` are verified, errors render on our page**; only after
+  do they go back to the client (RFC 6749 §4.1.2.1). The consent page never builds a redirect —
+  the callable returns the registered one.
+- **Metadata fetch is SSRF-guarded**: https only (loopback http on the emulator), IP literals,
+  `localhost`, `.local`/`.internal` and hosts resolving to private addresses refused, no redirects
+  followed, 3 s and 5 KB limits, the document's `client_id` must equal its URL. Cached 24 h in
+  `oauth_clients/{sha256(client_id)}`.
+- **What a grant may read is narrowed three times**: to what the client asked for, to what the
+  member's role in the chosen studio can read now, and to what they leave ticked. Contact details
+  start unticked. The principal still re-reads the member on every call.
+- **An access token is accepted on `/mcp` only** (its `resource`); `/v1` stays API-key only.
+- **Refresh tokens rotate single-use.** Presenting a used one revokes the whole grant and deletes
+  its credentials — a replay means the token leaked.
+- No remembered consent: every authorization shows the page. Clients outside
+  `OAUTH_RECOGNISED_CLIENT_HOSTS` are labelled as unrecognised.
+- Plugin removal revokes every grant with the keys (`sync/onInstalledPluginStatusChange.ts`); the
+  plugin gates approval, not use. The teardown re-reads the install before revoking: a trigger can
+  arrive late, and a stale deactivation delivered after a reinstall must not close connections made
+  since (seen on the emulator, where one arrived twenty minutes after the write).
+
+`oauth_requests`, `oauth_clients` and the OAuth `api_credentials` rows carry `expires_at` and are
+TTL-deleted (`EXPIRING_DOCUMENT_COLLECTIONS`, `packages/shared/src/retention.ts`).
+`teams/{t}/oauth_grants` is readable by an owner and by the member who made the grant.
 
 ## The read layer
 

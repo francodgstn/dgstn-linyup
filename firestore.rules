@@ -939,6 +939,13 @@ service cloud.firestore {
         allow read:  if hasTeamRole(teamId, 'owner');
         allow write: if false;
       }
+      // Connected apps (OAuth grants). An owner sees every grant; a member sees
+      // the ones they granted, which is what lets them disconnect their own.
+      match /oauth_grants/{grantId} {
+        allow read:  if hasTeamRole(teamId, 'owner')
+                     || (isTeamMember(teamId) && resource.data.uid == request.auth.uid);
+        allow write: if false;
+      }
 
       // Payment events (Payrexx) — immutable audit trail written by handlePayrexxWebhook.
       // Managers and owners can read; no client writes allowed.
@@ -2611,6 +2618,16 @@ service cloud.firestore {
     // SDK) and read only by the principal resolver. No client access: a readable
     // row would name a team, a member and the scopes a stolen secret carries.
     match /api_credentials/{credentialId} {
+      allow read, write: if false;
+    }
+
+    // OAuth authorization requests awaiting consent, and cached client metadata
+    // documents. Written and read only by the api function and the consent
+    // callables (Admin SDK).
+    match /oauth_requests/{requestId} {
+      allow read, write: if false;
+    }
+    match /oauth_clients/{clientKey} {
       allow read, write: if false;
     }
 

@@ -40,6 +40,15 @@ export const LEDGER_RETENTION_DAYS = {
 
 export type LedgerCollection = keyof typeof LEDGER_RETENTION_DAYS
 
+/**
+ * Collections retired by the SAME TTL mechanism but outside the ledger policy:
+ * each document's `expires_at` is set by its writer from its own lifetime (an
+ * OAuth code lives five minutes, a refresh token thirty days), so there is no
+ * one retention to name. Declared here so the TTL overrides and this list can be
+ * checked against each other (`utils/ledgerRetention.test.ts`).
+ */
+export const EXPIRING_DOCUMENT_COLLECTIONS = ['api_credentials', 'oauth_requests', 'oauth_clients'] as const
+
 /** The field the TTL policies key on — the same name in every ledger. */
 export const LEDGER_EXPIRES_AT_FIELD = 'expires_at'
 

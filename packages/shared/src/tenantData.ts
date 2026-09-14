@@ -34,6 +34,8 @@ import {
   FEEDBACK_COLLECTION,
   PUBLIC_DOMAINS_COLLECTION,
   API_CREDENTIALS_COLLECTION,
+  OAUTH_REQUESTS_COLLECTION,
+  OAUTH_CLIENTS_COLLECTION,
   // platform-wide / cross-tenant
   FEEDBACK_PROMPTS_COLLECTION,
   USERS_COLLECTION,
@@ -199,6 +201,11 @@ export const PLATFORM_COLLECTIONS: string[] = [
   STORE_PRESENCE_COLLECTION,
   STORE_REVIEWS_COLLECTION,
   STORE_EVENTS_COLLECTION,
+  // OAuth state that exists before a team is chosen: an authorization request
+  // awaiting consent, and a client's cached metadata document (which describes
+  // Claude or ChatGPT, not any studio). Both expire on their own.
+  OAUTH_REQUESTS_COLLECTION,
+  OAUTH_CLIENTS_COLLECTION,
 ]
 
 /**

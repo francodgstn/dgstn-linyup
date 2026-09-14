@@ -52,6 +52,13 @@ export const API_USAGE_SUBCOLLECTION = 'api_usage'
 // (ApiCredential). Top-level so a lookup is ONE direct get with no team known
 // yet; every client read and write is denied.
 export const API_CREDENTIALS_COLLECTION = 'api_credentials'
+// OAuth (docs/public-api.md). oauth_grants: a team's connected apps
+// (types/api.ts OAuthGrant). oauth_requests / oauth_clients: authorization
+// requests awaiting consent and cached Client ID Metadata Documents — platform
+// state keyed before any team is chosen, TTL-retired, client access denied.
+export const OAUTH_GRANTS_SUBCOLLECTION = 'oauth_grants'
+export const OAUTH_REQUESTS_COLLECTION = 'oauth_requests'
+export const OAUTH_CLIENTS_COLLECTION = 'oauth_clients'
 export const TEAM_REBUILD_JOBS_SUBCOLLECTION = 'rebuild_jobs'
 // The monthly leaderboard: one denormalised document per team (see
 // types/leaderboard.ts), plus a per-month history written at month end.

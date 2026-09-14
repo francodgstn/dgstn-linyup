@@ -3,11 +3,11 @@
 // Settings → API keys — the owner's door to the public API and MCP server
 // (docs/public-api.md).
 //
-// Everything this page does goes through the two callables (`createApiKey`,
-// `revokeApiKey`); `firestore.rules` denies every client write to `api_keys`
-// and lets only an owner read it. So a manager who deep-links here sees the
-// reason, not a list — the rail hides the row for her (`gate: 'ownerOnly'`),
-// which is navigation, never enforcement.
+// Everything this page does goes through the callables (`createApiKey`,
+// `revokeApiKey`, `revokeOAuthGrant`); `firestore.rules` denies every client
+// write to `api_keys` and `oauth_grants` and lets an owner read them. So a
+// manager who deep-links here sees the reason, not a list — the rail hides the
+// row for her (`gate: 'ownerOnly'`), which is navigation, never enforcement.
 //
 // The scope switches read the SAME table the server enforces
 // (`API_SCOPES` / `API_SCOPE_REQUIREMENTS` in @linyup/shared): personal
@@ -37,6 +37,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { PluginNotInstalled } from '@/components/plugins/PluginNotInstalled'
+import { ApiScopeHint, ApiScopeName } from '@/components/api/ApiScopeText'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { ConnectedApps } from './ConnectedApps'
 
 /** Where the API answers. Local development points this at the functions emulator. */
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.linyup.com').replace(/\/+$/, '')
@@ -235,7 +237,7 @@ export default function ApiKeysSettingsPage() {
                     <div className="flex flex-wrap gap-1">
                       {key.scopes.map((scope) => (
                         <Badge key={scope} variant="outline" className="font-normal">
-                          <ScopeName scope={scope} />
+                          <ApiScopeName scope={scope} />
                         </Badge>
                       ))}
                     </div>
@@ -266,6 +268,8 @@ export default function ApiKeysSettingsPage() {
             ))}
           </ul>
         )}
+
+        {currentTeamId && <ConnectedApps teamId={currentTeamId} />}
       </div>
 
       {/* The mobile primary action, per the list-page pattern: fixed bottom-right. */}
@@ -293,47 +297,6 @@ export default function ApiKeysSettingsPage() {
   )
 }
 
-/** A scope's short name, written out per scope so every key is a literal. */
-function ScopeName({ scope }: { scope: ApiScope }) {
-  const t = useTranslations('ApiKeys')
-  switch (scope) {
-    case 'contacts:read':
-      return <>{t('scopeContacts')}</>
-    case 'contacts:read:pii':
-      return <>{t('scopeContactsPii')}</>
-    case 'schedule:read':
-      return <>{t('scopeSchedule')}</>
-    case 'offerings:read':
-      return <>{t('scopeOfferings')}</>
-    case 'subscriptions:read':
-      return <>{t('scopeSubscriptions')}</>
-    case 'reports:read':
-      return <>{t('scopeReports')}</>
-    case 'finance:read':
-      return <>{t('scopeFinance')}</>
-  }
-}
-
-function ScopeHint({ scope }: { scope: ApiScope }) {
-  const t = useTranslations('ApiKeys')
-  switch (scope) {
-    case 'contacts:read':
-      return <>{t('scopeContactsHint')}</>
-    case 'contacts:read:pii':
-      return <>{t('scopeContactsPiiHint')}</>
-    case 'schedule:read':
-      return <>{t('scopeScheduleHint')}</>
-    case 'offerings:read':
-      return <>{t('scopeOfferingsHint')}</>
-    case 'subscriptions:read':
-      return <>{t('scopeSubscriptionsHint')}</>
-    case 'reports:read':
-      return <>{t('scopeReportsHint')}</>
-    case 'finance:read':
-      return <>{t('scopeFinanceHint')}</>
-  }
-}
-
 function ConnectCard() {
   const t = useTranslations('ApiKeys')
   return (
@@ -354,7 +317,9 @@ function ConnectCard() {
           {`${API_BASE_URL}/v1/openapi.json`}
         </a>
       </p>
-      <p className="text-xs text-muted-foreground">{t('connectWebSoon')}</p>
+      <p className="text-xs text-muted-foreground">
+        {t('connectWeb')} <code className="rounded bg-muted px-1 py-0.5 font-mono">{`${API_BASE_URL}/mcp`}</code>
+      </p>
     </div>
   )
 }
@@ -468,10 +433,10 @@ function CreateKeyDialog({
                     <li key={scope} className="flex items-start justify-between gap-4 p-3">
                       <div className="min-w-0">
                         <p className="text-sm">
-                          <ScopeName scope={scope} />
+                          <ApiScopeName scope={scope} />
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          <ScopeHint scope={scope} />
+                          <ApiScopeHint scope={scope} />
                         </p>
                       </div>
                       <Switch

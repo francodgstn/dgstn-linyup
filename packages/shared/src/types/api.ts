@@ -175,6 +175,82 @@ export interface ApiCredential {
   expires_at: Timestamp | null
 }
 
+// ─── OAuth (Phase 2) ─────────────────────────────────────────────────────────
+//
+// Linyup is its own authorization server (docs/public-api.md → "OAuth"):
+// authorization code + S256 PKCE, public clients identified by Client ID
+// Metadata Documents, tokens bound to the MCP resource (RFC 8707). One grant =
+// one member × one team × one client.
+
+/** The path of the protected resource OAuth access tokens are bound to. */
+export const API_MCP_PATH = '/mcp'
+
+export const OAUTH_AUTHORIZATION_REQUEST_TTL_MS = 10 * 60_000
+export const OAUTH_CODE_TTL_MS = 5 * 60_000
+export const OAUTH_ACCESS_TOKEN_TTL_MS = 60 * 60_000
+export const OAUTH_REFRESH_TOKEN_TTL_MS = 30 * 86_400_000
+export const OAUTH_CLIENT_METADATA_TTL_MS = 24 * 3_600_000
+
+/** Hosts whose clients the consent page names as recognised. Display only — never a decision. */
+export const OAUTH_RECOGNISED_CLIENT_HOSTS = ['claude.ai', 'claude.com', 'anthropic.com', 'chatgpt.com', 'openai.com'] as const
+
+/**
+ * `oauth_requests/{requestId}` — an authorization request between `/oauth/authorize`
+ * and the member's decision on the consent page. Consumed once; TTL-retired.
+ * Every client read and write is denied.
+ */
+export interface OAuthAuthorizationRequest {
+  client_id: string
+  client_name: string
+  client_uri: string | null
+  logo_uri: string | null
+  redirect_uri: string
+  state: string | null
+  code_challenge: string
+  scopes: ApiScope[]
+  /** RFC 8707 resource the tokens will be bound to. */
+  resource: string
+  /** The authorization server's issuer, returned as `iss` on the redirect. */
+  issuer: string
+  created_at: Timestamp
+  expires_at: Timestamp
+  consumed_at: Timestamp | null
+}
+
+/**
+ * `teams/{teamId}/oauth_grants/{grantId}` — a connected app. Revoking it ends
+ * every token issued under it: the principal resolver reads the grant on each
+ * request. Written only by Cloud Functions; readable by an owner and by the
+ * member who granted it.
+ */
+export interface OAuthGrant {
+  id: string
+  teamId: string
+  uid: string
+  client_id: string
+  client_name: string
+  client_uri: string | null
+  redirect_host: string
+  scopes: ApiScope[]
+  resource: string
+  catalog_version: number
+  created_at: Timestamp
+  revoked_at: Timestamp | null
+  revoked_by: string | null
+  last_used_at: Timestamp | null
+}
+
+/** `oauth_clients/{sha256(client_id)}` — a fetched Client ID Metadata Document, cached. */
+export interface OAuthClientRecord {
+  client_id: string
+  client_name: string
+  client_uri: string | null
+  logo_uri: string | null
+  redirect_uris: string[]
+  fetched_at: Timestamp
+  expires_at: Timestamp
+}
+
 /** `teams/{teamId}/api_usage/{yyyy-mm-dd}` — a day's request counter, TTL-retired. */
 export interface ApiUsageDay {
   requests: number
