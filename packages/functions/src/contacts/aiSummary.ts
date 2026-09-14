@@ -48,7 +48,7 @@ import {
 import { to } from '../utils/async'
 import { callerIsAllScoped, isTeamMember } from '../utils/teams'
 import { bucketRateLimit } from '../utils/rateLimit'
-import { ASSISTANT_MODEL, getGenAI } from '../utils/vertexClient'
+import { ASSISTANT_MODEL, getGenAI, replyWasStopped } from '../utils/vertexClient'
 import {
   LANGUAGE_NAMES,
   STUDIO_TIME_ZONE,
@@ -242,7 +242,7 @@ export const generateContactSummary = onCall(async (request) => {
     raw = response.text ?? ''
     // Still possible without thinking (a very long reply), so the reply says
     // whether it was stopped, and `normaliseSummary` never stores the fragment.
-    cut = String(response.candidates?.[0]?.finishReason ?? '') === 'MAX_TOKENS'
+    cut = replyWasStopped(response)
     if (cut) console.warn(`[generateContactSummary] reply hit the output cap (contact=${contactId})`)
   } catch (err) {
     console.error('[generateContactSummary] Vertex error:', (err as Error).message)
