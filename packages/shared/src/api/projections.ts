@@ -2,7 +2,7 @@ import type { AcquisitionStage, Contact, ContactEntry, ContactGender, ContactSou
 import type { EngagementBand, EngagementThresholds } from '../types/engagement'
 import { computeEngagementBand } from '../types/engagement'
 import type { HeldPlan, HeldPlanSource, HeldPlanStatus } from '../types/planHoldings'
-import { isExpiredAppointmentHold, type Session } from '../types/session'
+import { isExpiredAppointmentHold, seatsFree, type Session } from '../types/session'
 import { isSessionCancelled } from '../utils/sessionStatus'
 import { contactAttentionReasons, type ContactAttentionReason } from '../utils/contactFilter'
 import { contactLifecycle, type ContactLifecycle } from '../utils/contactLifecycle'
@@ -268,11 +268,16 @@ export function projectSession(session: Session, ctx: { nowMs: number }): ApiSes
   if (session.blocked_time === true) return null
   if (isExpiredAppointmentHold(session, ctx.nowMs)) return null
 
+  // `full` is DERIVED from the seat count, not read from the stored status: the
+  // stored value is a capacity-state snapshot that not every writer keeps in
+  // step, while `bookings_count` is the recount of seat-holding bookings
+  // (`bookingHoldsSeat`) and `seatsFree` is the shared capacity question.
+  const booked = count(session.bookings_count)
   const status: ApiSessionStatus = isSessionCancelled(session)
     ? 'cancelled'
     : session.status === 'pending_payment'
       ? 'pending_payment'
-      : session.status === 'full'
+      : seatsFree(session.max_participants, booked) <= 0
         ? 'full'
         : 'open'
 
@@ -292,7 +297,7 @@ export function projectSession(session: Session, ctx: { nowMs: number }): ApiSes
     room_id: str(session.roomId),
     provider: session.providerId ? { id: session.providerId, name: str(session.providerName) } : null,
     capacity: typeof session.max_participants === 'number' ? session.max_participants : null,
-    booked: count(session.bookings_count),
+    booked,
     waitlisted: count(session.waitlist_count),
     attended: count(session.participants_count),
     trial_bookings: count(session.trial_bookings_count),

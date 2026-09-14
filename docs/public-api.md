@@ -14,8 +14,9 @@ API key minting / principal resolver / single credential writer, `createApiKey` 
 the `api-connectors` plugin with its revoke-all teardown, rules + TTL, the field catalog with
 contact and session projections, and the `api` HTTPS function serving `/v1/me|team|contacts|sessions`
 and `/mcp` (tools: `get_studio_overview`, `find_contacts`, `list_inactive_contacts`, `get_contact`,
-`get_schedule`). Not yet: the Settings → API keys screen, the remaining resources and insight tools,
-OpenAPI, the Hosting `api` target.
+`get_schedule`), and Settings → API keys (`/settings/api-keys`: create with scopes and expiry,
+the secret shown once with Claude Code and curl examples, list, revoke). Not yet: the remaining
+resources and insight tools, OpenAPI, the Hosting `api` target.
 
 ## Where the code is
 

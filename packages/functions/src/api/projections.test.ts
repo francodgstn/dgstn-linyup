@@ -179,6 +179,18 @@ describe('projectSession', () => {
     )
   })
 
+  it('derives full from the seat count, whatever status was stored', () => {
+    // The local seed stores `status: 'open'` on an 8/8 class; the API must still say full.
+    assert.strictEqual(projectSession(sentinelSession({ status: 'open', bookings_count: 8, max_participants: 8 }), { nowMs: NOW })!.status, 'full')
+    assert.strictEqual(projectSession(sentinelSession({ status: 'full', bookings_count: 7, max_participants: 8 }), { nowMs: NOW })!.status, 'open', 'a freed seat reopens it')
+    assert.strictEqual(projectSession(sentinelSession({ status: 'open', bookings_count: 40, max_participants: null }), { nowMs: NOW })!.status, 'open', 'no cap is never full')
+    assert.strictEqual(
+      projectSession(sentinelSession({ status: 'cancelled', bookings_count: 8, max_participants: 8 }), { nowMs: NOW })!.status,
+      'cancelled',
+      'cancelled wins over full'
+    )
+  })
+
   it('drops blocked time and lapsed appointment holds', () => {
     assert.strictEqual(projectSession(sentinelSession({ blocked_time: true }), { nowMs: NOW }), null)
     const lapsed = sentinelSession({ status: 'pending_payment', hold_expires_at: { toMillis: () => NOW - 1 } })
