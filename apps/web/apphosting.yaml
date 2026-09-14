@@ -57,6 +57,14 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  # The public API + MCP origin (docs/public-api.md -> Hosting target), shown on
+  # Settings -> API keys and in its copy-paste examples. Inlined at build time like
+  # every NEXT_PUBLIC_*; unset, the page shows production's https://api.linyup.com.
+  - variable: NEXT_PUBLIC_API_BASE_URL
+    value: https://linyup-api-staging.web.app
+    availability:
+      - BUILD
+      - RUNTIME
   # Firebase App Check — the reCAPTCHA ENTERPRISE SITE KEY (public, safe to embed),
   # the one piece of deployment wiring the App Check rollout needs from this file.
   # Commented out because the key does not exist until the project is registered
