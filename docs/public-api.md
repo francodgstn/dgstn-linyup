@@ -25,8 +25,47 @@ Second wave: `/v1/activities`, `/v1/plans`, `/v1/sessions/{id}/roster`, `/v1/con
 
 Phase 2 (OAuth): discovery metadata, `/oauth/authorize|token|revoke` with Client ID Metadata
 Documents, the consent page at `/oauth/consent`, and Connected apps on Settings → API keys — see
-"OAuth" below. Not yet: the Hosting `api` target, and the connector test in claude.ai / ChatGPT,
-which needs a public https origin.
+"OAuth" below.
+
+**Staging (2026-09-15):** the `api` Hosting target is live at `https://linyup-api-staging.web.app`
+— see "Hosting target" below. Not yet: sandbox/prod, a custom domain, and the connector test in
+claude.ai / ChatGPT, which also needs the consent page on the staging web app (it ships with the
+branch's web deploy).
+
+## Hosting target
+
+`firebase.json` target `api`: static folder `infra/hosting/api` (only a `robots.txt`), every other
+path rewritten to the gen2 `api` function in europe-west6. `.firebaserc` maps it on staging only.
+CI deploys `hosting:landing` by name, so this target ships only when deployed deliberately:
+
+```
+node scripts/vendor-shared-for-deploy.mjs      # then revert packages/functions/package.json
+FUNCTIONS_DISCOVERY_TIMEOUT=120 npx firebase-tools deploy --project staging \
+  --only functions:api,functions:createApiKey,functions:revokeApiKey,functions:getOAuthAuthorizationRequest,functions:approveOAuthAuthorization,functions:denyOAuthAuthorization,functions:revokeOAuthGrant,hosting:api \
+  --non-interactive --force
+```
+
+`API_BASE_URL` in `packages/functions/.env.<env>` names the public origin; without it the issuer,
+the MCP resource and the OpenAPI server would be the Cloud Run host (Phase 0 finding).
+
+First staging deploy (2026-09-15, branch commit `c99d4fe2`), functions and hosting only.
+**Rules and indexes were NOT deployed from the branch**: `main` had changed `firestore.rules`
+since the branch was cut, so deploying them would have reverted that change. The API needs
+neither (Admin SDK, existing indexes); the `api_keys` / `oauth_grants` read rules and the TTL
+overrides reach staging with the merge. Smoke results through Hosting, no credential:
+
+| Check | Result |
+|---|---|
+| `/health` | 200; warm 64–86 ms |
+| Protected resource + AS metadata, OpenAPI `servers` | all name `https://linyup-api-staging.web.app` |
+| `POST /mcp` without a token | 401 with `resource_metadata` challenge, `private, no-store` |
+| Bogus key on `/v1/me` | 401 |
+| `/oauth/authorize` with an unverifiable client | 400 on our page, no redirect |
+| `/oauth/token` with an unknown code | 400 `invalid_grant` |
+| CORS preflight | 204 |
+
+The site ID `linyup-staging-api` could not be reused: the Phase 0 spike deleted a site of that
+name, and a deleted Hosting site ID is reserved forever.
 
 **OpenAPI** — `GET /v1/openapi.json`, unauthenticated (it holds no studio data), OpenAPI 3.0.3,
 built at request time by `api/openapi/document.ts`. It cannot drift by construction: the
