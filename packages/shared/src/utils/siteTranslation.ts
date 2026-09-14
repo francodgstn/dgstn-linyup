@@ -25,7 +25,13 @@
  *   surf.{surface}                  SiteMeta.header.surfaceLinks[].label
  *   menu.{itemId}                   SiteMenuItem.label (tree flattened; only
  *                                   explicit labels — a derived label is
- *                                   already localized by its source)
+ *                                   already localized by its source). The
+ *                                   SAME key space covers the top-bar links,
+ *                                   every footer column's links and the legal
+ *                                   row — item ids are unique across them
+ *   topbar.text                     SiteMeta.header.topBar.text
+ *   footer.text                     SiteMeta.footer.text
+ *   footer.col.{columnId}.heading   SiteFooterColumn.heading
  *   s.{sectionId}.headline          hero
  *   s.{sectionId}.subheadline       hero
  *   s.{sectionId}.cta               hero SiteCta.label
@@ -244,12 +250,41 @@ function siteBindings(target: {
           )
         )
       }
+      if (meta.header.topBar) {
+        bindings.push(
+          propBinding(meta.header.topBar as unknown as Record<string, unknown>, 'topbar.text', 'text', 'plain')
+        )
+      }
+    }
+    if (meta.footer) {
+      bindings.push(propBinding(meta.footer as unknown as Record<string, unknown>, 'footer.text', 'text', 'plain'))
+      for (const column of meta.footer.columns ?? []) {
+        bindings.push(
+          propBinding(
+            column as unknown as Record<string, unknown>,
+            `footer.col.${column.id}.heading`,
+            'heading',
+            'plain'
+          )
+        )
+      }
     }
   }
-  for (const { item } of flattenSiteMenu(target.menu)) {
-    bindings.push(
-      propBinding(item as unknown as Record<string, unknown>, `menu.${item.id}`, 'label', 'plain')
-    )
+  // Every link list shares the `menu.{itemId}` key — the header menu, the top
+  // bar, the footer columns and the legal row. Item ids are unique across all
+  // of them (the editor mints them that way), which is what keeps one key space.
+  const linkLists = [
+    target.menu,
+    meta?.header?.topBar?.items,
+    ...(meta?.footer?.columns ?? []).map((column) => column.items),
+    meta?.footer?.legal,
+  ]
+  for (const list of linkLists) {
+    for (const { item } of flattenSiteMenu(list)) {
+      bindings.push(
+        propBinding(item as unknown as Record<string, unknown>, `menu.${item.id}`, 'label', 'plain')
+      )
+    }
   }
   for (const section of target.sections ?? []) {
     bindings.push(...sectionBindings(section))

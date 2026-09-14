@@ -16,10 +16,15 @@ import {
   safeUrl,
   sanitizeMeta,
   sanitizeMenu,
+  applyNavFields,
   sanitizeHeroSection,
   sanitizeContentSection,
   sanitizeGallerySection,
   sanitizeContactSection,
+  sanitizeFeaturesSection,
+  sanitizeCtaBannerSection,
+  sanitizeFaqSection,
+  sanitizeTestimonialsSection,
   type Dict,
 } from '../website'
 import {
@@ -100,6 +105,20 @@ function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
     case 'contact':
       section = sanitizeContactSection(d, id) as unknown as OrgSiteSection
       break
+    // Offered by the org "Add section" menu and in `OrgSiteSection`, but missing
+    // here — so an org site published them as nothing.
+    case 'features':
+      section = sanitizeFeaturesSection(d, id)
+      break
+    case 'cta_banner':
+      section = sanitizeCtaBannerSection(d, id)
+      break
+    case 'faq':
+      section = sanitizeFaqSection(d, id)
+      break
+    case 'testimonials':
+      section = sanitizeTestimonialsSection(d, id)
+      break
     case 'clubs':
       section = sanitizeClubsSection(d, id)
       break
@@ -113,9 +132,9 @@ function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
       return null
   }
   if (!section) return null
-  // Nav membership is common to every section type, same convention as the team
-  // site: stored only when explicitly hidden, absence means "visible".
-  if (d.showInNav === false) section.showInNav = false
+  // Nav membership + menu label — one rule for both tenants (this used to copy
+  // only `showInNav`, so an org's menu labels never published).
+  applyNavFields(section, d)
   return section
 }
 

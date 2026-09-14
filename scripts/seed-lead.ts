@@ -109,6 +109,7 @@ import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
+import { sanitizeMenu, sanitizeMeta, sanitizeSections } from '../packages/functions/src/website/sanitize'
 import type {
   LeadProfile,
   LeadContactDef,
@@ -2806,6 +2807,11 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   for (const s of profile.siteSections) {
     sections.push(await resolveSectionAssets(s, teamId))
   }
+  // Brand overrides from the profile (logo, fonts, top bar, footer) merge over
+  // these defaults; header and footer merge field-by-field. The logo asset, when
+  // given, is uploaded like every other site image.
+  const brand = profile.siteMeta ?? {}
+  const logoUrl = profile.logoAsset ? await uploadAsset(profile.logoAsset, `teams/${teamId}/site/brand/logo`) : null
   const siteMeta = {
     title: profile.teamName,
     theme: 'light',
@@ -2815,13 +2821,30 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     // custom page background pairs with the light theme's dark text.
     ...(profile.publicBackground ? { background: profile.publicBackground } : {}),
     seo: { title: profile.teamName, description: profile.description },
-    header: { showNav: true, ctaLabel: 'Book now', ctaAction: 'booking' },
-    footer: { showSocial: true },
+    ...brand,
+    header: { showNav: true, ctaLabel: 'Book now', ctaAction: 'booking', ...(brand.header ?? {}) },
+    footer: { showSocial: true, ...(brand.footer ?? {}) },
+    ...(logoUrl ? { logoUrl } : {}),
   }
   // A stored menu, when the profile provides one — else the header derives its
   // menu from the sections (see WebsiteRenderer). Written to both docs so the
   // published site and the builder draft agree.
   const menu = profile.siteMenu ? { menu: profile.siteMenu } : {}
+  // The PUBLISHED doc goes through the same sanitizer as the publishWebsite
+  // callable, so a demo can never show a site the studio could not publish
+  // itself. The draft keeps the profile as authored (hidden sections included),
+  // exactly as the builder would store it.
+  const publishedSections = sanitizeSections(sections)
+  const droppedSectionIds = sections
+    .filter((s) => s.hidden !== true)
+    .map((s) => String(s.id))
+    .filter((id) => !publishedSections.some((p) => p.id === id))
+  if (droppedSectionIds.length > 0) {
+    console.warn(
+      `  ⚠ website: publish would drop section(s) ${droppedSectionIds.join(', ')} — unknown type or a missing required field`,
+    )
+  }
+  const publishedMenu = sanitizeMenu(profile.siteMenu)
   await db
     .collection('site_drafts')
     .doc(teamId)
@@ -2843,9 +2866,9 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       teamId,
       slug: profile.slug,
       name: profile.teamName,
-      meta: siteMeta,
-      sections,
-      ...menu,
+      meta: sanitizeMeta(siteMeta, profile.teamName),
+      sections: publishedSections,
+      ...(publishedMenu ? { menu: publishedMenu } : {}),
       socialLinks: profile.socialLinks,
       showBranding: false, // studio plan
       published_at: ts(daysFromNow(-12)),

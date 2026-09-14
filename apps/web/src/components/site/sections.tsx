@@ -341,8 +341,8 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
             {...(section.cta.action === 'booking'
               ? bookProps(href, ctx, { kind: 'root' })
               : linkProps(href, preview, section.cta.action === 'url'))}
-            className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
-            style={{ background: palette.accent, color: palette.onAccent }}
+            className="site-btn inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
+            style={{ background: palette.button, color: palette.onButton }}
           >
             {section.cta.label}
             <ArrowRight className="h-4 w-4" />
@@ -1427,8 +1427,8 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
                       : publicHrefLocalized(locale, slug, 'shop', { type: p.id, from: 'site' }),
                     preview
                   )}
-                  className="mt-5 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-                  style={{ background: palette.accent, color: palette.onAccent }}
+                  className="site-btn mt-5 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+                  style={{ background: palette.button, color: palette.onButton }}
                 >
                   {section.ctaLabel ?? t('joinNow')}
                 </a>
@@ -1474,8 +1474,8 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
                     </div>
                     <a
                       {...bookProps(href, ctx, activityIntent(a))}
-                      className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
-                      style={{ background: palette.accent, color: palette.onAccent }}
+                      className="site-btn shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
+                      style={{ background: palette.button, color: palette.onButton }}
                     >
                       {t('book')}
                     </a>
@@ -1998,8 +1998,8 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
         <div className="mt-8 text-center">
           <a
             {...bookProps(browseBookHref, ctx, { kind: 'root' })}
-            className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-            style={{ background: palette.accent, color: palette.onAccent }}
+            className="site-btn inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+            style={{ background: palette.button, color: palette.onButton }}
           >
             <CalendarDays className="h-4 w-4" />
             {t('bookASession')}
@@ -2093,8 +2093,8 @@ function SessionDetailModal({
               onBookClick()
               bookLinkProps.onClick?.(e)
             }}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-            style={{ background: palette.accent, color: palette.onAccent }}
+            className="site-btn mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+            style={{ background: palette.button, color: palette.onButton }}
           >
             <CalendarPlus className="h-4 w-4" />
             {t('book')}
@@ -2344,8 +2344,8 @@ function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: Rend
                 {...(section.cta.action === 'booking'
                   ? bookProps(href, ctx, { kind: 'root' })
                   : linkProps(href, preview, section.cta.action === 'url'))}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] sm:w-auto sm:min-w-[16rem]"
-                style={{ background: palette.accent, color: palette.onAccent }}
+                className="site-btn inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] sm:w-auto sm:min-w-[16rem]"
+                style={{ background: palette.button, color: palette.onButton }}
               >
                 {section.cta.label}
                 <ArrowRight className="h-4 w-4" />

@@ -76,7 +76,8 @@ import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
 import { MenuPanel } from '@/plugins/website/MenuPanel'
 import { sectionNavLabel } from '@/components/site/sections'
 import { SectionEditor } from '@/plugins/website/SectionEditor'
-import { useSiteDraft, saveSiteDraft, publishSite, unpublishSite } from '@/plugins/website/hooks'
+import { useSiteDraft, saveSiteDraft, publishSite, unpublishSite, uploadSiteImage } from '@/plugins/website/hooks'
+import { BrandFields } from '@/components/website/BrandFields'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
 import { SECTION_LIBRARY, newSection, newSectionId, emptyDraft } from '@/plugins/website/defaults'
 import { getWebsiteLimits } from '@/plugins/website/limits'
@@ -89,9 +90,13 @@ const limits = getWebsiteLimits()
 function AppearancePanel({
   meta,
   onChange,
+  sections,
+  uploadImage,
 }: {
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
+  sections: { id: string; label: string }[]
+  uploadImage: (file: File) => Promise<string>
 }) {
   const t = useTranslations('Website')
 
@@ -192,23 +197,6 @@ function AppearancePanel({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs">{t('apFont')}</Label>
-        <Select
-          value={meta.font}
-          onValueChange={(v) => onChange({ font: v as SiteMeta['font'] })}
-        >
-          <SelectTrigger className="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sans">Sans</SelectItem>
-            <SelectItem value="serif">Serif</SelectItem>
-            <SelectItem value="rounded">Rounded</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="space-y-2">
         <Label className="text-xs">{t('apAccentColor')}</Label>
         <ColorPicker
@@ -288,11 +276,13 @@ function AppearancePanel({
             edited, so no existing header changes. */}
       </div>
 
+      <BrandFields meta={meta} onChange={onChange} sections={sections} uploadImage={uploadImage} />
+
       <label className="flex items-center justify-between rounded-lg border p-3">
         <span className="text-sm">{t('apShowSocialFooter')}</span>
         <Switch
           checked={meta.footer.showSocial}
-          onCheckedChange={(v) => onChange({ footer: { showSocial: v } })}
+          onCheckedChange={(v) => onChange({ footer: { ...meta.footer, showSocial: v } })}
         />
       </label>
 
@@ -666,7 +656,12 @@ export default function WebsiteBuilderPage() {
           </div>
 
           {tab === 'appearance' ? (
-            <AppearancePanel meta={draft.meta} onChange={patchMeta} />
+            <AppearancePanel
+              meta={draft.meta}
+              onChange={patchMeta}
+              sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
+              uploadImage={(file) => uploadSiteImage(currentTeamId!, 'brand', file)}
+            />
           ) : tab === 'embed' ? (
             <EmbedWidgets
               teamId={currentTeamId!}

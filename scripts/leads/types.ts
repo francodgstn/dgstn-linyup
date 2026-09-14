@@ -674,6 +674,24 @@ export interface LeadProfile {
    * Authored by hand as `{ id, label?, target, children? }`; see SiteMenuItem.
    */
   siteMenu?: Record<string, unknown>[]
+  /**
+   * Optional website BRAND, merged over the seeder's defaults (title, light
+   * theme, the profile accent, system font). `header` and `footer` merge onto
+   * their defaults rather than replacing them. Everything here goes through the
+   * publish sanitizer like a studio's own edit, so an unsupported value is
+   * dropped, never faked. Menu item ids must be unique across `siteMenu`, the
+   * top bar, the footer columns and the legal row (they share translation keys).
+   */
+  // Structural, not SiteMeta: this file re-declares shared vocabulary (see the
+  // header note). The shape is SiteMeta's — `font`, `headingCase`, `buttonShape`,
+  // `buttonColor`, `logoUrl`, `header.topBar`, `footer.columns|logos|appLinks|legal`.
+  siteMeta?: Record<string, unknown> & {
+    header?: Record<string, unknown>
+    footer?: Record<string, unknown>
+  }
+  /** Assets-folder base name of the website logo — uploaded and set as
+   *  `siteMeta.logoUrl`. A `siteMeta.logoUrl` pointing elsewhere also works. */
+  logoAsset?: string
   courses: LeadCourseDef[]
   products: LeadProductDef[]
   /** Gift cards (settings.giftCards + the team public_profile mirror): lets the

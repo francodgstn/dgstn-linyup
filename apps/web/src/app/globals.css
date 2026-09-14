@@ -486,3 +486,19 @@
     page-break-inside: avoid;
   }
 }
+
+/* ── Studio website brand layer ──────────────────────────────────────────────
+   The public studio website (WebsiteRenderer, EmbedSection) carries its brand
+   as CSS variables on `.site-root` — set by siteBrandRootProps in
+   components/site/siteFonts.ts. UNLAYERED on purpose: the heading font lives
+   in `@layer base` and button shapes in Tailwind's utilities layer, and an
+   unlayered rule outranks both without !important. Every variable falls back
+   to the look sites had before brand settings existed. */
+.site-root :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--site-font-heading, var(--font-sora), var(--font-jakarta), sans-serif);
+  text-transform: var(--site-heading-case, none);
+}
+.site-root .site-btn {
+  border-radius: var(--site-btn-radius, 9999px);
+  text-transform: var(--site-heading-case, none);
+}

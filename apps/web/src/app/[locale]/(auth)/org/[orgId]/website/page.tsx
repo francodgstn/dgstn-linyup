@@ -20,7 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -46,7 +45,8 @@ import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
 import { sectionNavLabel } from '@/components/site/sections'
 import { type RenderableSite } from '@/components/site/WebsiteRenderer'
 import { OrgSectionEditor } from './OrgSectionEditor'
-import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite } from './hooks'
+import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite, uploadOrgSiteImage } from './hooks'
+import { BrandFields } from '@/components/website/BrandFields'
 import { ORG_SECTION_LIBRARY, newOrgSection, emptyOrgDraft } from './defaults'
 import { Tip } from '@/components/ui/tip'
 
@@ -89,9 +89,13 @@ function useOrgPreviewTeams(orgId: string | null) {
 function AppearancePanel({
   meta,
   onChange,
+  sections,
+  uploadImage,
 }: {
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
+  sections: { id: string; label: string }[]
+  uploadImage: (file: File) => Promise<string>
 }) {
   const t = useTranslations('Website')
 
@@ -119,20 +123,6 @@ function AppearancePanel({
           onChange={(id) => onChange({ themePreset: id })}
           accentColor={meta.accentColor}
         />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs">{t('apFont')}</Label>
-        <Select value={meta.font} onValueChange={(v) => onChange({ font: v as SiteMeta['font'] })}>
-          <SelectTrigger className="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sans">Sans</SelectItem>
-            <SelectItem value="serif">Serif</SelectItem>
-            <SelectItem value="rounded">Rounded</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-2">
@@ -172,11 +162,13 @@ function AppearancePanel({
         )}
       </div>
 
+      <BrandFields meta={meta} onChange={onChange} sections={sections} uploadImage={uploadImage} />
+
       <label className="flex items-center justify-between rounded-lg border p-3">
         <span className="text-sm">{t('apShowSocialFooter')}</span>
         <Switch
           checked={meta.footer.showSocial}
-          onCheckedChange={(v) => onChange({ footer: { showSocial: v } })}
+          onCheckedChange={(v) => onChange({ footer: { ...meta.footer, showSocial: v } })}
         />
       </label>
 
@@ -480,7 +472,12 @@ export default function OrgWebsiteBuilderPage() {
           </div>
 
           {tab === 'appearance' ? (
-            <AppearancePanel meta={draft.meta} onChange={patchMeta} />
+            <AppearancePanel
+              meta={draft.meta}
+              onChange={patchMeta}
+              sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
+              uploadImage={(file) => uploadOrgSiteImage(orgId, 'brand', file)}
+            />
           ) : (
             <div className="space-y-2.5">
               <SortableList ids={draft.sections.map((s) => s.id)} onReorder={reorderSections}>

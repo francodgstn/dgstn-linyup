@@ -61,6 +61,10 @@ export async function saveSiteDraft(teamId: string, userId: string, draft: SiteD
     enabled: draft.enabled,
     meta: draft.meta,
     sections: draft.sections,
+    // The menu editor's tree. Leaving it out of this full overwrite wiped every
+    // menu edit on save. Absent until first edited — `stripUndefinedDeep` drops
+    // it, and an absent menu still derives, so no existing site changes.
+    menu: draft.menu,
   })
   await setDoc(doc(db, SITE_DRAFTS_COLLECTION, teamId), {
     ...payload,

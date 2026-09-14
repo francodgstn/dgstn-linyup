@@ -20,7 +20,20 @@ import type { UiLanguage } from '../utils/regional'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type SiteTheme = 'light' | 'dark' | 'auto'
-export type SiteFont = 'sans' | 'serif' | 'rounded'
+
+/**
+ * Curated brand typefaces, loaded from Google Fonts by the renderer and served
+ * from our own origin (next/font), so a visitor's IP never reaches Google.
+ * A CLOSED list on purpose: every entry is a font file the public site ships,
+ * and the publish sanitizer refuses anything else. The ids are stored — a
+ * rename is a migration.
+ */
+export const SITE_BRAND_FONTS = ['montserrat', 'inter', 'poppins', 'oswald', 'playfair', 'dm-sans'] as const
+export type SiteBrandFont = (typeof SITE_BRAND_FONTS)[number]
+
+/** The three system stacks sites have always had, plus the brand typefaces. */
+export const SITE_FONTS = ['sans', 'serif', 'rounded', ...SITE_BRAND_FONTS] as const
+export type SiteFont = (typeof SITE_FONTS)[number]
 export type SectionAlign = 'left' | 'center'
 export type SiteCtaAction = 'booking' | 'signup' | 'url'
 
@@ -413,6 +426,38 @@ export interface SiteHeader {
   showSignIn?: boolean
   /** Per-surface overrides for the auto-derived links. See SiteSurfaceLinkConfig. */
   surfaceLinks?: SiteSurfaceLinkConfig[]
+  /** A thin utility strip ABOVE the header — contact details, a login link.
+   *  Absent ⇒ no strip, today's header. */
+  topBar?: SiteTopBar
+}
+
+/**
+ * The utility strip above the header. Links are ordinary menu items so they
+ * share the menu's targets, sanitizer and translation keys — but FLAT: a strip
+ * with dropdowns is a second menu, and the publish sanitizer drops children.
+ */
+export interface SiteTopBar {
+  /** Free text on the leading side ("info@studio.ch · +41 …"). */
+  text?: string
+  items?: SiteMenuItem[]
+}
+
+/** One link column in the footer. `id` keys its heading's translation, so a
+ *  reorder cannot rebind one column's heading onto another. */
+export interface SiteFooterColumn {
+  id: string
+  heading?: string
+  /** Flat, like the top bar. */
+  items: SiteMenuItem[]
+}
+
+/** A partner / certification logo in the footer strip. */
+export interface SiteFooterLogo {
+  url: string
+  /** Where the logo links to. Absent ⇒ not a link. */
+  link?: string
+  /** Alt text — the partner's name. */
+  alt?: string
 }
 
 /**
@@ -451,8 +496,22 @@ export function resolveSiteSurfaceLinks(
     .map(({ surface, label }) => ({ surface, label }))
 }
 
+/**
+ * The footer. Everything past `showSocial` is optional and absent on every
+ * site that predates it, which renders exactly the footer it always had.
+ */
 export interface SiteFooter {
   showSocial: boolean
+  /** A line of prose — an address block, a tagline. Plain text, pre-line. */
+  text?: string
+  /** Link columns ("Unsere Angebote", "Gut zu wissen"). */
+  columns?: SiteFooterColumn[]
+  /** Partner / certification logos, shown as a strip above the footer. */
+  logos?: SiteFooterLogo[]
+  /** Store badges for the studio's member app. */
+  appLinks?: { ios?: string; android?: string }
+  /** The bottom row — Impressum, Datenschutz, AGB. Flat. */
+  legal?: SiteMenuItem[]
 }
 
 export interface SiteMeta {
@@ -504,7 +563,20 @@ export interface SiteMeta {
    *  text and not for the page. That is the bug presets exist to remove. */
   theme: SiteTheme
   accentColor: string
+  /** Body typeface — and headings too, unless `headingFont` says otherwise. */
   font: SiteFont
+  /** A separate display face for headings. Absent ⇒ `font`. */
+  headingFont?: SiteFont
+  /** Headings set in capitals. Absent ⇒ 'normal', today's look. */
+  headingCase?: 'normal' | 'uppercase'
+  /** The shape of every call-to-action button. Absent ⇒ 'pill', today's look. */
+  buttonShape?: 'pill' | 'rounded' | 'square'
+  /** Button fill, when it should differ from the accent (a black button on a
+   *  blue-accented site). Absent ⇒ the accent colour, today's look. */
+  buttonColor?: string
+  /** The studio's logo, shown in the header in place of the site title. The
+   *  title stays the accessible name. Absent ⇒ the title as text. */
+  logoUrl?: string
   // Optional custom page background (a hex color or full CSS value, e.g. a
   // linear-gradient). Overrides the theme's default page background; the header
   // keeps a theme-based translucent bar. Text stays theme-driven, so pick a

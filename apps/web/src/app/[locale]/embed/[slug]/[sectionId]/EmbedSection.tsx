@@ -21,13 +21,17 @@ import type {
   SiteTranslationDoc,
 } from '@linyup/shared'
 import { SectionBlock, type RenderCtx } from '@/components/site/sections'
-import { buildPalette, FONT_STACK } from '@/components/site/theme'
+import { buildPalette } from '@/components/site/theme'
+import { siteBrandRootProps } from '@/components/site/siteFonts'
 import { EMBED_MESSAGE, isBookableAppHref, postToHost } from '@/lib/embedBridge'
 
 // What we render once resolution settles, independent of where it came from.
 interface Resolved {
   section: WebsiteSection
-  themeMeta: { theme: SiteMeta['theme']; accentColor?: string }
+  themeMeta: { theme: SiteMeta['theme']; accentColor?: string; buttonColor?: string }
+  /** A section embedded from a published site carries that site's brand;
+   *  a standalone widget has none and keeps today's look. */
+  brand?: Pick<SiteMeta, 'headingFont' | 'headingCase' | 'buttonShape'>
   font: SiteFont
   transparent: boolean
   slug: string
@@ -130,7 +134,8 @@ export default function EmbedSection({ slug, sectionId }: { slug: string; sectio
             if (!cancelled) {
               setResolved({
                 section: translated,
-                themeMeta: { theme: site.meta.theme, accentColor: site.meta.accentColor },
+                themeMeta: { theme: site.meta.theme, accentColor: site.meta.accentColor, buttonColor: site.meta.buttonColor },
+                brand: { headingFont: site.meta.headingFont, headingCase: site.meta.headingCase, buttonShape: site.meta.buttonShape },
                 font: site.meta.font,
                 transparent: false,
                 slug: site.slug,
@@ -267,7 +272,7 @@ export default function EmbedSection({ slug, sectionId }: { slug: string; sectio
   }
 
   const palette = buildPalette(resolved.themeMeta, systemDark)
-  const font = FONT_STACK[resolved.font] ?? FONT_STACK.sans
+  const brandRoot = siteBrandRootProps({ font: resolved.font, ...resolved.brand })
   const ctx: RenderCtx = {
     palette,
     slug: resolved.slug,
@@ -288,11 +293,11 @@ export default function EmbedSection({ slug, sectionId }: { slug: string; sectio
   return (
     <div
       ref={rootRef}
-      className="@container"
+      className={`@container ${brandRoot.className}`}
       style={{
         background: resolved.transparent ? 'transparent' : palette.bg,
         color: palette.text,
-        fontFamily: font,
+        ...brandRoot.style,
       }}
     >
       <SectionBlock section={resolved.section} ctx={ctx} />

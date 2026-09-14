@@ -14,7 +14,8 @@ import type {
 } from '@linyup/shared'
 import { resolveThemePreset } from '@linyup/shared'
 import { deriveSiteMenu } from '@linyup/shared'
-import { buildPalette, FONT_STACK, ctaHref } from './theme'
+import { buildPalette, ctaHref } from './theme'
+import { siteBrandRootProps } from './siteFonts'
 import { SectionBlock, sectionNavLabel, bookProps, SOCIAL_ICONS, type RenderCtx } from './sections'
 import type { BookIntent } from '@/components/booking/BookingOverlay'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
@@ -140,7 +141,8 @@ export default function WebsiteRenderer({
 
   const effectiveDark = toggleEnabled && override ? override === 'dark' : systemDark
   const palette = buildPalette(site.meta, effectiveDark)
-  const font = FONT_STACK[site.meta.font] ?? FONT_STACK.sans
+  // Fonts, heading case and button shape, as root CSS variables (see siteFonts).
+  const brandRoot = siteBrandRootProps(site.meta)
   const ctx: RenderCtx = {
     palette,
     slug: site.slug,
@@ -294,8 +296,61 @@ export default function WebsiteRenderer({
   const socials = (site.socialLinks ?? []).filter((s) => s.url)
   const year = new Date().getFullYear()
 
+  /** A FLAT link list — top bar, footer column, legal row — resolved exactly
+   *  like the header menu, so a link to a deleted section or an unavailable
+   *  surface drops out instead of rendering dead. Groups have no destination
+   *  and nothing to open in a strip, so they are skipped. */
+  function flatLinks(items: readonly SiteMenuItem[] | undefined): { id: string; href: string; label: string }[] {
+    return (items ?? []).flatMap((item) => {
+      const resolved = resolveItem(item)
+      return resolved?.href ? [{ id: item.id, href: resolved.href, label: resolved.label }] : []
+    })
+  }
+
+  const topBar = site.meta.header.topBar
+  const topBarLinks = flatLinks(topBar?.items)
+  const footer = site.meta.footer
+  const footerColumns = (footer.columns ?? [])
+    .map((column) => ({ ...column, links: flatLinks(column.items) }))
+    .filter((column) => column.heading || column.links.length > 0)
+  const footerLogos = footer.logos ?? []
+  const legalLinks = flatLinks(footer.legal)
+  const appLinks = footer.appLinks
+  const hasFooterGrid = !!footer.text || footerColumns.length > 0 || !!appLinks?.ios || !!appLinks?.android
+
   return (
-    <div className="@container min-h-full w-full" style={{ background: palette.bg, color: palette.text, fontFamily: font }}>
+    <div
+      className={`@container min-h-full w-full ${brandRoot.className}`}
+      style={{ ...brandRoot.style, background: palette.bg, color: palette.text }}
+    >
+      {/* Top bar — scrolls away above the sticky header. */}
+      {(topBar?.text || topBarLinks.length > 0) && (
+        <div className="text-xs" style={{ background: palette.surface, borderBottom: `1px solid ${palette.border}` }}>
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-2">
+            {topBar?.text ? (
+              <p style={{ color: palette.muted }}>{topBar.text}</p>
+            ) : (
+              <span />
+            )}
+            {topBarLinks.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {topBarLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={preview ? undefined : link.href}
+                    onClick={preview ? inert : undefined}
+                    className="font-medium transition-opacity hover:opacity-70"
+                    style={{ color: palette.text }}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header
         className="sticky top-0 z-20 backdrop-blur"
@@ -305,10 +360,17 @@ export default function WebsiteRenderer({
           <a
             href={preview ? undefined : '#top'}
             onClick={preview ? inert : undefined}
-            className="font-bold tracking-tight"
+            className="flex items-center font-bold tracking-tight"
             style={{ color: palette.text }}
           >
-            {site.meta.title || site.name}
+            {site.meta.logoUrl ? (
+              // A plain <img>: the logo is an arbitrary tenant URL, so next/image
+              // would need every host allow-listed. The title stays the name.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={site.meta.logoUrl} alt={site.meta.title || site.name} className="h-8 w-auto max-w-[200px] object-contain" />
+            ) : (
+              site.meta.title || site.name
+            )}
           </a>
           <nav className="hidden items-center gap-5 @3xl:flex">
             {/* ── LEVELS 1 AND 2+, DRAWN DIFFERENTLY ──────────────────────
@@ -326,7 +388,7 @@ export default function WebsiteRenderer({
                   key={top.item.id}
                   href={preview || !top.resolved.href ? undefined : top.resolved.href}
                   onClick={preview ? inert : undefined}
-                  className="text-sm transition-opacity hover:opacity-70"
+                  className="whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                   style={{ color: palette.muted }}
                 >
                   {top.resolved.label}
@@ -346,7 +408,7 @@ export default function WebsiteRenderer({
                     <a
                       href={preview ? undefined : top.resolved.href}
                       onClick={preview ? inert : undefined}
-                      className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-70"
+                      className="inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                       style={{ color: palette.muted }}
                     >
                       {top.resolved.label}
@@ -359,7 +421,7 @@ export default function WebsiteRenderer({
                     <button
                       type="button"
                       aria-expanded={false}
-                      className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-70"
+                      className="inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                       style={{ color: palette.muted }}
                     >
                       {top.resolved.label}
@@ -381,8 +443,8 @@ export default function WebsiteRenderer({
             {site.meta.header.ctaLabel && (
               <a
                 {...(headerBookProps ?? headerLinkProps)}
-                className="rounded-full px-4 py-1.5 text-sm font-semibold"
-                style={{ background: palette.accent, color: palette.onAccent }}
+                className="site-btn shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold"
+                style={{ background: palette.button, color: palette.onButton }}
               >
                 {site.meta.header.ctaLabel}
               </a>
@@ -473,8 +535,8 @@ export default function WebsiteRenderer({
                     if (headerBookProps) headerBookProps.onClick?.(e)
                     else if (preview) inert(e)
                   }}
-                  className="mt-2 rounded-full px-4 py-2 text-center text-sm font-semibold"
-                  style={{ background: palette.accent, color: palette.onAccent }}
+                  className="site-btn mt-2 rounded-full px-4 py-2 text-center text-sm font-semibold"
+                  style={{ background: palette.button, color: palette.onButton }}
                 >
                   {site.meta.header.ctaLabel}
                 </a>
@@ -509,8 +571,104 @@ export default function WebsiteRenderer({
         ))}
       </main>
 
+      {/* Partner / certification logos — a strip above the footer. */}
+      {footerLogos.length > 0 && (
+        <div style={{ background: palette.bg, borderTop: `1px solid ${palette.border}` }}>
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-10 gap-y-6 px-6 py-8">
+            {footerLogos.map((logo, i) => {
+              // eslint-disable-next-line @next/next/no-img-element
+              const img = <img src={logo.url} alt={logo.alt ?? ''} className="h-10 w-auto max-w-[140px] object-contain" />
+              return logo.link ? (
+                <a
+                  key={i}
+                  href={preview ? undefined : logo.link}
+                  onClick={preview ? inert : undefined}
+                  target={preview ? undefined : '_blank'}
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-70"
+                >
+                  {img}
+                </a>
+              ) : (
+                <span key={i}>{img}</span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="py-10" style={{ background: palette.surface, borderTop: `1px solid ${palette.border}` }}>
+        {hasFooterGrid && (
+          <div
+            className="mx-auto mb-8 grid max-w-5xl gap-8 border-b px-6 pb-8 text-left @xl:grid-cols-2 @3xl:grid-cols-4"
+            style={{ borderColor: palette.border }}
+          >
+            <div className="space-y-3">
+              {site.meta.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={site.meta.logoUrl} alt={site.meta.title || site.name} className="h-8 w-auto max-w-[180px] object-contain" />
+              ) : (
+                <p className="font-bold tracking-tight" style={{ color: palette.text }}>
+                  {site.meta.title || site.name}
+                </p>
+              )}
+              {footer.text && (
+                <p className="whitespace-pre-line text-sm" style={{ color: palette.muted }}>
+                  {footer.text}
+                </p>
+              )}
+              {(appLinks?.ios || appLinks?.android) && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {/* Store names are proper nouns — not translated. */}
+                  {(
+                    [
+                      ['App Store', appLinks?.ios],
+                      ['Google Play', appLinks?.android],
+                    ] as const
+                  ).map(([store, href]) =>
+                    href ? (
+                      <a
+                        key={store}
+                        href={preview ? undefined : href}
+                        onClick={preview ? inert : undefined}
+                        target={preview ? undefined : '_blank'}
+                        rel="noopener noreferrer"
+                        className="rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+                        style={{ background: palette.text, color: palette.bg }}
+                      >
+                        {store}
+                      </a>
+                    ) : null
+                  )}
+                </div>
+              )}
+            </div>
+            {footerColumns.map((column) => (
+              <div key={column.id} className="space-y-2">
+                {column.heading && (
+                  <p className="text-sm font-semibold" style={{ color: palette.text }}>
+                    {column.heading}
+                  </p>
+                )}
+                <ul className="space-y-1.5">
+                  {column.links.map((link) => (
+                    <li key={link.id}>
+                      <a
+                        href={preview ? undefined : link.href}
+                        onClick={preview ? inert : undefined}
+                        className="text-sm transition-opacity hover:opacity-70"
+                        style={{ color: palette.muted }}
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-6 text-center">
           {site.meta.footer.showSocial && socials.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2">
@@ -534,6 +692,21 @@ export default function WebsiteRenderer({
             </div>
           )}
           <p className="text-sm" style={{ color: palette.muted }}>© {year} {site.name}</p>
+          {legalLinks.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+              {legalLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={preview ? undefined : link.href}
+                  onClick={preview ? inert : undefined}
+                  className="text-xs transition-opacity hover:opacity-70"
+                  style={{ color: palette.muted }}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          )}
           {site.showBranding && (
             <p className="text-xs" style={{ color: palette.muted }}>
               {t('poweredBy')}{' '}
