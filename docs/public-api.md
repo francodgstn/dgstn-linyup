@@ -153,7 +153,7 @@ The read layer reuses the resolvers the rest of the product answers with — `co
 - **Phase 0 — staging spike.** A hello-world `api` behind a Hosting `api` target on staging, to
   verify: the rewrite reaches a europe-west6 gen2 function and forwards `Authorization`; no caching;
   cold start well under the 10 s connector budget; claude.ai and ChatGPT choose CIMD; MCP SDK v2
-  stability. **Findings: not run yet.**
+  stability. **Run 2026-09-14 (infrastructure only), then removed** — findings below.
 - **Phase 1 — foundation over API keys.** Shared vocabulary + field catalog + projections; principal
   and credential writer; API key callables and the Settings screen; read layer; `/v1` and `/mcp`
   accepting keys; the `api-connectors` plugin with its teardown arm.
@@ -162,3 +162,28 @@ The read layer reuses the resolvers the rest of the product answers with — `co
 - **Phase 3 — on demand.** DCR fallback, usage dashboard and per-call access log, public developer
   docs, directory submissions, webhooks / incremental sync (needs a `Contact.updated_at` writer),
   more resources (waivers first), organisation principals, writes.
+
+## Phase 0 findings (staging, 2026-09-14)
+
+`api` was deployed from the feature branch (commit `4fcb87cb`) to `linyup-staging` behind a
+temporary Hosting site `linyup-staging-api` with `rewrites: ** → function api (europe-west6)`,
+exercised with a temporary key on `seed-team-studio`, then **all of it was deleted** (function,
+site, key, usage counter). The claude.ai / ChatGPT client-registration test was deferred to
+Phase 2, where the OAuth endpoints it needs are built.
+
+| Question | Answer |
+|---|---|
+| Does a Hosting rewrite reach a gen2 function in europe-west6? | Yes. |
+| Is `Authorization` forwarded? | Yes — `/v1/me` through the rewrite resolved the key. A 401 keeps its `WWW-Authenticate`. |
+| Does Hosting cache responses? | No, with `Cache-Control: private, no-store`: repeated calls `x-cache: MISS`, and a wrong key straight after a success got 401. |
+| CORS preflight through the rewrite | 204, `Access-Control-Allow-Origin: *`. |
+| Hosting overhead (warm, 10 calls) | median 126 ms through Hosting vs 63 ms direct — about +60 ms. |
+| Cold start | The instance started at deploy took **5.3 s** from "Starting new instance" to a passing startup probe — Node loading the whole functions index. Inside the 10 s connector budget but not by much: plan `minInstances: 1` on `api` in production, or trim what `index.ts` loads for it. |
+| Concurrency | 120 concurrent `/health` calls were served by one instance (concurrency 40): all 200, median 409 ms, max 509 ms. |
+| MCP over the network | The SDK client connected through Hosting; connect + three tool calls in 1.2 s. |
+| Deploying from a laptop | Needs `FUNCTIONS_DISCOVERY_TIMEOUT=120` (the CLI's 10 s local discovery times out loading the index on Windows) and `scripts/vendor-shared-for-deploy.mjs` (which rewrites `packages/functions/package.json` — revert it afterwards). |
+
+**One defect found:** behind the Hosting rewrite the request's `Host` is the Cloud Run host, so
+`/v1/openapi.json` advertised `https://api-…-oa.a.run.app` as its server. Set `API_BASE_URL`
+(`https://api.linyup.com`) in every deployed environment when the Hosting target lands; the host
+fallback in `publicBaseUrl` is only right on the emulator and on cloudfunctions.net.
