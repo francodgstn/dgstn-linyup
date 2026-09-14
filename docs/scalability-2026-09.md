@@ -648,8 +648,9 @@ under any quota.
 ### Where the cost numbers actually come from (added 2026-09-12)
 
 The figures above are ESTIMATES from list prices. What the platform now measures,
-on the operator console's **Providers** page, is whatever each vendor will
-actually tell us — and that is three vendors out of nine:
+in the **Spend & usage** section at the top of the operator console's
+**Providers** page, is whatever each vendor will actually tell us — and only
+these vendors tell us anything:
 
 | Vendor | What it reports | How |
 |---|---|---|
@@ -722,10 +723,10 @@ BYO Stripe and Payrexx are the studio's own gateway and **fee-blind by design**,
 contributing zero rather than an estimate; `teams_missing_report` names how many
 tenants had no report, so a partial total is visibly partial.
 
-**Cloudflare, PostHog and EAS expose nothing usable**, and the two store portals
-report revenue rather than cost — each of those cards says so in place of a
-number, because an unexplained blank on a cost page invites the reader to assume
-zero.
+**Cloudflare, PostHog and EAS expose nothing usable**, and the store portals
+report revenue rather than cost — the page lists the reason for each vendor it
+shows beneath the cost cards, because an unexplained blank on a cost page
+invites the reader to assume zero.
 
 ## 13. Secondary limits, roughly in the order they bind
 
