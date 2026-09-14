@@ -2186,7 +2186,9 @@
     "subTypeNoPrices": "Noch kein Preis — dieser Plan hält nur einen Namen fest.",
     "subTypeIntroSummary": "{amount} für {periods, plural, one {die erste Periode} other {die ersten # Perioden}}",
     "subTypeLimitSummary": "Bis zu {count, plural, one {# Kurs} other {# Kurse}} {per, select, day {pro Tag} week {pro Woche} month {pro Monat} other {pro Monat}}",
-    "subTypeNoLimit": "Keine Buchungsbegrenzung."
+    "subTypeNoLimit": "Keine Buchungsbegrenzung.",
+    "paymentsWebhookSecretRequired": "Payrexx benötigt den Webhook-Signaturschlüssel. Ohne ihn werden keine Zahlungen erfasst.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Erforderlich. Wird verwendet, um <code>X-Webhook-Signature</code> bei jedem eingehenden Zahlungs-Webhook zu prüfen. Ohne ihn werden keine Zahlungen erfasst."
   },
   "Bookings": {
     "title": "Buchungen",

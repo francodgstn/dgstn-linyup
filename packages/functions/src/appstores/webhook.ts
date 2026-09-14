@@ -30,10 +30,9 @@
  *
  * ── IT FAILS CLOSED ────────────────────────────────────────────────────────
  * No secret configured ⇒ 503, not "accept and warn". This is an endpoint on the
- * open internet that writes to Firestore; the setup-phase leniency in
- * `billing/handlePayrexxWebhook.ts` is not appropriate here, and a webhook
- * cannot be registered in ASC without a secret anyway, so the lenient branch
- * would only ever serve an attacker.
+ * open internet that writes to Firestore, and a webhook cannot be registered in
+ * ASC without a secret anyway, so a lenient branch would only ever serve an
+ * attacker.
  *
  * Payload shape (JSON:API-ish), verified against Apple's documented examples:
  *   { data: { type, id, version, attributes: {...}, relationships: { instance } } }

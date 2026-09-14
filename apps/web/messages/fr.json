@@ -2186,7 +2186,9 @@
     "subTypeNoPrices": "Aucun prix pour l'instant — cette formule ne porte qu'un nom.",
     "subTypeIntroSummary": "{amount} pour {periods, plural, one {la première période} other {les # premières périodes}}",
     "subTypeLimitSummary": "Jusqu'à {count, plural, one {# cours} other {# cours}} {per, select, day {par jour} week {par semaine} month {par mois} other {par mois}}",
-    "subTypeNoLimit": "Aucune limite de réservation."
+    "subTypeNoLimit": "Aucune limite de réservation.",
+    "paymentsWebhookSecretRequired": "Payrexx nécessite la clé de signature du webhook. Sans elle, aucun paiement n'est enregistré.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Obligatoire. Utilisée pour vérifier <code>X-Webhook-Signature</code> sur chaque webhook de paiement entrant. Sans elle, aucun paiement n'est enregistré."
   },
   "Bookings": {
     "title": "Réservations",
