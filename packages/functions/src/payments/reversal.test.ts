@@ -631,6 +631,7 @@ describe('reversePaymentEffects — the read set', () => {
     })
     assert.deepEqual(reads, [
       'contacts/ct1',
+      'contacts/ct1/plan_grants/pi_1',
       'contacts/ct1/credit_grants/pi_1',
       'courses/c1/purchases/ct1',
     ])
@@ -655,6 +656,63 @@ describe('reversePaymentEffects — the read set', () => {
       credits: 'left',
       creditsRevoked: 0,
       course: 'left',
+      planGrant: 'left',
     })
+  })
+})
+
+describe('reversePaymentEffects — the plan grant the payment made', () => {
+  const CLEAR = {
+    subscription: 'clear_if_owned' as const,
+    credits: { op: 'leave' as const },
+    course: 'leave' as const,
+  }
+
+  it('ends the grant keyed by the refunded payment, and keeps the row', async () => {
+    const { db, ops } = mockDb({
+      'contacts/ct1/plan_grants/pi_1': { subscription_type_id: 'st1', ended_at: null },
+    })
+    const out = await reversePaymentEffects(db, {
+      teamId: 't1',
+      contactId: 'ct1',
+      paymentRef: 'pi_1',
+      lineItem: { kind: 'subscription', subscriptionTypeId: 'st1' },
+      plan: CLEAR,
+    })
+    assert.equal(out.planGrant, 'ended')
+    const end = ops.updates.find((u) => u.path === 'contacts/ct1/plan_grants/pi_1')
+    assert.ok(end, 'the grant was ended')
+    assert.equal(end.data.ended_reason, 'refund')
+    assert.deepEqual(ops.deletes, [], 'never deleted')
+  })
+
+  it('reports absent — and writes nothing — when the grant is already ended', async () => {
+    const { db, ops } = mockDb({
+      'contacts/ct1/plan_grants/pi_1': { subscription_type_id: 'st1', ended_at: { seconds: 1 } },
+    })
+    const out = await reversePaymentEffects(db, {
+      teamId: 't1',
+      contactId: 'ct1',
+      paymentRef: 'pi_1',
+      lineItem: { kind: 'subscription', subscriptionTypeId: 'st1' },
+      plan: CLEAR,
+    })
+    assert.equal(out.planGrant, 'absent')
+    assert.equal(ops.updates.filter((u) => u.path.includes('/plan_grants/')).length, 0)
+  })
+
+  it('a grant made by a DIFFERENT payment is out of reach: it is addressed by doc id only', async () => {
+    const { db, ops } = mockDb({
+      'contacts/ct1/plan_grants/pi_other': { subscription_type_id: 'st1', ended_at: null },
+    })
+    const out = await reversePaymentEffects(db, {
+      teamId: 't1',
+      contactId: 'ct1',
+      paymentRef: 'pi_1',
+      lineItem: { kind: 'subscription', subscriptionTypeId: 'st1' },
+      plan: CLEAR,
+    })
+    assert.equal(out.planGrant, 'absent')
+    assert.equal(ops.updates.length, 0)
   })
 })

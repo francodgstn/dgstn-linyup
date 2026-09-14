@@ -191,10 +191,20 @@ const CENSUS: Record<string, CensusEntry> = {
     writers: [],
     note: 'the credit grant document',
   },
+  'packages/functions/src/contacts/planCallables.ts': {
+    sites: 16,
+    writers: ['subscription_type_id: plan.subscriptionTypeId', 'subscription_type_id: null'],
+    note: "the staff plan callables' bridge: set to the plan given, cleared when nothing open still holds it",
+  },
+  'packages/functions/src/contacts/planGrants.ts': {
+    sites: 6,
+    writers: [],
+    note: "plan grant rows name their plan; nothing here writes the contact's slot",
+  },
   'packages/functions/src/ops/demoTenant.ts': {
-    sites: 2,
+    sites: 4,
     writers: ['subscription_type_id: SUBSCRIPTION_TYPE_ID'],
-    note: "the review studio's demo contacts",
+    note: "the review studio's demo contacts (the slot, as the bridge) and the plan grant each one is given",
   },
   'packages/functions/src/payments/effects.ts': {
     sites: 11,
@@ -237,15 +247,10 @@ const CENSUS: Record<string, CensusEntry> = {
   },
 
   // ── web ───────────────────────────────────────────────────────────────────
-  'apps/web/src/app/[locale]/(auth)/contacts/page.tsx': {
-    sites: 7,
-    writers: ['subscription_type_id: type?.id ?? null'],
-    note: 'bulk assign — replaces the slot on every selected contact',
-  },
   'apps/web/src/app/[locale]/(auth)/contacts/[id]/page.tsx': {
-    sites: 16,
-    writers: ['subscription_type_id: typeId', 'subscription_type_id: null'],
-    note: "the staff plan dialog's save and clear; the header chips' fallback object is display, not a write",
+    sites: 2,
+    writers: [],
+    note: "the header chips' fallback object is display; the plan dialog saves and clears through the plan callables",
   },
   'apps/web/src/app/[locale]/(public)/public/[slug]/space/SpaceHome.tsx': {
     sites: 1,
@@ -264,11 +269,6 @@ const CENSUS: Record<string, CensusEntry> = {
   },
 
   // ── scripts ───────────────────────────────────────────────────────────────
-  'scripts/backfill-plan-grants.ts': {
-    sites: 2,
-    writers: [],
-    note: 'the imported plan_grants row names its plan; the slot is only read',
-  },
   'scripts/lib/fixtures/money.ts': {
     sites: 3,
     writers: [],

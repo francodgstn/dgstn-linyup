@@ -70,11 +70,16 @@ export interface RecomputeResult {
  */
 export async function recomputeHeldPlans(
   contactId: string,
-  opts: { nowMs?: number; apply?: boolean } = {}
+  opts: {
+    nowMs?: number
+    apply?: boolean
+    /** A script holding more than one app (the HMD migration) names its target. */
+    db?: admin.firestore.Firestore
+  } = {}
 ): Promise<RecomputeResult> {
   const nowMs = opts.nowMs ?? Date.now()
   const apply = opts.apply ?? true
-  const db = admin.firestore()
+  const db = opts.db ?? admin.firestore()
   const contactRef = db.collection(CONTACTS_COLLECTION).doc(contactId)
 
   return db.runTransaction(async (tx) => {

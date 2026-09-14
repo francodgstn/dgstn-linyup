@@ -113,6 +113,7 @@ import {
 import { seedTeamMoney } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
+import { importPlanGrants } from './lib/planGrantImport'
 
 const PROJECT_ID = 'linyup-staging'
 
@@ -2455,6 +2456,12 @@ async function main() {
   // console provisions, with its fixed code (scripts/lib/mobile.ts).
   const memberApp = await seedReviewTenant({ db, seededBy: 'seed-staging' })
   await seedMobileSettings({ db, seededBy: 'seed-staging' })
+
+  // Every seeded plan as a plan grant, and every plan list built
+  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
+  // migration run, so a seeded tenant starts in the shape production will have.
+  const planGrants = await importPlanGrants(db, { teamIds: ['seed-team-coach', 'seed-team-studio', 'seed-org-team-a', 'seed-org-team-b'], apply: true })
+  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
 
   console.log('\n✅ Staging seeded successfully!\n')
   console.log('   ┌──────────────────────┬──────────────────────┬────────────┬──────────┐')

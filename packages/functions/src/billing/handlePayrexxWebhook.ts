@@ -46,6 +46,7 @@ import {
 import type { PayrexxGatewayConfig } from '@linyup/shared'
 import { recordFinanceTransaction } from '../finance/journal'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
+import { planGrantsCollection, setPaymentPlanGrantInTx } from '../contacts/planGrants'
 
 export const handlePayrexxWebhook = onRequest(
   { invoker: 'public' },
@@ -175,6 +176,7 @@ export const handlePayrexxWebhook = onRequest(
     // Suggest the subscription-type name when this payment maps to one, else a
     // generic Payrexx label. A manager can edit it via updatePaymentRecord.
     let comment = 'Payrexx payment'
+    let subscriptionTypeName: string | null = null
     if (subscriptionTypeId) {
       const [, typeSnap] = await to(
         db
@@ -185,7 +187,10 @@ export const handlePayrexxWebhook = onRequest(
           .get()
       )
       const name = typeSnap?.exists ? (typeSnap.data()?.name as string | undefined) : undefined
-      if (name) comment = name
+      if (name) {
+        comment = name
+        subscriptionTypeName = name
+      }
     }
 
     // ── 9. Match the contact (UNIQUE active email match only) ──────────────────
@@ -204,6 +209,14 @@ export const handlePayrexxWebhook = onRequest(
         if (existing.exists) {
           throw new Error('already_processed')
         }
+        // The plan grant this payment makes (docs/multi-plan-holdings.md), keyed
+        // by the payment event like every payment's grant — so a manager's later
+        // assignment of the same payment converges on it. Read before any write.
+        const grantRef =
+          contactId && subscriptionTypeId
+            ? planGrantsCollection(db, contactId).doc(paymentEventRef.id)
+            : null
+        const grantSnap = grantRef ? await tx.get(grantRef) : null
 
         // Record the payment event (immutable audit trail) — always, even when
         // unassigned, so no payment is ever dropped.
@@ -236,6 +249,22 @@ export const handlePayrexxWebhook = onRequest(
           }
           if (subscriptionTypeId) contactUpdate.subscription_type_id = subscriptionTypeId
           tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), contactUpdate)
+        }
+        // The slot id above is the bridge until the readers move; the grant is
+        // the holding — with the plan's name, and the period Payrexx says it covers.
+        if (grantRef && grantSnap && subscriptionTypeId) {
+          setPaymentPlanGrantInTx(tx, grantRef, grantSnap, {
+            teamId,
+            subscriptionTypeId,
+            subscriptionTypeName,
+            priceId: null,
+            recurrence: null,
+            amountMajor:
+              typeof transaction.amount === 'number' ? Math.round(transaction.amount) / 100 : null,
+            expiresAt: membershipExpiration,
+            source: 'gateway',
+            paymentRef: paymentEventRef.id,
+          })
         }
       })
     )

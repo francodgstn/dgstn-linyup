@@ -67,6 +67,19 @@ import {
   reportStripeShape,
 } from '../utils/stripe/objectShape'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
+import { planGrantsCollection, setPaymentPlanGrantInTx } from '../contacts/planGrants'
+
+/** The studio's name for a plan, for the plan grant a payment makes; null when unknown. */
+async function subscriptionTypeNameOf(
+  db: admin.firestore.Firestore,
+  teamId: string,
+  typeId: string
+): Promise<string | null> {
+  const [, snap] = await to(
+    db.collection(TEAMS_COLLECTION).doc(teamId).collection(SUBSCRIPTION_TYPES_SUBCOLLECTION).doc(typeId).get()
+  )
+  return snap?.exists ? ((snap.data()?.name as string | undefined) ?? null) : null
+}
 
 // Stripe SDK instance used ONLY for webhook signature verification. Verification
 // is pure crypto (HMAC of the raw body against the signing secret) — no API key is
@@ -272,6 +285,9 @@ async function enrichPaymentRow(
   if (!extracted.email) return { result: 'nothing_to_add', contactId: null }
 
   const { contactId } = await resolveSingleContact(teamId, extracted.email)
+  // The plan grant needs the plan's name, looked up before the transaction.
+  const preTypeId = (data.subscription_type_id as string | null | undefined) ?? extracted.subscriptionTypeId
+  const preTypeName = contactId && preTypeId ? await subscriptionTypeNameOf(db, teamId, preTypeId) : null
 
   // Guarded write: only claims the blanks it read, so a concurrent recording
   // event that filled them first wins and this becomes a no-op.
@@ -280,6 +296,12 @@ async function enrichPaymentRow(
       const fresh = await tx.get(eventRef)
       const d = fresh.data() ?? {}
       if (!fresh.exists || d.contact_id || d.email) throw new Error('raced')
+      // The plan grant this payment makes (docs/multi-plan-holdings.md), keyed by
+      // the payment event. Read before any write.
+      const grantTypeId = (d.subscription_type_id as string | null) ?? extracted.subscriptionTypeId
+      const grantRef =
+        contactId && grantTypeId ? planGrantsCollection(db, contactId).doc(eventRef.id) : null
+      const grantSnap = grantRef ? await tx.get(grantRef) : null
       tx.set(
         eventRef,
         {
@@ -293,6 +315,20 @@ async function enrichPaymentRow(
         const typeId = (d.subscription_type_id as string | null) ?? extracted.subscriptionTypeId
         if (typeId) update.subscription_type_id = typeId
         tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), update)
+      }
+      // The slot id above is the bridge until the readers move; the grant is the holding.
+      if (grantRef && grantSnap && grantTypeId) {
+        setPaymentPlanGrantInTx(tx, grantRef, grantSnap, {
+          teamId,
+          subscriptionTypeId: grantTypeId,
+          subscriptionTypeName: grantTypeId === preTypeId ? preTypeName : null,
+          priceId: null,
+          recurrence: null,
+          amountMajor: typeof d.amount === 'number' ? Math.round(d.amount) / 100 : null,
+          expiresAt: null,
+          source: 'gateway',
+          paymentRef: eventRef.id,
+        })
       }
     })
   )
@@ -408,6 +444,7 @@ export const handleTeamStripeWebhook = onRequest({ invoker: 'public' }, async (r
     // Default "what was paid" suggestion: the subscription-type name when mapped,
     // else a generic Stripe label. A manager can edit it via updatePaymentRecord.
     let comment = 'Stripe payment'
+    let subscriptionTypeName: string | null = null
     if (extracted.subscriptionTypeId) {
       const [, typeSnap] = await to(
         db
@@ -418,7 +455,10 @@ export const handleTeamStripeWebhook = onRequest({ invoker: 'public' }, async (r
           .get()
       )
       const name = typeSnap?.exists ? (typeSnap.data()?.name as string | undefined) : undefined
-      if (name) comment = name
+      if (name) {
+        comment = name
+        subscriptionTypeName = name
+      }
     }
 
     // Match the contact (UNIQUE active email match only); none/ambiguous → unassigned.
@@ -433,6 +473,13 @@ export const handleTeamStripeWebhook = onRequest({ invoker: 'public' }, async (r
       db.runTransaction(async (tx) => {
         const existing = await tx.get(eventRef)
         if (existing.exists) throw new Error('already_processed')
+        // The plan grant this payment makes (docs/multi-plan-holdings.md), keyed by
+        // the payment event. Read before any write.
+        const grantRef =
+          contactId && extracted.subscriptionTypeId
+            ? planGrantsCollection(db, contactId).doc(eventRef.id)
+            : null
+        const grantSnap = grantRef ? await tx.get(grantRef) : null
         tx.set(eventRef, {
           gateway: 'stripe',
           gatewayRef: extracted.ref,
@@ -458,6 +505,20 @@ export const handleTeamStripeWebhook = onRequest({ invoker: 'public' }, async (r
           const update: Record<string, unknown> = { last_payment_at: FieldValue.serverTimestamp() }
           if (extracted.subscriptionTypeId) update.subscription_type_id = extracted.subscriptionTypeId
           tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), update)
+        }
+        // The slot id above is the bridge until the readers move; the grant is the holding.
+        if (grantRef && grantSnap && extracted.subscriptionTypeId) {
+          setPaymentPlanGrantInTx(tx, grantRef, grantSnap, {
+            teamId,
+            subscriptionTypeId: extracted.subscriptionTypeId,
+            subscriptionTypeName,
+            priceId: null,
+            recurrence: null,
+            amountMajor: extracted.amount != null ? Math.round(extracted.amount) / 100 : null,
+            expiresAt: null,
+            source: 'gateway',
+            paymentRef: eventRef.id,
+          })
         }
       })
     )

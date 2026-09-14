@@ -96,7 +96,6 @@ import {
   contactDeletionState,
   readAlert,
   alertIsFired,
-  planGrantExpiryMs,
   planGrantIsCurrent,
   personInitials,
   ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
@@ -3101,25 +3100,28 @@ function SetSubscriptionDialog({
         qc.invalidateQueries({ queryKey: ['contact-member-subscriptions', teamId, contact.id] })
       }
 
-      const typeName = subTypes.find((s) => s.id === typeId)?.name ?? ''
+      // The SERVER gives the plan (docs/multi-plan-holdings.md, phase 2) — the
+      // rules refuse this write from the browser. Saving this single-plan dialog
+      // REPLACES: the callable ends every open plan, gives the new one (its end
+      // date computed from the chosen price there), and keeps the legacy slot
+      // in step until the readers move to the plan list.
       const chosenPrice = activePrices.find((p) => p.id === priceId)
-      // The grant's own end date, from the chosen price ("2 months included").
-      // WRITTEN WHOLE, null included — assigning a monthly plan to someone whose
-      // intro lapsed must ERASE that old date, or the plan she was just given is
-      // already expired and no screen would explain why.
-      const grantExpiryMs = planGrantExpiryMs(chosenPrice)
-      await updateDoc(doc(db, CONTACTS_COLLECTION, contact.id), {
-        subscription_type_id: typeId,
-        subscription_type_name: typeName,
-        subscription_price_id: chosenPrice ? chosenPrice.id : null,
-        subscription_recurrence: chosenPrice ? chosenPrice.recurrence : recurrence || null,
-        subscription_amount: chosenPrice ? chosenPrice.amount : null,
-        subscription_expires_at: grantExpiryMs === null ? null : Timestamp.fromMillis(grantExpiryMs),
-        subscription_type_updated_at: serverTimestamp(),
-        // Assigning a subscription materializes a provisional lead (offline-paid
-        // members count toward the cap too). See Contact.provisional.
-        provisional: deleteField(),
-        provisional_expires_at: deleteField(),
+      const assignFn = httpsCallable<
+        {
+          contactId: string
+          subscriptionTypeId: string
+          priceId: string | null
+          recurrence: string | null
+          replace: boolean
+        },
+        { grantId: string }
+      >(functions, 'assignPlan')
+      await assignFn({
+        contactId: contact.id,
+        subscriptionTypeId: typeId,
+        priceId: chosenPrice ? chosenPrice.id : null,
+        recurrence: chosenPrice ? null : recurrence || null,
+        replace: true,
       })
       onSaved()
       onOpenChange(false)
@@ -3160,16 +3162,13 @@ function SetSubscriptionDialog({
         }
         qc.invalidateQueries({ queryKey: ['contact-member-subscriptions', teamId, contact.id] })
       }
-      await updateDoc(doc(db, CONTACTS_COLLECTION, contact.id), {
-        subscription_type_id: null,
-        subscription_type_name: null,
-        subscription_price_id: null,
-        subscription_recurrence: null,
-        subscription_amount: null,
-        // Goes with the grant it described — see the assign branch above.
-        subscription_expires_at: null,
-        subscription_type_updated_at: serverTimestamp(),
-      })
+      // Ends every open plan the contact holds and empties the legacy slot, on
+      // the server (docs/multi-plan-holdings.md, phase 2).
+      const endFn = httpsCallable<{ contactId: string; allCurrent: true }, { ended: string[] }>(
+        functions,
+        'endPlan'
+      )
+      await endFn({ contactId: contact.id, allCurrent: true })
       onSaved()
       onOpenChange(false)
     } catch (err) {
