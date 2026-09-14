@@ -14,6 +14,15 @@
 // Signature: X-Webhook-Signature header — HMAC-SHA256(rawBody, signingSecret) as hex.
 // Constant-time comparison prevents timing attacks.
 //
+// IT FAILS CLOSED. No signing secret configured ⇒ 401 `no_signing_secret`, and
+// nothing past the integration read (which is where the secret lives) is read
+// or written. This endpoint is public and writes payments,
+// contacts, plan grants and journal rows; "no secret, warn and allow" let anyone
+// who knew a teamId forge a confirmed payment. 401 rather than a 200 no-op: it is
+// the same answer as every other authentication failure here, and a delivery
+// Payrexx retries after the owner pastes the secret is then recorded, where a
+// 200 would have lost that payment for good.
+//
 // Processing rules:
 //   • status must be 'confirmed'
 //   • mode must not be 'TEST' (override with ALLOW_TEST_PAYREXX=true env var for staging)
@@ -47,6 +56,33 @@ import type { PayrexxGatewayConfig } from '@linyup/shared'
 import { recordFinanceTransaction } from '../finance/journal'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
 import { planGrantsCollection, setPaymentPlanGrantInTx } from '../contacts/planGrants'
+
+export type PayrexxSignatureResult =
+  | { ok: true }
+  | { ok: false; reason: 'no_signing_secret' | 'missing_signature' | 'invalid_signature' }
+
+// Pure, so the fail-closed rule is testable without Firestore. The secret is
+// checked FIRST: an HMAC keyed with '' is something any caller can compute, so a
+// blank secret must never reach the comparison.
+export function verifyPayrexxSignature(
+  rawBody: Buffer,
+  header: string | undefined,
+  secret: string | undefined
+): PayrexxSignatureResult {
+  if (!secret || !secret.trim()) return { ok: false, reason: 'no_signing_secret' }
+  if (!header) return { ok: false, reason: 'missing_signature' }
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
+  try {
+    const expectedBuf = Buffer.from(expected, 'hex')
+    const receivedBuf = Buffer.from(header, 'hex')
+    if (expectedBuf.length === receivedBuf.length && crypto.timingSafeEqual(expectedBuf, receivedBuf)) {
+      return { ok: true }
+    }
+  } catch {
+    // Invalid hex in header
+  }
+  return { ok: false, reason: 'invalid_signature' }
+}
 
 export const handlePayrexxWebhook = onRequest(
   { invoker: 'public' },
@@ -83,40 +119,28 @@ export const handlePayrexxWebhook = onRequest(
     }
 
     const cfg = intSnap.docs[0].data().config as PayrexxGatewayConfig
-    const signingSecret = cfg.webhook_signing_secret ?? ''
 
-    // ── 3. Verify signature ───────────────────────────────────────────────────
-    const signatureHeader = req.headers['x-webhook-signature'] as string | undefined
-    if (!signatureHeader) {
-      console.warn(`[handlePayrexxWebhook] Missing X-Webhook-Signature team=${teamId}`)
-      res.status(401).json({ ok: false, reason: 'missing_signature' })
-      return
-    }
-
-    if (signingSecret) {
-      // rawBody is available on Firebase Functions v2 onRequest
-      const rawBody: Buffer =
-        (req as unknown as { rawBody?: Buffer }).rawBody ?? Buffer.from(JSON.stringify(req.body))
-      const expected = crypto.createHmac('sha256', signingSecret).update(rawBody).digest('hex')
-      let signatureValid = false
-      try {
-        const expectedBuf = Buffer.from(expected, 'hex')
-        const receivedBuf = Buffer.from(signatureHeader, 'hex')
-        signatureValid =
-          expectedBuf.length === receivedBuf.length &&
-          crypto.timingSafeEqual(expectedBuf, receivedBuf)
-      } catch {
-        // Invalid hex in header
-        signatureValid = false
-      }
-      if (!signatureValid) {
+    // ── 3. Verify signature — BEFORE anything else reads or writes ───────────
+    // rawBody is available on Firebase Functions v2 onRequest
+    const rawBody: Buffer =
+      (req as unknown as { rawBody?: Buffer }).rawBody ?? Buffer.from(JSON.stringify(req.body))
+    const sig = verifyPayrexxSignature(
+      rawBody,
+      req.headers['x-webhook-signature'] as string | undefined,
+      cfg.webhook_signing_secret
+    )
+    if (!sig.ok) {
+      if (sig.reason === 'no_signing_secret') {
+        // Loud: every delivery to this team is being refused until the owner
+        // pastes the secret into Settings → Payments.
+        console.warn(`[handlePayrexxWebhook] No signing secret configured for team=${teamId} — refusing`)
+      } else if (sig.reason === 'missing_signature') {
+        console.warn(`[handlePayrexxWebhook] Missing X-Webhook-Signature team=${teamId}`)
+      } else {
         console.warn(`[handlePayrexxWebhook] Signature mismatch team=${teamId}`)
-        res.status(401).json({ ok: false, reason: 'invalid_signature' })
-        return
       }
-    } else {
-      // No signing secret configured — log a warning but allow through (setup phase)
-      console.warn(`[handlePayrexxWebhook] No signing secret configured for team=${teamId} — skipping verification`)
+      res.status(401).json({ ok: false, reason: sig.reason })
+      return
     }
 
     // ── 4. Parse payload ──────────────────────────────────────────────────────

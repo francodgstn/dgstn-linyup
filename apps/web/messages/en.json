@@ -2189,7 +2189,9 @@
     "subTypeNoPrices": "No price yet — this plan tracks a name only.",
     "subTypeIntroSummary": "{amount} for the first {periods, plural, one {period} other {# periods}}",
     "subTypeLimitSummary": "Up to {count, plural, one {# class} other {# classes}} {per, select, day {per day} week {per week} month {per month} other {per month}}",
-    "subTypeNoLimit": "No booking limit."
+    "subTypeNoLimit": "No booking limit.",
+    "paymentsWebhookSecretRequired": "Payrexx needs the webhook signing secret. Without it, no payments are recorded.",
+    "paymentsWebhookSecretHelpPayrexxRequired": "Required. Used to verify <code>X-Webhook-Signature</code> on every incoming payment webhook. Payments are not recorded without it."
   },
   "Bookings": {
     "title": "Bookings",
