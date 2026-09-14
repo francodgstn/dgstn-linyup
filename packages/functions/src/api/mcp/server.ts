@@ -22,19 +22,45 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import type { ApiContact, ApiScope, ApiSession } from '@linyup/shared'
+import type {
+  ApiActivity,
+  ApiContact,
+  ApiEvent,
+  ApiMoney,
+  ApiPerson,
+  ApiPlan,
+  ApiScope,
+  ApiSession,
+  ApiSubscription,
+} from '@linyup/shared'
 import { principalMay, type ApiPrincipal } from '../auth/principal'
 import type { ApiRequest, ApiResponse, ListPage } from '../access'
 import { loadTeamContext, type TeamReadContext } from '../context'
 import { toApiError } from '../errors'
+import { CLASS_FILL_MAX_DAYS, getClassFill, principalSeesWholeSchedule } from '../insights/classFill'
 import { getContact, listContacts } from '../resources/contacts'
+import { listEvents } from '../resources/events'
+import { listActivities, listPlans } from '../resources/offerings'
+import { getContactHistory, getSessionRoster } from '../resources/people'
+import { getFinanceMonths, getWeeklyReports } from '../resources/reports'
 import { listSessions } from '../resources/sessions'
+import { listSubscriptions } from '../resources/subscriptions'
 import { describeScopes } from '../rest'
-import { contactListShape, parseInput, sessionListShape } from '../schemas'
+import {
+  classFillShape,
+  contactListShape,
+  eventListShape,
+  financeReportShape,
+  historyShape,
+  parseInput,
+  sessionListShape,
+  subscriptionListShape,
+  weeklyReportShape,
+} from '../schemas'
 import { parseApiInstant, zonedYmd } from '../time'
 
 export const MCP_SERVER_NAME = 'linyup'
-export const MCP_SERVER_VERSION = '1.0.0'
+export const MCP_SERVER_VERSION = '1.1.0'
 /** The schedule window one tool call may cover. */
 const SCHEDULE_MAX_DAYS = 14
 
@@ -85,6 +111,8 @@ export function registerReadTool<S extends z.ZodRawShape>(
   )
 }
 
+// ─── text formatting — what the model reads ──────────────────────────────────
+
 function localTime(iso: string | null, team: TeamReadContext): string {
   if (!iso) return '?'
   return new Intl.DateTimeFormat('en-GB', {
@@ -95,6 +123,23 @@ function localTime(iso: string | null, team: TeamReadContext): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(iso))
+}
+
+function localDate(iso: string | null, team: TeamReadContext): string {
+  if (!iso) return '?'
+  return new Intl.DateTimeFormat('en-GB', { timeZone: team.timeZone, day: '2-digit', month: 'short', year: 'numeric' }).format(
+    new Date(iso)
+  )
+}
+
+export function money(m: ApiMoney | null | undefined): string {
+  if (!m) return '—'
+  return `${m.currency} ${(m.amount / 100).toFixed(2)}`
+}
+
+function personName(p: ApiPerson | null): string {
+  if (!p) return '(hidden)'
+  return [p.first_name, p.last_name].filter(Boolean).join(' ') || '(no name)'
 }
 
 export function contactLine(c: ApiContact, team: TeamReadContext): string {
@@ -122,8 +167,48 @@ export function sessionLine(s: ApiSession, team: TeamReadContext): string {
   )
 }
 
+function activityLine(a: ApiActivity): string {
+  const parts = [`- ${a.name ?? '(unnamed)'} [${a.id}] · ${a.type}`]
+  if (!a.active) parts.push('inactive')
+  if (a.drop_in?.enabled) parts.push(`drop-in ${money(a.drop_in.price)}`)
+  if (a.trial?.enabled) parts.push(a.trial.price ? `trial ${money(a.trial.price)}` : 'free trial')
+  if (a.access?.require_plan) parts.push('plan required')
+  if (a.waitlist_enabled) parts.push('waitlist')
+  if (a.durations.length) {
+    parts.push(a.durations.map((d) => `${d.minutes} min ${d.price ? money(d.price) : d.sale}`).join(', '))
+  }
+  return parts.join(' · ')
+}
+
+function planLine(p: ApiPlan): string {
+  const prices = p.prices
+    .filter((x) => x.active)
+    .map((x) => `${money(x.price)} ${x.recurrence}${x.credits ? ` (${x.credits} credits)` : ''}`)
+    .join(', ')
+  return `- ${p.name ?? '(unnamed)'} [${p.id}] · ${p.source}${p.active ? '' : ' · inactive'}${prices ? ` · ${prices}` : ''}`
+}
+
+function subscriptionLine(s: ApiSubscription, team: TeamReadContext): string {
+  const parts = [`- ${personName(s.contact)} · ${s.plan.name ?? s.plan.id ?? '?'} · ${s.status}`]
+  if (s.price) parts.push(`${money(s.price)} ${s.recurrence ?? ''}`.trim())
+  if (s.paused) parts.push('paused')
+  if (s.cancelling) parts.push(s.ends_at ? `ends ${localDate(s.ends_at, team)}` : 'cancelling (end date unknown)')
+  if (s.cancellation?.reason) parts.push(`reason: ${s.cancellation.reason}`)
+  return parts.join(' · ')
+}
+
+function eventLine(e: ApiEvent, team: TeamReadContext): string {
+  return (
+    `- ${localTime(e.start, team)} · ${e.title ?? '(untitled)'} [${e.id}] · ${e.type}` +
+    ` · ${e.participants} registered` +
+    (e.fee && e.fee.amount > 0 ? ` · fee ${money(e.fee)}` : '') +
+    (e.status !== 'open' ? ` · ${e.status}` : '')
+  )
+}
+
 function pageFooter(page: ListPage<unknown>): string {
   if (!page.has_more) return ''
+  if (!page.next_cursor) return '\n(More exist than shown; narrow the question to see them.)'
   return page.scan_exhausted
     ? `\n(Stopped after reading ${page.scanned} records; call again with cursor "${page.next_cursor}" to keep looking.)`
     : `\n(More results: call again with cursor "${page.next_cursor}".)`
@@ -131,15 +216,24 @@ function pageFooter(page: ListPage<unknown>): string {
 
 export function serverInstructions(principal: ApiPrincipal, team: TeamReadContext, nowMs: number): string {
   const { usable } = describeScopes(principal)
-  const missing = (['contacts:read', 'contacts:read:pii', 'schedule:read'] as ApiScope[]).filter((s) => !usable.includes(s))
+  const watched: ApiScope[] = [
+    'contacts:read',
+    'contacts:read:pii',
+    'schedule:read',
+    'offerings:read',
+    'subscriptions:read',
+    'reports:read',
+    'finance:read',
+  ]
+  const missing = watched.filter((s) => !usable.includes(s))
   return [
     `You are connected, read-only, to the Linyup studio "${team.name}".`,
-    `Today is ${zonedYmd(nowMs, team.timeZone)} in ${team.timeZone}; give times in that zone. Money is in ${team.currency}, in minor units (divide by 100).`,
+    `Today is ${zonedYmd(nowMs, team.timeZone)} in ${team.timeZone}; give times in that zone. Money is in minor units (divide by 100); the studio's currency is ${team.currency}.`,
     'People: "roster" means members and leads the studio looks after; "external" means people who train here without being on the roster (partner-app drop-ins, former members) and are not churn. Leads are not yet confirmed.',
     'Engagement bands (active, low, at_risk, inactive) are measured from the last attended session.',
     missing.length
       ? `This connection cannot see: ${missing.join(', ')}. Say so rather than guessing.`
-      : 'This connection can see contact details.',
+      : 'This connection can see everything the API offers, contact details included.',
   ].join('\n')
 }
 
@@ -148,6 +242,10 @@ export function buildMcpServer(principal: ApiPrincipal, team: TeamReadContext, n
     { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION },
     { instructions: serverInstructions(principal, team, nowMs) }
   )
+  const range = (a: { from: string; to: string }) => ({
+    fromMs: parseApiInstant(a.from, team.timeZone, 'from'),
+    toMs: parseApiInstant(a.to, team.timeZone, 'to'),
+  })
 
   registerReadTool(
     server,
@@ -174,6 +272,7 @@ export function buildMcpServer(principal: ApiPrincipal, team: TeamReadContext, n
     }
   )
 
+  // ── people ──────────────────────────────────────────────────────────────────
   if (principalMay(principal, 'contacts:read')) {
     registerReadTool(
       server,
@@ -261,8 +360,34 @@ export function buildMcpServer(principal: ApiPrincipal, team: TeamReadContext, n
         return ok(contactLine(contact, team), contact)
       }
     )
+
+    if (principalMay(principal, 'schedule:read')) {
+      registerReadTool(
+        server,
+        'get_contact_history',
+        {
+          title: "A contact's bookings and visits",
+          description: "One person's recent bookings and check-ins, newest first, with the class and time of each.",
+          shape: { contact_id: z.string().min(1).max(128), ...historyShape(20, 100) },
+        },
+        async (args) => {
+          const history = await getContactHistory(principal, team, args.contact_id, args.limit, nowMs)
+          const lines = [contactLine(history.contact, team)]
+          lines.push(`Bookings (${history.bookings.length}):`)
+          for (const b of history.bookings) {
+            lines.push(
+              `  - ${localTime(b.session.start, team)} · ${b.session.activity ?? '?'} · ${b.status}${b.is_trial ? ' · trial' : ''}${b.paid ? ' · paid' : ''}`
+            )
+          }
+          lines.push(`Check-ins (${history.attendance.length}):`)
+          for (const a of history.attendance) lines.push(`  - ${localTime(a.session.start, team)} · ${a.session.activity ?? '?'}`)
+          return ok(lines.join('\n'), history)
+        }
+      )
+    }
   }
 
+  // ── schedule ────────────────────────────────────────────────────────────────
   if (principalMay(principal, 'schedule:read')) {
     registerReadTool(
       server,
@@ -275,20 +400,170 @@ export function buildMcpServer(principal: ApiPrincipal, team: TeamReadContext, n
       async (args) => {
         const page = await listSessions(
           principal,
-          {
-            fromMs: parseApiInstant(args.from, team.timeZone, 'from'),
-            toMs: parseApiInstant(args.to, team.timeZone, 'to'),
-            limit: args.limit,
-            cursor: args.cursor,
-            activityId: args.activity_id,
-            maxWindowDays: SCHEDULE_MAX_DAYS,
-          },
+          { ...range(args), limit: args.limit, cursor: args.cursor, activityId: args.activity_id, maxWindowDays: SCHEDULE_MAX_DAYS },
           nowMs
         )
         const text = page.data.length
           ? `${page.data.length} session(s):\n${page.data.map((s) => sessionLine(s, team)).join('\n')}${pageFooter(page)}`
           : `No sessions in that window.${pageFooter(page)}`
         return ok(text, page)
+      }
+    )
+
+    registerReadTool(
+      server,
+      'get_session_roster',
+      {
+        title: 'Session roster',
+        description:
+          'Who booked and who checked in for one session. People this connection may not name are counted, not listed.',
+        shape: { session_id: z.string().min(1).max(128) },
+      },
+      async (args) => {
+        const roster = await getSessionRoster(principal, team, args.session_id, nowMs)
+        const lines = [sessionLine(roster.session, team), `Booked (${roster.bookings.length}):`]
+        for (const b of roster.bookings) {
+          lines.push(`  - ${personName(b.contact)} · ${b.status}${b.is_trial ? ' · trial' : ''}${b.paid ? ' · paid' : ''}`)
+        }
+        if (roster.hidden_bookings) lines.push(`  (+${roster.hidden_bookings} not shown)`)
+        lines.push(`Checked in (${roster.attendance.length}):`)
+        for (const a of roster.attendance) lines.push(`  - ${personName(a.contact)}`)
+        if (roster.hidden_attendance) lines.push(`  (+${roster.hidden_attendance} not shown)`)
+        return ok(lines.join('\n'), roster)
+      }
+    )
+
+    registerReadTool(
+      server,
+      'list_events',
+      {
+        title: 'Events',
+        description: 'The studio’s events (seminars, camps, competitions) between two dates, with registrations and fees.',
+        shape: eventListShape(25, 100),
+      },
+      async (args) => {
+        const page = await listEvents(principal, team, { ...range(args), limit: args.limit })
+        const text = page.data.length
+          ? `${page.data.length} event(s):\n${page.data.map((e) => eventLine(e, team)).join('\n')}${pageFooter(page)}`
+          : `No events in that window.${pageFooter(page)}`
+        return ok(text, page)
+      }
+    )
+
+    if (principalSeesWholeSchedule(principal)) {
+      registerReadTool(
+        server,
+        'get_class_fill_rates',
+        {
+          title: 'Class fill rates',
+          description: `How full classes are over a period (at most ${CLASS_FILL_MAX_DAYS} days), per class, per weekly slot ("Thu 18:00") or per instructor. Cancelled sessions and appointments are left out.`,
+          shape: classFillShape,
+        },
+        async (args) => {
+          const fill = await getClassFill(
+            principal,
+            team,
+            { ...range(args), groupBy: args.group_by, activityId: args.activity_id },
+            nowMs
+          )
+          const lines = fill.rows.map(
+            (r) =>
+              `- ${r.label} · ${r.sessions} session(s)` +
+              (r.avg_fill_percent === null ? ' · no capacity set' : ` · ${r.avg_fill_percent}% full on average · ${r.full_sessions} full`) +
+              ` · avg ${r.avg_booked} booked, ${r.avg_attended} attended`
+          )
+          const text = lines.length
+            ? `Fill rates over ${fill.sessions_counted} session(s), by ${fill.group_by}:\n${lines.join('\n')}${fill.truncated ? '\n(Too many sessions; the period was cut short.)' : ''}`
+            : 'No classes in that period.'
+          return ok(text, fill)
+        }
+      )
+    }
+  }
+
+  // ── offerings, memberships, reports ─────────────────────────────────────────
+  if (principalMay(principal, 'offerings:read')) {
+    registerReadTool(
+      server,
+      'list_offerings',
+      {
+        title: 'Classes and plans',
+        description: 'What the studio offers: its classes and appointment types with prices, and its plans with prices and credits.',
+        shape: { kind: z.enum(['all', 'activities', 'plans']).default('all') },
+      },
+      async (args) => {
+        const [activities, plans] = await Promise.all([
+          args.kind === 'plans' ? null : listActivities(principal, team),
+          args.kind === 'activities' ? null : listPlans(principal, team),
+        ])
+        const lines: string[] = []
+        if (activities) lines.push(`Activities (${activities.data.length}):`, ...activities.data.map(activityLine))
+        if (plans) lines.push(`Plans (${plans.data.length}):`, ...plans.data.map(planLine))
+        return ok(lines.join('\n'), { activities: activities?.data ?? null, plans: plans?.data ?? null })
+      }
+    )
+  }
+
+  if (principalMay(principal, 'subscriptions:read')) {
+    registerReadTool(
+      server,
+      'list_memberships',
+      {
+        title: 'Memberships',
+        description:
+          'Stripe memberships by state: live, cancelling (running but will not renew — with the end date and reason), past_due, trialing or ended.',
+        shape: subscriptionListShape(25, 100),
+      },
+      async (args) => {
+        const page = await listSubscriptions(principal, team, { state: args.state, limit: args.limit }, nowMs)
+        const text = page.data.length
+          ? `${page.data.length} ${args.state} membership(s):\n${page.data.map((s) => subscriptionLine(s, team)).join('\n')}${pageFooter(page)}`
+          : `No ${args.state} memberships.`
+        return ok(text, page)
+      }
+    )
+  }
+
+  if (principalMay(principal, 'reports:read')) {
+    registerReadTool(
+      server,
+      'get_attendance_trend',
+      {
+        title: 'Weekly trend',
+        description: 'Week by week: sessions, bookings, active contacts, members with a plan, and trial conversions.',
+        shape: weeklyReportShape,
+      },
+      async (args) => {
+        const page = await getWeeklyReports(principal, args.weeks, nowMs)
+        const lines = page.data.map((w) =>
+          w.generated
+            ? `- ${w.iso_week}: ${w.sessions} sessions, ${w.bookings} bookings, ${w.active_contacts} active contacts, ${w.contacts_with_plan} with a plan, ${w.trial_conversions} trial conversions`
+            : `- ${w.iso_week}: no report yet`
+        )
+        return ok(`Weekly figures, oldest first:\n${lines.join('\n')}`, page)
+      }
+    )
+  }
+
+  if (principalMay(principal, 'finance:read')) {
+    registerReadTool(
+      server,
+      'get_revenue_summary',
+      {
+        title: 'Revenue by month',
+        description:
+          'Monthly revenue from the Finance plugin: gross, fees, net, refunds and payouts. Months are Europe/Zurich calendar months; the running month has no report until it closes.',
+        shape: financeReportShape,
+      },
+      async (args) => {
+        const page = await getFinanceMonths(principal, args.from, args.to)
+        const lines = page.data.map((m) => {
+          if (!m.generated || !m.totals) return `- ${m.month}: no report yet`
+          const cur = m.currencies[0] ?? team.currency
+          const fmt = (n: number) => money({ amount: n, currency: cur })
+          return `- ${m.month}: net ${fmt(m.totals.net)} (gross ${fmt(m.totals.gross)}, fees ${fmt(m.totals.stripe_fees + m.totals.platform_fees)}), ${m.transactions} transactions${m.refunds?.count ? `, ${m.refunds.count} refunds (${fmt(m.refunds.amount)})` : ''}`
+        })
+        return ok(`Revenue by month:\n${lines.join('\n')}`, page)
       }
     )
   }

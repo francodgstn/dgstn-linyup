@@ -67,15 +67,15 @@ export interface ApiMoney {
   currency: string
 }
 
-function moneyFromMajor(major: number | null | undefined, currency: string): ApiMoney | null {
+export function apiMoneyFromMajor(major: number | null | undefined, currency: string): ApiMoney | null {
   return typeof major === 'number' && Number.isFinite(major) ? { amount: toMinorUnits(major), currency } : null
 }
 
-function str(value: unknown): string | null {
+export function apiStr(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null
 }
 
-function strings(value: unknown): string[] {
+export function apiStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []
 }
 
@@ -143,14 +143,14 @@ export interface ApiContact {
 function projectHeldPlan(plan: HeldPlan, currency: string): ApiHeldPlan {
   return {
     plan_id: plan.subscription_type_id,
-    plan_name: str(plan.subscription_type_name),
+    plan_name: apiStr(plan.subscription_type_name),
     source: plan.source,
     status: plan.status,
     starts_at: apiIsoTime(plan.starts_at_ms),
     ends_at: apiIsoTime(plan.ends_at_ms),
     next_charge_at: apiIsoTime(plan.next_charge_at_ms),
-    recurrence: str(plan.recurrence),
-    price: moneyFromMajor(plan.amount, currency),
+    recurrence: apiStr(plan.recurrence),
+    price: apiMoneyFromMajor(plan.amount, currency),
     credits_remaining: typeof plan.credits_remaining === 'number' ? plan.credits_remaining : null,
   }
 }
@@ -167,8 +167,8 @@ export function projectContact(contact: Contact, ctx: ApiProjectionContext): Api
   const out: ApiContact = {
     object: 'contact',
     id: contact.id,
-    first_name: str(contact.firstname),
-    last_name: str(contact.lastname),
+    first_name: apiStr(contact.firstname),
+    last_name: apiStr(contact.lastname),
     lifecycle,
     journey: {
       stage: contact.acquisition_stage ?? null,
@@ -184,7 +184,7 @@ export function projectContact(contact: Contact, ctx: ApiProjectionContext): Api
     credits: Array.isArray(contact.credit_summary)
       ? contact.credit_summary.map((c) => ({
           plan_id: c.subscription_type_id,
-          plan_name: str(c.subscription_type_name),
+          plan_name: apiStr(c.subscription_type_name),
           remaining: c.remaining,
           next_expires_at: apiIsoTime(c.next_expires_at),
         }))
@@ -202,24 +202,24 @@ export function projectContact(contact: Contact, ctx: ApiProjectionContext): Api
       nowMs: ctx.nowMs,
       engagementThresholds: ctx.engagementThresholds,
     }),
-    assigned_coach_ids: strings(contact.assigned_coach_ids),
-    group_ids: strings(contact.group_ids),
-    tags: strings(contact.tags),
+    assigned_coach_ids: apiStrings(contact.assigned_coach_ids),
+    group_ids: apiStrings(contact.group_ids),
+    tags: apiStrings(contact.tags),
     created_at: apiIsoTime(contact.created_at),
   }
 
   if (ctx.pii) {
     // Written out field by field, like everything above, for the sentinel test.
-    out.email = str(contact.email)
-    out.phone = str(contact.phone)
+    out.email = apiStr(contact.email)
+    out.phone = apiStr(contact.phone)
     out.gender = contact.gender ?? null
     out.birthdate = apiDate(contact.birthdate, ctx.timeZone ?? 'Europe/Zurich')
     out.address = contact.address
       ? {
-          street: str(contact.address.route),
-          street_number: str(contact.address.street_number),
-          postal_code: str(contact.address.postal_code),
-          locality: str(contact.address.locality),
+          street: apiStr(contact.address.route),
+          street_number: apiStr(contact.address.street_number),
+          postal_code: apiStr(contact.address.postal_code),
+          locality: apiStr(contact.address.locality),
         }
       : null
   }
@@ -255,7 +255,7 @@ export interface ApiSession {
   tags: string[]
 }
 
-function count(value: unknown): number {
+export function apiCount(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
@@ -272,7 +272,7 @@ export function projectSession(session: Session, ctx: { nowMs: number }): ApiSes
   // stored value is a capacity-state snapshot that not every writer keeps in
   // step, while `bookings_count` is the recount of seat-holding bookings
   // (`bookingHoldsSeat`) and `seatsFree` is the shared capacity question.
-  const booked = count(session.bookings_count)
+  const booked = apiCount(session.bookings_count)
   const status: ApiSessionStatus = isSessionCancelled(session)
     ? 'cancelled'
     : session.status === 'pending_payment'
@@ -285,27 +285,27 @@ export function projectSession(session: Session, ctx: { nowMs: number }): ApiSes
     object: 'session',
     id: session.id,
     activity: {
-      id: str(session.activityId),
-      name: str(session.activityName),
+      id: apiStr(session.activityId),
+      name: apiStr(session.activityName),
       type: session.activityType === 'appointment' ? 'appointment' : 'class',
     },
     start: apiIsoTime(session.start),
     end: apiIsoTime(session.end),
     duration_minutes: typeof session.duration_minutes === 'number' ? session.duration_minutes : null,
-    location: str(session.location),
-    place_id: str(session.placeId),
-    room_id: str(session.roomId),
-    provider: session.providerId ? { id: session.providerId, name: str(session.providerName) } : null,
+    location: apiStr(session.location),
+    place_id: apiStr(session.placeId),
+    room_id: apiStr(session.roomId),
+    provider: session.providerId ? { id: session.providerId, name: apiStr(session.providerName) } : null,
     capacity: typeof session.max_participants === 'number' ? session.max_participants : null,
     booked,
-    waitlisted: count(session.waitlist_count),
-    attended: count(session.participants_count),
-    trial_bookings: count(session.trial_bookings_count),
+    waitlisted: apiCount(session.waitlist_count),
+    attended: apiCount(session.participants_count),
+    trial_bookings: apiCount(session.trial_bookings_count),
     status,
     booking: { allowed: session.allowBooking === true, required: session.bookingMandatory === true },
-    headline: str(session.headline),
+    headline: apiStr(session.headline),
     headline_public: session.headlinePublic === true,
-    series_id: str(session.seriesId),
-    tags: strings(session.tags),
+    series_id: apiStr(session.seriesId),
+    tags: apiStrings(session.tags),
   }
 }

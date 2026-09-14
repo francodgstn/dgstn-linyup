@@ -15,8 +15,18 @@ the `api-connectors` plugin with its revoke-all teardown, rules + TTL, the field
 contact and session projections, and the `api` HTTPS function serving `/v1/me|team|contacts|sessions`
 and `/mcp` (tools: `get_studio_overview`, `find_contacts`, `list_inactive_contacts`, `get_contact`,
 `get_schedule`), and Settings → API keys (`/settings/api-keys`: create with scopes and expiry,
-the secret shown once with Claude Code and curl examples, list, revoke). Not yet: the remaining
-resources and insight tools, OpenAPI, the Hosting `api` target.
+the secret shown once with Claude Code and curl examples, list, revoke).
+
+Second wave: `/v1/activities`, `/v1/plans`, `/v1/sessions/{id}/roster`, `/v1/contacts/{id}/history`,
+`/v1/subscriptions?state=`, `/v1/events`, `/v1/reports/weekly`, `/v1/reports/finance`,
+`/v1/insights/class-fill`; MCP tools `list_offerings`, `get_session_roster`, `get_contact_history`,
+`list_memberships`, `list_events`, `get_attendance_trend`, `get_revenue_summary`,
+`get_class_fill_rates`. Not yet: OpenAPI, the Hosting `api` target, OAuth (Phase 2).
+
+Records about people (a roster, a history, a membership) name the person from the CONTACT
+document through `loadPeople` (`api/resources/people.ts`) — never from the copy denormalised on
+the record — and a row whose person this connection may not see is left out and counted
+(`hidden_bookings`), never shown nameless.
 
 ## Where the code is
 

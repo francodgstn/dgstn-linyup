@@ -256,3 +256,12 @@ export function subscriptionCancellation(
     comment: d?.comment ?? null,
   }
 }
+
+/**
+ * The statuses a member subscription is LIVE under — what the payments page
+ * lists and what the public API calls "live". `paused` is not in
+ * `MemberSubscriptionStatus` (Stripe's `pause_collection` keeps `active`), kept
+ * for a doc that carries it anyway. Queried with `in` on the (`status`,
+ * `created_at`) index (firestore.index.json).
+ */
+export const LIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due', 'paused'] as const

@@ -1,5 +1,8 @@
-import type { Contact } from '../types/contact'
-import type { Session } from '../types/session'
+import type { Activity } from '../types/activity'
+import type { MemberSubscription } from '../types/connect'
+import type { Contact, SubscriptionType } from '../types/contact'
+import type { Event } from '../types/event'
+import type { Booking, Session } from '../types/session'
 
 // ─── The public API field catalog ────────────────────────────────────────────
 //
@@ -174,8 +177,152 @@ export const SESSION_FIELD_CATALOG: FieldCatalog<Session> = {
   payment_currency: 'excluded',
   payment_checkout_session_id: 'excluded',
   blocked_time: 'excluded', // blocked time is filtered out, never returned
-  contact_id: 'excluded', // an appointment's client — through the bookings endpoint, under contacts scope
+  contact_id: 'excluded', // an appointment's client — through the roster, under contacts scope
   client_name: 'excluded', // a denormalised copy that can outlive anonymisation
+}
+
+export const ACTIVITY_FIELD_CATALOG: FieldCatalog<Activity> = {
+  id: 'exposed',
+  teamId: 'excluded',
+  name: 'exposed',
+  alternativeName: 'exposed',
+  description: 'exposed',
+  slug: 'exposed',
+  color: 'exposed',
+  tags: 'exposed',
+  type: 'exposed',
+  providerId: 'exposed',
+  providerName: 'exposed',
+  durations: 'exposed', // through resolveAppointmentDurations / resolveDurationSale
+  memberBenefit: 'excluded', // deferred: benefits leave through resolveDurationBenefit, not yet projected
+  durationBenefits: 'excluded',
+  autoConfirm: 'excluded',
+  base_score: 'excluded',
+  isFreeTrial: 'excluded', // legacy, read by resolveActivityAccessRule
+  accessRule: 'exposed', // through resolveActivityAccessRule
+  dropIn: 'exposed', // through resolveActivityDropIn, never raw
+  trialEnabled: 'exposed',
+  trialPriceAmount: 'exposed',
+  waitlistEnabled: 'exposed',
+  prerequisites: 'exposed',
+  confirmationInstructions: 'excluded', // sent after booking; can hold door codes
+  meetingPoint: 'exposed',
+  whatsIncluded: 'exposed',
+  whatsNotIncluded: 'exposed',
+  faq: 'exposed',
+  cancellationPolicy: 'exposed',
+  bookingQuestions: 'excluded',
+  contactFields: 'excluded',
+  isActive: 'exposed',
+  image_url: 'exposed',
+  order: 'exposed', // leaves as list order
+  created_at: 'excluded',
+  createdBy: 'excluded',
+  archived_at: 'exposed', // an archived activity is not returned
+}
+
+export const PLAN_FIELD_CATALOG: FieldCatalog<SubscriptionType> = {
+  id: 'exposed',
+  name: 'exposed',
+  description: 'exposed',
+  source: 'exposed', // leaves as own | partner
+  active: 'exposed',
+  public: 'exposed',
+  order: 'exposed', // leaves as list order
+  prices: 'exposed', // field by field; maxPurchasesPerContact stays in
+  checkout_contact_mode: 'excluded',
+  limits: 'exposed', // through resolveUsageLimit
+  payoutPerVisit: 'excluded', // commercial terms with a partner app
+  introOffers: 'exposed', // through introOffersOf
+  introOffer: 'exposed', // legacy single offer, read by introOffersOf
+}
+
+export const BOOKING_FIELD_CATALOG: FieldCatalog<Booking> = {
+  id: 'exposed',
+  teamId: 'excluded',
+  contact: 'exposed',
+  session: 'exposed',
+  // The denormalised identity copies survive anonymisation, which only wipes the
+  // contact document — so a booking's person always comes from the CONTACT.
+  email: 'excluded',
+  firstname: 'excluded',
+  lastname: 'excluded',
+  phone: 'excluded',
+  is_new_contact: 'exposed',
+  joinedAt: 'exposed',
+  booking_token: 'excluded', // a credential: it manages the booking
+  booking_reference: 'excluded', // a desk lookup code
+  source: 'exposed',
+  question_answers: 'excluded', // "any injuries today?"
+  status: 'exposed',
+  rebooked_from: 'exposed',
+  rebooked_to: 'exposed',
+  payment_status: 'exposed', // leaves as `paid`, through bookingWasPaidFor
+  payment_intent_id: 'excluded',
+  settled_offline: 'excluded',
+  expires_at: 'excluded',
+  waitlist_claim: 'excluded',
+  claim_expires_at: 'excluded',
+  claimed_from_waitlist: 'exposed',
+  waiver_state: 'exposed',
+}
+
+export const MEMBER_SUBSCRIPTION_FIELD_CATALOG: FieldCatalog<MemberSubscription> = {
+  teamId: 'excluded',
+  subscriptionId: 'exposed',
+  customerId: 'excluded',
+  contactId: 'exposed',
+  priceId: 'excluded',
+  subscriptionTypeId: 'exposed',
+  subscriptionTypeName: 'exposed',
+  recurrence: 'exposed',
+  amount: 'exposed', // only with reports.view
+  currency: 'exposed',
+  application_fee_percent: 'excluded',
+  status: 'exposed',
+  current_period_start: 'exposed',
+  current_period_end: 'exposed',
+  cancel_at_period_end: 'exposed', // through subscriptionIsCancelling
+  cancel_at: 'exposed', // through subscriptionEndsAt
+  canceled_at: 'exposed',
+  cancellation_details: 'exposed', // reason + feedback; the member's own words only under pii
+  payment_method_kind: 'excluded',
+  last_invoice_id: 'excluded',
+  last_payment_status: 'exposed',
+  last_event_id: 'excluded',
+  duplicate: 'excluded', // a duplicate is not returned
+  pause_collection: 'exposed', // leaves as `paused`
+  created_at: 'exposed',
+  updated_at: 'excluded',
+}
+
+export const EVENT_FIELD_CATALOG: FieldCatalog<Event> = {
+  id: 'exposed',
+  teamId: 'excluded',
+  orgId: 'excluded',
+  scope: 'excluded', // organisation events are out of v1
+  title: 'exposed',
+  type: 'exposed',
+  start: 'exposed',
+  end: 'exposed',
+  location: 'exposed',
+  placeId: 'exposed',
+  roomId: 'exposed',
+  description: 'exposed',
+  fee: 'exposed',
+  status: 'exposed',
+  participants_count: 'exposed',
+  completed_checkins_count: 'exposed',
+  attendees_count: 'exposed',
+  invitations_sent_count: 'excluded',
+  last_invitation_sent_at: 'excluded',
+  coachId: 'exposed',
+  coachName: 'exposed',
+  program: 'excluded', // deferred
+  publicVisibility: 'exposed',
+  created_at: 'excluded',
+  createdBy: 'excluded',
+  deleted_at: 'excluded', // a deleted event is not returned
 }
 
 /** The fields of a catalog in one class, sorted — what the consent screen lists. */

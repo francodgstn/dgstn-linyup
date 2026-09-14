@@ -28,6 +28,7 @@ import {
   type PartnerVisit,
   type PaymentLineItem,
   TEAM_INTEGRATIONS_SUBCOLLECTION,
+  LIVE_SUBSCRIPTION_STATUSES,
 } from '@linyup/shared'
 
 /** The browser origin to send to checkout/onboarding callables so Stripe returns
@@ -212,7 +213,8 @@ export function useMemberPayments(
 /** The statuses a subscription is LIVE under — what the payments page lists.
  *  `paused` is not in `MemberSubscriptionStatus` (Stripe's `pause_collection`
  *  keeps `active`), kept for a doc that carries it anyway. */
-export const LIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due', 'paused'] as const
+// Moved to @linyup/shared (utils/subscriptionLifecycle.ts) so the public API lists the same statuses.
+export { LIVE_SUBSCRIPTION_STATUSES }
 
 export function useMemberSubscriptions(teamId: string | null) {
   return useQuery({
