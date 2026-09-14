@@ -31,6 +31,7 @@
 import * as admin from 'firebase-admin'
 import { FieldPath, FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
+import { Type } from '@google/genai'
 import {
   CONTACTS_COLLECTION,
   CONTACT_NOTES_SUBCOLLECTION,
@@ -54,8 +55,8 @@ import {
   STUDIO_TIME_ZONE,
   buildContactDossier,
   coachOwnsContact,
-  normaliseSummary,
   noteText,
+  readSummaryReply,
   systemPrompt,
   toDate,
   type DossierBooking,
@@ -71,6 +72,20 @@ const WEEKS = 26
 const RECENT_BOOKINGS = 30
 const RECENT_NOTES = 3
 const RECENT_PERIODS = 12
+
+/**
+ * THE REPLY'S SHAPE — the three parts the card labels (`readSummaryReply`). The
+ * schema bounds the model; the reader still copes with a reply that ignores it.
+ */
+const SUMMARY_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    status: { type: Type.STRING, description: 'engagement now, against their own history' },
+    outlook: { type: Type.STRING, description: 'what to expect next, and how confident' },
+    nextSession: { type: Type.STRING, description: 'one concrete thing for the next session' },
+  },
+  required: ['status', 'outlook', 'nextSession'],
+}
 
 type Request = { teamId?: string; contactId?: string }
 
@@ -225,7 +240,8 @@ export const generateContactSummary = onCall(async (request) => {
         systemInstruction: systemPrompt(LANGUAGE_NAMES[lang]),
         // Six sentences in German run past 256 tokens; the cap on the way back
         // is `normaliseSummary`, not this.
-        maxOutputTokens: 512,
+        // (640 since the reply became JSON — its keys and quotes cost a little.)
+        maxOutputTokens: 640,
         // NO THINKING. On this model thinking is on by default and its tokens
         // count against `maxOutputTokens`, so a reply the model had reasoned
         // about for a few hundred tokens was stopped mid-sentence — and stored
@@ -235,6 +251,9 @@ export const generateContactSummary = onCall(async (request) => {
         // An analysis, not a brainstorm — warm enough to interpret, not so
         // warm it invents.
         temperature: 0.4,
+        // THREE PARTS, GIVEN — see SUMMARY_SCHEMA.
+        responseMimeType: 'application/json',
+        responseJsonSchema: SUMMARY_SCHEMA,
       },
     })
     // `response.text`, not a walk down candidates[0].content.parts — see
@@ -249,17 +268,20 @@ export const generateContactSummary = onCall(async (request) => {
     throw new HttpsError('internal', 'The summary service is unavailable right now.')
   }
 
-  const text = normaliseSummary(raw, { cut })
+  const { text, sections } = readSummaryReply(raw, { cut })
   if (!text) throw new HttpsError('internal', 'The summary came back empty.')
 
   await contactRef.update({
+    // WHOLE, never merged key-by-key: a regenerated summary without parts must
+    // not keep the previous one's parts beside its new paragraph.
     ai_summary: {
       text,
+      ...(sections ? { sections } : {}),
       generated_at: FieldValue.serverTimestamp(),
       generated_by: uid,
       model: ASSISTANT_MODEL,
       language: lang,
     },
   })
-  return { text, language: lang, model: ASSISTANT_MODEL }
+  return { text, sections: sections ?? null, language: lang, model: ASSISTANT_MODEL }
 })

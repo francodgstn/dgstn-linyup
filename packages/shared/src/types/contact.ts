@@ -140,6 +140,20 @@ export interface MobileAppTelemetry {
 }
 
 /**
+ * The three parts of a sectioned summary (since 2026-09-14), in reading order.
+ * The card puts a translated label in front of each — the labels are the
+ * app's, never the model's. See `readSummaryReply` in functions.
+ */
+export interface ContactAiSummarySections {
+  /** Engagement now, against the person's own history. */
+  status: string
+  /** What to expect next, and how confident that is. */
+  outlook: string
+  /** One concrete thing for the coach at the next session. */
+  nextSession: string
+}
+
+/**
  * The AI-written briefing stored on a contact — see `Contact.ai_summary`.
  * `text` is the whole summary, already cut to a few sentences server-side;
  * `language` is the studio's authoring language it was written in;
@@ -147,7 +161,10 @@ export interface MobileAppTelemetry {
  * refresh exists.
  */
 export interface ContactAiSummary {
+  /** The whole summary as one paragraph — the parts joined, when there are parts. */
   text: string
+  /** Absent on a summary written before 2026-09-14; the card then shows `text`. */
+  sections?: ContactAiSummarySections
   generated_at: Timestamp
   generated_by: string
   model: string

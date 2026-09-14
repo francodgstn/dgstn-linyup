@@ -1114,7 +1114,10 @@
     "actionUpdateDetails": "Update",
     "rosterLabel": "Roster",
     "rosterActive": "Active",
-    "rosterActiveHint": "On your roster — reminders, invitations and automations reach them."
+    "rosterActiveHint": "On your roster — reminders, invitations and automations reach them.",
+    "summarySectionStatus": "Status:",
+    "summarySectionOutlook": "Outlook:",
+    "summarySectionNextSession": "At the next session:"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
