@@ -113,3 +113,28 @@ export interface HeldPlansMirror {
    */
   held_plans_next_change_at_ms: number | null
 }
+
+/**
+ * Is this entry of the plan list held at `nowMs`? THE ONE comparison every
+ * reader makes (docs/multi-plan-holdings.md §2.3). The mirror is exact at the
+ * moment it was built, but nothing writes when a grant ends or a pack expires,
+ * so a reader compares the stored instants against the clock rather than
+ * trusting the list as stored. A credit pack is held only while it has credits.
+ */
+export function holdingIsCurrent(
+  entry: Pick<HeldPlan, 'source' | 'starts_at_ms' | 'ends_at_ms' | 'credits_remaining'>,
+  nowMs: number
+): boolean {
+  if (entry.starts_at_ms != null && entry.starts_at_ms > nowMs) return false
+  if (entry.ends_at_ms != null && entry.ends_at_ms <= nowMs) return false
+  if (entry.source === 'credits' && !((entry.credits_remaining ?? 0) > 0)) return false
+  return true
+}
+
+/** The entries of a contact's plan list held at `nowMs`. */
+export function currentHeldPlans(
+  contact: { held_plans?: ReadonlyArray<HeldPlan> | null } | null | undefined,
+  nowMs: number = Date.now()
+): HeldPlan[] {
+  return (contact?.held_plans ?? []).filter((entry) => holdingIsCurrent(entry, nowMs))
+}
