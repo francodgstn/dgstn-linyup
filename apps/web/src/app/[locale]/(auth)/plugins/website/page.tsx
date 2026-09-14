@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
@@ -20,6 +21,7 @@ import {
   EyeOff,
   ExternalLink,
   Check,
+  Settings,
 } from 'lucide-react'
 import { ThemePresetPicker } from '@/components/theme/ThemePresetPicker'
 import { ThemePreview } from '@/components/theme/ThemePreview'
@@ -56,6 +58,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { DynamicIcon } from '@/components/ui/icon-picker'
 import { ColorPicker } from '@/components/ui/color-picker'
 import type {
@@ -63,6 +73,7 @@ import type {
   SiteDraft,
   SiteMenuItem,
   SiteMeta,
+  SitePageRef,
   WebsiteSection,
   WebsiteSectionType,
 } from '@linyup/shared'
@@ -72,6 +83,9 @@ import {
   findSiteTheme,
   resolveThemePreset,
   themedSection,
+  normalizeSitePagePath,
+  isValidSitePagePath,
+  SITE_PAGE_LIMITS,
   type SiteThemeDef,
 } from '@linyup/shared'
 import { usePublicSurfaces } from '@/hooks/usePublicSurfaces'
@@ -80,7 +94,15 @@ import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
 import { MenuPanel } from '@/plugins/website/MenuPanel'
 import { sectionNavLabel } from '@/components/site/sections'
 import { SectionEditor } from '@/plugins/website/SectionEditor'
-import { useSiteDraft, saveSiteDraft, publishSite, unpublishSite, uploadSiteImage } from '@/plugins/website/hooks'
+import {
+  useSiteDraft,
+  useSitePageDocs,
+  saveSiteDraft,
+  saveSitePages,
+  publishSite,
+  unpublishSite,
+  uploadSiteImage,
+} from '@/plugins/website/hooks'
 import { BrandFields } from '@/components/website/BrandFields'
 import { ThemePicker } from '@/components/website/ThemePicker'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
@@ -90,12 +112,26 @@ import { Tip } from '@/components/ui/tip'
 
 const limits = getWebsiteLimits()
 
+/** Removes every menu item (at any depth) whose target names the given page —
+ *  used when deleting a page, so a dangling `{kind:'page'}` link never
+ *  survives it. Children go with a removed item: a `page` target names ONE
+ *  page, so a subtree hung off a link to a since-deleted page has nothing
+ *  left to point at either. */
+function removeMenuItemsTargetingPage(items: SiteMenuItem[], pageId: string): SiteMenuItem[] {
+  return items
+    .filter((item) => !(item.target.kind === 'page' && item.target.pageId === pageId))
+    .map((item) =>
+      item.children ? { ...item, children: removeMenuItemsTargetingPage(item.children, pageId) } : item
+    )
+}
+
 // ─── appearance panel ─────────────────────────────────────────────────────────
 
 function AppearancePanel({
   meta,
   onChange,
   sections,
+  pages,
   uploadImage,
   themesInstalled,
   onApplyTheme,
@@ -103,6 +139,8 @@ function AppearancePanel({
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
   sections: { id: string; label: string }[]
+  /** The site's other pages — offered as link destinations alongside sections. */
+  pages: { id: string; label: string }[]
   uploadImage: (file: File) => Promise<string>
   /** The Site Themes plugin unlocks the picker. */
   themesInstalled: boolean
@@ -254,10 +292,31 @@ function AppearancePanel({
             <SelectContent>
               <SelectItem value="booking">Open booking</SelectItem>
               <SelectItem value="signup">Sign-up</SelectItem>
+              <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
               <SelectItem value="url">External link</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        {meta.header.ctaAction === 'page' && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('editorCtaPage')}</Label>
+            <Select
+              value={meta.header.ctaPageId ?? ''}
+              onValueChange={(v) => setHeader({ ctaPageId: v || undefined })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder={t('editorCtaPagePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {pages.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {meta.header.ctaAction === 'url' && (
           <div className="space-y-1.5">
             <Label className="text-xs">{t('apHeaderCtaUrl')}</Label>
@@ -294,7 +353,7 @@ function AppearancePanel({
             edited, so no existing header changes. */}
       </div>
 
-      <BrandFields meta={meta} onChange={onChange} sections={sections} uploadImage={uploadImage} />
+      <BrandFields meta={meta} onChange={onChange} sections={sections} pages={pages} uploadImage={uploadImage} />
 
       <label className="flex items-center justify-between rounded-lg border p-3">
         <span className="text-sm">{t('apShowSocialFooter')}</span>
@@ -351,6 +410,304 @@ function sectionSummary(s: WebsiteSection): string {
   }
 }
 
+// ─── the current-page param ─────────────────────────────────────────────────
+//
+// `useTabParam` reads its param ONCE at mount and keeps the URL in sync from
+// then on — see its own header for why. That works for `?tab=` because the
+// valid ids (sections/appearance/embed) are known at compile time. A page id
+// is not: the draft loads asynchronously, so at the moment this component
+// first mounts `draft.pages` is still null, and validating against an empty
+// list would strand every reload back on Home — exactly the bug this whole
+// selector exists to avoid.
+//
+// So this reads the raw `?page=` value at mount, unvalidated, and only
+// corrects it once the real page list is known (the effect below): a stale or
+// forged id falls back to Home, same as an unknown `?tab=` would.
+function useCurrentPageParam(pageIds: string[] | null): [string, (id: string) => void] {
+  const searchParams = useSearchParams()
+  const [pageId, setPageId] = useState(() => searchParams.get('page') || 'home')
+
+  useEffect(() => {
+    if (pageId === 'home' || !pageIds) return
+    if (!pageIds.includes(pageId)) setPageId('home')
+  }, [pageId, pageIds])
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const current = p.get('page')
+    if (pageId === 'home') {
+      if (current === null) return
+      p.delete('page')
+    } else {
+      if (current === pageId) return
+      p.set('page', pageId)
+    }
+    const qs = p.toString()
+    window.history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname)
+  }, [pageId])
+
+  return [pageId, setPageId]
+}
+
+// ─── add-page dialog ────────────────────────────────────────────────────────
+
+function AddPageDialog({
+  open,
+  onOpenChange,
+  existingPaths,
+  onCreate,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  /** Every OTHER page's path — the new one must not collide. */
+  existingPaths: string[]
+  onCreate: (page: { title: string; path: string }) => void
+}) {
+  const t = useTranslations('Website')
+  const tCommon = useTranslations('Common')
+  const [title, setTitle] = useState('')
+  const [path, setPath] = useState('')
+  // Once the studio has edited the path by hand, typing in Title stops
+  // overwriting it — the same "don't fight the last thing they touched" rule
+  // `normalizeSitePagePath` itself follows on blur.
+  const [pathTouched, setPathTouched] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) return
+    setTitle('')
+    setPath('')
+    setPathTouched(false)
+    setError(null)
+  }, [open])
+
+  function handleCreate() {
+    if (!title.trim()) {
+      setError(t('pagesTitleRequired'))
+      return
+    }
+    const normalized = normalizeSitePagePath(path)
+    if (!normalized || !isValidSitePagePath(normalized)) {
+      setError(t('pagesPathInvalid'))
+      return
+    }
+    if (existingPaths.includes(normalized)) {
+      setError(t('pagesPathTaken'))
+      return
+    }
+    onCreate({ title: title.trim(), path: normalized })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t('pagesNewTitle')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesTitleField')}</Label>
+            <Input
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                if (!pathTouched) setPath(normalizeSitePagePath(e.target.value))
+              }}
+              placeholder={t('pagesTitlePlaceholder')}
+              className="h-9"
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesPathField')}</Label>
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 text-xs text-muted-foreground">/site/</span>
+              <Input
+                value={path}
+                onChange={(e) => {
+                  setPathTouched(true)
+                  setPath(e.target.value)
+                }}
+                onBlur={() => setPath((p) => normalizeSitePagePath(p))}
+                className="h-9 font-mono text-xs"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{t('pagesPathHint')}</p>
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {tCommon('cancel')}
+          </Button>
+          <Button type="button" onClick={handleCreate}>
+            {t('pagesCreateAction')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── page settings dialog ───────────────────────────────────────────────────
+
+function PageSettingsDialog({
+  open,
+  onOpenChange,
+  page,
+  existingPaths,
+  onChange,
+  onDelete,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  page: SitePageRef
+  /** Every OTHER page's path — this page's own path may stay unchanged. */
+  existingPaths: string[]
+  onChange: (patch: Partial<SitePageRef>) => void
+  onDelete: () => void
+}) {
+  const t = useTranslations('Website')
+  const tCommon = useTranslations('Common')
+  const [path, setPath] = useState(page.path)
+  const [pathError, setPathError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Re-seed the local path draft whenever the dialog opens on a (possibly
+  // different) page — the path field has its own commit-on-blur step, so it
+  // cannot just read `page.path` directly like every other field here does.
+  useEffect(() => {
+    if (!open) return
+    setPath(page.path)
+    setPathError(null)
+  }, [open, page.id, page.path])
+
+  function commitPath() {
+    const normalized = normalizeSitePagePath(path)
+    if (!normalized || !isValidSitePagePath(normalized)) {
+      setPathError(t('pagesPathInvalid'))
+      return
+    }
+    if (existingPaths.includes(normalized)) {
+      setPathError(t('pagesPathTaken'))
+      return
+    }
+    setPathError(null)
+    setPath(normalized)
+    if (normalized !== page.path) onChange({ path: normalized })
+  }
+
+  const setSeo = (patch: Partial<NonNullable<SitePageRef['seo']>>) =>
+    onChange({ seo: { ...page.seo, ...patch } })
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('pagesSettingsTitle')}</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesTitleField')}</Label>
+              <Input
+                value={page.title}
+                onChange={(e) => onChange({ title: e.target.value })}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesPathField')}</Label>
+              <div className="flex items-center gap-1.5">
+                <span className="shrink-0 text-xs text-muted-foreground">/site/</span>
+                <Input
+                  value={path}
+                  onChange={(e) => setPath(e.target.value)}
+                  onBlur={commitPath}
+                  className="h-9 font-mono text-xs"
+                />
+              </div>
+              {pathError && <p className="text-xs text-destructive">{pathError}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesNavLabelField')}</Label>
+              <Input
+                value={page.navLabel ?? ''}
+                onChange={(e) => onChange({ navLabel: e.target.value || undefined })}
+                placeholder={page.title}
+                className="h-9"
+              />
+              <p className="text-xs text-muted-foreground">{t('pagesNavLabelHint')}</p>
+            </div>
+            <div className="rounded-lg border p-2.5">
+              <label className="flex items-center justify-between">
+                <span className="text-sm">{t('pagesHiddenField')}</span>
+                <Switch checked={!!page.hidden} onCheckedChange={(v) => onChange({ hidden: v })} />
+              </label>
+              <p className="mt-1 text-xs text-muted-foreground">{t('pagesHiddenHint')}</p>
+            </div>
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-xs font-medium text-muted-foreground">SEO</p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('pagesSeoTitleField')}</Label>
+                <Input
+                  value={page.seo?.title ?? ''}
+                  onChange={(e) => setSeo({ title: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('pagesSeoDescriptionField')}</Label>
+                <Input
+                  value={page.seo?.description ?? ''}
+                  onChange={(e) => setSeo({ description: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mr-auto text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t('pagesDelete')}
+            </Button>
+            <Button type="button" onClick={() => onOpenChange(false)}>
+              {t('pagesDone')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('pagesDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('pagesDeleteBody')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmDelete(false)
+                onOpenChange(false)
+                onDelete()
+              }}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {t('pagesDelete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 const SITE_TABS = ['sections', 'appearance', 'embed'] as const
@@ -369,6 +726,7 @@ export default function WebsiteBuilderPage() {
   const { isInstalled, isLoading: pluginsLoading } = useInstalledPlugins()
 
   const { data: savedDraft, isLoading: draftLoading } = useSiteDraft(currentTeamId)
+  const { data: pageDocs, isLoading: pagesLoading } = useSitePageDocs(currentTeamId)
 
   const [draft, setDraft] = useState<SiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -386,6 +744,21 @@ export default function WebsiteBuilderPage() {
   // click through the next one.
   const [confirmUnpublish, setConfirmUnpublish] = useState(false)
 
+  // ── multi-page state ──
+  // Each OTHER page's sections, keyed by page id — the home page's own live in
+  // `draft.sections` like before. Seeded from `useSitePageDocs` once both it
+  // and the draft (which names which pages exist) have settled; a page listed
+  // in `draft.pages` with no doc yet (added this session, never saved) starts
+  // at an empty list rather than waiting on a doc that will never arrive.
+  const [pageSections, setPageSections] = useState<Record<string, WebsiteSection[]> | null>(null)
+  // Pages removed this session — their doc is deleted on the next save
+  // alongside every surviving page's overwrite (saveSitePages).
+  const [removedPageIds, setRemovedPageIds] = useState<string[]>([])
+  const pageIds = useMemo(() => draft?.pages?.map((p) => p.id) ?? null, [draft?.pages])
+  const [currentPageId, setCurrentPageId] = useCurrentPageParam(pageIds)
+  const [addPageOpen, setAddPageOpen] = useState(false)
+  const [pageSettingsOpen, setPageSettingsOpen] = useState(false)
+
   // Initialise the working draft once data has settled.
   useEffect(() => {
     if (draft || draftLoading || !currentTeamId || !team) return
@@ -400,6 +773,15 @@ export default function WebsiteBuilderPage() {
     )
   }, [draft, draftLoading, savedDraft, currentTeamId, team])
 
+  useEffect(() => {
+    if (pageSections || pagesLoading || !draft) return
+    const initial: Record<string, WebsiteSection[]> = {}
+    for (const ref of draft.pages ?? []) {
+      initial[ref.id] = pageDocs?.[ref.id] ?? []
+    }
+    setPageSections(initial)
+  }, [pageSections, pagesLoading, draft, pageDocs])
+
   // ── mutators ──
   function mutate(updater: (d: SiteDraft) => SiteDraft) {
     setDraft((d) => (d ? updater(d) : d))
@@ -407,13 +789,33 @@ export default function WebsiteBuilderPage() {
   }
   const patchMeta = (patch: Partial<SiteMeta>) =>
     mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))
+
+  // THE CURRENT PAGE'S sections, and the one place that writes them. Every
+  // section mutator below goes through this rather than touching
+  // `draft.sections` / `pageSections` directly, so none of them need to know
+  // which page they're editing.
+  const isHome = currentPageId === 'home'
+  const currentSections: WebsiteSection[] = isHome
+    ? (draft?.sections ?? [])
+    : (pageSections?.[currentPageId] ?? [])
+  function setCurrentSections(updater: (sections: WebsiteSection[]) => WebsiteSection[]) {
+    if (isHome) {
+      mutate((d) => ({ ...d, sections: updater(d.sections) }))
+    } else {
+      setPageSections((prev) => ({
+        ...(prev ?? {}),
+        [currentPageId]: updater((prev ?? {})[currentPageId] ?? []),
+      }))
+      setDirty(true)
+    }
+  }
+
   const updateSection = (id: string, patch: Record<string, unknown>) =>
-    mutate((d) => ({
-      ...d,
-      sections: d.sections.map((s) => (s.id === id ? ({ ...s, ...patch } as WebsiteSection) : s)),
-    }))
+    setCurrentSections((sections) =>
+      sections.map((s) => (s.id === id ? ({ ...s, ...patch } as WebsiteSection) : s))
+    )
   function addSection(type: WebsiteSectionType) {
-    if (draft && draft.sections.length >= limits.maxSections) {
+    if (currentSections.length >= limits.maxSections) {
       toast.error(t('limitSections', { max: limits.maxSections }))
       return
     }
@@ -421,7 +823,7 @@ export default function WebsiteBuilderPage() {
     // a band, a video as a lightbox) — the same result as applying it afterwards.
     const theme = findSiteTheme(draft?.meta.appliedTheme)
     const sec = theme ? themedSection(newSection(type), theme) : newSection(type)
-    mutate((d) => ({ ...d, sections: [...d.sections, sec] }))
+    setCurrentSections((sections) => [...sections, sec])
     setOpenId(sec.id)
     setTab('sections')
   }
@@ -436,26 +838,62 @@ export default function WebsiteBuilderPage() {
    * until Publish, which is already its own explicit step.
    */
   function duplicateSection(id: string) {
-    if (draft && draft.sections.length >= limits.maxSections) {
+    if (currentSections.length >= limits.maxSections) {
       toast.error(t('limitSections', { max: limits.maxSections }))
       return
     }
-    const source = draft?.sections.find((s) => s.id === id)
+    const source = currentSections.find((s) => s.id === id)
     if (!source) return
     const copy = { ...source, id: newSectionId() } as WebsiteSection
-    mutate((d) => {
-      const at = d.sections.findIndex((s) => s.id === id)
-      const next = [...d.sections]
+    setCurrentSections((sections) => {
+      const at = sections.findIndex((s) => s.id === id)
+      const next = [...sections]
       next.splice(at + 1, 0, copy)
-      return { ...d, sections: next }
+      return next
     })
     setOpenId(copy.id)
   }
 
   const removeSection = (id: string) =>
-    mutate((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }))
+    setCurrentSections((sections) => sections.filter((s) => s.id !== id))
   function reorderSections(from: number, to: number) {
-    mutate((d) => ({ ...d, sections: arrayMove(d.sections, from, to) }))
+    setCurrentSections((sections) => arrayMove(sections, from, to))
+  }
+
+  // ── pages ──
+  function handleCreatePage({ title, path }: { title: string; path: string }) {
+    const id = `p-${Math.random().toString(36).slice(2, 8)}${Math.random().toString(36).slice(2, 6)}`
+    const ref: SitePageRef = { id, path, title }
+    mutate((d) => ({ ...d, pages: [...(d.pages ?? []), ref] }))
+    setPageSections((prev) => ({ ...(prev ?? {}), [id]: [] }))
+    setAddPageOpen(false)
+    setCurrentPageId(id)
+  }
+  function patchPage(id: string, patch: Partial<SitePageRef>) {
+    mutate((d) => ({
+      ...d,
+      pages: (d.pages ?? []).map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    }))
+  }
+  /** Removes the page's ref, its local sections and every menu item pointing
+   *  at it (whole-branch — a `page` target names ONE page, so a subtree under
+   *  a deleted page has nothing left to point at either). The page's own doc
+   *  is deleted on the next save via `removedPageIds`. */
+  function deletePage(id: string) {
+    mutate((d) => ({
+      ...d,
+      pages: (d.pages ?? []).filter((p) => p.id !== id),
+      menu: d.menu ? removeMenuItemsTargetingPage(d.menu, id) : d.menu,
+    }))
+    setPageSections((prev) => {
+      if (!prev) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    setRemovedPageIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
+    setPageSettingsOpen(false)
+    if (currentPageId === id) setCurrentPageId('home')
   }
 
   // ── save / publish ──
@@ -464,8 +902,15 @@ export default function WebsiteBuilderPage() {
     setSaving(true)
     try {
       await saveSiteDraft(currentTeamId, user.uid, draft)
+      const pagesToSave = (draft.pages ?? []).map((ref) => ({
+        id: ref.id,
+        sections: pageSections?.[ref.id] ?? [],
+      }))
+      await saveSitePages(currentTeamId, user.uid, pagesToSave, removedPageIds)
+      setRemovedPageIds([])
       setDirty(false)
       await qc.invalidateQueries({ queryKey: ['site-draft', currentTeamId] })
+      await qc.invalidateQueries({ queryKey: ['site-pages', currentTeamId] })
       return true
     } catch {
       toast.error(t('errorSave'))
@@ -512,7 +957,7 @@ export default function WebsiteBuilderPage() {
   }
 
   // ── gates ──
-  if (pluginsLoading || draftLoading || !draft) {
+  if (pluginsLoading || draftLoading || !draft || pagesLoading || !pageSections) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -564,20 +1009,32 @@ export default function WebsiteBuilderPage() {
 
   const menu: SiteMenuItem[] =
     draft?.menu ??
-    deriveSiteMenu({ sections: draft?.sections ?? [], surfaceLinks: liveSurfaces.map((surface) => ({ surface })) })
+    deriveSiteMenu({
+      sections: draft?.sections ?? [],
+      surfaceLinks: liveSurfaces.map((surface) => ({ surface })),
+      pages: draft?.pages,
+    })
 
   function setMenu(next: SiteMenuItem[]) {
     setDraft((d) => (d ? { ...d, menu: next } : d))
     setDirty(true)
   }
 
-  /** Append a section to the end of the menu, from the section editor's button. */
+  /** Append a section to the end of the menu, from the section editor's button.
+   *  A home section is a direct anchor; a section on another page is scoped TO
+   *  that page — `page` is the only target kind that can name a section
+   *  outside the home page. */
   function addSectionToMenu(section: WebsiteSection) {
-    setMenu([
-      ...menu,
-      { id: `m${Date.now().toString(36)}`, target: { kind: 'section', sectionId: section.id } },
-    ])
+    const target: SiteMenuItem['target'] = isHome
+      ? { kind: 'section', sectionId: section.id }
+      : { kind: 'page', pageId: currentPageId, sectionId: section.id }
+    setMenu([...menu, { id: `m${Date.now().toString(36)}`, target }])
   }
+
+  // The site's other pages, as the id+label pairs every picker here wants
+  // (menu editor, CTA editor, brand link lists).
+  const menuPages = (draft.pages ?? []).map((p) => ({ id: p.id, label: p.navLabel || p.title }))
+  const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
 
   const previewSite: RenderableSite = {
     teamId: draft.teamId,
@@ -588,8 +1045,14 @@ export default function WebsiteBuilderPage() {
     // The menu being edited, so the overlay previews the tree as it stands —
     // not the derived fallback it would show from an unsaved draft.
     menu,
+    pages: draft.pages,
     socialLinks: team?.socialLinks,
   }
+  // The page being previewed, when it isn't Home — WebsiteRenderer swaps its
+  // main area for this instead of `site.sections`. Reads the SAME
+  // `currentSections` the editor itself is showing, so the preview never lags
+  // an unsaved edit.
+  const previewPage = currentPageRef ? { ref: currentPageRef, sections: currentSections } : undefined
 
   return (
     <div className="space-y-4">
@@ -681,6 +1144,7 @@ export default function WebsiteBuilderPage() {
               meta={draft.meta}
               onChange={patchMeta}
               sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
+              pages={menuPages}
               uploadImage={(file) => uploadSiteImage(currentTeamId!, 'brand', file)}
               themesInstalled={isInstalled('site-themes')}
               onApplyTheme={(theme) => {
@@ -697,8 +1161,53 @@ export default function WebsiteBuilderPage() {
             />
           ) : (
             <div className="space-y-2.5">
-              <SortableList ids={draft.sections.map((s) => s.id)} onReorder={reorderSections}>
-                {draft.sections.map((s) => {
+              {/* THE CURRENT PAGE. Every mutator below (add/duplicate/remove/
+                  reorder/update section, the section limit, "add to menu") acts
+                  on whichever page is selected here — see `currentSections` /
+                  `setCurrentSections`. */}
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
+                <Label className="shrink-0 text-xs text-muted-foreground">{t('pagesLabel')}</Label>
+                <Select value={currentPageId} onValueChange={(v) => v && setCurrentPageId(v)}>
+                  <SelectTrigger className="h-8 w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="home">{t('pagesHome')}</SelectItem>
+                    {(draft.pages ?? []).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.title} — /{p.path}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={(draft.pages ?? []).length >= SITE_PAGE_LIMITS.maxPages}
+                  // Native title, not <Tip>: the button already carries a visible
+                  // label ("Add page") — this only extends it, and only while
+                  // disabled, with the reason.
+                  title={
+                    (draft.pages ?? []).length >= SITE_PAGE_LIMITS.maxPages
+                      ? t('pagesLimitReached', { max: SITE_PAGE_LIMITS.maxPages })
+                      : undefined
+                  }
+                  onClick={() => setAddPageOpen(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('pagesAdd')}
+                </Button>
+                {!isHome && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setPageSettingsOpen(true)}>
+                    <Settings className="h-3.5 w-3.5" />
+                    {t('pagesSettings')}
+                  </Button>
+                )}
+              </div>
+
+              <SortableList ids={currentSections.map((s) => s.id)} onReorder={reorderSections}>
+                {currentSections.map((s) => {
                   const lib = SECTION_LIBRARY.find((l) => l.type === s.type)
                   const open = openId === s.id
                   return (
@@ -800,6 +1309,7 @@ export default function WebsiteBuilderPage() {
                               <SectionEditor
                                 section={s}
                                 teamId={currentTeamId}
+                                pages={menuPages}
                                 onChange={(patch) => updateSection(s.id, patch)}
                               />
                               {/* NO "menu label" FIELD HERE ANY MORE. A menu
@@ -870,6 +1380,7 @@ export default function WebsiteBuilderPage() {
             <MenuPanel
               menu={menu}
               sections={draft.sections}
+              pages={menuPages}
               surfaces={liveSurfaces}
               surfaceLabel={(sf) => tSurface(sf as Parameters<typeof tSurface>[0])}
               sectionLabel={(sec) => sectionNavLabel(sec, tSite)}
@@ -886,6 +1397,7 @@ export default function WebsiteBuilderPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         site={previewSite}
+        page={previewPage}
         // Labels are what a preview is read for; the hrefs are inert under
         // `preview` anyway, so they point at the real public paths without
         // needing the locale-aware builder the live site uses.
@@ -949,6 +1461,26 @@ export default function WebsiteBuilderPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddPageDialog
+        open={addPageOpen}
+        onOpenChange={setAddPageOpen}
+        existingPaths={(draft.pages ?? []).map((p) => p.path)}
+        onCreate={handleCreatePage}
+      />
+
+      {currentPageRef && (
+        <PageSettingsDialog
+          open={pageSettingsOpen}
+          onOpenChange={setPageSettingsOpen}
+          page={currentPageRef}
+          existingPaths={(draft.pages ?? [])
+            .filter((p) => p.id !== currentPageRef.id)
+            .map((p) => p.path)}
+          onChange={(patch) => patchPage(currentPageRef.id, patch)}
+          onDelete={() => deletePage(currentPageRef.id)}
+        />
+      )}
     </div>
   )
 }

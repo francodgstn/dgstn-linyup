@@ -3,9 +3,11 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { hasTeamRole } from '../utils/teams'
 import { unpublishSiteForTeam, touchTeamForSurfaceRecompute, pluginIsActive } from '../utils/plugins'
-import { translatePublishedSite } from '../translate/translateSite'
+import { deleteSiteI18nSidecars, translatePublishedSite } from '../translate/translateSite'
 import {
   SITE_PUBLISHED_COLLECTION,
+  SITE_I18N_SEPARATOR,
+  SITE_PAGES_SUBCOLLECTION,
   SITE_DRAFTS_COLLECTION,
   TEAMS_COLLECTION,
   TEAM_PLACES_SUBCOLLECTION,
@@ -13,13 +15,15 @@ import {
   ORG_PLACES_SUBCOLLECTION,
   resolveSiteSourceLocale,
 } from '@linyup/shared'
-import type { PublishedSite, WebsiteSection } from '@linyup/shared'
+import type { PublishedSite, SitePageRef, WebsiteSection } from '@linyup/shared'
 import {
   asDict,
   clean,
   optStr,
   safeUrl,
   sanitizeMenu,
+  sanitizePageRefs,
+  dedupeSectionIds,
   sanitizeMeta,
   sanitizeSections,
   str,
@@ -119,10 +123,12 @@ async function enrichSectionsWithPlaces(
   fs: admin.firestore.Firestore,
   teamId: string,
   team: Dict,
-  sections: WebsiteSection[]
+  lists: WebsiteSection[][]
 ): Promise<void> {
-  if (!sections.some((s) => s.type === 'places' || s.type === 'contact')) return
-  applyPlacePool(sections, await loadPlacePool(fs, teamId, team))
+  // Every page of the site, one pool read — and none when no page reads it.
+  if (!lists.some((sections) => sections.some((s) => s.type === 'places' || s.type === 'contact'))) return
+  const pool = await loadPlacePool(fs, teamId, team)
+  for (const sections of lists) applyPlacePool(sections, pool)
 }
 
 // ─── publishWebsite ─────────────────────────────────────────────────────────────
@@ -160,11 +166,33 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
 
   const name = optStr(team.name, 200) ?? 'Site'
   // Hidden sections omitted, unpublishable ones dropped — see ./sanitize.
-  const sections = sanitizeSections(draft.sections)
+  // ── PAGES ──────────────────────────────────────────────────────────────
+  // The home page is the draft doc's own sections; every other page is a doc in
+  // site_drafts/{teamId}/pages, listed by the draft's `pages` index. A page
+  // publishes only when it is in the index, not hidden, and has a doc.
+  const draftPagesSnap = await fs.collection(`${SITE_DRAFTS_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`).get()
+  const draftPageSections = new Map(
+    draftPagesSnap.docs
+      .filter((doc) => !doc.id.includes(SITE_I18N_SEPARATOR))
+      .map((doc) => [doc.id, (doc.data() as Dict).sections] as const)
+  )
+  const pageRefs: SitePageRef[] = sanitizePageRefs(draft.pages).filter(
+    (ref) => !ref.hidden && draftPageSections.has(ref.id)
+  )
+  // Section ids made unique across the whole site — an id is an anchor, a
+  // translation key and an embed address.
+  const deduped = dedupeSectionIds([
+    sanitizeSections(draft.sections),
+    ...pageRefs.map((ref) => sanitizeSections(draftPageSections.get(ref.id))),
+  ])
+  if (deduped.dropped.length) {
+    console.warn(`[publishWebsite] team ${teamId}: dropped duplicate section ids ${deduped.dropped.join(', ')}`)
+  }
+  const [sections, ...pageSections] = deduped.lists
 
   // Embed selected places into 'places' sections + fill the Contact map from the
   // team's primary place. Done after sanitizing (needs Firestore reads).
-  await enrichSectionsWithPlaces(fs, teamId, team, sections)
+  await enrichSectionsWithPlaces(fs, teamId, team, deduped.lists)
 
   // Denormalise social links (already public via team.public_profile) so the
   // published doc is self-contained for footer/contact icons.
@@ -191,9 +219,26 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     collection: SITE_PUBLISHED_COLLECTION,
     id: teamId,
     owner: { teamId },
-    published: { meta, menu, sections },
+    published: { meta, menu, pages: pageRefs, sections },
     srcLang,
   })
+
+  // Each page is translated into sidecars of its own, beside the page doc — a
+  // page's translations are read with that page, never with the whole site.
+  const pagesCollection = `${SITE_PUBLISHED_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`
+  const pageI18n: Awaited<ReturnType<typeof translatePublishedSite>>[] = []
+  for (const [index, ref] of pageRefs.entries()) {
+    pageI18n.push(
+      await translatePublishedSite({
+        db: fs,
+        collection: pagesCollection,
+        id: ref.id,
+        owner: { teamId },
+        published: { sections: pageSections[index] },
+        srcLang,
+      })
+    )
+  }
 
   // Shaped to match PublishedSite; typed as Dict for the Firestore write since
   // values are re-derived from sanitizers (platform strings, server timestamps).
@@ -206,6 +251,8 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     // Absent ⇒ the renderer derives the old two-run header, so a site that has
     // never opened the menu editor publishes exactly what it published before.
     menu,
+    // Absent ⇒ a one-page site, exactly as before pages existed.
+    pages: pageRefs.length ? pageRefs : undefined,
     socialLinks: socialLinks.length ? socialLinks : undefined,
     showBranding: plan === 'free' ? true : undefined,
     i18n,
@@ -213,7 +260,37 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     updated_at: FieldValue.serverTimestamp() as unknown as PublishedSite['updated_at'],
   })
 
+  // ORDER: page docs first, then the site doc that indexes them, then orphans —
+  // a reader follows the index, so it never meets an entry whose page is missing.
+  if (pageRefs.length) {
+    const batch = fs.batch()
+    pageRefs.forEach((ref, index) => {
+      batch.set(
+        fs.collection(pagesCollection).doc(ref.id),
+        clean({
+          teamId,
+          pageId: ref.id,
+          sections: pageSections[index],
+          i18n: pageI18n[index],
+          published_at: FieldValue.serverTimestamp(),
+          updated_at: FieldValue.serverTimestamp(),
+        })
+      )
+    })
+    await batch.commit()
+  }
+
   await fs.doc(`${SITE_PUBLISHED_COLLECTION}/${teamId}`).set(published)
+
+  // A page no longer published (deleted, hidden) must not stay world-readable by
+  // its direct path — remove it and its translation sidecars.
+  const publishedPageIds = new Set(pageRefs.map((ref) => ref.id))
+  const existingPages = await fs.collection(pagesCollection).select().get()
+  for (const doc of existingPages.docs) {
+    if (doc.id.includes(SITE_I18N_SEPARATOR) || publishedPageIds.has(doc.id)) continue
+    await doc.ref.delete()
+    await deleteSiteI18nSidecars(fs, pagesCollection, doc.id)
+  }
   await draftSnap.ref.set(
     { enabled: true, updated_at: FieldValue.serverTimestamp(), updatedBy: uid },
     { merge: true },

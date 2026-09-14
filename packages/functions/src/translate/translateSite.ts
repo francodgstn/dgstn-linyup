@@ -24,6 +24,7 @@ import {
   type TranslatableUnit,
   type SiteI18nManifest,
   type SiteMenuItem,
+  type SitePageRef,
   type SiteMeta,
   type SiteTranslationDoc,
   type SiteTranslationUnits,
@@ -219,6 +220,8 @@ export async function translatePublishedSite(args: {
   published: {
     meta?: SiteMeta
     menu?: readonly SiteMenuItem[]
+    /** The site doc's page index — its titles and SEO are translated too. */
+    pages?: readonly SitePageRef[]
     sections: readonly (WebsiteSection | OrgSiteSection)[]
   }
   srcLang: UiLanguage
@@ -228,7 +231,7 @@ export async function translatePublishedSite(args: {
   const fallback: SiteI18nManifest = { srcLang, locales: [] }
 
   try {
-    const units = extractSiteUnits({ meta: published.meta, menu: published.menu, sections: published.sections })
+    const units = extractSiteUnits({ meta: published.meta, menu: published.menu, pages: published.pages, sections: published.sections })
     const targets = targetLocalesFor(srcLang)
 
     const refs = targets.map((locale) => db.collection(collection).doc(siteI18nDocId(id, locale)))

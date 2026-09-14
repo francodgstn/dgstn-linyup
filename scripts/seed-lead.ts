@@ -110,7 +110,13 @@ import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
-import { sanitizeMenu, sanitizeMeta, sanitizeSections } from '../packages/functions/src/website/sanitize'
+import {
+  dedupeSectionIds,
+  sanitizeMenu,
+  sanitizeMeta,
+  sanitizePageRefs,
+  sanitizeSections,
+} from '../packages/functions/src/website/sanitize'
 import type {
   LeadProfile,
   LeadContactDef,
@@ -2819,11 +2825,18 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   // brand values, and its section styles below each section's explicit ones —
   // the same result as applying the theme in the builder and then editing.
   const siteTheme = findSiteTheme(typeof brand.appliedTheme === 'string' ? brand.appliedTheme : undefined)
-  if (siteTheme) {
-    const styles = siteTheme.sections as Record<string, Record<string, unknown> | undefined>
-    sections.forEach((section, i) => {
-      sections[i] = { ...(styles[String(section.type)] ?? {}), ...section }
-    })
+  const themeStyles = (siteTheme?.sections ?? {}) as Record<string, Record<string, unknown> | undefined>
+  const themed = (section: Record<string, unknown>) => ({ ...(themeStyles[String(section.type)] ?? {}), ...section })
+  sections.forEach((section, i) => {
+    sections[i] = themed(section)
+  })
+  // The site's other pages — each a doc of its own beside the site doc, with the
+  // same asset resolution and theme layering as the home page.
+  const sitePages: { ref: Record<string, unknown>; sections: Record<string, unknown>[] }[] = []
+  for (const { sections: pageSections, ...ref } of profile.sitePages ?? []) {
+    const resolved: Record<string, unknown>[] = []
+    for (const s of pageSections) resolved.push(themed(await resolveSectionAssets(s, teamId)))
+    sitePages.push({ ref, sections: resolved })
   }
   const logoUrl = profile.logoAsset ? await uploadAsset(profile.logoAsset, `teams/${teamId}/site/brand/logo`) : null
   const siteMeta = {
@@ -2849,17 +2862,44 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   // callable, so a demo can never show a site the studio could not publish
   // itself. The draft keeps the profile as authored (hidden sections included),
   // exactly as the builder would store it.
-  const publishedSections = sanitizeSections(sections)
-  const droppedSectionIds = sections
+  // Pages mirror publishWebsite: refs sanitized, hidden ones and ones without a
+  // doc left out, section ids unique across the whole site.
+  const draftPageRefs = sitePages.map((p) => p.ref)
+  const publishedPageRefs = sanitizePageRefs(draftPageRefs).filter(
+    (ref) => !ref.hidden && sitePages.some((p) => p.ref.id === ref.id),
+  )
+  const deduped = dedupeSectionIds([
+    sanitizeSections(sections),
+    ...publishedPageRefs.map((ref) => sanitizeSections(sitePages.find((p) => p.ref.id === ref.id)?.sections)),
+  ])
+  const [publishedSections, ...publishedPageSections] = deduped.lists
+  if (draftPageRefs.length !== publishedPageRefs.length) {
+    console.warn(`  ⚠ website: publish would drop ${draftPageRefs.length - publishedPageRefs.length} page(s) — hidden, or an invalid/duplicate path`)
+  }
+  if (deduped.dropped.length > 0) {
+    console.warn(`  ⚠ website: duplicate section id(s) ${deduped.dropped.join(', ')} — only the first is published`)
+  }
+  const authored = [sections, ...publishedPageRefs.map((ref) => sitePages.find((p) => p.ref.id === ref.id)?.sections ?? [])]
+  const droppedSectionIds = authored
+    .flat()
     .filter((s) => s.hidden !== true)
     .map((s) => String(s.id))
-    .filter((id) => !publishedSections.some((p) => p.id === id))
+    .filter((id) => !deduped.lists.flat().some((p) => p.id === id) && !deduped.dropped.includes(id))
   if (droppedSectionIds.length > 0) {
     console.warn(
       `  ⚠ website: publish would drop section(s) ${droppedSectionIds.join(', ')} — unknown type or a missing required field`,
     )
   }
   const publishedMenu = sanitizeMenu(profile.siteMenu)
+  // A reseed without --reset must not leave a removed page behind.
+  await db.recursiveDelete(db.collection(`site_drafts/${teamId}/pages`))
+  await db.recursiveDelete(db.collection(`site_published/${teamId}/pages`))
+  for (const p of sitePages) {
+    await db
+      .collection(`site_drafts/${teamId}/pages`)
+      .doc(String(p.ref.id))
+      .set({ teamId, pageId: p.ref.id, sections: p.sections, updated_at: ts(daysFromNow(-12)) })
+  }
   await db
     .collection('site_drafts')
     .doc(teamId)
@@ -2871,9 +2911,23 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       meta: siteMeta,
       sections,
       ...menu,
+      ...(draftPageRefs.length ? { pages: draftPageRefs } : {}),
       updated_at: ts(daysFromNow(-12)),
       updatedBy: uid,
     })
+  // Page docs before the site doc that indexes them — the publish order.
+  for (const [index, ref] of publishedPageRefs.entries()) {
+    await db
+      .collection(`site_published/${teamId}/pages`)
+      .doc(ref.id)
+      .set({
+        teamId,
+        pageId: ref.id,
+        sections: publishedPageSections[index],
+        published_at: ts(daysFromNow(-12)),
+        updated_at: ts(daysFromNow(-12)),
+      })
+  }
   await db
     .collection('site_published')
     .doc(teamId)
@@ -2884,6 +2938,7 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       meta: sanitizeMeta(siteMeta, profile.teamName),
       sections: publishedSections,
       ...(publishedMenu ? { menu: publishedMenu } : {}),
+      ...(publishedPageRefs.length ? { pages: publishedPageRefs } : {}),
       socialLinks: profile.socialLinks,
       showBranding: false, // studio plan
       published_at: ts(daysFromNow(-12)),

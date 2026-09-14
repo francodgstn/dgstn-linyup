@@ -7,8 +7,10 @@ import type { UiLanguage } from '../utils/regional'
 // ─────────────────────────────────────────────────────────────────────────────
 // Website plugin — studio site builder.
 //
-// A site is a single scrolling page made of stacked, typed sections. Two docs
-// back it:
+// A site is one or more pages made of stacked, typed sections. The HOME page's
+// sections live on the site doc itself; every other page is a doc of its own in
+// a `pages` subcollection, listed by the site doc's `pages` index (see
+// SitePageRef). Two docs back the site:
 //   • site_drafts/{teamId}    — PRIVATE working copy (manager+ read/write)
 //   • site_published/{teamId}  — PUBLIC, fully-public snapshot containing ONLY
 //                                whitelisted fields. Written by the publishWebsite
@@ -36,7 +38,7 @@ export type SiteBrandFont = (typeof SITE_BRAND_FONTS)[number]
 export const SITE_FONTS = ['sans', 'serif', 'rounded', ...SITE_BRAND_FONTS] as const
 export type SiteFont = (typeof SITE_FONTS)[number]
 export type SectionAlign = 'left' | 'center'
-export type SiteCtaAction = 'booking' | 'signup' | 'url'
+export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page'
 
 /** A call-to-action button. `booking`/`signup` resolve to the team's bio-link
  *  flows; `url` opens an external link. ('membership' is a legacy alias for
@@ -45,6 +47,8 @@ export interface SiteCta {
   label: string
   action: SiteCtaAction
   url?: string
+  /** For `action: 'page'` — the page to open (a SitePageRef id). */
+  pageId?: string
 }
 
 export interface SiteImage {
@@ -146,6 +150,9 @@ export interface FeatureItem {
   linkLabel?: string
   /** An https URL, or `#sectionId` to jump to a section of the same page. */
   linkUrl?: string
+  /** A page of this site. Wins over `linkUrl`; a page that is not published
+   *  renders no link at all. */
+  linkPageId?: string
   /** Image across the top of the card ('cards' style). Replaces the icon. */
   imageUrl?: string
 }
@@ -425,7 +432,10 @@ export interface SiteSurfaceLinkConfig {
  * that tree wins from then on.
  */
 export type SiteMenuTarget =
+  /** A section of the HOME page — an anchor there, from any page. */
   | { kind: 'section'; sectionId: string }
+  /** Another page of the site, optionally scrolled to one of its sections. */
+  | { kind: 'page'; pageId: string; sectionId?: string }
   | { kind: 'surface'; surface: PublicSurface }
   | { kind: 'url'; url: string }
   /** A parent that only opens its children — no destination of its own. */
@@ -478,6 +488,8 @@ export function flattenSiteMenu(
 export function deriveSiteMenu(params: {
   sections: readonly { id: string; type: string; showInNav?: boolean }[]
   surfaceLinks: readonly { surface: PublicSurface }[]
+  /** A multi-page site lists its visible pages after the home anchors. */
+  pages?: readonly { id: string; hidden?: boolean }[]
 }): SiteMenuItem[] {
   const anchors = params.sections
     .filter((s) => s.type !== 'hero' && s.showInNav !== false)
@@ -485,11 +497,14 @@ export function deriveSiteMenu(params: {
       id: `section:${s.id}`,
       target: { kind: 'section', sectionId: s.id },
     }))
+  const pages = (params.pages ?? [])
+    .filter((p) => !p.hidden)
+    .map((p): SiteMenuItem => ({ id: `page:${p.id}`, target: { kind: 'page', pageId: p.id } }))
   const surfaces = params.surfaceLinks.map((l): SiteMenuItem => ({
     id: `surface:${l.surface}`,
     target: { kind: 'surface', surface: l.surface },
   }))
-  return [...anchors, ...surfaces]
+  return [...anchors, ...pages, ...surfaces]
 }
 
 export interface SiteHeader {
@@ -498,6 +513,8 @@ export interface SiteHeader {
   ctaLabel?: string
   ctaAction?: SiteCtaAction
   ctaUrl?: string
+  /** The page the header button opens, when `ctaAction` is 'page'. */
+  ctaPageId?: string
   /**
    * Show the member control ("Sign in" / "My space") in the header. Absent ⇒
    * shown: a returning member on the website otherwise has no way into their
@@ -675,6 +692,50 @@ export interface SiteMeta {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Pages
+//
+// The home page is the site doc's own `sections`; every other page is a
+// SitePageDoc in `{site_drafts|site_published}/{teamId}/pages/{pageId}`, listed
+// by the site doc's `pages` index. A page lives at `/site/{path}`.
+//
+// WHY A DOC PER PAGE, not an array on the site doc: a site of thirty pages of
+// rich sections does not fit in one Firestore document (1 MiB, and translations
+// roughly double it). The index stays on the site doc so a renderer resolves a
+// URL to a page with the one read it already makes.
+//
+// ABSENT MEANS ONE PAGE: a site with no `pages` renders exactly as it always
+// did, so nothing existing needs a backfill.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One page in the site's index. */
+export interface SitePageRef {
+  /** Stable id — the page doc id, and what menu / CTA targets point at. */
+  id: string
+  /** URL path under /site, e.g. 'angebot/crossfit'. Lowercase words and
+   *  dashes, '/'-separated — see utils/sitePages.ts. Never 'slug': the public
+   *  slug queries on these collections must never match a page. */
+  path: string
+  title: string
+  /** Shorter label for menus that list the page. Absent ⇒ the title. */
+  navLabel?: string
+  /** Kept in the draft, never published. */
+  hidden?: boolean
+  seo?: SiteSeo
+}
+
+/** A page's content — `{site_drafts|site_published}/{teamId}/pages/{pageId}`. */
+export interface SitePageDoc {
+  teamId: string
+  pageId: string
+  sections: WebsiteSection[]
+  /** Published docs only: which translation sidecars exist for this page.
+   *  Sidecars sit beside the page doc, id `{pageId}__i18n_{locale}`. */
+  i18n?: SiteI18nManifest
+  published_at?: Timestamp
+  updated_at?: Timestamp
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Site translations (public-site localization)
 //
 // Tenant-authored site content is machine-translated at publish/save time into
@@ -739,6 +800,9 @@ export interface SiteDraft {
   sections: WebsiteSection[]
   /** The header menu. Absent ⇒ derived from sections + live surfaces. */
   menu?: SiteMenuItem[]
+  /** The other pages of the site. Absent ⇒ a one-page site. Each page's
+   *  sections are in the `pages` subcollection. */
+  pages?: SitePageRef[]
   updated_at?: Timestamp
   updatedBy?: string
 }
@@ -753,6 +817,8 @@ export interface PublishedSite {
   sections: WebsiteSection[]
   /** The header menu. Absent ⇒ derived from sections + live surfaces. */
   menu?: SiteMenuItem[]
+  /** The published pages (hidden ones never are). Absent ⇒ a one-page site. */
+  pages?: SitePageRef[]
   /** Denormalised from the team at publish time, for footer/contact icons. */
   socialLinks?: SocialLink[]
   /** Denormalised from the plan — true on the free plan ("Powered by Linyup"). */

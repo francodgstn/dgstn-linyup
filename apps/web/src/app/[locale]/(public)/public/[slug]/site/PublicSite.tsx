@@ -6,8 +6,10 @@ import { useLocale, useTranslations } from 'next-intl'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import {
+  SITE_PAGES_SUBCOLLECTION,
   SITE_PUBLISHED_COLLECTION,
   applySiteTranslations,
+  findSitePageByPath,
   siteI18nDocId,
   parseDocId,
   parseDateKey,
@@ -15,7 +17,16 @@ import {
   resolveSiteSurfaceLinks,
   routableSurfaces,
 } from '@linyup/shared'
-import type { PublishedSite, PublicSurface, SiteTranslationDoc, SiteTranslationUnits } from '@linyup/shared'
+import type {
+  PublishedSite,
+  PublicSurface,
+  SiteI18nManifest,
+  SitePageDoc,
+  SitePageRef,
+  SiteTranslationDoc,
+  SiteTranslationUnits,
+  WebsiteSection,
+} from '@linyup/shared'
 import { useRouter } from '@/i18n/navigation'
 import { publicHref, publicHrefLocalized } from '@/lib/publicRoutes'
 import { usePublicTeam } from '../PublicTeamProvider'
@@ -32,7 +43,11 @@ import { takeBookingConfirmed } from '@/lib/bookingReturn'
 // `PublicTeamProvider` (via the /public/[slug] layout) and outside the embed, so
 // it is where the booking overlay is hosted. The builder canvas and the embed
 // render the same blocks without a provider and must never receive `onBook`.
-export default function PublicSite({ slug }: { slug: string }) {
+//
+// `path` names a page of the site other than home ([] ⇒ home). Every page is its
+// own route, so moving between pages remounts this component — see the note on
+// full-page navigation in WebsiteRenderer.
+export default function PublicSite({ slug, path = [] }: { slug: string; path?: string[] }) {
   const { team } = usePublicTeam()
   const { isAuthenticated, contact, openSignIn } = usePublicContactAuth()
   const locale = useLocale()
@@ -44,7 +59,11 @@ export default function PublicSite({ slug }: { slug: string }) {
   const tSite = useTranslations('Site')
   const [site, setSite] = useState<PublishedSite | null>(null)
   const [i18nUnits, setI18nUnits] = useState<SiteTranslationUnits | null>(null)
+  const [page, setPage] = useState<{ ref: SitePageRef; sections: WebsiteSection[] } | null>(null)
+  const [pageUnits, setPageUnits] = useState<SiteTranslationUnits | null>(null)
   const [loading, setLoading] = useState(true)
+  // A stable dependency for the load effect — the array itself is new each render.
+  const pathKey = path.join('/')
   const [bookIntent, setBookIntent] = useState<BookIntent | null>(null)
   // The session a real, verified payment confirmed — NOT a boolean: pinning it to
   // the id stops the confirmation leaking onto a LATER, different booking if the
@@ -73,9 +92,10 @@ export default function PublicSite({ slug }: { slug: string }) {
       // component is NOT remounted when only the [locale] param changes) can
       // never leave the PREVIOUS locale's units applied — srcLang or a locale
       // with no sidecar degrades to base text, not to the last language viewed.
+      const wantsLocale = (manifest: SiteI18nManifest | undefined): manifest is SiteI18nManifest =>
+        !!manifest && locale !== manifest.srcLang && manifest.locales.includes(locale as (typeof manifest.locales)[number])
       let units: SiteTranslationUnits | null = null
-      const manifest = base?.i18n
-      if (base && manifest && locale !== manifest.srcLang && manifest.locales.includes(locale as (typeof manifest.locales)[number])) {
+      if (base && wantsLocale(base.i18n)) {
         try {
           const sidecarSnap = await getDoc(doc(db, SITE_PUBLISHED_COLLECTION, siteI18nDocId(base.teamId, locale)))
           if (sidecarSnap.exists()) {
@@ -85,19 +105,58 @@ export default function PublicSite({ slug }: { slug: string }) {
           reportPublicLoadFailure('site/i18n-sidecar', err) // falls back to base-language text
         }
       }
+
+      // A page other than home: its sections are a doc of their own under the
+      // site doc, with translation sidecars beside it. A path the site does not
+      // have renders not-found, exactly like a slug with no site.
+      const segments = pathKey ? pathKey.split('/') : []
+      const ref = base && segments.length ? findSitePageByPath(base.pages, segments) : null
+      let loadedPage: { ref: SitePageRef; sections: WebsiteSection[] } | null = null
+      let loadedPageUnits: SiteTranslationUnits | null = null
+      if (base && ref) {
+        try {
+          const pageSnap = await getDoc(doc(db, SITE_PUBLISHED_COLLECTION, base.teamId, SITE_PAGES_SUBCOLLECTION, ref.id))
+          if (pageSnap.exists()) {
+            const pageDoc = pageSnap.data() as SitePageDoc
+            loadedPage = { ref, sections: pageDoc.sections ?? [] }
+            if (wantsLocale(pageDoc.i18n)) {
+              try {
+                const pageSidecar = await getDoc(
+                  doc(db, SITE_PUBLISHED_COLLECTION, base.teamId, SITE_PAGES_SUBCOLLECTION, siteI18nDocId(ref.id, locale))
+                )
+                if (pageSidecar.exists()) loadedPageUnits = (pageSidecar.data() as SiteTranslationDoc).units
+              } catch (err: unknown) {
+                reportPublicLoadFailure('site/page-i18n-sidecar', err) // base-language text
+              }
+            }
+          }
+        } catch (err: unknown) {
+          reportPublicLoadFailure('site/page', err) // terminal not-found, but never silent
+        }
+      }
       if (cancelled) return
-      setSite(base)
+      setSite(segments.length && !loadedPage ? null : base)
       setI18nUnits(units)
+      setPage(loadedPage)
+      setPageUnits(loadedPageUnits)
       setLoading(false)
     }
     run()
     return () => {
       cancelled = true
     }
-  }, [slug, locale])
+  }, [slug, locale, pathKey])
 
   // The ONE resolver (packages/shared) — never re-derive translated fields here.
   const translatedSite = useMemo(() => (site ? applySiteTranslations(site, i18nUnits) : null), [site, i18nUnits])
+  const translatedPage = useMemo(() => {
+    if (!page) return undefined
+    return {
+      // The page's title lives in the site's index, translated with the site.
+      ref: translatedSite?.pages?.find((p) => p.id === page.ref.id) ?? page.ref,
+      sections: applySiteTranslations({ sections: page.sections }, pageUnits).sections,
+    }
+  }, [page, pageUnits, translatedSite])
 
   // Reopen the overlay from the URL, so a refresh or a shared link lands the
   // visitor back where they were instead of on a bare website. Same param names
@@ -258,6 +317,7 @@ export default function PublicSite({ slug }: { slug: string }) {
     <>
       <WebsiteRenderer
         site={translatedSite}
+        page={translatedPage}
         onBook={openBooking}
         surfaceLinks={surfaceLinks}
         memberControl={memberControl}

@@ -46,11 +46,14 @@ export interface BrandFieldsProps {
   onChange: (patch: Partial<SiteMeta>) => void
   /** Sections a link can point at — id + the label the editor shows for it. */
   sections: { id: string; label: string }[]
+  /** The site's other pages — a link can point at one of these too. Absent ⇒
+   *  no page destinations offered (the org builder, which has no pages yet). */
+  pages?: { id: string; label: string }[]
   /** Uploads a brand image (logo, partner logo) and resolves to its URL. */
   uploadImage: (file: File) => Promise<string>
 }
 
-export function BrandFields({ meta, onChange, sections, uploadImage }: BrandFieldsProps) {
+export function BrandFields({ meta, onChange, sections, pages, uploadImage }: BrandFieldsProps) {
   const t = useTranslations('Website')
   const header = meta.header
   const footer = meta.footer
@@ -165,6 +168,7 @@ export function BrandFields({ meta, onChange, sections, uploadImage }: BrandFiel
           items={header.topBar?.items ?? []}
           onChange={(items) => setHeader({ topBar: { ...header.topBar, items } })}
           sections={sections}
+          pages={pages}
           idPrefix="tb-"
         />
       </div>
@@ -190,6 +194,7 @@ export function BrandFields({ meta, onChange, sections, uploadImage }: BrandFiel
               key={column.id}
               column={column}
               sections={sections}
+              pages={pages}
               onChange={(next) =>
                 setFooter({ columns: (footer.columns ?? []).map((c, i) => (i === index ? next : c)) })
               }
@@ -282,6 +287,7 @@ export function BrandFields({ meta, onChange, sections, uploadImage }: BrandFiel
             items={footer.legal ?? []}
             onChange={(legal) => setFooter({ legal })}
             sections={sections}
+            pages={pages}
             idPrefix="lg-"
           />
         </div>
@@ -386,11 +392,13 @@ function ImageField({
 function FooterColumnEditor({
   column,
   sections,
+  pages,
   onChange,
   onRemove,
 }: {
   column: SiteFooterColumn
   sections: { id: string; label: string }[]
+  pages?: { id: string; label: string }[]
   onChange: (column: SiteFooterColumn) => void
   onRemove: () => void
 }) {
@@ -412,6 +420,7 @@ function FooterColumnEditor({
         items={column.items}
         onChange={(items) => onChange({ ...column, items })}
         sections={sections}
+        pages={pages}
         idPrefix="fc-"
       />
     </div>
@@ -419,18 +428,25 @@ function FooterColumnEditor({
 }
 
 const URL_TARGET = '__url__'
+// Sections and pages share one flat Select, so their ids are namespaced —
+// a section and a page can otherwise mint the same random id and collide.
+const SECTION_PREFIX = 's:'
+const PAGE_PREFIX = 'p:'
 
-/** Flat label + destination rows. A destination is a section of the page or an
- *  external URL — the two targets a strip of links needs. */
+/** Flat label + destination rows. A destination is a section of the page, one
+ *  of the site's other pages, or an external URL. */
 function LinkListEditor({
   items,
   onChange,
   sections,
+  pages,
   idPrefix,
 }: {
   items: SiteMenuItem[]
   onChange: (items: SiteMenuItem[]) => void
   sections: { id: string; label: string }[]
+  /** Absent ⇒ no page destinations offered (the org builder). */
+  pages?: { id: string; label: string }[]
   idPrefix: string
 }) {
   const t = useTranslations('Website')
@@ -441,7 +457,12 @@ function LinkListEditor({
     <div className="space-y-2">
       {items.map((item, index) => {
         const target = item.target
-        const selectValue = target.kind === 'section' ? target.sectionId : URL_TARGET
+        const selectValue =
+          target.kind === 'section'
+            ? `${SECTION_PREFIX}${target.sectionId}`
+            : target.kind === 'page'
+              ? `${PAGE_PREFIX}${target.pageId}`
+              : URL_TARGET
         return (
           <div key={item.id} className="flex flex-wrap items-center gap-2">
             <Input
@@ -452,11 +473,12 @@ function LinkListEditor({
             />
             <Select
               value={selectValue}
-              onValueChange={(v) =>
-                update(index, {
-                  target: !v || v === URL_TARGET ? { kind: 'url', url: '' } : { kind: 'section', sectionId: v },
-                })
-              }
+              onValueChange={(v) => {
+                if (!v || v === URL_TARGET) update(index, { target: { kind: 'url', url: '' } })
+                else if (v.startsWith(PAGE_PREFIX))
+                  update(index, { target: { kind: 'page', pageId: v.slice(PAGE_PREFIX.length) } })
+                else update(index, { target: { kind: 'section', sectionId: v.slice(SECTION_PREFIX.length) } })
+              }}
             >
               <SelectTrigger className="h-8 w-40">
                 <SelectValue />
@@ -464,8 +486,13 @@ function LinkListEditor({
               <SelectContent>
                 <SelectItem value={URL_TARGET}>{t('brandLinkTargetUrl')}</SelectItem>
                 {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
+                  <SelectItem key={section.id} value={`${SECTION_PREFIX}${section.id}`}>
                     {section.label}
+                  </SelectItem>
+                ))}
+                {(pages ?? []).map((page) => (
+                  <SelectItem key={page.id} value={`${PAGE_PREFIX}${page.id}`}>
+                    {page.label}
                   </SelectItem>
                 ))}
               </SelectContent>

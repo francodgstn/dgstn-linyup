@@ -7,6 +7,7 @@ import { HttpsError } from 'firebase-functions/v2/https'
 import {
   TEAMS_COLLECTION,
   SITE_PUBLISHED_COLLECTION,
+  SITE_PAGES_SUBCOLLECTION,
   SITE_DRAFTS_COLLECTION,
   ORG_SITE_PUBLISHED_COLLECTION,
   ORG_SITE_DRAFTS_COLLECTION,
@@ -201,6 +202,9 @@ export async function assertPluginInstalled(teamId: string, pluginId: string): P
  */
 export async function unpublishSiteForTeam(teamId: string): Promise<void> {
   const db = admin.firestore()
+  // The pages (and their sidecars, which sit beside them) first: deleting the
+  // site doc alone would leave every page world-readable by its direct path.
+  await db.recursiveDelete(db.collection(`${SITE_PUBLISHED_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`))
   await db.doc(`${SITE_PUBLISHED_COLLECTION}/${teamId}`).delete()
   await deleteSiteI18nSidecars(db, SITE_PUBLISHED_COLLECTION, teamId)
   await db.doc(`${SITE_DRAFTS_COLLECTION}/${teamId}`).set(

@@ -6,6 +6,7 @@ import { ChevronDown, Globe, Menu, Moon, Sun, X } from 'lucide-react'
 import type {
   SiteMeta,
   SiteMenuItem,
+  SitePageRef,
   PublicSurface,
   WebsiteSection,
   OrgSiteSection,
@@ -13,7 +14,8 @@ import type {
   SocialLink,
 } from '@linyup/shared'
 import { resolveThemePreset } from '@linyup/shared'
-import { deriveSiteMenu } from '@linyup/shared'
+import { deriveSiteMenu, sitePageSegments } from '@linyup/shared'
+import { publicHrefLocalized, publicSubHrefLocalized } from '@/lib/publicRoutes'
 import { buildPalette, ctaHref } from './theme'
 import { siteBrandRootProps } from './siteFonts'
 import { SectionBlock, sectionNavLabel, bookProps, SOCIAL_ICONS, type RenderCtx } from './sections'
@@ -34,6 +36,8 @@ export interface RenderableSite {
   menu?: SiteMenuItem[]
   socialLinks?: SocialLink[]
   showBranding?: boolean
+  /** The site's other pages (team sites). Absent ⇒ a one-page site. */
+  pages?: SitePageRef[]
 }
 
 export default function WebsiteRenderer({
@@ -45,6 +49,7 @@ export default function WebsiteRenderer({
   surfaceLinks,
   memberControl,
   paymentsEnabled,
+  page,
 }: {
   site: RenderableSite
   preview?: boolean
@@ -71,6 +76,12 @@ export default function WebsiteRenderer({
    *  the live team site (the one host that resolves the team) — see
    *  RenderCtx.paymentsEnabled for why absent is not the same as false. */
   paymentsEnabled?: boolean
+  /**
+   * The page being shown, when it is not the home page. Header, footer and theme
+   * are the site's; only `<main>` changes. Absent ⇒ the home page
+   * (`site.sections`).
+   */
+  page?: { ref: SitePageRef; sections: (WebsiteSection | OrgSiteSection)[] }
 }) {
   const locale = useLocale()
   const t = useTranslations('Site')
@@ -143,6 +154,22 @@ export default function WebsiteRenderer({
   const palette = buildPalette(site.meta, effectiveDark)
   // Fonts, heading case and button shape, as root CSS variables (see siteFonts).
   const brandRoot = siteBrandRootProps(site.meta)
+  // ── PAGES ───────────────────────────────────────────────────────────────
+  // Every page is its own URL (a full navigation, not a client transition), so
+  // a link to a section is `#id` only when that section is on THIS page — from
+  // any other page it is the home URL plus the anchor.
+  const pageSections = page?.sections ?? site.sections
+  const homeHref = publicHrefLocalized(locale, site.slug, 'site')
+  const pageById = new Map((site.pages ?? []).filter((p) => !p.hidden).map((p) => [p.id, p]))
+  function pageHref(pageId: string, sectionId?: string): string | undefined {
+    const ref = pageById.get(pageId)
+    if (!ref) return undefined
+    const anchor = sectionId ? `#${sectionId}` : ''
+    if (page?.ref.id === ref.id) return anchor || '#top'
+    return publicSubHrefLocalized(locale, site.slug, 'site', sitePageSegments(ref.path)) + anchor
+  }
+  const onPageIds = new Set(pageSections.map((sec) => sec.id))
+
   const ctx: RenderCtx = {
     palette,
     slug: site.slug,
@@ -157,6 +184,7 @@ export default function WebsiteRenderer({
     // renders this component inside /(auth) with NO PublicTeamProvider, so a
     // leaked onBook would make the overlay throw and blank the canvas.
     onBook: preview ? undefined : onBook,
+    pageHref,
   }
 
   // ── THE MENU ────────────────────────────────────────────────────────────
@@ -173,12 +201,14 @@ export default function WebsiteRenderer({
         ? site.menu
         : deriveSiteMenu({
             sections: site.sections,
+            pages: site.pages,
             surfaceLinks: (surfaceLinks ?? []).flatMap((l) => (l.surface ? [{ surface: l.surface }] : [])),
           }))
     : []
 
   const surfaceByKey = new Map((surfaceLinks ?? []).flatMap((l) => (l.surface ? [[l.surface, l] as const] : [])))
-  const sectionById = new Map(site.sections.map((sec) => [sec.id, sec]))
+  // Home sections and this page's — a menu may point at either.
+  const sectionById = new Map([...site.sections, ...pageSections].map((sec) => [sec.id, sec]))
 
   /** Resolve one stored item to what the header actually needs to draw. A null
    *  href is a GROUP — a row that only opens its children. Items pointing at a
@@ -189,7 +219,16 @@ export default function WebsiteRenderer({
       case 'section': {
         const sec = sectionById.get(item.target.sectionId)
         if (!sec) return null
-        return { href: `#${sec.id}`, label: item.label?.trim() || sectionNavLabel(sec, t) }
+        return {
+          href: onPageIds.has(sec.id) ? `#${sec.id}` : `${homeHref}#${sec.id}`,
+          label: item.label?.trim() || sectionNavLabel(sec, t),
+        }
+      }
+      case 'page': {
+        const ref = pageById.get(item.target.pageId)
+        const href = pageHref(item.target.pageId, item.target.sectionId)
+        if (!ref || !href) return null
+        return { href, label: item.label?.trim() || ref.navLabel?.trim() || ref.title }
       }
       case 'surface': {
         const link = surfaceByKey.get(item.target.surface)
@@ -281,7 +320,7 @@ export default function WebsiteRenderer({
 
   const headerAction = site.meta.header.ctaAction ?? 'booking'
   const headerHref = site.meta.header.ctaLabel
-    ? ctaHref({ action: headerAction, url: site.meta.header.ctaUrl }, site.slug, locale)
+    ? ctaHref({ action: headerAction, url: site.meta.header.ctaUrl, pageId: site.meta.header.ctaPageId }, site.slug, locale, pageHref)
     : undefined
 
   // The header CTA is the most-clicked booking entry on the whole site, so it
@@ -358,7 +397,7 @@ export default function WebsiteRenderer({
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
           <a
-            href={preview ? undefined : '#top'}
+            href={preview ? undefined : page ? homeHref : '#top'}
             onClick={preview ? inert : undefined}
             className="flex items-center font-bold tracking-tight"
             style={{ color: palette.text }}
@@ -566,7 +605,7 @@ export default function WebsiteRenderer({
       </header>
 
       <main id="top">
-        {site.sections.map((s: WebsiteSection | OrgSiteSection) => (
+        {pageSections.map((s: WebsiteSection | OrgSiteSection) => (
           <SectionBlock key={s.id} section={s} ctx={ctx} />
         ))}
       </main>

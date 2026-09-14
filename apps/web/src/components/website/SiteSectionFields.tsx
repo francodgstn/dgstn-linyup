@@ -493,10 +493,13 @@ export function ContactFields({ s, onChange }: { s: ContactSection; onChange: (p
 // builder simply predated them.
 
 export function FeaturesFields({
-  s, tenant, onChange,
+  s, tenant, pages, onChange,
 }: {
   s: FeaturesSection
   tenant: SiteEditorTenant
+  /** The site's other pages, offered as a card's link target. Absent (the org
+   *  builder) ⇒ links are web addresses only. */
+  pages?: { id: string; label: string }[]
   onChange: (p: Patch) => void
 }) {
   const t = useTranslations('Website')
@@ -585,13 +588,40 @@ export function FeaturesFields({
                 onChange={(e) => set(i, { linkLabel: e.target.value })}
                 className="h-9"
               />
+              {pages && pages.length > 0 ? (
+                // A page OR a web address — picking one clears the other, so the
+                // stored item never carries a link the renderer would ignore.
+                <Select
+                  value={item.linkPageId ?? 'url'}
+                  onValueChange={(v) =>
+                    set(i, !v || v === 'url' ? { linkPageId: undefined } : { linkPageId: v, linkUrl: undefined })
+                  }
+                >
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="url">{t('editorCtaActionUrl')}</SelectItem>
+                    {pages.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={item.linkUrl ?? ''}
+                  placeholder="https://…"
+                  onChange={(e) => set(i, { linkUrl: e.target.value })}
+                  className="h-9"
+                />
+              )}
+            </div>
+            {pages && pages.length > 0 && !item.linkPageId && (
               <Input
                 value={item.linkUrl ?? ''}
                 placeholder="https://…"
                 onChange={(e) => set(i, { linkUrl: e.target.value })}
                 className="h-9"
               />
-            </div>
+            )}
           </div>
         ))}
       </div>

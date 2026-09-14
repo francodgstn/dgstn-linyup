@@ -19,7 +19,9 @@
 
 import {
   isPublicSurface,
+  isValidSitePagePath,
   isValidVideoId,
+  SITE_PAGE_LIMITS,
   SITE_THEME_IDS,
   SITE_FONTS,
   SITE_MENU_MAX_DEPTH,
@@ -42,6 +44,7 @@ import type {
   SiteFooterLogo,
   SiteMenuItem,
   SiteMeta,
+  SitePageRef,
   SiteSurfaceLinkConfig,
   SiteTopBar,
   SurfaceThemePresetId,
@@ -137,8 +140,14 @@ export function sanitizeCta(v: unknown): Dict | undefined {
   const d = asDict(v)
   const label = optStr(d.label, 120)
   if (!label) return undefined
-  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url'] as const, 'url')
+  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url', 'page'] as const, 'url')
   const action = action0 === 'membership' ? 'signup' : action0 // normalize legacy alias
+  if (action === 'page') {
+    // A page CTA with no page is a button that goes nowhere — drop it. Whether
+    // the page still exists is the renderer's question (it hides a dead one).
+    const pageId = optStr(d.pageId, 64)
+    return pageId ? { label, action, pageId } : undefined
+  }
   return clean({ label, action, url: action === 'url' ? safeUrl(d.url) : undefined })
 }
 
@@ -245,6 +254,7 @@ export function sanitizeFeaturesSection(d: Dict, id: string): FeaturesSection | 
         text: optStr(i.text, 600),
         linkLabel: optStr(i.linkLabel, 120),
         linkUrl: safeLink(i.linkUrl),
+        linkPageId: optStr(i.linkPageId, 64),
         imageUrl: safeUrl(i.imageUrl),
       })
     })
@@ -451,6 +461,66 @@ export function sanitizeSections(raw: unknown): WebsiteSection[] {
     .slice(0, 30)
 }
 
+// ─── pages ────────────────────────────────────────────────────────────────────
+
+/**
+ * The site's page index (SitePageRef[]). World-readable once published, so
+ * every field is re-derived: an id and a title are required, the path must be
+ * valid under the ONE grammar (utils/sitePages.ts) and unique, ids are unique,
+ * and the list is capped. `hidden` refs are kept — the callable decides what
+ * publishes; the draft keeps them.
+ */
+export function sanitizePageRefs(raw: unknown): SitePageRef[] {
+  const seenIds = new Set<string>()
+  const seenPaths = new Set<string>()
+  const refs: SitePageRef[] = []
+  for (const entry of Array.isArray(raw) ? raw : []) {
+    if (refs.length >= SITE_PAGE_LIMITS.maxPages) break
+    const d = asDict(entry)
+    const id = optStr(d.id, 64)
+    const title = optStr(d.title, 200)
+    const path = typeof d.path === 'string' ? d.path : ''
+    if (!id || !title || !isValidSitePagePath(path) || seenIds.has(id) || seenPaths.has(path)) continue
+    seenIds.add(id)
+    seenPaths.add(path)
+    const seo = asDict(d.seo)
+    const cleanSeo = clean({ title: optStr(seo.title, 200), description: optStr(seo.description, 400) })
+    refs.push(
+      clean({
+        id,
+        path,
+        title,
+        navLabel: optStr(d.navLabel, 120),
+        hidden: optTrue(d.hidden),
+        seo: Object.keys(cleanSeo).length ? cleanSeo : undefined,
+      }) as SitePageRef
+    )
+  }
+  return refs
+}
+
+/**
+ * Section ids unique across the WHOLE site (home + every page). An id is an
+ * anchor, a translation key (`s.{id}`) and an embed address, so a duplicate on
+ * a second page would be ambiguous in all three. The first occurrence wins; the
+ * ids dropped from later lists are returned for logging.
+ */
+export function dedupeSectionIds<T extends { id: string }>(lists: readonly T[][]): { lists: T[][]; dropped: string[] } {
+  const seen = new Set<string>()
+  const dropped: string[] = []
+  const out = lists.map((list) =>
+    list.filter((section) => {
+      if (seen.has(section.id)) {
+        dropped.push(section.id)
+        return false
+      }
+      seen.add(section.id)
+      return true
+    })
+  )
+  return { lists: out, dropped }
+}
+
 // ─── menu ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -491,6 +561,10 @@ export function sanitizeMenu(raw: unknown, depth = 1): SiteMenuItem[] | undefine
       if (t.kind === 'section') {
         const sectionId = optStr(t.sectionId, 64)
         if (sectionId) target = { kind: 'section', sectionId }
+      } else if (t.kind === 'page') {
+        const pageId = optStr(t.pageId, 64)
+        const sectionId = optStr(t.sectionId, 64)
+        if (pageId) target = clean({ kind: 'page', pageId, sectionId }) as SiteMenuItem['target']
       } else if (t.kind === 'surface') {
         // The real guard, not a cast: an unknown surface would publish a menu
         // row the renderer cannot resolve, and it would render as nothing with
@@ -614,8 +688,12 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
   const d = asDict(raw)
   const header = asDict(d.header)
   const seo = asDict(d.seo)
-  const headerCtaAction0 = oneOf(header.ctaAction, ['booking', 'signup', 'membership', 'url'] as const, 'booking')
-  const headerCtaAction = headerCtaAction0 === 'membership' ? 'signup' : headerCtaAction0 // normalize legacy
+  const headerCtaAction0 = oneOf(header.ctaAction, ['booking', 'signup', 'membership', 'url', 'page'] as const, 'booking')
+  const headerCtaPageId = headerCtaAction0 === 'page' ? optStr(header.ctaPageId, 64) : undefined
+  // The legacy alias is normalised, and a page button with no page falls back
+  // to booking rather than publishing a button that goes nowhere.
+  const headerCtaAction =
+    headerCtaAction0 === 'membership' ? 'signup' : headerCtaAction0 === 'page' && !headerCtaPageId ? 'booking' : headerCtaAction0
 
   return clean({
     title: optStr(d.title, 200) ?? fallbackTitle,
@@ -650,6 +728,7 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
       ctaLabel: optStr(header.ctaLabel, 120),
       ctaAction: headerCtaAction,
       ctaUrl: headerCtaAction === 'url' ? safeUrl(header.ctaUrl) : undefined,
+      ctaPageId: headerCtaPageId,
       showSignIn: header.showSignIn !== false,
       surfaceLinks: sanitizeSurfaceLinks(header.surfaceLinks),
       topBar: sanitizeTopBar(header.topBar),

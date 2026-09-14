@@ -559,6 +559,23 @@ export type LeadSiteSection = Record<string, unknown> & {
   imagesAssets?: string[]
 }
 
+/**
+ * A page of the website besides home, at `/site/{path}` — the shape of
+ * SitePageRef plus the page's own sections. Section ids must be unique across
+ * the whole site (home and every page); a menu reaches a page with
+ * `{ kind: 'page', pageId, sectionId? }`.
+ */
+export interface LeadSitePage {
+  id: string
+  /** Lowercase words joined by dashes, up to three `/` segments: 'ueber-uns/team'. */
+  path: string
+  title: string
+  navLabel?: string
+  hidden?: boolean
+  seo?: { title?: string; description?: string }
+  sections: LeadSiteSection[]
+}
+
 export interface LeadProfile {
   /** Lead id — folder name, workflow choice value, teamId `lead-{id}`. */
   id: string
@@ -665,6 +682,8 @@ export interface LeadProfile {
   events: LeadEventDef[]
 
   siteSections: LeadSiteSection[]
+  /** Optional pages besides home — see LeadSitePage. Absent ⇒ a one-page site. */
+  sitePages?: LeadSitePage[]
   /**
    * Optional stored header MENU (a `SiteMenuItem[]` tree). Absent ⇒ the header
    * is DERIVED from the sections — every nav-visible section becomes a top-level

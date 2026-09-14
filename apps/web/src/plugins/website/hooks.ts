@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, getDocs, collection, setDoc, writeBatch, serverTimestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage, functions } from '@/lib/firebase'
@@ -9,8 +9,18 @@ import {
   SITE_DRAFTS_COLLECTION,
   SITE_PUBLISHED_COLLECTION,
   EMBED_WIDGETS_COLLECTION,
+  SITE_PAGES_SUBCOLLECTION,
+  SITE_I18N_SEPARATOR,
 } from '@linyup/shared'
-import type { SiteDraft, PublishedSite, EmbedWidget, EmbedWidgetSet, SocialLink } from '@linyup/shared'
+import type {
+  SiteDraft,
+  SitePageDoc,
+  PublishedSite,
+  EmbedWidget,
+  EmbedWidgetSet,
+  SocialLink,
+  WebsiteSection,
+} from '@linyup/shared'
 
 // ─── queries ────────────────────────────────────────────────────────────────
 
@@ -34,6 +44,29 @@ export function usePublishedSite(teamId: string | null) {
     queryFn: async () => {
       const d = await getDoc(doc(db, SITE_PUBLISHED_COLLECTION, teamId!))
       return d.exists() ? (d.data() as PublishedSite) : null
+    },
+  })
+}
+
+/** A team's other pages (site_drafts/{teamId}/pages) — keyed by pageId, each
+ *  value its `sections`. Skips translation sidecar ids (SITE_I18N_SEPARATOR)
+ *  defensively — the draft side never writes one, only the published side
+ *  does, but a listing that isn't defensive here is the one that breaks first
+ *  if that ever changes. */
+export function useSitePageDocs(teamId: string | null) {
+  return useQuery<Record<string, WebsiteSection[]>>({
+    queryKey: ['site-pages', teamId],
+    enabled: !!teamId,
+    queryFn: async () => {
+      const snap = await getDocs(
+        collection(db, SITE_DRAFTS_COLLECTION, teamId!, SITE_PAGES_SUBCOLLECTION)
+      )
+      const out: Record<string, WebsiteSection[]> = {}
+      for (const d of snap.docs) {
+        if (d.id.includes(SITE_I18N_SEPARATOR)) continue
+        out[d.id] = (d.data() as SitePageDoc).sections ?? []
+      }
+      return out
     },
   })
 }
@@ -65,12 +98,47 @@ export async function saveSiteDraft(teamId: string, userId: string, draft: SiteD
     // menu edit on save. Absent until first edited — `stripUndefinedDeep` drops
     // it, and an absent menu still derives, so no existing site changes.
     menu: draft.menu,
+    // The page index. Same rule as `menu` — an omitted field on this
+    // full-overwrite doc is WIPED, not left alone, so a save from a builder
+    // that hadn't loaded `pages` yet would delete every other page's listing
+    // (its own doc under the `pages` subcollection survives, but nothing would
+    // point at it any more). Absent ⇒ a one-page site, so nothing existing
+    // changes.
+    pages: draft.pages,
   })
   await setDoc(doc(db, SITE_DRAFTS_COLLECTION, teamId), {
     ...payload,
     updated_at: serverTimestamp(),
     updatedBy: userId,
   })
+}
+
+/** Persist every page's sections (one `set` per page doc, full overwrite —
+ *  same "the doc is the complete document" rule as `saveSiteDraft`) and
+ *  delete any pages removed this session, all in one batch. */
+export async function saveSitePages(
+  teamId: string,
+  userId: string,
+  pages: { id: string; sections: WebsiteSection[] }[],
+  removedPageIds: string[]
+): Promise<void> {
+  const batch = writeBatch(db)
+  for (const page of pages) {
+    const payload = stripUndefinedDeep({
+      teamId,
+      pageId: page.id,
+      sections: page.sections,
+    })
+    batch.set(doc(db, SITE_DRAFTS_COLLECTION, teamId, SITE_PAGES_SUBCOLLECTION, page.id), {
+      ...payload,
+      updated_at: serverTimestamp(),
+      updatedBy: userId,
+    })
+  }
+  for (const id of removedPageIds) {
+    batch.delete(doc(db, SITE_DRAFTS_COLLECTION, teamId, SITE_PAGES_SUBCOLLECTION, id))
+  }
+  await batch.commit()
 }
 
 /** Persist the team's standalone embed widgets (full overwrite — there's no

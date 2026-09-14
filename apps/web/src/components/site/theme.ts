@@ -137,11 +137,14 @@ export function buildPalette(
  * the visitor is standing on, rather than the team's default landing surface.
  */
 export function ctaHref(
-  cta: Pick<SiteCta, 'action' | 'url'> | undefined,
+  cta: Pick<SiteCta, 'action' | 'url' | 'pageId'> | undefined,
   slug: string,
-  locale: string
+  locale: string,
+  /** Resolves a page of this site to its URL — see RenderCtx.pageHref. */
+  pageHref?: (pageId: string) => string | undefined
 ): string | undefined {
   if (!cta) return undefined
+  if (cta.action === 'page') return cta.pageId ? pageHref?.(cta.pageId) : undefined
   if (cta.action === 'booking') return publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
   // 'signup' is current; 'membership' is the legacy stored alias.
   if (cta.action === 'signup' || (cta.action as string) === 'membership')

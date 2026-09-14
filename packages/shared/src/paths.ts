@@ -344,6 +344,13 @@ export const LEGAL_PROFILE_SETTINGS_DOC_ID = 'legal_profile'
 // (public read, written only by the publishWebsite Cloud Function). Both keyed by teamId.
 export const SITE_DRAFTS_COLLECTION = 'site_drafts'
 export const SITE_PUBLISHED_COLLECTION = 'site_published'
+// The pages of a multi-page site, under both of the above:
+//   site_drafts/{teamId}/pages/{pageId}     — manager read/write
+//   site_published/{teamId}/pages/{pageId}  — public read, publishWebsite only
+// A published page's translation sidecars sit beside it, `{pageId}__i18n_{locale}`
+// (siteI18nDocId), so any LISTING of `pages` must skip ids containing
+// SITE_I18N_SEPARATOR.
+export const SITE_PAGES_SUBCOLLECTION = 'pages'
 // Standalone embed widgets (decoupled from the published site). PUBLIC snapshot
 // keyed by teamId; managers author it directly (no draft/publish split).
 export const EMBED_WIDGETS_COLLECTION = 'embed_widgets'

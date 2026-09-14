@@ -47,6 +47,13 @@
  *   s.{sectionId}.hours             ContactSection free-prose hours
  *   s.{sectionId}.text              CTA banner / video block body line
  *   s.{sectionId}.playLabel         video block play-button label
+ *   page.{pageId}.title             SitePageRef.title (the site doc's page index)
+ *   page.{pageId}.navLabel          SitePageRef.navLabel
+ *   page.{pageId}.seo.title         SitePageRef.seo.title
+ *   page.{pageId}.seo.description   SitePageRef.seo.description
+ *
+ * A PAGE's sections are translated into a sidecar of their own, beside the page
+ * doc — the same `s.{sectionId}.*` grammar, one sidecar per page.
  *
  * EXCLUDED — never extracted, because it is a brand name, data, or a link
  * rather than prose: `SiteMeta.title` and the team/org name, contact
@@ -64,6 +71,7 @@
 import type {
   SiteMeta,
   SiteMenuItem,
+  SitePageRef,
   WebsiteSection,
   SiteTranslationUnits,
 } from '../types/website'
@@ -227,10 +235,11 @@ function sectionBindings(section: AnySection): UnitBinding[] {
   return bindings
 }
 
-/** Bindings for a whole site (meta + menu + sections). */
+/** Bindings for a whole site (meta + menu + page index + sections). */
 function siteBindings(target: {
   meta?: SiteMeta
   menu?: readonly SiteMenuItem[]
+  pages?: readonly SitePageRef[]
   sections?: readonly AnySection[]
 }): UnitBinding[] {
   const bindings: UnitBinding[] = []
@@ -290,6 +299,16 @@ function siteBindings(target: {
       )
     }
   }
+  for (const page of target.pages ?? []) {
+    const ref = page as unknown as Record<string, unknown>
+    bindings.push(propBinding(ref, `page.${page.id}.title`, 'title', 'plain'))
+    bindings.push(propBinding(ref, `page.${page.id}.navLabel`, 'navLabel', 'plain'))
+    if (page.seo) {
+      const seo = page.seo as unknown as Record<string, unknown>
+      bindings.push(propBinding(seo, `page.${page.id}.seo.title`, 'title', 'plain'))
+      bindings.push(propBinding(seo, `page.${page.id}.seo.description`, 'description', 'plain'))
+    }
+  }
   for (const section of target.sections ?? []) {
     bindings.push(...sectionBindings(section))
   }
@@ -307,6 +326,7 @@ function siteBindings(target: {
 export function extractSiteUnits(input: {
   meta?: SiteMeta
   menu?: readonly SiteMenuItem[]
+  pages?: readonly SitePageRef[]
   sections: readonly AnySection[]
 }): TranslatableUnit[] {
   const units: TranslatableUnit[] = []
@@ -366,6 +386,7 @@ export function applySiteTranslations<
   S extends {
     meta?: SiteMeta
     menu?: SiteMenuItem[]
+    pages?: SitePageRef[]
     sections: readonly AnySection[]
   },
 >(site: S, units: SiteTranslationUnits | null | undefined): S {
@@ -374,6 +395,7 @@ export function applySiteTranslations<
     ...site,
     ...(site.meta !== undefined ? { meta: cloneDeep(site.meta) } : {}),
     ...(site.menu !== undefined ? { menu: cloneDeep(site.menu) } : {}),
+    ...(site.pages !== undefined ? { pages: cloneDeep(site.pages) } : {}),
     sections: cloneDeep(site.sections as AnySection[]),
   }
   applyBindings(siteBindings(next), units)

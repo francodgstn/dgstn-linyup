@@ -37,7 +37,18 @@ import {
 
 type Patch = Record<string, unknown>
 
-function CtaEditor({ cta, onChange }: { cta?: SiteCta; onChange: (cta: SiteCta | undefined) => void }) {
+function CtaEditor({
+  cta,
+  pages,
+  onChange,
+}: {
+  cta?: SiteCta
+  /** The site's other pages — offered as a CTA destination alongside booking,
+   *  sign-up and an external URL. Absent/empty ⇒ the "Page" action still shows
+   *  (it's a fixed option like the others), just with nothing to pick yet. */
+  pages?: { id: string; label: string }[]
+  onChange: (cta: SiteCta | undefined) => void
+}) {
   const t = useTranslations('Website')
   const value = cta ?? { label: '', action: 'booking' as const }
   const set = (patch: Partial<SiteCta>) => {
@@ -56,10 +67,23 @@ function CtaEditor({ cta, onChange }: { cta?: SiteCta; onChange: (cta: SiteCta |
           <SelectContent>
             <SelectItem value="booking">{t('editorCtaActionBooking')}</SelectItem>
             <SelectItem value="signup">{t('editorCtaActionSignup')}</SelectItem>
+            <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
             <SelectItem value="url">{t('editorCtaActionUrl')}</SelectItem>
           </SelectContent>
         </Select>
       </Field>
+      {value.action === 'page' && (
+        <Field label={t('editorCtaPage')}>
+          <Select value={value.pageId ?? ''} onValueChange={(v) => set({ pageId: v || undefined })}>
+            <SelectTrigger className="h-9"><SelectValue placeholder={t('editorCtaPagePlaceholder')} /></SelectTrigger>
+            <SelectContent>
+              {(pages ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
       {value.action === 'url' && (
         <Field label={t('editorCtaUrl')}>
           <Input value={value.url ?? ''} onChange={(e) => set({ url: e.target.value })} placeholder="https://" className="h-9 font-mono text-xs" />
@@ -275,10 +299,13 @@ function PlacesFields({ s, teamId, onChange }: { s: PlacesSection; teamId: strin
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionEditor({
-  section, teamId, onChange,
+  section, teamId, pages, onChange,
 }: {
   section: WebsiteSection
   teamId: string
+  /** The site's other pages — threaded into the CTA editor (hero, CTA banner)
+   *  as a destination option. Absent ⇒ no pages offered yet. */
+  pages?: { id: string; label: string }[]
   onChange: (patch: Patch) => void
 }) {
   const tenant: SiteEditorTenant = {
@@ -293,7 +320,7 @@ export function SectionEditor({
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<CtaEditor cta={section.cta} onChange={(cta) => onChange({ cta })} />}
+          cta={<CtaEditor cta={section.cta} pages={pages} onChange={(cta) => onChange({ cta })} />}
         />
       )
     case 'content':
@@ -306,14 +333,14 @@ export function SectionEditor({
     case 'places':   return <PlacesFields s={section} teamId={teamId} onChange={onChange} />
     // Presentational — shared with the org builder via SiteSectionFields, since
     // none of these say anything commerce-specific about a studio.
-    case 'features':    return <FeaturesFields s={section} tenant={tenant} onChange={onChange} />
+    case 'features':    return <FeaturesFields s={section} tenant={tenant} pages={pages} onChange={onChange} />
     case 'cta_banner':
       return (
         <CtaBannerFields
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<CtaEditor cta={section.cta} onChange={(cta) => onChange({ cta })} />}
+          cta={<CtaEditor cta={section.cta} pages={pages} onChange={(cta) => onChange({ cta })} />}
         />
       )
     case 'faq':         return <FaqFields s={section} onChange={onChange} />

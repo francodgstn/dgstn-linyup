@@ -1,24 +1,30 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import { headers } from 'next/headers'
+import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import {
   SITE_PUBLISHED_COLLECTION,
+  findSitePageByPath,
   siteI18nDocId,
+  sitePageSegments,
   translationSourceHash,
   localizedPublicUrl,
+  localizedPublicSubUrl,
 } from '@linyup/shared'
 import type { SiteI18nManifest, UiLanguage } from '@linyup/shared'
 import { restString as str, restMap as map, restArray, fetchDocumentFields } from '@/lib/publicMetaRest'
 import type { RestValue } from '@/lib/publicMetaRest'
-import PublicSite from './PublicSite'
+import PublicSite from '../PublicSite'
 
-// Public website route. Full-bleed (no app/bio-link chrome) and reads only the
+// Public website route — the home page at /site and every other page of the
+// site at /site/{path}. Full-bleed (no app/bio-link chrome) and reads only the
 // fully-public site_published collection — structured to later lift onto a
 // dedicated subdomain / custom domain with no data-model change.
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  params: Promise<{ locale: string; slug: string }>
+  params: Promise<{ locale: string; slug: string; path?: string[] }>
 }
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -34,12 +40,35 @@ function parseManifest(v?: RestValue): SiteI18nManifest | undefined {
   return { srcLang: srcLang as UiLanguage, locales: locales as UiLanguage[] }
 }
 
+/** The page index, only as far as metadata and the 404 need it. */
+function parsePages(v?: RestValue) {
+  return restArray(v).flatMap((entry) => {
+    const fields = map(entry)
+    const id = str(fields.id)
+    const path = str(fields.path)
+    const title = str(fields.title)
+    if (!id || !path || !title) return []
+    const seo = map(fields.seo)
+    return [
+      {
+        id,
+        path,
+        title,
+        hidden: fields.hidden?.booleanValue === true,
+        seoTitle: str(seo.title),
+        seoDescription: str(seo.description),
+      },
+    ]
+  })
+}
+
 // Resolve the published site's public SEO fields by slug via the Firestore REST
 // API. Deliberately NOT the web SDK: inside the Next server runtime the SDK's
 // streamed query responses come back empty (fetch-stream buffering), which made
 // every page title fall back to "Site not found". A single unauthenticated REST
 // read (rules: public) is dependency-free and works in any server runtime.
-async function fetchSiteMeta(slug: string) {
+// `cache`d: metadata and the page's 404 check share one read per request.
+const fetchSiteMeta = cache(async (slug: string) => {
   try {
     const base = USE_EMULATORS
       ? `http://${process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080'}/v1`
@@ -86,6 +115,7 @@ async function fetchSiteMeta(slug: string) {
       description: str(seo.description),
       ogImageUrl: str(seo.ogImageUrl),
       i18n: parseManifest(fields.i18n),
+      pages: parsePages(fields.pages),
     }
   } catch (e) {
     // Metadata falls back to the generic title, but never silently — a broken
@@ -93,15 +123,17 @@ async function fetchSiteMeta(slug: string) {
     console.error('[public-site] metadata fetch failed:', e)
     return null
   }
-}
+})
 
 // Emit real SEO / OpenGraph tags into <head> from the published site's stored
-// meta.seo (the client renderer never touches the document head).
+// meta.seo, or the page's own seo (the client renderer never touches the head).
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, slug } = await params
+  const { locale, slug, path } = await params
   const site = await fetchSiteMeta(slug)
+  const segments = path ?? []
+  const page = site && segments.length ? findSitePageByPath(site.pages, segments) : null
 
-  if (!site) {
+  if (!site || (segments.length > 0 && !page)) {
     const t = await getTranslations({ locale, namespace: 'Site' })
     return { title: t('notFoundTitle') }
   }
@@ -112,34 +144,47 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const host = h.get('x-forwarded-host') ?? h.get('host')
   const proto = h.get('x-forwarded-proto') ?? 'https'
   const origin = host ? `${proto}://${host}` : undefined
-  const url = origin ? localizedPublicUrl(origin, locale, slug, 'site') : undefined
+  const urlFor = (l: string) =>
+    !origin
+      ? undefined
+      : page
+        ? localizedPublicSubUrl(origin, l, slug, 'site', sitePageSegments(page.path))
+        : localizedPublicUrl(origin, l, slug, 'site')
+  const url = urlFor(locale)
 
   // The base text a stored translation unit was made from — substituted only
   // while its srcHash still matches, exactly like the render-path resolver
   // (applySiteTranslations). A stale or missing unit degrades to the base
-  // (authoring-language) SEO text, never to blank metadata.
-  let seoTitle = site.seoTitle
-  let description = site.description
-
+  // (authoring-language) text, never to blank metadata. A page's title and SEO
+  // live in the page index on the site doc, so they share the site's sidecar.
+  let translated = (_key: string, base: string | undefined) => base
   const manifest = site.i18n
   if (manifest && site.teamId && locale !== manifest.srcLang && (manifest.locales as string[]).includes(locale)) {
     const sidecarFields = await fetchDocumentFields(
       `${SITE_PUBLISHED_COLLECTION}/${siteI18nDocId(site.teamId, locale)}`
     )
     const units = map(sidecarFields?.units)
-    if (typeof site.seoTitle === 'string' && site.seoTitle.trim() !== '') {
-      const unit = map(units['seo.title'])
+    translated = (key, base) => {
+      if (typeof base !== 'string' || base.trim() === '') return base
+      const unit = map(units[key])
       const text = str(unit.text)
-      if (text && str(unit.srcHash) === translationSourceHash(site.seoTitle)) seoTitle = text
-    }
-    if (typeof site.description === 'string' && site.description.trim() !== '') {
-      const unit = map(units['seo.description'])
-      const text = str(unit.text)
-      if (text && str(unit.srcHash) === translationSourceHash(site.description)) description = text
+      return text && str(unit.srcHash) === translationSourceHash(base) ? text : base
     }
   }
 
-  const title = seoTitle || site.title || site.name || slug
+  const siteTitle = site.title || site.name || slug
+  let title: string
+  let description: string | undefined
+  if (page) {
+    const pageTitle = translated(`page.${page.id}.title`, page.title) ?? page.title
+    title = translated(`page.${page.id}.seo.title`, page.seoTitle) || `${pageTitle} | ${siteTitle}`
+    description = page.seoDescription
+      ? translated(`page.${page.id}.seo.description`, page.seoDescription)
+      : translated('seo.description', site.description)
+  } else {
+    title = translated('seo.title', site.seoTitle) || siteTitle
+    description = translated('seo.description', site.description)
+  }
   const ogImageUrl = site.ogImageUrl
 
   // hreflang alternates — only for a site with a translation manifest, and only
@@ -148,8 +193,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languages: Record<string, string> | undefined =
     manifest && origin
       ? Object.fromEntries([
-          ...[manifest.srcLang, ...manifest.locales].map((l) => [l, localizedPublicUrl(origin, l, slug, 'site')]),
-          ['x-default', localizedPublicUrl(origin, manifest.srcLang, slug, 'site')],
+          ...[manifest.srcLang, ...manifest.locales].map((l) => [l, urlFor(l) as string]),
+          ['x-default', urlFor(manifest.srcLang) as string],
         ])
       : undefined
 
@@ -167,6 +212,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SiteRoutePage({ params }: Props) {
-  const { slug } = await params
-  return <PublicSite slug={slug} />
+  const { slug, path } = await params
+  const segments = path ?? []
+  if (segments.length > 0) {
+    // A path the site does not have is a real 404 — status code included, so a
+    // crawler drops a deleted page. Only when the site itself was read: a failed
+    // read leaves the call to the client, which shows its own not-found.
+    const site = await fetchSiteMeta(slug)
+    if (site && !findSitePageByPath(site.pages, segments)) notFound()
+  }
+  return <PublicSite slug={slug} path={segments} />
 }

@@ -179,6 +179,12 @@ export interface RenderCtx {
    * `PublicTeamProvider`, and the overlay would throw there.
    */
   onBook?: (intent: BookIntent) => void
+  /**
+   * A page of this site → its URL (`#section` appended when given), or
+   * undefined for a page that is not published. Set by WebsiteRenderer, which
+   * holds the page index; absent on hosts with no pages (org site, embed).
+   */
+  pageHref?: (pageId: string, sectionId?: string) => string | undefined
 }
 
 export const SOCIAL_ICONS: Record<string, React.FC<{ className?: string }>> = {
@@ -368,7 +374,7 @@ function HeroShade({ style, tone, strength }: { style: NonNullable<HeroSection['
 
 function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
-  const href = ctaHref(section.cta, slug, locale)
+  const href = ctaHref(section.cta, slug, locale, ctx.pageHref)
   const center = section.align !== 'left'
   const overlay = (section.overlay ?? 40) / 100
 
@@ -2413,7 +2419,8 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
 /** A feature link: a `#section` anchor stays in the page; anything else is an
  *  external URL and opens in a new tab. */
 function featureLinkProps(url: string, preview: boolean) {
-  if (url.startsWith('#')) return linkProps(url, preview, false)
+  // An anchor or a page of this site stays in the tab; anything else is external.
+  if (url.startsWith('#') || url.startsWith('/')) return linkProps(url, preview, false)
   return linkProps(url, preview, true)
 }
 
@@ -2440,10 +2447,13 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
     </>
   )
 
+  // A page link wins over the address; a page that is not published gives none.
+  const linkHref = (item: (typeof items)[number]) =>
+    item.linkPageId ? ctx.pageHref?.(item.linkPageId) : item.linkUrl
   const link = (item: (typeof items)[number]) =>
-    item.linkLabel && item.linkUrl ? (
+    item.linkLabel && linkHref(item) ? (
       <a
-        {...featureLinkProps(item.linkUrl, preview)}
+        {...featureLinkProps(linkHref(item) as string, preview)}
         className="mt-3 inline-flex items-center gap-1 text-sm font-medium"
         style={{ color: palette.accent }}
       >
@@ -2557,7 +2567,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
 
 function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
-  const href = ctaHref(section.cta, slug, locale)
+  const href = ctaHref(section.cta, slug, locale, ctx.pageHref)
   const ctaButton = section.cta?.label ? (
     <a
       {...(section.cta.action === 'booking'
