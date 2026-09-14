@@ -4544,7 +4544,8 @@
     "journalFeeReturned": "Commissione Linyup restituita",
     "journalNetAfterRefund": "Ti resta",
     "journalStripeFeeKept": "Stripe trattiene la sua commissione di elaborazione in caso di rimborso.",
-    "journalNetAfterRefundCost": "Ti è costato"
+    "journalNetAfterRefundCost": "Ti è costato",
+    "receipt": "Giustificativo"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
@@ -8469,6 +8470,22 @@
       "membersCount": "{count} membri",
       "skipsMore": "e altri {count}",
       "openContact": "Apri contatto"
+    },
+    "fromPayment": {
+      "title": "Giustificativo Tarif 595 per questo pagamento",
+      "resolving": "Ricerca dell'oggetto di questo pagamento…",
+      "previewing": "Preparazione del giustificativo…",
+      "sourceSubscription": "Abbonamento",
+      "sourceCourse": "Corso",
+      "periodFrom": "Periodo dal",
+      "periodTo": "Periodo al",
+      "alsoEmail": "Invia anche il giustificativo via e-mail al membro",
+      "preview": "Anteprima",
+      "issue": "Emetti giustificativo",
+      "cancel": "Annulla",
+      "noHistory": "Questo pagamento indica un abbonamento, ma per il membro non risulta alcun abbonamento di quel piano da attestare. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
+      "unsupported": "Da questo pagamento non si può derivare un giustificativo: un pagamento a lezione singola o per appuntamento non indica quale corso o data copre, e i prodotti non sono promozione della salute. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
+      "openSegment": "Apri i giustificativi del membro"
     }
   },
   "LegalProfile": {
