@@ -4544,7 +4544,8 @@
     "journalFeeReturned": "Linyup fee returned",
     "journalNetAfterRefund": "You keep",
     "journalStripeFeeKept": "Stripe keeps its processing fee on a refund.",
-    "journalNetAfterRefundCost": "This cost you"
+    "journalNetAfterRefundCost": "This cost you",
+    "receipt": "Receipt"
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",
@@ -8469,6 +8470,22 @@
       "membersCount": "{count} members",
       "skipsMore": "and {count} more",
       "openContact": "Open contact"
+    },
+    "fromPayment": {
+      "title": "Tarif 595 receipt for this payment",
+      "resolving": "Finding what this payment was for…",
+      "previewing": "Preparing the receipt…",
+      "sourceSubscription": "Plan",
+      "sourceCourse": "Course",
+      "periodFrom": "Period from",
+      "periodTo": "Period to",
+      "alsoEmail": "Also email the receipt to the member",
+      "preview": "Preview",
+      "issue": "Issue receipt",
+      "cancel": "Cancel",
+      "noHistory": "This payment names a plan, but the member has no subscription of that plan on record to attest. Pick the source by hand on the member's Receipts segment.",
+      "unsupported": "A receipt can't be derived from this payment: a drop-in or appointment payment doesn't say which class or date it covered, and products aren't health promotion. Pick the source by hand on the member's Receipts segment.",
+      "openSegment": "Open the member's receipts"
     }
   },
   "LegalProfile": {

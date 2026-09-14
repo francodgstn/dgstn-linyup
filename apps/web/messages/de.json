@@ -4544,7 +4544,8 @@
     "journalFeeReturned": "Linyup-Gebühr zurück",
     "journalNetAfterRefund": "Dir bleibt",
     "journalStripeFeeKept": "Stripe behält bei einer Erstattung seine Bearbeitungsgebühr.",
-    "journalNetAfterRefundCost": "Das kostet dich"
+    "journalNetAfterRefundCost": "Das kostet dich",
+    "receipt": "Beleg"
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",
@@ -8469,6 +8470,22 @@
       "membersCount": "{count} Mitglieder",
       "skipsMore": "und {count} weitere",
       "openContact": "Kontakt öffnen"
+    },
+    "fromPayment": {
+      "title": "Tarif-595-Beleg für diese Zahlung",
+      "resolving": "Wird ermittelt, wofür diese Zahlung war…",
+      "previewing": "Beleg wird vorbereitet…",
+      "sourceSubscription": "Abo",
+      "sourceCourse": "Kurs",
+      "periodFrom": "Zeitraum von",
+      "periodTo": "Zeitraum bis",
+      "alsoEmail": "Beleg auch per E-Mail an das Mitglied senden",
+      "preview": "Vorschau",
+      "issue": "Beleg ausstellen",
+      "cancel": "Abbrechen",
+      "noHistory": "Diese Zahlung nennt ein Abo, aber für das Mitglied ist kein Abo dieses Plans erfasst, das bescheinigt werden könnte. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
+      "unsupported": "Aus dieser Zahlung lässt sich kein Beleg ableiten: Eine Einzeleintritts- oder Terminzahlung sagt nicht, welchen Kurs oder welches Datum sie abdeckt, und Produkte sind keine Gesundheitsförderung. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
+      "openSegment": "Belege des Mitglieds öffnen"
     }
   },
   "LegalProfile": {

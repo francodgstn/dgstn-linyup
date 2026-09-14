@@ -71,6 +71,26 @@ against the methods its label body certified, because the insurer reimburses per
 method and the receipt states what the studio chose, not what was suggested. Editing a
 suggested row's position clears the mark; nothing is saved until Save.
 
+## A receipt from a payment row
+
+"Receipt" on a payment row (Payments page and the contact's Payments tab, when the plugin
+is installed and the viewer manages the team) is the quick way to a receipt for money
+that has **already moved**. The payment is only the starting point — the receipt still
+attests the underlying record, through the same preview and issue callables:
+
+- a **plan** payment names a plan *type*, never a subscription instance, so the dialog
+  resolves the contact's subscription-history row of that type whose period covers the
+  payment date (else the latest one that started before it) and defaults the period to
+  the row's own;
+- a **course** payment names the course; the period is the payment day;
+- a **drop-in or appointment** payment names neither a class nor a date the receipt can
+  use, and a product is not health promotion — the dialog hands over to the contact's
+  Receipts segment, where the source is picked by hand.
+
+Nothing marks a payment as "receipted": the receipt's deterministic id and the preview's
+`already_issued` / `overlapping_receipt` answers are what stop a second one.
+`PreviewResultView` is ONE component, rendered by the segment and by the dialog.
+
 ## Line rules (Qualitop FAQ 3.3–3.7, Helsana §4; `lines.ts`, pure)
 
 | Unit | Lines | Quantity | Line date |

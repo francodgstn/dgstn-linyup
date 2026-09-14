@@ -4544,7 +4544,8 @@
     "journalFeeReturned": "Frais Linyup restitués",
     "journalNetAfterRefund": "Il vous reste",
     "journalStripeFeeKept": "Stripe conserve ses frais de traitement en cas de remboursement.",
-    "journalNetAfterRefundCost": "Cela vous coûte"
+    "journalNetAfterRefundCost": "Cela vous coûte",
+    "receipt": "Justificatif"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
@@ -8469,6 +8470,22 @@
       "membersCount": "{count} membres",
       "skipsMore": "et {count} de plus",
       "openContact": "Ouvrir le contact"
+    },
+    "fromPayment": {
+      "title": "Justificatif Tarif 595 pour ce paiement",
+      "resolving": "Recherche de l'objet de ce paiement…",
+      "previewing": "Préparation du justificatif…",
+      "sourceSubscription": "Abonnement",
+      "sourceCourse": "Cours",
+      "periodFrom": "Période du",
+      "periodTo": "Période au",
+      "alsoEmail": "Envoyer aussi le justificatif par e-mail au membre",
+      "preview": "Aperçu",
+      "issue": "Émettre le justificatif",
+      "cancel": "Annuler",
+      "noHistory": "Ce paiement mentionne un abonnement, mais aucun abonnement de ce plan n'est enregistré pour ce membre. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
+      "unsupported": "Impossible de dériver un justificatif de ce paiement : un paiement à la séance ou de rendez-vous n'indique ni le cours ni la date couverte, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
+      "openSegment": "Ouvrir les justificatifs du membre"
     }
   },
   "LegalProfile": {

@@ -13,7 +13,7 @@
 // leaving the Edit button up would only produce a refusal.
 
 import { useTranslations } from 'next-intl'
-import { Pencil, UserPlus } from 'lucide-react'
+import { HeartPulse, Pencil, UserPlus } from 'lucide-react'
 import type { Route } from 'next'
 import { financeSourceRefForPayment } from '@linyup/shared'
 import type { PaymentJournal } from '@/plugins/finance/hooks'
@@ -74,6 +74,14 @@ const PAYMENT_STATUS_STYLES: Record<string, string> = {
  * reconciliation that silently disagrees with a bank statement by a few francs
  * is worse than one that said it was an estimate.
  */
+/** A live row for something health promotion can attest — never a product or
+ *  a gift card, and never a voided record. The dialog decides the rest. */
+function receiptable(row: UnifiedPaymentRow): boolean {
+  if (row.voided) return false
+  const kind = row.lineItem?.kind ?? (row.planTypeId ? 'subscription' : null)
+  return kind === 'subscription' || kind === 'course' || kind === 'drop_in' || kind === 'appointment'
+}
+
 function JournalDetails({
   entry,
   fallbackCurrency,
@@ -170,6 +178,7 @@ export function PaymentsTable({
   onAssign,
   onRefund,
   onVoid,
+  onReceipt,
   journal,
 }: {
   rows: UnifiedPaymentRow[]
@@ -182,6 +191,11 @@ export function PaymentsTable({
   onRefund?: (row: UnifiedPaymentRow) => void
   /** When provided, live MANUAL rows get a Void action ("this record is wrong"). */
   onVoid?: (row: UnifiedPaymentRow) => void
+  /** When provided (the Tarif 595 plugin is installed and the viewer manages
+   *  the team), an assigned live row for a plan, course, class or appointment
+   *  gets a Receipt action — the quick way to a health-insurance receipt for
+   *  money that has already moved. */
+  onReceipt?: (row: UnifiedPaymentRow) => void
   /**
    * The money JOURNAL for these rows, keyed by `source_ref` — what each payment
    * actually booked. Absent unless the finance plugin is installed, and every
@@ -430,6 +444,12 @@ export function PaymentsTable({
                       {onVoid && row.voidable && (
                         <Button size="sm" variant="outline" onClick={() => onVoid(row)}>
                           {t('void')}
+                        </Button>
+                      )}
+                      {onReceipt && row.contactId && receiptable(row) && (
+                        <Button size="sm" variant="outline" onClick={() => onReceipt(row)} title={t('receipt')}>
+                          <HeartPulse className="h-3.5 w-3.5 mr-1" />
+                          {t('receipt')}
                         </Button>
                       )}
                     </div>
