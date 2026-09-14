@@ -71,8 +71,11 @@ import { cn } from '@/lib/utils'
  */
 const REMOVE_EFFECT_KEY: Record<
   string,
-  'removeConfirmBodyWebsite' | 'removeConfirmBodyCourses' | 'removeConfirmBodyBundle'
+  'removeConfirmBodyWebsite' | 'removeConfirmBodyCourses' | 'removeConfirmBodyBundle' | 'removeConfirmBodyApiKeys'
 > = {
+  // revokeAllApiKeys: every key the team issued is revoked, for good — a
+  // reinstall does not bring one back, so integrations need new keys.
+  'api-connectors': 'removeConfirmBodyApiKeys',
   // A CONTAINER's removal also removes the members the reconciler installed for
   // it, so the default copy ("your data is kept") is true of the data but not of
   // the features. Say both.

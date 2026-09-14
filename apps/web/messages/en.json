@@ -2966,7 +2966,10 @@
     "tarif595NavLabel": "Tarif 595",
     "qrInvoicesName": "QR-bill invoices",
     "qrInvoicesDescription": "Numbered invoices with a Swiss QR-bill payment part for members who pay by bank transfer.",
-    "qrInvoicesNavLabel": "Invoices"
+    "qrInvoicesNavLabel": "Invoices",
+    "apiConnectorsName": "API & AI connectors",
+    "apiConnectorsDescription": "Connect Claude, ChatGPT and your own tools to your studio's data with read-only API keys. You choose what is shared.",
+    "removeConfirmBodyApiKeys": "Every API key your team created is revoked immediately, so any assistant or integration using one stops working. Reinstalling does not restore them: you will have to create new keys."
   },
   "AiAssistant": {
     "launcherLabel": "AI assistant",

@@ -30,7 +30,23 @@ import { expandGroupSelection } from './contactGroups'
 
 // ─── filter shape ─────────────────────────────────────────────────────────────
 
-export type InactivityPreset = 'never' | '30d' | '60d' | '90d'
+/**
+ * `'never'` (no session ever), or `'<N>d'` — no session in the last N days. The
+ * contacts page offers 30/60/90; the public API asks any N ("who hasn't come in
+ * three weeks" is `'21d'`). Read through `inactivityPresetDays`.
+ */
+export type InactivityPreset = 'never' | `${number}d`
+
+/**
+ * The days in a non-`'never'` preset. An unreadable value reads as 90 — the
+ * longest window, so the NARROWEST audience, which is also how a resolver that
+ * predates arbitrary N reads one (its old ternary fell through to 90). A skew
+ * window can therefore only under-match, never widen a send list.
+ */
+export function inactivityPresetDays(preset: string): number {
+  const days = Number.parseInt(preset, 10)
+  return Number.isInteger(days) && days > 0 && preset === `${days}d` ? days : 90
+}
 
 /** systemId → selected level values */
 export type RankFilter = Record<string, RankRef[]>
@@ -1027,7 +1043,7 @@ export function matchesFilter(
     if (f.inactivity === 'never') {
       if (last !== null) return false
     } else {
-      const days = f.inactivity === '30d' ? 30 : f.inactivity === '60d' ? 60 : 90
+      const days = inactivityPresetDays(f.inactivity)
       const cutoff = nowMs - days * 86_400_000
       if (!(last === null || last < cutoff)) return false
     }

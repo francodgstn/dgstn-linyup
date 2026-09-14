@@ -927,6 +927,19 @@ service cloud.firestore {
         allow write:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
       }
 
+      // Public API keys and their daily usage counters (docs/public-api.md).
+      // Owner-only to read, like integrations: a key record is not the secret,
+      // but it says what the team exposes and to whom. Written only by the
+      // createApiKey / revokeApiKey callables and the API function.
+      match /api_keys/{keyId} {
+        allow read:  if hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+      match /api_usage/{day} {
+        allow read:  if hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+
       // Payment events (Payrexx) — immutable audit trail written by handlePayrexxWebhook.
       // Managers and owners can read; no client writes allowed.
       match /payment_events/{eventId} {
@@ -2590,6 +2603,14 @@ service cloud.firestore {
     // handleAppStoreWebhook (Admin SDK, after verifying Apple's HMAC), read by
     // the operator console (Admin SDK). No client access.
     match /store_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Public API credentials (docs/public-api.md), keyed by the SHA-256 of the
+    // secret. Minted, rotated and revoked only by api/auth/credentials.ts (Admin
+    // SDK) and read only by the principal resolver. No client access: a readable
+    // row would name a team, a member and the scopes a stolen secret carries.
+    match /api_credentials/{credentialId} {
       allow read, write: if false;
     }
 

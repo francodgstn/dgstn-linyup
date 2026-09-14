@@ -2966,7 +2966,10 @@
     "tarif595NavLabel": "Tarifa 595",
     "qrInvoicesName": "Fatture QR",
     "qrInvoicesDescription": "Fatture numerate con una parte di pagamento QR svizzera per i membri che pagano tramite bonifico bancario.",
-    "qrInvoicesNavLabel": "Fatture"
+    "qrInvoicesNavLabel": "Fatture",
+    "apiConnectorsName": "API e connettori IA",
+    "apiConnectorsDescription": "Collega Claude, ChatGPT e i tuoi strumenti ai dati del tuo studio con chiavi API in sola lettura. Sei tu a scegliere cosa condividere.",
+    "removeConfirmBodyApiKeys": "Tutte le chiavi API create dal tuo team vengono revocate subito: qualsiasi assistente o integrazione che ne usa una smette di funzionare. Reinstallarlo non le ripristina: dovrai creare nuove chiavi."
   },
   "AiAssistant": {
     "launcherLabel": "Assistente IA",

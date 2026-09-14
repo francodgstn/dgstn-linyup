@@ -33,6 +33,9 @@ export const LEDGER_RETENTION_DAYS = {
    *  page (`useTeamNotifications`), so an item nobody opened in ninety days is
    *  not one the studio was going to open. */
   notifications: 90,
+  /** `teams/{id}/api_usage/{yyyy-mm-dd}` — one counter per day of public API
+   *  and MCP traffic (docs/public-api.md). A usage figure, not an audit trail. */
+  api_usage: 90,
 } as const
 
 export type LedgerCollection = keyof typeof LEDGER_RETENTION_DAYS

@@ -2966,7 +2966,10 @@
     "tarif595NavLabel": "Tarif 595",
     "qrInvoicesName": "QR-Rechnungen",
     "qrInvoicesDescription": "Nummerierte Rechnungen mit Schweizer QR-Zahlteil für Mitglieder, die per Banküberweisung bezahlen.",
-    "qrInvoicesNavLabel": "Rechnungen"
+    "qrInvoicesNavLabel": "Rechnungen",
+    "apiConnectorsName": "API & KI-Verbindungen",
+    "apiConnectorsDescription": "Verbinde Claude, ChatGPT und deine eigenen Tools mit den Daten deines Studios – über API-Schlüssel mit reinem Lesezugriff. Du bestimmst, was geteilt wird.",
+    "removeConfirmBodyApiKeys": "Alle API-Schlüssel deines Teams werden sofort widerrufen – jeder Assistent und jede Integration, die einen davon nutzt, funktioniert nicht mehr. Eine erneute Installation stellt sie nicht wieder her: Du musst neue Schlüssel erstellen."
   },
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
