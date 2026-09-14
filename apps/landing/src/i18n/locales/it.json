@@ -242,11 +242,6 @@
         "description": "Raggiungi i membri dove già sono.",
         "detail": "Invia promemoria, aggiornamenti e messaggi di riattivazione su WhatsApp, proprio dove i tuoi membri già sono."
       },
-      "aiInsights": {
-        "title": "Insight AI",
-        "description": "Individua il rischio di abbandono in anticipo.",
-        "detail": "Lascia che l'AI individui i contatti a rischio abbandono e prepari il messaggio giusto per riconquistarli in tempo."
-      },
       "appointments": {
         "title": "Appuntamenti",
         "description": "Appuntamenti individuali prenotabili.",

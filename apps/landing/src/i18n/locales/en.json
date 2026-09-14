@@ -242,11 +242,6 @@
         "description": "Reach members where they already are.",
         "detail": "Send reminders, updates, and re-engagement messages on WhatsApp, right where your members already are."
       },
-      "aiInsights": {
-        "title": "AI insights",
-        "description": "Spot churn risk before it happens.",
-        "detail": "Let AI flag contacts at risk of leaving and even draft the perfect message to win them back before they're gone."
-      },
       "appointments": {
         "title": "Appointments",
         "description": "Bookable time with a specific coach.",
