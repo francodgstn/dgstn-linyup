@@ -242,11 +242,6 @@
         "description": "Mitglieder dort erreichen, wo sie sind.",
         "detail": "Sende Erinnerungen, Updates und Reaktivierungs-Nachrichten über WhatsApp — genau dort, wo deine Mitglieder schon sind."
       },
-      "aiInsights": {
-        "title": "KI-Insights",
-        "description": "Abwanderungsrisiko früh erkennen.",
-        "detail": "Lass die KI abwanderungsgefährdete Kontakte erkennen und gleich die passende Nachricht entwerfen, um sie zu halten."
-      },
       "appointments": {
         "title": "Termine",
         "description": "Buchbare Einzeltermine.",
