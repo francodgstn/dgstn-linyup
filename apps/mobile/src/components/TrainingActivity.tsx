@@ -9,12 +9,15 @@ interface TrainingActivityProps {
   contactId: string;
   teamId?: string;
   contact?: import('../types').Contact | null;
+  /** See AttendanceCalendar's `onBookingsChanged`. */
+  onBookingsChanged?: () => void;
 }
 
 export const TrainingActivity: React.FC<TrainingActivityProps> = ({
   contactId,
   teamId,
-  contact
+  contact,
+  onBookingsChanged,
 }) => {
   const theme = useTheme();
   const t = useTranslations('Training');
@@ -63,7 +66,7 @@ export const TrainingActivity: React.FC<TrainingActivityProps> = ({
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
         <Card.Content style={styles.cardContent}>
           {activeTab === 'CALENDAR' ? (
-            <AttendanceCalendar contactId={contactId} teamId={teamId} contact={contact} />
+            <AttendanceCalendar contactId={contactId} teamId={teamId} contact={contact} onBookingsChanged={onBookingsChanged} />
           ) : (
             <TrainingChart contactId={contactId} teamId={teamId} />
           )}

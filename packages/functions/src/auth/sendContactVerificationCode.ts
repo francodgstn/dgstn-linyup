@@ -14,14 +14,25 @@ import { distinctTeamIds, summarizeCodeRequest, toMatchedContactSummary } from '
 const CODE_EXPIRY_MS = 15 * 60 * 1000 // 15 minutes
 const MAX_CODES_PER_HOUR = 5
 const MAX_CODES_PER_IP_PER_HOUR = 20
+/** Shape only — one `@`, something either side, a dot in the domain. Whether
+ *  the address is REGISTERED is deliberately never disclosed by this callable;
+ *  this stops a typo such as "name@" being accepted and answered like any other
+ *  request, which left the member app on its code screen waiting for mail that
+ *  could not be sent (PrimeTestLab report 7107, M-01). The app checks the same
+ *  shape before calling (apps/mobile/src/utils/email.ts); this is the copy every
+ *  client shares. */
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export const sendContactVerificationCode = onCall({ enforceAppCheck: APP_CHECK_ENFORCE_MOBILE }, async (request) => {
   monitorAppCheck(request, 'sendContactVerificationCode')
   const data = request.data as { email?: string; teamId?: string }
   const { email } = data
 
-  if (!email) {
+  if (!email || typeof email !== 'string') {
     throw new HttpsError('invalid-argument', 'email is required')
+  }
+  if (!EMAIL_SHAPE.test(email.trim())) {
+    throw new HttpsError('invalid-argument', 'A valid email address is required')
   }
 
   const requestedTeamId =

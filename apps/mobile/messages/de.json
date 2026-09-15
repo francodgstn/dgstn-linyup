@@ -140,6 +140,7 @@
     "invalidCodeMessage": "Bitte gib einen gültigen 6-stelligen Code ein",
     "invalidCode": "Ungültiger Code",
     "enterEmail": "Bitte gib deine E-Mail-Adresse ein",
+    "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein",
     "sendCodeFailed": "Bestätigungscode konnte nicht gesendet werden",
     "selectContactFailed": "Kontakt konnte nicht ausgewählt werden",
     "stayLoggedIn": "Angemeldet bleiben",
@@ -183,6 +184,8 @@
     "successTitle": "Erfolg",
     "bookedSuccess": "Einheit erfolgreich gebucht!",
     "bookFailed": "Buchung fehlgeschlagen. Bitte versuche es erneut.",
+    "alreadyBookedTitle": "Bereits gebucht",
+    "alreadyBooked": "Du bist für diese Lektion bereits gebucht.",
     "signatureNeeded": "Unterschrift erforderlich",
     "notNow": "Nicht jetzt",
     "open": "Öffnen",
@@ -295,6 +298,8 @@
     "successTitle": "Erfolg",
     "bookedSuccess": "Einheit erfolgreich gebucht!",
     "bookFailed": "Buchung fehlgeschlagen. Bitte versuche es erneut.",
+    "alreadyBookedTitle": "Bereits gebucht",
+    "alreadyBooked": "Du bist für diese Lektion bereits gebucht.",
     "signatureNeeded": "Unterschrift erforderlich",
     "notNow": "Nicht jetzt",
     "open": "Öffnen",
@@ -360,6 +365,7 @@
     "noRank": "Kein Rang",
     "memberPrefix": "Mitglied: {name}",
     "cardLabel": "{term}-Karte",
+    "memberCardLabel": "Mitgliederkarte",
     "ageYears": "{age} Jahre",
     "ageFallback": "??",
     "weightKg": "{weight} kg",
@@ -424,6 +430,7 @@
     "streakLabel": "Serie",
     "ptsUnit": "Pkt",
     "weeksUnit": "Wochen",
+    "weekUnit": "Woche",
     "bestWeeksShort": "Beste: {count}W"
   },
   "Welcome": {
@@ -511,6 +518,13 @@
     "youHavePrefix": "Du hast {version}; ",
     "versionRequired": "Version {minimum} oder neuer ist erforderlich.",
     "openStore": "Store öffnen"
+  },
+  "BookingCancellation": {
+    "refusedNotFound": "Diese Buchung gibt es nicht mehr — offenbar wurde sie bereits storniert.",
+    "refusedSessionGone": "Diese Lektion steht nicht mehr im Programm, es gibt also nichts mehr zu stornieren.",
+    "refusedAlreadySettled": "Diese Buchung kann nicht mehr storniert werden — sie wurde bereits storniert oder das Studio hat die Teilnahme bestätigt.",
+    "refusedPast": "Diese Lektion hat bereits begonnen und kann hier nicht mehr storniert werden. Bitte wende dich an das Studio.",
+    "failedTransient": "Diese Buchung konnte nicht storniert werden — sie ist weiterhin aktiv. Bitte versuche es erneut."
   },
   "Waiver": {
     "documentFallback": "ein Dokument",

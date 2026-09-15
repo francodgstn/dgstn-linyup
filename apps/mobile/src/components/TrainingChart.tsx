@@ -141,6 +141,13 @@ export const TrainingChart: React.FC<TrainingChartProps> = ({ contactId, teamId,
     onPress: onMonthPress && useMonthly ? () => onMonthPress(entry.date) : undefined,
   }));
 
+  // Each x-axis label is centred on its data point, so with no edge spacing
+  // the first and last points sat ON the chart's edges and half of "Apr" and
+  // "Sep" fell outside it (report 7107, M-06). Reserve half a label's width
+  // each side and spread the points over what is left.
+  const edgeSpacing = 18;
+  const pointSpacing = (chartWidth - 2 * edgeSpacing) / Math.max(chartData.length - 1, 1);
+
   const rangeOptions = [
     { label: t('range6mLabel'), value: 26, summary: t('range6mSummary') },
     { label: t('range1yLabel'), value: 52, summary: t('range1ySummary') },
@@ -188,9 +195,9 @@ export const TrainingChart: React.FC<TrainingChartProps> = ({ contactId, teamId,
           width={chartWidth}
           height={140}
           overflowTop={20}
-          spacing={chartWidth / Math.max(chartData.length - 1, 1)}
-          initialSpacing={0}
-          endSpacing={0}
+          spacing={pointSpacing}
+          initialSpacing={edgeSpacing}
+          endSpacing={edgeSpacing}
           color={theme.colors.primary}
           thickness={2}
           dataPointsColor={theme.colors.primary}

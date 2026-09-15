@@ -160,7 +160,7 @@ export const GamificationCard: React.FC<GamificationCardProps> = ({
               </View>
               <View>
                 <Text variant="titleLarge" style={[styles.statValue, { color: theme.colors.onSurface }]}>
-                  {streak} <Text variant="bodyMedium" style={[styles.unitText, { color: theme.colors.onSurfaceVariant }]}>{t('weeksUnit')}</Text>
+                  {streak} <Text variant="bodyMedium" style={[styles.unitText, { color: theme.colors.onSurfaceVariant }]}>{streak === 1 ? t('weekUnit') : t('weeksUnit')}</Text>
                 </Text>
                 <Text variant="labelSmall" style={[styles.statLabel, { color: theme.colors.onSurfaceVariant }]}>{t('streakLabel').toUpperCase()}</Text>
                 {maxStreak > 0 && (
