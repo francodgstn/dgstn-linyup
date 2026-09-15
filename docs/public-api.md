@@ -27,7 +27,8 @@ Phase 2 (OAuth): discovery metadata, `/oauth/authorize|token|revoke` with Client
 Documents, the consent page at `/oauth/consent`, and Connected apps on Settings → API keys — see
 "OAuth" below.
 
-**Staging (2026-09-15):** the `api` Hosting target is live at `https://linyup-api-staging.web.app`
+**Staging (2026-09-15):** the `api` Hosting target is live at `https://api-stg.linyup.com` (custom
+domain on the `linyup-api-staging` site; DNS-only CNAME in Cloudflare)
 — see "Hosting target" below. Not yet: sandbox/prod, a custom domain, and the connector test in
 claude.ai / ChatGPT, which also needs the consent page on the staging web app (it ships with the
 branch's web deploy).
@@ -57,7 +58,7 @@ overrides reach staging with the merge. Smoke results through Hosting, no creden
 | Check | Result |
 |---|---|
 | `/health` | 200; warm 64–86 ms |
-| Protected resource + AS metadata, OpenAPI `servers` | all name `https://linyup-api-staging.web.app` |
+| Protected resource + AS metadata, OpenAPI `servers` | all name `https://linyup-api-staging.web.app`; after the custom domain, all name `https://api-stg.linyup.com` (re-run 2026-09-15, 11/11) |
 | `POST /mcp` without a token | 401 with `resource_metadata` challenge, `private, no-store` |
 | Bogus key on `/v1/me` | 401 |
 | `/oauth/authorize` with an unverifiable client | 400 on our page, no redirect |
