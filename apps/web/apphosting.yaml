@@ -61,7 +61,7 @@ env:
   # Settings -> API keys and in its copy-paste examples. Inlined at build time like
   # every NEXT_PUBLIC_*; unset, the page shows production's https://api.linyup.com.
   - variable: NEXT_PUBLIC_API_BASE_URL
-    value: https://linyup-api-staging.web.app
+    value: https://api-stg.linyup.com
     availability:
       - BUILD
       - RUNTIME
