@@ -23,7 +23,7 @@ CLI fills it.**
 | Service accounts + IAM | Hosting **content** (`apps/web/.next`, `apps/landing/dist`) |
 | Secret Manager **containers** (no values) | Storage **rules** (`storage.rules`) |
 | Firestore **database instance** (not rules/indexes) | Realtime DB **rules** (deny-all, unused) |
-| Firebase project init + Web App + Hosting **sites** | **Cloud Tasks queue** `executeDelayedRule` (auto-created on deploy) |
+| Firebase project init + Web App + Hosting **sites** (app, landing, api where present) | **Cloud Tasks queue** `executeDelayedRule` (auto-created on deploy) |
 | App Hosting API + deploy SA role (`roles/firebaseapphosting.admin`) | App Hosting **backend** creation (CLI, once) + GitHub repo connection (Console, once) |
 | Firebase Storage **default bucket** (not rules) | |
 | WIF pool/provider + CI deploy SA | |
@@ -162,6 +162,7 @@ The site IDs Terraform created must match `.firebaserc`. Apply the target map:
 ```bash
 firebase target:apply hosting app     linyup-staging         --project staging
 firebase target:apply hosting landing linyup-staging-landing --project staging
+firebase target:apply hosting api     linyup-api-staging     --project staging
 ```
 
 

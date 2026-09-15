@@ -89,8 +89,17 @@ module "firebase" {
   env             = "staging"
   app_site_id     = var.app_site_id
   landing_site_id = var.landing_site_id
+  api_site_id     = var.api_site_id
 
   depends_on = [module.services]
+}
+
+# The api site was created with the Firebase CLI on 2026-09-15 before Terraform
+# knew about it; adopt it rather than create a second one. Safe to delete this
+# block once an apply has imported it (a no-op import is harmless meanwhile).
+import {
+  to = module.firebase.google_firebase_hosting_site.api[0]
+  id = "projects/${var.project_id}/sites/${var.api_site_id}"
 }
 
 # ── Firestore database instance ───────────────────────────────────────────────
