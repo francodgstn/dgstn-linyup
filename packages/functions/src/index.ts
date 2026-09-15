@@ -30,7 +30,16 @@ export { listTeamMembers } from './teams/listTeamMembers'
 
 // Auth
 export { sendContactVerificationCode } from './auth/sendContactVerificationCode'
-export { generateApiKey } from './auth/generateApiKey'
+
+// Public API + MCP (docs/public-api.md)
+export { createApiKey, revokeApiKey } from './api/keys'
+export { api } from './api'
+export {
+  getOAuthAuthorizationRequest,
+  approveOAuthAuthorization,
+  denyOAuthAuthorization,
+  revokeOAuthGrant,
+} from './api/oauth/consent'
 
 // Signup gating (limited launch) — blocking function + invite email trigger
 export { beforeSignup } from './auth/beforeSignup'

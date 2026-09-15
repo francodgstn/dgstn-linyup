@@ -109,17 +109,12 @@ export function offerWasDelivered(outcome: SendOutcome): boolean {
  * status-only test reads a called-off class as bookable. `rebookSession` already
  * tests the pair; the queue would otherwise take joins for, and offer seats on,
  * a class that will never run.
+ *
+ * The predicate now lives in `@linyup/shared` (utils/sessionStatus.ts), so the
+ * public API's session projection asks the same question; re-exported here so
+ * every waitlist import keeps working.
  */
-export function isSessionCancelled(session: {
-  status?: unknown
-  isException?: unknown
-  exceptionType?: unknown
-}): boolean {
-  return (
-    session.status === 'cancelled' ||
-    (session.isException === true && session.exceptionType === 'cancelled')
-  )
-}
+export { isSessionCancelled } from '@linyup/shared'
 
 /** How many people may WAIT for one session. Offered/claimed/expired/left
  *  entries do not count — only the live queue is capped, so a class whose queue

@@ -65,6 +65,9 @@ const DATE_FIELDS: Record<LedgerCollection, readonly string[]> = {
   mail_sends: ['created_at'],
   automation_logs: ['triggered_at'],
   notifications: ['created_at'],
+  // Stamped by its writer (api/usage.ts) since the first row existed, so this
+  // scan finds nothing to do; the day lives only in the document id.
+  api_usage: [],
 }
 
 const { values } = parseArgs({

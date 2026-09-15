@@ -60,8 +60,12 @@ secret name); make it, and say plainly that you crossed the line and why.
   **immutable for the life of the project**.
 - Web apps run on **App Hosting**: backends `linyup-web-eu` and `linyup-admin-eu`
   (`app.linyup.com`, `app-stg.linyup.com`, `demo.linyup.com`).
-- The marketing site is a **Hosting target** named `landing` — the only real Hosting target
-  in `firebase.json`.
+- The marketing site is a **Hosting target** named `landing`.
+- The public API + MCP server is a second **Hosting target**, `api`: static `infra/hosting/api`,
+  every path rewritten to the gen2 `api` function in europe-west6 (docs/public-api.md). Mapped on
+  staging only so far (`linyup-api-staging`); `API_BASE_URL` in `packages/functions/.env.<env>`
+  must name the public origin, because behind the rewrite the request Host is the Cloud Run host.
+  CI deploys `hosting:landing` by name, so the `api` target ships only when deployed deliberately.
 - Terraform state per environment under `infra/environments/{sandbox,staging,prod}`.
 
 ---
@@ -244,6 +248,10 @@ without confirming it is fixed.
   (`reset:staging`; the real one is `staging:reset`).
 - **`emulators:seed` will silently seed or wipe another session's running emulator** if ports
   collide. Only one session may hold the emulator at a time.
+- **A deleted Hosting site ID is reserved forever.** `hosting:sites:delete` warns that the site
+  "cannot be reactivated by you or anyone else", and a later `hosting:sites:create` with the same
+  ID fails with "is reserved by another project". `linyup-staging-api` was lost this way to a
+  throwaway spike (2026-09-14); name spike sites so losing the name costs nothing.
 - **The emulator can load ZERO functions silently**, after which every callable returns
   "internal". Set `FUNCTIONS_DISCOVERY_TIMEOUT=120`.
 

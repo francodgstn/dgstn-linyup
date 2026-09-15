@@ -139,6 +139,34 @@ describe('matchesFilter — subscriptions', () => {
   })
 })
 
+describe('matchesFilter — inactivity', () => {
+  const day = 86_400_000
+  const lastSeen = (daysAgo: number) =>
+    contact({ last_session_at: ts(new Date(NOW - daysAgo * day).toISOString()) })
+
+  it('reads any whole number of days, not only the three the contacts page offers', () => {
+    const f = filter({ inactivity: '21d' })
+    assert.equal(matchesFilter(lastSeen(22), f, { nowMs: NOW }), true)
+    assert.equal(matchesFilter(lastSeen(20), f, { nowMs: NOW }), false)
+    assert.equal(matchesFilter(contact(), f, { nowMs: NOW }), true, 'never attended counts as inactive')
+  })
+
+  it('keeps the presets the page offers exactly as they were', () => {
+    assert.equal(matchesFilter(lastSeen(31), filter({ inactivity: '30d' }), { nowMs: NOW }), true)
+    assert.equal(matchesFilter(lastSeen(59), filter({ inactivity: '60d' }), { nowMs: NOW }), false)
+    assert.equal(matchesFilter(lastSeen(91), filter({ inactivity: '90d' }), { nowMs: NOW }), true)
+    assert.equal(matchesFilter(lastSeen(1), filter({ inactivity: 'never' }), { nowMs: NOW }), false)
+  })
+
+  it('reads an unreadable preset as 90 days — the narrowest audience, as an older resolver would', () => {
+    for (const bad of ['0d', '-5d', '2.5d', '21', 'abc'] as const) {
+      const f = filter({ inactivity: bad as ContactFilter['inactivity'] })
+      assert.equal(matchesFilter(lastSeen(60), f, { nowMs: NOW }), false, `${bad} must not widen to 60 days`)
+      assert.equal(matchesFilter(lastSeen(91), f, { nowMs: NOW }), true, `${bad} reads as 90 days`)
+    }
+  })
+})
+
 describe('calcAgeYears', () => {
   it('is calendar-correct, not a 365.25-day division', () => {
     // Born 2013-08-17 — the day BEFORE the birthday in 2026 ⇒ still 12.

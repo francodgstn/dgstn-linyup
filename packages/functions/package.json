@@ -22,6 +22,7 @@
     "@google-cloud/secret-manager": "^5.6.0",
     "@google/genai": "^2.21.0",
     "@linyup/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "date-fns": "^4.1.0",
     "firebase-admin": "^13.0.0",
     "firebase-functions": "^6.3.0",
@@ -33,7 +34,8 @@
     "sanitize-html": "^2.14.0",
     "stripe": "^22.1.1",
     "swissqrbill": "^4.4.1",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "3.25.2"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",

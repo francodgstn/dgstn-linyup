@@ -38,6 +38,24 @@
           ]
         }
       ]
+    },
+    {
+      "target": "api",
+      "public": "infra/hosting/api",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": {
+            "functionId": "api",
+            "region": "europe-west6"
+          }
+        }
+      ]
     }
   ],
   "functions": {

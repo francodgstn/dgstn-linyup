@@ -33,9 +33,21 @@ export const LEDGER_RETENTION_DAYS = {
    *  page (`useTeamNotifications`), so an item nobody opened in ninety days is
    *  not one the studio was going to open. */
   notifications: 90,
+  /** `teams/{id}/api_usage/{yyyy-mm-dd}` — one counter per day of public API
+   *  and MCP traffic (docs/public-api.md). A usage figure, not an audit trail. */
+  api_usage: 90,
 } as const
 
 export type LedgerCollection = keyof typeof LEDGER_RETENTION_DAYS
+
+/**
+ * Collections retired by the SAME TTL mechanism but outside the ledger policy:
+ * each document's `expires_at` is set by its writer from its own lifetime (an
+ * OAuth code lives five minutes, a refresh token thirty days), so there is no
+ * one retention to name. Declared here so the TTL overrides and this list can be
+ * checked against each other (`utils/ledgerRetention.test.ts`).
+ */
+export const EXPIRING_DOCUMENT_COLLECTIONS = ['api_credentials', 'oauth_requests', 'oauth_clients'] as const
 
 /** The field the TTL policies key on — the same name in every ledger. */
 export const LEDGER_EXPIRES_AT_FIELD = 'expires_at'

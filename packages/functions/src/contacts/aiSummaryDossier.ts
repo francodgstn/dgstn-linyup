@@ -537,16 +537,8 @@ function stripPartLabel(text: string): string {
   )
 }
 
-/**
- * The rules' `callerOwnsContact`, for the own-scoped coach: on the contact's
- * coach list, or its creator.
- */
-export function coachOwnsContact(
-  contact: Pick<Contact, 'assigned_coach_ids' | 'createdBy'>,
-  uid: string
-): boolean {
-  return (contact.assigned_coach_ids ?? []).includes(uid) || contact.createdBy === uid
-}
+/** Moved to `@linyup/shared` (utils/dataScope.ts) so the public API asks the same question. */
+export { coachOwnsContact } from '@linyup/shared'
 
 /** The language the summary is written in, from the studio's authoring language. */
 export const LANGUAGE_NAMES: Record<string, string> = {

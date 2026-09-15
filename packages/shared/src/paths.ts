@@ -43,6 +43,22 @@ export const OUTREACH_TEMPLATES_SUBCOLLECTION = 'outreach_templates'
 export const AUTOMATION_RULES_SUBCOLLECTION = 'automation_rules'
 export const AUTOMATION_LOGS_SUBCOLLECTION = 'automation_logs'
 export const WEBHOOK_ENDPOINTS_SUBCOLLECTION = 'webhook_endpoints'
+// Public API + MCP (docs/public-api.md). api_keys: the owner-visible key records
+// (types/api.ts ApiKey), function-written only. api_usage: one counter per day,
+// TTL-retired (LEDGER_RETENTION_DAYS.api_usage).
+export const API_KEYS_SUBCOLLECTION = 'api_keys'
+export const API_USAGE_SUBCOLLECTION = 'api_usage'
+// api_credentials/{sha256(secret)} — what a presented secret authenticates
+// (ApiCredential). Top-level so a lookup is ONE direct get with no team known
+// yet; every client read and write is denied.
+export const API_CREDENTIALS_COLLECTION = 'api_credentials'
+// OAuth (docs/public-api.md). oauth_grants: a team's connected apps
+// (types/api.ts OAuthGrant). oauth_requests / oauth_clients: authorization
+// requests awaiting consent and cached Client ID Metadata Documents — platform
+// state keyed before any team is chosen, TTL-retired, client access denied.
+export const OAUTH_GRANTS_SUBCOLLECTION = 'oauth_grants'
+export const OAUTH_REQUESTS_COLLECTION = 'oauth_requests'
+export const OAUTH_CLIENTS_COLLECTION = 'oauth_clients'
 export const TEAM_REBUILD_JOBS_SUBCOLLECTION = 'rebuild_jobs'
 // The monthly leaderboard: one denormalised document per team (see
 // types/leaderboard.ts), plus a per-month history written at month end.
