@@ -2,9 +2,7 @@ import { db, getFunctions } from '../config/firebase';
 import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, collectionGroup, orderBy, Timestamp, addDoc, serverTimestamp, limit, writeBatch } from 'firebase/firestore';
 import {
   CONTACTS_COLLECTION,
-  SESSIONS_COLLECTION,
   TEAMS_COLLECTION,
-  PARTICIPANTS_SUBCOLLECTION,
   CONTACT_GOALS_SUBCOLLECTION,
   CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION,
   CONTACT_PERFORMANCE_CHECKINS_SUBCOLLECTION,
@@ -39,9 +37,10 @@ import {
   AppointmentWithStatus,
   ListAvailabilityCoach,
   MyBookingsResult,
+  BookedSession,
+  SessionWithStatus,
   MobileAppTelemetry,
   RankingSystem,
-  SessionParticipationStatus,
 } from '../types';
 import { resolveCoachingDimensions, resolveGoalCategories } from '../utils/goalContract';
 import { readAlert, alertIsFired, RawContactAlert } from '../utils/contactAlerts';
@@ -52,13 +51,8 @@ import { SESSION_MIRROR_TYPE } from './sessionMirror';
 
 export { SESSION_MIRROR_TYPE };
 
-/** Sessions live at `sessions/{sessionId}/bookings/{contactId}` — no shared
- *  path constant exists for this subcollection yet (functions code keeps it
- *  as a local literal too — see packages/functions/src/booking/myBookings.ts). */
-const BOOKINGS_SUBCOLLECTION = 'bookings';
 const PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile';
 
-/** Map one `sessions/{id}/public_profile/{id}` mirror doc to the app's view. */
 /** A `getMyAttendance` row as the app's session shape. The callable answers
  *  from the SESSION documents (the Admin SDK reads them directly), so a session
  *  the studio never put on sale is present here exactly as it should be — the
@@ -76,6 +70,7 @@ function mapAttendance(teamId: string, a: MyAttendance): HydratedSession {
   };
 }
 
+/** Map one `sessions/{id}/public_profile/{id}` mirror doc to the app's view. */
 function mapSessionPublicProfile(sessionId: string, data: Record<string, unknown>): HydratedSession {
   const start = data.start as { toDate?: () => Date } | undefined;
   const end = data.end as { toDate?: () => Date } | undefined;
@@ -460,7 +455,7 @@ export const FirestoreService = {
     teamId: string,
     startDate: Date,
     endDate: Date
-  ): Promise<(HydratedSession & { status: SessionParticipationStatus })[]> {
+  ): Promise<SessionWithStatus[]> {
     try {
       const [sessions, bookingsResult, attended] = await Promise.all([
         this.getTeamSessionsInRange(teamId, startDate, endDate),
@@ -470,22 +465,22 @@ export const FirestoreService = {
         this.getContactAttendance(startDate, endDate, teamId),
       ]);
 
-      const bookedSessionIds = new Set(
-        bookingsResult.bookings.filter(b => b.kind === 'class').map(b => b.sessionId)
+      const bookingsBySession = new Map(
+        bookingsResult.bookings.filter(b => b.kind === 'class').map(b => [b.sessionId, b] as const)
       );
 
       const now = new Date();
       const attendedIds = new Set(attended.map(a => a.id));
 
-      return sessions.map((session) => {
-        const isPast = session.start < now;
-        let status: SessionParticipationStatus;
-        if (isPast) {
-          status = attendedIds.has(session.id) ? 'attended' : 'not attended';
-        } else {
-          status = bookedSessionIds.has(session.id) ? 'booked' : 'book';
+      return sessions.map((session): SessionWithStatus => {
+        if (session.start < now) {
+          return { ...session, status: attendedIds.has(session.id) ? 'attended' : 'not attended' };
         }
-        return { ...session, status };
+        const booking = bookingsBySession.get(session.id);
+        if (!booking) return { ...session, status: 'book' };
+        // Cancellability travels with the row — the server already answered it
+        // (BookedSession); no surface re-derives it from the booking's status.
+        return { ...session, status: 'booked', cancellable: booking.cancellable, cancelToken: booking.cancelToken };
       });
     } catch (error) {
       console.error('Error fetching sessions with participation:', error);
@@ -657,15 +652,20 @@ export const FirestoreService = {
     startDate: Date,
     endDate: Date,
     teamId?: string
-  ): Promise<HydratedSession[]> {
+  ): Promise<BookedSession[]> {
     try {
       if (!teamId) return [];
       const [sessions, bookingsResult] = await Promise.all([
         this.getTeamSessionsInRange(teamId, startDate, endDate),
         this.getMyBookings(teamId),
       ]);
-      const bookedIds = new Set(bookingsResult.bookings.filter(b => b.kind === 'class').map(b => b.sessionId));
-      return sessions.filter(s => bookedIds.has(s.id));
+      const bookingsBySession = new Map(
+        bookingsResult.bookings.filter(b => b.kind === 'class').map(b => [b.sessionId, b] as const)
+      );
+      return sessions.flatMap((s): BookedSession[] => {
+        const booking = bookingsBySession.get(s.id);
+        return booking ? [{ ...s, cancellable: booking.cancellable, cancelToken: booking.cancelToken }] : [];
+      });
     } catch (error) {
       console.error('Error fetching contact bookings:', error);
       return [];
@@ -675,49 +675,16 @@ export const FirestoreService = {
   // Cancel a booking (class or appointment) via its `booking_token` —
   // `getMyBookings` / `getUpcomingAppointments` already hand back a
   // `cancelToken` for every cancellable row, so this never needs a lookup.
+  // THE ONE cancel call in the app. A by-session variant used to read the
+  // booking doc and refuse any status but `pending` — but a fresh booking on
+  // an auto-confirm class is `confirmed`, so it refused every cancellation a
+  // member tried while the row still showed the bin (report 7107, M-02).
+  // Whether a booking is cancellable is the SERVER's answer (`cancellable` +
+  // `cancelToken` on the row, BookedSession), never re-derived here.
   async cancelBookingByToken(token: string): Promise<{ success: boolean; message?: string }> {
     const cancelBookingFn = httpsCallable(getFunctions(), 'cancelBooking');
     const result = await cancelBookingFn({ token });
     return result.data as any;
-  },
-
-  // Cancel a CLASS booking by session — looks up the booking token once (a
-  // single doc read on this user action, not a listing fan-out) and delegates
-  // to cancelBookingByToken.
-  async cancelSession(params: {
-    sessionId: string;
-    contactId: string;
-  }): Promise<{ success: boolean; message?: string }> {
-    try {
-      const bookingRef = doc(db, SESSIONS_COLLECTION, params.sessionId, BOOKINGS_SUBCOLLECTION, params.contactId);
-      let bookingSnap = await getDoc(bookingRef);
-
-      if (!bookingSnap.exists()) {
-        // Fallback: check participants for bookings not yet migrated
-        const participantRef = doc(db, SESSIONS_COLLECTION, params.sessionId, PARTICIPANTS_SUBCOLLECTION, params.contactId);
-        bookingSnap = await getDoc(participantRef);
-      }
-
-      if (!bookingSnap.exists()) {
-        throw new Error('Booking not found');
-      }
-
-      const bookingData = bookingSnap.data();
-      const bookingStatus = bookingData?.status;
-      if (bookingStatus && bookingStatus !== 'pending') {
-        throw new Error('This booking can no longer be cancelled.');
-      }
-
-      const bookingToken = bookingData?.booking_token;
-      if (!bookingToken) {
-        throw new Error('No booking token found for this session');
-      }
-
-      return await this.cancelBookingByToken(bookingToken);
-    } catch (error) {
-      console.error('Error cancelling session:', error);
-      throw error;
-    }
   },
 
   // Self check-in via team QR code scan.

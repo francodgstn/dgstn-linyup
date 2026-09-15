@@ -99,6 +99,17 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
   const statusColors = getAffiliationColors(affiliationSummary, theme.colors);
   const affiliationLabel = getAffiliationLabel(t, affiliationSummary);
 
+  // Neither concept exists on every tenant. Ranks are configured per tenant
+  // (`ranking_systems`); affiliations are an organisation-tier concept, so an
+  // independent studio (no `org_id`) has none to be "not affiliated" with. A
+  // card reading NO RANK / NOT AFFILIATED on a studio that uses neither is a
+  // wrong answer, not an empty one (PrimeTestLab report 7107, S-03) — each
+  // section renders only where its concept exists, or where THIS member holds
+  // one anyway (a rank or affiliation on record always shows).
+  const tenantUsesRanks = (rankingSystems?.length ?? 0) > 0 || rankInfo !== null;
+  const tenantUsesAffiliations = !!teamProfile?.org_id || (affiliationSummary?.types.length ?? 0) > 0;
+  const cardLabel = tenantUsesAffiliations ? t('cardLabel', { term: resolvedAffiliationTerm }) : t('memberCardLabel');
+
   const handleToggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     onToggleCollapse();
@@ -115,15 +126,19 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
           style={styles.collapsedGradient}
         >
           <View style={styles.collapsedTopRow}>
-            <BeltBadge badge={rankBadge} size={26} />
-            <Text style={styles.collapsedRank}>{rankTitle.toUpperCase()}</Text>
-            <TouchableRipple onPress={onShowStatusModal} style={styles.statusBadgeContainer}>
-              <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-                <Text style={[styles.statusBadgeText, { color: statusColors.text }]}>
-                  {affiliationLabel}
-                </Text>
-              </View>
-            </TouchableRipple>
+            {tenantUsesRanks && <BeltBadge badge={rankBadge} size={26} />}
+            <Text style={styles.collapsedRank} numberOfLines={1}>
+              {(tenantUsesRanks ? rankTitle : studentName).toUpperCase()}
+            </Text>
+            {tenantUsesAffiliations && (
+              <TouchableRipple onPress={onShowStatusModal} style={styles.statusBadgeContainer}>
+                <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+                  <Text style={[styles.statusBadgeText, { color: statusColors.text }]}>
+                    {affiliationLabel}
+                  </Text>
+                </View>
+              </TouchableRipple>
+            )}
           </View>
           <PillHandle onPress={handleToggle} rotation={chevronRotation} />
         </LinearGradient>
@@ -148,16 +163,18 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
                 {(teamProfile?.name ?? 'LINYUP').toUpperCase()}
               </Text>
               <Text variant="labelSmall" style={styles.orgSubLabel}>
-                {t('cardLabel', { term: resolvedAffiliationTerm }).toUpperCase()}
+                {cardLabel.toUpperCase()}
               </Text>
             </View>
-            <TouchableRipple onPress={onShowStatusModal} style={styles.statusBadgeContainer}>
-              <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-                <Text style={[styles.statusBadgeText, { color: statusColors.text }]}>
-                  {affiliationLabel}
-                </Text>
-              </View>
-            </TouchableRipple>
+            {tenantUsesAffiliations && (
+              <TouchableRipple onPress={onShowStatusModal} style={styles.statusBadgeContainer}>
+                <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+                  <Text style={[styles.statusBadgeText, { color: statusColors.text }]}>
+                    {affiliationLabel}
+                  </Text>
+                </View>
+              </TouchableRipple>
+            )}
           </View>
 
           {/* Rank Section */}
@@ -168,12 +185,14 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
                 {rankSub}
               </Text>
             </View>
-            <View style={styles.rankTitleRow}>
-              <BeltBadge badge={rankBadge} size={32} />
-              <Text variant="headlineMedium" style={styles.rankTitle}>
-                {rankTitle.toUpperCase()}
-              </Text>
-            </View>
+            {tenantUsesRanks && (
+              <View style={styles.rankTitleRow}>
+                <BeltBadge badge={rankBadge} size={32} />
+                <Text variant="headlineMedium" style={styles.rankTitle}>
+                  {rankTitle.toUpperCase()}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Separator */}

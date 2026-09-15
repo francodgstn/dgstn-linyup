@@ -140,6 +140,7 @@
     "invalidCodeMessage": "Please enter a valid 6-digit code",
     "invalidCode": "Invalid code",
     "enterEmail": "Please enter your email address",
+    "invalidEmail": "Please enter a valid email address",
     "sendCodeFailed": "Failed to send verification code",
     "selectContactFailed": "Failed to select contact",
     "stayLoggedIn": "Stay logged in",
@@ -183,6 +184,8 @@
     "successTitle": "Success",
     "bookedSuccess": "Session booked successfully!",
     "bookFailed": "Failed to book session. Please try again.",
+    "alreadyBookedTitle": "Already booked",
+    "alreadyBooked": "You're already booked for this class.",
     "signatureNeeded": "Signature needed",
     "notNow": "Not now",
     "open": "Open",
@@ -295,6 +298,8 @@
     "successTitle": "Success",
     "bookedSuccess": "Session booked successfully!",
     "bookFailed": "Failed to book session. Please try again.",
+    "alreadyBookedTitle": "Already booked",
+    "alreadyBooked": "You're already booked for this class.",
     "signatureNeeded": "Signature needed",
     "notNow": "Not now",
     "open": "Open",
@@ -360,6 +365,7 @@
     "noRank": "No rank",
     "memberPrefix": "Member: {name}",
     "cardLabel": "{term} card",
+    "memberCardLabel": "Member card",
     "ageYears": "{age} yrs",
     "ageFallback": "??",
     "weightKg": "{weight} kg",
@@ -424,6 +430,7 @@
     "streakLabel": "Streak",
     "ptsUnit": "pts",
     "weeksUnit": "weeks",
+    "weekUnit": "week",
     "bestWeeksShort": "Best: {count}w"
   },
   "Welcome": {
@@ -511,6 +518,13 @@
     "youHavePrefix": "You have {version}; ",
     "versionRequired": "version {minimum} or newer is required.",
     "openStore": "Open the store"
+  },
+  "BookingCancellation": {
+    "refusedNotFound": "This booking is no longer there — it looks like it was already cancelled.",
+    "refusedSessionGone": "That class is no longer in the schedule, so there is nothing left to cancel.",
+    "refusedAlreadySettled": "This booking can no longer be cancelled — it was already cancelled, or the studio has confirmed attendance.",
+    "refusedPast": "That class has already started, so it can no longer be cancelled here. Please speak to the studio.",
+    "failedTransient": "We couldn't cancel this booking — it is still active. Please try again."
   },
   "Waiver": {
     "documentFallback": "a document",

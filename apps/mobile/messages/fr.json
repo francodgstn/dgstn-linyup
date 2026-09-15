@@ -140,6 +140,7 @@
     "invalidCodeMessage": "Merci de saisir un code à 6 chiffres valide",
     "invalidCode": "Code invalide",
     "enterEmail": "Merci de saisir ton adresse e-mail",
+    "invalidEmail": "Merci de saisir une adresse e-mail valide",
     "sendCodeFailed": "Échec de l'envoi du code de vérification",
     "selectContactFailed": "Échec de la sélection du contact",
     "stayLoggedIn": "Rester connecté",
@@ -183,6 +184,8 @@
     "successTitle": "Succès",
     "bookedSuccess": "Séance réservée avec succès !",
     "bookFailed": "Échec de la réservation. Merci de réessayer.",
+    "alreadyBookedTitle": "Déjà réservé",
+    "alreadyBooked": "Tu as déjà une réservation pour ce cours.",
     "signatureNeeded": "Signature requise",
     "notNow": "Pas maintenant",
     "open": "Ouvrir",
@@ -295,6 +298,8 @@
     "successTitle": "Succès",
     "bookedSuccess": "Séance réservée avec succès !",
     "bookFailed": "Échec de la réservation. Merci de réessayer.",
+    "alreadyBookedTitle": "Déjà réservé",
+    "alreadyBooked": "Tu as déjà une réservation pour ce cours.",
     "signatureNeeded": "Signature requise",
     "notNow": "Pas maintenant",
     "open": "Ouvrir",
@@ -360,6 +365,7 @@
     "noRank": "Aucun grade",
     "memberPrefix": "Membre : {name}",
     "cardLabel": "Carte {term}",
+    "memberCardLabel": "Carte de membre",
     "ageYears": "{age} ans",
     "ageFallback": "??",
     "weightKg": "{weight} kg",
@@ -424,6 +430,7 @@
     "streakLabel": "Série",
     "ptsUnit": "pts",
     "weeksUnit": "semaines",
+    "weekUnit": "semaine",
     "bestWeeksShort": "Meilleur : {count}sem"
   },
   "Welcome": {
@@ -511,6 +518,13 @@
     "youHavePrefix": "Tu as la version {version} ; ",
     "versionRequired": "la version {minimum} ou plus récente est requise.",
     "openStore": "Ouvrir le store"
+  },
+  "BookingCancellation": {
+    "refusedNotFound": "Cette réservation n'existe plus — elle a apparemment déjà été annulée.",
+    "refusedSessionGone": "Ce cours ne figure plus au programme, il n'y a donc plus rien à annuler.",
+    "refusedAlreadySettled": "Cette réservation ne peut plus être annulée — elle a déjà été annulée ou le studio a confirmé la présence.",
+    "refusedPast": "Ce cours a déjà commencé et ne peut plus être annulé ici. Merci de contacter le studio.",
+    "failedTransient": "Impossible d'annuler cette réservation : elle est toujours active. Merci de réessayer."
   },
   "Waiver": {
     "documentFallback": "un document",
