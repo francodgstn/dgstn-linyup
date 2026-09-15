@@ -3781,7 +3781,23 @@
     "editorFormNextActivityPlaceholder": "Terminart wählen",
     "editorFormNoActivitiesHint": "Du hast noch keine Terminarten — lege zuerst eine unter Aktivitäten an.",
     "pricingGroupByTermLabel": "Nach Laufzeit gruppieren",
-    "pricingGroupByTermHint": "Zeigt einen Tab pro Laufzeit (1 Monat, 6 Monate, …) mit dem jeweiligen Preis pro Plan. Pläne ohne laufzeitgebundenen Preis werden unterhalb der Tabs aufgeführt."
+    "pricingGroupByTermHint": "Zeigt einen Tab pro Laufzeit (1 Monat, 6 Monate, …) mit dem jeweiligen Preis pro Plan. Pläne ohne laufzeitgebundenen Preis werden unterhalb der Tabs aufgeführt.",
+    "sectionPosts": "Blog-Beiträge",
+    "sectionPostsDesc": "Deine neuesten Beiträge, als Karten oder Liste",
+    "editorPostsNote": "Zeigt die neuesten Blog-Beiträge dieser Website. Füge einen über „Seite hinzufügen\" hinzu und wähle dort Beitrag.",
+    "editorPostsLimit": "Anzahl Beiträge (1–24)",
+    "pagesKindField": "Typ",
+    "pagesKindPage": "Seite",
+    "pagesKindPost": "Beitrag",
+    "pagesPostDateField": "Veröffentlichungsdatum",
+    "pagesPostCoverField": "Titelbild",
+    "pagesPostExcerptField": "Kurzbeschreibung",
+    "pagesPostExcerptHint": "{count}/{max} Zeichen",
+    "pagesPostsGroup": "Beiträge",
+    "pagesPostSuffix": "Beitrag",
+    "pagesPostsLimitReached": "Du kannst bis zu {max} Beiträge hinzufügen.",
+    "pagesAndPostsLimitReached": "Du hast das Limit von {maxPages} Seiten und {maxPosts} Beiträgen erreicht.",
+    "pagesPostDateInvalid": "Gib ein gültiges Veröffentlichungsdatum ein."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -7623,7 +7639,11 @@
     "formSignInRequired": "Melde dich an, um dieses Formular auszufüllen.",
     "formOpenForm": "Formular öffnen",
     "pricingTermTabsLabel": "Laufzeit",
-    "pricingTermMonths": "{count, plural, one {# Monat} other {# Monate}}"
+    "pricingTermMonths": "{count, plural, one {# Monat} other {# Monate}}",
+    "headingPosts": "Aus dem Blog",
+    "emptyPosts": "Noch keine Beiträge.",
+    "readMore": "Weiterlesen",
+    "navPosts": "Blog"
   },
   "OrgMemberInvite": {
     "title": "Einladung zur Organisation",

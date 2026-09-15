@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select'
 import type {
   WebsiteSection, ActivitiesSection, PricingSection, ScheduleSection, PlacesSection, FormSection,
-  SiteCta,
+  PostsSection, SiteCta,
 } from '@linyup/shared'
 import { uploadSiteImage } from './hooks'
 import { usePlaces } from '@/hooks/usePlaces'
@@ -400,6 +400,64 @@ function FormFields({ s, teamId, onChange }: { s: FormSection; teamId: string; o
   )
 }
 
+// ─── Posts (a site's own blog — team sites only, like Activities/Pricing/etc) ─
+
+function PostsFields({ s, onChange }: { s: PostsSection; onChange: (p: Patch) => void }) {
+  const t = useTranslations('Website')
+  const layout = s.layout ?? 'grid'
+  return (
+    <div className="space-y-3">
+      <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+        {t('editorPostsNote')}
+      </p>
+      <Field label={t('editorHeadingOptional')}><Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" /></Field>
+      <Field label={t('editorSubheadingOptional')}><Input value={s.subheading ?? ''} onChange={(e) => onChange({ subheading: e.target.value })} className="h-9" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('editorLayout')}>
+          <Select
+            value={layout}
+            onValueChange={(v) => onChange({ layout: v === 'grid' ? undefined : (v as PostsSection['layout']) })}
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="grid">{t('editorLayoutGrid')}</SelectItem>
+              <SelectItem value="list">{t('editorLayoutList')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        {/* A list row is always one per row — the column count is meaningless
+            there. Hidden rather than reset, so switching back to grid restores
+            whatever the studio had picked. */}
+        {layout === 'grid' && (
+          <Field label={t('editorColumns')}>
+            <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+      </div>
+      <Field label={t('editorPostsLimit')}>
+        <Input
+          type="number"
+          min={1}
+          max={24}
+          value={s.limit ?? 6}
+          onChange={(e) => {
+            const n = Number(e.target.value)
+            if (Number.isFinite(n)) onChange({ limit: Math.min(24, Math.max(1, Math.round(n))) })
+          }}
+          className="h-9 w-24"
+        />
+      </Field>
+    </div>
+  )
+}
+
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionEditor({
@@ -452,6 +510,7 @@ export function SectionEditor({
     case 'video':        return <VideoFields key={section.id} s={section} tenant={tenant} onChange={onChange} />
     case 'team':         return <TeamFields s={section} tenant={tenant} onChange={onChange} />
     case 'form':         return <FormFields s={section} teamId={teamId} onChange={onChange} />
+    case 'posts':        return <PostsFields s={section} onChange={onChange} />
     default:         return null
   }
 }

@@ -3781,7 +3781,23 @@
     "editorFormNextActivityPlaceholder": "Scegli un tipo di appuntamento",
     "editorFormNoActivitiesHint": "Non hai ancora tipi di appuntamento — creane prima uno in Attività.",
     "pricingGroupByTermLabel": "Raggruppa per durata",
-    "pricingGroupByTermHint": "Mostra una scheda per ogni durata di impegno (1 mese, 6 mesi, …), con il prezzo di ogni piano per la durata scelta. I piani senza un prezzo legato a una durata sono elencati sotto le schede."
+    "pricingGroupByTermHint": "Mostra una scheda per ogni durata di impegno (1 mese, 6 mesi, …), con il prezzo di ogni piano per la durata scelta. I piani senza un prezzo legato a una durata sono elencati sotto le schede.",
+    "sectionPosts": "Articoli del blog",
+    "sectionPostsDesc": "I tuoi articoli più recenti, in schede o elenco",
+    "editorPostsNote": "Mostra gli articoli di blog più recenti di questo sito. Aggiungine uno da \"Aggiungi pagina\", scegliendo Articolo.",
+    "editorPostsLimit": "Articoli da mostrare (1–24)",
+    "pagesKindField": "Tipo",
+    "pagesKindPage": "Pagina",
+    "pagesKindPost": "Articolo",
+    "pagesPostDateField": "Data di pubblicazione",
+    "pagesPostCoverField": "Immagine di copertina",
+    "pagesPostExcerptField": "Estratto",
+    "pagesPostExcerptHint": "{count}/{max} caratteri",
+    "pagesPostsGroup": "Articoli",
+    "pagesPostSuffix": "Articolo",
+    "pagesPostsLimitReached": "Puoi aggiungere fino a {max} articoli.",
+    "pagesAndPostsLimitReached": "Hai raggiunto il limite di {maxPages} pagine e {maxPosts} articoli.",
+    "pagesPostDateInvalid": "Inserisci una data di pubblicazione valida."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -7623,7 +7639,11 @@
     "formSignInRequired": "Accedi per compilare questo modulo.",
     "formOpenForm": "Apri il modulo",
     "pricingTermTabsLabel": "Durata dell'impegno",
-    "pricingTermMonths": "{count, plural, one {# mese} other {# mesi}}"
+    "pricingTermMonths": "{count, plural, one {# mese} other {# mesi}}",
+    "headingPosts": "Dal blog",
+    "emptyPosts": "Nessun articolo per ora.",
+    "readMore": "Continua a leggere",
+    "navPosts": "Blog"
   },
   "OrgMemberInvite": {
     "title": "Invito all'organizzazione",

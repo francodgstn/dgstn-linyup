@@ -441,6 +441,23 @@ export type WebsiteSection =
   | VideoSection
   | TeamSection
   | FormSection
+  | PostsSection
+
+/**
+ * The site's newest blog posts (pages with `kind: 'post'`), read from the page
+ * index the site already carries — no extra reads, and a post that is hidden
+ * or unpublished is simply not in it.
+ */
+export interface PostsSection extends SectionBase {
+  type: 'posts'
+  heading?: string
+  subheading?: string
+  /** How many posts, newest first. Publish defaults it to 6. */
+  limit?: number
+  /** 'grid' (default): cover cards. 'list': rows with a small image. */
+  layout?: 'grid' | 'list'
+  columns: 2 | 3 | 4
+}
 
 export type WebsiteSectionType = WebsiteSection['type']
 
@@ -549,7 +566,7 @@ export function deriveSiteMenu(params: {
   sections: readonly { id: string; type: string; showInNav?: boolean }[]
   surfaceLinks: readonly { surface: PublicSurface }[]
   /** A multi-page site lists its visible pages after the home anchors. */
-  pages?: readonly { id: string; hidden?: boolean }[]
+  pages?: readonly { id: string; hidden?: boolean; kind?: 'page' | 'post' }[]
 }): SiteMenuItem[] {
   const anchors = params.sections
     .filter((s) => s.type !== 'hero' && s.showInNav !== false)
@@ -557,8 +574,9 @@ export function deriveSiteMenu(params: {
       id: `section:${s.id}`,
       target: { kind: 'section', sectionId: s.id },
     }))
+  // Posts are reached through a posts section, never one menu item each.
   const pages = (params.pages ?? [])
-    .filter((p) => !p.hidden)
+    .filter((p) => !p.hidden && p.kind !== 'post')
     .map((p): SiteMenuItem => ({ id: `page:${p.id}`, target: { kind: 'page', pageId: p.id } }))
   const surfaces = params.surfaceLinks.map((l): SiteMenuItem => ({
     id: `surface:${l.surface}`,
@@ -781,6 +799,20 @@ export interface SitePageRef {
   /** Kept in the draft, never published. */
   hidden?: boolean
   seo?: SiteSeo
+  /**
+   * 'post' makes the page a blog post: listed by `posts` sections newest first,
+   * shown under a post header (title, date, cover image), and left out of the
+   * derived menu. A post is otherwise an ordinary page — its own URL, sections,
+   * translations and SEO. Absent ⇒ 'page'.
+   */
+  kind?: 'page' | 'post'
+  /** Posts: the date shown and sorted by, 'YYYY-MM-DD'. A calendar date, not a
+   *  Timestamp, so it never shifts with the reader's timezone. */
+  publishedOn?: string
+  /** Posts: the card and header image, and the social preview image. */
+  coverImageUrl?: string
+  /** Posts: a sentence or two for the card and the meta description. */
+  excerpt?: string
 }
 
 /** A page's content — `{site_drafts|site_published}/{teamId}/pages/{pageId}`. */

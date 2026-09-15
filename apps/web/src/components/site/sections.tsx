@@ -46,6 +46,7 @@ import {
   Minus,
   Quote,
   Play,
+  Newspaper,
 } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/icon-picker'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -67,9 +68,11 @@ import type {
   VideoSection,
   TeamSection,
   FormSection,
+  PostsSection,
   FormPublicProfile,
   SocialLink,
   OrgSiteTeamRef,
+  SitePageRef,
 } from '@linyup/shared'
 import {
   videoEmbedSrc,
@@ -80,6 +83,7 @@ import {
   normalizeBenefit,
   resolveDurationBenefit,
   resolveDurationSale,
+  sitePosts,
   type ActivityAccessRule,
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
@@ -93,6 +97,7 @@ import {
   TEAMS_COLLECTION,
   FORMS_COLLECTION,
 } from '@linyup/shared'
+import { formatSiteDate } from './siteDate'
 import { FieldInput, isFieldAnswered } from '@/components/forms/FieldInput'
 import {
   resolveActivityTerms,
@@ -193,6 +198,12 @@ export interface RenderCtx {
    * holds the page index; absent on hosts with no pages (org site, embed).
    */
   pageHref?: (pageId: string, sectionId?: string) => string | undefined
+  /**
+   * The site's page index — read by the Posts block to list blog posts newest
+   * first (`sitePosts`). Team sites only (org sites have no pages/posts yet);
+   * set by WebsiteRenderer from `site.pages`, absent on the embed.
+   */
+  pages?: SitePageRef[]
 }
 
 export const SOCIAL_ICONS: Record<string, React.FC<{ className?: string }>> = {
@@ -2904,6 +2915,124 @@ function FormBlock({ section, ctx }: { section: FormSection; ctx: RenderCtx }) {
   )
 }
 
+// ─── Posts (a site's own blog — pages with kind: 'post') ────────────────────
+//
+// No extra read: `sitePosts` filters and sorts the SAME page index the site
+// already carries (`ctx.pages`, set by WebsiteRenderer from `site.pages`), so a
+// hidden or unpublished post is simply not in it — nothing here decides that.
+
+function PostsBlock({ section, ctx }: { section: PostsSection; ctx: RenderCtx }) {
+  const t = useTranslations('Site')
+  const { palette, preview } = ctx
+  const posts = sitePosts(ctx.pages).slice(0, section.limit ?? 6)
+
+  if (posts.length === 0) {
+    // The live site simply omits an empty blog block; the builder canvas says
+    // why, so a studio doesn't wonder whether the section is broken.
+    if (!preview) return null
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-5xl px-6">
+          <Heading text={section.heading ?? t('headingPosts')} palette={palette} />
+          <p
+            className="mt-6 rounded-lg border border-dashed p-6 text-center text-sm"
+            style={{ color: palette.muted, borderColor: palette.border }}
+          >
+            {t('emptyPosts')}
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  const isList = section.layout === 'list'
+  const cols =
+    section.columns === 2
+      ? '@2xl:grid-cols-2'
+      : section.columns === 4
+        ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
+        : '@2xl:grid-cols-2 @5xl:grid-cols-3'
+  const containerClass = isList ? 'mt-10 flex flex-col gap-4' : `mt-10 grid grid-cols-1 gap-5 ${cols}`
+  const cardClass = isList
+    ? 'flex flex-col overflow-hidden site-card rounded-2xl border @2xl:flex-row'
+    : 'flex flex-col overflow-hidden site-card rounded-2xl border'
+  const mediaClass = isList
+    ? 'relative aspect-[16/10] w-full shrink-0 @2xl:aspect-auto @2xl:w-56 @4xl:w-72'
+    : 'relative aspect-[16/10] w-full'
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto max-w-5xl px-6">
+        <Heading text={section.heading ?? t('headingPosts')} palette={palette} />
+        {section.subheading && (
+          <p className="mt-3 text-center" style={{ color: palette.muted }}>
+            {section.subheading}
+          </p>
+        )}
+        <div className={containerClass}>
+          {posts.map((post) => {
+            const href = ctx.pageHref?.(post.id)
+            const inner = (
+              <>
+                <div className={mediaClass} style={{ background: palette.accent }}>
+                  {post.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={post.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Newspaper className="h-8 w-8" style={{ color: palette.onAccent, opacity: 0.85 }} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  {post.publishedOn && (
+                    <p className="text-xs" style={{ color: palette.muted }}>
+                      {formatSiteDate(post.publishedOn, ctx.locale)}
+                    </p>
+                  )}
+                  <h3 className="mt-1 text-lg font-semibold" style={{ color: palette.text }}>
+                    {post.title}
+                  </h3>
+                  {post.excerpt && (
+                    <p className="mt-2 line-clamp-3 flex-1 text-sm" style={{ color: palette.muted }}>
+                      {post.excerpt}
+                    </p>
+                  )}
+                  <span
+                    className="mt-4 inline-flex items-center gap-1.5 self-start text-sm font-semibold"
+                    style={{ color: palette.accent }}
+                  >
+                    {t('readMore')}
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </>
+            )
+            return href ? (
+              <a
+                key={post.id}
+                {...linkProps(href, preview)}
+                className={cardClass}
+                style={{ borderColor: palette.border, background: palette.surface }}
+              >
+                {inner}
+              </a>
+            ) : (
+              <div
+                key={post.id}
+                className={cardClass}
+                style={{ borderColor: palette.border, background: palette.surface }}
+              >
+                {inner}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── Features (highlight cards) ──────────────────────────────────────────────
 
 /** A feature link: a `#section` anchor stays in the page; anything else is an
@@ -3423,6 +3552,8 @@ export function SectionBlock({
       return <TeamBlock section={section} ctx={ctx} />
     case 'form':
       return <FormBlock section={section} ctx={ctx} />
+    case 'posts':
+      return <PostsBlock section={section} ctx={ctx} />
     case 'clubs':
       return <ClubsBlock section={section} ctx={ctx} />
     case 'locations':
@@ -3471,6 +3602,8 @@ export function sectionNavLabel(section: WebsiteSection | OrgSiteSection, t: Sit
       return section.heading || t('navTeam')
     case 'form':
       return section.heading || t('navForm')
+    case 'posts':
+      return section.heading || t('navPosts')
     case 'clubs':
       return section.heading || t('navClubs')
     case 'locations':

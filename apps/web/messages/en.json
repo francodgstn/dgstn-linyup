@@ -3781,7 +3781,23 @@
     "editorFormNextActivityPlaceholder": "Choose an appointment type",
     "editorFormNoActivitiesHint": "You have no appointment types yet — add one under Activities first.",
     "pricingGroupByTermLabel": "Group by term",
-    "pricingGroupByTermHint": "Shows a tab per commitment length (1 month, 6 months, …), each plan priced for the chosen term. Plans with no term-based price are listed below the tabs."
+    "pricingGroupByTermHint": "Shows a tab per commitment length (1 month, 6 months, …), each plan priced for the chosen term. Plans with no term-based price are listed below the tabs.",
+    "sectionPosts": "Blog posts",
+    "sectionPostsDesc": "Your latest posts, as cards or a list",
+    "editorPostsNote": "Shows this site's most recent blog posts. Add one from \"Add page\", choosing Post.",
+    "editorPostsLimit": "Posts to show (1–24)",
+    "pagesKindField": "Type",
+    "pagesKindPage": "Page",
+    "pagesKindPost": "Post",
+    "pagesPostDateField": "Publish date",
+    "pagesPostCoverField": "Cover image",
+    "pagesPostExcerptField": "Excerpt",
+    "pagesPostExcerptHint": "{count}/{max} characters",
+    "pagesPostsGroup": "Posts",
+    "pagesPostSuffix": "Post",
+    "pagesPostsLimitReached": "You can add up to {max} posts.",
+    "pagesAndPostsLimitReached": "You've reached the limit of {maxPages} pages and {maxPosts} posts.",
+    "pagesPostDateInvalid": "Enter a valid publish date."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -7623,7 +7639,11 @@
     "formSignInRequired": "Sign in to fill in this form.",
     "formOpenForm": "Open form",
     "pricingTermTabsLabel": "Commitment length",
-    "pricingTermMonths": "{count, plural, one {# month} other {# months}}"
+    "pricingTermMonths": "{count, plural, one {# month} other {# months}}",
+    "headingPosts": "From the blog",
+    "emptyPosts": "No posts yet.",
+    "readMore": "Read more",
+    "navPosts": "Blog"
   },
   "OrgMemberInvite": {
     "title": "Organisation invitation",

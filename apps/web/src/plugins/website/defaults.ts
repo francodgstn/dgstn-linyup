@@ -49,6 +49,7 @@ export const SECTION_LIBRARY: {
   { type: 'video', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
   { type: 'team', labelKey: 'sectionTeam', descKey: 'sectionTeamDesc', icon: 'Users', maturity: 'basic' },
   { type: 'form', labelKey: 'sectionForm', descKey: 'sectionFormDesc', icon: 'ClipboardList', maturity: 'basic' },
+  { type: 'posts', labelKey: 'sectionPosts', descKey: 'sectionPostsDesc', icon: 'Newspaper', maturity: 'basic' },
 ]
 
 /** Client-only unique id for a new section (React key + image path segment + anchor). */
@@ -113,6 +114,8 @@ export function newSection(type: WebsiteSectionType): WebsiteSection {
       }
     case 'form':
       return { id, type, formId: '' }
+    case 'posts':
+      return { id, type, columns: 3, limit: 6 }
   }
 }
 

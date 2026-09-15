@@ -19,6 +19,7 @@
 
 import {
   isPublicSurface,
+  isValidSiteDate,
   isValidSitePagePath,
   isValidVideoId,
   SITE_PAGE_LIMITS,
@@ -38,6 +39,7 @@ import type {
   GallerySection,
   HeroSection,
   PlacesSection,
+  PostsSection,
   PricingSection,
   ScheduleSection,
   SiteFooter,
@@ -421,6 +423,19 @@ export function sanitizeFormSection(d: Dict, id: string): FormSection | null {
   }) as unknown as FormSection
 }
 
+// A posts section is presentation only: the posts themselves are the page index,
+// already sanitized with the site.
+export function sanitizePostsSection(d: Dict, id: string): PostsSection {
+  return clean({
+    id, type: 'posts',
+    heading: optStr(d.heading, 200),
+    subheading: optStr(d.subheading, 400),
+    limit: num(d.limit, 1, 24, 6),
+    layout: optOneOf(d.layout, ['grid', 'list'] as const),
+    columns: columnsOf(d.columns),
+  }) as unknown as PostsSection
+}
+
 /** What publish knows about the docs a form section points at. */
 export interface FormCheckFacts {
   /** formId → the form doc's teamId and status, for forms that exist. */
@@ -511,6 +526,7 @@ const SECTION_BUILDERS = {
   places: sanitizePlacesSection,
   team: sanitizeTeamSection,
   form: sanitizeFormSection,
+  posts: sanitizePostsSection,
 } satisfies Record<WebsiteSectionType, SectionBuilder>
 
 function isSectionType(type: string): type is WebsiteSectionType {
@@ -566,15 +582,21 @@ export function sanitizePageRefs(raw: unknown): SitePageRef[] {
   const seenIds = new Set<string>()
   const seenPaths = new Set<string>()
   const refs: SitePageRef[] = []
+  let pageCount = 0
+  let postCount = 0
   for (const entry of Array.isArray(raw) ? raw : []) {
-    if (refs.length >= SITE_PAGE_LIMITS.maxPages) break
     const d = asDict(entry)
+    const isPost = d.kind === 'post'
+    // Pages and posts are capped apart — see SITE_PAGE_LIMITS.
+    if (isPost ? postCount >= SITE_PAGE_LIMITS.maxPosts : pageCount >= SITE_PAGE_LIMITS.maxPages) continue
     const id = optStr(d.id, 64)
     const title = optStr(d.title, 200)
     const path = typeof d.path === 'string' ? d.path : ''
     if (!id || !title || !isValidSitePagePath(path) || seenIds.has(id) || seenPaths.has(path)) continue
     seenIds.add(id)
     seenPaths.add(path)
+    if (isPost) postCount++
+    else pageCount++
     const seo = asDict(d.seo)
     const cleanSeo = clean({ title: optStr(seo.title, 200), description: optStr(seo.description, 400) })
     refs.push(
@@ -585,6 +607,11 @@ export function sanitizePageRefs(raw: unknown): SitePageRef[] {
         navLabel: optStr(d.navLabel, 120),
         hidden: optTrue(d.hidden),
         seo: Object.keys(cleanSeo).length ? cleanSeo : undefined,
+        // Post fields exist only on posts, so a page never carries a stale date.
+        kind: isPost ? 'post' : undefined,
+        publishedOn: isPost && isValidSiteDate(d.publishedOn) ? d.publishedOn : undefined,
+        coverImageUrl: isPost ? safeUrl(d.coverImageUrl) : undefined,
+        excerpt: isPost ? optStr(d.excerpt, 400) : undefined,
       }) as SitePageRef
     )
   }

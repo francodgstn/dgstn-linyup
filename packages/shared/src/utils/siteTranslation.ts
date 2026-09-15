@@ -49,6 +49,7 @@
  *   s.{sectionId}.playLabel         video block play-button label
  *   page.{pageId}.title             SitePageRef.title (the site doc's page index)
  *   page.{pageId}.navLabel          SitePageRef.navLabel
+ *   page.{pageId}.excerpt           SitePageRef.excerpt (a blog post's teaser)
  *   page.{pageId}.seo.title         SitePageRef.seo.title
  *   page.{pageId}.seo.description   SitePageRef.seo.description
  *
@@ -305,6 +306,7 @@ function siteBindings(target: {
     const ref = page as unknown as Record<string, unknown>
     bindings.push(propBinding(ref, `page.${page.id}.title`, 'title', 'plain'))
     bindings.push(propBinding(ref, `page.${page.id}.navLabel`, 'navLabel', 'plain'))
+    bindings.push(propBinding(ref, `page.${page.id}.excerpt`, 'excerpt', 'plain'))
     if (page.seo) {
       const seo = page.seo as unknown as Record<string, unknown>
       bindings.push(propBinding(seo, `page.${page.id}.seo.title`, 'title', 'plain'))

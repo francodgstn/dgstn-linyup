@@ -21,6 +21,7 @@ import { siteBrandRootProps } from './siteFonts'
 import { SectionBlock, sectionNavLabel, bookProps, SOCIAL_ICONS, type RenderCtx } from './sections'
 import type { BookIntent } from '@/components/booking/BookingOverlay'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
+import { formatSiteDate } from './siteDate'
 
 /** Structural subset satisfied by SiteDraft/PublishedSite (team sites, builder
  *  preview) AND OrgSiteDraft/OrgPublishedSite (org sites). `teamId` is only
@@ -185,6 +186,7 @@ export default function WebsiteRenderer({
     // leaked onBook would make the overlay throw and blank the canvas.
     onBook: preview ? undefined : onBook,
     pageHref,
+    pages: site.pages,
   }
 
   // ── THE MENU ────────────────────────────────────────────────────────────
@@ -605,6 +607,43 @@ export default function WebsiteRenderer({
       </header>
 
       <main id="top">
+        {/* A POST'S OWN HEADER — date, title, excerpt, cover image — sits above
+            its sections like a printed article's byline; the sections below
+            are the body, same as any other page. Never on a plain page or the
+            home page (`page?.ref.kind` is only ever 'post' when a post is
+            being viewed). */}
+        {page?.ref.kind === 'post' && (
+          <section className="py-16" style={{ background: palette.bg }}>
+            <div className="mx-auto max-w-5xl px-6">
+              {page.ref.publishedOn && (
+                <p className="text-sm" style={{ color: palette.muted }}>
+                  {formatSiteDate(page.ref.publishedOn, locale)}
+                </p>
+              )}
+              <h1
+                className="mt-2 text-3xl font-bold tracking-tight @2xl:text-4xl"
+                style={{ color: palette.text }}
+              >
+                {page.ref.title}
+              </h1>
+              {page.ref.excerpt && (
+                <p className="mt-4 max-w-3xl text-lg" style={{ color: palette.muted }}>
+                  {page.ref.excerpt}
+                </p>
+              )}
+              {page.ref.coverImageUrl && (
+                <div className="site-card mt-8 overflow-hidden rounded-2xl border" style={{ borderColor: palette.border }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={page.ref.coverImageUrl}
+                    alt=""
+                    className="aspect-[16/9] w-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+        )}
         {pageSections.map((s: WebsiteSection | OrgSiteSection) => (
           <SectionBlock key={s.id} section={s} ctx={ctx} />
         ))}

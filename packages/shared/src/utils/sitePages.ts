@@ -11,8 +11,10 @@
 // publish sanitizer refuses anything else, and the renderer resolves a URL.
 
 export const SITE_PAGE_LIMITS = {
-  /** Pages besides the home page. */
+  /** Pages besides the home page (posts not counted). */
   maxPages: 30,
+  /** Blog posts — capped apart from pages: a blog grows, a page tree does not. */
+  maxPosts: 100,
   /** Segments in a path ('ueber-uns/team' is 2). */
   maxDepth: 3,
   /** Characters per segment. */
@@ -61,6 +63,29 @@ export function normalizeSitePagePath(input: string): string {
 /** A stored path → its URL segments ('ueber-uns/team' → ['ueber-uns', 'team']). */
 export function sitePageSegments(path: string): string[] {
   return path.split('/').filter(Boolean)
+}
+
+const SITE_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
+
+/** A post date as stored: 'YYYY-MM-DD'. */
+export function isValidSiteDate(value: unknown): value is string {
+  return typeof value === 'string' && SITE_DATE.test(value)
+}
+
+/**
+ * The visible posts of a page index, newest first — the ONE ordering every
+ * posts section and post navigation uses. A post with no date sorts last;
+ * equal dates fall back to the title, so the order never flickers.
+ */
+export function sitePosts<P extends { kind?: string; hidden?: boolean; publishedOn?: string; title: string }>(
+  pages: readonly P[] | undefined
+): P[] {
+  return (pages ?? [])
+    .filter((page) => page.kind === 'post' && !page.hidden)
+    .sort((a, b) => {
+      const byDate = (b.publishedOn ?? '').localeCompare(a.publishedOn ?? '')
+      return byDate !== 0 ? byDate : a.title.localeCompare(b.title)
+    })
 }
 
 /** The page a URL's segments name, or null — the home page is `[]`. Hidden

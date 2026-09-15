@@ -180,6 +180,14 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     formId: 'form-1',
     next: { kind: 'appointment', activityId: 'act-intro' },
   },
+  posts: {
+    id: 'posts', type: 'posts', ...nav,
+    heading: 'Aktuelles',
+    subheading: 'Member of the Month',
+    limit: 4,
+    layout: 'list',
+    columns: 2,
+  },
 }
 
 describe('website publish — every section field round-trips', () => {

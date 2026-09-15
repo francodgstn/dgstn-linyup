@@ -573,6 +573,14 @@ export interface LeadSitePage {
   navLabel?: string
   hidden?: boolean
   seo?: { title?: string; description?: string }
+  /** 'post' makes the page a blog post (see SitePageRef.kind). */
+  kind?: 'page' | 'post'
+  /** Posts: 'YYYY-MM-DD'. */
+  publishedOn?: string
+  /** Posts: card, header and social image. */
+  coverImageUrl?: string
+  /** Posts: the teaser on cards and the meta description. */
+  excerpt?: string
   sections: LeadSiteSection[]
 }
 

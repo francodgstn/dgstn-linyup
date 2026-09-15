@@ -38,10 +38,14 @@ import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Segmented } from '@/components/ui/segmented'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -85,9 +89,15 @@ import {
   themedSection,
   normalizeSitePagePath,
   isValidSitePagePath,
+  isValidSiteDate,
   SITE_PAGE_LIMITS,
   type SiteThemeDef,
 } from '@linyup/shared'
+import { toDateInputValue } from '@/lib/format'
+import {
+  ImageField,
+  type SiteEditorTenant,
+} from '@/components/website/SiteSectionFields'
 import { usePublicSurfaces } from '@/hooks/usePublicSurfaces'
 import { type RenderableSite } from '@/components/site/WebsiteRenderer'
 import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
@@ -409,6 +419,8 @@ function sectionSummary(s: WebsiteSection): string {
       return s.heading ?? `${s.items?.length ?? 0} people`
     case 'form':
       return s.heading ?? 'Contact form'
+    case 'posts':
+      return s.heading ?? 'Blog posts'
     default:
       return ''
   }
@@ -459,31 +471,46 @@ function AddPageDialog({
   open,
   onOpenChange,
   existingPaths,
+  pagesFull,
+  postsFull,
   onCreate,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   /** Every OTHER page's path — the new one must not collide. */
   existingPaths: string[]
-  onCreate: (page: { title: string; path: string }) => void
+  /** Whether each kind's own cap (SITE_PAGE_LIMITS.maxPages / maxPosts) is
+   *  already reached — checked at creation, against whichever kind is chosen. */
+  pagesFull: boolean
+  postsFull: boolean
+  onCreate: (page: { title: string; path: string; kind: 'page' | 'post'; publishedOn?: string }) => void
 }) {
   const t = useTranslations('Website')
   const tCommon = useTranslations('Common')
+  const [kind, setKind] = useState<'page' | 'post'>('page')
   const [title, setTitle] = useState('')
   const [path, setPath] = useState('')
-  // Once the studio has edited the path by hand, typing in Title stops
-  // overwriting it — the same "don't fight the last thing they touched" rule
-  // `normalizeSitePagePath` itself follows on blur.
+  // Once the studio has edited the path by hand, typing in Title (or switching
+  // Page ↔ Post) stops overwriting it — the same "don't fight the last thing
+  // they touched" rule `normalizeSitePagePath` itself follows on blur.
   const [pathTouched, setPathTouched] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) return
+    setKind('page')
     setTitle('')
     setPath('')
     setPathTouched(false)
     setError(null)
   }, [open])
+
+  /** A post's suggested path lives under 'blog/' — a suffix, not a rename: the
+   *  title itself is untouched, only where a fresh path is offered from it. */
+  function suggestPath(nextKind: 'page' | 'post', nextTitle: string): string {
+    if (!nextTitle) return ''
+    return nextKind === 'post' ? normalizeSitePagePath(`blog/${nextTitle}`) : normalizeSitePagePath(nextTitle)
+  }
 
   function handleCreate() {
     if (!title.trim()) {
@@ -499,7 +526,20 @@ function AddPageDialog({
       setError(t('pagesPathTaken'))
       return
     }
-    onCreate({ title: title.trim(), path: normalized })
+    if (kind === 'post' && postsFull) {
+      setError(t('pagesPostsLimitReached', { max: SITE_PAGE_LIMITS.maxPosts }))
+      return
+    }
+    if (kind === 'page' && pagesFull) {
+      setError(t('pagesLimitReached', { max: SITE_PAGE_LIMITS.maxPages }))
+      return
+    }
+    onCreate({
+      title: title.trim(),
+      path: normalized,
+      kind,
+      publishedOn: kind === 'post' ? toDateInputValue(new Date()) : undefined,
+    })
   }
 
   return (
@@ -510,12 +550,27 @@ function AddPageDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesKindField')}</Label>
+            <Segmented
+              ariaLabel={t('pagesKindField')}
+              options={[
+                { value: 'page' as const, label: t('pagesKindPage') },
+                { value: 'post' as const, label: t('pagesKindPost') },
+              ]}
+              value={kind}
+              onChange={(v) => {
+                setKind(v)
+                if (!pathTouched) setPath(suggestPath(v, title))
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label className="text-xs">{t('pagesTitleField')}</Label>
             <Input
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value)
-                if (!pathTouched) setPath(normalizeSitePagePath(e.target.value))
+                if (!pathTouched) setPath(suggestPath(kind, e.target.value))
               }}
               placeholder={t('pagesTitlePlaceholder')}
               className="h-9"
@@ -559,6 +614,7 @@ function PageSettingsDialog({
   open,
   onOpenChange,
   page,
+  teamId,
   existingPaths,
   onChange,
   onDelete,
@@ -566,6 +622,8 @@ function PageSettingsDialog({
   open: boolean
   onOpenChange: (v: boolean) => void
   page: SitePageRef
+  /** Where a post's cover image is uploaded to. */
+  teamId: string
   /** Every OTHER page's path — this page's own path may stay unchanged. */
   existingPaths: string[]
   onChange: (patch: Partial<SitePageRef>) => void
@@ -576,6 +634,13 @@ function PageSettingsDialog({
   const [path, setPath] = useState(page.path)
   const [pathError, setPathError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const isPost = page.kind === 'post'
+  const excerptLength = (page.excerpt ?? '').length
+  const tenant: SiteEditorTenant = {
+    kind: 'team',
+    id: teamId,
+    uploadImage: (sectionId, file) => uploadSiteImage(teamId, sectionId, file),
+  }
 
   // Re-seed the local path draft whenever the dialog opens on a (possibly
   // different) page — the path field has its own commit-on-blur step, so it
@@ -620,6 +685,58 @@ function PageSettingsDialog({
                 className="h-9"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesKindField')}</Label>
+              <Segmented
+                ariaLabel={t('pagesKindField')}
+                options={[
+                  { value: 'page' as const, label: t('pagesKindPage') },
+                  { value: 'post' as const, label: t('pagesKindPost') },
+                ]}
+                value={isPost ? 'post' : 'page'}
+                onChange={(v) =>
+                  onChange({
+                    kind: v === 'post' ? 'post' : undefined,
+                    // A page turning into a post needs SOME date to sort and
+                    // display by; a post turning back into a page keeps
+                    // whatever it had, since the field is simply unread until
+                    // it becomes a post again.
+                    publishedOn: v === 'post' ? page.publishedOn || toDateInputValue(new Date()) : page.publishedOn,
+                  })
+                }
+              />
+            </div>
+            {isPost && (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('pagesPostDateField')}</Label>
+                  <Input
+                    type="date"
+                    value={page.publishedOn ?? ''}
+                    onChange={(e) => onChange({ publishedOn: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+                <ImageField
+                  label={t('pagesPostCoverField')}
+                  url={page.coverImageUrl}
+                  tenant={tenant}
+                  sectionId={page.id}
+                  onChange={(u) => onChange({ coverImageUrl: u })}
+                />
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('pagesPostExcerptField')}</Label>
+                  <Textarea
+                    value={page.excerpt ?? ''}
+                    onChange={(e) => onChange({ excerpt: e.target.value.slice(0, 400) })}
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('pagesPostExcerptHint', { count: excerptLength, max: 400 })}
+                  </p>
+                </div>
+              </>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">{t('pagesPathField')}</Label>
               <div className="flex items-center gap-1.5">
@@ -865,9 +982,26 @@ export default function WebsiteBuilderPage() {
   }
 
   // ── pages ──
-  function handleCreatePage({ title, path }: { title: string; path: string }) {
+  function handleCreatePage({
+    title,
+    path,
+    kind,
+    publishedOn,
+  }: {
+    title: string
+    path: string
+    kind: 'page' | 'post'
+    publishedOn?: string
+  }) {
     const id = `p-${Math.random().toString(36).slice(2, 8)}${Math.random().toString(36).slice(2, 6)}`
-    const ref: SitePageRef = { id, path, title }
+    const ref: SitePageRef = {
+      id,
+      path,
+      title,
+      // Absent ⇒ 'page' (SitePageRef.kind) — omit the field entirely for an
+      // ordinary page rather than writing 'page' explicitly.
+      ...(kind === 'post' ? { kind: 'post' as const, publishedOn } : {}),
+    }
     mutate((d) => ({ ...d, pages: [...(d.pages ?? []), ref] }))
     setPageSections((prev) => ({ ...(prev ?? {}), [id]: [] }))
     setAddPageOpen(false)
@@ -903,6 +1037,16 @@ export default function WebsiteBuilderPage() {
   // ── save / publish ──
   async function handleSave(): Promise<boolean> {
     if (!currentTeamId || !user || !draft) return false
+    // A post's date is what it sorts and displays by — catch a hand-typed or
+    // carried-over bad value here rather than at publish, where sitePosts()
+    // would silently sort it last instead of saying why.
+    const badDate = (draft.pages ?? []).find(
+      (p) => p.kind === 'post' && p.publishedOn && !isValidSiteDate(p.publishedOn)
+    )
+    if (badDate) {
+      toast.error(t('pagesPostDateInvalid'))
+      return false
+    }
     setSaving(true)
     try {
       await saveSiteDraft(currentTeamId, user.uid, draft)
@@ -1036,9 +1180,22 @@ export default function WebsiteBuilderPage() {
   }
 
   // The site's other pages, as the id+label pairs every picker here wants
-  // (menu editor, CTA editor, brand link lists).
-  const menuPages = (draft.pages ?? []).map((p) => ({ id: p.id, label: p.navLabel || p.title }))
+  // (menu editor, CTA editor, brand link lists, card link pickers). These are
+  // all FLAT lists — a post is suffixed rather than grouped, so it stays
+  // pickable everywhere a page already is without a second UI for it.
+  const menuPages = (draft.pages ?? []).map((p) => ({
+    id: p.id,
+    label: (p.navLabel || p.title) + (p.kind === 'post' ? ` · ${t('pagesPostSuffix')}` : ''),
+  }))
   const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
+  const nonPostPages = (draft.pages ?? []).filter((p) => p.kind !== 'post')
+  // Newest first, like the live site's `sitePosts` — but WITHOUT its hidden
+  // filter: a studio editing a hidden draft post still needs to find it here.
+  const postPages = (draft.pages ?? [])
+    .filter((p) => p.kind === 'post')
+    .sort((a, b) => (b.publishedOn ?? '').localeCompare(a.publishedOn ?? '') || a.title.localeCompare(b.title))
+  const pagesFull = nonPostPages.length >= SITE_PAGE_LIMITS.maxPages
+  const postsFull = postPages.length >= SITE_PAGE_LIMITS.maxPosts
 
   const previewSite: RenderableSite = {
     teamId: draft.teamId,
@@ -1177,24 +1334,41 @@ export default function WebsiteBuilderPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="home">{t('pagesHome')}</SelectItem>
-                    {(draft.pages ?? []).map((p) => (
+                    {nonPostPages.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.title} — /{p.path}
                       </SelectItem>
                     ))}
+                    {postPages.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>{t('pagesPostsGroup')}</SelectLabel>
+                        {postPages.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.title}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={(draft.pages ?? []).length >= SITE_PAGE_LIMITS.maxPages}
+                  // The kind is chosen INSIDE the dialog, so only the rare case
+                  // where NEITHER kind has room left disables the trigger —
+                  // each kind's own cap is enforced at creation time instead
+                  // (AddPageDialog's `pagesFull` / `postsFull`).
+                  disabled={pagesFull && postsFull}
                   // Native title, not <Tip>: the button already carries a visible
                   // label ("Add page") — this only extends it, and only while
                   // disabled, with the reason.
                   title={
-                    (draft.pages ?? []).length >= SITE_PAGE_LIMITS.maxPages
-                      ? t('pagesLimitReached', { max: SITE_PAGE_LIMITS.maxPages })
+                    pagesFull && postsFull
+                      ? t('pagesAndPostsLimitReached', {
+                          maxPages: SITE_PAGE_LIMITS.maxPages,
+                          maxPosts: SITE_PAGE_LIMITS.maxPosts,
+                        })
                       : undefined
                   }
                   onClick={() => setAddPageOpen(true)}
@@ -1470,6 +1644,8 @@ export default function WebsiteBuilderPage() {
         open={addPageOpen}
         onOpenChange={setAddPageOpen}
         existingPaths={(draft.pages ?? []).map((p) => p.path)}
+        pagesFull={pagesFull}
+        postsFull={postsFull}
         onCreate={handleCreatePage}
       />
 
@@ -1478,6 +1654,7 @@ export default function WebsiteBuilderPage() {
           open={pageSettingsOpen}
           onOpenChange={setPageSettingsOpen}
           page={currentPageRef}
+          teamId={currentTeamId!}
           existingPaths={(draft.pages ?? [])
             .filter((p) => p.id !== currentPageRef.id)
             .map((p) => p.path)}

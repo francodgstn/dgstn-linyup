@@ -57,6 +57,10 @@ function parsePages(v?: RestValue) {
         hidden: fields.hidden?.booleanValue === true,
         seoTitle: str(seo.title),
         seoDescription: str(seo.description),
+        isPost: str(fields.kind) === 'post',
+        publishedOn: str(fields.publishedOn),
+        coverImageUrl: str(fields.coverImageUrl),
+        excerpt: str(fields.excerpt),
       },
     ]
   })
@@ -178,14 +182,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (page) {
     const pageTitle = translated(`page.${page.id}.title`, page.title) ?? page.title
     title = translated(`page.${page.id}.seo.title`, page.seoTitle) || `${pageTitle} | ${siteTitle}`
+    // A post's own teaser is a better description than the whole site's.
     description = page.seoDescription
       ? translated(`page.${page.id}.seo.description`, page.seoDescription)
-      : translated('seo.description', site.description)
+      : page.isPost && page.excerpt
+        ? translated(`page.${page.id}.excerpt`, page.excerpt)
+        : translated('seo.description', site.description)
   } else {
     title = translated('seo.title', site.seoTitle) || siteTitle
     description = translated('seo.description', site.description)
   }
-  const ogImageUrl = site.ogImageUrl
+  // A post shares its own cover, and says it is an article with a date.
+  const ogImageUrl = (page?.isPost && page.coverImageUrl) || site.ogImageUrl
+  const article = page?.isPost
+    ? { type: 'article' as const, ...(page.publishedOn ? { publishedTime: page.publishedOn } : {}) }
+    : {}
 
   // hreflang alternates — only for a site with a translation manifest, and only
   // for the locales it actually carries; x-default points at the authoring
@@ -207,6 +218,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url,
       images: ogImageUrl ? [ogImageUrl] : undefined,
+      ...article,
     },
   }
 }
