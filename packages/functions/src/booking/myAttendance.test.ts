@@ -41,8 +41,16 @@ describe('getMyAttendance', () => {
   //
   // So this derives the SET of functions in the member app's Firestore service
   // that address a participant document at all, and pins it by NAME. A new one
-  // fails here and has to be justified; the survivor is justified below.
-  it('only cancelSession addresses a participant document in the member app', () => {
+  // fails here and has to be justified.
+  //
+  // THE SET IS NOW EMPTY. `cancelSession` was the survivor — it read one
+  // booking (falling back to the participant doc) on a user's tap to find a
+  // `booking_token`, and refused any status but `pending`, which refused every
+  // cancellation of a booking on an auto-confirm class. It is gone: the token
+  // and whether cancelling is still allowed both ride on the `getMyBookings`
+  // row, so the app cancels by token and reads attendance through this
+  // callable. Nothing in the member app addresses a participant document.
+  it('nothing addresses a participant document in the member app', () => {
     const owners = new Set<string>()
     const lines = mobile.split('\n')
     lines.forEach((line, i) => {
@@ -58,13 +66,10 @@ describe('getMyAttendance', () => {
       }
       owners.add(`<top level, line ${i + 1}>`)
     })
-    // `cancelSession` looks one booking up on a user's own tap — a single
-    // document read on an action, not a read per row of a list. Every other
-    // member-app question about attendance goes through the callable.
     assert.deepStrictEqual(
       [...owners].sort(),
-      ['cancelSession'],
-      'a new participants read appeared in apps/mobile — if it is per-session, route it through getMyAttendance',
+      [],
+      'a participants read appeared in apps/mobile — if it is per-session, route it through getMyAttendance',
     )
     assert.match(mobile, /'getMyAttendance'/)
   })

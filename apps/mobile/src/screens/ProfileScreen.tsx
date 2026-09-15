@@ -1052,10 +1052,14 @@ export const ProfileScreen: React.FC = () => {
           maxStreak={contact.max_streak}
         />
 
+        {/* The dashboard keeps its own agenda copy (`agendaSessions`); a booking
+            made or cancelled on this tab reloads it, so switching back never
+            offers Book for a class already booked (report 7107, M-03). */}
         <TrainingActivity
           contactId={contact.id}
           teamId={contact.teamId}
           contact={contact}
+          onBookingsChanged={refreshAgenda}
         />
 
         <PerformanceProfileSection contactId={contact.id} teamId={contact.teamId || ''} />
