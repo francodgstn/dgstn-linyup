@@ -126,6 +126,7 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     source: 'subscriptions',
     ctaLabel: 'Wählen',
     layout: 'table',
+    groupBy: 'term',
   },
   schedule: {
     id: 'schedule', type: 'schedule', ...nav,
@@ -153,6 +154,31 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     subheading: 'Wo wir trainieren',
     columns: 2,
     placeIds: ['place-1'],
+  },
+  team: {
+    id: 'team', type: 'team', ...nav,
+    heading: 'Unser Team',
+    subheading: '12 Coaches',
+    columns: 4,
+    layout: 'contact',
+    items: [
+      {
+        name: 'Patrick Dos Santos Rodrigues',
+        role: 'Head Coach',
+        badge: 'CF-L3',
+        bio: 'Seit 2014 dabei',
+        imageUrl: 'https://example.ch/patrick.png',
+        email: 'patrick@example.ch',
+        phone: '+41 41 790 10 48',
+      },
+    ],
+  },
+  form: {
+    id: 'form', type: 'form', ...nav,
+    heading: 'No Sweat Intro',
+    text: '30 Minuten, kostenlos',
+    formId: 'form-1',
+    next: { kind: 'appointment', activityId: 'act-intro' },
   },
 }
 

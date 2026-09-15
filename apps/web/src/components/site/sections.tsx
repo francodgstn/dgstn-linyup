@@ -65,6 +65,9 @@ import type {
   FaqSection,
   TestimonialsSection,
   VideoSection,
+  TeamSection,
+  FormSection,
+  FormPublicProfile,
   SocialLink,
   OrgSiteTeamRef,
 } from '@linyup/shared'
@@ -83,9 +86,14 @@ import {
   type Benefit,
   isHexColor,
   isLightColor,
+  nameInitials,
+  priceTermMonths,
+  pricingTerms,
   PUBLIC_PROFILE_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  FORMS_COLLECTION,
 } from '@linyup/shared'
+import { FieldInput, isFieldAnswered } from '@/components/forms/FieldInput'
 import {
   resolveActivityTerms,
   resolveActivityPricingDisplay,
@@ -1190,6 +1198,10 @@ interface PlanPrice {
   recurrence: string
   label?: string
   included_months?: number
+  /** A credit-pack price's credit count — read only by `priceTermMonths`
+   *  (a credit pack has no TERM to group by; its months are a validity
+   *  window, not a commitment). */
+  credits?: number
   /** The plan's INTRO OFFER on this price (resolved server-side by
    *  syncSubscriptionTypesToPublicProfile). Rendered through the same
    *  `IntroOfferLine` the shop uses — one discount, one sentence. */
@@ -1414,6 +1426,93 @@ function PricingTable({
   )
 }
 
+/**
+ * One plan's card. `onlyTermMonths` is the term tabs' whole point: instead of
+ * every price the plan has, the card shows ONLY the one price for the active
+ * term — set by `PricingBlock` when `groupBy: 'term'` is grouping ≥2 terms.
+ * Absent ⇒ every price, today's card.
+ */
+function PlanCard({
+  plan,
+  onlyTermMonths,
+  currency,
+  palette,
+  preview,
+  ctaHref,
+  ctaLabel,
+  t,
+}: {
+  plan: PlanEntry
+  onlyTermMonths?: number
+  currency: string
+  palette: SitePalette
+  preview: boolean
+  ctaHref: string | undefined
+  ctaLabel: string
+  t: SiteT
+}) {
+  const prices =
+    onlyTermMonths == null
+      ? (plan.prices ?? [])
+      : (plan.prices ?? []).filter((pr) => priceTermMonths(pr) === onlyTermMonths)
+  return (
+    <div
+      className="flex flex-col site-card rounded-2xl border p-6"
+      style={{ borderColor: palette.border, background: palette.surface }}
+    >
+      <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+        {plan.name}
+      </h3>
+      {prices.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {prices.map((pr, i) => {
+            const intro = readIntroTerms(pr.intro)
+            return (
+              <div key={i}>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold" style={{ color: palette.text }}>
+                    {formatCurrency(pr.amount, currency)}
+                  </span>
+                  <span className="text-sm" style={{ color: palette.muted }}>
+                    {recurrenceSuffix(pr.recurrence, t)}
+                    {pr.label ? ` · ${pr.label}` : ''}
+                  </span>
+                </div>
+                {/* The offer, stated on the card the visitor decides from — a
+                    price promise, and a mistranslated one is a lie, which is
+                    why this sentence was the first thing here to be
+                    translated (see the module header). */}
+                {intro && (
+                  <p className="mt-1 text-sm font-semibold" style={{ color: palette.accent }}>
+                    <IntroOfferLine
+                      intro={intro}
+                      fullAmount={pr.amount}
+                      recurrence={pr.recurrence}
+                      currency={currency}
+                    />
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {plan.description && (
+        <p className="mt-2 flex-1 text-sm" style={{ color: palette.muted }}>
+          {plan.description}
+        </p>
+      )}
+      <a
+        {...linkProps(preview ? undefined : ctaHref, preview)}
+        className="site-btn mt-5 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+        style={{ background: palette.button, color: palette.onButton }}
+      >
+        {ctaLabel}
+      </a>
+    </div>
+  )
+}
+
 function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCtx }) {
   const t = useTranslations('Site')
   const { palette, slug, locale, teamId, preview } = ctx
@@ -1434,6 +1533,39 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
     () => activities.filter(activityHasMoneyStory),
     [activities]
   )
+
+  // ── Term tabs (groupBy: 'term') — cards layout only ─────────────────────────
+  //
+  // Below 2 terms there is nothing to group ("1 month" tabbed against itself is
+  // not a choice), so this falls all the way back to today's one-card-per-plan
+  // grid regardless of the studio's setting.
+  const [selectedTerm, setSelectedTerm] = useState<number | null>(null)
+  const terms = useMemo(
+    () => (section.groupBy === 'term' ? pricingTerms(plans) : []),
+    [plans, section.groupBy]
+  )
+  const showTermTabs = (section.layout ?? 'cards') === 'cards' && terms.length >= 2
+  // `pricingTerms` sorts ascending — the shortest term is the default tab.
+  const activeTerm = selectedTerm !== null && terms.includes(selectedTerm) ? selectedTerm : terms[0]
+  // Plans that DO have a price at the active term.
+  const termPlans = useMemo(
+    () =>
+      showTermTabs
+        ? plans.filter((p) => (p.prices ?? []).some((pr) => priceTermMonths(pr) === activeTerm))
+        : [],
+    [plans, showTermTabs, activeTerm]
+  )
+  // Plans with NO termed price at all (a credit pack, a per-class price) —
+  // listed below the tabs as ordinary cards showing every price they have.
+  const otherPlans = useMemo(
+    () =>
+      showTermTabs
+        ? plans.filter((p) => !(p.prices ?? []).some((pr) => priceTermMonths(pr) !== null))
+        : [],
+    [plans, showTermTabs]
+  )
+  const planCta = (planId: string): string | undefined =>
+    publicHrefLocalized(locale, slug, 'shop', { type: planId, from: 'site' })
 
   useEffect(() => {
     let alive = true
@@ -1516,6 +1648,38 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             t={t}
           />
         ) : (
+        <>
+          {/* Keyboard-accessible: ordinary <button>s, Tab + Enter/Space work
+              with no extra wiring. `aria-selected` states which tab is active
+              for assistive tech; the visual state comes from the palette. */}
+          {!loading && showTermTabs && (
+            <div
+              role="tablist"
+              aria-label={t('pricingTermTabsLabel')}
+              className="mt-8 flex flex-wrap justify-center gap-2"
+            >
+              {terms.map((months) => {
+                const active = months === activeTerm
+                return (
+                  <button
+                    key={months}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setSelectedTerm(months)}
+                    className="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
+                    style={
+                      active
+                        ? { background: palette.accent, borderColor: palette.accent, color: palette.onAccent }
+                        : { background: 'transparent', borderColor: palette.border, color: palette.muted }
+                    }
+                  >
+                    {t('pricingTermMonths', { count: months })}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         <div className="mt-10 grid grid-cols-1 gap-5 @2xl:grid-cols-2 @5xl:grid-cols-3">
           {loading ? (
             <p className="col-span-full text-center text-sm" style={{ color: palette.muted }}>
@@ -1525,72 +1689,50 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             <p className="col-span-full text-center text-sm" style={{ color: palette.muted }}>
               {t('emptyPlans')}
             </p>
+          ) : showTermTabs ? (
+            <>
+              {termPlans.map((p) => (
+                <PlanCard
+                  key={p.id}
+                  plan={p}
+                  onlyTermMonths={activeTerm}
+                  currency={currency}
+                  palette={palette}
+                  preview={preview}
+                  ctaHref={planCta(p.id)}
+                  ctaLabel={section.ctaLabel ?? t('joinNow')}
+                  t={t}
+                />
+              ))}
+              {otherPlans.map((p) => (
+                <PlanCard
+                  key={p.id}
+                  plan={p}
+                  currency={currency}
+                  palette={palette}
+                  preview={preview}
+                  ctaHref={planCta(p.id)}
+                  ctaLabel={section.ctaLabel ?? t('joinNow')}
+                  t={t}
+                />
+              ))}
+            </>
           ) : (
             plans.map((p) => (
-              <div
+              <PlanCard
                 key={p.id}
-                className="flex flex-col site-card rounded-2xl border p-6"
-                style={{ borderColor: palette.border, background: palette.surface }}
-              >
-                <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
-                  {p.name}
-                </h3>
-                {p.prices && p.prices.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    {p.prices.map((pr, i) => {
-                      const intro = readIntroTerms(pr.intro)
-                      return (
-                        <div key={i}>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl font-bold" style={{ color: palette.text }}>
-                              {formatCurrency(pr.amount, currency)}
-                            </span>
-                            <span className="text-sm" style={{ color: palette.muted }}>
-                              {recurrenceSuffix(pr.recurrence, t)}
-                              {pr.label ? ` · ${pr.label}` : ''}
-                            </span>
-                          </div>
-                          {/* The offer, stated on the card the visitor decides
-                              from — a price promise, and a mistranslated one is
-                              a lie, which is why this sentence was the first
-                              thing here to be translated (see the module
-                              header). */}
-                          {intro && (
-                            <p className="mt-1 text-sm font-semibold" style={{ color: palette.accent }}>
-                              <IntroOfferLine
-                                intro={intro}
-                                fullAmount={pr.amount}
-                                recurrence={pr.recurrence}
-                                currency={currency}
-                              />
-                            </p>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-                {p.description && (
-                  <p className="mt-2 flex-1 text-sm" style={{ color: palette.muted }}>
-                    {p.description}
-                  </p>
-                )}
-                <a
-                  {...linkProps(
-                    preview
-                      ? undefined
-                      : publicHrefLocalized(locale, slug, 'shop', { type: p.id, from: 'site' }),
-                    preview
-                  )}
-                  className="site-btn mt-5 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-                  style={{ background: palette.button, color: palette.onButton }}
-                >
-                  {section.ctaLabel ?? t('joinNow')}
-                </a>
-              </div>
+                plan={p}
+                currency={currency}
+                palette={palette}
+                preview={preview}
+                ctaHref={planCta(p.id)}
+                ctaLabel={section.ctaLabel ?? t('joinNow')}
+                t={t}
+              />
             ))
           )}
         </div>
+        </>
         )}
         {/* Pay per visit — the drop-in + appointment prices that aren't
             subscriptions. One card, each activity a row with its price line and
@@ -2414,6 +2556,354 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
   )
 }
 
+// ─── Team (authored coaches / contact person — see TeamSection's doc comment) ─
+//
+// NOT the roster: every name, photo, role and bio is typed in the builder, same
+// convention as Features/Testimonials. Two layouts of the SAME data:
+//   - 'grid'    a portrait card per person — the "meet the coaches" wall.
+//   - 'contact' one wide card per person with the bio and mailto:/tel:
+//     buttons — "your contact person" on an offer page.
+
+function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
+  const { palette, preview } = ctx
+  const items = section.items ?? []
+  if (items.length === 0) return null
+
+  const header = (
+    <>
+      <Heading text={section.heading} palette={palette} />
+      {section.subheading && (
+        <p className="mt-3 text-center" style={{ color: palette.muted }}>
+          {section.subheading}
+        </p>
+      )}
+    </>
+  )
+
+  const avatar = (item: TeamSection['items'][number], className: string) => (
+    <div className={className} style={{ background: palette.accent }}>
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <span className="text-2xl font-bold" style={{ color: '#ffffff' }}>
+            {nameInitials(item.name)}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+
+  const badge = (item: TeamSection['items'][number]) =>
+    item.badge && (
+      <span
+        className="mt-2 inline-block rounded-full border px-2 py-0.5 text-xs"
+        style={{ borderColor: palette.border, color: palette.muted }}
+      >
+        {item.badge}
+      </span>
+    )
+
+  if (section.layout === 'contact') {
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-4xl px-6">
+          {header}
+          <div className={`${section.heading || section.subheading ? 'mt-10' : ''} space-y-5`}>
+            {items.map((item, i) => (
+              <div
+                key={i}
+                className="site-card flex flex-col items-center gap-5 overflow-hidden rounded-2xl border p-6 text-center @xl:flex-row @xl:items-start @xl:text-left"
+                style={{ borderColor: palette.border, background: palette.surface }}
+              >
+                {avatar(item, 'flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full')}
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+                    {item.name}
+                  </h3>
+                  {item.role && (
+                    <p className="text-sm font-medium" style={{ color: palette.accent }}>
+                      {item.role}
+                    </p>
+                  )}
+                  {badge(item)}
+                  {item.bio && (
+                    <p className="mt-3 whitespace-pre-line text-sm" style={{ color: palette.muted }}>
+                      {item.bio}
+                    </p>
+                  )}
+                  {(item.email || item.phone) && (
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 @xl:justify-start">
+                      {item.email && (
+                        <a
+                          {...linkProps(`mailto:${item.email}`, preview)}
+                          className="site-btn inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold"
+                          // An address is not a label: the theme's capitals (an
+                          // unlayered .site-btn rule, so no utility can undo it)
+                          // would print one nobody can read back.
+                          style={{ background: palette.button, color: palette.onButton, textTransform: 'none' }}
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          {item.email}
+                        </a>
+                      )}
+                      {item.phone && (
+                        <a
+                          {...linkProps(`tel:${item.phone.replace(/[^\d+]/g, '')}`, preview)}
+                          className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold"
+                          style={{ borderColor: palette.border, color: palette.text }}
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          {item.phone}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const cols =
+    section.columns === 2
+      ? '@2xl:grid-cols-2'
+      : section.columns === 4
+        ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
+        : '@2xl:grid-cols-2 @5xl:grid-cols-3'
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto max-w-5xl px-6">
+        {header}
+        <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-1 gap-5 ${cols}`}>
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className="site-card flex flex-col overflow-hidden rounded-2xl border"
+              style={{ borderColor: palette.border, background: palette.surface }}
+            >
+              {avatar(item, 'relative aspect-[4/5] w-full')}
+              <div className="p-4 text-center">
+                <h3 className="text-base font-semibold" style={{ color: palette.text }}>
+                  {item.name}
+                </h3>
+                {item.role && (
+                  <p className="text-sm" style={{ color: palette.muted }}>
+                    {item.role}
+                  </p>
+                )}
+                {badge(item)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Form (one of the team's own forms, filled in on the page) ───────────────
+//
+// Reads the SAME world-readable mirror the standalone /forms/{slug} page reads
+// (`forms/{formId}/public_profile/{formId}`) and submits through the SAME
+// `submitForm` callable — this is the standalone form's fields and submit path,
+// just embedded on the page instead of linked to. A `access: 'contacts'` form
+// is NOT re-implemented here (the sign-in gate lives on the standalone page,
+// which already carries it) — this block links out to it instead.
+
+type FormLoadState =
+  | { status: 'loading' }
+  | { status: 'notfound' }
+  | { status: 'gated'; formId: string; profile: FormPublicProfile }
+  | { status: 'ready'; formId: string; profile: FormPublicProfile }
+
+function useFormMirror(teamId: string | undefined, formId: string): FormLoadState {
+  const [state, setState] = useState<FormLoadState>({ status: 'loading' })
+  useEffect(() => {
+    if (!teamId || !formId) {
+      setState({ status: 'notfound' })
+      return
+    }
+    let alive = true
+    setState({ status: 'loading' })
+    getDoc(doc(db, FORMS_COLLECTION, formId, PUBLIC_PROFILE_SUBCOLLECTION, formId))
+      .then((snap) => {
+        if (!alive) return
+        if (!snap.exists()) {
+          setState({ status: 'notfound' })
+          return
+        }
+        const profile = snap.data() as FormPublicProfile
+        if (profile.teamId !== teamId) {
+          setState({ status: 'notfound' })
+          return
+        }
+        setState(
+          profile.access === 'contacts'
+            ? { status: 'gated', formId, profile }
+            : { status: 'ready', formId, profile }
+        )
+      })
+      .catch((err: unknown) => {
+        reportPublicLoadFailure('site/form', err)
+        if (alive) setState({ status: 'notfound' })
+      })
+    return () => {
+      alive = false
+    }
+  }, [teamId, formId])
+  return state
+}
+
+function FormBlock({ section, ctx }: { section: FormSection; ctx: RenderCtx }) {
+  const t = useTranslations('Site')
+  const { palette, preview, locale, slug, teamId } = ctx
+  const state = useFormMirror(teamId, section.formId)
+  const [answers, setAnswers] = useState<Record<string, unknown>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const profile = state.status === 'ready' || state.status === 'gated' ? state.profile : null
+  const sortedFields = useMemo(
+    () => (profile?.fields ?? []).slice().sort((a, b) => a.order - b.order),
+    [profile?.fields]
+  )
+
+  // No form chosen, no team to read it from (an org site / an embed with no
+  // team context), or the mirror doesn't resolve — nothing to render. This is
+  // ALSO what publish drops the section for, so a live site never shows this.
+  if (!section.formId || !teamId || state.status === 'notfound') return null
+
+  const submit = async () => {
+    if (preview || state.status !== 'ready') return
+    setError(null)
+    for (const f of sortedFields) {
+      if (f.required && !isFieldAnswered(f, answers[f.id])) {
+        setError(t('formMissingRequired', { label: f.label }))
+        return
+      }
+    }
+    setSubmitting(true)
+    try {
+      const fn = httpsCallable(functions, 'submitForm')
+      await fn({ teamId, formId: state.formId, answers })
+      setDone(true)
+      // The enquiry and the intro call are ONE step for the visitor: open the
+      // booking straight away. The thank-you keeps a button that reopens it, and
+      // a host with no overlay (an embed) is left with that button — a plain link.
+      if (section.next?.kind === 'appointment' && ctx.onBook) {
+        ctx.onBook({ kind: 'appointment', activityId: section.next.activityId })
+      }
+    } catch (err: unknown) {
+      setError((err as { message?: string })?.message || t('formSubmitError'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto max-w-xl px-6">
+        <Heading text={section.heading} palette={palette} />
+        {section.text && (
+          <p className="mt-3 text-center" style={{ color: palette.muted }}>
+            {section.text}
+          </p>
+        )}
+        <div
+          className={`site-card ${section.heading || section.text ? 'mt-10' : ''} rounded-2xl border p-6 @xl:p-8`}
+          style={{ borderColor: palette.border, background: palette.surface }}
+        >
+          {state.status === 'loading' ? (
+            <p className="text-center text-sm" style={{ color: palette.muted }}>
+              {t('loading')}
+            </p>
+          ) : state.status === 'gated' ? (
+            <div className="text-center">
+              <p className="text-sm" style={{ color: palette.muted }}>
+                {t('formSignInRequired')}
+              </p>
+              {profile?.slug && (
+                <a
+                  {...linkProps(
+                    publicSubHrefLocalized(locale, slug, 'forms', profile.slug),
+                    preview
+                  )}
+                  className="site-btn mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold"
+                  style={{ background: palette.button, color: palette.onButton }}
+                >
+                  {t('formOpenForm')}
+                </a>
+              )}
+            </div>
+          ) : done ? (
+            <div className="text-center">
+              <p className="text-sm font-medium" style={{ color: palette.text }}>
+                {t('formThankYou')}
+              </p>
+              {section.next?.kind === 'appointment' && (
+                <a
+                  {...bookProps(
+                    publicHrefLocalized(locale, slug, 'appointments', {
+                      activity: section.next.activityId,
+                      from: 'site',
+                    }),
+                    ctx,
+                    { kind: 'appointment', activityId: section.next.activityId }
+                  )}
+                  className="site-btn mt-4 inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold"
+                  style={{ background: palette.button, color: palette.onButton }}
+                >
+                  {t('formChooseTime')}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedFields.map((field) => (
+                <div key={field.id} className="space-y-1.5">
+                  {field.type !== 'checkbox' && (
+                    <label className="text-sm font-medium" style={{ color: palette.text }}>
+                      {field.label}
+                      {field.required && <span style={{ color: '#dc2626' }}> *</span>}
+                    </label>
+                  )}
+                  <FieldInput
+                    field={field}
+                    value={answers[field.id]}
+                    onChange={(v) => setAnswers((prev) => ({ ...prev, [field.id]: v }))}
+                  />
+                </div>
+              ))}
+              {error && (
+                <p className="text-sm" style={{ color: '#dc2626' }}>
+                  {error}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={submit}
+                disabled={submitting}
+                className="site-btn inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+                style={{ background: palette.button, color: palette.onButton }}
+              >
+                {submitting ? t('formSubmitting') : t('formSubmit')}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── Features (highlight cards) ──────────────────────────────────────────────
 
 /** A feature link: a `#section` anchor stays in the page; anything else is an
@@ -2929,6 +3419,10 @@ export function SectionBlock({
       return <TestimonialsBlock section={section} ctx={ctx} />
     case 'video':
       return <VideoBlock section={section} ctx={ctx} />
+    case 'team':
+      return <TeamBlock section={section} ctx={ctx} />
+    case 'form':
+      return <FormBlock section={section} ctx={ctx} />
     case 'clubs':
       return <ClubsBlock section={section} ctx={ctx} />
     case 'locations':
@@ -2973,6 +3467,10 @@ export function sectionNavLabel(section: WebsiteSection | OrgSiteSection, t: Sit
       return section.heading || t('navTestimonials')
     case 'video':
       return section.heading || t('navVideo')
+    case 'team':
+      return section.heading || t('navTeam')
+    case 'form':
+      return section.heading || t('navForm')
     case 'clubs':
       return section.heading || t('navClubs')
     case 'locations':

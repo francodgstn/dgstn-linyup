@@ -6,6 +6,8 @@ import { unpublishSiteForTeam, touchTeamForSurfaceRecompute, pluginIsActive } fr
 import { deleteSiteI18nSidecars, translatePublishedSite } from '../translate/translateSite'
 import {
   SITE_PUBLISHED_COLLECTION,
+  FORMS_COLLECTION,
+  ACTIVITIES_COLLECTION,
   SITE_I18N_SEPARATOR,
   SITE_PAGES_SUBCOLLECTION,
   SITE_DRAFTS_COLLECTION,
@@ -17,6 +19,7 @@ import {
 } from '@linyup/shared'
 import type { PublishedSite, SitePageRef, WebsiteSection } from '@linyup/shared'
 import {
+  applyFormChecks,
   asDict,
   clean,
   optStr,
@@ -28,6 +31,7 @@ import {
   sanitizeSections,
   str,
   type Dict,
+  type FormCheckFacts,
 } from './sanitize'
 
 // The publish sanitizers live in ./sanitize — pure, so the lead seeder publishes
@@ -131,6 +135,34 @@ async function enrichSectionsWithPlaces(
   for (const sections of lists) applyPlacePool(sections, pool)
 }
 
+/** Loads the forms and activities that form sections point at — one `getAll`,
+ *  and none when no page has a form — then lets `applyFormChecks` decide. */
+async function checkFormSections(
+  fs: admin.firestore.Firestore,
+  teamId: string,
+  lists: WebsiteSection[][]
+): Promise<void> {
+  const formSections = lists.flat().filter((s): s is Extract<WebsiteSection, { type: 'form' }> => s.type === 'form')
+  if (formSections.length === 0) return
+  const formIds = [...new Set(formSections.map((s) => s.formId))]
+  const activityIds = [...new Set(formSections.flatMap((s) => (s.next ? [s.next.activityId] : [])))]
+  const snaps = await fs.getAll(
+    ...formIds.map((id) => fs.collection(FORMS_COLLECTION).doc(id)),
+    ...activityIds.map((id) => fs.collection(ACTIVITIES_COLLECTION).doc(id))
+  )
+  const facts: FormCheckFacts = { forms: new Map(), activities: new Map() }
+  snaps.forEach((snap, index) => {
+    if (!snap.exists) return
+    const data = snap.data() as Dict
+    if (index < formIds.length) (facts.forms as Map<string, Dict>).set(snap.id, { teamId: data.teamId, status: data.status })
+    else (facts.activities as Map<string, Dict>).set(snap.id, { teamId: data.teamId, type: data.type })
+  })
+  const removed = applyFormChecks(lists, teamId, facts)
+  if (removed.length) {
+    console.warn(`[publishWebsite] team ${teamId}: dropped form section(s) ${removed.join(', ')} — form missing, not this team's, or not published`)
+  }
+}
+
 // ─── publishWebsite ─────────────────────────────────────────────────────────────
 // Reads the team's private draft, sanitizes it to a public-safe payload, and
 // writes site_published/{teamId} (world-readable). Also flags the draft enabled.
@@ -193,6 +225,8 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
   // Embed selected places into 'places' sections + fill the Contact map from the
   // team's primary place. Done after sanitizing (needs Firestore reads).
   await enrichSectionsWithPlaces(fs, teamId, team, deduped.lists)
+  // A form section may only embed this team's published form (needs reads too).
+  await checkFormSections(fs, teamId, deduped.lists)
 
   // Denormalise social links (already public via team.public_profile) so the
   // published doc is self-contained for footer/contact icons.

@@ -62,6 +62,7 @@ import type {
   FaqSection,
   TestimonialsSection,
   VideoSection,
+  TeamSection,
   HeroSection, ContentSection, GallerySection, ContactSection,
 } from '@linyup/shared'
 import { parseVideoUrl } from '@linyup/shared'
@@ -629,6 +630,142 @@ export function FeaturesFields({
       <AddItemButton
         label={t('editorAddFeature')}
         onClick={() => onChange({ items: [...items, { icon: 'Sparkles', title: '' }] })}
+      />
+    </div>
+  )
+}
+
+// ─── Team — TEAM-SITE ONLY ───────────────────────────────────────────────────
+//
+// People, authored in the builder (coaches on a team page, a named contact
+// person on an offer page) — not the roster, and not the org site's
+// roster-driven `coaches` aggregate (a different type, a different editor).
+// `TeamSection` is not a member of `OrgSiteSection`, so this lives here purely
+// for styling parity with the other item-list editors (FeaturesFields, above);
+// only the team `SectionEditor` ever renders it.
+
+export function TeamFields({
+  s, tenant, onChange,
+}: {
+  s: TeamSection
+  tenant: SiteEditorTenant
+  onChange: (p: Patch) => void
+}) {
+  const t = useTranslations('Website')
+  const items = s.items ?? []
+  const layout = s.layout ?? 'grid'
+  const set = (i: number, patch: Partial<(typeof items)[number]>) =>
+    onChange({ items: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) })
+  return (
+    <div className="space-y-3">
+      <Field label={t('editorHeadingOptional')}>
+        <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
+      </Field>
+      <Field label={t('editorSubheadingOptional')}>
+        <Input value={s.subheading ?? ''} onChange={(e) => onChange({ subheading: e.target.value })} className="h-9" />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('editorTeamLayout')}>
+          <Select
+            value={layout}
+            onValueChange={(v) => onChange({ layout: v === 'grid' ? undefined : (v as TeamSection['layout']) })}
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="grid">{t('editorTeamLayoutGrid')}</SelectItem>
+              <SelectItem value="contact">{t('editorTeamLayoutContact')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        {/* One wide card per person in 'contact' layout — the column count
+            would be meaningless there. Hidden rather than reset, so switching
+            back to 'grid' restores whatever the studio had picked. */}
+        {layout === 'grid' && (
+          <Field label={t('editorColumns')}>
+            <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+      </div>
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div key={i} className="space-y-2 rounded-lg border p-3">
+            <div className="flex items-start gap-2">
+              <ImageField
+                label={t('editorTeamPhoto')}
+                url={item.imageUrl}
+                tenant={tenant}
+                sectionId={s.id}
+                aspect="square"
+                onChange={(u) => set(i, { imageUrl: u })}
+              />
+              <div className="flex-1 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={item.name}
+                    placeholder={t('editorTeamName')}
+                    onChange={(e) => set(i, { name: e.target.value })}
+                    className="h-9"
+                  />
+                  <Input
+                    value={item.role ?? ''}
+                    placeholder={t('editorTeamRole')}
+                    onChange={(e) => set(i, { role: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+                <Input
+                  value={item.badge ?? ''}
+                  placeholder={t('editorTeamBadge')}
+                  onChange={(e) => set(i, { badge: e.target.value || undefined })}
+                  className="h-9"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange({ items: items.filter((_, j) => j !== i) })}
+                disabled={items.length <= 1}
+                className="mt-1.5 text-muted-foreground hover:text-destructive disabled:opacity-40"
+                aria-label={t('editorItemRemove')}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <Textarea
+              value={item.bio ?? ''}
+              placeholder={t('editorTeamBio')}
+              onChange={(e) => set(i, { bio: e.target.value || undefined })}
+              rows={2}
+            />
+            {/* Email/phone matter most in the 'contact' layout (they render as
+                mailto:/tel: buttons there), but are stored regardless of
+                layout — switching layout later shouldn't lose them. */}
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                value={item.email ?? ''}
+                placeholder={t('editorTeamEmail')}
+                onChange={(e) => set(i, { email: e.target.value || undefined })}
+                className="h-9"
+              />
+              <Input
+                value={item.phone ?? ''}
+                placeholder={t('editorTeamPhone')}
+                onChange={(e) => set(i, { phone: e.target.value || undefined })}
+                className="h-9"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <AddItemButton
+        label={t('editorAddTeamMember')}
+        onClick={() => onChange({ items: [...items, { name: '' }] })}
       />
     </div>
   )

@@ -175,6 +175,8 @@ const SECTION_ITEM_TEXT_PROPS: Record<string, readonly string[]> = {
   features: ['title', 'text', 'linkLabel'],
   faq: ['question', 'answer'],
   testimonials: ['activity', 'feedback'],
+  // A person's name and badge (a certification) stay as written.
+  team: ['role', 'bio'],
 }
 
 function propBinding(

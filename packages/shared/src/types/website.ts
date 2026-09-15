@@ -321,6 +321,14 @@ export interface PricingSection extends SectionBase {
    * Absent ⇒ 'cards'.
    */
   layout?: 'cards' | 'table'
+  /**
+   * 'term': cards grouped into tabs by commitment length ("1 month", "6
+   * months", "12 months"), each plan showing its price for the chosen term —
+   * see `priceTermMonths`. A plan with no termed price (a credit pack, a
+   * per-class price) is listed below the tabs. Cards layout only.
+   * Absent ⇒ every price on one card.
+   */
+  groupBy?: 'term'
 }
 
 /** Pulls upcoming bookable sessions from the session public_profile mirrors. */
@@ -367,6 +375,56 @@ export interface PlacesSection extends SectionBase {
   places?: { id: string; name: string; address?: string; mapsLink?: string }[]
 }
 
+/**
+ * People, authored in the builder — a studio's coaches on a team page, or the
+ * one contact person on an offer page. Nothing is read from the team roster:
+ * a website shows who the studio chooses, with the role and photo it chooses.
+ * (The org site's `coaches` block is the roster-driven one; different type.)
+ */
+export interface TeamSection extends SectionBase {
+  type: 'team'
+  heading?: string
+  subheading?: string
+  columns: 2 | 3 | 4
+  /**
+   * - 'grid' (default): a portrait card per person — photo, name, role, badge.
+   * - 'contact': a wide card per person with the bio and email / phone
+   *   buttons — "your contact person" on an offer page.
+   */
+  layout?: 'grid' | 'contact'
+  items: TeamMemberItem[]
+}
+
+export interface TeamMemberItem {
+  name: string
+  role?: string
+  /** A short tag on the card, e.g. a certification ("CF-L2"). Not translated. */
+  badge?: string
+  bio?: string
+  imageUrl?: string
+  email?: string
+  phone?: string
+}
+
+/**
+ * One of the team's published forms, filled in on the page itself. The fields
+ * are read live from the form's public mirror; publish drops the section when
+ * the form is not the team's or not published.
+ */
+export interface FormSection extends SectionBase {
+  type: 'form'
+  heading?: string
+  text?: string
+  formId: string
+  /**
+   * What follows a successful submit. Absent ⇒ a thank-you line.
+   * 'appointment' opens the appointment booking for that activity — a free
+   * intro call booked straight after the enquiry. Publish drops a `next` whose
+   * activity is not one of the team's appointment activities.
+   */
+  next?: { kind: 'appointment'; activityId: string }
+}
+
 export type WebsiteSection =
   | HeroSection
   | ContentSection
@@ -381,6 +439,8 @@ export type WebsiteSection =
   | FaqSection
   | TestimonialsSection
   | VideoSection
+  | TeamSection
+  | FormSection
 
 export type WebsiteSectionType = WebsiteSection['type']
 

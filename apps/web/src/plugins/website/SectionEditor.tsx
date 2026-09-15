@@ -4,15 +4,19 @@ import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import type {
-  WebsiteSection, ActivitiesSection, PricingSection, ScheduleSection, PlacesSection, SiteCta,
+  WebsiteSection, ActivitiesSection, PricingSection, ScheduleSection, PlacesSection, FormSection,
+  SiteCta,
 } from '@linyup/shared'
 import { uploadSiteImage } from './hooks'
 import { usePlaces } from '@/hooks/usePlaces'
+import { useActivities } from '@/hooks/useActivities'
 import { useAuth } from '@/contexts/AuthContext'
+import { useForms } from '@/plugins/custom-forms/hooks'
 import {
   ContactFields,
   ContentFields,
@@ -22,6 +26,7 @@ import {
   Field,
   GalleryFields,
   HeroFields,
+  TeamFields,
   TestimonialsFields,
   VideoFields,
   type SiteEditorTenant,
@@ -181,6 +186,20 @@ function PricingFields({ s, onChange }: { s: PricingSection; onChange: (p: Patch
         </Select>
         <p className="text-xs text-muted-foreground">{t('pricingLayoutHint')}</p>
       </Field>
+      {/* Term grouping is a CARD arrangement — the table already puts every
+          plan side by side, so there is no "which term" question to group by. */}
+      {(s.layout ?? 'cards') === 'cards' && (
+        <label className="flex items-center justify-between rounded-lg border p-3">
+          <span className="text-sm">{t('pricingGroupByTermLabel')}</span>
+          <Switch
+            checked={s.groupBy === 'term'}
+            onCheckedChange={(v) => onChange({ groupBy: v ? 'term' : undefined })}
+          />
+        </label>
+      )}
+      {s.groupBy === 'term' && (s.layout ?? 'cards') === 'cards' && (
+        <p className="text-xs text-muted-foreground">{t('pricingGroupByTermHint')}</p>
+      )}
     </div>
   )
 }
@@ -296,6 +315,91 @@ function PlacesFields({ s, teamId, onChange }: { s: PlacesSection; teamId: strin
   )
 }
 
+// ─── Form (one of the team's own published forms, filled in on the page) ────
+
+function FormFields({ s, teamId, onChange }: { s: FormSection; teamId: string; onChange: (p: Patch) => void }) {
+  const t = useTranslations('Website')
+  const { data: forms = [] } = useForms(teamId)
+  const { data: activities = [] } = useActivities(teamId)
+  // Appointment activities only — a class has no availability picker to open.
+  const appointmentActivities = activities.filter((a) => a.type === 'appointment')
+  // Archived forms drop out entirely; a draft stays listed but disabled, so a
+  // studio mid-build sees why its own form isn't offered instead of it just
+  // vanishing.
+  const selectable = forms.filter((f) => f.status !== 'archived')
+  const next = s.next
+
+  return (
+    <div className="space-y-3">
+      <Field label={t('editorHeadingOptional')}>
+        <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
+      </Field>
+      <Field label={t('editorTextOptional')}>
+        <Textarea value={s.text ?? ''} onChange={(e) => onChange({ text: e.target.value })} rows={2} />
+      </Field>
+      <Field label={t('editorFormPicker')}>
+        {selectable.length === 0 ? (
+          <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+            {t('editorFormEmptyHint')}
+          </p>
+        ) : (
+          <>
+            <Select value={s.formId || undefined} onValueChange={(v) => onChange({ formId: v })}>
+              <SelectTrigger className="h-9"><SelectValue placeholder={t('editorFormPickerPlaceholder')} /></SelectTrigger>
+              <SelectContent>
+                {selectable.map((f) => (
+                  <SelectItem key={f.id} value={f.id} disabled={f.status !== 'published'}>
+                    {f.title}
+                    {f.status !== 'published' ? t('editorFormDraftSuffix') : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* An empty formId is dropped at publish — the studio should know
+                before it publishes, not after. */}
+            {!s.formId && <p className="text-xs text-muted-foreground">{t('editorFormMissingHint')}</p>}
+          </>
+        )}
+      </Field>
+      <Field label={t('editorFormNext')}>
+        <Select
+          value={next?.kind ?? 'none'}
+          onValueChange={(v) =>
+            onChange({ next: v === 'appointment' ? { kind: 'appointment', activityId: '' } : undefined })
+          }
+        >
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t('editorFormNextNone')}</SelectItem>
+            <SelectItem value="appointment">{t('editorFormNextAppointment')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {next?.kind === 'appointment' && (
+        appointmentActivities.length === 0 ? (
+          <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+            {t('editorFormNoActivitiesHint')}
+          </p>
+        ) : (
+          <Field label={t('editorFormNextActivity')}>
+            <Select
+              value={next.activityId || undefined}
+              onValueChange={(v) => onChange({ next: { kind: 'appointment', activityId: v } })}
+            >
+              <SelectTrigger className="h-9"><SelectValue placeholder={t('editorFormNextActivityPlaceholder')} /></SelectTrigger>
+              <SelectContent>
+                {appointmentActivities.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )
+      )}
+    </div>
+  )
+}
+
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionEditor({
@@ -346,6 +450,8 @@ export function SectionEditor({
     case 'faq':         return <FaqFields s={section} onChange={onChange} />
     case 'testimonials': return <TestimonialsFields s={section} onChange={onChange} />
     case 'video':        return <VideoFields key={section.id} s={section} tenant={tenant} onChange={onChange} />
+    case 'team':         return <TeamFields s={section} tenant={tenant} onChange={onChange} />
+    case 'form':         return <FormFields s={section} teamId={teamId} onChange={onChange} />
     default:         return null
   }
 }

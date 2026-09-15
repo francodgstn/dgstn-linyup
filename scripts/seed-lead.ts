@@ -1567,7 +1567,7 @@ async function seedLeadTenant(profile: LeadProfile) {
   }
 
   // ── subscription types (raw docs) ─────────────────────────────────────────
-  for (const st of profile.subscriptions) {
+  for (const [stIndex, st] of profile.subscriptions.entries()) {
     const id = subIdOf(st.key)
     const prices = subPricesOf(st)
     await db
@@ -1583,6 +1583,9 @@ async function seedLeadTenant(profile: LeadProfile) {
         public: true,
         checkout_contact_mode: subCheckoutMode(st),
         prices,
+        // The profile's order is the studio's order — the public pricing cards
+        // and the shop sort by it (else alphabetically).
+        order: stIndex,
         // Usage limit on covered class bookings (window counters enforce it).
         ...(st.limits ? { limits: st.limits } : {}),
         // Aggregator payout per attended visit (drives the partner_visits ledger).

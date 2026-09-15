@@ -405,6 +405,10 @@ function sectionSummary(s: WebsiteSection): string {
       return s.heading ?? 'Upcoming sessions'
     case 'contact':
       return s.heading ?? 'Contact details'
+    case 'team':
+      return s.heading ?? `${s.items?.length ?? 0} people`
+    case 'form':
+      return s.heading ?? 'Contact form'
     default:
       return ''
   }

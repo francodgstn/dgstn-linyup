@@ -34,6 +34,7 @@ import type {
   CtaBannerSection,
   FaqSection,
   FeaturesSection,
+  FormSection,
   GallerySection,
   HeroSection,
   PlacesSection,
@@ -48,6 +49,7 @@ import type {
   SiteSurfaceLinkConfig,
   SiteTopBar,
   SurfaceThemePresetId,
+  TeamSection,
   TestimonialsSection,
   VideoSection,
   WebsiteSection,
@@ -366,7 +368,95 @@ function sanitizePricingSection(d: Dict, id: string): PricingSection {
     source: 'subscriptions',
     ctaLabel: optStr(d.ctaLabel, 120),
     layout: optOneOf(d.layout, ['cards', 'table'] as const),
+    groupBy: optOneOf(d.groupBy, ['term'] as const),
   }) as unknown as PricingSection
+}
+
+const EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/
+
+export function sanitizeTeamSection(d: Dict, id: string): TeamSection | null {
+  const items = (Array.isArray(d.items) ? d.items : [])
+    .map((raw) => {
+      const i = asDict(raw)
+      const name = optStr(i.name, 120)
+      if (!name) return null
+      const email = optStr(i.email, 200)
+      return clean({
+        name,
+        role: optStr(i.role, 120),
+        badge: optStr(i.badge, 40),
+        bio: optStr(i.bio, 800),
+        imageUrl: safeUrl(i.imageUrl),
+        email: email && EMAIL.test(email) ? email : undefined,
+        phone: optStr(i.phone, 64),
+      })
+    })
+    .filter(nonNull)
+    .slice(0, 40)
+  if (items.length === 0) return null
+  return clean({
+    id, type: 'team',
+    heading: optStr(d.heading, 200),
+    subheading: optStr(d.subheading, 400),
+    columns: columnsOf(d.columns),
+    layout: optOneOf(d.layout, ['grid', 'contact'] as const),
+    items,
+  }) as unknown as TeamSection
+}
+
+// A form section is only its form id and what follows a submit. Whether the form
+// is the team's and published — and whether `next` names one of the team's
+// appointment activities — needs Firestore, so publish checks it (./index).
+export function sanitizeFormSection(d: Dict, id: string): FormSection | null {
+  const formId = optStr(d.formId, 64)
+  if (!formId) return null
+  const next = asDict(d.next)
+  const activityId = next.kind === 'appointment' ? optStr(next.activityId, 64) : undefined
+  return clean({
+    id, type: 'form',
+    heading: optStr(d.heading, 200),
+    text: optStr(d.text, 600),
+    formId,
+    next: activityId ? { kind: 'appointment', activityId } : undefined,
+  }) as unknown as FormSection
+}
+
+/** What publish knows about the docs a form section points at. */
+export interface FormCheckFacts {
+  /** formId → the form doc's teamId and status, for forms that exist. */
+  forms: ReadonlyMap<string, { teamId?: unknown; status?: unknown }>
+  /** activityId → the activity doc's teamId and type, for activities that exist. */
+  activities: ReadonlyMap<string, { teamId?: unknown; type?: unknown }>
+}
+
+/**
+ * The publish-time half of a form section, IN PLACE across every page's list:
+ * a section whose form is not this team's published form is removed (a public
+ * page must never embed another tenant's form, nor a draft), and a `next` whose
+ * activity is not one of this team's appointment activities is deleted — the
+ * form still works, it just ends on a thank-you. Returns the removed ids.
+ *
+ * Pure: `publishWebsite` loads the facts, this decides.
+ */
+export function applyFormChecks(lists: WebsiteSection[][], teamId: string, facts: FormCheckFacts): string[] {
+  const removed: string[] = []
+  for (const list of lists) {
+    for (let i = list.length - 1; i >= 0; i--) {
+      const section = list[i]
+      if (section.type !== 'form') continue
+      const form = facts.forms.get(section.formId)
+      if (!form || form.teamId !== teamId || form.status !== 'published') {
+        removed.unshift(section.id)
+        list.splice(i, 1)
+        continue
+      }
+      if (section.next) {
+        const activity = facts.activities.get(section.next.activityId)
+        if (!activity || activity.teamId !== teamId || activity.type !== 'appointment') delete section.next
+      }
+    }
+  }
+  return removed
 }
 
 function sanitizeScheduleSection(d: Dict, id: string): ScheduleSection {
@@ -419,6 +509,8 @@ const SECTION_BUILDERS = {
   schedule: sanitizeScheduleSection,
   contact: sanitizeContactSection,
   places: sanitizePlacesSection,
+  team: sanitizeTeamSection,
+  form: sanitizeFormSection,
 } satisfies Record<WebsiteSectionType, SectionBuilder>
 
 function isSectionType(type: string): type is WebsiteSectionType {
