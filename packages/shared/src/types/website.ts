@@ -442,6 +442,48 @@ export type WebsiteSection =
   | TeamSection
   | FormSection
   | PostsSection
+  | SplitSection
+
+/**
+ * Two columns: the story on one side, a panel on the other — the shape almost
+ * every "what this offer is" page takes. A heading and text, a stacked list of
+ * what it includes, and beside it a card with the facts (level, duration,
+ * price), an image or a contact person, and one button.
+ *
+ * A SECTION, not a page layout: a page is still a column of sections, and this
+ * is the one that has two. That keeps every other block, the editor's reorder
+ * and the publish rules exactly as they are.
+ */
+export interface SplitSection extends SectionBase {
+  type: 'split'
+  heading?: string
+  subheading?: string
+  /** Rich text (the same sanitized HTML as a content section). */
+  body?: string
+  /** What the offer includes — a stacked list under the text. */
+  items?: SplitItem[]
+  side?: SplitPanel
+  /** Which side the panel sits on. Absent ⇒ 'right'. */
+  sidePosition?: 'left' | 'right'
+  /** The panel follows the reader down a long text (wide screens only). */
+  sideSticky?: boolean
+}
+
+export interface SplitItem {
+  title: string
+  text?: string
+  /** A lucide icon name, validated at render like a feature item's. */
+  icon?: string
+}
+
+export interface SplitPanel {
+  heading?: string
+  text?: string
+  imageUrl?: string
+  /** Label / value rows — "Dauer: 60 Min.", "Level: Alle". */
+  facts?: { label: string; value: string }[]
+  cta?: SiteCta
+}
 
 /**
  * The site's newest blog posts (pages with `kind: 'post'`), read from the page
@@ -748,6 +790,16 @@ export interface SiteMeta {
   buttonShape?: 'pill' | 'rounded' | 'square'
   /** The corners of cards and image tiles. Absent ⇒ 'rounded', today's look. */
   cardShape?: 'rounded' | 'square'
+  /**
+   * How wide the page runs on a large screen — header, sections and footer all
+   * follow it (`--site-width`):
+   *  - 'standard' (default): 64rem, today's measure, best for reading;
+   *  - 'wide': 80rem;
+   *  - 'full': 96rem — the airy, edge-to-edge look of a photo-led studio site.
+   */
+  contentWidth?: 'standard' | 'wide' | 'full'
+  /** Header and footer navigation in capitals. Absent ⇒ as written. */
+  navCase?: 'normal' | 'uppercase'
   /** The theme whose look was last applied (types/siteTheme.ts). A note for the
    *  builder — which theme to preselect, which section defaults to start new
    *  sections in — never read by the renderer: the look itself lives in the

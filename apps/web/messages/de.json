@@ -3797,7 +3797,22 @@
     "pagesPostSuffix": "Beitrag",
     "pagesPostsLimitReached": "Du kannst bis zu {max} Beiträge hinzufügen.",
     "pagesAndPostsLimitReached": "Du hast das Limit von {maxPages} Seiten und {maxPosts} Beiträgen erreicht.",
-    "pagesPostDateInvalid": "Gib ein gültiges Veröffentlichungsdatum ein."
+    "pagesPostDateInvalid": "Gib ein gültiges Veröffentlichungsdatum ein.",
+    "sectionSplit": "Zwei Spalten",
+    "sectionSplitDesc": "Auf der einen Seite eine Geschichte, auf der anderen die Fakten und ein Button",
+    "editorAddSplitItem": "Element hinzufügen",
+    "editorSplitPanelTitle": "Seitenpanel",
+    "editorSplitFacts": "Fakten",
+    "editorSplitFactLabel": "Bezeichnung",
+    "editorSplitFactValue": "Wert",
+    "editorAddSplitFact": "Fakt hinzufügen",
+    "editorSplitPanelPosition": "Position des Panels",
+    "editorSplitPanelSticky": "Panel beim Scrollen sichtbar halten",
+    "brandContentWidth": "Inhaltsbreite",
+    "brandContentWidthStandard": "Standard",
+    "brandContentWidthWide": "Breit",
+    "brandContentWidthFull": "Volle Breite",
+    "brandNavCapitals": "Navigation in Grossbuchstaben"
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -7643,7 +7658,8 @@
     "headingPosts": "Aus dem Blog",
     "emptyPosts": "Noch keine Beiträge.",
     "readMore": "Weiterlesen",
-    "navPosts": "Blog"
+    "navPosts": "Blog",
+    "navSplit": "Übersicht"
   },
   "OrgMemberInvite": {
     "title": "Einladung zur Organisation",

@@ -3797,7 +3797,22 @@
     "pagesPostSuffix": "Articolo",
     "pagesPostsLimitReached": "Puoi aggiungere fino a {max} articoli.",
     "pagesAndPostsLimitReached": "Hai raggiunto il limite di {maxPages} pagine e {maxPosts} articoli.",
-    "pagesPostDateInvalid": "Inserisci una data di pubblicazione valida."
+    "pagesPostDateInvalid": "Inserisci una data di pubblicazione valida.",
+    "sectionSplit": "Due colonne",
+    "sectionSplitDesc": "Una storia da un lato, i dati e un pulsante dall'altro",
+    "editorAddSplitItem": "Aggiungi elemento",
+    "editorSplitPanelTitle": "Pannello laterale",
+    "editorSplitFacts": "Dati",
+    "editorSplitFactLabel": "Etichetta",
+    "editorSplitFactValue": "Valore",
+    "editorAddSplitFact": "Aggiungi dato",
+    "editorSplitPanelPosition": "Posizione del pannello",
+    "editorSplitPanelSticky": "Mantieni il pannello visibile durante lo scorrimento",
+    "brandContentWidth": "Larghezza del contenuto",
+    "brandContentWidthStandard": "Standard",
+    "brandContentWidthWide": "Ampia",
+    "brandContentWidthFull": "Larghezza piena",
+    "brandNavCapitals": "Navigazione in maiuscolo"
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -7643,7 +7658,8 @@
     "headingPosts": "Dal blog",
     "emptyPosts": "Nessun articolo per ora.",
     "readMore": "Continua a leggere",
-    "navPosts": "Blog"
+    "navPosts": "Blog",
+    "navSplit": "Panoramica"
   },
   "OrgMemberInvite": {
     "title": "Invito all'organizzazione",

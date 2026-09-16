@@ -421,6 +421,8 @@ function sectionSummary(s: WebsiteSection): string {
       return s.heading ?? 'Contact form'
     case 'posts':
       return s.heading ?? 'Blog posts'
+    case 'split':
+      return s.heading ?? 'Two columns'
     default:
       return ''
   }

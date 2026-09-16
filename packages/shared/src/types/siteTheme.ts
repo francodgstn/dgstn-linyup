@@ -39,6 +39,7 @@ export type SiteThemeLook = Partial<
     | 'font'
     | 'headingFont'
     | 'headingCase'
+    | 'navCase'
     | 'buttonShape'
     | 'buttonColor'
     | 'cardShape'
@@ -77,6 +78,8 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
       themePreset: 'paper',
       font: 'montserrat',
       headingCase: 'uppercase',
+      // The nav in capitals too — a box's header is a row of short words.
+      navCase: 'uppercase',
       buttonShape: 'pill',
       buttonColor: '#000000',
       cardShape: 'square',

@@ -47,6 +47,13 @@
  *   s.{sectionId}.hours             ContactSection free-prose hours
  *   s.{sectionId}.text              CTA banner / video block body line
  *   s.{sectionId}.playLabel         video block play-button label
+ *   s.{sectionId}.item.{i}.{field}  repeatable items — features, FAQ,
+ *                                   testimonials, team, split (see
+ *                                   SECTION_ITEM_TEXT_PROPS)
+ *   s.{sectionId}.side.heading      the split section's panel
+ *   s.{sectionId}.side.text         "
+ *   s.{sectionId}.side.cta          " — SiteCta.label
+ *   s.{sectionId}.side.fact.{i}.label|value   " — its label/value rows
  *   page.{pageId}.title             SitePageRef.title (the site doc's page index)
  *   page.{pageId}.navLabel          SitePageRef.navLabel
  *   page.{pageId}.excerpt           SitePageRef.excerpt (a blog post's teaser)
@@ -178,6 +185,7 @@ const SECTION_ITEM_TEXT_PROPS: Record<string, readonly string[]> = {
   testimonials: ['activity', 'feedback'],
   // A person's name and badge (a certification) stay as written.
   team: ['role', 'bio'],
+  split: ['title', 'text'],
 }
 
 function propBinding(
@@ -234,6 +242,28 @@ function sectionBindings(section: AnySection): UnitBinding[] {
         }
       }
     })
+  }
+  // The split section's PANEL — its own heading, line, facts and button, keyed
+  // under `side.` so they can never collide with the main column's.
+  const side = s['side']
+  if (side && typeof side === 'object') {
+    const panel = side as Record<string, unknown>
+    bindings.push(propBinding(panel, `${prefix}side.heading`, 'heading', 'plain'))
+    bindings.push(propBinding(panel, `${prefix}side.text`, 'text', 'plain'))
+    const sideCta = panel['cta']
+    if (sideCta && typeof sideCta === 'object') {
+      bindings.push(propBinding(sideCta as Record<string, unknown>, `${prefix}side.cta`, 'label', 'plain'))
+    }
+    const facts = panel['facts']
+    if (Array.isArray(facts)) {
+      facts.forEach((fact, index) => {
+        if (fact && typeof fact === 'object') {
+          const f = fact as Record<string, unknown>
+          bindings.push(propBinding(f, `${prefix}side.fact.${index}.label`, 'label', 'plain'))
+          bindings.push(propBinding(f, `${prefix}side.fact.${index}.value`, 'value', 'plain'))
+        }
+      })
+    }
   }
   return bindings
 }

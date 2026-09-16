@@ -63,6 +63,7 @@ import type {
   TestimonialsSection,
   VideoSection,
   TeamSection,
+  SplitSection,
   HeroSection, ContentSection, GallerySection, ContactSection,
 } from '@linyup/shared'
 import { parseVideoUrl } from '@linyup/shared'
@@ -767,6 +768,167 @@ export function TeamFields({
         label={t('editorAddTeamMember')}
         onClick={() => onChange({ items: [...items, { name: '' }] })}
       />
+    </div>
+  )
+}
+
+// ─── Split — TEAM-SITE ONLY ──────────────────────────────────────────────────
+//
+// `SplitSection` is not a member of `OrgSiteSection` (same reasoning as
+// `TeamFields`, above); only the team `SectionEditor` ever renders it.
+
+export function SplitFields({
+  s, tenant, cta, onChange,
+}: {
+  s: SplitSection
+  tenant: SiteEditorTenant
+  /** The tenant's own call-to-action control for the panel button — see the
+   *  note at the top (HeroFields, CtaBannerFields). */
+  cta: React.ReactNode
+  onChange: (p: Patch) => void
+}) {
+  const t = useTranslations('Website')
+  const items = s.items ?? []
+  const side = s.side ?? {}
+  const facts = side.facts ?? []
+
+  // Same stable-callback reasoning as ContentFields: RichTextEditor is
+  // uncontrolled after mount, so a fresh onChange closure must never remount it.
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const handleBody = useCallback((html: string) => onChangeRef.current({ body: html }), [])
+  const upload = tenant.uploadImage
+  const handleUpload = useCallback((file: File) => upload(s.id, file), [upload, s.id])
+
+  const setItem = (i: number, patch: Partial<(typeof items)[number]>) =>
+    onChange({ items: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) })
+  const setSide = (patch: Partial<NonNullable<SplitSection['side']>>) =>
+    onChange({ side: { ...side, ...patch } })
+  const setFact = (i: number, patch: Partial<(typeof facts)[number]>) =>
+    setSide({ facts: facts.map((f, j) => (j === i ? { ...f, ...patch } : f)) })
+
+  return (
+    <div className="space-y-3">
+      <Field label={t('editorHeadingOptional')}>
+        <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
+      </Field>
+      <Field label={t('editorSubheadingOptional')}>
+        <Input value={s.subheading ?? ''} onChange={(e) => onChange({ subheading: e.target.value })} className="h-9" />
+      </Field>
+      <Field label={t('editorContent')}>
+        <RichTextEditor
+          key={s.id}
+          value={s.body ?? ''}
+          onChange={handleBody}
+          onUploadImage={handleUpload}
+          minHeight={160}
+          placeholder={t('editorContentPlaceholder')}
+        />
+      </Field>
+
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div key={i} className="space-y-2 rounded-lg border p-3">
+            <div className="flex items-start gap-2">
+              <IconPicker value={item.icon} onChange={(name) => setItem(i, { icon: name })} />
+              <Input
+                value={item.title}
+                placeholder={t('editorFeatureTitle')}
+                onChange={(e) => setItem(i, { title: e.target.value })}
+                className="h-9"
+              />
+              <button
+                type="button"
+                onClick={() => onChange({ items: items.filter((_, j) => j !== i) })}
+                className="mt-1.5 text-muted-foreground hover:text-destructive"
+                aria-label={t('editorItemRemove')}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <Textarea
+              value={item.text ?? ''}
+              placeholder={t('editorFeatureText')}
+              onChange={(e) => setItem(i, { text: e.target.value })}
+              rows={2}
+            />
+          </div>
+        ))}
+        <AddItemButton
+          label={t('editorAddSplitItem')}
+          onClick={() => onChange({ items: [...items, { title: '' }] })}
+        />
+      </div>
+
+      <div className="space-y-3 rounded-lg border p-3">
+        <p className="text-xs font-medium text-muted-foreground">{t('editorSplitPanelTitle')}</p>
+        <Field label={t('editorHeadingOptional')}>
+          <Input value={side.heading ?? ''} onChange={(e) => setSide({ heading: e.target.value })} className="h-9" />
+        </Field>
+        <Field label={t('editorTextOptional')}>
+          <Textarea value={side.text ?? ''} onChange={(e) => setSide({ text: e.target.value })} rows={2} />
+        </Field>
+        <ImageField
+          label={t('editorImageOptional')}
+          url={side.imageUrl}
+          tenant={tenant}
+          sectionId={s.id}
+          onChange={(u) => setSide({ imageUrl: u })}
+        />
+        <div className="space-y-2">
+          <Label className="text-xs">{t('editorSplitFacts')}</Label>
+          {facts.map((f, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                value={f.label}
+                placeholder={t('editorSplitFactLabel')}
+                onChange={(e) => setFact(i, { label: e.target.value })}
+                className="h-9"
+              />
+              <Input
+                value={f.value}
+                placeholder={t('editorSplitFactValue')}
+                onChange={(e) => setFact(i, { value: e.target.value })}
+                className="h-9"
+              />
+              <button
+                type="button"
+                onClick={() => setSide({ facts: facts.filter((_, j) => j !== i) })}
+                className="text-muted-foreground hover:text-destructive"
+                aria-label={t('editorItemRemove')}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <AddItemButton
+            label={t('editorAddSplitFact')}
+            onClick={() => setSide({ facts: [...facts, { label: '', value: '' }] })}
+          />
+        </div>
+        {cta}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('editorSplitPanelPosition')}>
+          <Select
+            value={s.sidePosition ?? 'right'}
+            onValueChange={(v) =>
+              onChange({ sidePosition: v === 'right' ? undefined : (v as SplitSection['sidePosition']) })
+            }
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="right">{t('editorRight')}</SelectItem>
+              <SelectItem value="left">{t('editorLeft')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        <label className="flex items-center justify-between rounded-lg border p-3">
+          <span className="text-sm">{t('editorSplitPanelSticky')}</span>
+          <Switch checked={s.sideSticky ?? false} onCheckedChange={(v) => onChange({ sideSticky: v })} />
+        </label>
+      </div>
     </div>
   )
 }

@@ -26,6 +26,7 @@ import {
   Field,
   GalleryFields,
   HeroFields,
+  SplitFields,
   TeamFields,
   TestimonialsFields,
   VideoFields,
@@ -511,6 +512,21 @@ export function SectionEditor({
     case 'team':         return <TeamFields s={section} tenant={tenant} onChange={onChange} />
     case 'form':         return <FormFields s={section} teamId={teamId} onChange={onChange} />
     case 'posts':        return <PostsFields s={section} onChange={onChange} />
+    case 'split':
+      return (
+        <SplitFields
+          s={section}
+          tenant={tenant}
+          onChange={onChange}
+          cta={
+            <CtaEditor
+              cta={section.side?.cta}
+              pages={pages}
+              onChange={(cta) => onChange({ side: { ...(section.side ?? {}), cta } })}
+            />
+          }
+        />
+      )
     default:         return null
   }
 }

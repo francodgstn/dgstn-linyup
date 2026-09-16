@@ -99,6 +99,33 @@ export function BrandFields({ meta, onChange, sections, pages, uploadImage }: Br
         />
       </label>
 
+      {/* ── Layout ───────────────────────────────────────────────────── */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('brandContentWidth')}</Label>
+          <Select
+            value={meta.contentWidth ?? 'standard'}
+            onValueChange={(v) => onChange({ contentWidth: v === 'standard' ? undefined : (v as SiteMeta['contentWidth']) })}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">{t('brandContentWidthStandard')}</SelectItem>
+              <SelectItem value="wide">{t('brandContentWidthWide')}</SelectItem>
+              <SelectItem value="full">{t('brandContentWidthFull')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <label className="flex items-center justify-between gap-3 rounded-lg border p-3">
+          <span className="text-sm">{t('brandNavCapitals')}</span>
+          <Switch
+            checked={meta.navCase === 'uppercase'}
+            onCheckedChange={(v) => onChange({ navCase: v ? 'uppercase' : undefined })}
+          />
+        </label>
+      </div>
+
       {/* ── Buttons ──────────────────────────────────────────────────── */}
       <div className="space-y-3 rounded-lg border p-3">
         <div className="grid gap-3 sm:grid-cols-2">

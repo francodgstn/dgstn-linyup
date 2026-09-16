@@ -53,6 +53,7 @@ import type {
   SiteRedirect,
   SiteSurfaceLinkConfig,
   SiteTopBar,
+  SplitSection,
   SurfaceThemePresetId,
   TeamSection,
   TestimonialsSection,
@@ -426,6 +427,53 @@ export function sanitizeFormSection(d: Dict, id: string): FormSection | null {
   }) as unknown as FormSection
 }
 
+// Two columns — the story and a panel beside it. Dropped only when BOTH sides
+// are empty; a heading alone is a legitimate (if plain) section.
+export function sanitizeSplitSection(d: Dict, id: string): SplitSection | null {
+  const items = (Array.isArray(d.items) ? d.items : [])
+    .map((raw) => {
+      const i = asDict(raw)
+      const title = optStr(i.title, 200)
+      if (!title) return null
+      const icon = optStr(i.icon, 64)
+      return clean({ title, text: optStr(i.text, 600), icon: icon && FEATURE_ICON.test(icon) ? icon : undefined })
+    })
+    .filter(nonNull)
+    .slice(0, 24)
+
+  const rawSide = asDict(d.side)
+  const facts = (Array.isArray(rawSide.facts) ? rawSide.facts : [])
+    .map((raw) => {
+      const f = asDict(raw)
+      const label = optStr(f.label, 120)
+      const value = optStr(f.value, 120)
+      return label && value ? { label, value } : null
+    })
+    .filter(nonNull)
+    .slice(0, 10)
+  const side = clean({
+    heading: optStr(rawSide.heading, 200),
+    text: optStr(rawSide.text, 800),
+    imageUrl: safeUrl(rawSide.imageUrl),
+    facts: facts.length ? facts : undefined,
+    cta: sanitizeCta(rawSide.cta),
+  })
+
+  const heading = optStr(d.heading, 200)
+  const body = sanitizeRichHtml(str(d.body, 50000))
+  if (!heading && !body && items.length === 0 && Object.keys(side).length === 0) return null
+  return clean({
+    id, type: 'split',
+    heading,
+    subheading: optStr(d.subheading, 400),
+    body,
+    items: items.length ? items : undefined,
+    side: Object.keys(side).length ? side : undefined,
+    sidePosition: optOneOf(d.sidePosition, ['left', 'right'] as const),
+    sideSticky: optTrue(d.sideSticky),
+  }) as unknown as SplitSection
+}
+
 // A posts section is presentation only: the posts themselves are the page index,
 // already sanitized with the site.
 export function sanitizePostsSection(d: Dict, id: string): PostsSection {
@@ -530,6 +578,7 @@ const SECTION_BUILDERS = {
   team: sanitizeTeamSection,
   form: sanitizeFormSection,
   posts: sanitizePostsSection,
+  split: sanitizeSplitSection,
 } satisfies Record<WebsiteSectionType, SectionBuilder>
 
 function isSectionType(type: string): type is WebsiteSectionType {
@@ -870,6 +919,8 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
     headingCase: optOneOf(d.headingCase, ['normal', 'uppercase'] as const),
     buttonShape: optOneOf(d.buttonShape, ['pill', 'rounded', 'square'] as const),
     cardShape: optOneOf(d.cardShape, ['rounded', 'square'] as const),
+    contentWidth: optOneOf(d.contentWidth, ['standard', 'wide', 'full'] as const),
+    navCase: optOneOf(d.navCase, ['normal', 'uppercase'] as const),
     appliedTheme: optOneOf(d.appliedTheme, SITE_THEME_IDS),
     buttonColor: safeHex(d.buttonColor),
     logoUrl: safeUrl(d.logoUrl),

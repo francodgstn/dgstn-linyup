@@ -278,14 +278,16 @@ export default function WebsiteRenderer({
           <a
             href={preview ? undefined : node.resolved.href}
             onClick={preview ? inert : undefined}
-            className="block rounded-lg px-3 py-1.5 text-sm transition-opacity hover:opacity-70"
+            className="site-nav block rounded-lg px-3 py-1.5 text-sm transition-opacity hover:opacity-70"
             style={{ color: palette.muted, paddingLeft: `${0.75 + depth * 0.75}rem` }}
           >
             {node.resolved.label}
           </a>
         ) : (
           // A group deeper in the tree is a LABEL, not a control: its children
-          // are already visible beneath it, so there is nothing to open.
+          // are already visible beneath it, so there is nothing to open. Its
+          // capitals are a fixed eyebrow-label style, not the navCase toggle —
+          // no `site-nav` here, or a 'normal' navCase would flatten it.
           <p
             className="px-3 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide"
             style={{ color: palette.text, opacity: 0.55, paddingLeft: `${0.75 + depth * 0.75}rem` }}
@@ -310,12 +312,13 @@ export default function WebsiteRenderer({
               if (preview) inert(e)
               setMobileOpen(false)
             }}
-            className="block rounded-md py-2 text-sm transition-opacity hover:opacity-70"
+            className="site-nav block rounded-md py-2 text-sm transition-opacity hover:opacity-70"
             style={{ color: palette.muted, paddingLeft: `${depth * 0.875}rem` }}
           >
             {node.resolved.label}
           </a>
         ) : (
+          // Same fixed eyebrow-label style as the desktop panel — no `site-nav`.
           <p
             className="pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide"
             style={{ color: palette.text, opacity: 0.55, paddingLeft: `${depth * 0.875}rem` }}
@@ -381,7 +384,7 @@ export default function WebsiteRenderer({
       {/* Top bar — scrolls away above the sticky header. */}
       {(topBar?.text || topBarLinks.length > 0) && (
         <div className="text-xs" style={{ background: palette.surface, borderBottom: `1px solid ${palette.border}` }}>
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-2">
+          <div className="mx-auto flex site-shell flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-2">
             {topBar?.text ? (
               <p style={{ color: palette.muted }}>{topBar.text}</p>
             ) : (
@@ -394,7 +397,7 @@ export default function WebsiteRenderer({
                     key={link.id}
                     href={preview ? undefined : link.href}
                     onClick={preview ? inert : undefined}
-                    className="font-medium transition-opacity hover:opacity-70"
+                    className="site-nav font-medium transition-opacity hover:opacity-70"
                     style={{ color: palette.text }}
                   >
                     {link.label}
@@ -411,7 +414,7 @@ export default function WebsiteRenderer({
         className="sticky top-0 z-20 backdrop-blur"
         style={{ background: palette.headerBg, borderBottom: `1px solid ${palette.border}` }}
       >
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
+        <div className="mx-auto flex site-shell items-center justify-between gap-4 px-6 py-3">
           <a
             href={preview ? undefined : page ? homeHref : '#top'}
             onClick={preview ? inert : undefined}
@@ -443,7 +446,7 @@ export default function WebsiteRenderer({
                   key={top.item.id}
                   href={preview || !top.resolved.href ? undefined : top.resolved.href}
                   onClick={preview ? inert : undefined}
-                  className="whitespace-nowrap text-sm transition-opacity hover:opacity-70"
+                  className="site-nav whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                   style={{ color: palette.muted }}
                 >
                   {top.resolved.label}
@@ -463,7 +466,7 @@ export default function WebsiteRenderer({
                     <a
                       href={preview ? undefined : top.resolved.href}
                       onClick={preview ? inert : undefined}
-                      className="inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
+                      className="site-nav inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                       style={{ color: palette.muted }}
                     >
                       {top.resolved.label}
@@ -476,7 +479,7 @@ export default function WebsiteRenderer({
                     <button
                       type="button"
                       aria-expanded={false}
-                      className="inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
+                      className="site-nav inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                       style={{ color: palette.muted }}
                     >
                       {top.resolved.label}
@@ -520,7 +523,10 @@ export default function WebsiteRenderer({
             {/* Hidden in the builder preview — a visitor-only control the
                 studio never needs while editing its own site. */}
             {!preview && (
-              <LocaleSwitcher triggerStyle={{ borderColor: palette.border, color: palette.muted }} />
+              <LocaleSwitcher
+                plain
+                triggerStyle={{ border: 'none', background: 'transparent', color: palette.muted }}
+              />
             )}
           </nav>
 
@@ -573,7 +579,7 @@ export default function WebsiteRenderer({
             className="@3xl:hidden"
             style={{ background: palette.bg, borderTop: `1px solid ${palette.border}` }}
           >
-            <nav className="mx-auto flex max-w-5xl flex-col gap-1 px-6 py-3">
+            <nav className="mx-auto flex site-shell flex-col gap-1 px-6 py-3">
               {/* THE WHOLE TREE, FLAT AND INDENTED — no dropdowns on a phone.
                   A tap-to-open submenu inside an already-open sheet is two
                   gestures to reach one page, and it hides the shape of the menu
@@ -612,7 +618,10 @@ export default function WebsiteRenderer({
               )}
               {!preview && (
                 <div className="pt-2">
-                  <LocaleSwitcher triggerStyle={{ borderColor: palette.border, color: palette.muted }} />
+                  <LocaleSwitcher
+                    plain
+                    triggerStyle={{ border: 'none', background: 'transparent', color: palette.muted }}
+                  />
                 </div>
               )}
             </nav>
@@ -628,7 +637,7 @@ export default function WebsiteRenderer({
             being viewed). */}
         {page?.ref.kind === 'post' && (
           <section className="py-16" style={{ background: palette.bg }}>
-            <div className="mx-auto max-w-5xl px-6">
+            <div className="mx-auto site-shell px-6">
               {page.ref.publishedOn && (
                 <p className="text-sm" style={{ color: palette.muted }}>
                   {formatSiteDate(page.ref.publishedOn, locale)}
@@ -666,7 +675,7 @@ export default function WebsiteRenderer({
       {/* Partner / certification logos — a strip above the footer. */}
       {footerLogos.length > 0 && (
         <div style={{ background: palette.bg, borderTop: `1px solid ${palette.border}` }}>
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-10 gap-y-6 px-6 py-8">
+          <div className="mx-auto flex site-shell flex-wrap items-center justify-center gap-x-10 gap-y-6 px-6 py-8">
             {footerLogos.map((logo, i) => {
               // eslint-disable-next-line @next/next/no-img-element
               const img = <img src={logo.url} alt={logo.alt ?? ''} className="h-10 w-auto max-w-[140px] object-contain" />
@@ -693,7 +702,7 @@ export default function WebsiteRenderer({
       <footer className="py-10" style={{ background: palette.surface, borderTop: `1px solid ${palette.border}` }}>
         {hasFooterGrid && (
           <div
-            className="mx-auto mb-8 grid max-w-5xl gap-8 border-b px-6 pb-8 text-left @xl:grid-cols-2 @3xl:grid-cols-4"
+            className="mx-auto mb-8 grid site-shell gap-8 border-b px-6 pb-8 text-left @xl:grid-cols-2 @3xl:grid-cols-4"
             style={{ borderColor: palette.border }}
           >
             <div className="space-y-3">
@@ -749,7 +758,7 @@ export default function WebsiteRenderer({
                       <a
                         href={preview ? undefined : link.href}
                         onClick={preview ? inert : undefined}
-                        className="text-sm transition-opacity hover:opacity-70"
+                        className="site-nav text-sm transition-opacity hover:opacity-70"
                         style={{ color: palette.muted }}
                       >
                         {link.label}
@@ -761,7 +770,7 @@ export default function WebsiteRenderer({
             ))}
           </div>
         )}
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-6 text-center">
+        <div className="mx-auto flex site-shell flex-col items-center gap-4 px-6 text-center">
           {site.meta.footer.showSocial && socials.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2">
               {socials.map((s) => {

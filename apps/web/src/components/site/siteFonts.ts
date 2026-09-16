@@ -66,7 +66,16 @@ const BUTTON_RADIUS: Record<NonNullable<SiteMeta['buttonShape']>, string> = {
   square: '0px',
 }
 
-type BrandMeta = Pick<SiteMeta, 'font' | 'headingFont' | 'headingCase' | 'buttonShape' | 'cardShape'>
+const CONTENT_WIDTH: Record<NonNullable<SiteMeta['contentWidth']>, string> = {
+  standard: '64rem',
+  wide: '80rem',
+  full: '96rem',
+}
+
+type BrandMeta = Pick<
+  SiteMeta,
+  'font' | 'headingFont' | 'headingCase' | 'buttonShape' | 'cardShape' | 'contentWidth' | 'navCase'
+>
 
 /**
  * className + style for a website root element (the full site and an embedded
@@ -90,5 +99,7 @@ export function siteBrandRootProps(meta: BrandMeta): { className: string; style:
     style['--site-card-radius'] = '0px'
     style['--site-card-radius-sm'] = '0px'
   }
+  style['--site-width'] = CONTENT_WIDTH[meta.contentWidth ?? 'standard']
+  if (meta.navCase === 'uppercase') style['--site-nav-case'] = 'uppercase'
   return { className: `site-root ${SITE_FONT_VARIABLE_CLASSES}`, style: style as CSSProperties }
 }

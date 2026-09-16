@@ -69,6 +69,7 @@ import type {
   TeamSection,
   FormSection,
   PostsSection,
+  SplitSection,
   FormPublicProfile,
   SocialLink,
   OrgSiteTeamRef,
@@ -448,10 +449,12 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const content = (
     <>
       <h1
-        className="text-4xl @2xl:text-5xl font-bold tracking-tight"
+        // Big on a desktop, calmer on a phone: at 390px a five-word headline in
+        // capitals ran to four lines at 48px, which is a wall, not a headline.
+        className="text-4xl @xl:text-5xl @2xl:text-6xl font-bold tracking-tight"
         style={{ color: cardText, textShadow: cardShadow }}
       >
-        {section.headline}
+        {renderHeadingText(section.headline, palette)}
       </h1>
       {section.subheadline && (
         <p
@@ -510,7 +513,7 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
         </>
       )}
       <div
-        className={`relative mx-auto w-full max-w-5xl px-6 py-20 ${center ? 'text-center' : 'text-left'}`}
+        className={`relative mx-auto w-full site-shell px-6 py-20 ${center ? 'text-center' : 'text-left'}`}
       >
         {inCard ? (
           <div
@@ -529,6 +532,29 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
 
 // ─── shared section heading ─────────────────────────────────────────────────
 
+/**
+ * A studio marks words with `*asterisks*` to accent them inside a heading —
+ * "Training, das *Resultate* liefert" — and the marked run renders in the
+ * site's accent colour, markers dropped. ONE helper, used by the shared
+ * `Heading`, the hero headline and the split section's heading; unmatched or
+ * unmarked text renders exactly as it did before this existed. Dependency-free
+ * (no markdown lib) and never renders raw HTML — the split parts are always
+ * plain text nodes.
+ */
+function renderHeadingText(text: string, palette: SitePalette): React.ReactNode {
+  const parts = text.split(/\*([^*]+)\*/)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <span key={i} style={{ color: palette.accent }}>
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  )
+}
+
 function Heading({
   text,
   palette,
@@ -541,10 +567,10 @@ function Heading({
   if (!text) return null
   return (
     <h2
-      className={`text-3xl font-bold tracking-tight ${center ? 'text-center' : ''}`}
+      className={`text-3xl font-bold tracking-tight @xl:text-4xl @3xl:text-5xl ${center ? 'text-center' : ''}`}
       style={{ color: palette.text }}
     >
-      {text}
+      {renderHeadingText(text, palette)}
     </h2>
   )
 }
@@ -556,7 +582,7 @@ function ContentBlock({ section, ctx }: { section: ContentSection; ctx: RenderCt
   const imageRight = section.imageSide === 'right'
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <div className={`grid items-center gap-10 ${section.imageUrl ? '@3xl:grid-cols-2' : ''}`}>
           {section.imageUrl && imageRight && <ContentText section={section} palette={palette} />}
           {section.imageUrl && (
@@ -605,7 +631,7 @@ function GalleryBlock({ section, ctx }: { section: GallerySection; ctx: RenderCt
     // the accessible name (a logo's caption is the partner's name).
     return (
       <section id={section.id} className="py-16" style={{ background: palette.bg }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto site-shell px-6">
           <Heading text={section.heading} palette={palette} />
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
             {section.images.map((img, i) => (
@@ -627,7 +653,7 @@ function GalleryBlock({ section, ctx }: { section: GallerySection; ctx: RenderCt
     return (
       <section id={section.id} className="py-16" style={{ background: palette.surface }}>
         {section.heading && (
-          <div className="mx-auto mb-10 max-w-5xl px-6">
+          <div className="mx-auto mb-10 site-shell px-6">
             <Heading text={section.heading} palette={palette} />
           </div>
         )}
@@ -662,7 +688,7 @@ function GalleryBlock({ section, ctx }: { section: GallerySection; ctx: RenderCt
         : '@2xl:grid-cols-2 @5xl:grid-cols-3'
   return (
     <section id={section.id} className="py-20" style={{ background: palette.surface }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading} palette={palette} />
         <div className={`mt-10 grid grid-cols-1 gap-4 ${cols}`}>
           {section.images.map((img, i) => (
@@ -988,7 +1014,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingActivities')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -1653,7 +1679,7 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingPricing')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -2187,7 +2213,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
   return (
     <section id={section.id} className="py-20" style={{ background: palette.surface }}>
       {/* Calendar view needs room for the 7-day grid; list view stays a tidy reading width. */}
-      <div className={`mx-auto px-6 ${view === 'calendar' ? 'max-w-5xl' : 'max-w-3xl'}`}>
+      <div className={`mx-auto px-6 ${view === 'calendar' ? 'site-shell' : 'max-w-3xl'}`}>
         <Heading text={section.heading ?? t('headingSchedule')} palette={palette} />
 
         <div className="mt-4 flex justify-center">
@@ -2442,7 +2468,7 @@ function ContactBlock({ section, ctx }: { section: ContactSection; ctx: RenderCt
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingContact')} palette={palette} />
         <div
           className={`mt-10 grid gap-8 ${section.mapQuery ? '@3xl:grid-cols-2' : 'max-w-md mx-auto'}`}
@@ -2527,7 +2553,7 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingPlaces')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -2605,14 +2631,20 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
     </>
   )
 
+  // A soft, neutral wash instead of a flat accent fill — a cut-out portrait
+  // needs something calm to sit on, in both light and dark themes; the two
+  // faint layers are derived from the palette's own text colour so they never
+  // fight the accent used everywhere else on the card.
+  const avatarBg = `linear-gradient(180deg, color-mix(in srgb, ${palette.text} 6%, transparent), color-mix(in srgb, ${palette.text} 12%, transparent)), ${palette.surface}`
+
   const avatar = (item: TeamSection['items'][number], className: string) => (
-    <div className={className} style={{ background: palette.accent }}>
+    <div className={className} style={{ background: avatarBg }}>
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center">
-          <span className="text-2xl font-bold" style={{ color: '#ffffff' }}>
+          <span className="text-2xl font-bold" style={{ color: palette.accent }}>
             {nameInitials(item.name)}
           </span>
         </div>
@@ -2703,7 +2735,7 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         {header}
         <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-1 gap-5 ${cols}`}>
           {items.map((item, i) => (
@@ -2713,7 +2745,7 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
               style={{ borderColor: palette.border, background: palette.surface }}
             >
               {avatar(item, 'relative aspect-[4/5] w-full')}
-              <div className="p-4 text-center">
+              <div className="p-4 text-left">
                 <h3 className="text-base font-semibold" style={{ color: palette.text }}>
                   {item.name}
                 </h3>
@@ -2726,6 +2758,129 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Split (a story on one side, a panel of facts + CTA on the other) ───────
+
+function SplitBlock({ section, ctx }: { section: SplitSection; ctx: RenderCtx }) {
+  const { palette, slug, locale, preview } = ctx
+  const items = section.items ?? []
+  const side = section.side
+  const panelFirst = section.sidePosition === 'left'
+  const hasPanel = !!(side && (side.heading || side.text || side.imageUrl || side.facts?.length || side.cta?.label))
+
+  if (!section.heading && !section.subheading && !section.body && items.length === 0 && !hasPanel) return null
+
+  const main = (
+    <div className="min-w-0">
+      <Heading text={section.heading} palette={palette} center={false} />
+      {section.subheading && (
+        <p className={`text-lg ${section.heading ? 'mt-3' : ''}`} style={{ color: palette.muted }}>
+          {section.subheading}
+        </p>
+      )}
+      {section.body && (
+        // Body is rich HTML — sanitized at publish time, same as the content block.
+        <div
+          className={`site-prose leading-relaxed ${section.heading || section.subheading ? 'mt-5' : ''}`}
+          style={{ color: palette.text, '--site-accent': palette.accent } as React.CSSProperties}
+          dangerouslySetInnerHTML={{ __html: section.body }}
+        />
+      )}
+      {items.length > 0 && (
+        <ul className={`space-y-4 ${section.heading || section.subheading || section.body ? 'mt-6' : ''}`}>
+          {items.map((item, i) => (
+            <li key={i} className="flex gap-3">
+              <span
+                className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                style={{ background: `${palette.accent}1a`, color: palette.accent }}
+              >
+                {item.icon ? (
+                  <DynamicIcon name={item.icon} className="h-3.5 w-3.5" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+              </span>
+              <div>
+                <p className="font-semibold" style={{ color: palette.text }}>
+                  {item.title}
+                </p>
+                {item.text && (
+                  <p className="mt-1 text-sm" style={{ color: palette.muted }}>
+                    {item.text}
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+
+  const href = side?.cta?.label ? shortHref(ctx, ctaHref(side.cta, slug, locale, ctx.pageHref)) : undefined
+  const panel = hasPanel && side && (
+    <div
+      className={`site-card overflow-hidden rounded-2xl border ${section.sideSticky ? '@3xl:sticky @3xl:top-24' : ''}`}
+      style={{ borderColor: palette.border, background: palette.surface }}
+    >
+      {side.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={side.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+      )}
+      <div className="p-6">
+        {side.heading && (
+          <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+            {side.heading}
+          </h3>
+        )}
+        {side.text && (
+          <p className={`text-sm ${side.heading ? 'mt-2' : ''}`} style={{ color: palette.muted }}>
+            {side.text}
+          </p>
+        )}
+        {side.facts && side.facts.length > 0 && (
+          <div className={side.heading || side.text ? 'mt-4' : ''}>
+            {side.facts.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-4 border-t py-2.5 text-sm first:border-t-0 first:pt-0"
+                style={{ borderColor: palette.border }}
+              >
+                <span style={{ color: palette.muted }}>{f.label}</span>
+                <span className="font-medium" style={{ color: palette.text }}>
+                  {f.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {side.cta?.label && (
+          <a
+            {...(side.cta.action === 'booking'
+              ? bookProps(href, ctx, { kind: 'root' })
+              : linkProps(href, preview, side.cta.action === 'url'))}
+            className="site-btn mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
+            style={{ background: palette.button, color: palette.onButton }}
+          >
+            {side.cta.label}
+          </a>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto site-shell px-6">
+        <div className={`grid items-start gap-10 @3xl:gap-14 ${panel ? '@3xl:grid-cols-[1.6fr_1fr]' : ''}`}>
+          {panel && panelFirst && panel}
+          {main}
+          {panel && !panelFirst && panel}
         </div>
       </div>
     </section>
@@ -2946,7 +3101,7 @@ function PostsBlock({ section, ctx }: { section: PostsSection; ctx: RenderCtx })
     if (!preview) return null
     return (
       <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto site-shell px-6">
           <Heading text={section.heading ?? t('headingPosts')} palette={palette} />
           <p
             className="mt-6 rounded-lg border border-dashed p-6 text-center text-sm"
@@ -2976,7 +3131,7 @@ function PostsBlock({ section, ctx }: { section: PostsSection; ctx: RenderCtx })
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingPosts')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -3099,7 +3254,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
     // Big figures, no cards — `title` is the figure, `text` its caption.
     return (
       <section id={section.id} className="py-16" style={{ background: palette.bg }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto site-shell px-6">
           {header}
           <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-2 gap-8 ${cols === 2 ? '' : cols === 4 ? '@3xl:grid-cols-4' : '@3xl:grid-cols-3'}`}>
             {items.map((item, i) => (
@@ -3123,7 +3278,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
   if (style === 'checklist') {
     return (
       <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto site-shell px-6">
           {header}
           <ul className={`mt-10 grid grid-cols-1 gap-x-8 gap-y-5 ${gridCols}`}>
             {items.map((item, i) => (
@@ -3155,7 +3310,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         {header}
         <div className={`mt-10 grid grid-cols-1 gap-4 ${gridCols}`}>
           {items.map((item, i) => (
@@ -3433,7 +3588,7 @@ function VideoBlock({ section, ctx }: { section: VideoSection; ctx: RenderCtx })
   if (film && section.display !== 'lightbox') {
     return (
       <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto site-shell px-6">
           <Heading text={section.heading} palette={palette} />
           {section.text && (
             <p className="mx-auto mt-3 max-w-2xl text-center text-lg" style={{ color: palette.muted }}>
@@ -3568,6 +3723,8 @@ export function SectionBlock({
       return <FormBlock section={section} ctx={ctx} />
     case 'posts':
       return <PostsBlock section={section} ctx={ctx} />
+    case 'split':
+      return <SplitBlock section={section} ctx={ctx} />
     case 'clubs':
       return <ClubsBlock section={section} ctx={ctx} />
     case 'locations':
@@ -3618,6 +3775,8 @@ export function sectionNavLabel(section: WebsiteSection | OrgSiteSection, t: Sit
       return section.heading || t('navForm')
     case 'posts':
       return section.heading || t('navPosts')
+    case 'split':
+      return section.heading || t('navSplit')
     case 'clubs':
       return section.heading || t('navClubs')
     case 'locations':

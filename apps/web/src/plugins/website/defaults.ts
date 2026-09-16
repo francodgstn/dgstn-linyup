@@ -50,6 +50,7 @@ export const SECTION_LIBRARY: {
   { type: 'team', labelKey: 'sectionTeam', descKey: 'sectionTeamDesc', icon: 'Users', maturity: 'basic' },
   { type: 'form', labelKey: 'sectionForm', descKey: 'sectionFormDesc', icon: 'ClipboardList', maturity: 'basic' },
   { type: 'posts', labelKey: 'sectionPosts', descKey: 'sectionPostsDesc', icon: 'Newspaper', maturity: 'basic' },
+  { type: 'split', labelKey: 'sectionSplit', descKey: 'sectionSplitDesc', icon: 'Columns2', maturity: 'basic' },
 ]
 
 /** Client-only unique id for a new section (React key + image path segment + anchor). */
@@ -116,6 +117,17 @@ export function newSection(type: WebsiteSectionType): WebsiteSection {
       return { id, type, formId: '' }
     case 'posts':
       return { id, type, columns: 3, limit: 6 }
+    case 'split':
+      return {
+        id,
+        type,
+        heading: 'What this offer includes',
+        items: [
+          { title: 'What you get', text: 'A short line about it.' },
+          { title: 'Who it is for', text: 'A short line about it.' },
+        ],
+        side: { heading: 'Details', facts: [{ label: 'Duration', value: '60 min' }] },
+      }
   }
 }
 
