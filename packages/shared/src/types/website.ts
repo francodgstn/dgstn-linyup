@@ -137,9 +137,11 @@ export interface FeaturesSection extends SectionBase {
    *  - 'stats': big figures in a row — `title` is the figure ("500 m²"), `text`
    *    the caption.
    *  - 'checklist': a tick per item, no cards.
+   *  - 'panels': solid ink panels, text left, no icon — the bold row of
+   *    statements a performance gym puts under its hero.
    * Absent ⇒ 'cards', so existing sections are unaffected.
    */
-  style?: 'cards' | 'stats' | 'checklist'
+  style?: 'cards' | 'stats' | 'checklist' | 'panels'
 }
 
 export interface FeatureItem {
@@ -800,6 +802,15 @@ export interface SiteMeta {
   contentWidth?: 'standard' | 'wide' | 'full'
   /** Header and footer navigation in capitals. Absent ⇒ as written. */
   navCase?: 'normal' | 'uppercase'
+  /**
+   * The language the WEBSITE is written in — the one a visitor gets when the
+   * URL names none, and the source the other locales are translated from.
+   *
+   * Separate from `Team.language`, which is the language the STUDIO works in:
+   * a Zug box run in German may keep an English back office, and an English
+   * studio may write its public site in French. Absent ⇒ the team's language.
+   */
+  language?: UiLanguage
   /** The theme whose look was last applied (types/siteTheme.ts). A note for the
    *  builder — which theme to preselect, which section defaults to start new
    *  sections in — never read by the renderer: the look itself lives in the

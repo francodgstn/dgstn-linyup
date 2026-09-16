@@ -248,7 +248,9 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
   // the tenant's other supported locales. Throw-free: a translation failure
   // degrades to fewer/no locales, never to a failed publish. See
   // translate/translateSite.ts.
-  const srcLang = resolveSiteSourceLocale(team as { language?: string | null })
+  // The WEBSITE's own language when the studio set one — a studio may work in
+  // one language and publish its site in another. Else the team’s.
+  const srcLang = resolveSiteSourceLocale({ language: meta.language ?? (team.language as string | undefined) })
   const i18n = await translatePublishedSite({
     db: fs,
     collection: SITE_PUBLISHED_COLLECTION,

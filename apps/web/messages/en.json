@@ -3812,7 +3812,11 @@
     "brandContentWidthStandard": "Standard",
     "brandContentWidthWide": "Wide",
     "brandContentWidthFull": "Full width",
-    "brandNavCapitals": "Navigation in capital letters"
+    "brandNavCapitals": "Navigation in capital letters",
+    "editorFeaturesStylePanels": "Panels",
+    "brandSiteLanguage": "Website language",
+    "brandSiteLanguageHint": "The language your website is written in — visitors get it unless they choose another. Independent of the language you work in.",
+    "brandSiteLanguageTeam": "Same as the studio"
   },
   "Kiosk": {
     "title": "Kiosk",

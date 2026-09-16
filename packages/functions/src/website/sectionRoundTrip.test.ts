@@ -234,6 +234,7 @@ describe('website publish — site meta round-trips', () => {
     cardShape: 'square',
     contentWidth: 'wide',
     navCase: 'uppercase',
+    language: 'de',
     appliedTheme: 'box',
     buttonColor: '#000000',
     logoUrl: 'https://example.ch/logo.svg',

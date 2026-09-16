@@ -3308,6 +3308,37 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
     )
   }
 
+  if (style === 'panels') {
+    // Solid INK panels — the row of statements a performance gym puts under its
+    // hero: the studio's text colour as the block, the page colour as the type,
+    // so it reads the same on a light or a dark theme. No icon, text left, and
+    // the studio's corner choice via `site-card`.
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          {header}
+          <div className={`mt-10 grid grid-cols-1 gap-5 ${gridCols}`}>
+            {items.map((item, i) => (
+              <div
+                key={i}
+                className="site-card flex flex-col gap-2 p-8"
+                style={{ background: palette.text, color: palette.bg }}
+              >
+                <h3 className="text-xl font-bold @xl:text-2xl">{item.title}</h3>
+                {item.text && (
+                  <p className="text-base leading-relaxed" style={{ opacity: 0.85 }}>
+                    {item.text}
+                  </p>
+                )}
+                {link(item)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
       <div className="mx-auto site-shell px-6">

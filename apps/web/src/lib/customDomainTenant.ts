@@ -5,6 +5,7 @@ import {
   ORGANIZATIONS_COLLECTION,
   USER_PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
+import { resolveSiteLanguage } from './siteLanguage'
 
 /**
  * Resolves an incoming custom hostname to the tenant it belongs to.
@@ -114,7 +115,11 @@ export async function resolveCustomDomainTenant(
         `${collection}/${entityId}/${USER_PUBLIC_PROFILE_SUBCOLLECTION}/${entityId}`
       )
       const slug = str(profile ?? undefined, 'slug')
-      const language = str(profile ?? undefined, 'language') || 'en'
+      // The WEBSITE's own language wins over the team's: the domain is the
+      // site's front door, and a studio may work in one language and publish
+      // its site in another (SiteMeta.language).
+      const siteLanguage = scope === 'team' ? await resolveSiteLanguage(slug ?? '') : null
+      const language = siteLanguage || str(profile ?? undefined, 'language') || 'en'
       // Only a team has a website; the same gate the root page's redirect uses
       // (the default must name the site AND the site must be live).
       const siteAtRoot =

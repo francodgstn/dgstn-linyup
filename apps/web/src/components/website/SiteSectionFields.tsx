@@ -538,6 +538,7 @@ export function FeaturesFields({
               <SelectItem value="cards">{t('editorFeaturesStyleCards')}</SelectItem>
               <SelectItem value="stats">{t('editorFeaturesStyleStats')}</SelectItem>
               <SelectItem value="checklist">{t('editorFeaturesStyleChecklist')}</SelectItem>
+              <SelectItem value="panels">{t('editorFeaturesStylePanels')}</SelectItem>
             </SelectContent>
           </Select>
         </Field>

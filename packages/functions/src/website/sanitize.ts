@@ -19,6 +19,7 @@
 
 import {
   isPublicSurface,
+  PUBLIC_LOCALES,
   isValidSiteDate,
   normalizeSiteRedirectPath,
   SITE_REDIRECT_LIMIT,
@@ -275,7 +276,7 @@ export function sanitizeFeaturesSection(d: Dict, id: string): FeaturesSection | 
     subheading: optStr(d.subheading, 400),
     columns: columnsOf(d.columns),
     items,
-    style: optOneOf(d.style, ['cards', 'stats', 'checklist'] as const),
+    style: optOneOf(d.style, ['cards', 'stats', 'checklist', 'panels'] as const),
   }) as unknown as FeaturesSection
 }
 
@@ -921,6 +922,7 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
     cardShape: optOneOf(d.cardShape, ['rounded', 'square'] as const),
     contentWidth: optOneOf(d.contentWidth, ['standard', 'wide', 'full'] as const),
     navCase: optOneOf(d.navCase, ['normal', 'uppercase'] as const),
+    language: optOneOf(d.language, PUBLIC_LOCALES),
     appliedTheme: optOneOf(d.appliedTheme, SITE_THEME_IDS),
     buttonColor: safeHex(d.buttonColor),
     logoUrl: safeUrl(d.logoUrl),

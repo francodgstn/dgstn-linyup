@@ -126,6 +126,30 @@ export function BrandFields({ meta, onChange, sections, pages, uploadImage }: Br
         </label>
       </div>
 
+      {/* The language the SITE is written in — a studio may run its back office
+          in one language and publish its site in another. Absent ⇒ the studio's
+          own language, which is what every existing site keeps. */}
+      <div className="space-y-1.5">
+        <Label className="text-xs">{t('brandSiteLanguage')}</Label>
+        <Select
+          value={meta.language ?? 'team'}
+          onValueChange={(v) => onChange({ language: v === 'team' ? undefined : (v as SiteMeta['language']) })}
+        >
+          <SelectTrigger className="h-9 w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="team">{t('brandSiteLanguageTeam')}</SelectItem>
+            {/* Language names are proper nouns — the same in every locale. */}
+            <SelectItem value="de">Deutsch</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+            <SelectItem value="fr">Français</SelectItem>
+            <SelectItem value="it">Italiano</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">{t('brandSiteLanguageHint')}</p>
+      </div>
+
       {/* ── Buttons ──────────────────────────────────────────────────── */}
       <div className="space-y-3 rounded-lg border p-3">
         <div className="grid gap-3 sm:grid-cols-2">
