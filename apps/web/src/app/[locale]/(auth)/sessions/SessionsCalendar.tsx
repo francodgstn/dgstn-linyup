@@ -1127,6 +1127,20 @@ export default function SessionsCalendar({
                       )}
                       style={{ height: gridHeight }}
                     >
+                      {/* Clicking the day where nothing is scheduled selects it.
+                          The header button is the accessible route and already
+                          does this, so the catcher is hidden from AT and out of
+                          the tab order rather than adding seven duplicate stops
+                          to every week. It is the FIRST child, so every session
+                          block paints — and takes its clicks — above it. */}
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        onClick={() => selectDate(day)}
+                        className="absolute inset-0 cursor-default"
+                      />
+
                       {/* Availability gutter — a faint LEFT strip the session
                           blocks stop short of, so a band still reads here even
                           when a session overlaps its time. Shown only when there
@@ -1134,7 +1148,7 @@ export default function SessionsCalendar({
                       {showLane && (
                         <div
                           aria-hidden="true"
-                          className="absolute inset-y-0 left-0 bg-muted/30 dark:bg-muted/20"
+                          className="pointer-events-none absolute inset-y-0 left-0 bg-muted/30 dark:bg-muted/20"
                           style={{ width: lanePx }}
                         />
                       )}
@@ -1143,7 +1157,7 @@ export default function SessionsCalendar({
                       {Array.from({ length: hourCount }, (_, i) => (
                         <div
                           key={i}
-                          className="absolute inset-x-0 border-t border-border/60"
+                          className="pointer-events-none absolute inset-x-0 border-t border-border/60"
                           style={{ top: i * HOUR_PX }}
                         />
                       ))}
