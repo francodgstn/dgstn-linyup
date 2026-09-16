@@ -81,5 +81,13 @@ describe('the public API block on a team', () => {
       assert.ok(!lead.includes('api_access_blocked'), 'a lead demo must be able to connect an app')
       assert.ok(lead.includes("{ id: 'api-connectors' }"))
     })
+
+    it('the review demo studio is blocked too — its owner login is published', () => {
+      const demo = read('../ops/demoTenant.ts')
+      assert.ok(
+        demo.includes('api_access_blocked: true'),
+        'manageDemoTenant provisions linyup-demo with a shared public login; it must not be able to issue credentials'
+      )
+    })
   })
 })
