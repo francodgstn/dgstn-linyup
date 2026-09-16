@@ -82,15 +82,15 @@ way before `canonicalClassGate`. A class following the studio default stores no
 price, so (a) from a plan's page every member-price control on it is dimmed with
 "no drop-in price" — on the state every new class starts in; (b) ticking a plan on a
 legacy `subscription`-tier class that follows the default stores
-`requirePlan: true`, while `bookSession` (which resolves the drop-in) treated it
-as open to members at the door — members without that plan lose the drop-in.
+`requirePlan: true`, while `bookSession` (which resolves the drop-in) sold it to
+anyone at the door — everyone without that plan loses the drop-in.
 **Fix:** the activity arm of `PlanLinkTarget` carries the studio default; both
 readers go through `resolveActivityDropIn`. The pricing form's draft states its
 mode explicitly so a draft "off" is not re-read as "follow the studio".
 **Build:** S · **Owner:** shared + web
 **Verify:** studio default CHF 25, a class on it; from a plan's page the member
-price columns are live; tick the plan on a legacy class and the stored gate stays
-members-without-plan-required.
+price columns are live; tick the plan on a legacy class and the stored gate keeps
+"no plan required".
 
 ### UX-104 — A "per class" plan price sells unlimited, never-ending access
 M5×C3 · manager · costs-money · at-setup · traced (verified) · new

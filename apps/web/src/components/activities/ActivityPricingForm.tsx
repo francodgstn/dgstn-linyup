@@ -384,10 +384,12 @@ export function ActivityPricingForm({
       { ...activity, durations: toActivityDurations(draft.durations) }
     : {
         ...activity,
-        dropIn: {
-          enabled: draftDropIn.enabled,
-          ...(draftDropIn.priceAmount != null ? { priceAmount: draftDropIn.priceAmount } : {}),
-        },
+        // ALREADY RESOLVED, so it says so: 'custom' carries the price, 'off' none.
+        // Without a mode an unpriced draft reads as 'studio' and the matcher
+        // would resolve the default back in under a class set to "no drop-in".
+        dropIn: draftDropIn.enabled
+          ? { mode: 'custom', enabled: true, priceAmount: draftDropIn.priceAmount }
+          : { mode: 'off', enabled: false },
         accessRule: {
           ...draftAccessRule(draft),
           ...(resolveActivityAccessRule(activity).subscriptionTypeIds?.length

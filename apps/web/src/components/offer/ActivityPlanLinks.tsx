@@ -51,6 +51,7 @@ import {
   offeringRateEffects,
   offeringRateLengths,
   rateHasAPriceToApplyTo,
+  studioDropInOf,
   resolveUsageLimit,
   isAppointmentActivity,
   type OfferingFacets,
@@ -62,6 +63,7 @@ import {
   type SubscriptionType,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { Link } from '@/i18n/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -297,6 +299,11 @@ export function ActivityPlanLinks({
   const t = useTranslations('OfferCatalogue')
   const tb = useTranslations('Benefit')
   const qc = useQueryClient()
+  // A class following the studio's default drop-in stores no price, so both
+  // "is there a price for a member rate to reduce?" and the edge writer's
+  // "does this class sell at the door?" are asked with the default in hand.
+  const { data: bookingSettings } = useBookingSettings()
+  const studioDropIn = studioDropInOf(bookingSettings)
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({})
   const [saving, setSaving] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
@@ -465,7 +472,7 @@ export function ActivityPlanLinks({
           if (!snap.exists()) return
           const g = groups[i]
           const update = foldOfferingPlanEdgeUpdates(
-            { kind: g.off.target.kind, doc: snap.data() } as PlanLinkTarget,
+            { kind: g.off.target.kind, doc: snap.data(), studioDropIn } as PlanLinkTarget,
             g.edits
           )
           if (update) tx.update(snap.ref, update)
@@ -536,7 +543,9 @@ export function ActivityPlanLinks({
           // it is about, rather than as prose under all of them.
           const isAppointment =
             off.target.kind === 'activity' && isAppointmentActivity(off.target.doc)
-          const hasPriceToReduce = rateHasAPriceToApplyTo(off.target)
+          const hasPriceToReduce = rateHasAPriceToApplyTo(
+            off.target.kind === 'activity' ? { ...off.target, studioDropIn } : off.target
+          )
           // Three kinds of "no price yet", and each names the control that
           // creates one — a class's drop-in, an appointment's duration price, a
           // course's sale switch. A generic sentence would leave the studio

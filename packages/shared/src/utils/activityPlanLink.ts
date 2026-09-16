@@ -56,6 +56,7 @@ import {
   classAccessTierOf,
   hasModernGate,
 } from './paymentOptions'
+import { resolveActivityDropIn, type DropInPrice } from './dropIn'
 
 /** The fields the edge is read from and written to — narrow on purpose, so a
  *  caller can pass a form's partial state or a Firestore snapshot alike.
@@ -257,7 +258,8 @@ export function activityPlanEdgeUpdate(
   subTypeId: string,
   next: ActivityPlanEdge,
   choice?: ActivityRateChoice,
-  minutes?: RateAddress
+  minutes?: RateAddress,
+  studioDropIn?: DropInPrice | null
 ): Record<string, unknown> | null {
   const now = activityPlanEdge(fresh, subTypeId, minutes)
   const update: Record<string, unknown> = {}
@@ -314,9 +316,14 @@ export function activityPlanEdgeUpdate(
     // Dropping the last plan therefore never widens the door either: a class
     // that required a plan still requires one, and the pricing page's health
     // check says so until the studio changes its mind in "Who can book".
+    // The door is the RESOLVED drop-in: a class following the studio default
+    // stores no price of its own, and reading the raw fields here turned a
+    // legacy `subscription` class that sells at the door into "plan required"
+    // the first time a plan was ticked — while bookSession, which resolves,
+    // had been letting members pay the drop-in.
     const gate = canonicalClassGate(
       resolveActivityAccessRule(fresh),
-      !!fresh.dropIn?.enabled && typeof fresh.dropIn.priceAmount === 'number'
+      resolveActivityDropIn(fresh, studioDropIn).enabled
     )
     update.accessRule = {
       type: classAccessTierOf(gate),
@@ -591,6 +598,11 @@ export type PlanLinkTarget =
        *  correct only for a class. Every editor row on an appointment sets it;
        *  see `RateAddress`. */
       minutes?: number
+      /** CLASS-ONLY: the studio default drop-in (`studioDropInOf(bookingSettings)`).
+       *  A class following it stores no price, so without this the rate
+       *  columns read "no price to reduce" and the edge writer mistakes the
+       *  class for one with no door. Absent reads as "no studio default". */
+      studioDropIn?: DropInPrice | null
     }
   | { kind: 'course'; doc: CourseEdgeFields }
 
@@ -663,8 +675,8 @@ export function rateHasAPriceToApplyTo(t: PlanLinkTarget): boolean {
       ? (t.doc.durations ?? []).some((d) => (d.priceAmount ?? 0) > 0)
       : priced(t.minutes)
   }
-  const dropIn = t.doc.dropIn
-  return !!dropIn?.enabled && (dropIn.priceAmount ?? 0) > 0
+  const dropIn = resolveActivityDropIn(t.doc, t.studioDropIn)
+  return dropIn.enabled && (dropIn.priceAmount ?? 0) > 0
 }
 
 export type OfferableRateEffect = 'included' | 'percent_off' | 'fixed_price'
@@ -745,7 +757,7 @@ export function foldOfferingPlanEdgeUpdates(
         kind: target.kind,
         doc,
         ...(target.kind === 'activity'
-          ? { minutes: e.minutes ?? target.minutes }
+          ? { minutes: e.minutes ?? target.minutes, studioDropIn: target.studioDropIn }
           : {}),
       } as PlanLinkTarget,
       e.subTypeId,
@@ -766,6 +778,6 @@ export function offeringPlanEdgeUpdate(
   choice?: ActivityRateChoice
 ): Record<string, unknown> | null {
   return t.kind === 'activity'
-    ? activityPlanEdgeUpdate(t.doc, subTypeId, next, choice, t.minutes)
+    ? activityPlanEdgeUpdate(t.doc, subTypeId, next, choice, t.minutes, t.studioDropIn)
     : coursePlanEdgeUpdate(t.doc, subTypeId, next, choice)
 }
