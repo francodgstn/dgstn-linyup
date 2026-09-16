@@ -57,6 +57,25 @@ variable "deploy_sa_roles" {
   ]
 }
 
+variable "create_play_publisher" {
+  type        = bool
+  description = <<-DESC
+    Create the Google Play publisher identity in this environment.
+
+    TRUE IN PROD ONLY, and not for tidiness: there is one Play listing and it
+    is the production app. The `preview` and `development` profiles build
+    internal-distribution binaries that never reach Play.
+
+    The same account is what FCM V1 uses for Android push, and that key must
+    come from the Firebase project whose google-services.json is in the
+    shipped build — prod again. Note the app has ONE android package across
+    all three build profiles (app.config.js takes it from APP_VARIANT, not
+    from the Firebase env), so EAS has a single credentials slot for it and
+    there is no per-environment split to make.
+  DESC
+  default     = false
+}
+
 variable "extra_token_creator_sa_emails" {
   type        = list(string)
   description = <<-DESC
