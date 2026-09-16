@@ -16,7 +16,7 @@
 // model's job is to say what they mean together. Everything below is
 // deterministic and tested; nothing is invented.
 
-import type { Contact, ContactAiSummarySections } from '@linyup/shared'
+import type { Contact, ContactAiMemberRecap, ContactAiSummarySections } from '@linyup/shared'
 
 /** A stored summary never exceeds this, in characters. Six sentences fit. */
 export const SUMMARY_MAX_CHARS = 900
@@ -31,6 +31,12 @@ export const SUMMARY_SECTION_MAX_SENTENCES = 2
 export const SUMMARY_SECTION_MAX_CHARS = 300
 /** The parts, in reading order — the model's JSON keys and the card's rows. */
 export const SUMMARY_SECTION_KEYS = ['status', 'outlook', 'nextSession'] as const
+/**
+ * The member recap's JSON keys (since 2026-09-16), stored as
+ * `ai_summary.member.status` / `.nextSession`. Prefixed in the reply so the
+ * model never confuses the studio's `status` with the one written to the person.
+ */
+export const MEMBER_RECAP_KEYS = ['memberStatus', 'memberNextSession'] as const
 /** How much of one note the model sees. */
 export const NOTE_MAX_CHARS = 240
 /**
@@ -465,8 +471,6 @@ export function normaliseSummary(
   return out
 }
 
-type SummaryPartKey = (typeof SUMMARY_SECTION_KEYS)[number]
-
 /**
  * THE SECTIONED REPLY. Since 2026-09-14 the model answers in three parts —
  * `status`, `outlook`, `nextSession` — under a response schema, and the card
@@ -485,7 +489,7 @@ type SummaryPartKey = (typeof SUMMARY_SECTION_KEYS)[number]
 export function readSummaryReply(
   raw: string,
   opts: { cut?: boolean } = {}
-): { text: string; sections?: ContactAiSummarySections } {
+): { text: string; sections?: ContactAiSummarySections; member?: ContactAiMemberRecap } {
   const parts = parseSummaryParts(raw)
   if (!parts) return { text: normaliseSummary(raw, opts) }
   const sections: ContactAiSummarySections = { status: '', outlook: '', nextSession: '' }
@@ -496,23 +500,50 @@ export function readSummaryReply(
     })
   }
   const text = SUMMARY_SECTION_KEYS.map((k) => sections[k]).filter(Boolean).join(' ')
-  return text ? { text, sections } : { text: '' }
+  if (!text) return { text: '' }
+  const member = readMemberRecap(parts)
+  return member ? { text, sections, member } : { text, sections }
 }
+
+/**
+ * THE MEMBER RECAP — the two parts written TO the person (since 2026-09-16).
+ * Same caps and the same cleanup as the studio's parts, plus a greeting the
+ * model wrote although the email adds its own. Absent unless BOTH parts
+ * survived: a recap with a status and no next step, or the reverse, is not the
+ * message the card offers to send, and a reply stopped before the second part
+ * would otherwise store half of one.
+ */
+function readMemberRecap(
+  parts: Partial<Record<ReplyPartKey, string>>
+): ContactAiMemberRecap | undefined {
+  const read = (key: ReplyPartKey) =>
+    normaliseSummary(stripGreeting(stripPartLabel(parts[key] ?? '')), {
+      maxSentences: SUMMARY_SECTION_MAX_SENTENCES,
+      maxChars: SUMMARY_SECTION_MAX_CHARS,
+    })
+  const status = read('memberStatus')
+  const nextSession = read('memberNextSession')
+  return status && nextSession ? { status, nextSession } : undefined
+}
+
+/** Every JSON key a reply may carry: the studio's three parts, then the member's two. */
+const REPLY_PART_KEYS = [...SUMMARY_SECTION_KEYS, ...MEMBER_RECAP_KEYS] as const
+type ReplyPartKey = (typeof REPLY_PART_KEYS)[number]
 
 /** The part strings of a reply: parsed whole, or salvaged from a truncated one.
  *  Null when the reply is not JSON at all. */
-function parseSummaryParts(raw: string): Partial<Record<SummaryPartKey, string>> | null {
+function parseSummaryParts(raw: string): Partial<Record<ReplyPartKey, string>> | null {
   const body = unfence(raw ?? '')
   if (!body.startsWith('{')) return null
-  const out: Partial<Record<SummaryPartKey, string>> = {}
+  const out: Partial<Record<ReplyPartKey, string>> = {}
   try {
     const json = JSON.parse(body) as Record<string, unknown>
-    for (const key of SUMMARY_SECTION_KEYS) {
+    for (const key of REPLY_PART_KEYS) {
       if (typeof json[key] === 'string') out[key] = json[key] as string
     }
   } catch {
     // Stopped mid-reply: keep the parts whose string closed.
-    for (const key of SUMMARY_SECTION_KEYS) {
+    for (const key of REPLY_PART_KEYS) {
       const m = body.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`))
       if (!m) continue
       try {
@@ -526,13 +557,26 @@ function parseSummaryParts(raw: string): Partial<Record<SummaryPartKey, string>>
 }
 
 /**
+ * A leading "Hi Anna," or "Ciao!" the model wrote into a member part although
+ * the email opens with its own greeting. Greeting words only, and only when a
+ * comma or an exclamation mark closes them within a few words — so a sentence
+ * that merely starts with "Hey" and runs on is left alone.
+ */
+function stripGreeting(text: string): string {
+  return text.replace(
+    /^\s*(?:hi|hello|hey|hallo|hoi|grüezi|salut|bonjour|coucou|ciao|salve)\b[^,!.\n]{0,30}[,!]\s*/iu,
+    ''
+  )
+}
+
+/**
  * A leading "Status:" or "**Ausblick:**" the model wrote although it was told
  * the app adds the label. Only the label vocabulary, never a generic "words
  * then a colon" — that would eat a sentence like "Anna comes steadily: …".
  */
 function stripPartLabel(text: string): string {
   return text.replace(
-    /^\s*[*_]*\s*(?:status|stato|statut|outlook|ausblick|perspectives?|prospettive|prediction|next ?session|at the next session|beim nächsten training|in der nächsten stunde|à la prochaine séance|lors de la prochaine séance|alla prossima sessione)\s*[*_]*\s*:\s*[*_]*\s*/iu,
+    /^\s*[*_]*\s*(?:status|stato|statut|outlook|ausblick|perspectives?|prospettive|prediction|next ?session|at the next session|beim nächsten training|in der nächsten stunde|à la prochaine séance|lors de la prochaine séance|alla prossima sessione|where you are|for your next session)\s*[*_]*\s*:\s*[*_]*\s*/iu,
     ''
   )
 }
@@ -562,12 +606,16 @@ export const LANGUAGE_NAMES: Record<string, string> = {
 export function systemPrompt(languageName: string): string {
   return `You write a short analysis of one client of a sports, fitness or wellness studio, for the coach who looks after them.
 
-Answer in three parts, each one or two sentences of plain prose, at most 130 words in total: no heading, no label, no bullet points, no markdown, no greeting, no sign-off — the app puts each part's name in front of it. Refer to the person by first name.
+First, three parts for the coach, each one or two sentences of plain prose, at most 130 words in total: no heading, no label, no bullet points, no markdown, no greeting, no sign-off — the app puts each part's name in front of it. Refer to the person by first name.
 
 Do not repeat the raw numbers the coach can already see on the same screen — total sessions, streak, the plan's name, the counters. Interpret them.
 - status: engagement now, against this person's own history — is attendance rising, steady or slipping, and how regular is the rhythm (which days, times and activities, if a pattern shows).
 - outlook: what to expect next, and why, from the signals — likely to keep coming, at risk of drifting, a plan ending or credits running out, upcoming bookings, a no-show habit. Say how confident you are; when the history is thin, say so rather than guess.
 - nextSession: one concrete, specific thing the coach could do or say at the next session, drawn from the notes or from the pattern.
+
+Then two more parts, written TO the person, which the studio may email them. Address them directly and informally, as a sports studio would (du in German, tu in French and Italian), warm and encouraging but specific, one or two sentences each, at most 70 words together. No greeting and no sign-off: the email adds both. These go to the person, so they must never mention risk, drifting, churn, gaps, no-shows, payments, plans or credits ending, engagement bands, or anything from the coach notes — only what they have been doing well and what to try next.
+- memberStatus: where they stand — their rhythm, their consistency, what they have been working on — as encouragement.
+- memberNextSession: one concrete thing to focus on or try at their next session, drawn from the activities and the pattern.
 
 Use only the facts given. Never invent a number, never guess at health, mood or motives, never read a reason into a gap the facts do not explain. Dates are ISO; write them the way a coach would say them.
 

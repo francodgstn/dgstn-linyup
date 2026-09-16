@@ -88,3 +88,63 @@ describe('contact summary — the three parts', () => {
     assert.deepEqual(readSummaryReply(prose), { text: normaliseSummary(prose) })
   })
 })
+
+// THE MEMBER RECAP (2026-09-16): two more parts in the same reply, written TO
+// the person, for the `ai-member-recap` module to email. See ContactAiMemberRecap.
+describe('contact summary — the member recap', () => {
+  const full = {
+    status: 'Anna trains twice a week.',
+    outlook: 'She is at risk of drifting once her plan ends.',
+    nextSession: 'Ask about the tournament.',
+    memberStatus: 'You have kept a steady twice-a-week rhythm.',
+    memberNextSession: 'Try the Thursday sparring class.',
+  }
+
+  it('reads both member parts beside the studio parts', () => {
+    const r = readSummaryReply(reply(full))
+    assert.deepEqual(r.member, {
+      status: 'You have kept a steady twice-a-week rhythm.',
+      nextSession: 'Try the Thursday sparring class.',
+    })
+    // The studio paragraph is unchanged by the recap's presence.
+    assert.equal(
+      r.text,
+      'Anna trains twice a week. She is at risk of drifting once her plan ends. Ask about the tournament.'
+    )
+  })
+
+  it('never carries an outlook — there is no member part to put one in', () => {
+    const r = readSummaryReply(reply({ ...full, memberOutlook: 'You might drop off.' }))
+    assert.deepEqual(Object.keys(r.member ?? {}).sort(), ['nextSession', 'status'])
+  })
+
+  it('strips a greeting and a label the model wrote although the email adds its own', () => {
+    const r = readSummaryReply(
+      reply({
+        ...full,
+        memberStatus: 'Hi Anna, you have kept a steady rhythm.',
+        memberNextSession: 'For your next session: try sparring.',
+      })
+    )
+    assert.equal(r.member?.status, 'you have kept a steady rhythm.')
+    assert.equal(r.member?.nextSession, 'try sparring.')
+  })
+
+  it('leaves a sentence that merely starts with a greeting word alone', () => {
+    const r = readSummaryReply(reply({ ...full, memberStatus: 'Hey there is a lot to be proud of this month.' }))
+    assert.equal(r.member?.status, 'Hey there is a lot to be proud of this month.')
+  })
+
+  it('is absent unless BOTH parts survived — half a recap is not the message', () => {
+    assert.equal(readSummaryReply(reply({ ...full, memberNextSession: '' })).member, undefined)
+    const cut = JSON.stringify(full).replace(/"memberNextSession":"[^"]*"\}$/, '"memberNextSession":"Try the Thur')
+    const r = readSummaryReply(cut, { cut: true })
+    assert.equal(r.member, undefined)
+    assert.equal(r.sections?.status, 'Anna trains twice a week.')
+  })
+
+  it('caps each member part like a studio part', () => {
+    const r = readSummaryReply(reply({ ...full, memberStatus: 'One. Two. Three.' }))
+    assert.equal(r.member?.status, 'One. Two.')
+  })
+})

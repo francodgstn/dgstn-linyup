@@ -35,6 +35,9 @@ import type { PluginId } from './plugin'
 export const PLUGIN_BUNDLES: Record<PluginId, readonly PluginId[]> = {
   // HMD's org-level customization bundle. See apps/web/src/plugins/hmd/manifest.ts.
   hmd: ['hmd-fighting-cup', 'hmd-belts'],
+  // AI insights — the first GENERIC container. See types/aiInsights.ts and
+  // apps/web/src/plugins/ai/manifest.ts. Order is the config panel's order.
+  ai: ['ai-contact-summary', 'ai-member-recap', 'ai-team-sentiment'],
 }
 
 /** Members of `id`, or `[]` when `id` is not a container. */

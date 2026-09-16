@@ -146,6 +146,9 @@ export const INSTALLED_PLUGINS_SUBCOLLECTION = 'installed_plugins'
 // Same subcollection name, under organizations/{orgId} instead of teams/{teamId}.
 // Exported as a separate constant for clarity at call sites.
 export const ORG_INSTALLED_PLUGINS_SUBCOLLECTION = 'installed_plugins'
+// AI readings about the whole team (teams/{teamId}/ai_reports/{reportId}) —
+// server-written only. See TeamSentimentDoc in types/aiInsights.ts.
+export const AI_REPORTS_SUBCOLLECTION = 'ai_reports'
 // Well-known integration doc id for a studio's email sender configuration
 // (teams|organizations/{id}/integrations/email_sender). See EmailSenderConfig.
 export const EMAIL_SENDER_INTEGRATION_DOC = 'email_sender'

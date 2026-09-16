@@ -16,9 +16,17 @@
 // has written, and a summary that ignores them is a worse summary. That is the
 // trade this file makes; a studio that disagrees leaves the switch off.
 //
-// AN EXPERIMENT (`contact-summary` in EXPERIMENTAL_FEATURES), checked here as
-// well as on the card: the flag is on the team doc, which only an owner may
-// write, so a client cannot spend model calls on a switch that is off.
+// A PLUGIN MODULE (`ai-contact-summary`, in the `ai` container — see
+// types/aiInsights.ts), checked here as well as on the card. It was the
+// `contact-summary` experiment until 2026-09-16. The install document is
+// owner-written, so a client cannot spend model calls on a module that is off;
+// `pluginIsActive` also sees an install made at the ORGANISATION.
+//
+// ONE CALL, TWO AUDIENCES. The same reply carries the member RECAP
+// (`ai_summary.member`): two parts written to the person, which the
+// `ai-member-recap` module lets the studio email them. Asking in the same call
+// sends the dossier once; the recap is stored whether or not that module is on,
+// so switching it on later works on the summaries a studio already has.
 //
 // MANUAL FOR NOW. The button on the insights card is the only trigger. When a
 // scheduled refresh comes it runs the body below minus the caller checks, per
@@ -40,14 +48,15 @@ import {
   SESSIONS_COLLECTION,
   SESSION_BOOKINGS_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  AI_MODULES,
   computeEngagementBand,
   densifyWeeklyCounts,
-  isExperimentalFeatureEnabled,
   isoWeekKeysBack,
   type Contact,
 } from '@linyup/shared'
 import { to } from '../utils/async'
 import { callerIsAllScoped, isTeamMember } from '../utils/teams'
+import { pluginIsActive } from '../utils/plugins'
 import { bucketRateLimit } from '../utils/rateLimit'
 import { ASSISTANT_MODEL, getGenAI, replyWasStopped } from '../utils/vertexClient'
 import {
@@ -64,7 +73,6 @@ import {
   type DossierPeriod,
 } from './aiSummaryDossier'
 
-const EXPERIMENT_ID = 'contact-summary'
 const RATE_LIMIT_MAX = 30 // summaries per user + team per hour
 /** Half a year of weeks: enough for a trend to mean something (see deriveSignals). */
 const WEEKS = 26
@@ -83,8 +91,12 @@ const SUMMARY_SCHEMA = {
     status: { type: Type.STRING, description: 'engagement now, against their own history' },
     outlook: { type: Type.STRING, description: 'what to expect next, and how confident' },
     nextSession: { type: Type.STRING, description: 'one concrete thing for the next session' },
+    // The member recap — written TO the person. No outlook, by design: see
+    // ContactAiMemberRecap in @linyup/shared.
+    memberStatus: { type: Type.STRING, description: 'to the person: where they stand, as encouragement' },
+    memberNextSession: { type: Type.STRING, description: 'to the person: one thing to focus on next session' },
   },
-  required: ['status', 'outlook', 'nextSession'],
+  required: ['status', 'outlook', 'nextSession', 'memberStatus', 'memberNextSession'],
 }
 
 type Request = { teamId?: string; contactId?: string }
@@ -105,7 +117,7 @@ export const generateContactSummary = onCall(async (request) => {
 
   const teamSnap = await db.collection(TEAMS_COLLECTION).doc(teamId).get()
   const team = teamSnap.data()
-  if (!isExperimentalFeatureEnabled(team, EXPERIMENT_ID)) {
+  if (!(await pluginIsActive(teamId, AI_MODULES.contactSummary))) {
     throw new HttpsError('failed-precondition', 'AI summaries are not switched on for this team.')
   }
 
@@ -240,8 +252,9 @@ export const generateContactSummary = onCall(async (request) => {
         systemInstruction: systemPrompt(LANGUAGE_NAMES[lang]),
         // Six sentences in German run past 256 tokens; the cap on the way back
         // is `normaliseSummary`, not this.
-        // (640 since the reply became JSON — its keys and quotes cost a little.)
-        maxOutputTokens: 640,
+        // (640 since the reply became JSON — its keys and quotes cost a little;
+        // 960 since it also carries the two-part member recap.)
+        maxOutputTokens: 960,
         // NO THINKING. On this model thinking is on by default and its tokens
         // count against `maxOutputTokens`, so a reply the model had reasoned
         // about for a few hundred tokens was stopped mid-sentence — and stored
@@ -268,20 +281,28 @@ export const generateContactSummary = onCall(async (request) => {
     throw new HttpsError('internal', 'The summary service is unavailable right now.')
   }
 
-  const { text, sections } = readSummaryReply(raw, { cut })
+  const { text, sections, member } = readSummaryReply(raw, { cut })
   if (!text) throw new HttpsError('internal', 'The summary came back empty.')
 
   await contactRef.update({
     // WHOLE, never merged key-by-key: a regenerated summary without parts must
-    // not keep the previous one's parts beside its new paragraph.
+    // not keep the previous one's parts beside its new paragraph — and a new
+    // recap must not inherit the previous recap's `member_sent_at`.
     ai_summary: {
       text,
       ...(sections ? { sections } : {}),
+      ...(member ? { member } : {}),
       generated_at: FieldValue.serverTimestamp(),
       generated_by: uid,
       model: ASSISTANT_MODEL,
       language: lang,
     },
   })
-  return { text, sections: sections ?? null, language: lang, model: ASSISTANT_MODEL }
+  return {
+    text,
+    sections: sections ?? null,
+    member: member ?? null,
+    language: lang,
+    model: ASSISTANT_MODEL,
+  }
 })
