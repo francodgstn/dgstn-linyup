@@ -77,8 +77,10 @@
     },
     "cta": {
       "title": "Alles in Aktion sehen",
-      "body": "Teste ein echtes Studio — ohne Anmeldung.",
-      "button": "Live-Demo entdecken"
+      "body": "Die Live-Demo ausprobieren — ohne Registrierung"
+    },
+    "all": {
+      "title": "Alle Funktionen ansehen"
     }
   },
   "proof": {
@@ -359,7 +361,7 @@
     "cmpMultiTeam": "Mehrere Studios",
     "cmpCentralAdmin": "Zentrale Verwaltung & Datenüberblick",
     "cmpCrossTeam": "Teamübergreifende Events & Nachrichten",
-    "cmpApi": "API-Zugang",
+    "cmpApi": "API- / MCP-Zugang",
     "cmpPermissions": "Erweiterte Rollen & Rechte",
     "cmpUnlimited": "Unbegrenzt",
     "cmpAddon": "Add-on",
