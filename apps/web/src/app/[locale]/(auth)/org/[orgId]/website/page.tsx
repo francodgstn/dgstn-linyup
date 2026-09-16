@@ -195,22 +195,20 @@ function AppearancePanel({
 
 // ─── section list row ──────────────────────────────────────────────────────────
 
-function sectionSummary(s: OrgSiteSection): string {
+/** See the team builder's copy of this: an un-headed section says nothing
+ *  rather than repeating its own type name in English under a translated one. */
+function sectionSummary(s: OrgSiteSection, t: (key: string, values?: Record<string, number>) => string): string {
   switch (s.type) {
     case 'hero':
       return s.headline
-    case 'content':
-      return s.heading || 'Content'
     case 'gallery':
-      return `${s.images.length} photo(s)`
+      return t('summaryPhotos', { count: s.images.length })
+    case 'content':
     case 'contact':
-      return s.heading ?? 'Contact details'
     case 'clubs':
-      return s.heading ?? 'Our clubs'
     case 'locations':
-      return s.heading ?? 'Find us'
     case 'coaches':
-      return s.heading ?? 'Our coaches'
+      return s.heading ?? ''
     default:
       return ''
   }
@@ -520,7 +518,9 @@ export default function OrgWebsiteBuilderPage() {
                               <p className="text-sm font-medium">
                                 {lib ? t(lib.labelKey as Parameters<typeof t>[0]) : s.type}
                               </p>
-                              <p className="truncate text-xs text-muted-foreground">{sectionSummary(s)}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {sectionSummary(s, tWeb as (k: string, v?: Record<string, number>) => string)}
+                              </p>
                             </button>
                             <div className="flex items-center gap-0.5">
                               <Tip label={t('toggleVisible')}>

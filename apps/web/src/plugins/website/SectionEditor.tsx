@@ -380,8 +380,12 @@ function FormFields({ s, teamId, onChange }: { s: FormSection; teamId: string; o
               <SelectTrigger className="h-9"><SelectValue placeholder={t('editorFormPickerPlaceholder')} /></SelectTrigger>
               <SelectContent>
                 {selectable.map((f) => (
-                  <SelectItem key={f.id} value={f.id} disabled={f.status !== 'published'}>
-                    {f.title}
+                  <SelectItem
+                    key={f.id}
+                    value={f.id}
+                    disabled={f.status !== 'published'}
+                    label={f.title}
+                  >
                     {f.status !== 'published' ? t('editorFormDraftSuffix') : ''}
                   </SelectItem>
                 ))}

@@ -3841,7 +3841,10 @@
     "publishConfirmHidden": "{count, plural, one {# hidden page stays} other {# hidden pages stay}} in the draft.",
     "editSection": "Edit this section",
     "pagesEmptyHint": "This page is empty. Add a section below to start building it.",
-    "pagesGroupLabel": "Pages"
+    "pagesGroupLabel": "Pages",
+    "pagesPostOrphanHint": "No page lists your blog posts yet, so this one is only reachable by its own link. Add a \"Blog posts\" section to a page to list them.",
+    "summaryPhotos": "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}",
+    "summaryPeople": "{count, plural, =0 {Nobody yet} one {# person} other {# people}}"
   },
   "Kiosk": {
     "title": "Kiosk",

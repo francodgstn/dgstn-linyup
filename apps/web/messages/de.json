@@ -3841,7 +3841,10 @@
     "publishConfirmHidden": "{count, plural, one {# ausgeblendete Seite bleibt} other {# ausgeblendete Seiten bleiben}} im Entwurf.",
     "editSection": "Diesen Abschnitt bearbeiten",
     "pagesEmptyHint": "Diese Seite ist leer. Füge unten einen Abschnitt hinzu, um sie aufzubauen.",
-    "pagesGroupLabel": "Seiten"
+    "pagesGroupLabel": "Seiten",
+    "pagesPostOrphanHint": "Noch keine Seite listet deine Blog-Beiträge, dieser hier ist also nur über seinen eigenen Link erreichbar. Füge einer Seite einen Abschnitt «Blog-Beiträge» hinzu, um sie zu listen.",
+    "summaryPhotos": "{count, plural, =0 {Noch keine Fotos} one {# Foto} other {# Fotos}}",
+    "summaryPeople": "{count, plural, =0 {Noch niemand} one {# Person} other {# Personen}}"
   },
   "Kiosk": {
     "title": "Kiosk",

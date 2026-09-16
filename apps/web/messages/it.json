@@ -3841,7 +3841,10 @@
     "publishConfirmHidden": "{count, plural, one {# pagina nascosta resta} other {# pagine nascoste restano}} nella bozza.",
     "editSection": "Modifica questa sezione",
     "pagesEmptyHint": "Questa pagina è vuota. Aggiungi una sezione qui sotto per costruirla.",
-    "pagesGroupLabel": "Pagine"
+    "pagesGroupLabel": "Pagine",
+    "pagesPostOrphanHint": "Nessuna pagina elenca ancora i tuoi articoli, quindi questo è raggiungibile solo dal suo link. Aggiungi una sezione «Articoli del blog» a una pagina per elencarli.",
+    "summaryPhotos": "{count, plural, =0 {Nessuna foto} one {# foto} other {# foto}}",
+    "summaryPeople": "{count, plural, =0 {Ancora nessuno} one {# persona} other {# persone}}"
   },
   "Kiosk": {
     "title": "Kiosk",

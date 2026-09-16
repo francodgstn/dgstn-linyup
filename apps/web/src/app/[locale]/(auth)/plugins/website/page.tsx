@@ -441,31 +441,34 @@ function HomeSettingsDialog({
 
 // ─── section list row ──────────────────────────────────────────────────────────
 
-function sectionSummary(s: WebsiteSection): string {
+/**
+ * The second line of a section's row: what THIS section says, under the type
+ * name the row already shows above it.
+ *
+ * Every fallback here used to be an English noun ("Content", "Membership
+ * plans", "3 photo(s)") sitting under a translated label — the only English
+ * left in a German studio's builder. A section with no heading of its own now
+ * says nothing rather than saying it twice in two languages; the two that
+ * carry a real count keep it, translated.
+ */
+function sectionSummary(s: WebsiteSection, t: (key: string, values?: Record<string, number>) => string): string {
   switch (s.type) {
     case 'hero':
       return s.headline
+    case 'gallery':
+      return t('summaryPhotos', { count: s.images.length })
+    case 'team':
+      return s.heading ?? t('summaryPeople', { count: s.items?.length ?? 0 })
     case 'content':
     case 'about':
-      return s.heading || 'Content'
-    case 'gallery':
-      return `${s.images.length} photo(s)`
     case 'activities':
-      return s.heading ?? 'Activities'
     case 'pricing':
-      return s.heading ?? 'Membership plans'
     case 'schedule':
-      return s.heading ?? 'Upcoming sessions'
     case 'contact':
-      return s.heading ?? 'Contact details'
-    case 'team':
-      return s.heading ?? `${s.items?.length ?? 0} people`
     case 'form':
-      return s.heading ?? 'Contact form'
     case 'posts':
-      return s.heading ?? 'Blog posts'
     case 'split':
-      return s.heading ?? 'Two columns'
+      return s.heading ?? ''
     default:
       return ''
   }
@@ -1317,6 +1320,15 @@ export default function WebsiteBuilderPage() {
   }))
   const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
   const hiddenPageCount = (draft.pages ?? []).filter((p) => p.hidden).length
+  // Does ANY page of the site list posts? Home's sections live on the draft,
+  // every other page's in the loaded page docs — a post is findable if either
+  // carries a 'posts' section.
+  // Unknown until the page docs are in — an empty map would otherwise read as
+  // "no page lists posts" and flash the wrong advice while they load.
+  const hasPostsSection =
+    pageSections === null ||
+    draft.sections.some((s) => s.type === 'posts') ||
+    Object.values(pageSections).some((list) => list.some((s) => s.type === 'posts'))
   const nonPostPages = (draft.pages ?? []).filter((p) => p.kind !== 'post')
   // Newest first, like the live site's `sitePosts` — but WITHOUT its hidden
   // filter: a studio editing a hidden draft post still needs to find it here.
@@ -1471,8 +1483,11 @@ export default function WebsiteBuilderPage() {
                   <SelectContent>
                     <SelectItem value="home">{t('pagesHome')}</SelectItem>
                     {nonPostPages.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.title} — /{p.path}
+                      // The title is the LABEL (what the closed trigger shows);
+                      // the path rides along as the item's sublabel. Without
+                      // that split the trigger printed the page's id.
+                      <SelectItem key={p.id} value={p.id} label={p.title}>
+                        /{p.path}
                       </SelectItem>
                     ))}
                     {postPages.length > 0 && (
@@ -1517,6 +1532,18 @@ export default function WebsiteBuilderPage() {
                   {t('pagesSettings')}
                 </Button>
               </div>
+
+              {/* A POST NOBODY CAN FIND. Writing one puts it at its own
+                  address and nowhere else: unless some page carries a "Blog
+                  posts" section, the only way to the article is the link the
+                  author has not shared yet. The builder knows this the moment
+                  the post is opened, so it says so once, quietly, instead of
+                  letting a studio publish into a void. */}
+              {currentPageRef?.kind === 'post' && !hasPostsSection && (
+                <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                  {t('pagesPostOrphanHint')}
+                </p>
+              )}
 
               {currentPageRef?.kind === 'post' && currentTeamId && (
                 <PostHeaderCard
@@ -1571,7 +1598,7 @@ export default function WebsiteBuilderPage() {
                                 {lib ? t(lib.labelKey as Parameters<typeof t>[0]) : s.type}
                               </p>
                               <p className="truncate text-xs text-muted-foreground">
-                                {sectionSummary(s)}
+                                {sectionSummary(s, t as (k: string, v?: Record<string, number>) => string)}
                               </p>
                             </button>
                             <div className="flex items-center gap-0.5">
