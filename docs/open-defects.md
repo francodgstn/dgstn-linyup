@@ -1,3 +1,8 @@
+---
+title: Open defects
+status: living
+area: product
+---
 # Open defects
 
 Confirmed bugs that are **not** fixed, each reproduced against real data rather

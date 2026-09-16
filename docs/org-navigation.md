@@ -1,3 +1,8 @@
+---
+title: Organisation navigation — design
+status: living
+area: platform
+---
 # Organisation navigation — design
 
 **Status: BUILT 2026-08-27.** Decisions taken 2026-08-25 (Franco); the chord and

@@ -53,7 +53,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative, dirname, resolve as resolvePath } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { parseHeadings, hasNumberedHeading, hasHeadingContaining } from './lib/docsMeta.mjs'
+import { parseHeadings, hasNumberedHeading, hasHeadingContaining, parseFrontmatter, AREAS, STATUSES } from './lib/docsMeta.mjs'
 
 // fileURLToPath, not `.pathname`: on Windows the latter is `/C:/…`.
 const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '')
@@ -249,6 +249,35 @@ for (const r of refs) {
   }
 }
 
+// ── frontmatter schema ──────────────────────────────────────────────────────
+//
+// Enforced only under docs/, which is where the index and the docs site read
+// from. A folder README is an entry point, not a document in the index.
+
+for (const rel of files.filter((f) => f.startsWith('docs/') && isMd(f))) {
+  if (rel === 'docs/README.md' || rel.endsWith('/README.md')) continue
+  const src = readFileSync(join(ROOT, rel), 'utf8')
+  const { data, error } = parseFrontmatter(src)
+  const at = { from: rel, line: 1, kind: 'frontmatter', target: rel }
+
+  if (error) { errors.push({ ...at, why: error }); continue }
+  if (!data) { errors.push({ ...at, why: 'no frontmatter block' }); continue }
+
+  if (!data.title) errors.push({ ...at, why: 'frontmatter has no `title`' })
+  if (!STATUSES.includes(data.status)) {
+    errors.push({ ...at, why: `\`status: ${data.status ?? '(absent)'}\` is not one of ${STATUSES.join(' | ')}` })
+  }
+  if (!AREAS.includes(data.area)) {
+    errors.push({ ...at, why: `\`area: ${data.area ?? '(absent)'}\` is not one of ${AREAS.join(' | ')}` })
+  }
+  // The title is what the index and the site's sidebar print. If it drifts
+  // from the H1 the page shows one name and the link another.
+  const h1 = /^#\s+(.+)$/m.exec(parseFrontmatter(src).body.split('\n').slice(0, 6).join('\n'))
+  if (data.title && h1 && h1[1].trim() !== String(data.title).trim()) {
+    errors.push({ ...at, why: `frontmatter title does not match the H1 ("${data.title}" vs "${h1[1].trim()}")` })
+  }
+}
+
 // ── report ──────────────────────────────────────────────────────────────────
 
 const key = (e) => `${e.from}::${e.target}::${e.section ?? e.num ?? ''}`
@@ -264,6 +293,7 @@ const LABEL = {
   'bare-workflow': 'path cited in a workflow',
   'bare-md': 'path in prose',
   'bare-section': 'bare section anchor',
+  frontmatter: 'frontmatter',
 }
 
 let failed = false

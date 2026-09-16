@@ -1,3 +1,8 @@
+---
+title: "Staging manual review, 2026-08-24 — the 29 findings"
+status: living
+area: ops
+---
 # Staging manual review, 2026-08-24 — the 29 findings
 
 Franco ran a manual review against **staging** and came back with 29 findings

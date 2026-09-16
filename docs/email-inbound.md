@@ -1,3 +1,8 @@
+---
+title: Receiving replies (inbound mail)
+status: living
+area: platform
+---
 # Receiving replies (inbound mail)
 
 > **Scope:** how Linyup **receives** replies to the mail it sends. Brevo

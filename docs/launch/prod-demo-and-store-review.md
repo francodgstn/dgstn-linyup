@@ -1,3 +1,8 @@
+---
+title: "Production demo tenant, store review, and cutover verification"
+status: living
+area: ops
+---
 # Production demo tenant, store review, and cutover verification
 
 Two different needs, deliberately kept apart. Conflating them makes both worse.

@@ -1,3 +1,8 @@
+---
+title: "Finance v2 — Accrual & Assets (plan)"
+status: plan
+area: payments
+---
 # Finance v2 — Accrual & Assets (plan)
 
 **Status: PLAN.** Phases 1 and 3 below are not implemented. What IS shipped from

@@ -1,3 +1,8 @@
+---
+title: Promo codes — architecture
+status: living
+area: payments
+---
 # Promo codes — architecture
 
 A promo code is **a price modifier a visitor types at checkout**. It changes what

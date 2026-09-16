@@ -1,3 +1,8 @@
+---
+title: "Payments: contact → studio"
+status: living
+area: payments
+---
 # Payments: contact → studio
 
 > **Scope:** how a studio/coach collects money **from their contacts** (members) —

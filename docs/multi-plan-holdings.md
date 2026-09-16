@@ -1,3 +1,8 @@
+---
+title: Multi-plan holdings — a contact holds a LIST of plans
+status: plan
+area: payments
+---
 # Multi-plan holdings — a contact holds a LIST of plans
 
 Status: **phases 0–2 and 3a built** — the guard, the store and mirror, the

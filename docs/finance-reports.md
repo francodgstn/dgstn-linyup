@@ -1,3 +1,8 @@
+---
+title: "Finance reports — journal, monthly rollups, CSV export"
+status: living
+area: payments
+---
 # Finance reports — journal, monthly rollups, CSV export
 
 The financial reporting substrate. For the double-entry accounting module built

@@ -1,3 +1,8 @@
+---
+title: Waitlist — architecture
+status: living
+area: booking
+---
 # Waitlist — architecture
 
 A waitlist is **a queue for a seat in a full class**. When a seat frees, the

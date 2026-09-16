@@ -1,3 +1,8 @@
+---
+title: Waivers — architecture
+status: living
+area: booking
+---
 # Waivers — architecture
 
 A waiver is **a liability release a visitor accepts before they are allowed into

@@ -1,3 +1,8 @@
+---
+title: Scalability — September 2026
+status: record
+area: platform
+---
 # Scalability — September 2026
 
 **The thing that does not scale here is not the database. It is the number of

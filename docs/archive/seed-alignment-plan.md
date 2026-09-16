@@ -1,3 +1,8 @@
+---
+title: Seed alignment — Phase 1 audit
+status: closed
+area: ops
+---
 > ## CLOSED — archived 2026-08-24
 >
 > **Both phases are complete** (PRs #80, #81, #82). Phase 1 produced

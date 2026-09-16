@@ -1,3 +1,8 @@
+---
+title: Migration Checklist — hmd-lineup → dgstn-lineup
+status: living
+area: ops
+---
 # Migration Checklist — hmd-lineup → dgstn-lineup
 
 Reference project: `C:\git\hmd\hmd-lineup`

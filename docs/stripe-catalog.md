@@ -1,3 +1,8 @@
+---
+title: Stripe catalog — declarative
+status: living
+area: payments
+---
 # Stripe catalog — declarative
 
 The **whole catalogue** (subscription plans **and** plugin add-ons) is defined

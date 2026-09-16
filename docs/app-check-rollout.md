@@ -1,3 +1,8 @@
+---
+title: App Check rollout runbook
+status: living
+area: platform
+---
 # App Check rollout runbook
 
 Firebase App Check is **implemented but not turned on**. This is the one-time procedure to

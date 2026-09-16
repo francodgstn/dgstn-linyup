@@ -1,3 +1,8 @@
+---
+title: "Custom domains (\"bring your own domain\")"
+status: living
+area: platform
+---
 # Custom domains ("bring your own domain")
 
 A studio's public surfaces live at `linyup.com/public/{slug}/…` — bio-link, site,

@@ -86,7 +86,14 @@ function splitTopLevel(s) {
   return out
 }
 
-const unquote = (s) => s.replace(/^['"]|['"]$/g, '').trim()
+const unquote = (s) => {
+  const t = s.trim()
+  // Unescape only when the value was actually quoted — a bare value containing
+  // a backslash is not an escape sequence.
+  if (/^"(.*)"$/s.test(t)) return t.slice(1, -1).replace(/\\"/g, '"')
+  if (/^'(.*)'$/s.test(t)) return t.slice(1, -1)
+  return t
+}
 
 /**
  * Every ATX heading, with the section number the `§` idiom points at.

@@ -1,3 +1,8 @@
+---
+title: "Prod canary, 2026-08-23 — triage and fix plan"
+status: living
+area: ops
+---
 # Prod canary, 2026-08-23 — triage and fix plan
 
 Franco ran a manual canary against **production** and came back with 24 findings.

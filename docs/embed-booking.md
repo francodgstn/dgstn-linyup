@@ -1,3 +1,8 @@
+---
+title: "The booking modal, on the studio's own website"
+status: living
+area: booking
+---
 # The booking modal, on the studio's own website
 
 A studio that already has a website — Wix, Squarespace, WordPress, a hand-rolled

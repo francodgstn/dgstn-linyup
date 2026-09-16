@@ -1,3 +1,8 @@
+---
+title: Wave 3 — branch handover
+status: closed
+area: ops
+---
 > ## CLOSED — archived 2026-08-24
 >
 > Branch `claude/fareharbor-feature-analysis-b58f2c` is **merged into `main`**, and

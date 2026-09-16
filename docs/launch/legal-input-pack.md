@@ -1,3 +1,8 @@
+---
+title: "Input pack for the ToS + DPA — facts, extracted from the code"
+status: living
+area: ops
+---
 # Input pack for the ToS + DPA — facts, extracted from the code
 
 This exists so a lawyer drafting Linyup's **Terms of Service** and **Data

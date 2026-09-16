@@ -1,3 +1,8 @@
+---
+title: FareHarbor → Linyup — competitive feature analysis
+status: record
+area: product
+---
 # FareHarbor → Linyup — competitive feature analysis
 
 > **Status: analysis, not a commitment.** Nothing here is scheduled. Effort
