@@ -94,14 +94,6 @@ module "firebase" {
   depends_on = [module.services]
 }
 
-# The api site was created with the Firebase CLI on 2026-09-15 before Terraform
-# knew about it; adopt it rather than create a second one. Safe to delete this
-# block once an apply has imported it (a no-op import is harmless meanwhile).
-import {
-  to = module.firebase.google_firebase_hosting_site.api[0]
-  id = "projects/${var.project_id}/sites/${var.api_site_id}"
-}
-
 # ── Firestore database instance ───────────────────────────────────────────────
 # Retention stays on the module default (7 days) deliberately: staging data is
 # seeded (pnpm staging:seed) and reproducible. PITR still covers an accidental
