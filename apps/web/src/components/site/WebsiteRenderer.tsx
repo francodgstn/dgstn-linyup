@@ -51,6 +51,7 @@ export default function WebsiteRenderer({
   memberControl,
   paymentsEnabled,
   page,
+  shortenHref,
 }: {
   site: RenderableSite
   preview?: boolean
@@ -83,6 +84,13 @@ export default function WebsiteRenderer({
    * (`site.sections`).
    */
   page?: { ref: SitePageRef; sections: (WebsiteSection | OrgSiteSection)[] }
+  /**
+   * Turns a public path into what the address bar should show — set only by the
+   * live team site, and only when the request came through the studio's OWN
+   * domain, where `/public/{slug}/site/x` is written `/x`. Absent everywhere
+   * else (builder canvas, embed, our own hosts): the long path is the address.
+   */
+  shortenHref?: (href: string) => string
 }) {
   const locale = useLocale()
   const t = useTranslations('Site')
@@ -160,14 +168,18 @@ export default function WebsiteRenderer({
   // a link to a section is `#id` only when that section is on THIS page — from
   // any other page it is the home URL plus the anchor.
   const pageSections = page?.sections ?? site.sections
-  const homeHref = publicHrefLocalized(locale, site.slug, 'site')
+  // On a studio's own domain every in-page link is the short one a visitor sees
+  // there (`/angebot/crossfit`); elsewhere `shortenHref` is absent and the long
+  // public path IS the address. See RenderCtx.shortenHref.
+  const short = (href: string) => (shortenHref ? shortenHref(href) : href)
+  const homeHref = short(publicHrefLocalized(locale, site.slug, 'site'))
   const pageById = new Map((site.pages ?? []).filter((p) => !p.hidden).map((p) => [p.id, p]))
   function pageHref(pageId: string, sectionId?: string): string | undefined {
     const ref = pageById.get(pageId)
     if (!ref) return undefined
     const anchor = sectionId ? `#${sectionId}` : ''
     if (page?.ref.id === ref.id) return anchor || '#top'
-    return publicSubHrefLocalized(locale, site.slug, 'site', sitePageSegments(ref.path)) + anchor
+    return short(publicSubHrefLocalized(locale, site.slug, 'site', sitePageSegments(ref.path))) + anchor
   }
   const onPageIds = new Set(pageSections.map((sec) => sec.id))
 
@@ -187,6 +199,7 @@ export default function WebsiteRenderer({
     onBook: preview ? undefined : onBook,
     pageHref,
     pages: site.pages,
+    shortenHref,
   }
 
   // ── THE MENU ────────────────────────────────────────────────────────────
@@ -321,9 +334,10 @@ export default function WebsiteRenderer({
   const inert = (e: React.MouseEvent) => e.preventDefault()
 
   const headerAction = site.meta.header.ctaAction ?? 'booking'
-  const headerHref = site.meta.header.ctaLabel
+  const headerHrefRaw = site.meta.header.ctaLabel
     ? ctaHref({ action: headerAction, url: site.meta.header.ctaUrl, pageId: site.meta.header.ctaPageId }, site.slug, locale, pageHref)
     : undefined
+  const headerHref = headerHrefRaw ? short(headerHrefRaw) : undefined
 
   // The header CTA is the most-clicked booking entry on the whole site, so it
   // opens the overlay like every other one. Signup/external CTAs stay plain

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { collectionGroup, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
+import { reviveTimestamps } from '@/lib/restTimestamps'
 import type { TeamPublicProfile } from '@linyup/shared'
 import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 
@@ -32,18 +33,30 @@ type Status = 'loading' | 'found' | 'notfound'
 interface Props {
   slug: string
   children: ReactNode
+  /**
+   * Server-resolved team (Firestore REST, `layout.tsx` → `fetchPublicTeam`) —
+   * present on first render lets the whole `/public/{slug}/…` subtree render in
+   * the SERVER HTML instead of a client-only spinner. Absent when the REST read
+   * failed (or came back empty for a stale/unpublished tenant) — the provider
+   * then falls back to exactly today's client-side query, unchanged.
+   */
+  initial?: { teamId: string; team: PublicTeamData }
 }
 
-// Resolves the team ONCE by slug CLIENT-SIDE (the Firebase client SDK must not be
-// used for server-side reads — see CLAUDE.md) and provides it to the whole
+// Resolves the team ONCE by slug — server-side when `initial` is provided
+// (the common case), else CLIENT-SIDE (the Firebase client SDK must not be
+// used for server-side reads — see CLAUDE.md) — and provides it to the whole
 // `/public/{slug}/…` subtree. Centralises the loading / not-found states so the
 // individual surfaces don't each duplicate them.
-export function PublicTeamProvider({ slug, children }: Props) {
-  const [status, setStatus] = useState<Status>('loading')
-  const [teamId, setTeamId] = useState<string | null>(null)
-  const [team, setTeam] = useState<PublicTeamData | null>(null)
+export function PublicTeamProvider({ slug, children, initial }: Props) {
+  const [status, setStatus] = useState<Status>(initial ? 'found' : 'loading')
+  const [teamId, setTeamId] = useState<string | null>(initial?.teamId ?? null)
+  const [team, setTeam] = useState<PublicTeamData | null>(
+    initial ? reviveTimestamps(initial.team) : null
+  )
 
   useEffect(() => {
+    if (initial) return // already resolved server-side — nothing to fetch
     let cancelled = false
     setStatus('loading')
     const q = query(
@@ -75,6 +88,10 @@ export function PublicTeamProvider({ slug, children }: Props) {
     return () => {
       cancelled = true
     }
+    // `initial` is read only to decide whether to skip the fetch — it is a
+    // one-shot value for this mount (see the note above), not something a
+    // later prop change is expected to react to here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   if (status === 'loading') {

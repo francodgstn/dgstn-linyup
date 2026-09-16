@@ -693,6 +693,21 @@ export interface LeadProfile {
   /** Optional pages besides home — see LeadSitePage. Absent ⇒ a one-page site. */
   sitePages?: LeadSitePage[]
   /**
+   * 301s from the lead's CURRENT website's paths to pages of the rebuilt one
+   * (SiteRedirect): `{ from: '/ueber-uns/unsere-box', to: { kind: 'page', pageId } }`,
+   * `to: { kind: 'home' }` or `{ kind: 'url', url: 'https://…' }`.
+   */
+  siteRedirects?: Record<string, unknown>[]
+  /** The surface the tenant root `/` lands on. Default 'bio-link'; 'site' makes
+   *  the website the front door (and the root of a custom domain). */
+  defaultPublicSurface?: 'bio-link' | 'site' | 'booking' | 'shop'
+  /**
+   * EMULATOR ONLY — claims this hostname for the tenant (public_domains +
+   * integrations/public_domain), so the custom-domain mapping can be exercised
+   * locally by sending `X-Linyup-Host: <hostname>`. Never seeded to the cloud.
+   */
+  customDomain?: string
+  /**
    * Optional stored header MENU (a `SiteMenuItem[]` tree). Absent ⇒ the header
    * is DERIVED from the sections — every nav-visible section becomes a top-level
    * item, which grows long once a site has many sections. A profile provides

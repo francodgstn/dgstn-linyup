@@ -46,6 +46,13 @@ export interface CustomDomainTenant {
    * default for a vanity domain. An explicit `/de/…` still wins.
    */
   language: string
+  /**
+   * The studio's WEBSITE owns the domain's root: its default public surface is
+   * the site and the site is live. Then `/` is the site's home and every path
+   * that is not another surface is a page of the site — see
+   * `toTenantInternalPath`'s `siteAtRoot`.
+   */
+  siteAtRoot: boolean
 }
 
 /**
@@ -62,20 +69,29 @@ export interface CustomDomainTenant {
 const TTL_MS = 5 * 60 * 1000
 const cache = new Map<string, { value: CustomDomainTenant | null; expires: number }>()
 
+const USE_EMULATORS = process.env.NEXT_PUBLIC_USE_EMULATORS === 'true'
+
 function restDocUrl(path: string): string {
-  const base = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${path}`
-  return API_KEY ? `${base}?key=${API_KEY}` : base
+  // The emulator when the app runs against one — otherwise a custom domain can
+  // never be exercised locally, and the mapping ships untried.
+  const host = USE_EMULATORS
+    ? `http://${process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080'}/v1`
+    : 'https://firestore.googleapis.com/v1'
+  const base = `${host}/projects/${PROJECT_ID}/databases/(default)/documents/${path}`
+  return API_KEY && !USE_EMULATORS ? `${base}?key=${API_KEY}` : base
 }
 
+type RestFields = Record<string, { stringValue?: string; booleanValue?: boolean; mapValue?: { fields?: RestFields } }>
+
 /** Firestore REST wraps every value in a type tag; this reads the string ones. */
-function str(fields: Record<string, { stringValue?: string }> | undefined, key: string): string | undefined {
+function str(fields: RestFields | undefined, key: string): string | undefined {
   return fields?.[key]?.stringValue
 }
 
-async function fetchDoc(path: string): Promise<Record<string, { stringValue?: string }> | null> {
+async function fetchDoc(path: string): Promise<RestFields | null> {
   const res = await fetch(restDocUrl(path), { cache: 'no-store' })
   if (!res.ok) return null
-  const body = (await res.json()) as { fields?: Record<string, { stringValue?: string }> }
+  const body = (await res.json()) as { fields?: RestFields }
   return body.fields ?? null
 }
 
@@ -99,7 +115,13 @@ export async function resolveCustomDomainTenant(
       )
       const slug = str(profile ?? undefined, 'slug')
       const language = str(profile ?? undefined, 'language') || 'en'
-      if (slug) value = { slug, teamId: entityId, scope, language }
+      // Only a team has a website; the same gate the root page's redirect uses
+      // (the default must name the site AND the site must be live).
+      const siteAtRoot =
+        scope === 'team' &&
+        str(profile ?? undefined, 'default_public_surface') === 'site' &&
+        profile?.active_public_surfaces?.mapValue?.fields?.site?.booleanValue === true
+      if (slug) value = { slug, teamId: entityId, scope, language, siteAtRoot }
     }
   } catch {
     // A resolution failure must not 500 the request — it falls through as "not a

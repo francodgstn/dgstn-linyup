@@ -115,6 +115,7 @@ import {
   sanitizeMenu,
   sanitizeMeta,
   sanitizePageRefs,
+  sanitizeRedirects,
   sanitizeSections,
 } from '../packages/functions/src/website/sanitize'
 import type {
@@ -868,6 +869,9 @@ async function seedLeadTenant(profile: LeadProfile) {
       plan: 'studio',
       plan_status: 'active',
       default_currency: profile.currency,
+      // The team doc owns it; syncTeamPublicProfile copies it to the mirror, so
+      // writing it only on the mirror would be undone by the first trigger run.
+      default_public_surface: profile.defaultPublicSurface ?? 'bio-link',
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       affiliations_enabled: true,
       ranking_systems: rankingSystem
@@ -1086,7 +1090,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         })),
       showBranding: false, // studio plan carries no "Powered by Linyup" badge
       default_currency: profile.currency,
-      default_public_surface: 'bio-link',
+      default_public_surface: profile.defaultPublicSurface ?? 'bio-link',
       // Written directly (sync triggers may not be deployed on the sandbox):
       // site + shop + space are all live for a seeded lead tenant; `forms` only
       // when the profile authors one (syncTeamPublicProfile gates it on there
@@ -2894,6 +2898,15 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     )
   }
   const publishedMenu = sanitizeMenu(profile.siteMenu)
+  // Old-site redirects publish through the same rule as publishWebsite: only to
+  // a published page, never over a real page path.
+  const publishedRedirects = sanitizeRedirects(profile.siteRedirects, {
+    pageIds: new Set(publishedPageRefs.map((ref) => ref.id)),
+    pagePaths: new Set(publishedPageRefs.map((ref) => ref.path)),
+  })
+  if ((profile.siteRedirects?.length ?? 0) !== publishedRedirects.length) {
+    console.warn(`  ⚠ website: publish would drop ${(profile.siteRedirects?.length ?? 0) - publishedRedirects.length} redirect(s) — invalid path, unknown page, or shadowing a page`)
+  }
   // A reseed without --reset must not leave a removed page behind.
   await db.recursiveDelete(db.collection(`site_drafts/${teamId}/pages`))
   await db.recursiveDelete(db.collection(`site_published/${teamId}/pages`))
@@ -2915,6 +2928,7 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       sections,
       ...menu,
       ...(draftPageRefs.length ? { pages: draftPageRefs } : {}),
+      ...(profile.siteRedirects?.length ? { redirects: profile.siteRedirects } : {}),
       updated_at: ts(daysFromNow(-12)),
       updatedBy: uid,
     })
@@ -2942,11 +2956,30 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       sections: publishedSections,
       ...(publishedMenu ? { menu: publishedMenu } : {}),
       ...(publishedPageRefs.length ? { pages: publishedPageRefs } : {}),
+      ...(publishedRedirects.length ? { redirects: publishedRedirects } : {}),
       socialLinks: profile.socialLinks,
       showBranding: false, // studio plan
       published_at: ts(daysFromNow(-12)),
       updated_at: ts(daysFromNow(-12)),
     })
+
+  // ── custom domain (emulator only) ──────────────────────────────────────────
+  // Claims a hostname for the tenant exactly as connecting a domain would, so
+  // the app's custom-domain mapping can be tried locally with
+  // `curl -H 'X-Linyup-Host: <host>' localhost:3000/`. Never against the cloud:
+  // a claimed hostname there is a real routing decision.
+  if (profile.customDomain && USE_EMULATOR) {
+    const hostname = profile.customDomain.toLowerCase()
+    await db.collection('public_domains').doc(hostname).set({ entityId: teamId, scope: 'team', created_at: ts(now()) })
+    await db
+      .collection('teams')
+      .doc(teamId)
+      .collection('integrations')
+      .doc('public_domain')
+      .set({ status: 'active', hostname, updated_at: ts(now()) })
+  } else if (profile.customDomain) {
+    console.warn(`  ⚠ customDomain '${profile.customDomain}' is emulator-only — not claimed on ${PROJECT_ID}`)
+  }
 
   // ── online courses ─────────────────────────────────────────────────────────
   for (const c of profile.courses) {

@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { collection, doc, getDoc, query, where, limit, getDocs } from 'firebase/firestore'
 import { useLocale, useTranslations } from 'next-intl'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
+import { reviveTimestamps } from '@/lib/restTimestamps'
 import {
   SITE_PAGES_SUBCOLLECTION,
   SITE_PUBLISHED_COLLECTION,
@@ -16,6 +17,7 @@ import {
   parseSlug,
   resolveSiteSurfaceLinks,
   routableSurfaces,
+  toTenantPublicPath,
 } from '@linyup/shared'
 import type {
   PublishedSite,
@@ -47,7 +49,39 @@ import { takeBookingConfirmed } from '@/lib/bookingReturn'
 // `path` names a page of the site other than home ([] ⇒ home). Every page is its
 // own route, so moving between pages remounts this component — see the note on
 // full-page navigation in WebsiteRenderer.
-export default function PublicSite({ slug, path = [] }: { slug: string; path?: string[] }) {
+
+/** Server-resolved site data (`site/[[...path]]/page.tsx` → Firestore REST),
+ *  decoded JSON — any Timestamp field is still a `{ __ts }` marker, revived by
+ *  `reviveTimestamps` before it lands in state. */
+export interface PublicSiteInitial {
+  site: PublishedSite
+  units: SiteTranslationUnits | null
+  page: { ref: SitePageRef; sections: WebsiteSection[] } | null
+  pageUnits: SiteTranslationUnits | null
+}
+
+export default function PublicSite({
+  slug,
+  path = [],
+  initial,
+  domain,
+}: {
+  slug: string
+  path?: string[]
+  /**
+   * Set when the request came through the studio's OWN domain: every link this
+   * page emits is then the short address a visitor sees there (`/angebot`), not
+   * `/public/{slug}/site/angebot`. Absent on our own hosts.
+   */
+  domain?: { tenantLanguage: string; siteAtRoot: boolean }
+  /**
+   * Present when the server component resolved the site — seeds state so the
+   * FIRST render already has real content (SSR), and the client-side query
+   * below is skipped entirely for that render. Absent when the REST read
+   * failed; the component then behaves exactly as it did before this existed.
+   */
+  initial?: PublicSiteInitial
+}) {
   const { team } = usePublicTeam()
   const { isAuthenticated, contact, openSignIn } = usePublicContactAuth()
   const locale = useLocale()
@@ -57,13 +91,27 @@ export default function PublicSite({ slug, path = [] }: { slug: string; path?: s
   const tSurfaces = useTranslations('PublicSurfaceNav')
   const tSpace = useTranslations('Space')
   const tSite = useTranslations('Site')
-  const [site, setSite] = useState<PublishedSite | null>(null)
-  const [i18nUnits, setI18nUnits] = useState<SiteTranslationUnits | null>(null)
-  const [page, setPage] = useState<{ ref: SitePageRef; sections: WebsiteSection[] } | null>(null)
-  const [pageUnits, setPageUnits] = useState<SiteTranslationUnits | null>(null)
-  const [loading, setLoading] = useState(true)
   // A stable dependency for the load effect — the array itself is new each render.
   const pathKey = path.join('/')
+  // The slug+locale+pathKey `initial` was computed FOR. A client-side locale or
+  // path change re-runs the server component (a new `initial` for the NEW key
+  // arrives as a prop) while THIS component instance stays mounted — App Router
+  // reconciles it in place rather than remounting, so a `useState` initializer
+  // alone would only ever see the FIRST key. Comparing this ref against the
+  // CURRENT key in the effect below is what tells "already seeded for this
+  // exact render" apart from "a fresh initial just arrived for a new render".
+  const initialKeyRef = useRef<string | null>(initial ? `${slug}:${locale}:${pathKey}` : null)
+  const [site, setSite] = useState<PublishedSite | null>(() => (initial ? reviveTimestamps(initial.site) : null))
+  const [i18nUnits, setI18nUnits] = useState<SiteTranslationUnits | null>(() =>
+    initial ? reviveTimestamps(initial.units) : null
+  )
+  const [page, setPage] = useState<{ ref: SitePageRef; sections: WebsiteSection[] } | null>(() =>
+    initial ? reviveTimestamps(initial.page) : null
+  )
+  const [pageUnits, setPageUnits] = useState<SiteTranslationUnits | null>(() =>
+    initial ? reviveTimestamps(initial.pageUnits) : null
+  )
+  const [loading, setLoading] = useState(!initial)
   const [bookIntent, setBookIntent] = useState<BookIntent | null>(null)
   // The session a real, verified payment confirmed — NOT a boolean: pinning it to
   // the id stops the confirmation leaking onto a LATER, different booking if the
@@ -73,7 +121,29 @@ export default function PublicSite({ slug, path = [] }: { slug: string; path?: s
   const [paidSessionId, setPaidSessionId] = useState<string | null>(null)
 
   useEffect(() => {
+    const key = `${slug}:${locale}:${pathKey}`
+    if (initial) {
+      if (initialKeyRef.current === key) {
+        // Already seeded for this exact render (the common case: first mount
+        // with SSR data) — nothing to fetch.
+        return
+      }
+      // A NEW `initial` for a DIFFERENT key just arrived (a client-side locale
+      // or path change caused the server component to re-run) — adopt it
+      // directly. The server already did the read; no network round trip
+      // needed here.
+      initialKeyRef.current = key
+      setSite(reviveTimestamps(initial.site))
+      setI18nUnits(reviveTimestamps(initial.units))
+      setPage(reviveTimestamps(initial.page))
+      setPageUnits(reviveTimestamps(initial.pageUnits))
+      setLoading(false)
+      return
+    }
+    // No `initial` at all (the server-side REST read failed) — the original
+    // client-side fallback, unchanged.
     let cancelled = false
+    setLoading(true)
     async function run() {
       let base: PublishedSite | null = null
       try {
@@ -145,7 +215,7 @@ export default function PublicSite({ slug, path = [] }: { slug: string; path?: s
     return () => {
       cancelled = true
     }
-  }, [slug, locale, pathKey])
+  }, [slug, locale, pathKey, initial])
 
   // The ONE resolver (packages/shared) — never re-derive translated fields here.
   const translatedSite = useMemo(() => (site ? applySiteTranslations(site, i18nUnits) : null), [site, i18nUnits])
@@ -255,6 +325,23 @@ export default function PublicSite({ slug, path = [] }: { slug: string; path?: s
     }
   }, [])
 
+  // Every link on the page, as the address bar should show it. The links are
+  // plain `<a href>`s, so a click is a FULL navigation and the domain's rewrite
+  // resolves the short path server-side — which is why `memberControl` below,
+  // the one CLIENT-side navigation here, keeps the long path.
+  const shortenHref = useMemo(
+    () =>
+      domain
+        ? (href: string) =>
+            toTenantPublicPath(href, {
+              slug,
+              tenantLanguage: domain.tenantLanguage,
+              siteAtRoot: domain.siteAtRoot,
+            })
+        : undefined,
+    [domain, slug]
+  )
+
   // Cross-surface reachability, derived from what's actually live — no studio
   // configuration, no new data model. The website deliberately keeps its own
   // chrome (PublicContactBar opts out of /site), so these render as the site's
@@ -272,11 +359,14 @@ export default function PublicSite({ slug, path = [] }: { slug: string; path?: s
         // `surface` is carried so a stored menu item can resolve its own href —
         // the renderer looks links up by it rather than re-deriving URLs.
         surface,
-        href: publicHrefLocalized(locale, slug, surface, { from: 'site' }),
+        href: (() => {
+          const href = publicHrefLocalized(locale, slug, surface, { from: 'site' })
+          return shortenHref ? shortenHref(href) : href
+        })(),
         label,
       })
     )
-  }, [team.active_public_surfaces, translatedSite?.meta.header, locale, slug, tSurfaces])
+  }, [team.active_public_surfaces, translatedSite?.meta.header, locale, slug, tSurfaces, shortenHref])
 
   const memberControl = useMemo(
     () =>
@@ -318,6 +408,7 @@ export default function PublicSite({ slug, path = [] }: { slug: string; path?: s
       <WebsiteRenderer
         site={translatedSite}
         page={translatedPage}
+        shortenHref={shortenHref}
         onBook={openBooking}
         surfaceLinks={surfaceLinks}
         memberControl={memberControl}

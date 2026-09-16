@@ -26,6 +26,7 @@ import {
   safeUrl,
   sanitizeMenu,
   sanitizePageRefs,
+  sanitizeRedirects,
   dedupeSectionIds,
   sanitizeMeta,
   sanitizeSections,
@@ -287,6 +288,14 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     menu,
     // Absent ⇒ a one-page site, exactly as before pages existed.
     pages: pageRefs.length ? pageRefs : undefined,
+    // Old-site redirects, kept only when they lead somewhere published.
+    redirects: (() => {
+      const redirects = sanitizeRedirects(draft.redirects, {
+        pageIds: new Set(pageRefs.map((ref) => ref.id)),
+        pagePaths: new Set(pageRefs.map((ref) => ref.path)),
+      })
+      return redirects.length ? redirects : undefined
+    })(),
     socialLinks: socialLinks.length ? socialLinks : undefined,
     showBranding: plan === 'free' ? true : undefined,
     i18n,

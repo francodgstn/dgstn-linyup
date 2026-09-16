@@ -1,6 +1,11 @@
 import createMiddleware from 'next-intl/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
-import { isCustomDomainPassthrough, splitPathLocale, toTenantInternalPath } from '@linyup/shared'
+import {
+  isCustomDomainPassthrough,
+  isLinyupOwnHost,
+  splitPathLocale,
+  toTenantInternalPath,
+} from '@linyup/shared'
 import { routing } from './i18n/routing'
 import { resolveCustomDomainTenant } from './lib/customDomainTenant'
 
@@ -21,21 +26,9 @@ const APP_FRAME_CSP =
 // Matches /embed/… with or without an as-needed locale prefix (/de/embed/…).
 const EMBED_PATH = /^\/(?:(?:de|fr|it)\/)?embed\//
 
-/**
- * Hosts that are OURS — the app, the marketing site, the previews, localhost.
- * Anything else reaching this app is a studio's own domain, forwarded here by
- * the Cloudflare tenant-router.
- */
-function isOwnHost(hostname: string): boolean {
-  return (
-    hostname === 'linyup.com' ||
-    hostname.endsWith('.linyup.com') ||
-    hostname.endsWith('.hosted.app') ||
-    hostname.endsWith('.web.app') ||
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1'
-  )
-}
+// Which hosts are ours is `isLinyupOwnHost` (@linyup/shared) — one list, shared
+// with the booking return and pinned by functions/src/domains/siteAtRoot.test.ts.
+const isOwnHost = isLinyupOwnHost
 
 /**
  * Maps a request on a studio's own domain onto the public route tree, or null
@@ -75,7 +68,9 @@ async function tenantRewrite(request: NextRequest): Promise<URL | null> {
   // gets the TENANT's language, not the browser's.
   const language = locale || tenant.language || 'en'
   const url = request.nextUrl.clone()
-  url.pathname = `/${language}${toTenantInternalPath(rest, tenant.slug, tenant.scope)}`
+  // A studio whose website is its front door gets the site at `/` and its pages
+  // at the root; every other studio keeps `/` as its default surface.
+  url.pathname = `/${language}${toTenantInternalPath(rest, tenant.slug, tenant.scope, { siteAtRoot: tenant.siteAtRoot })}`
   return url
 }
 

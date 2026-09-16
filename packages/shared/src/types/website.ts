@@ -895,8 +895,26 @@ export interface SiteDraft {
   /** The other pages of the site. Absent ⇒ a one-page site. Each page's
    *  sections are in the `pages` subcollection. */
   pages?: SitePageRef[]
+  /** Old URLs of a site the studio moved here — see SiteRedirect. */
+  redirects?: SiteRedirect[]
   updated_at?: Timestamp
   updatedBy?: string
+}
+
+/**
+ * A permanent (301) redirect from a path of the studio's PREVIOUS website to a
+ * page of this one, so moving a site onto Linyup does not break the links the
+ * old one earned — search results, printed flyers, bookmarks.
+ *
+ * Applied only where the site would otherwise answer "not found": a real page
+ * always wins over a redirect with the same path.
+ */
+export interface SiteRedirect {
+  /** The old path as requested: lowercase, leading slash, no query or locale —
+   *  '/ueber-uns/unsere-box'. See `normalizeSiteRedirectPath`. */
+  from: string
+  /** Where it goes: the home page, a page of this site, or an https address. */
+  to: { kind: 'home' } | { kind: 'page'; pageId: string } | { kind: 'url'; url: string }
 }
 
 /** PUBLIC snapshot — site_published/{teamId}. Public read, function-write only.
@@ -911,6 +929,8 @@ export interface PublishedSite {
   menu?: SiteMenuItem[]
   /** The published pages (hidden ones never are). Absent ⇒ a one-page site. */
   pages?: SitePageRef[]
+  /** Old-site redirects whose target is published. */
+  redirects?: SiteRedirect[]
   /** Denormalised from the team at publish time, for footer/contact icons. */
   socialLinks?: SocialLink[]
   /** Denormalised from the plan — true on the free plan ("Powered by Linyup"). */

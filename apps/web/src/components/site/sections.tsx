@@ -204,6 +204,13 @@ export interface RenderCtx {
    * set by WebsiteRenderer from `site.pages`, absent on the embed.
    */
   pages?: SitePageRef[]
+  /**
+   * The short form of a public path, on a studio's OWN domain: the site lives
+   * at `/angebot/crossfit` there, not `/public/{slug}/site/angebot/crossfit`.
+   * Set by the live site when the request came through such a domain; absent
+   * everywhere else, where the long path IS the address.
+   */
+  shortenHref?: (href: string) => string
 }
 
 export const SOCIAL_ICONS: Record<string, React.FC<{ className?: string }>> = {
@@ -246,11 +253,17 @@ function activityBookHref(
 ): string | undefined {
   const { locale, slug } = ctx
   if (a.activityType === 'appointment')
-    return publicHrefLocalized(locale, slug, 'appointments', { activity: a.id, from: 'site' })
-  if (a.slug) return publicSubHrefLocalized(locale, slug, 'booking', a.slug, { from: 'site' })
+    return shortHref(ctx, publicHrefLocalized(locale, slug, 'appointments', { activity: a.id, from: 'site' }))
+  if (a.slug) return shortHref(ctx, publicSubHrefLocalized(locale, slug, 'booking', a.slug, { from: 'site' }))
   return fallbackToBooking
-    ? publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
+    ? shortHref(ctx, publicHrefLocalized(locale, slug, 'booking', { from: 'site' }))
     : undefined
+}
+
+/** A public path as this visitor's address bar should show it — short on the
+ *  studio's own domain, unchanged everywhere else. See RenderCtx.shortenHref. */
+export function shortHref(ctx: RenderCtx, href: string | undefined): string | undefined {
+  return href && ctx.shortenHref ? ctx.shortenHref(href) : href
 }
 
 /**
@@ -289,7 +302,8 @@ function activityIntent(a: {
  *   - the embed iframe's click delegation still has an anchor to read
  * Never turn these into bare <button>s.
  */
-export function bookProps(href: string | undefined, ctx: RenderCtx, intent: BookIntent) {
+export function bookProps(rawHref: string | undefined, ctx: RenderCtx, intent: BookIntent) {
+  const href = shortHref(ctx, rawHref)
   // Preview wins FIRST — the builder canvas stays inert no matter what.
   if (ctx.preview) return linkProps(undefined, true)
   if (!ctx.onBook || !href) return linkProps(href, ctx.preview)
@@ -393,7 +407,7 @@ function HeroShade({ style, tone, strength }: { style: NonNullable<HeroSection['
 
 function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
-  const href = ctaHref(section.cta, slug, locale, ctx.pageHref)
+  const href = shortHref(ctx, ctaHref(section.cta, slug, locale, ctx.pageHref))
   const center = section.align !== 'left'
   const overlay = (section.overlay ?? 40) / 100
 
@@ -2843,7 +2857,7 @@ function FormBlock({ section, ctx }: { section: FormSection; ctx: RenderCtx }) {
               {profile?.slug && (
                 <a
                   {...linkProps(
-                    publicSubHrefLocalized(locale, slug, 'forms', profile.slug),
+                    shortHref(ctx, publicSubHrefLocalized(locale, slug, 'forms', profile.slug)),
                     preview
                   )}
                   className="site-btn mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold"
@@ -3186,7 +3200,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
 
 function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
-  const href = ctaHref(section.cta, slug, locale, ctx.pageHref)
+  const href = shortHref(ctx, ctaHref(section.cta, slug, locale, ctx.pageHref))
   const ctaButton = section.cta?.label ? (
     <a
       {...(section.cta.action === 'booking'

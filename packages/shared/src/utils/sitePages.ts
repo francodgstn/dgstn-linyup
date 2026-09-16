@@ -10,6 +10,8 @@
 // Pure and dependency-free: the editor normalises what a studio types, the
 // publish sanitizer refuses anything else, and the renderer resolves a URL.
 
+import { TENANT_ROUTE_SEGMENTS } from './customDomainPaths'
+
 export const SITE_PAGE_LIMITS = {
   /** Pages besides the home page (posts not counted). */
   maxPages: 30,
@@ -34,6 +36,9 @@ export function isValidSitePagePath(path: string): boolean {
   const segments = path.split('/')
   return (
     segments.length <= SITE_PAGE_LIMITS.maxDepth &&
+    // On a domain where the site is the front door, `/shop` must still be the
+    // shop — so a page can never claim a tenant route's name.
+    !TENANT_ROUTE_SEGMENTS.includes(segments[0]) &&
     segments.every((segment) => segment.length <= SITE_PAGE_LIMITS.maxSegmentLength && SEGMENT.test(segment))
   )
 }
@@ -63,6 +68,39 @@ export function normalizeSitePagePath(input: string): string {
 /** A stored path → its URL segments ('ueber-uns/team' → ['ueber-uns', 'team']). */
 export function sitePageSegments(path: string): string[] {
   return path.split('/').filter(Boolean)
+}
+
+// ─── Redirects from a previous website ────────────────────────────────────────
+
+/** How many old paths a site may redirect. */
+export const SITE_REDIRECT_LIMIT = 200
+
+/**
+ * An old site's path as stored and as looked up: lowercase, one leading slash,
+ * no trailing slash, no query or fragment, percent-decoded. '' when nothing
+ * usable is left — the root is never a redirect (the home page owns it).
+ */
+export function normalizeSiteRedirectPath(input: string): string {
+  if (typeof input !== 'string') return ''
+  let path = input.trim().split(/[?#]/)[0]
+  try {
+    path = decodeURIComponent(path)
+  } catch {
+    return ''
+  }
+  path = ('/' + path.toLowerCase()).replace(/\/{2,}/g, '/').replace(/\/+$/, '')
+  if (path.length > 300 || /[\s<>"\\]/.test(path)) return ''
+  return path === '/' ? '' : path
+}
+
+/** The redirect for a requested path, or null. */
+export function findSiteRedirect<R extends { from: string }>(
+  redirects: readonly R[] | undefined,
+  requestedPath: string
+): R | null {
+  const path = normalizeSiteRedirectPath(requestedPath)
+  if (!path) return null
+  return (redirects ?? []).find((redirect) => redirect.from === path) ?? null
 }
 
 const SITE_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/

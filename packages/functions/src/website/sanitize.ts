@@ -20,6 +20,8 @@
 import {
   isPublicSurface,
   isValidSiteDate,
+  normalizeSiteRedirectPath,
+  SITE_REDIRECT_LIMIT,
   isValidSitePagePath,
   isValidVideoId,
   SITE_PAGE_LIMITS,
@@ -48,6 +50,7 @@ import type {
   SiteMenuItem,
   SiteMeta,
   SitePageRef,
+  SiteRedirect,
   SiteSurfaceLinkConfig,
   SiteTopBar,
   SurfaceThemePresetId,
@@ -616,6 +619,40 @@ export function sanitizePageRefs(raw: unknown): SitePageRef[] {
     )
   }
   return refs
+}
+
+/**
+ * Old-site redirects, whitelisted. A redirect to a page is kept only when that
+ * page is published (`pageIds`), so a deleted page never leaves a 301 to a 404;
+ * a path is kept once (the first wins) and never shadows a real page path — a
+ * page always answers its own URL.
+ */
+export function sanitizeRedirects(
+  raw: unknown,
+  opts: { pageIds: ReadonlySet<string>; pagePaths: ReadonlySet<string> }
+): SiteRedirect[] {
+  const out: SiteRedirect[] = []
+  const seen = new Set<string>()
+  for (const entry of Array.isArray(raw) ? raw : []) {
+    if (out.length >= SITE_REDIRECT_LIMIT) break
+    const d = asDict(entry)
+    const from = normalizeSiteRedirectPath(str(d.from, 400))
+    if (!from || seen.has(from) || opts.pagePaths.has(from.slice(1))) continue
+    const to = asDict(d.to)
+    let target: SiteRedirect['to'] | null = null
+    if (to.kind === 'home') target = { kind: 'home' }
+    else if (to.kind === 'page') {
+      const pageId = optStr(to.pageId, 64)
+      if (pageId && opts.pageIds.has(pageId)) target = { kind: 'page', pageId }
+    } else if (to.kind === 'url') {
+      const url = safeUrl(to.url)
+      if (url?.startsWith('https://')) target = { kind: 'url', url }
+    }
+    if (!target) continue
+    seen.add(from)
+    out.push({ from, to: target })
+  }
+  return out
 }
 
 /**
