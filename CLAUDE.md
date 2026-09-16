@@ -367,90 +367,57 @@ Two primitives, not two entities — both are `sessions/{id}` docs:
   the provider publishes *availability*, and the session is created lazily,
   overlap-safe, at booking.
 
-`Activity.type` (`'class' | 'appointment'`) picks the scheduling mechanism;
-`Session.activityType` carries it. Mirrors: `type: 'session'` vs
-`'appointment_session'`; activity mirrors carry `activityType` so public UIs route
-appointment cards to the picker.
+`Activity.type` picks the scheduling mechanism and `Session.activityType` carries
+it. The `Activity` owns the *what* (`durations`, and the member rule below); the
+`availability/{id}` doc owns only the *when* — provider, recurrence, buffer and
+**`activityIds`**. Because a window may offer activities of different lengths, a
+start time is indeterminate until the client picks one, **which is why
+availability can never be pre-generated**; the old slot-generation cron was
+deleted for exactly that reason.
+Full docs: `docs/appointments.md` → "The two halves: the *what* and the *when*".
 
-**The what vs the when.** The `Activity` owns the *what* — `durations` (each
-length with an optional base price) and the ONE `memberBenefit` rule (no
-capacity: an appointment is exclusive time, one booking per slot by definition).
-The `availability/{id}` doc owns only the *when* — provider, recurrence,
-`mode: 'range'|'times'`, buffer, and **`activityIds`** (which appointment
-activities are bookable in that window). Durations are never stored on
-availability; they derive from the linked activities. Because a window may offer
-activities of different lengths, a start time is indeterminate until the client
-picks one — **which is why availability can never be pre-generated** (the old
-slot-generation cron was deleted for exactly this reason).
+Six invariants, each a bug before it was a rule:
 
-Booking: **`bookAppointment`** is the free-path appointment callable
-(`bookSession` is class-only and rejects them); the client sends no templateId —
-the server resolves the covering availability. `listAvailability` computes free
-times, coach-first (returning `durations` + `memberBenefit` per activity).
-Appointments have **NO access gate** — THE PRICE IS THE GATE: unpriced → anyone
-books free (guests included), priced → anyone pays their effective price.
-`Activity.accessRule` is CLASS-ONLY (appointment forms don't show it, appointment
-paths don't read it, appointment session docs/mirrors don't carry it).
-`cancelBooking` handles both kinds.
+- **Appointments have NO access gate — THE PRICE IS THE GATE.** Unpriced ⇒ anyone
+  books free, guests included; priced ⇒ anyone pays their effective price.
+  `Activity.accessRule` is **CLASS-ONLY**: appointment forms don't show it,
+  appointment paths don't read it, appointment docs and mirrors don't carry it.
+- **`bookAppointment` is the free appointment rail**; `bookSession` is class-only
+  and rejects appointments. The client sends no templateId — the server resolves
+  the covering availability. `cancelBooking` handles both kinds.
+- **A class's drop-in price is read through ONE resolver**,
+  `resolveActivityDropIn(activity, studioDropInOf(bookingSettings))`
+  (`packages/shared/src/utils/dropIn.ts`). Never branch on
+  `activity.dropIn.enabled` / `.priceAmount`: a class following the studio
+  default stores no price of its own. The mirror carries the RESOLVED price and
+  `syncStudioDropIn` rewrites every following class when the default moves.
+  `docs/payment-contact-studio.md` → "Drop-in".
+- **THE ONE READER of a per-length member rule is `resolveDurationBenefit`.**
+  Never touch the fields directly: `durationBenefits` present ⇒ it is the whole
+  answer and a missing entry means no rule; absent ⇒ the legacy
+  activity-wide `Activity.memberBenefit` still applies to every length, so **no
+  backfill is owed**.
+- **`resolvePaymentOptions(snapshot, target, context?)` is THE ONE shared
+  coverage/quote resolver** (`packages/shared/src/utils/paymentOptions.ts`, pure,
+  client-safe) for class bookings, drop-ins, appointments, courses and products.
+  **Never add a parallel coverage or price check — extend the resolver**
+  (fixtures: `packages/functions/src/booking/paymentOptions.test.ts`). Money
+  mechanics live once in `packages/functions/src/connect/checkout.ts` and
+  `packages/shared/src/utils/money.ts`.
+- **On a paid appointment the hold IS the session.** `bookAppointment` refuses a
+  payable caller with `payment_required`; `createAppointmentCheckout` writes the
+  session `pending_payment` with `hold_expires_at`, and the Connect webhook
+  (`kind: 'appointment'`) confirms it to `full` on payment.
+  `docs/appointments.md` → "The hold state machine — the hold IS the session".
 
-**A class's drop-in price is read through ONE resolver.** The price has a
-studio-wide default (`BookingSettings.dropIn`, on the team's public profile
-beside the other booking settings, edited on Offerings → Pricing or in place from
-a class's pricing tab) and each
-class says how it relates to it — `Activity.dropIn.mode`: `'studio'` (follow
-the default; what a new class starts as), `'custom'` (its own price), `'off'`
-(none, even under a default); a document without `mode` reads as `'custom'`
-when it named a price and `'studio'` otherwise. **`resolveActivityDropIn(activity,
-studioDropInOf(bookingSettings))`** (`packages/shared/src/utils/dropIn.ts`) is
-the only reader — never branch on `activity.dropIn.enabled` / `.priceAmount`,
-since a class that follows the studio stores no price. The activity mirror
-carries the RESOLVED price (public readers and mobile need no default), and
-`syncStudioDropIn` rewrites the mirrors of every following class when the
-default changes. Docs: `docs/payment-contact-studio.md` → "Drop-in".
-
-**Paid appointments** put a base price per duration (`Activity.durations:
-[{minutes, priceAmount?}]`) **and one member rule per duration**
-(`Activity.durationBenefits: [{minutes, benefit}]`) — holders of a listed type
-book that length free (`included`; credit packs spend a credit), at
-`percent_off`, or at a `fixed_price` (all clamped to Stripe's 0.50 floor, never
-free-via-discount). **THE ONE READER is `resolveDurationBenefit(activity,
-minutes)`** — never touch the fields directly: `durationBenefits` present ⇒ it
-is the whole answer and a missing entry means no rule; absent ⇒ the LEGACY
-activity-wide `Activity.memberBenefit` still applies to every length, so an
-un-re-edited appointment behaves as before and **no backfill is owed** (the
-first per-length save absorbs the old rule onto every length and clears it).
-This is NOT the per-duration × per-type `subscriptionPricing` matrix cut in
-2026-07 — that was a grid of prices; this is the same one rule, asked once per
-length, because `fixed_price` on an activity charged the same for 30 and 90
-minutes. A public ONE-LINE summary (shop card, site chip, pricing table) states
-a benefit only when every length agrees, else the price range alone.
-Resolver: **`resolvePaymentOptions(snapshot, target, context?)`** — the ONE
-shared coverage/quote resolver (`packages/shared/src/utils/paymentOptions.ts`,
-pure, client-safe) that answers `covered | spend_credits | pay(amount,
-appliedBenefit)` for class bookings, drop-ins, appointments, courses AND
-products; the optional third `context` carries a typed promo code (see "Promo
-codes" below) and nothing else, so every pre-existing call site compiles and
-behaves unchanged. The server builds its authoritative snapshot via `loadContactPaymentSnapshot`
-(`packages/functions/src/booking/access.ts`), the web an optimistic one via
-`apps/web/src/lib/paymentSnapshot.ts`. Never add a parallel coverage/price
-check — extend the resolver (fixtures:
-`functions/src/booking/paymentOptions.test.ts`). Money mechanics (0.50 floor,
-Rappen conversion, fees, idempotency) live once in
-`packages/functions/src/connect/checkout.ts` + `shared/src/utils/money.ts`. A
-payable caller is refused by `bookAppointment`
-(`payment_required`) and instead reserves→pays→confirms via
-**`createAppointmentCheckout`** at the caller's effective amount: the hold IS
-the session (`status: 'pending_payment'` + `hold_expires_at`, +30 min, lazily
-expiring) and the Connect webhook (`kind: 'appointment'`) confirms it to `full`
-on payment. `dropIn` stays class-only — appointments never use it; class-side,
-the independent `trialEnabled` toggle lets a gated class accept a newcomer's
-guest trial, so members-included + trial + drop-in coexist. That trial may
-itself be **priced** — `Activity.trialPriceAmount` (class-only, gated-only;
-absent ⇒ free, today's behaviour) charges a newcomer's first class over the
-drop-in checkout (`createDropInCheckout({ trial: true })`), enforced once per
-person via `Contact.trial_used_at`. A trial is never a subscription. Kiosk
-walk-in is class-only too. Full docs: `docs/appointments.md` → "Paid
-appointments"; `docs/payment-contact-studio.md` → "Paid trial".
+`dropIn` is class-only — appointments never use it. Class-side, the independent
+`trialEnabled` toggle lets a gated class accept a newcomer's guest trial, so
+members-included + trial + drop-in coexist; that trial may itself be priced
+(`Activity.trialPriceAmount`, gated-only, absent ⇒ free) over the drop-in
+checkout, enforced once per person via `Contact.trial_used_at`. **A trial is
+never a subscription.** Kiosk walk-in is class-only too.
+`docs/appointments.md` → "Paid appointments"; and
+`docs/payment-contact-studio.md` → "Paid trial".
 
 ### Book-form fields — a QUESTION is about the booking, a FIELD is about the person
 
