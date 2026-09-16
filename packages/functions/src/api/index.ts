@@ -160,7 +160,14 @@ export async function handleApiRequest(req: ApiRequest, res: ApiResponse): Promi
     return
   }
   const principal = decision.principal
-  const credentialKey = principal.via.kind === 'api_key' ? principal.via.keyId : principal.via.grantId
+  // Bearers only: `resolveApiPrincipal` never yields a credential-less `member`
+  // principal (that is the in-app assistant's), so its uid is a formality here.
+  const credentialKey =
+    principal.via.kind === 'api_key'
+      ? principal.via.keyId
+      : principal.via.kind === 'oauth'
+        ? principal.via.grantId
+        : principal.uid
 
   const wait = buckets.take(credentialKey, nowMs)
   if (wait > 0) {
@@ -173,7 +180,9 @@ export async function handleApiRequest(req: ApiRequest, res: ApiResponse): Promi
     recordApiUsage(principal.teamId, 'ok', nowMs),
     principal.via.kind === 'api_key'
       ? touchApiKeyLastUsed(principal.teamId, principal.via.keyId, principal.lastUsedAtMs, nowMs)
-      : touchOAuthGrantLastUsed(principal.teamId, principal.via.grantId, principal.lastUsedAtMs, nowMs),
+      : principal.via.kind === 'oauth'
+        ? touchOAuthGrantLastUsed(principal.teamId, principal.via.grantId, principal.lastUsedAtMs, nowMs)
+        : Promise.resolve(),
   ])
 
   try {

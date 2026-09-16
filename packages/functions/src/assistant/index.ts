@@ -1,22 +1,44 @@
-// In-app AI assistant (v1) — a navigation & help copilot for studio staff. It
-// answers "how do I / where is X" and points to the right page. Read-only: it has
-// NO access to the team's data and takes no actions (those are later phases).
+// In-app AI assistant — for studio staff (coaches, managers, owners). Two jobs:
+// answer questions about THEIR studio by calling read tools, and help them find
+// their way around Linyup.
+//
+// The data comes through the public API's read layer, never a Firestore read of
+// its own. The tools are the registry's (api/tools/registry.ts), the ones the
+// remote MCP server publishes to Claude and ChatGPT, answered for a principal
+// built from the signed-in member (`resolveMemberPrincipal`). That buys, without
+// a second implementation of either: a coach sees only their own people and
+// sessions, a demotion applies to the next question, and every record leaves as
+// an allow-list projection — `fieldCatalog.ts` fails the build for a field
+// nobody classified. Contact details are withheld outright (ASSISTANT_SCOPES):
+// the member may see them in the app, but sending them to a model is a separate
+// decision, and the contact-summary precedent is that no identifying field
+// reaches a prompt.
+//
+// Read-only: no tool writes, and the prompt says so.
 //
 // Gated: the caller must be a member of a team that has the (locked) ai-assistant
 // plugin installed — so it only runs for teams the operator has unlocked.
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
-import { to } from '../utils/async'
-import { isTeamMember } from '../utils/teams'
+import { FunctionCallingConfigMode, type Content } from '@google/genai'
+import { API_SCOPES, type ApiScope } from '@linyup/shared'
+import { resolveMemberPrincipal } from '../api/auth/principal'
+import { loadTeamContext } from '../api/context'
+import { studioInstructions } from '../api/tools/instructions'
+import { toolsFor, type ReadToolContext } from '../api/tools/registry'
 import { getGenAI, ASSISTANT_MODEL, replyWasStopped } from '../utils/vertexClient'
 import { pluginIsActive } from '../utils/plugins'
+import { functionDeclarations, runToolLoop, type Generate } from './toolLoop'
 
 const MAX_MESSAGES = 20
 const MAX_CHARS_PER_MESSAGE = 4000
 const UNLOCK_PLUGIN_ID = 'ai-assistant'
 const RATE_LIMIT_MAX = 40 // messages per user + team per hour
 const RATE_WINDOW_MS = 60 * 60 * 1000
+
+/** What the assistant may read: every API scope except contact details. */
+export const ASSISTANT_SCOPES: readonly ApiScope[] = API_SCOPES.filter((s) => s !== 'contacts:read:pii')
 
 // Static app-capability index the model is grounded on. Keep concise; a richer,
 // generated index (from NAV_SECTIONS/settings-nav/PLUGIN_REGISTRY) is a Phase-B
@@ -44,14 +66,14 @@ const APP_MAP = `Linyup dashboard map (menu path → what it's for):
 - Settings › Team (general, payments/currency, branding), Booking, Event types, Members, Roles (capabilities per role), Plugins (marketplace), Billing (plan & invoices).
 Contact detail tabs: Profile, Appointments, Stats, Bookings, Plans & Affiliation, Payments, Activity, Follow-ups (alerts + outreach), Gamification.`
 
-const SYSTEM_PROMPT = `You are Linyup's in-app assistant for studio staff (coaches, managers, owners).
-Help them find features and learn how to do things in Linyup. Be concise and practical.
-When relevant, tell them exactly where to go using the menu path (e.g. "Settings › Roles").
-Only discuss the Linyup app. If asked about their private data (specific contacts, numbers)
-or to perform an action, explain that you can't do that yet — you currently help with
-navigation and how-to. Do not invent features that aren't in the app map.
+const HELP_PROMPT = `You are Linyup's in-app assistant for studio staff (coaches, managers, owners). You have two jobs.
 
-${APP_MAP}`
+1. Answer questions about their studio by calling your tools — who has gone quiet, how full classes were, which memberships are cancelling, what is on the schedule. Use the tools rather than guessing. Never state a number, a name or a date a tool did not return; if a tool refuses or finds nothing, say so plainly.
+2. Help them find their way around Linyup. When relevant, tell them exactly where to go using the menu path from the app map below (e.g. "Settings › Roles"). Do not invent features that aren't in it.
+
+You can read, not act: you cannot book, cancel, message or change anything. When they ask for an action, say where in the app they can do it.
+Contact details (email, phone, address, date of birth) are never available to you, even though the member can see them in the app — point them to the contact's profile instead.
+Be concise and practical, and reply in the language the member writes in.`
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
@@ -87,10 +109,12 @@ export const assistantChat = onCall(async (request) => {
   }
 
   const db = admin.firestore()
+  const nowMs = Date.now()
 
-  // Caller must be a team member…
-  const [memberErr, isMember] = await to(isTeamMember(uid, teamId))
-  if (memberErr || !isMember) throw new HttpsError('permission-denied', 'You are not a member of this team.')
+  // The member, read NOW — the same principal rules the public API answers with.
+  const decision = await resolveMemberPrincipal(uid, teamId, ASSISTANT_SCOPES)
+  if ('refusal' in decision) throw new HttpsError('permission-denied', 'You are not a member of this team.')
+  const principal = decision.principal
 
   // …and the (unlocked) assistant plugin must be installed for this team.
   // Through the ONE resolver, so an ORG-level install counts — this was its own
@@ -99,8 +123,8 @@ export const assistantChat = onCall(async (request) => {
     throw new HttpsError('failed-precondition', 'The AI assistant is not enabled for this team.')
   }
 
-  // Rate-limit per user + team per hour.
-  const windowKey = Math.floor(Date.now() / RATE_WINDOW_MS).toString()
+  // Rate-limit per user + team per hour — per question, however many tool calls it takes.
+  const windowKey = Math.floor(nowMs / RATE_WINDOW_MS).toString()
   const rlRef = db.collection('rate_limits').doc(uid).collection('assistant_chat').doc(`${teamId}_${windowKey}`)
   const allowed = await db.runTransaction(async (tx) => {
     const snap = await tx.get(rlRef)
@@ -112,42 +136,58 @@ export const assistantChat = onCall(async (request) => {
   if (!allowed) throw new HttpsError('resource-exhausted', 'You have reached the hourly limit. Try again later.')
 
   // Normalise + bound the conversation, then map to Vertex content format.
-  const trimmed = messages
+  const trimmed: Content[] = messages
     .slice(-MAX_MESSAGES)
     .filter((m) => m && typeof m.content === 'string' && m.content.trim())
     .map((m) => ({
-      role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+      role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: String(m.content).slice(0, MAX_CHARS_PER_MESSAGE) }],
     }))
   if (trimmed.length === 0 || trimmed[trimmed.length - 1].role !== 'user') {
     throw new HttpsError('invalid-argument', 'The last message must be from the user.')
   }
 
-  try {
-    const response = await getGenAI().models.generateContent({
+  const team = await loadTeamContext(teamId)
+  const ctx: ReadToolContext = { principal, team, nowMs }
+  const tools = toolsFor(ctx)
+  const systemInstruction = `${HELP_PROMPT}\n\n${studioInstructions(principal, team, nowMs, 'assistant')}\n\n${APP_MAP}`
+  const declarations = functionDeclarations(tools)
+
+  const generate: Generate = (contents, { allowTools }) =>
+    getGenAI().models.generateContent({
       model: ASSISTANT_MODEL,
-      contents: trimmed,
+      contents,
       config: {
-        systemInstruction: SYSTEM_PROMPT,
-        maxOutputTokens: 1024,
-        // NO THINKING: a how-to answer grounded on the app map needs no
-        // reasoning budget, and thinking tokens would spend this cap before the
-        // answer is written (see vertexClient).
+        systemInstruction,
+        // Room for an answer that lists people or classes, not just a how-to.
+        maxOutputTokens: 2048,
+        // NO THINKING: choosing a read tool is function calling, which this
+        // model does without a reasoning budget, and thinking tokens would spend
+        // this cap before the answer is written (see vertexClient). Revisit only
+        // if tool choice is visibly wrong.
         thinkingConfig: { thinkingBudget: 0 },
-        temperature: 0.3,
+        temperature: 0.2,
+        tools: [{ functionDeclarations: declarations }],
+        toolConfig: {
+          functionCallingConfig: { mode: allowTools ? FunctionCallingConfigMode.AUTO : FunctionCallingConfigMode.NONE },
+        },
       },
     })
-    // `response.text` rather than walking candidates[0].content.parts — four
-    // optional steps that each return undefined silently. See vertexClient.
-    let reply = (response.text ?? '').trim()
+
+  try {
+    const { turn, toolsUsed } = await runToolLoop(generate, trimmed, tools, ctx)
+    // `text` rather than walking candidates[0].content.parts — four optional
+    // steps that each return undefined silently. See vertexClient.
+    let reply = (turn.text ?? '').trim()
     if (!reply) throw new HttpsError('internal', 'The assistant returned an empty response.')
     // A long answer can still reach the cap. It is still worth showing, but as
     // what it is: cut, never as a finished answer.
-    if (replyWasStopped(response)) {
+    if (replyWasStopped(turn)) {
       console.warn(`[assistantChat] reply hit the output cap (team=${teamId})`)
       reply = endStoppedReply(reply)
     }
-    return { reply }
+    console.info(`[assistantChat] team=${teamId} uid=${uid} role=${principal.role} tools=${toolsUsed.join(',') || 'none'}`)
+    return { reply, tools: toolsUsed }
   } catch (err) {
     if (err instanceof HttpsError) throw err
     console.error('[assistantChat] Vertex error:', (err as Error).message)

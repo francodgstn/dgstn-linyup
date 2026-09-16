@@ -2977,8 +2977,8 @@
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
     "title": "KI-Assistent",
-    "disclaimer": "Experimentell · hilft dir, Funktionen zu finden. Greift noch nicht auf deine Daten zu.",
-    "greeting": "Frag mich, wie du etwas in Linyup machst — ich zeige dir, wo es geht.",
+    "disclaimer": "Experimentell · liest die Daten deines Studios, soweit deine Rolle es erlaubt, nie Kontaktdaten. Ändern kann er nichts.",
+    "greeting": "Frag nach deinem Studio – wer länger nicht mehr da war, wie voll die Kurse waren – oder wie etwas in Linyup geht.",
     "thinking": "Denke nach…",
     "inputPlaceholder": "Stelle eine Frage…",
     "send": "Senden",

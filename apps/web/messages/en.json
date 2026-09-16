@@ -2977,8 +2977,8 @@
   "AiAssistant": {
     "launcherLabel": "AI assistant",
     "title": "AI assistant",
-    "disclaimer": "Experimental · helps you find features. Doesn't access your data yet.",
-    "greeting": "Ask me how to do something in Linyup — I'll point you to the right place.",
+    "disclaimer": "Experimental · reads your studio's data as far as your role allows, never contact details. It can't change anything.",
+    "greeting": "Ask about your studio — who hasn't come in a while, how full classes were — or how to do something in Linyup.",
     "thinking": "Thinking…",
     "inputPlaceholder": "Ask a question…",
     "send": "Send",

@@ -34,7 +34,8 @@ describe('assistant — a reply stopped at the output cap', () => {
   it('the call turns thinking off and passes a stopped reply through endStoppedReply', () => {
     const source = readFileSync(join(__dirname, 'index.ts'), 'utf8').replace(/\r\n/g, '\n')
     assert.match(source, /thinkingConfig:\s*\{\s*thinkingBudget:\s*0\s*\}/)
-    assert.match(source, /if \(replyWasStopped\(response\)\)/)
+    // Whatever the final reply is called — it is the tool loop's last turn now.
+    assert.match(source, /if \(replyWasStopped\(\w+\)\)/)
     assert.match(source, /reply = endStoppedReply\(reply\)/)
   })
 })

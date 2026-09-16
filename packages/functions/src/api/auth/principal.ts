@@ -60,7 +60,16 @@ export type ApiAuthRefusal =
 export interface ApiPrincipal {
   teamId: string
   uid: string
-  via: { kind: 'api_key'; keyId: string } | { kind: 'oauth'; grantId: string; clientId: string }
+  /**
+   * How the principal came in. `member` carries no credential at all: it is the
+   * member signed in to the web app, asking through the in-app assistant
+   * (assistant/). It is built only by `resolveMemberPrincipal` and never reaches
+   * the HTTP entry point, which resolves bearers alone.
+   */
+  via:
+    | { kind: 'api_key'; keyId: string }
+    | { kind: 'oauth'; grantId: string; clientId: string }
+    | { kind: 'member' }
   role: TeamRole
   scopes: ReadonlySet<ApiScope>
   /** LIVE — from the member document read for this request. */
@@ -209,6 +218,60 @@ export async function resolveApiPrincipal(
     nowMs,
     expectedResource
   )
+}
+
+/**
+ * A principal for the member SIGNED IN to the web app — no key, no grant. The
+ * in-app assistant speaks for whoever is asking, so there is no credential to
+ * read; the rules that remain are the ones that matter most. Rule 1 holds
+ * unchanged: the member document is read for this call, so a demotion or a
+ * removal applies to the very next question. Rule 4 holds unchanged: `scopes`
+ * is what the caller chooses to ask for, and `principalMay` still intersects
+ * it with the member's live capabilities, so passing a scope never widens what
+ * a role can read. Pure, like `decideApiPrincipal`.
+ */
+export function decideMemberPrincipal(
+  teamId: string,
+  uid: string,
+  member: PrincipalFacts['member'],
+  fallbackCapabilities: Capability[] | null | undefined,
+  scopes: readonly ApiScope[]
+): PrincipalDecision {
+  if (!member) return { refusal: 'not_a_member' }
+  const capabilities = Array.isArray(member.capabilities)
+    ? member.capabilities
+    : (fallbackCapabilities ?? memberCapabilityList(member))
+  return {
+    principal: {
+      teamId,
+      uid,
+      via: { kind: 'member' },
+      role: member.role,
+      scopes: new Set(normalizeApiScopes(scopes)),
+      capabilities: new Set(capabilities),
+      dataScope: memberDataScope(member),
+      lastUsedAtMs: null,
+    },
+  }
+}
+
+/** Reads the member document for this call and decides. */
+export async function resolveMemberPrincipal(
+  uid: string,
+  teamId: string,
+  scopes: readonly ApiScope[]
+): Promise<PrincipalDecision> {
+  const snap = await admin
+    .firestore()
+    .collection(TEAMS_COLLECTION)
+    .doc(teamId)
+    .collection(TEAM_MEMBERS_SUBCOLLECTION)
+    .doc(uid)
+    .get()
+  const member = snap.exists ? (snap.data() as PrincipalFacts['member']) : null
+  const fallbackCapabilities =
+    member && !Array.isArray(member.capabilities) ? (await resolveMemberCapabilities(teamId, member.role)).capabilities : null
+  return decideMemberPrincipal(teamId, uid, member, fallbackCapabilities, scopes)
 }
 
 /** Was `scope` granted, AND does the member hold what it requires right now? */
