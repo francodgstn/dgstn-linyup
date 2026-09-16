@@ -268,7 +268,8 @@ describe('contact summary — what the model says back', () => {
   // Read from the SOURCE, because the call itself needs Vertex: thinking tokens
   // count against the output cap, which is how summaries were being cut short.
   it('the summary call turns thinking off and tells normaliseSummary when it was stopped', () => {
-    const source = readFileSync(join(__dirname, 'aiSummary.ts'), 'utf8').replace(/\r\n/g, '\n')
+    // The call lives in the shared body, which the button and a team sentiment run both use.
+    const source = readFileSync(join(__dirname, 'aiSummaryGenerate.ts'), 'utf8').replace(/\r\n/g, '\n')
     assert.match(source, /thinkingConfig:\s*\{\s*thinkingBudget:\s*0\s*\}/)
     assert.match(source, /cut = replyWasStopped\(response\)/)
     assert.match(source, /readSummaryReply\(raw,\s*\{\s*cut\s*\}\)/)

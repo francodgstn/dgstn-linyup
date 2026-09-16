@@ -52,13 +52,15 @@ contact.
 
 ## Gate
 
-An **experiment**, not a plugin and not a plan feature — the same call offer
-drafting made and for the same reason: the output is what is being tuned. The
-owner switches it on under Settings → Experimental; the card mounts the block
-only while it is on, and the callable re-checks the flag on the team doc so a
-client cannot spend model calls on a switch that is off. The settings list
-notes Studio+ (AI insights is that row on the plan comparison) without gating
-the toggle, as every entry does.
+**A plugin module since 2026-09-16:** `ai-contact-summary`, in the AI insights
+container (`docs/ai-insights.md`). It was an experiment (`contact-summary`,
+Settings → Experimental) from 2026-09-11 until then, and moved once a coach
+briefing, a member recap and a team reading were three things a studio chooses
+between. A team that had the experiment on reads as off and installs the
+plugin. The card mounts the block only while the module is installed, and the
+callable re-checks it through `pluginIsActive`, which also sees an install made
+at the organisation — so a client cannot spend model calls on a module that is
+off.
 
 Beyond the switch: signed in, member of the team, the contact in that team,
 and — for an own-scoped coach — on the contact's coach list or its creator
@@ -125,6 +127,19 @@ for a summary written before the change, the paragraph), the date and a
 one-line disclaimer. The record is written whole, so a regenerated summary
 never keeps an older one's parts.
 
+**Plus a member recap, since 2026-09-16.** The same reply carries two more
+parts written TO the person — `memberStatus` (where they stand, as
+encouragement) and `memberNextSession` (one thing to try next time) — stored as
+`ai_summary.member`. There is deliberately no member outlook: the studio's
+outlook says things like "at risk of drifting", which is a note about a person,
+not a message to them. The prompt forbids risk, gaps, no-shows, payments, plans
+ending and anything from the notes in these two parts. Same caps and cleanup as
+the studio parts, plus a greeting the model wrote is stripped (the email adds
+its own); the recap is stored only when BOTH parts survived. Asking in the same
+call sends the dossier once, and the recap is stored whether or not the
+`ai-member-recap` module is on, so switching it on later works on existing
+summaries. Sending it is `docs/ai-insights.md`.
+
 **Thinking is off, and a stopped reply loses its fragment.** On
 `gemini-2.5-flash` thinking is on by default and its tokens count against
 `maxOutputTokens`, so summaries on staging were being stopped mid-sentence and
@@ -135,7 +150,13 @@ before the fix stays as it is until someone regenerates it.
 
 ## Regeneration: manual now, schedule later
 
-Only the button regenerates. This is the recorded decision: a scheduled refresh
+Two presses regenerate: the button on the contact page (`generated_by` = the
+user's uid), and a **team sentiment run**, which refreshes the briefings of the
+team's active members that have something new — none yet, older than 7 days, or
+a session, booking or note since (`summaryNeedsRefresh`) — and stamps them
+`generated_by: 'team_sentiment'`. Both write through ONE function,
+`generateSummaryForContact` (`contacts/aiSummaryGenerate.ts`); see
+`docs/ai-insights.md` → Team sentiment. Nothing regenerates on a clock. A scheduled refresh
 is not built until the button has shown whether a summary is worth the model
 calls (Franco, 2026-09-11). When it is:
 

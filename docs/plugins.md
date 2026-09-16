@@ -19,8 +19,10 @@ below Studio so paid value cannot be self-granted.
 
 ## Bundles — a container of plugins
 
-A **container** is a plugin whose install installs others. HMD is the first:
-`hmd` holds `hmd-fighting-cup` today and gains modules later.
+A **container** is a plugin whose install installs others. HMD was the first:
+`hmd` holds `hmd-fighting-cup` and `hmd-belts`. **AI insights** (`ai`) is the
+second and the first generic one: `ai-contact-summary`, `ai-member-recap`,
+`ai-team-sentiment`.
 
 ```
 organizations/hmd/installed_plugins/hmd                 ← the container: what a human writes
@@ -96,9 +98,19 @@ the source — a new file reading `PLUGIN_REGISTRY` fails until it is classified
    showing a member's event type (it offers no install) but gates on the
    **container's** audience and prints the **container's** name.
 
-The container's module switches live on the **org** plugins page, and have to:
-an org-managed install deliberately shows no Configure control on a studio's own
-settings page, and HMD installs at org level.
+The switches are one component, `components/plugins/BundleModulesPanel.tsx`,
+at either scope. HMD's live on the **org** plugins page, and have to: an
+org-managed install deliberately shows no Configure control on a studio's own
+settings page, and HMD installs at org level. **AI insights** (`ai`, since
+2026-09-16 — the first generic container, see `docs/ai-insights.md`) installs at
+the studio, so its switches render in the studio's Configure dialog through its
+own `plugins/ai/ConfigPanel.tsx`.
+
+A dependency BETWEEN members of one container is not a `PLUGIN_REQUIREMENTS`
+entry: a requirement is written as a standalone install, which for a member
+would be a document the reconciler does not own. AI insights' member recap needs
+the contact briefing only because its button lives inside the briefing, so the
+dependency is one of placement and is stated in the module's description.
 
 ---
 

@@ -38,7 +38,6 @@ export type ExperimentalFeatureId =
   | 'extra-dashboard'
   | 'waitlist'
   | 'offer-drafting'
-  | 'contact-summary'
 
 /**
  * WHERE an experiment's on/off state lives.
@@ -159,27 +158,12 @@ export const EXPERIMENTAL_FEATURES: readonly ExperimentalFeature[] = [
     // drafting; the switch stays live below it.
     minPlan: 'studio',
   },
-  {
-    // Reader: the summary block on the contact detail insights card
-    // (app/[locale]/(auth)/contacts/[id]/InsightsCard.tsx), mounted only while
-    // this is on — and `generateContactSummary`
-    // (packages/functions/src/contacts/aiSummary.ts), which re-checks the flag
-    // server-side so a client cannot spend model calls on a switch that is off.
-    //
-    // AN EXPERIMENT for the same reason offer drafting is: the model's output
-    // is the thing being tuned, and the stored record may change shape.
-    // Regeneration is MANUAL — a button on the card. A scheduled refresh is the
-    // decision this entry keeps open; it would key on `ai_summary.generated_at`
-    // and write the same record, not on anything stored here.
-    id: 'contact-summary',
-    nameKey: 'contactSummaryName',
-    descriptionKey: 'contactSummaryDescription',
-    surfaceKey: 'contactSummarySurface',
-    // A NOTE, not a gate — same rule as the others. "AI insights" is the
-    // Studio+ row on the plan comparison, so the list says so; the switch
-    // stays live below it.
-    minPlan: 'studio',
-  },
+  // `contact-summary` lived here from 2026-09-11 to 2026-09-16. It GRADUATED
+  // into the `ai-contact-summary` module of the AI insights plugin container
+  // (types/aiInsights.ts) once a coach briefing, a member recap and a team
+  // reading were three things a studio chooses between. A team that had it
+  // switched on reads as off — `resolveExperimentalFeatures` drops ids it does
+  // not recognise, the safe direction for an opt-in — and installs the plugin.
 ]
 
 /** The shape stored at `teams/{teamId}.settings.experimentalFeatures`. */

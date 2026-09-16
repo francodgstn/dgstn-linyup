@@ -1,107 +1,15 @@
 'use client'
 
-// The HMD container's module switches.
+// The HMD container's Configure slot on a STUDIO's settings page.
 //
-// The container's install document holds the DESIRED module set in
-// `config.modules`; a server-side reconciler (`plugins/bundleReconcile.ts`)
-// materializes it into ordinary member install documents. So this panel writes
-// ONE field on ONE document and never touches a member — which is why the whole
-// product downstream can stay bundle-blind.
-//
-// It is rendered on the ORG plugins page. That is not incidental: an
-// org-installed plugin shows no Configure control on a studio's own settings
-// page (by design — the studio does not own the install), and HMD installs at
-// org level, so this is the only place the switches can live.
+// The real module switches are `BundleModulesPanel`
+// (components/plugins/BundleModulesPanel.tsx), rendered on the ORG plugins page:
+// HMD installs at organisation level, and an org-installed plugin shows no
+// Configure control on a studio's own settings page (by design — the studio does
+// not own the install). The panel lived in this file until 2026-09-16, when the
+// AI insights container needed the same switches at studio scope.
 
-import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { doc, setDoc } from 'firebase/firestore'
-import { toast } from 'sonner'
-import { db } from '@/lib/firebase'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import {
-  ORGANIZATIONS_COLLECTION,
-  ORG_INSTALLED_PLUGINS_SUBCOLLECTION,
-  BUNDLE_MODULES_CONFIG_KEY,
-  type InstalledPlugin,
-} from '@linyup/shared'
-import { memberManifestsOf } from '@/plugins/registry'
-
-export function BundleModulesPanel({
-  containerId,
-  orgId,
-  installation,
-  canEdit,
-}: {
-  containerId: string
-  orgId: string
-  installation: InstalledPlugin | undefined
-  canEdit: boolean
-}) {
-  const t = useTranslations('Plugins')
-  const [busy, setBusy] = useState<string | null>(null)
-
-  const members = memberManifestsOf(containerId)
-  const modules = (installation?.config?.[BUNDLE_MODULES_CONFIG_KEY] ?? {}) as Record<string, boolean>
-
-  async function toggle(memberId: string, on: boolean) {
-    setBusy(memberId)
-    try {
-      await setDoc(
-        doc(db, ORGANIZATIONS_COLLECTION, orgId, ORG_INSTALLED_PLUGINS_SUBCOLLECTION, containerId),
-        // Merge, so one switch never rewrites the whole map — two admins editing
-        // different modules must not clobber each other.
-        { config: { [BUNDLE_MODULES_CONFIG_KEY]: { [memberId]: on } } },
-        { merge: true },
-      )
-    } catch (err) {
-      console.error('[BundleModulesPanel] toggle failed:', err)
-      toast.error(t('bundleModulesError'))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  if (members.length === 0) return null
-
-  return (
-    <div className="space-y-3">
-      <div>
-        <p className="text-sm font-medium">{t('bundleModulesTitle')}</p>
-        {/* The reconciler is eventually consistent — a member document appears or
-            disappears a beat after the switch moves. Say so rather than letting
-            it read as a failed click. */}
-        <p className="text-xs text-muted-foreground">{t('bundleModulesHint')}</p>
-      </div>
-      <div className="space-y-2">
-        {members.map((m) => {
-          // Absent means ON: a module shipped after this tenant installed the
-          // container must reach them without anyone editing their data.
-          const on = modules[m.id] !== false
-          return (
-            <div key={m.id} className="flex items-start gap-3 rounded-md border p-3">
-              <div className="flex-1 min-w-0">
-                <Label htmlFor={`module-${m.id}`} className="text-sm font-medium">
-                  {t(m.nameKey as Parameters<typeof t>[0])}
-                </Label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t(m.descriptionKey as Parameters<typeof t>[0])}
-                </p>
-              </div>
-              <Switch
-                id={`module-${m.id}`}
-                checked={on}
-                disabled={!canEdit || busy === m.id}
-                onCheckedChange={(v) => toggle(m.id, v)}
-              />
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
 
 /**
  * The slot-convention export (`pluginSlot(id, 'ConfigPanel')`), which the STUDIO

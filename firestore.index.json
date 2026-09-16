@@ -328,6 +328,20 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "ai_summary.generated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "contacts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "teamId",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "deleted_at",
           "order": "ASCENDING"
         },
