@@ -2988,13 +2988,15 @@
     "apiConnectorsDescription": "Collega Claude, ChatGPT e i tuoi strumenti ai dati del tuo studio con chiavi API in sola lettura. Sei tu a scegliere cosa condividere.",
     "removeConfirmBodyApiKeys": "Tutte le chiavi API create dal tuo team vengono revocate subito: qualsiasi assistente o integrazione che ne usa una smette di funzionare. Reinstallarlo non le ripristina: dovrai creare nuove chiavi.",
     "aiName": "Approfondimenti IA",
-    "aiDescription": "Funzioni IA da attivare una alla volta: un riepilogo per ogni contatto, un resoconto da inviare al membro via e-mail e una lettura dell'intero team. Scritte solo quando lo chiedi, dai dati che già gestisci.",
+    "aiDescription": "Funzioni IA da attivare una alla volta: un riepilogo per ogni contatto, un resoconto da inviare al membro via e-mail, una lettura dell'intero team e una prima bozza della tua offerta. Scritte solo quando lo chiedi, dai dati che già gestisci.",
     "aiContactSummaryName": "Riepilogo del contatto",
     "aiContactSummaryDescription": "Un breve riepilogo IA in cima a ogni contatto: lo stato, le prospettive e un'idea per la prossima sessione.",
     "aiMemberRecapName": "Resoconto via e-mail",
     "aiMemberRecapDescription": "Invia al membro un resoconto tratto dal suo riepilogo: a che punto è e un consiglio per la prossima sessione, mai le prospettive. Lo rivedi e lo modifichi prima dell'invio. Richiede il riepilogo del contatto.",
     "aiTeamSentimentName": "Clima del team",
-    "aiTeamSentimentDescription": "Una lettura dell'intero team nella dashboard, dai riepiloghi dei tuoi contatti: il clima, cosa funziona, a cosa fare attenzione. Fino a 5 al giorno, per titolari e manager."
+    "aiTeamSentimentDescription": "Una lettura dell'intero team nella dashboard, dai riepiloghi dei tuoi contatti: il clima, cosa funziona, a cosa fare attenzione. Fino a 5 al giorno, per titolari e manager.",
+    "aiOfferDraftingName": "Bozza dell'offerta",
+    "aiOfferDraftingDescription": "Descrivi il tuo studio e ottieni una prima serie di attività e abbonamenti da rivedere, da Offerte → Crea → Bozza con l'IA. Nulla viene creato finché non confermi. Solo per i titolari."
   },
   "AiAssistant": {
     "launcherLabel": "Assistente IA",
@@ -7542,9 +7544,6 @@
     "extraDashboardName": "Componenti aggiuntivi della dashboard",
     "extraDashboardDescription": "Aggiunge una serie di pannelli extra in fondo alla dashboard: i più venduti, la matrice di coinvolgimento, la conversione delle prove, i grafici finanziari e l'esploratore di correlazioni. Funzionano, ma la loro forma non è ancora definita e ognuno può cambiare o essere rimosso.",
     "extraDashboardSurface": "Dashboard, sotto «Tendenze»",
-    "offerDraftingDescription": "Descrivi il tuo studio e ottieni una prima serie di attività e abbonamenti da rivedere. Nulla viene creato finché non confermi — e può proporre soltanto attività e abbonamenti.",
-    "offerDraftingName": "Bozza dell'offerta con l'IA",
-    "offerDraftingSurface": "Offerte → Crea → Bozza con l'IA",
     "waitlistDescription": "Consenti ai clienti di mettersi in coda per una lezione piena e ricevere un posto quando si libera, con un tempo limite prima che l'offerta passi alla persona successiva. Funziona, ma il flusso di offerte e promemoria è ancora in fase di messa a punto. Disattivarla nasconde l'opzione sulle nuove attività; le code esistenti mantengono posto e offerte.",
     "waitlistName": "Liste d'attesa",
     "waitlistSurface": "Su ogni attività di tipo lezione e sulla pagina di prenotazione pubblica quando una lezione è piena."

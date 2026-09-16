@@ -17,7 +17,7 @@ below Studio so paid value cannot be self-granted.
 A **container** is a plugin whose install installs others. HMD was the first:
 `hmd` holds `hmd-fighting-cup` and `hmd-belts`. **AI insights** (`ai`) is the
 second and the first generic one: `ai-contact-summary`, `ai-member-recap`,
-`ai-team-sentiment`.
+`ai-team-sentiment`, `ai-offer-drafting`.
 
 ```
 organizations/hmd/installed_plugins/hmd                 ← the container: what a human writes
@@ -53,7 +53,10 @@ same precedent. Declaring it in both places would be a copy for a test to police
 **A member absent from `config.modules` is ON.** A module shipped after a tenant
 installed the container must reach them without anybody editing their data; only
 an explicit `false` switches one off, and being stored it survives every
-reconcile.
+reconcile. **But it arrives on the next reconcile, not on deploy:** the
+reconciler runs when the container's install document is written, so an existing
+install gains a new module the next time that document is saved (any module
+switch does it).
 
 ### The reconciler
 

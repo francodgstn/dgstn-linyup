@@ -13,9 +13,11 @@ import type { PluginManifest } from '@linyup/shared'
  *  - `ai-contact-summary` — the coach's briefing on a contact.
  *  - `ai-member-recap`    — email the member-facing part of that briefing.
  *  - `ai-team-sentiment`  — a team-wide reading on the dashboard, five a day.
+ *  - `ai-offer-drafting`  — "Draft with AI" on Offerings (owner only).
  *
  * ── BETA, AND SAYS SO ON THE CARD ────────────────────────────────────────────
- * The contact summary was an experiment until 2026-09-16. It moved here when
+ * The contact summary was an experiment until 2026-09-16, and offer drafting
+ * until 2026-09-17. They moved here when
  * three AI surfaces became things a studio chooses between, which is what a
  * container's module switches express and an experiment's single switch did
  * not. The model's output is still what is being tuned, so the card carries the

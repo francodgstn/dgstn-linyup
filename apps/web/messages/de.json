@@ -2988,13 +2988,15 @@
     "apiConnectorsDescription": "Verbinde Claude, ChatGPT und deine eigenen Tools mit den Daten deines Studios – über API-Schlüssel mit reinem Lesezugriff. Du bestimmst, was geteilt wird.",
     "removeConfirmBodyApiKeys": "Alle API-Schlüssel deines Teams werden sofort widerrufen – jeder Assistent und jede Integration, die einen davon nutzt, funktioniert nicht mehr. Eine erneute Installation stellt sie nicht wieder her: Du musst neue Schlüssel erstellen.",
     "aiName": "KI-Einblicke",
-    "aiDescription": "KI-Funktionen, die du einzeln einschaltest: eine Kurzanalyse zu jedem Kontakt, ein Rückblick, den du dem Mitglied mailen kannst, und eine Einschätzung des ganzen Teams. Nur auf Anfrage erstellt, aus den Daten, die du schon führst.",
+    "aiDescription": "KI-Funktionen, die du einzeln einschaltest: eine Kurzanalyse zu jedem Kontakt, ein Rückblick, den du dem Mitglied mailen kannst, eine Einschätzung des ganzen Teams und ein erster Entwurf deines Angebots. Nur auf Anfrage erstellt, aus den Daten, die du schon führst.",
     "aiContactSummaryName": "Kontakt-Kurzanalyse",
     "aiContactSummaryDescription": "Eine kurze KI-Zusammenfassung oben bei jedem Kontakt: Status, Ausblick und ein Punkt für das nächste Training.",
     "aiMemberRecapName": "Rückblick per E-Mail",
     "aiMemberRecapDescription": "Schicke dem Mitglied einen Rückblick aus seiner Kurzanalyse: wo es steht und einen Tipp fürs nächste Training, nie den Ausblick. Du prüfst und bearbeitest ihn vor dem Versand. Benötigt die Kontakt-Kurzanalyse.",
     "aiTeamSentimentName": "Team-Stimmung",
-    "aiTeamSentimentDescription": "Eine Einschätzung des ganzen Teams im Dashboard, aus deinen Kontakt-Kurzanalysen: die Stimmung, was funktioniert, worauf zu achten ist. Bis zu 5 pro Tag, für Inhaber und Manager."
+    "aiTeamSentimentDescription": "Eine Einschätzung des ganzen Teams im Dashboard, aus deinen Kontakt-Kurzanalysen: die Stimmung, was funktioniert, worauf zu achten ist. Bis zu 5 pro Tag, für Inhaber und Manager.",
+    "aiOfferDraftingName": "Angebot entwerfen",
+    "aiOfferDraftingDescription": "Beschreibe dein Studio und erhalte einen ersten Satz Aktivitäten und Abos zur Durchsicht, unter Angebote → Erstellen → Mit KI entwerfen. Es wird nichts angelegt, bevor du bestätigst. Nur für Inhaber."
   },
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
@@ -7542,9 +7544,6 @@
     "extraDashboardName": "Zusätzliche Dashboard-Komponenten",
     "extraDashboardDescription": "Fügt am Ende des Dashboards zusätzliche Panels hinzu: die meistverkauften Angebote, die Engagement-Matrix, Probestunden-Conversion, die Finanz-Charts und den Korrelations-Explorer. Sie funktionieren, aber ihre Form steht noch nicht fest und jedes davon kann sich ändern oder entfallen.",
     "extraDashboardSurface": "Dashboard, unter „Trends“",
-    "offerDraftingDescription": "Beschreiben Sie Ihr Studio und erhalten Sie einen ersten Satz Aktivitäten und Abos zur Durchsicht. Es wird nichts angelegt, bevor Sie es geprüft und bestätigt haben — und es kann ausschliesslich Aktivitäten und Abos vorschlagen.",
-    "offerDraftingName": "Angebot mit KI entwerfen",
-    "offerDraftingSurface": "Angebote → Erstellen → Mit KI entwerfen",
     "waitlistDescription": "Lassen Sie Kundinnen und Kunden sich für eine volle Klasse anstellen und einen Platz erhalten, sobald einer frei wird — mit einer Frist, bevor das Angebot an die nächste Person geht. Es funktioniert, aber der Ablauf von Angebot und Erinnerung wird noch abgestimmt. Ausschalten blendet die Option bei neuen Aktivitäten aus; bestehende Wartelisten behalten ihre Plätze und Angebote.",
     "waitlistName": "Wartelisten",
     "waitlistSurface": "Bei jeder Klassen-Aktivität und auf der öffentlichen Buchungsseite, wenn eine Klasse voll ist."

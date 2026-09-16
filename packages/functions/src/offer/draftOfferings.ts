@@ -26,18 +26,19 @@ import {
   TEAMS_COLLECTION,
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
   OFFERING_DRAFT_LIMITS,
+  AI_MODULES,
   parseOfferingDraft,
   planKeysForActivity,
   type OfferingDraft,
 } from '@linyup/shared'
 import { to } from '../utils/async'
 import { hasTeamRole, isTeamMember } from '../utils/teams'
+import { pluginIsActive } from '../utils/plugins'
 import { Type } from '@google/genai'
 import { getGenAI, ASSISTANT_MODEL, replyWasStopped } from '../utils/vertexClient'
 
 const RATE_LIMIT_MAX = 12 // drafts per user + team per hour
 const RATE_WINDOW_MS = 60 * 60 * 1000
-const EXPERIMENT_ID = 'offer-drafting'
 
 /**
  * THE OUTPUT BUDGET, SPLIT. A draft is a small planning task — activities and
@@ -215,24 +216,24 @@ function assertShortEnough(prompt: string) {
   }
 }
 
-/** Member, owner, and the experiment switched on — checked in that order so the
+/** Member, owner, and the module installed — checked in that order so the
  *  message a caller gets names the first thing actually wrong. */
 async function assertAllowed(uid: string, teamId: string) {
   const [memberErr, isMember] = await to(isTeamMember(uid, teamId))
   if (memberErr || !isMember) {
     throw new HttpsError('permission-denied', 'You are not a member of this team.')
   }
-  // OWNER-ONLY, matching where the switch lives: the experiment flag is on the
-  // team document, which only an owner may write. A manager who could run this
-  // but not turn it off would be able to create priced records from a switch
-  // they cannot reach.
+  // OWNER-ONLY, matching where the switch lives. It was the `offer-drafting`
+  // experiment on the team document until 2026-09-17 and is now the
+  // `ai-offer-drafting` module of the AI insights plugin — and both are
+  // owner-written. A manager who could run this but not turn it off would be
+  // able to create priced records from a switch they cannot reach.
   const [roleErr, isOwner] = await to(hasTeamRole(uid, teamId, 'owner'))
   if (roleErr || !isOwner) {
     throw new HttpsError('permission-denied', 'Only the studio owner can draft offerings.')
   }
-  const snap = await admin.firestore().collection(TEAMS_COLLECTION).doc(teamId).get()
-  const on = snap.data()?.settings?.experimentalFeatures?.[EXPERIMENT_ID] === true
-  if (!on) {
+  // `pluginIsActive` also sees the module installed at the ORGANISATION.
+  if (!(await pluginIsActive(teamId, AI_MODULES.offerDrafting))) {
     throw new HttpsError('failed-precondition', 'Offer drafting is not switched on for this team.')
   }
 }

@@ -37,7 +37,6 @@ import type { SaasPlan } from './team'
 export type ExperimentalFeatureId =
   | 'extra-dashboard'
   | 'waitlist'
-  | 'offer-drafting'
 
 /**
  * WHERE an experiment's on/off state lives.
@@ -135,29 +134,12 @@ export const EXPERIMENTAL_FEATURES: readonly ExperimentalFeature[] = [
     surfaceKey: 'waitlistSurface',
     store: 'booking-settings',
   },
-  {
-    // Reader: the Create menu on Offerings
-    // (app/[locale]/(auth)/manage/offer/page.tsx), which shows "Draft with AI"
-    // only while this is on.
-    //
-    // AN EXPERIMENT RATHER THAN A PLUGIN, and rather than a feature: the model
-    // is new, its output quality is the thing being tuned, and it may be
-    // withdrawn. Exactly what this registry is for.
-    //
-    // OWNER-ONLY IS LOAD-BEARING HERE, not incidental. The flag lives on the
-    // team doc, which only an owner may write — and `draftOfferings` checks the
-    // same role, so nobody can create priced records from a switch they cannot
-    // reach. That is a stronger pairing than the other two entries need, and it
-    // is why the callable re-checks rather than trusting the flag alone.
-    id: 'offer-drafting',
-    nameKey: 'offerDraftingName',
-    descriptionKey: 'offerDraftingDescription',
-    surfaceKey: 'offerDraftingSurface',
-    // A NOTE, not a gate — same rule as the others. The drafting itself costs
-    // model calls, so it is pointed at the tiers that have an offer worth
-    // drafting; the switch stays live below it.
-    minPlan: 'studio',
-  },
+  // `offer-drafting` lived here until 2026-09-17 and GRADUATED the same way as
+  // `contact-summary` below: it is the `ai-offer-drafting` module of the AI insights
+  // plugin container (types/aiInsights.ts), so every AI feature a studio
+  // switches on sits in one card (Franco, 2026-09-17). Its owner-only pairing
+  // survived the move — the install document is owner-written too.
+  //
   // `contact-summary` lived here from 2026-09-11 to 2026-09-16. It GRADUATED
   // into the `ai-contact-summary` module of the AI insights plugin container
   // (types/aiInsights.ts) once a coach briefing, a member recap and a team

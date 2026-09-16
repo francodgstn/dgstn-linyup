@@ -9,6 +9,7 @@ import { aiManifest } from './ai/manifest'
 import { aiContactSummaryManifest } from './ai-contact-summary/manifest'
 import { aiMemberRecapManifest } from './ai-member-recap/manifest'
 import { aiTeamSentimentManifest } from './ai-team-sentiment/manifest'
+import { aiOfferDraftingManifest } from './ai-offer-drafting/manifest'
 import { whatsappManifest } from './whatsapp/manifest'
 import { websiteManifest } from './website/manifest'
 import { hmdManifest } from './hmd/manifest'
@@ -38,6 +39,7 @@ export const PLUGIN_REGISTRY: PluginManifest[] = [
   aiContactSummaryManifest,
   aiMemberRecapManifest,
   aiTeamSentimentManifest,
+  aiOfferDraftingManifest,
   aiAssistantManifest,
   whatsappManifest,
   websiteManifest,
