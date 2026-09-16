@@ -489,7 +489,9 @@ publish), and it is only worth it if studios actually hesitate at that button.
 *Decide after CFZ or the first real site uses it in anger.*
 
 ## 31. Autosave, or keep an explicit Save?
-**PARKED.** `useUnsavedChangesGuard` (new, in `hooks/`) now asks before a
+**ANSWERED 2026-09-16 — Franco: autosave.** Built: `hooks/useAutosave.ts` saves the draft 1.5 s after the last edit in both builders; an edit counter keeps an edit made mid-save dirty, and a failed save stops retrying until the next edit and shows "Nicht gespeichert · Erneut versuchen". The Save draft button is gone; the header shows the save state beside the publish state. Publishing is unchanged. The unsaved-changes guard stays for the seconds before a save lands. The original question follows.
+
+**Was PARKED.** `useUnsavedChangesGuard` (new, in `hooks/`) now asks before a
 navigation throws a draft away — the browser's own prompt on unload, and a
 capture-phase click interception for in-app links. It cannot catch the back
 button (`popstate` fires after the history entry has already moved). Autosaving

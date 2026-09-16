@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useTranslations } from 'next-intl'
@@ -130,6 +130,7 @@ import {
 } from '@/plugins/website/defaults'
 import { SectionPicker } from '@/components/website/SectionPicker'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { useAutosave } from '@/hooks/useAutosave'
 import { getWebsiteLimits } from '@/plugins/website/limits'
 import { Tip } from '@/components/ui/tip'
 
@@ -1132,6 +1133,8 @@ export default function WebsiteBuilderPage() {
 
   const [draft, setDraft] = useState<SiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
+  const editRev = useRef(0)
+  const [revision, setRevision] = useState(0)
   // A draft lives in this component's state until Save writes it, so leaving
   // the page throws the work away — silently, which is the part that makes it
   // expensive. See the hook for what it can and cannot intercept.
@@ -1193,9 +1196,16 @@ export default function WebsiteBuilderPage() {
   }, [pageSections, pagesLoading, draft, pageDocs])
 
   // ── mutators ──
+  // Every change goes through markDirty, which also bumps the edit counter
+  // autosave keys on — see useAutosave for why a boolean alone is not enough.
+  function markDirty() {
+    editRev.current += 1
+    setRevision(editRev.current)
+    setDirty(true)
+  }
   function mutate(updater: (d: SiteDraft) => SiteDraft) {
     setDraft((d) => (d ? updater(d) : d))
-    setDirty(true)
+    markDirty()
   }
   const patchMeta = (patch: Partial<SiteMeta>) =>
     mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))
@@ -1216,7 +1226,7 @@ export default function WebsiteBuilderPage() {
         ...(prev ?? {}),
         [currentPageId]: updater((prev ?? {})[currentPageId] ?? []),
       }))
-      setDirty(true)
+      markDirty()
     }
   }
 
@@ -1348,8 +1358,12 @@ export default function WebsiteBuilderPage() {
   }
 
   // ── save / publish ──
-  async function handleSave(): Promise<boolean> {
+  async function handleSave({ silent = false }: { silent?: boolean } = {}): Promise<boolean> {
     if (!currentTeamId || !user || !draft) return false
+    // What this save is about to write. An edit that lands while it is in
+    // flight bumps the counter, and must stay dirty for the next save.
+    const rev = editRev.current
+    const removed = removedPageIds
     // A post's date is what it sorts and displays by — catch a hand-typed or
     // carried-over bad value here rather than at publish, where sitePosts()
     // would silently sort it last instead of saying why.
@@ -1367,19 +1381,28 @@ export default function WebsiteBuilderPage() {
         id: ref.id,
         sections: pageSections?.[ref.id] ?? [],
       }))
-      await saveSitePages(currentTeamId, user.uid, pagesToSave, removedPageIds)
-      setRemovedPageIds([])
-      setDirty(false)
+      await saveSitePages(currentTeamId, user.uid, pagesToSave, removed)
+      setRemovedPageIds((ids) => ids.filter((id) => !removed.includes(id)))
+      if (editRev.current === rev) setDirty(false)
       await qc.invalidateQueries({ queryKey: ['site-draft', currentTeamId] })
       await qc.invalidateQueries({ queryKey: ['site-pages', currentTeamId] })
       return true
     } catch {
-      toast.error(t('errorSave'))
+      // An autosave failure is shown as a status with a retry, not a toast —
+      // a toast per attempt is noise, and autosave stops after one failure.
+      if (!silent) toast.error(t('errorSave'))
       return false
     } finally {
       setSaving(false)
     }
   }
+
+  const autosave = useAutosave({
+    revision,
+    dirty,
+    paused: saving || publishing,
+    save: () => handleSave({ silent: true }),
+  })
 
   async function handlePublish() {
     if (!currentTeamId || !draft) return
@@ -1448,11 +1471,9 @@ export default function WebsiteBuilderPage() {
     typeof window !== 'undefined'
       ? `${window.location.origin}/public/${slug}/site`
       : `/public/${slug}/site`
-  const status = dirty
-    ? t('statusUnsaved')
-    : draft.enabled
-      ? t('statusPublished')
-      : t('statusDraft')
+  // Whether the site is live. Saving is its own line beside it now — with
+  // autosave, "unsaved" is a few seconds long and says nothing about publishing.
+  const status = draft.enabled ? t('statusPublished') : t('statusDraft')
   // THE MENU THE EDITOR WORKS ON. Absent in storage ⇒ derive today's layout, so
   // a studio that has never opened this tab sees exactly the menu their site
   // already has and can start rearranging it rather than rebuilding it. The
@@ -1478,7 +1499,7 @@ export default function WebsiteBuilderPage() {
 
   function setMenu(next: SiteMenuItem[]) {
     setDraft((d) => (d ? { ...d, menu: next } : d))
-    setDirty(true)
+    markDirty()
   }
 
   /** Append a section to the end of the menu, from the section editor's button.
@@ -1583,10 +1604,23 @@ export default function WebsiteBuilderPage() {
             <Eye className="h-4 w-4" />
             {t('preview')}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? t('saving') : t('saveDraft')}
-          </Button>
-          <Button size="sm" onClick={() => setConfirmPublish(true)} disabled={publishing}>
+          {/* SAVE STATE, NOT A SAVE BUTTON. The draft saves itself a moment
+              after the last edit; a button appears only when that failed. */}
+          <span aria-live="polite" className="text-xs text-muted-foreground">
+            {autosave.failed ? (
+              <span className="text-destructive">{t('autosaveFailed')}</span>
+            ) : saving || dirty ? (
+              t('autosaveSaving')
+            ) : (
+              t('autosaveSaved')
+            )}
+          </span>
+          {autosave.failed && (
+            <Button variant="outline" size="sm" onClick={() => handleSave()} disabled={saving}>
+              {t('autosaveRetry')}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setConfirmPublish(true)} disabled={publishing || saving}>
             {publishing ? (
               t('publishing')
             ) : (

@@ -3862,7 +3862,11 @@
     "starterFactValue": "60 min",
     "starterCtaHeading": "Ready to start?",
     "starterCtaText": "Book your first session.",
-    "starterCtaLabel": "Book now"
+    "starterCtaLabel": "Book now",
+    "autosaveSaving": "Saving…",
+    "autosaveSaved": "Draft saved",
+    "autosaveFailed": "Not saved",
+    "autosaveRetry": "Try again"
   },
   "Kiosk": {
     "title": "Kiosk",

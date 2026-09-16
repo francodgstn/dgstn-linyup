@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -57,6 +57,7 @@ import {
 } from './defaults'
 import { SectionPicker } from '@/components/website/SectionPicker'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { useAutosave } from '@/hooks/useAutosave'
 import { Tip } from '@/components/ui/tip'
 
 const MAX_SECTIONS = 12
@@ -237,6 +238,9 @@ export default function OrgWebsiteBuilderPage() {
 
   const [draft, setDraft] = useState<OrgSiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
+  // The edit counter autosave keys on — see useAutosave.
+  const editRev = useRef(0)
+  const [revision, setRevision] = useState(0)
   // A draft lives in this component's state until Save writes it, so leaving
   // the page throws the work away — silently, which is the part that makes it
   // expensive. See the hook for what it can and cannot intercept.
@@ -267,9 +271,14 @@ export default function OrgWebsiteBuilderPage() {
   }, [draft, draftLoading, savedDraft, org])
 
   // ── mutators ──
+  function markDirty() {
+    editRev.current += 1
+    setRevision(editRev.current)
+    setDirty(true)
+  }
   function mutate(updater: (d: OrgSiteDraft) => OrgSiteDraft) {
     setDraft((d) => (d ? updater(d) : d))
-    setDirty(true)
+    markDirty()
   }
   const patchMeta = (patch: Partial<SiteMeta>) => mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))
   const updateSection = (id: string, patch: Record<string, unknown>) =>
@@ -301,21 +310,30 @@ export default function OrgWebsiteBuilderPage() {
   }
 
   // ── save / publish ──
-  async function handleSave(): Promise<boolean> {
+  async function handleSave({ silent = false }: { silent?: boolean } = {}): Promise<boolean> {
     if (!orgId || !user || !draft) return false
+    // An edit made while this save is in flight stays dirty for the next one.
+    const rev = editRev.current
     setSaving(true)
     try {
       await saveOrgSiteDraft(orgId, user.uid, draft)
-      setDirty(false)
+      if (editRev.current === rev) setDirty(false)
       await qc.invalidateQueries({ queryKey: ['org-site-draft', orgId] })
       return true
     } catch {
-      toast.error(t('errorSave'))
+      if (!silent) toast.error(t('errorSave'))
       return false
     } finally {
       setSaving(false)
     }
   }
+
+  const autosave = useAutosave({
+    revision,
+    dirty,
+    paused: saving || publishing,
+    save: () => handleSave({ silent: true }),
+  })
 
   async function handlePublish() {
     if (!orgId || !draft) return
@@ -378,7 +396,7 @@ export default function OrgWebsiteBuilderPage() {
     typeof window !== 'undefined'
       ? `${window.location.origin}/public/org/${slug}`
       : `/public/org/${slug}`
-  const status = dirty ? t('statusUnsaved') : draft.enabled ? t('statusPublished') : t('statusDraft')
+  const status = draft.enabled ? t('statusPublished') : t('statusDraft')
   // THE HEADER MENU — the same stored tree a studio edits, through the same
   // panel and the same sanitiser. Absent until the org first touches it, and
   // `deriveSiteMenu` then produces exactly the header it had before, which is
@@ -392,7 +410,7 @@ export default function OrgWebsiteBuilderPage() {
 
   function setMenu(next: SiteMenuItem[]) {
     setDraft((d) => (d ? { ...d, menu: next } : d))
-    setDirty(true)
+    markDirty()
   }
 
   const previewSite: RenderableSite = {
@@ -451,10 +469,22 @@ export default function OrgWebsiteBuilderPage() {
             <Eye className="mr-1 h-4 w-4" />
             {t('preview')}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? t('saving') : t('saveDraft')}
-          </Button>
-          <Button size="sm" onClick={handlePublish} disabled={publishing}>
+          {/* Save state, not a Save button — same as the studio builder. */}
+          <span aria-live="polite" className="text-xs text-muted-foreground">
+            {autosave.failed ? (
+              <span className="text-destructive">{tWeb('autosaveFailed')}</span>
+            ) : saving || dirty ? (
+              tWeb('autosaveSaving')
+            ) : (
+              tWeb('autosaveSaved')
+            )}
+          </span>
+          {autosave.failed && (
+            <Button variant="outline" size="sm" onClick={() => handleSave()} disabled={saving}>
+              {tWeb('autosaveRetry')}
+            </Button>
+          )}
+          <Button size="sm" onClick={handlePublish} disabled={publishing || saving}>
             {publishing ? (
               t('publishing')
             ) : (

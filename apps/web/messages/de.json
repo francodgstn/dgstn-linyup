@@ -3862,7 +3862,11 @@
     "starterFactValue": "60 Min.",
     "starterCtaHeading": "Bereit loszulegen?",
     "starterCtaText": "Buche deine erste Einheit.",
-    "starterCtaLabel": "Jetzt buchen"
+    "starterCtaLabel": "Jetzt buchen",
+    "autosaveSaving": "Wird gespeichert…",
+    "autosaveSaved": "Entwurf gespeichert",
+    "autosaveFailed": "Nicht gespeichert",
+    "autosaveRetry": "Erneut versuchen"
   },
   "Kiosk": {
     "title": "Kiosk",
