@@ -499,32 +499,31 @@ on the claim, which goes through the paid or free rail like any other booking.
 
 ### Waitlist — class-only, one deadline, one seat writer
 
-A queue for a seat in a full **class**; entries live at
-`sessions/{sessionId}/waitlist/{contactId}` (doc id = contactId, mirroring
-`bookings`), written only by callables — every client write is denied by the
-rules. **Class-only**: an appointment session doesn't exist until it's booked, so
-"full" has no meaning there. The flag is `Activity.waitlistEnabled` + its public
-mirror only — there is deliberately **no** `session.waitlist_enabled` (it would
-need an activity→sessions fan-out plus a backfill). When a seat frees, the
-`seatFreedEdge` trigger on the session doc offers it to the oldest waiter and
-holds it as an **ordinary booking** carrying `waitlist_claim` +
-`claim_expires_at`, so `bookingHoldsSeat` and every capacity gate already stop
-selling it. **THE SINGLE-DEADLINE RULE:** the hold's `claim_expires_at`, the
-entry's `offer_expires_at` and (for a paid claim) the booking hold's `expires_at`
-and the Stripe session's `expires_at` are ONE instant, computed once by
-`resolveClaimWindow` and copied — diverge and a seat gets sold twice. (A
-free-path hold carries no `expires_at`; only the checkout adds it, which is why
-`expirePendingBookings` reaches the paid claim hold alone.) A free claim settles
-in `claimWaitlistSeat`; a **payable one leaves it and returns through
-`createDropInCheckout({ waitlistToken })`** (no second pricing path). **ONE SEAT
-WRITER:** on a **class** session `bookings_count` is only ever an ABSOLUTE value,
-from `trackBookings`' recount or a transaction that read the `bookings`
-subcollection — **no `FieldValue.increment` on it anywhere** (an appointment
-session is created together with its one booking, so its `bookings_count: 1` is
-absolute and uncontended by construction). Releases go through
-`releaseWaitlistOffer` and always **release before re-offering** — where there is
-anything to re-offer: the Connect webhook's oversell branch and the session
-teardown deliberately do not. Full docs: `docs/waitlist.md`.
+A queue for a seat in a full **class** — entries at
+`sessions/{sessionId}/waitlist/{contactId}`, written only by callables, every
+client write denied by the rules. **Class-only**: an appointment session does not
+exist until it is booked, so "full" has no meaning there. An offered seat is held
+as an **ordinary booking** carrying `waitlist_claim`, so `bookingHoldsSeat` and
+every capacity gate already stop selling it. Full docs: `docs/waitlist.md`.
+
+Three invariants, each a bug before it was a rule:
+
+- **THE SINGLE-DEADLINE RULE.** The hold's `claim_expires_at`, the entry's
+  `offer_expires_at` and — for a paid claim — the booking hold's `expires_at` and
+  the Stripe session's `expires_at` are ONE instant, computed once by
+  `resolveClaimWindow` and copied. Diverge and a seat gets sold twice.
+- **ONE SEAT WRITER.** On a class session `bookings_count` is only ever an
+  ABSOLUTE value, from `trackBookings`' recount or a transaction that read the
+  `bookings` subcollection — **no `FieldValue.increment` on it anywhere**.
+- **Release before re-offering**, through `releaseWaitlistOffer`, where there is
+  anything to re-offer: the Connect webhook's oversell branch and the session
+  teardown deliberately do not.
+  `docs/waitlist.md` → "Release — and why the ordering is load-bearing".
+
+A free claim settles in `claimWaitlistSeat`; a payable one leaves and returns
+through `createDropInCheckout({ waitlistToken })` — **no second pricing path**.
+The flag is `Activity.waitlistEnabled` + its public mirror; there is deliberately
+**no** `session.waitlist_enabled`.
 
 ### Promo codes — a Stage A MODIFIER, never a tender
 
