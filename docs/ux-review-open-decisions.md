@@ -511,3 +511,27 @@ UI, but it is the one string in that file. Needs a `Common.close` key and
 `useTranslations` inside a ui primitive — four of them already do this, so the
 pattern exists; left alone only because the reward is small and the file is
 shared by every dialog in the app.
+
+## 34. The publish integrity test cannot run in this environment
+**BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
+studio, press Publish with no changes, confirm the live site is unchanged". Run
+on 2026-09-16 it destroyed most of the CrossFit Zug site — page index,
+redirects, half the theme fields, the header's appointment CTA, and every menu
+item pointing at a page.
+
+**The cause is the environment, not the code.** The functions emulator on this
+machine belongs to the MAIN checkout and loads `packages/functions/dist` built
+from it, which predates everything after phase 0 — so `publishWebsite` ran a
+sanitizer with no `pages`, no `redirects` and none of the newer `SiteMeta`
+fields, and dropped what it did not know. The tenant was restored by reseeding.
+
+To actually close it, one of: build this branch's functions into the checkout
+that owns the running emulator, or give this worktree its own slot
+(`node scripts/local-env.mjs status` first — restarting the shared emulator
+wipes every tenant in it, including work belonging to other sessions, so it was
+deliberately not done unattended).
+
+What the run DID prove, and what was fixed from it: the draft save was deleting
+the redirect table on every save (now fixed, and the payload is typed so the
+next omission fails the build).
+
