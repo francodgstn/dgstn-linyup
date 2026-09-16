@@ -94,6 +94,13 @@ jobs:
       - name: Doc references
         run: pnpm docs:check
 
+      # docs/README.md is generated from frontmatter and committed like a
+      # lockfile: the primary reader of these docs is an agent reading the repo
+      # from disk, so an index that only exists after running a script is
+      # invisible to the reader it is for.
+      - name: Docs index
+        run: pnpm docs:index:check
+
   test-functions:
     name: Functions Tests
     runs-on: ubuntu-latest
