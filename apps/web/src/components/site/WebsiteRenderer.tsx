@@ -18,7 +18,7 @@ import { deriveSiteMenu, sitePageSegments } from '@linyup/shared'
 import { publicHrefLocalized, publicSubHrefLocalized } from '@/lib/publicRoutes'
 import { buildPalette, ctaHref } from './theme'
 import { siteBrandRootProps } from './siteFonts'
-import { SectionBlock, sectionNavLabel, bookProps, SOCIAL_ICONS, type RenderCtx } from './sections'
+import { SectionBlock, sectionNavLabel, bookProps, ctaIntent, SOCIAL_ICONS, type RenderCtx } from './sections'
 import type { BookIntent } from '@/components/booking/BookingOverlay'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { formatSiteDate } from './siteDate'
@@ -337,16 +337,20 @@ export default function WebsiteRenderer({
   const inert = (e: React.MouseEvent) => e.preventDefault()
 
   const headerAction = site.meta.header.ctaAction ?? 'booking'
-  const headerHrefRaw = site.meta.header.ctaLabel
-    ? ctaHref({ action: headerAction, url: site.meta.header.ctaUrl, pageId: site.meta.header.ctaPageId }, site.slug, locale, pageHref)
-    : undefined
+  const headerCta = {
+    action: headerAction,
+    url: site.meta.header.ctaUrl,
+    pageId: site.meta.header.ctaPageId,
+    activityId: site.meta.header.ctaActivityId,
+  }
+  const headerHrefRaw = site.meta.header.ctaLabel ? ctaHref(headerCta, site.slug, locale, pageHref) : undefined
   const headerHref = headerHrefRaw ? short(headerHrefRaw) : undefined
 
   // The header CTA is the most-clicked booking entry on the whole site, so it
-  // opens the overlay like every other one. Signup/external CTAs stay plain
-  // navigations. Null when this isn't a booking CTA.
-  const headerBookProps =
-    headerAction === 'booking' ? bookProps(headerHref, ctx, { kind: 'root' }) : null
+  // opens the overlay like every other one — on its own activity when the
+  // studio named one. Signup/page/external CTAs stay plain navigations.
+  const headerIntent = ctaIntent(headerCta)
+  const headerBookProps = headerIntent ? bookProps(headerHref, ctx, headerIntent) : null
 
   /** Plain-navigation fallback, matching the nav links' preview behaviour. */
   const headerLinkProps = { href: preview ? undefined : headerHref, onClick: preview ? inert : undefined }

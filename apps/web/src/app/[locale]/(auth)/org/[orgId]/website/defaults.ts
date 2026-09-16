@@ -8,6 +8,7 @@ import type {
 // Client-only unique id generator — shared verbatim with the team site builder
 // (React key + image path segment + anchor). Not org/team-specific.
 import { newSectionId } from '@/plugins/website/defaults'
+import type { SectionGroup } from '@/components/website/SectionPicker'
 import { DEFAULT_ACCENT } from '@/components/ui/color-picker'
 
 // ─── section library (for the "Add section" menu) ──────────────────────────────
@@ -26,32 +27,36 @@ export const ORG_SECTION_LIBRARY: {
   labelKey: string
   descKey: string
   icon: string
+  /** Which drawer of the Add-section dialog it sits in — see SectionPicker. */
+  group?: SectionGroup
   /** See SECTION_LIBRARY (team defaults.ts) — same convention, same default.
    *  No current type is 'managed'. */
   maturity?: 'full' | 'basic' | 'managed'
 }[] = [
-  { type: 'hero', labelKey: 'sectionHero', descKey: 'sectionHeroDesc', icon: 'Image' },
-  { type: 'content', labelKey: 'sectionContent', descKey: 'sectionContentDesc', icon: 'FileText' },
-  { type: 'gallery', labelKey: 'sectionGallery', descKey: 'sectionGalleryDesc', icon: 'Images' },
-  { type: 'clubs', labelKey: 'sectionClubs', descKey: 'sectionClubsDesc', icon: 'Building2' },
+  { type: 'hero', group: 'content', labelKey: 'sectionHero', descKey: 'sectionHeroDesc', icon: 'Image' },
+  { type: 'content', group: 'content', labelKey: 'sectionContent', descKey: 'sectionContentDesc', icon: 'FileText' },
+  { type: 'gallery', group: 'content', labelKey: 'sectionGallery', descKey: 'sectionGalleryDesc', icon: 'Images' },
+  { type: 'clubs', group: 'offer', labelKey: 'sectionClubs', descKey: 'sectionClubsDesc', icon: 'Building2' },
   {
     type: 'locations',
+    group: 'offer',
     labelKey: 'sectionLocations',
     descKey: 'sectionLocationsDesc',
     icon: 'MapPin',
   },
-  { type: 'coaches', labelKey: 'sectionCoaches', descKey: 'sectionCoachesDesc', icon: 'UserCog' },
-  { type: 'features', labelKey: 'sectionFeatures', descKey: 'sectionFeaturesDesc', icon: 'Sparkles' },
-  { type: 'cta_banner', labelKey: 'sectionCta', descKey: 'sectionCtaDesc', icon: 'Megaphone' },
-  { type: 'faq', labelKey: 'sectionFaq', descKey: 'sectionFaqDesc', icon: 'HelpCircle' },
+  { type: 'coaches', group: 'trust', labelKey: 'sectionCoaches', descKey: 'sectionCoachesDesc', icon: 'UserCog' },
+  { type: 'features', group: 'content', labelKey: 'sectionFeatures', descKey: 'sectionFeaturesDesc', icon: 'Sparkles' },
+  { type: 'cta_banner', group: 'content', labelKey: 'sectionCta', descKey: 'sectionCtaDesc', icon: 'Megaphone' },
+  { type: 'faq', group: 'trust', labelKey: 'sectionFaq', descKey: 'sectionFaqDesc', icon: 'HelpCircle' },
   {
     type: 'testimonials',
+    group: 'trust',
     labelKey: 'sectionTestimonials',
     descKey: 'sectionTestimonialsDesc',
     icon: 'Quote',
   },
-  { type: 'video', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
-  { type: 'contact', labelKey: 'sectionContact', descKey: 'sectionContactDesc', icon: 'Mail' },
+  { type: 'video', group: 'content', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
+  { type: 'contact', group: 'offer', labelKey: 'sectionContact', descKey: 'sectionContactDesc', icon: 'Mail' },
 ]
 
 /**

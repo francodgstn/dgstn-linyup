@@ -149,13 +149,20 @@ export function sanitizeCta(v: unknown): Dict | undefined {
   const d = asDict(v)
   const label = optStr(d.label, 120)
   if (!label) return undefined
-  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url', 'page'] as const, 'url')
+  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url', 'page', 'appointment'] as const, 'url')
   const action = action0 === 'membership' ? 'signup' : action0 // normalize legacy alias
   if (action === 'page') {
     // A page CTA with no page is a button that goes nowhere — drop it. Whether
     // the page still exists is the renderer's question (it hides a dead one).
     const pageId = optStr(d.pageId, 64)
     return pageId ? { label, action, pageId } : undefined
+  }
+  if (action === 'appointment') {
+    // An appointment CTA that names no activity still has somewhere sensible to
+    // go — the booking panel's own list — so it degrades to 'booking' rather
+    // than taking the studio's button off its page.
+    const activityId = optStr(d.activityId, 64)
+    return activityId ? { label, action, activityId } : { label, action: 'booking' }
   }
   return clean({ label, action, url: action === 'url' ? safeUrl(d.url) : undefined })
 }
@@ -330,6 +337,7 @@ export function sanitizeFaqSection(d: Dict, id: string): FaqSection | null {
   return clean({
     id, type: 'faq',
     heading: optStr(d.heading, 200),
+    style: optOneOf(d.style, ['cards', 'panels'] as const),
     items,
   }) as unknown as FaqSection
 }
@@ -894,12 +902,20 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
   const d = asDict(raw)
   const header = asDict(d.header)
   const seo = asDict(d.seo)
-  const headerCtaAction0 = oneOf(header.ctaAction, ['booking', 'signup', 'membership', 'url', 'page'] as const, 'booking')
+  const headerCtaAction0 = oneOf(header.ctaAction, ['booking', 'signup', 'membership', 'url', 'page', 'appointment'] as const, 'booking')
   const headerCtaPageId = headerCtaAction0 === 'page' ? optStr(header.ctaPageId, 64) : undefined
-  // The legacy alias is normalised, and a page button with no page falls back
-  // to booking rather than publishing a button that goes nowhere.
+  const headerCtaActivityId = headerCtaAction0 === 'appointment' ? optStr(header.ctaActivityId, 64) : undefined
+  // The legacy alias is normalised, and a page or appointment button that
+  // names no destination falls back to booking rather than publishing a button
+  // that goes nowhere.
   const headerCtaAction =
-    headerCtaAction0 === 'membership' ? 'signup' : headerCtaAction0 === 'page' && !headerCtaPageId ? 'booking' : headerCtaAction0
+    headerCtaAction0 === 'membership'
+      ? 'signup'
+      : headerCtaAction0 === 'page' && !headerCtaPageId
+        ? 'booking'
+        : headerCtaAction0 === 'appointment' && !headerCtaActivityId
+          ? 'booking'
+          : headerCtaAction0
 
   return clean({
     title: optStr(d.title, 200) ?? fallbackTitle,
@@ -938,6 +954,7 @@ export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
       ctaAction: headerCtaAction,
       ctaUrl: headerCtaAction === 'url' ? safeUrl(header.ctaUrl) : undefined,
       ctaPageId: headerCtaPageId,
+      ctaActivityId: headerCtaActivityId,
       showSignIn: header.showSignIn !== false,
       surfaceLinks: sanitizeSurfaceLinks(header.surfaceLinks),
       topBar: sanitizeTopBar(header.topBar),

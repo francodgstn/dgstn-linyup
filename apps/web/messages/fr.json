@@ -3816,7 +3816,19 @@
     "editorFeaturesStylePanels": "Panneaux",
     "brandSiteLanguage": "Langue du site",
     "brandSiteLanguageHint": "La langue dans laquelle votre site est rédigé — les visiteurs la voient tant qu'ils n'en choisissent pas une autre. Indépendante de votre langue de travail.",
-    "brandSiteLanguageTeam": "Comme le studio"
+    "brandSiteLanguageTeam": "Comme le studio",
+    "editorCtaActionAppointment": "Rendez-vous",
+    "editorCtaAppointment": "Quel rendez-vous",
+    "editorCtaAppointmentPlaceholder": "Choisir un rendez-vous",
+    "editorCtaAppointmentEmptyHint": "Vous n'avez pas encore d'offre de rendez-vous. Ajoutez-en une dans Offres pour l'ouvrir directement depuis un bouton.",
+    "editorCtaAppointmentFallbackHint": "Sans rendez-vous, ce bouton ouvre la fenêtre de réservation.",
+    "addSectionTitle": "Ajouter une section",
+    "addSectionDesc": "Choisissez un bloc à ajouter au bas de cette page. Vous pourrez le déplacer ensuite.",
+    "addSectionSearch": "Rechercher une section",
+    "addSectionNoMatch": "Aucune section ne correspond.",
+    "sectionGroupContent": "Contenu et mise en page",
+    "sectionGroupOffer": "Votre offre",
+    "sectionGroupTrust": "Équipe et confiance"
   },
   "Kiosk": {
     "title": "Kiosque",
@@ -3960,7 +3972,14 @@
     "sectionFaq": "FAQ",
     "sectionFaqDesc": "Questions-réponses en accordéon",
     "sectionTestimonials": "Témoignages",
-    "sectionTestimonialsDesc": "Avis des membres, un à un"
+    "sectionTestimonialsDesc": "Avis des membres, un à un",
+    "addSectionTitle": "Ajouter une section",
+    "addSectionDesc": "Choisissez un bloc à ajouter au bas de cette page. Vous pourrez le déplacer ensuite.",
+    "addSectionSearch": "Rechercher une section",
+    "addSectionNoMatch": "Aucune section ne correspond.",
+    "sectionGroupContent": "Contenu et mise en page",
+    "sectionGroupOffer": "Votre fédération",
+    "sectionGroupTrust": "Équipe et confiance"
   },
   "Courses": {
     "title": "Cours en ligne",

@@ -3816,7 +3816,19 @@
     "editorFeaturesStylePanels": "Pannelli",
     "brandSiteLanguage": "Lingua del sito",
     "brandSiteLanguageHint": "La lingua in cui è scritto il tuo sito — chi visita la vede finché non ne sceglie un'altra. Indipendente dalla lingua con cui lavori.",
-    "brandSiteLanguageTeam": "Come lo studio"
+    "brandSiteLanguageTeam": "Come lo studio",
+    "editorCtaActionAppointment": "Appuntamento",
+    "editorCtaAppointment": "Quale appuntamento",
+    "editorCtaAppointmentPlaceholder": "Scegli un appuntamento",
+    "editorCtaAppointmentEmptyHint": "Non hai ancora offerte di appuntamento. Aggiungine una in Offerte per aprirla direttamente da un pulsante.",
+    "editorCtaAppointmentFallbackHint": "Senza appuntamento questo pulsante apre il pannello di prenotazione.",
+    "addSectionTitle": "Aggiungi una sezione",
+    "addSectionDesc": "Scegli un blocco da aggiungere in fondo a questa pagina. Potrai spostarlo dopo.",
+    "addSectionSearch": "Cerca sezioni",
+    "addSectionNoMatch": "Nessuna sezione corrisponde.",
+    "sectionGroupContent": "Contenuto e struttura",
+    "sectionGroupOffer": "La tua offerta",
+    "sectionGroupTrust": "Persone e fiducia"
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -3960,7 +3972,14 @@
     "sectionFaq": "FAQ",
     "sectionFaqDesc": "Domande e risposte a fisarmonica",
     "sectionTestimonials": "Testimonianze",
-    "sectionTestimonialsDesc": "Recensioni dei membri, una alla volta"
+    "sectionTestimonialsDesc": "Recensioni dei membri, una alla volta",
+    "addSectionTitle": "Aggiungi una sezione",
+    "addSectionDesc": "Scegli un blocco da aggiungere in fondo a questa pagina. Potrai spostarlo dopo.",
+    "addSectionSearch": "Cerca sezioni",
+    "addSectionNoMatch": "Nessuna sezione corrisponde.",
+    "sectionGroupContent": "Contenuto e struttura",
+    "sectionGroupOffer": "La vostra federazione",
+    "sectionGroupTrust": "Persone e fiducia"
   },
   "Courses": {
     "title": "Corsi online",

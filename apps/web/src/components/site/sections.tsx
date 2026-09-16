@@ -74,6 +74,7 @@ import type {
   SocialLink,
   OrgSiteTeamRef,
   SitePageRef,
+  SiteCta,
 } from '@linyup/shared'
 import {
   videoEmbedSrc,
@@ -259,6 +260,21 @@ function activityBookHref(
   return fallbackToBooking
     ? shortHref(ctx, publicHrefLocalized(locale, slug, 'booking', { from: 'site' }))
     : undefined
+}
+
+/**
+ * What a studio's own CTA opens in place, or null when it is a plain navigation.
+ *
+ * 'booking' opens the panel at its own front door; 'appointment' opens it
+ * already on one activity — which is how a studio puts "Free intro" on the hero
+ * without the visitor passing through a page and a form first. Everything else
+ * (a page, the signup form, an external link) is a navigation and returns null.
+ */
+export function ctaIntent(cta: Pick<SiteCta, 'action' | 'activityId'> | undefined): BookIntent | null {
+  if (!cta) return null
+  if (cta.action === 'appointment')
+    return cta.activityId ? { kind: 'appointment', activityId: cta.activityId } : { kind: 'root' }
+  return cta.action === 'booking' ? { kind: 'root' } : null
 }
 
 /** A public path as this visitor's address bar should show it — short on the
@@ -467,8 +483,8 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
       {section.cta?.label && (
         <div className={`mt-8 flex ${center ? 'justify-center' : 'justify-start'}`}>
           <a
-            {...(section.cta.action === 'booking'
-              ? bookProps(href, ctx, { kind: 'root' })
+            {...(ctaIntent(section.cta)
+              ? bookProps(href, ctx, ctaIntent(section.cta)!)
               : linkProps(href, preview, section.cta.action === 'url'))}
             className="site-btn inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
             style={{ background: palette.button, color: palette.onButton }}
@@ -2861,8 +2877,8 @@ function SplitBlock({ section, ctx }: { section: SplitSection; ctx: RenderCtx })
         )}
         {side.cta?.label && (
           <a
-            {...(side.cta.action === 'booking'
-              ? bookProps(href, ctx, { kind: 'root' })
+            {...(ctaIntent(side.cta)
+              ? bookProps(href, ctx, ctaIntent(side.cta)!)
               : linkProps(href, preview, side.cta.action === 'url'))}
             className="site-btn mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
             style={{ background: palette.button, color: palette.onButton }}
@@ -3391,8 +3407,8 @@ function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: Rend
   const href = shortHref(ctx, ctaHref(section.cta, slug, locale, ctx.pageHref))
   const ctaButton = section.cta?.label ? (
     <a
-      {...(section.cta.action === 'booking'
-        ? bookProps(href, ctx, { kind: 'root' })
+      {...(ctaIntent(section.cta)
+        ? bookProps(href, ctx, ctaIntent(section.cta)!)
         : linkProps(href, preview, section.cta.action === 'url'))}
       className="site-btn inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] @xl:w-auto @xl:min-w-[16rem]"
       style={{ background: palette.button, color: palette.onButton }}
@@ -3466,6 +3482,62 @@ function FaqBlock({ section, ctx }: { section: FaqSection; ctx: RenderCtx }) {
   // bars a visitor has to probe to know it has content.
   const [open, setOpen] = useState(0)
   if (items.length === 0) return null
+
+  if (section.style === 'panels') {
+    // ONE block, not a stack of cards: hard edges, heavy rules between the
+    // rows, and the open row filled in the panel colour — the same contrast the
+    // panel features carry, so a bold page stays bold at the questions. The
+    // corner choice is the studio's own, like everywhere else.
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-3xl px-6">
+          <Heading text={section.heading} palette={palette} />
+          <div
+            className="site-card mt-10 overflow-hidden border-2"
+            style={{ borderColor: palette.panel }}
+          >
+            {items.map((item, i) => {
+              const isOpen = open === i
+              return (
+                <div
+                  key={i}
+                  className={i > 0 ? 'border-t-2' : undefined}
+                  style={{
+                    borderColor: palette.panel,
+                    background: isOpen ? palette.panel : 'transparent',
+                    color: isOpen ? palette.onPanel : palette.text,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpen(isOpen ? -1 : i)}
+                    aria-expanded={isOpen}
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left @xl:px-6 @xl:py-5"
+                  >
+                    <span className="text-base font-bold @xl:text-lg">{item.question}</span>
+                    {isOpen ? (
+                      <Minus className="h-5 w-5 shrink-0" />
+                    ) : (
+                      <Plus className="h-5 w-5 shrink-0" />
+                    )}
+                  </button>
+                  {isOpen && (
+                    <p
+                      className="whitespace-pre-line px-5 pb-5 text-base leading-relaxed @xl:px-6"
+                      style={{ opacity: 0.85 }}
+                    >
+                      {item.answer}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
       <div className="mx-auto max-w-3xl px-6">

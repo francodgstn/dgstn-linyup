@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import type { SiteMeta, WebsiteSection, WebsiteSectionType } from '@linyup/shared'
-import { sanitizeMeta, sanitizeMenu, sanitizeSection, sanitizeSections } from './sanitize'
+import { sanitizeCta, sanitizeMeta, sanitizeMenu, sanitizeSection, sanitizeSections } from './sanitize'
 
 // EVERY FIELD THE EDITOR CAN WRITE MUST SURVIVE PUBLISH.
 //
@@ -102,6 +102,7 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
   faq: {
     id: 'faq', type: 'faq', ...nav,
     heading: 'Alles, was du wissen musst',
+    style: 'panels',
     items: [{ question: 'Brauche ich Erfahrung?', answer: 'Nein.\nWir starten gemeinsam.' }],
   },
   testimonials: {
@@ -351,6 +352,19 @@ describe('website publish — what it refuses', () => {
     assert.equal(linkOf('https://example.ch/a'), 'https://example.ch/a')
     assert.equal(linkOf('#"><script>'), undefined)
     assert.equal(linkOf('/relative'), undefined)
+  })
+
+  it('opens an appointment CTA on its own activity, and never on nothing', () => {
+    assert.deepEqual(sanitizeCta({ label: 'Kostenlos starten', action: 'appointment', activityId: 'act-intro' }), {
+      label: 'Kostenlos starten',
+      action: 'appointment',
+      activityId: 'act-intro',
+    })
+    // No activity ⇒ the booking panel's front door, not a dead button.
+    assert.deepEqual(sanitizeCta({ label: 'Start', action: 'appointment' }), { label: 'Start', action: 'booking' })
+    const header = (h: Record<string, unknown>) => sanitizeMeta({ header: h }, 't').header
+    assert.equal(header({ ctaLabel: 'Start', ctaAction: 'appointment' }).ctaAction, 'booking')
+    assert.equal(header({ ctaLabel: 'Start', ctaAction: 'appointment', ctaActivityId: 'act-intro' }).ctaActivityId, 'act-intro')
   })
 
   it('keeps the menu tree (the draft save used to drop it)', () => {

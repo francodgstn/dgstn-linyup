@@ -117,6 +117,7 @@ import { BrandFields } from '@/components/website/BrandFields'
 import { ThemePicker } from '@/components/website/ThemePicker'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
 import { SECTION_LIBRARY, newSection, newSectionId, emptyDraft } from '@/plugins/website/defaults'
+import { SectionPicker } from '@/components/website/SectionPicker'
 import { getWebsiteLimits } from '@/plugins/website/limits'
 import { Tip } from '@/components/ui/tip'
 
@@ -1513,34 +1514,14 @@ export default function WebsiteBuilderPage() {
                 })}
               </SortableList>
 
-              {/* Add section */}
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input py-3 text-sm font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground">
-                  <Plus className="h-4 w-4" />
-                  {t('addSection')}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  {/* 'managed' sections (none today) are authored by Linyup, not
-                      offered here — but stay editable once present. */}
-                  {SECTION_LIBRARY.filter((lib) => lib.maturity !== 'managed').map((lib) => (
-                    <DropdownMenuItem
-                      key={lib.type}
-                      onClick={() => addSection(lib.type)}
-                      className="gap-2"
-                    >
-                      <DynamicIcon name={lib.icon} className="h-4 w-4 text-muted-foreground" />
-                      <span className="flex flex-col">
-                        <span className="text-sm">
-                          {t(lib.labelKey as Parameters<typeof t>[0])}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {t(lib.descKey as Parameters<typeof t>[0])}
-                        </span>
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Add section — a dialog of grouped tiles, not a dropdown of
+                  seventeen rows. 'managed' sections (none today) are authored by
+                  Linyup, not offered here — but stay editable once present. */}
+              <SectionPicker
+                entries={SECTION_LIBRARY.filter((lib) => lib.maturity !== 'managed')}
+                t={(key) => t(key as Parameters<typeof t>[0])}
+                onPick={addSection}
+              />
             </div>
           )}
         </div>

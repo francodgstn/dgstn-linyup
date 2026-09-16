@@ -1,4 +1,5 @@
 import type { WebsiteSection, WebsiteSectionType, SiteDraft, SiteMeta } from '@linyup/shared'
+import type { SectionGroup } from '@/components/website/SectionPicker'
 import { DEFAULT_ACCENT } from '@/components/ui/color-picker'
 
 // ─── section library (for the "Add section" menu) ──────────────────────────────
@@ -9,6 +10,8 @@ export const SECTION_LIBRARY: {
   labelKey: string
   descKey: string
   icon: string
+  /** Which drawer of the Add-section dialog it sits in — see SectionPicker. */
+  group?: SectionGroup
   /**
    * Absent ⇒ 'full' — offered in the "Add section" menu like every section
    * today. 'managed' is for a future type authored by Linyup itself (a seed or
@@ -19,38 +22,41 @@ export const SECTION_LIBRARY: {
    */
   maturity?: 'full' | 'basic' | 'managed'
 }[] = [
-  { type: 'hero', labelKey: 'sectionHero', descKey: 'sectionHeroDesc', icon: 'Image' },
-  { type: 'content', labelKey: 'sectionContent', descKey: 'sectionContentDesc', icon: 'FileText' },
-  { type: 'gallery', labelKey: 'sectionGallery', descKey: 'sectionGalleryDesc', icon: 'Images' },
+  { type: 'hero', group: 'content', labelKey: 'sectionHero', descKey: 'sectionHeroDesc', icon: 'Image' },
+  { type: 'content', group: 'content', labelKey: 'sectionContent', descKey: 'sectionContentDesc', icon: 'FileText' },
+  { type: 'gallery', group: 'content', labelKey: 'sectionGallery', descKey: 'sectionGalleryDesc', icon: 'Images' },
   {
     type: 'activities',
+    group: 'offer',
     labelKey: 'sectionActivities',
     descKey: 'sectionActivitiesDesc',
     icon: 'LayoutGrid',
   },
-  { type: 'pricing', labelKey: 'sectionPricing', descKey: 'sectionPricingDesc', icon: 'Tag' },
+  { type: 'pricing', group: 'offer', labelKey: 'sectionPricing', descKey: 'sectionPricingDesc', icon: 'Tag' },
   {
     type: 'schedule',
+    group: 'offer',
     labelKey: 'sectionSchedule',
     descKey: 'sectionScheduleDesc',
     icon: 'CalendarDays',
   },
-  { type: 'contact', labelKey: 'sectionContact', descKey: 'sectionContactDesc', icon: 'MapPin' },
-  { type: 'places', labelKey: 'sectionPlaces', descKey: 'sectionPlacesDesc', icon: 'Map' },
-  { type: 'features', labelKey: 'sectionFeatures', descKey: 'sectionFeaturesDesc', icon: 'Sparkles' },
-  { type: 'cta_banner', labelKey: 'sectionCta', descKey: 'sectionCtaDesc', icon: 'Megaphone' },
-  { type: 'faq', labelKey: 'sectionFaq', descKey: 'sectionFaqDesc', icon: 'HelpCircle' },
+  { type: 'contact', group: 'offer', labelKey: 'sectionContact', descKey: 'sectionContactDesc', icon: 'MapPin' },
+  { type: 'places', group: 'offer', labelKey: 'sectionPlaces', descKey: 'sectionPlacesDesc', icon: 'Map' },
+  { type: 'features', group: 'content', labelKey: 'sectionFeatures', descKey: 'sectionFeaturesDesc', icon: 'Sparkles' },
+  { type: 'cta_banner', group: 'content', labelKey: 'sectionCta', descKey: 'sectionCtaDesc', icon: 'Megaphone' },
+  { type: 'faq', group: 'trust', labelKey: 'sectionFaq', descKey: 'sectionFaqDesc', icon: 'HelpCircle' },
   {
     type: 'testimonials',
+    group: 'trust',
     labelKey: 'sectionTestimonials',
     descKey: 'sectionTestimonialsDesc',
     icon: 'Quote',
   },
-  { type: 'video', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
-  { type: 'team', labelKey: 'sectionTeam', descKey: 'sectionTeamDesc', icon: 'Users', maturity: 'basic' },
-  { type: 'form', labelKey: 'sectionForm', descKey: 'sectionFormDesc', icon: 'ClipboardList', maturity: 'basic' },
-  { type: 'posts', labelKey: 'sectionPosts', descKey: 'sectionPostsDesc', icon: 'Newspaper', maturity: 'basic' },
-  { type: 'split', labelKey: 'sectionSplit', descKey: 'sectionSplitDesc', icon: 'Columns2', maturity: 'basic' },
+  { type: 'video', group: 'content', labelKey: 'sectionVideo', descKey: 'sectionVideoDesc', icon: 'Clapperboard' },
+  { type: 'team', group: 'trust', labelKey: 'sectionTeam', descKey: 'sectionTeamDesc', icon: 'Users', maturity: 'basic' },
+  { type: 'form', group: 'offer', labelKey: 'sectionForm', descKey: 'sectionFormDesc', icon: 'ClipboardList', maturity: 'basic' },
+  { type: 'posts', group: 'trust', labelKey: 'sectionPosts', descKey: 'sectionPostsDesc', icon: 'Newspaper', maturity: 'basic' },
+  { type: 'split', group: 'content', labelKey: 'sectionSplit', descKey: 'sectionSplitDesc', icon: 'Columns2', maturity: 'basic' },
 ]
 
 /** Client-only unique id for a new section (React key + image path segment + anchor). */

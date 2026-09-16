@@ -18,6 +18,7 @@
 
 import type {
   CtaBannerSection,
+  FaqSection,
   FeaturesSection,
   GallerySection,
   HeroSection,
@@ -53,6 +54,7 @@ export interface SiteThemeSectionDefaults {
   features?: Partial<Pick<FeaturesSection, 'style'>>
   gallery?: Partial<Pick<GallerySection, 'layout'>>
   cta_banner?: Partial<Pick<CtaBannerSection, 'style'>>
+  faq?: Partial<Pick<FaqSection, 'style'>>
   video?: Partial<Pick<VideoSection, 'display'>>
 }
 
@@ -89,6 +91,9 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
       // copy on top — the text is readable without darkening the whole image.
       hero: { align: 'left', overlay: 90, overlayStyle: 'gradient-left-bottom', overlayTone: 'light' },
       cta_banner: { style: 'band' },
+      // The questions in the same hard-edged, high-contrast language as the
+      // panels above them — a box's page does not go soft at the FAQ.
+      faq: { style: 'panels' },
       video: { display: 'lightbox' },
     },
   },

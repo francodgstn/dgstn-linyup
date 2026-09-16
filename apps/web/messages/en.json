@@ -3816,7 +3816,19 @@
     "editorFeaturesStylePanels": "Panels",
     "brandSiteLanguage": "Website language",
     "brandSiteLanguageHint": "The language your website is written in — visitors get it unless they choose another. Independent of the language you work in.",
-    "brandSiteLanguageTeam": "Same as the studio"
+    "brandSiteLanguageTeam": "Same as the studio",
+    "editorCtaActionAppointment": "Appointment",
+    "editorCtaAppointment": "Which appointment",
+    "editorCtaAppointmentPlaceholder": "Choose an appointment",
+    "editorCtaAppointmentEmptyHint": "You have no appointment offerings yet. Add one under Offerings to open it straight from a button.",
+    "editorCtaAppointmentFallbackHint": "Without an appointment this button opens the booking panel.",
+    "addSectionTitle": "Add a section",
+    "addSectionDesc": "Pick a block to add to the bottom of this page. You can move it afterwards.",
+    "addSectionSearch": "Search sections",
+    "addSectionNoMatch": "No section matches that.",
+    "sectionGroupContent": "Content & layout",
+    "sectionGroupOffer": "Your offering",
+    "sectionGroupTrust": "People & proof"
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -3960,7 +3972,14 @@
     "sectionFaq": "FAQ",
     "sectionFaqDesc": "Questions and answers in an accordion",
     "sectionTestimonials": "Testimonials",
-    "sectionTestimonialsDesc": "Member reviews, one at a time"
+    "sectionTestimonialsDesc": "Member reviews, one at a time",
+    "addSectionTitle": "Add a section",
+    "addSectionDesc": "Pick a block to add to the bottom of this page. You can move it afterwards.",
+    "addSectionSearch": "Search sections",
+    "addSectionNoMatch": "No section matches that.",
+    "sectionGroupContent": "Content & layout",
+    "sectionGroupOffer": "Your federation",
+    "sectionGroupTrust": "People & proof"
   },
   "Courses": {
     "title": "Online Courses",

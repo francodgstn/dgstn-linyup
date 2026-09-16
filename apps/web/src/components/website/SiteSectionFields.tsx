@@ -1095,6 +1095,15 @@ export function FaqFields({ s, onChange }: { s: FaqSection; onChange: (p: Patch)
       <Field label={t('editorHeadingOptional')}>
         <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
       </Field>
+      <Field label={t('editorFeaturesStyle')}>
+        <Select value={s.style ?? 'cards'} onValueChange={(v) => onChange({ style: v as FaqSection['style'] })}>
+          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cards">{t('editorFeaturesStyleCards')}</SelectItem>
+            <SelectItem value="panels">{t('editorFeaturesStylePanels')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
       <div className="space-y-3">
         {items.map((item, i) => (
           <div key={i} className="space-y-2 rounded-lg border p-3">

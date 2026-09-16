@@ -3816,7 +3816,19 @@
     "editorFeaturesStylePanels": "Panels",
     "brandSiteLanguage": "Sprache der Website",
     "brandSiteLanguageHint": "Die Sprache, in der deine Website geschrieben ist — Besucherinnen und Besucher sehen sie, solange sie keine andere wählen. Unabhängig von deiner Arbeitssprache.",
-    "brandSiteLanguageTeam": "Wie das Studio"
+    "brandSiteLanguageTeam": "Wie das Studio",
+    "editorCtaActionAppointment": "Termin",
+    "editorCtaAppointment": "Welcher Termin",
+    "editorCtaAppointmentPlaceholder": "Termin wählen",
+    "editorCtaAppointmentEmptyHint": "Du hast noch keine Terminangebote. Lege unter Angebote eines an, um es direkt über einen Button zu öffnen.",
+    "editorCtaAppointmentFallbackHint": "Ohne Termin öffnet dieser Button das Buchungsfenster.",
+    "addSectionTitle": "Abschnitt hinzufügen",
+    "addSectionDesc": "Wähle einen Block, der unten an diese Seite kommt. Verschieben kannst du ihn danach.",
+    "addSectionSearch": "Abschnitte durchsuchen",
+    "addSectionNoMatch": "Kein Abschnitt passt dazu.",
+    "sectionGroupContent": "Inhalt & Aufbau",
+    "sectionGroupOffer": "Dein Angebot",
+    "sectionGroupTrust": "Menschen & Vertrauen"
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -3960,7 +3972,14 @@
     "sectionFaq": "FAQ",
     "sectionFaqDesc": "Fragen und Antworten als Akkordeon",
     "sectionTestimonials": "Stimmen",
-    "sectionTestimonialsDesc": "Mitglieder-Stimmen, einzeln"
+    "sectionTestimonialsDesc": "Mitglieder-Stimmen, einzeln",
+    "addSectionTitle": "Abschnitt hinzufügen",
+    "addSectionDesc": "Wähle einen Block, der unten an diese Seite kommt. Verschieben kannst du ihn danach.",
+    "addSectionSearch": "Abschnitte durchsuchen",
+    "addSectionNoMatch": "Kein Abschnitt passt dazu.",
+    "sectionGroupContent": "Inhalt & Aufbau",
+    "sectionGroupOffer": "Euer Verband",
+    "sectionGroupTrust": "Menschen & Vertrauen"
   },
   "Courses": {
     "title": "Online-Kurse",

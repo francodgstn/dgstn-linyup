@@ -154,7 +154,7 @@ export function buildPalette(
  * the visitor is standing on, rather than the team's default landing surface.
  */
 export function ctaHref(
-  cta: Pick<SiteCta, 'action' | 'url' | 'pageId'> | undefined,
+  cta: Pick<SiteCta, 'action' | 'url' | 'pageId' | 'activityId'> | undefined,
   slug: string,
   locale: string,
   /** Resolves a page of this site to its URL — see RenderCtx.pageHref. */
@@ -163,6 +163,13 @@ export function ctaHref(
   if (!cta) return undefined
   if (cta.action === 'page') return cta.pageId ? pageHref?.(cta.pageId) : undefined
   if (cta.action === 'booking') return publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
+  // An appointment CTA keeps a real address (the picker for that one activity),
+  // so middle-click and crawlers still work — `ctaIntent` is what turns the
+  // plain click into the overlay. Without an activity it is the booking root.
+  if (cta.action === 'appointment')
+    return cta.activityId
+      ? publicHrefLocalized(locale, slug, 'appointments', { activity: cta.activityId, from: 'site' })
+      : publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
   // 'signup' is current; 'membership' is the legacy stored alias.
   if (cta.action === 'signup' || (cta.action as string) === 'membership')
     return publicHrefLocalized(locale, slug, 'signup', { from: 'site' })

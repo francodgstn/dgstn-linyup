@@ -46,6 +46,7 @@ type Patch = Record<string, unknown>
 function CtaEditor({
   cta,
   pages,
+  teamId,
   onChange,
 }: {
   cta?: SiteCta
@@ -53,9 +54,13 @@ function CtaEditor({
    *  sign-up and an external URL. Absent/empty ⇒ the "Page" action still shows
    *  (it's a fixed option like the others), just with nothing to pick yet. */
   pages?: { id: string; label: string }[]
+  teamId: string
   onChange: (cta: SiteCta | undefined) => void
 }) {
   const t = useTranslations('Website')
+  const { data: activities = [] } = useActivities(teamId)
+  // Appointment activities only — a class has no availability picker to open.
+  const appointmentActivities = activities.filter((a) => a.type === 'appointment')
   const value = cta ?? { label: '', action: 'booking' as const }
   const set = (patch: Partial<SiteCta>) => {
     const next = { ...value, ...patch }
@@ -72,6 +77,7 @@ function CtaEditor({
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="booking">{t('editorCtaActionBooking')}</SelectItem>
+            <SelectItem value="appointment">{t('editorCtaActionAppointment')}</SelectItem>
             <SelectItem value="signup">{t('editorCtaActionSignup')}</SelectItem>
             <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
             <SelectItem value="url">{t('editorCtaActionUrl')}</SelectItem>
@@ -88,6 +94,31 @@ function CtaEditor({
               ))}
             </SelectContent>
           </Select>
+        </Field>
+      )}
+      {value.action === 'appointment' && (
+        <Field label={t('editorCtaAppointment')}>
+          {appointmentActivities.length === 0 ? (
+            <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+              {t('editorCtaAppointmentEmptyHint')}
+            </p>
+          ) : (
+            <>
+              <Select value={value.activityId ?? ''} onValueChange={(v) => set({ activityId: v || undefined })}>
+                <SelectTrigger className="h-9"><SelectValue placeholder={t('editorCtaAppointmentPlaceholder')} /></SelectTrigger>
+                <SelectContent>
+                  {appointmentActivities.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* Publish turns an activity-less appointment CTA into a plain
+                  booking button — say so here rather than let it surprise. */}
+              {!value.activityId && (
+                <p className="mt-1 text-xs text-muted-foreground">{t('editorCtaAppointmentFallbackHint')}</p>
+              )}
+            </>
+          )}
         </Field>
       )}
       {value.action === 'url' && (
@@ -483,7 +514,7 @@ export function SectionEditor({
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<CtaEditor cta={section.cta} pages={pages} onChange={(cta) => onChange({ cta })} />}
+          cta={<CtaEditor cta={section.cta} pages={pages} teamId={teamId} onChange={(cta) => onChange({ cta })} />}
         />
       )
     case 'content':
@@ -503,7 +534,7 @@ export function SectionEditor({
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<CtaEditor cta={section.cta} pages={pages} onChange={(cta) => onChange({ cta })} />}
+          cta={<CtaEditor cta={section.cta} pages={pages} teamId={teamId} onChange={(cta) => onChange({ cta })} />}
         />
       )
     case 'faq':         return <FaqFields s={section} onChange={onChange} />
@@ -522,6 +553,7 @@ export function SectionEditor({
             <CtaEditor
               cta={section.side?.cta}
               pages={pages}
+              teamId={teamId}
               onChange={(cta) => onChange({ side: { ...(section.side ?? {}), cta } })}
             />
           }

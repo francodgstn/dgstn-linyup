@@ -38,17 +38,21 @@ export type SiteBrandFont = (typeof SITE_BRAND_FONTS)[number]
 export const SITE_FONTS = ['sans', 'serif', 'rounded', ...SITE_BRAND_FONTS] as const
 export type SiteFont = (typeof SITE_FONTS)[number]
 export type SectionAlign = 'left' | 'center'
-export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page'
+export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment'
 
 /** A call-to-action button. `booking`/`signup` resolve to the team's bio-link
- *  flows; `url` opens an external link. ('membership' is a legacy alias for
- *  'signup', still accepted on read/publish for older stored sites.) */
+ *  flows; `appointment` opens the booking panel straight on ONE appointment
+ *  activity (a free intro, a trial call) instead of sending the visitor to a
+ *  page first; `url` opens an external link. ('membership' is a legacy alias
+ *  for 'signup', still accepted on read/publish for older stored sites.) */
 export interface SiteCta {
   label: string
   action: SiteCtaAction
   url?: string
   /** For `action: 'page'` — the page to open (a SitePageRef id). */
   pageId?: string
+  /** For `action: 'appointment'` — the appointment activity to open. */
+  activityId?: string
 }
 
 export interface SiteImage {
@@ -207,6 +211,14 @@ export interface FaqSection extends SectionBase {
   type: 'faq'
   heading?: string
   items: FaqItem[]
+  /**
+   * 'cards' (the default) is one soft card per question. 'panels' is the bold
+   * treatment — one hard-edged block, heavy rules between the rows, and the
+   * open row filled in the panel colour — so an FAQ can carry the same contrast
+   * as the panel features and a black-button brand instead of going soft
+   * halfway down the page.
+   */
+  style?: 'cards' | 'panels'
 }
 
 export interface FaqItem {
@@ -637,6 +649,8 @@ export interface SiteHeader {
   ctaUrl?: string
   /** The page the header button opens, when `ctaAction` is 'page'. */
   ctaPageId?: string
+  /** The appointment the header button opens, when `ctaAction` is 'appointment'. */
+  ctaActivityId?: string
   /**
    * Show the member control ("Sign in" / "My space") in the header. Absent ⇒
    * shown: a returning member on the website otherwise has no way into their
