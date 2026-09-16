@@ -16,6 +16,14 @@ output "admin_runtime_sa" {
   value       = module.iam.admin_runtime_email
 }
 
+# The address to invite in Play Console → Users and permissions before
+# `eas submit -p android` can reach a track. Terraform creates the account; the
+# invitation and the JSON key are manual and one-time — see modules/iam/main.tf.
+output "play_publisher_sa" {
+  description = "Google Play publisher SA email. Invite this address in Play Console, then create its key and upload with `eas credentials -p android`."
+  value       = module.iam.play_publisher_email
+}
+
 output "project_number" {
   description = "Numeric project number."
   value       = local.project_number

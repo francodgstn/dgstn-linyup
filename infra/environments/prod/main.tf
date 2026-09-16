@@ -121,6 +121,10 @@ module "iam" {
   project_id      = var.project_id
   deploy_sa_email = var.deploy_sa_email
 
+  # The Play publisher identity lives in prod only — one Play listing, and the
+  # FCM V1 key must come from the project whose google-services.json ships.
+  create_play_publisher = true
+
   # Functions run as the default compute SA, which must be able to sign custom
   # tokens as itself — see the variable's docs in modules/iam.
   extra_token_creator_sa_emails = [
