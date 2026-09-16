@@ -2,11 +2,20 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  SUMMARY_REUSE_MAX_AGE_DAYS,
   TEAM_SENTIMENT_DAILY_LIMIT,
+  TEAM_SENTIMENT_REFRESH_BATCH,
+  TEAM_SENTIMENT_RUN_STALE_MINUTES,
   aiUsageCountToday,
   aiUsageDayKey,
+  summaryNeedsRefresh,
+  teamSentimentRoundCount,
+  teamSentimentRoundSlice,
+  teamSentimentRunInProgress,
   teamSentimentRunsLeft,
+  type TeamSentimentRun,
 } from '@linyup/shared'
+import { selectActiveMembers } from './teamSentimentRun'
 import {
   MEMBER_TOKEN,
   SENTIMENT_SECTION_MAX_CHARS,
@@ -120,29 +129,188 @@ describe('team sentiment — five a day', () => {
     assert.equal(teamSentimentRunsLeft({ day: '2026-09-17', count: 99 }, lateUtc), 0)
   })
 
-  describe('the callable, from source', () => {
-    const source = readFileSync(join(__dirname, 'teamSentiment.ts'), 'utf8').replace(/\r\n/g, '\n')
-    const body = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '')
+  // The callable STARTS a run and the run spends the calls, so the guarantees
+  // are split across two files: the button reserves before anything is spent,
+  // and the run writes what it spends absolutely and the reading whole.
+  const strip = (file: string) =>
+    readFileSync(join(__dirname, file), 'utf8')
+      .replace(/\r\n/g, '\n')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '')
 
-    it('gates on its module and on an all-scoped caller', () => {
+  describe('the callable, from source', () => {
+    const body = strip('teamSentiment.ts')
+
+    it('gates on both modules and on an all-scoped caller', () => {
       assert.match(body, /pluginIsActive\(teamId, AI_MODULES\.teamSentiment\)/)
+      assert.match(body, /pluginIsActive\(teamId, AI_MODULES\.contactSummary\)/)
       assert.match(body, /callerIsAllScoped\(uid, teamId\)/)
     })
 
-    it('reserves the run in a transaction BEFORE the model call, absolutely', () => {
+    it('reserves the run in a transaction BEFORE the run is queued, absolutely', () => {
       const reserve = body.indexOf('runTransaction(')
-      const call = body.indexOf('generateContent(')
-      assert.ok(reserve > 0 && call > reserve, 'the run must be reserved before the model is asked')
+      const queue = body.indexOf('enqueueTeamSentimentRound(')
+      assert.ok(reserve > 0 && queue > reserve, 'the run must be reserved before any member is refreshed')
       assert.match(body, /usage: \{ day, count: count \+ 1 \}/)
       assert.ok(!/FieldValue\.increment/.test(body), 'the run count is written absolutely, never incremented')
     })
 
-    it('refuses too few summaries before spending a run', () => {
-      assert.ok(body.indexOf('not_enough_summaries') < body.indexOf('runTransaction('))
+    it('makes no model call itself', () => {
+      assert.ok(!body.includes('generateContent('), 'the button only starts a run')
+    })
+
+    it('refuses what costs nothing before spending a run', () => {
+      const reserve = body.indexOf('runTransaction(')
+      assert.ok(body.indexOf('not_enough_members') < reserve, 'too few active members')
+      assert.ok(body.indexOf('teamSentimentRunInProgress(') < reserve, 'a run already going')
+    })
+
+    it('replaces usage and the run whole, keeping the last reading on the card', () => {
+      assert.match(body, /mergeFields: \['usage', 'run'\]/)
+    })
+  })
+
+  describe('the run, from source', () => {
+    const body = strip('teamSentimentRun.ts')
+
+    it('writes its progress absolutely, from the transaction that guards the round', () => {
+      assert.ok(!/FieldValue\.increment/.test(body), 'counts are absolute, never incremented')
+      assert.match(body, /'run\.refreshed': current\.refreshed \+ tally\.refreshed/)
+      assert.match(body, /current\.rounds_done !== round/)
     })
 
     it('replaces the stored reading whole', () => {
-      assert.match(body, /ref\.update\(\{\s*report: \{/)
+      assert.match(body, /tx\.update\(ref, \{\s*report: \{/)
+    })
+
+    it('stamps the briefings it writes', () => {
+      assert.match(body, /generatedBy: TEAM_SENTIMENT_GENERATED_BY/)
+    })
+  })
+})
+
+describe('team sentiment — the run', () => {
+  const NOW = Date.UTC(2026, 8, 16, 12)
+  const DAY = 86_400_000
+  const ts = (ms: number) => ({ toDate: () => new Date(ms), toMillis: () => ms })
+  const contact = (id: string, over: Record<string, unknown> = {}) => ({
+    id,
+    data: { archived_at: null, deleted_at: null, last_session_at: ts(NOW - 2 * DAY), created_at: ts(NOW - 400 * DAY), ...over },
+  })
+
+  describe('who counts as active', () => {
+    it('keeps roster members inside the active threshold, leads included', () => {
+      const ids = selectActiveMembers(
+        [
+          contact('recent'),
+          contact('lead', { provisional: true }),
+          contact('external', { external: true }),
+          contact('archived', { archived_at: ts(NOW - DAY) }),
+          contact('low', { last_session_at: ts(NOW - 20 * DAY) }),
+        ],
+        undefined,
+        NOW
+      )
+      assert.deepEqual([...ids].sort(), ['lead', 'recent'])
+    })
+
+    it('measures like the contact page: last session, else when they joined', () => {
+      const ids = selectActiveMembers(
+        [
+          contact('new', { last_session_at: undefined, created_at: ts(NOW - 3 * DAY) }),
+          contact('old-never-came', { last_session_at: undefined, created_at: ts(NOW - 90 * DAY) }),
+        ],
+        undefined,
+        NOW
+      )
+      assert.deepEqual(ids, ['new'])
+    })
+
+    it("follows the studio's own active threshold", () => {
+      const twenty = [contact('twenty', { last_session_at: ts(NOW - 20 * DAY) })]
+      assert.deepEqual(selectActiveMembers(twenty, undefined, NOW), [])
+      assert.deepEqual(
+        selectActiveMembers(twenty, { active_within_days: 30, low_within_days: 45, at_risk_within_days: 90 }, NOW),
+        ['twenty']
+      )
+    })
+
+    it('puts the most recently seen first, and caps', () => {
+      const ids = selectActiveMembers(
+        [
+          contact('a', { last_session_at: ts(NOW - 5 * DAY) }),
+          contact('b', { last_session_at: ts(NOW - 1 * DAY) }),
+          contact('c', { last_session_at: ts(NOW - 3 * DAY) }),
+        ],
+        undefined,
+        NOW,
+        2
+      )
+      assert.deepEqual(ids, ['b', 'c'])
+    })
+  })
+
+  describe('when a briefing is reused', () => {
+    const generatedAtMs = NOW - 2 * DAY
+    const quiet = { generatedAtMs, lastSessionMs: NOW - 3 * DAY, newestBookingMs: NOW - 4 * DAY, newestNoteMs: null }
+
+    it('regenerates when there is none', () => {
+      assert.equal(summaryNeedsRefresh({ ...quiet, generatedAtMs: null }, NOW), true)
+    })
+
+    it('reuses a recent one when nothing happened since', () => {
+      assert.equal(summaryNeedsRefresh(quiet, NOW), false)
+    })
+
+    it('regenerates after a session, a booking or a note', () => {
+      assert.equal(summaryNeedsRefresh({ ...quiet, lastSessionMs: NOW - DAY }, NOW), true)
+      assert.equal(summaryNeedsRefresh({ ...quiet, newestBookingMs: NOW - DAY }, NOW), true)
+      assert.equal(summaryNeedsRefresh({ ...quiet, newestNoteMs: NOW - DAY }, NOW), true)
+    })
+
+    it(`regenerates one older than ${SUMMARY_REUSE_MAX_AGE_DAYS} days even when nothing happened`, () => {
+      const old = NOW - (SUMMARY_REUSE_MAX_AGE_DAYS + 1) * DAY
+      assert.equal(summaryNeedsRefresh({ ...quiet, generatedAtMs: old, lastSessionMs: old - DAY, newestBookingMs: null }, NOW), true)
+    })
+  })
+
+  describe('a run in flight', () => {
+    const run = (over: Partial<TeamSentimentRun>): TeamSentimentRun => ({
+      id: 'r',
+      status: 'refreshing',
+      started_at: ts(NOW - 60_000) as unknown as TeamSentimentRun['started_at'],
+      started_by: 'u',
+      finished_at: null,
+      active_within_days: 14,
+      member_ids: [],
+      rounds_done: 0,
+      refreshed: 0,
+      reused: 0,
+      failed: 0,
+      error: null,
+      ...over,
+    })
+
+    it('is in progress while refreshing or reading', () => {
+      assert.equal(teamSentimentRunInProgress(run({}), NOW), true)
+      assert.equal(teamSentimentRunInProgress(run({ status: 'reading' }), NOW), true)
+      assert.equal(teamSentimentRunInProgress(run({ status: 'done' }), NOW), false)
+      assert.equal(teamSentimentRunInProgress(run({ status: 'failed' }), NOW), false)
+      assert.equal(teamSentimentRunInProgress(undefined, NOW), false)
+    })
+
+    it('is abandoned, not in progress, once it is stale — so the button works again', () => {
+      const stale = ts(NOW - (TEAM_SENTIMENT_RUN_STALE_MINUTES + 1) * 60_000) as unknown as TeamSentimentRun['started_at']
+      assert.equal(teamSentimentRunInProgress(run({ started_at: stale }), NOW), false)
+    })
+
+    it('walks the members in rounds, covering each exactly once', () => {
+      const ids = Array.from({ length: TEAM_SENTIMENT_REFRESH_BATCH * 2 + 3 }, (_, i) => `m${i}`)
+      const rounds = teamSentimentRoundCount(ids.length)
+      assert.equal(rounds, 3)
+      const walked = Array.from({ length: rounds }, (_, r) => teamSentimentRoundSlice(ids, r)).flat()
+      assert.deepEqual(walked, ids)
+      assert.deepEqual(teamSentimentRoundSlice(ids, rounds), [])
     })
   })
 })

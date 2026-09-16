@@ -292,17 +292,19 @@ export { assistantChat } from './assistant'
 // `applyOfferingDraft` writes and runs no model. The seam between them is where
 // a human decides.
 export { draftOfferings, applyOfferingDraft } from './offer/draftOfferings'
-// AI summary of a contact — was the second experiment on the Vertex rail. ONE
-// callable: it reads, asks the model, and writes ONE field the rules deny to
-// every client (`Contact.ai_summary`). Manual trigger only; its header owns the
-// scheduled refresh it deliberately does not build yet.
+// AI summary of a contact — was the second experiment on the Vertex rail. The
+// button: it reads, asks the model, and writes ONE field the rules deny to every
+// client (`Contact.ai_summary`), through the body a team sentiment run shares.
 export { generateContactSummary } from './contacts/aiSummary'
 // The AI insights plugin container (`ai`, types/aiInsights.ts) — the summary
 // above graduated into its `ai-contact-summary` module. The recap email sends
-// what that summary already wrote (no model call); team sentiment reads the
-// stored summaries and is capped per team per day.
+// what that summary already wrote (no model call). Team sentiment STARTS a run
+// that refreshes the active members' briefings and reads them, capped per team
+// per day; `refreshTeamSentimentRound` is its Cloud Tasks drain, addressed as
+// locations/europe-west6/functions/refreshTeamSentimentRound.
 export { sendContactRecapEmail } from './contacts/aiRecapEmail'
 export { generateTeamSentiment } from './aiInsights/teamSentiment'
+export { refreshTeamSentimentRound } from './aiInsights/teamSentimentWorker'
 
 // Kiosk mode (entrance-tablet PIN unlock)
 export { unlockKiosk } from './kiosk'

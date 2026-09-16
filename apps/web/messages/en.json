@@ -7662,7 +7662,7 @@
     "sentimentLimitReached": "You have used today's {limit} readings. Try again tomorrow.",
     "sentimentFailed": "The reading could not be generated. Try again in a moment.",
     "sentimentEmptyTitle": "No team reading yet",
-    "sentimentEmptyBody": "A reading of the whole team, made from the AI summaries on your contacts. It needs at least {needed} of them.",
+    "sentimentEmptyBody": "A reading of your team's active members. Each run first refreshes their AI briefings where something has changed, then reads them together. It needs at least {needed} active members.",
     "sentimentOverview": "Overview",
     "sentimentStrengths": "What's working",
     "sentimentConcerns": "What to watch",
@@ -7674,7 +7674,16 @@
     "sentimentUpdatedOn": "Updated {date}",
     "sentimentBasedOn": "Based on {count, plural, one {# contact summary} other {# contact summaries}}",
     "sentimentBasedOnSince": "Based on {count, plural, one {# contact summary} other {# contact summaries}}, the oldest from {date}",
-    "sentimentDisclaimer": "AI generated, verify before acting"
+    "sentimentDisclaimer": "AI generated, verify before acting",
+    "sentimentStarted": "Refreshing {count, plural, one {# active member} other {# active members}} — the reading appears here when it is ready.",
+    "sentimentRunning": "Working…",
+    "sentimentProgressRefreshing": "Refreshing member briefings — {done} of {total}",
+    "sentimentProgressReading": "Reading the team…",
+    "sentimentRunFailed": "The last reading could not be finished. Try again.",
+    "sentimentRunInProgress": "A reading is already being made.",
+    "sentimentContactSummaryOff": "Switch on contact briefings in AI insights first — the reading is made from them.",
+    "sentimentNotEnoughMembers": "A team reading needs at least {needed} active members — seen in the last {days} days.",
+    "sentimentBasedOnActive": "Active members only, seen in the last {days} days · based on {count, plural, one {# briefing} other {# briefings}}"
   },
   "BookingContactFields": {
     "title": "Contact details to collect",

@@ -7662,7 +7662,7 @@
     "sentimentLimitReached": "Du hast die {limit} Einschätzungen für heute aufgebraucht. Versuche es morgen wieder.",
     "sentimentFailed": "Die Einschätzung konnte nicht erstellt werden. Versuche es gleich nochmals.",
     "sentimentEmptyTitle": "Noch keine Team-Einschätzung",
-    "sentimentEmptyBody": "Eine Einschätzung des ganzen Teams, aus den KI-Zusammenfassungen deiner Kontakte. Dafür braucht es mindestens {needed}.",
+    "sentimentEmptyBody": "Eine Einschätzung der aktiven Mitglieder deines Teams. Jeder Durchlauf aktualisiert zuerst ihre KI-Briefings, wo sich etwas geändert hat, und liest sie dann gemeinsam. Dafür braucht es mindestens {needed} aktive Mitglieder.",
     "sentimentOverview": "Überblick",
     "sentimentStrengths": "Was funktioniert",
     "sentimentConcerns": "Worauf achten",
@@ -7674,7 +7674,16 @@
     "sentimentUpdatedOn": "Aktualisiert am {date}",
     "sentimentBasedOn": "Aus {count, plural, one {# Kontakt-Zusammenfassung} other {# Kontakt-Zusammenfassungen}}",
     "sentimentBasedOnSince": "Aus {count, plural, one {# Kontakt-Zusammenfassung} other {# Kontakt-Zusammenfassungen}}, die älteste vom {date}",
-    "sentimentDisclaimer": "KI-generiert, vor dem Handeln prüfen"
+    "sentimentDisclaimer": "KI-generiert, vor dem Handeln prüfen",
+    "sentimentStarted": "{count, plural, one {# aktives Mitglied wird} other {# aktive Mitglieder werden}} aktualisiert – die Einschätzung erscheint hier, sobald sie fertig ist.",
+    "sentimentRunning": "Läuft …",
+    "sentimentProgressRefreshing": "Mitglieder-Briefings werden aktualisiert – {done} von {total}",
+    "sentimentProgressReading": "Das Team wird eingeschätzt …",
+    "sentimentRunFailed": "Die letzte Einschätzung konnte nicht abgeschlossen werden. Versuche es erneut.",
+    "sentimentRunInProgress": "Es wird bereits eine Einschätzung erstellt.",
+    "sentimentContactSummaryOff": "Schalte zuerst die Kontakt-Briefings in den KI-Einblicken ein – die Einschätzung entsteht aus ihnen.",
+    "sentimentNotEnoughMembers": "Eine Team-Einschätzung braucht mindestens {needed} aktive Mitglieder – in den letzten {days} Tagen gesehen.",
+    "sentimentBasedOnActive": "Nur aktive Mitglieder, in den letzten {days} Tagen gesehen · aus {count, plural, one {# Briefing} other {# Briefings}}"
   },
   "BookingContactFields": {
     "title": "Zu erfassende Kontaktdaten",

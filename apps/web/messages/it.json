@@ -7662,7 +7662,7 @@
     "sentimentLimitReached": "Hai usato le {limit} letture di oggi. Riprova domani.",
     "sentimentFailed": "Non è stato possibile generare la lettura. Riprova tra un momento.",
     "sentimentEmptyTitle": "Ancora nessuna lettura del team",
-    "sentimentEmptyBody": "Una lettura dell'intero team, dai riepiloghi IA dei tuoi contatti. Ne servono almeno {needed}.",
+    "sentimentEmptyBody": "Una lettura dei membri attivi del tuo team. Ogni esecuzione aggiorna prima i loro riepiloghi IA dove è cambiato qualcosa, poi li legge insieme. Servono almeno {needed} membri attivi.",
     "sentimentOverview": "Panoramica",
     "sentimentStrengths": "Cosa funziona",
     "sentimentConcerns": "A cosa fare attenzione",
@@ -7674,7 +7674,16 @@
     "sentimentUpdatedOn": "Aggiornato il {date}",
     "sentimentBasedOn": "Da {count, plural, one {# riepilogo di contatto} other {# riepiloghi di contatti}}",
     "sentimentBasedOnSince": "Da {count, plural, one {# riepilogo di contatto} other {# riepiloghi di contatti}}, il più vecchio del {date}",
-    "sentimentDisclaimer": "Generato dall'IA, verifica prima di agire"
+    "sentimentDisclaimer": "Generato dall'IA, verifica prima di agire",
+    "sentimentStarted": "Aggiornamento di {count, plural, one {# membro attivo} other {# membri attivi}} — la lettura comparirà qui appena pronta.",
+    "sentimentRunning": "In corso…",
+    "sentimentProgressRefreshing": "Aggiornamento dei riepiloghi dei membri — {done} di {total}",
+    "sentimentProgressReading": "Lettura del team…",
+    "sentimentRunFailed": "L'ultima lettura non è stata completata. Riprova.",
+    "sentimentRunInProgress": "È già in corso una lettura.",
+    "sentimentContactSummaryOff": "Attiva prima i riepiloghi dei contatti in AI insights — la lettura si basa su di essi.",
+    "sentimentNotEnoughMembers": "Una lettura del team richiede almeno {needed} membri attivi — visti negli ultimi {days} giorni.",
+    "sentimentBasedOnActive": "Solo membri attivi, visti negli ultimi {days} giorni · basata su {count, plural, one {# riepilogo} other {# riepiloghi}}"
   },
   "BookingContactFields": {
     "title": "Dati di contatto da raccogliere",

@@ -7662,7 +7662,7 @@
     "sentimentLimitReached": "Vous avez utilisé les {limit} lectures du jour. Réessayez demain.",
     "sentimentFailed": "La lecture n'a pas pu être générée. Réessayez dans un instant.",
     "sentimentEmptyTitle": "Pas encore de lecture de l'équipe",
-    "sentimentEmptyBody": "Une lecture de toute l'équipe, à partir des résumés IA de vos contacts. Il en faut au moins {needed}.",
+    "sentimentEmptyBody": "Une lecture des membres actifs de votre équipe. Chaque passage met d'abord à jour leurs synthèses IA là où quelque chose a changé, puis les lit ensemble. Il faut au moins {needed} membres actifs.",
     "sentimentOverview": "Vue d'ensemble",
     "sentimentStrengths": "Ce qui fonctionne",
     "sentimentConcerns": "Points de vigilance",
@@ -7674,7 +7674,16 @@
     "sentimentUpdatedOn": "Mis à jour le {date}",
     "sentimentBasedOn": "D'après {count, plural, one {# résumé de contact} other {# résumés de contacts}}",
     "sentimentBasedOnSince": "D'après {count, plural, one {# résumé de contact} other {# résumés de contacts}}, le plus ancien du {date}",
-    "sentimentDisclaimer": "Généré par l'IA, à vérifier avant d'agir"
+    "sentimentDisclaimer": "Généré par l'IA, à vérifier avant d'agir",
+    "sentimentStarted": "Mise à jour de {count, plural, one {# membre actif} other {# membres actifs}} — la lecture s'affichera ici dès qu'elle sera prête.",
+    "sentimentRunning": "En cours…",
+    "sentimentProgressRefreshing": "Mise à jour des synthèses des membres — {done} sur {total}",
+    "sentimentProgressReading": "Lecture de l'équipe…",
+    "sentimentRunFailed": "La dernière lecture n'a pas pu être terminée. Réessayez.",
+    "sentimentRunInProgress": "Une lecture est déjà en cours.",
+    "sentimentContactSummaryOff": "Activez d'abord les synthèses de contacts dans AI insights — la lecture est faite à partir d'elles.",
+    "sentimentNotEnoughMembers": "Une lecture d'équipe nécessite au moins {needed} membres actifs — vus ces {days} derniers jours.",
+    "sentimentBasedOnActive": "Membres actifs uniquement, vus ces {days} derniers jours · à partir de {count, plural, one {# synthèse} other {# synthèses}}"
   },
   "BookingContactFields": {
     "title": "Coordonnées à collecter",
