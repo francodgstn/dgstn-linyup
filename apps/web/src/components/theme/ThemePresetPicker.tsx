@@ -250,7 +250,7 @@ function Tile({
         {icon}
         <span className="truncate text-xs font-medium">{label}</span>
         {badge && (
-          <Badge variant="outline" className="gap-1 px-1 py-0 text-[0.5625rem] font-normal">
+          <Badge variant="outline" className="gap-1 px-1 py-0 text-xs font-normal">
             <Moon className="h-2.5 w-2.5" />
             {badge}
           </Badge>

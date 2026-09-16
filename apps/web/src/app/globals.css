@@ -16,6 +16,14 @@
   every existing class benefits without touching a single component.
 */
 @theme {
+  /* One tier BELOW text-xs, for the few places where space is genuinely scarce
+     and the alternative is truncating a word off — today the week grid's event
+     blocks and its hour axis. It exists so "smaller here" is a named decision
+     rather than a magic number: the 237 arbitrary px sizes this replaced were
+     unreviewable precisely because nothing said which of them were deliberate. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 0.9375rem;
+
   --text-xs--line-height: 1.125rem;    /* 1.33 -> 1.5  */
   --text-sm--line-height: 1.375rem;    /* 1.43 -> 1.57 */
   --text-base--line-height: 1.625rem;  /* 1.5  -> 1.63 */

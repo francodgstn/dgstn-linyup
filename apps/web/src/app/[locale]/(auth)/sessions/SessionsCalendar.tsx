@@ -1076,7 +1076,7 @@ export default function SessionsCalendar({
                             // sizes like a replaced element), so a continuation
                             // bar carrying only a space collapsed to 10px.
                             className={cn(
-                              'block w-full truncate px-1.5 py-0.5 text-xs font-semibold text-left transition-opacity hover:opacity-80',
+                              'block w-full truncate px-1.5 py-0.5 text-2xs font-semibold text-left transition-opacity hover:opacity-80',
                               isFirst ? 'rounded-l-md' : 'rounded-l-none',
                               isLast ? 'rounded-r-md' : 'rounded-r-none'
                             )}
@@ -1102,7 +1102,7 @@ export default function SessionsCalendar({
                   {Array.from({ length: hourCount }, (_, i) => (
                     <span
                       key={i}
-                      className="absolute right-1.5 text-xs text-muted-foreground tabular-nums select-none"
+                      className="absolute right-1.5 text-2xs text-muted-foreground tabular-nums select-none"
                       style={{ top: i * HOUR_PX + 2 }}
                     >
                       {String(weekGrid.startHour + i).padStart(2, '0')}:00
@@ -1238,14 +1238,14 @@ export default function SessionsCalendar({
                           >
                             <p
                               className={cn(
-                                'text-xs font-medium truncate leading-tight',
+                                'text-2xs font-medium truncate leading-tight',
                                 cancelled && 'line-through'
                               )}
                             >
                               {s.activityName ?? t('noActivity')}
                             </p>
                             {height >= 36 && (
-                              <p className="text-xs text-muted-foreground truncate">
+                              <p className="text-2xs text-muted-foreground truncate">
                                 {formatTs(s.start)} – {formatTs(s.end)}
                               </p>
                             )}
