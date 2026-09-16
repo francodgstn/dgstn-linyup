@@ -320,7 +320,7 @@ export default function GamificationHome() {
                     )}
                   </div>
                   <span
-                    className="line-clamp-2 text-[11px] font-medium leading-tight"
+                    className="line-clamp-2 text-[0.6875rem] font-medium leading-tight"
                     style={{ color: isEarned ? textMain : textMuted, opacity: isEarned ? 1 : 0.6 }}
                   >
                     {t(`badges.${def.key}.label`)}

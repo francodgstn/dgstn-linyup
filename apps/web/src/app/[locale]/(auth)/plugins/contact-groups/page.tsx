@@ -219,7 +219,7 @@ function AddMembersDialog({
               }`}>
                 {picked.has(c.id) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
               </span>
-              <span className="h-7 w-7 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-semibold">
+              <span className="h-7 w-7 rounded-full shrink-0 flex items-center justify-center bg-muted text-muted-foreground text-[0.625rem] font-semibold">
                 {personInitials(c)}
               </span>
               <span className="truncate">{c.firstname} {c.lastname}</span>
@@ -573,7 +573,7 @@ export default function ContactGroupsPage() {
                 {/* Subgroups and bulk-add are group-only: "ungrouped" has no
                     children, and you file people OUT of it, not into it. */}
                 {!ungroupedSelected && isDynamicGroup(selectedGroup) && (
-                  <Badge variant="outline" className="gap-1 text-[10px] border-violet-500/40 text-violet-600 dark:text-violet-400">
+                  <Badge variant="outline" className="gap-1 text-[0.625rem] border-violet-500/40 text-violet-600 dark:text-violet-400">
                     <Zap className="h-2.5 w-2.5" />{t('dynamicBadge')}
                   </Badge>
                 )}
@@ -639,7 +639,7 @@ export default function ContactGroupsPage() {
                         </span>
                         <span className="text-sm font-medium truncate">{c.firstname} {c.lastname}</span>
                         {!isDirect && !ungroupedSelected && (
-                          <Badge variant="outline" className="text-[10px] shrink-0">{t('viaSubgroup')}</Badge>
+                          <Badge variant="outline" className="text-[0.625rem] shrink-0">{t('viaSubgroup')}</Badge>
                         )}
                       </Link>
                       {/* Quick-assign: file someone into another group without

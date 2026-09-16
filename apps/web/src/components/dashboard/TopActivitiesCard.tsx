@@ -48,12 +48,12 @@ function buildRankingFromBookings(
 function DeltaBadge({ current, comparison }: { current: number; comparison: number | null | undefined }) {
   if (comparison === undefined) return null
   if (comparison === null) {
-    return <Badge className="h-4 text-[10px] px-1.5 bg-blue-500 text-white hover:bg-blue-500 ml-1">NEW</Badge>
+    return <Badge className="h-4 text-[0.625rem] px-1.5 bg-blue-500 text-white hover:bg-blue-500 ml-1">NEW</Badge>
   }
   const delta = current - comparison
-  if (delta === 0) return <span className="text-[11px] text-muted-foreground ml-1">—</span>
+  if (delta === 0) return <span className="text-[0.6875rem] text-muted-foreground ml-1">—</span>
   return (
-    <Badge className={`h-4 text-[10px] px-1.5 ml-1 ${delta > 0 ? 'bg-green-500 hover:bg-green-500' : 'bg-red-500 hover:bg-red-500'} text-white`}>
+    <Badge className={`h-4 text-[0.625rem] px-1.5 ml-1 ${delta > 0 ? 'bg-green-500 hover:bg-green-500' : 'bg-red-500 hover:bg-red-500'} text-white`}>
       {delta > 0 ? `+${delta}` : delta}
     </Badge>
   )

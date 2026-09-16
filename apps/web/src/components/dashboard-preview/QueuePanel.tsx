@@ -93,13 +93,13 @@ function PersonRowView({ contact, reason }: PersonRow) {
   const initials = personInitials(contact)
   return (
     <Link href={`/contacts/${contact.id}` as Route} className={ROW_CLASS}>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[11px] font-semibold text-amber-600">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[0.6875rem] font-semibold text-amber-600">
         {initials}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm font-medium">
         {contact.firstname} {contact.lastname}
       </span>
-      <Badge variant="outline" className="shrink-0 border-amber-300 text-[11px] text-amber-600">
+      <Badge variant="outline" className="shrink-0 border-amber-300 text-[0.6875rem] text-amber-600">
         {t(`reason_${reason}` as 'reason_alerts')}
       </Badge>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
@@ -259,7 +259,7 @@ export function QueuePanel({
             {hidden > 0 && (
               <Link
                 href={ATTENTION_HREF}
-                className="block px-2 py-1 text-[11px] text-muted-foreground hover:text-primary hover:underline"
+                className="block px-2 py-1 text-[0.6875rem] text-muted-foreground hover:text-primary hover:underline"
               >
                 {t('queueMorePeople', { count: hidden })}
               </Link>

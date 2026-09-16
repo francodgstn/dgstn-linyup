@@ -123,7 +123,7 @@ export function ScopeSwitcher({ collapsed }: { collapsed: boolean }) {
   ) : (
     <span className="flex min-w-0 flex-1 flex-col items-start">
       <span
-        className={`text-[9px] font-bold uppercase leading-tight tracking-[0.12em] ${
+        className={`text-[0.5625rem] font-bold uppercase leading-tight tracking-[0.12em] ${
           isOrg ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground/70'
         }`}
       >

@@ -1001,7 +1001,7 @@ function NavFlyout({
             className="z-50 min-w-52 rounded-lg border bg-popover p-1.5 text-popover-foreground shadow-md"
           >
             {label && (
-              <p className="px-2 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              <p className="px-2 pb-1 pt-0.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/60">
                 {label}
               </p>
             )}
@@ -1414,7 +1414,7 @@ function PluginNavGroup({
       {collapsed ? (
         <div className="border-t mx-1 mb-1" />
       ) : (
-        <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 pb-1">
+        <p className="text-[0.6875rem] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 pb-1">
           {label}
         </p>
       )}
@@ -1742,7 +1742,7 @@ function ShortcutRow({
 // section subheaders so it reads as a background label, not a heading. Hidden in
 // the icon-only sidebar, where a hairline divider separates the macro groups.
 function GroupLabel({ children }: { children: React.ReactNode }) {
-  return <p className="px-2 pb-1 text-[11px] font-medium text-muted-foreground/50">{children}</p>
+  return <p className="px-2 pb-1 text-[0.6875rem] font-medium text-muted-foreground/50">{children}</p>
 }
 
 // Marks the whole Favourites area as a region: a thin, flat, brand-violet rule
@@ -1932,7 +1932,7 @@ function ShortcutsNav({
           second heading for it to belong to, and that is deliberate. */}
       {!collapsed && (
         <div className="flex items-center pb-1">
-          <p className="flex-1 px-2 text-[11px] font-medium text-muted-foreground/50">
+          <p className="flex-1 px-2 text-[0.6875rem] font-medium text-muted-foreground/50">
             {t('navGroupShortcuts')}
           </p>
           <Tip label={t('navShortcutsClear')}>
@@ -2388,7 +2388,7 @@ function NavSearch({
         <Icon className="h-4 w-4 shrink-0" />
         <span className="truncate">{entry.label}</span>
         {entry.badge && (
-          <span className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
+          <span className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-px text-[0.625rem] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
             {entry.badge}
           </span>
         )}
@@ -2398,7 +2398,7 @@ function NavSearch({
           </span>
         )}
         {isAlwaysShown(entry.id) && (
-          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/60">
+          <span className="ml-auto shrink-0 text-[0.625rem] text-muted-foreground/60">
             {t('navSearchInShortcuts')}
           </span>
         )}
@@ -2574,7 +2574,7 @@ function NavSearch({
                 here, though: this is the moment the user is looking at the panel
                 and can learn how to reach it without the mouse next time. */}
             <span className="min-w-0 leading-snug">{t('navSearchPromptAll')}</span>
-            <kbd className="ml-auto shrink-0 rounded border px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground/70">
+            <kbd className="ml-auto shrink-0 rounded border px-1.5 py-0.5 font-sans text-[0.625rem] text-muted-foreground/70">
               {modKeyLabel()}K
             </kbd>
           </div>
@@ -2593,7 +2593,7 @@ function NavSearch({
               role="listbox"
               className="max-h-[50vh] overflow-y-auto border-t pt-1.5"
             >
-              <p className="px-2 pb-1 pt-0.5 text-[10px] font-medium text-muted-foreground/50">
+              <p className="px-2 pb-1 pt-0.5 text-[0.625rem] font-medium text-muted-foreground/50">
                 {t('navRecentContactsGroup')}
               </p>
               <div className="space-y-0.5">{recentContactRows.map(renderEntry)}</div>
@@ -2627,7 +2627,7 @@ function NavSearch({
               {groups.map((group) =>
                 group.results.length === 0 ? null : (
                   <div key={group.key}>
-                    <p className="px-2 pb-1 pt-0.5 text-[10px] font-medium text-muted-foreground/50">
+                    <p className="px-2 pb-1 pt-0.5 text-[0.625rem] font-medium text-muted-foreground/50">
                       {group.label}
                     </p>
                     <div className="space-y-0.5">{group.results.map(renderEntry)}</div>
@@ -2636,7 +2636,7 @@ function NavSearch({
               )}
               {/* Shortcuts are invisible without a hint, and an undiscoverable
                   shortcut is the same as an absent one. */}
-              <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t px-2 pb-0.5 pt-1.5 text-[10px] text-muted-foreground/70">
+              <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t px-2 pb-0.5 pt-1.5 text-[0.625rem] text-muted-foreground/70">
                 <span>
                   <kbd className="font-sans">↑↓</kbd> {t('navSearchHintNavigate')}
                 </span>

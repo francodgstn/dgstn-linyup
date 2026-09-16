@@ -7,6 +7,20 @@
 /*
   @theme inline: maps shadcn CSS custom properties to Tailwind v4 color/radius tokens.
 */
+/*
+  The app is built almost entirely from `text-xs` and `text-sm` — thousands of
+  uses against a double-figure handful of `text-base`. At those sizes the thing
+  that makes reading WORK rather than scan is leading, not size: Tailwind's
+  stock 1rem on `text-xs` and 1.25rem on `text-sm` are ratios of 1.33 and 1.43,
+  which is tight for UI a studio owner reads all day. Loosened here, once, so
+  every existing class benefits without touching a single component.
+*/
+@theme {
+  --text-xs--line-height: 1.125rem;    /* 1.33 -> 1.5  */
+  --text-sm--line-height: 1.375rem;    /* 1.43 -> 1.57 */
+  --text-base--line-height: 1.625rem;  /* 1.5  -> 1.63 */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -171,6 +185,15 @@
 
   html {
     scrollbar-gutter: stable;
+
+    /* 17px against a 16px browser default. Tailwind sizes type AND spacing in
+       rem — p-4, gap-2, h-9 — so moving the root moves both together, which is
+       the difference between "bigger letters in the same cramped boxes" and a
+       layout that breathes. A PERCENTAGE, never a px value, so a viewer who has
+       raised their browser's default text size keeps that preference.
+       Media-query rem resolves against the browser default, not this, so the
+       responsive breakpoints do not shift. */
+    font-size: 106.25%;
   }
 
   body {

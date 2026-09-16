@@ -117,7 +117,7 @@ function ItemCard({
               {!item.allDay && item.endTime ? `–${item.endTime}` : ''}
             </span>
             {crossesMidnight(item) && (
-              <span title={t('crossesMidnight')} className="text-[10px]">
+              <span title={t('crossesMidnight')} className="text-[0.625rem]">
                 +1
               </span>
             )}
@@ -264,7 +264,7 @@ function DaySection({
                     <span className="text-xs font-medium">{track.name}</span>
                   </div>
                   {trackItems.length === 0 ? (
-                    <p className="rounded-lg border border-dashed py-4 text-center text-[11px] text-muted-foreground">
+                    <p className="rounded-lg border border-dashed py-4 text-center text-[0.6875rem] text-muted-foreground">
                       —
                     </p>
                   ) : (

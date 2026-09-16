@@ -421,7 +421,7 @@ export function RosterDonut({
               {/* The denominator, in the one place a donut has for it. */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-black leading-none tabular-nums">{total}</span>
-                <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span className="mt-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
                   {t('rosterTotal')}
                 </span>
               </div>

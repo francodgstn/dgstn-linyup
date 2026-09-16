@@ -126,7 +126,7 @@ export function HowToTocRail() {
       aria-label={t('tocTitle')}
       className="sticky top-6 hidden w-44 shrink-0 self-start xl:block"
     >
-      <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+      <p className="px-3 pb-2 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
         {t('tocTitle')}
       </p>
       <ul className="space-y-0.5 border-l">

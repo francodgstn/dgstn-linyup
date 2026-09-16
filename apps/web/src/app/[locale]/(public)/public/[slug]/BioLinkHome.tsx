@@ -407,7 +407,7 @@ export default function BioLinkHome({ slug, team: teamProp, onLinkClick }: Props
         {/* Footer — Free-plan badge (denormalized flag; removing it is a paid
             perk). undefined = hidden: existing docs get the flag via backfill. */}
         {team.showBranding === true && (
-          <p className="mt-12 text-center text-[11px]" style={{ color: textMuted }}>
+          <p className="mt-12 text-center text-[0.6875rem]" style={{ color: textMuted }}>
             {tSite('poweredBy')}{' '}
             <Link href="/" className="hover:underline font-medium" style={{ color: textMuted }}>
               Linyup

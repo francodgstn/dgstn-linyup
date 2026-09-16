@@ -98,7 +98,7 @@ export function CreateStepFromLever({
           <button
             type="button"
             onClick={() => setParentGoalId(null)}
-            className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+            className="rounded-full px-2.5 py-1 text-[0.6875rem] font-medium"
             style={
               parentGoalId === null
                 ? { background: accent, color: '#fff' }
@@ -112,7 +112,7 @@ export function CreateStepFromLever({
               key={g.id}
               type="button"
               onClick={() => setParentGoalId(g.id)}
-              className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+              className="rounded-full px-2.5 py-1 text-[0.6875rem] font-medium"
               style={
                 parentGoalId === g.id
                   ? { background: accent, color: '#fff' }

@@ -181,7 +181,7 @@ export function ProgramTemplatesManager({
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-sm font-medium">{tpl.name}</span>
                 {!isOwned(tpl) && (
-                  <Badge variant="outline" className="gap-1 text-[10px]">
+                  <Badge variant="outline" className="gap-1 text-[0.625rem]">
                     <Building2 className="h-3 w-3" />
                     {t('templateFromOrg')}
                   </Badge>

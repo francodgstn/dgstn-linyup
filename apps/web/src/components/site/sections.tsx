@@ -1780,7 +1780,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
               }
             >
               <span
-                className="text-[11px] font-semibold uppercase tracking-wide"
+                className="text-[0.6875rem] font-semibold uppercase tracking-wide"
                 style={active ? undefined : { color: palette.muted }}
               >
                 {isToday(g.date)

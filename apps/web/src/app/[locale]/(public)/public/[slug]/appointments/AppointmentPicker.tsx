@@ -1570,7 +1570,7 @@ function ActivityCard({
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-sm">{activity.activityName}</p>
             {priceLabel && (
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[0.625rem] font-semibold text-primary">
                 {priceLabel}
               </span>
             )}

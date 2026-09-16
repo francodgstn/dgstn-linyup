@@ -500,7 +500,7 @@ function SubscriptionCard({
                   }`}
                 >
                   {featured && !isCurrent && (
-                    <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                    <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-primary-foreground">
                       {tp('mostPopular')}
                     </span>
                   )}

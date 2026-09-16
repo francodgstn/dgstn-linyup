@@ -191,7 +191,7 @@ export function BenefitEditor({
                 }`}
               >
                 <span className="block text-xs font-medium">{t(`effect_${effect}` as const)}</span>
-                <span className="block text-[11px] text-muted-foreground">
+                <span className="block text-[0.6875rem] text-muted-foreground">
                   {t(`effect_${effect}_desc` as const)}
                 </span>
               </button>

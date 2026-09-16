@@ -447,7 +447,7 @@ export function ContactsOverviewCard({
         ) : isMulti ? (
           <>
             <BarList data={barData} total={total} />
-            <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+            <p className="mt-3 text-[0.6875rem] leading-snug text-muted-foreground">
               {t('overviewOverlapNote')}
             </p>
           </>

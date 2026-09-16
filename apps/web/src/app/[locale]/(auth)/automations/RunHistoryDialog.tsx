@@ -299,7 +299,7 @@ function RunRow({
 
       <div className="flex flex-wrap items-center gap-1.5">
         {tierKey && (
-          <Badge variant="secondary" className="text-[11px]">
+          <Badge variant="secondary" className="text-[0.6875rem]">
             {t(tierKey)}
           </Badge>
         )}

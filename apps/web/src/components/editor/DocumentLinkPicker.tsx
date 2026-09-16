@@ -131,7 +131,7 @@ export function DocumentLinkPicker({
                     <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="flex-1 truncate">{d.title}</span>
                     {d.isPublic === false && (
-                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[0.625rem] text-muted-foreground">
                         {labels.unpublished}
                       </span>
                     )}

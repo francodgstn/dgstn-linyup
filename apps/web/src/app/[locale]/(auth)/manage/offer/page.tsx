@@ -1121,7 +1121,7 @@ export default function CataloguePage() {
                     where the item count already is and the two numbers would be
                     read as one. */}
                 {dead > 0 && (
-                  <span className="absolute right-2 top-1.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] leading-tight text-amber-700">
+                  <span className="absolute right-2 top-1.5 rounded-full bg-amber-500/20 px-1.5 text-[0.625rem] leading-tight text-amber-700">
                     {dead}
                   </span>
                 )}
@@ -1947,7 +1947,7 @@ function PaneBody({
                 when they wonder whether they still owe a save — the button is
                 a scroll away past the plan table. */}
             {dirty && (
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.6875rem] font-medium text-amber-700">
                 {t('unsaved')}
               </span>
             )}
@@ -2242,9 +2242,9 @@ function RailRow({
               step from the muted detail line under it, so a rail of twenty
               items read as twenty pairs of similar-looking lines rather than a
               list of names with notes attached (Franco, 2026-09-02). */}
-          <span className="block truncate text-[15px] font-semibold leading-tight">{name}</span>
+          <span className="block truncate text-[0.9375rem] font-semibold leading-tight">{name}</span>
           {detail && (
-            <span className="mt-1 flex items-center gap-1 text-[11px] leading-tight text-muted-foreground">
+            <span className="mt-1 flex items-center gap-1 text-[0.6875rem] leading-tight text-muted-foreground">
               {DetailIcon && <DetailIcon className="h-3 w-3 shrink-0" aria-hidden />}
               {/* `truncate` stays on the TEXT, not on the row: hung on the flex
                   parent it would clip the icon first and leave the words the

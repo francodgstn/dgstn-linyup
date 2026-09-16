@@ -1937,7 +1937,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
           {/* BETA, said out loud. This rail has never been exercised end to end
               on production (Franco, 2026-08-24), and a studio deciding where to
               take money is entitled to know that before it does. */}
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+          <Badge variant="outline" className="text-[0.625rem] uppercase tracking-wide">
             {t('paymentsExternalBeta')}
           </Badge>
         </div>
@@ -2141,7 +2141,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                   no Stripe API call). Saying so beats leaving an owner to infer
                   that pasting it turns card payments on. */}
               {selectedType === 'stripe' && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[0.6875rem] text-muted-foreground">
                   {t('paymentsPublishableKeyHelp')}
                 </p>
               )}
@@ -2171,7 +2171,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
               {errors.webhookSigningSecret && (
                 <p className="text-xs text-destructive">{t('paymentsWebhookSecretRequired')}</p>
               )}
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[0.6875rem] text-muted-foreground">
                 {selectedType === 'stripe' ? (
                   t.rich('paymentsWebhookSecretHelpStripe', {
                     teamId,
@@ -2212,7 +2212,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                       <p className="text-xs font-medium text-amber-900 dark:text-amber-200">
                         {t('paymentsWebhookEventsTitle')}
                       </p>
-                      <p className="text-[11px] text-amber-900/90 dark:text-amber-200/90">
+                      <p className="text-[0.6875rem] text-amber-900/90 dark:text-amber-200/90">
                         {t.rich('paymentsWebhookEventsHelp', {
                           code: (chunks) => (
                             <code className="rounded bg-amber-100 px-1 dark:bg-amber-900/60">
@@ -2251,7 +2251,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                   </Select>
                 )}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[0.6875rem] text-muted-foreground">
                 {selectedType === 'stripe' ? (
                   t.rich('paymentsDefaultSubscriptionTypeHelpStripe', {
                     code: (chunks) => <code className="bg-muted px-1 rounded">{chunks}</code>,

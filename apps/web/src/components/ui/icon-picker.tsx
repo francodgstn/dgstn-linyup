@@ -42,7 +42,7 @@ export function IconPicker({ value, onChange, className }: Props) {
         <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
           {ICON_CATEGORIES.map((cat) => (
             <div key={cat.label}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+              <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                 {cat.label}
               </p>
               <div className="grid grid-cols-6 gap-1">

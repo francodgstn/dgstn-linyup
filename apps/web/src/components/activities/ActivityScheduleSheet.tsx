@@ -203,7 +203,7 @@ export function ActivityScheduleSheet({
 
           {series.length > 0 && (
             <section className="space-y-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <h3 className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('scheduleSheetRecurring')}
               </h3>
               {series.map((g) => (
@@ -224,7 +224,7 @@ export function ActivityScheduleSheet({
                     ))}
                   </div>
                   {g.sessions.length > DATES_PER_SERIES && (
-                    <p className="px-2 pt-1 text-[11px] text-muted-foreground">
+                    <p className="px-2 pt-1 text-[0.6875rem] text-muted-foreground">
                       {t('scheduleSheetMore', { count: g.sessions.length - DATES_PER_SERIES })}
                     </p>
                   )}
@@ -235,7 +235,7 @@ export function ActivityScheduleSheet({
 
           {oneOffs.length > 0 && (
             <section className="space-y-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <h3 className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('scheduleSheetOneOff')}
               </h3>
               <div className="-mx-2 rounded-lg border p-1">

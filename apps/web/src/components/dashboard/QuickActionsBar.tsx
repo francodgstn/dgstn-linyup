@@ -149,7 +149,7 @@ export function QuickActionsBar() {
                 have no business claiming that role anyway. */}
             <div className="flex items-baseline justify-between gap-2 px-2 py-1.5 text-sm font-medium">
               <span>{t('pickerTitle')}</span>
-              <span className="text-[11px] font-normal text-muted-foreground">
+              <span className="text-[0.6875rem] font-normal text-muted-foreground">
                 {t('pickerCount', { used: resolvedAll.length, max: QUICK_ACTION_MAX })}
               </span>
             </div>
@@ -167,7 +167,7 @@ export function QuickActionsBar() {
             {automationActions.length > 0 && (
               <>
                 <DropdownMenuSeparator />
-                <div className="px-2 py-1 text-[11px] text-muted-foreground">
+                <div className="px-2 py-1 text-[0.6875rem] text-muted-foreground">
                   {t('automationsGroup')}
                 </div>
                 {automationActions.map((a) => (
@@ -186,7 +186,7 @@ export function QuickActionsBar() {
                 Without it the obvious next request is "add Contacts to the bar",
                 which is the thing the nav already does better. */}
             <DropdownMenuSeparator />
-            <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
+            <p className="px-2 py-1.5 text-[0.6875rem] leading-snug text-muted-foreground">
               {t('pickerHint')}
             </p>
           </DropdownMenuContent>

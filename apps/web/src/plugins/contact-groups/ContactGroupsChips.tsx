@@ -28,7 +28,7 @@ export function ContactGroupsChips({ contact, onChanged }: { contact: Contact; o
       <FolderTree className="h-3 w-3 text-muted-foreground shrink-0" />
       {memberGroups.map((g) => (
         <span key={g.id}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-medium bg-muted text-muted-foreground"
         >
           {g.color && <span className="h-2 w-2 rounded-full shrink-0" style={{ background: g.color }} />}
           {g.name}
@@ -41,7 +41,7 @@ export function ContactGroupsChips({ contact, onChanged }: { contact: Contact; o
         groupIds={contact.group_ids ?? []}
         onChanged={onChanged}
         align="start"
-        triggerClassName="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+        triggerClassName="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.6875rem] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
       >
         <Plus className="h-3 w-3" />
         {memberGroups.length === 0 && t('addToGroup')}

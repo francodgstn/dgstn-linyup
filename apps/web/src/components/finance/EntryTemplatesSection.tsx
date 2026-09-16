@@ -258,7 +258,7 @@ export function EntryTemplatesSection({ teamId, isOwner }: { teamId: string; isO
           <LayoutTemplate className="h-4 w-4 mr-1" />
           {t('templatesTitle')}
           {templates.length > 0 && (
-            <Badge variant="secondary" className="ml-1.5 text-[10px]">
+            <Badge variant="secondary" className="ml-1.5 text-[0.625rem]">
               {templates.length}
             </Badge>
           )}
@@ -291,12 +291,12 @@ export function EntryTemplatesSection({ teamId, isOwner }: { teamId: string; isO
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium">{tpl.name}</span>
                       {recurrenceBadge(tpl) && (
-                        <Badge variant="secondary" className="text-[10px]">
+                        <Badge variant="secondary" className="text-[0.625rem]">
                           {recurrenceBadge(tpl)}
                         </Badge>
                       )}
                       {!tpl.active && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-[0.625rem]">
                           {t('inactive')}
                         </Badge>
                       )}

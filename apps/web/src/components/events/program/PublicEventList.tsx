@@ -68,7 +68,7 @@ export function PublicEventList({
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-medium">{event.title}</span>
               {event.programItemCount > 0 && (
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-[0.625rem]">
                   {t('publicHasProgramme')}
                 </Badge>
               )}

@@ -262,7 +262,7 @@ export function SessionPeekSheet({ sessionId, onClose, activities, onEdit, onDel
                   <div className="space-y-0.5">
                     {pendingBookings.map((b) => (
                       <div key={b.id} className="flex items-center gap-2.5 py-1.5">
-                        <div className="h-7 w-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                        <div className="h-7 w-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[0.625rem] font-bold shrink-0">
                           {b.firstname?.[0]}{b.lastname?.[0]}
                         </div>
                         <PeekName contactId={b.contact}>{b.lastname} {b.firstname}</PeekName>
@@ -288,7 +288,7 @@ export function SessionPeekSheet({ sessionId, onClose, activities, onEdit, onDel
                 <div className="space-y-0.5">
                   {visibleParticipants.map((p) => (
                     <div key={p.id} className="flex items-center gap-2.5 py-1.5">
-                      <div className="h-7 w-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[0.625rem] font-bold shrink-0">
                         {p.firstname?.[0]}{p.lastname?.[0]}
                       </div>
                       <PeekName contactId={p.contact}>{p.lastname} {p.firstname}</PeekName>

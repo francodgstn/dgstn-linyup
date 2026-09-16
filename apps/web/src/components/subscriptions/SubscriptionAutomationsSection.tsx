@@ -100,7 +100,7 @@ export function SubscriptionAutomationsSection({
                 <p className="text-xs text-muted-foreground">{triggerLabel(r.trigger.type, t)}</p>
               </div>
               {!r.active && (
-                <Badge variant="outline" className="text-[10px] shrink-0">
+                <Badge variant="outline" className="text-[0.625rem] shrink-0">
                   {t('autoPaused')}
                 </Badge>
               )}
