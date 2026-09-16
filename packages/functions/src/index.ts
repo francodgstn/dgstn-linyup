@@ -287,7 +287,8 @@ export {
 export { unlockPlugin } from './plugins/unlockPlugin'
 export { assistantChat } from './assistant'
 
-// AI offer drafting — an EXPERIMENT, not a plugin (see EXPERIMENTAL_FEATURES).
+// AI offer drafting — the `ai-offer-drafting` module of the AI insights plugin
+// (types/aiInsights.ts); an experiment until 2026-09-17.
 // Two callables on purpose: `draftOfferings` runs the model and writes nothing,
 // `applyOfferingDraft` writes and runs no model. The seam between them is where
 // a human decides.

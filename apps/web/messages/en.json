@@ -2988,13 +2988,15 @@
     "apiConnectorsDescription": "Connect Claude, ChatGPT and your own tools to your studio's data with read-only API keys. You choose what is shared.",
     "removeConfirmBodyApiKeys": "Every API key your team created is revoked immediately, so any assistant or integration using one stops working. Reinstalling does not restore them: you will have to create new keys.",
     "aiName": "AI insights",
-    "aiDescription": "AI features you switch on one by one: a briefing on each contact, a recap you can email the member, and a reading of the whole team. Written only when you ask, from the records you already keep.",
+    "aiDescription": "AI features you switch on one by one: a briefing on each contact, a recap you can email the member, a reading of the whole team, and a first draft of your offer. Written only when you ask, from the records you already keep.",
     "aiContactSummaryName": "Contact briefing",
     "aiContactSummaryDescription": "A short AI summary at the top of each contact: their status, the outlook and one thing for the next session.",
     "aiMemberRecapName": "Member recap email",
     "aiMemberRecapDescription": "Send the member a recap from their briefing: where they stand and a tip for their next session, never the outlook. You review and edit it before it goes. Needs the contact briefing.",
     "aiTeamSentimentName": "Team sentiment",
-    "aiTeamSentimentDescription": "A reading of the whole team on the dashboard, made from your contact briefings: the mood, what is working, what to watch. Up to 5 a day, for owners and managers."
+    "aiTeamSentimentDescription": "A reading of the whole team on the dashboard, made from your contact briefings: the mood, what is working, what to watch. Up to 5 a day, for owners and managers.",
+    "aiOfferDraftingName": "Draft your offer",
+    "aiOfferDraftingDescription": "Describe your studio and get a first set of activities and plans to review, from Offerings → Create → Draft with AI. Nothing is created until you confirm. Owners only."
   },
   "AiAssistant": {
     "launcherLabel": "AI assistant",
@@ -7542,9 +7544,6 @@
     "extraDashboardName": "Extra dashboard components",
     "extraDashboardDescription": "Adds a shelf of extra panels at the foot of the dashboard: what sells best, the engagement matrix, trial conversion, the finance charts and the correlation explorer. They work, but their shape is still being decided and any of them may change or be withdrawn.",
     "extraDashboardSurface": "Dashboard, below Trends",
-    "offerDraftingDescription": "Describe your studio and get a first set of activities and plans to review. Nothing is created until you look it over and confirm — and it can only ever propose activities and plans.",
-    "offerDraftingName": "Draft your offer with AI",
-    "offerDraftingSurface": "Offerings → Create → Draft with AI",
     "waitlistDescription": "Let clients queue for a full class and be offered a seat when one frees up, with a claim window before the offer passes to the next person. It works, but the offer and reminder flow is still being tuned. Switching it off hides the option on new activities; queues that already exist keep their place and their offers.",
     "waitlistName": "Waitlists",
     "waitlistSurface": "Each class activity, and the public booking page when a class is full."

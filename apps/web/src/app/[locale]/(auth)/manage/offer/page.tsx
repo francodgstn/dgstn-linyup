@@ -76,6 +76,7 @@ import {
 
 import {
   ACTIVITIES_COLLECTION,
+  AI_MODULES,
   activityPlanFacets,
   COURSES_COLLECTION,
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
@@ -127,7 +128,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tip } from '@/components/ui/tip'
 import { AiDraftDialog } from '@/components/offer/AiDraftDialog'
-import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
 import {
   PaneDirtyProvider,
   usePaneDirtyState,
@@ -228,7 +228,7 @@ function CreateAction({
 }: {
   tabs: { key: TabKey }[]
   onOpen: (kind: 'activity' | 'plan') => void
-  /** Absent unless the `offer-drafting` experiment is on for this team. */
+  /** Absent unless the `ai-offer-drafting` module is installed and the reader is the owner. */
   onDraftWithAi?: () => void
 }) {
   const t = useTranslations('OfferCatalogue')
@@ -428,11 +428,13 @@ export default function CataloguePage() {
   const [creating, setCreating] = useState<'activity' | 'plan' | null>(null)
   const [schedulePreview, setSchedulePreview] = useState<Activity | null>(null)
   const [confirming, setConfirming] = useState<Confirming>(null)
-  // AN EXPERIMENT, off unless the owner switched it on — see
-  // EXPERIMENTAL_FEATURES. `isEnabled` reads false while the team doc is still
-  // loading, which is the safe direction for an opt-in.
-  const { isEnabled } = useExperimentalFeatures()
-  const aiDrafting = isEnabled('offer-drafting')
+  // THE `ai-offer-drafting` MODULE of the AI insights plugin (an experiment
+  // until 2026-09-17). OWNER-ONLY, like `draftOfferings` behind it: the module
+  // is installed by an owner, and a manager shown the entry would only ever be
+  // refused. `isInstalled` reads false while installs load — the safe direction.
+  const { teamRole } = useAuth()
+  const { isInstalled } = useInstalledPlugins()
+  const aiDrafting = isInstalled(AI_MODULES.offerDrafting) && teamRole === 'owner'
   const [aiOpen, setAiOpen] = useState(false)
 
   const { data: activities = [], isLoading: loadingActivities } = useActivities(currentTeamId)
@@ -445,7 +447,6 @@ export default function CataloguePage() {
   // Courses only exist for a studio that installed the plugin, so the group is
   // absent rather than empty when it is not — an empty "Courses" heading would
   // advertise a feature this studio has not got.
-  const { isInstalled } = useInstalledPlugins()
   const coursesInstalled = isInstalled('online-courses')
   const { data: courses = [], isLoading: loadingCourses } = useCourses(
     coursesInstalled ? currentTeamId : null

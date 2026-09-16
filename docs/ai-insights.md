@@ -18,6 +18,7 @@ too, and the module switches then render on the org plugins page.
 | `ai-contact-summary` | The coach's briefing on a contact: status, outlook, one thing for the next session. Also writes the member recap in the same call. | Contact page, insights card | `generateContactSummary` (`contacts/aiSummary.ts`) |
 | `ai-member-recap` | "Send to member": the member-facing part of the briefing, reviewed and editable, emailed as the studio. | Button on the briefing + `MemberRecapDialog` | `sendContactRecapEmail` (`contacts/aiRecapEmail.ts`) |
 | `ai-team-sentiment` | A reading of the team's ACTIVE members: refreshes their briefings where something changed, then reads them — mood, overview, what is working, what to watch, where to focus. | Dashboard, between the working rows and Trends | `generateTeamSentiment` (`aiInsights/teamSentiment.ts`) starts a run; `refreshTeamSentimentRound` (`aiInsights/teamSentimentWorker.ts`) drains it |
+| `ai-offer-drafting` | "Draft with AI": describe the studio, review the proposed activities and plans, then create them in one batch. Owner only. | Offerings → Create menu + `AiDraftDialog` | `draftOfferings` proposes, `applyOfferingDraft` writes (`offer/draftOfferings.ts`) |
 
 Ids, limits and stored shapes: `packages/shared/src/types/aiInsights.ts`.
 The briefing itself — dossier, signals, prompt, reply: `docs/contact-summary.md`.
@@ -116,8 +117,15 @@ and `run`, one listener for all three.
 - The `contact-summary` **experiment** was retired into `ai-contact-summary`. A
   team that had it on reads as off and installs the plugin; the stored summaries
   are untouched.
-- **Offer drafting** (`offer-drafting`) stays an experiment for now. It is AI and
-  could become a module; nobody has asked for it to move.
+- The `offer-drafting` **experiment** was retired into `ai-offer-drafting` on
+  2026-09-17, so every AI feature a studio switches on sits in this one card.
+  It stays OWNER-ONLY: the Create menu shows "Draft with AI" to the owner alone,
+  and `draftOfferings` / `applyOfferingDraft` check the owner role and then the
+  module. A team that had the experiment on installs the plugin.
+- **A container installed before a module was added does not get that module on
+  deploy.** The reconciler runs when the container's install document is written,
+  so an existing install gains `ai-offer-drafting` the next time a module switch
+  in its Configure dialog is saved.
 - **The in-app assistant** (`ai-assistant`) stays standalone: it is `locked`, and
   a locked plugin cannot be a member (`unlockPlugin` writes one document and never
   reconciles).

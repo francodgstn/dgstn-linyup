@@ -2988,13 +2988,15 @@
     "apiConnectorsDescription": "Connectez Claude, ChatGPT et vos propres outils aux données de votre studio grâce à des clés API en lecture seule. Vous choisissez ce qui est partagé.",
     "removeConfirmBodyApiKeys": "Toutes les clés API créées par votre équipe sont révoquées immédiatement : tout assistant ou toute intégration qui en utilise une cesse de fonctionner. Une nouvelle installation ne les rétablit pas : vous devrez créer de nouvelles clés.",
     "aiName": "Analyses IA",
-    "aiDescription": "Des fonctions IA à activer une par une : une synthèse pour chaque contact, un récapitulatif à envoyer au membre par e-mail et une lecture de toute l'équipe. Rédigées uniquement à votre demande, à partir des données que vous tenez déjà.",
+    "aiDescription": "Des fonctions IA à activer une par une : une synthèse pour chaque contact, un récapitulatif à envoyer au membre par e-mail, une lecture de toute l'équipe et une première ébauche de votre offre. Rédigées uniquement à votre demande, à partir des données que vous tenez déjà.",
     "aiContactSummaryName": "Synthèse du contact",
     "aiContactSummaryDescription": "Un court résumé IA en tête de chaque contact : son statut, les perspectives et une idée pour la prochaine séance.",
     "aiMemberRecapName": "Récapitulatif par e-mail",
     "aiMemberRecapDescription": "Envoyez au membre un récapitulatif tiré de sa synthèse : où il en est et un conseil pour sa prochaine séance, jamais les perspectives. Vous le relisez et le modifiez avant l'envoi. Nécessite la synthèse du contact.",
     "aiTeamSentimentName": "Climat de l'équipe",
-    "aiTeamSentimentDescription": "Une lecture de toute l'équipe sur le tableau de bord, à partir de vos synthèses de contacts : le climat, ce qui fonctionne, ce qui mérite attention. Jusqu'à 5 par jour, pour les propriétaires et les responsables."
+    "aiTeamSentimentDescription": "Une lecture de toute l'équipe sur le tableau de bord, à partir de vos synthèses de contacts : le climat, ce qui fonctionne, ce qui mérite attention. Jusqu'à 5 par jour, pour les propriétaires et les responsables.",
+    "aiOfferDraftingName": "Ébauche de l'offre",
+    "aiOfferDraftingDescription": "Décrivez votre studio et obtenez une première série d'activités et d'abonnements à relire, depuis Offres → Créer → Rédiger avec l'IA. Rien n'est créé avant votre confirmation. Réservé aux propriétaires."
   },
   "AiAssistant": {
     "launcherLabel": "Assistant IA",
@@ -7542,9 +7544,6 @@
     "extraDashboardName": "Composants supplémentaires du tableau de bord",
     "extraDashboardDescription": "Ajoute une série de panneaux supplémentaires au bas du tableau de bord : les meilleures ventes, la matrice d'engagement, la conversion des séances d'essai, les graphiques financiers et l'explorateur de corrélations. Ils fonctionnent, mais leur forme n'est pas encore arrêtée et chacun peut changer ou être retiré.",
     "extraDashboardSurface": "Tableau de bord, sous « Tendances »",
-    "offerDraftingDescription": "Décrivez votre studio et obtenez une première série d'activités et d'abonnements à relire. Rien n'est créé avant votre confirmation — et cela ne peut proposer que des activités et des abonnements.",
-    "offerDraftingName": "Rédiger votre offre avec l'IA",
-    "offerDraftingSurface": "Offres → Créer → Rédiger avec l'IA",
     "waitlistDescription": "Permettez aux clients de faire la queue pour un cours complet et de se voir proposer une place dès qu'elle se libère, avec un délai avant que l'offre passe à la personne suivante. Cela fonctionne, mais le déroulé des offres et des rappels est encore en cours d'ajustement. La désactivation masque l'option sur les nouvelles activités ; les files existantes gardent leur ordre et leurs offres.",
     "waitlistName": "Listes d'attente",
     "waitlistSurface": "Sur chaque activité de type cours, et sur la page de réservation publique quand un cours est complet."

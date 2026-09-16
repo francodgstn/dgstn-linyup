@@ -39,6 +39,12 @@ export const AI_MODULES = {
   memberRecap: 'ai-member-recap',
   /** A team-wide reading of the contact summaries, on the dashboard. */
   teamSentiment: 'ai-team-sentiment',
+  /**
+   * "Draft with AI" on Offerings: activities and plans proposed from a
+   * description, reviewed, then created. The `offer-drafting` experiment until
+   * 2026-09-17.
+   */
+  offerDrafting: 'ai-offer-drafting',
 } as const
 
 export type AiModuleId = (typeof AI_MODULES)[keyof typeof AI_MODULES]

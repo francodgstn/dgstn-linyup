@@ -37,7 +37,12 @@ export const PLUGIN_BUNDLES: Record<PluginId, readonly PluginId[]> = {
   hmd: ['hmd-fighting-cup', 'hmd-belts'],
   // AI insights — the first GENERIC container. See types/aiInsights.ts and
   // apps/web/src/plugins/ai/manifest.ts. Order is the config panel's order.
-  ai: ['ai-contact-summary', 'ai-member-recap', 'ai-team-sentiment'],
+  //
+  // `ai-offer-drafting` joined on 2026-09-17. A container installed before then
+  // gains it the next time its install document is written (a module switch in
+  // the Configure dialog does it): the reconciler runs on that write, not on a
+  // deploy.
+  ai: ['ai-contact-summary', 'ai-member-recap', 'ai-team-sentiment', 'ai-offer-drafting'],
 }
 
 /** Members of `id`, or `[]` when `id` is not a container. */
