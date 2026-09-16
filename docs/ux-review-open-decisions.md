@@ -535,3 +535,30 @@ What the run DID prove, and what was fixed from it: the draft save was deleting
 the redirect table on every save (now fixed, and the payload is typed so the
 next omission fails the build).
 
+## 35. Turbopack cannot resolve one dependency in a deep worktree
+**ENVIRONMENT, not code.** `next dev --turbopack` in this worktree fails with
+`Can't resolve '@tiptap/extension-drag-handle-react'` on a cold cache, so every
+route that pulls `RichTextEditor` 500s. Node resolves it fine both ways
+(CJS and ESM), the pnpm junction and files are intact, Windows long paths ARE
+enabled, and `pnpm install` does not change it; the real path is 277 characters.
+`next dev --webpack` compiles and serves the same tree without complaint, which
+is how this session's UI was verified.
+
+*Meanwhile:* run the dev server with `--webpack` in a deep worktree. Worth a
+turbopack issue with the path length if it shows up outside this machine.
+Related, and separate: a poisoned `.next` needs the DIRECTORY moved away —
+restarting the server is not enough, and a stale `.next.old-*` left inside
+`apps/web` makes Tailwind scan a 500 MB build output and fail on a CSS class
+candidate containing a NUL byte.
+
+## 36. A new page starts empty — should it start from a layout?
+**PARKED (a proposal, not a defect).** Creating a blog post now opens on a text
+block; creating a PAGE still opens on nothing but an "Add section" button.
+CrossFit Zug's seven offer pages are the same four blocks in the same order
+(hero → text → features → call to action), which is what a studio's pages
+usually are. Offering two or three starters at creation — "Offer page",
+"Simple page", "Empty" — would remove the blankest moment in the builder, reuse
+the section library that already exists, and cost one extra step in the create
+dialog. It needs a product call on WHICH starters exist and what they are
+called, so it was not built.
+
