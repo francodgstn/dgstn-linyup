@@ -226,6 +226,12 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
         flags: { internal: true },
         // Deliberately absent: `payments`. No Connect account means
         // `payments_enabled` fails closed and every priced door stays shut.
+        // No public API or MCP either, for the reason the demo exists: its owner
+        // login is published (docs/test-accounts.md), so anyone who reads the docs
+        // could mint a key and read — and bill — our Firestore indefinitely. Same
+        // block the /try playground carries (docs/public-api.md -> "Blocked
+        // tenants"); creation is refused, so no credential can exist.
+        api_access_blocked: true,
         created: FieldValue.serverTimestamp(),
         createdBy: DEMO_OWNER_UID,
         primaryContact: DEMO_OWNER_UID,
