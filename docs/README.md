@@ -16,72 +16,72 @@ you may act on it:
 
 ## Payments, billing and finance
 
-- [**Accounting — double-entry ledger (finance plugin)**](./accounting.md) — how it works now · 2026-09-16
-- [**Finance reports — journal, monthly rollups, CSV export**](./finance-reports.md) — how it works now · 2026-09-16
-- [**Finance v2 — Accrual & Assets (plan)**](./finance-accrual.md) — work to do · 2026-09-16
-- [**Money triggers for the automation engine**](./automations-money-triggers.md) — how it works now · 2026-09-16
-- [**Multi-plan holdings — a contact holds a LIST of plans**](./multi-plan-holdings.md) — work to do · 2026-09-16
-- [**Payments: contact → studio**](./payment-contact-studio.md) — how it works now · 2026-09-16
-- [**Payments: studio → Linyup (SaaS billing)**](./payment-studio-linyup.md) — how it works now · 2026-09-16
-- [**Promo codes — architecture**](./promo-codes.md) — how it works now · 2026-09-16
-- [**Stripe catalog — declarative**](./stripe-catalog.md) — how it works now · 2026-09-16
-- [**Tarif 595 — health-insurance reimbursement receipts (CH)**](./tarif-595.md) — how it works now · 2026-09-16
+- [**Accounting — double-entry ledger (finance plugin)**](./accounting.md) — how it works now
+- [**Finance reports — journal, monthly rollups, CSV export**](./finance-reports.md) — how it works now
+- [**Finance v2 — Accrual & Assets (plan)**](./finance-accrual.md) — work to do
+- [**Money triggers for the automation engine**](./automations-money-triggers.md) — how it works now
+- [**Multi-plan holdings — a contact holds a LIST of plans**](./multi-plan-holdings.md) — work to do
+- [**Payments: contact → studio**](./payment-contact-studio.md) — how it works now
+- [**Payments: studio → Linyup (SaaS billing)**](./payment-studio-linyup.md) — how it works now
+- [**Promo codes — architecture**](./promo-codes.md) — how it works now
+- [**Stripe catalog — declarative**](./stripe-catalog.md) — how it works now
+- [**Tarif 595 — health-insurance reimbursement receipts (CH)**](./tarif-595.md) — how it works now
 
 ## Booking — classes, appointments, waivers
 
-- [**Appointments (1:1) — architecture**](./appointments.md) — how it works now · 2026-09-16
-- [**Event programmes**](./event-program.md) — how it works now · 2026-09-16
-- [**The booking modal, on the studio's own website**](./embed-booking.md) — how it works now · 2026-09-16
-- [**Waitlist — architecture**](./waitlist.md) — how it works now · 2026-09-16
-- [**Waivers — architecture**](./waivers.md) — how it works now · 2026-09-16
+- [**Appointments (1:1) — architecture**](./appointments.md) — how it works now
+- [**Event programmes**](./event-program.md) — how it works now
+- [**The booking modal, on the studio's own website**](./embed-booking.md) — how it works now
+- [**Waitlist — architecture**](./waitlist.md) — how it works now
+- [**Waivers — architecture**](./waivers.md) — how it works now
 
 ## Contacts and membership
 
-- [**A coach's own contacts, beside the studio's — design**](./studio-independent-contacts.md) — how it works now · 2026-09-16
-- [**AI insights — the AI plugin container**](./ai-insights.md) — how it works now · 2026-09-16
-- [**Contact AI summary**](./contact-summary.md) — how it works now · 2026-09-16
-- [**Decoupling the rank scale — a plan**](./rank-scale-decoupling.md) — work to do · 2026-09-16
-- [**What an organisation may see of a member studio's people — design**](./org-contact-visibility.md) — how it works now · 2026-09-16
+- [**A coach's own contacts, beside the studio's — design**](./studio-independent-contacts.md) — how it works now
+- [**AI insights — the AI plugin container**](./ai-insights.md) — how it works now
+- [**Contact AI summary**](./contact-summary.md) — how it works now
+- [**Decoupling the rank scale — a plan**](./rank-scale-decoupling.md) — work to do
+- [**What an organisation may see of a member studio's people — design**](./org-contact-visibility.md) — how it works now
 
 ## Public content and localisation
 
-- [**Site translations — public website + embed localization**](./site-translations.md) — how it works now · 2026-09-16
+- [**Site translations — public website + embed localization**](./site-translations.md) — how it works now
 
 ## Platform, infrastructure and API
 
-- [**App Check rollout runbook**](./app-check-rollout.md) — how it works now · 2026-09-16
-- [**Custom domains ("bring your own domain")**](./custom-domains.md) — how it works now · 2026-09-16
-- [**Organisation navigation — design**](./org-navigation.md) — how it works now · 2026-09-16
-- [**Plugins**](./plugins.md) — how it works now · 2026-09-16
-- [**Public API + remote MCP server**](./public-api.md) — how it works now · 2026-09-16
-- [**Receiving replies (inbound mail)**](./email-inbound.md) — how it works now · 2026-09-16
+- [**App Check rollout runbook**](./app-check-rollout.md) — how it works now
+- [**Custom domains ("bring your own domain")**](./custom-domains.md) — how it works now
+- [**Organisation navigation — design**](./org-navigation.md) — how it works now
+- [**Plugins**](./plugins.md) — how it works now
+- [**Public API + remote MCP server**](./public-api.md) — how it works now
+- [**Receiving replies (inbound mail)**](./email-inbound.md) — how it works now
 
 ## Member app
 
-- [**App-store insights in the operator console**](./app-store-insights.md) — how it works now · 2026-09-16
-- [**Member app — EAS + CI setup for STAGING (a runbook for a local agent)**](./mobile-eas-setup.md) — how it works now · 2026-09-16
-- [**Member app — store setup: TestFlight + Play, testing now, public later**](./mobile-store-setup.md) — how it works now · 2026-09-16
+- [**App-store insights in the operator console**](./app-store-insights.md) — how it works now
+- [**Member app — EAS + CI setup for STAGING (a runbook for a local agent)**](./mobile-eas-setup.md) — how it works now
+- [**Member app — store setup: TestFlight + Play, testing now, public later**](./mobile-store-setup.md) — how it works now
 
 ## Operations, launch and migration
 
-- [**Analysis, 2026-08-25 — ops readiness, seed data, HMD import**](./launch/analysis-2026-08-25.md) — how it works now · 2026-09-16
-- [**Data safety checklist**](./launch/data-safety-checklist.md) — how it works now · 2026-09-16
-- [**Founder onboarding runbook (first 5)**](./launch/founder-onboarding-runbook.md) — how it works now · 2026-09-16
-- [**Go-live readiness — first pass, August 2026**](./launch/readiness-2026-08.md) — how it works now · 2026-09-16
-- [**Input pack for the ToS + DPA — facts, extracted from the code**](./launch/legal-input-pack.md) — how it works now · 2026-09-16
-- [**Migration Checklist — hmd-lineup → dgstn-lineup**](./migration-checklist.md) — how it works now · 2026-09-16
-- [**Prod canary, 2026-08-23 — triage and fix plan**](./launch/canary-2026-08-fixes.md) — how it works now · 2026-09-16
-- [**Production demo tenant, store review, and cutover verification**](./launch/prod-demo-and-store-review.md) — how it works now · 2026-09-16
-- [**Provider wiring checklist (go-live QA)**](./launch/provider-wiring-checklist.md) — how it works now · 2026-09-16
-- [**Staging manual review, 2026-08-24 — the 29 findings**](./launch/staging-review-2026-08-24.md) — how it works now · 2026-09-16
-- [**Test accounts — every environment, web and member app**](./test-accounts.md) — how it works now · 2026-09-16
+- [**Analysis, 2026-08-25 — ops readiness, seed data, HMD import**](./launch/analysis-2026-08-25.md) — how it works now
+- [**Data safety checklist**](./launch/data-safety-checklist.md) — how it works now
+- [**Founder onboarding runbook (first 5)**](./launch/founder-onboarding-runbook.md) — how it works now
+- [**Go-live readiness — first pass, August 2026**](./launch/readiness-2026-08.md) — how it works now
+- [**Input pack for the ToS + DPA — facts, extracted from the code**](./launch/legal-input-pack.md) — how it works now
+- [**Migration Checklist — hmd-lineup → dgstn-lineup**](./migration-checklist.md) — how it works now
+- [**Prod canary, 2026-08-23 — triage and fix plan**](./launch/canary-2026-08-fixes.md) — how it works now
+- [**Production demo tenant, store review, and cutover verification**](./launch/prod-demo-and-store-review.md) — how it works now
+- [**Provider wiring checklist (go-live QA)**](./launch/provider-wiring-checklist.md) — how it works now
+- [**Staging manual review, 2026-08-24 — the 29 findings**](./launch/staging-review-2026-08-24.md) — how it works now
+- [**Test accounts — every environment, web and member app**](./test-accounts.md) — how it works now
 
 ## Product, strategy and open registers
 
-- [**HMD SaaS Strategy — Product & Pricing Blueprint**](./product-strategy.md) — how it works now · 2026-09-16
-- [**In-app feedback system**](./in-app-feedback.md) — how it works now · 2026-09-16
-- [**Open decisions — parked for Franco**](./ux-review-open-decisions.md) — how it works now · 2026-09-16
-- [**Open defects**](./open-defects.md) — how it works now · 2026-09-16
+- [**HMD SaaS Strategy — Product & Pricing Blueprint**](./product-strategy.md) — how it works now
+- [**In-app feedback system**](./in-app-feedback.md) — how it works now
+- [**Open decisions — parked for Franco**](./ux-review-open-decisions.md) — how it works now
+- [**Open defects**](./open-defects.md) — how it works now
 
 ## Closed and point-in-time
 
@@ -90,11 +90,11 @@ is often the only place a decision's reasoning survives. **Verify against the co
 before acting on anything here.** Listed wherever they physically live — closure is
 carried by `status:`, not by which folder a file sits in.
 
-- [**Seed alignment — Phase 1 audit**](./archive/seed-alignment-plan.md) — finished · 2026-09-16
-- [**UX review, August 2026**](./archive/ux-review-2026-08.md) — finished · 2026-09-16
-- [**Wave 3 — branch handover**](./archive/wave3-handover.md) — finished · 2026-09-16
-- [**FareHarbor → Linyup — competitive feature analysis**](./fareharbor-analysis.md) — true as of a date · 2026-09-16
-- [**Member app — scan and roadmap (2026-09-02)**](./mobile-roadmap-2026-09.md) — true as of a date · 2026-09-16
-- [**Scalability — September 2026**](./scalability-2026-09.md) — true as of a date · 2026-09-16
-- [**Security audit — Linyup — 2026-07**](./security-audit-2026-07.md) — true as of a date · 2026-09-16
-- [**Seed truth — the 2026-08 coverage audit**](./seed-truth-2026-08.md) — true as of a date · 2026-09-16
+- [**Seed truth — the 2026-08 coverage audit**](./seed-truth-2026-08.md) — true as of a date
+- [**Security audit — Linyup — 2026-07**](./security-audit-2026-07.md) — true as of a date
+- [**Scalability — September 2026**](./scalability-2026-09.md) — true as of a date
+- [**Member app — scan and roadmap (2026-09-02)**](./mobile-roadmap-2026-09.md) — true as of a date
+- [**FareHarbor → Linyup — competitive feature analysis**](./fareharbor-analysis.md) — true as of a date
+- [**Wave 3 — branch handover**](./archive/wave3-handover.md) — finished
+- [**UX review, August 2026**](./archive/ux-review-2026-08.md) — finished
+- [**Seed alignment — Phase 1 audit**](./archive/seed-alignment-plan.md) — finished
