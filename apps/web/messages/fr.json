@@ -3828,7 +3828,17 @@
     "addSectionNoMatch": "Aucune section ne correspond.",
     "sectionGroupContent": "Contenu et mise en page",
     "sectionGroupOffer": "Votre offre",
-    "sectionGroupTrust": "Équipe et confiance"
+    "sectionGroupTrust": "Équipe et confiance",
+    "pagesNewPostTitle": "Nouvel article",
+    "pagesCreatePostAction": "Créer l'article",
+    "pagesPathEdit": "Personnaliser",
+    "pagesPostTitleField": "Titre",
+    "pagesHomeSettingsTitle": "Paramètres de la page d'accueil",
+    "pagesSeoHint": "L'apparence de cette page dans les résultats de recherche.",
+    "unsavedLeaveConfirm": "Vous avez des modifications non enregistrées sur votre site. Quitter quand même ?",
+    "publishConfirmTitle": "Mettre le site en ligne ?",
+    "publishConfirmBody": "Cela publie tout votre brouillon : la page d'accueil, {pages, plural, =0 {aucune autre page} one {# autre page} other {# autres pages}} et {posts, plural, =0 {aucun article} one {# article de blog} other {# articles de blog}}.",
+    "publishConfirmHidden": "{count, plural, one {# page masquée reste} other {# pages masquées restent}} dans le brouillon."
   },
   "Kiosk": {
     "title": "Kiosque",
@@ -3979,7 +3989,8 @@
     "addSectionNoMatch": "Aucune section ne correspond.",
     "sectionGroupContent": "Contenu et mise en page",
     "sectionGroupOffer": "Votre fédération",
-    "sectionGroupTrust": "Équipe et confiance"
+    "sectionGroupTrust": "Équipe et confiance",
+    "unsavedLeaveConfirm": "Vous avez des modifications non enregistrées sur votre site. Quitter quand même ?"
   },
   "Courses": {
     "title": "Cours en ligne",

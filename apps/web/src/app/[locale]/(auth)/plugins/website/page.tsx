@@ -118,6 +118,7 @@ import { ThemePicker } from '@/components/website/ThemePicker'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
 import { SECTION_LIBRARY, newSection, newSectionId, emptyDraft } from '@/plugins/website/defaults'
 import { SectionPicker } from '@/components/website/SectionPicker'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { getWebsiteLimits } from '@/plugins/website/limits'
 import { Tip } from '@/components/ui/tip'
 
@@ -176,8 +177,6 @@ function AppearancePanel({
 
   const setHeader = (p: Partial<SiteMeta['header']>) =>
     onChange({ header: { ...meta.header, ...p } })
-  const setSeo = (p: Partial<NonNullable<SiteMeta['seo']>>) =>
-    onChange({ seo: { ...meta.seo, ...p } })
 
   return (
     <div className="space-y-5">
@@ -374,26 +373,69 @@ function AppearancePanel({
         />
       </label>
 
-      <div className="space-y-3 rounded-lg border p-3">
-        <p className="text-xs font-medium text-muted-foreground">SEO (optional)</p>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('apPageTitle')}</Label>
-          <Input
-            value={meta.seo?.title ?? ''}
-            onChange={(e) => setSeo({ title: e.target.value })}
-            className="h-9"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('apMetaDescription')}</Label>
-          <Input
-            value={meta.seo?.description ?? ''}
-            onChange={(e) => setSeo({ description: e.target.value })}
-            className="h-9"
-          />
-        </div>
-      </div>
+      {/* NO SEO BLOCK HERE ANY MORE. These two fields were never site-wide —
+          they are the HOME page's title and description (the public route reads
+          them only for the site root), sitting in a tab a studio reads as
+          global, while every other page had its own pair behind Page settings.
+          A manager tuning her About page had two identical-looking forms and no
+          way to tell which one she was in. Home now uses the same Page-settings
+          entry point as every other page. */}
     </div>
+  )
+}
+
+/**
+ * The home page's settings. Every other page opens the page-settings dialog; home
+ * has no path, no menu label, nothing to hide and nothing to delete, so what is
+ * left is the search listing — but it opens from the SAME button, because "the
+ * page I am looking at" is the only mental model a studio should need here.
+ */
+function HomeSettingsDialog({
+  open,
+  onOpenChange,
+  meta,
+  onChange,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  meta: SiteMeta
+  onChange: (patch: Partial<SiteMeta>) => void
+}) {
+  const t = useTranslations('Website')
+  const setSeo = (patch: Partial<NonNullable<SiteMeta['seo']>>) =>
+    onChange({ seo: { ...meta.seo, ...patch } })
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('pagesHomeSettingsTitle')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t('pagesSeoHint')}</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesSeoTitleField')}</Label>
+            <Input
+              value={meta.seo?.title ?? ''}
+              onChange={(e) => setSeo({ title: e.target.value })}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesSeoDescriptionField')}</Label>
+            <Input
+              value={meta.seo?.description ?? ''}
+              onChange={(e) => setSeo({ description: e.target.value })}
+              className="h-9"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" onClick={() => onOpenChange(false)}>
+            {t('pagesDone')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -497,6 +539,7 @@ function AddPageDialog({
   // Page ↔ Post) stops overwriting it — the same "don't fight the last thing
   // they touched" rule `normalizeSitePagePath` itself follows on blur.
   const [pathTouched, setPathTouched] = useState(false)
+  const [pathOpen, setPathOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -505,6 +548,7 @@ function AddPageDialog({
     setTitle('')
     setPath('')
     setPathTouched(false)
+    setPathOpen(false)
     setError(null)
   }, [open])
 
@@ -549,7 +593,7 @@ function AddPageDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{t('pagesNewTitle')}</DialogTitle>
+          <DialogTitle>{kind === 'post' ? t('pagesNewPostTitle') : t('pagesNewTitle')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -580,21 +624,44 @@ function AddPageDialog({
               autoFocus
             />
           </div>
+          {/* THE ADDRESS IS A CONSEQUENCE OF THE TITLE, NOT A QUESTION.
+              A studio owner writing "Unsere Werte" has no opinion about
+              "unsere-werte" and should not be asked to form one — so the
+              derived address is shown as a fact, and only a studio that WANTS
+              to change it opens the field. */}
           <div className="space-y-1.5">
             <Label className="text-xs">{t('pagesPathField')}</Label>
-            <div className="flex items-center gap-1.5">
-              <span className="shrink-0 text-xs text-muted-foreground">/site/</span>
-              <Input
-                value={path}
-                onChange={(e) => {
-                  setPathTouched(true)
-                  setPath(e.target.value)
-                }}
-                onBlur={() => setPath((p) => normalizeSitePagePath(p))}
-                className="h-9 font-mono text-xs"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">{t('pagesPathHint')}</p>
+            {pathOpen ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span className="shrink-0 text-xs text-muted-foreground">/site/</span>
+                  <Input
+                    value={path}
+                    onChange={(e) => {
+                      setPathTouched(true)
+                      setPath(e.target.value)
+                    }}
+                    onBlur={() => setPath((p) => normalizeSitePagePath(p))}
+                    className="h-9 font-mono text-xs"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t('pagesPathHint')}</p>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="truncate font-mono text-xs text-muted-foreground">
+                  /site/{path || <span className="italic">…</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPathOpen(true)}
+                  className="shrink-0 text-xs font-medium text-primary hover:underline"
+                >
+                  {t('pagesPathEdit')}
+                </button>
+              </div>
+            )}
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
@@ -603,11 +670,81 @@ function AddPageDialog({
             {tCommon('cancel')}
           </Button>
           <Button type="button" onClick={handleCreate}>
-            {t('pagesCreateAction')}
+            {kind === 'post' ? t('pagesCreatePostAction') : t('pagesCreateAction')}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/**
+ * A POST'S HEADLINE, DATE, COVER AND TEASER ARE THE POST — NOT ITS SETTINGS.
+ *
+ * They were in the settings dialog, one button away from the article they
+ * belong to, next to SEO and the delete button. An author writing a post has
+ * to think about all four of them and about none of the things they were
+ * filed with, so they sit here, above the body, in the order a blog card
+ * shows them. What stays behind the Settings button is what a post shares
+ * with every other page: its address, its menu label, whether it is hidden,
+ * and SEO.
+ */
+function PostHeaderCard({
+  page,
+  teamId,
+  onChange,
+}: {
+  page: SitePageRef
+  teamId: string
+  onChange: (patch: Partial<SitePageRef>) => void
+}) {
+  const t = useTranslations('Website')
+  const excerptLength = (page.excerpt ?? '').length
+  const tenant: SiteEditorTenant = {
+    kind: 'team',
+    id: teamId,
+    uploadImage: (sectionId, file) => uploadSiteImage(teamId, sectionId, file),
+  }
+  return (
+    <div className="space-y-3 rounded-lg border bg-card p-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs">{t('pagesPostTitleField')}</Label>
+        <Input
+          value={page.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          className="h-10 text-base font-semibold"
+        />
+      </div>
+      <div className="grid gap-3 @md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('pagesPostDateField')}</Label>
+          <Input
+            type="date"
+            value={page.publishedOn ?? ''}
+            onChange={(e) => onChange({ publishedOn: e.target.value })}
+            className="h-9"
+          />
+        </div>
+        <ImageField
+          label={t('pagesPostCoverField')}
+          url={page.coverImageUrl}
+          tenant={tenant}
+          sectionId={page.id}
+          onChange={(u) => onChange({ coverImageUrl: u })}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">{t('pagesPostExcerptField')}</Label>
+        <Textarea
+          value={page.excerpt ?? ''}
+          onChange={(e) => onChange({ excerpt: e.target.value.slice(0, 400) })}
+          rows={2}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t('pagesPostExcerptHint', { count: excerptLength, max: 400 })}
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -672,6 +809,7 @@ function PageSettingsDialog({
   const setSeo = (patch: Partial<NonNullable<SitePageRef['seo']>>) =>
     onChange({ seo: { ...page.seo, ...patch } })
 
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -680,14 +818,16 @@ function PageSettingsDialog({
             <DialogTitle>{t('pagesSettingsTitle')}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">{t('pagesTitleField')}</Label>
-              <Input
-                value={page.title}
-                onChange={(e) => onChange({ title: e.target.value })}
-                className="h-9"
-              />
-            </div>
+            {!isPost && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('pagesTitleField')}</Label>
+                <Input
+                  value={page.title}
+                  onChange={(e) => onChange({ title: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">{t('pagesKindField')}</Label>
               <Segmented
@@ -709,37 +849,8 @@ function PageSettingsDialog({
                 }
               />
             </div>
-            {isPost && (
-              <>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t('pagesPostDateField')}</Label>
-                  <Input
-                    type="date"
-                    value={page.publishedOn ?? ''}
-                    onChange={(e) => onChange({ publishedOn: e.target.value })}
-                    className="h-9"
-                  />
-                </div>
-                <ImageField
-                  label={t('pagesPostCoverField')}
-                  url={page.coverImageUrl}
-                  tenant={tenant}
-                  sectionId={page.id}
-                  onChange={(u) => onChange({ coverImageUrl: u })}
-                />
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t('pagesPostExcerptField')}</Label>
-                  <Textarea
-                    value={page.excerpt ?? ''}
-                    onChange={(e) => onChange({ excerpt: e.target.value.slice(0, 400) })}
-                    rows={3}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('pagesPostExcerptHint', { count: excerptLength, max: 400 })}
-                  </p>
-                </div>
-              </>
-            )}
+            {/* A post's date, cover and teaser are NOT here — they are the
+                post, and they are edited beside it (PostHeaderCard). */}
             <div className="space-y-1.5">
               <Label className="text-xs">{t('pagesPathField')}</Label>
               <div className="flex items-center gap-1.5">
@@ -854,6 +965,10 @@ export default function WebsiteBuilderPage() {
 
   const [draft, setDraft] = useState<SiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
+  // A draft lives in this component's state until Save writes it, so leaving
+  // the page throws the work away — silently, which is the part that makes it
+  // expensive. See the hook for what it can and cannot intercept.
+  useUnsavedChangesGuard(dirty, t('unsavedLeaveConfirm'))
   const [tab, setTab] = useTabParam(SITE_TABS, 'sections')
   const [openId, setOpenId] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -882,6 +997,10 @@ export default function WebsiteBuilderPage() {
   const [currentPageId, setCurrentPageId] = useCurrentPageParam(pageIds)
   const [addPageOpen, setAddPageOpen] = useState(false)
   const [pageSettingsOpen, setPageSettingsOpen] = useState(false)
+  // Publish takes the WHOLE site live — every page, every post, every menu
+  // change sitting in the draft, not just the typo you came to fix. So it says
+  // what it is about to put in front of visitors before it does it.
+  const [confirmPublish, setConfirmPublish] = useState(false)
 
   // Initialise the working draft once data has settled.
   useEffect(() => {
@@ -1006,7 +1125,13 @@ export default function WebsiteBuilderPage() {
       ...(kind === 'post' ? { kind: 'post' as const, publishedOn } : {}),
     }
     mutate((d) => ({ ...d, pages: [...(d.pages ?? []), ref] }))
-    setPageSections((prev) => ({ ...(prev ?? {}), [id]: [] }))
+    // A POST OPENS ON SOMETHING TO WRITE IN. An author who just named an
+    // article should not have to know that a paragraph is a "section" and pick
+    // it out of a library before typing the first word; an ordinary page, whose
+    // shape is genuinely the author's choice, still starts empty.
+    const first = kind === 'post' ? [newSection('content')] : []
+    setPageSections((prev) => ({ ...(prev ?? {}), [id]: first }))
+    setOpenId(first[0]?.id ?? null)
     setAddPageOpen(false)
     setCurrentPageId(id)
   }
@@ -1191,6 +1316,7 @@ export default function WebsiteBuilderPage() {
     label: (p.navLabel || p.title) + (p.kind === 'post' ? ` · ${t('pagesPostSuffix')}` : ''),
   }))
   const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
+  const hiddenPageCount = (draft.pages ?? []).filter((p) => p.hidden).length
   const nonPostPages = (draft.pages ?? []).filter((p) => p.kind !== 'post')
   // Newest first, like the live site's `sitePosts` — but WITHOUT its hidden
   // filter: a studio editing a hidden draft post still needs to find it here.
@@ -1266,7 +1392,7 @@ export default function WebsiteBuilderPage() {
           <Button variant="outline" size="sm" onClick={handleSave} disabled={!dirty || saving}>
             {saving ? t('saving') : t('saveDraft')}
           </Button>
-          <Button size="sm" onClick={handlePublish} disabled={publishing}>
+          <Button size="sm" onClick={() => setConfirmPublish(true)} disabled={publishing}>
             {publishing ? (
               t('publishing')
             ) : (
@@ -1379,13 +1505,19 @@ export default function WebsiteBuilderPage() {
                   <Plus className="h-3.5 w-3.5" />
                   {t('pagesAdd')}
                 </Button>
-                {!isHome && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setPageSettingsOpen(true)}>
-                    <Settings className="h-3.5 w-3.5" />
-                    {t('pagesSettings')}
-                  </Button>
-                )}
+                <Button type="button" variant="outline" size="sm" onClick={() => setPageSettingsOpen(true)}>
+                  <Settings className="h-3.5 w-3.5" />
+                  {t('pagesSettings')}
+                </Button>
               </div>
+
+              {currentPageRef?.kind === 'post' && currentTeamId && (
+                <PostHeaderCard
+                  page={currentPageRef}
+                  teamId={currentTeamId}
+                  onChange={(patch) => patchPage(currentPageRef.id, patch)}
+                />
+              )}
 
               <SortableList ids={currentSections.map((s) => s.id)} onReorder={reorderSections}>
                 {currentSections.map((s) => {
@@ -1596,6 +1728,35 @@ export default function WebsiteBuilderPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Publish confirmation — what is about to go live, counted from the
+          draft in hand. Not a diff against what is published today (that needs
+          a field-by-field comparison against the published snapshot); this is
+          the honest half that can be said with no new machinery, and it is
+          already the difference between "I clicked the big button" and "I put
+          three pages and a half-finished post in front of my members". */}
+      <AlertDialog open={confirmPublish} onOpenChange={setConfirmPublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('publishConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('publishConfirmBody', { pages: nonPostPages.length, posts: postPages.length })}
+              {hiddenPageCount > 0 ? ` ${t('publishConfirmHidden', { count: hiddenPageCount })}` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmPublish(false)
+                void handlePublish()
+              }}
+            >
+              {t('publish')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Unpublish confirmation. States the consequence in the visitor's terms —
           the site goes offline now, and any bio-link entry pointing at it stops
           being offered (BioLinkHome filters page links through
@@ -1631,6 +1792,15 @@ export default function WebsiteBuilderPage() {
         postsFull={postsFull}
         onCreate={handleCreatePage}
       />
+
+      {isHome && (
+        <HomeSettingsDialog
+          open={pageSettingsOpen}
+          onOpenChange={setPageSettingsOpen}
+          meta={draft.meta}
+          onChange={(patch) => mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))}
+        />
+      )}
 
       {currentPageRef && (
         <PageSettingsDialog

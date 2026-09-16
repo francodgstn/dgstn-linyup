@@ -3828,7 +3828,17 @@
     "addSectionNoMatch": "No section matches that.",
     "sectionGroupContent": "Content & layout",
     "sectionGroupOffer": "Your offering",
-    "sectionGroupTrust": "People & proof"
+    "sectionGroupTrust": "People & proof",
+    "pagesNewPostTitle": "New blog post",
+    "pagesCreatePostAction": "Create post",
+    "pagesPathEdit": "Customise",
+    "pagesPostTitleField": "Headline",
+    "pagesHomeSettingsTitle": "Home page settings",
+    "pagesSeoHint": "How this page appears in search results.",
+    "unsavedLeaveConfirm": "You have unsaved changes to your website. Leave anyway?",
+    "publishConfirmTitle": "Put the site live?",
+    "publishConfirmBody": "This publishes everything in your draft: the home page, {pages, plural, =0 {no other pages} one {# other page} other {# other pages}} and {posts, plural, =0 {no blog posts} one {# blog post} other {# blog posts}}.",
+    "publishConfirmHidden": "{count, plural, one {# hidden page stays} other {# hidden pages stay}} in the draft."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -3979,7 +3989,8 @@
     "addSectionNoMatch": "No section matches that.",
     "sectionGroupContent": "Content & layout",
     "sectionGroupOffer": "Your federation",
-    "sectionGroupTrust": "People & proof"
+    "sectionGroupTrust": "People & proof",
+    "unsavedLeaveConfirm": "You have unsaved changes to your website. Leave anyway?"
   },
   "Courses": {
     "title": "Online Courses",

@@ -3828,7 +3828,17 @@
     "addSectionNoMatch": "Nessuna sezione corrisponde.",
     "sectionGroupContent": "Contenuto e struttura",
     "sectionGroupOffer": "La tua offerta",
-    "sectionGroupTrust": "Persone e fiducia"
+    "sectionGroupTrust": "Persone e fiducia",
+    "pagesNewPostTitle": "Nuovo articolo",
+    "pagesCreatePostAction": "Crea articolo",
+    "pagesPathEdit": "Personalizza",
+    "pagesPostTitleField": "Titolo",
+    "pagesHomeSettingsTitle": "Impostazioni della home page",
+    "pagesSeoHint": "Come appare questa pagina nei risultati di ricerca.",
+    "unsavedLeaveConfirm": "Hai modifiche non salvate sul tuo sito. Uscire comunque?",
+    "publishConfirmTitle": "Pubblicare il sito?",
+    "publishConfirmBody": "Questo pubblica tutta la tua bozza: la home page, {pages, plural, =0 {nessun’altra pagina} one {# altra pagina} other {# altre pagine}} e {posts, plural, =0 {nessun articolo} one {# articolo del blog} other {# articoli del blog}}.",
+    "publishConfirmHidden": "{count, plural, one {# pagina nascosta resta} other {# pagine nascoste restano}} nella bozza."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -3979,7 +3989,8 @@
     "addSectionNoMatch": "Nessuna sezione corrisponde.",
     "sectionGroupContent": "Contenuto e struttura",
     "sectionGroupOffer": "La vostra federazione",
-    "sectionGroupTrust": "Persone e fiducia"
+    "sectionGroupTrust": "Persone e fiducia",
+    "unsavedLeaveConfirm": "Hai modifiche non salvate sul vostro sito. Uscire comunque?"
   },
   "Courses": {
     "title": "Corsi online",

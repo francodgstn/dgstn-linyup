@@ -49,6 +49,7 @@ import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite, up
 import { BrandFields } from '@/components/website/BrandFields'
 import { ORG_SECTION_LIBRARY, newOrgSection, emptyOrgDraft } from './defaults'
 import { SectionPicker } from '@/components/website/SectionPicker'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { Tip } from '@/components/ui/tip'
 
 const MAX_SECTIONS = 12
@@ -231,6 +232,10 @@ export default function OrgWebsiteBuilderPage() {
 
   const [draft, setDraft] = useState<OrgSiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
+  // A draft lives in this component's state until Save writes it, so leaving
+  // the page throws the work away — silently, which is the part that makes it
+  // expensive. See the hook for what it can and cannot intercept.
+  useUnsavedChangesGuard(dirty, t('unsavedLeaveConfirm'))
   const [tab, setTab] = useTabParam(SITE_TABS, 'sections')
   const tSite = useTranslations('Site')
   // The `Website` namespace, for the copy this page shares with the studio's
