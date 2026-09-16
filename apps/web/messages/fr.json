@@ -3838,7 +3838,10 @@
     "unsavedLeaveConfirm": "Vous avez des modifications non enregistrées sur votre site. Quitter quand même ?",
     "publishConfirmTitle": "Mettre le site en ligne ?",
     "publishConfirmBody": "Cela publie tout votre brouillon : la page d'accueil, {pages, plural, =0 {aucune autre page} one {# autre page} other {# autres pages}} et {posts, plural, =0 {aucun article} one {# article de blog} other {# articles de blog}}.",
-    "publishConfirmHidden": "{count, plural, one {# page masquée reste} other {# pages masquées restent}} dans le brouillon."
+    "publishConfirmHidden": "{count, plural, one {# page masquée reste} other {# pages masquées restent}} dans le brouillon.",
+    "editSection": "Modifier cette section",
+    "pagesEmptyHint": "Cette page est vide. Ajoutez une section ci-dessous pour la construire.",
+    "pagesGroupLabel": "Pages"
   },
   "Kiosk": {
     "title": "Kiosque",

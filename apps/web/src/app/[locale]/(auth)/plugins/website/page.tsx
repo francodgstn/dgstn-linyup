@@ -1456,7 +1456,14 @@ export default function WebsiteBuilderPage() {
                   on whichever page is selected here — see `currentSections` /
                   `setCurrentSections`. */}
               <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
-                <Label className="shrink-0 text-xs text-muted-foreground">{t('pagesLabel')}</Label>
+                {/* A studio thinking "my website has these pages" had nothing
+                    on screen saying "pages" — only an unlabelled dropdown in a
+                    grey strip. The count is here for the same reason: the caps
+                    (30 pages, 100 posts) were only ever mentioned by the error
+                    you got when you hit one. */}
+                <Label className="shrink-0 text-xs font-medium text-muted-foreground">
+                  {t('pagesGroupLabel')} · {nonPostPages.length + 1}/{SITE_PAGE_LIMITS.maxPages}
+                </Label>
                 <Select value={currentPageId} onValueChange={(v) => v && setCurrentPageId(v)}>
                   <SelectTrigger className="h-8 w-56">
                     <SelectValue />
@@ -1519,6 +1526,15 @@ export default function WebsiteBuilderPage() {
                 />
               )}
 
+              {/* A brand-new page is a dashed button and nothing else, which
+                  reads as "something failed to load" rather than "this page is
+                  yours to fill". One line is enough to say which it is. */}
+              {currentSections.length === 0 && (
+                <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  {t('pagesEmptyHint')}
+                </p>
+              )}
+
               <SortableList ids={currentSections.map((s) => s.id)} onReorder={reorderSections}>
                 {currentSections.map((s) => {
                   const lib = SECTION_LIBRARY.find((l) => l.type === s.type)
@@ -1538,6 +1554,7 @@ export default function WebsiteBuilderPage() {
                               type="button"
                               {...attributes}
                               {...listeners}
+                              aria-label={t('menuReorder')}
                               className="shrink-0 cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
                             >
                               <GripVertical className="h-4 w-4" />
@@ -1591,13 +1608,20 @@ export default function WebsiteBuilderPage() {
                                   )}
                                 </button>
                               </Tip>
-                              <button
-                                type="button"
-                                onClick={() => setOpenId(open ? null : s.id)}
-                                className="rounded p-1 hover:bg-muted"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
+                              {/* The pencil and the bin were the only two
+                                  row actions with no name — hovered, they said
+                                  nothing, and to a screen reader they were two
+                                  unlabelled buttons beside three labelled ones. */}
+                              <Tip label={t('editSection')}>
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenId(open ? null : s.id)}
+                                  aria-label={t('editSection')}
+                                  className="rounded p-1 hover:bg-muted"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </Tip>
                               <Tip label={tCommon('duplicate')}>
                                 <button
                                   type="button"
@@ -1608,13 +1632,16 @@ export default function WebsiteBuilderPage() {
                                   <Copy className="h-3.5 w-3.5" />
                                 </button>
                               </Tip>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteId(s.id)}
-                                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              <Tip label={t('delete')}>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteId(s.id)}
+                                  aria-label={t('delete')}
+                                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </Tip>
                             </div>
                           </div>
                           {open && currentTeamId && (

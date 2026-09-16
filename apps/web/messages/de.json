@@ -3838,7 +3838,10 @@
     "unsavedLeaveConfirm": "Du hast ungespeicherte Änderungen an deiner Website. Trotzdem verlassen?",
     "publishConfirmTitle": "Website veröffentlichen?",
     "publishConfirmBody": "Damit wird alles aus deinem Entwurf veröffentlicht: die Startseite, {pages, plural, =0 {keine weiteren Seiten} one {# weitere Seite} other {# weitere Seiten}} und {posts, plural, =0 {keine Blog-Beiträge} one {# Blog-Beitrag} other {# Blog-Beiträge}}.",
-    "publishConfirmHidden": "{count, plural, one {# ausgeblendete Seite bleibt} other {# ausgeblendete Seiten bleiben}} im Entwurf."
+    "publishConfirmHidden": "{count, plural, one {# ausgeblendete Seite bleibt} other {# ausgeblendete Seiten bleiben}} im Entwurf.",
+    "editSection": "Diesen Abschnitt bearbeiten",
+    "pagesEmptyHint": "Diese Seite ist leer. Füge unten einen Abschnitt hinzu, um sie aufzubauen.",
+    "pagesGroupLabel": "Seiten"
   },
   "Kiosk": {
     "title": "Kiosk",

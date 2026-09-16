@@ -3838,7 +3838,10 @@
     "unsavedLeaveConfirm": "You have unsaved changes to your website. Leave anyway?",
     "publishConfirmTitle": "Put the site live?",
     "publishConfirmBody": "This publishes everything in your draft: the home page, {pages, plural, =0 {no other pages} one {# other page} other {# other pages}} and {posts, plural, =0 {no blog posts} one {# blog post} other {# blog posts}}.",
-    "publishConfirmHidden": "{count, plural, one {# hidden page stays} other {# hidden pages stay}} in the draft."
+    "publishConfirmHidden": "{count, plural, one {# hidden page stays} other {# hidden pages stay}} in the draft.",
+    "editSection": "Edit this section",
+    "pagesEmptyHint": "This page is empty. Add a section below to start building it.",
+    "pagesGroupLabel": "Pages"
   },
   "Kiosk": {
     "title": "Kiosk",
