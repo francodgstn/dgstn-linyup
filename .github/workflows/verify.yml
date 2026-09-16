@@ -273,6 +273,29 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
           NEXT_PUBLIC_FIREBASE_APP_ID: placeholder
 
+  # The docs site is NEVER DEPLOYED — docs/ carries open-defects.md,
+  # security-audit-2026-07.md and test-accounts.md, none of which belongs on a
+  # public URL. It is built here so a bad frontmatter block or a broken
+  # reference cannot sit undetected until someone runs `pnpm dev:docs`.
+  build-docs:
+    name: Build Docs Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @linyup/docs run build
+
   build-landing:
     name: Build Landing Site
     runs-on: ubuntu-latest

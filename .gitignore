@@ -91,3 +91,9 @@ apps/web/messages/_pending/*.json
 
 # Tarif 595 sample renders (pnpm --filter @linyup/functions tarif595:sample)
 packages/functions/tmp/
+
+# apps/docs generates content-collection types for every file under docs/, so
+# this directory churns on each doc edit. apps/landing/.astro is tracked and
+# stays tracked — it has no content collection, so Astro emits only stable
+# scaffolding there.
+apps/docs/.astro/
