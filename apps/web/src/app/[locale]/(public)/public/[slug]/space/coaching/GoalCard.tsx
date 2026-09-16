@@ -173,7 +173,7 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
       {/* Status — stays visible collapsed, together with the rail below: it
           is the other half of "what state is this goal in". */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: `${accent}1f`, color: accent }}>
+        <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: `${accent}1f`, color: accent }}>
           {t(STATUS_KEYS[goal.status])}
         </span>
       </div>
@@ -182,7 +182,7 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
       {!collapsed && ((goal.categories?.length ?? 0) > 0 || goal.from_dimension || goal.start_date || goal.target_date) && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {(goal.categories ?? []).map((cat) => (
-            <span key={cat} className="rounded-full px-2 py-0.5 text-[10px]" style={{ background: cardBorder, color: textMuted }}>
+            <span key={cat} className="rounded-full px-2 py-0.5 text-xs" style={{ background: cardBorder, color: textMuted }}>
               {goalCategoryLabel(cat, categories)}
             </span>
           ))}
@@ -191,19 +191,19 @@ export function GoalCard({ goal, steps, categories, dimensions, createGoal, upda
               (outline, no fill) so the two never read as one list. */}
           {goal.from_dimension && (
             <span
-              className="rounded-full border border-dashed px-2 py-0.5 text-[10px]"
+              className="rounded-full border border-dashed px-2 py-0.5 text-xs"
               style={{ borderColor: cardBorder, color: textMuted }}
             >
               {t('goalFromDimension', { dimension: dimensionLabel(goal.from_dimension, dimensions) })}
             </span>
           )}
           {goal.start_date && (
-            <span className="text-[10px]" style={{ color: textMuted }}>
+            <span className="text-xs" style={{ color: textMuted }}>
               {t('startDateLabel', { date: fmt.date(goal.start_date) })}
             </span>
           )}
           {goal.target_date && (
-            <span className="text-[10px]" style={{ color: textMuted }}>
+            <span className="text-xs" style={{ color: textMuted }}>
               {t('targetDateLabel', { date: fmt.date(goal.target_date) })}
             </span>
           )}

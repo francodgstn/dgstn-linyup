@@ -1,3 +1,8 @@
+---
+title: Public API + remote MCP server
+status: living
+area: platform
+---
 # Public API + remote MCP server
 
 Studio staff reach their studio's data from outside Linyup in two ways:

@@ -1,3 +1,8 @@
+---
+title: In-app feedback system
+status: living
+area: product
+---
 # In-app feedback system
 
 Lightweight feedback channel for the tenant dashboard (`apps/web`), built for the

@@ -183,7 +183,7 @@ function RecapForm({
           {message.teamName}
         </p>
       </div>
-      <p className="text-[11px] text-muted-foreground">{t('recapReviewHint')}</p>
+      <p className="text-xs text-muted-foreground">{t('recapReviewHint')}</p>
 
       <DialogFooter>
         <Button variant="outline" onClick={onDone} disabled={sending}>

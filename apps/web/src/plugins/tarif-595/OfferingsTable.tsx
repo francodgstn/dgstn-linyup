@@ -112,7 +112,7 @@ export function OfferingsTable({
         cell: ({ row }) => (
           <div className="min-w-44 space-y-0.5">
             <div className="text-sm font-medium leading-tight">{row.original.name}</div>
-            <Badge variant="outline" className="text-[10px] uppercase">
+            <Badge variant="outline" className="text-xs uppercase">
               {kindLabel(row.original.kind)}
             </Badge>
           </div>

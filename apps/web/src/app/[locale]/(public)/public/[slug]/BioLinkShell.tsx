@@ -51,7 +51,7 @@ export function BioLinkShell({
       >
         {children}
         {showBranding === true && (
-          <p className="pt-4 text-center text-[11px] text-muted-foreground">
+          <p className="pt-4 text-center text-xs text-muted-foreground">
             Powered by{' '}
             <Link href="/" className="hover:underline font-medium">
               Linyup

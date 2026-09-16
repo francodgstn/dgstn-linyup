@@ -83,6 +83,24 @@ jobs:
       - name: Seed scripts
         run: pnpm typecheck:seeds
 
+      # This repo's architecture discipline runs on POINTERS: CLAUDE.md does not
+      # restate the promo ownership rules, it says to read them at
+      # `docs/promo-codes.md → "Redemption integrity"` rather than from a
+      # summary. That only works while the pointers resolve, and nothing checked
+      # them — a heading rename silently turned "read it there" into "read it
+      # nowhere". Six idioms are in use and an off-the-shelf link checker sees
+      # only markdown links, which are 25 of ~935 references; most of the rest
+      # are bare paths in .ts comments.
+      - name: Doc references
+        run: pnpm docs:check
+
+      # docs/README.md is generated from frontmatter and committed like a
+      # lockfile: the primary reader of these docs is an agent reading the repo
+      # from disk, so an index that only exists after running a script is
+      # invisible to the reader it is for.
+      - name: Docs index
+        run: pnpm docs:index:check
+
   test-functions:
     name: Functions Tests
     runs-on: ubuntu-latest
@@ -254,6 +272,29 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: placeholder.appspot.com
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
           NEXT_PUBLIC_FIREBASE_APP_ID: placeholder
+
+  # The docs site is NEVER DEPLOYED — docs/ carries open-defects.md,
+  # security-audit-2026-07.md and test-accounts.md, none of which belongs on a
+  # public URL. It is built here so a bad frontmatter block or a broken
+  # reference cannot sit undetected until someone runs `pnpm dev:docs`.
+  build-docs:
+    name: Build Docs Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @linyup/docs run build
 
   build-landing:
     name: Build Landing Site

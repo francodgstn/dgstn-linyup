@@ -278,7 +278,7 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
                 // hover state, so a tooltip here explained nothing to anyone.
                 <span
                   title={t('goalCoachInfo')}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                 >
                   <Info className="h-3 w-3" />
                   {t('goalMemberAddedBadge')}
@@ -425,8 +425,8 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
                   <div className="flex items-center justify-between">
                     <RatingStars value={ev.score} readOnly size={14} />
                     <div className="flex items-center gap-1.5">
-                      {ev.edited && <span className="text-[10px] text-muted-foreground">edited</span>}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${ev.evaluated_by === 'coach' ? 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'}`}>
+                      {ev.edited && <span className="text-xs text-muted-foreground">edited</span>}
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${ev.evaluated_by === 'coach' ? 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'}`}>
                         {t(`goalBy_${ev.evaluated_by}`)}
                       </span>
                       {ev.evaluated_by === 'coach' && (
@@ -436,7 +436,7 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
                       )}
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {formatDate(ev.evaluated_at)} · {t(`goalStatus_${ev.status_after}`)}
                   </p>
                   {ev.notes && <p className="text-xs text-foreground">{ev.notes}</p>}

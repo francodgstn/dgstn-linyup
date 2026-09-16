@@ -1,3 +1,8 @@
+---
+title: "UX review, August 2026"
+status: closed
+area: ops
+---
 > ## CLOSED — archived 2026-08-24
 >
 > A point-in-time review of `apps/web` run against commit `8b1dea3` on 2026-08-17.

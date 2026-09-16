@@ -7,7 +7,7 @@
 // No new server surface; corrections go through the entries page's Reverse,
 // like any other manual entry. Defaults come from the team's chart template
 // (OPENING_BALANCE_ROLE_ACCOUNTS); the owner can re-pick any active account.
-// docs/accounting.md → "Opening balances"; plan: docs/finance-accrual.md.
+// docs/accounting.md → "Workflows"; plan: docs/finance-accrual.md.
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'

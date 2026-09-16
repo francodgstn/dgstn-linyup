@@ -400,7 +400,7 @@ export const PLAN_FEATURES: Record<SaasPlan, PlanFeature[]> = {
 // ─── Plugin packaging ─────────────────────────────────────────────────────────
 // Studio/Org include all internal plugins. Coach can activate a curated subset
 // (plugins with an `addon`) as paid monthly add-ons; non-curated plugins are
-// upgrade-locked for coaches. See docs/product-strategy-addons-proposal.md.
+// upgrade-locked for coaches. See docs/product-strategy.md → "Plugin add-ons (Coach plan)".
 
 export type PluginAccess =
   | { kind: 'included' }

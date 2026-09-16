@@ -136,7 +136,7 @@ function SurfaceRow({
         <p className="mt-0.5 truncate text-xs text-muted-foreground leading-snug">{desc}</p>
       </div>
       {live && (
-        <span className="hidden shrink-0 items-center gap-1.5 text-[11px] font-medium text-emerald-600 sm:inline-flex dark:text-emerald-400">
+        <span className="hidden shrink-0 items-center gap-1.5 text-xs font-medium text-emerald-600 sm:inline-flex dark:text-emerald-400">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           {t('statusLive')}
         </span>

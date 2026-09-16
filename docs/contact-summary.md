@@ -1,3 +1,8 @@
+---
+title: Contact AI summary
+status: living
+area: contacts
+---
 # Contact AI summary
 
 Four to six sentences at the top of a contact's insights card: an ANALYSIS,

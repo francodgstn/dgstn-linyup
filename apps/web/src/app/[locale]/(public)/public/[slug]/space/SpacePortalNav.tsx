@@ -78,7 +78,7 @@ export default function SpacePortalNav() {
             <Link
               key={it.href}
               href={it.href as Route}
-              className="flex-1 inline-flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-medium leading-none transition-opacity hover:opacity-90"
+              className="flex-1 inline-flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-xs font-medium leading-none transition-opacity hover:opacity-90"
               style={active ? { background: accent, color: '#fff' } : { color: textMuted }}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />

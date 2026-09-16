@@ -1,3 +1,8 @@
+---
+title: AI insights — the AI plugin container
+status: living
+area: contacts
+---
 # AI insights — the AI plugin container
 
 Since 2026-09-16 the AI features a studio switches on live in ONE plugin card,

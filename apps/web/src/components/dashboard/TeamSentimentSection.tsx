@@ -170,7 +170,7 @@ export function TeamSentimentSection({ teamId }: { teamId: string | null }) {
           </h2>
           <Badge
             variant="secondary"
-            className="border-blue-200 bg-blue-50 text-[11px] font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300"
+            className="border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300"
           >
             {t('sentimentBeta')}
           </Badge>
@@ -233,7 +233,7 @@ export function TeamSentimentSection({ teamId }: { teamId: string | null }) {
                   ) : null
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {generatedAt
                   ? `${t('sentimentUpdatedOn', {
                       date: generatedAt.toLocaleDateString(undefined, { dateStyle: 'medium' }),

@@ -212,7 +212,7 @@ function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean
             <p className="mt-2 text-sm leading-relaxed">{text}</p>
           )}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {updated
                 ? `${t('summaryUpdatedOn', {
                     date: updated.toLocaleDateString(undefined, { dateStyle: 'medium' }),
@@ -278,7 +278,7 @@ function RecapAction({
   return (
     <div className="flex items-center gap-2">
       {sentAt && (
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {t('recapSentOn', { date: sentAt.toLocaleDateString(undefined, { dateStyle: 'medium' }) })}
         </span>
       )}
@@ -315,7 +315,7 @@ function StatsRow({
           so the two readings of one number look like one number. */}
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Trophy className="h-3 w-3 text-primary" />
           {t('statTotalSessions')}
         </p>
@@ -325,14 +325,14 @@ function StatsRow({
           {contact.current_streak ?? 0}
           <span className="text-sm font-normal">w</span>
         </p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Flame className="h-3 w-3 text-orange-500" />
           {t('statStreak')}
         </p>
       </div>
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.current_month_score ?? 0}</p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Star className="h-3 w-3 text-yellow-500" />
           {t('statMonthScore')}
         </p>
@@ -483,7 +483,7 @@ function EngagementCell({
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ENGAGEMENT_BAR[band]}`} aria-hidden />
         <span className="truncate">{t(`engagement_${band}` as Parameters<typeof t>[0])}</span>
       </p>
-      <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+      <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
         <Activity className="h-3 w-3" />
         {t('engagementLabel')}
       </p>

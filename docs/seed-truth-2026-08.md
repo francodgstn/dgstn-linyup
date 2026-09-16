@@ -1,3 +1,8 @@
+---
+title: Seed truth — the 2026-08 coverage audit
+status: record
+area: ops
+---
 # Seed truth — the 2026-08 coverage audit
 
 Phase 1 of `docs/archive/seed-alignment-plan.md` (that plan is now closed; this

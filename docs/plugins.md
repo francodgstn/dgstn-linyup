@@ -1,3 +1,8 @@
+---
+title: Plugins
+status: living
+area: platform
+---
 # Plugins
 
 A plugin packages a feature that not every tenant gets. **Manifests are code**

@@ -1,3 +1,8 @@
+---
+title: "Payments: studio → Linyup (SaaS billing)"
+status: living
+area: payments
+---
 # Payments: studio → Linyup (SaaS billing)
 
 > **Scope:** how **Linyup charges studios** for their plan (Coach / Studio /

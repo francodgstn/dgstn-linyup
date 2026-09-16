@@ -294,7 +294,7 @@ export function EngagementMatrixCard({
             </div>
             <div className="flex flex-wrap gap-1.5">
               {qInfo.actions.map((a) => (
-                <span key={a} className="text-[11px] px-2 py-0.5 rounded-full bg-muted font-medium">
+                <span key={a} className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium">
                   {a}
                 </span>
               ))}
@@ -302,7 +302,7 @@ export function EngagementMatrixCard({
           </div>
         )}
 
-        <p className="text-[10px] text-muted-foreground">{t('midpoint', { midX, midY })}</p>
+        <p className="text-xs text-muted-foreground">{t('midpoint', { midX, midY })}</p>
       </CardContent>
     </Card>
   )

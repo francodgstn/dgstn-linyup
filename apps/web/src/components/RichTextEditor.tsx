@@ -208,7 +208,7 @@ function Toolbar({
                 >
                   {isPinned ? <Pin className="h-3.5 w-3.5" /> : <PinOff className="h-3.5 w-3.5" />}
                 </ToolbarButton>
-                <span className="px-1 text-[10px] text-muted-foreground">
+                <span className="px-1 text-xs text-muted-foreground">
                   {isPinned
                     ? documentLinks.labels.version(attrs.version!)
                     : documentLinks.labels.latest}
@@ -230,16 +230,16 @@ function Toolbar({
         <>
           <div className="w-px h-4 bg-border mx-1" />
           <ToolbarButton title="Add column" onClick={() => run((c) => c.addColumnAfter())}>
-            <span className="text-[10px] font-semibold px-0.5">+Col</span>
+            <span className="text-xs font-semibold px-0.5">+Col</span>
           </ToolbarButton>
           <ToolbarButton title="Add row" onClick={() => run((c) => c.addRowAfter())}>
-            <span className="text-[10px] font-semibold px-0.5">+Row</span>
+            <span className="text-xs font-semibold px-0.5">+Row</span>
           </ToolbarButton>
           <ToolbarButton title="Delete column" onClick={() => run((c) => c.deleteColumn())}>
-            <span className="text-[10px] font-semibold px-0.5">−Col</span>
+            <span className="text-xs font-semibold px-0.5">−Col</span>
           </ToolbarButton>
           <ToolbarButton title="Delete row" onClick={() => run((c) => c.deleteRow())}>
-            <span className="text-[10px] font-semibold px-0.5">−Row</span>
+            <span className="text-xs font-semibold px-0.5">−Row</span>
           </ToolbarButton>
           <ToolbarButton title="Delete table" onClick={() => run((c) => c.deleteTable())}>
             <Trash2 className="h-3.5 w-3.5" />

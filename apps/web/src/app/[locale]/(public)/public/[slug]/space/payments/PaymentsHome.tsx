@@ -139,9 +139,9 @@ export default function PaymentsHome() {
                       {formatCurrency(p.amount / 100, currency)}
                     </p>
                     {failed ? (
-                      <p className="text-[11px]" style={{ color: '#dc2626' }}>{t('paymentFailed')}</p>
+                      <p className="text-xs" style={{ color: '#dc2626' }}>{t('paymentFailed')}</p>
                     ) : refunded ? (
-                      <p className="text-[11px]" style={{ color: textMuted }}>
+                      <p className="text-xs" style={{ color: textMuted }}>
                         {t('paymentRefunded', { amount: formatCurrency(p.refundedAmount / 100, currency) })}
                       </p>
                     ) : null}

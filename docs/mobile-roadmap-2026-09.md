@@ -1,3 +1,8 @@
+---
+title: Member app — scan and roadmap (2026-09-02)
+status: record
+area: mobile
+---
 # Member app — scan and roadmap (2026-09-02)
 
 The member app (`apps/mobile`, Expo 54 / React Native 0.81) was ported from

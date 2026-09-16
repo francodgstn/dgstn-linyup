@@ -39,7 +39,7 @@ function PreviewCard({
     <div className="overflow-hidden rounded-lg border" style={{ borderColor: k.border }}>
       {/* THE PAGE, with the scheme label sitting directly on it. */}
       <div className="space-y-2 p-2.5" style={{ background: palette.background }}>
-        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: k.muted }}>
+        <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: k.muted }}>
           {label}
         </span>
         {/* THE CARD — the surface, floating on the page. It is neutral on
@@ -56,7 +56,7 @@ function PreviewCard({
           <div className="h-1.5 w-full rounded-full" style={{ background: k.text, opacity: 0.78 }} />
           <div className="h-1.5 w-2/3 rounded-full" style={{ background: k.muted }} />
           <span
-            className="mt-1 inline-block rounded-md px-2.5 py-1 text-[10px] font-medium"
+            className="mt-1 inline-block rounded-md px-2.5 py-1 text-xs font-medium"
             style={{ background: accent, color: '#ffffff' }}
           >
             Button

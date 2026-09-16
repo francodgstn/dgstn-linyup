@@ -206,7 +206,7 @@ export function CorrelationExplorerCard({
           </Select>
         </div>
         {regression && (
-          <p className="text-[11px] text-muted-foreground">{rLabel(t, regression.r)}</p>
+          <p className="text-xs text-muted-foreground">{rLabel(t, regression.r)}</p>
         )}
       </CardHeader>
       <CardContent>

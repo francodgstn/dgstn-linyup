@@ -230,7 +230,7 @@ export function SessionsHeatmapCard({
           {/* header row */}
           <div />
           {DAYS.map((d) => (
-            <span key={d} className="text-center text-[10px] font-bold text-muted-foreground">
+            <span key={d} className="text-center text-xs font-bold text-muted-foreground">
               {d}
             </span>
           ))}
@@ -241,7 +241,7 @@ export function SessionsHeatmapCard({
             return (
               <Fragment key={`row-${hour}`}>
                 <span
-                  className="text-[10px] text-muted-foreground text-right pr-1 whitespace-nowrap"
+                  className="text-xs text-muted-foreground text-right pr-1 whitespace-nowrap"
                   style={{ lineHeight: `${CELL_SIZE}px`, height: CELL_SIZE }}
                 >
                   {hour}:00

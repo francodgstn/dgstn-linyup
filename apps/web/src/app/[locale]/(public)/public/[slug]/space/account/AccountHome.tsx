@@ -153,7 +153,7 @@ export default function AccountHome() {
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle} />
             </Field>
             {status === 'error' && <p className="text-xs" style={{ color: '#dc2626' }}>{errMsg}</p>}
-            <p className="text-[11px]" style={{ color: textMuted }}>{t('profileApprovalNote')}</p>
+            <p className="text-xs" style={{ color: textMuted }}>{t('profileApprovalNote')}</p>
             <div className="flex items-center gap-2">
               <button type="submit" disabled={status === 'saving'}
                 className="text-sm font-medium px-4 py-2 rounded-full disabled:opacity-50"

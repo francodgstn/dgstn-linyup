@@ -725,7 +725,7 @@ function SavedMenu({ filters, onChange, saved, save, remove, togglePin, pinnedPr
         <ChevronDown className="h-3 w-3 opacity-40" />
       </PopoverTrigger>
       <PopoverContent align="end" side="bottom" className="w-52 p-1.5">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pt-1 pb-0.5">{t('savedPresetsHeading')}</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 pt-1 pb-0.5">{t('savedPresetsHeading')}</p>
         {presets.map((q) => {
           const isPinned = pinnedPresets.includes(q.id)
           return (
@@ -747,7 +747,7 @@ function SavedMenu({ filters, onChange, saved, save, remove, togglePin, pinnedPr
         {saved.length > 0 && (
           <>
             <div className="my-1 border-t mx-1" />
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-0.5">{t('savedYoursHeading')}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-0.5">{t('savedYoursHeading')}</p>
             {saved.map((q) => (
               <div key={q.id} className="flex items-center gap-1 rounded hover:bg-accent group px-1">
                 <button type="button" onClick={() => apply(q)} className="flex-1 px-1 py-1.5 text-sm text-left truncate">{q.name}</button>
@@ -1200,7 +1200,7 @@ function ConsentFilterContent({ documents, value, onChange }: {
 
   return (
     <div className="min-w-[260px] p-1 space-y-1.5">
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">
         {t('filterConsentDocument')}
       </p>
       <Select value={documentId} onValueChange={(v) => setDocument(v ?? '')}>
@@ -1218,7 +1218,7 @@ function ConsentFilterContent({ documents, value, onChange }: {
         </SelectContent>
       </Select>
       <div className="border-t my-1.5 mx-1" />
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">
         {t('filterConsentState')}
       </p>
       {CONSENT_STATES.map((s) => (
@@ -1233,7 +1233,7 @@ function ConsentFilterContent({ documents, value, onChange }: {
           here keeps the filter honest about what "not signed" costs that
           person: nothing, until the studio also requires it before booking. */}
       {selected && !selected.requiredBeforeBooking && (
-        <p className="px-2 pt-1.5 text-[11px] leading-snug text-muted-foreground">
+        <p className="px-2 pt-1.5 text-xs leading-snug text-muted-foreground">
           {t('filterConsentSignupOnly')}
         </p>
       )}
@@ -1358,11 +1358,11 @@ function FilterChips({
       },
       render: (f, set) => (
         <div className="p-1 space-y-0.5">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterStage')}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterStage')}</p>
           {STAGE_OPTS.map((o) => <CheckOption key={o.value} label={o.label} checked={f.stages.includes(o.value)}
             onToggle={() => set({ ...f, stages: toggle(f.stages, o.value) })} />)}
           <div className="border-t my-1.5 mx-1" />
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterSource')}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterSource')}</p>
           {SOURCE_OPTS.map((o) => <CheckOption key={o.value} label={o.label} checked={f.sources.includes(o.value)}
             onToggle={() => set({ ...f, sources: toggle(f.sources, o.value) })} />)}
         </div>
@@ -1563,7 +1563,7 @@ function FilterChips({
       },
       render: (f, set) => (
         <div className="p-1 space-y-0.5">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterLastActive')}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterLastActive')}</p>
           {INACTIVITY_OPTS.map((o) => (
             <button key={o.value} type="button"
               onClick={() => set({ ...f, inactivity: f.inactivity === o.value ? null : o.value })}
@@ -1576,7 +1576,7 @@ function FilterChips({
             </button>
           ))}
           <div className="border-t my-1.5 mx-1" />
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterSessions')}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 py-0.5">{t('filterSessions')}</p>
           <div className="flex items-center gap-1.5 px-1 pb-1">
             <Input type="number" min="0" placeholder={t('filterSessionsMin')}
               value={f.sessionsMin ?? ''}
@@ -1907,14 +1907,14 @@ function ContactRow({
               <Badge variant="outline" className="text-xs">{t(`stage_${contact.acquisition_stage}` as Parameters<typeof t>[0])}</Badge>
             )}
             {contact.pending_signup && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                 {t('pendingSignup')}
               </span>
             )}
             {/* Shop registration awaiting payment — the ONLY provisional kind with a
                 purge deadline; trial/form leads show their normal stage badges. */}
             {contact.provisional === true && contact.provisional_expires_at != null && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                 {t('unconfirmedBadge', {
                   days: Math.max(
                     0,
@@ -1954,7 +1954,7 @@ function ContactRow({
           it: an urgency ranking nobody can see the reason for is a ranking
           nobody trusts. */}
       {attentionReason && (
-        <span className="shrink-0 px-2 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+        <span className="shrink-0 px-2 text-xs font-medium text-amber-600 dark:text-amber-400">
           {t(`attention_${attentionReason}` as 'attention_alerts')}
         </span>
       )}
@@ -2123,7 +2123,7 @@ function ContactRequestDialog({
                         <p className="text-xs font-medium">{t(`reqf_${r.field}`)}</p>
                         <div className="mt-1 grid grid-cols-2 gap-3 text-sm">
                           <div className="min-w-0">
-                            <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                            <span className="block text-xs uppercase tracking-wide text-muted-foreground">
                               {t('reqCurrent')}
                             </span>
                             <p className="truncate text-muted-foreground">
@@ -2131,7 +2131,7 @@ function ContactRequestDialog({
                             </p>
                           </div>
                           <div className="min-w-0">
-                            <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                            <span className="block text-xs uppercase tracking-wide text-muted-foreground">
                               {t('reqRequested')}
                             </span>
                             <p className={`truncate ${changed ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>

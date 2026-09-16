@@ -1,3 +1,8 @@
+---
+title: "Go-live readiness — first pass, August 2026"
+status: living
+area: ops
+---
 # Go-live readiness — first pass, August 2026
 
 Closes the **irreversible-harm** class of the readiness plan. Everything here is

@@ -515,7 +515,7 @@ function PricingPreviewSection({
                           {c.title}
                         </Link>
                         {c.status === 'draft' && (
-                          <Badge variant="outline" className="text-[10px] shrink-0">
+                          <Badge variant="outline" className="text-xs shrink-0">
                             {t('draftBadge')}
                           </Badge>
                         )}
@@ -861,7 +861,7 @@ function DiscountsSection({ teamId, currency }: { teamId: string | null; currenc
                     <span className="flex-1 truncate text-sm text-muted-foreground">
                       {c.label || promoSummary(c, currency, t)}
                     </span>
-                    <Badge variant="secondary" className="shrink-0 text-[11px]">
+                    <Badge variant="secondary" className="shrink-0 text-xs">
                       {promoSummary(c, currency, t)}
                     </Badge>
                   </div>

@@ -1008,7 +1008,7 @@ function AcquisitionTimeline({
               {/* label + milestone date */}
               <div className={`min-w-0 ${isLast ? '' : 'pb-4'}`}>
                 <p
-                  className={`text-[13px] font-medium leading-5 ${reached ? 'text-foreground' : 'text-muted-foreground'}`}
+                  className={`text-[0.8125rem] font-medium leading-5 ${reached ? 'text-foreground' : 'text-muted-foreground'}`}
                 >
                   {t(`stage_${stage}` as Parameters<typeof t>[0])}
                 </p>
@@ -1063,7 +1063,7 @@ function AcquisitionTimeline({
             </div>
             {/* stage label */}
             <p
-              className={`mt-1.5 text-center text-[11px] font-medium leading-tight ${reached ? 'text-foreground' : 'text-muted-foreground'}`}
+              className={`mt-1.5 text-center text-xs font-medium leading-tight ${reached ? 'text-foreground' : 'text-muted-foreground'}`}
             >
               {t(`stage_${stage}` as Parameters<typeof t>[0])}
             </p>
@@ -1182,10 +1182,10 @@ function HeaderActionButton({
       >
         <Icon className="h-4 w-4" />
         {shortLabel && (
-          <span className="max-w-full truncate text-[10px] leading-tight">{shortLabel}</span>
+          <span className="max-w-full truncate text-xs leading-tight">{shortLabel}</span>
         )}
         {count > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+          <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
             {count}
           </span>
         )}
@@ -1393,7 +1393,7 @@ function AlertsGlance({
               }`}
             >
               <p className="truncate text-sm">{a.message}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {fired(a) ? t('alertFired') : t('alertPending')}
               </p>
             </button>
@@ -1474,7 +1474,7 @@ function NotesGlance({ contact, onOpen }: { contact: Contact; onOpen: () => void
               onClick={onOpen}
               className={`group relative block w-full overflow-hidden rounded-lg border p-3 text-left transition-colors hover:border-border ${noteColorClasses(n.color).card}`}
             >
-              <div className="mb-1 text-[11px] text-muted-foreground">{fmt(n)}</div>
+              <div className="mb-1 text-xs text-muted-foreground">{fmt(n)}</div>
               <div
                 className="prose-notes max-h-24 overflow-hidden text-sm"
                 dangerouslySetInnerHTML={{ __html: n.content }}
@@ -2436,11 +2436,11 @@ function FigureCell({
       {/* Wraps rather than truncating: on a phone each cell is about a third of
           the screen, and a clipped amount is worse than one on two lines. */}
       <p className="break-words text-base font-bold leading-tight tabular-nums sm:text-xl">{value}</p>
-      <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+      <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
         <Icon className="h-3 w-3 shrink-0" />
         <span className="truncate">{label}</span>
       </p>
-      {detail && <p className="mt-1 truncate text-[11px] text-muted-foreground">{detail}</p>}
+      {detail && <p className="mt-1 truncate text-xs text-muted-foreground">{detail}</p>}
     </div>
   )
 }
@@ -3807,7 +3807,7 @@ function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | n
                               {entry.parameters.description as string}
                             </p>
                             <div className="flex flex-col items-end gap-0.5 shrink-0">
-                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
                                 {formatActivityTimestamp(
                                   entry.created_at as { toDate(): Date } | null | undefined
                                 )}
@@ -3815,7 +3815,7 @@ function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | n
                               <button
                                 type="button"
                                 onClick={() => setSelectedEntry(entry)}
-                                className="text-[10px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                                className="text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
                               >
                                 details
                               </button>
@@ -4977,7 +4977,7 @@ function AffiliationsTab({
                     <p className="text-xs text-muted-foreground">
                       {t('feeLabel')}: {typeDef.fee_amount}
                       {aff.fee_paid && (
-                        <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
+                        <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
                           {t('feePaidBadge')}
                         </span>
                       )}

@@ -367,90 +367,57 @@ Two primitives, not two entities — both are `sessions/{id}` docs:
   the provider publishes *availability*, and the session is created lazily,
   overlap-safe, at booking.
 
-`Activity.type` (`'class' | 'appointment'`) picks the scheduling mechanism;
-`Session.activityType` carries it. Mirrors: `type: 'session'` vs
-`'appointment_session'`; activity mirrors carry `activityType` so public UIs route
-appointment cards to the picker.
+`Activity.type` picks the scheduling mechanism and `Session.activityType` carries
+it. The `Activity` owns the *what* (`durations`, and the member rule below); the
+`availability/{id}` doc owns only the *when* — provider, recurrence, buffer and
+**`activityIds`**. Because a window may offer activities of different lengths, a
+start time is indeterminate until the client picks one, **which is why
+availability can never be pre-generated**; the old slot-generation cron was
+deleted for exactly that reason.
+Full docs: `docs/appointments.md` → "The two halves: the *what* and the *when*".
 
-**The what vs the when.** The `Activity` owns the *what* — `durations` (each
-length with an optional base price) and the ONE `memberBenefit` rule (no
-capacity: an appointment is exclusive time, one booking per slot by definition).
-The `availability/{id}` doc owns only the *when* — provider, recurrence,
-`mode: 'range'|'times'`, buffer, and **`activityIds`** (which appointment
-activities are bookable in that window). Durations are never stored on
-availability; they derive from the linked activities. Because a window may offer
-activities of different lengths, a start time is indeterminate until the client
-picks one — **which is why availability can never be pre-generated** (the old
-slot-generation cron was deleted for exactly this reason).
+Six invariants, each a bug before it was a rule:
 
-Booking: **`bookAppointment`** is the free-path appointment callable
-(`bookSession` is class-only and rejects them); the client sends no templateId —
-the server resolves the covering availability. `listAvailability` computes free
-times, coach-first (returning `durations` + `memberBenefit` per activity).
-Appointments have **NO access gate** — THE PRICE IS THE GATE: unpriced → anyone
-books free (guests included), priced → anyone pays their effective price.
-`Activity.accessRule` is CLASS-ONLY (appointment forms don't show it, appointment
-paths don't read it, appointment session docs/mirrors don't carry it).
-`cancelBooking` handles both kinds.
+- **Appointments have NO access gate — THE PRICE IS THE GATE.** Unpriced ⇒ anyone
+  books free, guests included; priced ⇒ anyone pays their effective price.
+  `Activity.accessRule` is **CLASS-ONLY**: appointment forms don't show it,
+  appointment paths don't read it, appointment docs and mirrors don't carry it.
+- **`bookAppointment` is the free appointment rail**; `bookSession` is class-only
+  and rejects appointments. The client sends no templateId — the server resolves
+  the covering availability. `cancelBooking` handles both kinds.
+- **A class's drop-in price is read through ONE resolver**,
+  `resolveActivityDropIn(activity, studioDropInOf(bookingSettings))`
+  (`packages/shared/src/utils/dropIn.ts`). Never branch on
+  `activity.dropIn.enabled` / `.priceAmount`: a class following the studio
+  default stores no price of its own. The mirror carries the RESOLVED price and
+  `syncStudioDropIn` rewrites every following class when the default moves.
+  `docs/payment-contact-studio.md` → "Drop-in".
+- **THE ONE READER of a per-length member rule is `resolveDurationBenefit`.**
+  Never touch the fields directly: `durationBenefits` present ⇒ it is the whole
+  answer and a missing entry means no rule; absent ⇒ the legacy
+  activity-wide `Activity.memberBenefit` still applies to every length, so **no
+  backfill is owed**.
+- **`resolvePaymentOptions(snapshot, target, context?)` is THE ONE shared
+  coverage/quote resolver** (`packages/shared/src/utils/paymentOptions.ts`, pure,
+  client-safe) for class bookings, drop-ins, appointments, courses and products.
+  **Never add a parallel coverage or price check — extend the resolver**
+  (fixtures: `packages/functions/src/booking/paymentOptions.test.ts`). Money
+  mechanics live once in `packages/functions/src/connect/checkout.ts` and
+  `packages/shared/src/utils/money.ts`.
+- **On a paid appointment the hold IS the session.** `bookAppointment` refuses a
+  payable caller with `payment_required`; `createAppointmentCheckout` writes the
+  session `pending_payment` with `hold_expires_at`, and the Connect webhook
+  (`kind: 'appointment'`) confirms it to `full` on payment.
+  `docs/appointments.md` → "The hold state machine — the hold IS the session".
 
-**A class's drop-in price is read through ONE resolver.** The price has a
-studio-wide default (`BookingSettings.dropIn`, on the team's public profile
-beside the other booking settings, edited on Offerings → Pricing or in place from
-a class's pricing tab) and each
-class says how it relates to it — `Activity.dropIn.mode`: `'studio'` (follow
-the default; what a new class starts as), `'custom'` (its own price), `'off'`
-(none, even under a default); a document without `mode` reads as `'custom'`
-when it named a price and `'studio'` otherwise. **`resolveActivityDropIn(activity,
-studioDropInOf(bookingSettings))`** (`packages/shared/src/utils/dropIn.ts`) is
-the only reader — never branch on `activity.dropIn.enabled` / `.priceAmount`,
-since a class that follows the studio stores no price. The activity mirror
-carries the RESOLVED price (public readers and mobile need no default), and
-`syncStudioDropIn` rewrites the mirrors of every following class when the
-default changes. Docs: `docs/payment-contact-studio.md` → "Drop-in".
-
-**Paid appointments** put a base price per duration (`Activity.durations:
-[{minutes, priceAmount?}]`) **and one member rule per duration**
-(`Activity.durationBenefits: [{minutes, benefit}]`) — holders of a listed type
-book that length free (`included`; credit packs spend a credit), at
-`percent_off`, or at a `fixed_price` (all clamped to Stripe's 0.50 floor, never
-free-via-discount). **THE ONE READER is `resolveDurationBenefit(activity,
-minutes)`** — never touch the fields directly: `durationBenefits` present ⇒ it
-is the whole answer and a missing entry means no rule; absent ⇒ the LEGACY
-activity-wide `Activity.memberBenefit` still applies to every length, so an
-un-re-edited appointment behaves as before and **no backfill is owed** (the
-first per-length save absorbs the old rule onto every length and clears it).
-This is NOT the per-duration × per-type `subscriptionPricing` matrix cut in
-2026-07 — that was a grid of prices; this is the same one rule, asked once per
-length, because `fixed_price` on an activity charged the same for 30 and 90
-minutes. A public ONE-LINE summary (shop card, site chip, pricing table) states
-a benefit only when every length agrees, else the price range alone.
-Resolver: **`resolvePaymentOptions(snapshot, target, context?)`** — the ONE
-shared coverage/quote resolver (`packages/shared/src/utils/paymentOptions.ts`,
-pure, client-safe) that answers `covered | spend_credits | pay(amount,
-appliedBenefit)` for class bookings, drop-ins, appointments, courses AND
-products; the optional third `context` carries a typed promo code (see "Promo
-codes" below) and nothing else, so every pre-existing call site compiles and
-behaves unchanged. The server builds its authoritative snapshot via `loadContactPaymentSnapshot`
-(`packages/functions/src/booking/access.ts`), the web an optimistic one via
-`apps/web/src/lib/paymentSnapshot.ts`. Never add a parallel coverage/price
-check — extend the resolver (fixtures:
-`functions/src/booking/paymentOptions.test.ts`). Money mechanics (0.50 floor,
-Rappen conversion, fees, idempotency) live once in
-`packages/functions/src/connect/checkout.ts` + `shared/src/utils/money.ts`. A
-payable caller is refused by `bookAppointment`
-(`payment_required`) and instead reserves→pays→confirms via
-**`createAppointmentCheckout`** at the caller's effective amount: the hold IS
-the session (`status: 'pending_payment'` + `hold_expires_at`, +30 min, lazily
-expiring) and the Connect webhook (`kind: 'appointment'`) confirms it to `full`
-on payment. `dropIn` stays class-only — appointments never use it; class-side,
-the independent `trialEnabled` toggle lets a gated class accept a newcomer's
-guest trial, so members-included + trial + drop-in coexist. That trial may
-itself be **priced** — `Activity.trialPriceAmount` (class-only, gated-only;
-absent ⇒ free, today's behaviour) charges a newcomer's first class over the
-drop-in checkout (`createDropInCheckout({ trial: true })`), enforced once per
-person via `Contact.trial_used_at`. A trial is never a subscription. Kiosk
-walk-in is class-only too. Full docs: `docs/appointments.md` → "Paid
-appointments"; `docs/payment-contact-studio.md` → "Paid trial".
+`dropIn` is class-only — appointments never use it. Class-side, the independent
+`trialEnabled` toggle lets a gated class accept a newcomer's guest trial, so
+members-included + trial + drop-in coexist; that trial may itself be priced
+(`Activity.trialPriceAmount`, gated-only, absent ⇒ free) over the drop-in
+checkout, enforced once per person via `Contact.trial_used_at`. **A trial is
+never a subscription.** Kiosk walk-in is class-only too.
+`docs/appointments.md` → "Paid appointments"; and
+`docs/payment-contact-studio.md` → "Paid trial".
 
 ### Book-form fields — a QUESTION is about the booking, a FIELD is about the person
 
@@ -499,214 +466,156 @@ on the claim, which goes through the paid or free rail like any other booking.
 
 ### Waitlist — class-only, one deadline, one seat writer
 
-A queue for a seat in a full **class**; entries live at
-`sessions/{sessionId}/waitlist/{contactId}` (doc id = contactId, mirroring
-`bookings`), written only by callables — every client write is denied by the
-rules. **Class-only**: an appointment session doesn't exist until it's booked, so
-"full" has no meaning there. The flag is `Activity.waitlistEnabled` + its public
-mirror only — there is deliberately **no** `session.waitlist_enabled` (it would
-need an activity→sessions fan-out plus a backfill). When a seat frees, the
-`seatFreedEdge` trigger on the session doc offers it to the oldest waiter and
-holds it as an **ordinary booking** carrying `waitlist_claim` +
-`claim_expires_at`, so `bookingHoldsSeat` and every capacity gate already stop
-selling it. **THE SINGLE-DEADLINE RULE:** the hold's `claim_expires_at`, the
-entry's `offer_expires_at` and (for a paid claim) the booking hold's `expires_at`
-and the Stripe session's `expires_at` are ONE instant, computed once by
-`resolveClaimWindow` and copied — diverge and a seat gets sold twice. (A
-free-path hold carries no `expires_at`; only the checkout adds it, which is why
-`expirePendingBookings` reaches the paid claim hold alone.) A free claim settles
-in `claimWaitlistSeat`; a **payable one leaves it and returns through
-`createDropInCheckout({ waitlistToken })`** (no second pricing path). **ONE SEAT
-WRITER:** on a **class** session `bookings_count` is only ever an ABSOLUTE value,
-from `trackBookings`' recount or a transaction that read the `bookings`
-subcollection — **no `FieldValue.increment` on it anywhere** (an appointment
-session is created together with its one booking, so its `bookings_count: 1` is
-absolute and uncontended by construction). Releases go through
-`releaseWaitlistOffer` and always **release before re-offering** — where there is
-anything to re-offer: the Connect webhook's oversell branch and the session
-teardown deliberately do not. Full docs: `docs/waitlist.md`.
+A queue for a seat in a full **class** — entries at
+`sessions/{sessionId}/waitlist/{contactId}`, written only by callables, every
+client write denied by the rules. **Class-only**: an appointment session does not
+exist until it is booked, so "full" has no meaning there. An offered seat is held
+as an **ordinary booking** carrying `waitlist_claim`, so `bookingHoldsSeat` and
+every capacity gate already stop selling it. Full docs: `docs/waitlist.md`.
+
+Three invariants, each a bug before it was a rule:
+
+- **THE SINGLE-DEADLINE RULE.** The hold's `claim_expires_at`, the entry's
+  `offer_expires_at` and — for a paid claim — the booking hold's `expires_at` and
+  the Stripe session's `expires_at` are ONE instant, computed once by
+  `resolveClaimWindow` and copied. Diverge and a seat gets sold twice.
+- **ONE SEAT WRITER.** On a class session `bookings_count` is only ever an
+  ABSOLUTE value, from `trackBookings`' recount or a transaction that read the
+  `bookings` subcollection — **no `FieldValue.increment` on it anywhere**.
+- **Release before re-offering**, through `releaseWaitlistOffer`, where there is
+  anything to re-offer: the Connect webhook's oversell branch and the session
+  teardown deliberately do not.
+  `docs/waitlist.md` → "Release — and why the ordering is load-bearing".
+
+A free claim settles in `claimWaitlistSeat`; a payable one leaves and returns
+through `createDropInCheckout({ waitlistToken })` — **no second pricing path**.
+The flag is `Activity.waitlistEnabled` + its public mirror; there is deliberately
+**no** `session.waitlist_enabled`.
 
 ### Promo codes — a Stage A MODIFIER, never a tender
 
-**A promo code changes what a purchase costs; a gift card pays for one.** That is
-the whole design, and getting it backwards is the single biggest way this area
-goes wrong:
+**A promo code changes what a purchase costs; a gift card pays for one.** Getting
+that backwards is the single biggest way this area goes wrong:
 
 > A price **MODIFIER** belongs in Stage A (inside `resolvePaymentOptions`). A
 > **TENDER** belongs in Stage B (at the checkout callable). **Nothing is both.**
 
-So the promo is applied inside the resolver and **no callable ever computes a
-discounted amount itself** — every one reads `payOption.amount`. The dividend:
-every gift-card reservation already receives a post-promo total, so no gift-card
-call site needed a promo edit. `teams/{teamId}/promo_codes/{CODE}` (the doc
-id IS the code, `PromoCode` in `packages/shared/src/types/promoCode.ts`), written
-only by manager callables in `packages/functions/src/connect/promoCodes.ts`;
-`firestore.rules` denies every client write. Rails: drop-in, appointment, course,
-product — **not** memberships, not gift-card purchases, not the priced-trial door,
-and **not the waitlist claim** (its deadline cannot be shortened without giving
-one seat two timers, so a code there would lock a use for the whole claim window;
-the claim path is refused server-side, not merely unmounted). A code may also be
-narrowed by **audience** (`audience: 'all' | 'new_contacts'`, where "new" is
-`!joined` — the same fact the `members` access rule runs on, never a second
-definition), by entity allow-lists, or bound to one contact.
+Codes live at `teams/{teamId}/promo_codes/{CODE}` — the doc id IS the code —
+written only by manager callables in
+`packages/functions/src/connect/promoCodes.ts`; `firestore.rules` denies every
+client write. Full docs: `docs/promo-codes.md`.
 
-**Best-one-wins, and the comparator is deliberately ASYMMETRIC.** A *benefit*
-applies whenever it does not RAISE the price (`<= base`), because `appliedBenefit`
-answers *which membership priced this booking* — provenance read downstream. A
-*promo* applies only when **strictly lower**, because `appliedPromo` answers *did
-a code change the price* — an event. When a promo beats a benefit, the beaten one
-rides on `appliedPromo.supersededBenefit` so a campaign never blanks a studio's
-subscription attribution. `appliedBenefit` and `appliedPromo` are never both
-present on one option.
+Five invariants, each a bug before it was a rule:
 
-**ONE writer of `usage_count`** — `commitPromoRedemption`'s transaction, writing
-an **absolute** value from its own read set. No `FieldValue.increment` on
-`usage_count` or `PromoRedemption.count` anywhere, and **no restore-on-refund
-path**, which is the second writer that would otherwise appear. The manager levers
-(`clearPromoRedemption`, `releasePromoReservations`) *delete lifecycle state* and
-never adjust a counter.
+- **No callable ever computes a discounted amount.** The promo is applied inside
+  the resolver and every caller reads `payOption.amount` — which is why no
+  gift-card call site needed a promo edit, each already receiving a post-promo
+  total.
+- **The comparator is deliberately ASYMMETRIC.** A *benefit* applies whenever it
+  does not RAISE the price (`<= base`) — `appliedBenefit` answers *which
+  membership priced this*. A *promo* applies only when **strictly lower** —
+  `appliedPromo` answers *did a code change the price*. A beaten benefit rides on
+  `appliedPromo.supersededBenefit`, so a campaign never blanks a studio's
+  subscription attribution, and the two are never both present on one option.
+- **ONE writer of `usage_count`** — `commitPromoRedemption`'s transaction,
+  writing an **absolute** value from its own read set. No `FieldValue.increment`
+  on `usage_count` or `PromoRedemption.count` anywhere, and **no
+  restore-on-refund path**, which is the second writer that would otherwise
+  appear.
+- **A use is consumed by a completed SALE, never by an attempt** — the commit
+  sits at each handler's per-kind confirm point, never before the dispatch, so a
+  branch that refunds the whole charge commits nothing and the reservation
+  lapses. A live reservation still holds a use, because the rail refuses rather
+  than over-issues.
+  `docs/promo-codes.md` → "The commit — one writer, at the confirm point".
+- **A promo writes NO finance journal row, ever.** A discount is not a money event
+  on a cash basis; the money event is the smaller charge. No `FinanceCategory`
+  member, no reclass pair, no CSV column. The record is
+  `PaymentLineItem.promoCode` plus the `redemptions/{identityKey}` ledger.
 
-**A use is consumed by a completed SALE, never by an attempt.** The commit sits at
-each handler's per-kind confirm point — never before the dispatch — so every
-branch that refunds the whole charge commits nothing and the reservation simply
-lapses. A **live reservation consumes a use** (never
-over-issue), which is bounded by a deterministic reservation key (a retry is a
-refresh, not a second use), `PROMO_MAX_LIVE_RESERVATIONS` + a distinct
-`promo_busy` refusal, short checkout windows, reserved-shown-separately-from-used
-in the admin list, and the manager release lever. The per-person cap binds to a
-**hashed normalised email**, not a contact document — so it is a nudge with teeth,
-not a promise, and the admin copy says "counted per email address".
+**The ownership rules behind the deterministic reservation key are enumerated
+ONCE**, in `docs/promo-codes.md` → "Redemption integrity" — read them there
+rather than from a summary, because the summaries of that list have disagreed
+with it, and with each other, in every review round of this phase. **Never make
+the key unique to fix a release bug**: that destroys retry-is-a-refresh.
 
-**The deterministic key is paid for by a set of ownership rules**, each of which
-was a live bug before it was written down. They are enumerated ONCE, in
-`docs/promo-codes.md` → "Redemption integrity" — read them there rather than from
-a summary, because the summaries of that list have now disagreed with it (and
-with each other) in every review round of this phase. The shape they all share:
-the key says *which slot*, `instanceId` says *whose attempt holds it right now*,
-and `sessionId` says *which Checkout Session may take money for it*; every
-removal or spend compares its marker **inside** the transaction that writes.
-Never make the key unique to fix a release bug — that destroys
-retry-is-a-refresh.
-
-**A promo writes NO finance journal row, ever** — a discount is not a money event
-on a cash basis; the money event is the smaller charge. No `FinanceCategory`
-member, no reclass pair, no CSV column. The record is
-`PaymentLineItem.promoCode` on the payment row (a system stamp: never read off a
-client payload, carried forward across a manager's edit) plus the
-`redemptions/{identityKey}` ledger. Full docs: `docs/promo-codes.md`.
+Rails: drop-in, appointment, course, product — **not** memberships, gift-card
+purchases, the priced-trial door, or the waitlist claim (refused server-side, not
+merely unmounted: a code there would lock a use for the whole claim window). A
+code may also be narrowed by audience, by entity allow-list, or bound to one
+contact. `docs/promo-codes.md` → "Which rails take a code".
 
 ### Waivers — a FACT about a person, never a scarce resource
 
 **A signature is a fact about a person, not a claim on a scarce resource.**
 Nothing about a waiver is reserved, held, released or restored — the promo
-phase's reserve→commit→release apparatus has no analogue here, and reaching
-for it is the single biggest way this area goes wrong. There is no price (no
-arm in `resolvePaymentOptions`, checkable by `git diff`), no journal row, no
-counter but `rounds`, and **no job, cron or sweep anywhere**.
+phase's reserve→commit→release apparatus has no analogue here, and reaching for
+it is the single biggest way this area goes wrong. There is no price (no arm in
+`resolvePaymentOptions`), no journal row, no counter but `rounds`, and **no job,
+cron or sweep anywhere**. Full docs: `docs/waivers.md`.
 
-A waiver is a Document (`kind: 'waiver'`) whose published versions are
-**immutable snapshots** — `documents/{d}/versions/v0001…`, `allow write: if
-false`, minted only by `publishDocumentVersion`, which replaced the old client
-status flip **for every kind** (the rules now deny a client *transition* into
-`published`). The sanitizer runs THERE, once, and the public mirror **copies**
-the frozen `bodyHtml`: two sanitize calls with a library upgrade between them
-would break every acceptance hash. `scripts/backfill-document-versions.ts` is a
-**deploy precondition** — every already-published document needs a v1 to copy
-from.
+Five invariants, each a bug before it was a rule:
 
-**The ledger has two halves** (`packages/functions/src/waivers/accept.ts` is
-its ONE writer): append-only EVENT rows hold the immutable facts, and one
-mutable CURRENT-STATE row per `(document, contact)` holds the answer the gate
-asks. The event id derives from the EVENT (`…:intentId`), not the relationship
-— which is what makes re-signing, renewal after expiry and re-signing after
-revocation expressible at all. The event is ALWAYS created; the signer row is
-updated **only when the event strictly improves it**
-(`waiverEventImprovesSigner`), against a row re-read **inside the same
-transaction**, with `rounds = read + 1` and no `FieldValue.increment`. Two
-traps, both learned the hard way: **never** copy `recordFinanceTransaction`'s
-`.create()`+catch-gRPC-6 idiom into a transaction (a collision fails the whole
-commit and takes the seat) — `tx.get` the acceptance ref in the read phase and
-skip; and `accepted_at` is captured **before** the transaction, because a retry
-that re-stamps it silently beats a revocation.
+- **Published versions are immutable snapshots** — `documents/{d}/versions/v0001…`,
+  `allow write: if false`, minted only by `publishDocumentVersion` (which replaced
+  the client status flip **for every kind**). The sanitizer runs THERE, once, and
+  the mirror **copies** the frozen `bodyHtml`: sanitizing twice with a library
+  upgrade between would break every acceptance hash.
+- **ONE ledger writer**, `packages/functions/src/waivers/accept.ts` — append-only
+  event rows plus one current-state signer row per `(document, contact)`, updated
+  **only when the event strictly improves it** (`waiverEventImprovesSigner`),
+  re-read in the same transaction, `rounds = read + 1`, no `FieldValue.increment`.
+  `accepted_at` is captured BEFORE the transaction, or a retry silently beats a
+  revocation; the other trap is `docs/waivers.md` → "Why the acceptance ref is READ".
+- **ONE predicate**, `waiverAcceptanceState` (`packages/shared/src/types/waiver.ts`),
+  fixed order `none → revoked → superseded → expired → valid`. Supersession and
+  expiry are **never stored**.
+- **Authorization reads `teams/{t}/waiver_policy/current` and fails CLOSED.**
+  `TeamPublicProfile.required_waivers` is a display mirror that fails OPEN and is
+  **never** read for a decision.
+- **Every rail refuses** — `enforceWaiverGate` → `decideWaiverGate`, no `defer`
+  arm and no posture parameter, so no booking anywhere commits with a required
+  waiver unsigned. Refuse before any contact write; record with the commit.
+  **The census owner is the module header of
+  `packages/functions/src/waivers/gate.ts`** — never restate it, and never state a
+  count of it; `gate.test.ts` re-derives the caller set from the source.
 
-**ONE predicate** — `waiverAcceptanceState` (`packages/shared/src/types/waiver.ts`),
-fixed order `none → revoked → superseded → expired → valid`. Supersession and
-expiry are **never stored**: a `require_resign` publish moves ONE number
-(`min_valid_version`) and writes **zero** signer rows. The validity rule is
-frozen onto each signature, so editing `validityMonths` governs future
-signatures only.
-
-**Authorization reads `teams/{t}/waiver_policy/current`** — server-written,
-patched (never rebuilt) inside the same transaction as the document write, and
-it fails **CLOSED**. `TeamPublicProfile.required_waivers` is a display mirror
-that fails open and is **never** read for a decision; the client calls
-`resolveWaiverRequirement` iff that mirror is non-empty, so a tenant with no
-waiver pays zero extra round-trips.
-
-**The gate** is `enforceWaiverGate` → `decideWaiverGate`, called once per rail.
-**The census owner is the module header of
-`packages/functions/src/waivers/gate.ts`** — never restate it, and never state a
-count of it; `gate.test.ts` re-derives the caller set from the source so a new
-rail that is never added fails the build. Two ordering rules: **refuse before
-any contact write**, and **record with the commit** (free rails: inside the seat
-transaction; paid rails: before Stripe, in their own transaction, not
-conditional on payment). **Every rail refuses** — there is no `defer` arm and no
-posture parameter, so no booking anywhere commits with a required waiver
-unsigned. **Not gated, deliberately:** staff add-participant (no server seam),
-`checkInContact` (a coach chose to admit them), event attendance (a different
-primitive), `rebookSession`, `joinWaitlist`, shop purchases.
-
-**Minors are a PROMPT, not an enforcement.** `WaiverConfig.mayIncludeMinors`
-(off by default) adds one required choice to the consent step — *I am the
-participant* vs *I am signing as a parent or guardian*, plus an optional name —
-and puts a chip on the roster and the printed manifest so the studio checks at
-the door. It is a **self-declaration**: nothing verifies it, and no copy may
-imply otherwise. The control renders **inline** in the waiver editor because its
-failure mode is silent; moving it behind "advanced" removes the only guard there
-is. The emailed-guardian link this replaced (2026-08-16) proved control of a
-mailbox, not parenthood — see `docs/waivers.md` → "Minors" for why ~2,500 lines
-of it were deleted rather than fixed.
-
-The **`notify` publish outcome is deferred to v2**: `PublishOutcome` has two
-members and the callable refuses `'notify'` by name. The `notices/{id}`
-subcollection stays declared and **writer-less** on purpose — removing it would
-make notify a migration rather than an addition.
-
-Full docs: `docs/waivers.md`, including **"What the gate does NOT cover"** and
-the sixteen recorded decisions.
+**Minors are a PROMPT, not an enforcement**: a self-declaration on the consent
+step plus a chip on the roster, verified by nothing, and no copy may imply
+otherwise (`docs/waivers.md` → "Minors"). The `notify` publish outcome is
+**deferred to v2** — the callable refuses it by name and `notices/{id}` stays
+declared and writer-less on purpose.
 
 ### Site translations — author once, machine-translate at publish
 
 The studio authors its public site in ONE language (`Team.language` /
 `Organization.language`, fallback `'en'` via `resolveSiteSourceLocale`);
-`publishWebsite` / `publishOrgWebsite` machine-translate the site text into the
-other locales of en/de/fr/it synchronously at publish (DeepL or Google Cloud
-Translation behind `packages/functions/src/translate/` — vendor chosen ONLY in
-its `provider.ts`, `TRANSLATION_PROVIDER` env; no provider ⇒ warn once, publish
-succeeds untranslated — **translation can never fail a publish**). **ONE extractor + ONE
-resolver**: `extractSiteUnits` / `applySiteTranslations` /
-`applySectionTranslations` in `packages/shared/src/utils/siteTranslation.ts`
-own the key grammar (its module header is the authoritative table) — never add
-a parallel implementation. Storage: per-locale **sidecar docs in the SAME
-collections**, id `{id}__i18n_{locale}` (`siteI18nDocId`, paths.ts) — never
-carrying a `slug` field (invisible to the public slug queries),
-function-write-only via the existing wildcard rules, with a manifest
-`i18n: {srcLang, locales}` on the base doc; embed widgets carry translations
-inline (`EmbedWidgetSet.i18n`), written whole by the `onEmbedWidgetsWritten`
-trigger (loop guard = fixed-point check). **The hash guard**: every unit is
-`{text, srcHash, pinned?}`; the resolver substitutes only when `srcHash`
-(`translationSourceHash`, FNV-1a, non-cryptographic) matches the CURRENT base
-text — staleness degrades to the authoring language, never to wrong text, and
-unchanged text re-publishes with zero provider calls. `pinned` is a
-**reservation** for a future manual-override callable: MT writers preserve it
-while the hash matches, clear it when the source changes, and the resolver
-never reads it. **Never translated**: brand names (`meta.title`, team/org
-name), data fields (address/phone/email/mapQuery, place names), live-mirror
-content (activity/plan/session names — authoring-language this phase), and
-binding text (waivers, cancellation policies — never machine-translated, by
-recorded decision). Full docs: `docs/site-translations.md` (incl. the embed
-`?hl=en` pinning, the switcher/cookie change, and
-`pnpm backfill:site-translations`).
+`publishWebsite` / `publishOrgWebsite` machine-translate it into the other
+locales of en/de/fr/it synchronously at publish, behind
+`packages/functions/src/translate/` — vendor chosen ONLY in its `provider.ts`.
+Full docs: `docs/site-translations.md`.
+
+Four invariants, each a bug before it was a rule:
+
+- **Translation can never fail a publish.** No provider ⇒ warn once and publish
+  untranslated; nothing about translating may block a studio's site going live.
+- **ONE extractor + ONE resolver** — `extractSiteUnits` / `applySiteTranslations`
+  / `applySectionTranslations` in `packages/shared/src/utils/siteTranslation.ts`,
+  whose module header is the authoritative key-grammar table. Never add a
+  parallel implementation.
+- **The hash guard.** Every unit is `{text, srcHash, pinned?}`, and the resolver
+  substitutes only when `srcHash` matches the CURRENT base text — so staleness
+  degrades to the authoring language and **never to wrong text**.
+  `docs/site-translations.md` → "The hash-guard contract".
+- **A sidecar never carries a `slug`.** Per-locale docs live in the SAME
+  collections under `{id}__i18n_{locale}` (`siteI18nDocId`), function-write-only,
+  and must stay invisible to the public slug queries.
+
+**Never translated**: brand names (`meta.title`, team/org name), data fields
+(address/phone/email/mapQuery, place names), live-mirror content (activity, plan
+and session names) and binding text — waivers and cancellation policies are never
+machine-translated, by recorded decision.
+`docs/site-translations.md` → "What translates, and what deliberately doesn't".
 
 ### Scheduled jobs fan out — one Cloud Task per tenant, never a loop
 

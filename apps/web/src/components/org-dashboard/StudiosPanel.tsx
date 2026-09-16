@@ -178,7 +178,7 @@ function StudioRow({
             {studio.name ?? t('studioUnnamed')}
           </span>
           {studio.status === 'invited' && (
-            <Badge variant="secondary" className="shrink-0 text-[10px]">
+            <Badge variant="secondary" className="shrink-0 text-xs">
               {t('studioInvited')}
             </Badge>
           )}
@@ -208,18 +208,18 @@ function StudioRow({
 
       <div className="shrink-0 text-right">
         <div className="text-sm font-semibold tabular-nums">{onBooks ?? '—'}</div>
-        <div className="text-[11px] text-muted-foreground">{t('studioOnBooks')}</div>
+        <div className="text-xs text-muted-foreground">{t('studioOnBooks')}</div>
       </div>
       <div className="w-20 shrink-0 text-right">
         <div className="text-sm font-semibold tabular-nums text-primary">
           {affiliated ?? '—'}
           {coverage != null && (
-            <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
               {t('studioCoverage', { percent: coverage })}
             </span>
           )}
         </div>
-        <div className="truncate text-[11px] text-muted-foreground">{affiliationTerm}</div>
+        <div className="truncate text-xs text-muted-foreground">{affiliationTerm}</div>
       </div>
     </li>
   )

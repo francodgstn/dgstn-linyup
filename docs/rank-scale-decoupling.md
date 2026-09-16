@@ -1,3 +1,8 @@
+---
+title: Decoupling the rank scale — a plan
+status: plan
+area: contacts
+---
 # Decoupling the rank scale — a plan
 
 **Status: Phases 1–4 shipped — #322 (ids), #324 (every reader resolves a

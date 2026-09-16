@@ -1,3 +1,8 @@
+---
+title: "HMD SaaS Strategy — Product & Pricing Blueprint"
+status: living
+area: product
+---
 > **⚠️ STATUS: DRAFT / WORK IN PROGRESS — not definitive. Pricing figures and tier boundaries are indicative and subject to change.**
 
 ---

@@ -1,3 +1,8 @@
+---
+title: App-store insights in the operator console
+status: living
+area: mobile
+---
 # App-store insights in the operator console
 
 **Status: experimental spike.** Local emulator only — no Terraform, no deploy, no

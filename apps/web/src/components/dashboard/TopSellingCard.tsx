@@ -206,7 +206,7 @@ export function TopSellingCard({
                       {/* The KIND, not a category the studio chose: it is what
                           tells a plan from a product when two of them share a
                           name, which happens more often than it sounds. */}
-                      <Badge variant="outline" className="shrink-0 text-[10px] font-normal">
+                      <Badge variant="outline" className="shrink-0 text-xs font-normal">
                         {t(`kind.${item.kind}` as Parameters<typeof t>[0])}
                       </Badge>
                     </div>
@@ -239,7 +239,7 @@ export function TopSellingCard({
               )
             })}
             {capped && (
-              <p className="pt-0.5 text-[11px] text-muted-foreground/70">
+              <p className="pt-0.5 text-xs text-muted-foreground/70">
                 {t('cappedNote', { count: CONNECT_LIMIT })}
               </p>
             )}

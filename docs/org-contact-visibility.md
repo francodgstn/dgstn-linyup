@@ -1,3 +1,8 @@
+---
+title: "What an organisation may see of a member studio's people — design"
+status: living
+area: contacts
+---
 # What an organisation may see of a member studio's people — design
 
 **Status: BUILT 2026-09-08** (Franco). A studio inside an organisation keeps its

@@ -73,7 +73,7 @@ export function SpaceNextUpCard({ bookingLive }: Props) {
         </div>
       ) : next ? (
         <>
-          <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: accent }}>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-wide" style={{ color: accent }}>
             {t('nextUpTitle')}
           </p>
           <div className="mt-1.5 flex items-start gap-3">
