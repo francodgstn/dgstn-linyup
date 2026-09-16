@@ -17,3 +17,9 @@ variable "landing_site_id" {
   type        = string
   description = "Hosting site ID for the landing site. MUST match .firebaserc (e.g. linyup-staging-landing)."
 }
+
+variable "api_site_id" {
+  type        = string
+  description = "Hosting site ID for the public API + MCP server. MUST match .firebaserc (e.g. linyup-api-staging). Null: the environment has no api site."
+  default     = null
+}

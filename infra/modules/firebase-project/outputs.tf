@@ -27,3 +27,8 @@ output "landing_site_id" {
   description = "Hosting site ID for the landing site."
   value       = google_firebase_hosting_site.landing.site_id
 }
+
+output "api_site_id" {
+  description = "Hosting site ID for the public API + MCP server, or null where the environment has none."
+  value       = var.api_site_id == null ? null : google_firebase_hosting_site.api[0].site_id
+}

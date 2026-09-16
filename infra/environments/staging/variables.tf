@@ -64,6 +64,12 @@ variable "landing_site_id" {
   default     = "linyup-staging-landing"
 }
 
+variable "api_site_id" {
+  type        = string
+  description = "Hosting site ID for the public API + MCP server (custom domain api-stg.linyup.com)."
+  default     = "linyup-api-staging"
+}
+
 # ── Secrets ───────────────────────────────────────────────────────────────────
 variable "secret_ids" {
   type        = list(string)
