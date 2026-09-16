@@ -647,6 +647,14 @@ export interface Team {
   description?: string
   primaryContact?: string
   sport_type?: string
+  /**
+   * This studio may never hand out public-API credentials (docs/public-api.md
+   * -> "Blocked tenants"). Set on the `/try` demo playground, whose logins are
+   * public: a visitor signs in as the owner, so nothing short of a server-side
+   * refusal keeps them from minting a key against our own Firestore bill.
+   * Read through `apiAccessBlocked` (types/api.ts), never inline.
+   */
+  api_access_blocked?: boolean
   // Day thresholds for the derived contact engagement band. Unset → defaults
   // (DEFAULT_ENGAGEMENT_THRESHOLDS). The band itself is never stored.
   engagement_thresholds?: EngagementThresholds

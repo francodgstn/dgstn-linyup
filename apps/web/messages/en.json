@@ -8757,7 +8757,8 @@
     "disconnect": "Disconnect",
     "disconnectTitle": "Disconnect “{name}”?",
     "disconnectBody": "It stops working immediately. To use it again, connect it again from the app.",
-    "disconnectedToast": "“{name}” disconnected"
+    "disconnectedToast": "“{name}” disconnected",
+    "blockedBody": "This is a shared demo studio, so the API and MCP server are switched off for it. Your own studio can use them on the Studio plan."
   },
   "OAuthConsent": {
     "pageTitle": "Connect an app",
@@ -8779,6 +8780,7 @@
     "expiredBody": "Go back to the app and start connecting again.",
     "noTeams": "Your account isn't a member of any studio.",
     "errorGeneric": "Something went wrong. Please try again.",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "teamBlocked": "This is a shared demo studio, so it cannot connect apps. Pick another studio, or connect from your own."
   }
 }

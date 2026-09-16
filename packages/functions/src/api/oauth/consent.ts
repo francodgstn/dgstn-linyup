@@ -22,12 +22,14 @@ import {
   OAUTH_REQUESTS_COLLECTION,
   TEAMS_COLLECTION,
   TEAM_MEMBERS_SUBCOLLECTION,
+  apiAccessBlocked,
   apiScopeUsableBy,
   normalizeApiScopes,
   type ApiScope,
   type Capability,
   type OAuthAuthorizationRequest,
   type OAuthGrant,
+  type Team,
   type TeamMember,
   type TeamRole,
 } from '@linyup/shared'
@@ -35,6 +37,7 @@ import { assertPluginInstalled, pluginIsActive } from '../../utils/plugins'
 import { hasCapability, resolveMemberCapabilities } from '../../utils/teams'
 import { approveAuthorization, denyAuthorization, revokeOAuthGrant as revokeGrant, type ConsentOutcome } from '../auth/credentials'
 import { isRecognisedClient } from './clientMetadata'
+import { assertApiAccessAllowed } from '../teamAccess'
 
 function requireString(value: unknown, field: string): string {
   if (typeof value !== 'string' || !value || value.length > 256) {
@@ -78,6 +81,8 @@ export interface ConsentTeamOption {
   name: string
   role: TeamRole
   plugin_installed: boolean
+  /** The studio is barred from the public API entirely (the demo playground). */
+  api_blocked: boolean
   scopes: Array<{ scope: ApiScope; usable: boolean }>
 }
 
@@ -102,6 +107,7 @@ export const getOAuthAuthorizationRequest = onCall(async (request) => {
       name: (teamSnaps[i].data()?.name as string | undefined) ?? teamId,
       role: member.role,
       plugin_installed: await pluginIsActive(teamId, API_CONNECTORS_PLUGIN_ID),
+      api_blocked: apiAccessBlocked(teamSnaps[i].data() as Team),
       scopes: req.scopes.map((scope) => ({ scope, usable: apiScopeUsableBy(scope, member.role, capabilities) })),
     })
   }
@@ -138,6 +144,7 @@ export const approveOAuthAuthorization = onCall(async (request) => {
   const member = memberSnap.data() as TeamMember | undefined
   if (!member) throw new HttpsError('permission-denied', 'You are not a member of this team', { reason: 'not_a_member' })
   await assertPluginInstalled(teamId, API_CONNECTORS_PLUGIN_ID)
+  await assertApiAccessAllowed(teamId)
 
   const req = await loadOpenRequest(requestId, nowMs)
   const capabilities = await capabilitiesOf(teamId, member)

@@ -6,6 +6,7 @@
 // principal ONCE (`resolveApiPrincipal`) before anything is read.
 
 import { onRequest } from 'firebase-functions/v2/https'
+import { defineInt } from 'firebase-functions/params'
 import type { ApiAuthRefusal } from './auth/principal'
 import { resolveApiPrincipal } from './auth/principal'
 import { touchApiKeyLastUsed, touchOAuthGrantLastUsed } from './auth/credentials'
@@ -16,6 +17,18 @@ import { handleRest, sendApiError } from './rest'
 import { TokenBuckets, recordApiUsage } from './usage'
 
 const buckets = new TokenBuckets()
+
+/**
+ * Warm instances for this function. Production runs 1: a cold start measured
+ * 5.3 s on the Phase 0 spike and an MCP connector gives up around 10 s, so the
+ * first call of a quiet morning would fail rather than be slow. Everywhere else
+ * it is 0. Every .env file must carry it — a param the emulator cannot resolve
+ * makes it prompt, and a prompt in a non-TTY loads zero functions.
+ */
+const API_MIN_INSTANCES = defineInt("API_MIN_INSTANCES", {
+  description: "Warm instances for the public API function (production: 1)",
+  default: 0,
+})
 
 const REFUSAL_MESSAGE: Record<ApiAuthRefusal, string> = {
   missing_token: 'Send a credential as `Authorization: Bearer <token>`',
@@ -183,6 +196,13 @@ export async function handleApiRequest(req: ApiRequest, res: ApiResponse): Promi
 }
 
 export const api = onRequest(
-  { invoker: 'public', maxInstances: 10, timeoutSeconds: 60, memory: '512MiB', concurrency: 40 },
+  {
+    invoker: 'public',
+    minInstances: API_MIN_INSTANCES,
+    maxInstances: 10,
+    timeoutSeconds: 60,
+    memory: '512MiB',
+    concurrency: 40,
+  },
   handleApiRequest
 )

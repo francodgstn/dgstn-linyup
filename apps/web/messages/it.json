@@ -8757,7 +8757,8 @@
     "disconnect": "Scollega",
     "disconnectTitle": "Scollegare “{name}”?",
     "disconnectBody": "Smette subito di funzionare. Per usarla di nuovo, ricollegala dall'app.",
-    "disconnectedToast": "“{name}” scollegata"
+    "disconnectedToast": "“{name}” scollegata",
+    "blockedBody": "Questo è uno studio dimostrativo condiviso, quindi l'API e il server MCP sono disattivati. Il tuo studio può usarli con il piano Studio."
   },
   "OAuthConsent": {
     "pageTitle": "Collega un'app",
@@ -8779,6 +8780,7 @@
     "expiredBody": "Torna all'app e avvia di nuovo il collegamento.",
     "noTeams": "Il tuo account non fa parte di nessuno studio.",
     "errorGeneric": "Qualcosa è andato storto. Riprova.",
-    "loading": "Caricamento…"
+    "loading": "Caricamento…",
+    "teamBlocked": "Questo è uno studio dimostrativo condiviso e non può collegare app. Scegli un altro studio oppure collega dal tuo."
   }
 }

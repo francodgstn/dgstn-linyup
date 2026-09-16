@@ -24,6 +24,14 @@ env:
   # Inbound webhooks (Automations → Webhooks). MUST be overridden here: the base
   # apphosting.yaml carries the staging URL, and this file merges over it — without
   # this line sandbox would hand out staging's webhook URL.
+  # The public API + MCP origin (docs/public-api.md -> Hosting target), shown on
+  # Settings -> API keys and in its copy-paste examples. Inlined at build time.
+  - variable: NEXT_PUBLIC_API_BASE_URL
+    value: https://api-demo.linyup.com
+    availability:
+      - BUILD
+      - RUNTIME
+
   - variable: NEXT_PUBLIC_INBOUND_WEBHOOK_URL
     value: https://europe-west6-linyup-sandbox.cloudfunctions.net/inboundWebhook
     availability:

@@ -8757,7 +8757,8 @@
     "disconnect": "Trennen",
     "disconnectTitle": "„{name}“ trennen?",
     "disconnectBody": "Sie funktioniert sofort nicht mehr. Um sie wieder zu nutzen, verbinde sie erneut aus der App.",
-    "disconnectedToast": "„{name}“ getrennt"
+    "disconnectedToast": "„{name}“ getrennt",
+    "blockedBody": "Dies ist ein gemeinsam genutztes Demo-Studio, daher sind API und MCP-Server dafür abgeschaltet. Dein eigenes Studio kann sie im Studio-Tarif nutzen."
   },
   "OAuthConsent": {
     "pageTitle": "App verbinden",
@@ -8779,6 +8780,7 @@
     "expiredBody": "Geh zurück zur App und starte die Verbindung erneut.",
     "noTeams": "Dein Konto ist in keinem Studio Mitglied.",
     "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
-    "loading": "Wird geladen …"
+    "loading": "Wird geladen …",
+    "teamBlocked": "Dies ist ein gemeinsam genutztes Demo-Studio und kann keine Apps verbinden. Wähle ein anderes Studio oder verbinde von deinem eigenen aus."
   }
 }
