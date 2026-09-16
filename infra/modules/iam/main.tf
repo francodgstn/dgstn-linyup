@@ -104,6 +104,39 @@ resource "google_service_account_iam_member" "functions_runtime_token_creator" {
   member             = "serviceAccount:${google_service_account.functions_runtime.email}"
 }
 
+# ── Google Play publisher SA ──────────────────────────────────────────────────
+# The identity `eas submit -p android` authenticates as when it uploads an AAB
+# to a Play track. Terraform creates the ACCOUNT ONLY — the key is deliberately
+# absent:
+#
+#   - `google_service_account_key` persists the private key in PLAINTEXT in
+#     remote state (gs://linyup-tfstate-dgstn, shared by all three envs). No key
+#     resource exists anywhere in this repo, so state holds no credentials at
+#     all today — worth keeping for one minted once and uploaded once.
+#   - The `ephemeral` variant is excluded from state BY DESIGN, so the JSON
+#     could never be read back out to hand to EAS. Different problem.
+#
+# Two steps stay manual as a result, both one-time:
+#   1. Play Console → Users and permissions → invite this SA's email, with at
+#      least "Release to testing tracks". Play developer-account membership is
+#      NOT a GCP resource and the Google provider has no resource for it, so
+#      this can never be automated here however much of the rest is.
+#   2. Create a JSON key and upload it with `eas credentials -p android`
+#      (interactive only — `--non-interactive` refuses, which is how its
+#      absence surfaced). See .claude/skills/mobile-release/SKILL.md.
+#
+# It needs NO project-level role. Its authority comes from the Play invitation,
+# not from IAM on this project — which is why no google_project_iam_member sits
+# beside it, and why that absence is deliberate rather than an omission.
+resource "google_service_account" "play_publisher" {
+  count = var.create_play_publisher ? 1 : 0
+
+  project      = var.project_id
+  account_id   = "linyup-play-publisher"
+  display_name = "Linyup Play Store Publisher"
+  description  = "Uploads AABs to Google Play tracks via eas submit; also the FCM V1 identity for Android push. Its key is created and uploaded by hand, never by Terraform."
+}
+
 # The SA the functions ACTUALLY run as today (the default compute SA). Kept as a
 # list so this does not have to be reopened when the runtime identity changes.
 resource "google_service_account_iam_member" "extra_token_creator" {
