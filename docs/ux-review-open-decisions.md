@@ -458,7 +458,9 @@ FIXED on `claude/crossfit-zug-website-strategy-4776aa` (PR #378). What is left
 here is what needs Franco.
 
 ## 29. Should Pages be top-level navigation in the builder?
-**PARKED.** There is no Pages destination: page switching is a `<Select>` inside
+**ANSWERED 2026-09-16 — Franco: (b), the persistent page rail.** Built: `PagesRail` beside every tab (lg+), picking a page opens it in Sections; posts in their own scroll; a page header with Settings above the sections; the compact switcher stays below lg; the menu column moves beside the editor only at xl. The original question follows.
+
+**Was PARKED.** There is no Pages destination: page switching is a `<Select>` inside
 the Sections tab, with Add page and Page settings beside it
 (`(auth)/plugins/website/page.tsx`). A studio thinking "I need to manage my
 pages" has nowhere to go that says so, which is the friction that prompted the
@@ -552,7 +554,9 @@ restarting the server is not enough, and a stale `.next.old-*` left inside
 candidate containing a NUL byte.
 
 ## 36. A new page starts empty — should it start from a layout?
-**PARKED (a proposal, not a defect).** Creating a blog post now opens on a text
+**ANSWERED 2026-09-16 — Franco: build it.** Built: `starterSections` in `plugins/website/defaults.ts` — Simple page (default: hero with the page title + text), Offer page (hero + two columns + a booking CTA band), Empty page; placeholder copy is passed in translated. The original proposal follows.
+
+**Was PARKED.** Creating a blog post now opens on a text
 block; creating a PAGE still opens on nothing but an "Add section" button.
 CrossFit Zug's seven offer pages are the same four blocks in the same order
 (hero → text → features → call to action), which is what a studio's pages

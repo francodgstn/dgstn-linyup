@@ -22,6 +22,9 @@ import {
   ExternalLink,
   Check,
   Settings,
+  House,
+  FileText,
+  Newspaper,
 } from 'lucide-react'
 import { ThemePresetPicker } from '@/components/theme/ThemePresetPicker'
 import { ThemePreview } from '@/components/theme/ThemePreview'
@@ -116,7 +119,15 @@ import {
 import { BrandFields } from '@/components/website/BrandFields'
 import { ThemePicker } from '@/components/website/ThemePicker'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
-import { SECTION_LIBRARY, newSection, newSectionId, emptyDraft } from '@/plugins/website/defaults'
+import {
+  SECTION_LIBRARY,
+  newSection,
+  newSectionId,
+  emptyDraft,
+  PAGE_STARTERS,
+  starterSections,
+  type PageStarter,
+} from '@/plugins/website/defaults'
 import { SectionPicker } from '@/components/website/SectionPicker'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { getWebsiteLimits } from '@/plugins/website/limits'
@@ -531,11 +542,21 @@ function AddPageDialog({
    *  already reached — checked at creation, against whichever kind is chosen. */
   pagesFull: boolean
   postsFull: boolean
-  onCreate: (page: { title: string; path: string; kind: 'page' | 'post'; publishedOn?: string }) => void
+  onCreate: (page: {
+    title: string
+    path: string
+    kind: 'page' | 'post'
+    publishedOn?: string
+    starter: PageStarter
+  }) => void
 }) {
   const t = useTranslations('Website')
   const tCommon = useTranslations('Common')
   const [kind, setKind] = useState<'page' | 'post'>('page')
+  // 'simple' by default: a hero carrying the page's own title and a text block
+  // under it is what most second pages are, and it is never the wrong start —
+  // deleting two sections is easier than facing an empty page.
+  const [starter, setStarter] = useState<PageStarter>('simple')
   const [title, setTitle] = useState('')
   const [path, setPath] = useState('')
   // Once the studio has edited the path by hand, typing in Title (or switching
@@ -548,6 +569,7 @@ function AddPageDialog({
   useEffect(() => {
     if (open) return
     setKind('page')
+    setStarter('simple')
     setTitle('')
     setPath('')
     setPathTouched(false)
@@ -589,6 +611,7 @@ function AddPageDialog({
       path: normalized,
       kind,
       publishedOn: kind === 'post' ? toDateInputValue(new Date()) : undefined,
+      starter,
     })
   }
 
@@ -627,6 +650,38 @@ function AddPageDialog({
               autoFocus
             />
           </div>
+          {/* A page picks its starting shape; a post always starts as a text
+              block to write in, so it is not asked. */}
+          {kind === 'page' && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesStarterField')}</Label>
+              <div role="radiogroup" aria-label={t('pagesStarterField')} className="grid gap-2">
+                {PAGE_STARTERS.map((option) => {
+                  const selected = starter === option
+                  const copy = {
+                    simple: [t('pagesStarterSimple'), t('pagesStarterSimpleDesc')],
+                    offer: [t('pagesStarterOffer'), t('pagesStarterOfferDesc')],
+                    empty: [t('pagesStarterEmpty'), t('pagesStarterEmptyDesc')],
+                  }[option]
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setStarter(option)}
+                      className={`rounded-lg border p-2.5 text-left transition-colors ${
+                        selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50'
+                      }`}
+                    >
+                      <span className="block text-sm font-medium">{copy[0]}</span>
+                      <span className="block text-xs text-muted-foreground">{copy[1]}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           {/* THE ADDRESS IS A CONSEQUENCE OF THE TITLE, NOT A QUESTION.
               A studio owner writing "Unsere Werte" has no opinion about
               "unsere-werte" and should not be asked to form one — so the
@@ -955,6 +1010,108 @@ function PageSettingsDialog({
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
+/**
+ * THE PAGE RAIL — "MY WEBSITE HAS THESE PAGES", ALWAYS ON SCREEN.
+ *
+ * Pages used to be a dropdown inside the Sections tab, so the one thing a
+ * studio owner thinks of a website as — a set of pages — had no place of its
+ * own: you had to already be in Sections, notice the grey strip, and open a
+ * select to see what existed. The rail is the Wix/Squarespace answer: the list
+ * is permanent, beside every tab, and picking a page opens it.
+ *
+ * Design and Embed are site-wide, so choosing a page from either of them
+ * switches to Sections — the only tab a page changes. Below lg there is no
+ * room for a column, and the compact page switcher above the sections is used
+ * instead; both drive the same ?page= param.
+ *
+ * Posts are listed apart, newest first, in their own scroll: a studio with
+ * sixty posts should still see its pages without scrolling past them.
+ */
+function PagesRail({
+  currentPageId,
+  pages,
+  posts,
+  onSelect,
+  onAdd,
+  addDisabled,
+  addDisabledReason,
+}: {
+  currentPageId: string
+  pages: SitePageRef[]
+  posts: SitePageRef[]
+  onSelect: (id: string) => void
+  onAdd: () => void
+  addDisabled: boolean
+  addDisabledReason?: string
+}) {
+  const t = useTranslations('Website')
+  const row = (id: string, icon: React.ReactNode, title: string, sub?: string, hidden?: boolean) => {
+    const active = id === currentPageId
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => onSelect(id)}
+        aria-current={active ? 'page' : undefined}
+        className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+          active ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+        }${hidden ? ' opacity-60' : ''}`}
+      >
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm">{title}</span>
+          {sub && <span className="block truncate text-xs font-normal text-muted-foreground">{sub}</span>}
+        </span>
+        {hidden && <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t('pagesHiddenField')} />}
+      </button>
+    )
+  }
+  return (
+    <nav
+      aria-label={t('pagesGroupLabel')}
+      className="hidden space-y-3 rounded-lg border bg-card p-2 lg:sticky lg:top-4 lg:block lg:w-60 lg:shrink-0"
+    >
+      <div className="flex items-center justify-between px-2 pt-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t('pagesGroupLabel')}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {pages.length + 1}/{SITE_PAGE_LIMITS.maxPages}
+        </span>
+      </div>
+      <div className="space-y-0.5">
+        {row('home', <House className="h-4 w-4" />, t('pagesHome'), '/')}
+        {pages.map((p) => row(p.id, <FileText className="h-4 w-4" />, p.title, `/${p.path}`, p.hidden))}
+      </div>
+      {posts.length > 0 && (
+        <div className="space-y-0.5">
+          <div className="flex items-center justify-between px-2 pt-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('pagesPostsGroup')}
+            </span>
+            <span className="text-xs text-muted-foreground">{posts.length}</span>
+          </div>
+          <div className="max-h-72 space-y-0.5 overflow-y-auto">
+            {posts.map((p) => row(p.id, <Newspaper className="h-4 w-4" />, p.title, p.publishedOn, p.hidden))}
+          </div>
+        </div>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={addDisabled}
+        title={addDisabled ? addDisabledReason : undefined}
+        onClick={onAdd}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {t('pagesAdd')}
+      </Button>
+    </nav>
+  )
+}
+
 const SITE_TABS = ['sections', 'appearance', 'embed'] as const
 
 export default function WebsiteBuilderPage() {
@@ -1119,11 +1276,13 @@ export default function WebsiteBuilderPage() {
     path,
     kind,
     publishedOn,
+    starter,
   }: {
     title: string
     path: string
     kind: 'page' | 'post'
     publishedOn?: string
+    starter: PageStarter
   }) {
     const id = `p-${Math.random().toString(36).slice(2, 8)}${Math.random().toString(36).slice(2, 6)}`
     const ref: SitePageRef = {
@@ -1138,10 +1297,26 @@ export default function WebsiteBuilderPage() {
     // A POST OPENS ON SOMETHING TO WRITE IN. An author who just named an
     // article should not have to know that a paragraph is a "section" and pick
     // it out of a library before typing the first word; an ordinary page, whose
-    // shape is genuinely the author's choice, still starts empty.
-    const first = kind === 'post' ? [newSection('content')] : []
+    // shape is the author's choice, starts from the starter they picked.
+    const first =
+      kind === 'post'
+        ? [newSection('content')]
+        : starterSections(starter, title, {
+            offerHeading: t('starterOfferHeading'),
+            offerItemWhat: t('starterOfferItemWhat'),
+            offerItemWho: t('starterOfferItemWho'),
+            itemText: t('starterItemText'),
+            factsHeading: t('starterFactsHeading'),
+            factLabel: t('starterFactLabel'),
+            factValue: t('starterFactValue'),
+            ctaHeading: t('starterCtaHeading'),
+            ctaText: t('starterCtaText'),
+            ctaLabel: t('starterCtaLabel'),
+          })
     setPageSections((prev) => ({ ...(prev ?? {}), [id]: first }))
-    setOpenId(first[0]?.id ?? null)
+    // Open the block the author writes in first — the post's text, or the
+    // section under a starter's hero (the hero already carries the title).
+    setOpenId((kind === 'post' ? first[0] : first[1] ?? first[0])?.id ?? null)
     setAddPageOpen(false)
     setCurrentPageId(id)
   }
@@ -1424,9 +1599,27 @@ export default function WebsiteBuilderPage() {
         </div>
       </div>
 
-      {/* Two columns */}
+      {/* Rail | editor | menu. The rail is beside every tab; the menu only
+          beside Sections, and below the editor until the screen is wide
+          enough for three columns. */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        {/* Left: editor */}
+        <PagesRail
+          currentPageId={currentPageId}
+          pages={nonPostPages}
+          posts={postPages}
+          onSelect={(id) => {
+            setCurrentPageId(id)
+            setTab('sections')
+          }}
+          onAdd={() => setAddPageOpen(true)}
+          addDisabled={pagesFull && postsFull}
+          addDisabledReason={t('pagesAndPostsLimitReached', {
+            maxPages: SITE_PAGE_LIMITS.maxPages,
+            maxPosts: SITE_PAGE_LIMITS.maxPosts,
+          })}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-6 xl:flex-row xl:items-start">
+        {/* Editor */}
         <div className="min-w-0 flex-1 space-y-4">
           {/* Tabs */}
           <div className="flex gap-0 border-b">
@@ -1474,7 +1667,7 @@ export default function WebsiteBuilderPage() {
                   reorder/update section, the section limit, "add to menu") acts
                   on whichever page is selected here — see `currentSections` /
                   `setCurrentSections`. */}
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5 lg:hidden">
                 {/* A studio thinking "my website has these pages" had nothing
                     on screen saying "pages" — only an unlabelled dropdown in a
                     grey strip. The count is here for the same reason: the caps
@@ -1534,6 +1727,21 @@ export default function WebsiteBuilderPage() {
                   <Plus className="h-3.5 w-3.5" />
                   {t('pagesAdd')}
                 </Button>
+              </div>
+
+              {/* WHICH PAGE THIS IS. With the list in the rail, the editor
+                  itself has to say what it is editing — and settings belong to
+                  the page, so they sit on its header, not in the list. */}
+              <div className="flex items-center gap-3 border-b pb-2.5">
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-base font-semibold">
+                    {currentPageRef ? currentPageRef.title : t('pagesHome')}
+                  </h2>
+                  <p className="truncate font-mono text-xs text-muted-foreground">
+                    /site{currentPageRef ? `/${currentPageRef.path}` : ''}
+                    {currentPageRef?.hidden ? ` · ${t('pagesHiddenField')}` : ''}
+                  </p>
+                </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => setPageSettingsOpen(true)}>
                   <Settings className="h-3.5 w-3.5" />
                   {t('pagesSettings')}
@@ -1726,7 +1934,7 @@ export default function WebsiteBuilderPage() {
             with the Sections tab for the same reason — beside Appearance or the
             embed snippets it would be answering a question nobody asked. */}
         {tab === 'sections' && (
-          <div className="space-y-2 lg:w-[420px] lg:flex-shrink-0 lg:self-start">
+          <div className="space-y-2 xl:w-[380px] xl:flex-shrink-0 xl:self-start">
             <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               <ListTree className="h-3.5 w-3.5" />
               {t('tabMenu')}
@@ -1742,6 +1950,7 @@ export default function WebsiteBuilderPage() {
             />
           </div>
         )}
+        </div>
       </div>
 
       {/* The preview opens over the page rather than living beside it — see the

@@ -161,3 +161,65 @@ export function emptyDraft(team: {
     sections: [newSection('hero'), newSection('content'), newSection('contact')],
   }
 }
+
+// ─── page starters ─────────────────────────────────────────────────────────────
+//
+// A NEW PAGE SHOULD NOT OPEN ON NOTHING. A studio's pages are overwhelmingly the
+// same few shapes — an offer page is a hero, what it includes beside the facts,
+// and a button to book — so creating one offers a shape to start from. Every
+// section a starter makes is an ordinary section: movable, removable, editable,
+// with nothing remembering which starter produced it.
+//
+// The placeholder copy comes in from the caller, already translated: a German
+// studio starting an offer page should read German placeholders, and this
+// module holds no copy of its own.
+
+export type PageStarter = 'empty' | 'simple' | 'offer'
+
+export const PAGE_STARTERS: readonly PageStarter[] = ['simple', 'offer', 'empty']
+
+export interface PageStarterCopy {
+  offerHeading: string
+  offerItemWhat: string
+  offerItemWho: string
+  itemText: string
+  factsHeading: string
+  factLabel: string
+  factValue: string
+  ctaHeading: string
+  ctaText: string
+  ctaLabel: string
+}
+
+/** The sections a new page starts with. The page's own title is its headline. */
+export function starterSections(starter: PageStarter, title: string, copy: PageStarterCopy): WebsiteSection[] {
+  const hero = (): WebsiteSection => ({ id: newSectionId(), type: 'hero', headline: title, align: 'left', overlay: 40 })
+  switch (starter) {
+    case 'empty':
+      return []
+    case 'simple':
+      return [hero(), { id: newSectionId(), type: 'content', body: '', imageSide: 'left' }]
+    case 'offer':
+      return [
+        hero(),
+        {
+          id: newSectionId(),
+          type: 'split',
+          heading: copy.offerHeading,
+          items: [
+            { title: copy.offerItemWhat, text: copy.itemText },
+            { title: copy.offerItemWho, text: copy.itemText },
+          ],
+          side: { heading: copy.factsHeading, facts: [{ label: copy.factLabel, value: copy.factValue }] },
+        },
+        {
+          id: newSectionId(),
+          type: 'cta_banner',
+          heading: copy.ctaHeading,
+          text: copy.ctaText,
+          // The one button every offer page exists for.
+          cta: { label: copy.ctaLabel, action: 'booking' },
+        },
+      ]
+  }
+}
