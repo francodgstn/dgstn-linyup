@@ -527,72 +527,56 @@ The flag is `Activity.waitlistEnabled` + its public mirror; there is deliberatel
 
 ### Promo codes — a Stage A MODIFIER, never a tender
 
-**A promo code changes what a purchase costs; a gift card pays for one.** That is
-the whole design, and getting it backwards is the single biggest way this area
-goes wrong:
+**A promo code changes what a purchase costs; a gift card pays for one.** Getting
+that backwards is the single biggest way this area goes wrong:
 
 > A price **MODIFIER** belongs in Stage A (inside `resolvePaymentOptions`). A
 > **TENDER** belongs in Stage B (at the checkout callable). **Nothing is both.**
 
-So the promo is applied inside the resolver and **no callable ever computes a
-discounted amount itself** — every one reads `payOption.amount`. The dividend:
-every gift-card reservation already receives a post-promo total, so no gift-card
-call site needed a promo edit. `teams/{teamId}/promo_codes/{CODE}` (the doc
-id IS the code, `PromoCode` in `packages/shared/src/types/promoCode.ts`), written
-only by manager callables in `packages/functions/src/connect/promoCodes.ts`;
-`firestore.rules` denies every client write. Rails: drop-in, appointment, course,
-product — **not** memberships, not gift-card purchases, not the priced-trial door,
-and **not the waitlist claim** (its deadline cannot be shortened without giving
-one seat two timers, so a code there would lock a use for the whole claim window;
-the claim path is refused server-side, not merely unmounted). A code may also be
-narrowed by **audience** (`audience: 'all' | 'new_contacts'`, where "new" is
-`!joined` — the same fact the `members` access rule runs on, never a second
-definition), by entity allow-lists, or bound to one contact.
+Codes live at `teams/{teamId}/promo_codes/{CODE}` — the doc id IS the code —
+written only by manager callables in
+`packages/functions/src/connect/promoCodes.ts`; `firestore.rules` denies every
+client write. Full docs: `docs/promo-codes.md`.
 
-**Best-one-wins, and the comparator is deliberately ASYMMETRIC.** A *benefit*
-applies whenever it does not RAISE the price (`<= base`), because `appliedBenefit`
-answers *which membership priced this booking* — provenance read downstream. A
-*promo* applies only when **strictly lower**, because `appliedPromo` answers *did
-a code change the price* — an event. When a promo beats a benefit, the beaten one
-rides on `appliedPromo.supersededBenefit` so a campaign never blanks a studio's
-subscription attribution. `appliedBenefit` and `appliedPromo` are never both
-present on one option.
+Five invariants, each a bug before it was a rule:
 
-**ONE writer of `usage_count`** — `commitPromoRedemption`'s transaction, writing
-an **absolute** value from its own read set. No `FieldValue.increment` on
-`usage_count` or `PromoRedemption.count` anywhere, and **no restore-on-refund
-path**, which is the second writer that would otherwise appear. The manager levers
-(`clearPromoRedemption`, `releasePromoReservations`) *delete lifecycle state* and
-never adjust a counter.
+- **No callable ever computes a discounted amount.** The promo is applied inside
+  the resolver and every caller reads `payOption.amount` — which is why no
+  gift-card call site needed a promo edit, each already receiving a post-promo
+  total.
+- **The comparator is deliberately ASYMMETRIC.** A *benefit* applies whenever it
+  does not RAISE the price (`<= base`) — `appliedBenefit` answers *which
+  membership priced this*. A *promo* applies only when **strictly lower** —
+  `appliedPromo` answers *did a code change the price*. A beaten benefit rides on
+  `appliedPromo.supersededBenefit`, so a campaign never blanks a studio's
+  subscription attribution, and the two are never both present on one option.
+- **ONE writer of `usage_count`** — `commitPromoRedemption`'s transaction,
+  writing an **absolute** value from its own read set. No `FieldValue.increment`
+  on `usage_count` or `PromoRedemption.count` anywhere, and **no
+  restore-on-refund path**, which is the second writer that would otherwise
+  appear.
+- **A use is consumed by a completed SALE, never by an attempt** — the commit
+  sits at each handler's per-kind confirm point, never before the dispatch, so a
+  branch that refunds the whole charge commits nothing and the reservation
+  lapses. A live reservation still holds a use, because the rail refuses rather
+  than over-issues.
+  `docs/promo-codes.md` → "The commit — one writer, at the confirm point".
+- **A promo writes NO finance journal row, ever.** A discount is not a money event
+  on a cash basis; the money event is the smaller charge. No `FinanceCategory`
+  member, no reclass pair, no CSV column. The record is
+  `PaymentLineItem.promoCode` plus the `redemptions/{identityKey}` ledger.
 
-**A use is consumed by a completed SALE, never by an attempt.** The commit sits at
-each handler's per-kind confirm point — never before the dispatch — so every
-branch that refunds the whole charge commits nothing and the reservation simply
-lapses. A **live reservation consumes a use** (never
-over-issue), which is bounded by a deterministic reservation key (a retry is a
-refresh, not a second use), `PROMO_MAX_LIVE_RESERVATIONS` + a distinct
-`promo_busy` refusal, short checkout windows, reserved-shown-separately-from-used
-in the admin list, and the manager release lever. The per-person cap binds to a
-**hashed normalised email**, not a contact document — so it is a nudge with teeth,
-not a promise, and the admin copy says "counted per email address".
+**The ownership rules behind the deterministic reservation key are enumerated
+ONCE**, in `docs/promo-codes.md` → "Redemption integrity" — read them there
+rather than from a summary, because the summaries of that list have disagreed
+with it, and with each other, in every review round of this phase. **Never make
+the key unique to fix a release bug**: that destroys retry-is-a-refresh.
 
-**The deterministic key is paid for by a set of ownership rules**, each of which
-was a live bug before it was written down. They are enumerated ONCE, in
-`docs/promo-codes.md` → "Redemption integrity" — read them there rather than from
-a summary, because the summaries of that list have now disagreed with it (and
-with each other) in every review round of this phase. The shape they all share:
-the key says *which slot*, `instanceId` says *whose attempt holds it right now*,
-and `sessionId` says *which Checkout Session may take money for it*; every
-removal or spend compares its marker **inside** the transaction that writes.
-Never make the key unique to fix a release bug — that destroys
-retry-is-a-refresh.
-
-**A promo writes NO finance journal row, ever** — a discount is not a money event
-on a cash basis; the money event is the smaller charge. No `FinanceCategory`
-member, no reclass pair, no CSV column. The record is
-`PaymentLineItem.promoCode` on the payment row (a system stamp: never read off a
-client payload, carried forward across a manager's edit) plus the
-`redemptions/{identityKey}` ledger. Full docs: `docs/promo-codes.md`.
+Rails: drop-in, appointment, course, product — **not** memberships, gift-card
+purchases, the priced-trial door, or the waitlist claim (refused server-side, not
+merely unmounted: a code there would lock a use for the whole claim window). A
+code may also be narrowed by audience, by entity allow-list, or bound to one
+contact. `docs/promo-codes.md` → "Which rails take a code".
 
 ### Waivers — a FACT about a person, never a scarce resource
 
