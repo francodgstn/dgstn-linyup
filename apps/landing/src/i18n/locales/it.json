@@ -77,8 +77,10 @@
     },
     "cta": {
       "title": "Guardalo all'opera",
-      "body": "Prova uno studio reale — senza registrarti.",
-      "button": "Esplora la demo live"
+      "body": "Prova la demo dal vivo — senza registrazione"
+    },
+    "all": {
+      "title": "Vedi tutte le funzioni"
     }
   },
   "proof": {
@@ -359,7 +361,7 @@
     "cmpMultiTeam": "Più studi",
     "cmpCentralAdmin": "Amministrazione centrale e dati unificati",
     "cmpCrossTeam": "Eventi e messaggi tra team",
-    "cmpApi": "Accesso API",
+    "cmpApi": "Accesso API / MCP",
     "cmpPermissions": "Ruoli e permessi avanzati",
     "cmpUnlimited": "Illimitati",
     "cmpAddon": "Opzione",

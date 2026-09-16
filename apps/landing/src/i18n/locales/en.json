@@ -77,8 +77,10 @@
     },
     "cta": {
       "title": "See it all in action",
-      "body": "Take a real studio for a spin — no sign-up needed.",
-      "button": "Explore the live demo"
+      "body": "Explore the live demo — no sign-up needed"
+    },
+    "all": {
+      "title": "Check all features"
     }
   },
   "proof": {
@@ -359,7 +361,7 @@
     "cmpMultiTeam": "Multiple studios",
     "cmpCentralAdmin": "Central admin & unified data",
     "cmpCrossTeam": "Cross-team events & messaging",
-    "cmpApi": "API access",
+    "cmpApi": "API / MCP access",
     "cmpPermissions": "Advanced roles & permissions",
     "cmpUnlimited": "Unlimited",
     "cmpAddon": "Add-on",

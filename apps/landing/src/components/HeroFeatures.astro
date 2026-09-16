@@ -13,8 +13,9 @@ const DEMO_URL = import.meta.env.PUBLIC_DEMO_URL ?? 'https://demo.linyup.com';
 
 // The day-to-day essentials, shown directly under the hero as calm, static cards
 // (no marquee). Labels are verb + benefit; copy lives in
-// heroFeatures.cards.<key>.{title,benefit}. The last grid cell is an accent
-// demo CTA. The full breadth is in the marquee further down (Features.astro).
+// heroFeatures.cards.<key>.{title,benefit}. The eighth cell completes the row
+// with a link to the full list (#more-features, Features.astro); the accent demo
+// CTA then spans the row beneath it.
 const cards = [
   { key: 'sessions', icon: 'calendar-range' },
   { key: 'bookings', icon: 'clipboard-list' },
@@ -44,11 +45,15 @@ const cards = [
           </div>
         ))
       }
+      <a class="hf-card hf-all" href="#more-features">
+        <div class="hf-icon"><i data-lucide="layout-grid" /></div>
+        <h3>{t('heroFeatures.all.title')}</h3>
+        <span class="hf-all-arrow"><i data-lucide="arrow-right"></i></span>
+      </a>
       <a class="hf-card hf-cta" href={`${DEMO_URL}/try`} target="_blank" rel="noopener">
         <div class="hf-icon hf-cta-icon"><i data-lucide="play"></i></div>
         <h3>{t('heroFeatures.cta.title')}</h3>
-        <p>{t('heroFeatures.cta.body')}</p>
-        <span class="hf-cta-btn">{t('heroFeatures.cta.button')} <i data-lucide="arrow-right"></i></span>
+        <p>{t('heroFeatures.cta.body')} <i data-lucide="arrow-right"></i></p>
       </a>
     </div>
   </div>
@@ -79,8 +84,20 @@ const cards = [
   }
   .hf-card:hover { transform: translateY(-3px); box-shadow: var(--ring-card), var(--shadow-md); }
 
-  /* Accent demo CTA — fills the last grid cell, draws the eye in primary. */
+  /* "Check all features" — completes the second row and jumps to the full list. */
+  .hf-all { text-decoration: none; color: inherit; justify-content: space-between; }
+  .hf-all-arrow {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 14px;
+    color: var(--primary);
+  }
+  .hf-all-arrow :global(svg) { width: 18px; height: 18px; transition: transform 0.15s ease; }
+  .hf-all:hover .hf-all-arrow :global(svg) { transform: translateX(3px); }
+
+  /* Accent demo CTA — spans the row beneath the cards, draws the eye in primary. */
   .hf-cta {
+    grid-column: 1 / -1;
     background: linear-gradient(160deg, var(--primary), color-mix(in oklch, var(--primary) 78%, black));
     border: 0;
     color: #fff;
@@ -90,19 +107,10 @@ const cards = [
   .hf-cta h3 { color: #fff; }
   /* Higher specificity than `.hf-card p` (same element carries both classes), so the
      body text actually renders white on the purple card instead of muted grey. */
-  .hf-card.hf-cta p { color: color-mix(in oklch, #fff 94%, transparent); }
+  .hf-card.hf-cta p { color: color-mix(in oklch, #fff 94%, transparent); display: inline-flex; align-items: center; gap: 8px; }
+  .hf-cta p :global(svg) { width: 16px; height: 16px; transition: transform 0.15s ease; }
+  .hf-cta:hover p :global(svg) { transform: translateX(3px); }
   .hf-cta-icon { background: color-mix(in oklch, #fff 18%, transparent); border-color: color-mix(in oklch, #fff 28%, transparent); color: #fff; }
-  .hf-cta-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 14px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-  }
-  .hf-cta-btn :global(svg) { width: 16px; height: 16px; transition: transform 0.15s ease; }
-  .hf-cta:hover .hf-cta-btn :global(svg) { transform: translateX(3px); }
 
   .hf-icon {
     width: 52px;
