@@ -61,8 +61,9 @@ describe('custom domain — the addresses a visitor sees', () => {
     assert.strictEqual(customDomainSiteUrl({ ...base, locale: 'it', siteAtRoot: false, segments: ['blog'] }), 'https://crossfitzug.ch/it/site/blog')
   })
 
-  it('names English on a non-English tenant by its long path', () => {
-    assert.strictEqual(customDomainSiteUrl({ ...base, locale: 'en', siteAtRoot: true, segments: ['blog'] }), `https://crossfitzug.ch/public/${SLUG}/site/blog`)
+  it('has no address for English on a non-English tenant', () => {
+    // English has no address on a German domain — the caller omits it.
+    assert.strictEqual(customDomainSiteUrl({ ...base, locale: 'en', siteAtRoot: true, segments: ['blog'] }), null)
     assert.strictEqual(customDomainSiteUrl({ ...base, tenantLanguage: 'en', locale: 'en', siteAtRoot: true, segments: ['blog'] }), 'https://crossfitzug.ch/blog')
   })
 

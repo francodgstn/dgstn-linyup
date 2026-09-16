@@ -112,7 +112,17 @@ const PUBLIC_SITE_PATH = /^\/public\/([A-Za-z0-9_-]+)\/site(?:\/|$)/
  * from the tenant lookup, which already prefers the site's language.)
  */
 async function siteLanguageRewrite(request: NextRequest): Promise<Rewrite | null> {
-  const [locale, rest] = splitPathLocale(request.nextUrl.pathname)
+  const pathname = request.nextUrl.pathname
+  // `/en/…` — ENGLISH, ASKED FOR EXPLICITLY. `as-needed` has no prefix for the
+  // default locale, so next-intl would redirect this to the unprefixed path,
+  // which now answers in the SITE's language: on a German site that would make
+  // English unreachable, and its hreflang a lie. Serving it here keeps English
+  // addressable (the app routes live under `[locale]`, so the path already is
+  // the internal one).
+  if (pathname.startsWith('/en/') && PUBLIC_SITE_PATH.test(pathname.slice(3))) {
+    return { url: request.nextUrl.clone(), locale: 'en' }
+  }
+  const [locale, rest] = splitPathLocale(pathname)
   if (locale) return null // the visitor named a language — theirs wins
   const slug = PUBLIC_SITE_PATH.exec(rest)?.[1]
   if (!slug) return null

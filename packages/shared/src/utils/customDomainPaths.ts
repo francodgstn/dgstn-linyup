@@ -160,8 +160,10 @@ export function toTenantInternalPath(
  *     no siteAtRoot               →  https://crossfitzug.ch/site/angebot/crossfit
  *
  * The tenant's own language is unprefixed (the domain answers in it). English
- * on a non-English tenant has no short form — `/en` is not a locale prefix under
- * `as-needed` — so it is named by its long path, which the domain also serves.
+ * on a non-English tenant has NO ADDRESS on the domain at all — `/en` is not a
+ * locale prefix under `as-needed`, and the unprefixed path is taken by the
+ * tenant's own language — so this returns null and the caller omits it rather
+ * than advertising a URL that answers in another language.
  */
 export function customDomainSiteUrl(opts: {
   host: string
@@ -170,7 +172,7 @@ export function customDomainSiteUrl(opts: {
   tenantLanguage: string
   siteAtRoot: boolean
   segments: readonly string[]
-}): string {
+}): string | null {
   const origin = `https://${opts.host}`
   const sub = opts.segments.filter(Boolean).join('/')
   if (opts.locale === opts.tenantLanguage || PREFIXED_LOCALES.includes(opts.locale)) {
@@ -178,7 +180,7 @@ export function customDomainSiteUrl(opts: {
     const path = opts.siteAtRoot ? (sub ? `/${sub}` : '') : `/site${sub ? `/${sub}` : ''}`
     return `${origin}${prefix}${path}` || origin
   }
-  return `${origin}/public/${opts.slug}/site${sub ? `/${sub}` : ''}`
+  return null
 }
 
 /** Escapes a string for literal use inside a RegExp. */

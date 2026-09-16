@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
   const updatedAt = (fields.updated_at as RestValue & { timestampValue?: string } | undefined)?.timestampValue
 
-  const entry = (segments: string[], lastModified?: string): MetadataRoute.Sitemap[number] => {
+  const entry = (segments: string[], lastModified?: string): MetadataRoute.Sitemap[number] | null => {
     const url = (locale: string) =>
       customDomainSiteUrl({
         host,
@@ -49,12 +49,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         siteAtRoot: tenant.siteAtRoot,
         segments,
       })
+    // The domain always answers in the tenant's own language; a locale with no
+    // address there (English on a German domain) is left out rather than listed
+    // pointing at another language's page.
+    const self = url(tenant.language)
+    if (!self) return null
+    const languages = Object.fromEntries(
+      locales.map((locale) => [locale, url(locale)] as const).filter((e): e is readonly [string, string] => !!e[1])
+    )
     return {
-      url: url(tenant.language),
+      url: self,
       ...(lastModified ? { lastModified } : {}),
-      ...(locales.length > 1
-        ? { alternates: { languages: Object.fromEntries(locales.map((locale) => [locale, url(locale)])) } }
-        : {}),
+      ...(Object.keys(languages).length > 1 ? { alternates: { languages } } : {}),
     }
   }
 
@@ -63,8 +69,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const path = restString(page.path)
     if (!path || page.hidden?.booleanValue === true) return []
     // A post's own date is its last change as far as a crawler cares.
-    return [entry(sitePageSegments(path), restString(page.publishedOn) || updatedAt)]
+    const row = entry(sitePageSegments(path), restString(page.publishedOn) || updatedAt)
+    return row ? [row] : []
   })
 
-  return [entry([], updatedAt), ...pages]
+  const home = entry([], updatedAt)
+  return home ? [home, ...pages] : pages
 }

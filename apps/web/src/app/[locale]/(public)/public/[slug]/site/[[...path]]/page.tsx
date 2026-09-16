@@ -64,20 +64,38 @@ const fetchFullSite = cache(async (slug: string): Promise<{ teamId: string; site
   return { teamId: doc.id, site: doc.fields as unknown as PublishedSite }
 })
 
-/** The address of a page of `slug`'s site (`segments` [] ⇒ home) for this request. */
-async function siteAddress(slug: string, locale: string, segments: readonly string[]): Promise<string | undefined> {
+/**
+ * The address of a page of `slug`'s site (`segments` [] ⇒ home) for this
+ * request, or undefined when that language has no address here — English on a
+ * studio's German domain, where the unprefixed path is German and `/en` is not
+ * a prefix. An alternate that answers in another language is worse than none.
+ */
+async function siteAddress(
+  slug: string,
+  locale: string,
+  segments: readonly string[],
+  siteLanguage: string | undefined
+): Promise<string | undefined> {
   const { visitorHost, tenant, origin } = await resolveRequestHost()
   if (tenant && tenant.scope === 'team' && tenant.slug === slug) {
-    return customDomainSiteUrl({
-      host: visitorHost,
-      slug,
-      locale,
-      tenantLanguage: tenant.language,
-      siteAtRoot: tenant.siteAtRoot,
-      segments,
-    })
+    return (
+      customDomainSiteUrl({
+        host: visitorHost,
+        slug,
+        locale,
+        tenantLanguage: tenant.language,
+        siteAtRoot: tenant.siteAtRoot,
+        segments,
+      }) ?? undefined
+    )
   }
   if (!origin) return undefined
+  // On OUR hosts the unprefixed path answers in the site's language (proxy.ts),
+  // so English needs the explicit `/en` the proxy also serves.
+  if (locale === 'en' && siteLanguage && siteLanguage !== 'en') {
+    const path = segments.length ? publicSubPath(slug, 'site', [...segments]) : publicPath(slug, 'site')
+    return `${origin}/en${path}`
+  }
   return segments.length
     ? localizedPublicSubUrl(origin, locale, slug, 'site', [...segments])
     : localizedPublicUrl(origin, locale, slug, 'site')
@@ -95,7 +113,7 @@ async function redirectTarget(
   if (to.kind === 'page' && !ref) return null
   const segments = ref ? sitePageSegments(ref.path) : []
   const { tenant } = await resolveRequestHost()
-  if (tenant && tenant.slug === slug) return (await siteAddress(slug, locale, segments)) ?? null
+  if (tenant && tenant.slug === slug) return (await siteAddress(slug, locale, segments, site.meta?.language)) ?? null
   // Relative on the app's own hosts: the visitor stays on whichever one they used.
   return `${publicLocalePrefix(locale)}${segments.length ? publicSubPath(slug, 'site', segments) : publicPath(slug, 'site')}`
 }
@@ -114,6 +132,7 @@ const fetchSiteMeta = cache(async (slug: string) => {
     description: site.meta?.seo?.description,
     ogImageUrl: site.meta?.seo?.ogImageUrl,
     i18n: site.i18n,
+    language: site.meta?.language,
     pages: (site.pages ?? []).map((p) => ({
       id: p.id,
       path: p.path,
@@ -148,7 +167,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pageSegments = page ? sitePageSegments(page.path) : []
   const addressLocales = [locale, ...(site.i18n ? [site.i18n.srcLang, ...site.i18n.locales] : [])]
   const addresses = new Map(
-    await Promise.all(addressLocales.map(async (l) => [l, await siteAddress(slug, l, pageSegments)] as const))
+    await Promise.all(
+      addressLocales.map(async (l) => [l, await siteAddress(slug, l, pageSegments, site.language)] as const)
+    )
   )
   const urlFor = (l: string) => addresses.get(l)
   const url = urlFor(locale)
@@ -195,13 +216,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // hreflang alternates — only for a site with a translation manifest, and only
   // for the locales it actually carries; x-default points at the authoring
   // language, the one that's never gated on a translation existing.
-  const languages: Record<string, string> | undefined =
-    manifest && url
-      ? Object.fromEntries([
-          ...[manifest.srcLang, ...manifest.locales].map((l) => [l, urlFor(l) as string]),
-          ['x-default', urlFor(manifest.srcLang) as string],
-        ])
-      : undefined
+  let languages: Record<string, string> | undefined
+  if (manifest && url) {
+    const entries: Record<string, string> = {}
+    for (const l of [manifest.srcLang, ...manifest.locales]) {
+      // A locale with no address here is left out — an alternate that answers
+      // in another language is worse than none (see `siteAddress`).
+      const href = urlFor(l)
+      if (href) entries[l] = href
+    }
+    const xDefault = urlFor(manifest.srcLang)
+    if (xDefault) entries['x-default'] = xDefault
+    languages = Object.keys(entries).length ? entries : undefined
+  }
 
   return {
     title,
