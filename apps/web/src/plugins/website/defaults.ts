@@ -184,8 +184,6 @@ export interface PageStarterCopy {
   offerItemWho: string
   itemText: string
   factsHeading: string
-  factLabel: string
-  factValue: string
   ctaHeading: string
   ctaText: string
   ctaLabel: string
@@ -202,15 +200,18 @@ export function starterSections(starter: PageStarter, title: string, copy: PageS
     case 'offer':
       return [
         hero(),
+        // Generic sections only — a starter every studio sees must not be
+        // built from a client-owned part (CLIENT_SITE_PARTS).
         {
           id: newSectionId(),
-          type: 'split',
+          type: 'features',
           heading: copy.offerHeading,
+          columns: 3,
           items: [
-            { title: copy.offerItemWhat, text: copy.itemText },
-            { title: copy.offerItemWho, text: copy.itemText },
+            { icon: 'Sparkles', title: copy.offerItemWhat, text: copy.itemText },
+            { icon: 'Users', title: copy.offerItemWho, text: copy.itemText },
+            { icon: 'Info', title: copy.factsHeading, text: copy.itemText },
           ],
-          side: { heading: copy.factsHeading, facts: [{ label: copy.factLabel, value: copy.factValue }] },
         },
         {
           id: newSectionId(),

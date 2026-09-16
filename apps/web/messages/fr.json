@@ -2968,7 +2968,9 @@
     "qrInvoicesDescription": "Factures numérotées avec une partie paiement QR suisse pour les membres qui paient par virement bancaire.",
     "qrInvoicesNavLabel": "Factures",
     "siteThemesName": "Thèmes de site",
-    "siteThemesDescription": "Des styles prêts à l’emploi pour votre site — police, boutons, cartes et styles de sections en un clic. Chaque réglage reste modifiable."
+    "siteThemesDescription": "Des styles prêts à l’emploi pour votre site — police, boutons, cartes et styles de sections en un clic. Chaque réglage reste modifiable.",
+    "crossfitZugSiteName": "Site web CrossFit Zug",
+    "crossfitZugSiteDescription": "Les sections, styles et thème propres à votre site, conçus pour correspondre à votre site actuel."
   },
   "AiAssistant": {
     "launcherLabel": "Assistant IA",
@@ -3850,7 +3852,7 @@
     "pagesStarterSimple": "Page simple",
     "pagesStarterSimpleDesc": "Un en-tête avec le titre de la page et un bloc de texte",
     "pagesStarterOffer": "Page d'offre",
-    "pagesStarterOfferDesc": "En-tête, ce qui est inclus à côté des infos clés, et un bouton de réservation",
+    "pagesStarterOfferDesc": "En-tête, ce qui est inclus sous forme de cartes, et un bouton de réservation",
     "pagesStarterEmpty": "Page vide",
     "pagesStarterEmptyDesc": "Partir de zéro et ajouter vos propres sections",
     "starterOfferHeading": "Ce qui est inclus",

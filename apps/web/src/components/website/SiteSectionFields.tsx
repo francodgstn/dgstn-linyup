@@ -66,7 +66,7 @@ import type {
   SplitSection,
   HeroSection, ContentSection, GallerySection, ContactSection,
 } from '@linyup/shared'
-import { parseVideoUrl } from '@linyup/shared'
+import { parseVideoUrl, CLIENT_SITE_PARTS, sitePartOffered } from '@linyup/shared'
 import { RichTextEditor } from '@/components/RichTextEditor'
 import { getWebsiteLimits } from '@/plugins/website/limits'
 
@@ -80,6 +80,12 @@ export interface SiteEditorTenant {
   id: string
   /** Where an image uploaded from this editor is stored. */
   uploadImage: (sectionId: string, file: File) => Promise<string>
+  /**
+   * Whether this tenant has a plugin installed — used ONLY to decide which
+   * client-owned styles to offer (see CLIENT_SITE_PARTS). Absent (the org
+   * builder) ⇒ only generic styles are offered.
+   */
+  hasPlugin?: (pluginId: string) => boolean
 }
 
 // ─── small field helper ─────────────────────────────────────────────────────
@@ -538,7 +544,12 @@ export function FeaturesFields({
               <SelectItem value="cards">{t('editorFeaturesStyleCards')}</SelectItem>
               <SelectItem value="stats">{t('editorFeaturesStyleStats')}</SelectItem>
               <SelectItem value="checklist">{t('editorFeaturesStyleChecklist')}</SelectItem>
-              <SelectItem value="panels">{t('editorFeaturesStylePanels')}</SelectItem>
+              {/* A client-owned style: offered to its client, and kept
+                  selectable on a section that already uses it. */}
+              {(style === 'panels' ||
+                sitePartOffered(CLIENT_SITE_PARTS.sectionStyles.features?.panels, tenant.hasPlugin)) && (
+                <SelectItem value="panels">{t('editorFeaturesStylePanels')}</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </Field>
@@ -1085,9 +1096,22 @@ export function VideoFields({
   )
 }
 
-export function FaqFields({ s, onChange }: { s: FaqSection; onChange: (p: Patch) => void }) {
+export function FaqFields({
+  s,
+  hasPlugin,
+  onChange,
+}: {
+  s: FaqSection
+  /** See SiteEditorTenant.hasPlugin. */
+  hasPlugin?: (pluginId: string) => boolean
+  onChange: (p: Patch) => void
+}) {
   const t = useTranslations('Website')
   const items = s.items ?? []
+  // The FAQ has one generic style, so the picker exists only where the
+  // client-owned 'panels' style is on offer — or already in use.
+  const styleOffered =
+    s.style === 'panels' || sitePartOffered(CLIENT_SITE_PARTS.sectionStyles.faq?.panels, hasPlugin)
   const set = (i: number, patch: Partial<(typeof items)[number]>) =>
     onChange({ items: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) })
   return (
@@ -1095,15 +1119,17 @@ export function FaqFields({ s, onChange }: { s: FaqSection; onChange: (p: Patch)
       <Field label={t('editorHeadingOptional')}>
         <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
       </Field>
-      <Field label={t('editorFeaturesStyle')}>
-        <Select value={s.style ?? 'cards'} onValueChange={(v) => onChange({ style: v as FaqSection['style'] })}>
-          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cards">{t('editorFeaturesStyleCards')}</SelectItem>
-            <SelectItem value="panels">{t('editorFeaturesStylePanels')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
+      {styleOffered && (
+        <Field label={t('editorFeaturesStyle')}>
+          <Select value={s.style ?? 'cards'} onValueChange={(v) => onChange({ style: v as FaqSection['style'] })}>
+            <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cards">{t('editorFeaturesStyleCards')}</SelectItem>
+              <SelectItem value="panels">{t('editorFeaturesStylePanels')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
       <div className="space-y-3">
         {items.map((item, i) => (
           <div key={i} className="space-y-2 rounded-lg border p-3">

@@ -29,6 +29,7 @@ import { promoCodesManifest } from './promo-codes/manifest'
 import { tarif595Manifest } from './tarif-595/manifest'
 import { qrInvoicesManifest } from './qr-invoices/manifest'
 import { siteThemesManifest } from './site-themes/manifest'
+import { crossfitZugSiteManifest } from './crossfitzug/manifest'
 
 export const PLUGIN_REGISTRY: PluginManifest[] = [
   aiAssistantManifest,
@@ -53,6 +54,7 @@ export const PLUGIN_REGISTRY: PluginManifest[] = [
   tarif595Manifest,
   qrInvoicesManifest,
   siteThemesManifest,
+  crossfitZugSiteManifest,
 ]
 
 /** All plugin-contributed event type IDs (built-in type IDs from installed plugins). */

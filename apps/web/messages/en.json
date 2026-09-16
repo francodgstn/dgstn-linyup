@@ -2968,7 +2968,9 @@
     "qrInvoicesDescription": "Numbered invoices with a Swiss QR-bill payment part for members who pay by bank transfer.",
     "qrInvoicesNavLabel": "Invoices",
     "siteThemesName": "Site Themes",
-    "siteThemesDescription": "Ready-made looks for your website — typeface, buttons, cards and section styles in one click. Every setting stays editable."
+    "siteThemesDescription": "Ready-made looks for your website — typeface, buttons, cards and section styles in one click. Every setting stays editable.",
+    "crossfitZugSiteName": "CrossFit Zug website",
+    "crossfitZugSiteDescription": "Your website's own sections, styles and theme, built to match your current site."
   },
   "AiAssistant": {
     "launcherLabel": "AI assistant",
@@ -3850,7 +3852,7 @@
     "pagesStarterSimple": "Simple page",
     "pagesStarterSimpleDesc": "A header with the page title and a block of text",
     "pagesStarterOffer": "Offer page",
-    "pagesStarterOfferDesc": "Header, what's included beside the key facts, and a booking button",
+    "pagesStarterOfferDesc": "Header, what's included as cards, and a booking button",
     "pagesStarterEmpty": "Empty page",
     "pagesStarterEmptyDesc": "Start from scratch and add your own sections",
     "starterOfferHeading": "What's included",

@@ -2968,7 +2968,9 @@
     "qrInvoicesDescription": "Nummerierte Rechnungen mit Schweizer QR-Zahlteil für Mitglieder, die per Banküberweisung bezahlen.",
     "qrInvoicesNavLabel": "Rechnungen",
     "siteThemesName": "Website-Themes",
-    "siteThemesDescription": "Fertige Looks für deine Website — Schrift, Buttons, Karten und Abschnittsstile mit einem Klick. Jede Einstellung bleibt anpassbar."
+    "siteThemesDescription": "Fertige Looks für deine Website — Schrift, Buttons, Karten und Abschnittsstile mit einem Klick. Jede Einstellung bleibt anpassbar.",
+    "crossfitZugSiteName": "CrossFit Zug Website",
+    "crossfitZugSiteDescription": "Die eigenen Abschnitte, Stile und das Theme deiner Website, passend zu deinem bisherigen Auftritt."
   },
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
@@ -3850,7 +3852,7 @@
     "pagesStarterSimple": "Einfache Seite",
     "pagesStarterSimpleDesc": "Ein Kopfbereich mit dem Seitentitel und ein Textblock",
     "pagesStarterOffer": "Angebotsseite",
-    "pagesStarterOfferDesc": "Kopfbereich, Leistungen neben den wichtigsten Fakten und ein Buchungs-Button",
+    "pagesStarterOfferDesc": "Kopfbereich, Leistungen als Karten und ein Buchungs-Button",
     "pagesStarterEmpty": "Leere Seite",
     "pagesStarterEmptyDesc": "Von Grund auf beginnen und eigene Abschnitte hinzufügen",
     "starterOfferHeading": "Das erwartet dich",

@@ -63,6 +63,8 @@ import {
   PUBLIC_LOCALES,
   siteI18nDocId,
   findSiteTheme,
+  CLIENT_SITE_PARTS,
+  type SiteThemeId,
   normalizeActivityTags,
   withRankLevelIds,
   type RankLevelInput,
@@ -2792,9 +2794,14 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     // gift cards configured needs it, or the offer silently vanishes from the
     // shop mid prospect demo.
     ...(profile.giftCards?.enabled ? [{ id: 'gift-cards' }] : []),
-    // A profile that names a website theme gets the plugin that unlocks the
-    // theme picker, so the studio can re-apply or switch it in the demo.
-    ...(profile.siteMeta?.appliedTheme ? [{ id: 'site-themes' }] : []),
+    // A profile that names a website theme gets the plugin that OWNS it
+    // (CLIENT_SITE_PARTS) — which also offers that client's own sections and
+    // styles, so the studio can re-apply or edit them in the demo.
+    ...(() => {
+      const theme = profile.siteMeta?.appliedTheme
+      const owner = typeof theme === 'string' ? CLIENT_SITE_PARTS.themes[theme as SiteThemeId] : undefined
+      return owner ? [{ id: owner }] : []
+    })(),
     // NOT 'documents' — a default feature on every plan, not a plugin. Its
     // signup-consent selection goes to teams/{teamId}/settings/documents below.
   ]

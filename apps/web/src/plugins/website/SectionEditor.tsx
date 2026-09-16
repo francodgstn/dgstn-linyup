@@ -497,10 +497,12 @@ function PostsFields({ s, onChange }: { s: PostsSection; onChange: (p: Patch) =>
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionEditor({
-  section, teamId, pages, onChange,
+  section, teamId, pages, hasPlugin, onChange,
 }: {
   section: WebsiteSection
   teamId: string
+  /** The builder's installed-plugin check, for client-owned styles. */
+  hasPlugin?: (pluginId: string) => boolean
   /** The site's other pages — threaded into the CTA editor (hero, CTA banner)
    *  as a destination option. Absent ⇒ no pages offered yet. */
   pages?: { id: string; label: string }[]
@@ -510,6 +512,7 @@ export function SectionEditor({
     kind: 'team',
     id: teamId,
     uploadImage: (sectionId, file) => uploadSiteImage(teamId, sectionId, file),
+    hasPlugin,
   }
   switch (section.type) {
     case 'hero':
@@ -541,7 +544,7 @@ export function SectionEditor({
           cta={<CtaEditor cta={section.cta} pages={pages} teamId={teamId} onChange={(cta) => onChange({ cta })} />}
         />
       )
-    case 'faq':         return <FaqFields s={section} onChange={onChange} />
+    case 'faq':         return <FaqFields s={section} hasPlugin={hasPlugin} onChange={onChange} />
     case 'testimonials': return <TestimonialsFields s={section} onChange={onChange} />
     case 'video':        return <VideoFields key={section.id} s={section} tenant={tenant} onChange={onChange} />
     case 'team':         return <TeamFields s={section} tenant={tenant} onChange={onChange} />

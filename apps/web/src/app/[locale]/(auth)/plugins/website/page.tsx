@@ -94,6 +94,9 @@ import {
   isValidSitePagePath,
   isValidSiteDate,
   SITE_PAGE_LIMITS,
+  SITE_THEMES,
+  CLIENT_SITE_PARTS,
+  sitePartOffered,
   type SiteThemeDef,
 } from '@linyup/shared'
 import { toDateInputValue } from '@/lib/format'
@@ -157,7 +160,7 @@ function AppearancePanel({
   sections,
   pages,
   uploadImage,
-  themesInstalled,
+  themes,
   onApplyTheme,
 }: {
   meta: SiteMeta
@@ -167,7 +170,8 @@ function AppearancePanel({
   pages: { id: string; label: string }[]
   uploadImage: (file: File) => Promise<string>
   /** The Site Themes plugin unlocks the picker. */
-  themesInstalled: boolean
+  /** Themes this tenant may apply; the picker is hidden when there are none. */
+  themes: readonly SiteThemeDef[]
   /** Applies a theme to the WHOLE draft — look and section styles. */
   onApplyTheme: (theme: SiteThemeDef) => void
 }) {
@@ -202,11 +206,15 @@ function AppearancePanel({
       </div>
 
       {/* Themes first: a theme sets most of what follows, so picking one before
-          fine-tuning is the order that does not undo a studio's own edits. */}
-      <div className="space-y-1.5">
-        <Label className="text-xs">{t('themesTitle')}</Label>
-        <ThemePicker appliedTheme={meta.appliedTheme} installed={themesInstalled} onApply={onApplyTheme} />
-      </div>
+          fine-tuning is the order that does not undo a studio's own edits.
+          Only when this studio has a theme to pick — every theme is currently
+          a client's own. */}
+      {themes.length > 0 && (
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('themesTitle')}</Label>
+          <ThemePicker appliedTheme={meta.appliedTheme} themes={themes} onApply={onApplyTheme} />
+        </div>
+      )}
 
       {/* Theme — TWO COLUMNS: the controls on the left (2/3), a live preview on
           the right (1/3). A studio changing colours wants to watch them decide
@@ -1317,8 +1325,6 @@ export default function WebsiteBuilderPage() {
             offerItemWho: t('starterOfferItemWho'),
             itemText: t('starterItemText'),
             factsHeading: t('starterFactsHeading'),
-            factLabel: t('starterFactLabel'),
-            factValue: t('starterFactValue'),
             ctaHeading: t('starterCtaHeading'),
             ctaText: t('starterCtaText'),
             ctaLabel: t('starterCtaLabel'),
@@ -1682,7 +1688,9 @@ export default function WebsiteBuilderPage() {
               sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
               pages={menuPages}
               uploadImage={(file) => uploadSiteImage(currentTeamId!, 'brand', file)}
-              themesInstalled={isInstalled('site-themes')}
+              themes={SITE_THEMES.filter((theme) =>
+                sitePartOffered(CLIENT_SITE_PARTS.themes[theme.id], isInstalled)
+              )}
               onApplyTheme={(theme) => {
                 mutate((d) => applySiteTheme(d, theme))
                 toast.success(t('themeAppliedToast'))
@@ -1926,6 +1934,7 @@ export default function WebsiteBuilderPage() {
                                 section={s}
                                 teamId={currentTeamId}
                                 pages={menuPages}
+                                hasPlugin={isInstalled}
                                 onChange={(patch) => updateSection(s.id, patch)}
                               />
                               {/* NO "menu label" FIELD HERE ANY MORE. A menu
@@ -1953,7 +1962,13 @@ export default function WebsiteBuilderPage() {
                   seventeen rows. 'managed' sections (none today) are authored by
                   Linyup, not offered here — but stay editable once present. */}
               <SectionPicker
-                entries={SECTION_LIBRARY.filter((lib) => lib.maturity !== 'managed')}
+                entries={SECTION_LIBRARY.filter(
+                  (lib) =>
+                    lib.maturity !== 'managed' &&
+                    // A client-owned section type is offered to its client only;
+                    // one already on the page stays listed and editable.
+                    sitePartOffered(CLIENT_SITE_PARTS.sectionTypes[lib.type], isInstalled)
+                )}
                 t={(key) => t(key as Parameters<typeof t>[0])}
                 onPick={addSection}
               />

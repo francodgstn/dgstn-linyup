@@ -1,6 +1,9 @@
 'use client'
 
-// The website theme picker — unlocked by the Site Themes plugin.
+// The website theme picker — it offers the themes this tenant may apply.
+// Every theme today is client-owned (CLIENT_SITE_PARTS), so the caller passes
+// the themes whose owning plugin is installed and hides the picker when there
+// are none.
 //
 // A theme is a look + layout preset (packages/shared/src/types/siteTheme.ts).
 // Picking one hands it to `onApply`, which runs `applySiteTheme` over the whole
@@ -10,41 +13,27 @@
 
 import { useTranslations } from 'next-intl'
 import { Check } from 'lucide-react'
-import { SITE_THEMES } from '@linyup/shared'
 import type { SiteThemeDef, SiteThemeId } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
-import { Link } from '@/i18n/navigation'
-import type { Route } from 'next'
 import { FONT_STACK } from '@/components/site/siteFonts'
 
 export function ThemePicker({
   appliedTheme,
-  installed,
+  themes,
   onApply,
 }: {
   appliedTheme?: SiteThemeId
-  /** Whether the Site Themes plugin is installed. Without it the picker is a
-   *  pointer to the plugin, not a disabled control. */
-  installed: boolean
+  /** The themes this tenant may apply — already filtered by owner. */
+  themes: readonly SiteThemeDef[]
   onApply: (theme: SiteThemeDef) => void
 }) {
   const t = useTranslations('Website')
-
-  if (!installed) {
-    return (
-      <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-        <Link href={'/settings/plugins' as Route} className="underline underline-offset-2">
-          {t('themesInstallHint')}
-        </Link>
-      </p>
-    )
-  }
 
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">{t('themesHint')}</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {SITE_THEMES.map((theme) => {
+        {themes.map((theme) => {
           const applied = appliedTheme === theme.id
           const radius = theme.look.cardShape === 'square' ? '0px' : '0.75rem'
           const buttonRadius =
