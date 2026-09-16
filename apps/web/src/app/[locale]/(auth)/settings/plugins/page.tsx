@@ -80,6 +80,7 @@ const REMOVE_EFFECT_KEY: Record<
   // it, so the default copy ("your data is kept") is true of the data but not of
   // the features. Say both.
   hmd: 'removeConfirmBodyBundle',
+  ai: 'removeConfirmBodyBundle',
   // unpublishSiteForTeam: deletes site_published/{teamId}, flags the draft disabled.
   website: 'removeConfirmBodyWebsite',
   // deleteAllCoursePublicProfiles: batch-deletes every course public_profile

@@ -710,6 +710,17 @@ service cloud.firestore {
         allow write: if false; // Only cloud functions should write to activity log
       }
 
+      // AI readings about the whole team (the `ai-team-sentiment` module —
+      // types/aiInsights.ts). Written only by `generateTeamSentiment`, which also
+      // keeps the daily run count here; a client write would let a studio reset
+      // its own cap. Read by ALL-SCOPED members only: a coach scoped to their own
+      // book cannot read the other contacts, so they do not read a reading of
+      // them either — the callable refuses them for the same reason.
+      match /ai_reports/{reportId} {
+        allow read:  if isTeamMember(teamId) && callerIsAllScoped(teamId);
+        allow write: if false;
+      }
+
       // Team weekly reports subcollection (moved from users/{userId}/user_weekly_reports)
       match /team_weekly_reports/{weeklyReportId} {
         // All team members can read weekly reports

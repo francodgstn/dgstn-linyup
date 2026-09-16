@@ -5,6 +5,10 @@
 import type { PluginId, PluginManifest } from '@linyup/shared'
 import { bundleContaining, bundleMembers, pluginIsInstallable } from '@linyup/shared'
 import { aiAssistantManifest } from './ai-assistant/manifest'
+import { aiManifest } from './ai/manifest'
+import { aiContactSummaryManifest } from './ai-contact-summary/manifest'
+import { aiMemberRecapManifest } from './ai-member-recap/manifest'
+import { aiTeamSentimentManifest } from './ai-team-sentiment/manifest'
 import { whatsappManifest } from './whatsapp/manifest'
 import { websiteManifest } from './website/manifest'
 import { hmdManifest } from './hmd/manifest'
@@ -30,6 +34,10 @@ import { qrInvoicesManifest } from './qr-invoices/manifest'
 import { apiConnectorsManifest } from './api-connectors/manifest'
 
 export const PLUGIN_REGISTRY: PluginManifest[] = [
+  aiManifest,
+  aiContactSummaryManifest,
+  aiMemberRecapManifest,
+  aiTeamSentimentManifest,
   aiAssistantManifest,
   whatsappManifest,
   websiteManifest,

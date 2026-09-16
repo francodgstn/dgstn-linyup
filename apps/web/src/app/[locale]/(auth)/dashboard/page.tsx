@@ -91,6 +91,9 @@ import { RosterDonut } from '@/components/dashboard-preview/RosterDonut'
 import { DailyAside } from '@/components/dashboard-preview/DailyAside'
 import { WeekSection } from '@/components/dashboard-preview/WeekSection'
 import { ExtraSection } from '@/components/dashboard-preview/ExtraSection'
+import { TeamSentimentSection } from '@/components/dashboard/TeamSentimentSection'
+import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
+import { AI_MODULES } from '@linyup/shared'
 import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { useCapabilities } from '@/hooks/useCapabilities'
 
@@ -144,6 +147,9 @@ export default function DashboardPage() {
   // The parked panels at the foot of the page. Off unless a studio asked for
   // them; see ExtraSection.
   const { isEnabled } = useExperimentalFeatures()
+  // Team sentiment (AI insights plugin): a reading of EVERY contact, so an
+  // own-scoped coach does not get it — the rules and the callable agree.
+  const { isInstalled } = useInstalledPlugins()
 
   // THE roster hook, on the contacts page's cache entry — not a second fetch
   // of its own. Same coach scope as the contacts page: an own-scoped coach's
@@ -286,6 +292,16 @@ export default function DashboardPage() {
               INSIDE the not-loading branch, so the gap does not sit there on
               its own while the plan resolves. Costs the fold nothing — the
               seam is already below it. */}
+          {/* Team sentiment — between "now" and the history below, and only
+              for an all-scoped reader with the module installed. Its own
+              header carries the same top rule as Trends, so the two read as
+              sibling sections rather than one long one. */}
+          {!ownScoped && isInstalled(AI_MODULES.teamSentiment) && (
+            <div className="pt-4">
+              <TeamSentimentSection teamId={currentTeamId} />
+            </div>
+          )}
+
           {planLoading ? null : (
             <div className="pt-4">
               {isAtLeast('studio') ? (

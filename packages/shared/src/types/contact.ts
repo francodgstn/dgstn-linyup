@@ -154,6 +154,27 @@ export interface ContactAiSummarySections {
 }
 
 /**
+ * The MEMBER-FACING recap written in the same model call as the studio's
+ * summary (since 2026-09-16) — addressed to the person, in the second person,
+ * for the studio to email them from the summary card (`ai-member-recap`).
+ *
+ * TWO parts, not three, and the missing one is the point: the studio's
+ * `outlook` says things like "at risk of drifting", which is a note about a
+ * person and not a message to them. So there is no member outlook to leak —
+ * the model is never asked for one.
+ *
+ * Written in the same call so the dossier is sent once. A studio that has not
+ * switched the recap on still gets it stored beside the summary, so switching
+ * it on later works on the summaries it already has.
+ */
+export interface ContactAiMemberRecap {
+  /** Where they stand, encouraging and specific, addressed to them. */
+  status: string
+  /** One thing to focus on at their next session, addressed to them. */
+  nextSession: string
+}
+
+/**
  * The AI-written briefing stored on a contact — see `Contact.ai_summary`.
  * `text` is the whole summary, already cut to a few sentences server-side;
  * `language` is the studio's authoring language it was written in;
@@ -165,6 +186,15 @@ export interface ContactAiSummary {
   text: string
   /** Absent on a summary written before 2026-09-14; the card then shows `text`. */
   sections?: ContactAiSummarySections
+  /** Absent on a summary written before 2026-09-16 — regenerate to get one. */
+  member?: ContactAiMemberRecap
+  /**
+   * When THIS summary's recap was last emailed to the person, and by whom.
+   * Written by `sendContactRecapEmail` only. A regenerated summary is written
+   * whole and so arrives without them — a new recap has not been sent.
+   */
+  member_sent_at?: Timestamp
+  member_sent_by?: string
   generated_at: Timestamp
   generated_by: string
   model: string
