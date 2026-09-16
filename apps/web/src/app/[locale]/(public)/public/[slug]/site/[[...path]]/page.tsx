@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { cache } from 'react'
-import { headers } from 'next/headers'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import {
@@ -9,7 +8,6 @@ import {
   customDomainSiteUrl,
   findSiteRedirect,
   findSitePageByPath,
-  isLinyupOwnHost,
   publicLocalePrefix,
   publicPath,
   publicSubPath,
@@ -31,7 +29,7 @@ import type {
   WebsiteSection,
 } from '@linyup/shared'
 import { restGetDocument, restRunQuery } from '@/lib/firestoreRest'
-import { resolveCustomDomainTenant } from '@/lib/customDomainTenant'
+import { resolveRequestHost } from '@/lib/tenantHostContext'
 import PublicSite, { type PublicSiteInitial } from '../PublicSite'
 
 // Public website route — the home page at /site and every other page of the
@@ -66,24 +64,6 @@ const fetchFullSite = cache(async (slug: string): Promise<{ teamId: string; site
   return { teamId: doc.id, site: doc.fields as unknown as PublishedSite }
 })
 
-/**
- * Which host this request came through. On a studio's OWN domain (the Worker's
- * `X-Linyup-Host`, resolved to this very site) addresses are the short ones a
- * visitor sees there — `customDomainSiteUrl`; on the app's own hosts they stay
- * the `/public/{slug}/site/…` paths. `cache()`d: metadata, redirects and the page
- * share one lookup (itself cached per instance in customDomainTenant).
- */
-const resolveRequestHost = cache(async () => {
-  const h = await headers()
-  const visitorHost = (h.get('x-linyup-host') || h.get('x-forwarded-host') || h.get('host') || '')
-    .split(':')[0]
-    .toLowerCase()
-  const rawHost = h.get('x-forwarded-host') ?? h.get('host')
-  const proto = h.get('x-forwarded-proto') ?? 'https'
-  const tenant = visitorHost && !isLinyupOwnHost(visitorHost) ? await resolveCustomDomainTenant(visitorHost) : null
-  return { visitorHost, tenant, origin: rawHost ? `${proto}://${rawHost}` : undefined }
-})
-
 /** The address of a page of `slug`'s site (`segments` [] ⇒ home) for this request. */
 async function siteAddress(slug: string, locale: string, segments: readonly string[]): Promise<string | undefined> {
   const { visitorHost, tenant, origin } = await resolveRequestHost()
@@ -101,14 +81,6 @@ async function siteAddress(slug: string, locale: string, segments: readonly stri
   return segments.length
     ? localizedPublicSubUrl(origin, locale, slug, 'site', [...segments])
     : localizedPublicUrl(origin, locale, slug, 'site')
-}
-
-/** What the renderer needs to write short links — only on THIS site's own domain. */
-async function siteDomainContext(slug: string): Promise<{ tenantLanguage: string; siteAtRoot: boolean } | undefined> {
-  const { tenant } = await resolveRequestHost()
-  return tenant && tenant.scope === 'team' && tenant.slug === slug
-    ? { tenantLanguage: tenant.language, siteAtRoot: tenant.siteAtRoot }
-    : undefined
 }
 
 /** Where an old-site redirect sends a visitor, or null when its page is gone. */
@@ -275,7 +247,7 @@ export default async function SiteRoutePage({ params }: Props) {
     // REST failed (or the site truly doesn't exist) — let the client component
     // run its own query and render its own not-found, exactly as before this
     // change.
-    return <PublicSite slug={slug} path={segments} domain={await siteDomainContext(slug)} />
+    return <PublicSite slug={slug} path={segments} />
   }
 
   const { teamId, site } = resolved
@@ -304,5 +276,5 @@ export default async function SiteRoutePage({ params }: Props) {
   }
 
   const initial: PublicSiteInitial = { site, units, page, pageUnits }
-  return <PublicSite slug={slug} path={segments} initial={initial} domain={await siteDomainContext(slug)} />
+  return <PublicSite slug={slug} path={segments} initial={initial} />
 }

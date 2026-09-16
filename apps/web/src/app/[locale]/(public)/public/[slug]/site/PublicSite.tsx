@@ -64,16 +64,9 @@ export default function PublicSite({
   slug,
   path = [],
   initial,
-  domain,
 }: {
   slug: string
   path?: string[]
-  /**
-   * Set when the request came through the studio's OWN domain: every link this
-   * page emits is then the short address a visitor sees there (`/angebot`), not
-   * `/public/{slug}/site/angebot`. Absent on our own hosts.
-   */
-  domain?: { tenantLanguage: string; siteAtRoot: boolean }
   /**
    * Present when the server component resolved the site — seeds state so the
    * FIRST render already has real content (SSR), and the client-side query
@@ -82,7 +75,9 @@ export default function PublicSite({
    */
   initial?: PublicSiteInitial
 }) {
-  const { team } = usePublicTeam()
+  // `domain` is set only when the visitor came through the studio's OWN domain
+  // — resolved once in the tenant layout and carried on the team context.
+  const { team, domain } = usePublicTeam()
   const { isAuthenticated, contact, openSignIn } = usePublicContactAuth()
   const locale = useLocale()
   const router = useRouter()

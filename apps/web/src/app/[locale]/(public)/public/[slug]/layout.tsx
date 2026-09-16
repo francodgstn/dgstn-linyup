@@ -3,6 +3,7 @@ import { PublicContactAuthProvider } from './PublicContactAuthProvider'
 import { PublicContactBar, PublicContactSignIn } from './PublicContactBar'
 import { PublicReturnBar } from './PublicReturnBar'
 import { fetchPublicTeam } from '@/lib/publicTeamRest'
+import { tenantDomainContext } from '@/lib/tenantHostContext'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,8 +23,11 @@ interface Props {
 export default async function PublicTeamLayout({ children, params }: Props) {
   const { slug } = await params
   const initial = (await fetchPublicTeam(slug)) ?? undefined
+  // Resolved ONCE here, for every surface: a link on any of them should be the
+  // short one when the visitor came through the studio's own domain.
+  const domain = await tenantDomainContext(slug)
   return (
-    <PublicTeamProvider slug={slug} initial={initial}>
+    <PublicTeamProvider slug={slug} initial={initial} domain={domain}>
       <PublicContactAuthProvider>
         {/* Before children so it sits at the top of the page flow. Renders only
             on the surfaces that have no back affordance of their own. */}

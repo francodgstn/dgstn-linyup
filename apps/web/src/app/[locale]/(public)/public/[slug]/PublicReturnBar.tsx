@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { parsePublicFrom, type PublicFrom } from '@linyup/shared'
+import { useLocale } from 'next-intl'
+import { parsePublicFrom, publicLocalePrefix, toTenantPublicPath, type PublicFrom } from '@linyup/shared'
 import { usePathname } from '@/i18n/navigation'
 import { returnHref } from '@/lib/publicRoutes'
 import { usePublicTeam } from './PublicTeamProvider'
@@ -31,7 +32,8 @@ const SURFACES_WITH_OWN_CHROME = [
 
 export function PublicReturnBar() {
   const pathname = usePathname()
-  const { slug, team } = usePublicTeam()
+  const { slug, team, domain } = usePublicTeam()
+  const locale = useLocale()
   const [from, setFrom] = useState<PublicFrom | undefined>(undefined)
 
   // Read from window rather than useSearchParams(): these routes deliberately
@@ -55,5 +57,23 @@ export function PublicReturnBar() {
   // No `from` → the team's default surface, the same fallback every other flow
   // uses. One rule to reason about, and it never dead-ends.
   const backTo = returnHref(team, slug, from)
-  return <PublicBackBar href={backTo.href} label={team.name || slug} />
+  // On the studio's own domain the way back is written the way the address bar
+  // shows it — `/` or `/shop`, not `/public/{slug}/…` (`domain` comes from the
+  // team context, resolved once in the layout).
+  //
+  // The locale is prefixed BEFORE shortening: `returnHref` is locale-agnostic
+  // (next-intl's Link adds the prefix), but an unprefixed path on the domain
+  // already means the TENANT's language — so shortening it as-is would read it
+  // as English and leave the long path. Prefixed, it shortens, and the short
+  // form is then a plain <a>: a full navigation the domain's rewrite resolves,
+  // with no prefix for next-intl to re-add.
+  const shortened = domain
+    ? toTenantPublicPath(`${publicLocalePrefix(locale)}${backTo.href}`, {
+        slug,
+        tenantLanguage: domain.tenantLanguage,
+        siteAtRoot: domain.siteAtRoot,
+      })
+    : null
+  const isShort = !!shortened && !shortened.startsWith('/public/')
+  return <PublicBackBar href={isShort ? shortened! : backTo.href} plain={isShort} label={team.name || slug} />
 }

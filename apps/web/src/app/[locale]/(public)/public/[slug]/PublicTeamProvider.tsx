@@ -12,10 +12,25 @@ import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 // fields plus the routing fields (`default_public_surface`, `active_public_surfaces`).
 export type PublicTeamData = TeamPublicProfile
 
+/**
+ * Set when the request came through the STUDIO'S OWN domain: what a link on any
+ * public surface needs to be written the short way a visitor sees there
+ * (`toTenantPublicPath`). Absent on our own hosts, where the long
+ * `/public/{slug}/…` path IS the address. Resolved once, server-side, in the
+ * tenant layout (`lib/tenantHostContext`).
+ */
+export interface PublicTeamDomain {
+  /** The language the domain answers in without a prefix. */
+  tenantLanguage: string
+  /** The website owns `/` there — see `toTenantInternalPath`. */
+  siteAtRoot: boolean
+}
+
 interface PublicTeamContextValue {
   slug: string
   teamId: string
   team: PublicTeamData
+  domain?: PublicTeamDomain
 }
 
 const PublicTeamContext = createContext<PublicTeamContextValue | null>(null)
@@ -41,6 +56,8 @@ interface Props {
    * then falls back to exactly today's client-side query, unchanged.
    */
   initial?: { teamId: string; team: PublicTeamData }
+  /** The studio's own domain, when the request came through it. */
+  domain?: PublicTeamDomain
 }
 
 // Resolves the team ONCE by slug — server-side when `initial` is provided
@@ -48,7 +65,7 @@ interface Props {
 // used for server-side reads — see CLAUDE.md) — and provides it to the whole
 // `/public/{slug}/…` subtree. Centralises the loading / not-found states so the
 // individual surfaces don't each duplicate them.
-export function PublicTeamProvider({ slug, children, initial }: Props) {
+export function PublicTeamProvider({ slug, children, initial, domain }: Props) {
   const [status, setStatus] = useState<Status>(initial ? 'found' : 'loading')
   const [teamId, setTeamId] = useState<string | null>(initial?.teamId ?? null)
   const [team, setTeam] = useState<PublicTeamData | null>(
@@ -112,7 +129,7 @@ export function PublicTeamProvider({ slug, children, initial }: Props) {
   }
 
   return (
-    <PublicTeamContext.Provider value={{ slug, teamId, team }}>
+    <PublicTeamContext.Provider value={{ slug, teamId, team, domain }}>
       {children}
     </PublicTeamContext.Provider>
   )
