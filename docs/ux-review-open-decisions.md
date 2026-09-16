@@ -446,3 +446,68 @@ its remainder stated:
 - **UX-7** — the trial is now stated. **Remainder:** the T-7 / T-1 reminders.
 
 Everything else in this file is a decision or a follow-up, not a defect.
+
+---
+
+# Website builder review — 2026-09-16
+
+A second, self-contained review, prompted by the CrossFit Zug rebuild: the builder
+became genuinely powerful, and "settings and pages seem hard to handle" for the
+non-technical studio owner it is for. Eight findings; the mechanical five are
+FIXED on `claude/crossfit-zug-website-strategy-4776aa` (PR #378). What is left
+here is what needs Franco.
+
+## 29. Should Pages be top-level navigation in the builder?
+**PARKED.** There is no Pages destination: page switching is a `<Select>` inside
+the Sections tab, with Add page and Page settings beside it
+(`(auth)/plugins/website/page.tsx`). A studio thinking "I need to manage my
+pages" has nowhere to go that says so, which is the friction that prompted the
+review. The shapes worth choosing between:
+
+- **(a) A fourth tab** — Sections / Pages / Appearance / Embed. Cheapest; costs
+  one round trip every time you switch page to edit it.
+- **(b) A persistent page rail** (Wix's model) — the page list is always on the
+  left and Sections/Appearance operate *within* the selected page. Best match for
+  the mental model, biggest change: the tab bar, the current-page URL param and
+  the right-hand column all move.
+- **(c) Leave it where it is.** Defensible for a one-page site, which is most
+  studios today; CFZ (12 pages + posts) is the case that breaks it.
+
+*Meanwhile:* the strip is labelled "Pages · 8/30" and the row actions are named,
+so the current arrangement is at least legible. Nothing here is hard to undo.
+
+## 30. Does Publish get a real diff?
+**PARKED.** Publish takes the whole draft live — the typo you came to fix plus
+the half-finished page beside it. Shipped now: a confirmation stating what is
+about to go live, counted from the draft (home + N pages + M posts, and how many
+hidden pages stay behind). A REAL answer compares against `site_published`
+field by field and lists what changed. That is a genuine piece of work (either a
+client-side deep comparison of two whole sites, or a server-computed diff at
+publish), and it is only worth it if studios actually hesitate at that button.
+*Decide after CFZ or the first real site uses it in anger.*
+
+## 31. Autosave, or keep an explicit Save?
+**PARKED.** `useUnsavedChangesGuard` (new, in `hooks/`) now asks before a
+navigation throws a draft away — the browser's own prompt on unload, and a
+capture-phase click interception for in-app links. It cannot catch the back
+button (`popstate` fires after the history entry has already moved). Autosaving
+the draft on a debounce would remove the whole failure class — the draft is one
+`setDoc` overwrite — but it changes what "Save draft" means and makes every
+half-finished edit durable. Product call, not a code one.
+
+## 32. Does the organisation builder track the team builder?
+**PARKED.** `(auth)/org/[orgId]/website/` re-implements its own AppearancePanel
+and has no Pages, no Posts, no Embed tab. The two have already drifted once for
+real (a bug where the org builder read the wrong i18n namespace). Two questions,
+in order: (i) do org sites ever get pages/posts, or is single-page a deliberate
+scope cut? (ii) regardless, the shared half of AppearancePanel should be one
+component with a capability flag, the way `BrandFields` and `MenuPanel` already
+are. (ii) is worth doing either way; (i) decides how much.
+
+## 33. `Common.close` — the dialog primitive's only untranslated string
+**FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
+Close</span>`. Screen-reader-only, so no sighted user sees English in a German
+UI, but it is the one string in that file. Needs a `Common.close` key and
+`useTranslations` inside a ui primitive — four of them already do this, so the
+pattern exists; left alone only because the reward is small and the file is
+shared by every dialog in the app.
