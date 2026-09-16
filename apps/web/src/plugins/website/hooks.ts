@@ -85,10 +85,23 @@ export function useEmbedWidgets(teamId: string | null) {
 
 // ─── mutations ────────────────────────────────────────────────────────────────
 
-/** Persist the draft (full overwrite — the draft is the complete document). */
+/**
+ * Persist the draft (full overwrite — the draft is the complete document).
+ *
+ * EVERY FIELD OF SiteDraft MUST APPEAR BELOW. This is a setDoc without merge,
+ * so a field left out of this object is not "left alone" — it is DELETED from
+ * the studio's draft the next time anything is saved, and then from the live
+ * site the next time it is published. It has happened twice: first the menu
+ * tree, then the redirect table, which quietly took a studio's old-URL
+ * forwarding with it. Both were invisible — no error, no failing test, the
+ * builder still showing what it held in memory.
+ *
+ * So the payload is TYPED against the document's own shape: a field added to
+ * SiteDraft fails tsc here until it is carried. stripUndefinedDeep then drops
+ * whatever this draft has not set, so an absent field stays absent.
+ */
 export async function saveSiteDraft(teamId: string, userId: string, draft: SiteDraft): Promise<void> {
-  const payload = stripUndefinedDeep({
-    teamId,
+  const fields: { [K in keyof Omit<Required<SiteDraft>, 'teamId' | 'updated_at' | 'updatedBy'>]: SiteDraft[K] } = {
     slug: draft.slug,
     name: draft.name,
     enabled: draft.enabled,
@@ -105,8 +118,14 @@ export async function saveSiteDraft(teamId: string, userId: string, draft: SiteD
     // point at it any more). Absent ⇒ a one-page site, so nothing existing
     // changes.
     pages: draft.pages,
-  })
+    // The old-URL redirect table. There is no editor for it yet, which is
+    // exactly why its absence here was invisible: a seeded or imported site
+    // carried redirects, and the studio's first Save deleted them.
+    redirects: draft.redirects,
+  }
+  const payload = stripUndefinedDeep(fields)
   await setDoc(doc(db, SITE_DRAFTS_COLLECTION, teamId), {
+    teamId,
     ...payload,
     updated_at: serverTimestamp(),
     updatedBy: userId,
