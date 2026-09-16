@@ -9,9 +9,8 @@
     "Two real Firebase Hosting targets:",
     "- `landing`: apps/landing, the static marketing site (linyup.com).",
     "- `api`: the public API + MCP server (docs/public-api.md), every path rewritten",
-    "  to the gen2 `api` function. Mapped on staging only (linyup-api-staging); add",
-    "  sandbox/prod mappings when those sites exist. CI deploys hosting:landing by",
-    "  name, so this target ships only when deployed deliberately. The obvious name",
+    "  to the gen2 `api` function. Mapped in every environment; the deploy workflows",
+    "  name it explicitly (hosting:api) alongside hosting:landing. The obvious name",
     "  linyup-staging-api is gone: a deleted site ID is reserved forever.",
     "",
     "There used to be an `app` target here too, pointing at the {project} sites",
@@ -29,6 +28,9 @@
       "hosting": {
         "landing": [
           "linyup-sandbox-landing"
+        ],
+        "api": [
+          "linyup-api-sandbox"
         ]
       }
     },
@@ -46,6 +48,9 @@
       "hosting": {
         "landing": [
           "linyup-prod-landing"
+        ],
+        "api": [
+          "linyup-api-prod"
         ]
       }
     }

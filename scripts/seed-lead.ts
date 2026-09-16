@@ -2763,6 +2763,11 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     { id: 'gamification' },
     { id: 'website' },
     { id: 'online-courses' },
+    // The lead demo shows the studio answering in Claude or ChatGPT, which needs
+    // the plugin installed before a key or a connector can be approved. Lead
+    // tenants are private (one prospect, credentials handed over deliberately),
+    // unlike the /try playground, which is blocked outright.
+    { id: 'api-connectors' },
     // PROFILE-DRIVEN since 2026-09-09, like every other optional plugin here.
     // It was unconditional, which gave a lead with nothing to sell a Products
     // entry in its menu and an empty tab behind it — the shop reads the

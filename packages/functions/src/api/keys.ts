@@ -16,6 +16,7 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { API_CONNECTORS_PLUGIN_ID, API_KEY_NAME_MAX, normalizeApiScopes } from '@linyup/shared'
 import { assertPluginInstalled } from '../utils/plugins'
+import { assertApiAccessAllowed } from './teamAccess'
 import { requireCapability } from '../utils/teams'
 import { ApiKeyLimitError, mintApiKey, revokeApiKey as revokeKey } from './auth/credentials'
 
@@ -48,6 +49,7 @@ export const createApiKey = onCall(async (request) => {
 
   await requireCapability(uid, teamId, 'integrations.manage')
   await assertPluginInstalled(teamId, API_CONNECTORS_PLUGIN_ID)
+  await assertApiAccessAllowed(teamId)
 
   const name = requireString(data.name, 'name', API_KEY_NAME_MAX)
   const scopes = normalizeApiScopes(data.scopes)

@@ -62,10 +62,12 @@ secret name); make it, and say plainly that you crossed the line and why.
   (`app.linyup.com`, `app-stg.linyup.com`, `demo.linyup.com`).
 - The marketing site is a **Hosting target** named `landing`.
 - The public API + MCP server is a second **Hosting target**, `api`: static `infra/hosting/api`,
-  every path rewritten to the gen2 `api` function in europe-west6 (docs/public-api.md). Mapped on
-  staging only so far (`linyup-api-staging`); `API_BASE_URL` in `packages/functions/.env.<env>`
-  must name the public origin, because behind the rewrite the request Host is the Cloud Run host.
-  CI deploys `hosting:landing` by name, so the `api` target ships only when deployed deliberately.
+  every path rewritten to the gen2 `api` function in europe-west6 (docs/public-api.md). Mapped in
+  all three environments — `linyup-api-staging` (api-stg), `linyup-api-sandbox` (api-demo),
+  `linyup-api-prod` (api.linyup.com) — and every deploy workflow names `hosting:api`, sandbox
+  included, where it is the only Hosting target there is. `API_BASE_URL` in
+  `packages/functions/.env.<env>` must name the public origin, because behind the rewrite the
+  request Host is the Cloud Run host. `API_MIN_INSTANCES` is 1 in production only.
 - Terraform state per environment under `infra/environments/{sandbox,staging,prod}`.
 
 ---
@@ -235,6 +237,14 @@ without confirming it is fixed.
   native attestation provider ships in an EAS dev build (`docs/app-check-rollout.md`).
   `auth/appCheckMobile.test.ts` pins that no web-flagged callable is reachable from
   `apps/mobile`. Derive the real set by grepping for `enforceAppCheck`, never from a doc.
+- **A 429 during a deploy can leave a new function PRIVATE.** On the merge of #369 the first
+  attempt created `api` and then hit the quota on other functions; the retry skipped `api` as
+  unchanged, so the `allUsers` invoker binding its `invoker: 'public'` declares was never
+  applied and every call answered 403. Re-running the workflow does not fix it (still
+  unchanged). After a deploy that hit 429, check:
+  `gcloud run services get-iam-policy api --region europe-west6 --project <p>` — and if the
+  policy is empty, `gcloud run services add-iam-policy-binding api --region europe-west6
+  --project <p> --member=allUsers --role=roles/run.invoker`.
 - **Prod can return 429 on the per-minute function-mutation quota** when a shared re-vendor
   causes every function to update at once. Re-dispatch the workflow; it converges.
 - **The emulator hides missing indexes** and **ignores Cloud Tasks `scheduleTime`** (its
