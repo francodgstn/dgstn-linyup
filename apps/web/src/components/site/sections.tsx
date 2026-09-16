@@ -3309,10 +3309,12 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
   }
 
   if (style === 'panels') {
-    // Solid INK panels — the row of statements a performance gym puts under its
-    // hero: the studio's text colour as the block, the page colour as the type,
-    // so it reads the same on a light or a dark theme. No icon, text left, and
-    // the studio's corner choice via `site-card`.
+    // Solid panels — the row of statements a performance gym puts under its
+    // hero. The studio's BUTTON colour when it chose one (a box that picked
+    // black buttons means black blocks, which is the look this style is for),
+    // else the page's own ink, so a site that never touched the brand fields
+    // still gets a panel that reads on a light or a dark theme. No icon, text
+    // left, and the studio's corner choice via `site-card`.
     return (
       <section id={section.id} className="py-20" style={{ background: palette.bg }}>
         <div className="mx-auto site-shell px-6">
@@ -3322,7 +3324,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
               <div
                 key={i}
                 className="site-card flex flex-col gap-2 p-8"
-                style={{ background: palette.text, color: palette.bg }}
+                style={{ background: palette.panel, color: palette.onPanel }}
               >
                 <h3 className="text-xl font-bold @xl:text-2xl">{item.title}</h3>
                 {item.text && (

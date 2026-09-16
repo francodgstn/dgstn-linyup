@@ -26,6 +26,15 @@ export interface SitePalette {
    */
   button: string
   onButton: string
+  /**
+   * A solid statement block (the features 'panels' style) and the ink on it.
+   * The studio's BUTTON colour when it chose one — a box that picked black
+   * buttons means black blocks, which is the look that style exists for — else
+   * the page's own ink, so a site that never touched the brand fields still
+   * gets a panel that reads on a light or a dark theme.
+   */
+  panel: string
+  onPanel: string
 }
 
 /** Relative luminance test for a #rgb / #rrggbb colour. Anything unparseable
@@ -43,6 +52,12 @@ function isLightHex(hex: string): boolean {
 function buttonColors(buttonColor: string | undefined, accent: string, onAccent: string) {
   if (!buttonColor) return { button: accent, onButton: onAccent }
   return { button: buttonColor, onButton: isLightHex(buttonColor) ? '#0f172a' : '#ffffff' }
+}
+
+/** The panel pair — see SitePalette.panel. */
+function panelColors(buttonColor: string | undefined, text: string) {
+  const panel = buttonColor || text
+  return { panel, onPanel: isLightHex(panel) ? '#0f172a' : '#ffffff' }
 }
 
 /** The ink and lines that sit on a background of a given scheme. Shared by both
@@ -111,6 +126,7 @@ export function buildPalette(
     return {
       ...base,
       ...buttonColors(meta.buttonColor, base.accent, base.onAccent),
+      ...panelColors(meta.buttonColor, base.text),
       surface: surfacePalette.surface,
       headerBg: `${surfacePalette.surface}d9`,
       bg: surfacePalette.background,
@@ -124,6 +140,7 @@ export function buildPalette(
   const base = {
     ...ink,
     ...buttonColors(meta.buttonColor, ink.accent, ink.onAccent),
+    ...panelColors(meta.buttonColor, ink.text),
     surface: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
   }
   return { ...base, headerBg: `${solid}d9`, bg: meta.background || solid }
