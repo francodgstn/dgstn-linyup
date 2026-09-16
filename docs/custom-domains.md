@@ -42,6 +42,26 @@ Not built:
   first click. Both forms serve (see below); making the builders host-aware is
   the remaining half.
 
+## Environments
+
+**Production only, deliberately.** Custom domains are wired on `linyup-prod` and
+nowhere else. One Cloudflare zone has one fallback origin, so sandbox and staging
+would each need their own domain, their own API token and their own Worker
+deploy — see `infra/workers/tenant-router/`.
+
+The gate is enforced in three places, and only the last one is a boundary:
+
+- Off-prod, the studio's Public pages card and the operator console both say the
+  feature is unavailable.
+- `registerPublicDomain` (`packages/functions/src/domains/publicDomain.ts`)
+  refuses server-side. A settings form is not a boundary; this is.
+- The `cloudflare-api-token` secret is declared for the prod project alone
+  (`infra/environments/prod/variables.tf`). A token that exists off-prod is a
+  token that can register a hostname on the PRODUCTION zone, one
+  misconfiguration away.
+
+Operator setup for the zone and token: `infra/README.md` §5d.
+
 ## The shape
 
 **One hostname per tenant, serving the WHOLE public tree.** Not one hostname per

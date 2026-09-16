@@ -150,7 +150,7 @@ function transformSubcollectionDoc(
 // firebasePaths.js), so there is no source doc to copy. A migrated team
 // starting with no policy is the honest, safe state: the booking gate fails
 // CLOSED on an absent policy, i.e. "no waiver required," never a silently
-// skipped requirement. See scripts/MIGRATE-HMD.md → "Documents / Waivers".
+// skipped requirement. See scripts/MIGRATE-HMD.md → "What is and isn't migrated".
 // A studio that wants one authors it from /plugins/documents post-migration.
 
 export async function pass11TeamSubcollections(

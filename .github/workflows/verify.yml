@@ -83,6 +83,17 @@ jobs:
       - name: Seed scripts
         run: pnpm typecheck:seeds
 
+      # This repo's architecture discipline runs on POINTERS: CLAUDE.md does not
+      # restate the promo ownership rules, it says to read them at
+      # `docs/promo-codes.md → "Redemption integrity"` rather than from a
+      # summary. That only works while the pointers resolve, and nothing checked
+      # them — a heading rename silently turned "read it there" into "read it
+      # nowhere". Six idioms are in use and an off-the-shelf link checker sees
+      # only markdown links, which are 25 of ~935 references; most of the rest
+      # are bare paths in .ts comments.
+      - name: Doc references
+        run: pnpm docs:check
+
   test-functions:
     name: Functions Tests
     runs-on: ubuntu-latest
