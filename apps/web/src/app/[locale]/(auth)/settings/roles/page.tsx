@@ -225,7 +225,7 @@ export default function RolePermissionsPage() {
           <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
             <span className="flex items-center gap-2">
               {roleLabel(role)}
-              <Badge variant={editableRole ? 'secondary' : 'outline'} className="text-[0.625rem]">
+              <Badge variant={editableRole ? 'secondary' : 'outline'} className="text-xs">
                 {editableRole ? t('badgeCustomizable') : t('badgeFixed')}
               </Badge>
             </span>

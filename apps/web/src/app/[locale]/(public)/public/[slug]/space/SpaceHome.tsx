@@ -558,7 +558,7 @@ export default function SpaceHome() {
 
       {/* Branding */}
       {team?.showBranding === true && (
-        <p className="pt-6 text-center text-[0.6875rem]" style={{ color: textMuted }}>
+        <p className="pt-6 text-center text-xs" style={{ color: textMuted }}>
           {t('poweredBy')}{' '}
           <Link href={'/' as Route} className="hover:underline font-medium" style={{ color: textMuted }}>
             Linyup

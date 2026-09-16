@@ -13,7 +13,7 @@ import { rankLevelBadge, type RankLevel } from '@linyup/shared'
 import { cn } from '@/lib/utils'
 
 const SIZES = {
-  sm: { box: 'h-4 w-4', text: 'text-[0.625rem]', px: 16 },
+  sm: { box: 'h-4 w-4', text: 'text-xs', px: 16 },
   md: { box: 'h-6 w-6', text: 'text-sm', px: 24 },
   lg: { box: 'h-10 w-10', text: 'text-xl', px: 40 },
 } as const

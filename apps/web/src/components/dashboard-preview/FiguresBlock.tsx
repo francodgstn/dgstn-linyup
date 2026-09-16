@@ -131,7 +131,7 @@ function Figure({
     <Link href={href} className="group/figure block">
       <div className="mb-1 flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 shrink-0 text-primary/60" />
-        <p className="truncate text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {caption}
         </p>
         {/* EVERY FIGURE IS A LINK, and until now nothing said so: the only
@@ -169,7 +169,7 @@ function Figure({
           The value and its SUBTITLE still share a baseline; that pairing is
           the block's geometry and is untouched. */}
       {!loading && note ? (
-        <div className="mt-0.5 text-[0.6875rem] leading-snug text-muted-foreground/70">{note}</div>
+        <div className="mt-0.5 text-xs leading-snug text-muted-foreground/70">{note}</div>
       ) : null}
     </Link>
   )

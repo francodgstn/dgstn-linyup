@@ -49,13 +49,13 @@ export function VersionHistory({ documentId }: { documentId: string }) {
               <span className="font-medium">{t('versionN', { version: v.version })}</span>
               <span className="text-xs text-muted-foreground">{formatWhen(v)}</span>
               <span className="text-xs text-muted-foreground">{v.published_by_name}</span>
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">
+              <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                 {v.publish_outcome === 'require_resign'
                   ? t('outcomeRequireResign')
                   : t('outcomeSilent')}
               </span>
               {v.backfilled_at && (
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                   {t('versionBackfilled')}
                 </span>
               )}

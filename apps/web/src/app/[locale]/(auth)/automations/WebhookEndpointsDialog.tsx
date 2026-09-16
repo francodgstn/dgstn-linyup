@@ -152,7 +152,7 @@ export function WebhookEndpointsDialog({
         <DialogBody className="flex flex-col gap-6">
         <p className="text-xs text-muted-foreground">
           Each endpoint has a unique secret URL. POST JSON with an{' '}
-          <code className="bg-muted px-1 rounded text-[0.6875rem]">email</code> field to trigger
+          <code className="bg-muted px-1 rounded text-xs">email</code> field to trigger
           automation rules linked to that endpoint.
         </p>
 
@@ -208,19 +208,19 @@ export function WebhookEndpointsDialog({
                           defaults to min-width:auto and won't shrink below its
                           content, so a long Cloud Functions URL would otherwise
                           force the whole dialog to overflow horizontally. */}
-                      <code className="min-w-0 flex-1 text-[0.625rem] bg-muted rounded px-2 py-1 truncate font-mono">
+                      <code className="min-w-0 flex-1 text-xs bg-muted rounded px-2 py-1 truncate font-mono">
                         POST {url}
                       </code>
                       <CopyButton text={url} />
                     </div>
                   ) : (
-                    <code className="text-[0.625rem] text-muted-foreground font-mono">
+                    <code className="text-xs text-muted-foreground font-mono">
                       …/{ep.secret_key}
                     </code>
                   )}
 
                   {ep.trigger_count != null && ep.trigger_count > 0 && (
-                    <p className="text-[0.625rem] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Triggered {ep.trigger_count}×
                       {ep.last_triggered_at && ` · last ${ep.last_triggered_at.toDate().toLocaleDateString()}`}
                     </p>
@@ -258,9 +258,9 @@ export function WebhookEndpointsDialog({
         </div>
 
         {/* Docs hint */}
-        <div className="text-[0.6875rem] text-muted-foreground space-y-1 pt-1">
+        <div className="text-xs text-muted-foreground space-y-1 pt-1">
           <p className="font-medium">Payload format</p>
-          <pre className="bg-muted rounded p-2 text-[0.625rem] font-mono overflow-x-auto">{`POST {url}
+          <pre className="bg-muted rounded p-2 text-xs font-mono overflow-x-auto">{`POST {url}
 Content-Type: application/json
 
 { "email": "jane@example.com", "firstname": "Jane" }`}</pre>

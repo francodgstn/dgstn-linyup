@@ -127,7 +127,7 @@ function StatusBadge({ status }: { status: string }) {
   }
   const { cls, label } = cfg[status] ?? { cls: 'bg-muted text-muted-foreground', label: status }
   return (
-    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold', cls)}>
+    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold', cls)}>
       {label}
     </span>
   )
@@ -362,7 +362,7 @@ function EventCard({
       <div className="flex-1 min-w-0 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium text-sm truncate">{event.title}</span>
-          <span className="shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold bg-muted text-muted-foreground capitalize">
+          <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground capitalize">
             {event.type}
           </span>
         </div>
@@ -868,7 +868,7 @@ export default function SessionsCalendar({
           {weekdayNarrow.map((label, i) => (
             <div
               key={i}
-              className="text-center text-[0.6875rem] font-medium text-muted-foreground py-1 select-none"
+              className="text-center text-xs font-medium text-muted-foreground py-1 select-none"
             >
               {label}
             </div>
@@ -907,7 +907,7 @@ export default function SessionsCalendar({
             stretched to the week-grid height by the flex row) and scrolls, so a
             busy day never grows the page. */}
         <div className="mt-6 pt-4 border-t lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
-          <p className="text-[0.6875rem] font-semibold text-muted-foreground uppercase tracking-wide mb-3 select-none capitalize">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 select-none capitalize">
             {selected.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           {daySessions.length === 0 && dayEvents.length === 0 ? (
@@ -972,7 +972,7 @@ export default function SessionsCalendar({
             tick; without a name they're a mystery, and this is the only thing on
             the page that says what they are. Rendered only when there are any. */}
         {availabilityProviders.length > 0 && (
-          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.6875rem] text-muted-foreground">
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="font-medium">{t('availabilityLegend')}</span>
             {availabilityProviders.slice(0, MAX_AVAIL_LANES).map((p) => (
               <span key={p.id} className="inline-flex items-center gap-1">
@@ -1014,7 +1014,7 @@ export default function SessionsCalendar({
                         month: 'long',
                       })}
                     >
-                      <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
+                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         {day.toLocaleDateString([], { weekday: 'short' })}
                       </span>
                       <span
@@ -1076,7 +1076,7 @@ export default function SessionsCalendar({
                             // sizes like a replaced element), so a continuation
                             // bar carrying only a space collapsed to 10px.
                             className={cn(
-                              'block w-full truncate px-1.5 py-0.5 text-[0.625rem] font-semibold text-left transition-opacity hover:opacity-80',
+                              'block w-full truncate px-1.5 py-0.5 text-xs font-semibold text-left transition-opacity hover:opacity-80',
                               isFirst ? 'rounded-l-md' : 'rounded-l-none',
                               isLast ? 'rounded-r-md' : 'rounded-r-none'
                             )}
@@ -1102,7 +1102,7 @@ export default function SessionsCalendar({
                   {Array.from({ length: hourCount }, (_, i) => (
                     <span
                       key={i}
-                      className="absolute right-1.5 text-[0.625rem] text-muted-foreground tabular-nums select-none"
+                      className="absolute right-1.5 text-xs text-muted-foreground tabular-nums select-none"
                       style={{ top: i * HOUR_PX + 2 }}
                     >
                       {String(weekGrid.startHour + i).padStart(2, '0')}:00
@@ -1238,14 +1238,14 @@ export default function SessionsCalendar({
                           >
                             <p
                               className={cn(
-                                'text-[0.6875rem] font-medium truncate leading-tight',
+                                'text-xs font-medium truncate leading-tight',
                                 cancelled && 'line-through'
                               )}
                             >
                               {s.activityName ?? t('noActivity')}
                             </p>
                             {height >= 36 && (
-                              <p className="text-[0.625rem] text-muted-foreground truncate">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {formatTs(s.start)} – {formatTs(s.end)}
                               </p>
                             )}

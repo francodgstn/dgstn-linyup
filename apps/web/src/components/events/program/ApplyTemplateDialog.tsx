@@ -116,7 +116,7 @@ export function ApplyTemplateDialog({
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-sm font-medium">{tpl.name}</span>
                       {tpl.scope === 'org' && (
-                        <Badge variant="outline" className="gap-1 text-[0.625rem]">
+                        <Badge variant="outline" className="gap-1 text-xs">
                           <Building2 className="h-3 w-3" />
                           {t('templateFromOrg')}
                         </Badge>

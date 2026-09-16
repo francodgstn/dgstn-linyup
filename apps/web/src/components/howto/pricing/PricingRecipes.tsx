@@ -72,7 +72,7 @@ export function PricingRecipes() {
         className="mt-4 rounded-xl border bg-card p-5"
       >
         <div>
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             {t('pricing.recipes.labels.how')}
           </p>
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -81,7 +81,7 @@ export function PricingRecipes() {
         </div>
 
         <div className="mt-4 border-t pt-3">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             {t('pricing.recipes.labels.setup')}
           </p>
           <div className="mt-1.5">
@@ -90,7 +90,7 @@ export function PricingRecipes() {
         </div>
 
         <div className="mt-4 border-t pt-3">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             {t('pricing.recipes.labels.see')}
           </p>
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -99,7 +99,7 @@ export function PricingRecipes() {
         </div>
 
         <div className="mt-4 border-t pt-3">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             {t('pricing.recipes.labels.check')}
           </p>
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">

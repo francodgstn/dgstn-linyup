@@ -179,7 +179,7 @@ function SummaryBlock({ contact }: { contact: Contact }) {
           ) : (
             <p className="mt-2 text-sm leading-relaxed">{text}</p>
           )}
-          <p className="mt-2 text-[0.6875rem] text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             {updated
               ? `${t('summaryUpdatedOn', {
                   date: updated.toLocaleDateString(undefined, { dateStyle: 'medium' }),
@@ -211,7 +211,7 @@ function StatsRow({
           so the two readings of one number look like one number. */}
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[0.625rem] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Trophy className="h-3 w-3 text-primary" />
           {t('statTotalSessions')}
         </p>
@@ -221,14 +221,14 @@ function StatsRow({
           {contact.current_streak ?? 0}
           <span className="text-sm font-normal">w</span>
         </p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[0.625rem] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Flame className="h-3 w-3 text-orange-500" />
           {t('statStreak')}
         </p>
       </div>
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.current_month_score ?? 0}</p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[0.625rem] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Star className="h-3 w-3 text-yellow-500" />
           {t('statMonthScore')}
         </p>
@@ -379,7 +379,7 @@ function EngagementCell({
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ENGAGEMENT_BAR[band]}`} aria-hidden />
         <span className="truncate">{t(`engagement_${band}` as Parameters<typeof t>[0])}</span>
       </p>
-      <p className="mt-0.5 flex items-center justify-center gap-1 text-[0.625rem] leading-tight text-muted-foreground">
+      <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
         <Activity className="h-3 w-3" />
         {t('engagementLabel')}
       </p>

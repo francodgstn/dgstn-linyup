@@ -270,7 +270,7 @@ export function WeeklyCalendar({ sessions, accent, bookingHref, onSelect, window
               className={`border-b border-l px-1 py-1.5 text-center ${isToday ? 'bg-primary/5' : ''}`}
             >
               <p className="text-xs font-bold">{fmt.weekdayShort(date)}</p>
-              <p className="text-[0.6875rem] text-muted-foreground">{fmt.dayMonth(date)}</p>
+              <p className="text-xs text-muted-foreground">{fmt.dayMonth(date)}</p>
             </div>
           )
         })}
@@ -284,7 +284,7 @@ export function WeeklyCalendar({ sessions, accent, bookingHref, onSelect, window
             {Array.from({ length: hourCount }, (_, i) => (
               <span
                 key={i}
-                className="absolute right-1.5 text-[0.625rem] text-muted-foreground tabular-nums select-none"
+                className="absolute right-1.5 text-xs text-muted-foreground tabular-nums select-none"
                 style={{ top: i * HOUR_PX + 2 }}
               >
                 {hourLabel(startHour + i)}
@@ -338,12 +338,12 @@ export function WeeklyCalendar({ sessions, accent, bookingHref, onSelect, window
                 const ended = (s.end ?? s.start).toDate().getTime() < now.getTime()
                 const inner = (
                   <>
-                    <p className="truncate text-[0.6875rem] font-medium leading-tight">{label}</p>
+                    <p className="truncate text-xs font-medium leading-tight">{label}</p>
                     {height >= 34 && (
-                      <p className="truncate text-[0.625rem] text-muted-foreground">{timeRange}</p>
+                      <p className="truncate text-xs text-muted-foreground">{timeRange}</p>
                     )}
                     {height >= 52 && s.location && (
-                      <p className="truncate text-[0.625rem] text-muted-foreground">{s.location}</p>
+                      <p className="truncate text-xs text-muted-foreground">{s.location}</p>
                     )}
                   </>
                 )

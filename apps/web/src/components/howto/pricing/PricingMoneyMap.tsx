@@ -216,7 +216,7 @@ export function PricingMoneyMap() {
 
         {items.length > 0 && (
           <div className="mt-4">
-            <p className="pb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <p className="pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
               {t('termsLabel')}
             </p>
             <ul className="space-y-1.5">
@@ -231,7 +231,7 @@ export function PricingMoneyMap() {
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t pt-3">
-          <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             {t('seeInApp')}
           </span>
           <Link

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 // Everything below a page's <h1>. Before this there was no canon and ~20 hand-
 // rolled variants were in use, several differing only in ways nobody chose:
 // `tracking-wide` vs `tracking-wider`, `text-sm font-semibold` vs
-// `font-semibold text-sm`, `text-[0.6875rem]` vs `text-xs`. They cluster into three
+// `font-semibold text-sm`, `text-xs` vs `text-xs`. They cluster into three
 // real levels, which are the three below — the drift was noise on top of a
 // structure that already existed.
 //

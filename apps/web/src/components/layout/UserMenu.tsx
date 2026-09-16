@@ -200,13 +200,13 @@ export function UserMenu({ collapsed }: { collapsed: boolean }) {
                     <BarChart3 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="flex min-w-0 flex-col">
                       <span className="text-xs font-medium">{t('analytics')}</span>
-                      <span className="truncate text-[0.6875rem] text-muted-foreground">
+                      <span className="truncate text-xs text-muted-foreground">
                         {t('analyticsHint')}
                       </span>
                     </span>
                   </span>
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                       analyticsOptedOut
                         ? 'bg-muted text-muted-foreground'
                         : 'bg-primary/10 text-primary'

@@ -111,7 +111,7 @@ function JournalDetails({
 
   return (
     <div className="space-y-2 text-xs">
-      <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {t('journalHeading')}
       </p>
       {txn && (

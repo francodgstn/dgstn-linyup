@@ -78,7 +78,7 @@ export function StepRow({ step, setStepDone, deleteGoal, confirm }: Props) {
           {step.title}
         </span>
         {!own && (
-          <span className="shrink-0 text-[0.625rem]" style={{ color: textMuted }}>
+          <span className="shrink-0 text-xs" style={{ color: textMuted }}>
             {t('goalCoachCreatedBadge')}
           </span>
         )}
@@ -97,7 +97,7 @@ export function StepRow({ step, setStepDone, deleteGoal, confirm }: Props) {
         )}
       </div>
       {toggleFailed && (
-        <p className="ml-7 text-[0.625rem]" style={{ color: '#dc2626' }}>
+        <p className="ml-7 text-xs" style={{ color: '#dc2626' }}>
           {t('stepToggleFailed')}
         </p>
       )}

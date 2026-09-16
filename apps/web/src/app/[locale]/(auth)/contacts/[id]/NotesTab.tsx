@@ -282,11 +282,11 @@ function NoteCard({
     <div className={`group rounded-lg border ${noteColorClasses(note.color).card}`}>
       {/* Header row */}
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
-        <span className="text-[0.6875rem] text-muted-foreground">{dateLabel}</span>
+        <span className="text-xs text-muted-foreground">{dateLabel}</span>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {confirmDelete ? (
             <>
-              <span className="text-[0.6875rem] text-destructive mr-1">Delete?</span>
+              <span className="text-xs text-destructive mr-1">Delete?</span>
               <button
                 onClick={() => onDelete(note.id)}
                 className="p-1 rounded text-destructive hover:bg-destructive/10 transition-colors"

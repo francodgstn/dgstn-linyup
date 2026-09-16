@@ -98,7 +98,7 @@ export default function ReceiptsHome() {
                         {r.replacesNumber ? ` · ${t('receiptReplaces', { number: r.replacesNumber })}` : ''}
                       </p>
                       {voided && (
-                        <p className="text-[0.6875rem]" style={{ color: '#dc2626' }}>
+                        <p className="text-xs" style={{ color: '#dc2626' }}>
                           {t('receiptVoided')}
                         </p>
                       )}

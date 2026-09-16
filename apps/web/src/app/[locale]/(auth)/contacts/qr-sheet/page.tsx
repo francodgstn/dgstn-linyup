@@ -176,7 +176,7 @@ export default function ContactQrSheetPage() {
             >
               <p className="text-sm font-semibold text-black">{s.name}</p>
               <QRCodeCanvas value={s.url} size={128} includeMargin />
-              <p className="text-[0.625rem] leading-tight text-neutral-600">{t('sheetSlipHint')}</p>
+              <p className="text-xs leading-tight text-neutral-600">{t('sheetSlipHint')}</p>
             </div>
           ))}
         </div>

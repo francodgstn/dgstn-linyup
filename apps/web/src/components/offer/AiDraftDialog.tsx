@@ -309,7 +309,7 @@ function DraftRow({
         {chips.length > 0 && (
           <span className="flex flex-wrap gap-1 pt-0.5">
             {chips.map((c, i) => (
-              <Badge key={i} variant="outline" className="text-[0.6875rem] font-normal">
+              <Badge key={i} variant="outline" className="text-xs font-normal">
                 {c}
               </Badge>
             ))}

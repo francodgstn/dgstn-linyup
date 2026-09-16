@@ -146,7 +146,7 @@ export function CoreConcepts() {
                 return (
                   <li key={i} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-primary bg-primary/10 text-[0.625rem] font-semibold text-primary">
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-primary bg-primary/10 text-xs font-semibold text-primary">
                         {i + 1}
                       </span>
                       {!isLast && <span className="my-1 w-0.5 flex-1 bg-primary/30" />}
@@ -158,13 +158,13 @@ export function CoreConcepts() {
                       </p>
                       {stage.entries.length > 0 && (
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[0.6875rem] text-muted-foreground/70">
+                          <span className="text-xs text-muted-foreground/70">
                             {t('funnelEntriesLabel')}
                           </span>
                           {stage.entries.map((e, j) => (
                             <span
                               key={j}
-                              className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] text-muted-foreground"
+                              className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
                             >
                               {e}
                             </span>
@@ -184,7 +184,7 @@ export function CoreConcepts() {
 
         {terms.length > 0 && (
           <div className="mt-4">
-            <p className="pb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <p className="pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
               {t('termsLabel')}
             </p>
             <ul className="space-y-1.5">
@@ -199,7 +199,7 @@ export function CoreConcepts() {
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t pt-3">
-          <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             {t('seeInApp')}
           </span>
           {concept.links.map((l) => (

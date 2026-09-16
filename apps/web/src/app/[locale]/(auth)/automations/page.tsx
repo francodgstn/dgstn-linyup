@@ -1447,7 +1447,7 @@ function ActionEditor({
                   value={action.note ?? ''}
                   onChange={(e) => update(i, { note: e.target.value })}
                 />
-                <p className="text-[0.6875rem] text-muted-foreground">{t('actions.addNote.hint')}</p>
+                <p className="text-xs text-muted-foreground">{t('actions.addNote.hint')}</p>
               </div>
             )}
 

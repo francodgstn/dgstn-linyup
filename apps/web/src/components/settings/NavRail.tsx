@@ -87,7 +87,7 @@ export function NavRail({
       ) : (
         shown.map((group) => (
           <div key={group.key} className="space-y-0.5">
-            <p className="px-2 pb-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
               {group.label}
             </p>
             {group.rows.map((row) => {

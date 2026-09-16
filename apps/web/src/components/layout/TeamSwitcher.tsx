@@ -204,7 +204,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
     <>
       {isError && (
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             {t('switchStudio')}
           </DropdownMenuLabel>
           {/* The read failed, so how many studios this login has is UNKNOWN.
@@ -246,7 +246,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
               studio and no organisation: a way to get a second, and the offer
               behind it. */}
           {showStudioList && (
-            <DropdownMenuLabel className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
               {t('switchStudio')}
             </DropdownMenuLabel>
           )}
@@ -328,7 +328,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
           list before this menu could render a single row. */}
       {orgs.length > 0 && (
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             {t('switchOrganisation')}
           </DropdownMenuLabel>
           {orgs.map((org) => {

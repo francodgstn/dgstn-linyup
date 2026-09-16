@@ -146,7 +146,7 @@ function StepRow({ step, teamId }: { step: SetupStep; teamId: string }) {
         {label}
       </span>
       {step.locked ? (
-        <span className="mt-0.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[0.625rem] font-medium text-muted-foreground">
+        <span className="mt-0.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
           {t('setup.requiresPlan', { plan: planName(step.requiresPlan ?? 'studio') })}
         </span>
       ) : step.acknowledged ? (
@@ -192,7 +192,7 @@ function StepRow({ step, teamId }: { step: SetupStep; teamId: string }) {
           type="button"
           disabled={busy}
           onClick={() => void toggleAck(!step.acknowledged)}
-          className="ml-9 mb-1 text-[0.6875rem] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+          className="ml-9 mb-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
         >
           {step.acknowledged
             ? t('setup.ackUndo')
@@ -405,7 +405,7 @@ export function SetupGuide() {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="shrink-0 text-[0.6875rem] tabular-nums text-muted-foreground">
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
             {t('setup.progress', { done: requiredDone, total: requiredTotal })}
           </span>
         </div>
@@ -451,10 +451,10 @@ export function SetupGuide() {
                       isOpen ? '' : '-rotate-90'
                     }`}
                   />
-                  <span className="flex-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span className="flex-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t(`setup.sections.${section}` as 'setup.sections.offer')}
                   </span>
-                  <span className="shrink-0 text-[0.6875rem] tabular-nums text-muted-foreground/70">
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground/70">
                     {outsideBar
                       ? `(${sectionDone}/${rows.length})`
                       : `${sectionDone}/${rows.length}`}

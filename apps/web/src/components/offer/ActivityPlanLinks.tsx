@@ -580,7 +580,7 @@ export function ActivityPlanLinks({
                 )}
                 <span className="truncate">{label}</span>
                 {direction === 'from-plan' && off.badge && (
-                  <Badge variant="outline" className="text-[0.625rem] font-normal">
+                  <Badge variant="outline" className="text-xs font-normal">
                     {off.badge}
                   </Badge>
                 )}
@@ -694,7 +694,7 @@ export function ActivityPlanLinks({
                           className="h-7 w-12 px-1 text-center text-xs"
                           aria-label={tb('percentLabel')}
                         />
-                        <span className="text-[0.625rem] text-muted-foreground">%</span>
+                        <span className="text-xs text-muted-foreground">%</span>
                       </span>
                     )}
                     {on && c === 'fixed_price' && (
@@ -712,7 +712,7 @@ export function ActivityPlanLinks({
                           className="h-7 w-14 px-1 text-center text-xs"
                           aria-label={tb('amountLabel')}
                         />
-                        <span className="text-[0.625rem] text-muted-foreground">{currency}</span>
+                        <span className="text-xs text-muted-foreground">{currency}</span>
                       </span>
                     )}
                   </div>
@@ -817,7 +817,7 @@ export function ActivityPlanLinks({
                               className="h-7 w-12 px-1 text-center text-xs"
                               aria-label={tb('percentLabel')}
                             />
-                            <span className="text-[0.625rem] text-muted-foreground">%</span>
+                            <span className="text-xs text-muted-foreground">%</span>
                           </span>
                         )}
                         {chosen && opt === 'fixed_price' && (
@@ -838,7 +838,7 @@ export function ActivityPlanLinks({
                               className="h-7 w-14 px-1 text-center text-xs"
                               aria-label={tb('amountLabel')}
                             />
-                            <span className="text-[0.625rem] text-muted-foreground">{currency}</span>
+                            <span className="text-xs text-muted-foreground">{currency}</span>
                           </span>
                         )}
                       </div>
@@ -905,7 +905,7 @@ export function ActivityPlanLinks({
             title={
               c === 'none' ? t('choiceNoneDesc') : tb(`effect_${c}_desc` as const)
             }
-            className="cursor-help bg-muted/30 px-1 py-1.5 text-center text-[0.6875rem] font-medium text-muted-foreground"
+            className="cursor-help bg-muted/30 px-1 py-1.5 text-center text-xs font-medium text-muted-foreground"
           >
             {c === 'none' ? t('choiceNone') : tb(`effect_${c}` as const)}
           </div>
@@ -924,7 +924,7 @@ export function ActivityPlanLinks({
             draft, so it is reviewed before it is written. */}
         {canEdit && (
           <>
-            <div className="flex items-center justify-end bg-muted/10 px-3 py-1 text-[0.625rem] uppercase tracking-wide text-muted-foreground/60">
+            <div className="flex items-center justify-end bg-muted/10 px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground/60">
               {t('setAllLabel')}
             </div>
             {(['none', 'included', 'percent_off', 'fixed_price'] as const).map((c) => {
@@ -1027,7 +1027,7 @@ export function ActivityPlanLinks({
           </div>
           {lengthGroups.map((g) => (
             <div key={g.key} className="mt-2.5 overflow-hidden rounded-md border">
-              <div className="min-w-[36rem] border-b bg-muted px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-foreground/80">
+              <div className="min-w-[36rem] border-b bg-muted px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-foreground/80">
                 {t('lengthGroup', { minutes: g.minutes })}
               </div>
               <div className={GRID_COLS}>{g.rows.map(renderRow)}</div>

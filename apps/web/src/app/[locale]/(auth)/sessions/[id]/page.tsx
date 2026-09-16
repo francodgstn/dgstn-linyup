@@ -233,7 +233,7 @@ const FUNDING_BADGE_KEY: Record<FundedTender, string> = {
 function SeatFundingChip({ chip }: { chip: SeatChipState }) {
   const t = useTranslations('SessionDetail')
   const base =
-    'inline-flex items-center gap-1 rounded-full text-[0.625rem] font-semibold px-1.5 py-0.5 flex-shrink-0'
+    'inline-flex items-center gap-1 rounded-full text-xs font-semibold px-1.5 py-0.5 flex-shrink-0'
   if (chip.kind === 'none') return null
   if (chip.kind === 'no_sub') {
     return (
@@ -855,7 +855,7 @@ function AddParticipantsDialog({
                       {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
                     </div>
                     {!isCovered(c) && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 text-[0.625rem] font-semibold px-1.5 py-0.5 flex-shrink-0">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold px-1.5 py-0.5 flex-shrink-0">
                         <AlertTriangle className="h-3 w-3" />
                         {t('noSubBadge')}
                       </span>

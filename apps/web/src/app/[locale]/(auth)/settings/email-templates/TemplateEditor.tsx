@@ -445,7 +445,7 @@ export function TemplateEditor({
                   srcDoc={previewDoc}
                   className="flex-1 w-full rounded-lg border bg-white"
                 />
-                <p className="text-[0.6875rem] text-muted-foreground shrink-0">{te('previewNote')}</p>
+                <p className="text-xs text-muted-foreground shrink-0">{te('previewNote')}</p>
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto px-3 py-3">

@@ -396,7 +396,7 @@ function LinksTab({
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-sm font-medium">{displayLabel}</span>
                         {isSystem && (
-                          <Badge variant="secondary" className="shrink-0 text-[0.625rem]">
+                          <Badge variant="secondary" className="shrink-0 text-xs">
                             {systemBadge}
                           </Badge>
                         )}
