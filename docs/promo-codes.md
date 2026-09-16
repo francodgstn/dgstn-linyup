@@ -996,7 +996,8 @@ and on the other to `31 + 4 === 35`), and the instant cannot be computed later
   which computes a 7-day link expiry one statement before its own Stripe call and
   has no window to overspend.
 
-Fixtures: `connect/checkoutWindow.test.ts` → "the checkout window work budget".
+Fixtures: `packages/functions/src/connect/checkoutWindow.test.ts` →
+"the checkout window work budget".
 
 **Release is by positive evidence; lazy expiry is the backstop.** The distinction
 is the cap, so it is worth naming which is which:

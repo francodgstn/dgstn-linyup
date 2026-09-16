@@ -12,15 +12,22 @@
  *
  * SIX IDIOMS ARE IN USE, and an off-the-shelf link checker sees only the first:
  *
- *   1. markdown links            [x](./y.md)                        ~24
- *   2. bare repo-relative paths  docs/x.md, packages/…/y.ts       ~500
- *   3. named sections            docs/x.md → "Section"              ~43
- *   4. file-qualified anchors    docs/scalability-2026-09.md §17    ~90
- *   5. bare anchors              §6.1  (this document's own)       ~174
+ *   1. markdown links            [x](./y.md)
+ *   2. bare repo-relative paths  docs/x.md, packages/…/y.ts
+ *   3. named sections            docs/x.md → "Section", CLAUDE.md → "Section"
+ *   4. file-qualified anchors    docs/scalability-2026-09.md §17
+ *   5. bare anchors              §6.1  (this document's own)
  *   6. cross-repo                hmd-lineup/docs/portal-security.md
  *
- * Idiom 2 lives mostly in .ts COMMENTS — 333 of them — which is why a markdown
- * link checker would validate about 5% of the surface while implying it had
+ * Every run prints the live per-idiom tally, which is the only count of them
+ * that cannot go stale. The figures this table used to carry did exactly that,
+ * and silently: idiom 3 was blind to a pointer whose quoted heading wrapped,
+ * and to any target without a docs|packages|apps|scripts|infra prefix, so
+ * those went unchecked — every CLAUDE.md pointer among them — while the table
+ * still advertised a number. See RE_NAMED and NAMED_TARGET below.
+ *
+ * Idiom 2 lives mostly in .ts COMMENTS, which is why a markdown link checker
+ * would validate a small fraction of the surface while implying it had
  * validated all of it.
  *
  * ERROR vs WARNING. Everything a reader is INSTRUCTED TO GO READ is an error:
@@ -115,16 +122,48 @@ const files = [...new Set(allFiles)].filter((p) => isMd(p) || SRC_EXT.test(p) ||
 const REPO_DIR = '(?:docs|packages|apps|scripts|infra)'
 // Longest alternative FIRST: `ts|tsx` matches `.ts` inside `.tsx` and reports
 // a file that does not exist. Same for `js` before `json`.
-const PATHISH = `${REPO_DIR}\\/[A-Za-z0-9_@.\\/-]+\\.(?:tsx|ts|mjs|json|js|mdx|md|tf|yaml|yml|rules)`
+const EXT = '(?:tsx|ts|mjs|json|js|mdx|md|tf|yaml|yml|rules)'
+const PATHISH = `${REPO_DIR}\\/[A-Za-z0-9_@.\\/-]+\\.${EXT}`
+
+// A NAMED pointer is SELF-ANCHORING — `x.md → "Section"` cannot be matched by
+// accident. REPO_DIR exists to stop RE_BARE_PATH claiming every word with a dot
+// in it, a risk this idiom does not have; requiring it here instead made every
+// pointer at a root-level or sibling file invisible — among them EVERY pointer
+// at CLAUDE.md, including the ones guarding CLAUDE.md's own section headings.
+// The file that tells agents to follow pointers had none of its own checked.
+const NAMED_TARGET = `(?:[A-Za-z0-9_@.-]+\\/)*[A-Za-z0-9_@.-]+\\.${EXT}`
 
 const RE_MD_LINK = /\[[^\]]*\]\(([^)\s]+)\)/g
-const RE_NAMED = new RegExp('`?(' + PATHISH + ')`?\\s*(?:§\\s*[\\w.]+\\s*)?→\\s*[""]([^""\\n]+)[""]', 'g')
+// The quoted heading MAY WRAP. `[^"\n]+` looks harmless and is not: a pointer
+// broken over two lines stopped being a named reference at all and silently
+// degraded to a bare path, so the file was checked and the heading never was.
+// Bounded so an unbalanced quote cannot run away; RE_NAMED_OPEN below reports
+// anything that runs past it rather than letting it vanish the same way.
+const RE_NAMED = new RegExp(
+  '(?<![\\w/`.-])`?(' + NAMED_TARGET + ')`?\\s*(?:§\\s*[\\w.]+\\s*)?→\\s*"([^"]{1,200}?)"', 'g')
+const RE_NAMED_OPEN = new RegExp(
+  '(?<![\\w/`.-])`?(' + NAMED_TARGET + ')`?\\s*(?:§\\s*[\\w.]+\\s*)?→\\s*"', 'g')
 const RE_QUALIFIED = new RegExp('`?(' + PATHISH + ')`?[^\\n§/]{0,40}§\\s*(\\d+(?:\\.\\d+)*[a-z]?)', 'g')
 const RE_BARE_PATH = new RegExp('(?<![\\w/`])(' + PATHISH + ')', 'g')
 const RE_BARE_SECTION = /(?<![\w/.])§\s*(\d+(?:\.\d+)*[a-z]?)/g
 
 const isPlaceholder = (p) => /YYYY|\{|<|\*|…/.test(p)
 const isCrossRepo = (p) => /(^|\/)hmd-lineup\//.test(p)
+
+// A wrapped pointer's continuation carries its file's comment leader. Strip it
+// in SOURCE only: a markdown heading may legitimately open with `*` or `#`, and
+// mangling one here would invent a mismatch rather than find one.
+const normalizeSection = (s, md) =>
+  (md ? s : s.replace(/\n[ \t]*(?:\/\/+|\*|#)?[ \t]*/g, ' ')).replace(/\s+/g, ' ').trim()
+
+// Resolve a named target the way a READER does: the file next to the citing one
+// if there is one, else the repo root. `README.md` cited from
+// apps/mobile/ARCHITECTURE.md is the mobile README, not the root one (both
+// exist); `CLAUDE.md` cited from scripts/ has no sibling and means the root.
+const resolveNamedTarget = (from, raw) => {
+  const sibling = relative(ROOT, resolvePath(join(ROOT, dirname(from)), raw)).replaceAll('\\', '/')
+  return existsSync(join(ROOT, sibling)) ? sibling : raw
+}
 
 const lineOf = (src, idx) => src.slice(0, idx).split('\n').length
 
@@ -143,10 +182,18 @@ for (const rel of files) {
   }
 
   // 3. named sections — richest idiom, extracted first
+  const closed = new Set()
   for (const m of src.matchAll(RE_NAMED)) {
     claimed.add(m.index)
+    closed.add(m.index)
     if (isCrossRepo(m[1]) || isPlaceholder(m[1])) continue
-    add('named', m[1], { section: m[2] }, m.index)
+    add('named', resolveNamedTarget(rel, m[1]), { section: normalizeSection(m[2], md) }, m.index)
+  }
+  // A pointer that opens but never closes inside RE_NAMED's bound is REPORTED,
+  // never dropped. Silently skipping one is the exact defect this pass fixes.
+  for (const m of src.matchAll(RE_NAMED_OPEN)) {
+    if (closed.has(m.index) || isCrossRepo(m[1]) || isPlaceholder(m[1])) continue
+    add('named-unterminated', resolveNamedTarget(rel, m[1]), {}, m.index)
   }
   // 4. file-qualified §
   for (const m of src.matchAll(RE_QUALIFIED)) {
@@ -227,7 +274,9 @@ for (const r of refs) {
     continue
   }
 
-  if (r.kind === 'named' && isMd(r.target)) {
+  if (r.kind === 'named-unterminated') {
+    warnings.push({ ...r, why: 'pointer opens a quoted section that never closes' })
+  } else if (r.kind === 'named' && isMd(r.target)) {
     if (!hasHeadingContaining(headingsOf(r.target), r.section)) {
       errors.push({ ...r, why: `${r.target} has no heading matching "${r.section}"` })
     }
@@ -288,6 +337,7 @@ const stale = ACKNOWLEDGED.filter((a) => !errors.some((e) => key(e) === key(a)))
 const LABEL = {
   link: 'markdown link',
   named: 'named section',
+  'named-unterminated': 'unterminated pointer',
   qualified: 'section anchor',
   'bare-src': 'path cited in source',
   'bare-workflow': 'path cited in a workflow',
