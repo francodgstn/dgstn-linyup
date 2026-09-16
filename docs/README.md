@@ -38,6 +38,7 @@ you may act on it:
 ## Contacts and membership
 
 - [**A coach's own contacts, beside the studio's — design**](./studio-independent-contacts.md) — how it works now · 2026-09-16
+- [**AI insights — the AI plugin container**](./ai-insights.md) — how it works now · 2026-09-16
 - [**Contact AI summary**](./contact-summary.md) — how it works now · 2026-09-16
 - [**Decoupling the rank scale — a plan**](./rank-scale-decoupling.md) — work to do · 2026-09-16
 - [**What an organisation may see of a member studio's people — design**](./org-contact-visibility.md) — how it works now · 2026-09-16
