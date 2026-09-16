@@ -578,7 +578,15 @@ export function PlanPricingForm({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {RECURRENCES.map((r) => (
+                          {/* NO NEW "PER CLASS" PRICE (UX-104). It is charged once
+                              and never ends, and a held non-credit price covers
+                              every linked class — so "10-class card, per class"
+                              sold unlimited access for life. A pack is one-time
+                              plus a number of classes. A price already stored
+                              with it keeps its label so the form can show it. */}
+                          {RECURRENCES.filter(
+                            (r) => r !== 'per_class' || watch(`prices.${i}.recurrence`) === 'per_class'
+                          ).map((r) => (
                             <SelectItem key={r} value={r}>
                               {tc(`recurrence_${r}`)}
                             </SelectItem>

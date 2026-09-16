@@ -135,7 +135,7 @@ legacy benefit shape, course `included` benefit, singular `introOffer`, the plan
 
 | Rank | Stage | Value | Effort | Status |
 |---|---|---|---|---|
-| 1 | **S0 — fix the leaks.** Raw drop-in readers (UX-103); stop offering `per_class` (UX-104); deciding paths stop branching on `accessRule.type` | high | S | first two shipped in this pass; the `type` branches ride with S1 |
+| 1 | **S0 — fix the leaks.** Raw drop-in readers (UX-103); stop offering `per_class` (UX-104); deciding paths stop branching on `accessRule.type` | high | S | raw readers fixed and `per_class` no longer offered for new prices; stored ones are decision 32; the `type` branches ride with S1 |
 | 2 | **S1 — backfill the class gate** (`audience`/`requirePlan`/`dropIn.mode`), then delete `legacyClassCoverage`, `hasModernGate`, `isFreeTrial`, stored `type`. Check mobile readers first | high | M | decision 33 |
 | 3 | **S2 — plan scope "All classes"**, unioned by the snapshot loader so the resolver is untouched | highest for the owner | M | decision 30 |
 | 4 | **S3 — finish multi-plan 3b–5** | high | M | planned |

@@ -487,11 +487,14 @@ built.
 
 ## 32. Stored `per_class` plan prices (UX-104)
 **ASSUMED.** `per_class` sells unlimited, never-ending access on linked classes.
-Shipped: removed from the picker for new prices and from the AI drafter; seed
-corrected to a one-time 10-class pack. **Not done:** refusing checkout on an
-already-stored `per_class` price, or converting them — HMD migration
-(`scripts/migration/transforms/subscriptions.ts`) can emit it and some may be
-tracking-only, unsold plans. Decide: refuse at checkout, convert, or leave.
+Shipped: removed from the picker for new prices and from the AI drafter.
+**Not done:** refusing checkout on an already-stored `per_class` price, or
+converting them. The emulator and staging seeds ship a "10-Class Pack" priced
+`per_class` (converting it to one-time + 10 credits changes which seeded contacts
+are covered, since credits need grants); HMD migration
+(`scripts/migration/transforms/subscriptions.ts`) can emit it, and some may be
+tracking-only plans nobody buys online. Decide: refuse at checkout, convert
+(seeds + a backfill), or leave.
 
 ## 33. The legacy class-gate backfill (model review S1)
 **PARKED — needs a deploy window, not a design call.** Retires `accessRule.type` as

@@ -102,12 +102,12 @@ is unmetered (`heldTypeIsUnmetered`), and only `one_time` prices ever get an end
 seed ships exactly this — lets the buyer book every linked class forever.
 `planTemplates.ts` itself calls it "a display recurrence with no door semantics".
 **Fix:** stop offering it: remove it from the price picker for new prices (an
-existing price keeps its label), from the AI drafter's enum, and correct the seed to
-a one-time price with 10 credits. A class pack is *one-time + number of classes*.
-The server-side refusal for already-stored `per_class` prices is decision 32.
+existing price keeps its label) and from the AI drafter's enum and validator. A
+class pack is *one-time + number of classes*. Already-stored `per_class` prices —
+including the emulator and staging seeds' "10-Class Pack" — are decision 32.
 **Build:** S · **Owner:** web + functions + scripts
-**Verify:** New plan → price → no "Per class"; the seed's 10-class card spends a
-credit per booking.
+**Verify:** New plan → price → no "Per class"; an existing per-class price still
+shows its label.
 
 ### UX-105 — "Nobody can book this" warnings are written in model words
 M5 · manager · costs-money · weekly · traced · new
