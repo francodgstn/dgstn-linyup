@@ -1,7 +1,10 @@
 'use client'
 
-// AI assistant launcher — a floating button + slide-over chat panel. v1 is a
-// read-only navigation/help copilot (no data access, no actions). Self-gates on
+// AI assistant launcher — a floating button + slide-over chat panel. Read-only:
+// it answers from the studio's data through the public API's read tools, as far
+// as the signed-in member's role allows and never contact details, and helps
+// with navigation; it takes no actions (functions assistant/, docs/public-api.md
+// → "Read tools"). Self-gates on
 // the (locked) ai-assistant plugin being installed for the current team, so it
 // only appears once the operator has unlocked it. Mounted once in the auth layout.
 

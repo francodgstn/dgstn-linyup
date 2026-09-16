@@ -120,6 +120,8 @@ the record — and a row whose person this connection may not see is left out an
 | REST router / MCP server | `packages/functions/src/api/rest.ts`, `mcp/server.ts` |
 | OAuth endpoints, client metadata, consent callables | `packages/functions/src/api/oauth/` |
 | The per-team block | `packages/functions/src/api/teamAccess.ts`, `apiAccessBlocked` in shared |
+| Read tools (ONE registry: MCP server + in-app assistant) | `packages/functions/src/api/tools/` |
+| In-app assistant (tool loop over the registry) | `packages/functions/src/assistant/` |
 | Consent page | `apps/web/src/app/[locale]/oauth/consent/page.tsx` |
 
 **MCP SDK:** `@modelcontextprotocol/sdk` 1.30 (stable, zod 3). The v2 split packages
@@ -233,6 +235,40 @@ ones were exercised end to end on the emulator):
 `oauth_requests`, `oauth_clients` and the OAuth `api_credentials` rows carry `expires_at` and are
 TTL-deleted (`EXPIRING_DOCUMENT_COLLECTIONS`, `packages/shared/src/retention.ts`).
 `teams/{t}/oauth_grants` is readable by an owner and by the member who made the grant.
+
+## Read tools
+
+A tool answers a question about the studio ("who has gone quiet?", "how full were Thursdays?")
+from the read layer, for one resolved principal. **`api/tools/registry.ts` is the only place a
+tool is defined**, and two front ends publish it:
+
+| Front end | Principal | Published as |
+|---|---|---|
+| Remote MCP server (`api/mcp/server.ts`) — Claude, ChatGPT, Claude Code | API key or OAuth grant | MCP tools (the SDK converts the zod shape) |
+| In-app assistant (`assistant/`) — the web app's chat panel | the signed-in member (`resolveMemberPrincipal`) | Gemini function declarations (`api/tools/jsonSchema.ts`) |
+
+So an answer cannot depend on the door the question came through, and a tool added once reaches
+both. Each tool states who may use it (`available`: scopes ∩ live capabilities through
+`principalMay`), parses its own arguments with `parseInput`, and returns failures as results the
+model reads rather than throws. The grounding preamble — studio, today in its zone, money in minor
+units, the people vocabulary, what this principal cannot see — is `api/tools/instructions.ts`,
+written once for both. `api/tools/registry.test.ts` pins that the MCP server publishes exactly
+what the registry decides for the same principal.
+
+**The member principal** (`decideMemberPrincipal`) has no credential: it is whoever is signed in to
+the web app. Rules 1 and 4 of the principal hold unchanged — the member document is read for the
+call, and the scopes the caller asks for are still intersected with live capabilities, so asking
+for a scope never widens a role. It never reaches `api/index.ts`, which resolves bearers only.
+
+**The assistant withholds contact details** (`ASSISTANT_SCOPES` = every scope except
+`contacts:read:pii`). The member may see them in the app, but sending them to a model is a separate
+decision, and the contact-summary precedent is that no identifying field reaches a prompt.
+
+**The assistant's tool loop** (`assistant/toolLoop.ts`): up to `MAX_TOOL_ROUNDS` rounds, then one
+more turn with tools off so the model answers from what it gathered; every call is paired with one
+response (calls over `MAX_CALLS_PER_ROUND` are refused, not dropped — function calling rejects an
+unpaired turn); a tool result is clipped at `MAX_TOOL_OUTPUT_CHARS` and says so. Rate-limited per
+question, not per call. Its navigation help (`APP_MAP`) is unchanged and still hand-maintained.
 
 ## Blocked tenants
 

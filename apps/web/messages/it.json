@@ -2977,8 +2977,8 @@
   "AiAssistant": {
     "launcherLabel": "Assistente IA",
     "title": "Assistente IA",
-    "disclaimer": "Sperimentale · ti aiuta a trovare le funzioni. Non accede ancora ai tuoi dati.",
-    "greeting": "Chiedimi come fare qualcosa in Linyup — ti indicherò dove andare.",
+    "disclaimer": "Sperimentale · legge i dati del tuo studio nei limiti del tuo ruolo, mai i dati di contatto. Non può modificare nulla.",
+    "greeting": "Chiedi del tuo studio — chi non viene da un po', quanto erano pieni i corsi — o come fare qualcosa in Linyup.",
     "thinking": "Sto pensando…",
     "inputPlaceholder": "Fai una domanda…",
     "send": "Invia",

@@ -98,13 +98,18 @@ const range = (q: { from: string; to: string }, team: TeamReadContext) => ({
 
 /** `resource` → `id` present? → `sub` → handler. `*` stands for "any id". */
 const ROUTES = {
-  me: async ({ principal, team }): Promise<ApiCredentialInfo> => ({
-    object: 'credential',
-    team: { id: team.teamId, name: team.name },
-    role: principal.role,
-    via: principal.via.kind,
-    scopes: describeScopes(principal),
-  }),
+  me: async ({ principal, team }): Promise<ApiCredentialInfo> => {
+    // REST resolves bearers only; a credential-less member principal belongs to
+    // the in-app assistant and has no credential to describe.
+    if (principal.via.kind === 'member') throw new ApiError('unauthenticated', 'This endpoint describes an API key or OAuth token')
+    return {
+      object: 'credential',
+      team: { id: team.teamId, name: team.name },
+      role: principal.role,
+      via: principal.via.kind,
+      scopes: describeScopes(principal),
+    }
+  },
   team: async ({ team }): Promise<ApiTeamInfo> => ({
     object: 'team',
     id: team.teamId,
