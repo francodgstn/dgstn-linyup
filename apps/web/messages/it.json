@@ -3844,7 +3844,8 @@
     "pagesGroupLabel": "Pagine",
     "pagesPostOrphanHint": "Nessuna pagina elenca ancora i tuoi articoli, quindi questo è raggiungibile solo dal suo link. Aggiungi una sezione «Articoli del blog» a una pagina per elencarli.",
     "summaryPhotos": "{count, plural, =0 {Nessuna foto} one {# foto} other {# foto}}",
-    "summaryPeople": "{count, plural, =0 {Ancora nessuno} one {# persona} other {# persone}}"
+    "summaryPeople": "{count, plural, =0 {Ancora nessuno} one {# persona} other {# persone}}",
+    "pagesPostFieldsMovedHint": "Titolo, data di pubblicazione, immagine di copertina e anteprima si modificano sull'articolo stesso, sopra il contenuto."
   },
   "Kiosk": {
     "title": "Kiosk",

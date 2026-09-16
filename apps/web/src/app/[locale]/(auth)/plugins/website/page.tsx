@@ -718,7 +718,7 @@ function PostHeaderCard({
           className="h-10 text-base font-semibold"
         />
       </div>
-      <div className="grid gap-3 @md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs">{t('pagesPostDateField')}</Label>
           <Input
@@ -852,8 +852,15 @@ function PageSettingsDialog({
                 }
               />
             </div>
-            {/* A post's date, cover and teaser are NOT here — they are the
-                post, and they are edited beside it (PostHeaderCard). */}
+            {/* A post's headline, date, cover and teaser are NOT here — they
+                are the post, and they are edited beside it (PostHeaderCard).
+                Said out loud, because a Title field that disappears the moment
+                you switch Type to Post looks like a field that was taken away. */}
+            {isPost && (
+              <p className="rounded-lg border border-dashed p-2.5 text-xs text-muted-foreground">
+                {t('pagesPostFieldsMovedHint')}
+              </p>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">{t('pagesPathField')}</Label>
               <div className="flex items-center gap-1.5">

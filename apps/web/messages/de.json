@@ -3844,7 +3844,8 @@
     "pagesGroupLabel": "Seiten",
     "pagesPostOrphanHint": "Noch keine Seite listet deine Blog-Beiträge, dieser hier ist also nur über seinen eigenen Link erreichbar. Füge einer Seite einen Abschnitt «Blog-Beiträge» hinzu, um sie zu listen.",
     "summaryPhotos": "{count, plural, =0 {Noch keine Fotos} one {# Foto} other {# Fotos}}",
-    "summaryPeople": "{count, plural, =0 {Noch niemand} one {# Person} other {# Personen}}"
+    "summaryPeople": "{count, plural, =0 {Noch niemand} one {# Person} other {# Personen}}",
+    "pagesPostFieldsMovedHint": "Titel, Veröffentlichungsdatum, Titelbild und Kurzbeschreibung bearbeitest du am Beitrag selbst, über dem Inhalt."
   },
   "Kiosk": {
     "title": "Kiosk",
