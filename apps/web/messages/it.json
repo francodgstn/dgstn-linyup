@@ -4014,7 +4014,13 @@
     "sectionGroupContent": "Contenuto e struttura",
     "sectionGroupOffer": "La vostra federazione",
     "sectionGroupTrust": "Persone e fiducia",
-    "unsavedLeaveConfirm": "Hai modifiche non salvate sul vostro sito. Uscire comunque?"
+    "unsavedLeaveConfirm": "Hai modifiche non salvate sul vostro sito. Uscire comunque?",
+    "starterTitle": "Inizia da un layout",
+    "starterHint": "Il vostro sito è vuoto. Scegliete un layout, oppure aggiungete le sezioni una alla volta qui sotto.",
+    "starterFederation": "Home della federazione",
+    "starterFederationDesc": "Intestazione, presentazione, i vostri club, sedi e contatti",
+    "starterSimple": "Sito semplice",
+    "starterSimpleDesc": "Intestazione, un blocco di testo e i contatti"
   },
   "Courses": {
     "title": "Corsi online",

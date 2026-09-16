@@ -4014,7 +4014,13 @@
     "sectionGroupContent": "Inhalt & Aufbau",
     "sectionGroupOffer": "Euer Verband",
     "sectionGroupTrust": "Menschen & Vertrauen",
-    "unsavedLeaveConfirm": "Du hast ungespeicherte Änderungen an eurer Website. Trotzdem verlassen?"
+    "unsavedLeaveConfirm": "Du hast ungespeicherte Änderungen an eurer Website. Trotzdem verlassen?",
+    "starterTitle": "Mit einer Vorlage starten",
+    "starterHint": "Eure Website ist leer. Wählt eine Vorlage oder fügt unten einzeln Abschnitte hinzu.",
+    "starterFederation": "Verbands-Startseite",
+    "starterFederationDesc": "Kopfbereich, Einleitung, eure Clubs, Standorte und Kontaktangaben",
+    "starterSimple": "Einfache Website",
+    "starterSimpleDesc": "Kopfbereich, ein Textblock und Kontaktangaben"
   },
   "Courses": {
     "title": "Online-Kurse",

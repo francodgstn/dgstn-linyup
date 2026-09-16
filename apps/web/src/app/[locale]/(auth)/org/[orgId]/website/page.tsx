@@ -47,7 +47,14 @@ import { type RenderableSite } from '@/components/site/WebsiteRenderer'
 import { OrgSectionEditor } from './OrgSectionEditor'
 import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite, uploadOrgSiteImage } from './hooks'
 import { BrandFields } from '@/components/website/BrandFields'
-import { ORG_SECTION_LIBRARY, newOrgSection, emptyOrgDraft } from './defaults'
+import {
+  ORG_SECTION_LIBRARY,
+  ORG_SITE_STARTERS,
+  newOrgSection,
+  emptyOrgDraft,
+  orgStarterSections,
+  type OrgSiteStarter,
+} from './defaults'
 import { SectionPicker } from '@/components/website/SectionPicker'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { Tip } from '@/components/ui/tip'
@@ -281,6 +288,14 @@ export default function OrgWebsiteBuilderPage() {
     setTab('sections')
   }
   const removeSection = (id: string) => mutate((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }))
+  function applyStarter(starter: OrgSiteStarter) {
+    if (!org) return
+    const sections = orgStarterSections(starter, org)
+    mutate((d) => ({ ...d, sections }))
+    // Open the block under the hero — the hero already carries the org's name,
+    // the text beneath it is what nobody has written yet.
+    setOpenId(sections[1]?.id ?? null)
+  }
   function reorderSections(from: number, to: number) {
     mutate((d) => ({ ...d, sections: arrayMove(d.sections, from, to) }))
   }
@@ -484,6 +499,36 @@ export default function OrgWebsiteBuilderPage() {
             />
           ) : (
             <div className="space-y-2.5">
+              {/* AN EMPTY SITE OFFERS A SHAPE. Only while there is nothing to
+                  lose: the moment a section exists, this is gone and the
+                  section list is the site. Adding sections one by one below
+                  stays open the whole time. */}
+              {draft.sections.length === 0 && (
+                <div className="space-y-2 rounded-lg border border-dashed p-3">
+                  <p className="text-sm font-medium">{t('starterTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('starterHint')}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ORG_SITE_STARTERS.map((option) => {
+                      const copy = {
+                        federation: [t('starterFederation'), t('starterFederationDesc')],
+                        simple: [t('starterSimple'), t('starterSimpleDesc')],
+                      }[option]
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => applyStarter(option)}
+                          className="rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/60 hover:bg-accent/40"
+                        >
+                          <span className="block text-sm font-semibold">{copy[0]}</span>
+                          <span className="block text-xs text-muted-foreground">{copy[1]}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               <SortableList ids={draft.sections.map((s) => s.id)} onReorder={reorderSections}>
                 {draft.sections.map((s) => {
                   const lib = ORG_SECTION_LIBRARY.find((l) => l.type === s.type)

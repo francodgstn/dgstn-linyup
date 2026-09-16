@@ -151,11 +151,47 @@ export function emptyOrgDraft(org: { id: string; name: string; slug?: string }):
     name: org.name,
     enabled: false,
     meta,
-    sections: [
-      newOrgSection('hero'),
-      newOrgSection('content'),
-      newOrgSection('clubs'),
-      newOrgSection('contact'),
-    ],
+    // EMPTY ON PURPOSE. A fresh draft used to arrive pre-filled with four
+    // sections under an English "Welcome" — a layout nobody chose, in a language
+    // the federation may not write in. It now starts empty, and an empty site
+    // offers the starters below; the old four are the "Federation home" one.
+    sections: [],
+  }
+}
+
+// ─── site starters ─────────────────────────────────────────────────────────────
+//
+// An organisation site is one page, so there is no "new page" moment to offer a
+// shape at — the moment is an EMPTY site: the first visit, or after every
+// section was removed. The sections a starter makes are ordinary sections;
+// nothing remembers which starter produced them.
+
+export type OrgSiteStarter = 'federation' | 'simple'
+
+export const ORG_SITE_STARTERS: readonly OrgSiteStarter[] = ['federation', 'simple']
+
+type StarterOrg = {
+  name: string
+  headquarters?: ContactAddress
+  contact_email?: string
+  contact_phone?: string
+}
+
+/** The sections an empty org site starts with. The org's own name is the
+ *  headline; the contact block is pre-filled from the org record, exactly as
+ *  adding one by hand would. */
+export function orgStarterSections(starter: OrgSiteStarter, org: StarterOrg): OrgSiteSection[] {
+  const hero: OrgSiteSection = { id: newSectionId(), type: 'hero', headline: org.name, align: 'center', overlay: 40 }
+  switch (starter) {
+    case 'federation':
+      return [
+        hero,
+        newOrgSection('content', org),
+        newOrgSection('clubs', org),
+        newOrgSection('locations', org),
+        newOrgSection('contact', org),
+      ]
+    case 'simple':
+      return [hero, newOrgSection('content', org), newOrgSection('contact', org)]
   }
 }

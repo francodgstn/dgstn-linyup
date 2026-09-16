@@ -4014,7 +4014,13 @@
     "sectionGroupContent": "Content & layout",
     "sectionGroupOffer": "Your federation",
     "sectionGroupTrust": "People & proof",
-    "unsavedLeaveConfirm": "You have unsaved changes to your website. Leave anyway?"
+    "unsavedLeaveConfirm": "You have unsaved changes to your website. Leave anyway?",
+    "starterTitle": "Start from a layout",
+    "starterHint": "Your site is empty. Pick a layout to fill it, or add sections one by one below.",
+    "starterFederation": "Federation home",
+    "starterFederationDesc": "Header, introduction, your clubs, locations and contact details",
+    "starterSimple": "Simple site",
+    "starterSimpleDesc": "Header, a block of text and contact details"
   },
   "Courses": {
     "title": "Online Courses",

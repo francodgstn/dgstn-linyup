@@ -4014,7 +4014,13 @@
     "sectionGroupContent": "Contenu et mise en page",
     "sectionGroupOffer": "Votre fédération",
     "sectionGroupTrust": "Équipe et confiance",
-    "unsavedLeaveConfirm": "Vous avez des modifications non enregistrées sur votre site. Quitter quand même ?"
+    "unsavedLeaveConfirm": "Vous avez des modifications non enregistrées sur votre site. Quitter quand même ?",
+    "starterTitle": "Partir d'une mise en page",
+    "starterHint": "Votre site est vide. Choisissez une mise en page, ou ajoutez des sections une à une ci-dessous.",
+    "starterFederation": "Accueil de la fédération",
+    "starterFederationDesc": "En-tête, présentation, vos clubs, lieux et coordonnées",
+    "starterSimple": "Site simple",
+    "starterSimpleDesc": "En-tête, un bloc de texte et les coordonnées"
   },
   "Courses": {
     "title": "Cours en ligne",
