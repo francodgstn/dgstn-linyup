@@ -1,78 +1,62 @@
 // ─── Team sentiment ───────────────────────────────────────────────────────────
 //
-// The `ai-team-sentiment` module: one reading of the whole team, made from the
-// contact summaries the studio has already generated, shown on the dashboard.
-// The pure half — the dossier, the reply, the prompt — is `teamSentimentPrompt.ts`.
+// The `ai-team-sentiment` module: one reading of the team's ACTIVE members,
+// shown on the dashboard. This callable is the button, and it only STARTS a run:
+// the run refreshes the active members' briefings and then reads them, in Cloud
+// Task rounds (teamSentimentRun.ts, teamSentimentWorker.ts). The pure half — the
+// dossier, the reply, the prompt — is `teamSentimentPrompt.ts`.
 //
-// ── FIVE A DAY, COUNTED BEFORE THE CALL ─────────────────────────────────────
-// One run sends up to TEAM_SENTIMENT_MAX_SUMMARIES summaries in one prompt, the
-// largest call in the AI container by far. So a team gets
-// TEAM_SENTIMENT_DAILY_LIMIT runs per calendar day (Europe/Zurich), and the run
-// is RESERVED in a transaction before the model is asked — an attempt spends a
-// run whether or not the model answers, because an answer is what costs. The
-// count is written as an absolute value from the transaction's own read, never
-// with FieldValue.increment, and nothing gives a run back: a second writer of
-// that number is how a cap stops being one.
+// ── FIVE A DAY, COUNTED BEFORE ANYTHING IS SPENT ────────────────────────────
+// A run makes a model call for every active member with something new, and one
+// more for the reading, so a team gets TEAM_SENTIMENT_DAILY_LIMIT runs per
+// calendar day (Europe/Zurich). The run is RESERVED in the same transaction that
+// creates it, before the first member is touched — a run spends its slot whether
+// or not it finishes, because the calls are what cost. The count is written as an
+// absolute value from the transaction's own read, never with
+// FieldValue.increment, and nothing gives a run back: a second writer of that
+// number is how a cap stops being one.
 //
-// The refusals that cost nothing — module off, not enough summaries — come
-// BEFORE the reservation, so they never spend a run.
+// The refusals that cost nothing — a module off, a run already going, too few
+// active members — come BEFORE the reservation, so they never spend a run.
 //
 // ── ALL-SCOPED ONLY ──────────────────────────────────────────────────────────
 // A coach scoped to their own book cannot read the other contacts, so they do
 // not get a reading of them either: not here, and not through the rules on the
 // stored document.
+//
+// ── IT NEEDS THE BRIEFINGS MODULE ────────────────────────────────────────────
+// The run writes contact briefings, which belong to `ai-contact-summary`. With
+// that module off, the studio has chosen not to have them, so the run refuses
+// rather than write summaries nobody switched on.
 
 import * as admin from 'firebase-admin'
-import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { Timestamp } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
-import { Type } from '@google/genai'
 import {
   AI_MODULES,
-  AI_REPORTS_SUBCOLLECTION,
-  CONTACTS_COLLECTION,
+  DEFAULT_ENGAGEMENT_THRESHOLDS,
   TEAMS_COLLECTION,
   TEAM_SENTIMENT_DAILY_LIMIT,
-  TEAM_SENTIMENT_MAX_AGE_DAYS,
-  TEAM_SENTIMENT_MAX_SUMMARIES,
   TEAM_SENTIMENT_MIN_SUMMARIES,
-  TEAM_SENTIMENT_MOODS,
-  TEAM_SENTIMENT_REPORT_ID,
   aiUsageCountToday,
   aiUsageDayKey,
-  computeEngagementBand,
-  isRosterContact,
-  type Contact,
+  teamSentimentRunInProgress,
+  type EngagementThresholds,
   type TeamSentimentDoc,
+  type TeamSentimentRun,
 } from '@linyup/shared'
 import { to } from '../utils/async'
 import { callerIsAllScoped, isTeamMember } from '../utils/teams'
 import { pluginIsActive } from '../utils/plugins'
-import { ASSISTANT_MODEL, getGenAI, replyWasStopped } from '../utils/vertexClient'
-import { LANGUAGE_NAMES, toDate } from '../contacts/aiSummaryDossier'
 import {
-  buildTeamDossier,
-  readTeamSentimentReply,
-  teamSentimentSystemPrompt,
-  type SentimentEntry,
-} from './teamSentimentPrompt'
+  enqueueTeamSentimentRound,
+  failTeamSentimentRun,
+  loadActiveMemberIds,
+  sentimentRef,
+} from './teamSentimentRun'
 
-/**
- * How many contacts the query reads to find TEAM_SENTIMENT_MAX_SUMMARIES live
- * ones: archived and deleted contacts keep their summaries and are dropped in
- * memory, so the read has some headroom. Bounded either way.
- */
-const READ_LIMIT = 200
-
-const SENTIMENT_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    mood: { type: Type.STRING, enum: [...TEAM_SENTIMENT_MOODS], description: 'the overall reading' },
-    overview: { type: Type.STRING, description: 'the overall picture and its direction' },
-    strengths: { type: Type.STRING, description: 'what is working, as shared patterns' },
-    concerns: { type: Type.STRING, description: 'what to watch, as groups — never individuals' },
-    focus: { type: Type.STRING, description: 'one or two team-level things to do next' },
-  },
-  required: ['mood', 'overview', 'strengths', 'concerns', 'focus'],
+function runInProgress(): HttpsError {
+  return new HttpsError('failed-precondition', 'A team reading is already being made.', { reason: 'run_in_progress' })
 }
 
 export const generateTeamSentiment = onCall({ timeoutSeconds: 120 }, async (request) => {
@@ -91,65 +75,37 @@ export const generateTeamSentiment = onCall({ timeoutSeconds: 120 }, async (requ
   if (!(await pluginIsActive(teamId, AI_MODULES.teamSentiment))) {
     throw new HttpsError('failed-precondition', 'Team sentiment is not switched on for this team.')
   }
+  if (!(await pluginIsActive(teamId, AI_MODULES.contactSummary))) {
+    throw new HttpsError('failed-precondition', 'Contact briefings are not switched on for this team.', {
+      reason: 'contact_summary_off',
+    })
+  }
 
   const db = admin.firestore()
-  const teamSnap = await db.collection(TEAMS_COLLECTION).doc(teamId).get()
-  const team = teamSnap.data()
+  const ref = sentimentRef(teamId)
+  const team = (await db.collection(TEAMS_COLLECTION).doc(teamId).get()).data()
+  const thresholds: EngagementThresholds = team?.engagement_thresholds ?? DEFAULT_ENGAGEMENT_THRESHOLDS
   const now = new Date()
 
-  // Newest summaries first. A contact without a summary has no
-  // `ai_summary.generated_at` and is not in this ordering at all, which is the
-  // filter. Index: contacts (teamId ASC, ai_summary.generated_at DESC).
-  const snap = await db
-    .collection(CONTACTS_COLLECTION)
-    .where('teamId', '==', teamId)
-    .orderBy('ai_summary.generated_at', 'desc')
-    .limit(READ_LIMIT)
-    .get()
+  const existing = (await ref.get()).data() as TeamSentimentDoc | undefined
+  if (teamSentimentRunInProgress(existing?.run, now.getTime())) throw runInProgress()
 
-  const maxAgeMs = TEAM_SENTIMENT_MAX_AGE_DAYS * 86_400_000
-  const entries: SentimentEntry[] = []
-  let oldest: Date | null = null
-  for (const d of snap.docs) {
-    if (entries.length >= TEAM_SENTIMENT_MAX_SUMMARIES) break
-    const contact = { ...d.data(), id: d.id } as Contact
-    if (!isRosterContact(contact)) continue
-    const summary = contact.ai_summary
-    const generated = toDate(summary?.generated_at)
-    if (!summary || !generated) continue
-    const ageMs = now.getTime() - generated.getTime()
-    // Ordered newest first, so the first summary past the cut ends the list.
-    if (ageMs > maxAgeMs) break
-    const lastMs = toDate(contact.last_session_at)?.getTime() ?? null
-    const refMs = lastMs ?? toDate(contact.created_at)?.getTime() ?? null
-    entries.push({
-      firstname: contact.firstname,
-      band: computeEngagementBand(refMs, team?.engagement_thresholds, now.getTime()),
-      ageDays: Math.max(0, Math.floor(ageMs / 86_400_000)),
-      status: summary.sections?.status ?? null,
-      outlook: summary.sections?.outlook ?? null,
-      text: summary.text ?? null,
-    })
-    oldest = generated
-  }
-
-  if (entries.length < TEAM_SENTIMENT_MIN_SUMMARIES) {
-    throw new HttpsError('failed-precondition', 'Not enough contact summaries yet.', {
-      reason: 'not_enough_summaries',
-      found: entries.length,
+  const memberIds = await loadActiveMemberIds(teamId, thresholds, now.getTime())
+  if (memberIds.length < TEAM_SENTIMENT_MIN_SUMMARIES) {
+    throw new HttpsError('failed-precondition', 'Not enough active members for a team reading.', {
+      reason: 'not_enough_members',
+      found: memberIds.length,
       needed: TEAM_SENTIMENT_MIN_SUMMARIES,
+      active_within_days: thresholds.active_within_days,
     })
   }
 
-  // RESERVE THE RUN — see the header.
-  const ref = db
-    .collection(TEAMS_COLLECTION)
-    .doc(teamId)
-    .collection(AI_REPORTS_SUBCOLLECTION)
-    .doc(TEAM_SENTIMENT_REPORT_ID)
+  // RESERVE AND START THE RUN, in one transaction — see the header.
+  const runId = db.collection('_').doc().id
   const day = aiUsageDayKey(now)
   const used = await db.runTransaction(async (tx) => {
     const current = (await tx.get(ref)).data() as TeamSentimentDoc | undefined
+    if (teamSentimentRunInProgress(current?.run, now.getTime())) throw runInProgress()
     const count = aiUsageCountToday(current?.usage, now)
     if (count >= TEAM_SENTIMENT_DAILY_LIMIT) {
       throw new HttpsError('resource-exhausted', 'The daily limit for team readings is reached.', {
@@ -157,61 +113,38 @@ export const generateTeamSentiment = onCall({ timeoutSeconds: 120 }, async (requ
         limit: TEAM_SENTIMENT_DAILY_LIMIT,
       })
     }
-    tx.set(ref, { usage: { day, count: count + 1 } }, { merge: true })
+    const run: TeamSentimentRun = {
+      id: runId,
+      status: 'refreshing',
+      started_at: Timestamp.fromDate(now),
+      started_by: uid,
+      finished_at: null,
+      active_within_days: thresholds.active_within_days,
+      member_ids: memberIds,
+      rounds_done: 0,
+      refreshed: 0,
+      reused: 0,
+      failed: 0,
+      error: null,
+    }
+    // `mergeFields` replaces `usage` and `run` WHOLE — a deep merge would keep the
+    // previous run's fields — and leaves the last `report` on the card meanwhile.
+    tx.set(ref, { usage: { day, count: count + 1 }, run }, { mergeFields: ['usage', 'run'] })
     return count + 1
   })
 
-  const langRaw = String(team?.language ?? 'en')
-  const lang = langRaw in LANGUAGE_NAMES ? langRaw : 'en'
-
-  let raw = ''
-  let cut = false
   try {
-    const response = await getGenAI().models.generateContent({
-      model: ASSISTANT_MODEL,
-      contents: [{ role: 'user', parts: [{ text: buildTeamDossier(entries) }] }],
-      config: {
-        systemInstruction: teamSentimentSystemPrompt(LANGUAGE_NAMES[lang]),
-        maxOutputTokens: 1024,
-        // No thinking: it would spend the output cap (see utils/vertexClient.ts).
-        thinkingConfig: { thinkingBudget: 0 },
-        temperature: 0.4,
-        responseMimeType: 'application/json',
-        responseJsonSchema: SENTIMENT_SCHEMA,
-      },
-    })
-    raw = response.text ?? ''
-    cut = replyWasStopped(response)
-    if (cut) console.warn(`[generateTeamSentiment] reply hit the output cap (team=${teamId})`)
+    await enqueueTeamSentimentRound(teamId, runId, 0)
   } catch (err) {
-    console.error('[generateTeamSentiment] Vertex error:', (err as Error).message)
-    throw new HttpsError('internal', 'The reading service is unavailable right now.')
+    console.error('[generateTeamSentiment] could not queue the run:', (err as Error).message)
+    await failTeamSentimentRun(teamId, runId, 'enqueue_failed')
+    throw new HttpsError('internal', 'The reading could not be started. Try again in a moment.')
   }
 
-  // A stopped reply keeps the parts that closed; `readTeamSentimentReply` never
-  // stores a half-written one, and refuses outright without an overview.
-  const reading = readTeamSentimentReply(raw)
-  if (!reading) throw new HttpsError('internal', 'The reading came back empty.')
-
-  // `update` with the whole `report` map REPLACES it — a `set` with merge would
-  // deep-merge and keep a previous reading's parts beside the new ones.
-  await ref.update({
-    report: {
-      mood: reading.mood,
-      sections: reading.sections,
-      generated_at: FieldValue.serverTimestamp(),
-      generated_by: uid,
-      model: ASSISTANT_MODEL,
-      language: lang,
-      summaries_used: entries.length,
-      summaries_oldest_at: oldest ? Timestamp.fromDate(oldest) : null,
-    },
-  })
-
   return {
-    mood: reading.mood,
-    sections: reading.sections,
-    summariesUsed: entries.length,
+    runId,
+    members: memberIds.length,
+    activeWithinDays: thresholds.active_within_days,
     runsLeft: Math.max(0, TEAM_SENTIMENT_DAILY_LIMIT - used),
   }
 })

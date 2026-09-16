@@ -145,7 +145,13 @@ before the fix stays as it is until someone regenerates it.
 
 ## Regeneration: manual now, schedule later
 
-Only the button regenerates. This is the recorded decision: a scheduled refresh
+Two presses regenerate: the button on the contact page (`generated_by` = the
+user's uid), and a **team sentiment run**, which refreshes the briefings of the
+team's active members that have something new — none yet, older than 7 days, or
+a session, booking or note since (`summaryNeedsRefresh`) — and stamps them
+`generated_by: 'team_sentiment'`. Both write through ONE function,
+`generateSummaryForContact` (`contacts/aiSummaryGenerate.ts`); see
+`docs/ai-insights.md` → Team sentiment. Nothing regenerates on a clock. A scheduled refresh
 is not built until the button has shown whether a summary is worth the model
 calls (Franco, 2026-09-11). When it is:
 

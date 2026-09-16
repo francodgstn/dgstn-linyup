@@ -17,8 +17,11 @@
 // ── COST IS BOUNDED PER SURFACE, NEVER BY A SCHEDULE ─────────────────────────
 // Every model call here is a button somebody pressed. There is deliberately no
 // scheduled generation for all contacts: it would spend model calls on people
-// nobody is about to look at. Team sentiment reads EVERY summary at once, so it
-// also has a per-team daily cap (`TEAM_SENTIMENT_DAILY_LIMIT`).
+// nobody is about to look at. Team sentiment is the one press that fans out: it
+// first refreshes the briefings of the team's ACTIVE members (one call each,
+// skipping anyone with nothing new — `summaryNeedsRefresh`) and then reads them
+// all in one prompt. That is why it has a per-team daily cap
+// (`TEAM_SENTIMENT_DAILY_LIMIT`), reserved before the first member is touched.
 
 import type { Timestamp } from './common'
 
@@ -43,14 +46,28 @@ export type AiModuleId = (typeof AI_MODULES)[keyof typeof AI_MODULES]
 // ─── Team sentiment ───────────────────────────────────────────────────────────
 
 /**
- * Runs per team per calendar day (Europe/Zurich). One run reads up to
- * `TEAM_SENTIMENT_MAX_SUMMARIES` summaries in a single prompt, so it is by far
- * the largest call in the container — the cap is what keeps an idle refresh
- * button from becoming the bill.
+ * Runs per team per calendar day (Europe/Zurich). One run refreshes the briefing
+ * of every active member that has something new — a model call each — and then
+ * reads up to `TEAM_SENTIMENT_MAX_SUMMARIES` of them in a single prompt, so it is
+ * by far the largest thing the container does. The cap is what keeps an idle
+ * refresh button from becoming the bill.
  */
 export const TEAM_SENTIMENT_DAILY_LIMIT = 5
-/** The most contact summaries one run reads — the newest ones. */
+/** The most active members one run refreshes and reads — the most recently seen. */
 export const TEAM_SENTIMENT_MAX_SUMMARIES = 150
+/** Members refreshed per Cloud Task round (each a model call, a few at a time). */
+export const TEAM_SENTIMENT_REFRESH_BATCH = 10
+/**
+ * A member's briefing is REUSED unless something happened since it was written —
+ * a session, a booking, a note — or it is older than this many days.
+ */
+export const SUMMARY_REUSE_MAX_AGE_DAYS = 7
+/**
+ * A run still refreshing or reading after this long is treated as abandoned — a
+ * chain that crashed past its retries — so the button works again. The run it
+ * spent is not given back.
+ */
+export const TEAM_SENTIMENT_RUN_STALE_MINUTES = 30
 /** Fewer summaries than this and there is no team to read a sentiment from. */
 export const TEAM_SENTIMENT_MIN_SUMMARIES = 3
 /** A summary older than this describes somebody who may have changed since. */
@@ -90,6 +107,39 @@ export interface TeamSentimentReport {
   summaries_used: number
   /** The oldest of them — how far back "now" reaches in this reading. */
   summaries_oldest_at: Timestamp | null
+  /**
+   * The engagement threshold the reading was scoped to: it covers only members
+   * seen within this many days (the studio's `active_within_days`). Absent on a
+   * reading made before runs refreshed the active members.
+   */
+  active_within_days?: number
+}
+
+export type TeamSentimentRunStatus = 'refreshing' | 'reading' | 'done' | 'failed'
+
+/**
+ * The run in flight, or the last one — beside the report so the dashboard's one
+ * listener shows progress too. Written only by the functions; replaced WHOLE
+ * when a run starts, and moved forward with absolute counts from a transaction's
+ * own read (never `FieldValue.increment`).
+ */
+export interface TeamSentimentRun {
+  id: string
+  status: TeamSentimentRunStatus
+  started_at: Timestamp
+  started_by: string
+  finished_at: Timestamp | null
+  /** The active threshold the members were picked with — acknowledged on the card. */
+  active_within_days: number
+  /** The active members, most recently seen first, capped at TEAM_SENTIMENT_MAX_SUMMARIES. */
+  member_ids: string[]
+  /** Task rounds completed — the guard that makes a redelivered round a no-op. */
+  rounds_done: number
+  refreshed: number
+  reused: number
+  failed: number
+  /** Why a `failed` run failed, as a stable code the card can word. */
+  error: string | null
 }
 
 /** Runs used on one calendar day. Written absolutely, in a transaction. */
@@ -109,6 +159,7 @@ export interface AiReportUsage {
 export interface TeamSentimentDoc {
   report?: TeamSentimentReport
   usage?: AiReportUsage
+  run?: TeamSentimentRun
 }
 
 /** The document id of the team sentiment reading under `ai_reports`. */
@@ -138,4 +189,54 @@ export function aiUsageCountToday(usage: AiReportUsage | null | undefined, now: 
 /** Runs left today — never negative. */
 export function teamSentimentRunsLeft(usage: AiReportUsage | null | undefined, now: Date): number {
   return Math.max(0, TEAM_SENTIMENT_DAILY_LIMIT - aiUsageCountToday(usage, now))
+}
+
+function tsMillis(value: unknown): number | null {
+  if (value instanceof Date) return value.getTime()
+  const t = value as { toMillis?: () => number } | null | undefined
+  return t && typeof t.toMillis === 'function' ? t.toMillis() : null
+}
+
+/**
+ * Is a run still going? Refreshing or reading, and started within
+ * TEAM_SENTIMENT_RUN_STALE_MINUTES — past that it is abandoned, not in progress.
+ */
+export function teamSentimentRunInProgress(run: TeamSentimentRun | null | undefined, nowMs: number): boolean {
+  if (!run || (run.status !== 'refreshing' && run.status !== 'reading')) return false
+  const started = tsMillis(run.started_at)
+  return started === null || nowMs - started < TEAM_SENTIMENT_RUN_STALE_MINUTES * 60_000
+}
+
+/** What `summaryNeedsRefresh` decides on — epoch ms, `null` when unknown or absent. */
+export interface SummaryFreshnessFacts {
+  /** When the stored briefing was written; `null` = there is none. */
+  generatedAtMs: number | null
+  lastSessionMs: number | null
+  newestBookingMs: number | null
+  newestNoteMs: number | null
+}
+
+/**
+ * THE freshness rule for a member's briefing inside a team run: regenerate when
+ * there is none, when it is older than SUMMARY_REUSE_MAX_AGE_DAYS, or when the
+ * member attended, booked or got a note after it was written. Otherwise reuse —
+ * nothing it was written from has changed, so a new call would repeat it.
+ */
+export function summaryNeedsRefresh(facts: SummaryFreshnessFacts, nowMs: number): boolean {
+  const { generatedAtMs } = facts
+  if (generatedAtMs === null) return true
+  if (nowMs - generatedAtMs > SUMMARY_REUSE_MAX_AGE_DAYS * 86_400_000) return true
+  return [facts.lastSessionMs, facts.newestBookingMs, facts.newestNoteMs].some(
+    (ms) => ms !== null && ms > generatedAtMs
+  )
+}
+
+/** Which round a member index falls in, and the slice a round covers. */
+export function teamSentimentRoundSlice(memberIds: readonly string[], round: number): string[] {
+  return memberIds.slice(round * TEAM_SENTIMENT_REFRESH_BATCH, (round + 1) * TEAM_SENTIMENT_REFRESH_BATCH)
+}
+
+/** Rounds a run of this many members takes. */
+export function teamSentimentRoundCount(members: number): number {
+  return Math.ceil(members / TEAM_SENTIMENT_REFRESH_BATCH)
 }

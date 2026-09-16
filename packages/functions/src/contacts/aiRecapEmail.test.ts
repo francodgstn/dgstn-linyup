@@ -94,6 +94,8 @@ describe('contact summary — gated on the plugin module, not the retired experi
   })
 
   it('stores the member recap with the summary, written whole', () => {
-    assert.match(source, /\.\.\.\(member \? \{ member \} : \{\}\)/)
+    // The write lives in the body the button shares with team sentiment runs.
+    const generate = readFileSync(join(__dirname, 'aiSummaryGenerate.ts'), 'utf8').replace(/\r\n/g, '\n')
+    assert.match(generate, /\.\.\.\(member \? \{ member \} : \{\}\)/)
   })
 })
