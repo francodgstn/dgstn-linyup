@@ -212,24 +212,46 @@ Apple/Google (see the roadmap §7), plus the prod key.
   var only redirects a build at another EAS project; an empty value falls
   back to the default (which is why the config uses `||`, not `??` — the
   `.env.*` templates ship `EAS_PROJECT_ID=`).
-- First Play submission is manual: Google requires the very first AAB to be
-  uploaded by hand before `eas submit` can target a track. The whole store
-  path — both consoles, the credentials, and the 14-day Play closed-testing
-  clock that gates going public — is `docs/mobile-store-setup.md`.
+- **Uploading to Play.** Two separate reasons it can be manual, and only one of
+  them expires. Google requires the very FIRST AAB by hand before `eas submit`
+  can target a track — that one is done. The second is standing: EAS holds no
+  Google service-account key, so `eas submit -p android` refuses before it
+  reaches Play at all. One interactive setup ends it, permanently:
+
+  1. Create a service account and a JSON key —
+     <https://expo.fyi/creating-google-service-account>. It needs NO GCP role;
+     its power comes from the Play invitation, not from Google Cloud.
+  2. Play Console → **Users and permissions** → invite that service account's
+     email, with at least *Release to testing tracks*.
+  3. `eas credentials -p android` → Google Service Account → upload the JSON.
+     Interactive only — `--non-interactive` cannot do it, which is the error
+     above. The key lives on EAS afterwards; never commit it.
+
+  **The same key is what FCM V1 needs for Android push**, which is parked in
+  this project — so this one setup unblocks both, and doing it now means the
+  push credentials are already in place before the build that carries them.
+  The whole store path — both consoles, the credentials, and the 14-day Play
+  closed-testing clock that gates going public — is `docs/mobile-store-setup.md`.
 - `FIREBASE_API_KEY` — **both** `eas.json`'s `env` block per profile **and**
   an EAS environment variable per environment. Not redundancy: the `env`
   block is the only thing in scope when `eas build` evaluates app.config.js
   LOCALLY (eas-cli sets `EXPO_NO_DOTENV=1` there), while the EAS environment
   variable is what the builder gets and what `eas update --environment`
   resolves for the OTA path. `development` and `preview` carry the staging key
-  in both. The `store` profile TEMPORARILY carries the STAGING key too, so the
-  Play closed test could start before the prod key was decided — the release
-  lane refuses a `mobile-v*` tag while its `FIREBASE_PROJECT_ID` is anything but
-  `linyup-prod`, so this cannot ship by accident. The `production` EAS
-  environment still carries nothing. Write the literal value —
+  in both. The `store` profile carries the PROD key and
+  `FIREBASE_PROJECT_ID=linyup-prod`; the release lane refuses a `mobile-v*` tag
+  while that id is anything else. The `production` EAS environment carries BOTH
+  `FIREBASE_API_KEY` and `FIREBASE_PROJECT_ID` — the id was added 2026-09-10
+  because `app.config.js` falls back to `linyup-staging` when it is absent, so an
+  OTA resolved with only the key would have published a STAGING-pointed bundle to
+  the production channel. The build path was never exposed: it reads eas.json.
+  Write the literal value —
   `"${FIREBASE_API_KEY}"` is not interpolated and gets baked in as that string.
-- Apple ASC API key, Play service-account JSON — stored on EAS
-  (`credentialsSource: remote`).
+- **Apple ASC API key: on EAS. Play service-account JSON: NOT on EAS** — checked
+  2026-09-16, when `eas submit -p android` refused at `Google Service Account
+  Keys cannot be set up in --non-interactive mode`. Until that key is uploaded,
+  EVERY Play upload is a manual one through the console, no matter how the build
+  was produced. See "Uploading to Play" above.
 
 ## Traps recorded
 
