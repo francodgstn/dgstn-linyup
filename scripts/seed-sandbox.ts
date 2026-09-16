@@ -1595,6 +1595,12 @@ async function seedDemoTeam(profile: SectorProfile) {
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       // Standalone Studio demo teams enable the affiliation axis (team-local 'club').
       affiliations_enabled: true,
+      // No public API or MCP from the /try playground, for the same reason the
+      // messaging policy below hard-silences it: anonymous visitors hold the
+      // shared owner login, so anyone could install the connectors plugin and
+      // mint a key that reads (and bills) our Firestore long after they leave.
+      // Lead tenants are NOT blocked — see scripts/seed-lead.ts.
+      api_access_blocked: true,
       ranking_systems: rankingSystem
         ? [{ ...rankingSystem, is_primary: true, levels: withRankLevelIds(rankingSystem.levels) }]
         : [],

@@ -1,6 +1,6 @@
 import type { Capability, DataScope } from './capabilities'
 import type { Timestamp } from './common'
-import type { TeamRole } from './team'
+import type { Team, TeamRole } from './team'
 import { resolveRoleCapabilities } from './capabilities'
 
 // ─── Public API + MCP — the shared vocabulary ────────────────────────────────
@@ -256,4 +256,19 @@ export interface ApiUsageDay {
   requests: number
   denied: number
   expires_at: Timestamp
+}
+
+/**
+ * Is this studio barred from the public API? THE ONE READER of
+ * `Team.api_access_blocked`.
+ *
+ * The `/try` demo playground shares one public login per studio, so a visitor
+ * arrives as the owner and could mint a key (or approve a connector) that reads
+ * — and bills — our Firestore long after they close the tab. The block is
+ * enforced where the plugin gate is, at creation: no key is minted and no grant
+ * approved, so no credential ever exists to consume. Lead tenants are not
+ * blocked; demonstrating the connector is the point of a lead demo.
+ */
+export function apiAccessBlocked(team: Pick<Team, 'api_access_blocked'> | null | undefined): boolean {
+  return team?.api_access_blocked === true
 }

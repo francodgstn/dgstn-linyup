@@ -98,7 +98,9 @@ jobs:
       # GOOGLE_APPLICATION_CREDENTIALS* env var here.
       # --force: lets firebase-tools set up the Artifact Registry cleanup policy
       # non-interactively and skips the confirmation prompt when functions are
-      # removed from source. No hosting:landing (sandbox has no landing site) and
+      # removed from source. No hosting:landing (sandbox has no landing site), but
+      # hosting:api IS deployed: the api site is only a rewrite onto the `api`
+      # function, and without a release the demo API would 404 (docs/public-api.md). And
       # no database — RTDB is unused and the sandbox project has no RTDB instance
       # (deploying its rules would fail with "haven't created a Realtime Database
       # instance").
@@ -115,7 +117,7 @@ jobs:
       - name: Deploy to Firebase (Sandbox)
         run: |
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project sandbox --only functions,firestore,storage --non-interactive --force; then
+            if npx firebase-tools deploy --project sandbox --only functions,hosting:api,firestore,storage --non-interactive --force; then
               exit 0
             fi
             echo "::warning::firebase deploy attempt $attempt failed; retrying in 30s…"

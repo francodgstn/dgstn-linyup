@@ -8757,7 +8757,8 @@
     "disconnect": "Déconnecter",
     "disconnectTitle": "Déconnecter « {name} » ?",
     "disconnectBody": "Elle cesse immédiatement de fonctionner. Pour l'utiliser à nouveau, reconnectez-la depuis l'application.",
-    "disconnectedToast": "« {name} » déconnectée"
+    "disconnectedToast": "« {name} » déconnectée",
+    "blockedBody": "Ceci est un studio de démonstration partagé : l'API et le serveur MCP y sont désactivés. Votre propre studio peut les utiliser avec le forfait Studio."
   },
   "OAuthConsent": {
     "pageTitle": "Connecter une application",
@@ -8779,6 +8780,7 @@
     "expiredBody": "Retournez dans l'application et relancez la connexion.",
     "noTeams": "Votre compte n'est membre d'aucun studio.",
     "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "teamBlocked": "Ceci est un studio de démonstration partagé : il ne peut pas connecter d'applications. Choisissez un autre studio, ou connectez depuis le vôtre."
   }
 }

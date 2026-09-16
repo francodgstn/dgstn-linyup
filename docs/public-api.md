@@ -9,7 +9,8 @@ Studio staff reach their studio's data from outside Linyup in two ways:
 Both are the same product: one origin, one principal, one read layer. This document is the owner of
 the design; the code headers point here.
 
-Status (2026-09-14): **Phase 1 in progress, nothing deployed.** Built so far: the scope table,
+Status (2026-09-16): **merged to main (#369) and live on staging.** Sandbox and production are
+configured here but their Hosting sites do not exist yet — see "Hosting target". Built: the scope table,
 API key minting / principal resolver / single credential writer, `createApiKey` / `revokeApiKey`,
 the `api-connectors` plugin with its revoke-all teardown, rules + TTL, the field catalog with
 contact and session projections, and the `api` HTTPS function serving `/v1/me|team|contacts|sessions`
@@ -27,17 +28,35 @@ Phase 2 (OAuth): discovery metadata, `/oauth/authorize|token|revoke` with Client
 Documents, the consent page at `/oauth/consent`, and Connected apps on Settings → API keys — see
 "OAuth" below.
 
-**Staging (2026-09-15):** the `api` Hosting target is live at `https://api-stg.linyup.com` (custom
-domain on the `linyup-api-staging` site; DNS-only CNAME in Cloudflare)
-— see "Hosting target" below. Not yet: sandbox/prod, a custom domain, and the connector test in
-claude.ai / ChatGPT, which also needs the consent page on the staging web app (it ships with the
-branch's web deploy).
+**Staging (2026-09-15):** live at `https://api-stg.linyup.com` (custom domain on the
+`linyup-api-staging` site; DNS-only CNAME in Cloudflare), and claude.ai and VS Code both completed
+client verification against it.
+
+**Sandbox and production (2026-09-16):** configured, not yet created. Each still needs its Hosting
+site (`terraform apply` creates it), the custom domain added in the Firebase console with the DNS
+record, and a deploy — sandbox by tag, production through its workflow. Sandbox exists so a lead
+demo can show the connector; the `/try` playground is blocked from the API outright (see
+"Blocked tenants").
 
 ## Hosting target
 
 `firebase.json` target `api`: static folder `infra/hosting/api` (only a `robots.txt`), every other
-path rewritten to the gen2 `api` function in europe-west6. `.firebaserc` maps it on staging only.
-CI deploys `hosting:landing` by name, so this target ships only when deployed deliberately:
+path rewritten to the gen2 `api` function in europe-west6. `.firebaserc` maps it in every
+environment, Terraform owns the site shells (`infra/modules/firebase-project`), and each deploy
+workflow names `hosting:api` explicitly:
+
+| Environment | Site | Answers on | Warm instances |
+|---|---|---|---|
+| staging | `linyup-api-staging` | `https://api-stg.linyup.com` | 0 |
+| sandbox | `linyup-api-sandbox` | `https://api-demo.linyup.com` | 0 |
+| production | `linyup-api-prod` | `https://api.linyup.com` | 1 |
+
+`API_MIN_INSTANCES` (`packages/functions/.env.<env>`) sets the warm instances: production runs one
+because a cold start measured 5.3 s and a connector gives up around 10 s. It must exist in every
+env file, `.env.local` included — an unresolvable param makes the emulator prompt, and a prompt in
+a non-TTY loads zero functions.
+
+To deploy the target by hand (CI does it on every push to main / tag):
 
 ```
 node scripts/vendor-shared-for-deploy.mjs      # then revert packages/functions/package.json
@@ -100,6 +119,7 @@ the record — and a row whose person this connection may not see is left out an
 | Read layer | `packages/functions/src/api/resources/` |
 | REST router / MCP server | `packages/functions/src/api/rest.ts`, `mcp/server.ts` |
 | OAuth endpoints, client metadata, consent callables | `packages/functions/src/api/oauth/` |
+| The per-team block | `packages/functions/src/api/teamAccess.ts`, `apiAccessBlocked` in shared |
 | Consent page | `apps/web/src/app/[locale]/oauth/consent/page.tsx` |
 
 **MCP SDK:** `@modelcontextprotocol/sdk` 1.30 (stable, zod 3). The v2 split packages
@@ -213,6 +233,24 @@ ones were exercised end to end on the emulator):
 `oauth_requests`, `oauth_clients` and the OAuth `api_credentials` rows carry `expires_at` and are
 TTL-deleted (`EXPIRING_DOCUMENT_COLLECTIONS`, `packages/shared/src/retention.ts`).
 `teams/{t}/oauth_grants` is readable by an owner and by the member who made the grant.
+
+## Blocked tenants
+
+Some studios must never hand out credentials at all. `Team.api_access_blocked` says so, read
+through `apiAccessBlocked` (`packages/shared/src/types/api.ts`) and never inline, and enforced
+by `assertApiAccessAllowed` (`packages/functions/src/api/teamAccess.ts`) beside the plugin gate
+in `createApiKey` and `approveOAuthAuthorization`.
+
+The block is at CREATION, like the plugin gate: no key is minted and no grant approved, so no
+credential exists for the principal resolver to accept later. Installing the plugin on a blocked
+studio therefore changes nothing — which is the point, because the flag exists for the sandbox
+`/try` playground, where the owner login is PUBLIC and a visitor could otherwise mint a key that
+reads (and bills) our Firestore long after they close the tab. It is the same reasoning that
+hard-silences outbound mail on those tenants (`scripts/seed-sandbox.ts`).
+
+**Lead tenants (`lead-*`) are deliberately not blocked** and install `api-connectors` in their
+seed: showing a prospect their own studio answering in Claude is the point of the demo.
+Revoking is never blocked — a door must always close. Pinned by `api/teamAccess.test.ts`.
 
 ## The read layer
 

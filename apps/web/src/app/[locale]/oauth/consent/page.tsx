@@ -35,6 +35,8 @@ interface ConsentTeamOption {
   name: string
   role: TeamRole
   plugin_installed: boolean
+  /** Barred from the public API outright — the demo playground, whose login is public. */
+  api_blocked: boolean
   scopes: Array<{ scope: ApiScope; usable: boolean }>
 }
 
@@ -55,9 +57,9 @@ function reasonOf(err: unknown): string | null {
   return typeof details?.reason === 'string' ? details.reason : null
 }
 
-/** A team the member can actually grant from: plugin installed and at least one usable scope. */
+/** A team the member can actually grant from: not blocked, plugin installed, one usable scope. */
 function grantable(team: ConsentTeamOption): boolean {
-  return team.plugin_installed && team.scopes.some((s) => s.usable)
+  return !team.api_blocked && team.plugin_installed && team.scopes.some((s) => s.usable)
 }
 
 export default function OAuthConsentPage() {
@@ -220,7 +222,9 @@ export default function OAuthConsentPage() {
             )}
           </div>
 
-          {team && !team.plugin_installed ? (
+          {team && team.api_blocked ? (
+            <p className="rounded-lg bg-muted/40 p-3 text-sm">{t('teamBlocked')}</p>
+          ) : team && !team.plugin_installed ? (
             <div className="space-y-2 rounded-lg bg-muted/40 p-3 text-sm">
               <p>{t('notInstalled')}</p>
               {team.role === 'owner' && (

@@ -29,6 +29,7 @@ import {
   DEFAULT_API_SCOPES,
   MAX_ACTIVE_API_KEYS,
   TEAMS_COLLECTION,
+  apiAccessBlocked,
   type ApiKey,
   type ApiScope,
 } from '@linyup/shared'
@@ -87,7 +88,7 @@ function reasonOf(err: unknown): string | null {
 
 export default function ApiKeysSettingsPage() {
   const t = useTranslations('ApiKeys')
-  const { currentTeamId, teamRole } = useAuth()
+  const { currentTeamId, teamRole, team } = useAuth()
   const { isInstalled, isLoading: pluginsLoading } = useInstalledPlugins()
   const format = useTeamFormat()
   const { confirm, confirmDialog } = useConfirm()
@@ -166,6 +167,17 @@ export default function ApiKeysSettingsPage() {
       <div className="max-w-5xl space-y-5">
         {header}
         <Skeleton className="h-24 max-w-2xl rounded-xl" />
+      </div>
+    )
+  }
+
+  // A studio the server refuses outright (the public demo playground, whose owner
+  // login is shared). Says so before the install prompt: installing changes nothing.
+  if (apiAccessBlocked(team)) {
+    return (
+      <div className="max-w-5xl space-y-5">
+        {header}
+        <p className="max-w-2xl rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">{t('blockedBody')}</p>
       </div>
     )
   }
