@@ -254,6 +254,7 @@ export async function notifyWaitlistOffers(
       try {
         await sendSms({
           to: offer.phone,
+          contactId: offer.contactId,
           content: buildWaitlistOfferSms({
             teamName: ctx.teamName,
             activityName: ctx.activityName,

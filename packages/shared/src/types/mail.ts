@@ -30,10 +30,18 @@ export interface MailSendRecord {
   // 'studio' mail is sent on behalf of a team; 'system' mail is Linyup's own.
   stream: 'system' | 'studio'
   team_id?: string
-  // 'suppressed' = never handed to the provider (synthetic recipient or a
-  // messaging-policy drop); suppress_reason explains which layer dropped it.
+  // 'suppressed' = never handed to the provider; suppress_reason explains which
+  // layer dropped it. The email-only and SMS-only reasons are listed by channel
+  // in functions mail/README.md → "The send log".
   status: 'sent' | 'delivered' | 'bounced' | 'blocked' | 'spam' | 'failed' | 'suppressed'
-  suppress_reason?: 'synthetic' | 'policy_silent' | 'policy_allowlist'
+  suppress_reason?:
+    | 'synthetic'
+    | 'policy_silent'
+    | 'policy_allowlist'
+    | 'dead_address'
+    | 'opt_out'
+    | 'invalid_number'
+    | 'suppressed_number'
   created_at: Timestamp
   updated_at: Timestamp
 }

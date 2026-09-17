@@ -312,6 +312,7 @@ export async function sendBookingRemindersForTeam(teamId: string): Promise<Remin
             }
             const outcome = await sendSms({
               to: phone,
+              contactId: (booking.contact as string) || null,
               content: buildBookingReminderSms({
                 teamName: team.name,
                 activityName,
@@ -324,7 +325,7 @@ export async function sendBookingRemindersForTeam(teamId: string): Promise<Remin
               idempotencyKey: `sms-reminder-${sessionId}-${bookingDoc.id}-${step.id}`,
             })
             if (outcome.skipped && !outcome.providerMessageId) {
-              // Disabled/suppressed/bad number — mark the step so we don't retry
+              // Disabled/opted out/suppressed/bad number — mark the step so we don't retry
               // hourly forever (the idempotency key would dedupe anyway).
               skipped++
             }
