@@ -80,4 +80,18 @@ export default defineConfig({
       pagefind: true,
     }),
   ],
+  vite: {
+    server: {
+      watch: {
+        // `astro dev` never finished starting (30s+, no server ever bound) —
+        // Vite's watcher crawls the whole workspace root by default, and this
+        // repo keeps `.claude/worktrees/` INSIDE that root: ~16 full nested
+        // copies of the monorepo, each with its own node_modules. Same
+        // species of problem as apps/web's `turbopack.root` pin (Next.js
+        // inferring too broad a root in the same layout) — Vite has no
+        // automatic fix, so the watcher needs telling explicitly.
+        ignored: ['**/.claude/worktrees/**'],
+      },
+    },
+  },
 })
