@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Route } from 'next'
 import { cache } from 'react'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
@@ -265,7 +265,7 @@ export default async function SiteRoutePage({ params }: Props) {
       // wins: this runs only where the answer would otherwise be "not found".
       const redirect = findSiteRedirect(resolved.site.redirects, `/${segments.join('/')}`)
       const target = redirect ? await redirectTarget(redirect.to, resolved.site, slug, locale) : null
-      if (target) permanentRedirect(target)
+      if (target) permanentRedirect(target as Route)
       notFound()
     }
   }
