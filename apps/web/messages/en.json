@@ -4333,7 +4333,9 @@
     "feeStripeNote": "Stripe's own processing fee applies. See <link>Stripe's pricing</link>.",
     "feeRefundNote": "If a payment is refunded, you pay the Stripe fee.",
     "feesTitle": "What you pay",
-    "feeNoneNote": "Linyup takes no fee on your payments."
+    "feeNoneNote": "Linyup takes no fee on your payments.",
+    "feeAgreedNote": "Linyup's fee is {pct}% per payment, the rate agreed with you.",
+    "feeAgreedUntilNote": "Linyup's fee is {pct}% per payment, the rate agreed with you, until {date}."
   },
   "PaymentsDashboard": {
     "title": "Payments",

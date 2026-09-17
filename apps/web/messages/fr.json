@@ -4333,7 +4333,9 @@
     "feeStripeNote": "Les frais de traitement de Stripe s'appliquent en plus. Voir <link>les tarifs Stripe</link>.",
     "feeRefundNote": "En cas de remboursement, les frais Stripe sont à votre charge.",
     "feesTitle": "Ce que vous payez",
-    "feeNoneNote": "Linyup ne prélève aucune commission sur vos paiements."
+    "feeNoneNote": "Linyup ne prélève aucune commission sur vos paiements.",
+    "feeAgreedNote": "Les frais de Linyup sont de {pct}% par paiement, le taux convenu avec vous.",
+    "feeAgreedUntilNote": "Les frais de Linyup sont de {pct}% par paiement, le taux convenu avec vous, jusqu'au {date}."
   },
   "PaymentsDashboard": {
     "title": "Paiements",

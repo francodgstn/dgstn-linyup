@@ -30,7 +30,7 @@ import {
 import { activeCustomDomainHost } from '../domains/activeDomain'
 import { resolveBaseUrl } from '../utils/env'
 import { sha256Hex } from '../utils/crypto'
-import { requireChargeableAccount, type EnabledTeam } from './access'
+import { platformFeeMetadata, requireChargeableAccount, type EnabledTeam } from './access'
 
 // ─── Amount guards — ONE floor, ONE error shape ─────────────────────────────────
 // Authored prices below Stripe's 0.50 floor are a configuration error → throw.
@@ -753,6 +753,7 @@ export async function startOneOffCheckout(params: {
     amount: amountMinor,
     model,
     waived: team.feeWaived,
+    rate: team.fee.rate,
   })
   try {
     const session = await createOneOffCheckoutSession({
@@ -764,7 +765,7 @@ export async function startOneOffCheckout(params: {
       successUrl: params.successUrl,
       cancelUrl: params.cancelUrl,
       customerEmail: params.customerEmail,
-      metadata: params.metadata,
+      metadata: { ...params.metadata, ...platformFeeMetadata(team) },
       idempotencyKey: params.idempotencyKey,
       expiresAtEpochSeconds: params.expiresAtEpochSeconds,
     })
@@ -802,7 +803,7 @@ export async function startSubscriptionCheckout(params: {
 }): Promise<{ url: string; sessionId: string; applicationFeePercent: number }> {
   const { team } = params
   const { accountId } = requireChargeableAccount(team)
-  const applicationFeePercent = takeRatePercent(team.plan, team.feeWaived)
+  const applicationFeePercent = takeRatePercent(team.plan, team.feeWaived, team.fee.rate)
   try {
     const discountCouponId = params.introCoupon
       ? await ensureIntroCoupon({ accountId, spec: params.introCoupon })

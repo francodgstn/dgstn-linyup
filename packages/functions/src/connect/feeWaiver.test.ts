@@ -23,7 +23,8 @@ import { chargeHasApplicationFee, computePlatformFee, takeRatePercent } from '@l
 const SRC = join(__dirname, '..')
 
 function read(...parts: string[]): string {
-  return readFileSync(join(SRC, ...parts), 'utf8')
+  // Normalised: a Windows checkout is CRLF, and the needles below span lines.
+  return readFileSync(join(SRC, ...parts), 'utf8').replace(/\r\n/g, '\n')
 }
 
 /** Strip line and block comments so prose mentioning a call is not counted. */
@@ -74,17 +75,17 @@ describe('THE CENSUS — every site that computes a platform fee', () => {
     {
       file: ['connect', 'checkout.ts'],
       what: 'startOneOffCheckout — the choke point for every one-off rail',
-      needle: 'waived: team.feeWaived',
+      needle: 'waived: team.feeWaived,\n    rate: team.fee.rate,',
     },
     {
       file: ['connect', 'checkout.ts'],
       what: 'startSubscriptionCheckout — recurring, via application_fee_percent',
-      needle: 'takeRatePercent(team.plan, team.feeWaived)',
+      needle: 'takeRatePercent(team.plan, team.feeWaived, team.fee.rate)',
     },
     {
       file: ['appointments', 'staffBooking.ts'],
       what: 'createStaffAppointment — the one caller that bypasses both choke points',
-      needle: 'waived: enabledTeam.feeWaived',
+      needle: 'waived: enabledTeam.feeWaived,\n      rate: enabledTeam.fee.rate,',
     },
   ]
 
@@ -92,13 +93,21 @@ describe('THE CENSUS — every site that computes a platform fee', () => {
     it(`${site.file.join('/')} — ${site.what} — passes the waiver`, () => {
       assert.ok(
         code(read(...site.file)).includes(site.needle),
-        `this fee site no longer passes the waiver; a comped tenant would be charged here`
+        `this fee site no longer passes the waiver AND the resolved rate; a comped tenant ` +
+          `would be charged here, or a negotiated one charged the published rate`
       )
     })
   }
 
-  it('there are exactly three fee sites — a fourth must join the census above', () => {
-    const files = ['connect/checkout.ts', 'appointments/staffBooking.ts', 'connect/payments.ts']
+  it('there are exactly four fee computations — a fifth must join the census above', () => {
+    // feeRateSync.ts brings live subscriptions onto the resolved rate; it passes
+    // the same three arguments, and is counted here so it cannot quietly stop.
+    const files = [
+      'connect/checkout.ts',
+      'appointments/staffBooking.ts',
+      'connect/payments.ts',
+      'connect/feeRateSync.ts',
+    ]
     let found = 0
     const seen: string[] = []
     for (const f of files) {
@@ -110,8 +119,8 @@ describe('THE CENSUS — every site that computes a platform fee', () => {
     }
     assert.equal(
       found,
-      3,
-      `expected 3 fee computations, found ${found} at ${seen.join(', ')}. ` +
+      4,
+      `expected 4 fee computations, found ${found} at ${seen.join(', ')}. ` +
         `A NEW ONE MUST PASS \`waived\` — add it to SITES above rather than deleting this assertion.`
     )
   })
@@ -120,10 +129,11 @@ describe('THE CENSUS — every site that computes a platform fee', () => {
     // If a second resolver appears, the two will disagree — and the one that is
     // wrong will be wrong in the direction of charging a comped customer.
     const access = code(read('connect', 'access.ts'))
-    assert.ok(access.includes('async function resolveFeeWaiver'), 'the resolver moved')
+    assert.ok(access.includes('async function resolvePlatformFee'), 'the resolver moved')
     assert.ok(
-      access.includes('feeWaived: await resolveFeeWaiver(data)'),
-      'loadEnabledTeam no longer resolves the waiver'
+      access.includes('const fee = await resolvePlatformFee(data, plan)') &&
+        access.includes("feeWaived: fee.source === 'comped'"),
+      'loadEnabledTeam no longer resolves the waiver and the rate together'
     )
     assert.ok(
       access.includes("data.org_id as string | undefined"),

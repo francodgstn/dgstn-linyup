@@ -60,7 +60,20 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
   // (it may be inherited from the studio's organisation) rather than being
   // re-derived here, so this surface cannot disagree with what is charged.
   const feeWaived = status?.feeWaived === true
-  const feePct = plan && !feeWaived ? takeRatePercent(plan) : null
+  // The same goes for a NEGOTIATED rate, which the browser cannot derive at all.
+  // Nothing is shown while the status loads, so an agreed rate never flashes the
+  // published one first; the plan is the fallback only once the server has not
+  // answered with a rate (an error, or a functions deploy that predates it).
+  const feePct = feeWaived
+    ? null
+    : (status?.feePercent ?? (isLoading || !plan ? null : takeRatePercent(plan)))
+  const feeAgreed = status?.feeSource === 'team_rate' || status?.feeSource === 'org_rate'
+  // `feeExpiresAtMs` is the first instant the rate no longer applies, so the last
+  // day it DOES apply is the millisecond before.
+  const feeAgreedUntil =
+    feeAgreed && status?.feeExpiresAtMs
+      ? new Date(status.feeExpiresAtMs - 1).toLocaleDateString(locale, { dateStyle: 'medium' })
+      : null
 
   async function beginOnboarding() {
     const res = await start.mutateAsync({ teamId, locale })
@@ -145,7 +158,15 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
           {feeWaived ? (
             <FeeLine>{t('feeNoneNote')}</FeeLine>
           ) : (
-            feePct != null && <FeeLine>{t('feeNote', { pct: feePct })}</FeeLine>
+            feePct != null && (
+              <FeeLine>
+                {feeAgreedUntil
+                  ? t('feeAgreedUntilNote', { pct: feePct, date: feeAgreedUntil })
+                  : feeAgreed
+                    ? t('feeAgreedNote', { pct: feePct })
+                    : t('feeNote', { pct: feePct })}
+              </FeeLine>
+            )
           )}
           <FeeLine>
             {t.rich('feeStripeNote', {

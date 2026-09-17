@@ -4333,7 +4333,9 @@
     "feeStripeNote": "Si applica la commissione di Stripe. Vedi <link>i prezzi di Stripe</link>.",
     "feeRefundNote": "In caso di rimborso, la commissione Stripe è a tuo carico.",
     "feesTitle": "Cosa paghi",
-    "feeNoneNote": "Linyup non applica alcuna commissione sui tuoi pagamenti."
+    "feeNoneNote": "Linyup non applica alcuna commissione sui tuoi pagamenti.",
+    "feeAgreedNote": "La commissione di Linyup è del {pct}% per pagamento, la tariffa concordata con te.",
+    "feeAgreedUntilNote": "La commissione di Linyup è del {pct}% per pagamento, la tariffa concordata con te, fino al {date}."
   },
   "PaymentsDashboard": {
     "title": "Pagamenti",
