@@ -25,6 +25,13 @@ For a person with no plan that includes the class:
 A plan holder books free ("Included"), at a member price (a discount on the
 drop-in — offered only when there is one), or spends a class from a pack.
 
+**Only an "Included" plan decides access.** A plan that merely earns a MEMBER
+PRICE changes what its holders pay and never who may book, so a class with a
+drop-in price and a discounting plan stays open to everyone — and a member price
+has nothing to bite on once the drop-in is off. The two lists are already
+separate in the data (`accessRule.subscriptionTypeIds` vs the benefit's
+`subscriptionTypeIds`); this is the rule that keeps them apart.
+
 - **Trial class for newcomers** is available whenever the class is **not free**
   (it has a drop-in price or a plan includes it) — including a class anyone can
   pay for. That is the "first class free, then pay per class" shape.
@@ -32,6 +39,11 @@ drop-in — offered only when there is one), or spends a class from a pack.
   members wall in front of all of it: visitors cannot book even paying; the trial
   still admits a newcomer once. It is the club case (registered members train,
   the public cannot).
+
+**Screen order** (Franco, 2026-09-17): the summary sentence, then the drop-in
+price, then the plan table, then the trial, then More options. The base price
+comes before what plans change about it — and a member price is greyed out until
+there is a drop-in to reduce, which is a puzzle if the plans come first.
 
 The pricing tab opens on one generated sentence — *"Unlimited monthly books free
 · everyone else pays CHF 25 · newcomers: first class free"* — and the catalogue
@@ -68,18 +80,24 @@ change is a narrowing, not a new engine.
    it starts members-only). Its chip says `Free for anyone`, and the setup
    checklist asks for the usual drop-in price early.
 
+A document written before the drop-in default names no `dropIn.mode` and so
+FOLLOWS the studio (shipped with the default itself, #289). A studio that sets a
+usual price therefore already turned every legacy `members` and `subscription`
+class into a paid door; the backfill writes `mode` explicitly so that is stated
+rather than inherited.
+
 ## Stages
 
 Each stage leaves main green and deployable. Owners in brackets.
 
-1. **Resolver** [shared] — `resolveClassGate` derives `requirePlan`; new
-   `classIsFree(activity, studioDropIn)` and `classTrialAvailable(…)`; one
-   `classAccessSummary(…)` producing the sentence parts and the chip kind, used by
-   the form, the catalogue, the Pricing preview and the public cards. Legacy docs
-   still read through `resolveActivityAccessRule` until stage 5 (the ONE place).
-   Fixtures: the table above, the four behaviour changes, a guest paying the
-   drop-in on a class that lists a plan (identity is only demanded of someone
-   claiming coverage).
+1. **Resolver** [shared] — DONE (`packages/shared/src/utils/classAccess.ts`,
+   fixtures `packages/functions/src/offer/classAccess.test.ts`).
+   `classAccessFacts(activity, studioDropIn)` answers the table in one call
+   (resolved door, included plans, sign-up wall, plan-holders-only, free, trial
+   available); `classAccessChip` names the two-word list chip;
+   `classAccessRuleFor` is what every writer stores, so the derived answer and
+   the stored `requirePlan` / `type` cannot disagree while both exist. Legacy
+   documents still read through `resolveActivityAccessRule` until stage 5.
 2. **Server** [functions] — `bookSession`'s trial door asks `classTrialAvailable`
    instead of `accessRule.type !== 'open'`; the activity and session mirrors stop
    writing `isFreeTrial` and `type` (they carry the summary kind instead); the AI
