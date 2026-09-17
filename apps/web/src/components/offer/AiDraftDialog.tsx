@@ -18,6 +18,13 @@
  * a refund conversation with a member. The model is told to omit prices it is
  * guessing rather than invent them, and where one did come back it is shown as
  * a chip a reader's eye lands on rather than as a settled field.
+ *
+ * MARKDOWN: THE NOTE RENDERS IT, THE DESCRIPTIONS NEVER CARRY IT. The model's
+ * note is display-only, so it goes through `renderChatMarkdown` like an assistant
+ * reply. A description is stored in a plain-text field and shown as plain text on
+ * every public page, so `parseOfferingDraft` strips Markdown from it on the way
+ * in — and what a row shows here is what the record will hold, line breaks
+ * included.
  */
 
 import { useMemo, useState } from 'react'
@@ -38,6 +45,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { functions } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
+import { renderChatMarkdown } from '@/lib/chatMarkdown'
 import { OFFERING_DRAFT_LIMITS, type OfferingDraft } from '@linyup/shared'
 
 type DraftResult = { draft: OfferingDraft; problems: { path: string; code: string }[] }
@@ -84,6 +92,7 @@ export function AiDraftDialog({
   }, [draft, dropped])
 
   const keptCount = (kept?.activities.length ?? 0) + (kept?.plans.length ?? 0)
+  const noteHtml = useMemo(() => renderChatMarkdown(draft?.note), [draft?.note])
 
   function reset() {
     setResult(null)
@@ -194,7 +203,13 @@ export function AiDraftDialog({
                 </Button>
               </div>
 
-              {draft.note && <p className="text-xs text-muted-foreground">{draft.note}</p>}
+              {noteHtml && (
+                <div
+                  className="prose-chat text-xs text-muted-foreground"
+                  // Sanitized with a tag allow-list in renderChatMarkdown.
+                  dangerouslySetInnerHTML={{ __html: noteHtml }}
+                />
+              )}
 
               <p className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-2 text-xs text-amber-700">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -305,7 +320,8 @@ function DraftRow({
       <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
       <span className="min-w-0 flex-1 space-y-1">
         <span className="block text-sm font-medium">{name}</span>
-        {note && <span className="block text-xs text-muted-foreground">{note}</span>}
+        {/* Plain text, line breaks kept — exactly what the record will store. */}
+        {note && <span className="block whitespace-pre-line text-xs text-muted-foreground">{note}</span>}
         {chips.length > 0 && (
           <span className="flex flex-wrap gap-1 pt-0.5">
             {chips.map((c, i) => (
