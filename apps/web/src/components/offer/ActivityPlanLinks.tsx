@@ -998,6 +998,36 @@ export function ActivityPlanLinks({
         }
       />
 
+      {/* UX-109 (interim) — the ONLY explanation of what a column means used to
+          be the `title` on its header cell, which a mouse can find and a touch
+          screen (or a keyboard user tabbing past it) never will. A one-line,
+          always-visible legend says the same four sentences the tooltips
+          already carry — never a second copy of them — and wraps rather than
+          scrolling, so it reads at 375px same as everywhere else on this page.
+          The real fix (a stacked card-per-row layout below `sm`) is a separate,
+          larger pass; this is the shipped-here half. Shown only once there is a
+          table under it, and only on narrow screens: where a pointer can hover
+          the header, four always-on sentences are clutter the tooltips already
+          cover. */}
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground sm:hidden">
+          {(['none', 'included', 'percent_off', 'fixed_price'] as const).map((c) => (
+            <span key={c} className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className={choiceDotClass(true, c === 'none' ? 'none' : c === 'included' ? 'included' : 'reduced')}
+              />
+              <span>
+                <span className="font-medium text-foreground">
+                  {c === 'none' ? t('choiceNone') : tb(`effect_${c}` as const)}
+                </span>{' '}
+                — {c === 'none' ? t('choiceNoneDesc') : tb(`effect_${c}_desc` as const)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* ── A TABLE, BECAUSE IT IS ALWAYS THE SAME QUESTION ────────────────
           Every row asks one question with the same four answers, so the
           answers are named ONCE, at the top, and each row is a line of radio
