@@ -2040,6 +2040,37 @@ export default function BookingForm({
                     // required there.
                     const d = resolveActivityPricingDisplay({ ...a, type: a.activityType }, subLookup)
                     const lines: string[] = []
+                    // A SIGNED-IN MEMBER SEES HER OWN PRICE, not the list (UX-110).
+                    // Asked through the same resolver the who's-booking step uses,
+                    // so the card and the next screen cannot quote two numbers.
+                    // A plan that covers the class replaces every line with one;
+                    // a member rate replaces the drop-in figure. Display only.
+                    let memberDropInAmount: number | null = null
+                    let coveredByPlan = false
+                    if (isAuthenticated && heldPlanIds.length > 0 && a.activityType !== 'appointment') {
+                      const accessRule = resolveActivityAccessRule(a)
+                      const snapshot = clientPaymentSnapshot({
+                        authenticated: true,
+                        heldSubscriptionTypeIds: heldPlanIds,
+                      })
+                      const booking = resolvePaymentOptions(snapshot, { kind: 'class_booking', accessRule })
+                      const first = booking.options[0]
+                      if (
+                        first?.type === 'covered' &&
+                        (first.via.reason === 'subscription' || first.via.reason === 'benefit_included')
+                      ) {
+                        coveredByPlan = true
+                      }
+                      if (d.dropInAmount != null && a.dropIn) {
+                        const quote = resolvePaymentOptions(snapshot, {
+                          kind: 'drop_in',
+                          accessRule,
+                          dropIn: a.dropIn,
+                          benefit: a.memberBenefit,
+                        }).options[0]
+                        if (quote?.type === 'pay' && quote.appliedBenefit) memberDropInAmount = quote.amount
+                      }
+                    }
                     // 'members' tier — the DEFAULT for every new class — used to
                     // render NO access line at all. It gets one now, and it names
                     // the gate that is actually enforced: being signed up with
@@ -2066,7 +2097,11 @@ export default function BookingForm({
                     // above stay: "included with X" states how access works,
                     // it is not a checkout this page can open.
                     if (d.dropInAmount != null && paymentsEnabled)
-                      lines.push(t('badgeDropInPrice', { price: formatCurrency(d.dropInAmount, currency, locale) }))
+                      lines.push(
+                        t('badgeDropInPrice', {
+                          price: formatCurrency(memberDropInAmount ?? d.dropInAmount, currency, locale),
+                        })
+                      )
                     if (d.appointmentPrice && paymentsEnabled)
                       lines.push(
                         d.appointmentPrice.min === d.appointmentPrice.max
@@ -2076,6 +2111,7 @@ export default function BookingForm({
                               max: formatCurrency(d.appointmentPrice.max, currency, locale),
                             })
                       )
+                    if (coveredByPlan) lines.splice(0, lines.length, t('memberCovered'))
                     return (
                       <>
                         <div className="flex items-start gap-1.5 flex-wrap">
