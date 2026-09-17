@@ -12,6 +12,7 @@ import { SpaceMembershipCard } from '../SpaceMembershipCard'
 import SpaceSignInWall from '../SpaceSignInWall'
 import { ConsentHistoryDownload } from './ConsentHistoryDownload'
 import { InsuranceCard } from './InsuranceCard'
+import { WhatsAppReminderCard } from './WhatsAppReminderCard'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceContact } from '../useSpaceContact'
@@ -200,6 +201,10 @@ export default function AccountHome() {
           </dl>
         )}
       </section>
+
+      {/* WhatsApp reminders — shown when the studio offers the channel or the
+          member already answered (so they can opt back out later). */}
+      <WhatsAppReminderCard />
 
       {/* Signed documents — a member's own answer to "what have I agreed to",
           with the version, the date and the current state. It renders as a CARD

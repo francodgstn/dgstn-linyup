@@ -14,8 +14,15 @@ import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { TEAMS_COLLECTION, resolveBookingReminderSteps, type BookingReminderStep } from '@linyup/shared'
+import {
+  TEAMS_COLLECTION,
+  resolveBookingReminderSteps,
+  WHATSAPP_PLUGIN_ID,
+  type BookingReminderStep,
+} from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
+import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
+import { useWhatsAppIntegration } from '@/plugins/whatsapp/hooks'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -59,6 +66,19 @@ interface TeamEmailSettings {
   }
 }
 
+/** Whether the WhatsApp option should be OFFERED in the channel picker. Gated
+ *  on install only (not on "connected" — a studio setting up a schedule before
+ *  finishing Embedded Signup should not be blocked); the "will be skipped"
+ *  hint below handles the not-yet-usable case regardless of why. */
+function useWhatsAppChannelUsable(): { installed: boolean; usable: boolean } {
+  const { currentTeamId, teamRole } = useAuth()
+  const canEdit = teamRole === 'owner'
+  const { isInstalled } = useInstalledPlugins()
+  const installed = isInstalled(WHATSAPP_PLUGIN_ID)
+  const { data: integration } = useWhatsAppIntegration(currentTeamId, canEdit && installed)
+  return { installed, usable: installed && integration?.status === 'connected' }
+}
+
 // ─── reminder schedule editor ─────────────────────────────────────────────────
 // The offsets a studio can pick per step. Custom values can come later; these
 // presets cover the common flows (incl. SWIMLI's 1 week / 2 days / day before).
@@ -68,13 +88,26 @@ function stepId(channel: string, offsetHours: number): string {
   return `step-${channel}-${offsetHours}h`
 }
 
+function channelLabel(t: ReturnType<typeof useTranslations>, channel: BookingReminderStep['channel']): string {
+  if (channel === 'sms') return t('reminderChannelSms')
+  if (channel === 'whatsapp') return t('reminderChannelWhatsApp')
+  return t('reminderChannelEmail')
+}
+
 function ReminderStepsEditor({
   steps,
   disabled,
+  whatsappInstalled,
+  whatsappUsable,
   onChange,
 }: {
   steps: BookingReminderStep[]
   disabled: boolean
+  /** Offer WhatsApp as a channel choice at all. */
+  whatsappInstalled: boolean
+  /** Installed AND connected — governs the "will be skipped" hint on an
+   *  existing WhatsApp step, regardless of why it isn't usable yet. */
+  whatsappUsable: boolean
   onChange: (next: BookingReminderStep[]) => void
 }) {
   const t = useTranslations('SettingsEmails')
@@ -94,47 +127,61 @@ function ReminderStepsEditor({
   return (
     <div className="ml-0 sm:ml-6 mt-2 space-y-2">
       {steps.map((s, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <Select
-            value={s.channel}
-            onValueChange={(v) => update(i, { channel: v as BookingReminderStep['channel'] })}
-          >
-            <SelectTrigger className="w-28 h-8 text-xs" disabled={disabled}>
-              <span>{s.channel === 'sms' ? t('reminderChannelSms') : t('reminderChannelEmail')}</span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="email">{t('reminderChannelEmail')}</SelectItem>
-              <SelectItem value="sms">{t('reminderChannelSms')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={String(s.offsetHours)}
-            onValueChange={(v) => update(i, { offsetHours: Number(v) })}
-          >
-            <SelectTrigger className="w-44 h-8 text-xs" disabled={disabled}>
-              <span>{offsetLabel(s.offsetHours)}</span>
-            </SelectTrigger>
-            <SelectContent>
-              {[...new Set([...OFFSET_PRESETS, s.offsetHours])]
-                .sort((a, b) => b - a)
-                .map((h) => (
-                  <SelectItem key={h} value={String(h)}>
-                    {offsetLabel(h)}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          <Tip label={t('reminderRemoveStep')}>
-            <button
-              type="button"
-              disabled={disabled || steps.length <= 1}
-              onClick={() => onChange(steps.filter((_, idx) => idx !== i))}
-              className="p-1 text-muted-foreground hover:text-destructive rounded transition-colors disabled:opacity-30"
-              aria-label={t('reminderRemoveStep')}
+        <div key={i} className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Select
+              value={s.channel}
+              onValueChange={(v) => update(i, { channel: v as BookingReminderStep['channel'] })}
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </Tip>
+              <SelectTrigger className="w-32 h-8 text-xs" disabled={disabled}>
+                <span>{channelLabel(t, s.channel)}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">{t('reminderChannelEmail')}</SelectItem>
+                <SelectItem value="sms">{t('reminderChannelSms')}</SelectItem>
+                {/* Offered only once the plugin is installed — an existing step
+                    already set to 'whatsapp' before install/uninstall still
+                    renders below via channelLabel, it simply isn't a pickable
+                    option here. */}
+                {whatsappInstalled && (
+                  <SelectItem value="whatsapp">{t('reminderChannelWhatsApp')}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(s.offsetHours)}
+              onValueChange={(v) => update(i, { offsetHours: Number(v) })}
+            >
+              <SelectTrigger className="w-44 h-8 text-xs" disabled={disabled}>
+                <span>{offsetLabel(s.offsetHours)}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {[...new Set([...OFFSET_PRESETS, s.offsetHours])]
+                  .sort((a, b) => b - a)
+                  .map((h) => (
+                    <SelectItem key={h} value={String(h)}>
+                      {offsetLabel(h)}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Tip label={t('reminderRemoveStep')}>
+              <button
+                type="button"
+                disabled={disabled || steps.length <= 1}
+                onClick={() => onChange(steps.filter((_, idx) => idx !== i))}
+                className="p-1 text-muted-foreground hover:text-destructive rounded transition-colors disabled:opacity-30"
+                aria-label={t('reminderRemoveStep')}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </Tip>
+          </div>
+          {s.channel === 'whatsapp' && (
+            <p className="text-xs text-muted-foreground">
+              {whatsappUsable ? t('reminderWhatsAppNote') : t('reminderWhatsAppSkippedHint')}
+            </p>
+          )}
         </div>
       ))}
       <div className="flex items-center justify-between gap-2">
@@ -169,6 +216,7 @@ export function SystemEmailsCard() {
   const t = useTranslations('Automations')
   const { currentTeamId, team, teamRole } = useAuth()
   const canEdit = teamRole === 'owner'
+  const { installed: whatsappInstalled, usable: whatsappUsable } = useWhatsAppChannelUsable()
 
   const [state, setState] = useState<Record<ToggleKey, boolean>>(() =>
     readState(team as TeamEmailSettings | null)
@@ -256,6 +304,8 @@ export function SystemEmailsCard() {
               <ReminderStepsEditor
                 steps={steps}
                 disabled={!canEdit || stepsSaving}
+                whatsappInstalled={whatsappInstalled}
+                whatsappUsable={whatsappUsable}
                 onChange={saveSteps}
               />
             )}

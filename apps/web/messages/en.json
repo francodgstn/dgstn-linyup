@@ -1133,7 +1133,22 @@
     "recapSending": "Sending…",
     "recapSent": "Recap sent to {name}.",
     "recapNotDelivered": "The email was not sent. The address may be blocked, or this recap was already sent.",
-    "recapFailed": "The recap could not be sent. Try again in a moment."
+    "recapFailed": "The recap could not be sent. Try again in a moment.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappOptedIn": "Opted in",
+    "whatsappOptedOut": "Opted out",
+    "whatsappNotAsked": "Not asked",
+    "whatsappMarkOptedIn": "Mark opted in",
+    "whatsappMarkOptedOut": "Mark opted out",
+    "whatsappConfirmOptInTitle": "Record WhatsApp opt-in",
+    "whatsappConfirmOptInDesc": "Confirm the member agreed to receive WhatsApp messages from the studio.",
+    "whatsappConfirmOptInAction": "Confirm opt-in",
+    "whatsappSource_booking_form": "booking form",
+    "whatsappSource_signup_form": "signup form",
+    "whatsappSource_space": "Space",
+    "whatsappSource_member_app": "member app",
+    "whatsappSource_staff": "staff",
+    "whatsappSource_reply_stop": "replied STOP"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -2867,7 +2882,7 @@
     "errorRemove": "Could not remove plugin. Please try again.",
     "errorSaveConfig": "Could not save configuration. Please try again.",
     "whatsappName": "WhatsApp",
-    "whatsappDescription": "Send WhatsApp messages to members as automation actions and trigger rules on incoming messages.",
+    "whatsappDescription": "Send booking reminders and messages to members over WhatsApp, using your studio's own number.",
     "whatsappActionSendMessage": "Send WhatsApp message",
     "whatsappTriggerMessageReceived": "WhatsApp message received",
     "whatsappConfigTokenLabel": "Meta API access token",
@@ -3001,7 +3016,33 @@
     "aiTeamSentimentName": "Team sentiment",
     "aiTeamSentimentDescription": "A reading of the whole team on the dashboard, made from your contact briefings: the mood, what is working, what to watch. Up to 5 a day, for owners and managers.",
     "aiOfferDraftingName": "Draft your offer",
-    "aiOfferDraftingDescription": "Describe your studio and get a first set of activities and plans to review, from Offerings → Create → Draft with AI. Nothing is created until you confirm. Owners only."
+    "aiOfferDraftingDescription": "Describe your studio and get a first set of activities and plans to review, from Offerings → Create → Draft with AI. Nothing is created until you confirm. Owners only.",
+    "loading": "Loading…",
+    "whatsappNotAvailable": "WhatsApp isn't available yet on this deployment.",
+    "whatsappConnectAction": "Connect WhatsApp",
+    "whatsappExplainOwnNumber": "Connect your studio's own WhatsApp Business number — Linyup never sends from a shared number.",
+    "whatsappExplainBilling": "Meta bills your studio directly for messages sent — Linyup adds no charge of its own.",
+    "whatsappExplainOptIn": "Members only receive messages once they've opted in — on the booking form, in their Space, or in person with staff.",
+    "whatsappExplainReplies": "Replies keep arriving in your own WhatsApp Business app, exactly as before.",
+    "whatsappConnected": "Connected",
+    "whatsappQualityRating": "Quality rating: {rating}",
+    "whatsappTemplateStatusTitle": "Reminder template",
+    "whatsappTemplateApproved": "Approved",
+    "whatsappTemplatePending": "Pending review",
+    "whatsappTemplateRejected": "Rejected",
+    "whatsappTemplatePaused": "Paused",
+    "whatsappTemplateMissing": "Not yet created",
+    "whatsappRefresh": "Refresh",
+    "whatsappDisconnectAction": "Disconnect",
+    "whatsappDisconnectTitle": "Disconnect WhatsApp?",
+    "whatsappDisconnectDesc": "Booking reminders over WhatsApp will stop. Your WhatsApp Business account and app are not affected — you can reconnect any time.",
+    "whatsappReconnect": "Reconnect",
+    "whatsappErrorGeneric": "Something went wrong connecting WhatsApp. Please try again.",
+    "whatsappErrorNotBusinessApp": "Connect a number you use in the WhatsApp Business app, so replies reach you.",
+    "whatsappErrorNumberTaken": "This number is already connected to another studio.",
+    "whatsappErrorNumberAmbiguous": "Couldn't determine which number to connect. Please try again.",
+    "whatsappConnectCancelled": "Connection cancelled.",
+    "whatsappConnectIncomplete": "The connection wasn't completed. Please try again."
   },
   "AiAssistant": {
     "launcherLabel": "AI assistant",
@@ -4243,7 +4284,14 @@
     "insuranceSave": "Save",
     "insuranceSaved": "Saved.",
     "insuranceSaveFailed": "Couldn't save. Please try again.",
-    "insuranceLoadFailed": "Your insurance details couldn't be loaded."
+    "insuranceLoadFailed": "Your insurance details couldn't be loaded.",
+    "whatsappRemindersTitle": "WhatsApp reminders",
+    "whatsappRemindersIntro": "Get your booking reminders on WhatsApp instead of just email.",
+    "whatsappRemindersUnavailable": "This studio doesn't offer WhatsApp reminders right now.",
+    "whatsappRemindersOn": "WhatsApp reminders are on",
+    "whatsappRemindersOff": "WhatsApp reminders are off",
+    "whatsappRemindersSaved": "Saved",
+    "whatsappRemindersError": "Couldn't save your preference. Please try again."
   },
   "FreePlan": {
     "downgradeBannerTitle": "Your trial has ended — you're now on the Free plan",
@@ -5369,7 +5417,8 @@
     "memberContinueToPayment": "Continue to payment",
     "memberSomeoneElseTitle": "Booking for someone else",
     "memberSomeoneElseSubtitle": "Book this class for another person instead",
-    "pricingDetailsTrigger": "Prices & access"
+    "pricingDetailsTrigger": "Prices & access",
+    "whatsappOptInLabel": "Send me reminders from {studioName} on WhatsApp"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",
@@ -5452,7 +5501,8 @@
     "registeredTitle": "You're registered!",
     "successBody": "Welcome to <strong>{teamName}</strong>. Your details have been saved. The team will be in touch soon.",
     "openSpace": "Open your Space",
-    "toSurface": "To {name}"
+    "toSurface": "To {name}",
+    "whatsappOptInLabel": "Send me reminders from {teamName} on WhatsApp"
   },
   "PublicContactUpdate": {
     "teamNotFoundTitle": "Team not found",
@@ -6573,7 +6623,10 @@
     "deactivateAction": "Deactivate",
     "emailsSubtitle": "Manage your sender identity, automatic system emails, booking confirmation note and SMS sender.",
     "templatesSubtitle": "Predefined and custom templates your automations and campaigns send, plus reusable placeholders you can drop into any of them.",
-    "templatesLinkNote": "Predefined and custom outreach templates, plus the placeholder reference, now live on the <link>Email templates</link> page."
+    "templatesLinkNote": "Predefined and custom outreach templates, plus the placeholder reference, now live on the <link>Email templates</link> page.",
+    "reminderChannelWhatsApp": "WhatsApp",
+    "reminderWhatsAppNote": "Sent only to members who opted in to WhatsApp; others receive nothing for this step.",
+    "reminderWhatsAppSkippedHint": "WhatsApp isn't connected right now, so this reminder is skipped until it is."
   },
   "Finance": {
     "exportCsv": "Export CSV",
