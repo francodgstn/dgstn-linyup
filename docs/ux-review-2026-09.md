@@ -52,6 +52,8 @@ being filed, not taken from the agents' word.
 | 113 | confuses | A hint still names "Any member" / "Specific subscriptions", options the form removed | M5 | web | ✅ Fixed (b3b27d7b) |
 | 114 | slows | Every new class starts uncovered by every membership until someone ticks it | M5 (model) | shared + functions + web | ▶ Parked — decision 30 |
 | 115 | costs-money | "First class free, then drop-in for anyone" cannot be set up | M5 (model) | functions + web | ▶ Parked — decision 31 |
+| 116 | slows | Creating a class meets nine optional fields (meeting point, booking questions, prose) before Save | M5 | web | ✅ Fixed (0935311f) |
+| 117 | slows | Pricing's "What you sell" repeats the plan facts the Offerings plan pane already shows | M5 | web | ▶ Parked — decision 34 |
 
 ---
 
@@ -221,6 +223,27 @@ The trial door opens only on members-only classes (`bookSession` branches on
 `accessRule.type !== 'open'`); a class open to anyone that sells a drop-in projects
 to `open`, so the form hides the trial there. Needs a product call on what
 "newcomer" means across trial and promo codes.
+
+### UX-116 — Creating a class meets nine optional fields before Save
+M5 · manager · slows · at-setup · counted · new (declutter audit)
+
+**Now:** the create/duplicate dialog rendered the meeting point, booking
+questions, contact fields, prerequisites, confirmation instructions, what's
+included / not included, FAQ and cancellation policy unconditionally after the
+five fields a class needs (`ActivityDialog.tsx`).
+**Fix (shipped):** in the dialog they fold under one `MoreOptions`, open by itself
+when the copied class already carries any of them. Auto-confirm and the waitlist
+stay visible — hiding either fails silently (unconfirmed bookings; a full class
+with no queue). The pane's Booking tab is unchanged.
+**Build:** S · **Owner:** web-agent
+
+### UX-117 — Pricing's "What you sell" repeats the plan pane
+M5 · manager · slows · weekly · traced · new — **parked, decision 34**
+
+The section lists each plan's prices, class limit and what it covers — the same
+facts the Offerings plan pane shows and edits one click away. The declutter audit
+proposes replacing it with one link. Not done: it is a whole section of a page
+Franco shaped recently, and the all-plans-at-a-glance view may be the point.
 
 ## What's good
 

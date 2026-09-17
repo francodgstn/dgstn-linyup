@@ -503,3 +503,9 @@ stored data, `isFreeTrial`, the legacy coverage engine and `dropIn` without
 Pre-launch, so acceptable; but it touches every environment's data and the mobile
 app's readers were not reviewed. Decide when, and whether mobile needs a release
 first.
+
+## 34. Remove "What you sell" from Pricing (UX-117)
+**PARKED.** The declutter audit found the section repeats each plan's prices,
+limit and coverage that the Offerings plan pane already shows, and proposes one
+link instead. Kept because it is the only all-plans-at-a-glance view and the page
+was reshaped recently on purpose. Decide: remove, or keep as the overview.
