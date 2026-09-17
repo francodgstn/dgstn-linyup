@@ -1795,7 +1795,7 @@
     "access_open": "Für alle offen",
     "access_open_desc": "Jeder kann buchen, keine Anmeldung nötig.",
     "access_members": "Nur für Mitglieder",
-    "access_members_desc": "Nur Personen, die bereits Mitglied sind.",
+    "access_members_desc": "Nur Personen, die bereits Mitglied sind. Neue können trotzdem eine Probestunde buchen, wenn du sie unten einschaltest.",
     "access_subscription": "Abo erforderlich",
     "accessBadgeSubscription": "Abonnement",
     "dropInLabel": "Drop-in anbieten (pro Kurs zahlen)",

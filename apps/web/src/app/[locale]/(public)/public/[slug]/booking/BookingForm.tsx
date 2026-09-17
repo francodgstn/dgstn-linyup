@@ -2055,10 +2055,9 @@ export default function BookingForm({
                       })
                       const booking = resolvePaymentOptions(snapshot, { kind: 'class_booking', accessRule })
                       const first = booking.options[0]
-                      if (
-                        first?.type === 'covered' &&
-                        (first.via.reason === 'subscription' || first.via.reason === 'benefit_included')
-                      ) {
+                      // 'subscription' only: 'open' / 'members' coverage is not a
+                      // plan paying for it, and the lines above already say so.
+                      if (first?.type === 'covered' && first.via.reason === 'subscription') {
                         coveredByPlan = true
                       }
                       if (d.dropInAmount != null && a.dropIn) {

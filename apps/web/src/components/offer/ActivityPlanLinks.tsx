@@ -302,8 +302,8 @@ export function ActivityPlanLinks({
   // A class following the studio's default drop-in stores no price, so both
   // "is there a price for a member rate to reduce?" and the edge writer's
   // "does this class sell at the door?" are asked with the default in hand.
-  const { data: bookingSettings } = useBookingSettings()
-  const studioDropIn = studioDropInOf(bookingSettings)
+  const bookingSettingsQuery = useBookingSettings()
+  const studioDropIn = studioDropInOf(bookingSettingsQuery.data)
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({})
   const [saving, setSaving] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
@@ -428,6 +428,15 @@ export function ActivityPlanLinks({
     }
     setSaving(true)
     try {
+      // THE DEFAULT MUST BE KNOWN, not assumed absent. Still loading (or failed)
+      // reads as "no studio default", and on a legacy class that sells at the
+      // default door the edge writer would then store "plan required" — the
+      // very write UX-103 removed. So a save waits for the settings, and a
+      // failed read fails the save rather than guessing.
+      const studioDropInAtSave =
+        bookingSettingsQuery.data === undefined
+          ? studioDropInOf((await bookingSettingsQuery.refetch({ throwOnError: true })).data)
+          : studioDropIn
       // BEFORE the transaction, never inside it: this writes the host's own
       // document, and a write from within would be read back by the same
       // transaction as a conflict.
@@ -472,7 +481,7 @@ export function ActivityPlanLinks({
           if (!snap.exists()) return
           const g = groups[i]
           const update = foldOfferingPlanEdgeUpdates(
-            { kind: g.off.target.kind, doc: snap.data(), studioDropIn } as PlanLinkTarget,
+            { kind: g.off.target.kind, doc: snap.data(), studioDropIn: studioDropInAtSave } as PlanLinkTarget,
             g.edits
           )
           if (update) tx.update(snap.ref, update)

@@ -1795,7 +1795,7 @@
     "access_open": "Open to anyone",
     "access_open_desc": "Anyone can book, no sign-up needed.",
     "access_members": "Members only",
-    "access_members_desc": "Only people who have joined as members.",
+    "access_members_desc": "Only people who have joined as members. Newcomers can still take a trial class if you switch it on below.",
     "access_subscription": "Plan required",
     "accessBadgeSubscription": "Subscription",
     "dropInLabel": "Offer drop-in (pay per class)",

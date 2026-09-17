@@ -1795,7 +1795,7 @@
     "access_open": "Aperto a tutti",
     "access_open_desc": "Chiunque può prenotare, senza bisogno di registrarsi.",
     "access_members": "Solo membri",
-    "access_members_desc": "Solo le persone già iscritte come membri.",
+    "access_members_desc": "Solo le persone già iscritte come membri. I nuovi arrivati possono comunque fare una lezione di prova, se la attivi qui sotto.",
     "access_subscription": "Piano richiesto",
     "accessBadgeSubscription": "Abbonamento",
     "dropInLabel": "Offri drop-in (paga a lezione)",

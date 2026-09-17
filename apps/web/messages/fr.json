@@ -1795,7 +1795,7 @@
     "access_open": "Ouvert à tous",
     "access_open_desc": "Tout le monde peut réserver, sans inscription.",
     "access_members": "Membres uniquement",
-    "access_members_desc": "Seules les personnes déjà membres.",
+    "access_members_desc": "Seules les personnes déjà membres. Les nouveaux venus peuvent tout de même prendre un cours d'essai si vous l'activez ci-dessous.",
     "access_subscription": "Plan requis",
     "accessBadgeSubscription": "Abonnement",
     "dropInLabel": "Proposer le drop-in (paiement à la séance)",
