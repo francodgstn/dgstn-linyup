@@ -47,6 +47,15 @@ const eslintConfig = [
       'no-restricted-syntax': ['error', noFirestorePathLiterals, noBareLocaleFormatting],
     },
   },
+  {
+    // Playwright test files, not React — `react-hooks/rules-of-hooks` false-
+    // positives on Playwright's fixture callback, which is conventionally
+    // named `use` (colliding with the unrelated React 19 `use()` hook name).
+    files: ['e2e/**/*.ts'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+    },
+  },
 ]
 
 export default eslintConfig

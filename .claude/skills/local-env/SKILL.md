@@ -270,3 +270,7 @@ provisions from the console. Everything else: `docs/test-accounts.md`.
   skill assumes a developed machine with several worktrees on it.
 - **`persona-ux-test`** and **`ux-review`** assume the stack is already up; bring
   it up here first, and do **not** reseed for them.
+- **`apps/web/e2e`** (Playwright, real browser — not the Browser pane) is the
+  same story: it drives an already-up slot rather than starting its own, and
+  needs `PLAYWRIGHT_BASE_URL` pointed at your slot if it isn't slot 0. See
+  `apps/web/e2e/README.md`.
