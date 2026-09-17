@@ -451,3 +451,61 @@ its remainder stated:
 - **UX-7** — the trial is now stated. **Remainder:** the T-7 / T-1 reminders.
 
 Everything else in this file is a decision or a follow-up, not a defect.
+
+---
+
+# Offerings review — 2026-09-17 (`docs/ux-review-2026-09.md`)
+
+Parked during the autonomous run on the activities/plans review. Numbering
+continues from the 2026-08 run.
+
+## 29. Where the studio default drop-in is edited (UX-112)
+**PARKED.** Two places edit `BookingSettings.dropIn`: Pricing → Drop-in (set, change,
+turn off) and a class's pricing tab (set or change, never off). The reviewer
+proposes Pricing becomes display-only and the class tab gains "turn off"; the
+alternative is the reverse (Pricing owns it, the class tab only links). Either
+satisfies "one place". *Meanwhile:* both stay, unchanged.
+
+## 30. A plan that covers "all classes" by default (UX-114)
+**PARKED — the highest-value model change in the review.** Today a plan stores no
+scope; each class lists the plans that include it, so an unlimited membership
+covers no class added after it was set up. Proposal (model review S2): a plan-side
+scope, `all classes` (default for new memberships and passes) or `selected`, unioned
+into the class's allowed plans by the snapshot loader so `resolvePaymentOptions`
+is untouched. Questions for Franco: default `all` for new plans only, or also
+migrate existing ones? Do workshops/events need an "excluded from all-classes"
+flag on the class? *Meanwhile:* nothing built.
+
+## 31. Trial on classes open to anyone, and one meaning of "newcomer" (UX-115)
+**PARKED.** "First class free (or CHF 15), then CHF 25 drop-in for anyone" cannot
+be expressed: the trial door opens only on members-only classes. Also three
+definitions of "new": trial (`trial_used_at`), promo `new_contacts` (`!joined`),
+purchase caps. Questions: should a class open to anyone with a paid drop-in offer a
+trial? Should a contact who used a trial still count as "new" for a promo code?
+Should the trial get a studio-wide default like the drop-in? *Meanwhile:* nothing
+built.
+
+## 32. Stored `per_class` plan prices (UX-104)
+**ASSUMED.** `per_class` sells unlimited, never-ending access on linked classes.
+Shipped: removed from the picker for new prices and from the AI drafter.
+**Not done:** refusing checkout on an already-stored `per_class` price, or
+converting them. The emulator and staging seeds ship a "10-Class Pack" priced
+`per_class` (converting it to one-time + 10 credits changes which seeded contacts
+are covered, since credits need grants); HMD migration
+(`scripts/migration/transforms/subscriptions.ts`) can emit it, and some may be
+tracking-only plans nobody buys online. Decide: refuse at checkout, convert
+(seeds + a backfill), or leave.
+
+## 33. The legacy class-gate backfill (model review S1)
+**PARKED — needs a deploy window, not a design call.** Retires `accessRule.type` as
+stored data, `isFreeTrial`, the legacy coverage engine and `dropIn` without
+`mode`, by backfilling every class to `audience`/`requirePlan`/`dropIn.mode`.
+Pre-launch, so acceptable; but it touches every environment's data and the mobile
+app's readers were not reviewed. Decide when, and whether mobile needs a release
+first.
+
+## 34. Remove "What you sell" from Pricing (UX-117)
+**PARKED.** The declutter audit found the section repeats each plan's prices,
+limit and coverage that the Offerings plan pane already shows, and proposes one
+link instead. Kept because it is the only all-plans-at-a-glance view and the page
+was reshaped recently on purpose. Decide: remove, or keep as the overview.

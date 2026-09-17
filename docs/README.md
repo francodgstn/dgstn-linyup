@@ -80,8 +80,10 @@ you may act on it:
 
 - [**HMD SaaS Strategy — Product & Pricing Blueprint**](./product-strategy.md) — how it works now
 - [**In-app feedback system**](./in-app-feedback.md) — how it works now
+- [**Offerings model review — activities, plans, and who books what at what price**](./offerings-model-review-2026-09.md) — work to do
 - [**Open decisions — parked for Franco**](./ux-review-open-decisions.md) — how it works now
 - [**Open defects**](./open-defects.md) — how it works now
+- [**UX review — 2026-09 · Offerings (activities & plans)**](./ux-review-2026-09.md) — how it works now
 
 ## Closed and point-in-time
 
@@ -90,6 +92,7 @@ is often the only place a decision's reasoning survives. **Verify against the co
 before acting on anything here.** Listed wherever they physically live — closure is
 carried by `status:`, not by which folder a file sits in.
 
+- [**Offerings copy pass — 2026-09 (working notes for UX-105/106/107/113)**](./ux-review-2026-09-copy.md) — true as of a date
 - [**Seed truth — the 2026-08 coverage audit**](./seed-truth-2026-08.md) — true as of a date
 - [**Security audit — Linyup — 2026-07**](./security-audit-2026-07.md) — true as of a date
 - [**Scalability — September 2026**](./scalability-2026-09.md) — true as of a date

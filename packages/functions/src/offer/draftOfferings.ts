@@ -90,7 +90,8 @@ Shape:
   "note": "one line on anything you assumed, optional"
 }
 
-recurrence is one of: per_class, one_time, weekly, biweekly, monthly, quarterly, annual.
+recurrence is one of: one_time, weekly, biweekly, monthly, quarterly, annual.
+A class pack is one_time with credits (the number of classes).
 limit.per is one of: day, week, month.
 
 Rules:
@@ -175,7 +176,6 @@ const RESPONSE_SCHEMA = {
                 recurrence: {
                   type: Type.STRING,
                   enum: [
-                    'per_class',
                     'one_time',
                     'weekly',
                     'biweekly',

@@ -242,6 +242,43 @@ describe('the activity ↔ plan edge', () => {
       requirePlan: false,
     }
 
+    it('a LEGACY subscription class that sells at the studio default door keeps its door', () => {
+      // A legacy `subscription` tier with a paid door means "anyone books, a
+      // non-holder pays" (`resolveClassGate`). bookSession resolves the drop-in,
+      // so this class sold at the door; the edge writer read the raw fields, saw
+      // no door, and wrote `requirePlan: true` the first time a plan was ticked.
+      const fresh = cls({ accessRule: { type: 'subscription' }, dropIn: { mode: 'studio', enabled: false } })
+      const update = activityPlanEdgeUpdate(
+        fresh,
+        'premium',
+        { access: true, rate: false },
+        undefined,
+        undefined,
+        { enabled: true, priceAmount: 25 }
+      )
+      assert.deepEqual(update, {
+        accessRule: { type: 'open', audience: 'anyone', requirePlan: false, subscriptionTypeIds: ['premium'] },
+        isFreeTrial: true,
+      })
+      // Without a studio default there is no door, and the legacy tier means "plan required".
+      const noDefault = activityPlanEdgeUpdate(fresh, 'premium', { access: true, rate: false })
+      assert.deepEqual((noDefault as { accessRule: unknown }).accessRule, {
+        type: 'subscription',
+        audience: 'members',
+        requirePlan: true,
+        subscriptionTypeIds: ['premium'],
+      })
+    })
+
+    it('the fold carries the studio default to the writer', () => {
+      const fresh = cls({ accessRule: { type: 'subscription' }, dropIn: { mode: 'studio', enabled: false } })
+      const update = foldOfferingPlanEdgeUpdates(
+        { kind: 'activity', doc: fresh, studioDropIn: { enabled: true, priceAmount: 25 } },
+        [{ subTypeId: 'premium', next: { access: true, rate: false } }]
+      )
+      assert.equal((update as { accessRule: { requirePlan: boolean } }).accessRule.requirePlan, false)
+    })
+
     it('keeps who may book when a plan is ticked included', () => {
       const fresh = cls({
         accessRule: membersNoPlan,
@@ -745,23 +782,51 @@ describe('rateHasAPriceToApplyTo', () => {
   const activity = (doc: Record<string, unknown>) =>
     ({ kind: 'activity' as const, doc: doc as never })
 
+  // A GATED class: on the legacy open tier everyone is covered before any price
+  // is looked at, so there is no door for a rate to reduce (`resolveActivityDropIn`).
+  const members = { type: 'class', accessRule: { type: 'members' } }
+
   it('a class needs an ENABLED drop-in carrying a real price', () => {
-    assert.equal(rateHasAPriceToApplyTo(activity({ type: 'class' })), false)
+    assert.equal(rateHasAPriceToApplyTo(activity(members)), false)
     assert.equal(
-      rateHasAPriceToApplyTo(activity({ type: 'class', dropIn: { enabled: false, priceAmount: 25 } })),
+      rateHasAPriceToApplyTo(activity({ ...members, dropIn: { mode: 'off', enabled: false, priceAmount: 25 } })),
       false
     )
     assert.equal(
-      rateHasAPriceToApplyTo(activity({ type: 'class', dropIn: { enabled: true } })),
+      rateHasAPriceToApplyTo(activity({ ...members, dropIn: { enabled: true } })),
       false
     )
     assert.equal(
-      rateHasAPriceToApplyTo(activity({ type: 'class', dropIn: { enabled: true, priceAmount: 0 } })),
+      rateHasAPriceToApplyTo(activity({ ...members, dropIn: { enabled: true, priceAmount: 0 } })),
       false
     )
     assert.equal(
-      rateHasAPriceToApplyTo(activity({ type: 'class', dropIn: { enabled: true, priceAmount: 25 } })),
+      rateHasAPriceToApplyTo(activity({ ...members, dropIn: { enabled: true, priceAmount: 25 } })),
       true
+    )
+  })
+
+  it('a class following the STUDIO default has the studio price to reduce', () => {
+    // The state every new class starts in: no price of its own. Reading the raw
+    // fields dimmed every member-rate column on it from a plan's page.
+    const following = { ...members, dropIn: { mode: 'studio', enabled: false } }
+    assert.equal(
+      rateHasAPriceToApplyTo({
+        kind: 'activity',
+        doc: following as never,
+        studioDropIn: { enabled: true, priceAmount: 25 },
+      }),
+      true
+    )
+    assert.equal(rateHasAPriceToApplyTo({ kind: 'activity', doc: following as never, studioDropIn: null }), false)
+    // …and 'off' stays off under a default.
+    assert.equal(
+      rateHasAPriceToApplyTo({
+        kind: 'activity',
+        doc: { ...members, dropIn: { mode: 'off', enabled: false } } as never,
+        studioDropIn: { enabled: true, priceAmount: 25 },
+      }),
+      false
     )
   })
 

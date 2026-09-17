@@ -72,6 +72,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { FormSection } from '@/components/ui/form-section'
+import { MoreOptions } from '@/components/forms/MoreOptions'
 import {
   Select,
   SelectContent,
@@ -578,7 +579,15 @@ export function PlanPricingForm({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {RECURRENCES.map((r) => (
+                          {/* NO NEW "PER CLASS" PRICE (UX-104). It is charged once
+                              and never ends, and a held non-credit price covers
+                              every linked class — so "10-class card, per class"
+                              sold unlimited access for life. A pack is one-time
+                              plus a number of classes. A price already stored
+                              with it keeps its label so the form can show it. */}
+                          {RECURRENCES.filter(
+                            (r) => r !== 'per_class' || watch(`prices.${i}.recurrence`) === 'per_class'
+                          ).map((r) => (
                             <SelectItem key={r} value={r}>
                               {tc(`recurrence_${r}`)}
                             </SelectItem>
@@ -605,7 +614,7 @@ export function PlanPricingForm({
                       )}
                     </div>
                     {watch(`prices.${i}.recurrence`) === 'one_time' && (
-                      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+                      <div className="space-y-2">
                         <div className="space-y-1">
                           <SuffixInput
                             suffix={t('subTypeCreditsSuffix')}
@@ -618,25 +627,33 @@ export function PlanPricingForm({
                           />
                           <p className="text-xs text-muted-foreground">{t('subTypeCreditsHelp')}</p>
                         </div>
-                        {/* How many times ONE person may buy this — the "our
-                            2-month intro is once per customer" rule. Blank =
-                            unlimited, which is why it is a plain optional
-                            field and not a switch with a number behind it. */}
-                        <div className="space-y-1">
-                          <SuffixInput
-                            suffix={t('subTypeMaxPurchasesSuffix')}
-                            type="number"
-                            step="1"
-                            min="1"
-                            className="w-[170px] h-8 text-sm"
-                            placeholder={t('subTypeMaxPurchasesUnlimited')}
-                            aria-label={t('subTypeMaxPurchases')}
-                            {...register(`prices.${i}.maxPurchasesPerContact`)}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {t('subTypeMaxPurchasesHelp')}
-                          </p>
-                        </div>
+                        {/* UX-108: how many times ONE person may buy this — the
+                            "our 2-month intro is once per customer" rule — is the
+                            rare path (most prices sell unlimited). Collapsed by
+                            default; opens itself when this row ALREADY has a cap,
+                            read once from the row's own draft at mount so a
+                            studio's existing setting is never hidden from it. */}
+                        <MoreOptions
+                          label={t('subTypePriceMoreOptionsLabel')}
+                          hint={t('subTypePriceMoreOptionsHint')}
+                          defaultOpen={!!watch(`prices.${i}.maxPurchasesPerContact`)}
+                        >
+                          <div className="space-y-1">
+                            <SuffixInput
+                              suffix={t('subTypeMaxPurchasesSuffix')}
+                              type="number"
+                              step="1"
+                              min="1"
+                              className="w-[170px] h-8 text-sm"
+                              placeholder={t('subTypeMaxPurchasesUnlimited')}
+                              aria-label={t('subTypeMaxPurchases')}
+                              {...register(`prices.${i}.maxPurchasesPerContact`)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {t('subTypeMaxPurchasesHelp')}
+                            </p>
+                          </div>
+                        </MoreOptions>
                       </div>
                     )}
                     {/* This price's own intro offer. It sits INSIDE the row

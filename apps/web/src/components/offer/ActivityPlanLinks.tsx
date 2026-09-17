@@ -51,6 +51,7 @@ import {
   offeringRateEffects,
   offeringRateLengths,
   rateHasAPriceToApplyTo,
+  studioDropInOf,
   resolveUsageLimit,
   isAppointmentActivity,
   type OfferingFacets,
@@ -62,6 +63,7 @@ import {
   type SubscriptionType,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { Link } from '@/i18n/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -297,6 +299,11 @@ export function ActivityPlanLinks({
   const t = useTranslations('OfferCatalogue')
   const tb = useTranslations('Benefit')
   const qc = useQueryClient()
+  // A class following the studio's default drop-in stores no price, so both
+  // "is there a price for a member rate to reduce?" and the edge writer's
+  // "does this class sell at the door?" are asked with the default in hand.
+  const bookingSettingsQuery = useBookingSettings()
+  const studioDropIn = studioDropInOf(bookingSettingsQuery.data)
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({})
   const [saving, setSaving] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
@@ -421,6 +428,15 @@ export function ActivityPlanLinks({
     }
     setSaving(true)
     try {
+      // THE DEFAULT MUST BE KNOWN, not assumed absent. Still loading (or failed)
+      // reads as "no studio default", and on a legacy class that sells at the
+      // default door the edge writer would then store "plan required" — the
+      // very write UX-103 removed. So a save waits for the settings, and a
+      // failed read fails the save rather than guessing.
+      const studioDropInAtSave =
+        bookingSettingsQuery.data === undefined
+          ? studioDropInOf((await bookingSettingsQuery.refetch({ throwOnError: true })).data)
+          : studioDropIn
       // BEFORE the transaction, never inside it: this writes the host's own
       // document, and a write from within would be read back by the same
       // transaction as a conflict.
@@ -465,7 +481,7 @@ export function ActivityPlanLinks({
           if (!snap.exists()) return
           const g = groups[i]
           const update = foldOfferingPlanEdgeUpdates(
-            { kind: g.off.target.kind, doc: snap.data() } as PlanLinkTarget,
+            { kind: g.off.target.kind, doc: snap.data(), studioDropIn: studioDropInAtSave } as PlanLinkTarget,
             g.edits
           )
           if (update) tx.update(snap.ref, update)
@@ -536,7 +552,9 @@ export function ActivityPlanLinks({
           // it is about, rather than as prose under all of them.
           const isAppointment =
             off.target.kind === 'activity' && isAppointmentActivity(off.target.doc)
-          const hasPriceToReduce = rateHasAPriceToApplyTo(off.target)
+          const hasPriceToReduce = rateHasAPriceToApplyTo(
+            off.target.kind === 'activity' ? { ...off.target, studioDropIn } : off.target
+          )
           // Three kinds of "no price yet", and each names the control that
           // creates one — a class's drop-in, an appointment's duration price, a
           // course's sale switch. A generic sentence would leave the studio
@@ -988,6 +1006,36 @@ export function ActivityPlanLinks({
               : t('includesHint')
         }
       />
+
+      {/* UX-109 (interim) — the ONLY explanation of what a column means used to
+          be the `title` on its header cell, which a mouse can find and a touch
+          screen (or a keyboard user tabbing past it) never will. A one-line,
+          always-visible legend says the same four sentences the tooltips
+          already carry — never a second copy of them — and wraps rather than
+          scrolling, so it reads at 375px same as everywhere else on this page.
+          The real fix (a stacked card-per-row layout below `sm`) is a separate,
+          larger pass; this is the shipped-here half. Shown only once there is a
+          table under it, and only on narrow screens: where a pointer can hover
+          the header, four always-on sentences are clutter the tooltips already
+          cover. */}
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground sm:hidden">
+          {(['none', 'included', 'percent_off', 'fixed_price'] as const).map((c) => (
+            <span key={c} className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className={choiceDotClass(true, c === 'none' ? 'none' : c === 'included' ? 'included' : 'reduced')}
+              />
+              <span>
+                <span className="font-medium text-foreground">
+                  {c === 'none' ? t('choiceNone') : tb(`effect_${c}` as const)}
+                </span>{' '}
+                — {c === 'none' ? t('choiceNoneDesc') : tb(`effect_${c}_desc` as const)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* ── A TABLE, BECAUSE IT IS ALWAYS THE SAME QUESTION ────────────────
           Every row asks one question with the same four answers, so the

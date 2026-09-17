@@ -49,15 +49,18 @@ import {
   COURSE_PURCHASES_SUBCOLLECTION,
   PUBLIC_PROFILE_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  heldSubscriptionTypeIds as heldPlanIdsOf,
 } from '@linyup/shared'
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { QueryErrorState } from '@/components/ui/query-error'
+import { Badge } from '@/components/ui/badge'
 import { loadFailureDetail, reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { publicHref, publicSubHref } from '@/lib/publicRoutes'
 import { resolveActivityTerms, type ActivityTerm } from '@/lib/activityTerms'
 import { usePublicTeam } from '../PublicTeamProvider'
 import PriceListNotice from './PriceListNotice'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
+import { usePublicContactRecord } from '../usePublicContactRecord'
 import { PublicStudioTermsLink } from '../PublicStudioTermsLink'
 import { DEFAULT_ACCENT } from '@/lib/colors'
 import {
@@ -123,6 +126,23 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  *  card and the checkout modal ask the same question of the same field. */
 function introTermsOf(price: PlanPrice) {
   return readIntroTerms(price.intro)
+}
+
+/**
+ * UX-111 — when a plan lists both a monthly and an annual price and the annual
+ * works out cheaper per month, steer the prospect toward it with a "Save N%"
+ * badge. DERIVED ONLY: there is nothing for the studio to set, and nothing
+ * that can drift out of sync with the two prices it reads.
+ *
+ * A rounding-off gap is not a steer — below 5% the badge is withheld rather
+ * than inviting a "why does this only save 2%" support question.
+ */
+function annualSavingsPercent(prices: PlanPrice[] | undefined): number | null {
+  const monthly = (prices ?? []).find((p) => p.recurrence === 'monthly')
+  const annual = (prices ?? []).find((p) => p.recurrence === 'annual')
+  if (!monthly || !annual || monthly.amount <= 0 || annual.amount <= 0) return null
+  const percent = Math.round((1 - annual.amount / (monthly.amount * 12)) * 100)
+  return percent >= 5 ? percent : null
 }
 
 type CourseAccessType = 'free' | 'registered' | 'subscription' | 'purchase'
@@ -212,6 +232,20 @@ export default function ShopHome({
   const locale = useLocale()
   const { slug, teamId, team } = usePublicTeam()
   const { isAuthenticated, isRestoring, contact, openSignIn, logout } = usePublicContactAuth()
+
+  // WHAT THIS MEMBER HOLDS — every plan on the live record, not the single
+  // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
+  // covered by a second plan was told she held none and routed to pay a drop-in
+  // the server then refused to sell her. The frozen slot survives only as the
+  // floor for a FAILED read, as in AppointmentPicker. Display only: the
+  // callables re-resolve from their own snapshot.
+  const contactRecord = usePublicContactRecord()
+  const heldPlanIds = contactRecord.data
+    ? heldPlanIdsOf(contactRecord.data)
+    : contact?.subscription_type_id
+      ? [contact.subscription_type_id]
+      : []
+  const heldPlanKey = heldPlanIds.join(',')
 
   const [plans, setPlans] = useState<PlanEntry[]>([])
   const [pendingCheckout, setPendingCheckout] = useState<Checkout | null>(null)
@@ -682,12 +716,8 @@ export default function ShopHome({
     startCheckout({ kind: 'giftcard', amount })
   }
 
-  // The contact's held union for course-coverage display — today the public
-  // contact session only carries the single primary `subscription_type_id`
-  // (no `active_subscriptions`/`credit_summary` mirror here), so this is a
-  // one-element array in practice; the resolver itself supports the full held
-  // union (P6 — see the Space's equivalent `hasAccess`).
-  const heldSubscriptionTypeIds = contact?.subscription_type_id ? [contact.subscription_type_id] : []
+  // The contact's held union for coverage display — `heldPlanIds` above.
+  const heldSubscriptionTypeIds = heldPlanIds
 
   // Same resolver the server uses (@linyup/shared) for course access — pure
   // function of the course's accessRule + the visitor's optimistic snapshot.
@@ -830,7 +860,7 @@ export default function ShopHome({
       checkoutVariantId ?? '',
       promoApplied?.code ?? '',
       isAuthenticated ? (contact?.id ?? 'auth') : 'guest',
-      contact?.subscription_type_id ?? '',
+      heldPlanKey,
     ].join('|')
   )
 
@@ -1208,7 +1238,9 @@ export default function ShopHome({
                 {t('subscriptionsSection')}
               </h2>
             )}
-            {plans.map((plan) => (
+            {plans.map((plan) => {
+              const savePercent = annualSavingsPercent(plan.prices)
+              return (
               <div
                 key={plan.id}
                 ref={(el) => {
@@ -1237,6 +1269,15 @@ export default function ShopHome({
                             <span style={{ color: textMuted }}> · {t('creditsCount', { count: price.credits })}</span>
                           ) : (
                             <span style={{ color: textMuted }}> {recurrenceSuffix(price.recurrence)}</span>
+                          )}
+                          {/* UX-111 — two Buy rows with no steer: badge the
+                              cheaper-per-month annual row, derived from the two
+                              prices sitting right here, nothing for the studio
+                              to configure. */}
+                          {price.recurrence === 'annual' && savePercent != null && (
+                            <Badge variant="secondary" className="ml-2 align-middle">
+                              {t('saveBadge', { percent: savePercent })}
+                            </Badge>
                           )}
                         </span>
                         {(price.label || price.included_months) && (
@@ -1285,7 +1326,8 @@ export default function ShopHome({
                   ))}
                 </div>
               </div>
-            ))}
+              )
+            })}
 
             {/* "Pay per visit" strip — routing only, no purchase here (payment
                 always happens in the booking flows). The cross-sell bridge back
