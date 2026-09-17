@@ -1,19 +1,21 @@
 'use client'
 
-// Unified Pricing admin page — read-only. Three sections, one shared resolver
-// (@/lib/pricingSurface, itself a thin wrapper over @linyup/shared's
-// resolvePaymentOptions) so nothing here can ever disagree with what a real
-// booking/checkout would charge:
-//   1. Health — cross-entity pricing inconsistencies, each with a fix link.
-//      FIRST, because it is the only section that says something is WRONG; the
-//      others describe what is. Problems reported last are read last.
-//   2. Price preview — pick a persona (guest / member / a subscription type)
-//      and see exactly what every class, appointment, course and product
-//      would cost them right now.
-//   3. What you sell — one card per subscription type: its prices + what it
-//      unlocks (reverse lookup over activities/courses).
-//   4. Discounts — a modifier of the prices above it, so it reads after them.
-// No editing here — every fix link routes to the surface that owns the data.
+// Unified Pricing admin page. One shared resolver (@/lib/pricingSurface, itself
+// a thin wrapper over @linyup/shared's resolvePaymentOptions) so nothing here
+// can ever disagree with what a real booking/checkout would charge:
+//   1. Things to fix — cross-entity pricing inconsistencies, each with a fix
+//      link. FIRST, because it is the only section that says something is
+//      WRONG; the others describe what is. Rendered only when there is one.
+//   2. Drop-in — the studio-wide default drop-in price, the ONE thing edited
+//      here (it is also editable in place from a class's pricing tab).
+//   3. Price preview — pick who is asking (guest / member / a plan) and see
+//      exactly what every class, appointment, course and product would cost
+//      them right now.
+//   4. What you sell — one card per plan: its prices + what it includes
+//      (reverse lookup over activities/courses).
+//   5. Discounts — a modifier of the prices above it, so it reads after them.
+// Everything else is read-only — every fix link routes to the surface that
+// owns the data.
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'

@@ -1909,7 +1909,9 @@
     "dropInStudioDefaultEdit": "Change the studio default",
     "dropInStudioDefaultConfirm": "Save studio default",
     "dropInStudioDefaultCancel": "Cancel",
-    "dropInStudioDefaultSaved": "Studio default saved — every class that follows it now sells at this price."
+    "dropInStudioDefaultSaved": "Studio default saved — every class that follows it now sells at this price.",
+    "bookingMoreOptionsLabel": "More options",
+    "bookingMoreOptionsHint": "Meeting point, booking questions, and what people should know before they come"
   },
   "Benefit": {
     "fieldLabel": "Member benefit",

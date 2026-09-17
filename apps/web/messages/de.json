@@ -1909,7 +1909,9 @@
     "dropInStudioDefaultEdit": "Studio-Standard ändern",
     "dropInStudioDefaultConfirm": "Studio-Standard speichern",
     "dropInStudioDefaultCancel": "Abbrechen",
-    "dropInStudioDefaultSaved": "Studio-Standard gespeichert — jede Klasse, die ihm folgt, wird jetzt zu diesem Preis verkauft."
+    "dropInStudioDefaultSaved": "Studio-Standard gespeichert — jede Klasse, die ihm folgt, wird jetzt zu diesem Preis verkauft.",
+    "bookingMoreOptionsLabel": "Weitere Optionen",
+    "bookingMoreOptionsHint": "Treffpunkt, Buchungsfragen und was man vor dem Besuch wissen sollte"
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",

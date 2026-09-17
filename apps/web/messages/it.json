@@ -1909,7 +1909,9 @@
     "dropInStudioDefaultEdit": "Modifica il prezzo predefinito dello studio",
     "dropInStudioDefaultConfirm": "Salva il prezzo predefinito",
     "dropInStudioDefaultCancel": "Annulla",
-    "dropInStudioDefaultSaved": "Prezzo predefinito salvato — ogni lezione che lo segue ora si vende a questo prezzo."
+    "dropInStudioDefaultSaved": "Prezzo predefinito salvato — ogni lezione che lo segue ora si vende a questo prezzo.",
+    "bookingMoreOptionsLabel": "Altre opzioni",
+    "bookingMoreOptionsHint": "Punto d'incontro, domande di prenotazione e cosa sapere prima di venire"
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",

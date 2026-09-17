@@ -1909,7 +1909,9 @@
     "dropInStudioDefaultEdit": "Modifier le tarif par défaut du studio",
     "dropInStudioDefaultConfirm": "Enregistrer le tarif par défaut",
     "dropInStudioDefaultCancel": "Annuler",
-    "dropInStudioDefaultSaved": "Tarif par défaut enregistré — chaque cours qui le suit se vend désormais à ce prix."
+    "dropInStudioDefaultSaved": "Tarif par défaut enregistré — chaque cours qui le suit se vend désormais à ce prix.",
+    "bookingMoreOptionsLabel": "Plus d'options",
+    "bookingMoreOptionsHint": "Point de rendez-vous, questions de réservation et ce qu'il faut savoir avant de venir"
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
