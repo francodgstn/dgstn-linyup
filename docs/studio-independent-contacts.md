@@ -1,3 +1,8 @@
+---
+title: "A coach's own contacts, beside the studio's — design"
+status: living
+area: contacts
+---
 # A coach's own contacts, beside the studio's — design
 
 **Status: DECIDED, LARGELY NOT BUILT (2026-09-08, Franco).** A coach who belongs to an

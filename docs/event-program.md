@@ -1,3 +1,8 @@
+---
+title: Event programmes
+status: living
+area: booking
+---
 # Event programmes
 
 An event is not just a session with a different label — it **has a programme**: a

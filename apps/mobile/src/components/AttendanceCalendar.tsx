@@ -2,8 +2,10 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import { Text, IconButton, useTheme, ActivityIndicator, Divider, Button } from 'react-native-paper';
 import { FirestoreService } from '../services/firestore';
-import { HydratedSession, Contact } from '../types';
+import { BookedSession, HydratedSession, Contact } from '../types';
 import { waiverRefusal } from '../utils/waiverRefusal';
+import { callableErrorCode } from '../utils/callableError';
+import { cancelRefusalIsFinal, cancelRefusalKey } from '../utils/cancelRefusal';
 import { useTranslations } from '../i18n';
 
 interface AttendanceCalendarProps {
@@ -11,12 +13,18 @@ interface AttendanceCalendarProps {
   teamId?: string;
   initialMonth?: Date;
   contact?: Contact | null;
+  /** Fired after a booking here succeeds or is cancelled, so the screens that
+   *  keep their own copy of the agenda (the dashboard's upcoming classes) can
+   *  reload — the calendar reloads itself. Report 7107, M-03: booking on Train
+   *  left the dashboard offering Book for the same class. */
+  onBookingsChanged?: () => void;
 }
 
-export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactId, teamId, initialMonth, contact }) => {
+export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactId, teamId, initialMonth, contact, onBookingsChanged }) => {
   const theme = useTheme();
   const t = useTranslations('Attendance');
   const tWaiver = useTranslations('Waiver');
+  const tCancel = useTranslations('BookingCancellation');
   const [currentDate, setCurrentDate] = useState(initialMonth || new Date());
 
   // Navigate to month when initialMonth changes (e.g. from chart tap)
@@ -27,7 +35,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
     }
   }, [initialMonth]);
   const [attendedSessions, setAttendedSessions] = useState<HydratedSession[]>([]);
-  const [bookedSessions, setBookedSessions] = useState<HydratedSession[]>([]);
+  const [bookedSessions, setBookedSessions] = useState<BookedSession[]>([]);
   const [availableSessions, setAvailableSessions] = useState<HydratedSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -87,8 +95,17 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
       });
       Alert.alert(t('successTitle'), t('bookedSuccess'));
       loadMonthData();
+      onBookingsChanged?.();
     } catch (error) {
       console.error(error);
+      // Already booked (from the dashboard, another device, the desk): the row
+      // was stale, not the booking — say so and reload (report 7107, M-03).
+      if (callableErrorCode(error) === 'already-exists') {
+        Alert.alert(t('alreadyBookedTitle'), t('alreadyBooked'));
+        loadMonthData();
+        onBookingsChanged?.();
+        return;
+      }
       // The SECOND mobile booking rail, and it swallowed the same refusal. Both
       // call `bookSession`, both are gated server-side, so both have to name the
       // document rather than telling a member to retry something that cannot
@@ -112,7 +129,9 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
     }
   };
 
-  const handleCancel = async (session: HydratedSession) => {
+  // `token` is the server's `cancelToken` off the BookedSession row — the bin
+  // renders only when it is present, so this never re-derives cancellability.
+  const handleCancel = async (session: HydratedSession, token: string) => {
     if (!contact?.id) return;
     Alert.alert(
       t('cancelBookingTitle'),
@@ -125,15 +144,15 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
           onPress: async () => {
             setLoadingSessionId(session.id);
             try {
-              await FirestoreService.cancelSession({
-                sessionId: session.id,
-                contactId: contact.id
-              });
+              await FirestoreService.cancelBookingByToken(token);
               Alert.alert(t('successTitle'), t('cancelledSuccess'));
               loadMonthData();
-            } catch (error: any) {
-              const message = error?.message || t('cancelFailed');
-              Alert.alert(t('errorTitle'), message);
+              onBookingsChanged?.();
+            } catch (error: unknown) {
+              // A tagged refusal is final and means the row was stale: say
+              // why, and reload rather than inviting a retry that cannot work.
+              Alert.alert(t('errorTitle'), tCancel(cancelRefusalKey(error)));
+              if (cancelRefusalIsFinal(error)) loadMonthData();
             } finally {
               setLoadingSessionId(null);
             }
@@ -343,7 +362,11 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
               {sessionsOnSelectedDay.length > 0 ? (
                   sessionsOnSelectedDay.map(session => {
                       const isAttended = attendedSessions.some(as => as.id === session.id);
-                      const isBooked = !isAttended && bookedSessions.some(bs => bs.id === session.id);
+                      const booked = isAttended ? undefined : bookedSessions.find(bs => bs.id === session.id);
+                      const isBooked = !!booked;
+                      // The bin is a promise: it renders only when the server said
+                      // `cancelBooking` will accept this booking (report 7107, S-04).
+                      const cancelToken = booked?.cancellable ? booked.cancelToken : null;
                       const isAvailable = !isAttended && !isBooked;
                       const isFuture = session.start > new Date();
                       const isSessionLoading = loadingSessionId === session.id;
@@ -384,13 +407,15 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ contactI
                                           <View style={[styles.statusPill, { backgroundColor: theme.dark ? 'rgba(59, 130, 246, 0.2)' : '#DBEAFE' }]}>
                                               <Text variant="labelSmall" style={{ color: theme.dark ? '#60A5FA' : '#1E40AF', fontWeight: '800', fontSize: 9 }}>{t('bookedTag').toUpperCase()}</Text>
                                           </View>
-                                          <IconButton
-                                              icon="trash-can-outline"
-                                              size={18}
-                                              iconColor={theme.colors.error}
-                                              onPress={() => handleCancel(session)}
-                                              style={{ margin: 0, marginLeft: 2 }}
-                                          />
+                                          {cancelToken ? (
+                                              <IconButton
+                                                  icon="trash-can-outline"
+                                                  size={18}
+                                                  iconColor={theme.colors.error}
+                                                  onPress={() => handleCancel(session, cancelToken)}
+                                                  style={{ margin: 0, marginLeft: 2 }}
+                                              />
+                                          ) : null}
                                       </View>
                                   ) : isBooked ? (
                                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

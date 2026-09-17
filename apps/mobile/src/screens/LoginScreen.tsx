@@ -11,6 +11,7 @@ import {
   useTheme
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { looksLikeEmail } from '../utils/email';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslations } from '../i18n';
@@ -200,6 +201,13 @@ export const LoginScreen: React.FC = () => {
   const handleSendCode = async (teamId?: string) => {
     if (!email.trim()) {
       Alert.alert(t('errorTitle'), t('enterEmail'));
+      return;
+    }
+    // A malformed address must not reach the server: the callable answers a
+    // code request without saying whether the address exists (by design), so
+    // "name@" would land on the code screen waiting for mail that cannot come.
+    if (!looksLikeEmail(email)) {
+      Alert.alert(t('errorTitle'), t('invalidEmail'));
       return;
     }
 

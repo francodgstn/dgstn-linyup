@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileText,
   FlaskConical,
+  KeyRound,
   LayoutTemplate,
   ListChecks,
   ListTodo,
@@ -103,6 +104,11 @@ export const SETTINGS_ITEMS: SettingsNavItem[] = [
   // The plugins marketplace renders in the detail pane; its per-plugin editor
   // sub-routes open full-screen at /plugins/*.
   { id: 'plugins', href: '/settings/plugins', labelKey: 'plugins', icon: Puzzle, group: 'studio', exact: true },
+  // API keys for the public API and MCP server (docs/public-api.md). Owner-only:
+  // the key records are owner-READ in firestore.rules, so anyone else would
+  // arrive at a page that can only explain why it is empty. Shown whether or not
+  // the api-connectors plugin is installed — the page itself is the way in.
+  { id: 'apiKeys', href: '/settings/api-keys', labelKey: 'apiKeys', icon: KeyRound, group: 'studio', gate: 'ownerOnly' },
   // The public-surface overview hub — the map of everything the world can see
   // (public URL, default landing, per-surface live status). Individual surfaces
   // are reachable from their own sections (Space → Grow); this ties them

@@ -51,6 +51,14 @@ env:
   # without this line prod would hand customers a staging webhook URL. App Hosting
   # rejects `value: ""`, so the variable cannot be unset once the base defines it —
   # it can only be pointed at the right project.
+  # The public API + MCP origin (docs/public-api.md -> Hosting target), shown on
+  # Settings -> API keys and in its copy-paste examples. Inlined at build time.
+  - variable: NEXT_PUBLIC_API_BASE_URL
+    value: https://api.linyup.com
+    availability:
+      - BUILD
+      - RUNTIME
+
   - variable: NEXT_PUBLIC_INBOUND_WEBHOOK_URL
     value: https://europe-west6-linyup-prod.cloudfunctions.net/inboundWebhook
     availability:

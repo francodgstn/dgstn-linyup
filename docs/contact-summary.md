@@ -1,3 +1,8 @@
+---
+title: Contact AI summary
+status: living
+area: contacts
+---
 # Contact AI summary
 
 Four to six sentences at the top of a contact's insights card: an ANALYSIS,
@@ -47,13 +52,15 @@ contact.
 
 ## Gate
 
-An **experiment**, not a plugin and not a plan feature — the same call offer
-drafting made and for the same reason: the output is what is being tuned. The
-owner switches it on under Settings → Experimental; the card mounts the block
-only while it is on, and the callable re-checks the flag on the team doc so a
-client cannot spend model calls on a switch that is off. The settings list
-notes Studio+ (AI insights is that row on the plan comparison) without gating
-the toggle, as every entry does.
+**A plugin module since 2026-09-16:** `ai-contact-summary`, in the AI insights
+container (`docs/ai-insights.md`). It was an experiment (`contact-summary`,
+Settings → Experimental) from 2026-09-11 until then, and moved once a coach
+briefing, a member recap and a team reading were three things a studio chooses
+between. A team that had the experiment on reads as off and installs the
+plugin. The card mounts the block only while the module is installed, and the
+callable re-checks it through `pluginIsActive`, which also sees an install made
+at the organisation — so a client cannot spend model calls on a module that is
+off.
 
 Beyond the switch: signed in, member of the team, the contact in that team,
 and — for an own-scoped coach — on the contact's coach list or its creator
@@ -96,12 +103,42 @@ English); German asks for Swiss spelling.
 
 ## What comes back
 
-`normaliseSummary` strips fences, heading lines, bullets and emphasis, keeps at
-most six sentences and never more than 900 characters, cutting at a sentence
-boundary where one exists. Empty in, empty out — the callable turns that into
-an `internal` error rather than storing nothing. The stored record carries
-`text`, `generated_at`, `generated_by` (the uid), `model` and `language`; the
-card shows the text, the date and a one-line disclaimer.
+**Three parts, since 2026-09-14: Status, Outlook, At the next session.** The
+prompt always asked for engagement now, what to expect next and one thing to do
+at the next session, in that order; the reply is now those three parts under a
+response schema (`status`, `outlook`, `nextSession`), and the card puts a bold,
+translated label in front of each. The labels are the APP'S, in the reader's
+language — a label the model wrote would drift in wording and language between
+contacts, so one it adds anyway is stripped. "Outlook" rather than
+"Prediction": the prompt makes the model state its confidence and say so when
+the history is thin, which a prediction does not promise.
+
+`readSummaryReply` reads the parts and runs each through `normaliseSummary` at
+two sentences / 300 characters (three parts at the cap stay inside the old
+six-sentence, 900-character paragraph). A reply that is not JSON at all reads
+as the old paragraph; a reply stopped mid-JSON keeps the parts that closed.
+`normaliseSummary` itself still strips fences, heading lines, bullets and
+emphasis and cuts at a sentence boundary where one exists. Empty in, empty out
+— the callable turns that into an `internal` error rather than storing
+nothing. The stored record carries `text` (the parts joined — every reader of
+the paragraph keeps working), `sections` when there are parts, `generated_at`,
+`generated_by` (the uid), `model` and `language`; the card shows the parts (or,
+for a summary written before the change, the paragraph), the date and a
+one-line disclaimer. The record is written whole, so a regenerated summary
+never keeps an older one's parts.
+
+**Plus a member recap, since 2026-09-16.** The same reply carries two more
+parts written TO the person — `memberStatus` (where they stand, as
+encouragement) and `memberNextSession` (one thing to try next time) — stored as
+`ai_summary.member`. There is deliberately no member outlook: the studio's
+outlook says things like "at risk of drifting", which is a note about a person,
+not a message to them. The prompt forbids risk, gaps, no-shows, payments, plans
+ending and anything from the notes in these two parts. Same caps and cleanup as
+the studio parts, plus a greeting the model wrote is stripped (the email adds
+its own); the recap is stored only when BOTH parts survived. Asking in the same
+call sends the dossier once, and the recap is stored whether or not the
+`ai-member-recap` module is on, so switching it on later works on existing
+summaries. Sending it is `docs/ai-insights.md`.
 
 **Thinking is off, and a stopped reply loses its fragment.** On
 `gemini-2.5-flash` thinking is on by default and its tokens count against
@@ -113,7 +150,13 @@ before the fix stays as it is until someone regenerates it.
 
 ## Regeneration: manual now, schedule later
 
-Only the button regenerates. This is the recorded decision: a scheduled refresh
+Two presses regenerate: the button on the contact page (`generated_by` = the
+user's uid), and a **team sentiment run**, which refreshes the briefings of the
+team's active members that have something new — none yet, older than 7 days, or
+a session, booking or note since (`summaryNeedsRefresh`) — and stamps them
+`generated_by: 'team_sentiment'`. Both write through ONE function,
+`generateSummaryForContact` (`contacts/aiSummaryGenerate.ts`); see
+`docs/ai-insights.md` → Team sentiment. Nothing regenerates on a clock. A scheduled refresh
 is not built until the button has shown whether a summary is worth the model
 calls (Franco, 2026-09-11). When it is:
 

@@ -1,3 +1,8 @@
+---
+title: "Payments: contact → studio"
+status: living
+area: payments
+---
 # Payments: contact → studio
 
 > **Scope:** how a studio/coach collects money **from their contacts** (members) —
@@ -787,7 +792,7 @@ or the gateway default, `last_payment_at` ← now.
    |-------|-------|
    | URL | `https://europe-west6-linyup-prod.cloudfunctions.net/handlePayrexxWebhook?teamId=YOUR_TEAM_ID` |
    | Events | `Transaction` |
-   | Secret | A random string — paste it into Linyup's **Webhook signing secret** field |
+   | Secret | A random string — paste it into Linyup's **Webhook signing secret** field (**required**: without it no payment is recorded) |
 
    *(Staging: replace `linyup-prod` with `linyup-staging`. Local: see Testing below.)*
 3. Optionally set a **Default subscription type** — applied when a payment link has no
@@ -797,8 +802,9 @@ or the gateway default, `last_payment_at` ← now.
 ### Behaviour
 
 - **Signature**: `HMAC-SHA256(rawBody, signingSecret)` compared to `X-Webhook-Signature`
-  with a constant-time comparison. Blank secret → logs a warning and allows through
-  (setup phase only; **not** for production).
+  with a constant-time comparison. **Fails closed:** a blank secret → `401
+  no_signing_secret` and nothing is recorded (it used to warn and record, which let
+  anyone who knew a teamId forge a payment). The settings dialog requires the secret.
 - Only `status: confirmed` is processed; `mode: TEST` is ignored unless
   `ALLOW_TEST_PAYREXX=true`.
 - **Membership expiration** comes from `transaction.subscription.valid_until` (parsed as
@@ -892,6 +898,7 @@ checkout.session.completed` (or pay a test Checkout on the studio's own test acc
 | Log message | Fix |
 |-------------|-----|
 | `No Payrexx integration for team=…` / `no_integration` | Gateway not configured, or wrong `teamId` in the webhook URL |
+| `No signing secret configured` / `no_signing_secret` | The integration has no signing secret, so every delivery is refused. Paste the gateway's secret into Settings → Payments. |
 | `Missing X-Webhook-Signature` / `missing_signature` | The gateway isn't sending the header — check its webhook config |
 | `Signature mismatch` / `invalid_signature` | The signing secret in Linyup doesn't match the gateway's. Re-copy it. |
 | `… unassigned email=…` | No single active contact matched (none, or a shared family email) — recorded as **Unassigned**; assign it from the Payments page. |

@@ -1,3 +1,8 @@
+---
+title: Security audit — Linyup — 2026-07
+status: record
+area: platform
+---
 # Security audit — Linyup — 2026-07
 
 > **RECORD — audit run 2026-07; not re-run since.** Findings are stated as they

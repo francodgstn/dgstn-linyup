@@ -55,7 +55,7 @@ export const PLUGIN_REQUIREMENTS: Record<PluginId, readonly PluginId[]> = {
   // depreciation postings read the register's records — so finance needs the
   // register present. The register does NOT need finance: it answers an
   // operational question ("what do we own") and stands alone.
-  // See docs/finance-accrual.md §4 and docs/plugins.md.
+  // See docs/finance-accrual.md → "Assets" and docs/plugins.md.
   finance: ['asset-register'],
 }
 

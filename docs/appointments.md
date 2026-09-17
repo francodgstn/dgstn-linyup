@@ -1,3 +1,8 @@
+---
+title: "Appointments (1:1) — architecture"
+status: living
+area: booking
+---
 # Appointments (1:1) — architecture
 
 An appointment is **a booking of a provider's exclusive time**, as opposed to a

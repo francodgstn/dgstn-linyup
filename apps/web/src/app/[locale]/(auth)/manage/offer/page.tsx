@@ -76,6 +76,7 @@ import {
 
 import {
   ACTIVITIES_COLLECTION,
+  AI_MODULES,
   activityPlanFacets,
   COURSES_COLLECTION,
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
@@ -127,7 +128,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tip } from '@/components/ui/tip'
 import { AiDraftDialog } from '@/components/offer/AiDraftDialog'
-import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
 import {
   PaneDirtyProvider,
   usePaneDirtyState,
@@ -228,7 +228,7 @@ function CreateAction({
 }: {
   tabs: { key: TabKey }[]
   onOpen: (kind: 'activity' | 'plan') => void
-  /** Absent unless the `offer-drafting` experiment is on for this team. */
+  /** Absent unless the `ai-offer-drafting` module is installed and the reader is the owner. */
   onDraftWithAi?: () => void
 }) {
   const t = useTranslations('OfferCatalogue')
@@ -428,11 +428,13 @@ export default function CataloguePage() {
   const [creating, setCreating] = useState<'activity' | 'plan' | null>(null)
   const [schedulePreview, setSchedulePreview] = useState<Activity | null>(null)
   const [confirming, setConfirming] = useState<Confirming>(null)
-  // AN EXPERIMENT, off unless the owner switched it on — see
-  // EXPERIMENTAL_FEATURES. `isEnabled` reads false while the team doc is still
-  // loading, which is the safe direction for an opt-in.
-  const { isEnabled } = useExperimentalFeatures()
-  const aiDrafting = isEnabled('offer-drafting')
+  // THE `ai-offer-drafting` MODULE of the AI insights plugin (an experiment
+  // until 2026-09-17). OWNER-ONLY, like `draftOfferings` behind it: the module
+  // is installed by an owner, and a manager shown the entry would only ever be
+  // refused. `isInstalled` reads false while installs load — the safe direction.
+  const { teamRole } = useAuth()
+  const { isInstalled } = useInstalledPlugins()
+  const aiDrafting = isInstalled(AI_MODULES.offerDrafting) && teamRole === 'owner'
   const [aiOpen, setAiOpen] = useState(false)
 
   const { data: activities = [], isLoading: loadingActivities } = useActivities(currentTeamId)
@@ -445,7 +447,6 @@ export default function CataloguePage() {
   // Courses only exist for a studio that installed the plugin, so the group is
   // absent rather than empty when it is not — an empty "Courses" heading would
   // advertise a feature this studio has not got.
-  const { isInstalled } = useInstalledPlugins()
   const coursesInstalled = isInstalled('online-courses')
   const { data: courses = [], isLoading: loadingCourses } = useCourses(
     coursesInstalled ? currentTeamId : null
@@ -1121,7 +1122,7 @@ export default function CataloguePage() {
                     where the item count already is and the two numbers would be
                     read as one. */}
                 {dead > 0 && (
-                  <span className="absolute right-2 top-1.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] leading-tight text-amber-700">
+                  <span className="absolute right-2 top-1.5 rounded-full bg-amber-500/20 px-1.5 text-xs leading-tight text-amber-700">
                     {dead}
                   </span>
                 )}
@@ -1947,7 +1948,7 @@ function PaneBody({
                 when they wonder whether they still owe a save — the button is
                 a scroll away past the plan table. */}
             {dirty && (
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700">
                 {t('unsaved')}
               </span>
             )}
@@ -2242,9 +2243,9 @@ function RailRow({
               step from the muted detail line under it, so a rail of twenty
               items read as twenty pairs of similar-looking lines rather than a
               list of names with notes attached (Franco, 2026-09-02). */}
-          <span className="block truncate text-[15px] font-semibold leading-tight">{name}</span>
+          <span className="block truncate text-[0.9375rem] font-semibold leading-tight">{name}</span>
           {detail && (
-            <span className="mt-1 flex items-center gap-1 text-[11px] leading-tight text-muted-foreground">
+            <span className="mt-1 flex items-center gap-1 text-xs leading-tight text-muted-foreground">
               {DetailIcon && <DetailIcon className="h-3 w-3 shrink-0" aria-hidden />}
               {/* `truncate` stays on the TEXT, not on the row: hung on the flex
                   parent it would clip the icon first and leave the words the

@@ -5,6 +5,7 @@ import {
   matchesFilter,
   planGrantIsCurrent,
   type ContactFilter,
+  type HeldPlan,
 } from '@linyup/shared'
 import { resolvePlanPurchaseCap } from './planPurchases'
 
@@ -41,11 +42,32 @@ describe('planGrantIsCurrent — an end date, compared not trusted', () => {
   })
 })
 
+// Since phase 3 of docs/multi-plan-holdings.md the union reads the contact's
+// plan LIST, where a one-off grant carries its end as `ends_at_ms` — still
+// compared against the clock by every reader, never trusted as stored.
+const held = (
+  entries: Array<Pick<HeldPlan, 'subscription_type_id' | 'source'> & Partial<HeldPlan>>
+): { held_plans: HeldPlan[] } => ({
+  held_plans: entries.map((e) => ({
+    subscription_type_name: null,
+    status: 'active',
+    starts_at_ms: null,
+    ends_at_ms: null,
+    price_id: null,
+    amount: null,
+    recurrence: null,
+    ref: e.subscription_type_id,
+    ...e,
+  })),
+})
+
 describe('the expiry reaches the coverage union', () => {
-  const contact = {
+  const introGrant = {
     subscription_type_id: 'intro',
-    subscription_expires_at: at('2026-08-01T00:00:00Z'),
+    source: 'grant' as const,
+    ends_at_ms: ms('2026-08-01T00:00:00Z'),
   }
+  const contact = held([introGrant])
 
   it('holds the plan while the grant runs', () => {
     assert.deepEqual(heldSubscriptionTypeIds(contact, ms('2026-07-20T00:00:00Z')), ['intro'])
@@ -55,24 +77,21 @@ describe('the expiry reaches the coverage union', () => {
     assert.deepEqual(heldSubscriptionTypeIds(contact, ms('2026-09-01T00:00:00Z')), [])
   })
 
-  it('never touches a live Stripe subscription, which expires itself', () => {
-    // `active_subscriptions` is a mirror of live subscriptions and drops its own
-    // entries on lapse. Applying a one-off grant's end date to it would cut off
-    // a member who is still being charged.
-    const both = {
-      ...contact,
-      active_subscriptions: [{ subscription_type_id: 'monthly' }],
-    }
+  it("never applies a grant's end to a Stripe subscription beside it", () => {
+    const both = held([introGrant, { subscription_type_id: 'monthly', source: 'stripe' }])
     assert.deepEqual(heldSubscriptionTypeIds(both, ms('2026-09-01T00:00:00Z')), ['monthly'])
   })
 
   it('keeps a credit pack that outlives the grant', () => {
-    const withPack = {
-      ...contact,
-      credit_summary: [
-        { subscription_type_id: 'pack10', remaining: 4, next_expires_at: at('2026-12-01T00:00:00Z') },
-      ],
-    }
+    const withPack = held([
+      introGrant,
+      {
+        subscription_type_id: 'pack10',
+        source: 'credits',
+        credits_remaining: 4,
+        ends_at_ms: ms('2026-12-01T00:00:00Z'),
+      },
+    ])
     assert.deepEqual(heldSubscriptionTypeIds(withPack, ms('2026-09-01T00:00:00Z')), ['pack10'])
   })
 })
@@ -86,8 +105,7 @@ describe('the contacts list agrees with the gate', () => {
 
   const subject = {
     id: 'c1',
-    subscription_type_id: 'intro',
-    subscription_expires_at: at('2026-08-01T00:00:00Z'),
+    ...held([{ subscription_type_id: 'intro', source: 'grant', ends_at_ms: ms('2026-08-01T00:00:00Z') }]),
   }
 
   it('is on the plan while covered, in the list AND in the union', () => {

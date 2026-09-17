@@ -77,8 +77,10 @@
     },
     "cta": {
       "title": "See it all in action",
-      "body": "Take a real studio for a spin — no sign-up needed.",
-      "button": "Explore the live demo"
+      "body": "Explore the live demo — no sign-up needed"
+    },
+    "all": {
+      "title": "Check all features"
     }
   },
   "proof": {
@@ -242,11 +244,6 @@
         "description": "Reach members where they already are.",
         "detail": "Send reminders, updates, and re-engagement messages on WhatsApp, right where your members already are."
       },
-      "aiInsights": {
-        "title": "AI insights",
-        "description": "Spot churn risk before it happens.",
-        "detail": "Let AI flag contacts at risk of leaving and even draft the perfect message to win them back before they're gone."
-      },
       "appointments": {
         "title": "Appointments",
         "description": "Bookable time with a specific coach.",
@@ -364,7 +361,7 @@
     "cmpMultiTeam": "Multiple studios",
     "cmpCentralAdmin": "Central admin & unified data",
     "cmpCrossTeam": "Cross-team events & messaging",
-    "cmpApi": "API access",
+    "cmpApi": "API / MCP access",
     "cmpPermissions": "Advanced roles & permissions",
     "cmpUnlimited": "Unlimited",
     "cmpAddon": "Add-on",

@@ -2,7 +2,7 @@ import * as assert from 'node:assert'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { Timestamp } from 'firebase-admin/firestore'
-import { LEDGER_EXPIRES_AT_FIELD, LEDGER_RETENTION_DAYS, ledgerExpiresAt } from '@linyup/shared'
+import { EXPIRING_DOCUMENT_COLLECTIONS, LEDGER_EXPIRES_AT_FIELD, LEDGER_RETENTION_DAYS, ledgerExpiresAt } from '@linyup/shared'
 import { ledgerExpiry, withLedgerExpiry } from './ledgerRetention'
 
 // ONE retention policy, and the TTL declarations that enforce it must name
@@ -38,7 +38,7 @@ describe('ledger retention', () => {
     assert.strictEqual('expires_at' in row, false)
   })
 
-  it('firestore.index.json declares a TTL on exactly the ledgers the policy names', () => {
+  it('firestore.index.json declares a TTL on exactly the ledgers the policy names, plus the self-expiring collections', () => {
     const indexes = JSON.parse(
       readFileSync(resolve(__dirname, '../../../../firestore.index.json'), 'utf8'),
     ) as { fieldOverrides: Array<{ collectionGroup: string; fieldPath: string; ttl?: boolean }> }
@@ -49,6 +49,6 @@ describe('ledger retention', () => {
         return f.collectionGroup
       })
       .sort()
-    assert.deepStrictEqual(declared, Object.keys(LEDGER_RETENTION_DAYS).sort())
+    assert.deepStrictEqual(declared, [...Object.keys(LEDGER_RETENTION_DAYS), ...EXPIRING_DOCUMENT_COLLECTIONS].sort())
   })
 })

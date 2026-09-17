@@ -1,3 +1,8 @@
+---
+title: Site translations — public website + embed localization
+status: living
+area: content
+---
 # Site translations — public website + embed localization
 
 A studio authors its public site **once, in its own language**, and the publish

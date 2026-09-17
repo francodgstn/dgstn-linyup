@@ -1,3 +1,8 @@
+---
+title: Accounting — double-entry ledger (finance plugin)
+status: living
+area: payments
+---
 # Accounting — double-entry ledger (finance plugin)
 
 The lightweight double-entry accounting module, built on the finance journal

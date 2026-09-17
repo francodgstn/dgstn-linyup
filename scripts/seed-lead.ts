@@ -92,6 +92,7 @@ import {
   linkSeedConnectAccount,
   reportSeedConnectAccounts,
 } from './lib/connect'
+import { importPlanGrants } from './lib/planGrantImport'
 import { requireConsentExport } from './lib/exportConsentLedger'
 import {
   appointmentOccurrences,
@@ -2779,6 +2780,11 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     { id: 'gamification' },
     { id: 'website' },
     { id: 'online-courses' },
+    // The lead demo shows the studio answering in Claude or ChatGPT, which needs
+    // the plugin installed before a key or a connector can be approved. Lead
+    // tenants are private (one prospect, credentials handed over deliberately),
+    // unlike the /try playground, which is blocked outright.
+    { id: 'api-connectors' },
     // PROFILE-DRIVEN since 2026-09-09, like every other optional plugin here.
     // It was unconditional, which gave a lead with nothing to sell a Products
     // entry in its menu and an empty tab behind it — the shop reads the
@@ -3442,6 +3448,12 @@ async function main() {
   }
 
   const { studentEmail, sessionCount, demoContact } = await seedLeadTenant(profile)
+
+  // Every seeded plan as a plan grant, and every plan list built
+  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
+  // migration run, so a seeded tenant starts in the shape production will have.
+  const planGrants = await importPlanGrants(db, { teamIds: [teamId], apply: true })
+  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
 
   console.log(
     `\n✅ Lead tenant seeded — ${profile.contacts.length} contacts, ${sessionCount} sessions\n`

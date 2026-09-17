@@ -1,0 +1,4 @@
+# api.linyup.com serves the public API and MCP server (docs/public-api.md).
+# Every path is rewritten to the `api` function; nothing here is for crawlers.
+User-agent: *
+Disallow: /

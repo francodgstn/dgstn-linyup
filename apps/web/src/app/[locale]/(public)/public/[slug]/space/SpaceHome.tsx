@@ -72,10 +72,10 @@ export interface PublicCourseCard {
 // on; here it filters the catalogue down to the courses this contact may open
 // (their "My courses" library). Only ever called for a signed-in contact (Space
 // is sign-in gated — see the early return below). Unlike the shop's optimistic
-// snapshot, Space has the contact's FULL held union (active_subscriptions +
-// credit_summary via `heldSubscriptionTypeIds`, not just the primary
-// `subscription_type_id`) — deliberately widens "included by subscription" to
-// every held type, not just the primary one (P6, approved — pricing/display only).
+// snapshot, Space has the contact's FULL held union (every plan-list entry held
+// now, via `heldSubscriptionTypeIds`) — deliberately widens "included by
+// subscription" to every held type, not just one (P6, approved — pricing/display
+// only).
 
 function hasAccess(
   card: PublicCourseCard,
@@ -278,10 +278,15 @@ export default function SpaceHome() {
   }
 
   // ── My courses = accessible entitlements only (no locked/buy cards here) ──
-  // Full held union when the fuller contact doc has loaded (active_subscriptions
-  // + credit_summary), falling back to just the session's primary
-  // subscription_type_id until it does.
-  const heldTypeIds = heldSubscriptionTypeIds(fullContact ?? { subscription_type_id: contact.subscription_type_id })
+  // The full held union once the fuller contact doc has loaded (its plan list),
+  // falling back to just the session's primary subscription_type_id until it
+  // does. The session carries one plan until phase 3c of
+  // docs/multi-plan-holdings.md gives it the list.
+  const heldTypeIds = fullContact
+    ? heldSubscriptionTypeIds(fullContact)
+    : contact.subscription_type_id
+      ? [contact.subscription_type_id]
+      : []
   const myCourses = courses.filter((c) => hasAccess(c, heldTypeIds, purchasedCourseIds))
 
   // ── Shop quick links — the studio's sellable channels, deep-linked to the right
@@ -553,7 +558,7 @@ export default function SpaceHome() {
 
       {/* Branding */}
       {team?.showBranding === true && (
-        <p className="pt-6 text-center text-[11px]" style={{ color: textMuted }}>
+        <p className="pt-6 text-center text-xs" style={{ color: textMuted }}>
           {t('poweredBy')}{' '}
           <Link href={'/' as Route} className="hover:underline font-medium" style={{ color: textMuted }}>
             Linyup

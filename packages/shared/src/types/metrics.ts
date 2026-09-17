@@ -245,14 +245,12 @@ export interface PlatformMobileMetrics {
  *   - GCP reports MONTH-TO-DATE MONEY against a budget.
  *   - Brevo reports CREDITS REMAINING on a plan — not a currency amount at all.
  *   - DeepL reports CHARACTERS used against a cap.
+ *   - Stripe reports a COMPLETED MONTH'S MONEY, split by whose cost it is —
+ *     two figures that must never be added (see `StripeCostSnapshot`).
  *
  * ── WHAT IT DOES NOT COVER ──────────────────────────────────────────────────
- * Stripe is absent on purpose. Connect processing fees are the STUDIO's cost,
- * not Linyup's, so a single "Stripe fees" total would conflate two parties'
- * money and overstate platform COGS. Adding Stripe means first deciding whether
- * the page shows Linyup's own cost only, or splits platform-vs-studio
- * explicitly. Cloudflare (flat-rate Workers), PostHog and EAS expose nothing
- * usable; the Providers page states that per card rather than leaving a blank.
+ * Cloudflare (flat-rate Workers), PostHog and EAS expose nothing usable; the
+ * Providers page says so beneath its cost cards rather than leaving a blank.
  */
 export interface PlatformProviderCosts {
   gcp?: GcpCostSnapshot

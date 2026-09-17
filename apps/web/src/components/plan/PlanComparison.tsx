@@ -76,7 +76,6 @@ const GROUPS: { heading: string; rows: CmpRow[] }[] = [
       { label: 'rowKiosk', note: 'kioskNote', values: [false, false, true, true] },
       { label: 'rowAnalytics', values: [false, false, true, true] },
       { label: 'rowApi', values: [false, false, true, true] },
-      { label: 'rowAiInsights', values: [false, false, 'soon', 'soon'] },
       { label: 'rowWhatsapp', values: [false, false, 'soon', 'soon'] },
     ],
   },
@@ -147,7 +146,7 @@ export function PlanComparison({ currentPlan }: { currentPlan: SaasPlan | null }
                     <TableRow className="hover:bg-transparent">
                       <TableCell
                         colSpan={PLAN_ORDER.length + 1}
-                        className="bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                        className="bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                       >
                         {t(group.heading)}
                       </TableCell>
@@ -159,7 +158,7 @@ export function PlanComparison({ currentPlan }: { currentPlan: SaasPlan | null }
                           <TableCell className="align-top text-sm font-medium">
                             {t(row.label)}
                             {row.note && (
-                              <span className="mt-0.5 block text-[11px] font-normal leading-snug text-balance text-muted-foreground">
+                              <span className="mt-0.5 block text-xs font-normal leading-snug text-balance text-muted-foreground">
                                 {t(row.note as Parameters<typeof t>[0])}
                               </span>
                             )}

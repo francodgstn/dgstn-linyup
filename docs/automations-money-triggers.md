@@ -1,3 +1,8 @@
+---
+title: Money triggers for the automation engine
+status: living
+area: payments
+---
 # Money triggers for the automation engine
 
 A studio can now automate off what Stripe does to a payment. Until this landed, the

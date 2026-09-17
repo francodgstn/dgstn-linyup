@@ -2,7 +2,7 @@
 # Firebase CLI later fills with content:
 #   - the Firebase project itself
 #   - a Web App (whose generated config feeds the NEXT_PUBLIC_* env vars)
-#   - the two Hosting sites (app + landing)
+#   - the Hosting sites (app + landing, and api where an environment has one)
 #
 # All google_firebase_* resources REQUIRE the google-beta provider.
 
@@ -44,6 +44,20 @@ resource "google_firebase_hosting_site" "landing" {
   provider = google-beta
   project  = var.project_id
   site_id  = var.landing_site_id
+
+  depends_on = [google_firebase_project.this]
+}
+
+# The public API + MCP server site (docs/public-api.md -> Hosting target). Optional:
+# only environments that set api_site_id have one, so sandbox and prod plan no
+# change until theirs exists. Its custom domain (api-stg.linyup.com) and the
+# public invoker on the `api` function stay out of Terraform, like the other
+# sites' domains and every function's IAM, which firebase deploy owns.
+resource "google_firebase_hosting_site" "api" {
+  count    = var.api_site_id == null ? 0 : 1
+  provider = google-beta
+  project  = var.project_id
+  site_id  = var.api_site_id
 
   depends_on = [google_firebase_project.this]
 }

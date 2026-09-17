@@ -55,7 +55,7 @@ export function WaiverChip({
 
   return (
     <span
-      className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${
+      className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs font-semibold ${
         shown === 'revoked'
           ? 'border-destructive/40 text-destructive'
           : 'border-amber-300 text-amber-700'
@@ -106,7 +106,7 @@ export function WaiverDoorCheckChip({
 
   return (
     <span
-      className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-sky-300 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700"
+      className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-sky-300 px-1.5 py-0.5 text-xs font-semibold text-sky-700"
       title={detail}
     >
       <UserCheck className="h-3 w-3" aria-hidden />

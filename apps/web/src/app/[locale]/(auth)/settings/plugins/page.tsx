@@ -71,12 +71,16 @@ import { cn } from '@/lib/utils'
  */
 const REMOVE_EFFECT_KEY: Record<
   string,
-  'removeConfirmBodyWebsite' | 'removeConfirmBodyCourses' | 'removeConfirmBodyBundle'
+  'removeConfirmBodyWebsite' | 'removeConfirmBodyCourses' | 'removeConfirmBodyBundle' | 'removeConfirmBodyApiKeys'
 > = {
+  // revokeAllApiKeys: every key the team issued is revoked, for good — a
+  // reinstall does not bring one back, so integrations need new keys.
+  'api-connectors': 'removeConfirmBodyApiKeys',
   // A CONTAINER's removal also removes the members the reconciler installed for
   // it, so the default copy ("your data is kept") is true of the data but not of
   // the features. Say both.
   hmd: 'removeConfirmBodyBundle',
+  ai: 'removeConfirmBodyBundle',
   // unpublishSiteForTeam: deletes site_published/{teamId}, flags the draft disabled.
   website: 'removeConfirmBodyWebsite',
   // deleteAllCoursePublicProfiles: batch-deletes every course public_profile
@@ -181,7 +185,7 @@ function PluginBadgeIcons({
         {isBeta && (
           <Badge
             variant="secondary"
-            className="border-blue-200 bg-blue-50 text-[11px] font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300"
+            className="border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300"
           >
             {t('statusBeta')}
           </Badge>
@@ -364,7 +368,7 @@ function PluginCard({
               {t(manifest.nameKey as Parameters<typeof t>[0])}
             </span>
             {manifest.locked && !isInstalled && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground shrink-0">
                 <Lock className="h-2.5 w-2.5" />
                 {t('lockedBadge')}
               </span>

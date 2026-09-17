@@ -63,7 +63,7 @@ function SeatMeter({ session, state }: { session: Session; state: 'past' | 'next
         {against != null && against > 0 ? `${primary}/${against}` : primary}
       </p>
       {showAttendance ? (
-        <p className="mt-0.5 text-[11px] leading-none text-muted-foreground">{t('seatsAttended')}</p>
+        <p className="mt-0.5 text-xs leading-none text-muted-foreground">{t('seatsAttended')}</p>
       ) : cap != null && cap > 0 ? (
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
@@ -72,10 +72,10 @@ function SeatMeter({ session, state }: { session: Session; state: 'past' | 'next
           />
         </div>
       ) : (
-        <p className="mt-0.5 text-[11px] leading-none text-muted-foreground">{t('seatsBooked')}</p>
+        <p className="mt-0.5 text-xs leading-none text-muted-foreground">{t('seatsBooked')}</p>
       )}
       {trials > 0 && (
-        <p className="mt-1 text-[11px] leading-none text-emerald-600">
+        <p className="mt-1 text-xs leading-none text-emerald-600">
           {t('seatsTrials', { count: trials })}
         </p>
       )}
@@ -144,7 +144,7 @@ function SessionRow({
       <div className="w-11 shrink-0 text-right">
         <p className="text-sm font-semibold leading-none tabular-nums">{time}</p>
         {session.duration_minutes ? (
-          <p className="mt-1 text-[11px] leading-none text-muted-foreground tabular-nums">
+          <p className="mt-1 text-xs leading-none text-muted-foreground tabular-nums">
             {t('durationMinutes', { minutes: session.duration_minutes })}
           </p>
         ) : null}

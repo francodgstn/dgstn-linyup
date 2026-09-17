@@ -46,7 +46,7 @@ export function Figure({
     <div className="h-full">
       <div className="mb-1.5 flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 shrink-0 text-primary/60" />
-        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {title}
         </p>
       </div>

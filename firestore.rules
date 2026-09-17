@@ -710,6 +710,17 @@ service cloud.firestore {
         allow write: if false; // Only cloud functions should write to activity log
       }
 
+      // AI readings about the whole team (the `ai-team-sentiment` module —
+      // types/aiInsights.ts). Written only by `generateTeamSentiment`, which also
+      // keeps the daily run count here; a client write would let a studio reset
+      // its own cap. Read by ALL-SCOPED members only: a coach scoped to their own
+      // book cannot read the other contacts, so they do not read a reading of
+      // them either — the callable refuses them for the same reason.
+      match /ai_reports/{reportId} {
+        allow read:  if isTeamMember(teamId) && callerIsAllScoped(teamId);
+        allow write: if false;
+      }
+
       // Team weekly reports subcollection (moved from users/{userId}/user_weekly_reports)
       match /team_weekly_reports/{weeklyReportId} {
         // All team members can read weekly reports
@@ -925,6 +936,26 @@ service cloud.firestore {
       match /webhook_endpoints/{endpointId} {
         allow read:   if isTeamMember(teamId);
         allow write:  if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+      }
+
+      // Public API keys and their daily usage counters (docs/public-api.md).
+      // Owner-only to read, like integrations: a key record is not the secret,
+      // but it says what the team exposes and to whom. Written only by the
+      // createApiKey / revokeApiKey callables and the API function.
+      match /api_keys/{keyId} {
+        allow read:  if hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+      match /api_usage/{day} {
+        allow read:  if hasTeamRole(teamId, 'owner');
+        allow write: if false;
+      }
+      // Connected apps (OAuth grants). An owner sees every grant; a member sees
+      // the ones they granted, which is what lets them disconnect their own.
+      match /oauth_grants/{grantId} {
+        allow read:  if hasTeamRole(teamId, 'owner')
+                     || (isTeamMember(teamId) && resource.data.uid == request.auth.uid);
+        allow write: if false;
       }
 
       // Payment events (Payrexx) — immutable audit trail written by handlePayrexxWebhook.
@@ -1278,13 +1309,16 @@ service cloud.firestore {
       // Requires the contacts.manage capability (viewers are read-only). Own-scoped
       // members (coach) may only create a contact owned by themselves
       // (uid in assigned_coach_ids, or createdBy == uid) so it lands in their own book.
-      allow create: if (request.resource.data.teamId == getUserCurrentTeam()
+      // No client creates a contact holding a plan: plans are grants, given
+      // through the plan callables (docs/multi-plan-holdings.md, phase 2).
+      allow create: if ((request.resource.data.teamId == getUserCurrentTeam()
                           && isTeamMember(request.resource.data.teamId)
                           && hasTeamCapability(request.resource.data.teamId, 'contacts.manage')
                           && (callerIsAllScoped(request.resource.data.teamId)
                               || callerOwnsContact(request.resource)))
                        || isTeacher(request.resource)
-                       || hasRole('admin');
+                       || hasRole('admin'))
+                       && !request.resource.data.keys().hasAny(['subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
 
       // Read/Update/Delete: Must be member of contact's team (own-scope for a coach)
       // OR old teacher-based access.
@@ -1307,12 +1341,15 @@ service cloud.firestore {
       // prose as the model's. `held_plans`, `held_plan_type_ids` and
       // `held_plans_next_change_at_ms` are `recomputeHeldPlans`'s alone
       // (sync/heldPlans.ts): the list of plans the contact holds, which phase 3
-      // of docs/multi-plan-holdings.md makes an access input.
+      // of docs/multi-plan-holdings.md makes an access input. The legacy
+      // `subscription_*` plan slot is server-written since phase 2: staff change
+      // plans through assignPlan / changePlan / endPlan (contacts/planCallables.ts),
+      // and every other writer is a Cloud Function.
       allow update: if (canWriteContact(resource)
                        || hasRole('admin')
                        || (isSelfContact(contactId)
                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'last_seen_at', 'mobile_app'])))
-                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms']);
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
       allow delete: if (canAccessContact(resource)
                           && hasTeamCapability(resource.data.teamId, 'contacts.delete'))
                        || hasRole('admin');
@@ -2600,6 +2637,24 @@ service cloud.firestore {
     // handleAppStoreWebhook (Admin SDK, after verifying Apple's HMAC), read by
     // the operator console (Admin SDK). No client access.
     match /store_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Public API credentials (docs/public-api.md), keyed by the SHA-256 of the
+    // secret. Minted, rotated and revoked only by api/auth/credentials.ts (Admin
+    // SDK) and read only by the principal resolver. No client access: a readable
+    // row would name a team, a member and the scopes a stolen secret carries.
+    match /api_credentials/{credentialId} {
+      allow read, write: if false;
+    }
+
+    // OAuth authorization requests awaiting consent, and cached client metadata
+    // documents. Written and read only by the api function and the consent
+    // callables (Admin SDK).
+    match /oauth_requests/{requestId} {
+      allow read, write: if false;
+    }
+    match /oauth_clients/{clientKey} {
       allow read, write: if false;
     }
 

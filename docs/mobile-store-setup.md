@@ -1,3 +1,8 @@
+---
+title: "Member app — store setup: TestFlight + Play, testing now, public later"
+status: living
+area: mobile
+---
 # Member app — store setup: TestFlight + Play, testing now, public later
 
 The sequel to `docs/mobile-eas-setup.md`. That runbook got the app building and

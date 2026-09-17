@@ -119,8 +119,25 @@ export interface HydratedSession {
   allowBooking?: boolean;
 }
 
+/** A session the contact holds a booking on, with what `getMyBookings` says
+ *  about cancelling it. `cancellable` is resolved SERVER-SIDE against the same
+ *  rules `cancelBooking` applies (`memberCanCancel`,
+ *  packages/functions/src/booking/myBookings.ts). The app never re-derives it
+ *  from the booking's status — it got that wrong once: a fresh booking on an
+ *  auto-confirm class is `confirmed`, and a client-side "only pending cancels"
+ *  rule refused every cancellation a member ever tried while still showing
+ *  the bin (PrimeTestLab report 7107, M-02). */
+export interface BookedSession extends HydratedSession {
+  cancellable: boolean;
+  /** The `booking_token` for `cancelBooking`, or null when not cancellable. */
+  cancelToken: string | null;
+}
+
 export interface SessionWithStatus extends HydratedSession {
   status: SessionParticipationStatus;
+  /** Set on `booked` rows only — see BookedSession. */
+  cancellable?: boolean;
+  cancelToken?: string | null;
 }
 
 /** The shared `TeamLeaderboard` document as `FirestoreService.getTeamLeaderboard`

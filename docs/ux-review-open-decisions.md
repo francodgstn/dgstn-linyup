@@ -1,3 +1,8 @@
+---
+title: Open decisions — parked for Franco
+status: living
+area: product
+---
 # Open decisions — parked for Franco
 
 Questions raised while working the UX review that need a product call rather than a

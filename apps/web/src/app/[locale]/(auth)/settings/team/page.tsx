@@ -201,14 +201,22 @@ const presetSchema = z.object({
 })
 type PresetData = z.infer<typeof presetSchema>
 
-const gatewaySchema = z.object({
-  gatewayType: z.enum(['stripe', 'payrexx']),
-  identifier: z.string().min(1, 'Required'),
-  currency: z.string().min(3).max(3).toUpperCase(),
-  // Payrexx-specific (optional — only submitted when gatewayType === 'payrexx')
-  webhookSigningSecret: z.string().optional(),
-  defaultSubscriptionTypeId: z.string().optional(),
-})
+const gatewaySchema = z
+  .object({
+    gatewayType: z.enum(['stripe', 'payrexx']),
+    identifier: z.string().min(1, 'Required'),
+    currency: z.string().min(3).max(3).toUpperCase(),
+    webhookSigningSecret: z.string().optional(),
+    defaultSubscriptionTypeId: z.string().optional(),
+  })
+  // REQUIRED for Payrexx: handlePayrexxWebhook fails closed without it (401,
+  // nothing recorded), so a secret-less Payrexx gateway is a dead integration.
+  // Stripe stays optional — blank there is the documented "not recording yet".
+  .superRefine((v, ctx) => {
+    if (v.gatewayType === 'payrexx' && !v.webhookSigningSecret?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['webhookSigningSecret'], message: 'Required' })
+    }
+  })
 type GatewayFormData = z.infer<typeof gatewaySchema>
 
 // ─── owner-only note ──────────────────────────────────────────────────────────
@@ -1929,7 +1937,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
           {/* BETA, said out loud. This rail has never been exercised end to end
               on production (Franco, 2026-08-24), and a studio deciding where to
               take money is entitled to know that before it does. */}
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+          <Badge variant="outline" className="text-xs uppercase tracking-wide">
             {t('paymentsExternalBeta')}
           </Badge>
         </div>
@@ -1983,12 +1991,11 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
             const cfg = item.config
             const label = cfg.type === 'stripe' ? 'Stripe' : 'Payrexx'
             const identifier = cfg.type === 'stripe' ? cfg.publishable_key : cfg.instance_name
-            // A BYO Stripe row with no signing secret records NOTHING:
-            // handleTeamStripeWebhook answers `no_signing_secret` and returns 400
-            // before it looks at the body. Payrexx is not the same case — a blank
-            // secret there skips signature verification but still records — so the
-            // stalled state is deliberately Stripe-only rather than symmetrical.
-            const stalled = item.enabled && cfg.type === 'stripe' && !cfg.webhook_signing_secret
+            // A BYO row with no signing secret records NOTHING, on either rail:
+            // handleTeamStripeWebhook and handlePayrexxWebhook both answer
+            // `no_signing_secret` before they look at the body. The dialog now
+            // requires the secret for Payrexx, so this catches rows saved before.
+            const stalled = item.enabled && !cfg.webhook_signing_secret
             return (
               <div key={item.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">
@@ -2134,7 +2141,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                   no Stripe API call). Saying so beats leaving an owner to infer
                   that pasting it turns card payments on. */}
               {selectedType === 'stripe' && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t('paymentsPublishableKeyHelp')}
                 </p>
               )}
@@ -2161,14 +2168,20 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                 }
                 autoComplete="off"
               />
-              <p className="text-[11px] text-muted-foreground">
+              {errors.webhookSigningSecret && (
+                <p className="text-xs text-destructive">{t('paymentsWebhookSecretRequired')}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
                 {selectedType === 'stripe' ? (
                   t.rich('paymentsWebhookSecretHelpStripe', {
                     teamId,
                     code: (chunks) => <code className="bg-muted px-1 rounded">{chunks}</code>,
                   })
                 ) : (
-                  t.rich('paymentsWebhookSecretHelpPayrexx', {
+                  // Superseded key `paymentsWebhookSecretHelpPayrexx` still exists
+                  // in the locale files; it offered "leave blank to disable
+                  // verification", which the webhook no longer allows.
+                  t.rich('paymentsWebhookSecretHelpPayrexxRequired', {
                     code: (chunks) => <code className="bg-muted px-1 rounded">{chunks}</code>,
                   })
                 )}
@@ -2199,7 +2212,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                       <p className="text-xs font-medium text-amber-900 dark:text-amber-200">
                         {t('paymentsWebhookEventsTitle')}
                       </p>
-                      <p className="text-[11px] text-amber-900/90 dark:text-amber-200/90">
+                      <p className="text-xs text-amber-900/90 dark:text-amber-200/90">
                         {t.rich('paymentsWebhookEventsHelp', {
                           code: (chunks) => (
                             <code className="rounded bg-amber-100 px-1 dark:bg-amber-900/60">
@@ -2238,7 +2251,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                   </Select>
                 )}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {selectedType === 'stripe' ? (
                   t.rich('paymentsDefaultSubscriptionTypeHelpStripe', {
                     code: (chunks) => <code className="bg-muted px-1 rounded">{chunks}</code>,

@@ -328,6 +328,20 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "ai_summary.generated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "contacts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "teamId",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "deleted_at",
           "order": "ASCENDING"
         },
@@ -3251,6 +3265,30 @@
     },
     {
       "collectionGroup": "notifications",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "api_usage",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "api_credentials",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "oauth_requests",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "oauth_clients",
       "fieldPath": "expires_at",
       "ttl": true,
       "indexes": []

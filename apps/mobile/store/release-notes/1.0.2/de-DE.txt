@@ -1,0 +1,4 @@
+• Das Stornieren einer Lektion funktioniert wieder. Der Papierkorb erscheint nur noch, solange stornieren möglich ist, und nennt sonst den Grund.
+• Buchst du im Tab Training, weiss die Übersicht es sofort.
+• Die Anmeldung erkennt eine vertippte E-Mail-Adresse, bevor der Code verschickt wird.
+• Kleinere Korrekturen: Eine Woche Serie heisst jetzt «1 Woche», und das Statistik-Diagramm schneidet den ersten und letzten Monat nicht mehr ab.

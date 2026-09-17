@@ -32,6 +32,9 @@ const GATED: Array<[string, string, string]> = [
   ['issue.ts', 'previewTarif595Receipt', 'the dry run of creating a receipt'],
   ['issue.ts', 'issueTarif595Receipt', 'creating a receipt'],
   ['bulk.ts', 'startTarif595BulkIssue', 'creating a receipt for every member'],
+  // Not a receipt, but it spends the studio's model budget on the studio's
+  // behalf — gated like creation, and rate-limited on top.
+  ['suggest.ts', 'suggestTarif595Mappings', 'proposing the offering → position map'],
 ]
 const UNGATED: Array<[string, string, string]> = [
   ['download.ts', 'downloadTarif595Receipt', 'retrieving a receipt already handed out'],

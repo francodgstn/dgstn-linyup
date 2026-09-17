@@ -1,3 +1,8 @@
+---
+title: FareHarbor → Linyup — competitive feature analysis
+status: record
+area: product
+---
 # FareHarbor → Linyup — competitive feature analysis
 
 > **Status: analysis, not a commitment.** Nothing here is scheduled. Effort
@@ -343,6 +348,8 @@ Three decisions this analysis surfaced but could not make. **Two are now resolve
 (2026-08-15) and are kept with their answers rather than deleted, so the reasoning
 survives the decision.
 
+### 6.1 Tenant content translation
+
 **1. Tenant content translation — RESOLVED 2026-08-15: no per-locale authoring,
 ever. Machine translation into the PUBLIC MIRRORS, for findability. Shaped below;
 not yet scheduled.**
@@ -427,9 +434,13 @@ marketing copy it can be given domain context for. The real costs are re-transla
 on every content edit, mirror growth, and accountability for a wrong translation —
 all three bounded by the marketing/binding split above.
 
+### 6.2 Guest count
+
 **2. Guest count — RESOLVED 2026-08-15: declined.** See §5. The demand is not real
 for the studios being sold to now, and contact selection at sign-in already covers
 the parent-books-children case that motivated it.
+
+### 6.3 The fitness-aggregator partner rail
 
 **3. The fitness-aggregator partner rail — bet or distraction?**
 The pieces are half-built already (the fitness-app field on the guest form,

@@ -8,7 +8,8 @@ import {
   touchTeamForSurfaceRecompute,
 } from '../utils/plugins'
 import { rebuildLedgerForTeam } from '../accounting/rebuild'
-import { KEEP_COURSE_MIRRORS_FIELD } from '@linyup/shared'
+import { revokeAllApiKeys, revokeAllOAuthGrants } from '../api/auth/credentials'
+import { API_CONNECTORS_PLUGIN_ID, KEEP_COURSE_MIRRORS_FIELD } from '@linyup/shared'
 
 export const onInstalledPluginStatusChange = onDocumentWritten(
   'teams/{teamId}/installed_plugins/{pluginId}',
@@ -77,6 +78,27 @@ export const onInstalledPluginStatusChange = onDocumentWritten(
       }
       // Batch-delete all course/public_profile summaries for this team.
       await deleteAllCoursePublicProfiles(teamId)
+    } else if (pluginId === API_CONNECTORS_PLUGIN_ID) {
+      // An external DOOR, not a public artefact: every key the team issued stops
+      // working the moment the plugin goes (removal, lapse, downgrade to Free).
+      // Creation is the only place the install gate sits (api/keys.ts), so
+      // without this arm an uninstalled team would keep reading through keys it
+      // already held. Reinstalling does NOT bring them back — revoked is final.
+      // Connected apps (OAuth grants) are the same door, opened from claude.ai or
+      // ChatGPT instead of Settings, and close with it.
+      // Triggers are at-least-once and can arrive late: a deactivation delivered
+      // after the studio installed the plugin again would close doors opened
+      // since. Ask the install as it is NOW, not as the event remembers it.
+      const current = await event.data?.after.ref.get()
+      if (current?.data()?.status === 'active') {
+        console.log(`[plugins] team ${teamId}: stale api-connectors deactivation ignored (installed again)`)
+        return
+      }
+      const revoked = await revokeAllApiKeys(teamId, 'system')
+      const disconnected = await revokeAllOAuthGrants(teamId, 'system')
+      console.log(
+        `[plugins] team ${teamId}: api-connectors deactivated, ${revoked} API key(s) revoked, ${disconnected} connected app(s) disconnected`
+      )
     }
     // NOTE: 'documents' has NO teardown any more, because Documents is no longer
     // a plugin — there is no install to deactivate. The arm that used to delete

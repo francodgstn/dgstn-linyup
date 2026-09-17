@@ -23,10 +23,12 @@
  *   --from-team <teamId>          Resume contacts/sessions from a specific team
  *   --verify                      Run verification after migration
  *
- * Passes: setup | auth-users | users | teams | activities | session-series | contacts | sessions | events | exam-checkins | cup-checkins | event-categories | referrals | team-subcollections | places | org-website | season-calendar | activation | affiliations | verify
+ * Passes: setup | auth-users | users | teams | activities | session-series | contacts | sessions | events | exam-checkins | cup-checkins | event-categories | referrals | team-subcollections | places | org-website | season-calendar | activation | affiliations | plan-grants | verify
  *
  *   activation    — part of every full run that has --live; alone, to flip a club live at its wave
  *   affiliations  — never part of a full run; the licence re-sync while the old system stays master
+ *   plan-grants   — part of every full run; each contact's legacy plan slot as a plan grant. A
+ *                   per-club contacts catch-up runs it after: --only plan-grants --teams X
  */
 
 import { parseArgs } from 'node:util'
@@ -54,6 +56,7 @@ import { pass13OrgWebsite }         from './migration/passes/13-org-website'
 import { pass14SeasonCalendar }     from './migration/passes/14-season-calendar'
 import { pass15Activation }         from './migration/passes/15-activation'
 import { pass16Affiliations }       from './migration/passes/16-affiliations'
+import { pass17PlanGrants }         from './migration/passes/17-plan-grants'
 import { verify }                   from './migration/verify'
 
 const { values } = parseArgs({
@@ -278,6 +281,9 @@ async function run() {
   // The licence re-sync is never part of a full run — pass 05 writes the same
   // rows on import; this exists for the weeks the old system stays master.
   if (only === 'affiliations')                 await pass16Affiliations(cfg, teamIds)
+  // After the contacts pass, which writes the slot this imports as a plan grant
+  // (docs/multi-plan-holdings.md).
+  if (!only || only === 'plan-grants')         await pass17PlanGrants(cfg, teamIds)
 
   if (!only || only === 'verify' || values['verify']) await verify(teamIds, !!cfg.teams?.length)
 

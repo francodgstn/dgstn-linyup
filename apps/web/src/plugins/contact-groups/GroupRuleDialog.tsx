@@ -101,7 +101,7 @@ export function GroupRuleDialog({
           <p className="text-sm text-muted-foreground">{t('ruleExplainer')}</p>
 
           <div className="rounded-lg border bg-muted/30 p-2.5 space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t('ruleCriteria')}
             </p>
             {keys.length === 0 ? (

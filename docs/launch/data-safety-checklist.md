@@ -1,3 +1,8 @@
+---
+title: Data safety checklist
+status: living
+area: ops
+---
 # Data safety checklist
 
 Goal: make "we got it wrong" (bad migration, misconfigured setup) **recoverable**,

@@ -80,7 +80,7 @@ export interface Asset {
    */
   quantity?: number
   /** Straight-line to zero over this many months (category default, editable).
-   * No residual values, no component accounting — docs/finance-accrual.md §4. */
+   * No residual values, no component accounting — docs/finance-accrual.md → "Assets". */
   useful_life_months: number
   /** Free-text location ("main room", "storage") — multi-club orgs have a team
    * per club, so this stays a label, not a Place reference. */

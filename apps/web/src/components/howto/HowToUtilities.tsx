@@ -96,7 +96,7 @@ function ChecklistCard() {
             style={{ width: `${requiredTotal ? (requiredDone / requiredTotal) * 100 : 0}%` }}
           />
         </div>
-        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
           {tOnb('setup.progress', { done: requiredDone, total: requiredTotal })}
         </span>
       </div>
@@ -163,7 +163,7 @@ function TipsCard() {
         )}
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {tDiscover('tipCounter', { current: index + 1, total: TIPS.length })}
         </span>
         <Button

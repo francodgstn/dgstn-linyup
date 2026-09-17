@@ -148,7 +148,7 @@ function BarCard({ event, color, past }: { event: Event; color: string; past: bo
           className="inline-block h-2 w-2 shrink-0 translate-y-px rounded-full"
           style={{ background: color }}
         />
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">
           {event.type ? eventTypeLabel(event.type, tE.has, tE) : t('timelineTypeless')}
         </span>
       </div>
@@ -731,7 +731,7 @@ export function EventsTimeline({
                   className="flex items-center"
                   style={{ height: b.lanes * LANE_H }}
                 >
-                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     {/* NO DOT ON AN OWNER BAND. A type band is one colour, so a
                         dot restates the bars beside it; an owner band holds
                         every type at once and a single colour would name one of
@@ -775,7 +775,7 @@ export function EventsTimeline({
                 {drawnTicks.map((tick) => (
                   <div
                     key={tick.date.getTime()}
-                    className="absolute top-0 text-[10px] leading-5 text-muted-foreground"
+                    className="absolute top-0 text-xs leading-5 text-muted-foreground"
                     style={{ left: `${tick.at * 100}%` }}
                   >
                     {tick.labelled && (
@@ -899,7 +899,7 @@ export function EventsTimeline({
                               // box, so clipping the fill to the rounded corners
                               // this way deletes almost every title on the
                               // track. The fill rounds its own bottom instead.
-                              className={`group absolute z-20 flex items-center rounded-[4px] text-left text-[11px] font-medium text-white transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                              className={`group absolute z-20 flex items-center rounded-[4px] text-left text-xs font-medium text-white transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                 // A clipped edge is drawn SQUARE. A rounded end
                                 // says "it finishes here", which is the one thing
                                 // an event running past the window does not do.
@@ -975,12 +975,12 @@ export function EventsTimeline({
                             </span>
                           )}
                           {p.labelSide === 'after' && (
-                            <span className="pointer-events-none absolute left-full ml-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
+                            <span className="pointer-events-none absolute left-full ml-1.5 whitespace-nowrap text-xs font-medium text-foreground">
                               {event.title}
                             </span>
                           )}
                           {p.labelSide === 'before' && (
-                            <span className="pointer-events-none absolute right-full mr-1.5 whitespace-nowrap text-[11px] font-medium text-foreground">
+                            <span className="pointer-events-none absolute right-full mr-1.5 whitespace-nowrap text-xs font-medium text-foreground">
                               {event.title}
                             </span>
                           )}
@@ -1045,7 +1045,7 @@ export function EventsTimeline({
                         return next
                       })
                     }
-                    className="flex items-baseline gap-1.5 rounded text-[11px] transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex items-baseline gap-1.5 rounded text-xs transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span
                       className={`inline-block h-2 w-2 shrink-0 translate-y-px rounded-full ${off ? 'opacity-30' : ''}`}
@@ -1124,20 +1124,20 @@ export function EventsTimeline({
                           gutter that names the owner bands is hidden below `sm`
                           — on a phone this row is the only thing that says. */}
                       {ownerBandsWorth && ownerBandOf(e) === 'org' && (
-                        <span className="shrink-0 rounded border px-1 py-px text-[10px] text-muted-foreground">
+                        <span className="shrink-0 rounded border px-1 py-px text-xs text-muted-foreground">
                           {t('timelineBandOrgRow')}
                         </span>
                       )}
-                      <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">
+                      <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
                         {e.type ? eventTypeLabel(e.type, tE.has, tE) : t('timelineTypeless')}
                       </span>
                       {isPast && (
-                        <span className="flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-muted-foreground">
+                        <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted-foreground">
                           <Users className="h-3 w-3" />
                           {e.participants_count ?? 0}
                         </span>
                       )}
-                      <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                         {start ? format.dateTime(start, { day: 'numeric', month: 'short' }) : '—'}
                       </span>
                     </button>

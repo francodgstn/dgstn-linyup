@@ -21,6 +21,7 @@ import {
   type ContactFilterContext,
   type ContactFilterSubject,
   type ContactGroup,
+  type HeldPlan,
   type WaiverAcceptanceState,
   type WaiverSignerFacts,
 } from '@linyup/shared'
@@ -80,32 +81,89 @@ describe('matchesFilter — empty filter', () => {
   })
 })
 
+/** A contact holding these plans, as the plan list stores them. */
+function holding(
+  ...entries: Array<Pick<HeldPlan, 'subscription_type_id' | 'source'> & Partial<HeldPlan>>
+): ContactFilterSubject {
+  return contact({
+    held_plans: entries.map((e) => ({
+      subscription_type_name: null,
+      status: 'active',
+      starts_at_ms: null,
+      ends_at_ms: null,
+      price_id: null,
+      amount: null,
+      recurrence: null,
+      ref: e.subscription_type_id,
+      ...e,
+    })),
+  })
+}
+
+// The subscriptions dimension reads the plan list, through the same held union
+// as the booking gate (docs/multi-plan-holdings.md, phase 3).
 describe('matchesFilter — subscriptions', () => {
-  it('matches the primary subscription_type_id', () => {
-    const c = contact({ subscription_type_id: 'adult-monthly' })
+  it('matches a plan held through a grant', () => {
+    const c = holding({ subscription_type_id: 'adult-monthly', source: 'grant' })
     assert.equal(matchesFilter(c, filter({ subscriptions: ['adult-monthly'] }), { nowMs: NOW }), true)
   })
 
-  // The old contacts-page filter read ONLY subscription_type_id while the list
-  // RENDERED from active_subscriptions, so these contacts showed a subscription
-  // chip yet filtered as "none".
-  it('matches a subscription held only in active_subscriptions', () => {
-    const c = contact({ active_subscriptions: [{ subscription_type_id: 'kids-term' }] })
+  it('matches a plan held through a Stripe subscription', () => {
+    const c = holding({ subscription_type_id: 'kids-term', source: 'stripe' })
     assert.equal(matchesFilter(c, filter({ subscriptions: ['kids-term'] }), { nowMs: NOW }), true)
   })
 
-  it("'none' means no subscription in EITHER field", () => {
-    const bare = contact()
-    const arrayOnly = contact({ active_subscriptions: [{ subscription_type_id: 'kids-term' }] })
-    assert.equal(matchesFilter(bare, filter({ subscriptions: ['none'] }), { nowMs: NOW }), true)
-    assert.equal(matchesFilter(arrayOnly, filter({ subscriptions: ['none'] }), { nowMs: NOW }), false)
+  it('matches a credit pack with credits left, as the gate does', () => {
+    const c = holding({ subscription_type_id: 'pack10', source: 'credits', credits_remaining: 2 })
+    assert.equal(matchesFilter(c, filter({ subscriptions: ['pack10'] }), { nowMs: NOW }), true)
+  })
+
+  it("'none' means no plan held now — an ended plan counts as none", () => {
+    const ended = holding({ subscription_type_id: 'kids-term', source: 'grant', ends_at_ms: NOW - 1 })
+    const live = holding({ subscription_type_id: 'kids-term', source: 'stripe' })
+    assert.equal(matchesFilter(contact(), filter({ subscriptions: ['none'] }), { nowMs: NOW }), true)
+    assert.equal(matchesFilter(ended, filter({ subscriptions: ['none'] }), { nowMs: NOW }), true)
+    assert.equal(matchesFilter(live, filter({ subscriptions: ['none'] }), { nowMs: NOW }), false)
   })
 
   it("ORs 'none' with a named type", () => {
     const f = filter({ subscriptions: ['none', 'adult-monthly'] })
     assert.equal(matchesFilter(contact(), f, { nowMs: NOW }), true)
-    assert.equal(matchesFilter(contact({ subscription_type_id: 'adult-monthly' }), f, { nowMs: NOW }), true)
-    assert.equal(matchesFilter(contact({ subscription_type_id: 'kids-term' }), f, { nowMs: NOW }), false)
+    assert.equal(matchesFilter(holding({ subscription_type_id: 'adult-monthly', source: 'grant' }), f, { nowMs: NOW }), true)
+    assert.equal(matchesFilter(holding({ subscription_type_id: 'kids-term', source: 'grant' }), f, { nowMs: NOW }), false)
+  })
+
+  it('reads nothing but the plan list: the legacy slot alone holds nothing', () => {
+    const slotOnly = contact({ subscription_type_id: 'adult-monthly' })
+    assert.equal(matchesFilter(slotOnly, filter({ subscriptions: ['adult-monthly'] }), { nowMs: NOW }), false)
+  })
+})
+
+describe('matchesFilter — inactivity', () => {
+  const day = 86_400_000
+  const lastSeen = (daysAgo: number) =>
+    contact({ last_session_at: ts(new Date(NOW - daysAgo * day).toISOString()) })
+
+  it('reads any whole number of days, not only the three the contacts page offers', () => {
+    const f = filter({ inactivity: '21d' })
+    assert.equal(matchesFilter(lastSeen(22), f, { nowMs: NOW }), true)
+    assert.equal(matchesFilter(lastSeen(20), f, { nowMs: NOW }), false)
+    assert.equal(matchesFilter(contact(), f, { nowMs: NOW }), true, 'never attended counts as inactive')
+  })
+
+  it('keeps the presets the page offers exactly as they were', () => {
+    assert.equal(matchesFilter(lastSeen(31), filter({ inactivity: '30d' }), { nowMs: NOW }), true)
+    assert.equal(matchesFilter(lastSeen(59), filter({ inactivity: '60d' }), { nowMs: NOW }), false)
+    assert.equal(matchesFilter(lastSeen(91), filter({ inactivity: '90d' }), { nowMs: NOW }), true)
+    assert.equal(matchesFilter(lastSeen(1), filter({ inactivity: 'never' }), { nowMs: NOW }), false)
+  })
+
+  it('reads an unreadable preset as 90 days — the narrowest audience, as an older resolver would', () => {
+    for (const bad of ['0d', '-5d', '2.5d', '21', 'abc'] as const) {
+      const f = filter({ inactivity: bad as ContactFilter['inactivity'] })
+      assert.equal(matchesFilter(lastSeen(60), f, { nowMs: NOW }), false, `${bad} must not widen to 60 days`)
+      assert.equal(matchesFilter(lastSeen(91), f, { nowMs: NOW }), true, `${bad} reads as 90 days`)
+    }
   })
 })
 

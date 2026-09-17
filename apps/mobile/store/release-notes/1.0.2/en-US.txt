@@ -1,0 +1,4 @@
+• Cancelling a class works again. The bin now appears only while cancelling is still allowed, and says why when it is not.
+• Book a class on Train and Dashboard knows right away.
+• Sign-in catches a mistyped email address before sending the code.
+• Smaller fixes: a one-week streak reads "1 week", and the stats chart no longer clips the first and last month.

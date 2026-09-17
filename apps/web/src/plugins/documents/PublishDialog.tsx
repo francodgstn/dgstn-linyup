@@ -126,7 +126,7 @@ export function PublishDialog({ open, onClose, document, onPublish }: PublishDia
                     {o === 'silent' ? t('outcomeSilent') : t('outcomeRequireResign')}
                   </span>
                   {isWaiver && o === 'require_resign' && (
-                    <span className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                       {t('recommended')}
                     </span>
                   )}

@@ -268,7 +268,6 @@ export type PlanFeature =
   | 'automation_flows'
   | 'advanced_alerts'
   | 'advanced_dashboard'
-  | 'ai_insights'
   | 'multiple_managers'
   | 'referral_program'
   | 'courses'
@@ -294,8 +293,8 @@ export type PlanFeature =
  */
 export const MULTIPLE_USERS_PLAN_REFUSAL = 'multiple-users-plan-required'
 
-// NOTE: features delivered by plugins (gamification, referral_program, courses,
-// ai_insights) are now gated by plugin INSTALL state, not these flags — see
+// NOTE: features delivered by plugins (gamification, referral_program, courses)
+// are now gated by plugin INSTALL state, not these flags — see
 // pluginAccessForPlan + useInstalledPlugins. The flags remain for reference /
 // non-UI logic; do not re-introduce feature-flag gates for plugin features.
 export const PLAN_FEATURES: Record<SaasPlan, PlanFeature[]> = {
@@ -357,7 +356,6 @@ export const PLAN_FEATURES: Record<SaasPlan, PlanFeature[]> = {
     'automation_flows',
     'advanced_alerts',
     'advanced_dashboard',
-    'ai_insights',
     'multiple_managers',
     'referral_program',
     'courses',
@@ -386,7 +384,6 @@ export const PLAN_FEATURES: Record<SaasPlan, PlanFeature[]> = {
     'automation_flows',
     'advanced_alerts',
     'advanced_dashboard',
-    'ai_insights',
     'multiple_managers',
     'referral_program',
     'courses',
@@ -403,7 +400,7 @@ export const PLAN_FEATURES: Record<SaasPlan, PlanFeature[]> = {
 // ─── Plugin packaging ─────────────────────────────────────────────────────────
 // Studio/Org include all internal plugins. Coach can activate a curated subset
 // (plugins with an `addon`) as paid monthly add-ons; non-curated plugins are
-// upgrade-locked for coaches. See docs/product-strategy-addons-proposal.md.
+// upgrade-locked for coaches. See docs/product-strategy.md → "Plugin add-ons (Coach plan)".
 
 export type PluginAccess =
   | { kind: 'included' }

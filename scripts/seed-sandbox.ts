@@ -100,6 +100,7 @@ import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
 import { sanitizeMeta, sanitizeSections } from '../packages/functions/src/website/sanitize'
+import { importPlanGrants } from './lib/planGrantImport'
 
 const USE_EMULATOR = !!process.env.FIRESTORE_EMULATOR_HOST
 // Emulator convenience: the Auth host is required alongside Firestore — default
@@ -1595,6 +1596,12 @@ async function seedDemoTeam(profile: SectorProfile) {
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       // Standalone Studio demo teams enable the affiliation axis (team-local 'club').
       affiliations_enabled: true,
+      // No public API or MCP from the /try playground, for the same reason the
+      // messaging policy below hard-silences it: anonymous visitors hold the
+      // shared owner login, so anyone could install the connectors plugin and
+      // mint a key that reads (and bills) our Firestore long after they leave.
+      // Lead tenants are NOT blocked — see scripts/seed-lead.ts.
+      api_access_blocked: true,
       ranking_systems: rankingSystem
         ? [{ ...rankingSystem, is_primary: true, levels: withRankLevelIds(rankingSystem.levels) }]
         : [],
@@ -3266,6 +3273,12 @@ async function main() {
   // reseed refreshes its window, so on the sandbox it never lapses.
   const memberApp = await seedReviewTenant({ db, seededBy: 'seed-sandbox' })
   await seedMobileSettings({ db, seededBy: 'seed-sandbox' })
+
+  // Every seeded plan as a plan grant, and every plan list built
+  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
+  // migration run, so a seeded tenant starts in the shape production will have.
+  const planGrants = await importPlanGrants(db, { teamIds: SECTOR_PROFILES.map((p) => `sandbox-${p.key}`), apply: true })
+  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
 
   console.log('\n✅ Demo playground seeded successfully!\n')
   console.log('   ┌──────────┬──────────────────────────┬────────────────────────┬────────────┐')

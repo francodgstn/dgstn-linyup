@@ -77,8 +77,10 @@
     },
     "cta": {
       "title": "Voyez tout en action",
-      "body": "Essayez un vrai studio — sans inscription.",
-      "button": "Découvrir la démo en direct"
+      "body": "Découvrez la démo en direct — sans inscription"
+    },
+    "all": {
+      "title": "Voir toutes les fonctionnalités"
     }
   },
   "proof": {
@@ -242,11 +244,6 @@
         "description": "Touchez vos membres là où ils sont.",
         "detail": "Envoyez rappels, actualités et messages de réengagement sur WhatsApp, là où vos membres sont déjà."
       },
-      "aiInsights": {
-        "title": "Insights IA",
-        "description": "Anticipez le risque de désabonnement.",
-        "detail": "Laissez l'IA repérer les contacts à risque de départ et rédiger le message idéal pour les reconquérir à temps."
-      },
       "appointments": {
         "title": "Rendez-vous",
         "description": "Rendez-vous individuels réservables.",
@@ -364,7 +361,7 @@
     "cmpMultiTeam": "Plusieurs studios",
     "cmpCentralAdmin": "Administration centrale & vue unifiée",
     "cmpCrossTeam": "Événements & messages inter-équipes",
-    "cmpApi": "Accès API",
+    "cmpApi": "Accès API / MCP",
     "cmpPermissions": "Rôles & permissions avancés",
     "cmpUnlimited": "Illimité",
     "cmpAddon": "Option",

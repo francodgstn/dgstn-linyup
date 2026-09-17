@@ -1,3 +1,8 @@
+---
+title: Member app — EAS + CI setup for STAGING (a runbook for a local agent)
+status: living
+area: mobile
+---
 # Member app — EAS + CI setup for STAGING (a runbook for a local agent)
 
 This is the one-time, owner-account work that `.github/workflows/mobile.yml`

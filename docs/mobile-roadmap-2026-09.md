@@ -1,3 +1,8 @@
+---
+title: Member app — scan and roadmap (2026-09-02)
+status: record
+area: mobile
+---
 # Member app — scan and roadmap (2026-09-02)
 
 The member app (`apps/mobile`, Expo 54 / React Native 0.81) was ported from
@@ -280,6 +285,24 @@ Collected during autonomous execution; none blocks the current steps.
   including the owner's own sessions: on a ready checkout it prints at most
   one line (the missing mobile key) and rebuilds nothing. Remove the hook from
   `.claude/settings.json` if that is unwanted.
+- **A light / dark / system appearance setting** (PrimeTestLab report 7107,
+  S-01). The app follows the system scheme (`userInterfaceStyle:
+  'automatic'`), and a studio's non-adaptive preset (`ink`) overrides it —
+  there is no in-app control. One is small (a preference in AsyncStorage
+  feeding `buildTheme`, plus a row on the profile tab) but it is a product
+  choice: whether a member may override the look the studio chose.
+- **The Feed tab shows "coming soon"** (report 7107, S-02). Either studio
+  posts land there or the tab leaves the bar until they do. Hiding it is one
+  entry in `ProfileScreen`'s tab list; kept as is until what the feed carries
+  is decided.
+- **Landscape on Android** (report 7107, M-04) is NOT a defect in the app:
+  the config locks `orientation: 'portrait'` and the built manifest carries
+  `android:screenOrientation="portrait"` (verified with `expo config --type
+  introspect`). The tester's ASUS ROG Phone forced a rotation on a
+  portrait-locked activity, and Android letterboxes that as a narrow portrait
+  strip — the "thin column, black bars" the report describes. A real
+  landscape layout would mean lifting the lock and reflowing every screen;
+  not planned for a phone-only member app.
 
 ---
 

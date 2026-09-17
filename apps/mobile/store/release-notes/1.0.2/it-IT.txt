@@ -1,0 +1,4 @@
+• L'annullamento di una lezione funziona di nuovo. Il cestino compare solo finché annullare è possibile e, altrimenti, spiega il motivo.
+• Prenoti una lezione in Allenamento e la Panoramica lo sa subito.
+• L'accesso rileva un indirizzo email digitato male prima di inviare il codice.
+• Correzioni minori: una serie di una settimana mostra «1 settimana» e il grafico non taglia più il primo e l'ultimo mese.

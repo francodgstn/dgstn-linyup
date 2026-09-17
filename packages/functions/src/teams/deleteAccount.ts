@@ -41,6 +41,7 @@ import {
   MEMBER_SUBSCRIPTIONS_SUBCOLLECTION,
   TEAMS_COLLECTION,
   TEAM_MEMBERS_SUBCOLLECTION,
+  LIVE_SUBSCRIPTION_STATUSES,
 } from '@linyup/shared'
 import { getConnectStripe } from '../utils/connect/client'
 
@@ -51,7 +52,6 @@ export const TEAM_DELETION_GRACE_DAYS = 30
 
 /** Anything Stripe can still charge for. Paused included — a frozen
  *  subscription is one resume away from billing a studio that no longer exists. */
-const LIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due', 'paused']
 
 async function assertTeamOwner(uid: string, teamId: string): Promise<void> {
   const snap = await admin
@@ -81,7 +81,7 @@ async function stopAllBilling(teamId: string, accountId: string): Promise<number
     .collection(TEAMS_COLLECTION)
     .doc(teamId)
     .collection(MEMBER_SUBSCRIPTIONS_SUBCOLLECTION)
-    .where('status', 'in', LIVE_SUBSCRIPTION_STATUSES)
+    .where('status', 'in', [...LIVE_SUBSCRIPTION_STATUSES])
     .get()
 
   const live = snap.docs.filter((d) => d.data().duplicate !== true && !!d.data().subscriptionId)

@@ -51,6 +51,7 @@ import * as admin from 'firebase-admin'
 import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { format } from 'date-fns'
 import { updateTeamLeaderboard } from '../utils/leaderboard'
+import { IMPORTED_SLOT_GRANT_ID, importedSlotGrantDoc, planGrantsCollection } from '../contacts/planGrants'
 import { detectPerformanceProfile } from '@linyup/shared'
 import {
   TEAMS_COLLECTION,
@@ -225,6 +226,12 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
         flags: { internal: true },
         // Deliberately absent: `payments`. No Connect account means
         // `payments_enabled` fails closed and every priced door stays shut.
+        // No public API or MCP either, for the reason the demo exists: its owner
+        // login is published (docs/test-accounts.md), so anyone who reads the docs
+        // could mint a key and read — and bill — our Firestore indefinitely. Same
+        // block the /try playground carries (docs/public-api.md -> "Blocked
+        // tenants"); creation is refused, so no credential can exist.
+        api_access_blocked: true,
         created: FieldValue.serverTimestamp(),
         createdBy: DEMO_OWNER_UID,
         primaryContact: DEMO_OWNER_UID,
@@ -311,6 +318,7 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
       },
       { merge: true }
     )
+    await writeDemoPlanGrant(db, c.id)
   }
 
   for (const t of DEMO_TESTERS) {
@@ -338,6 +346,7 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
       },
       { merge: true }
     )
+    await writeDemoPlanGrant(db, t.id)
   }
 
   // ── 5. A live schedule, regenerated every run ─────────────────────────────
@@ -526,4 +535,26 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
       attended: attendedCount,
     },
   }
+}
+
+/**
+ * The demo plan as a plan grant (docs/multi-plan-holdings.md). The contact write
+ * sets the legacy slot — the bridge until the readers move to the plan list —
+ * and this gives the same plan as the imported-slot row every seeder writes.
+ * Written AFTER the contact, so the plan-grant trigger finds the contact and
+ * builds its plan list.
+ */
+async function writeDemoPlanGrant(db: admin.firestore.Firestore, contactId: string): Promise<void> {
+  const type = await db
+    .collection(TEAMS_COLLECTION)
+    .doc(DEMO_TEAM_ID)
+    .collection(SUBSCRIPTION_TYPES_SUBCOLLECTION)
+    .doc(SUBSCRIPTION_TYPE_ID)
+    .get()
+  const grant = importedSlotGrantDoc({
+    teamId: DEMO_TEAM_ID,
+    subscription_type_id: SUBSCRIPTION_TYPE_ID,
+    subscription_type_name: (type.data()?.name as string | undefined) ?? null,
+  })
+  if (grant) await planGrantsCollection(db, contactId).doc(IMPORTED_SLOT_GRANT_ID).set(grant)
 }

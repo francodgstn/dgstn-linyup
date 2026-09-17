@@ -33,6 +33,9 @@ import {
   MESSAGING_POLICIES_COLLECTION,
   FEEDBACK_COLLECTION,
   PUBLIC_DOMAINS_COLLECTION,
+  API_CREDENTIALS_COLLECTION,
+  OAUTH_REQUESTS_COLLECTION,
+  OAUTH_CLIENTS_COLLECTION,
   // platform-wide / cross-tenant
   FEEDBACK_PROMPTS_COLLECTION,
   USERS_COLLECTION,
@@ -149,6 +152,10 @@ export const TENANT_DATA_COLLECTIONS: TenantCollection[] = [
     match: { by: 'field', field: 'entityId' },
     externalTeardown: 'cloudflare_hostname',
   },
+  // What a public-API secret authenticates, keyed by its hash. Tenant data for
+  // the same reason as contact update links: a credential that outlives its team
+  // is a live door into nothing — and a door nonetheless.
+  { collection: API_CREDENTIALS_COLLECTION, match: { by: 'field', field: 'teamId' } },
 ]
 
 /**
@@ -194,6 +201,11 @@ export const PLATFORM_COLLECTIONS: string[] = [
   STORE_PRESENCE_COLLECTION,
   STORE_REVIEWS_COLLECTION,
   STORE_EVENTS_COLLECTION,
+  // OAuth state that exists before a team is chosen: an authorization request
+  // awaiting consent, and a client's cached metadata document (which describes
+  // Claude or ChatGPT, not any studio). Both expire on their own.
+  OAUTH_REQUESTS_COLLECTION,
+  OAUTH_CLIENTS_COLLECTION,
 ]
 
 /**

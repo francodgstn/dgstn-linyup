@@ -149,6 +149,7 @@ describe('the two halves are never summed', () => {
     'packages/functions/src/analytics/stripeCosts.ts',
     'apps/admin/src/lib/queries/providerCosts.ts',
     'apps/admin/src/app/(dashboard)/providers/page.tsx',
+    'apps/admin/src/app/(dashboard)/providers/cost-overview.tsx',
   ]
 
   it('no source adds a platform figure to a studio figure', () => {

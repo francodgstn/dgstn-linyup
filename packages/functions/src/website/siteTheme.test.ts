@@ -28,6 +28,7 @@ const sections = (): WebsiteSection[] => [
   { id: 'c', type: 'cta_banner', heading: 'Start', text: 'Now' },
   { id: 'v', type: 'video', heading: 'Film', provider: 'vimeo', videoId: '1113155200' },
   { id: 'f', type: 'faq', items: [{ question: 'q', answer: 'a' }] },
+  { id: 'g', type: 'gallery', images: [], columns: 3 },
 ]
 
 describe('site themes', () => {
@@ -63,8 +64,9 @@ describe('site themes', () => {
     assert.equal(byId.h.headline, 'Training')
     assert.equal(byId.c.style, 'band')
     assert.equal(byId.v.display, 'lightbox')
+    assert.equal(byId.f.style, 'panels')
     // A type the theme says nothing about is the same object.
-    assert.equal(out.sections[3], input[3])
+    assert.equal(out.sections[4], input[4])
     // Pure: the input was not mutated.
     assert.equal((input[1] as { style?: string }).style, undefined)
   })

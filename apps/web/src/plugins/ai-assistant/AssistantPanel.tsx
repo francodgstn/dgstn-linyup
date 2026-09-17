@@ -1,14 +1,27 @@
 'use client'
 
-// AI assistant launcher — a floating button + slide-over chat panel. v1 is a
-// read-only navigation/help copilot (no data access, no actions). Self-gates on
+// AI assistant launcher — a floating button + slide-over chat panel. Read-only:
+// it answers from the studio's data through the public API's read tools, as far
+// as the signed-in member's role allows and never contact details, and helps
+// with navigation; it takes no actions (functions assistant/, docs/public-api.md
+// → "Read tools"). Self-gates on
 // the (locked) ai-assistant plugin being installed for the current team, so it
 // only appears once the operator has unlocked it. Mounted once in the auth layout.
+//
+// REPLIES ARE MARKDOWN. A model asked for a list or a comparison writes it —
+// bold, bullets, a table — and shown as plain text that is asterisks and pipes.
+// So an assistant reply renders through `renderChatMarkdown` (lib/chatMarkdown.ts:
+// GFM, then a sanitizer with a tag allow-list, because the text quotes studio
+// data). The member's OWN messages stay plain text: they typed characters, and
+// "2*3" or "_name_" should read back exactly as written.
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo, type MouseEvent } from 'react'
+import type { Route } from 'next'
 import { useTranslations } from 'next-intl'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
+import { renderChatMarkdown } from '@/lib/chatMarkdown'
+import { useRouter } from '@/i18n/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import {
@@ -103,15 +116,13 @@ function AssistantPanel() {
                 key={i}
                 className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
-                    m.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
-                >
-                  {m.content}
-                </div>
+                {m.role === 'user' ? (
+                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground">
+                    {m.content}
+                  </div>
+                ) : (
+                  <AssistantReply content={m.content} onNavigate={() => setOpen(false)} />
+                )}
               </div>
             ))}
             {sending && (
@@ -141,5 +152,39 @@ function AssistantPanel() {
         </SheetContent>
       </Sheet>
     </>
+  )
+}
+
+/**
+ * One assistant reply, as rendered Markdown. Parsed once per reply rather than on
+ * every keystroke in the composer.
+ *
+ * An IN-APP link (a path starting with `/`) goes through the locale-aware router
+ * and closes the panel, so "open Settings › Roles" lands on the page in the
+ * member's language without a full reload. A modified click (new tab, new window)
+ * and every external link keep the browser's own behaviour — external ones open
+ * in a new tab, set by `renderChatMarkdown`.
+ */
+function AssistantReply({ content, onNavigate }: { content: string; onNavigate: () => void }) {
+  const router = useRouter()
+  const html = useMemo(() => renderChatMarkdown(content), [content])
+
+  function onClick(e: MouseEvent<HTMLDivElement>) {
+    const anchor = (e.target as HTMLElement).closest('a')
+    const href = anchor?.getAttribute('href')
+    if (!href || !href.startsWith('/') || href.startsWith('//')) return
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    e.preventDefault()
+    onNavigate()
+    router.push(href as Route)
+  }
+
+  return (
+    <div
+      className="prose-chat min-w-0 max-w-[85%] rounded-2xl bg-muted px-3 py-2 text-sm text-foreground"
+      onClick={onClick}
+      // Sanitized in renderChatMarkdown with a tag allow-list — see its header.
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   )
 }

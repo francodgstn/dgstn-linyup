@@ -259,7 +259,7 @@ function StatusBadge({ status }: { status: string }) {
     pending_payment: t('statusAwaitingPayment'),
   }
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cls[status] ?? ''}`}>
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cls[status] ?? ''}`}>
       {labels[status] ?? status}
     </span>
   )
@@ -1502,7 +1502,7 @@ export function AppointmentAvailabilityManager({ teamId, userId, variant = 'page
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <p className="font-medium text-sm">{tmpl.title}</p>
                                   <StatusBadge status={tmpl.status} />
-                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                                     {t(tmpl.mode === 'range' ? 'modeRange' : 'modeTimes')}
                                   </span>
                                 </div>

@@ -7,12 +7,13 @@
 // packages/functions/src/contacts/heldPlans.test.ts.
 
 import type { CreditSummaryEntry } from '../types/contact'
-import type {
-  HeldPlan,
-  HeldPlanSource,
-  HeldPlanStatus,
-  HeldPlansMirror,
-  PlanGrantSource,
+import {
+  holdingIsCurrent,
+  type HeldPlan,
+  type HeldPlanSource,
+  type HeldPlanStatus,
+  type HeldPlansMirror,
+  type PlanGrantSource,
 } from '../types/planHoldings'
 import { memberSubscriptionRollupStatus, type MemberSubscriptionRollupInput } from './subscriptionRollup'
 import { subscriptionEndsAtMs, subscriptionIsCancelling } from './subscriptionLifecycle'
@@ -59,6 +60,46 @@ function ms(t: MillisLike): number | null {
 /** Code-unit order, so the result is identical in every runtime and locale. */
 function cmp(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0
+}
+
+/** One subscription type as the payment snapshot needs it. */
+export interface PlanHoldingForPayment {
+  /** Studio price ids of the grants holding this type — what decides whether the
+   *  holding is unmetered or credit-metered. Stripe entries carry none. */
+  priceIds: string[]
+  /** Held by a grant or a Stripe subscription, not only by a credit pack. */
+  heldAsPlan: boolean
+  /** The credit pack holding this type, when one does. */
+  credits: { remaining: number; expiresAtMs: number | null } | null
+}
+
+/**
+ * The plan list, grouped by type, for the payment snapshot
+ * (`loadContactPaymentContext`). Only entries held at `nowMs` count. The price
+ * id comes from each ENTRY, so every held plan is classified by the price it was
+ * given — not only the one the legacy slot happened to name.
+ */
+export function paymentHoldingsByType(
+  contact: { held_plans?: ReadonlyArray<HeldPlan> | null } | null | undefined,
+  nowMs: number
+): Map<string, PlanHoldingForPayment> {
+  const byType = new Map<string, PlanHoldingForPayment>()
+  for (const entry of contact?.held_plans ?? []) {
+    if (!holdingIsCurrent(entry, nowMs)) continue
+    const holding = byType.get(entry.subscription_type_id) ?? {
+      priceIds: [],
+      heldAsPlan: false,
+      credits: null,
+    }
+    if (entry.source === 'credits') {
+      holding.credits = { remaining: entry.credits_remaining ?? 0, expiresAtMs: entry.ends_at_ms }
+    } else {
+      holding.heldAsPlan = true
+      if (entry.price_id && !holding.priceIds.includes(entry.price_id)) holding.priceIds.push(entry.price_id)
+    }
+    byType.set(entry.subscription_type_id, holding)
+  }
+  return byType
 }
 
 /** Is this grant held right now: not ended, started, and not past its expiry. */

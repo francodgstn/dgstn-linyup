@@ -1,3 +1,8 @@
+---
+title: Founder onboarding runbook (first 5)
+status: living
+area: ops
+---
 # Founder onboarding runbook (first 5)
 
 The day-to-day playbook for onboarding a founder studio under the

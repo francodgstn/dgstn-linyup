@@ -77,8 +77,10 @@
     },
     "cta": {
       "title": "Guardalo all'opera",
-      "body": "Prova uno studio reale — senza registrarti.",
-      "button": "Esplora la demo live"
+      "body": "Prova la demo dal vivo — senza registrazione"
+    },
+    "all": {
+      "title": "Vedi tutte le funzioni"
     }
   },
   "proof": {
@@ -242,11 +244,6 @@
         "description": "Raggiungi i membri dove già sono.",
         "detail": "Invia promemoria, aggiornamenti e messaggi di riattivazione su WhatsApp, proprio dove i tuoi membri già sono."
       },
-      "aiInsights": {
-        "title": "Insight AI",
-        "description": "Individua il rischio di abbandono in anticipo.",
-        "detail": "Lascia che l'AI individui i contatti a rischio abbandono e prepari il messaggio giusto per riconquistarli in tempo."
-      },
       "appointments": {
         "title": "Appuntamenti",
         "description": "Appuntamenti individuali prenotabili.",
@@ -364,7 +361,7 @@
     "cmpMultiTeam": "Più studi",
     "cmpCentralAdmin": "Amministrazione centrale e dati unificati",
     "cmpCrossTeam": "Eventi e messaggi tra team",
-    "cmpApi": "Accesso API",
+    "cmpApi": "Accesso API / MCP",
     "cmpPermissions": "Ruoli e permessi avanzati",
     "cmpUnlimited": "Illimitati",
     "cmpAddon": "Opzione",

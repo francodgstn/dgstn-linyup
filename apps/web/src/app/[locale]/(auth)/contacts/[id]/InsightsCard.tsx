@@ -4,9 +4,12 @@
  * THE RIGHT-HAND CARD of the contact header: what the studio reads about the
  * person, beside the profile card that says who they are.
  *
- * Top, the AI summary — an experiment (`contact-summary`). While the switch is
- * off the block is ABSENT, not empty, so a studio that never opted in sees a
- * card of numbers and nothing that hints at a model. Under it: four figures
+ * Top, the AI summary — the `ai-contact-summary` module of the AI insights plugin
+ * (it was the `contact-summary` experiment until 2026-09-16). While the module is
+ * not installed the block is ABSENT, not empty, so a studio that never opted in
+ * sees a card of numbers and nothing that hints at a model. Inside it, with the
+ * `ai-member-recap` module, a "Send to member" action opens `MemberRecapDialog`
+ * with the member-facing part of the same summary. Under it: four figures
  * in a row — the three counters and the engagement band as a coloured dot
  * with its name (it used to be a vertical meter beside the strip, a fill
  * level for something that has four words and no level) — then the
@@ -27,15 +30,22 @@ import {
   AreaChart,
   Area,
 } from 'recharts'
-import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity } from 'lucide-react'
+import { Sparkles, RefreshCw, Trophy, Flame, Star, Activity, Send } from 'lucide-react'
 import { toast } from 'sonner'
-import { computeEngagementBand, isoWeekKey } from '@linyup/shared'
-import type { Contact, EngagementThresholds } from '@linyup/shared'
+import { AI_MODULES, computeEngagementBand, isoWeekKey } from '@linyup/shared'
+import type {
+  Contact,
+  ContactAiMemberRecap,
+  ContactAiSummarySections,
+  EngagementThresholds,
+} from '@linyup/shared'
 import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
-import { useExperimentalFeatures } from '@/hooks/useExperimentalFeatures'
+import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
+import { useCapabilities } from '@/hooks/useCapabilities'
 import { isoWeekLabel, useContactWeeklyReports } from './AttendanceTrendCard'
 import { ENGAGEMENT_BAR, ENGAGEMENT_TEXT } from './engagement'
+import { MemberRecapDialog } from './MemberRecapDialog'
 
 function toDate(ts: unknown): Date | undefined {
   if (!ts) return undefined
@@ -53,8 +63,8 @@ export function InsightsCard({
   thresholds?: EngagementThresholds
   className?: string
 }) {
-  const { isEnabled } = useExperimentalFeatures()
-  const summaryOn = isEnabled('contact-summary')
+  const { isInstalled } = useInstalledPlugins()
+  const summaryOn = isInstalled(AI_MODULES.contactSummary)
   return (
     <div
       className={`flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card ${className}`}
@@ -68,7 +78,11 @@ export function InsightsCard({
       {summaryOn && (
         // Keyed so a summary just generated for one contact never shows over
         // the next contact this component happens to be re-rendered for.
-        <SummaryBlock key={contact.id} contact={contact} />
+        <SummaryBlock
+          key={contact.id}
+          contact={contact}
+          recapOn={isInstalled(AI_MODULES.memberRecap)}
+        />
       )}
       <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'mt-auto'}`}>
         <StatsRow contact={contact} thresholds={thresholds} />
@@ -80,19 +94,42 @@ export function InsightsCard({
 
 // ─── AI summary ───────────────────────────────────────────────────────────────
 
-type SummaryResult = { text: string; language: string; model: string }
+type SummaryResult = {
+  text: string
+  sections: ContactAiSummarySections | null
+  member: ContactAiMemberRecap | null
+  language: string
+  model: string
+}
 
-function SummaryBlock({ contact }: { contact: Contact }) {
+type FreshSummary = {
+  text: string
+  sections: ContactAiSummarySections | null
+  member: ContactAiMemberRecap | null
+  language: string
+}
+
+function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean }) {
   const t = useTranslations('Contacts')
   const qc = useQueryClient()
+  const { can } = useCapabilities()
   const [busy, setBusy] = useState(false)
+  const [recapOpen, setRecapOpen] = useState(false)
   // What the callable just returned, shown until the contact query refetches
   // and the stored record catches up.
-  const [fresh, setFresh] = useState<string | null>(null)
+  const [fresh, setFresh] = useState<FreshSummary | null>(null)
 
   const stored = contact.ai_summary
-  const text = fresh ?? stored?.text ?? null
+  const text = fresh?.text ?? stored?.text ?? null
+  // The parts, when the summary has them — one written before 2026-09-14 does
+  // not, and reads as the paragraph it always was.
+  const sections = fresh ? fresh.sections : (stored?.sections ?? null)
+  // The member-facing recap, when the summary has one (since 2026-09-16).
+  const member = fresh ? fresh.member : (stored?.member ?? null)
+  const language = fresh?.language ?? stored?.language ?? 'en'
   const updated = fresh ? new Date() : toDate(stored?.generated_at)
+  // A fresh summary has not been sent; a stored one may have been.
+  const sentAt = fresh ? undefined : toDate(stored?.member_sent_at)
   // An archived or deleted contact keeps the summary it has; nobody asks for a
   // new one about someone who left.
   const closed = !!contact.archived_at || !!contact.deleted_at
@@ -106,7 +143,12 @@ function SummaryBlock({ contact }: { contact: Contact }) {
         'generateContactSummary'
       )
       const res = await call({ teamId: contact.teamId, contactId: contact.id })
-      setFresh(res.data.text)
+      setFresh({
+        text: res.data.text,
+        sections: res.data.sections ?? null,
+        member: res.data.member ?? null,
+        language: res.data.language,
+      })
       toast.success(t('summaryGenerated'))
       qc.invalidateQueries({ queryKey: ['contact', contact.id] })
     } catch (err) {
@@ -144,19 +186,115 @@ function SummaryBlock({ contact }: { contact: Contact }) {
       </div>
       {text ? (
         <>
-          <p className="mt-2 text-sm leading-relaxed">{text}</p>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            {updated
-              ? `${t('summaryUpdatedOn', {
-                  date: updated.toLocaleDateString(undefined, { dateStyle: 'medium' }),
-                })} · `
-              : ''}
-            {t('summaryDisclaimer')}
-          </p>
+          {sections ? (
+            // THE LABELS ARE THE APP'S, in the reader's language; the parts are
+            // the model's, in the studio's. A part the model left empty is
+            // skipped rather than shown as a bare label.
+            <div className="mt-2 space-y-1.5 text-sm leading-relaxed">
+              {sections.status && (
+                <p>
+                  <span className="font-semibold">{t('summarySectionStatus')}</span> {sections.status}
+                </p>
+              )}
+              {sections.outlook && (
+                <p>
+                  <span className="font-semibold">{t('summarySectionOutlook')}</span> {sections.outlook}
+                </p>
+              )}
+              {sections.nextSession && (
+                <p>
+                  <span className="font-semibold">{t('summarySectionNextSession')}</span>{' '}
+                  {sections.nextSession}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-relaxed">{text}</p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+            <p className="text-xs text-muted-foreground">
+              {updated
+                ? `${t('summaryUpdatedOn', {
+                    date: updated.toLocaleDateString(undefined, { dateStyle: 'medium' }),
+                  })} · `
+                : ''}
+              {t('summaryDisclaimer')}
+            </p>
+            {recapOn && !closed && can('contacts.manage') && (
+              <RecapAction
+                member={member}
+                email={contact.email}
+                unsubscribed={contact.email_unsubscribed === true}
+                sentAt={sentAt}
+                onOpen={() => setRecapOpen(true)}
+              />
+            )}
+          </div>
+          {member && (
+            <MemberRecapDialog
+              open={recapOpen}
+              onOpenChange={setRecapOpen}
+              contact={contact}
+              recap={member}
+              language={language}
+            />
+          )}
         </>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">{t('summaryEmpty')}</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * "Send to member" beside the summary's footer. Always SHOWN while the module is
+ * on and the reader may mail contacts, and DISABLED with its reason as the
+ * tooltip otherwise — a button that silently vanished for a contact with no email
+ * would read as the feature being off.
+ */
+function RecapAction({
+  member,
+  email,
+  unsubscribed,
+  sentAt,
+  onOpen,
+}: {
+  member: ContactAiMemberRecap | null
+  email: string | undefined
+  unsubscribed: boolean
+  sentAt: Date | undefined
+  onOpen: () => void
+}) {
+  const t = useTranslations('Contacts')
+  // A summary written before 2026-09-16 carries no recap: regenerating writes one.
+  const blocked = !member
+    ? t('recapNeedsRegenerate')
+    : !email
+      ? t('recapNoEmail')
+      : unsubscribed
+        ? t('recapUnsubscribed')
+        : null
+  return (
+    <div className="flex items-center gap-2">
+      {sentAt && (
+        <span className="text-xs text-muted-foreground">
+          {t('recapSentOn', { date: sentAt.toLocaleDateString(undefined, { dateStyle: 'medium' }) })}
+        </span>
+      )}
+      <span title={blocked ?? undefined}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onOpen}
+          disabled={!!blocked}
+          className="h-7 gap-1.5 text-xs"
+        >
+          <Send className="h-3.5 w-3.5" />
+          {t('recapAction')}
+        </Button>
+      </span>
     </div>
   )
 }
@@ -177,7 +315,7 @@ function StatsRow({
           so the two readings of one number look like one number. */}
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Trophy className="h-3 w-3 text-primary" />
           {t('statTotalSessions')}
         </p>
@@ -187,14 +325,14 @@ function StatsRow({
           {contact.current_streak ?? 0}
           <span className="text-sm font-normal">w</span>
         </p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Flame className="h-3 w-3 text-orange-500" />
           {t('statStreak')}
         </p>
       </div>
       <div className="px-4 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.current_month_score ?? 0}</p>
-        <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Star className="h-3 w-3 text-yellow-500" />
           {t('statMonthScore')}
         </p>
@@ -345,7 +483,7 @@ function EngagementCell({
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ENGAGEMENT_BAR[band]}`} aria-hidden />
         <span className="truncate">{t(`engagement_${band}` as Parameters<typeof t>[0])}</span>
       </p>
-      <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] leading-tight text-muted-foreground">
+      <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
         <Activity className="h-3 w-3" />
         {t('engagementLabel')}
       </p>

@@ -102,7 +102,7 @@ jobs:
       - name: Deploy to Firebase (Production)
         run: |
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project production --only functions,hosting:landing,firestore,storage --non-interactive --force; then
+            if npx firebase-tools deploy --project production --only functions,hosting:landing,hosting:api,firestore,storage --non-interactive --force; then
               exit 0
             fi
             echo "::warning::firebase deploy attempt $attempt failed; retrying in 30s…"

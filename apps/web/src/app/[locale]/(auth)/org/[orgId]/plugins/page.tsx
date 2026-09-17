@@ -14,7 +14,7 @@ import { useOrg } from '@/contexts/OrgContext'
 import { ORGANIZATIONS_COLLECTION, ORG_INSTALLED_PLUGINS_SUBCOLLECTION, pluginVisibleToTenant, isBundleContainer } from '@linyup/shared'
 import type { InstalledPlugin, PluginManifest, PluginCategory } from '@linyup/shared'
 import { installableManifests } from '@/plugins/registry'
-import { BundleModulesPanel } from '@/plugins/hmd/ConfigPanel'
+import { BundleModulesPanel } from '@/components/plugins/BundleModulesPanel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -124,7 +124,7 @@ function OrgPluginCard({
       {isInstalled && isBundleContainer(manifest.id) && (
         <BundleModulesPanel
           containerId={manifest.id}
-          orgId={orgId}
+          scope={{ kind: 'org', orgId }}
           installation={installation}
           canEdit={canEdit}
         />

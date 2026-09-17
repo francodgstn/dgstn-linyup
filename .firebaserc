@@ -6,24 +6,31 @@
     "production": "linyup-prod"
   },
   "_comment_targets": [
-    "Only `landing` is a real Firebase Hosting target — apps/landing is the static",
-    "marketing site and firebase.json configures exactly that one.",
+    "Two real Firebase Hosting targets:",
+    "- `landing`: apps/landing, the static marketing site (linyup.com).",
+    "- `api`: the public API + MCP server (docs/public-api.md), every path rewritten",
+    "  to the gen2 `api` function. Mapped in every environment; the deploy workflows",
+    "  name it explicitly (hosting:api) alongside hosting:landing. The obvious name",
+    "  linyup-staging-api is gone: a deleted site ID is reserved forever.",
     "",
     "There used to be an `app` target here too, pointing at the {project} sites",
     "(linyup-staging.web.app and friends). It predates the web app moving to App",
-    "Hosting and was never removed: firebase.json has no `app` config and no",
-    "workflow deploys hosting:app, so those sites were provisioned-but-empty and",
+    "Hosting and was never removed: firebase.json had no `app` config and no",
+    "workflow deployed hosting:app, so those sites were provisioned-but-empty and",
     "served a bare 404 to anything pointing at them — which is exactly what",
-    "staging's HOSTING_URL did until 2026-08-14. Removed so the config no longer",
-    "advertises a deploy target that does not exist. The web apps live on App",
-    "Hosting: app.linyup.com, app-stg.linyup.com, demo.linyup.com — with",
-    "linyup.com itself reserved for the `landing` target above."
+    "staging's HOSTING_URL did until 2026-08-14. The web apps live on App",
+    "Hosting: app.linyup.com, app-stg.linyup.com, demo.linyup.com.",
+    "",
+    "`firebase target:apply` rewrites this file and DROPS this key — restore it."
   ],
   "targets": {
     "linyup-sandbox": {
       "hosting": {
         "landing": [
           "linyup-sandbox-landing"
+        ],
+        "api": [
+          "linyup-api-sandbox"
         ]
       }
     },
@@ -31,6 +38,9 @@
       "hosting": {
         "landing": [
           "linyup-staging-landing"
+        ],
+        "api": [
+          "linyup-api-staging"
         ]
       }
     },
@@ -38,6 +48,9 @@
       "hosting": {
         "landing": [
           "linyup-prod-landing"
+        ],
+        "api": [
+          "linyup-api-prod"
         ]
       }
     }

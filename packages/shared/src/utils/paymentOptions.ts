@@ -50,7 +50,13 @@ export interface ContactPaymentSnapshot {
    *  (remaining > 0, unexpired) AND mirror-held credit types whose balance is
    *  exhausted/expired (remaining 0) — the distinction drives no_credits vs
    *  no_subscription denials. */
-  heldCreditTypes: Array<{ subscriptionTypeId: string; remaining: number }>
+  heldCreditTypes: Array<{
+    subscriptionTypeId: string
+    remaining: number
+    /** When this type's soonest credits lapse, epoch ms; null or absent when
+     *  they never do. Decides which pack is spent first (see `bestCreditPlan`). */
+    expiresAtMs?: number | null
+  }>
   /** trial_used_at truthy. Only meaningful for authenticated contacts — guests
    *  are checked by the callable's email-resolved lookup instead. */
   trialUsed?: boolean
@@ -262,6 +268,55 @@ function creditRemaining(snapshot: ContactPaymentSnapshot, id: string): number {
   return entry ? entry.remaining : 0
 }
 
+/** When a held pack's soonest credits lapse, epoch ms; +Infinity when they never do. */
+function creditExpiry(snapshot: ContactPaymentSnapshot, id: string): number {
+  const at = snapshot.heldCreditTypes.find((e) => e.subscriptionTypeId === id)?.expiresAtMs
+  return typeof at === 'number' ? at : Number.POSITIVE_INFINITY
+}
+
+// ─── The best held plan, not the first listed ───────────────────────────────────
+//
+// A member may hold several plans that each cover the same thing
+// (docs/multi-plan-holdings.md §2.5, decision D3). Which one is used is chosen
+// by value, never by the order a rule happens to list its plans in:
+//
+//   1. unmetered and unlimited;
+//   2. unmetered and limited, with allowance left — the most remaining first;
+//   3. credits — the pack lapsing soonest first, so credits are not left to expire.
+//
+// A benefit then prices at the lowest result, which the modifier comparison
+// already does. Ties keep the rule's own order, so a result never flips between
+// two equally good plans.
+
+/** The best unmetered plan among `ids` that covers now. `remainingOf` reads a
+ *  usage window: null = unlimited, 0 = spent. */
+function bestUnmeteredPlan(
+  snapshot: ContactPaymentSnapshot,
+  ids: readonly string[],
+  remainingOf: (id: string) => number | null = () => null
+): string | undefined {
+  let best: { id: string; remaining: number | null } | undefined
+  for (const id of ids) {
+    if (!snapshot.heldUnmeteredTypeIds.includes(id)) continue
+    const remaining = remainingOf(id)
+    if (remaining !== null && remaining <= 0) continue
+    const better =
+      !best || (best.remaining !== null && (remaining === null || remaining > best.remaining))
+    if (better) best = { id, remaining }
+  }
+  return best?.id
+}
+
+/** The pack among `ids` with credits left that lapses soonest. */
+function bestCreditPlan(snapshot: ContactPaymentSnapshot, ids: readonly string[]): string | undefined {
+  let best: string | undefined
+  for (const id of ids) {
+    if (creditRemaining(snapshot, id) <= 0) continue
+    if (best === undefined || creditExpiry(snapshot, id) < creditExpiry(snapshot, best)) best = id
+  }
+  return best
+}
+
 /** Is there a price for a non-covered booker to pay? */
 function hasPaidDoor(dropIn?: { enabled?: boolean; priceAmount?: number } | null): boolean {
   return !!dropIn?.enabled && typeof dropIn.priceAmount === 'number'
@@ -430,12 +485,9 @@ function resolveClassCoverage(
     return typeof r === 'number' ? r : null // null = unlimited
   }
   // 1) Unmetered coverage first — never burns credits. A usage-limited type
-  //    only covers while its window allowance isn't spent.
-  const unmetered = allowed.find((id) => {
-    if (!snapshot.heldUnmeteredTypeIds.includes(id)) return false
-    const r = windowRemaining(id)
-    return r === null || r > 0
-  })
+  //    only covers while its window allowance isn't spent, and the BEST held
+  //    plan covers: unlimited before limited, the most allowance left first.
+  const unmetered = bestUnmeteredPlan(snapshot, allowed, windowRemaining)
   if (unmetered) {
     const r = windowRemaining(unmetered)
     return {
@@ -450,8 +502,9 @@ function resolveClassCoverage(
       denial: null,
     }
   }
-  // 2) Credit coverage — the caller spends one credit atomically at booking.
-  const creditType = allowed.find((id) => creditRemaining(snapshot, id) > 0)
+  // 2) Credit coverage — the caller spends one credit atomically at booking,
+  //    from the pack that lapses soonest.
+  const creditType = bestCreditPlan(snapshot, allowed)
   if (creditType) {
     return {
       options: [
@@ -580,11 +633,13 @@ function resolveBenefitCandidate(
   const benefit = normalizeBenefit(rawBenefit)
   if (!benefit || !allowed.has(benefit.effect)) return null
 
-  // Held (in benefit-config order): unmetered subscription OR usable credits.
+  // The best held plan the benefit lists: an unmetered subscription before a
+  // credit pack, and among packs the one lapsing soonest. Benefits carry no
+  // usage window (v1), so every held unmetered plan counts as unlimited here.
   const via =
-    benefit.subscriptionTypeIds.find(
-      (id) => snapshot.heldUnmeteredTypeIds.includes(id) || creditRemaining(snapshot, id) > 0
-    ) ?? null
+    bestUnmeteredPlan(snapshot, benefit.subscriptionTypeIds) ??
+    bestCreditPlan(snapshot, benefit.subscriptionTypeIds) ??
+    null
   if (!via) return null
 
   switch (benefit.effect) {
@@ -622,7 +677,7 @@ function resolveBenefitCandidate(
     }
     case 'spend_credits': {
       // Explicit credit spend: only a listed pack WITH balance applies.
-      const creditVia = benefit.subscriptionTypeIds.find((id) => creditRemaining(snapshot, id) > 0)
+      const creditVia = bestCreditPlan(snapshot, benefit.subscriptionTypeIds)
       if (!creditVia) return null
       return {
         kind: 'coverage',
@@ -963,9 +1018,11 @@ function resolveTarget(
       // deliberately widens the old primary-subscription-only check to
       // multi-subscription holders (P6 — pricing/UI only; Firestore rules keep
       // their own read gate).
-      const heldUnion = (id: string) =>
-        snapshot.heldUnmeteredTypeIds.includes(id) || attachedToCreditType(snapshot, id)
-      const included = (rule.subscriptionTypeIds ?? []).find(heldUnion)
+      // The plan it is attributed to is the best one held: an unmetered
+      // subscription before a credit type the contact is merely attached to.
+      const listed = rule.subscriptionTypeIds ?? []
+      const included =
+        bestUnmeteredPlan(snapshot, listed) ?? listed.find((id) => attachedToCreditType(snapshot, id))
 
       if (rule.type === 'subscription') {
         if (included) {

@@ -241,7 +241,7 @@ export function ProgramTab({ event, canEdit = true, parentOrgId }: ProgramTabPro
                 )}
               >
                 <span className="block">{day.title || t('dayN', { n: index + 1 })}</span>
-                <span className="block text-[10px] opacity-70">{day.date}</span>
+                <span className="block text-xs opacity-70">{day.date}</span>
               </button>
             ))}
           </div>

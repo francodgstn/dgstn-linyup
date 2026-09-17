@@ -4,6 +4,8 @@ import { Card, Icon, Text, useTheme, Button, ActivityIndicator, IconButton } fro
 import { SessionWithStatus, Contact } from '../../types';
 import { FirestoreService } from '../../services/firestore';
 import { waiverRefusal } from '../../utils/waiverRefusal';
+import { callableErrorCode } from '../../utils/callableError';
+import { cancelRefusalIsFinal, cancelRefusalKey } from '../../utils/cancelRefusal';
 import { useTranslations } from '../../i18n';
 
 interface SessionAgendaCardProps {
@@ -17,6 +19,7 @@ export const SessionAgendaCard: React.FC<SessionAgendaCardProps> = ({ sessions, 
   const theme = useTheme();
   const t = useTranslations('Agenda');
   const tWaiver = useTranslations('Waiver');
+  const tCancel = useTranslations('BookingCancellation');
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
 
   const handleBook = async (session: SessionWithStatus) => {
@@ -43,6 +46,14 @@ export const SessionAgendaCard: React.FC<SessionAgendaCardProps> = ({ sessions, 
       // is a port), but it does have the refusal mapper written for exactly
       // this, and the same rail is gated server-side. So: name the document,
       // say who has to sign, and open the signing page when the server sent one.
+      // Already booked — from the Train tab, another device, or the desk. The
+      // ROW was stale, not the booking: say so and reload rather than "failed"
+      // (PrimeTestLab report 7107, M-03).
+      if (callableErrorCode(error) === 'already-exists') {
+        Alert.alert(t('alreadyBookedTitle'), t('alreadyBooked'));
+        if (onRefresh) onRefresh();
+        return;
+      }
       const waiver = waiverRefusal(tWaiver, error, 'booking');
       if (!waiver) {
         Alert.alert(t('errorTitle'), t('bookFailed'));
@@ -63,9 +74,12 @@ export const SessionAgendaCard: React.FC<SessionAgendaCardProps> = ({ sessions, 
   };
 
   const handleCancel = async (session: SessionWithStatus) => {
-    console.log('[handleCancel] Called, contact:', contact?.id, 'session:', session.id);
-    if (!contact?.id) {
-      console.warn('[handleCancel] No contact id, aborting');
+    // The bin only renders when the server said this booking is cancellable
+    // and handed back its token (BookedSession), so no token means the row is
+    // stale — reload instead of pressing on.
+    const token = session.cancelToken;
+    if (!contact?.id || !token) {
+      if (onRefresh) onRefresh();
       return;
     }
 
@@ -80,16 +94,15 @@ export const SessionAgendaCard: React.FC<SessionAgendaCardProps> = ({ sessions, 
           onPress: async () => {
             setLoadingSessionId(session.id);
             try {
-              await FirestoreService.cancelSession({
-                sessionId: session.id,
-                contactId: contact.id
-              });
+              await FirestoreService.cancelBookingByToken(token);
               Alert.alert(t('successTitle'), t('cancelledSuccess'));
               if (onRefresh) onRefresh();
-            } catch (error: any) {
+            } catch (error: unknown) {
               console.error('Cancel booking error:', error);
-              const message = error?.message || error?.code || t('cancelFailed');
-              Alert.alert(t('errorTitle'), message);
+              // A tagged refusal is final and means the row was stale: say
+              // why, and reload rather than inviting a retry that cannot work.
+              Alert.alert(t('errorTitle'), tCancel(cancelRefusalKey(error)));
+              if (cancelRefusalIsFinal(error) && onRefresh) onRefresh();
             } finally {
               setLoadingSessionId(null);
             }
@@ -189,19 +202,23 @@ export const SessionAgendaCard: React.FC<SessionAgendaCardProps> = ({ sessions, 
         </Button>
       );
     } else if (currentStatus === 'booked' && new Date(session.start) > new Date()) {
-       // Show booked status AND cancel icon
+       // Booked status, plus the bin ONLY when the server said `cancelBooking`
+       // will accept it — a bin that exists is a promise (report 7107, S-04).
+       const canCancel = !!session.cancellable && !!session.cancelToken;
        actionElement = (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={[styles.statusPill, { backgroundColor: config.bg, marginRight: 4 }]}>
+          <View style={[styles.statusPill, { backgroundColor: config.bg, marginRight: canCancel ? 4 : 0 }]}>
             <Text variant="labelSmall" style={[styles.statusText, { color: config.text }]}>{statusLabels[currentStatus]}</Text>
           </View>
-          <IconButton
-            icon="trash-can-outline"
-            size={20}
-            iconColor={theme.colors.error}
-            onPress={() => handleCancel(session)}
-            style={{ margin: 0 }}
-          />
+          {canCancel && (
+            <IconButton
+              icon="trash-can-outline"
+              size={20}
+              iconColor={theme.colors.error}
+              onPress={() => handleCancel(session)}
+              style={{ margin: 0 }}
+            />
+          )}
         </View>
       );
     } else {

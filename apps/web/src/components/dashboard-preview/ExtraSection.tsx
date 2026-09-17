@@ -63,9 +63,12 @@
  * weeks. That is the price of the card, and the reason it lives on an opt-in
  * shelf rather than on the page above.
  *
- * AI insights is the intended next tenant — `plugins/ai-insights` is
- * `status: 'coming_soon'` with no card to mount today, so there is nothing to
- * add here yet. Mount it here when it exists.
+ * The team-level AI view did NOT start here after all. The `ai-insights` plugin
+ * that reserved this slot was a placeholder and was removed on 2026-09-14; the
+ * real one, team sentiment, arrived on 2026-09-16 as a module of the AI insights
+ * plugin container, and a plugin module is already its own switch — parking it
+ * behind this shelf's experiment too would have been two switches for one card.
+ * It mounts on the page above (`dashboard/TeamSentimentSection.tsx`).
  */
 
 import { useTranslations } from 'next-intl'

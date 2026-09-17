@@ -343,7 +343,7 @@ export function SpaceWaiverCard({ variant }: { variant: 'banner' | 'card' }) {
       {/* Said rather than implied: this panel now answers for everything the
           studio requires, including a document attached to one class — which is
           exactly what a member sent here from a door has to be able to sign. */}
-      <p className="mt-3 text-[11px]" style={{ color: textMuted }}>
+      <p className="mt-3 text-xs" style={{ color: textMuted }}>
         {tSpace('waiverScopeNote')}
       </p>
     </section>

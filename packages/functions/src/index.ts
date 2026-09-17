@@ -30,7 +30,16 @@ export { listTeamMembers } from './teams/listTeamMembers'
 
 // Auth
 export { sendContactVerificationCode } from './auth/sendContactVerificationCode'
-export { generateApiKey } from './auth/generateApiKey'
+
+// Public API + MCP (docs/public-api.md)
+export { createApiKey, revokeApiKey } from './api/keys'
+export { api } from './api'
+export {
+  getOAuthAuthorizationRequest,
+  approveOAuthAuthorization,
+  denyOAuthAuthorization,
+  revokeOAuthGrant,
+} from './api/oauth/consent'
 
 // Signup gating (limited launch) — blocking function + invite email trigger
 export { beforeSignup } from './auth/beforeSignup'
@@ -80,6 +89,9 @@ export {
   heldPlansOnCreditGrantWrite,
   heldPlansOnMemberSubscriptionWrite,
 } from './sync/heldPlans'
+// Staff plan changes (docs/multi-plan-holdings.md, phase 2) — the callables
+// that replaced the browser's writes to the legacy plan slot.
+export { assignPlan, changePlan, endPlan } from './contacts/planCallables'
 // Availability writes re-run the team sync so the appointment picker's liveness
 // flag (active_public_surfaces.appointments) can't go stale — see the file.
 export { onAvailabilityWrite } from './sync/onAvailabilityWrite'
@@ -275,16 +287,25 @@ export {
 export { unlockPlugin } from './plugins/unlockPlugin'
 export { assistantChat } from './assistant'
 
-// AI offer drafting — an EXPERIMENT, not a plugin (see EXPERIMENTAL_FEATURES).
+// AI offer drafting — the `ai-offer-drafting` module of the AI insights plugin
+// (types/aiInsights.ts); an experiment until 2026-09-17.
 // Two callables on purpose: `draftOfferings` runs the model and writes nothing,
 // `applyOfferingDraft` writes and runs no model. The seam between them is where
 // a human decides.
 export { draftOfferings, applyOfferingDraft } from './offer/draftOfferings'
-// AI summary of a contact — the second experiment on the Vertex rail. ONE
-// callable: it reads, asks the model, and writes ONE field the rules deny to
-// every client (`Contact.ai_summary`). Manual trigger only; its header owns the
-// scheduled refresh it deliberately does not build yet.
+// AI summary of a contact — was the second experiment on the Vertex rail. The
+// button: it reads, asks the model, and writes ONE field the rules deny to every
+// client (`Contact.ai_summary`), through the body a team sentiment run shares.
 export { generateContactSummary } from './contacts/aiSummary'
+// The AI insights plugin container (`ai`, types/aiInsights.ts) — the summary
+// above graduated into its `ai-contact-summary` module. The recap email sends
+// what that summary already wrote (no model call). Team sentiment STARTS a run
+// that refreshes the active members' briefings and reads them, capped per team
+// per day; `refreshTeamSentimentRound` is its Cloud Tasks drain, addressed as
+// locations/europe-west6/functions/refreshTeamSentimentRound.
+export { sendContactRecapEmail } from './contacts/aiRecapEmail'
+export { generateTeamSentiment } from './aiInsights/teamSentiment'
+export { refreshTeamSentimentRound } from './aiInsights/teamSentimentWorker'
 
 // Kiosk mode (entrance-tablet PIN unlock)
 export { unlockKiosk } from './kiosk'
@@ -493,6 +514,9 @@ export {
   downloadTarif595Receipt,
   emailTarif595Receipt,
   listMyTarif595Receipts,
+  // A model-backed PROPOSAL of the offering → position map, reviewed on the
+  // settings page before it is saved; writes nothing, rate-limited.
+  suggestTarif595Mappings,
 } from './tarif595'
 
 // QR-bill invoices (plugin) — creation is plugin-gated; void, download, email

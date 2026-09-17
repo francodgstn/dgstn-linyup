@@ -1,7 +1,7 @@
 'use client'
 
 // Asset register — the equipment list behind the statement of assets
-// (docs/finance-accrual.md §4, register-only slice). CASH MODE POSTS NOTHING:
+// (docs/finance-accrual.md → "Assets", register-only slice). CASH MODE POSTS NOTHING:
 // registering/editing/disposing writes only the register doc; book values are
 // INDICATIVE straight-line arithmetic (shared assetBookValue), computed here
 // for the list, the totals and the statement-of-assets CSV. Registration ≠

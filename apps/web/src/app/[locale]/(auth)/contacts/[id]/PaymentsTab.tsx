@@ -35,6 +35,7 @@ import { PaymentsTable } from '@/components/payments/PaymentsTable'
 import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
 import { InvoiceActions, InvoiceStatusBadge } from '@/plugins/qr-invoices/InvoiceActions'
 import { useContactInvoices } from '@/plugins/qr-invoices/hooks'
+import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -63,6 +64,10 @@ export function PaymentsTab({
   const invoicesInstalled = isInstalled('qr-invoices')
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false)
   const { data: invoices = [] } = useContactInvoices(tid, invoicesInstalled ? contact.id : null)
+  // Tarif 595: a Receipt action on each attestable payment row — the quick
+  // way to a health-insurance receipt for money that has already moved.
+  const receiptsInstalled = isInstalled('tarif-595')
+  const [receiptTarget, setReceiptTarget] = useState<UnifiedPaymentRow | null>(null)
   const contactName = `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim() || contact.email
 
   const rows = useMemo(
@@ -135,6 +140,7 @@ export function PaymentsTab({
           onAssign={setAssignTarget}
           onRefund={setRefundTarget}
           onVoid={setVoidTarget}
+          onReceipt={tid && receiptsInstalled && canManage ? setReceiptTarget : undefined}
         />
       )}
 
@@ -217,6 +223,10 @@ export function PaymentsTab({
           open={createInvoiceOpen}
           onOpenChange={setCreateInvoiceOpen}
         />
+      )}
+
+      {tid && receiptsInstalled && (
+        <CreateReceiptFromPaymentDialog teamId={tid} row={receiptTarget} contactName={contactName} onClose={() => setReceiptTarget(null)} />
       )}
     </div>
   )

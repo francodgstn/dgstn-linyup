@@ -1,0 +1,4 @@
+• L'annulation d'un cours fonctionne à nouveau. La corbeille n'apparaît que tant que l'annulation est possible, et explique sinon pourquoi.
+• Réserve un cours dans Entraînement et Accueil le sait aussitôt.
+• La connexion détecte une adresse e-mail mal saisie avant d'envoyer le code.
+• Corrections mineures : une série d'une semaine affiche « 1 semaine », et le graphique ne coupe plus le premier ni le dernier mois.
