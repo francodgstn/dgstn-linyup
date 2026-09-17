@@ -38,18 +38,18 @@ being filed, not taken from the agents' word.
 
 | # | Sev | Finding | Area | Owner | Status |
 |---|---|---|---|---|---|
-| 102 | blocks | A member whose *second* plan covers a class is told she holds none, then refused when she tries to pay | C2×C3 | web | ▶ Open |
-| 103 | costs-money | The plan ↔ class table reads a class's drop-in raw, so a class on the studio default looks priceless and a plan tick can lock it to plan-holders | M5 | shared + web | ▶ Open |
-| 104 | costs-money | A plan price with the "per class" recurrence sells unlimited, never-ending access | M5×C3 | web + seeds | ▶ Open |
-| 105 | costs-money | The "nobody can book this" warnings are written in model words and name no fix | M5 | web | ▶ Open |
-| 106 | confuses | One concept, four names on the manager side (plan / subscription / subscription type / membership), plus "gate", "door", "holders" | M5 | web | ▶ Open |
-| 107 | confuses | The contact reads "subscription" and "membership" for the same fact, one screen apart | C2 | web | ▶ Open |
-| 108 | slows | Creating any plan shows partner-app, checkout-capture and purchase-cap controls first-time studios never need | M5 | web | ▶ Open |
-| 109 | slows | The plan ↔ class table needs sideways scroll at 375px and explains its columns only in hover tooltips | M5 | web | ▶ Open |
-| 110 | confuses | A member browsing classes sees the list price; her member price appears two steps later | C2 | web | ▶ Open |
-| 111 | slows | A plan with monthly + annual prices shows two identical Buy rows, no steer to the better deal | C3 | web | ▶ Open |
+| 102 | blocks | A member whose *second* plan covers a class is told she holds none, then refused when she tries to pay | C2×C3 | web | ✅ Fixed (54e033a0) |
+| 103 | costs-money | The plan ↔ class table reads a class's drop-in raw, so a class on the studio default looks priceless and a plan tick can lock it to plan-holders | M5 | shared + web | ✅ Fixed (04a975f5) |
+| 104 | costs-money | A plan price with the "per class" recurrence sells unlimited, never-ending access | M5×C3 | web + seeds | ✅ Fixed (7d5a89de) |
+| 105 | costs-money | The "nobody can book this" warnings are written in model words and name no fix | M5 | web | ✅ Fixed (b3b27d7b) |
+| 106 | confuses | One concept, four names on the manager side (plan / subscription / subscription type / membership), plus "gate", "door", "holders" | M5 | web | ✅ Fixed (b3b27d7b) |
+| 107 | confuses | The contact reads "subscription" and "membership" for the same fact, one screen apart | C2 | web | ✅ Fixed (b3b27d7b) |
+| 108 | slows | Creating any plan shows partner-app, checkout-capture and purchase-cap controls first-time studios never need | M5 | web | ✅ Fixed (000d39a5) |
+| 109 | slows | The plan ↔ class table needs sideways scroll at 375px and explains its columns only in hover tooltips | M5 | web | ◐ Interim shipped (000d39a5 (interim legend)) |
+| 110 | confuses | A member browsing classes sees the list price; her member price appears two steps later | C2 | web | ✅ Fixed (cd90ca49) |
+| 111 | slows | A plan with monthly + annual prices shows two identical Buy rows, no steer to the better deal | C3 | web | ✅ Fixed (000d39a5) |
 | 112 | confuses | The studio default drop-in is editable in two places with different powers | M5 | web | ▶ Parked — decision 29 |
-| 113 | confuses | A hint still names "Any member" / "Specific subscriptions", options the form removed | M5 | web | ▶ Open |
+| 113 | confuses | A hint still names "Any member" / "Specific subscriptions", options the form removed | M5 | web | ✅ Fixed (b3b27d7b) |
 | 114 | slows | Every new class starts uncovered by every membership until someone ticks it | M5 (model) | shared + functions + web | ▶ Parked — decision 30 |
 | 115 | costs-money | "First class free, then drop-in for anyone" cannot be set up | M5 (model) | functions + web | ▶ Parked — decision 31 |
 
@@ -149,6 +149,9 @@ membership doesn't include this class". `AppointmentBooking` uses "subscription"
 throughout.
 **Fix:** contact-facing word is **membership** everywhere in `Booking` and
 `AppointmentBooking` (the manager side keeps *plan*).
+**Shipped as:** English only. German, French and Italian already used one word
+throughout (Abo / abonnement / abbonamento), which is the customer's own word
+there, so they were left as they were.
 **Build:** S · **Owner:** web-agent
 
 ### UX-108 — The plan editor puts rare controls on the default path
@@ -168,7 +171,8 @@ M5 · manager · slows · at-setup · traced · new
 
 **Now:** `ActivityPlanLinks` is a `min-w-[36rem]` grid in `overflow-x-auto`; the
 only explanation of None / Included / % off / Fixed is a `title` on each header.
-**Fix (interim, shipped here):** a one-line visible legend above the table.
+**Fix (interim, shipped here):** a visible legend above the table, on narrow
+screens only (a pointer still gets the header tooltips, without four extra lines).
 **Real fix:** a stacked one-card-per-row layout below `sm` — L, not in this pass.
 **Build:** S interim / L real · **Owner:** web-agent
 
