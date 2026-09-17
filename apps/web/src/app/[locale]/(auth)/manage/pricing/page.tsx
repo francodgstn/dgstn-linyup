@@ -44,7 +44,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CheckCircle2, AlertTriangle, AlertCircle, BadgePercent, Info } from 'lucide-react'
+import { AlertTriangle, AlertCircle, BadgePercent, Info } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import type {
   Activity,
@@ -754,32 +754,30 @@ function fixHref(w: PricingWarning): Route {
 function HealthSection({ warnings }: { warnings: PricingWarning[] }) {
   const t = useTranslations('OfferPricing')
 
+  // NOTHING RENDERED WHEN THERE IS NOTHING TO FIX (UX-106). The old all-clear
+  // line ("Everything looks consistent") only restated the section's own
+  // title — a section titled "Things to fix" that is empty already says so.
+  if (warnings.length === 0) return null
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('sectionHealthTitle')}</CardTitle>
       </CardHeader>
       <CardContent>
-        {warnings.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-            {t('healthAllGood')}
-          </div>
-        ) : (
-          <div className="divide-y rounded-lg border">
-            {warnings.map((w, i) => (
-              <div key={i} className="flex items-start gap-2.5 px-3 py-2.5">
-                {severityIcon(w.severity)}
-                <p className="flex-1 text-sm">
-                  {t(HEALTH_MESSAGE_KEY[w.code] as Parameters<typeof t>[0], { name: w.subjectName })}
-                </p>
-                <Link href={fixHref(w)} className="text-xs font-medium text-primary hover:underline shrink-0">
-                  {t('fixLink')}
-                </Link>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="divide-y rounded-lg border">
+          {warnings.map((w, i) => (
+            <div key={i} className="flex items-start gap-2.5 px-3 py-2.5">
+              {severityIcon(w.severity)}
+              <p className="flex-1 text-sm">
+                {t(HEALTH_MESSAGE_KEY[w.code] as Parameters<typeof t>[0], { name: w.subjectName })}
+              </p>
+              <Link href={fixHref(w)} className="text-xs font-medium text-primary hover:underline shrink-0">
+                {t('fixLink')}
+              </Link>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )
