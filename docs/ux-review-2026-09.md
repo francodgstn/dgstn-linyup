@@ -38,21 +38,21 @@ being filed, not taken from the agents' word.
 
 | # | Sev | Finding | Area | Owner | Status |
 |---|---|---|---|---|---|
-| 102 | blocks | A member whose *second* plan covers a class is told she holds none, then refused when she tries to pay | C2×C3 | web | ✅ Fixed (54e033a0) |
-| 103 | costs-money | The plan ↔ class table reads a class's drop-in raw, so a class on the studio default looks priceless and a plan tick can lock it to plan-holders | M5 | shared + web | ✅ Fixed (04a975f5) |
-| 104 | costs-money | A plan price with the "per class" recurrence sells unlimited, never-ending access | M5×C3 | web + seeds | ✅ Fixed (7d5a89de) |
-| 105 | costs-money | The "nobody can book this" warnings are written in model words and name no fix | M5 | web | ✅ Fixed (b3b27d7b) |
-| 106 | confuses | One concept, four names on the manager side (plan / subscription / subscription type / membership), plus "gate", "door", "holders" | M5 | web | ✅ Fixed (b3b27d7b) |
-| 107 | confuses | The contact reads "subscription" and "membership" for the same fact, one screen apart | C2 | web | ✅ Fixed (b3b27d7b) |
-| 108 | slows | Creating any plan shows partner-app, checkout-capture and purchase-cap controls first-time studios never need | M5 | web | ✅ Fixed (000d39a5) |
-| 109 | slows | The plan ↔ class table needs sideways scroll at 375px and explains its columns only in hover tooltips | M5 | web | ◐ Interim shipped (000d39a5 (interim legend)) |
-| 110 | confuses | A member browsing classes sees the list price; her member price appears two steps later | C2 | web | ✅ Fixed (cd90ca49) |
-| 111 | slows | A plan with monthly + annual prices shows two identical Buy rows, no steer to the better deal | C3 | web | ✅ Fixed (000d39a5) |
+| 102 | blocks | A member whose *second* plan covers a class is told she holds none, then refused when she tries to pay | C2×C3 | web | ✅ Fixed (dea573f8) |
+| 103 | costs-money | The plan ↔ class table reads a class's drop-in raw, so a class on the studio default looks priceless and a plan tick can lock it to plan-holders | M5 | shared + web | ✅ Fixed (545912cd) |
+| 104 | costs-money | A plan price with the "per class" recurrence sells unlimited, never-ending access | M5×C3 | web + seeds | ✅ Fixed (f5ddd2cd) |
+| 105 | costs-money | The "nobody can book this" warnings are written in model words and name no fix | M5 | web | ✅ Fixed (1dcaed66) |
+| 106 | confuses | One concept, four names on the manager side (plan / subscription / subscription type / membership), plus "gate", "door", "holders" | M5 | web | ✅ Fixed (1dcaed66) |
+| 107 | confuses | The contact reads "subscription" and "membership" for the same fact, one screen apart | C2 | web | ✅ Fixed (1dcaed66) |
+| 108 | slows | Creating any plan shows partner-app, checkout-capture and purchase-cap controls first-time studios never need | M5 | web | ✅ Fixed (a4cd5879) |
+| 109 | slows | The plan ↔ class table needs sideways scroll at 375px and explains its columns only in hover tooltips | M5 | web | ◐ Interim shipped (a4cd5879 (interim legend)) |
+| 110 | confuses | A member browsing classes sees the list price; her member price appears two steps later | C2 | web | ✅ Fixed (0679f90e) |
+| 111 | slows | A plan with monthly + annual prices shows two identical Buy rows, no steer to the better deal | C3 | web | ✅ Fixed (a4cd5879) |
 | 112 | confuses | The studio default drop-in is editable in two places with different powers | M5 | web | ▶ Parked — decision 29 |
-| 113 | confuses | A hint still names "Any member" / "Specific subscriptions", options the form removed | M5 | web | ✅ Fixed (b3b27d7b) |
+| 113 | confuses | A hint still names "Any member" / "Specific subscriptions", options the form removed | M5 | web | ✅ Fixed (1dcaed66) |
 | 114 | slows | Every new class starts uncovered by every membership until someone ticks it | M5 (model) | shared + functions + web | ▶ Parked — decision 30 |
 | 115 | costs-money | "First class free, then drop-in for anyone" cannot be set up | M5 (model) | functions + web | ▶ Parked — decision 31 |
-| 116 | slows | Creating a class meets nine optional fields (meeting point, booking questions, prose) before Save | M5 | web | ✅ Fixed (0935311f) |
+| 116 | slows | Creating a class meets nine optional fields (meeting point, booking questions, prose) before Save | M5 | web | ✅ Fixed (d52ee50a) |
 | 117 | slows | Pricing's "What you sell" repeats the plan facts the Offerings plan pane already shows | M5 | web | ▶ Parked — decision 34 |
 
 ---
