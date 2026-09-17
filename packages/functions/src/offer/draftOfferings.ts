@@ -101,6 +101,8 @@ Rules:
 - Prices are in the studio's own currency, as plain numbers. If the description
   gives no price, LEAVE PRICES OUT rather than guessing a number the studio
   might not notice.
+- Descriptions are plain text shown to members on public pages: no Markdown,
+  no bullets, no bold. The "note" may use Markdown.
 - Do not duplicate anything in "Already set up" below; complement it.
 - Keep it small and realistic: a handful of activities, two or three plans.`
 
