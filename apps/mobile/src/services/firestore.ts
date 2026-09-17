@@ -610,6 +610,19 @@ export const FirestoreService = {
     }
   },
 
+  /**
+   * The member's own WhatsApp reminder opt-in/out — one of the three doors in
+   * docs/whatsapp-outbound.md → "Opt-in surfaces" (the other two are the
+   * public booking/signup forms and staff on the contact page). Always sent
+   * with `source: 'member_app'` so it's attributed correctly; an opt-in is
+   * refused server-side (`failed-precondition`) once the studio no longer
+   * offers WhatsApp.
+   */
+  async setMyWhatsAppConsent(teamId: string, optIn: boolean): Promise<void> {
+    const fn = httpsCallable(getFunctions(), 'setMyWhatsAppConsent');
+    await fn({ teamId, optIn, source: 'member_app' });
+  },
+
   // Book a session as the signed-in contact. No token dance: our contact session
   // (the custom token minted at login) rides along on the callable automatically,
   // and bookSession reads contactId/teamId from its claims — so the booking is

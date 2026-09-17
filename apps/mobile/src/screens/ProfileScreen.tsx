@@ -1,4 +1,4 @@
-import { isTrialStage, leaderboardDisplayName, personInitials } from '@linyup/shared';
+import { isTrialStage, leaderboardDisplayName, personInitials, whatsappConsentAllows } from '@linyup/shared';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -17,6 +17,7 @@ import {
 import {
   IconButton,
   Surface,
+  Switch,
   Text,
   TouchableRipple,
   useTheme,
@@ -174,6 +175,13 @@ export const ProfileScreen: React.FC = () => {
   const [isEditingWeight, setIsEditingWeight] = useState(false);
   const [weightInput, setWeightInput] = useState('');
   const [isSavingWeight, setIsSavingWeight] = useState(false);
+
+  // WhatsApp reminder opt-in (docs/whatsapp-outbound.md → "Opt-in surfaces").
+  // `waOverride` is the optimistic value while a toggle is in flight; null
+  // means "trust the contact doc", which is what whatsappConsentAllows reads.
+  const [waOverride, setWaOverride] = useState<boolean | null>(null);
+  const [waSaving, setWaSaving] = useState(false);
+  const [waError, setWaError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -480,6 +488,27 @@ export const ProfileScreen: React.FC = () => {
 
   if (!contact) return <LoadingOverlay visible message={t('loadingProfile')} />;
 
+  // Shown once the studio offers WhatsApp OR the contact already answered
+  // (opted in or out) — so a member who opted in before the studio
+  // disconnected can still switch it off. `whatsappConsentAllows` is the ONE
+  // reader of the status; never branch on `whatsapp_consent.status` directly.
+  const showWhatsAppRow = teamProfile?.whatsapp_opt_in_offered === true || !!contact.whatsapp_consent;
+  const waOptedIn = waOverride !== null ? waOverride : whatsappConsentAllows(contact);
+
+  const handleToggleWhatsApp = async (next: boolean) => {
+    setWaOverride(next);
+    setWaSaving(true);
+    setWaError(null);
+    try {
+      await FirestoreService.setMyWhatsAppConsent(contact.teamId, next);
+      await refreshContact();
+    } catch (err) {
+      setWaError(err instanceof Error ? err.message : t('whatsappConsentUpdateFailed'));
+    } finally {
+      setWaSaving(false);
+      setWaOverride(null);
+    }
+  };
 
   const handleShowContactSelection = async () => {
     await showContactSelection();
@@ -650,6 +679,24 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
       </Surface>
+
+      {/* WhatsApp reminders — one lean row, shown only when the studio offers
+          the channel (or the member already answered — see showWhatsAppRow).
+          Optimistic toggle with rollback on failure; the error surfaces in the
+          Snackbar below rather than blocking the row. */}
+      {showWhatsAppRow && (
+        <Surface style={[styles.infoCard, { marginTop: 16 }]} elevation={1}>
+          <View style={[styles.infoSection, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+            <View style={{ flex: 1 }}>
+              <Text variant="titleMedium" style={styles.infoSectionTitle}>{t('whatsappReminders').toUpperCase()}</Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {t('whatsappRemindersHelp')}
+              </Text>
+            </View>
+            <Switch value={waOptedIn} onValueChange={handleToggleWhatsApp} disabled={waSaving} />
+          </View>
+        </Surface>
+      )}
 
       {/* Account closure. Set apart from the action row above: it is not one of
           the things you do here, it is the way out. A pending deletion takes
@@ -1228,6 +1275,15 @@ export const ProfileScreen: React.FC = () => {
         style={{ marginBottom: 20 }}
       >
         {t('updateRequestSubmitted')}
+      </Snackbar>
+
+      <Snackbar
+        visible={!!waError}
+        onDismiss={() => setWaError(null)}
+        duration={4000}
+        style={{ marginBottom: 20 }}
+      >
+        {waError}
       </Snackbar>
 
     </View>
