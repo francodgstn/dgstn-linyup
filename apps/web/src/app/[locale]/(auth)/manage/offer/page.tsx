@@ -528,6 +528,17 @@ export default function CataloguePage() {
 
   // The SAME icons name these things in the sidebar, so they are what a studio
   // already recognises them by. The strip's layout lives with the strip.
+  // ONE LINE PER TAB saying what it holds. Written as four literal keys rather
+  // than `t(`hint_${key}`)`: `i18n:check` counts computed keys and never fails
+  // them, so a typo in one would ship silently. Shown on the tab's tooltip, and
+  // printed in the rail only while that tab is empty — the first visit, when a
+  // studio needs orienting and has not yet learned where to hover.
+  const tabHint: Record<TabKey, string> = {
+    activities: t('hintActivities'),
+    plans: t('hintPlans'),
+    courses: t('hintCourses'),
+    products: t('hintProducts'),
+  }
   const tabs: { key: TabKey; label: string; icon: React.ElementType; count: number }[] = [
     { key: 'activities', label: t('tabActivities'), icon: Zap, count: activities.length },
     { key: 'plans', label: t('railPlans'), icon: IdCard, count: plans.length },
@@ -1072,8 +1083,12 @@ export default function CataloguePage() {
             const dead = onlyDeadEnds ? (deadEndsPerTab[tab.key] ?? 0) : 0
             const TabIcon = tab.icon
             return (
+              // WHAT THE TAB HOLDS, on hover (Franco, 2026-09-17). The sentence
+              // orients a first visit and is noise on every visit after it, so
+              // it is printed in the rail only while the tab is EMPTY and lives
+              // here otherwise — see `tabHint`.
+              <Tip key={tab.key} label={tabHint[tab.key]} side="bottom">
               <button
-                key={tab.key}
                 type="button"
                 role="tab"
                 aria-selected={on}
@@ -1127,6 +1142,7 @@ export default function CataloguePage() {
                   </span>
                 )}
               </button>
+              </Tip>
             )
           })}
         </div>
@@ -1206,29 +1222,16 @@ export default function CataloguePage() {
             className="space-y-3 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-3 motion-safe:duration-200"
           >
 
-          {/* ONE LINE PER TAB, printed, and INSIDE THE RAIL: it describes what
-              the list below it holds, so it belongs with the list rather than
-              with the cards that switch between them (Franco, 2026-09-02).
-
-              It briefly lived behind an info mark to save the height; the mark
-              cost more than the lines did — a studio had to know there was
-              something to hover before it could tell them anything, which is the
-              wrong trade for a sentence that orients somebody who has just
-              arrived (Franco, 2026-09-01).
-
-              Written as four literal keys rather than `t(`hint_${activeTab}`)`:
-              `i18n:check` counts computed keys and never fails them, so a typo
-              in one would ship silently. */}
-          <p className="px-2 pt-1 text-xs leading-snug text-muted-foreground">
-            {
-              {
-                activities: t('hintActivities'),
-                plans: t('hintPlans'),
-                courses: t('hintCourses'),
-                products: t('hintProducts'),
-              }[activeTab]
-            }
-          </p>
+          {/* ONE LINE PER TAB, INSIDE THE RAIL — while the tab is EMPTY. It
+              describes what the list below it holds, so it belongs with the list
+              (Franco, 2026-09-02). It once lived only behind an info mark, and a
+              studio had to know there was something to hover before it could tell
+              them anything (2026-09-01) — so the first visit still gets it
+              printed. Once the list has rows it is noise on every visit after,
+              and moves to the tab's tooltip (2026-09-17). */}
+          {(tabs.find((x) => x.key === activeTab)?.count ?? 0) === 0 && (
+            <p className="px-2 pt-1 text-xs leading-snug text-muted-foreground">{tabHint[activeTab]}</p>
+          )}
 
           {/* THE WAY OUT, on the two tabs that need one. A course and a product
               are only PRICED here — their content, media, variants and
