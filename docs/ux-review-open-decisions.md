@@ -460,14 +460,14 @@ Parked during the autonomous run on the activities/plans review. Numbering
 continues from the 2026-08 run.
 
 ## 29. Where the studio default drop-in is edited (UX-112)
-**PARKED.** Two places edit `BookingSettings.dropIn`: Pricing → Drop-in (set, change,
+**ANSWERED 2026-09-17 — Franco: one modal**, opened from the Offerings page and from a class's pricing tab; Pricing goes back to read-only. Planned in `docs/class-access-derived.md` stage 4. Original note: Two places edit `BookingSettings.dropIn`: Pricing → Drop-in (set, change,
 turn off) and a class's pricing tab (set or change, never off). The reviewer
 proposes Pricing becomes display-only and the class tab gains "turn off"; the
 alternative is the reverse (Pricing owns it, the class tab only links). Either
 satisfies "one place". *Meanwhile:* both stay, unchanged.
 
 ## 30. A plan that covers "all classes" by default (UX-114)
-**PARKED — the highest-value model change in the review.** Today a plan stores no
+**ANSWERED 2026-09-17 — Franco: keep as is** unless studios ask; the catalogue already flags a class no plan includes. Original note: Today a plan stores no
 scope; each class lists the plans that include it, so an unlimited membership
 covers no class added after it was set up. Proposal (model review S2): a plan-side
 scope, `all classes` (default for new memberships and passes) or `selected`, unioned
@@ -477,7 +477,7 @@ migrate existing ones? Do workshops/events need an "excluded from all-classes"
 flag on the class? *Meanwhile:* nothing built.
 
 ## 31. Trial on classes open to anyone, and one meaning of "newcomer" (UX-115)
-**PARKED.** "First class free (or CHF 15), then CHF 25 drop-in for anyone" cannot
+**ANSWERED 2026-09-17 (trial half)** — the access question goes away entirely; who can book is derived from plans, drop-in and trial, and the trial is available on any class that is not free. `docs/class-access-derived.md`. The promo half (does a used trial still count as new?) stays open. Original note: "First class free (or CHF 15), then CHF 25 drop-in for anyone" cannot
 be expressed: the trial door opens only on members-only classes. Also three
 definitions of "new": trial (`trial_used_at`), promo `new_contacts` (`!joined`),
 purchase caps. Questions: should a class open to anyone with a paid drop-in offer a
@@ -486,7 +486,7 @@ Should the trial get a studio-wide default like the drop-in? *Meanwhile:* nothin
 built.
 
 ## 32. Stored `per_class` plan prices (UX-104)
-**ASSUMED.** `per_class` sells unlimited, never-ending access on linked classes.
+**ANSWERED 2026-09-17 — Franco: pre-cutover, align everything**: remove `per_class`, convert the seeds and the Swimli lead profile (HMD never used it). `docs/class-access-derived.md` stage 4. Original note: `per_class` sells unlimited, never-ending access on linked classes.
 Shipped: removed from the picker for new prices and from the AI drafter.
 **Not done:** refusing checkout on an already-stored `per_class` price, or
 converting them. The emulator and staging seeds ship a "10-Class Pack" priced
@@ -497,7 +497,7 @@ tracking-only plans nobody buys online. Decide: refuse at checkout, convert
 (seeds + a backfill), or leave.
 
 ## 33. The legacy class-gate backfill (model review S1)
-**PARKED — needs a deploy window, not a design call.** Retires `accessRule.type` as
+**ANSWERED 2026-09-17** — folded into the derived-access change as its stage 5 (`docs/class-access-derived.md`); mobile checked, it reads none of the fields. Original note: Retires `accessRule.type` as
 stored data, `isFreeTrial`, the legacy coverage engine and `dropIn` without
 `mode`, by backfilling every class to `audience`/`requirePlan`/`dropIn.mode`.
 Pre-launch, so acceptable; but it touches every environment's data and the mobile
