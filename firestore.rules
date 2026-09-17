@@ -567,6 +567,18 @@ service cloud.firestore {
     match /messaging_policies/{entityId} {
       allow read, write: if false;
     }
+    // WhatsApp Business (docs/whatsapp-outbound.md) — functions-only. The
+    // connection holds a studio's (encrypted) Meta token, the number claim is the
+    // webhook's router, and the suppressions are phone-number hashes.
+    match /whatsapp_connections/{teamId} {
+      allow read, write: if false;
+    }
+    match /whatsapp_numbers/{phoneNumberId} {
+      allow read, write: if false;
+    }
+    match /whatsapp_suppressions/{suppressionId} {
+      allow read, write: if false;
+    }
 
     // Private user profiles
     match /users/{userId} {
@@ -798,9 +810,12 @@ service cloud.firestore {
         // custom hostname to a tenant reads the hostname from here, so a client
         // able to write it could name a hostname belonging to another studio.
         // The authority is Cloudflare plus the public_domains/{hostname} claim;
-        // this doc must never be able to disagree with them.
+        // this doc must never be able to disagree with them. `whatsapp` is the
+        // same: it says whether a number is connected and which templates Meta
+        // approved, and only the connect callables and the webhook know that.
         allow write: if hasTeamRole(teamId, 'owner')
-                     && integrationId != 'public_domain';
+                     && integrationId != 'public_domain'
+                     && integrationId != 'whatsapp';
       }
 
       // Per-team settings for features that are NOT plugins
@@ -1318,7 +1333,7 @@ service cloud.firestore {
                               || callerOwnsContact(request.resource)))
                        || isTeacher(request.resource)
                        || hasRole('admin'))
-                       && !request.resource.data.keys().hasAny(['subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
+                       && !request.resource.data.keys().hasAny(['whatsapp_consent', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
 
       // Read/Update/Delete: Must be member of contact's team (own-scope for a coach)
       // OR old teacher-based access.
@@ -1344,12 +1359,14 @@ service cloud.firestore {
       // of docs/multi-plan-holdings.md makes an access input. The legacy
       // `subscription_*` plan slot is server-written since phase 2: staff change
       // plans through assignPlan / changePlan / endPlan (contacts/planCallables.ts),
-      // and every other writer is a Cloud Function.
+      // and every other writer is a Cloud Function. `whatsapp_consent` goes
+      // through whatsapp/consent.ts only, which stamps who gave it and where: a
+      // direct write could record consent nobody gave.
       allow update: if (canWriteContact(resource)
                        || hasRole('admin')
                        || (isSelfContact(contactId)
                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'last_seen_at', 'mobile_app'])))
-                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms', 'whatsapp_consent', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
       allow delete: if (canAccessContact(resource)
                           && hasTeamCapability(resource.data.teamId, 'contacts.delete'))
                        || hasRole('admin');

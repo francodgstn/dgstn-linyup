@@ -1,8 +1,12 @@
-# WhatsApp Business — outbound (plan)
+# WhatsApp Business — outbound
 
-Status: **plan, nothing built** (2026-09-17). The `whatsapp` plugin in
-`apps/web/src/plugins/whatsapp/` is a `coming_soon` stub whose action only logs
-(`packages/functions/src/plugins/whatsapp.ts`); this document replaces it.
+Status: **Phase 1 built, not deployed** (2026-09-17), behind `WHATSAPP_ENABLED`
+(off in every environment) and waiting on the Meta app (see "Ops
+prerequisites"). Phase 2 (studio templates + the automation action) is not
+built; until it is, the plugin offers no automation action at all.
+
+Code: `packages/functions/src/whatsapp/` (its files' headers say who owns what),
+`packages/shared/src/types/whatsapp.ts`.
 
 ## Decisions (Franco, 2026-09-17)
 
@@ -48,7 +52,7 @@ automation action ────┴─► sendStudioWhatsApp(teamId, msg)   ONE se
                               kill switch → idempotency (mail_sends) → policy
                               → opt-in → suppression → connection → provider
                               ▼
-                        metaCloudProvider   (the only file that calls graph.facebook.com)
+                        whatsapp/graph.ts   (the only file that calls graph.facebook.com)
 
 handleWhatsAppWebhook (onRequest, public)
   GET  verify-token challenge
@@ -56,7 +60,7 @@ handleWhatsAppWebhook (onRequest, public)
        statuses → mail_sends row by wamid (delivered / read / failed + pricing category)
        messages → STOP keywords only → opt-out; everything else ignored, not stored
        message_template_status_update → template status
-       account / phone quality updates → connection status
+       (quality and number changes: read by refreshWhatsAppStatus, not the webhook)
 ```
 
 ### 1. Platform configuration
@@ -76,26 +80,36 @@ non-interactive deploy fails.
 
 | Path | Shape | Read |
 |---|---|---|
-| `teams/{t}/integrations/whatsapp` | `status` (`connected` \| `disconnected` \| `error`), `waba_id`, `phone_number_id`, `display_phone_number`, `verified_name`, `is_on_biz_app`, `quality_rating`, `templates: {key: {status, reason?}}`, `connected_by`, `connected_at`, `last_error?` | owner / manager |
+| `teams/{t}/integrations/whatsapp` | `status` (`connected` \| `disconnected` \| `error`), `waba_id`, `phone_number_id`, `display_phone_number`, `verified_name`, `is_on_biz_app`, `quality_rating`, `templates: {key: {status, reason?}}`, `connected_by`, `connected_at`, `last_error?` | owner (the existing integrations rule) |
 | `whatsapp_connections/{teamId}` | encrypted business token, `waba_id`, `phone_number_id` | deny |
 | `whatsapp_numbers/{phoneNumberId}` | `teamId` — **one number, one team**; a connect that finds it held by another team is refused (the `connect_accounts` lesson) | deny |
-| `teams/{t}/whatsapp_templates/{id}` | studio-authored template: `name`, `category`, `language`, `body`, `variables[]`, `meta_template_id`, `status`, `rejected_reason?` | team members |
-| `whatsapp_suppressions/{phoneHash}` | STOP / hard-failure opt-outs, by `phoneHash` | deny |
+| `teams/{t}/whatsapp_templates/{id}` *(Phase 2)* | studio-authored template: `name`, `category`, `language`, `body`, `variables[]`, `meta_template_id`, `status`, `rejected_reason?` | team members |
+| `whatsapp_suppressions/{teamId}_{phoneHash}` | STOP replies, **per studio** (a STOP to one studio says nothing about another) | deny |
 | `mail_sends/*` | existing ledger, `channel: 'whatsapp'`, `provider_message_id` = wamid, plus `wa_category`, `wa_billable` | existing |
 
 **Contact consent** — `Contact.whatsapp_consent`:
 `{ status: 'opted_in' | 'opted_out', at, source: 'booking_form' | 'signup_form' | 'space' | 'member_app' | 'staff' | 'reply_stop', recorded_by? }`.
 Present only once somebody has answered; absent reads as "not opted in".
-One predicate, `whatsappConsentAllows(contact)` in shared, is the only reader.
-A STOP writes `opted_out` AND a suppression by phone hash, so a second contact
-record with the same number is covered too. Wiped on anonymisation
+One predicate, `whatsappConsentAllows(contact)` in shared, is the only reader;
+one builder, `whatsappConsentPatch` (`whatsapp/consentPatch.ts`), the only
+writer — both pinned by `whatsapp.test.ts`. A STOP writes `opted_out` on the
+contacts that number was messaged as (found through the send log, which keeps
+`contact_id` + `recipient_hash`; contact phones are stored as typed) AND a
+suppression, so a second contact record with the same number is covered too.
+**The newest answer wins**: a suppression blocks only when it is newer than the
+contact's opt-in (`suppressionBlocks`), so a member who replied STOP and later
+opted in again on a form is not silently blocked, and no opt-in door has to
+know the suppression list exists. Wiped on anonymisation
 (`CONTACT_IDENTIFYING_FIELDS`), added to the API field catalogue as `excluded`.
 
 ### 3. Connect / disconnect (callables, owner-only, plugin-gated)
 
-- `connectWhatsApp({ code, wabaId, phoneNumberId })`: `assertPluginInstalled`;
-  **refused for public demo tenants** (`sandbox-*`, `linyup-demo`); exchange
-  the code (`GET /oauth/access_token`); refuse unless `is_on_biz_app`; claim
+- `connectWhatsApp({ code, wabaId, phoneNumberId? })`: `assertPluginInstalled`;
+  **refused for public demo tenants** (the `api_access_blocked` flag the
+  `/try` teams and `linyup-demo` carry); exchange
+  the code (`GET /oauth/access_token`); when the browser has no number id
+  (Business App onboarding reports the account only) read the account's numbers
+  and require exactly one; refuse unless `is_on_biz_app`; claim
   `whatsapp_numbers/{id}` in a transaction; subscribe the app to the WABA;
   provision the reminder templates; write the status doc.
 - `disconnectWhatsApp`: unsubscribe the app, delete the token and the number
@@ -163,9 +177,13 @@ Quiet hours reuse `isWithinSmsSendingHours`.
 ### 7. Opt-in surfaces (one callable, three doors)
 
 - Public booking + signup forms: an unticked checkbox naming the studio and
-  WhatsApp, shown only when the studio's plugin is connected (public profile
-  mirror flag `whatsapp_enabled`); written through the existing contact-write
-  rails (`buildContactFieldPatch` gains the key).
+  WhatsApp, shown only when `TeamPublicProfile.whatsapp_opt_in_offered` (plugin
+  installed AND a number connected; connect/disconnect touch the team doc so the
+  mirror follows). Book forms send the reserved answer key `whatsapp_opt_in` in
+  `contactFieldAnswers`, which `buildContactFieldPatch` turns into the consent —
+  so every rail that already narrows book-form answers records it with no change
+  of its own. Signup sends `contactDetails.whatsappOptIn`. Only `true` is read:
+  an unticked box never withdraws an opt-in.
 - Space profile + member app: `setMyWhatsAppConsent({ optIn })`, a
   contact-session callable shared by both.
 - Staff: a toggle on the contact page → `setContactWhatsAppConsent`
@@ -212,7 +230,7 @@ signed status webhook. Record in this doc, with sources:
 - the failure codes for "stopped marketing" and "not on WhatsApp";
 - how Linyup-sent messages appear in the studio's app.
 
-**Phase 1 — connect + rail + reminders + consent.** Sections 1–5, 7, 8;
+**Phase 1 — connect + rail + reminders + consent.** *(built)* Sections 1–5, 7, 8;
 plugin to `beta`; rules + rules tests; i18n fragment; `pnpm census:reads` rows
 for any new LOG read. Enough for App Review.
 
@@ -233,11 +251,14 @@ for any new LOG read. Enough for App Review.
   routing to the right team, STOP in four languages, consent predicate, send
   rail order (policy silent, no consent, suppressed, template not approved →
   suppressed rows with reasons), reminder step skip + key, token encryption
-  round-trip, demo-tenant refusal.
+  round-trip, demo-tenant refusal. Built: `whatsapp/*.test.ts` (templates,
+  token sealing, webhook parse + signature, STOP keywords, consent + the
+  newest-answer rule, reminder formatting); the send rail and callables are not
+  unit-tested against Firestore — the staging E2E below covers them.
 - Source pins: the provider file is the only `graph.facebook.com` caller;
   every WhatsApp send goes through `sendStudioWhatsApp`; `whatsapp_consent` is
   read only through its predicate.
-- Rules tests for the new paths.
+- Rules tests for the new paths: `whatsapp/whatsapp.rules-test.ts`.
 - Staging E2E (Phase 0/1): a studio number via coexistence; opt in from the
   booking form; a reminder arrives and shows in the studio's app; STOP from the
   phone → consent `opted_out` → the next reminder is suppressed.

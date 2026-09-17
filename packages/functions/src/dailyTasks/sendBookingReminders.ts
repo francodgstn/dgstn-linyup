@@ -10,7 +10,7 @@
 // Runs HOURLY (bookingRemindersHourly in ./index.ts — no longer part of the
 // 02:00 dailyTasks batch): a step is due when the session is at most
 // `offsetHours` away and no further than 24h past the offset (a catch-up
-// window; the sent marker guarantees once-only). SMS steps additionally respect
+// window; the sent marker guarantees once-only). SMS and WhatsApp steps respect
 // quiet hours (08:00–21:00 Europe/Zurich) — outside them the step defers to the
 // next in-window run.
 //
@@ -41,6 +41,7 @@ import { to } from '../utils/async'
 import { sendEmail } from '../utils/email'
 import { isWithinSmsSendingHours, sendSms } from '../utils/sms'
 import { buildBookingReminderEmail, buildBookingReminderSms } from '../booking/templates'
+import { sendWhatsAppBookingReminder } from '../whatsapp/reminder'
 import { getHostingUrl } from '../utils/env'
 import {
   SESSIONS_COLLECTION,
@@ -300,6 +301,25 @@ export async function sendBookingRemindersForTeam(teamId: string): Promise<Remin
               text,
               teamId,
             })
+          } else if (step.channel === 'whatsapp') {
+            // WhatsApp step — same quiet hours as SMS. Everything that makes a
+            // booking unsendable (no contact, no phone, no opt-in, not
+            // connected, template not approved) is a SKIP, marked below like
+            // an SMS skip: never sent by another channel instead.
+            if (!smsWindowOpen) continue
+            const outcome = await sendWhatsAppBookingReminder({
+              teamId,
+              teamName: team.name,
+              lang: team.lang,
+              booking,
+              bookingId: bookingDoc.id,
+              sessionId,
+              stepId: step.id,
+              activityName,
+              sessionStart,
+              manageBookingUrl,
+            })
+            if (outcome.skipped && outcome.skipped !== 'duplicate') skipped++
           } else {
             // SMS step — needs a phone, an opted-in recipient, and the quiet-hours
             // window. Deferrals (window closed) leave the marker unset so the next
