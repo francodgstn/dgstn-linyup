@@ -18,6 +18,7 @@ import { formatChf, formatDate } from '@/lib/format'
 import { getMessagingInfo, MAIL_LEDGER_NOTE } from '@/lib/queries/messaging'
 import { describeFirebaseTarget } from '@/lib/firebase-admin'
 import { CompCard } from './comp-card'
+import { FeeRateCard } from './fee-rate-card'
 import { InternalCard } from './internal-card'
 import { ConnectToggle } from './connect-toggle'
 import { DisconnectConnect } from './disconnect-connect'
@@ -255,6 +256,24 @@ export default async function AccountDetailPage({
             <div className="mt-4">
               <InternalCard kind={account.type} entityId={account.id} initialInternal={account.internal} />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Linyup's cut of member payments — the published take-rate, or one
+            negotiated with this tenant. Beside billing because it is the other
+            half of what Linyup earns from it. */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Platform fee on member payments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FeeRateCard
+              kind={account.type}
+              entityId={account.id}
+              comped={account.comped}
+              publishedBps={account.publishedFeeBps}
+              feeRate={account.feeRate}
+            />
           </CardContent>
         </Card>
 

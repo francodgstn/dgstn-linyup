@@ -35,7 +35,12 @@ import {
   type SaasPlan,
   localizedPublicUrl,
 } from '@linyup/shared'
-import { assertManager, loadEnabledTeam, requireChargeableAccount } from '../connect/access'
+import {
+  assertManager,
+  loadEnabledTeam,
+  platformFeeMetadata,
+  requireChargeableAccount,
+} from '../connect/access'
 import { closeTeamCheckoutSession } from '../connect/checkout'
 import type { CheckoutSessionCloseOutcome } from '../utils/connect/client'
 import { createOneOffCheckoutSession } from '../utils/connect/client'
@@ -462,6 +467,7 @@ export const createStaffAppointment = onCall(async (request) => {
       amount: amountMinor,
       model,
       waived: enabledTeam.feeWaived,
+      rate: enabledTeam.fee.rate,
     })
     const locale = data.locale ?? 'en'
     const base = `${resolveBaseUrl(data.origin)}/${locale}/pay/result`
@@ -485,6 +491,7 @@ export const createStaffAppointment = onCall(async (request) => {
       // sound but is an argument about the document rather than a fact about this
       // attempt. See appointments/holdRelease.ts.
       bookingToken: bookingToken as string,
+      ...platformFeeMetadata(enabledTeam),
     }
     try {
       const checkoutSession = await createOneOffCheckoutSession({

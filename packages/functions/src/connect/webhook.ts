@@ -730,6 +730,15 @@ async function handlePaymentIntent(
       amount: pi.amount ?? 0,
       currency: pi.currency ?? 'chf',
       application_fee_amount: pi.application_fee_amount ?? 0,
+      // Which rate that fee was charged at, and why (plan / negotiated / comped),
+      // stamped at checkout by `platformFeeMetadata`. Absent on payments that
+      // predate it and on rails that do not go through Checkout.
+      ...(md.platform_fee_bps != null && Number.isInteger(Number(md.platform_fee_bps))
+        ? {
+            platform_fee_bps: Number(md.platform_fee_bps),
+            platform_fee_source: md.platform_fee_source ?? null,
+          }
+        : {}),
       status,
       ...(status === 'succeeded' ? { amount_refunded: 0 } : {}),
       last_event_id: eventId,

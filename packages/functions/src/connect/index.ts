@@ -160,8 +160,15 @@ export const getConnectStatus = onCall(async (request) => {
   // against a rate that was never taken. The waiver is server state (it can come
   // from the studio's organisation), so the answer travels with the status
   // rather than being recomputed in the browser: one resolver, not two.
+  // The same holds for a NEGOTIATED rate, which the browser cannot know at all.
   const feeWaived = team.feeWaived
-  if (!accountId) return { connected: false as const, feeWaived }
+  const fee = {
+    feeWaived,
+    feePercent: team.fee.rate.bps / 100,
+    feeSource: team.fee.source,
+    feeExpiresAtMs: team.fee.expiresAtMs,
+  }
+  if (!accountId) return { connected: false as const, ...fee }
 
   let status: NormalizedAccountStatus
   try {
@@ -175,7 +182,7 @@ export const getConnectStatus = onCall(async (request) => {
 
   return {
     connected: true as const,
-    feeWaived,
+    ...fee,
     accountId,
     model,
     status: status.status,

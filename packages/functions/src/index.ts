@@ -547,6 +547,11 @@ export { requestContactDeletion, cancelContactDeletion } from './contacts/selfDe
 // the reviewed prod deploy rather than from a workstation — see ops/demoTenant.ts.
 export { manageDemoTenant, setReviewAccess, getReviewAccess } from './ops'
 
+// Operator-only: re-apply a tenant's platform-fee rate to its live member
+// subscriptions, which carry their fee percent on the Stripe object. See
+// connect/feeRateSync.ts.
+export { resyncTenantFeeRate } from './ops/feeRate'
+
 // Bio-link
 export { getInTouchForm } from './bio-link/getInTouchForm'
 

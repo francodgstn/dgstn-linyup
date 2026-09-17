@@ -4333,7 +4333,9 @@
     "feeStripeNote": "Dazu kommt Stripes eigene Bearbeitungsgebühr. Siehe <link>Stripe-Preise</link>.",
     "feeRefundNote": "Bei einer Erstattung trägst du die Stripe-Gebühr.",
     "feesTitle": "Das zahlst du",
-    "feeNoneNote": "Linyup erhebt keine Gebühr auf deine Zahlungen."
+    "feeNoneNote": "Linyup erhebt keine Gebühr auf deine Zahlungen.",
+    "feeAgreedNote": "Die Gebühr von Linyup beträgt {pct}% pro Zahlung, der mit dir vereinbarte Satz.",
+    "feeAgreedUntilNote": "Die Gebühr von Linyup beträgt {pct}% pro Zahlung, der mit dir vereinbarte Satz, bis {date}."
   },
   "PaymentsDashboard": {
     "title": "Zahlungen",
