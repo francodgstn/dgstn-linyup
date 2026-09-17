@@ -47,16 +47,16 @@ export interface PlanPrice {
 }
 
 export const PLAN_PRICING: Record<SaasPlan, PlanPrice> = {
-  free: { baseMonthly: 0, stripeLookupKey: null, includedContacts: 15 },
+  free: { baseMonthly: 0, stripeLookupKey: null, includedContacts: 50 },
   coach: {
     baseMonthly: 9,
     stripeLookupKey: 'linyup_coach_monthly',
-    includedContacts: 50,
+    includedContacts: 150,
   },
   studio: {
     baseMonthly: 35,
     stripeLookupKey: 'linyup_studio_monthly',
-    includedContacts: 250,
+    includedContacts: 300,
   },
   // Organisation has NO fixed price and NO base fee — it is priced PER STUDIO
   // (ORG_PER_STUDIO). `baseMonthly: 0` is the honest value rather than a
@@ -131,7 +131,7 @@ export interface ContactBlock {
 
 /** Studio add-on: buy room in predictable flat blocks, not per-head. */
 export const STUDIO_CONTACT_BLOCK: ContactBlock = {
-  size: 250,
+  size: 300,
   monthly: 10,
   stripeLookupKey: 'linyup_studio_contact_block_monthly',
 }
@@ -299,7 +299,7 @@ export const MULTIPLE_USERS_PLAN_REFUSAL = 'multiple-users-plan-required'
 // non-UI logic; do not re-introduce feature-flag gates for plugin features.
 export const PLAN_FEATURES: Record<SaasPlan, PlanFeature[]> = {
   // Free = the full Coach feature set. The tier is differentiated by limits
-  // (15-contact hard cap — see PLAN_PRICING.free.includedContacts — single user,
+  // (a hard contact cap — see PLAN_PRICING.free.includedContacts — single user,
   // no plugin add-ons, bio-link branding), not by feature flags.
   free: [
     'contacts',

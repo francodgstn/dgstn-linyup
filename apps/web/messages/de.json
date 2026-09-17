@@ -2784,7 +2784,7 @@
     "contactsLine": "{count} Kontakte",
     "unlimitedContacts": "Unbegrenzte Kontakte",
     "compareToggle": "Alle Funktionen vergleichen",
-    "contactsNote": "Zählt nur aktive (nicht archivierte) Kontakte. Studio kann +250er-Blöcke für CHF 10/Monat hinzufügen; archivierte Kontakte werden nach 2 Jahren automatisch anonymisiert.",
+    "contactsNote": "Zählt nur aktive (nicht archivierte) Kontakte. Studio kann +300er-Blöcke für CHF 10/Monat hinzufügen; archivierte Kontakte werden nach 2 Jahren automatisch anonymisiert.",
     "unlimited": "Unbegrenzt",
     "addon": "Add-on",
     "limited": "Eingeschränkt",
@@ -5741,9 +5741,9 @@
     "compareAllPlans": "Alle Pläne vergleichen →",
     "planContent": {
       "free": {
-        "tagline": "Kostenlos starten mit bis zu 15 Kontakten.",
+        "tagline": "Kostenlos starten mit bis zu 50 Kontakten.",
         "features": [
-          "Bis zu 15 aktive Kontakte",
+          "Bis zu 50 aktive Kontakte",
           "Öffentlicher Bio-Link",
           "Sessions, Abos & Ziele"
         ]
@@ -5753,13 +5753,13 @@
         "features": [
           "Mitglieder-App + Terminbuchung",
           "Kontaktgruppen & eigene Felder inklusive",
-          "Add-ons à la carte + 50 Kontakte"
+          "Add-ons à la carte + 150 Kontakte"
         ]
       },
       "studio": {
         "tagline": "Wachsen Sie mit Engagement-Tools, Automatisierung und der Mitglieder-App.",
         "features": [
-          "Alle Add-ons inklusive + 250 Kontakte",
+          "Alle Add-ons inklusive + 300 Kontakte",
           "Gamification – Streaks, Bestenlisten, Abzeichen",
           "Vollständige Automatisierungs-Suite & mehrere Manager"
         ]

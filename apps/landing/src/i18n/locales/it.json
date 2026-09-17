@@ -347,7 +347,7 @@
     "cmpCore": "Gestisci lo studio",
     "cmpOrg": "Organizzazione multi-studio",
     "cmpContacts": "Contatti",
-    "cmpContactsNote": "Conta solo i contatti attivi (non archiviati). Studio può aggiungere blocchi da +250 per CHF 10/mese; i contatti archiviati vengono anonimizzati automaticamente dopo 2 anni.",
+    "cmpContactsNote": "Conta solo i contatti attivi (non archiviati). Studio può aggiungere blocchi da +300 per CHF 10/mese; i contatti archiviati vengono anonimizzati automaticamente dopo 2 anni.",
     "cmpMembers": "Più gestori/visualizzatori",
     "cmpUiLanguages": "Interfaccia moderna in 4 lingue",
     "cmpUiLanguagesNote": "English · Deutsch · Français · Italiano",
@@ -375,7 +375,7 @@
       "price": "Gratuito",
       "audience": "Per coach che stanno iniziando.",
       "features": [
-        "Fino a 15 contatti",
+        "Fino a 50 contatti",
         "Pagina di prenotazione e bio link",
         "Sessioni, abbonamenti e obiettivi"
       ]
@@ -387,7 +387,7 @@
       "audience": "Per istruttori singoli e coach privati che prendono slancio.",
       "features": [
         "Tutto di Free",
-        "50 contatti",
+        "150 contatti",
         "App membri + Gruppi e Campi personalizzati",
         "Opzioni à la carte"
       ]

@@ -1909,7 +1909,7 @@ async function handleCourseCheckout(
  *   1. Creating a contact exists to hang a per-person effect off it (a course
  *      entitlement, membership fields, credits). A gift card has none — the
  *      entitlement travels with the code, to whoever the buyer hands it to.
- *   2. The Free plan's 15-contact cap is HARD, and provisional contacts are
+ *   2. The Free plan's contact cap is HARD, and provisional contacts are
  *      deliberately excluded from it (utils/contactCap.ts). A studio selling
  *      twenty Christmas cards would otherwise fill its own allowance with
  *      people who are not its customers, and confirming a provisional buyer

@@ -3,7 +3,7 @@ import { PLAN_PRICING } from '@linyup/shared'
 import { underHardContactCap } from './contactCap'
 
 describe('underHardContactCap', () => {
-  const freeCap = PLAN_PRICING.free.includedContacts! // 15 as of writing
+  const freeCap = PLAN_PRICING.free.includedContacts!
 
   it('blocks the free plan at its included-contacts cap', () => {
     assert.strictEqual(underHardContactCap('free', freeCap - 1), true)
@@ -18,8 +18,8 @@ describe('underHardContactCap', () => {
   })
 
   it('confirmed count excludes provisional registrations (caller subtracts)', () => {
-    // 15 active of which 3 provisional → 12 confirmed → still under the cap.
+    // At-cap actives of which 3 are provisional → still under the cap.
     assert.strictEqual(underHardContactCap('free', freeCap + 3 - 3 - 3), true)
-    assert.strictEqual(underHardContactCap('free', 15 - 3), true)
+    assert.strictEqual(underHardContactCap('free', freeCap - 3), true)
   })
 })
