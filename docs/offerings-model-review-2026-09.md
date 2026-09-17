@@ -1,3 +1,8 @@
+---
+title: Offerings model review — activities, plans, and who books what at what price
+status: plan
+area: product
+---
 # Offerings model review — activities, plans, and who books what at what price
 
 2026-09-17, on `origin/main` 23d7ea30. A read-only review of the concepts behind

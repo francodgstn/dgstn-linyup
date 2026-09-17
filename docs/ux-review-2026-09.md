@@ -1,3 +1,8 @@
+---
+title: UX review — 2026-09 · Offerings (activities & plans)
+status: living
+area: product
+---
 # UX review — 2026-09 · Offerings (activities & plans)
 
 Reviewed on `origin/main` 23d7ea30 (2026-09-17), after the studio default drop-in
