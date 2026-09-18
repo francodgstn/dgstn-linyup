@@ -89,6 +89,7 @@ import {
 import { buildStorefrontPageLinks, seedStorePromoCode } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { ledgerExpiry } from './lib/ledgerExpiry'
+import { writeTeamContactCounter } from './lib/contactCounter'
 import { partnerAppNames } from './lib/partnerApps'
 import {
   planSeedConnectAccounts,
@@ -2377,6 +2378,11 @@ async function seedLeadTenant(profile: LeadProfile) {
   // Planned above; written here so it merges onto the team public_profile rather
   // than being overwritten by it. Silent no-op when no account is configured.
   await linkSeedConnectAccount({ db, teamId })
+
+  // THE LIVE-CONTACT COUNTER. Written last, once every contact of this team
+  // exists, because it stores an ABSOLUTE count — see scripts/lib/contactCounter.ts
+  // for why a seeder owes it and why it must agree with the nightly reconciler.
+  await writeTeamContactCounter(db, teamId)
 
   return { teamId, studentEmail, sessionCount: sessionDefs.length, demoContact }
 }

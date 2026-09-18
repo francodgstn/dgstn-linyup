@@ -57,6 +57,7 @@ import { pass14SeasonCalendar }     from './migration/passes/14-season-calendar'
 import { pass15Activation }         from './migration/passes/15-activation'
 import { pass16Affiliations }       from './migration/passes/16-affiliations'
 import { pass17PlanGrants }         from './migration/passes/17-plan-grants'
+import { pass18ContactCounters }    from './migration/passes/18-contact-counters'
 import { verify }                   from './migration/verify'
 
 const { values } = parseArgs({
@@ -284,6 +285,9 @@ async function run() {
   // After the contacts pass, which writes the slot this imports as a plan grant
   // (docs/multi-plan-holdings.md).
   if (!only || only === 'plan-grants')         await pass17PlanGrants(cfg, teamIds)
+  // LAST of the data passes: the counter stores an ABSOLUTE count, so it must
+  // see the final state of the contacts collection. See the pass header.
+  if (!only || only === 'contact-counters')    await pass18ContactCounters(cfg, teamIds)
 
   if (!only || only === 'verify' || values['verify']) await verify(teamIds, !!cfg.teams?.length)
 

@@ -87,6 +87,7 @@ import {
 } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { ledgerExpiry } from './lib/ledgerExpiry'
+import { writeTeamContactCounter } from './lib/contactCounter'
 import { partnerAppNames } from './lib/partnerApps'
 import {
   activityDocForWrite,
@@ -2067,8 +2068,14 @@ async function seedTeam(opts: TeamSeed) {
     }
   }
 
+  // THE LIVE-CONTACT COUNTER. Written last, once every contact of this team
+  // exists, because it stores an ABSOLUTE count — see scripts/lib/contactCounter.ts
+  // for why a seeder owes it and why it must agree with the nightly reconciler.
+  const liveCount = await writeTeamContactCounter(db, teamId)
+
   console.log(
-    `   ✓ ${teamName} (${plan}) — ${contactCount} contacts, ${sessionDefs.length} sessions`
+    `   ✓ ${teamName} (${plan}) — ${contactCount} contacts ` +
+      `(${liveCount} live, counter stamped), ${sessionDefs.length} sessions`
   )
 }
 

@@ -72,6 +72,55 @@ describe('ledger rows written by scripts carry a TTL stamp', () => {
     )
   })
 
+  // THE CONTACT COUNTER is the sibling gap, and the same shape: a seeder writes
+  // contacts straight to Firestore, so neither of the counter's live writers
+  // (the trackContacts delta trigger, the nightly reconciler) has run for them.
+  // Pinned here because the local failure is a CONFIDENT WRONG NUMBER rather
+  // than a blank — trackContacts runs in the emulator and its increment() on a
+  // missing document creates it at 1.
+  it('every seeder that writes contacts also stamps the contact counter', () => {
+    for (const rel of [
+      'scripts/seed-emulator.ts',
+      'scripts/seed-sandbox.ts',
+      'scripts/seed-lead.ts',
+      'scripts/seed-staging.ts',
+      'scripts/migration/passes/18-contact-counters.ts',
+    ]) {
+      assert.ok(
+        read(rel).includes('writeTeamContactCounter('),
+        `${rel} seeds contacts but never stamps teams/{id}/counters/contacts`,
+      )
+    }
+  })
+
+  it('the counter helper counts the way the nightly reconciler counts', () => {
+    // The value a seed writes and the value the nightly job would later write
+    // must never disagree — a second definition of "live" is worse than none.
+    const helper = read('scripts/lib/contactCounter.ts')
+    for (const clause of ["where('teamId', '==', teamId)", "where('deleted_at', '==', null)", "where('archived_at', '==', null)", '.count()']) {
+      assert.ok(
+        helper.includes(clause),
+        `scripts/lib/contactCounter.ts must use ${clause}, as countActiveContacts does`,
+      )
+    }
+    // Absolute, never a delta — the rule both real writers follow. Comments are
+    // stripped first: this file's header QUOTES the trigger's own
+    // `set({ live: increment(1) }, …)` to explain what it is not doing, and
+    // matching prose instead of code is how a source-reading pin fails wrongly.
+    const code = helper
+      .split('\n')
+      .filter((l) => {
+        const t = l.trim()
+        return !t.startsWith('*') && !t.startsWith('//') && !t.startsWith('/*')
+      })
+      .join('\n')
+    assert.doesNotMatch(
+      code,
+      /increment\(/,
+      'the seeder counter must write an ABSOLUTE value, never an increment',
+    )
+  })
+
   // THE ONE THAT CATCHES A NEW SEEDER. The list above is maintained by hand, so
   // this re-derives the writer set from the source and fails when a file writes
   // a ledger collection without being listed — the way the list goes stale.
