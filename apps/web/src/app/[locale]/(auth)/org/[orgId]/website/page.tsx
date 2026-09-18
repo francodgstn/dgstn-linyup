@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
 import { toast } from 'sonner'
-import { Globe, Plus, GripVertical, Pencil, Trash2, Eye, EyeOff, ExternalLink, Check, ListTree } from 'lucide-react'
+import { Globe, Plus, GripVertical, Pencil, Trash2, Eye, EyeOff, ExternalLink, Check, ListTree, Settings } from 'lucide-react'
 import { ThemePresetPicker } from '@/components/theme/ThemePresetPicker'
 import { SortableList, SortableItem } from '@/components/ui/sortable'
 import { arrayMove } from '@dnd-kit/sortable'
@@ -21,12 +21,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -38,14 +32,37 @@ import {
 } from '@/components/ui/alert-dialog'
 import { DynamicIcon } from '@/components/ui/icon-picker'
 import { ColorPicker } from '@/components/ui/color-picker'
-import { ORGANIZATIONS_COLLECTION, ORG_TEAMS_SUBCOLLECTION, TEAMS_COLLECTION, deriveSiteMenu } from '@linyup/shared'
-import type { OrgSiteDraft, OrgSiteSection, OrgSiteSectionType, OrgSiteTeamRef, SiteMeta, SiteMenuItem } from '@linyup/shared'
+import {
+  ORGANIZATIONS_COLLECTION,
+  ORG_TEAMS_SUBCOLLECTION,
+  TEAMS_COLLECTION,
+  SITE_PAGE_LIMITS,
+  deriveSiteMenu,
+  isValidSiteDate,
+} from '@linyup/shared'
+import type {
+  OrgSiteDraft,
+  OrgSiteSection,
+  OrgSiteSectionType,
+  OrgSiteTeamRef,
+  SiteMeta,
+  SiteMenuItem,
+  SitePageRef,
+} from '@linyup/shared'
 import { MenuPanel } from '@/plugins/website/MenuPanel'
 import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
 import { sectionNavLabel } from '@/components/site/sections'
 import { type RenderableSite } from '@/components/site/WebsiteRenderer'
 import { OrgSectionEditor } from './OrgSectionEditor'
-import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite, uploadOrgSiteImage } from './hooks'
+import {
+  useOrgSiteDraft,
+  useOrgSitePageDocs,
+  saveOrgSiteDraft,
+  saveOrgSitePages,
+  publishOrgSite,
+  unpublishOrgSite,
+  uploadOrgSiteImage,
+} from './hooks'
 import { BrandFields } from '@/components/website/BrandFields'
 import {
   ORG_SECTION_LIBRARY,
@@ -59,6 +76,23 @@ import { SectionPicker } from '@/components/website/SectionPicker'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { useAutosave } from '@/hooks/useAutosave'
 import { Tip } from '@/components/ui/tip'
+import { newSection, starterSections, type PageStarter } from '@/plugins/website/defaults'
+import {
+  AddPageDialog,
+  HomeSettingsDialog,
+  PageSettingsDialog,
+  PagesRail,
+  PostHeaderCard,
+  removeMenuItemsTargetingPage,
+  useCurrentPageParam,
+} from '@/components/website/pages/SitePageTools'
+
+/**
+ * The starters an organisation's new page may take. The studio's 'offer' page
+ * ends in a booking band, and an organisation has nothing to book — so it is
+ * left out, not offered with a button that could never publish.
+ */
+const ORG_PAGE_STARTERS: readonly PageStarter[] = ['simple', 'empty']
 
 const MAX_SECTIONS = 12
 
@@ -100,17 +134,19 @@ function AppearancePanel({
   meta,
   onChange,
   sections,
+  pages,
   uploadImage,
 }: {
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
   sections: { id: string; label: string }[]
+  /** The site's pages, offered as link targets in the brand link lists. */
+  pages: { id: string; label: string }[]
   uploadImage: (file: File) => Promise<string>
 }) {
   const t = useTranslations('Website')
 
   const setHeader = (p: Partial<SiteMeta['header']>) => onChange({ header: { ...meta.header, ...p } })
-  const setSeo = (p: Partial<NonNullable<SiteMeta['seo']>>) => onChange({ seo: { ...meta.seo, ...p } })
 
   return (
     <div className="space-y-5">
@@ -154,7 +190,10 @@ function AppearancePanel({
           <Label className="text-xs">{t('apHeaderCtaLabel')}</Label>
           <Input
             value={meta.header.ctaLabel ?? ''}
-            onChange={(e) => setHeader({ ctaLabel: e.target.value })}
+            // An organisation's header button is always a link (it has no
+            // booking page) — say so the moment it gets a label, not only once
+            // an address is typed, or the stored action stays 'booking'.
+            onChange={(e) => setHeader({ ctaLabel: e.target.value, ctaAction: 'url' })}
             placeholder={t('apHeaderCtaPlaceholderOrg')}
             className="h-9"
           />
@@ -172,7 +211,7 @@ function AppearancePanel({
         )}
       </div>
 
-      <BrandFields meta={meta} onChange={onChange} sections={sections} uploadImage={uploadImage} />
+      <BrandFields meta={meta} onChange={onChange} sections={sections} pages={pages} uploadImage={uploadImage} />
 
       <label className="flex items-center justify-between rounded-lg border p-3">
         <span className="text-sm">{t('apShowSocialFooter')}</span>
@@ -182,21 +221,9 @@ function AppearancePanel({
         />
       </label>
 
-      <div className="space-y-3 rounded-lg border p-3">
-        <p className="text-xs font-medium text-muted-foreground">SEO (optional)</p>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('apPageTitle')}</Label>
-          <Input value={meta.seo?.title ?? ''} onChange={(e) => setSeo({ title: e.target.value })} className="h-9" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('apMetaDescription')}</Label>
-          <Input
-            value={meta.seo?.description ?? ''}
-            onChange={(e) => setSeo({ description: e.target.value })}
-            className="h-9"
-          />
-        </div>
-      </div>
+      {/* No SEO block: these were the HOME page's title and description, and
+          Home now opens Page settings like every other page — as on a studio's
+          site. */}
     </div>
   )
 }
@@ -237,6 +264,15 @@ export default function OrgWebsiteBuilderPage() {
   const { data: previewTeams = [] } = useOrgPreviewTeams(orgId)
 
   const [draft, setDraft] = useState<OrgSiteDraft | null>(null)
+  const { data: pageDocs, isLoading: pagesLoading } = useOrgSitePageDocs(orgId)
+  // Every page other than home, keyed by id — seeded once from the page docs,
+  // then the builder's own. Deleted pages are removed on the next save.
+  const [pageSections, setPageSections] = useState<Record<string, OrgSiteSection[]> | null>(null)
+  const [removedPageIds, setRemovedPageIds] = useState<string[]>([])
+  const pageIds = useMemo(() => draft?.pages?.map((p) => p.id) ?? null, [draft?.pages])
+  const [currentPageId, setCurrentPageId] = useCurrentPageParam(pageIds)
+  const [addPageOpen, setAddPageOpen] = useState(false)
+  const [pageSettingsOpen, setPageSettingsOpen] = useState(false)
   const [dirty, setDirty] = useState(false)
   // The edit counter autosave keys on — see useAutosave.
   const editRev = useRef(0)
@@ -270,6 +306,13 @@ export default function OrgWebsiteBuilderPage() {
     setDraft(savedDraft ?? emptyOrgDraft({ id: org.id, name: org.name, slug: org.slug }))
   }, [draft, draftLoading, savedDraft, org])
 
+  useEffect(() => {
+    if (pageSections || pagesLoading || !draft) return
+    const initial: Record<string, OrgSiteSection[]> = {}
+    for (const ref of draft.pages ?? []) initial[ref.id] = pageDocs?.[ref.id] ?? []
+    setPageSections(initial)
+  }, [pageSections, pagesLoading, draft, pageDocs])
+
   // ── mutators ──
   function markDirty() {
     editRev.current += 1
@@ -281,22 +324,92 @@ export default function OrgWebsiteBuilderPage() {
     markDirty()
   }
   const patchMeta = (patch: Partial<SiteMeta>) => mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))
+  // THE CURRENT PAGE'S sections, and the one place that writes them — the same
+  // arrangement as the studio builder, so every section mutator below works on
+  // whichever page is open.
+  const isHome = currentPageId === 'home'
+  const currentSections: OrgSiteSection[] = isHome ? (draft?.sections ?? []) : (pageSections?.[currentPageId] ?? [])
+  function setCurrentSections(updater: (sections: OrgSiteSection[]) => OrgSiteSection[]) {
+    if (isHome) {
+      mutate((d) => ({ ...d, sections: updater(d.sections) }))
+    } else {
+      setPageSections((prev) => ({ ...(prev ?? {}), [currentPageId]: updater((prev ?? {})[currentPageId] ?? []) }))
+      markDirty()
+    }
+  }
   const updateSection = (id: string, patch: Record<string, unknown>) =>
-    mutate((d) => ({
-      ...d,
-      sections: d.sections.map((s) => (s.id === id ? ({ ...s, ...patch } as OrgSiteSection) : s)),
-    }))
+    setCurrentSections((sections) => sections.map((s) => (s.id === id ? ({ ...s, ...patch } as OrgSiteSection) : s)))
   function addSection(type: OrgSiteSectionType) {
-    if (draft && draft.sections.length >= MAX_SECTIONS) {
+    if (currentSections.length >= MAX_SECTIONS) {
       toast.error(t('limitSections', { max: MAX_SECTIONS }))
       return
     }
     const sec = newOrgSection(type, org)
-    mutate((d) => ({ ...d, sections: [...d.sections, sec] }))
+    setCurrentSections((sections) => [...sections, sec])
     setOpenId(sec.id)
     setTab('sections')
   }
-  const removeSection = (id: string) => mutate((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }))
+  const removeSection = (id: string) => setCurrentSections((sections) => sections.filter((s) => s.id !== id))
+
+  // ── pages ──
+  function handleCreatePage({
+    title,
+    path,
+    kind,
+    publishedOn,
+    starter,
+  }: {
+    title: string
+    path: string
+    kind: 'page' | 'post'
+    publishedOn?: string
+    starter: PageStarter
+  }) {
+    const id = `p-${Math.random().toString(36).slice(2, 8)}${Math.random().toString(36).slice(2, 6)}`
+    const ref: SitePageRef = { id, path, title, ...(kind === 'post' ? { kind: 'post' as const, publishedOn } : {}) }
+    mutate((d) => ({ ...d, pages: [...(d.pages ?? []), ref] }))
+    // A post opens on a text block; a page on the starter picked. Both are
+    // presentational sections an organisation site carries (`simple` is a
+    // hero and a text block — the org starters never include the booking band).
+    const first = (
+      kind === 'post'
+        ? [newSection('content')]
+        : starterSections(starter, title, {
+            offerHeading: tWeb('starterOfferHeading'),
+            offerItemWhat: tWeb('starterOfferItemWhat'),
+            offerItemWho: tWeb('starterOfferItemWho'),
+            itemText: tWeb('starterItemText'),
+            factsHeading: tWeb('starterFactsHeading'),
+            ctaHeading: tWeb('starterCtaHeading'),
+            ctaText: tWeb('starterCtaText'),
+            ctaLabel: tWeb('starterCtaLabel'),
+          })
+    ) as OrgSiteSection[]
+    setPageSections((prev) => ({ ...(prev ?? {}), [id]: first }))
+    setOpenId((kind === 'post' ? first[0] : first[1] ?? first[0])?.id ?? null)
+    setAddPageOpen(false)
+    setCurrentPageId(id)
+    setTab('sections')
+  }
+  function patchPage(id: string, patch: Partial<SitePageRef>) {
+    mutate((d) => ({ ...d, pages: (d.pages ?? []).map((p) => (p.id === id ? { ...p, ...patch } : p)) }))
+  }
+  function deletePage(id: string) {
+    mutate((d) => ({
+      ...d,
+      pages: (d.pages ?? []).filter((p) => p.id !== id),
+      menu: d.menu ? removeMenuItemsTargetingPage(d.menu, id) : d.menu,
+    }))
+    setPageSections((prev) => {
+      if (!prev) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    setRemovedPageIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
+    setPageSettingsOpen(false)
+    if (currentPageId === id) setCurrentPageId('home')
+  }
   function applyStarter(starter: OrgSiteStarter) {
     if (!org) return
     const sections = orgStarterSections(starter, org)
@@ -306,7 +419,7 @@ export default function OrgWebsiteBuilderPage() {
     setOpenId(sections[1]?.id ?? null)
   }
   function reorderSections(from: number, to: number) {
-    mutate((d) => ({ ...d, sections: arrayMove(d.sections, from, to) }))
+    setCurrentSections((sections) => arrayMove(sections, from, to))
   }
 
   // ── save / publish ──
@@ -314,11 +427,25 @@ export default function OrgWebsiteBuilderPage() {
     if (!orgId || !user || !draft) return false
     // An edit made while this save is in flight stays dirty for the next one.
     const rev = editRev.current
+    const removed = removedPageIds
+    // A post's date is what it sorts and displays by — say so now, not at publish.
+    if ((draft.pages ?? []).some((p) => p.kind === 'post' && p.publishedOn && !isValidSiteDate(p.publishedOn))) {
+      if (!silent) toast.error(tWeb('pagesPostDateInvalid'))
+      return false
+    }
     setSaving(true)
     try {
       await saveOrgSiteDraft(orgId, user.uid, draft)
+      await saveOrgSitePages(
+        orgId,
+        user.uid,
+        (draft.pages ?? []).map((ref) => ({ id: ref.id, sections: pageSections?.[ref.id] ?? [] })),
+        removed
+      )
+      setRemovedPageIds((ids) => ids.filter((id) => !removed.includes(id)))
       if (editRev.current === rev) setDirty(false)
       await qc.invalidateQueries({ queryKey: ['org-site-draft', orgId] })
+      await qc.invalidateQueries({ queryKey: ['org-site-pages', orgId] })
       return true
     } catch {
       if (!silent) toast.error(t('errorSave'))
@@ -372,7 +499,7 @@ export default function OrgWebsiteBuilderPage() {
   }
 
   // ── gates ──
-  if (orgLoading || draftLoading || !draft) {
+  if (orgLoading || draftLoading || !draft || pagesLoading || !pageSections) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -413,12 +540,31 @@ export default function OrgWebsiteBuilderPage() {
     markDirty()
   }
 
+  const menuPages = (draft.pages ?? []).map((p) => ({
+    id: p.id,
+    label: (p.navLabel || p.title) + (p.kind === 'post' ? ` · ${tWeb('pagesPostSuffix')}` : ''),
+  }))
+  const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
+  const nonPostPages = (draft.pages ?? []).filter((p) => p.kind !== 'post')
+  const postPages = (draft.pages ?? [])
+    .filter((p) => p.kind === 'post')
+    .sort((a, b) => (b.publishedOn ?? '').localeCompare(a.publishedOn ?? '') || a.title.localeCompare(b.title))
+  const pagesFull = nonPostPages.length >= SITE_PAGE_LIMITS.maxPages
+  const postsFull = postPages.length >= SITE_PAGE_LIMITS.maxPosts
+  const orgTenant = {
+    kind: 'org' as const,
+    id: orgId,
+    uploadImage: (sectionId: string, file: File) => uploadOrgSiteImage(orgId, sectionId, file),
+  }
+  const previewPage = currentPageRef ? { ref: currentPageRef, sections: currentSections } : undefined
+
   const previewSite: RenderableSite = {
     name: draft.name,
     slug: draft.slug,
     meta: draft.meta,
     sections: draft.sections,
     menu,
+    pages: draft.pages,
     // From the ORG document, exactly as `publishOrgWebsite` reads it — so the
     // preview shows the social icons the published page will, rather than the
     // author discovering them only after publishing.
@@ -497,9 +643,25 @@ export default function OrgWebsiteBuilderPage() {
         </div>
       </div>
 
-      {/* Two columns */}
+      {/* Rail | editor | menu — the studio builder's layout. */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        {/* Left: editor */}
+        <PagesRail
+          currentPageId={currentPageId}
+          pages={nonPostPages}
+          posts={postPages}
+          onSelect={(id) => {
+            setCurrentPageId(id)
+            setTab('sections')
+          }}
+          onAdd={() => setAddPageOpen(true)}
+          addDisabled={pagesFull && postsFull}
+          addDisabledReason={tWeb('pagesAndPostsLimitReached', {
+            maxPages: SITE_PAGE_LIMITS.maxPages,
+            maxPosts: SITE_PAGE_LIMITS.maxPosts,
+          })}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-6 xl:flex-row xl:items-start">
+        {/* Editor */}
         <div className="min-w-0 flex-1 space-y-4">
           {/* Tabs */}
           <div className="flex gap-0 border-b">
@@ -525,15 +687,50 @@ export default function OrgWebsiteBuilderPage() {
               meta={draft.meta}
               onChange={patchMeta}
               sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
+              pages={menuPages}
               uploadImage={(file) => uploadOrgSiteImage(orgId, 'brand', file)}
             />
           ) : (
             <div className="space-y-2.5">
+              {/* Narrow screens have no room for the rail: the page switch is
+                  a button row here instead. */}
+              <div className="flex flex-wrap items-center gap-2 lg:hidden">
+                <Button type="button" variant="outline" size="sm" onClick={() => setAddPageOpen(true)} disabled={pagesFull && postsFull}>
+                  <Plus className="h-3.5 w-3.5" />
+                  {tWeb('pagesAdd')}
+                </Button>
+              </div>
+
+              {/* WHICH PAGE THIS IS, with its settings — as on a studio's site. */}
+              <div className="flex items-center gap-3 border-b pb-2.5">
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-base font-semibold">
+                    {currentPageRef ? currentPageRef.title : tWeb('pagesHome')}
+                  </h2>
+                  <p className="truncate font-mono text-xs text-muted-foreground">
+                    /{currentPageRef ? currentPageRef.path : ''}
+                    {currentPageRef?.hidden ? ` · ${tWeb('pagesHiddenField')}` : ''}
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPageSettingsOpen(true)}>
+                  <Settings className="h-3.5 w-3.5" />
+                  {tWeb('pagesSettings')}
+                </Button>
+              </div>
+
+              {currentPageRef?.kind === 'post' && (
+                <PostHeaderCard
+                  page={currentPageRef}
+                  tenant={orgTenant}
+                  onChange={(patch) => patchPage(currentPageRef.id, patch)}
+                />
+              )}
+
               {/* AN EMPTY SITE OFFERS A SHAPE. Only while there is nothing to
                   lose: the moment a section exists, this is gone and the
                   section list is the site. Adding sections one by one below
                   stays open the whole time. */}
-              {draft.sections.length === 0 && (
+              {isHome && draft.sections.length === 0 && (
                 <div className="space-y-2 rounded-lg border border-dashed p-3">
                   <p className="text-sm font-medium">{t('starterTitle')}</p>
                   <p className="text-xs text-muted-foreground">{t('starterHint')}</p>
@@ -559,8 +756,8 @@ export default function OrgWebsiteBuilderPage() {
                 </div>
               )}
 
-              <SortableList ids={draft.sections.map((s) => s.id)} onReorder={reorderSections}>
-                {draft.sections.map((s) => {
+              <SortableList ids={currentSections.map((s) => s.id)} onReorder={reorderSections}>
+                {currentSections.map((s) => {
                   const lib = ORG_SECTION_LIBRARY.find((l) => l.type === s.type)
                   const open = openId === s.id
                   return (
@@ -633,6 +830,7 @@ export default function OrgWebsiteBuilderPage() {
                               <OrgSectionEditor
                                 section={s}
                                 orgId={orgId}
+                                pages={menuPages}
                                 onChange={(patch) => updateSection(s.id, patch)}
                               />
                               {s.type !== 'hero' && (
@@ -674,7 +872,7 @@ export default function OrgWebsiteBuilderPage() {
             Beside the Sections tab only: a header menu is a list of sections, so
             next to Appearance it would answer a question nobody asked. */}
         {tab === 'sections' && (
-          <div className="space-y-2 lg:w-[420px] lg:flex-shrink-0 lg:self-start">
+          <div className="space-y-2 xl:w-[380px] xl:flex-shrink-0 xl:self-start">
             <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               <ListTree className="h-3.5 w-3.5" />
               {tWeb('tabMenu')}
@@ -682,6 +880,7 @@ export default function OrgWebsiteBuilderPage() {
             <MenuPanel
               menu={menu}
               sections={draft.sections}
+              pages={menuPages}
               surfaces={[]}
               surfaceLabel={() => ''}
               sectionLabel={(sec) => sectionNavLabel(sec, tSite)}
@@ -689,6 +888,7 @@ export default function OrgWebsiteBuilderPage() {
             />
           </div>
         )}
+        </div>
       </div>
 
       {/* `orgId` + `orgTeams` are what the clubs, locations and coaches blocks
@@ -698,9 +898,40 @@ export default function OrgWebsiteBuilderPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         site={previewSite}
+        page={previewPage}
         orgId={orgId}
         orgTeams={previewTeams}
       />
+
+      <AddPageDialog
+        open={addPageOpen}
+        onOpenChange={setAddPageOpen}
+        existingPaths={(draft.pages ?? []).map((p) => p.path)}
+        pagesFull={pagesFull}
+        postsFull={postsFull}
+        pathPrefix="/"
+        starters={ORG_PAGE_STARTERS}
+        onCreate={handleCreatePage}
+      />
+      {isHome && (
+        <HomeSettingsDialog
+          open={pageSettingsOpen}
+          onOpenChange={setPageSettingsOpen}
+          meta={draft.meta}
+          onChange={patchMeta}
+        />
+      )}
+      {currentPageRef && (
+        <PageSettingsDialog
+          open={pageSettingsOpen}
+          onOpenChange={setPageSettingsOpen}
+          page={currentPageRef}
+          pathPrefix="/"
+          existingPaths={(draft.pages ?? []).filter((p) => p.id !== currentPageRef.id).map((p) => p.path)}
+          onChange={(patch) => patchPage(currentPageRef.id, patch)}
+          onDelete={() => deletePage(currentPageRef.id)}
+        />
+      )}
 
       {/* Unpublish confirmation. States the consequence in the visitor's terms
           — the site goes offline now — and then states, equally plainly, that

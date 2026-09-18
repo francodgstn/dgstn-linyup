@@ -892,11 +892,18 @@ export interface SitePageRef {
   excerpt?: string
 }
 
-/** A page's content — `{site_drafts|site_published}/{teamId}/pages/{pageId}`. */
-export interface SitePageDoc {
-  teamId: string
+/**
+ * A page's content — `{site_drafts|site_published}/{teamId}/pages/{pageId}`,
+ * or `{org_site_drafts|org_site_published}/{orgId}/pages/{pageId}` for an
+ * organisation, whose sections are its own union (`OrgSiteSection`). The page
+ * INDEX (`SitePageRef`) and everything about addresses is identical for both.
+ */
+export interface SitePageDoc<S = WebsiteSection> {
+  /** Exactly one of these names the owner. */
+  teamId?: string
+  orgId?: string
   pageId: string
-  sections: WebsiteSection[]
+  sections: S[]
   /** Published docs only: which translation sidecars exist for this page.
    *  Sidecars sit beside the page doc, id `{pageId}__i18n_{locale}`. */
   i18n?: SiteI18nManifest

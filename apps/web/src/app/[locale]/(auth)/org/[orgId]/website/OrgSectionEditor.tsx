@@ -32,6 +32,7 @@ import {
   FaqFields,
   FeaturesFields,
   Field,
+  PostsFields,
   GalleryFields,
   HeroFields,
   TestimonialsFields,
@@ -57,37 +58,73 @@ import {
 
 type Patch = Record<string, unknown>
 
-/** The org hero's CTA — a URL, because an org has no booking or signup surface. */
+/**
+ * An org button's destination — a page of the org's own site, or an external
+ * link. Never booking, signup or an appointment: an organisation has none of
+ * those surfaces, and the publish sanitizer drops such a button anyway.
+ */
 function OrgCtaEditor({
   cta,
+  pages,
   onChange,
 }: {
   cta?: SiteCta
+  /** The site's other pages, offered as a destination. */
+  pages?: { id: string; label: string }[]
   onChange: (p: Patch) => void
 }) {
   const t = useTranslations('Website')
+  const action = cta?.action === 'page' ? 'page' : 'url'
+  const set = (next: Partial<SiteCta>) => {
+    const merged = { label: cta?.label ?? '', action, ...cta, ...next } as SiteCta
+    onChange({ cta: merged.label ? merged : undefined })
+  }
   return (
     <div className="space-y-2 rounded-lg border p-3">
       <p className="text-xs font-medium text-muted-foreground">{t('editorCtaTitle')}</p>
       <Field label={t('editorCtaLabel')}>
         <Input
           value={cta?.label ?? ''}
-          onChange={(e) =>
-            onChange({ cta: e.target.value ? { label: e.target.value, action: 'url', url: cta?.url } : undefined })
-          }
+          onChange={(e) => set({ label: e.target.value, action })}
           placeholder={t('editorOrgCtaPlaceholder')}
           className="h-9"
         />
       </Field>
       {cta?.label && (
-        <Field label={t('editorCtaUrl')}>
-          <Input
-            value={cta?.url ?? ''}
-            onChange={(e) => onChange({ cta: { label: cta?.label, action: 'url', url: e.target.value } })}
-            placeholder="https://"
-            className="h-9 font-mono text-xs"
-          />
-        </Field>
+        <>
+          {(pages?.length ?? 0) > 0 && (
+            <Field label={t('editorCtaAction')}>
+              <Select value={action} onValueChange={(v) => set({ action: v as SiteCta['action'] })}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
+                  <SelectItem value="url">{t('editorCtaActionUrl')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+          {action === 'page' ? (
+            <Field label={t('editorCtaPage')}>
+              <Select value={cta.pageId ?? ''} onValueChange={(v) => set({ pageId: v || undefined })}>
+                <SelectTrigger className="h-9"><SelectValue placeholder={t('editorCtaPagePlaceholder')} /></SelectTrigger>
+                <SelectContent>
+                  {(pages ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : (
+            <Field label={t('editorCtaUrl')}>
+              <Input
+                value={cta.url ?? ''}
+                onChange={(e) => set({ url: e.target.value })}
+                placeholder="https://"
+                className="h-9 font-mono text-xs"
+              />
+            </Field>
+          )}
+        </>
       )}
     </div>
   )
@@ -276,10 +313,13 @@ function CoachesFields({ s, onChange }: { s: CoachesSection; onChange: (p: Patch
 export function OrgSectionEditor({
   section,
   orgId,
+  pages,
   onChange,
 }: {
   section: OrgSiteSection
   orgId: string
+  /** The site's other pages — offered as button destinations. */
+  pages?: { id: string; label: string }[]
   onChange: (patch: Patch) => void
 }) {
   const tenant: SiteEditorTenant = {
@@ -294,7 +334,7 @@ export function OrgSectionEditor({
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<OrgCtaEditor cta={section.cta} onChange={onChange} />}
+          cta={<OrgCtaEditor cta={section.cta} pages={pages} onChange={onChange} />}
         />
       )
     case 'content':
@@ -315,7 +355,7 @@ export function OrgSectionEditor({
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<OrgCtaEditor cta={section.cta} onChange={onChange} />}
+          cta={<OrgCtaEditor cta={section.cta} pages={pages} onChange={onChange} />}
         />
       )
     case 'faq':
@@ -330,6 +370,8 @@ export function OrgSectionEditor({
       return <LocationsFields s={section} onChange={onChange} />
     case 'coaches':
       return <CoachesFields s={section} onChange={onChange} />
+    case 'posts':
+      return <PostsFields s={section} onChange={onChange} />
     default:
       return null
   }

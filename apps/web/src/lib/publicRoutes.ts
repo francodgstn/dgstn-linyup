@@ -5,6 +5,7 @@ import {
   type PublicRoutable,
   type PublicRouteParams,
   type PublicSurface,
+  publicOrgPath,
   publicPath,
   publicSubPath,
   routableSurfaces,
@@ -87,6 +88,12 @@ export function publicSubHrefLocalized<R extends PublicRoutable>(
   params?: PublicRouteParams[R]
 ): string {
   return localizePublicPath(locale, publicSubPath(slug, route, sub, params))
+}
+
+/** An organisation site's page as a PREFIXED path, for raw <a href> — the org
+ *  twin of `publicHrefLocalized(locale, slug, 'site')`. `segments` [] ⇒ home. */
+export function publicOrgHrefLocalized(locale: string, slug: string, segments: readonly string[] = []): string {
+  return localizePublicPath(locale, publicOrgPath(slug, segments))
 }
 
 /**

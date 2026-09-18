@@ -4111,7 +4111,9 @@
     "starterFederation": "Verbands-Startseite",
     "starterFederationDesc": "Kopfbereich, Einleitung, eure Clubs, Standorte und Kontaktangaben",
     "starterSimple": "Einfache Website",
-    "starterSimpleDesc": "Kopfbereich, ein Textblock und Kontaktangaben"
+    "starterSimpleDesc": "Kopfbereich, ein Textblock und Kontaktangaben",
+    "sectionPosts": "Blog-Beiträge",
+    "sectionPostsDesc": "Deine neuesten Beiträge, als Karten oder Liste"
   },
   "Courses": {
     "title": "Online-Kurse",

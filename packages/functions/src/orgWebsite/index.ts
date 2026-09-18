@@ -6,141 +6,27 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { assertOrgAdmin, assertOrgSubscriptionLive } from '../orgs'
-import { translatePublishedSite, deleteSiteI18nSidecars } from '../translate/translateSite'
+import { translatePublishedSite } from '../translate/translateSite'
+import { asDict, clean, optStr, safeUrl, sanitizeMenu, type Dict } from '../website'
+import { sanitizeOrgSections, sanitizeOrgMeta, orgSiteSourceLocale } from './sanitize'
 import {
-  asDict,
-  clean,
-  bool,
-  num,
-  optStr,
-  safeUrl,
-  sanitizeMeta,
-  sanitizeMenu,
-  applyNavFields,
-  sanitizeHeroSection,
-  sanitizeContentSection,
-  sanitizeGallerySection,
-  sanitizeContactSection,
-  sanitizeFeaturesSection,
-  sanitizeCtaBannerSection,
-  sanitizeFaqSection,
-  sanitizeTestimonialsSection,
-  sanitizeVideoSection,
-  type Dict,
-} from '../website'
+  readSitePages,
+  translateSitePages,
+  publishedRedirects,
+  writeSitePages,
+  pruneUnpublishedPages,
+} from '../website/publishPages'
+import { unpublishSiteForOrg } from '../utils/plugins'
 import {
   ORG_SITE_DRAFTS_COLLECTION,
   ORG_SITE_PUBLISHED_COLLECTION,
   ORGANIZATIONS_COLLECTION,
   ORG_TEAMS_SUBCOLLECTION,
   TEAMS_COLLECTION,
-  resolveSiteSourceLocale,
 } from '@linyup/shared'
 import type { OrgPublishedSite, OrgSiteSection, OrgSiteTeamRef } from '@linyup/shared'
 
-// ─── org-only aggregate section sanitizers ─────────────────────────────────────
-// hero/content/gallery/contact are shared verbatim with the team site — imported
-// above from ../website. Only these three aggregate types are org-specific.
-
-function sanitizeClubsSection(d: Dict, id: string): OrgSiteSection {
-  const columns = num(d.columns, 2, 4, 3)
-  return clean({
-    id, type: 'clubs',
-    heading: optStr(d.heading, 200),
-    subheading: optStr(d.subheading, 400),
-    columns: (columns === 2 || columns === 4 ? columns : 3) as 2 | 3 | 4,
-    showAddress: bool(d.showAddress),
-  }) as unknown as OrgSiteSection
-}
-
-function sanitizeLocationsSection(d: Dict, id: string): OrgSiteSection {
-  const columns = num(d.columns, 2, 4, 3)
-  const extra = (Array.isArray(d.extra) ? d.extra : [])
-    .map((raw) => {
-      const e = asDict(raw)
-      const extraId = optStr(e.id, 64)
-      const name = optStr(e.name, 200)
-      if (!extraId || !name) return null
-      return clean({ id: extraId, name, address: optStr(e.address, 400), mapsLink: safeUrl(e.mapsLink) })
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null)
-    .slice(0, 50)
-  return clean({
-    id, type: 'locations',
-    heading: optStr(d.heading, 200),
-    subheading: optStr(d.subheading, 400),
-    columns: (columns === 2 || columns === 4 ? columns : 3) as 2 | 3 | 4,
-    extra: extra.length ? extra : undefined,
-  }) as unknown as OrgSiteSection
-}
-
-function sanitizeCoachesSection(d: Dict, id: string): OrgSiteSection {
-  const columns = num(d.columns, 2, 4, 3)
-  return clean({
-    id, type: 'coaches',
-    heading: optStr(d.heading, 200),
-    subheading: optStr(d.subheading, 400),
-    columns: (columns === 2 || columns === 4 ? columns : 3) as 2 | 3 | 4,
-  }) as unknown as OrgSiteSection
-}
-
-function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
-  const d = asDict(raw)
-  const id = optStr(d.id, 64)
-  const type = d.type
-  if (!id || typeof type !== 'string') return null
-
-  let section: OrgSiteSection | null
-  switch (type) {
-    case 'hero':
-      section = sanitizeHeroSection(d, id) as unknown as OrgSiteSection | null
-      break
-    // Legacy 'about' literal normalized to 'content' — same as the team site.
-    case 'content':
-    case 'about':
-      section = sanitizeContentSection(d, id) as unknown as OrgSiteSection | null
-      break
-    case 'gallery':
-      section = sanitizeGallerySection(d, id) as unknown as OrgSiteSection | null
-      break
-    case 'contact':
-      section = sanitizeContactSection(d, id) as unknown as OrgSiteSection
-      break
-    // Offered by the org "Add section" menu and in `OrgSiteSection`, but missing
-    // here — so an org site published them as nothing.
-    case 'features':
-      section = sanitizeFeaturesSection(d, id)
-      break
-    case 'cta_banner':
-      section = sanitizeCtaBannerSection(d, id)
-      break
-    case 'faq':
-      section = sanitizeFaqSection(d, id)
-      break
-    case 'testimonials':
-      section = sanitizeTestimonialsSection(d, id)
-      break
-    case 'video':
-      section = sanitizeVideoSection(d, id)
-      break
-    case 'clubs':
-      section = sanitizeClubsSection(d, id)
-      break
-    case 'locations':
-      section = sanitizeLocationsSection(d, id)
-      break
-    case 'coaches':
-      section = sanitizeCoachesSection(d, id)
-      break
-    default:
-      return null
-  }
-  if (!section) return null
-  // Nav membership + menu label — one rule for both tenants (this used to copy
-  // only `showInNav`, so an org's menu labels never published).
-  applyNavFields(section, d)
-  return section
-}
+// The section and meta sanitizers live in ./sanitize (pure, tested).
 
 // ─── publishOrgWebsite ──────────────────────────────────────────────────────────
 // Reads the org's private draft, sanitizes it to a public-safe payload, embeds a
@@ -175,13 +61,16 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
 
   const name = optStr(draft.name, 200) ?? optStr(org.name, 200) ?? 'Site'
 
-  const sections = (Array.isArray(draft.sections) ? draft.sections : [])
-    // Drop sections the org admin toggled hidden — kept in the draft but never
-    // reach the published site (or its nav).
-    .filter((raw) => !(raw && typeof raw === 'object' && (raw as Dict).hidden === true))
-    .map(sanitizeOrgSection)
-    .filter((s): s is OrgSiteSection => s !== null)
-    .slice(0, 30)
+  // The home page's sections and every published page — the same page rules
+  // as the team site, from the one place that has them (../website/publishPages).
+  const { pageRefs, sections, pageSections } = await readSitePages({
+    fs,
+    draftCollection: ORG_SITE_DRAFTS_COLLECTION,
+    id: orgId,
+    draft,
+    sanitizeList: sanitizeOrgSections,
+    logTag: 'publishOrgWebsite',
+  })
 
   // Embed a snapshot of the org's active member teams. Only branding-level fields
   // (teamId/slug/name) are embedded; per-team live data (logo, address, coaches)
@@ -221,7 +110,7 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     })
     .filter((x): x is { platform: string; url: string } => x !== null)
 
-  const meta = sanitizeMeta(draft.meta, name)
+  const meta = sanitizeOrgMeta(draft.meta, name)
   // The header menu, through the SAME sanitiser the team site uses — depth,
   // breadth and target shape are tenant-agnostic. Undefined when the org has
   // never edited its header, and `clean` drops it, so the renderer keeps
@@ -230,13 +119,22 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
 
   // Machine-translate the sanitized published shape — same pipeline as the
   // team site, keyed by orgId. Throw-free: never fails the publish.
-  const srcLang = resolveSiteSourceLocale(org as { language?: string | null })
+  const srcLang = orgSiteSourceLocale(meta, org as { language?: string | null })
   const i18n = await translatePublishedSite({
     db: fs,
     collection: ORG_SITE_PUBLISHED_COLLECTION,
     id: orgId,
     owner: { orgId },
-    published: { meta, menu, sections },
+    published: { meta, menu, pages: pageRefs, sections },
+    srcLang,
+  })
+  const pageI18n = await translateSitePages({
+    fs,
+    publishedCollection: ORG_SITE_PUBLISHED_COLLECTION,
+    id: orgId,
+    owner: { orgId },
+    pageRefs,
+    pageSections,
     srcLang,
   })
 
@@ -249,6 +147,9 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     meta,
     menu,
     sections,
+    // Absent ⇒ a one-page site, exactly as every org site was before pages.
+    pages: pageRefs.length ? pageRefs : undefined,
+    redirects: publishedRedirects(draft.redirects, pageRefs),
     teams,
     socialLinks: socialLinks.length ? socialLinks : undefined,
     // The organization plan never shows the "Powered by Linyup" badge (that's a
@@ -259,7 +160,18 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     updated_at: FieldValue.serverTimestamp() as unknown as OrgPublishedSite['updated_at'],
   })
 
+  // ORDER: page docs, then the site doc that indexes them, then orphans.
+  await writeSitePages({
+    fs,
+    publishedCollection: ORG_SITE_PUBLISHED_COLLECTION,
+    id: orgId,
+    owner: { orgId },
+    pageRefs,
+    pageSections,
+    pageI18n,
+  })
   await fs.doc(`${ORG_SITE_PUBLISHED_COLLECTION}/${orgId}`).set(published)
+  await pruneUnpublishedPages({ fs, publishedCollection: ORG_SITE_PUBLISHED_COLLECTION, id: orgId, pageRefs })
   await draftSnap.ref.set(
     { enabled: true, updated_at: FieldValue.serverTimestamp(), updatedBy: uid },
     { merge: true },
@@ -280,13 +192,9 @@ export const unpublishOrgWebsite = onCall(async (request) => {
 
   await assertOrgAdmin(uid, orgId)
 
-  const fs = admin.firestore()
-  await fs.doc(`${ORG_SITE_PUBLISHED_COLLECTION}/${orgId}`).delete()
-  await deleteSiteI18nSidecars(fs, ORG_SITE_PUBLISHED_COLLECTION, orgId)
-  await fs.doc(`${ORG_SITE_DRAFTS_COLLECTION}/${orgId}`).set(
-    { enabled: false, updated_at: FieldValue.serverTimestamp(), updatedBy: uid },
-    { merge: true },
-  )
+  // The SAME teardown the org lapse runs — one place that knows everything an
+  // org's published site consists of, so the two can never disagree about it.
+  await unpublishSiteForOrg(orgId, uid)
 
   return { ok: true }
 })
