@@ -115,6 +115,8 @@ export function newOrgSection(
       return { id, type, columns: 3 }
     case 'coaches':
       return { id, type, columns: 3 }
+    case 'posts':
+      return { id, type, columns: 3, limit: 6 }
     case 'contact': {
       const hq = org?.headquarters
       const address = [

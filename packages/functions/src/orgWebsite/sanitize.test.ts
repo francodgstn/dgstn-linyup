@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import type { ClubsSection, CoachesSection, LocationsSection } from '@linyup/shared'
+import { publicOrgPath } from '@linyup/shared'
 import { orgSiteSourceLocale, sanitizeOrgMeta, sanitizeOrgSection } from './sanitize'
 
 // THE ORG SITE'S OWN PUBLISH RULES. The sections it shares with the team site
@@ -46,6 +47,11 @@ describe('org website publish — the aggregate sections round-trip', () => {
     })
   }
 
+  it('publishes a blog-posts section — organisations write news too', () => {
+    const posts = { id: 'news', type: 'posts', heading: 'News', limit: 4, layout: 'list', columns: 2 }
+    assert.deepEqual(sanitizeOrgSection(structuredClone(posts)), posts)
+  })
+
   it('drops an unknown type and a section without an id', () => {
     assert.equal(sanitizeOrgSection({ id: 'p', type: 'pricing' }), null)
     assert.equal(sanitizeOrgSection({ type: 'clubs', columns: 3 }), null)
@@ -81,5 +87,12 @@ describe('org website publish — the language the site is written in', () => {
   it("falls back to the organisation's, then to English", () => {
     assert.equal(orgSiteSourceLocale({}, { language: 'fr' }), 'fr')
     assert.equal(orgSiteSourceLocale({}, {}), 'en')
+  })
+})
+
+describe('org website addresses', () => {
+  it('puts pages directly under the org slug — no /site level', () => {
+    assert.equal(publicOrgPath('swiss-hmd'), '/public/org/swiss-hmd')
+    assert.equal(publicOrgPath('swiss-hmd', ['ueber-uns', 'vorstand']), '/public/org/swiss-hmd/ueber-uns/vorstand')
   })
 })

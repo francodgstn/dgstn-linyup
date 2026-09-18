@@ -249,6 +249,18 @@ export function publicLocalePrefix(locale: string | null | undefined): string {
   return (PUBLIC_LOCALES as readonly string[]).includes(normalized) ? `/${normalized}` : ''
 }
 
+/**
+ * An organisation site's path: `/public/org/{slug}` for its home, with a page's
+ * segments after it. Organisation sites live one level under the team tree
+ * (`/public/org/…`, a static segment Next resolves before the team `[slug]`),
+ * and their pages sit directly under the org slug — there is no `/site` level,
+ * because an org's public presence IS its site.
+ */
+export function publicOrgPath(slug: string, segments: readonly string[] = []): string {
+  const base = `/public/org/${encodeURIComponent(slug)}`
+  return segments.length ? `${base}/${segments.map(encodeURIComponent).join('/')}` : base
+}
+
 /** `publicUrl` with the reader's locale pinned into the path. Use this for every
  *  link that goes into an email — see the note above. */
 export function localizedPublicUrl<R extends PublicRoutable>(

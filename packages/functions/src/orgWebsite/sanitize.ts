@@ -28,6 +28,7 @@ import {
   sanitizeFaqSection,
   sanitizeTestimonialsSection,
   sanitizeVideoSection,
+  sanitizePostsSection,
   type Dict,
 } from '../website/sanitize'
 
@@ -103,6 +104,7 @@ const ORG_SECTION_BUILDERS = {
   faq: (d, id) => sanitizeFaqSection(d, id),
   testimonials: (d, id) => sanitizeTestimonialsSection(d, id),
   video: (d, id) => sanitizeVideoSection(d, id),
+  posts: (d, id) => sanitizePostsSection(d, id),
   clubs: sanitizeClubsSection,
   locations: sanitizeLocationsSection,
   coaches: sanitizeCoachesSection,

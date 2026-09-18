@@ -58,6 +58,10 @@ export async function saveOrgSiteDraft(
     // Absent until the org first edits its header — `stripUndefinedDeep` drops
     // it, and an absent menu still derives, so no existing org site changes.
     menu: draft.menu,
+    // The page index and the old-URL redirects — omitted here, a save would
+    // delete them (see saveSiteDraft).
+    pages: draft.pages,
+    redirects: draft.redirects,
   }
   const payload = stripUndefinedDeep(fields)
   await setDoc(doc(db, ORG_SITE_DRAFTS_COLLECTION, orgId), {
