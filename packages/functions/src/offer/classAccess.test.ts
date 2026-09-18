@@ -127,8 +127,17 @@ describe('who may book a class', () => {
   })
 
   describe('the trial', () => {
-    it('is available on anything but a free class', () => {
+    it('is available on anything a newcomer cannot already do', () => {
+      // Free to anyone: the door grants nothing, so it stays inert.
       assert.equal(classAccessFacts(cls(), STUDIO).trialAvailable, false)
+      // Free but walled: the trial is the newcomer's one way in.
+      assert.equal(
+        classAccessFacts(
+          cls({ accessRule: { type: 'members', audience: 'members', requirePlan: false } }),
+          NO_STUDIO
+        ).trialAvailable,
+        true
+      )
       assert.equal(
         classAccessFacts(cls({ dropIn: { mode: 'studio', enabled: false } }), STUDIO).trialAvailable,
         true

@@ -98,10 +98,14 @@ Each stage leaves main green and deployable. Owners in brackets.
    `classAccessRuleFor` is what every writer stores, so the derived answer and
    the stored `requirePlan` / `type` cannot disagree while both exist. Legacy
    documents still read through `resolveActivityAccessRule` until stage 5.
-2. **Server** [functions] — `bookSession`'s trial door asks `classTrialAvailable`
-   instead of `accessRule.type !== 'open'`; the activity and session mirrors stop
-   writing `isFreeTrial` and `type` (they carry the summary kind instead); the AI
-   offer drafter and the demo tenant write the new shape.
+2. **Server** [functions] — DONE. `bookSession`'s trial door asks
+   `classAccessFacts(...).trialAvailable` instead of `accessRule.type !== 'open'`,
+   so a class anyone may book AND PAY FOR now takes a newcomer's trial; the AI
+   offer drafter and the demo tenant write through `classAccessRuleFor`. The
+   MIRRORS need no change: a mirror carries the RESOLVED drop-in and its access
+   rule, so `classAccessFacts(mirror, null)` answers for a public reader exactly
+   as it does for the admin one. The stored `isFreeTrial` / `type` fields go with
+   stage 5's backfill, not here.
 3. **Pricing tab** [web] — the mockup: summary sentence, plan table, drop-in
    (usual / own / none), trial, More options → sign-up switch. The access cards and
    the "members without a plan" switch go. Catalogue chips, the Pricing preview,

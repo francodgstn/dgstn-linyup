@@ -38,14 +38,18 @@ import {
   type Activity,
   type ActivityAccessRule,
 } from '../types/activity'
-import { gatedPlanIds, isAppointmentActivity } from './activityPlanLink'
+import { gatedPlanIds, isAppointmentActivity, type ActivityEdgeFields } from './activityPlanLink'
 import { resolveActivityDropIn, type DropInPrice, type ResolvedDropIn } from './dropIn'
 import { classAccessTierOf, resolveClassGate } from './paymentOptions'
 
 /** The fields these helpers read. A public activity mirror satisfies it, so the
  *  catalogue, the pricing tab and the public pages ask the same questions. */
 export type ClassAccessInput = Pick<Activity, 'type'> &
-  Partial<Pick<Activity, 'accessRule' | 'isFreeTrial' | 'dropIn' | 'trialEnabled'>>
+  Partial<Pick<Activity, 'accessRule' | 'isFreeTrial' | 'trialEnabled'>> & {
+    /** Nullable, like every other reader of it: a document that carries no
+     *  drop-in field and one that carries an explicit null mean the same. */
+    dropIn?: Activity['dropIn'] | null
+  }
 
 export interface ClassAccessFacts {
   /** The door, through THE ONE READER — the studio default applied. */
@@ -58,9 +62,12 @@ export interface ClassAccessFacts {
   planHoldersOnly: boolean
   /** Free for everyone it admits — no door, no plan to hold. */
   free: boolean
-  /** May this class offer a newcomer trial? Anything but a free class can:
-   *  a trial on a free class grants nothing and would only take a guest's
-   *  once-per-person trial away from them. */
+  /** May this class offer a newcomer trial? Anything a newcomer cannot already
+   *  do — so every class EXCEPT one that is free to anyone, where the door
+   *  grants nothing and would only burn a guest's once-per-person trial (and
+   *  deadlock a mispriced trial against a free booking). A class that is free
+   *  but walled to people who signed up DOES need it: that is the newcomer's
+   *  one way in. */
   trialAvailable: boolean
 }
 
@@ -86,18 +93,25 @@ export function classAccessFacts(
 ): ClassAccessFacts {
   if (isAppointmentActivity(activity)) return APPOINTMENT_FACTS
   const dropIn = resolveActivityDropIn(activity, studioDropIn)
-  const includedPlanIds = gatedPlanIds(activity)
+  // The access facet reads the rule and nothing else — handed exactly that, so
+  // a caller may pass a mirror, a form draft or a Firestore document alike.
+  const includedPlanIds = gatedPlanIds({
+    type: activity.type,
+    accessRule: activity.accessRule,
+    isFreeTrial: activity.isFreeTrial,
+  } as ActivityEdgeFields)
   const rule = resolveActivityAccessRule(activity)
   const free = !dropIn.enabled && includedPlanIds.length === 0
+  // Read through the gate so a legacy `members` tier keeps its wall and a
+  // legacy `subscription` one keeps letting a payer in.
+  const signupRequired = resolveClassGate(rule, dropIn.enabled).audience === 'members'
   return {
     dropIn,
     includedPlanIds,
-    // Read through the gate so a legacy `members` tier keeps its wall and a
-    // legacy `subscription` one keeps letting a payer in.
-    signupRequired: resolveClassGate(rule, dropIn.enabled).audience === 'members',
+    signupRequired,
     planHoldersOnly: includedPlanIds.length > 0 && !dropIn.enabled,
     free,
-    trialAvailable: !free,
+    trialAvailable: !free || signupRequired,
   }
 }
 

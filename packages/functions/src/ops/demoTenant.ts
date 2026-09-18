@@ -52,7 +52,7 @@ import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { format } from 'date-fns'
 import { updateTeamLeaderboard } from '../utils/leaderboard'
 import { IMPORTED_SLOT_GRANT_ID, importedSlotGrantDoc, planGrantsCollection } from '../contacts/planGrants'
-import { detectPerformanceProfile } from '@linyup/shared'
+import { classAccessRuleFor, detectPerformanceProfile } from '@linyup/shared'
 import {
   TEAMS_COLLECTION,
   CONTACTS_COLLECTION,
@@ -281,9 +281,14 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
         ...(a.tags?.length ? { tags: a.tags } : {}),
         // Openly bookable: with no Connect account there is no price to charge,
         // so this is the only door that can work — and it is the one a reviewer
-        // should be able to walk through.
-        isFreeTrial: true,
-        accessRule: { type: 'open' },
+        // should be able to walk through. No plans and no drop-in price is what
+        // makes a class free (docs/class-access-derived.md).
+        accessRule: classAccessRuleFor({
+          signupRequired: false,
+          includedPlanIds: [],
+          paidDoor: false,
+        }),
+        dropIn: { mode: 'off', enabled: false },
         max_participants: 12,
         archived_at: null,
         order: ACTIVITIES.indexOf(a),
