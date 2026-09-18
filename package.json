@@ -16,6 +16,7 @@
     "dev:admin:sandbox": "pnpm --filter @linyup/admin dev:sandbox",
     "dev:landing": "pnpm --filter @linyup/landing dev",
     "dev:docs": "pnpm --filter @linyup/docs run dev",
+    "dev:help": "pnpm --filter @linyup/help run dev",
     "dev:mobile": "pnpm --filter @linyup/mobile start",
     "dev:mobile:emulators": "pnpm --filter @linyup/mobile start:emulators",
     "lint": "turbo run lint",

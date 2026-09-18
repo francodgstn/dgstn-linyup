@@ -1,0 +1,35 @@
+---
+title: Linyup Docs
+description: How to run your studio on Linyup — setup, pricing, scheduling, and the developer API.
+template: splash
+hero:
+  tagline: Everything you need to set up your studio, price what you offer, and connect Linyup to the rest of your tools.
+  actions:
+    - text: Start with the core concepts
+      link: /getting-started/core-concepts/
+      icon: right-arrow
+    - text: Developer docs
+      link: /developers/
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components'
+
+<CardGrid>
+  <Card title="Studio owners & managers" icon="rocket">
+    Set up your studio, sell memberships and packs, open your public pages and get paid.
+    <LinkCard title="How pricing fits together" href="/studio/pricing/" />
+  </Card>
+  <Card title="Coaches" icon="star">
+    Your schedule, your appointments and your people — the day-to-day side of Linyup.
+    <LinkCard title="Appointments & availability" href="/coaches/appointments/" />
+  </Card>
+  <Card title="Developers" icon="seti:json">
+    Read your studio's data over a REST API or connect an AI assistant through MCP.
+    <LinkCard title="Developer overview" href="/developers/" />
+  </Card>
+  <Card title="Common questions" icon="information">
+    Six questions every new studio asks, answered through one example studio.
+    <LinkCard title="FAQ" href="/faq/" />
+  </Card>
+</CardGrid>
