@@ -2994,7 +2994,8 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       ...(publishedPageRefs.length ? { pages: publishedPageRefs } : {}),
       ...(publishedRedirects.length ? { redirects: publishedRedirects } : {}),
       socialLinks: profile.socialLinks,
-      showBranding: false, // studio plan
+      // No showBranding key: publishWebsite writes it only on the free plan,
+      // so a paid studio's published site carries none.
       published_at: ts(daysFromNow(-12)),
       updated_at: ts(daysFromNow(-12)),
     })

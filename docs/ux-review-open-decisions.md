@@ -582,7 +582,9 @@ pattern exists; left alone only because the reward is small and the file is
 shared by every dialog in the app.
 
 ## 40. The publish integrity test cannot run in this environment
-**BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
+**RESOLVED 2026-09-18 — passed.** Re-run on main `b4d07bb3` (both website PRs merged) with the stack started from the same checkout: CrossFit Zug seeded, Publish pressed in the builder as the studio with no edits. The published site doc and all 11 page docs came back identical, timestamps and translations aside; the one difference was `showBranding: false` becoming absent (same meaning — the seeders now write it the way publish does). 33 translation sidecars were written, and the live pages, `/en` included, answer correctly. The original entry follows.
+
+**Was BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
 studio, press Publish with no changes, confirm the live site is unchanged". Run
 on 2026-09-16 it destroyed most of the CrossFit Zug site — page index,
 redirects, half the theme fields, the header's appointment CTA, and every menu
