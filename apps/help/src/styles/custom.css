@@ -1,11 +1,57 @@
-/* Brand indigo, from apps/landing tailwind.config (brand 100/200/600/900). */
+/* The Linyup touch — the brand of linyup.com (apps/landing/src/styles/global.css)
+   on Starlight's variables. Violet accent, Plus Jakarta Sans for text, Sora for
+   page titles, Fredoka for the wordmark (src/components/SiteTitle.astro).
+   apps/docs carries the same file; keep the two in step. */
+
 :root {
-  --sl-color-accent-low: #1e1b4b;
-  --sl-color-accent: #4f46e5;
-  --sl-color-accent-high: #c7d2fe;
+  --sl-font: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --lu-font-title: 'Sora', var(--sl-font);
+
+  /* Dark theme (Starlight's default ramp is dark-first). */
+  --sl-color-accent-low: #2e1065;
+  --sl-color-accent: #8b5cf6;
+  --sl-color-accent-high: #ddd6fe;
+  --sl-color-bg-nav: #140f24;
+  --sl-color-bg-sidebar: #140f24;
 }
+
 :root[data-theme='light'] {
-  --sl-color-accent-low: #e0e7ff;
-  --sl-color-accent: #4f46e5;
-  --sl-color-accent-high: #312e81;
+  --sl-color-accent-low: #ede9fe;
+  --sl-color-accent: #7c3aed;
+  --sl-color-accent-high: #4c1d95;
+  --sl-color-bg-nav: #faf9fe;
+  --sl-color-bg-sidebar: #faf9fe;
+}
+
+/* Page titles and the home hero in Sora; light-mode headings in deep violet. */
+h1#_top,
+.hero h1 {
+  font-family: var(--lu-font-title);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+:root[data-theme='light'] h1#_top,
+:root[data-theme='light'] .sl-markdown-content :is(h2, h3) {
+  color: #2e1065;
+}
+
+/* A thin brand line under the header. */
+.header {
+  border-bottom: 0;
+  box-shadow: inset 0 -3px 0 0 transparent;
+  background-image: linear-gradient(90deg, #a78bfa, #7c3aed 45%, #5b21b6);
+  background-size: 100% 3px;
+  background-repeat: no-repeat;
+  background-position: bottom;
+}
+
+/* Softer, rounder cards, like the landing site's. */
+.card,
+.sl-link-card {
+  border-radius: 0.75rem;
+}
+
+/* The "Soon" badge reads as a label, not an alert. */
+.sl-badge {
+  font-weight: 600;
 }

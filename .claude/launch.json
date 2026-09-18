@@ -61,6 +61,20 @@
       "port": 4322
     },
     {
+      "name": "help",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@linyup/help",
+        "exec",
+        "astro",
+        "dev",
+        "--port",
+        "4323"
+      ],
+      "port": 4323
+    },
+    {
       "name": "docs",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [

@@ -12,19 +12,38 @@ pnpm --filter @linyup/help build   # dist/ — drafts excluded
 Content lives in `src/content/docs/`. A page with `draft: true` is an outline: visible in dev,
 left out of the build, so nothing unfinished can go public.
 
-## Hosting (not wired yet)
+## Pages: draft, coming soon, live
 
-Same pattern as `landing` / `api`: a static Firebase Hosting target.
+- `draft: true`: an outline. Visible in dev, left out of the build.
+- `comingSoon: true`: **published**, with a banner and a "Soon" badge in the sidebar, so an area
+  exists on the site before its guide does. Give it a truthful one-paragraph summary. To make it
+  a real page, write it and delete the line.
+- Neither: a live page.
 
-1. Terraform: add a `linyup-{env}-help` site to `infra/modules/firebase-project` (site IDs are
-   reserved forever once deleted — pick the name once).
-2. `firebase.json`: a `help` hosting target, `public: apps/help/dist`, same cache headers as landing.
-3. `.firebaserc`: map `help` in each project (and restore `_comment_targets` if `target:apply`
-   drops it).
-4. Deploy workflows: add `hosting:help` to the `--only` list in `deploy.yml` / `deploy-prod.yml`,
-   after a `pnpm --filter @linyup/help build` step.
-5. Custom domain `docs.linyup.com` (prod) / `docs-stg.linyup.com` (staging) in the Firebase
-   console, DNS-only CNAME in Cloudflare.
+A folder under `src/content/docs/` is a product area; `astro.config.ts` lists the folders in
+sidebar order, and each one autogenerates from its pages' `sidebar.order`.
+
+## Look
+
+`src/styles/custom.css` puts linyup.com's brand on Starlight (violet accent, Plus Jakarta Sans,
+Sora titles) and `src/components/SiteTitle.astro` replaces the title with the swoosh and the
+two-tone wordmark. `apps/docs` carries the same pair, tagged "engineering"; keep them in step.
+
+## Hosting
+
+A static Firebase Hosting target, the same pattern as `landing` / `api`:
+
+- **Site**: `linyup-help-staging` / `linyup-help-prod`, created by Terraform
+  (`infra/modules/firebase-project`, `help_site_id`). Sandbox has none.
+- **Target**: `help` in `firebase.json` (`public: apps/help/dist`, landing's cache headers) and
+  `.firebaserc`.
+- **Deploy**: `deploy.yml` (staging, on push to `main`) and `deploy-prod.yml` (prod, on a `v*`
+  tag) build it and ship `hosting:help`. `verify.yml` checks and builds it on every PR.
+- **Domain**: `docs.linyup.com` (prod), `docs-stg.linyup.com` (staging). Added as a custom
+  domain on the Hosting site, with a **DNS-only** (grey-cloud) record in Cloudflare — never
+  proxied, see `infra/README.md`.
+
+The site must exist before a deploy names `hosting:help`, or the whole deploy fails.
 
 ## Languages
 

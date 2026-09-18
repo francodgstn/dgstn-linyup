@@ -21,7 +21,7 @@ Subscriptions ──unlock──▶ Activities ──scheduled as──▶ Sessi
 
 ## Contacts — everyone your studio knows
 
-Contacts are the people side of Linyup. Leads, trialists, members and alumni all live in one list. Everything else attaches to a contact: the subscriptions they hold, their affiliation status and the sessions they have booked. When someone books or signs up through one of your [public pages](/studio/public-pages/), a contact is created or matched automatically.
+Contacts are the people side of Linyup. Leads, trialists, members and alumni all live in one list. Everything else attaches to a contact: the subscriptions they hold, their affiliation status and the sessions they have booked. When someone books or signs up through one of your [public pages](/public/), a contact is created or matched automatically.
 
 **Key terms**
 
