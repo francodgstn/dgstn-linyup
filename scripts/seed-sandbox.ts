@@ -1627,7 +1627,7 @@ async function seedDemoTeam(profile: SectorProfile) {
     } = {
       id: subIdOf(st.kind),
       name: st.name,
-      checkout_contact_mode: recurrence && recurrence !== 'per_class' ? 'full' : 'minimal',
+      checkout_contact_mode: recurrence && recurrence !== 'one_time' ? 'full' : 'minimal',
     }
     if (st.description) entry.description = st.description
     // price.id (stable client id) must mirror the raw subscription_types write so the
@@ -2002,7 +2002,7 @@ async function seedDemoTeam(profile: SectorProfile) {
         active: true,
         // Surface every plan on the bio-link / website pricing table.
         public: true,
-        checkout_contact_mode: recurrence && recurrence !== 'per_class' ? 'full' : 'minimal',
+        checkout_contact_mode: recurrence && recurrence !== 'one_time' ? 'full' : 'minimal',
         prices,
         teamId,
         created_at: ts(daysFromNow(-120)),

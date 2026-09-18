@@ -716,7 +716,7 @@ async function seedLeadTenant(profile: LeadProfile) {
   // Shop contact-capture mode: 'full' when any price creates a lasting membership.
   function subCheckoutMode(st: (typeof profile.subscriptions)[number]) {
     const prices = subPricesOf(st)
-    return prices.some((p) => p.recurrence !== 'per_class') ? 'full' : 'minimal'
+    return prices.some((p) => p.recurrence !== 'one_time') ? 'full' : 'minimal'
   }
   function resolveSub(subKey: string | null): {
     id: string

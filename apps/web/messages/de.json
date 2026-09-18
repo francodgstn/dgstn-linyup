@@ -790,7 +790,6 @@
     "performanceIndicator_recharge": "Erholung",
     "performanceIndicator_sense_of_progress": "Fortschritt",
     "subscriptionTerminationReason": "Grund für die Beendigung",
-    "recurrence_per_class": "Pro Einheit",
     "recurrence_one_time": "Einmalig",
     "recurrence_weekly": "Wöchentlich",
     "recurrence_biweekly": "Alle 2 Wochen",
@@ -4957,7 +4956,6 @@
     "cancel": "Abbrechen",
     "continueToPayment": "Weiter zur Zahlung",
     "recurrence": {
-      "per_class": "/ Einheit",
       "one_time": "einmalig",
       "weekly": "/ Woche",
       "biweekly": "/ 2 Wochen",

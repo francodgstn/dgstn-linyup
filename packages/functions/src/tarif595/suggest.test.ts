@@ -22,9 +22,8 @@ describe('tarif595 suggestTarif595Unit — the unit follows from the offering', 
     assert.equal(suggestTarif595Unit({ kind: 'subscription', recurrences: ['quarterly'] })?.unit, 'month')
     assert.equal(suggestTarif595Unit({ kind: 'subscription', recurrences: ['annual', 'monthly'] })?.unit, 'month')
   })
-  it('annual only bills per year; per-class per lesson; one-time flat', () => {
+  it('annual only bills per year; one-time flat', () => {
     assert.equal(suggestTarif595Unit({ kind: 'subscription', recurrences: ['annual'] })?.unit, 'year')
-    assert.equal(suggestTarif595Unit({ kind: 'subscription', recurrences: ['per_class'] })?.unit, 'lesson')
     assert.equal(suggestTarif595Unit({ kind: 'subscription', recurrences: ['one_time'] })?.unit, 'flat')
   })
   it('a plan with no prices decides nothing — the row stays empty rather than guessed', () => {

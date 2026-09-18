@@ -486,7 +486,7 @@ Should the trial get a studio-wide default like the drop-in? *Meanwhile:* nothin
 built.
 
 ## 32. Stored `per_class` plan prices (UX-104)
-**ANSWERED 2026-09-17 — Franco: pre-cutover, align everything**: remove `per_class`, convert the seeds and the Swimli lead profile (HMD never used it). `docs/class-access-derived.md` stage 4. Original note: `per_class` sells unlimited, never-ending access on linked classes.
+**DONE 2026-09-18 — Franco: pre-cutover, align everything**: `per_class` removed from the type and every writer, the seeds and the Swimli lead profile converted (HMD never used it). `docs/class-access-derived.md` stage 4. Original note: `per_class` sells unlimited, never-ending access on linked classes.
 Shipped: removed from the picker for new prices and from the AI drafter.
 **Not done:** refusing checkout on an already-stored `per_class` price, or
 converting them. The emulator and staging seeds ship a "10-Class Pack" priced

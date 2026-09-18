@@ -304,7 +304,7 @@ export const createMembershipPayment = onCall(async (request) => {
     return { url: session.url, sessionId: session.sessionId, recurring: true }
   }
 
-  // per_class / one_time → single charge.
+  // one_time → single charge.
   const session = await startOneOffCheckout({
     team,
     amountMinor: amount,

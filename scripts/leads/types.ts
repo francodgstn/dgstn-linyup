@@ -13,7 +13,6 @@
  */
 
 export type LeadRecurrence =
-  | 'per_class'
   | 'one_time'
   | 'weekly'
   | 'biweekly'

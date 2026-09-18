@@ -556,7 +556,6 @@ export interface ContactGroup {
 // ─── subscription type (team configuration) ───────────────────────────────────
 
 export type SubscriptionRecurrence =
-  | 'per_class'
   | 'one_time' // a single charge (e.g. intro package); grants `included_months` of membership
   | 'weekly'
   | 'biweekly'
@@ -564,7 +563,7 @@ export type SubscriptionRecurrence =
   | 'quarterly'
   | 'annual'
 
-// Recurrences billed as a Stripe subscription (vs one-off charges: per_class, one_time).
+// Recurrences billed as a Stripe subscription (vs the one-off charge: one_time).
 export const RECURRING_RECURRENCES: SubscriptionRecurrence[] = [
   'weekly',
   'biweekly',
@@ -578,7 +577,7 @@ export function isRecurringRecurrence(r: SubscriptionRecurrence): boolean {
 }
 
 // Maps a recurring recurrence to a Stripe interval + count. Returns null for the
-// one-off recurrences (per_class, one_time), which are charged as single payments.
+// the one-off recurrence (one_time), which is charged as a single payment.
 export function recurrenceToStripeInterval(
   r: SubscriptionRecurrence
 ): { interval: 'week' | 'month' | 'year'; interval_count: number } | null {
@@ -594,7 +593,7 @@ export function recurrenceToStripeInterval(
     case 'annual':
       return { interval: 'year', interval_count: 1 }
     default:
-      return null // per_class, one_time
+      return null // one_time
   }
 }
 

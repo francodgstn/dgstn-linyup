@@ -671,7 +671,18 @@ async function seedTeam(opts: TeamSeed) {
             name: '10-Class Pack',
             description: 'Pre-paid block of 10 sessions.',
             source: 'internal',
-            prices: [{ id: `${teamId}-sub-10class-price`, amount: 180, recurrence: 'per_class' }],
+            // A PACK IS one-time + a number of classes (decision 32): the old
+            // 'per_class' price was charged once and covered every linked class
+            // forever. Valid 3 months, like a real card.
+            prices: [
+              {
+                id: `${teamId}-sub-10class-price`,
+                amount: 180,
+                recurrence: 'one_time',
+                credits: 10,
+                included_months: 3,
+              },
+            ],
             active: true,
           },
         ]
@@ -1255,7 +1266,7 @@ async function seedTeam(opts: TeamSeed) {
 
   // ── subscription types ────────────────────────────────────────────────────────
   for (const st of subscriptionTypeDefs) {
-    const hasRecurring = st.prices.some((p: { recurrence: string }) => p.recurrence !== 'per_class')
+    const hasRecurring = st.prices.some((p: { recurrence: string }) => p.recurrence !== 'one_time')
     await db
       .collection('teams')
       .doc(teamId)

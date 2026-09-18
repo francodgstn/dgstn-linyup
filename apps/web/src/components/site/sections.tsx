@@ -1285,7 +1285,6 @@ interface PlanEntry {
 /** Short, public-facing recurrence suffixes ("/mo", "/yr"). An unknown
  *  recurrence renders nothing rather than a raw key. */
 const RECURRENCE_KEYS: Record<string, string> = {
-  per_class: 'recurrencePerClass',
   weekly: 'recurrenceWeekly',
   biweekly: 'recurrenceBiweekly',
   monthly: 'recurrenceMonthly',

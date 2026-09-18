@@ -294,8 +294,15 @@ async function seedTeam(opts: {
   // Subscription types — vary by plan. Studio/Org use named tiers (Starter /
   // Premium / Elite) where each tier carries multiple prices (monthly + annual).
   // Coach keeps a simpler single-price structure.
-  type SeedRecurrence = 'per_class' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual'
-  type SeedPrice = { id: string; amount: number; recurrence: SeedRecurrence }
+  type SeedRecurrence = 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual'
+  type SeedPrice = {
+    id: string
+    amount: number
+    recurrence: SeedRecurrence
+    /** one_time packs only: classes granted, and how long they stay valid. */
+    credits?: number
+    included_months?: number
+  }
   type SeedSubType = {
     id: string
     name: string
@@ -324,7 +331,18 @@ async function seedTeam(opts: {
             name: '10-Class Pack',
             description: 'Pre-paid block of 10 sessions.',
             source: 'internal',
-            prices: [{ id: `${teamId}-sub-10class-price`, amount: 180, recurrence: 'per_class' }],
+            // A PACK IS one-time + a number of classes (decision 32): the old
+            // 'per_class' price was charged once and covered every linked class
+            // forever. Valid 3 months, like a real card.
+            prices: [
+              {
+                id: `${teamId}-sub-10class-price`,
+                amount: 180,
+                recurrence: 'one_time',
+                credits: 10,
+                included_months: 3,
+              },
+            ],
             active: true,
           },
         ]
@@ -432,7 +450,7 @@ async function seedTeam(opts: {
   const publicSubTypes = subscriptionTypeDefs
     .filter((st) => st.active !== false)
     .map((st) => {
-      const hasRecurring = st.prices.some((p) => p.recurrence !== 'per_class')
+      const hasRecurring = st.prices.some((p) => p.recurrence !== 'one_time')
       const entry: {
         id: string
         name: string
@@ -1047,7 +1065,7 @@ async function seedTeam(opts: {
 
   // ── subscription types ──────────────────────────────────────────────────────
   for (const st of subscriptionTypeDefs) {
-    const hasRecurring = st.prices.some((p) => p.recurrence !== 'per_class')
+    const hasRecurring = st.prices.some((p) => p.recurrence !== 'one_time')
     await db
       .collection('teams')
       .doc(teamId)

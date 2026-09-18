@@ -139,7 +139,7 @@ describe('resolvePlanPurchaseCap — which prices a cap can govern', () => {
     // lock a member out of renewing a subscription she is entitled to keep. That
     // case already has its own refusal (you-already-hold-this-type), and two
     // enforcement points for one fact is how they come to disagree.
-    for (const recurrence of ['monthly', 'annual', 'weekly', 'quarterly', 'per_class'] as const) {
+    for (const recurrence of ['monthly', 'annual', 'weekly', 'quarterly'] as const) {
       assert.equal(resolvePlanPurchaseCap({ recurrence, maxPurchasesPerContact: 1 }), null)
     }
   })

@@ -790,7 +790,6 @@
     "performanceIndicator_recharge": "Recharge",
     "performanceIndicator_sense_of_progress": "Progress",
     "subscriptionTerminationReason": "Reason for ending",
-    "recurrence_per_class": "Per class",
     "recurrence_one_time": "One-time",
     "recurrence_weekly": "Weekly",
     "recurrence_biweekly": "Every 2 weeks",
@@ -4957,7 +4956,6 @@
     "cancel": "Cancel",
     "continueToPayment": "Continue to payment",
     "recurrence": {
-      "per_class": "/ class",
       "one_time": "one-time",
       "weekly": "/ week",
       "biweekly": "/ 2 weeks",

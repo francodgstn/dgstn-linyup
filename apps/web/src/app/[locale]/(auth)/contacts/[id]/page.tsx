@@ -3079,7 +3079,7 @@ function SetSubscriptionDialog({
   )
   const hasActive = liveStripeSubs.length > 0 || !!contact.subscription_type_id
 
-  const RECURRENCES = ['per_class', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annual']
+  const RECURRENCES = ['weekly', 'biweekly', 'monthly', 'quarterly', 'annual']
 
   const selectedType = subTypes.find((st) => st.id === typeId)
   const activePrices = (selectedType?.prices ?? []).filter((p) => p.active !== false)

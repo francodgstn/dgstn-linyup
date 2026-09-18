@@ -116,11 +116,15 @@ Each stage leaves main green and deployable. Owners in brackets.
    and a fixture pins that. Tab descriptions → tooltip (`4cbb3b2b`).
    PUBLIC surfaces still read the stored `accessRule.type`, which every writer
    keeps in step — they move in stage 5, when the field goes.
-4. **Drop-in modal and the per-class leftovers** [web + scripts] — decision 29: one
-   "Drop-in price" modal opened from the Offerings header and from a class's
-   pricing tab (set, change, turn off, "follows it: N classes"); Pricing goes back
-   to read-only. Decision 32: `per_class` removed from the type, the forms, the
-   emulator and staging seeds, and the Swimli lead profile (local file).
+4. **Drop-in modal and the per-class leftovers** [web + scripts] — DONE.
+   Decision 29: `components/offer/StudioDropInDialog.tsx` is the ONE editor of the
+   usual price (set, change, turn off, how many classes use it), opened from the
+   Offerings header and from a class's pricing tab; the Pricing page shows it
+   read-only with a link into the same dialog. Decision 32: `per_class` is gone
+   from `SubscriptionRecurrence`, the forms, the AI drafter, the copy, and the
+   seeds — the emulator and staging "10-Class Pack" is one-time + 10 classes,
+   valid 3 months, and the Swimli lead profile's single lesson is a one-lesson
+   pack (that profile is a gitignored local file, edited in the main checkout).
 5. **Backfill and delete** [scripts + shared] — `scripts/backfill-class-access.ts`,
    dry-run by default, through the Backfill workflow for staging and sandbox:
    every class gets `audience`, `subscriptionTypeIds` and `dropIn.mode` in the new
