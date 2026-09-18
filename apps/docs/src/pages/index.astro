@@ -1,0 +1,60 @@
+---
+// Home page. Without it `/` is a 404 — every document lives at its own slug
+// (e.g. /accounting/) and nothing claimed the root, which made a perfectly
+// healthy dev server look broken.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
+import { getCollection } from 'astro:content'
+import { AREAS } from '../../../../scripts/lib/docsMeta.mjs'
+
+// Keep in step with AREA_TITLE in astro.config.ts.
+const AREA_TITLE: Record<string, string> = {
+  payments: 'Payments & finance',
+  booking: 'Booking',
+  contacts: 'Contacts & membership',
+  content: 'Public content',
+  platform: 'Platform & API',
+  mobile: 'Member app',
+  ops: 'Operations',
+  product: 'Product & registers',
+}
+const KIND: Record<string, string> = {
+  living: 'how it works now',
+  plan: 'work to do',
+  record: 'true as of a date',
+  closed: 'finished',
+}
+
+const docs = await getCollection('docs')
+const live = docs.filter((d) => d.data.status === 'living' || d.data.status === 'plan')
+const groups = AREAS.map((area: string) => ({
+  area,
+  title: AREA_TITLE[area] ?? area,
+  items: live
+    .filter((d) => d.data.area === area)
+    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
+})).filter((g: { items: unknown[] }) => g.items.length > 0)
+const pastCount = docs.length - live.length
+---
+
+<StarlightPage frontmatter={{ title: 'Linyup engineering', description: 'Internal documentation. Not published.', status: 'living', area: 'ops' }}>
+  <p>
+    Every current document under <code>docs/</code>, grouped by area. Each one says what kind of
+    document it is: <em>how it works now</em> means the rules hold today, <em>work to do</em> is a plan
+    that may be stale. The {pastCount} closed and point-in-time documents are in the sidebar under
+    <strong>Closed &amp; point-in-time</strong>.
+  </p>
+  {
+    groups.map((g: { area: string; title: string; items: typeof docs }) => (
+      <>
+        <h2 id={g.area}>{g.title}</h2>
+        <ul>
+          {g.items.map((d) => (
+            <li>
+              <a href={`/${d.id}/`}>{d.data.title}</a> — {KIND[d.data.status]}
+            </li>
+          ))}
+        </ul>
+      </>
+    ))
+  }
+</StarlightPage>
