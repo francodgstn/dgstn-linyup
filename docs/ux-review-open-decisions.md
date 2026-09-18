@@ -542,7 +542,9 @@ review. The shapes worth choosing between:
 so the current arrangement is at least legible. Nothing here is hard to undo.
 
 ## 36. Does Publish get a real diff?
-**PARKED.** Publish takes the whole draft live — the typo you came to fix plus
+**ANSWERED 2026-09-18 — Franco: leave it as is.** The confirmation stating what goes live stays; no diff. Revisit only if a studio actually hesitates at the button (a per-page "what changed" list would be the step, not a field diff). The original entry follows.
+
+**Was PARKED.** Publish takes the whole draft live — the typo you came to fix plus
 the half-finished page beside it. Shipped now: a confirmation stating what is
 about to go live, counted from the draft (home + N pages + M posts, and how many
 hidden pages stay behind). A REAL answer compares against `site_published`
@@ -574,7 +576,9 @@ component with a capability flag, the way `BrandFields` and `MenuPanel` already
 are. (ii) is worth doing either way; (i) decides how much.
 
 ## 39. `Common.close` — the dialog primitive's only untranslated string
-**FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
+**DONE 2026-09-18.** `Common.close` added in all four locales and used by the dialog's X button, the dialog footer's optional Close button, and the sheet's X button (`sheet.tsx` had the same string). The original entry follows.
+
+**Was FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
 Close</span>`. Screen-reader-only, so no sighted user sees English in a German
 UI, but it is the one string in that file. Needs a `Common.close` key and
 `useTranslations` inside a ui primitive — four of them already do this, so the
@@ -607,6 +611,8 @@ the redirect table on every save (now fixed, and the payload is typed so the
 next omission fails the build).
 
 ## 41. Turbopack cannot resolve one dependency in a deep worktree
+**ANSWERED 2026-09-18 — Franco: accept it.** Deep worktrees run the dev server with `--webpack`; the local-env skill (`.claude/skills/local-env/SKILL.md`, traps) now says so. The original entry follows.
+
 **ENVIRONMENT, not code.** `next dev --turbopack` in this worktree fails with
 `Can't resolve '@tiptap/extension-drag-handle-react'` on a cold cache, so every
 route that pulls `RichTextEditor` 500s. Node resolves it fine both ways

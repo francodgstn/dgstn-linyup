@@ -26,7 +26,8 @@
     "ratingAriaLabel": "Noter {n} sur 5",
     "loadMore": "Charger plus",
     "showingCount": "{count} chargés",
-    "showingOf": "{shown} sur {total} chargés"
+    "showingOf": "{shown} sur {total} chargés",
+    "close": "Fermer"
   },
   "Plans": {
     "free": "Free",
