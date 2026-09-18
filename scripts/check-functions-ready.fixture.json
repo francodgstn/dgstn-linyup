@@ -1,0 +1,144 @@
+{
+  "_about": "Real Cloud Functions v2 + Cloud Run Admin v2 list entries, captured on 2026-09-18 and trimmed to the fields scripts/check-functions-ready.mjs reads; nothing else was edited.",
+  "sandboxQuota": {
+    "_about": "linyup-sandbox after sandbox-2026-09-16 went green with 81 functions left on stale revisions (the CPU quota). onContactWrite: serving a 2026-09-04 revision. runTarif595BulkIssue: newest revision never became ready, nothing to fall back on. createTeam: healthy. handleBudgetNotification: FAILED, no Cloud Run service or trigger at all.",
+    "functions": [
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/functions/onContactWrite",
+        "environment": "GEN_2",
+        "state": "ACTIVE",
+        "serviceConfig": {
+          "service": "projects/linyup-sandbox/locations/europe-west6/services/oncontactwrite"
+        }
+      },
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/functions/runTarif595BulkIssue",
+        "environment": "GEN_2",
+        "state": "ACTIVE",
+        "serviceConfig": {
+          "service": "projects/linyup-sandbox/locations/europe-west6/services/runtarif595bulkissue"
+        }
+      },
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/functions/createTeam",
+        "environment": "GEN_2",
+        "state": "ACTIVE",
+        "serviceConfig": {
+          "service": "projects/linyup-sandbox/locations/europe-west6/services/createteam"
+        }
+      },
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/functions/handleBudgetNotification",
+        "environment": "GEN_2",
+        "state": "FAILED",
+        "stateMessages": [
+          {
+            "severity": "ERROR",
+            "type": "CloudRunServiceNotFound",
+            "message": "Cloud Run service projects/linyup-sandbox/locations/europe-west6/services/handlebudgetnotification for the function was not found. The function will not work correctly. Please redeploy."
+          },
+          {
+            "severity": "ERROR",
+            "type": "EventarcTriggerNotFound",
+            "message": "Eventarc trigger projects/linyup-sandbox/locations/europe-west6/triggers/handlebudgetnotification-016347 for the function was not found. The function may not work correctly. Please redeploy."
+          }
+        ]
+      }
+    ],
+    "services": [
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/services/oncontactwrite",
+        "labels": {
+          "goog-managed-by": "cloudfunctions"
+        },
+        "terminalCondition": {
+          "type": "Ready",
+          "state": "CONDITION_FAILED",
+          "message": "Revision 'oncontactwrite-00102-fos' is not ready and cannot serve traffic. Quota exceeded for total allowable CPU per project per region.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=linyup-sandbox&resource=cloud_run_revision/service_name/oncontactwrite/revision_name/oncontactwrite-00102-fos&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22oncontactwrite%22%0Aresource.labels.revision_name%3D%22oncontactwrite-00102-fos%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+          "lastTransitionTime": "2026-09-16T03:06:18.970135Z",
+          "revisionReason": "HEALTH_CHECK_CONTAINER_ERROR"
+        },
+        "latestReadyRevision": "projects/linyup-sandbox/locations/europe-west6/services/oncontactwrite/revisions/oncontactwrite-00095-ner",
+        "latestCreatedRevision": "projects/linyup-sandbox/locations/europe-west6/services/oncontactwrite/revisions/oncontactwrite-00102-fos"
+      },
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/services/runtarif595bulkissue",
+        "labels": {
+          "goog-managed-by": "cloudfunctions"
+        },
+        "terminalCondition": {
+          "type": "Ready",
+          "state": "CONDITION_FAILED",
+          "message": "Revision 'runtarif595bulkissue-00002-tuy' is not ready and cannot serve traffic. Quota exceeded for total allowable CPU per project per region.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=linyup-sandbox&resource=cloud_run_revision/service_name/runtarif595bulkissue/revision_name/runtarif595bulkissue-00002-tuy&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22runtarif595bulkissue%22%0Aresource.labels.revision_name%3D%22runtarif595bulkissue-00002-tuy%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+          "lastTransitionTime": "2026-09-16T03:02:04.529849Z",
+          "revisionReason": "HEALTH_CHECK_CONTAINER_ERROR"
+        },
+        "latestCreatedRevision": "projects/linyup-sandbox/locations/europe-west6/services/runtarif595bulkissue/revisions/runtarif595bulkissue-00002-tuy"
+      },
+      {
+        "name": "projects/linyup-sandbox/locations/europe-west6/services/createteam",
+        "labels": {
+          "goog-managed-by": "cloudfunctions"
+        },
+        "terminalCondition": {
+          "type": "Ready",
+          "state": "CONDITION_SUCCEEDED",
+          "lastTransitionTime": "2026-09-16T03:02:52.219504Z"
+        },
+        "latestReadyRevision": "projects/linyup-sandbox/locations/europe-west6/services/createteam/revisions/createteam-00017-poj",
+        "latestCreatedRevision": "projects/linyup-sandbox/locations/europe-west6/services/createteam/revisions/createteam-00017-poj"
+      }
+    ]
+  },
+  "prodUntouched": {
+    "_about": "linyup-prod after v0.28.0 went green while firebase-tools 15.18 abandoned every 512Mi function. dailyTasks: healthy, ACTIVE, serving its newest revision - from 2026-09-16, on the previous release's hash. createTeam: updated by the v0.28.0 deploy.",
+    "functions": [
+      {
+        "name": "projects/linyup-prod/locations/europe-west6/functions/dailyTasks",
+        "environment": "GEN_2",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-16T03:02:48.690721415Z",
+        "labels": {
+          "firebase-functions-hash": "03dadf98b57a86cff4e7651e1cb82482ea140592"
+        },
+        "serviceConfig": {
+          "service": "projects/linyup-prod/locations/europe-west6/services/dailytasks"
+        }
+      },
+      {
+        "name": "projects/linyup-prod/locations/europe-west6/functions/createTeam",
+        "environment": "GEN_2",
+        "state": "ACTIVE",
+        "updateTime": "2026-09-18T14:52:37.917825986Z",
+        "labels": {
+          "firebase-functions-hash": "a15b394230916addcd9e0d210315d749898c3ac9"
+        },
+        "serviceConfig": {
+          "service": "projects/linyup-prod/locations/europe-west6/services/createteam"
+        }
+      }
+    ],
+    "services": [
+      {
+        "name": "projects/linyup-prod/locations/europe-west6/services/dailytasks",
+        "terminalCondition": {
+          "type": "Ready",
+          "state": "CONDITION_SUCCEEDED",
+          "lastTransitionTime": "2026-09-16T03:02:48.380904Z"
+        },
+        "latestReadyRevision": "projects/linyup-prod/locations/europe-west6/services/dailytasks/revisions/dailytasks-00040-pur",
+        "latestCreatedRevision": "projects/linyup-prod/locations/europe-west6/services/dailytasks/revisions/dailytasks-00040-pur"
+      },
+      {
+        "name": "projects/linyup-prod/locations/europe-west6/services/createteam",
+        "terminalCondition": {
+          "type": "Ready",
+          "state": "CONDITION_SUCCEEDED",
+          "lastTransitionTime": "2026-09-18T14:52:37.235124Z"
+        },
+        "latestReadyRevision": "projects/linyup-prod/locations/europe-west6/services/createteam/revisions/createteam-00016-kas",
+        "latestCreatedRevision": "projects/linyup-prod/locations/europe-west6/services/createteam/revisions/createteam-00016-kas"
+      }
+    ]
+  }
+}

@@ -99,17 +99,41 @@ jobs:
       # authenticate") and the per-minute Cloud Functions mutation quota 429s on a
       # full redeploy. Both are transient and converge on re-run (auth blips clear;
       # already-updated functions are skipped next pass). 30s gaps let the quota reset.
+      #
+      # An exit 0 is not a finished deploy. firebase-tools 15.18 can deadlock a
+      # whole group of functions and simply stop, printing neither "Deploy
+      # complete!" nor an error: v0.28.0's first run (2026-09-18) never deployed
+      # any 512Mi function here, never created a new one and never released the
+      # api Hosting version, behind a green run. So an attempt counts only when
+      # that line was printed; the retry then re-plans only what was left,
+      # because everything finished is skipped as unchanged. The header of
+      # scripts/check-functions-ready.mjs has the mechanism.
       - name: Deploy to Firebase (Production)
         run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/firebase-deploy.log"
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project production --only functions,hosting:landing,hosting:api,firestore,storage --non-interactive --force; then
+            if npx firebase-tools deploy --project production --only functions,hosting:landing,hosting:api,firestore,storage --non-interactive --force 2>&1 | tee "$log" \
+              && grep -q 'Deploy complete!' "$log"; then
               exit 0
             fi
-            echo "::warning::firebase deploy attempt $attempt failed; retrying in 30s…"
+            echo "::warning::firebase deploy attempt $attempt failed or stopped before 'Deploy complete!'; retrying in 30s…"
             sleep 30
           done
           echo "::error::firebase deploy failed after 5 attempts"
           exit 1
+
+      # A green deploy step is not a deployed backend. `firebase deploy` can exit
+      # 0 while Cloud Run refuses the new revisions — the regional CPU quota did
+      # it on 2026-09-16, and 61 functions here went on serving code from as far
+      # back as 2026-09-08. Each one still read ACTIVE and already carried the new
+      # hash, so the retry above skipped it as unchanged and the run went green.
+      # This reads the truth off Cloud Run and fails the run BEFORE the App
+      # Hosting rollouts, so neither frontend goes live over a backend it is
+      # ahead of. The reasoning, and the redeploy it prints, belong to the header
+      # of scripts/check-functions-ready.mjs.
+      - name: Verify every function serves the deployed code
+        run: pnpm functions:ready --project linyup-prod
 
       # App Hosting (Next.js SSR) — web + admin. Auto-rollout is DISABLED on the
       # PROD backends (see infra/README.md §6), so prod ships ONLY through this

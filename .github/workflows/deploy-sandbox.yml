@@ -114,17 +114,40 @@ jobs:
       #
       # This wrapper was missing here while prod had it, so the 2026-08-25 deploy
       # failed with 25 functions un-updated and needed a manual re-dispatch.
+      #
+      # An exit 0 is not a finished deploy. firebase-tools 15.18 can deadlock a
+      # whole group of functions and simply stop, printing neither "Deploy
+      # complete!" nor an error: on 2026-09-18 every 512Mi function here was never
+      # deployed, a new one never created, and the api Hosting release never made,
+      # behind a green run. So an attempt counts only when that line was printed;
+      # the retry then re-plans only what was left, because everything finished
+      # is skipped as unchanged. The header of scripts/check-functions-ready.mjs
+      # has the mechanism.
       - name: Deploy to Firebase (Sandbox)
         run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/firebase-deploy.log"
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project sandbox --only functions,hosting:api,firestore,storage --non-interactive --force; then
+            if npx firebase-tools deploy --project sandbox --only functions,hosting:api,firestore,storage --non-interactive --force 2>&1 | tee "$log" \
+              && grep -q 'Deploy complete!' "$log"; then
               exit 0
             fi
-            echo "::warning::firebase deploy attempt $attempt failed; retrying in 30s…"
+            echo "::warning::firebase deploy attempt $attempt failed or stopped before 'Deploy complete!'; retrying in 30s…"
             sleep 30
           done
           echo "::error::firebase deploy failed after 5 attempts"
           exit 1
+
+      # A green deploy step is not a deployed backend. `firebase deploy` can exit
+      # 0 while Cloud Run refuses the new revisions — the regional CPU quota did
+      # it on 2026-09-16, and 81 functions here went on serving code up to two
+      # weeks old. Each one still reads ACTIVE and already carries the new hash,
+      # so the retry above skips it as unchanged. This reads the truth off Cloud
+      # Run and fails the run BEFORE the web rollout, so the frontend never goes
+      # live over a backend it is ahead of. The reasoning, and the redeploy it
+      # prints, belong to the header of scripts/check-functions-ready.mjs.
+      - name: Verify every function serves the deployed code
+        run: pnpm functions:ready --project linyup-sandbox
 
       # App Hosting (Next.js SSR) — the web app, rolled out AFTER the backend
       # above so the frontend never goes live ahead of the functions and rules it
