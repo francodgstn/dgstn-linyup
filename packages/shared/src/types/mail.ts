@@ -32,7 +32,7 @@ export interface MailSendRecord {
   team_id?: string
   // 'suppressed' = never handed to the provider; suppress_reason explains which
   // layer dropped it. The email-only and SMS-only reasons are listed by channel
-  // in functions mail/README.md → "The send log".
+  // in packages/functions/src/mail/README.md → "The send log".
   status: 'sent' | 'delivered' | 'bounced' | 'blocked' | 'spam' | 'failed' | 'suppressed'
   suppress_reason?:
     | 'synthetic'
