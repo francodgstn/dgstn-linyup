@@ -48,29 +48,21 @@ So whichever machine builds the binary that ships must also be the machine that
 publishes updates to it. CI is the one that can do both unattended, which is why
 it is CI and not the laptop.
 
-**Where this stands (2026-09-11).** Both binaries in the stores today were built
-on the Windows checkout — TestFlight 1.0.1(3) (`88d18f6f…`) and Play closed
-testing version code 3 (`4e1cc6df…`) — so a CI-published OTA reaches NEITHER.
-Until the next store binary comes from a `mobile-v*` tag, publish updates the way
-1.0.1's safe-area fix went out: `eas update --branch production --environment
-production` from the machine that built them. The switchover costs one release,
-once.
+**Where this stands (2026-09-16).** The switchover is done. Both stores carry
+the CI builds from `mobile-v1.0.1-ci1` — Play closed testing version code 5
+(`a4093b56…`) and TestFlight 1.0.1(5) (`b817ef4f…`) — and `mobile-v1.0.2`
+reached them over the air. So a tag now reaches real phones, and **the laptop
+must not publish updates any more**: a local `eas update` hashes the Windows
+fingerprint and targets the old locally-built binaries, which the Play track no
+longer carries. Play shows versionName **1.0.1** while the channel serves
+**1.0.2**; that is correct — the shipped artifact is the build CI made, and the
+1.0.2 changes arrive on first launch.
 
-**The CI builds already exist. SUBMIT them, do not rebuild.** The tag
-`mobile-v1.0.1-ci1` produced iOS **1.0.1(5)** (`b817ef4f…`) and Android
-**1.0.1(5), version code 5** (`a4093b56…`) — both finished, both carrying the
-runner's fingerprints. They are held only by the App Store review and the Play
-fourteen-day clock. When those close:
-
-```bash
-cd apps/mobile
-npx eas-cli submit --profile store --platform ios --latest
-npx eas-cli submit --profile store --platform android --latest
-```
-
-Building a fresh binary instead — from the laptop especially — puts this back
-exactly where it started. The whole value of those two artefacts is that CI made
-them, so an OTA CI publishes reaches the phone that installed them.
+**One thing to check on iOS before the App Store release goes live:** which
+build is attached to the version. A 1.0.1(3) submitted for review before the
+switchover is locally built (`88d18f6f…`); if that is what ships, no App Store
+user ever receives a CI-published update. Swap it for 1.0.1(5) on the version
+page — TestFlight testers still on build 3 should update for the same reason.
 
 A local `eas build` is still right for anything you are NOT shipping: a
 `preview` build for your own phone, or reproducing a build failure.
@@ -138,9 +130,12 @@ git tag -a mobile-v1.0.2 -m "<why>" && git push origin mobile-v1.0.2
 cd apps/mobile
 npx eas-cli submit --profile store --platform android --latest
 
-# 4. Play Console → Closed testing → the new release: paste the notes per
-#    language, but install it on YOUR phone from the tester link and sign in
-#    with the review login before rolling it out to the group.
+# 4. The submit ROLLS OUT BY ITSELF: `eas submit` creates the track release
+#    as `completed`, so there is no moment between upload and testers to try
+#    it on your phone first. Want one? Set submit.store.android.releaseStatus
+#    to "draft" in eas.json, then promote in Play Console. Either way the
+#    upload carries NO release notes — paste store/release-notes/<version>/*
+#    per language in the console, or push all four in one Play API edit.
 # 5. Tell the testers what changed and ask for ONE concrete thing
 #    ("switch the phone to German, book a class, reply with what annoyed you") —
 #    the production-access questionnaire asks for feedback and what you changed.
@@ -212,26 +207,34 @@ Apple/Google (see the roadmap §7), plus the prod key.
   var only redirects a build at another EAS project; an empty value falls
   back to the default (which is why the config uses `||`, not `??` — the
   `.env.*` templates ship `EAS_PROJECT_ID=`).
-- **Uploading to Play.** Two separate reasons it can be manual, and only one of
-  them expires. Google requires the very FIRST AAB by hand before `eas submit`
-  can target a track — that one is done. The second is standing: EAS holds no
-  Google service-account key, so `eas submit -p android` refuses before it
-  reaches Play at all. One interactive setup ends it, permanently:
+- **Uploading to Play is automated** (since 2026-09-16). `eas submit -p android`
+  authenticates as `linyup-play-publisher@linyup-prod.iam.gserviceaccount.com`
+  and needs no console visit; the very first AAB had to go by hand, long done.
+  How it was set up, should it ever need redoing — a rotated key, say:
 
-  1. Create a service account and a JSON key —
-     <https://expo.fyi/creating-google-service-account>. It needs NO GCP role;
-     its power comes from the Play invitation, not from Google Cloud.
-  2. Play Console → **Users and permissions** → invite that service account's
-     email, with at least *Release to testing tracks*.
-  3. `eas credentials -p android` → Google Service Account → upload the JSON.
-     Interactive only — `--non-interactive` cannot do it, which is the error
-     above. The key lives on EAS afterwards; never commit it.
+  1. **The account is Terraform** — `infra/modules/iam`, flag
+     `create_play_publisher`, prod only. `terraform -chdir=infra/environments/prod
+     output play_publisher_sa` prints its address. It has NO GCP role: its power
+     comes from the Play invitation, not from IAM on the project.
+  2. **Play Console → Users and permissions** → that address, with at least
+     *Release to testing tracks*. Developer-account membership is not a GCP
+     resource, so Terraform cannot do this step. Without it the submit fails
+     AFTER authenticating — *"The service account is missing the necessary
+     permissions"* — and a new grant can take a few minutes to land.
+  3. **A JSON key, uploaded once** — `eas credentials -p android` → Google
+     Service Account → *…for Play Store Submissions* → Set up. Interactive only
+     (`--non-interactive` refuses). The key lives on EAS; never commit it. The
+     `google-play-service-account` container in Secret Manager stays EMPTY on
+     purpose — nothing server-side calls the Play API, and two copies of one
+     credential can disagree.
 
-  **The same key is what FCM V1 needs for Android push**, which is parked in
-  this project — so this one setup unblocks both, and doing it now means the
-  push credentials are already in place before the build that carries them.
-  The whole store path — both consoles, the credentials, and the 14-day Play
-  closed-testing clock that gates going public — is `docs/mobile-store-setup.md`.
+  **The same key is what FCM V1 needs for Android push**, which is parked. It
+  goes in the SEPARATE *…for FCM V1* slot, and it must be the `linyup-prod` key:
+  the app resolves one android package for every profile (from `APP_VARIANT`,
+  not the Firebase env), so EAS has one credentials slot — push will work on
+  store builds and not on preview builds. The whole store path — both consoles,
+  the credentials, and the 14-day Play closed-testing clock that gates going
+  public — is `docs/mobile-store-setup.md`.
 - `FIREBASE_API_KEY` — **both** `eas.json`'s `env` block per profile **and**
   an EAS environment variable per environment. Not redundancy: the `env`
   block is the only thing in scope when `eas build` evaluates app.config.js
@@ -247,11 +250,9 @@ Apple/Google (see the roadmap §7), plus the prod key.
   the production channel. The build path was never exposed: it reads eas.json.
   Write the literal value —
   `"${FIREBASE_API_KEY}"` is not interpolated and gets baked in as that string.
-- **Apple ASC API key: on EAS. Play service-account JSON: NOT on EAS** — checked
-  2026-09-16, when `eas submit -p android` refused at `Google Service Account
-  Keys cannot be set up in --non-interactive mode`. Until that key is uploaded,
-  EVERY Play upload is a manual one through the console, no matter how the build
-  was produced. See "Uploading to Play" above.
+- **Apple ASC API key and the Play service-account key: both on EAS**
+  (`credentialsSource: remote`). The Play key was the last to land, on
+  2026-09-16 — see "Uploading to Play" above. The FCM V1 slot is still empty.
 
 ## Traps recorded
 
