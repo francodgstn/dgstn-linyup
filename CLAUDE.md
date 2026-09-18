@@ -651,6 +651,12 @@ Two rules when adding one:
   no monthly finance reports for its whole life while logging a clean zero.
   The identical clause against `contacts` IS correct — see
   `apps/web/src/lib/liveContacts.ts` for why the two collections differ.
+  **The `!=` sibling is the same trap and reads even better:**
+  `where('status', '!=', 'corrected')` matches NOTHING when the field is
+  absent, which on the finance journal is almost every row — so the query
+  returns a tiny slice and looks like a working query rather than an empty one.
+  `analytics/stripeCosts.ts` sidesteps it by reading the closed month's reports
+  instead of re-deriving from the journal; its header says why.
 
 ### Comments must not assert a COUNT of code sites
 
@@ -677,6 +683,35 @@ So, in order of preference:
    reads the SOURCE and pins call-site tallies (it spans the functions/web
    boundary on purpose — that boundary is where corrections stop travelling).
    That file is where a bare number is allowed, because there it is executable.
+
+### A guard that SAMPLES a race is not a guard
+
+A test that renders twice and compares, or greps for the one spelling of a
+mistake somebody happened to make, passes whenever the timing or the wording
+goes the other way. The regression then comes back as a **flake**, or as
+nothing at all, and both read as green. Two shipped in one phase:
+
+- The Tarif 595 receipt's "re-renders byte-identically" check compared exactly
+  **two** renders against a roughly one-in-twelve race (PDFKit embeds an
+  alpha-channel PNG through an async `splitAlphaChannel` decode and numbers the
+  objects in callback order). It passed locally, passed most CI runs, and
+  failed the one that mattered.
+- A source-reading pin against a stray `?? 0` required the literal `providers.`
+  prefix, while a real one lands on whichever local holds the block — so it
+  passed against the very edit it existed to catch.
+
+The fix was the same both times, and it is the rule: **assert the CAUSE
+structurally, not the symptom by sampling.** No alpha channel means no
+`/SMask`, which means the synchronous embed path — one grep of the output, true
+or false, no timing involved. A member access on ANY receiver, not one spelling
+of it. Keep the sampling check too where it might catch a cause nobody
+predicted, but widen it well past the observed rate and say in the test why
+that number (`tarif595/render.test.ts` renders six times, and says so).
+
+And the converse, for a pin that reads source: **re-run it against the defect
+it describes before trusting it.** A source-reading assertion has no failing
+state to have been seen — it is green on the day it is written whether or not
+it works.
 
 ### Stripe fields move — never read one inline
 
