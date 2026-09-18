@@ -23,14 +23,38 @@
  *     check that only lists services.
  *
  * On 2026-09-16 that left 81 sandbox and 61 production functions serving code
- * up to two weeks old behind two green runs. So this reads the state where it
- * actually is. A function is serving the deployed code only when
+ * up to two weeks old behind two green runs.
+ *
+ * The SECOND way, found on 2026-09-18: firebase-tools 15.18 builds each group
+ * of functions (codebase + region + memory size) once and hands the build to
+ * the rest of the group. If the first call in a group is rate-limited (a 429),
+ * its retry waits for the very build it was supposed to start — and the whole
+ * group waits with it, holding no timer or socket, so node's event loop drains
+ * and the CLI exits 0 half-way: no "Deploy complete!", no summary. Every 512Mi
+ * function in prod and sandbox was never deployed, and a brand-new one never
+ * created, behind two more green runs. Fixed upstream in firebase-tools 15.30.0
+ * (firebase/firebase-tools#11044). Those functions stay perfectly healthy — on
+ * the previous release — so no Cloud Run condition shows it; their deploy hash
+ * does (4 below).
+ *
+ * So this reads the state where it actually is. A function is serving the
+ * deployed code only when
  *
  *   1. Cloud Functions reports it ACTIVE (the one signal for a function whose
  *      Cloud Run service does not exist), and
  *   2. its Cloud Run service's Ready condition SUCCEEDED, and
  *   3. latestReadyRevision == latestCreatedRevision — the newest revision is
- *      the one taking traffic.
+ *      the one taking traffic, and
+ *   4. it carries the latest deploy's `firebase-functions-hash`. That label is
+ *      sha1(source + env + the secrets a function BINDS), and no function here
+ *      binds a secret at deploy time (they are read at runtime), so one complete
+ *      deploy leaves exactly one hash on every function it processed — updated,
+ *      created or skipped as unchanged. The latest deploy's hash is the one on
+ *      the most recently updated function. If functions ever bind secrets, the
+ *      hashes legitimately split by secret set and this rule has to learn that.
+ *
+ * A function missing from the project entirely (a create that never ran) is
+ * not visible here: the deploy step's "Deploy complete!" check owns that case.
  *
  * Anything still reconciling is re-read until it settles or --timeout passes.
  * Exit 0: every function serves its newest revision. Exit 1: the list, with the
@@ -81,6 +105,7 @@ function firstParagraph(message) {
  */
 export function assessReadiness({ functions, services }) {
   const byService = new Map(services.map((s) => [lastSegment(s.name), s]))
+  const latestHash = latestDeployHash(functions)
   return functions.map((fn) => {
     const base = {
       id: lastSegment(fn.name),
@@ -125,15 +150,47 @@ export function assessReadiness({ functions, services }) {
     if (!serving || serving !== newest) {
       return { ...base, verdict: 'failed', reason: 'newest revision not serving', serving, newest }
     }
+    // Healthy is not the same as deployed: a function the deploy never reached
+    // keeps serving the previous release without a single failed condition.
+    const hash = deployHash(fn)
+    if (latestHash && hash && hash !== latestHash) {
+      return {
+        ...base,
+        verdict: 'failed',
+        reason: 'not updated by the latest deploy',
+        message: `on deploy hash ${hash.slice(0, 8)}, not ${latestHash.slice(0, 8)}`,
+        serving,
+        newest,
+      }
+    }
     return { ...base, verdict: 'ok', serving, newest }
   })
 }
 
+const deployHash = (fn) => fn.labels?.['firebase-functions-hash'] ?? null
+
+/**
+ * The hash the latest deploy wrote: the one on the most recently updated
+ * function — not the most common one, which after a deploy that reached fewer
+ * than half the functions would be the OLD release's. Functions without the
+ * label (not deployed by firebase-tools) are not judged by it. Pure.
+ */
+export function latestDeployHash(functions) {
+  let latest = null
+  for (const fn of functions) {
+    const hash = deployHash(fn)
+    const at = Date.parse(fn.updateTime ?? '')
+    if (hash && Number.isFinite(at) && (!latest || at > latest.at)) latest = { hash, at }
+  }
+  return latest?.hash ?? null
+}
+
 /**
  * The commands that bring the failed functions back, in order. A plain
- * redeploy of the same tree would skip them (see the header), so every one is
- * named with --only; a FAILED function is deleted first, because updating a
- * function whose service is gone is not reliable. Pure.
+ * redeploy of the same tree skips any whose hash is already current (see the
+ * header), so every one is named with --only; a FAILED function is deleted
+ * first, because updating a function whose service is gone is not reliable.
+ * Pure.
  */
 export function redeployCommands({ project, region, failed }) {
   if (!failed.length) return []
@@ -276,7 +333,7 @@ async function main() {
     .sort((a, b) => a.id.localeCompare(b.id))
   const settling = verdicts.filter((v) => v.verdict === 'settling')
   const headline =
-    `${project} (${region}): ${verdicts.length} functions — ${ok.length} serving their newest revision` +
+    `${project} (${region}): ${verdicts.length} functions — ${ok.length} serving the deployed code` +
     (failed.length ? `, ${failed.length} not` : '') +
     (settling.length ? `, ${settling.length} still settling after ${args.timeout}s` : '')
   console.log(headline)
@@ -300,7 +357,9 @@ async function main() {
         : `no Cloud Run service (function ${f.state})`
     const newest =
       f.serving && f.newest && f.newest !== f.serving ? `; newest ${f.newest} did not come up` : ''
-    return { id: f.id, text: `${serving}${newest}` }
+    const untouched =
+      f.reason === 'not updated by the latest deploy' ? '; the latest deploy never reached it' : ''
+    return { id: f.id, text: `${serving}${newest}${untouched}` }
   })
   const width = Math.max(...rows.map((r) => r.id.length))
   for (const r of rows) console.log(`  ${r.id.padEnd(width)}  ${r.text}`)
@@ -310,8 +369,9 @@ async function main() {
   const commands = redeployCommands({ project, region, failed })
   if (commands.length) {
     console.log(
-      '\nA plain redeploy of this tree skips them (their hash is already current). From a checkout of the' +
-        '\ndeployed commit, built and vendored the way the deploy workflow does it, once the cause is fixed:'
+      '\nA plain redeploy of the same tree skips any whose hash is already current; naming them with' +
+        '\n--only redeploys them regardless. From a checkout of the deployed commit, built and vendored' +
+        '\nthe way the deploy workflow does it, once the cause is fixed:'
     )
     for (const c of commands) console.log(`  ${c}`)
   }

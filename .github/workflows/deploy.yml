@@ -129,13 +129,24 @@ jobs:
       # and converge on re-run. Staging deploys unattended on every push to main,
       # so it is the one environment where a transient failure has no human to
       # re-dispatch it — which is exactly why it needs the wrapper most.
+      #
+      # An exit 0 is not a finished deploy. firebase-tools 15.18 can deadlock a
+      # whole group of functions and simply stop, printing neither "Deploy
+      # complete!" nor an error — it did to sandbox and prod on 2026-09-18, behind
+      # green runs. So an attempt counts only when that line was printed; the
+      # retry then re-plans only what was left, because everything finished is
+      # skipped as unchanged. The header of scripts/check-functions-ready.mjs has
+      # the mechanism.
       - name: Deploy to Firebase (Staging)
         run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/firebase-deploy.log"
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project staging --only functions,hosting:landing,hosting:api,firestore,storage --non-interactive --force; then
+            if npx firebase-tools deploy --project staging --only functions,hosting:landing,hosting:api,firestore,storage --non-interactive --force 2>&1 | tee "$log" \
+              && grep -q 'Deploy complete!' "$log"; then
               exit 0
             fi
-            echo "::warning::firebase deploy attempt $attempt failed; retrying in 30s…"
+            echo "::warning::firebase deploy attempt $attempt failed or stopped before 'Deploy complete!'; retrying in 30s…"
             sleep 30
           done
           echo "::error::firebase deploy failed after 5 attempts"
