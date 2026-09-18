@@ -8816,7 +8816,9 @@
       "resumedSuccess": "Ricevuta {number} completata.",
       "issueError": "Impossibile emettere la ricevuta.",
       "unitPriceLabel": "Prezzo per unità (CHF)",
-      "unitPriceHint": "Per mese, lezione o entrata. Lasciare vuoto per riprendere il prezzo dall'abbonamento o dall'acquisto; un giustificativo di presenza lo richiede."
+      "unitPriceHint": "Al mese, a lezione o a entrata. Lasci vuoto per riprendere il prezzo dall'abbonamento o dall'acquisto.",
+      "unitPriceDoorHint": "A lezione. Lasci vuoto per usare il prezzo a lezione singola di questo corso, pari a {price}; inserisca un altro importo se il membro ha pagato una tariffa diversa.",
+      "unitPriceNoDoorHint": "A lezione. Questo corso non ha un prezzo a lezione singola; inserisca quanto è costata una lezione a questo membro."
     },
     "history": {
       "title": "Ricevute di questo contatto",
@@ -8843,7 +8845,8 @@
       "attendance_truncated": "È stato possibile fatturare solo una parte dello storico presenze.",
       "insured_number_missing": "Manca il numero di assicurato.",
       "insurer_unknown": "Nessun assicuratore registrato per questo contatto.",
-      "unit_price_zero": "Una o più righe hanno un prezzo pari a zero."
+      "unit_price_zero": "Una o più righe hanno un prezzo pari a zero.",
+      "unit_price_from_drop_in": "Non è stato inserito alcun prezzo, quindi è stato usato il prezzo a lezione singola del corso. Lo verifichi se questo membro ha pagato una tariffa diversa, ad esempio con un carnet."
     },
     "bulk": {
       "title": "Emetti per tutti i membri",

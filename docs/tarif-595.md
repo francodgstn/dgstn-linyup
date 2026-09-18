@@ -149,8 +149,15 @@ position as a zero-priced companion line. The official text is printed unaltered
 per rate group.
 
 Unit prices: a subscription's from its history row (`unitPriceMinorFor` scales a recurrence
-price to the unit); a course's from its purchase; attendance receipts take the price from
-the request (the manager types it) — absent, the line is zero and the preview warns.
+price to the unit); a course's from its purchase. An **attendance** receipt has no record
+carrying a price — a check-in is not a sale — so it takes, in this order: the price the
+manager typed; else the class's **resolved drop-in price** (`loadClassLessonPriceMinor`,
+through `resolveActivityDropIn` — never the stored field, because a class following the
+studio default stores no price of its own), said out loud with the
+`unit_price_from_drop_in` warning because it is a default and not a fact about this
+member (somebody on a ten-pass paid a different rate per lesson); else zero, with the
+`unit_price_zero` warning. The Receipts segment shows the same resolved price as the
+blank-field default. `dropInPrice.test.ts` pins both halves.
 
 ## The document (`xml.ts`, pure; validated against the XSD in `fixtures/`)
 

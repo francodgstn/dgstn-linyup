@@ -8,9 +8,16 @@
 //   cd packages/functions && FUNCTIONS_DISCOVERY_TIMEOUT=120 firebase emulators:exec \
 //     --only auth,firestore,functions,storage --project demo-linyup \
 //     "node integration/tarif595.integration.mjs"
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
-process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099'
-process.env.FIREBASE_STORAGE_EMULATOR_HOST = '127.0.0.1:9199'
+// HOSTS COME FROM THE ENVIRONMENT, defaults last. `emulators:exec` exports the
+// hosts of the suite it started, and the default ports are often busy on a
+// machine running several worktrees — overwriting them here would point this
+// script (which WIPES and seeds a team) at somebody else's emulator. The
+// functions origin has no standard variable, hence TARIF595_IT_FUNCTIONS_HOST.
+process.env.FIRESTORE_EMULATOR_HOST ||= '127.0.0.1:8080'
+process.env.FIREBASE_AUTH_EMULATOR_HOST ||= '127.0.0.1:9099'
+process.env.FIREBASE_STORAGE_EMULATOR_HOST ||= '127.0.0.1:9199'
+const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST
+const FUNCTIONS_HOST = process.env.TARIF595_IT_FUNCTIONS_HOST || '127.0.0.1:5001'
 import { createHash } from 'node:crypto'
 import admin from 'firebase-admin'
 
@@ -23,7 +30,7 @@ const CONTACT = 'verif-595-contact'
 const UID = 'verif-595-owner'
 const EMAIL = 'owner595@example.com'
 const PASSWORD = 'verif595pass'
-const FN = 'http://127.0.0.1:5001/demo-linyup/europe-west6'
+const FN = `http://${FUNCTIONS_HOST}/demo-linyup/europe-west6`
 
 let pass = 0, fail = 0
 const results = []
@@ -60,7 +67,8 @@ async function reset() {
   await db.recursiveDelete(contactRef)
   for (const c of [CONTACT2, CONTACT3, CONTACT4]) await db.recursiveDelete(db.collection('contacts').doc(c))
   await db.collection('activities').doc('verif-595-act').delete().catch(() => {})
-  for (const s of ['verif-595-s1', 'verif-595-s2', 'verif-595-s3']) {
+  await db.collection('activities').doc('verif-595-act2').delete().catch(() => {})
+  for (const s of ['verif-595-s1', 'verif-595-s2', 'verif-595-s3', 'verif-595-s4']) {
     await db.recursiveDelete(db.collection('sessions').doc(s)).catch(() => {})
   }
   await teamRef.set({ name: 'Studio Bewegung GmbH', slug: 'verif-595', language: 'de', plan: 'coach', plan_status: 'active', created: FieldValue.serverTimestamp(), createdBy: UID })
@@ -80,6 +88,7 @@ async function reset() {
     offerings: {
       'subscription:verif-type': { position: '1001', unit: 'month' },
       'activity:verif-595-act': { position: '3039', unit: 'lesson' },
+      'activity:verif-595-act2': { position: '3039', unit: 'lesson' },
     },
   })
   await contactRef.set({
@@ -101,6 +110,13 @@ async function reset() {
   await seedMember(CONTACT4, { firstname: 'Dora', ahv: '7569217076985', start: '2027-01-01', end: '2027-12-31', archived: true })
   // attendance: three sessions of one activity, each with a participant row
   await db.collection('activities').doc('verif-595-act').set({ teamId: TEAM, name: 'Krafttraining', isActive: true })
+  // A gated class WITH a door price: what an attendance receipt takes when no price is typed.
+  await db.collection('activities').doc('verif-595-act2').set({ teamId: TEAM, name: 'Yoga', isActive: true, type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'custom', enabled: true, priceAmount: 30 } })
+  {
+    const sref = db.collection('sessions').doc('verif-595-s4')
+    await sref.set({ teamId: TEAM, activityId: 'verif-595-act2', activityName: 'Yoga', start: Timestamp.fromDate(new Date('2027-04-06T18:00:00+02:00')), end: Timestamp.fromDate(new Date('2027-04-06T19:00:00+02:00')) })
+    await sref.collection('participants').doc(CONTACT).set({ contactId: CONTACT, contact: CONTACT, session: sref.id, checkedInAt: Timestamp.fromDate(new Date('2027-04-06T18:05:00+02:00')) })
+  }
   const days = ['2027-03-02', '2027-03-09', '2027-03-16']
   for (const [i, d] of days.entries()) {
     const sref = db.collection('sessions').doc(`verif-595-s${i + 1}`)
@@ -112,7 +128,7 @@ async function reset() {
 async function idToken() {
   try { await admin.auth().deleteUser(UID) } catch {}
   await admin.auth().createUser({ uid: UID, email: EMAIL, password: PASSWORD, emailVerified: true })
-  const res = await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake', {
+  const res = await fetch(`http://${AUTH_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email: EMAIL, password: PASSWORD, returnSecureToken: true }),
   })
@@ -190,6 +206,16 @@ async function main() {
   const ia = await call('issueTarif595Receipt', attReq)
   check('attendance issue → 00003', ia.result?.number === `595-${year}-00003`, JSON.stringify(ia.error ?? ia.result))
 
+  // 7a. THE DOOR PRICE: no typed price → the class's resolved drop-in price, said as a warning;
+  // a typed price always wins; a class without a door price still warns about a zero price.
+  const doorReq = { teamId: TEAM, contactId: CONTACT, source: { kind: 'attendance', activityId: 'verif-595-act2' }, from: '2027-04-01', to: '2027-04-30' }
+  const pd = await call('previewTarif595Receipt', doorReq)
+  check('attendance without a typed price takes the drop-in price (30.00) and says so', pd.result?.ok === true && pd.result.draft.lines.length === 1 && pd.result.draft.lines[0].unit_minor === 3000 && pd.result.warnings.some((w) => w.code === 'unit_price_from_drop_in') && !pd.result.warnings.some((w) => w.code === 'unit_price_zero'), JSON.stringify(pd.error ?? { lines: pd.result?.draft?.lines, warnings: pd.result?.warnings, blocking: pd.result?.blocking }))
+  const pt = await call('previewTarif595Receipt', { ...doorReq, unitPriceMinor: 2200 })
+  check('a typed price wins over the door price, with no door-price warning', pt.result?.draft?.lines?.[0]?.unit_minor === 2200 && !pt.result.warnings.some((w) => w.code === 'unit_price_from_drop_in'), JSON.stringify(pt.error ?? pt.result?.warnings))
+  const pn = await call('previewTarif595Receipt', { teamId: TEAM, contactId: CONTACT, source: { kind: 'attendance', activityId: 'verif-595-act' }, from: '2027-03-02', to: '2027-03-31' })
+  check('a class with NO door price still warns about a zero price', pn.result?.warnings?.some((w) => w.code === 'unit_price_zero') && !pn.result.warnings.some((w) => w.code === 'unit_price_from_drop_in'), JSON.stringify(pn.error ?? pn.result?.warnings))
+
   // 7b. BULK: the 2027 window over every live contact. The first contact's
   // row (2027-01-15..2028-01-14) is clipped to 2027-01-15..2027-12-31 — a
   // different period from the receipt issued by hand above, so it is SKIPPED
@@ -222,7 +248,7 @@ async function main() {
   // exchanged for an id token at the Auth emulator.
   async function contactToken(contactId) {
     const custom = await admin.auth().createCustomToken(`contact:${contactId}`, { contactId, teamId: TEAM, sessionExpires: Date.now() + 3_600_000 })
-    const res = await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=fake', {
+    const res = await fetch(`http://${AUTH_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=fake`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ token: custom, returnSecureToken: true }),
     })

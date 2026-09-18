@@ -23,19 +23,22 @@ import {
   COURSE_PURCHASES_SUBCOLLECTION,
   formatAhv,
   isValidAhv,
+  resolveActivityDropIn,
+  studioDropInOf,
+  toMinorUnits,
   type Tarif595PreviewResult,
   type Tarif595Source,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory'
 import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
 import { useCourses } from '@/plugins/online-courses/hooks'
 import {
   callIssueTarif595Receipt,
   callPreviewTarif595Receipt,
-  downloadTarif595Receipt,
   saveTarif595ContactData,
   useContactTarif595Receipts,
   useInvalidateTarif595,
@@ -61,7 +64,6 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // ─── date helpers ───────────────────────────────────────────────────────────
 
@@ -318,6 +320,21 @@ export function ReceiptsSegment({
 
   const selected = allOptions.find((o) => o.key === pickKey) ?? null
 
+  // What the server uses when the price is left blank on an ATTENDANCE
+  // receipt: the class's resolved drop-in price. Shown here through the same
+  // shared resolver (a class following the studio default stores no price of
+  // its own, so the field must never be read directly) — display only; the
+  // server derives it again and says so in the preview.
+  const bookingSettingsQ = useBookingSettings()
+  const doorPriceMajor = useMemo(() => {
+    const src = selected?.source
+    if (!src || src.kind !== 'attendance') return null
+    const activity = classActivities.find((a) => a.id === src.activityId)
+    if (!activity) return null
+    const dropIn = resolveActivityDropIn(activity, studioDropInOf(bookingSettingsQ.data))
+    return dropIn.enabled && typeof dropIn.priceAmount === 'number' ? dropIn.priceAmount : null
+  }, [selected, classActivities, bookingSettingsQ.data])
+
   function handlePick(key: string) {
     setPickKey(key)
     setPreview(null)
@@ -568,7 +585,7 @@ export function ReceiptsSegment({
                     id="tarif595-unit-price"
                     type="text"
                     inputMode="decimal"
-                    placeholder={selected?.source.kind === 'attendance' ? '25.00' : ''}
+                    placeholder={doorPriceMajor !== null ? doorPriceMajor.toFixed(2) : selected?.source.kind === 'attendance' ? '25.00' : ''}
                     value={unitPrice}
                     aria-invalid={!unitPriceValid}
                     onChange={(e) => {
@@ -576,7 +593,13 @@ export function ReceiptsSegment({
                       setPreview(null)
                     }}
                   />
-                  <p className="text-xs text-muted-foreground">{t('issue.unitPriceHint')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {doorPriceMajor !== null
+                      ? t('issue.unitPriceDoorHint', { price: formatMoneyMinor(toMinorUnits(doorPriceMajor), 'CHF') })
+                      : selected?.source.kind === 'attendance'
+                        ? t('issue.unitPriceNoDoorHint')
+                        : t('issue.unitPriceHint')}
+                  </p>
                 </div>
               </div>
 

@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import { Loader2, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { tarif595BulkIsTerminal, type Tarif595BulkJob, type Tarif595BulkSkip } from '@linyup/shared'
+import { TARIF595_WARNING_CODES, tarif595BulkIsTerminal, type Tarif595BulkJob, type Tarif595BulkSkip } from '@linyup/shared'
 import { Link } from '@/i18n/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ function SkipList({ skips, skipped }: { skips: Tarif595BulkSkip[]; skipped: numb
           {/* The reason text is the preview's own: a warning code reads from
               `warning.*`, every other code from `blocking.*`. */}
           <p className="text-muted-foreground">
-            {g.code === 'overlapping_receipt' || g.code === 'attendance_truncated' || g.code === 'insured_number_missing' || g.code === 'insurer_unknown' || g.code === 'unit_price_zero'
+            {(TARIF595_WARNING_CODES as readonly string[]).includes(g.code)
               ? t(`warning.${g.code}`)
               : t(`blocking.${g.code}`)}
             {' · '}
