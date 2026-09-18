@@ -1,9 +1,11 @@
 ---
-title: AI insights — the AI plugin container
+title: AI insights
+description: AI insights — the AI plugin container
 status: living
-area: contacts
+area: plugins
+order: 3
 ---
-# AI insights — the AI plugin container
+# AI insights
 
 Since 2026-09-16 the AI features a studio switches on live in ONE plugin card,
 **AI insights** (`ai`), built exactly like HMD's bundle: a container whose modules

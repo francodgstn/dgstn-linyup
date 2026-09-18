@@ -1,9 +1,11 @@
 ---
-title: "Member app — store setup: TestFlight + Play, testing now, public later"
+title: Store setup
+description: "Member app — store setup: TestFlight + Play, testing now, public later"
 status: living
 area: mobile
+order: 5
 ---
-# Member app — store setup: TestFlight + Play, testing now, public later
+# Store setup
 
 The sequel to `docs/mobile-eas-setup.md`. That runbook got the app building and
 updating on EAS; this one gets it into the two stores. Same shape: written to be

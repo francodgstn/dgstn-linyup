@@ -1,9 +1,11 @@
 ---
-title: "Custom domains (\"bring your own domain\")"
+title: Custom domains
+description: "Custom domains (\"bring your own domain\")"
 status: living
-area: platform
+area: public
+order: 5
 ---
-# Custom domains ("bring your own domain")
+# Custom domains
 
 A studio's public surfaces live at `linyup.com/public/{slug}/…` — bio-link, site,
 booking, shop, documents, space, events, appointments. This feature serves that

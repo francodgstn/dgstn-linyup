@@ -1,9 +1,11 @@
 ---
-title: Organisation navigation — design
+title: Org navigation
+description: Organisation navigation — design
 status: living
-area: platform
+area: orgs
+order: 1
 ---
-# Organisation navigation — design
+# Org navigation
 
 **Status: BUILT 2026-08-27.** Decisions taken 2026-08-25 (Franco); the chord and
 the four-rows-plus-rail split confirmed 2026-08-27. Recorded before

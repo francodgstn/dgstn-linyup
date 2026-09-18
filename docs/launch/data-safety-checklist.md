@@ -1,9 +1,11 @@
 ---
-title: Data safety checklist
+title: Data safety
+description: Data safety checklist
 status: living
 area: ops
+order: 5
 ---
-# Data safety checklist
+# Data safety
 
 Goal: make "we got it wrong" (bad migration, misconfigured setup) **recoverable**,
 and keep the messy validation off production. Do §1 **before any prod customer

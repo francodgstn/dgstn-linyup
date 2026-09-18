@@ -1,5 +1,6 @@
 ---
-title: Seed alignment — Phase 1 audit
+title: Seed alignment
+description: Seed alignment — Phase 1 audit
 status: closed
 area: ops
 ---

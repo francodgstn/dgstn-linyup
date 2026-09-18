@@ -1,9 +1,11 @@
 ---
-title: Open decisions — parked for Franco
+title: Open decisions
+description: Open decisions — parked for Franco
 status: living
 area: product
+order: 3
 ---
-# Open decisions — parked for Franco
+# Open decisions
 
 Questions raised while working the UX review that need a product call rather than a
 code judgement. Recorded here as they arise so the autonomous run does not stall

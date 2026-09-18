@@ -1,9 +1,11 @@
 ---
-title: Decoupling the rank scale — a plan
-status: plan
+title: Rank scales
+description: Decoupling the rank scale — a plan
+status: living
 area: contacts
+order: 4
 ---
-# Decoupling the rank scale — a plan
+# Rank scales
 
 **Status: Phases 1–4 shipped — #322 (ids), #324 (every reader resolves a
 level by `RankRef` and order is array position), and Phase 4 on 2026-09-12

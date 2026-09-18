@@ -1,9 +1,11 @@
 ---
-title: WhatsApp Business — outbound
+title: WhatsApp
+description: WhatsApp Business — outbound
 status: living
-area: platform
+area: messaging
+order: 3
 ---
-# WhatsApp Business — outbound
+# WhatsApp
 
 Status: **Phases 1 and 2 built** — Phase 1 on staging 2026-09-18, Phase 2 in
 review — behind `WHATSAPP_ENABLED`

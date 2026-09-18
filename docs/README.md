@@ -2,8 +2,9 @@
 
 # Documentation index
 
-Every document under `docs/`, grouped by area. `CLAUDE.md` holds the invariants an
-agent must not violate and points here for the reasoning behind them.
+Every document under `docs/`, grouped by area in reading order — the same grouping
+the docs site (`pnpm dev:docs`) uses. `CLAUDE.md` holds the invariants an agent must
+not violate and points here for the reasoning behind them.
 
 Each entry says what kind of document it is, because the difference decides whether
 you may act on it:
@@ -14,93 +15,126 @@ you may act on it:
   the code before acting on it.
 - **finished** — closed. Nothing in it is a work list.
 
-## Payments, billing and finance
+## Start here
 
-- [**Accounting — double-entry ledger (finance plugin)**](./accounting.md) — how it works now
-- [**Finance reports — journal, monthly rollups, CSV export**](./finance-reports.md) — how it works now
-- [**Finance v2 — Accrual & Assets (plan)**](./finance-accrual.md) — work to do
-- [**Money triggers for the automation engine**](./automations-money-triggers.md) — how it works now
-- [**Multi-plan holdings — a contact holds a LIST of plans**](./multi-plan-holdings.md) — work to do
-- [**Payments: contact → studio**](./payment-contact-studio.md) — how it works now
-- [**Payments: studio → Linyup (SaaS billing)**](./payment-studio-linyup.md) — how it works now
-- [**Promo codes — architecture**](./promo-codes.md) — how it works now
-- [**Stripe catalog — declarative**](./stripe-catalog.md) — how it works now
-- [**Tarif 595 — health-insurance reimbursement receipts (CH)**](./tarif-595.md) — how it works now
+- [**Overview**](./overview.md) — how it works now
+- [**Glossary**](./glossary.md) — how it works now
+- [**Test accounts**](./test-accounts.md) — how it works now
 
-## Booking — classes, appointments, waivers
+## Architecture
 
-- [**Appointments (1:1) — architecture**](./appointments.md) — how it works now
+- [**Public API & MCP**](./public-api.md) — how it works now
+
+## Contacts
+
+- [**Contact state model**](./contact-state-model.md) — how it works now
+- [**Rank scales**](./rank-scale-decoupling.md) — how it works now
+- [**Coach-owned contacts**](./studio-independent-contacts.md) — work to do
+
+## Booking
+
+- [**Class access**](./class-access-derived.md) — how it works now
+- [**Appointments**](./appointments.md) — how it works now
+- [**Waitlist**](./waitlist.md) — how it works now
+- [**Waivers**](./waivers.md) — how it works now
 - [**Event programmes**](./event-program.md) — how it works now
-- [**The booking modal, on the studio's own website**](./embed-booking.md) — how it works now
-- [**Waitlist — architecture**](./waitlist.md) — how it works now
-- [**Waivers — architecture**](./waivers.md) — how it works now
 
-## Contacts and membership
+## Payments & finance
 
-- [**A coach's own contacts, beside the studio's — design**](./studio-independent-contacts.md) — how it works now
-- [**AI insights — the AI plugin container**](./ai-insights.md) — how it works now
+- [**Member payments**](./payment-contact-studio.md) — how it works now
+- [**SaaS billing**](./payment-studio-linyup.md) — how it works now
+- [**Stripe catalogue**](./stripe-catalog.md) — how it works now
+- [**Promo codes**](./promo-codes.md) — how it works now
+- [**Multi-plan holdings**](./multi-plan-holdings.md) — work to do
+- [**Money triggers**](./automations-money-triggers.md) — how it works now
+- [**Finance reports**](./finance-reports.md) — how it works now
+- [**Accounting**](./accounting.md) — how it works now
+- [**Accrual & assets**](./finance-accrual.md) — work to do
+
+## Public surfaces
+
+- [**Booking embed**](./embed-booking.md) — how it works now
+- [**Site translations**](./site-translations.md) — how it works now
+- [**Custom domains**](./custom-domains.md) — how it works now
+
+## Messaging
+
+- [**Inbound mail**](./email-inbound.md) — how it works now
+- [**WhatsApp**](./whatsapp-outbound.md) — how it works now
+
+## Plugins
+
+- [**Plugin model**](./plugins.md) — how it works now
+- [**Tarif 595**](./tarif-595.md) — how it works now
+- [**AI insights**](./ai-insights.md) — how it works now
 - [**Contact AI summary**](./contact-summary.md) — how it works now
-- [**Decoupling the rank scale — a plan**](./rank-scale-decoupling.md) — work to do
-- [**How Linyup sees a contact — the contact state model**](./contact-state-model.md) — how it works now
-- [**What an organisation may see of a member studio's people — design**](./org-contact-visibility.md) — how it works now
 
-## Public content and localisation
+## Organisations
 
-- [**Site translations — public website + embed localization**](./site-translations.md) — how it works now
-
-## Platform, infrastructure and API
-
-- [**App Check rollout runbook**](./app-check-rollout.md) — how it works now
-- [**Custom domains ("bring your own domain")**](./custom-domains.md) — how it works now
-- [**Organisation navigation — design**](./org-navigation.md) — how it works now
-- [**Plugins**](./plugins.md) — how it works now
-- [**Public API + remote MCP server**](./public-api.md) — how it works now
-- [**Receiving replies (inbound mail)**](./email-inbound.md) — how it works now
-- [**WhatsApp Business — outbound**](./whatsapp-outbound.md) — how it works now
+- [**Org navigation**](./org-navigation.md) — how it works now
+- [**Member visibility**](./org-contact-visibility.md) — how it works now
 
 ## Member app
 
-- [**App-store insights in the operator console**](./app-store-insights.md) — how it works now
-- [**Member app — EAS + CI setup for STAGING (a runbook for a local agent)**](./mobile-eas-setup.md) — how it works now
-- [**Member app — store setup: TestFlight + Play, testing now, public later**](./mobile-store-setup.md) — how it works now
+- [**EAS & CI setup**](./mobile-eas-setup.md) — how it works now
+- [**Store setup**](./mobile-store-setup.md) — how it works now
+- [**Store insights**](./app-store-insights.md) — how it works now
 
-## Operations, launch and migration
+## Operations
 
-- [**Analysis, 2026-08-25 — ops readiness, seed data, HMD import**](./launch/analysis-2026-08-25.md) — how it works now
-- [**Data safety checklist**](./launch/data-safety-checklist.md) — how it works now
-- [**Founder onboarding runbook (first 5)**](./launch/founder-onboarding-runbook.md) — how it works now
-- [**Go-live readiness — first pass, August 2026**](./launch/readiness-2026-08.md) — how it works now
-- [**Input pack for the ToS + DPA — facts, extracted from the code**](./launch/legal-input-pack.md) — how it works now
-- [**Migration Checklist — hmd-lineup → dgstn-lineup**](./migration-checklist.md) — how it works now
-- [**Prod canary, 2026-08-23 — triage and fix plan**](./launch/canary-2026-08-fixes.md) — how it works now
-- [**Production demo tenant, store review, and cutover verification**](./launch/prod-demo-and-store-review.md) — how it works now
-- [**Provider wiring checklist (go-live QA)**](./launch/provider-wiring-checklist.md) — how it works now
-- [**Staging manual review, 2026-08-24 — the 29 findings**](./launch/staging-review-2026-08-24.md) — how it works now
-- [**Test accounts — every environment, web and member app**](./test-accounts.md) — how it works now
+- [**App Check rollout**](./app-check-rollout.md) — how it works now
+- [**Data safety**](./launch/data-safety-checklist.md) — how it works now
+- [**Provider wiring**](./launch/provider-wiring-checklist.md) — how it works now
+- [**Founder onboarding**](./launch/founder-onboarding-runbook.md) — how it works now
+- [**Prod demo tenant**](./launch/prod-demo-and-store-review.md) — how it works now
+- [**HMD port checklist**](./migration-checklist.md) — how it works now
+- [**Legal input pack**](./launch/legal-input-pack.md) — how it works now
 
-## Product, strategy and open registers
+## Product
 
-- [**HMD SaaS Strategy — Product & Pricing Blueprint**](./product-strategy.md) — how it works now
-- [**In-app feedback system**](./in-app-feedback.md) — how it works now
-- [**Offerings model review — activities, plans, and who books what at what price**](./offerings-model-review-2026-09.md) — work to do
-- [**Open decisions — parked for Franco**](./ux-review-open-decisions.md) — how it works now
+- [**Strategy**](./product-strategy.md) — work to do
+- [**Open decisions**](./ux-review-open-decisions.md) — how it works now
 - [**Open defects**](./open-defects.md) — how it works now
-- [**UX review — 2026-09 · Offerings (activities & plans)**](./ux-review-2026-09.md) — how it works now
-- [**Who can book a class — derived from its prices, not asked**](./class-access-derived.md) — work to do
+- [**Feedback widget**](./in-app-feedback.md) — how it works now
 
-## Closed and point-in-time
+## Elsewhere in the repo
+
+Kept beside the code they describe, and rendered into the docs site from there.
+
+- [**Worktrees & ports**](../.claude/skills/local-env/SKILL.md) — Start here
+- [**i18n fragments**](../apps/web/messages/_pending/README.md) — Architecture
+- [**Tenant router**](../infra/workers/tenant-router/README.md) — Public surfaces
+- [**Email sending**](../packages/functions/src/mail/README.md) — Messaging
+- [**App architecture**](../apps/mobile/ARCHITECTURE.md) — Member app
+- [**Getting started**](../apps/mobile/README.md) — Member app
+- [**Releasing**](../.claude/skills/mobile-release/SKILL.md) — Member app
+- [**Store listing assets**](../apps/mobile/store/README.md) — Member app
+- [**Infrastructure**](../infra/README.md) — Operations
+- [**Sandbox → promote**](../docs/launch/README.md) — Operations
+- [**Lead sandboxes**](../scripts/leads/README.md) — Operations
+- [**HMD data import**](../scripts/MIGRATE-HMD.md) — Operations
+- [**Integration tests**](../packages/functions/integration/README.md) — Operations
+- [**E2E tests**](../apps/web/e2e/README.md) — Operations
+
+## Records
 
 Records of what was true on a date, and finished work. Kept because a closed plan
 is often the only place a decision's reasoning survives. **Verify against the code
 before acting on anything here.** Listed wherever they physically live — closure is
 carried by `status:`, not by which folder a file sits in.
 
-- [**Offerings copy pass — 2026-09 (working notes for UX-105/106/107/113)**](./ux-review-2026-09-copy.md) — true as of a date
-- [**Seed truth — the 2026-08 coverage audit**](./seed-truth-2026-08.md) — true as of a date
-- [**Security audit — Linyup — 2026-07**](./security-audit-2026-07.md) — true as of a date
-- [**Scalability — September 2026**](./scalability-2026-09.md) — true as of a date
-- [**Member app — scan and roadmap (2026-09-02)**](./mobile-roadmap-2026-09.md) — true as of a date
-- [**FareHarbor → Linyup — competitive feature analysis**](./fareharbor-analysis.md) — true as of a date
-- [**Wave 3 — branch handover**](./archive/wave3-handover.md) — finished
-- [**UX review, August 2026**](./archive/ux-review-2026-08.md) — finished
-- [**Seed alignment — Phase 1 audit**](./archive/seed-alignment-plan.md) — finished
+- [**FareHarbor analysis**](./fareharbor-analysis.md) — true as of a date
+- [**Go-live readiness 2026-08**](./launch/readiness-2026-08.md) — true as of a date
+- [**Mobile scan 2026-09**](./mobile-roadmap-2026-09.md) — true as of a date
+- [**Offerings review 2026-09**](./offerings-model-review-2026-09.md) — true as of a date
+- [**Ops analysis 2026-08**](./launch/analysis-2026-08-25.md) — true as of a date
+- [**Prod canary 2026-08**](./launch/canary-2026-08-fixes.md) — true as of a date
+- [**Scalability 2026-09**](./scalability-2026-09.md) — true as of a date
+- [**Security audit 2026-07**](./security-audit-2026-07.md) — true as of a date
+- [**Seed alignment**](./archive/seed-alignment-plan.md) — finished
+- [**Seed coverage 2026-08**](./seed-truth-2026-08.md) — true as of a date
+- [**Staging review 2026-08**](./launch/staging-review-2026-08-24.md) — true as of a date
+- [**UX copy pass 2026-09**](./ux-review-2026-09-copy.md) — true as of a date
+- [**UX review 2026-08**](./archive/ux-review-2026-08.md) — finished
+- [**UX review 2026-09**](./ux-review-2026-09.md) — true as of a date
+- [**Wave 3 handover**](./archive/wave3-handover.md) — finished

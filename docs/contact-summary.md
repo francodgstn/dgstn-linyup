@@ -1,7 +1,8 @@
 ---
 title: Contact AI summary
 status: living
-area: contacts
+area: plugins
+order: 4
 ---
 # Contact AI summary
 

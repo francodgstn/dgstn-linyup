@@ -1,9 +1,10 @@
 ---
-title: Security audit — Linyup — 2026-07
+title: Security audit 2026-07
+description: Security audit — Linyup — 2026-07
 status: record
-area: platform
+area: architecture
 ---
-# Security audit — Linyup — 2026-07
+# Security audit 2026-07
 
 > **RECORD — audit run 2026-07; not re-run since.** Findings are stated as they
 > were on that date and many have shipped. This file stays in `docs/` (not the

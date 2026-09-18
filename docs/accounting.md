@@ -1,9 +1,11 @@
 ---
-title: Accounting — double-entry ledger (finance plugin)
+title: Accounting
+description: Accounting — double-entry ledger (finance plugin)
 status: living
 area: payments
+order: 10
 ---
-# Accounting — double-entry ledger (finance plugin)
+# Accounting
 
 The lightweight double-entry accounting module, built on the finance journal
 (see [finance-reports.md](./finance-reports.md) for the journal, monthly

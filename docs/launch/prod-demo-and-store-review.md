@@ -1,9 +1,11 @@
 ---
-title: "Production demo tenant, store review, and cutover verification"
+title: Prod demo tenant
+description: "Production demo tenant, store review, and cutover verification"
 status: living
 area: ops
+order: 7.5
 ---
-# Production demo tenant, store review, and cutover verification
+# Prod demo tenant
 
 Two different needs, deliberately kept apart. Conflating them makes both worse.
 

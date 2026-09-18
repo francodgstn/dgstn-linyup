@@ -1,9 +1,11 @@
 ---
-title: Waitlist — architecture
+title: Waitlist
+description: Waitlist — architecture
 status: living
 area: booking
+order: 5
 ---
-# Waitlist — architecture
+# Waitlist
 
 A waitlist is **a queue for a seat in a full class**. When a seat frees, the
 oldest waiter is offered it and the seat is *held for them* until a deadline;

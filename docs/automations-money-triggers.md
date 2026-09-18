@@ -1,9 +1,11 @@
 ---
-title: Money triggers for the automation engine
+title: Money triggers
+description: Money triggers for the automation engine
 status: living
 area: payments
+order: 8
 ---
-# Money triggers for the automation engine
+# Money triggers
 
 A studio can now automate off what Stripe does to a payment. Until this landed, the
 engine could only react to CONTACT and BOOKING documents.

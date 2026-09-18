@@ -1,9 +1,10 @@
 ---
-title: "Go-live readiness — first pass, August 2026"
-status: living
+title: Go-live readiness 2026-08
+description: "Go-live readiness — first pass, August 2026"
+status: record
 area: ops
 ---
-# Go-live readiness — first pass, August 2026
+# Go-live readiness 2026-08
 
 Closes the **irreversible-harm** class of the readiness plan. Everything here is
 merged (PRs #74, #75, #76) and, where it is infrastructure, applied and verified

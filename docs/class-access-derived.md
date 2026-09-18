@@ -1,9 +1,11 @@
 ---
-title: Who can book a class — derived from its prices, not asked
-status: plan
-area: product
+title: Class access
+description: "Who can book a class — derived from its prices, not asked"
+status: living
+area: booking
+order: 2
 ---
-# Who can book a class — derived from its prices, not asked
+# Class access
 
 Agreed with Franco on 2026-09-17 from an interactive mockup: the class pricing tab
 asks **no access question**. Who can book is worked out from what the studio

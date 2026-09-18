@@ -1,9 +1,10 @@
 ---
-title: Scalability — September 2026
+title: Scalability 2026-09
+description: Scalability — September 2026
 status: record
-area: platform
+area: architecture
 ---
-# Scalability — September 2026
+# Scalability 2026-09
 
 **The thing that does not scale here is not the database. It is the number of
 surfaces.**

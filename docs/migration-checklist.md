@@ -1,9 +1,11 @@
 ---
-title: Migration Checklist — hmd-lineup → dgstn-lineup
+title: HMD port checklist
+description: Migration Checklist — hmd-lineup → dgstn-lineup
 status: living
 area: ops
+order: 10
 ---
-# Migration Checklist — hmd-lineup → dgstn-lineup
+# HMD port checklist
 
 Reference project: `C:\git\hmd\hmd-lineup`
 

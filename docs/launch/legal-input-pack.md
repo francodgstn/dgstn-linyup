@@ -1,9 +1,11 @@
 ---
-title: "Input pack for the ToS + DPA — facts, extracted from the code"
+title: Legal input pack
+description: "Input pack for the ToS + DPA — facts, extracted from the code"
 status: living
 area: ops
+order: 11
 ---
-# Input pack for the ToS + DPA — facts, extracted from the code
+# Legal input pack
 
 This exists so a lawyer drafting Linyup's **Terms of Service** and **Data
 Processing Agreement** does not have to bill for discovery. Everything below was

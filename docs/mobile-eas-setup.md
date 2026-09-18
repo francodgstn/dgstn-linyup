@@ -1,9 +1,11 @@
 ---
-title: Member app — EAS + CI setup for STAGING (a runbook for a local agent)
+title: "EAS & CI setup"
+description: Member app — EAS + CI setup for STAGING (a runbook for a local agent)
 status: living
 area: mobile
+order: 4
 ---
-# Member app — EAS + CI setup for STAGING (a runbook for a local agent)
+# EAS & CI setup
 
 This is the one-time, owner-account work that `.github/workflows/mobile.yml`
 needs before its lanes do anything: an EAS project, the staging Firebase

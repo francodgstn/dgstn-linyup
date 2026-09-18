@@ -2,6 +2,7 @@
 title: Event programmes
 status: living
 area: booking
+order: 7
 ---
 # Event programmes
 

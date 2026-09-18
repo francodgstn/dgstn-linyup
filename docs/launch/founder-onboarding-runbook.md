@@ -1,9 +1,11 @@
 ---
-title: Founder onboarding runbook (first 5)
+title: Founder onboarding
+description: Founder onboarding runbook (first 5)
 status: living
 area: ops
+order: 7
 ---
-# Founder onboarding runbook (first 5)
+# Founder onboarding
 
 The day-to-day playbook for onboarding a founder studio under the
 **sandbox → promote** model. Run it **once per founder**. White-glove throughout.

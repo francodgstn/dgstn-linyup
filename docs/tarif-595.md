@@ -1,9 +1,11 @@
 ---
-title: Tarif 595 — health-insurance reimbursement receipts (CH)
+title: Tarif 595
+description: Tarif 595 — health-insurance reimbursement receipts (CH)
 status: living
-area: payments
+area: plugins
+order: 2
 ---
-# Tarif 595 — health-insurance reimbursement receipts (CH)
+# Tarif 595
 
 **Plugin id `tarif-595` · Coach and above, no add-on · status beta.**
 Verified 2026-09-12 against the primary documents (Forum Datenaustausch XSD + CHM

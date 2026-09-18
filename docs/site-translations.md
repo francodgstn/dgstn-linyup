@@ -1,9 +1,11 @@
 ---
-title: Site translations — public website + embed localization
+title: Site translations
+description: Site translations — public website + embed localization
 status: living
-area: content
+area: public
+order: 4
 ---
-# Site translations — public website + embed localization
+# Site translations
 
 A studio authors its public site **once, in its own language**, and the publish
 pipeline machine-translates the site's text into the other three locales of

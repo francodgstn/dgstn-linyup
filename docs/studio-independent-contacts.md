@@ -1,9 +1,11 @@
 ---
-title: "A coach's own contacts, beside the studio's — design"
-status: living
+title: Coach-owned contacts
+description: "A coach's own contacts, beside the studio's — design"
+status: plan
 area: contacts
+order: 5
 ---
-# A coach's own contacts, beside the studio's — design
+# Coach-owned contacts
 
 **Status: DECIDED, LARGELY NOT BUILT (2026-09-08, Franco).** A coach who belongs to an
 organisation and also works for themselves gets **a second studio**, not a

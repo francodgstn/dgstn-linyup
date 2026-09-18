@@ -1,9 +1,11 @@
 ---
-title: "The booking modal, on the studio's own website"
+title: Booking embed
+description: "The booking modal, on the studio's own website"
 status: living
-area: booking
+area: public
+order: 3
 ---
-# The booking modal, on the studio's own website
+# Booking embed
 
 A studio that already has a website — Wix, Squarespace, WordPress, a hand-rolled
 one — can put Linyup's booking funnel **on that site**, as a pop-up over the page
