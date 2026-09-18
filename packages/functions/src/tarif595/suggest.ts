@@ -26,6 +26,7 @@ import {
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
   TARIF595_FREE_TEXT_CODE,
   TARIF595_PLUGIN_ID,
+  TARIF595_SUGGEST_AS_OF_MAX_DAYS,
   TEAMS_COLLECTION,
   suggestTarif595Unit,
   tarif595LangOf,
@@ -114,6 +115,17 @@ const RESPONSE_SCHEMA = {
   required: ['suggestions'],
 }
 
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** `asOf` within [today, today + TARIF595_SUGGEST_AS_OF_MAX_DAYS]; anything
+ *  else (absent, malformed, the past, too far) is today. */
+export function clampAsOf(asOf: unknown, todayIso: string): string {
+  if (typeof asOf !== 'string' || !ISO_RE.test(asOf) || asOf < todayIso) return todayIso
+  const [y, m, d] = todayIso.split('-').map(Number)
+  const max = new Date(Date.UTC(y, m - 1, d + TARIF595_SUGGEST_AS_OF_MAX_DAYS)).toISOString().slice(0, 10)
+  return asOf > max ? todayIso : asOf
+}
+
 function unfence(text: string): string {
   const m = text.trim().match(/^```(?:json)?\s*([\s\S]*?)\s*```$/)
   return (m ? m[1] : text).trim()
@@ -177,10 +189,21 @@ export const suggestTarif595Mappings = onCall({ timeoutSeconds: 120, memory: '51
   await assertPluginInstalled(teamId, TARIF595_PLUGIN_ID)
   await assertUnderRateLimit(uid, teamId, 'tarif595_suggest', RATE_LIMIT_MAX)
 
-  const [team, config, offerings] = await Promise.all([getTeam(teamId), loadTarif595Config(teamId), loadOfferings(teamId)])
+  const [team, config, allOfferings] = await Promise.all([getTeam(teamId), loadTarif595Config(teamId), loadOfferings(teamId)])
+  // `keys` narrows the proposal to the rows the page asks about (the ones whose
+  // position is about to expire); an unknown key is simply not in the set.
+  const onlyKeys = Array.isArray(data.keys) ? new Set(data.keys.filter((k): k is string => typeof k === 'string')) : null
+  const offerings = onlyKeys ? allOfferings.filter((o) => onlyKeys.has(o.key)) : allOfferings
   if (offerings.length === 0) return { suggestions: [], listVersion: TARIF595_LIST_VERSION, model: ASSISTANT_MODEL }
   const language = config?.language ?? tarif595LangOf(team?.language)
-  const today = zurichDay(new Date()) ?? new Date().toISOString().slice(0, 10)
+  const nowIso = zurichDay(new Date()) ?? new Date().toISOString().slice(0, 10)
+  // THE DAY THE PROPOSAL IS VALID FOR. Today by default; a later day when the
+  // page asks for a REPLACEMENT of a position that expires — as of the day
+  // after its last valid day, so the catalogue is next year's edition and the
+  // parser below refuses this year's codes. Clamped: never the past (a
+  // mapping for a list that no longer applies), never further than the next
+  // edition.
+  const today = clampAsOf(data.asOf, nowIso)
 
   const catalogue = tarif595PositionsOn(today)
     .map((p) => `${p.code} | ${p.chapter} | ${p.text[language]}`)

@@ -76,6 +76,42 @@ against the methods its label body certified, because the insurer reimburses per
 method and the receipt states what the studio chose, not what was suggested. Editing a
 suggested row's position clears the mark; nothing is saved until Save.
 
+## Expiring positions — the list changes every 1 January
+
+The position list retires rows each year (the 2026 edition's last valid day is
+2026-12-31 for a set of them — Pilates, Antara, the swimming courses, wellness in the
+fitness centre, the livestream code), and a receipt line dated after a position's last
+valid day is **refused** by the preview (`position_invalid_on_date`). A mapping that is
+fine today can therefore block the first receipt of the new year. So the plugin warns
+ahead:
+
+- **The date rule is the positions module's own** — `tarif595PositionExpiry(code, today)`
+  answers `ok | expiring | expired` with the last valid day, warning from
+  `TARIF595_EXPIRY_WARNING_DAYS` before it (`expiry.test.ts`). It is generated into
+  `positions.ts` beside the validity readers, so the warning and the refusal can never
+  disagree about a date. The web reaches it through the lazily loaded table
+  (`useTarif595PositionsTable().expiry`) and never imports the subpath statically.
+- **Where it shows**: a checklist row on the plugin home; on the settings page a banner
+  above the offerings table, the affected rows sorted first with their own state icon,
+  and "valid until …" under each affected picker (main position and PT companion alike).
+- **There is no successor map.** The new edition regroups methods — no 2027 row is called
+  "Pilates" — so a replacement is a judgement. "Suggest replacements" asks
+  `suggestTarif595Mappings` for those rows **as of the day after the last valid day**
+  (`asOf`, clamped to [today, today + `TARIF595_SUGGEST_AS_OF_MAX_DAYS`], with `keys`
+  narrowing the call): the catalogue is then next year's, and the parser refuses this
+  year's codes. A proposal is shown beside the row and applied only by **Use**. Nothing is
+  saved until Save.
+- **"Use" writes a SUCCESSOR, never an overwrite** — `Tarif595OfferingMapping.successor
+  { from, position, ptPosition? }`. Both editions are needed at once: in January a studio
+  still issues the receipts of the year just ended, whose lines are dated in the old year
+  and need the old position, beside the new year's — and an overwrite would break that
+  year-end run with the very refusal the warning exists to prevent. **THE ONE READER is
+  `tarif595MappingOn(mapping, lineDate)`** (shared, pure), which `lines.ts` asks per line:
+  a subscription straddling the change bills its 2026 segment on the old position and its
+  2027 segment on the new one. The successor starts the day after the old position's last
+  valid day; a PT companion that survives the change is carried over. A row with a
+  successor no longer counts as expiring.
+
 ## A receipt from a payment row
 
 "Receipt" on a payment row (Payments page and the contact's Payments tab, when the plugin

@@ -8819,7 +8819,9 @@
       "noHistory": "Ce paiement mentionne un abonnement, mais aucun abonnement de ce plan n'est enregistré pour ce membre. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
       "unsupported": "Impossible de dériver un justificatif de ce paiement : un paiement à la séance ou de rendez-vous n'indique ni le cours ni la date couverte, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
       "openSegment": "Ouvrir les justificatifs du membre"
-    }
+    },
+    "checklistExpiring": "{count} positions associées ne sont plus valables après le {date}",
+    "checklistReview": "Vérifier"
   },
   "LegalProfile": {
     "title": "Profil juridique",
@@ -8920,7 +8922,9 @@
       "searchPlaceholder": "Rechercher une offre…",
       "unmappedOnly": "Non associés seulement ({count})",
       "summary": "{mapped} sur {total} associés",
-      "allMapped": "Toutes les offres sont associées."
+      "allMapped": "Toutes les offres sont associées.",
+      "stateExpiring": "Position bientôt expirée",
+      "stateExpired": "Position plus valable"
     },
     "suggest": {
       "button": "Suggérer des positions",
@@ -8933,6 +8937,18 @@
       "noneFound": "Aucune position n'a pu être suggérée pour les offres non associées.",
       "unavailable": "Les suggestions ne sont pas disponibles pour le moment. Vous pouvez toujours choisir les positions à la main.",
       "rateLimited": "Vous avez atteint la limite horaire de suggestions. Réessayez plus tard."
+    },
+    "expiry": {
+      "banner": "{count} positions associées ne sont plus valables après le {date}. La liste tarifaire change chaque 1er janvier, et une ligne de justificatif datée après le dernier jour de validité est refusée. Choisissez un remplacement d'ici là.",
+      "suggestReplacements": "Suggérer des remplacements",
+      "rowExpiring": "Valable jusqu'au {date} – les justificatifs datés plus tard seront refusés.",
+      "rowExpired": "Plus valable depuis le {date} – les nouveaux justificatifs sur cette position sont refusés.",
+      "replacementLabel": "Remplacement suggéré",
+      "useReplacement": "Utiliser",
+      "replacementsFound": "{count} remplacements suggérés. Rien ne change tant que vous n'avez pas choisi « Utiliser » sur une ligne, et rien n'est enregistré avant votre enregistrement.",
+      "replacementsNone": "Aucun remplacement n'a pu être suggéré. Choisissez à la main une position valable l'an prochain.",
+      "successorLine": "Dès le {date} : {position}",
+      "removeSuccessor": "Retirer"
     }
   },
   "QrInvoices": {

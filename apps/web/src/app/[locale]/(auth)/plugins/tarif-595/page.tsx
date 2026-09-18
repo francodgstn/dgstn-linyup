@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadMoreFooter } from '@/components/ui/load-more-footer'
 import { useTarif595Config, useTarif595Receipts, type Tarif595ReceiptRow } from '@/plugins/tarif-595/hooks'
+import { useTarif595PositionsTable } from '@/plugins/tarif-595/PositionPicker'
 import { ReceiptActions, ReceiptStatusBadge } from '@/plugins/tarif-595/ReceiptActions'
 import { BulkIssueCard } from '@/plugins/tarif-595/BulkIssueCard'
 
@@ -94,6 +95,10 @@ export default function Tarif595PluginPage() {
   const { data: legalProfile, isLoading: legalLoading } = useLegalProfile(teamId)
   const { data: config, isLoading: configLoading } = useTarif595Config(teamId)
   const receiptsQ = useTarif595Receipts(teamId)
+  // Lazily loaded and shared with the settings page's cache — read here only to
+  // say whether a MAPPED position is about to expire (the list changes every
+  // 1 January, and an expired mapping refuses the first receipt of the year).
+  const { data: positionsTable } = useTarif595PositionsTable()
 
   if (pluginsLoading) return <Skeleton className="m-6 h-40" />
   if (!teamId || !isInstalled('tarif-595')) {
@@ -113,6 +118,20 @@ export default function Tarif595PluginPage() {
   const configIssues = config ? validateTarif595Config(config, ALWAYS_VALID_POSITION) : [{ path: 'offerings', code: 'no_offerings' as const }]
   const legalDone = !legalLoading && legalIssues.length === 0
   const configDone = !configLoading && configIssues.length === 0
+
+  // Mapped positions (main or PT companion) that expire within the warning
+  // horizon or already have — and the earliest of their last valid days.
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const expiringUntil = positionsTable
+    ? Object.values(config?.offerings ?? {})
+        // A mapping that already names its successor needs no attention.
+        .filter((m) => !m.successor)
+        .flatMap((m) => [m.position, m.ptPosition ?? null])
+        .map((code) => (code ? positionsTable.expiry(code, todayIso) : null))
+        .filter((e) => !!e && e.status !== 'ok' && !!e.validUntil)
+        .map((e) => e!.validUntil as string)
+        .sort()
+    : []
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -145,6 +164,14 @@ export default function Tarif595PluginPage() {
                   href={'/plugins/tarif-595/settings' as Route}
                   actionLabel={t('checklistComplete')}
                 />
+                {expiringUntil.length > 0 && (
+                  <ChecklistRow
+                    done={false}
+                    label={t('checklistExpiring', { count: expiringUntil.length, date: expiringUntil[0] })}
+                    href={'/plugins/tarif-595/settings' as Route}
+                    actionLabel={t('checklistReview')}
+                  />
+                )}
               </>
             )}
           </CardContent>
