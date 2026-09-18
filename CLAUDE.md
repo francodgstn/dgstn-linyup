@@ -1127,7 +1127,10 @@ tripwire — a direct read of a collection that grows with time must carry a bou
 Part 2 §14, Part 3 §19): `pnpm backfill:ledger-ttl` before the TTL index overrides,
 and `pnpm backfill:contact-counts` after the functions deploy — the operator console
 reads a per-team contact counter that only exists once its trigger or the nightly
-reconciliation has written it.
+reconciliation has written it. Against a deployed project run them through the
+**Backfill** workflow (`.github/workflows/backfill.yml`, dispatch-only, dry run by
+default, reviewer-gated per project) rather than from a laptop holding ADC; each
+script's own header owns its place in the release.
 
 **`backfill:ledger-ttl` is for rows the APP wrote before its writers shipped, and
 nothing else.** Every ledger row a SCRIPT writes — the four seeders, the shared
@@ -1138,10 +1141,7 @@ seeded data was work the next reseed threw away: `/try` reseeds nightly and
 `pnpm emulators:seed` wipes and rewrites, so the pass would have been owed again
 after every seed, forever. A new script that writes a ledger collection is caught
 by `packages/functions/src/utils/seedLedgerExpiry.test.ts`, which re-derives the
-writer set from the source rather than trusting its own list. Against a deployed project run them through the
-**Backfill** workflow (`.github/workflows/backfill.yml`, dispatch-only, dry run by
-default, reviewer-gated per project) rather than from a laptop holding ADC; each
-script's own header owns its place in the release.
+writer set from the source rather than trusting its own list.
 
 ---
 
