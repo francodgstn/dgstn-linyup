@@ -4,6 +4,9 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 import {
   TEAMS_COLLECTION,
+  TEAM_INTEGRATIONS_SUBCOLLECTION,
+  WHATSAPP_INTEGRATION_DOC,
+  WHATSAPP_PLUGIN_ID,
   ORGANIZATIONS_COLLECTION,
   INSTALLED_PLUGINS_SUBCOLLECTION,
   SITE_PUBLISHED_COLLECTION,
@@ -92,13 +95,14 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
   // `resolveActivePluginInstalls`.
   const orgId = (data.org_id as string | undefined) ?? null
 
-  const [pluginInstalls, sitePublishedSnap, orgSnap] = await Promise.all([
+  const [pluginInstalls, sitePublishedSnap, orgSnap, whatsappSnap] = await Promise.all([
     resolveActivePluginInstalls(teamId, orgId, [
       'website',
       'kiosk',
       'custom-forms',
       'gift-cards',
       'gamification',
+      WHATSAPP_PLUGIN_ID,
     ]),
     db.doc(`${SITE_PUBLISHED_COLLECTION}/${teamId}`).get(),
     // Read with the admin SDK: the org doc is members-only under
@@ -108,6 +112,7 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     // NOT re-trigger this sync — see the comment on the mirrored fields below
     // and TeamPublicProfile.ranking_systems' doc comment.
     orgId ? db.doc(`${ORGANIZATIONS_COLLECTION}/${orgId}`).get() : Promise.resolve(null),
+    db.doc(`${TEAMS_COLLECTION}/${teamId}/${TEAM_INTEGRATIONS_SUBCOLLECTION}/${WHATSAPP_INTEGRATION_DOC}`).get(),
   ])
   const orgData = orgSnap?.exists ? orgSnap.data() : undefined
 
@@ -437,6 +442,12 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     // the kill-switch or finishing Connect onboarding (both touch the team doc)
     // takes the priced doors down or puts them up on the next write.
     payments_enabled: paymentsEnabled,
+    // Whether the public forms ask for a WhatsApp opt-in: the plugin installed
+    // AND a number connected. Connect and disconnect touch the team doc, so this
+    // follows both. An opt-in asked for a channel the studio does not run would
+    // be consent to nothing.
+    whatsapp_opt_in_offered:
+      pluginInstalls.get(WHATSAPP_PLUGIN_ID) !== null && whatsappSnap.data()?.status === 'connected',
     // Billing currency for the website pricing table (bio-link/website never read teams/).
     default_currency: (data.default_currency as string | undefined) || null,
     // Team-wide cancellation policy default (activity-level override lives on

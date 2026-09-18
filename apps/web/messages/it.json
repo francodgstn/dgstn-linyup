@@ -1133,7 +1133,22 @@
     "recapSending": "Invio…",
     "recapSent": "Resoconto inviato a {name}.",
     "recapNotDelivered": "L'e-mail non è stata inviata. L'indirizzo potrebbe essere bloccato, oppure questo resoconto è già stato inviato.",
-    "recapFailed": "Il resoconto non è stato inviato. Riprova tra un momento."
+    "recapFailed": "Il resoconto non è stato inviato. Riprova tra un momento.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappOptedIn": "Ha aderito",
+    "whatsappOptedOut": "Ha rifiutato",
+    "whatsappNotAsked": "Non richiesto",
+    "whatsappMarkOptedIn": "Segna come aderito",
+    "whatsappMarkOptedOut": "Segna come rifiutato",
+    "whatsappConfirmOptInTitle": "Registra il consenso WhatsApp",
+    "whatsappConfirmOptInDesc": "Conferma che il membro ha accettato di ricevere messaggi WhatsApp dallo studio.",
+    "whatsappConfirmOptInAction": "Conferma il consenso",
+    "whatsappSource_booking_form": "modulo di prenotazione",
+    "whatsappSource_signup_form": "modulo di iscrizione",
+    "whatsappSource_space": "Spazio personale",
+    "whatsappSource_member_app": "app per i membri",
+    "whatsappSource_staff": "staff",
+    "whatsappSource_reply_stop": "ha risposto STOP"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -2876,7 +2891,7 @@
     "errorRemove": "Impossibile rimuovere il plugin. Riprova.",
     "errorSaveConfig": "Impossibile salvare la configurazione. Riprova.",
     "whatsappName": "WhatsApp",
-    "whatsappDescription": "Invia messaggi WhatsApp ai membri come azioni di automazione e attiva regole sui messaggi in arrivo.",
+    "whatsappDescription": "Invia promemoria di prenotazione e messaggi ai membri via WhatsApp, usando il numero del tuo studio.",
     "whatsappActionSendMessage": "Invia messaggio WhatsApp",
     "whatsappTriggerMessageReceived": "Messaggio WhatsApp ricevuto",
     "whatsappConfigTokenLabel": "Token di accesso API Meta",
@@ -3014,7 +3029,33 @@
     "siteThemesName": "Temi del sito",
     "siteThemesDescription": "Look pronti per il tuo sito — carattere, pulsanti, schede e stili delle sezioni con un clic. Ogni impostazione resta modificabile.",
     "crossfitZugSiteName": "Sito web CrossFit Zug",
-    "crossfitZugSiteDescription": "Le sezioni, gli stili e il tema propri del tuo sito, realizzati per corrispondere al tuo sito attuale."
+    "crossfitZugSiteDescription": "Le sezioni, gli stili e il tema propri del tuo sito, realizzati per corrispondere al tuo sito attuale.",
+    "loading": "Caricamento…",
+    "whatsappNotAvailable": "WhatsApp non è ancora disponibile su questo sistema.",
+    "whatsappConnectAction": "Collega WhatsApp",
+    "whatsappExplainOwnNumber": "Collega il numero WhatsApp Business del tuo studio — Linyup non invia mai da un numero condiviso.",
+    "whatsappExplainBilling": "Meta addebita direttamente al tuo studio i messaggi inviati — Linyup non aggiunge alcun costo proprio.",
+    "whatsappExplainOptIn": "I membri ricevono messaggi solo dopo aver dato il consenso — nel modulo di prenotazione, nel loro Spazio personale o di persona con lo staff.",
+    "whatsappExplainReplies": "Le risposte continuano ad arrivare nella tua app WhatsApp Business, come prima.",
+    "whatsappConnected": "Connesso",
+    "whatsappQualityRating": "Valutazione qualità: {rating}",
+    "whatsappTemplateStatusTitle": "Modello di promemoria",
+    "whatsappTemplateApproved": "Approvato",
+    "whatsappTemplatePending": "In revisione",
+    "whatsappTemplateRejected": "Rifiutato",
+    "whatsappTemplatePaused": "In pausa",
+    "whatsappTemplateMissing": "Non ancora creato",
+    "whatsappRefresh": "Aggiorna",
+    "whatsappDisconnectAction": "Disconnetti",
+    "whatsappDisconnectTitle": "Disconnettere WhatsApp?",
+    "whatsappDisconnectDesc": "I promemoria di prenotazione via WhatsApp verranno interrotti. Il tuo account e la tua app WhatsApp Business non sono interessati — puoi ricollegarti in qualsiasi momento.",
+    "whatsappReconnect": "Ricollega",
+    "whatsappErrorGeneric": "Si è verificato un errore durante il collegamento a WhatsApp. Riprova.",
+    "whatsappErrorNotBusinessApp": "Collega un numero che usi nell'app WhatsApp Business, così le risposte ti raggiungono.",
+    "whatsappErrorNumberTaken": "Questo numero è già collegato a un altro studio.",
+    "whatsappErrorNumberAmbiguous": "Non è stato possibile determinare quale numero collegare. Riprova.",
+    "whatsappConnectCancelled": "Collegamento annullato.",
+    "whatsappConnectIncomplete": "Il collegamento non è stato completato. Riprova."
   },
   "AiAssistant": {
     "launcherLabel": "Assistente IA",
@@ -4503,7 +4544,14 @@
     "insuranceSave": "Salva",
     "insuranceSaved": "Salvato.",
     "insuranceSaveFailed": "Salvataggio non riuscito. Riprovi.",
-    "insuranceLoadFailed": "Impossibile caricare i suoi dati assicurativi."
+    "insuranceLoadFailed": "Impossibile caricare i suoi dati assicurativi.",
+    "whatsappRemindersTitle": "Promemoria WhatsApp",
+    "whatsappRemindersIntro": "Ricevi i tuoi promemoria di prenotazione su WhatsApp oltre che via e-mail.",
+    "whatsappRemindersUnavailable": "Questo studio non offre promemoria WhatsApp al momento.",
+    "whatsappRemindersOn": "I promemoria WhatsApp sono attivi",
+    "whatsappRemindersOff": "I promemoria WhatsApp sono disattivati",
+    "whatsappRemindersSaved": "Salvato",
+    "whatsappRemindersError": "Non è stato possibile salvare la tua preferenza. Riprova."
   },
   "FreePlan": {
     "downgradeBannerTitle": "La tua prova è terminata — sei ora sul piano Free",
@@ -5629,7 +5677,8 @@
     "memberContinueToPayment": "Prosegui al pagamento",
     "memberSomeoneElseTitle": "Prenota per qualcun altro",
     "memberSomeoneElseSubtitle": "Prenota questo corso per un'altra persona",
-    "pricingDetailsTrigger": "Prezzi e accesso"
+    "pricingDetailsTrigger": "Prezzi e accesso",
+    "whatsappOptInLabel": "Inviami promemoria da {studioName} su WhatsApp"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",
@@ -5712,7 +5761,8 @@
     "registeredTitle": "Sei registrato/a!",
     "successBody": "Benvenuto/a presso <strong>{teamName}</strong>. I tuoi dati sono stati salvati. Il team ti contatterà presto.",
     "openSpace": "Apri il tuo Spazio",
-    "toSurface": "Vai {name}"
+    "toSurface": "Vai {name}",
+    "whatsappOptInLabel": "Inviami promemoria da {teamName} su WhatsApp"
   },
   "PublicContactUpdate": {
     "teamNotFoundTitle": "Team non trovato",
@@ -6833,7 +6883,10 @@
     "deactivateAction": "Disattiva",
     "emailsSubtitle": "Gestisci l'identità del mittente, le e-mail di sistema automatiche, la nota di conferma prenotazione e il mittente SMS.",
     "templatesSubtitle": "Modelli predefiniti e personalizzati inviati dalle tue automazioni e campagne, oltre a segnaposto riutilizzabili da inserire in uno qualsiasi di essi.",
-    "templatesLinkNote": "I modelli di outreach predefiniti e personalizzati, insieme al riferimento dei segnaposto, ora si trovano nella pagina <link>Modelli e-mail</link>."
+    "templatesLinkNote": "I modelli di outreach predefiniti e personalizzati, insieme al riferimento dei segnaposto, ora si trovano nella pagina <link>Modelli e-mail</link>.",
+    "reminderChannelWhatsApp": "WhatsApp",
+    "reminderWhatsAppNote": "Inviato solo ai membri che hanno acconsentito a WhatsApp; per gli altri questo passaggio viene saltato.",
+    "reminderWhatsAppSkippedHint": "WhatsApp non è collegato al momento, quindi questo promemoria viene saltato finché non lo sarà."
   },
   "Finance": {
     "exportCsv": "Esporta CSV",

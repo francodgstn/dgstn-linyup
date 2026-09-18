@@ -29,6 +29,9 @@ export function mapPublicProfileMirror(teamId: string, data: Record<string, unkn
     bioLinkBackground: data.bioLinkBackground as TeamPublicProfile['bioLinkBackground'],
     coaches: data.coaches as TeamPublicProfile['coaches'],
     payments_enabled: data.payments_enabled as boolean | undefined,
+    // The WhatsApp plugin is installed and a number is connected — gates the
+    // member app's opt-in switch (docs/whatsapp-outbound.md → "Opt-in surfaces").
+    whatsapp_opt_in_offered: data.whatsapp_opt_in_offered as boolean | undefined,
     // The team's coaching / gamification / ranking configuration — mirrored
     // here specifically so a contact session (which cannot read `teams/{id}`
     // or `organizations/{id}`) still sees the studio's own customisation

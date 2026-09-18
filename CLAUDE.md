@@ -359,6 +359,19 @@ nodemailer** and **no stored mail credentials** for anyone. Full docs:
   idempotency + delivery ledger. Secrets: `brevo-api-key`, `brevo-webhook-secret`
   (Secret Manager; emulator env `BREVO_API_KEY` / `BREVO_WEBHOOK_SECRET`).
 
+### WhatsApp — the studio's own number, templates only, opt-in only
+
+A studio connects its OWN WhatsApp Business number (kept in the WhatsApp
+Business App, so replies land there) and Meta bills the studio. Every message
+goes through **`sendStudioWhatsApp`** (`packages/functions/src/whatsapp/service.ts`),
+the one send rail; `whatsapp/graph.ts` is the only Graph API caller. A contact
+is messaged only when **`whatsappConsentAllows(contact)`** says so — the one
+reader of `Contact.whatsapp_consent`, whose one builder is
+`whatsappConsentPatch`; the rules deny the field to every client. No seeder
+writes consent, which is what keeps fabricated-but-routable seeded numbers
+silent. A WhatsApp reminder step that cannot send is SKIPPED, never sent by
+another channel. Full docs: `docs/whatsapp-outbound.md`.
+
 ### Appointments (1:1) vs classes
 
 Two primitives, not two entities — both are `sessions/{id}` docs:

@@ -1133,7 +1133,22 @@
     "recapSending": "Wird gesendet…",
     "recapSent": "Rückblick an {name} gesendet.",
     "recapNotDelivered": "Die E-Mail wurde nicht gesendet. Die Adresse ist vielleicht gesperrt, oder dieser Rückblick wurde schon gesendet.",
-    "recapFailed": "Der Rückblick konnte nicht gesendet werden. Versuche es gleich nochmals."
+    "recapFailed": "Der Rückblick konnte nicht gesendet werden. Versuche es gleich nochmals.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappOptedIn": "Zugestimmt",
+    "whatsappOptedOut": "Abgelehnt",
+    "whatsappNotAsked": "Nicht gefragt",
+    "whatsappMarkOptedIn": "Als zugestimmt markieren",
+    "whatsappMarkOptedOut": "Als abgelehnt markieren",
+    "whatsappConfirmOptInTitle": "WhatsApp-Zustimmung erfassen",
+    "whatsappConfirmOptInDesc": "Bestätigen Sie, dass das Mitglied zugestimmt hat, WhatsApp-Nachrichten vom Studio zu erhalten.",
+    "whatsappConfirmOptInAction": "Zustimmung bestätigen",
+    "whatsappSource_booking_form": "Buchungsformular",
+    "whatsappSource_signup_form": "Anmeldeformular",
+    "whatsappSource_space": "persönlicher Bereich",
+    "whatsappSource_member_app": "Mitglieder-App",
+    "whatsappSource_staff": "Team",
+    "whatsappSource_reply_stop": "hat mit STOP geantwortet"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -2876,7 +2891,7 @@
     "errorRemove": "Plugin konnte nicht entfernt werden. Bitte erneut versuchen.",
     "errorSaveConfig": "Konfiguration konnte nicht gespeichert werden. Bitte erneut versuchen.",
     "whatsappName": "WhatsApp",
-    "whatsappDescription": "Sende WhatsApp-Nachrichten an Mitglieder als Automatisierungsaktionen und löse Regeln bei eingehenden Nachrichten aus.",
+    "whatsappDescription": "Senden Sie Buchungserinnerungen und Nachrichten an Mitglieder über WhatsApp — mit der eigenen Nummer Ihres Studios.",
     "whatsappActionSendMessage": "WhatsApp-Nachricht senden",
     "whatsappTriggerMessageReceived": "WhatsApp-Nachricht empfangen",
     "whatsappConfigTokenLabel": "Meta-API-Zugriffstoken",
@@ -3014,7 +3029,33 @@
     "siteThemesName": "Website-Themes",
     "siteThemesDescription": "Fertige Looks für deine Website — Schrift, Buttons, Karten und Abschnittsstile mit einem Klick. Jede Einstellung bleibt anpassbar.",
     "crossfitZugSiteName": "CrossFit Zug Website",
-    "crossfitZugSiteDescription": "Die eigenen Abschnitte, Stile und das Theme deiner Website, passend zu deinem bisherigen Auftritt."
+    "crossfitZugSiteDescription": "Die eigenen Abschnitte, Stile und das Theme deiner Website, passend zu deinem bisherigen Auftritt.",
+    "loading": "Wird geladen…",
+    "whatsappNotAvailable": "WhatsApp ist auf diesem System noch nicht verfügbar.",
+    "whatsappConnectAction": "WhatsApp verbinden",
+    "whatsappExplainOwnNumber": "Verbinden Sie die eigene WhatsApp-Business-Nummer Ihres Studios — Linyup versendet nie über eine gemeinsam genutzte Nummer.",
+    "whatsappExplainBilling": "Meta stellt Ihrem Studio die versendeten Nachrichten direkt in Rechnung — Linyup verrechnet dafür nichts zusätzlich.",
+    "whatsappExplainOptIn": "Mitglieder erhalten Nachrichten erst, nachdem sie zugestimmt haben — im Buchungsformular, in ihrem persönlichen Bereich oder persönlich beim Team.",
+    "whatsappExplainReplies": "Antworten landen weiterhin wie gewohnt in Ihrer eigenen WhatsApp-Business-App.",
+    "whatsappConnected": "Verbunden",
+    "whatsappQualityRating": "Qualitätsbewertung: {rating}",
+    "whatsappTemplateStatusTitle": "Erinnerungsvorlage",
+    "whatsappTemplateApproved": "Genehmigt",
+    "whatsappTemplatePending": "In Prüfung",
+    "whatsappTemplateRejected": "Abgelehnt",
+    "whatsappTemplatePaused": "Pausiert",
+    "whatsappTemplateMissing": "Noch nicht erstellt",
+    "whatsappRefresh": "Aktualisieren",
+    "whatsappDisconnectAction": "Trennen",
+    "whatsappDisconnectTitle": "WhatsApp trennen?",
+    "whatsappDisconnectDesc": "Buchungserinnerungen über WhatsApp werden gestoppt. Ihr WhatsApp-Business-Konto und Ihre App sind davon nicht betroffen — Sie können jederzeit wieder verbinden.",
+    "whatsappReconnect": "Erneut verbinden",
+    "whatsappErrorGeneric": "Beim Verbinden mit WhatsApp ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "whatsappErrorNotBusinessApp": "Verbinden Sie eine Nummer, die Sie in der WhatsApp-Business-App nutzen, damit Antworten Sie erreichen.",
+    "whatsappErrorNumberTaken": "Diese Nummer ist bereits mit einem anderen Studio verbunden.",
+    "whatsappErrorNumberAmbiguous": "Es konnte nicht bestimmt werden, welche Nummer verbunden werden soll. Bitte versuchen Sie es erneut.",
+    "whatsappConnectCancelled": "Verbindung abgebrochen.",
+    "whatsappConnectIncomplete": "Die Verbindung wurde nicht abgeschlossen. Bitte versuchen Sie es erneut."
   },
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
@@ -4503,7 +4544,14 @@
     "insuranceSave": "Speichern",
     "insuranceSaved": "Gespeichert.",
     "insuranceSaveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "insuranceLoadFailed": "Ihre Versicherungsangaben konnten nicht geladen werden."
+    "insuranceLoadFailed": "Ihre Versicherungsangaben konnten nicht geladen werden.",
+    "whatsappRemindersTitle": "WhatsApp-Erinnerungen",
+    "whatsappRemindersIntro": "Erhalten Sie Ihre Buchungserinnerungen per WhatsApp statt nur per E-Mail.",
+    "whatsappRemindersUnavailable": "Dieses Studio bietet WhatsApp-Erinnerungen derzeit nicht an.",
+    "whatsappRemindersOn": "WhatsApp-Erinnerungen sind aktiviert",
+    "whatsappRemindersOff": "WhatsApp-Erinnerungen sind deaktiviert",
+    "whatsappRemindersSaved": "Gespeichert",
+    "whatsappRemindersError": "Ihre Einstellung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
   },
   "FreePlan": {
     "downgradeBannerTitle": "Deine Testphase ist beendet — du nutzt jetzt den Free-Plan",
@@ -5629,7 +5677,8 @@
     "memberContinueToPayment": "Weiter zur Zahlung",
     "memberSomeoneElseTitle": "Für jemand anderen buchen",
     "memberSomeoneElseSubtitle": "Diese Klasse stattdessen für eine andere Person buchen",
-    "pricingDetailsTrigger": "Preise & Zugang"
+    "pricingDetailsTrigger": "Preise & Zugang",
+    "whatsappOptInLabel": "Erinnerungen von {studioName} per WhatsApp senden"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Probetraining buchen",
@@ -5712,7 +5761,8 @@
     "registeredTitle": "Sie sind registriert!",
     "successBody": "Willkommen bei <strong>{teamName}</strong>. Ihre Angaben wurden gespeichert. Das Team wird sich bald bei Ihnen melden.",
     "openSpace": "Deinen Space öffnen",
-    "toSurface": "Weiter {name}"
+    "toSurface": "Weiter {name}",
+    "whatsappOptInLabel": "Erinnerungen von {teamName} per WhatsApp senden"
   },
   "PublicContactUpdate": {
     "teamNotFoundTitle": "Team nicht gefunden",
@@ -6833,7 +6883,10 @@
     "deactivateAction": "Deaktivieren",
     "emailsSubtitle": "Verwalten Sie Ihre Absenderidentität, automatische Systemmails, den Hinweis zur Buchungsbestätigung und den SMS-Absender.",
     "templatesSubtitle": "Vordefinierte und individuelle Vorlagen, die Ihre Automatisierungen und Kampagnen versenden, sowie wiederverwendbare Platzhalter, die Sie in jede davon einfügen können.",
-    "templatesLinkNote": "Vordefinierte und individuelle Outreach-Vorlagen sowie die Platzhalterübersicht finden Sie jetzt auf der Seite <link>E-Mail-Vorlagen</link>."
+    "templatesLinkNote": "Vordefinierte und individuelle Outreach-Vorlagen sowie die Platzhalterübersicht finden Sie jetzt auf der Seite <link>E-Mail-Vorlagen</link>.",
+    "reminderChannelWhatsApp": "WhatsApp",
+    "reminderWhatsAppNote": "Wird nur an Mitglieder gesendet, die WhatsApp zugestimmt haben; für alle anderen entfällt dieser Schritt.",
+    "reminderWhatsAppSkippedHint": "WhatsApp ist derzeit nicht verbunden, daher wird diese Erinnerung übersprungen, bis es verbunden ist."
   },
   "Finance": {
     "exportCsv": "CSV exportieren",

@@ -1,6 +1,7 @@
 import type { RankRef } from './team'
 import type { Timestamp } from './common'
 import type { HeldPlan } from './planHoldings'
+import type { WhatsAppConsent } from './whatsapp'
 import type { AffiliationSummary } from './affiliation'
 import type { ContactFilter } from '../utils/contactFilter'
 
@@ -233,6 +234,9 @@ export interface Contact {
   // that names this contact; a dropped send leaves a 'suppressed' ledger row.
   // A per-number block lives separately in sms_suppressions.
   sms_opt_out?: boolean
+  // WhatsApp opt-in (docs/whatsapp-outbound.md). Absent = not opted in. Read
+  // through `whatsappConsentAllows`, written only by the functions' consent writer.
+  whatsapp_consent?: WhatsAppConsent
 
   // Address
   address?: ContactAddress

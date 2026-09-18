@@ -183,6 +183,17 @@ export const MESSAGING_POLICIES_COLLECTION = 'messaging_policies'
 // Well-known integration doc id for a studio's SMS sender configuration
 // (teams/{id}/integrations/sms_sender): { type, senderName, enabled }.
 export const SMS_SENDER_INTEGRATION_DOC = 'sms_sender'
+// WhatsApp Business (docs/whatsapp-outbound.md). The integration doc
+// (teams/{id}/integrations/whatsapp) is display state written by functions; the
+// three root collections below are Admin-SDK only.
+export const WHATSAPP_INTEGRATION_DOC = 'whatsapp'
+// whatsapp_connections/{teamId}: the studio's encrypted business token.
+export const WHATSAPP_CONNECTIONS_COLLECTION = 'whatsapp_connections'
+// whatsapp_numbers/{phoneNumberId}: { teamId } — one number, one team; the
+// webhook routes by it.
+export const WHATSAPP_NUMBERS_COLLECTION = 'whatsapp_numbers'
+// whatsapp_suppressions/{sha256(E.164)}: STOP replies and permanent failures.
+export const WHATSAPP_SUPPRESSIONS_COLLECTION = 'whatsapp_suppressions'
 
 // In-app feedback (see types/feedback.ts).
 // feedback: client CREATE with strict rules validation; read/update via the

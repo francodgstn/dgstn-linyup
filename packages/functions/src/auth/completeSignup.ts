@@ -11,6 +11,7 @@ import { assertVerifiableCode } from './verificationCode'
 import { recordSignupConsent } from '../waivers/signup'
 import { resolveSignupJoinPromotion, type SignupJoinPromotion } from './signupJoin'
 import { to } from '../utils/async'
+import { whatsappConsentPatch } from '../whatsapp/consentPatch'
 import {
   CONTACTS_COLLECTION,
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
@@ -61,6 +62,8 @@ export const completeSignup = onCall(async (request) => {
       birthdate?: string
       notes?: string
       privacyConsent: boolean
+      /** Ticked "send me reminders on WhatsApp". Only `true` is read. */
+      whatsappOptIn?: boolean
     }
     // The terms/privacy documents the studio linked beside the consent checkbox,
     // echoed back as the visitor was SHOWN them.
@@ -236,6 +239,8 @@ export const completeSignup = onCall(async (request) => {
     pending_signup: false,
     signup_completed_at: FieldValue.serverTimestamp(),
     consent,
+    // An unticked box is no answer: it never withdraws an opt-in given elsewhere.
+    ...(contactDetails.whatsappOptIn === true ? whatsappConsentPatch(true, 'signup_form') : {}),
   }
 
   // Completing signup IS the act of joining, so the contact is moved to

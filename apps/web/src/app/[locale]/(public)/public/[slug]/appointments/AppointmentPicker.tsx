@@ -1491,6 +1491,10 @@ function SlotBookingForm({
         showPhone
         contactFields={contactFields}
         customFieldDefinitions={publicCustomFields}
+        whatsappOptIn={{
+          offered: publicTeam?.whatsapp_opt_in_offered === true,
+          studioName: publicTeam?.name || '',
+        }}
         submitting={submittingGuest}
         error={error}
         onSubmit={onSubmitGuest}

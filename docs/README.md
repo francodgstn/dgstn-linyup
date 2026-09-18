@@ -56,6 +56,7 @@ you may act on it:
 - [**Plugins**](./plugins.md) — how it works now
 - [**Public API + remote MCP server**](./public-api.md) — how it works now
 - [**Receiving replies (inbound mail)**](./email-inbound.md) — how it works now
+- [**WhatsApp Business — outbound**](./whatsapp-outbound.md) — how it works now
 
 ## Member app
 

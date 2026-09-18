@@ -9,7 +9,8 @@ import {
 } from '../utils/plugins'
 import { rebuildLedgerForTeam } from '../accounting/rebuild'
 import { revokeAllApiKeys, revokeAllOAuthGrants } from '../api/auth/credentials'
-import { API_CONNECTORS_PLUGIN_ID, KEEP_COURSE_MIRRORS_FIELD } from '@linyup/shared'
+import { disconnectWhatsAppForTeam } from '../whatsapp/connect'
+import { API_CONNECTORS_PLUGIN_ID, KEEP_COURSE_MIRRORS_FIELD, WHATSAPP_PLUGIN_ID } from '@linyup/shared'
 
 export const onInstalledPluginStatusChange = onDocumentWritten(
   'teams/{teamId}/installed_plugins/{pluginId}',
@@ -99,6 +100,15 @@ export const onInstalledPluginStatusChange = onDocumentWritten(
       console.log(
         `[plugins] team ${teamId}: api-connectors deactivated, ${revoked} API key(s) revoked, ${disconnected} connected app(s) disconnected`
       )
+    } else if (pluginId === WHATSAPP_PLUGIN_ID) {
+      // The studio's WhatsApp token must not outlive the plugin: sends already
+      // stop (the send rail reads the connection), but a stored credential for
+      // a plugin nobody has installed is a liability with no use. Same stale-
+      // event check as above.
+      const current = await event.data?.after.ref.get()
+      if (current?.data()?.status === 'active') return
+      await disconnectWhatsAppForTeam(teamId)
+      console.log(`[plugins] team ${teamId}: whatsapp deactivated, number disconnected`)
     }
     // NOTE: 'documents' has NO teardown any more, because Documents is no longer
     // a plugin — there is no install to deactivate. The arm that used to delete

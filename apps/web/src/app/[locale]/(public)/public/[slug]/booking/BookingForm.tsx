@@ -2915,6 +2915,7 @@ export default function BookingForm({
           customFieldDefinitions={team.publicCustomFields}
           showAggregatorField={showFitnessApp}
           aggregatorApps={partnerApps}
+          whatsappOptIn={{ offered: team.whatsapp_opt_in_offered === true, studioName: team.name || '' }}
           submitting={isSubmitting}
           error={bookingError}
           onSubmit={onSubmitGuest}

@@ -409,11 +409,13 @@ export function bookingContactFieldCustomId(key: string): string | null {
 // ─── Booking reminders ────────────────────────────────────────────────────────
 // A team's reminder schedule (settings.bookingReminderSteps): one entry per
 // reminder sent before a booked session, e.g. email 168h + email 48h + SMS 24h.
+// A 'whatsapp' step sends only while the WhatsApp plugin is connected, to a
+// contact who opted in; otherwise it is skipped, never sent by another channel.
 // When unset, the legacy single-email behavior applies (settings.bookingReminderHours,
 // default 24h). settings.bookingRemindersEnabled remains the master toggle.
 export interface BookingReminderStep {
   id: string // stable per-step marker key on the booking's reminders_sent map
-  channel: 'email' | 'sms'
+  channel: 'email' | 'sms' | 'whatsapp'
   offsetHours: number // hours before session start
 }
 
@@ -1227,6 +1229,9 @@ export interface TeamPublicProfile {
   // written before this field existed advertises no priced door until its next
   // sync, which is the safe direction.
   payments_enabled?: boolean
+  // The WhatsApp plugin is installed and a number is connected — the public
+  // booking and signup forms ask for a WhatsApp opt-in only then.
+  whatsapp_opt_in_offered?: boolean
   // Denormalized from teams/{id}.default_currency by syncTeamPublicProfile so the
   // public website pricing table can format prices without reading teams/.
   default_currency?: string
