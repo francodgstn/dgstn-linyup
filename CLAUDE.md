@@ -237,7 +237,9 @@ present (`null` when clear — what makes the Firestore `== null` query safe,
 see `apps/web/src/lib/liveContacts.ts`), while `provisional`/`external` are
 present ONLY when true — so "is external" can be queried and "is not external"
 is decided in memory after the live query. Never test the field inline; the
-census of server seams is `contacts/contactLifecycle.test.ts`.
+census of server seams is `contacts/contactLifecycle.test.ts`. The whole model —
+the four axes (Journey · Affiliation · Plan · Lifecycle), the seven people it was
+tested against, and the names that lost — is `docs/contact-state-model.md`.
 
 ### Public Space — the contacts' personal portal
 
@@ -357,6 +359,21 @@ nodemailer** and **no stored mail credentials** for anyone. Full docs:
   idempotency + delivery ledger. Secrets: `brevo-api-key`, `brevo-webhook-secret`
   (Secret Manager; emulator env `BREVO_API_KEY` / `BREVO_WEBHOOK_SECRET`).
 
+### WhatsApp — the studio's own number, templates only, opt-in only
+
+A studio connects its OWN WhatsApp Business number (kept in the WhatsApp
+Business App, so replies land there) and Meta bills the studio. Every message
+goes through **`sendStudioWhatsApp`** (`packages/functions/src/whatsapp/service.ts`),
+the one send rail; `whatsapp/graph.ts` is the only Graph API caller. A contact
+is messaged only when **`whatsappConsentAllows(contact, kind)`** says so — the
+one reader of both answers, `whatsapp_consent` (reminders) and
+`whatsapp_marketing_consent` (news and offers), whose one builder is
+`whatsappConsentPatch`; the rules deny both to every client. The send rail, not
+the caller, decides which answer a template needs, from its Meta category. No seeder
+writes consent, which is what keeps fabricated-but-routable seeded numbers
+silent. A WhatsApp reminder step that cannot send is SKIPPED, never sent by
+another channel. Full docs: `docs/whatsapp-outbound.md`.
+
 ### Appointments (1:1) vs classes
 
 Two primitives, not two entities — both are `sessions/{id}` docs:
@@ -392,6 +409,16 @@ Six invariants, each a bug before it was a rule:
   default stores no price of its own. The mirror carries the RESOLVED price and
   `syncStudioDropIn` rewrites every following class when the default moves.
   `docs/payment-contact-studio.md` → "Drop-in".
+- **Who may book a class is DERIVED from its prices, never asked or stored.** A
+  class stores two answers: `accessRule.audience` (the "only people who signed
+  up with you" wall) and `accessRule.subscriptionTypeIds` (the plans that
+  INCLUDE it). "Plan required" = a plan includes it AND no door sells it,
+  computed on every read by `resolveClassGate`; a member PRICE never decides
+  access. Read it through **`classAccessFacts(activity, studioDropIn)`**
+  (`packages/shared/src/utils/classAccess.ts`) and write it through
+  **`classAccessRuleFor`** — never branch on the legacy `accessRule.type`,
+  `accessRule.requirePlan` or `isFreeTrial`, which only un-rewritten documents
+  carry (`pnpm backfill:class-access` removes them). `docs/class-access-derived.md`.
 - **THE ONE READER of a per-length member rule is `resolveDurationBenefit`.**
   Never touch the fields directly: `durationBenefits` present ⇒ it is the whole
   answer and a missing entry means no rule; absent ⇒ the legacy
@@ -1129,6 +1156,17 @@ reconciliation has written it. Against a deployed project run them through the
 **Backfill** workflow (`.github/workflows/backfill.yml`, dispatch-only, dry run by
 default, reviewer-gated per project) rather than from a laptop holding ADC; each
 script's own header owns its place in the release.
+
+**`backfill:ledger-ttl` is for rows the APP wrote before its writers shipped, and
+nothing else.** Every ledger row a SCRIPT writes — the four seeders, the shared
+automations fixture, the HMD migration — now stamps `expires_at` at the write,
+through `scripts/lib/ledgerExpiry.ts` (whose header owns the reasoning) and from
+the row's OWN date, so a seeded ledger ages exactly like a real one. Backfilling
+seeded data was work the next reseed threw away: `/try` reseeds nightly and
+`pnpm emulators:seed` wipes and rewrites, so the pass would have been owed again
+after every seed, forever. A new script that writes a ledger collection is caught
+by `packages/functions/src/utils/seedLedgerExpiry.test.ts`, which re-derives the
+writer set from the source rather than trusting its own list.
 
 ---
 

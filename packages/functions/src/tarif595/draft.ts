@@ -38,7 +38,7 @@ import { sha256Hex } from '../utils/crypto'
 import { getTeam } from '../utils/teams'
 import { loadSetup, loadTarif595ContactData, type Tarif595Setup } from './config'
 import { buildTarif595Lines } from './lines'
-import { listAttendedDays, loadCoursePurchase, loadSubscriptionPeriod, unitPriceMinorFor, zurichDay } from './sources'
+import { listAttendedDays, loadClassLessonPriceMinor, loadCoursePurchase, loadSubscriptionPeriod, unitPriceMinorFor, zurichDay } from './sources'
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/
 const CONTACT_RECEIPTS_SCAN = 200
@@ -191,6 +191,17 @@ export async function buildReceiptDraft(req: Tarif595ReceiptRequest): Promise<Dr
       })
       attendanceDates = scan.days
       if (scan.truncated) warnings.push({ code: 'attendance_truncated' })
+      // No typed price → the class's RESOLVED drop-in price, the studio's own
+      // answer to "what does one lesson cost". Said out loud as a warning,
+      // because it is a default and not a fact about this member: somebody on
+      // a ten-pass paid a different rate per lesson than the door price.
+      if (unitPriceMinor === null) {
+        const doorPrice = await loadClassLessonPriceMinor(req.teamId, req.source.activityId)
+        if (doorPrice !== null) {
+          unitPriceMinor = doorPrice
+          warnings.push({ code: 'unit_price_from_drop_in' })
+        }
+      }
     }
   } else {
     const purchase = await loadCoursePurchase(req.source.courseId, req.contactId)

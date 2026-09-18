@@ -93,12 +93,9 @@ describe('the class gate — a plan is REQUIRED', () => {
     assert.equal(r.options[0]?.type, 'covered')
   })
 
-  it('someone with no plan cannot buy their way in', () => {
-    // The difference from the suite above: there, the drop-in was the way in for
-    // a member without a plan. Here there is no way in at all.
+  it('a stored "plan required" no longer blocks the door — a price always opens it (rule 5a, class-access stage 5: requirePlan is derived and a stored true is ignored once a paid door exists)', () => {
     const r = resolvePaymentOptions(member(), dropInTarget(rule))
-    assert.equal(r.options.length, 0)
-    assert.equal(r.denial, 'no_subscription')
+    assert.deepEqual(r.options, [{ type: 'pay', amount: 25, source: 'drop_in' }])
   })
 
   it('a DISCOUNTED plan still gets through the door, and pays its rate', () => {
@@ -121,14 +118,14 @@ describe('a document that predates the two fields is untouched', () => {
     assert.deepEqual(r.options, [{ type: 'covered', via: { reason: 'open' } }])
   })
 
-  it('members stays free for members, and a guest may still pay', () => {
+  it('members stays free for members, and a guest is now walled off — rule 3: a legacy members door is inert, so the wall closes it instead of selling it (legacy_members_door_closed)', () => {
     const rule: ActivityAccessRule = { type: 'members' }
     assert.deepEqual(resolvePaymentOptions(member(), bookTarget(rule)).options, [
       { type: 'covered', via: { reason: 'members' } },
     ])
-    assert.deepEqual(resolvePaymentOptions(GUEST_SNAPSHOT, dropInTarget(rule)).options, [
-      { type: 'pay', amount: 25, source: 'drop_in' },
-    ])
+    const guest = resolvePaymentOptions(GUEST_SNAPSHOT, dropInTarget(rule))
+    assert.deepEqual(guest.options, [])
+    assert.equal(guest.denial, 'guest')
   })
 
   it('subscription still denies a non-holder, and still sells them a drop-in', () => {

@@ -41,6 +41,7 @@ you may act on it:
 - [**AI insights — the AI plugin container**](./ai-insights.md) — how it works now
 - [**Contact AI summary**](./contact-summary.md) — how it works now
 - [**Decoupling the rank scale — a plan**](./rank-scale-decoupling.md) — work to do
+- [**How Linyup sees a contact — the contact state model**](./contact-state-model.md) — how it works now
 - [**What an organisation may see of a member studio's people — design**](./org-contact-visibility.md) — how it works now
 
 ## Public content and localisation
@@ -55,6 +56,7 @@ you may act on it:
 - [**Plugins**](./plugins.md) — how it works now
 - [**Public API + remote MCP server**](./public-api.md) — how it works now
 - [**Receiving replies (inbound mail)**](./email-inbound.md) — how it works now
+- [**WhatsApp Business — outbound**](./whatsapp-outbound.md) — how it works now
 
 ## Member app
 
@@ -84,6 +86,7 @@ you may act on it:
 - [**Open decisions — parked for Franco**](./ux-review-open-decisions.md) — how it works now
 - [**Open defects**](./open-defects.md) — how it works now
 - [**UX review — 2026-09 · Offerings (activities & plans)**](./ux-review-2026-09.md) — how it works now
+- [**Who can book a class — derived from its prices, not asked**](./class-access-derived.md) — work to do
 
 ## Closed and point-in-time
 

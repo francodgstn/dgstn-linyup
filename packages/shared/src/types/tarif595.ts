@@ -66,6 +66,30 @@ export interface Tarif595OfferingMapping {
   customName?: string | null
   /** For `unit: 'entry'`: how many entries the pass holds (e.g. 10). */
   entries?: number | null
+  /**
+   * What replaces `position` (and `ptPosition`) for lines dated on or after
+   * `from` — how a mapping survives the 1 January edition change. It is a
+   * SUCCESSOR and not an overwrite because both editions are needed at once:
+   * in January a studio still issues the receipts of the year just ended,
+   * whose lines are dated in the old year and need the old position, beside
+   * the new year's. THE ONE READER is `tarif595MappingOn` — never read
+   * `position` directly where a line date is known.
+   */
+  successor?: Tarif595MappingSuccessor | null
+}
+
+export interface Tarif595MappingSuccessor {
+  /** YYYY-MM-DD — the first line date the successor applies to. */
+  from: string
+  position: string
+  ptPosition?: string | null
+}
+
+/** The position pair a mapping bills under ON a line date. */
+export function tarif595MappingOn(mapping: Tarif595OfferingMapping, dateIso: string): { position: string; ptPosition: string | null } {
+  const s = mapping.successor
+  if (s && s.position && dateIso >= s.from) return { position: s.position, ptPosition: s.ptPosition ?? null }
+  return { position: mapping.position, ptPosition: mapping.ptPosition ?? null }
 }
 
 export type Tarif595OfferingKind = 'subscription' | 'activity' | 'course'
@@ -339,6 +363,18 @@ export function validateTarif595Config(
     if (m?.position === TARIF595_FREE_TEXT_CODE && !m.customName?.trim()) {
       issues.push({ path: `offerings.${key}.customName`, code: 'required' })
     }
+    if (m?.successor) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(m.successor.from ?? '')) {
+        issues.push({ path: `offerings.${key}.successor.from`, code: 'pattern' })
+      }
+      if (!m.successor.position) issues.push({ path: `offerings.${key}.successor.position`, code: 'required' })
+      else if (!ctx.positionExists(m.successor.position)) {
+        issues.push({ path: `offerings.${key}.successor.position`, code: 'unknown_position' })
+      }
+      if (m.successor.ptPosition && !ctx.positionExists(m.successor.ptPosition)) {
+        issues.push({ path: `offerings.${key}.successor.ptPosition`, code: 'unknown_position' })
+      }
+    }
   }
   return issues
 }
@@ -396,6 +432,21 @@ export type Tarif595WarningCode =
   | 'insured_number_missing'
   | 'insurer_unknown'
   | 'unit_price_zero'
+  /** No price was typed for an attendance receipt, so the class's resolved
+   *  drop-in price was used — a default worth a glance, since a pass holder
+   *  paid a different rate per lesson than the door price. */
+  | 'unit_price_from_drop_in'
+
+/** THE list of warning codes, for a reader that holds a code of either kind
+ *  (a bulk run's skip) and must pick the namespace its copy lives in. */
+export const TARIF595_WARNING_CODES: readonly Tarif595WarningCode[] = [
+  'overlapping_receipt',
+  'attendance_truncated',
+  'insured_number_missing',
+  'insurer_unknown',
+  'unit_price_zero',
+  'unit_price_from_drop_in',
+]
 
 export interface Tarif595PreviewIssue {
   code: Tarif595BlockingCode
@@ -628,14 +679,25 @@ export function suggestTarif595Unit(f: Tarif595OfferingFacts): { unit: Tarif595U
   // the number of months covers either purchase (Qualitop FAQ 3.6).
   if (rec.has('monthly') || rec.has('quarterly') || rec.has('weekly') || rec.has('biweekly')) return { unit: 'month', entries: null }
   if (rec.has('annual')) return { unit: 'year', entries: null }
-  if (rec.has('per_class')) return { unit: 'lesson', entries: null }
   if (rec.has('one_time')) return { unit: 'flat', entries: null }
   return null
 }
 
 export interface Tarif595SuggestRequest {
   teamId: string
+  /**
+   * Suggest against the positions valid on THIS day (YYYY-MM-DD) instead of
+   * today — how the settings page asks for a REPLACEMENT of a position about
+   * to expire: as of the day after its last valid day. The server clamps it
+   * to [today, today + TARIF595_SUGGEST_AS_OF_MAX_DAYS].
+   */
+  asOf?: string | null
+  /** Restrict the proposal to these offering keys (the expiring rows). */
+  keys?: string[] | null
 }
+
+/** How far ahead `asOf` may look — a little over a year covers the next edition. */
+export const TARIF595_SUGGEST_AS_OF_MAX_DAYS = 400
 
 export type Tarif595SuggestionConfidence = 'high' | 'medium' | 'low'
 

@@ -27,6 +27,13 @@ import { loadConsentLedgers } from '../waivers/consentLedger'
 import { resolveRankingSystems } from './ranking'
 import { findRankLevel, isKnownRankingSystem, pluginIdOfNamespacedId, rankLevelKey } from '@linyup/shared'
 import { pluginIsActive } from './plugins'
+import { runWhatsAppAction } from '../whatsapp/automation'
+import {
+  WHATSAPP_PLUGIN_ID,
+  WHATSAPP_TEMPLATES_SUBCOLLECTION,
+  whatsappStudioTemplateSendable,
+  type WhatsAppStudioTemplate,
+} from '@linyup/shared'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -122,6 +129,10 @@ export type AutomationCondition =
 
 export type AutomationAction =
   | { type: 'send_email'; templateId: string }
+  // WhatsApp — one of the studio's own approved templates (docs/whatsapp-outbound.md
+  // → "6c"). BUILT-IN rather than a `plugin:` action because the builder edits
+  // built-in actions; it runs only while the WhatsApp plugin is installed.
+  | { type: 'send_whatsapp'; templateId: string }
   | { type: 'create_alert'; presetId: string }
   | { type: 'assign_tag'; tag: string }
   | { type: 'remove_tag'; tag: string }
@@ -316,6 +327,13 @@ export interface RuleStats {
    * exact even when the stored list is a sample.
    */
   recipients: Set<string>
+  /**
+   * What each `send_whatsapp` action did, by outcome — `sent`, `held` (waiting
+   * for 08:00), or why it was skipped (`no_marketing_consent`, `no_phone`, …).
+   * A skipped WhatsApp message is not an error and reaches nobody, so without
+   * this the run history could not say why a WhatsApp rule sent nothing.
+   */
+  whatsapp?: Record<string, number>
 }
 
 /**
@@ -360,6 +378,8 @@ export interface AutomationLogData {
   recipient_ids: string[]
   /** The true number of recipients, which may exceed recipient_ids.length. */
   recipients_total: number
+  /** `RuleStats.whatsapp`, present only when the rule has a WhatsApp action. */
+  whatsapp_outcomes?: Record<string, number>
   error?: string
 }
 
@@ -690,6 +710,13 @@ export interface ResolvedActions {
    * mid-sweep.
    */
   activePlugins: Set<string>
+  /**
+   * The rule's `send_whatsapp` templates that can send right now: the WhatsApp
+   * plugin is installed and the template's live version is approved. Resolved
+   * once per rule, like the plugin gate above. The send rail asks again per
+   * message, so this only decides whether the rule is worth walking.
+   */
+  whatsappTemplateIds?: Set<string>
 }
 
 async function resolveActionResources(
@@ -769,7 +796,33 @@ async function resolveActionResources(
     }
   }
 
-  return { template, alertPreset, language, activePlugins }
+  const whatsappTemplateIds = new Set<string>()
+  const waIds = [...new Set(actions.filter((a) => a.type === 'send_whatsapp').map((a) => (a as { templateId: string }).templateId))]
+  if (waIds.length) {
+    const [err, active] = await to(pluginIsActive(teamId, WHATSAPP_PLUGIN_ID))
+    if (!err && active) {
+      activePlugins.add(WHATSAPP_PLUGIN_ID)
+      for (const id of waIds.filter(Boolean)) {
+        const [tErr, tDoc] = await to(teamRef.collection(WHATSAPP_TEMPLATES_SUBCOLLECTION).doc(id).get())
+        if (!tErr && tDoc?.exists && whatsappStudioTemplateSendable(tDoc.data() as WhatsAppStudioTemplate)) {
+          whatsappTemplateIds.add(id)
+        } else {
+          console.log(`[automationEngine] WhatsApp template ${id} not found or not approved`)
+        }
+      }
+    } else {
+      console.log(`[automationEngine] WhatsApp plugin not installed for team ${teamId} — skipping its actions`)
+    }
+  }
+
+  return { template, alertPreset, language, activePlugins, whatsappTemplateIds }
+}
+
+/** Does this rule send WhatsApp? Then a contact is not skipped for having no
+ *  email address or for having unsubscribed from email — those gate the email
+ *  action alone (see executeActionsForContact). */
+export function ruleSendsWhatsApp(actions: AutomationAction[]): boolean {
+  return actions.some((a) => a.type === 'send_whatsapp')
 }
 
 async function createContactAlertDoc(
@@ -822,6 +875,7 @@ async function createContactAlertDoc(
 export function hasResolvableActions(actions: AutomationAction[], resolved: ResolvedActions): boolean {
   for (const a of actions) {
     if (a.type === 'send_email' && resolved.template) return true
+    if (a.type === 'send_whatsapp' && resolved.whatsappTemplateIds?.has(a.templateId)) return true
     if (a.type === 'create_alert' && resolved.alertPreset) return true
     if (a.type === 'update_field') return true
     if (a.type === 'archive_contact') return true
@@ -860,15 +914,18 @@ async function executeActionsForContact(
   teamData: Record<string, unknown>,
   ruleId: string,
   payload?: Record<string, unknown>
-): Promise<{ executed: number; failed: number }> {
+): Promise<{ executed: number; failed: number; whatsapp: Record<string, number> }> {
   const now = new Date()
   const teamName = (teamData.name as string) || ''
   let executed = 0
   let failed = 0
+  const whatsapp: Record<string, number> = {}
 
   for (const action of actions) {
     try {
-      if (action.type === 'send_email' && resolved.template) {
+      // A rule that also sends WhatsApp reaches contacts with no email address,
+      // or who unsubscribed from email; the email action still never mails them.
+      if (action.type === 'send_email' && resolved.template && contact.email && !contact.email_unsubscribed) {
         const subject = substituteVariables(
           resolved.template.subject as string,
           contact,
@@ -910,6 +967,22 @@ async function executeActionsForContact(
           })
         )
         executed++
+      }
+
+      if (action.type === 'send_whatsapp' && resolved.whatsappTemplateIds?.has(action.templateId)) {
+        const outcome = await runWhatsAppAction({
+          teamId,
+          ruleId,
+          contactId,
+          contact: contact as unknown as Record<string, unknown>,
+          templateId: action.templateId,
+          teamData,
+          payload,
+          now,
+        })
+        whatsapp[outcome] = (whatsapp[outcome] ?? 0) + 1
+        // Held counts as done: it will go out at 08:00 without this rule again.
+        if (outcome === 'sent' || outcome === 'held') executed++
       }
 
       if (action.type === 'create_alert' && resolved.alertPreset) {
@@ -1398,7 +1471,15 @@ async function executeActionsForContact(
     }
   }
 
-  return { executed, failed }
+  return { executed, failed, whatsapp }
+}
+
+/** Adds one contact's WhatsApp outcomes to the run's tally. */
+function tallyWhatsApp(stats: RuleStats, outcomes: Record<string, number>): void {
+  for (const [outcome, n] of Object.entries(outcomes)) {
+    stats.whatsapp = stats.whatsapp ?? {}
+    stats.whatsapp[outcome] = (stats.whatsapp[outcome] ?? 0) + n
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1509,11 +1590,7 @@ async function runBookingRule(
         }
       }
 
-      if (!contact.email) {
-        stats.skipped++
-        continue
-      }
-      if (contact.email_unsubscribed) {
+      if (!ruleSendsWhatsApp(rule.actions) && (!contact.email || contact.email_unsubscribed)) {
         stats.skipped++
         continue
       }
@@ -1527,7 +1604,7 @@ async function runBookingRule(
         continue
       }
 
-      const { executed, failed } = await executeActionsForContact(
+      const { executed, failed, whatsapp } = await executeActionsForContact(
         contactId || bookingDoc.id,
         contact,
         rule.actions,
@@ -1538,6 +1615,7 @@ async function runBookingRule(
       )
       stats.sent += executed
       stats.errors += failed
+      tallyWhatsApp(stats, whatsapp)
       if (executed > 0) recordRecipient(stats, contactId)
 
       // Mark booking as processed
@@ -1611,11 +1689,7 @@ async function runContactRule(
 
   for (const contact of contacts) {
     if (contact.deleted_at || contact.archived_at || contact.external) continue
-    if (!contact.email) {
-      stats.skipped++
-      continue
-    }
-    if (contact.email_unsubscribed) {
+    if (!ruleSendsWhatsApp(rule.actions) && (!contact.email || contact.email_unsubscribed)) {
       stats.skipped++
       continue
     }
@@ -1650,7 +1724,7 @@ async function runContactRule(
       continue
     }
 
-    const { executed, failed } = await executeActionsForContact(
+    const { executed, failed, whatsapp } = await executeActionsForContact(
       contact.id,
       contact,
       rule.actions,
@@ -1662,6 +1736,7 @@ async function runContactRule(
     )
     stats.sent += executed
     stats.errors += failed
+    tallyWhatsApp(stats, whatsapp)
 
     // Mark rule as sent for this contact — and record them as a recipient. The
     // two share one condition on purpose: "reached" in the log means exactly
@@ -1762,6 +1837,7 @@ export async function runRule(
     // verbatim, so there is no second write to keep in step.
     recipient_ids: Array.from(stats.recipients).slice(0, RECIPIENT_ID_CAP),
     recipients_total: stats.recipients.size,
+    ...(stats.whatsapp && Object.keys(stats.whatsapp).length ? { whatsapp_outcomes: stats.whatsapp } : {}),
   }
 
   console.log(`[automationEngine] runRule complete rule=${rule.id} team=${teamId}`, {

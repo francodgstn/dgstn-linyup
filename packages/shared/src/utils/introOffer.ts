@@ -39,7 +39,6 @@
 //   monthly      1 month     once ✔           repeating, duration_in_months = N
 //   quarterly    3 months    once ✔           repeating, = 3N
 //   annual       12 months   once ✔           repeating, = 12N
-//   per_class    —           REFUSED — not billed as a subscription at all
 //   one_time     —           REFUSED — same
 //
 // The refusals are enforced HERE rather than at the editor, so the editor and
@@ -76,7 +75,7 @@ export function monthsPerBillingPeriod(r: SubscriptionRecurrence): number | null
     case 'annual':
       return 12
     default:
-      // weekly / biweekly are recurring but not month-aligned; per_class and
+      // weekly / biweekly are recurring but not month-aligned; one_time and
       // one_time are not subscriptions.
       return null
   }
@@ -113,7 +112,7 @@ export function introOfferDurationFor(
  *  broken instead of greying a control with no explanation. */
 export type IntroOfferProblem =
   | 'no_price' // the named price is gone or deactivated
-  | 'not_recurring' // per_class / one_time — nothing recurs, so nothing "returns to full"
+  | 'not_recurring' // one_time — nothing recurs, so nothing "returns to full"
   | 'periods_invalid' // not an integer in 1 … INTRO_OFFER_MAX_PERIODS
   | 'interval_not_monthly' // weekly/biweekly with N > 1 — see the table above
   | 'amount_invalid' // negative, or not a number

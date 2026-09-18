@@ -56,11 +56,13 @@
  * exemption. It is empty, and should stay that way while the error surface is
  * small enough to just fix.
  */
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative, dirname, resolve as resolvePath } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { parseHeadings, hasNumberedHeading, hasHeadingContaining, parseFrontmatter, AREAS, STATUSES } from './lib/docsMeta.mjs'
+// readText, never readFileSync: a Windows checkout is CRLF, and every parse
+// below is line-based. See its header in docsMeta.mjs.
+import { readText, parseHeadings, hasNumberedHeading, hasHeadingContaining, parseFrontmatter, AREAS, STATUSES } from './lib/docsMeta.mjs'
 
 // fileURLToPath, not `.pathname`: on Windows the latter is `/C:/…`.
 const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '')
@@ -75,6 +77,10 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', '.next', '.git', 'snapshots',
 // */references/ tree are vendored upstream content we do not author.
 const SKIP_PATHS = [
   /^\.agents\//,
+  // Nested git worktrees — other checkouts of this repo at other commits, plus
+  // the folders a removed one leaves behind. CI's clone has none of them, so
+  // scanning them reports other branches' findings as this tree's, locally only.
+  /^\.claude\/worktrees\//,
   /^\.claude\/skills\/stripe-/,
   /^\.claude\/skills\/[^/]+\/references\//,
   // The marketing site's legal pages are PRODUCT CONTENT, not documentation.
@@ -173,7 +179,7 @@ const refs = []
 
 for (const rel of files) {
   let src
-  try { src = readFileSync(join(ROOT, rel), 'utf8') } catch { continue }
+  try { src = readText(join(ROOT, rel)) } catch { continue }
   const md = isMd(rel)
   const claimed = new Set() // spans already consumed by a richer idiom
 
@@ -246,7 +252,7 @@ const headingCache = new Map()
 function headingsOf(rel) {
   if (!headingCache.has(rel)) {
     try {
-      headingCache.set(rel, parseHeadings(readFileSync(join(ROOT, rel), 'utf8')))
+      headingCache.set(rel, parseHeadings(readText(join(ROOT, rel))))
     } catch {
       headingCache.set(rel, [])
     }
@@ -305,7 +311,7 @@ for (const r of refs) {
 
 for (const rel of files.filter((f) => f.startsWith('docs/') && isMd(f))) {
   if (rel === 'docs/README.md' || rel.endsWith('/README.md')) continue
-  const src = readFileSync(join(ROOT, rel), 'utf8')
+  const src = readText(join(ROOT, rel))
   const { data, error } = parseFrontmatter(src)
   const at = { from: rel, line: 1, kind: 'frontmatter', target: rel }
 

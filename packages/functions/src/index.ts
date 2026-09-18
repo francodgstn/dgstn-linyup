@@ -359,6 +359,20 @@ export { registerSenderDomain, checkSenderDomain, useManagedSender } from './mai
 export { sendTestEmail } from './mail/sendTestEmail'
 export { handleBrevoWebhook } from './mail/handleBrevoWebhook'
 
+// WhatsApp Business — a studio's own number, templates only, opt-in only.
+// See docs/whatsapp-outbound.md.
+export {
+  getWhatsAppSignupConfig,
+  connectWhatsApp,
+  refreshWhatsAppStatus,
+  disconnectWhatsApp,
+} from './whatsapp/connect'
+export { setMyWhatsAppConsent, setContactWhatsAppConsent } from './whatsapp/consent'
+export { handleWhatsAppWebhook } from './whatsapp/webhook'
+export { submitWhatsAppTemplate, deleteWhatsAppTemplate } from './whatsapp/studioTemplates'
+export { sendHeldWhatsApp } from './whatsapp/automation'
+export { getWhatsAppUsage } from './whatsapp/usage'
+
 // Public-site localization — machine-translates tenant-authored site content
 // (team/org published sites go through publishWebsite/publishOrgWebsite
 // directly; embed widgets have no publish step, so they get their own

@@ -540,6 +540,26 @@ close to reality, because the first actual-spend alert fires at half of it:
   function `maxInstances: 20` and App Hosting's `maxInstances` are the actual
   ceilings.
 
+**Decided 2026-09-18 (Franco): the defaults stand** — prod 500, staging 100,
+sandbox 30 CHF. This is a deliberate call against the bullets above, not an
+unset value, so nothing here is waiting on a number. What that means in
+practice, stated plainly so nobody re-opens it as a defect:
+
+- **The 50 % actual-spend rule on prod will not fire in any normal month.** It
+  lands at 250 CHF, far above a pre-launch bill. Treat the actual-spend rules as
+  the record, not as detection.
+- **The FORECASTED_SPEND rule is what does the detecting**, and it needs no
+  re-tuning to do it: it fires mid-month the moment the trend projects past the
+  full 500, which is the runaway case the ceiling exists for.
+- **The early-warning line moved to the Providers page instead.** The budget's
+  Pub/Sub feed writes month-to-date spend to the daily platform-metrics snapshot
+  (`analytics/budgetNotification.ts`), so the real number is on a screen several
+  times a day regardless of where the thresholds sit. Watching it is what
+  replaces a tight ceiling here.
+- **Revisit on the first real tenants, or after anything that changes the egress
+  or invocation shape** — then set it from the last full month per the bullets
+  above.
+
 ---
 
 ## Sandbox environment (demo playground)

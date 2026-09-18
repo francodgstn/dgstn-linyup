@@ -14,7 +14,7 @@
  *
  * SubscriptionRecurrence values must exactly match the union type in
  * packages/shared/src/types/contact.ts:
- *   'per_class' | 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual'
+ *   'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual'
  *
  * Shape mirrors SubscriptionType + SubscriptionPrice from that same file, and is
  * declared here rather than imported so this file stays a plain data table. (The

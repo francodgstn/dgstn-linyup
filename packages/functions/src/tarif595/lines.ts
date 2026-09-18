@@ -27,6 +27,7 @@
 
 import {
   TARIF595_FREE_TEXT_CODE,
+  tarif595MappingOn,
   type Tarif595Lang,
   type Tarif595Line,
   type Tarif595OfferingMapping,
@@ -202,11 +203,17 @@ export function buildTarif595Lines(input: LineInput): LineBuildResult {
   }
 
   for (const slot of slots) {
-    push(mapping.position, slot, unitMinor)
+    // The position pair BY THE LINE DATE: a mapping may carry a successor for
+    // the next edition of the list (the list changes every 1 January), and a
+    // multi-year subscription then bills its 2026 segment on the old position
+    // and its 2027 segment on the new one — `tarif595MappingOn` is the one
+    // reader of that.
+    const on = tarif595MappingOn(mapping, slot.date)
+    push(on.position, slot, unitMinor)
     // Personal training: the method's position AND the PT position (Qualitop
     // FAQ 4.6). The price sits on the method line; the companion is the
     // classification, at zero.
-    if (mapping.ptPosition) push(mapping.ptPosition, slot, 0)
+    if (on.ptPosition) push(on.ptPosition, slot, 0)
   }
 
   const amount_minor = lines.reduce((s, l) => s + l.amount_minor, 0)

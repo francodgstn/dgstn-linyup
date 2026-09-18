@@ -233,7 +233,9 @@ describe('priced doors follow the ability to be paid (UX-33)', () => {
       'a FREE trial must stay open when the studio cannot take money'
     )
     const dropIn = form.split('function dropInPriceOf(')[1].split('\n}')[0]
-    assert.ok(dropIn.includes('if (!paymentsEnabled) return null'))
+    // Widened with a null-activity guard (`!a`) alongside the payments guard —
+    // same refusal, unrelated to this suite's UX-33 claim.
+    assert.ok(dropIn.includes('if (!paymentsEnabled || !a) return null'))
   })
 })
 

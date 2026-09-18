@@ -47,6 +47,8 @@ export const CONTACT_FIELD_CATALOG: FieldCatalog<Contact> = {
   weight: 'excluded', // health data
   avatar_url: 'excluded',
   sms_opt_out: 'excluded',
+  whatsapp_consent: 'excluded',
+  whatsapp_marketing_consent: 'excluded',
   address: 'pii',
   emergency_contacts: 'excluded', // third parties' details
   consent: 'excluded', // deprecated, superseded by the waiver ledger

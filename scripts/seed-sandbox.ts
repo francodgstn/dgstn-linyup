@@ -48,7 +48,13 @@
 
 import admin from 'firebase-admin'
 import { applicationDefault } from 'firebase-admin/app'
-import { DEFAULT_PAYMENT_MODES, normalizeActivityTags, withRankLevelIds } from '@linyup/shared'
+import {
+  DEFAULT_PAYMENT_MODES,
+  activityDocForWrite,
+  normalizeActivityTags,
+  resolveActivityDropIn,
+  withRankLevelIds,
+} from '@linyup/shared'
 import {
   CONTACT_AFFILIATIONS_SUBCOLLECTION,
   AFFILIATION_TYPES_SUBCOLLECTION,
@@ -65,6 +71,7 @@ import {
   seedStoreCourses,
 } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
+import { ledgerExpiry } from './lib/ledgerExpiry'
 import { partnerAppNames } from './lib/partnerApps'
 import {
   planSeedConnectAccounts,
@@ -535,11 +542,15 @@ interface ActivityDef {
   slug: string
   color: string
   tags: string[]
+  /** AUTHORING shorthand, not a stored field: true = free to anyone, false =
+   *  members only. Converted into the derived access shape at write time by
+   *  `activityDocForWrite` (docs/class-access-derived.md) — no class document
+   *  carries `isFreeTrial` any more. */
   isFreeTrial: boolean
   base_score: number
   description: string // shown on the portal booking page activity cards
-  /** Subscription-gate the class on these plan kinds (Activity.accessRule
-   *  'subscription'). Unset → the tier derives from isFreeTrial (open/members). */
+  /** Plan kinds that INCLUDE the class. With a `dropInPrice` anyone else pays
+   *  the drop-in; without one only those plan holders may book. */
   accessSubKinds?: Array<Exclude<SubKind, null>>
   /** Independent of the tier: a gated class still accepts a newcomer's trial. */
   trialEnabled?: boolean
@@ -623,10 +634,10 @@ const SECTOR_PROFILES: SectorProfile[] = [
         description: 'Core positions, escapes and submissions for your first year on the mats.',
       },
       {
-        // The sandbox's FULL-ordinary-offer demo (members included + trial +
-        // drop-in): subscription-gated on the internal plans, `trialEnabled`
-        // lets a newcomer book a free trial, and an uncovered contact can pay
-        // the per-class drop-in price instead — three independent toggles.
+        // The sandbox's FULL-ordinary-offer demo (plans included + trial +
+        // drop-in): the internal plans include it, anyone else pays the
+        // per-class drop-in price, and `trialEnabled` gives a newcomer a free
+        // first class — three independent answers.
         name: 'Advanced BJJ',
         slug: 'advanced-bjj',
         color: '#7c3aed',
@@ -1627,7 +1638,7 @@ async function seedDemoTeam(profile: SectorProfile) {
     } = {
       id: subIdOf(st.kind),
       name: st.name,
-      checkout_contact_mode: recurrence && recurrence !== 'per_class' ? 'full' : 'minimal',
+      checkout_contact_mode: recurrence && recurrence !== 'one_time' ? 'full' : 'minimal',
     }
     if (st.description) entry.description = st.description
     // price.id (stable client id) must mirror the raw subscription_types write so the
@@ -1763,14 +1774,28 @@ async function seedDemoTeam(profile: SectorProfile) {
   const actIds = activities.map((_, i) => `${teamId}-act-${i}`)
   for (let i = 0; i < activities.length; i++) {
     const a = activities[i]
-    // Paid-access gate: explicit subscription gate when the def carries
-    // accessSubKinds, else derived from isFreeTrial (the same derivation
-    // resolveActivityAccessRule applies). isFreeTrial stays in sync (open ⇔ true).
-    const accessRule = a.accessSubKinds?.length
-      ? { type: 'subscription', subscriptionTypeIds: a.accessSubKinds.map((k) => subIdOf(k)) }
-      : { type: a.isFreeTrial ? 'open' : 'members' }
-    const dropIn =
-      a.dropInPrice != null ? { enabled: true, priceAmount: a.dropInPrice } : null
+    // The def is authored in the legacy vocabulary (a tier + an optional own
+    // drop-in price) and written through `activityDocForWrite`, so the stored
+    // class is exactly what the stage-5 backfill would produce
+    // (docs/class-access-derived.md). The sandbox sets no usual drop-in price.
+    const studioDropIn = null
+    const { accessRule, dropIn } = activityDocForWrite(
+      {
+        type: 'class' as const,
+        accessRule: a.accessSubKinds?.length
+          ? {
+              type: 'subscription' as const,
+              subscriptionTypeIds: a.accessSubKinds.map((k) => subIdOf(k)),
+            }
+          : { type: a.isFreeTrial ? ('open' as const) : ('members' as const) },
+        ...(a.dropInPrice != null
+          ? { dropIn: { enabled: true, priceAmount: a.dropInPrice } }
+          : {}),
+      },
+      studioDropIn
+    )
+    // The RESOLVED door, exactly as syncActivityPublicProfile mirrors it.
+    const door = resolveActivityDropIn({ type: 'class', accessRule, dropIn }, studioDropIn)
     await db
       .collection('activities')
       .doc(actIds[i])
@@ -1780,10 +1805,9 @@ async function seedDemoTeam(profile: SectorProfile) {
         slug: a.slug,
         color: a.color,
         description: a.description,
-        isFreeTrial: a.isFreeTrial,
         accessRule,
+        dropIn,
         ...(a.trialEnabled ? { trialEnabled: true } : {}),
-        ...(dropIn ? { dropIn } : {}),
         base_score: a.base_score,
         type: 'class',
         // Bookings confirm themselves — the default `resolveAutoConfirm` gives
@@ -1808,12 +1832,11 @@ async function seedDemoTeam(profile: SectorProfile) {
         color: a.color,
         description: a.description,
         image_url: null,
-        isFreeTrial: a.isFreeTrial,
         accessRule,
-        // Drop-in mirrored only when enabled + priced, exactly as
-        // syncActivityPublicProfile does. trialEnabled IS mirrored (when true)
-        // so the public flow can offer the newcomer trial door.
-        ...(dropIn ? { dropIn } : {}),
+        // The RESOLVED drop-in, mirrored only when there is a price to charge,
+        // exactly as syncActivityPublicProfile does. trialEnabled IS mirrored
+        // (when true) so the public flow can offer the newcomer trial door.
+        ...(door.enabled ? { dropIn: { enabled: true, priceAmount: door.priceAmount } } : {}),
         ...(a.trialEnabled ? { trialEnabled: true } : {}),
         ...(a.tags?.length ? { tags: normalizeActivityTags(a.tags) } : {}),
       })
@@ -1887,8 +1910,6 @@ async function seedDemoTeam(profile: SectorProfile) {
       slug: 'private-coaching',
       color: accentColor,
       image_url: null,
-      // The doc carries no isFreeTrial; the live sync mirrors `|| false`.
-      isFreeTrial: false,
       // Duration menu ("from CHF 45" on public cards) + the per-length member
       // rules, both mirrored verbatim, exactly as syncActivityPublicProfile
       // does (public-safe: the subscription-type ids are already public in the
@@ -2002,7 +2023,7 @@ async function seedDemoTeam(profile: SectorProfile) {
         active: true,
         // Surface every plan on the bio-link / website pricing table.
         public: true,
-        checkout_contact_mode: recurrence && recurrence !== 'per_class' ? 'full' : 'minimal',
+        checkout_contact_mode: recurrence && recurrence !== 'one_time' ? 'full' : 'minimal',
         prices,
         teamId,
         created_at: ts(daysFromNow(-120)),
@@ -2100,7 +2121,6 @@ async function seedDemoTeam(profile: SectorProfile) {
           activityName: a.name,
           activityColor: a.color,
           activitySlug: a.slug,
-          activityIsFreeTrial: a.isFreeTrial,
           activityImage: null,
           start: ts(base),
           end: ts(end),
@@ -2461,6 +2481,9 @@ async function seedDemoTeam(profile: SectorProfile) {
   for (let i = 0; i < logEntries.length; i++) {
     const e = logEntries[i]
     if (!e.contact) continue
+    // The row's OWN date, so the TTL stamp ages this row exactly as a real one
+    // of the same age would age — see scripts/lib/ledgerExpiry.ts.
+    const loggedAt = daysFromNow(-i - 1)
     await db
       .collection('teams')
       .doc(teamId)
@@ -2468,9 +2491,10 @@ async function seedDemoTeam(profile: SectorProfile) {
       .doc(`${teamId}-log-${i}`)
       .set({
         event: e.event,
-        created_at: ts(daysFromNow(-i - 1)),
+        created_at: ts(loggedAt),
         parameters: { description: e.desc },
         refs: { contact: e.contact, user: teamId },
+        expires_at: ledgerExpiry('activity_log', loggedAt),
       })
   }
 

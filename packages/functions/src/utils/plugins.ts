@@ -228,12 +228,16 @@ export async function unpublishSiteForTeam(teamId: string): Promise<void> {
  * an org's `website` install still tears nothing down by itself, and
  * orgs/lifecycle.ts calls this explicitly.
  */
-export async function unpublishSiteForOrg(orgId: string): Promise<void> {
+export async function unpublishSiteForOrg(orgId: string, updatedBy?: string): Promise<void> {
   const db = admin.firestore()
+  // The pages first, exactly as for a team: deleting the site doc alone would
+  // leave every page world-readable by its direct path — after an unpublish,
+  // and after a LAPSE, which runs this same function.
+  await db.recursiveDelete(db.collection(`${ORG_SITE_PUBLISHED_COLLECTION}/${orgId}/${SITE_PAGES_SUBCOLLECTION}`))
   await db.doc(`${ORG_SITE_PUBLISHED_COLLECTION}/${orgId}`).delete()
   await deleteSiteI18nSidecars(db, ORG_SITE_PUBLISHED_COLLECTION, orgId)
   await db.doc(`${ORG_SITE_DRAFTS_COLLECTION}/${orgId}`).set(
-    { enabled: false, updated_at: FieldValue.serverTimestamp() },
+    { enabled: false, updated_at: FieldValue.serverTimestamp(), ...(updatedBy ? { updatedBy } : {}) },
     { merge: true }
   )
 }

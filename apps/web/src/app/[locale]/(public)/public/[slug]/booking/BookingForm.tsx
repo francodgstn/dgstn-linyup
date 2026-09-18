@@ -18,7 +18,7 @@ import { db, functions } from '@/lib/firebase'
 import {
   resolveActivityAccessRule,
   compareActivities,
-  activityRequiresSubscription,
+  classAccessFacts,
   planGiftCardRedemption,
   resolvePaymentOptions,
   resolveBookingContactFields,
@@ -260,10 +260,34 @@ function dropInPriceOf(
   a: ActivityProfile | null | undefined,
   paymentsEnabled: boolean
 ): number | null {
-  if (!paymentsEnabled) return null
-  if (!a || a.isFreeTrial !== false) return null
-  if (!a.dropIn?.enabled) return null
-  return typeof a.dropIn.priceAmount === 'number' ? a.dropIn.priceAmount : null
+  if (!paymentsEnabled || !a) return null
+  const door = guestFacts(a).dropIn
+  return door.enabled && typeof door.priceAmount === 'number' ? door.priceAmount : null
+}
+
+/** WHO MAY BOOK, derived (docs/class-access-derived.md) — from the mirror, whose
+ *  drop-in is already RESOLVED, so there is no studio default left to follow. */
+function guestFacts(a: ActivityProfile) {
+  return classAccessFacts(
+    {
+      type: 'class',
+      accessRule: a.accessRule ?? undefined,
+      isFreeTrial: a.isFreeTrial,
+      dropIn:
+        a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+          ? { mode: 'custom', priceAmount: a.dropIn.priceAmount }
+          : { mode: 'off' },
+    },
+    null
+  )
+}
+
+/** Can a stranger NOT simply book this class? The wall, or plan holders only.
+ *  (A class anyone may pay for is not members-only — the visitor pays.) */
+function membersOnly(a: ActivityProfile | null | undefined): boolean {
+  if (!a) return false
+  const f = guestFacts(a)
+  return f.signupRequired || f.planHoldersOnly
 }
 
 /** Is the newcomer's trial door open? A FREE trial always is — being unable to
@@ -297,7 +321,7 @@ function nextStepAfterSession(
   // A KNOWN CALLER SKIPS BOTH DOORS. 'who' and 'returning' exist to work out
   // who is booking; a contact session has already answered that.
   if (signedIn) return 'member'
-  const gated = a?.isFreeTrial === false
+  const gated = membersOnly(a)
   const canGuest = dropInPriceOf(a, paymentsEnabled) != null || trialDoorOpen(a, paymentsEnabled)
   return gated && !canGuest ? 'returning' : 'who'
 }
@@ -1369,7 +1393,10 @@ export default function BookingForm({
     // Same resolver the server uses (@linyup/shared) decides "covered" —
     // mechanical swap of the intersection check, same gating conditions.
     const accessRule = selectedActivity ? resolveActivityAccessRule(selectedActivity) : null
-    const required = accessRule ? activityRequiresSubscription(accessRule) : null
+    // Plan holders only — the one case a returning visitor with no covering plan
+    // cannot book at all. Derived, like every reader (docs/class-access-derived.md).
+    const accessFacts = selectedActivity ? guestFacts(selectedActivity) : null
+    const required = accessFacts?.planHoldersOnly ? accessFacts.includedPlanIds : null
     if (required?.length && contactData.held_subscription_type_ids && !dropInAvailable) {
       const snapshot = clientPaymentSnapshot({
         authenticated: true,
@@ -2435,7 +2462,7 @@ export default function BookingForm({
   // ─── Step: Who? ───────────────────────────────────────────────────────────
 
   if (step === 'who' && selectedSession) {
-    const isMembersOnly = selectedActivity?.isFreeTrial === false
+    const isMembersOnly = membersOnly(selectedActivity)
     const trialPriceLabel =
       typeof selectedActivity?.trialPriceAmount === 'number'
         ? formatCurrency(selectedActivity.trialPriceAmount, currency, locale)
@@ -2547,7 +2574,7 @@ export default function BookingForm({
     const covered = memberCanBookFree
     const payable = !covered && dropInAvailable
     const someoneElseStep: Step =
-      selectedActivity?.isFreeTrial === false && !dropInAvailable && !trialAvailable
+      membersOnly(selectedActivity) && !dropInAvailable && !trialAvailable
         ? 'returning'
         : 'who'
 
@@ -2617,7 +2644,7 @@ export default function BookingForm({
   // above.
 
   if (step === 'returning' && selectedSession) {
-    const isMembersOnly = selectedActivity?.isFreeTrial === false
+    const isMembersOnly = membersOnly(selectedActivity)
     // Back goes to wherever the visitor came from: gated classes with a guest
     // door (drop-in or trial) DID pass through the 'who' chooser.
     const hadWhoStep = !isMembersOnly || dropInAvailable || trialAvailable
@@ -2915,6 +2942,7 @@ export default function BookingForm({
           customFieldDefinitions={team.publicCustomFields}
           showAggregatorField={showFitnessApp}
           aggregatorApps={partnerApps}
+          whatsappOptIn={{ offered: team.whatsapp_opt_in_offered === true, studioName: team.name || '' }}
           submitting={isSubmitting}
           error={bookingError}
           onSubmit={onSubmitGuest}
@@ -2955,7 +2983,7 @@ export default function BookingForm({
             the class runs, and the claim is where coverage is actually
             resolved. Refusing here would turn away the person the studio most
             wants to keep. */}
-        {selectedActivity?.isFreeTrial === false && (
+        {membersOnly(selectedActivity) && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <span className="font-semibold">{t('badgeMembersOnly')}</span>{' '}
             {t('waitlistAccessWarning')}

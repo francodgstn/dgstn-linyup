@@ -443,9 +443,7 @@ function TemplateDialog({
         type: 'appointment' as const,
         level: 'all' as const,
         color: DEFAULT_ACCENT,
-        isFreeTrial: true,
-        accessRule: { type: 'open' as const },
-        dropIn: { enabled: false },
+        // An appointment has no access gate — the price is the gate.
         durations: [{ minutes: 60, priceAmount: null }],
         slug: 'appointment',
         teamId,

@@ -14,6 +14,8 @@ import {
   nextItemOrder,
   parseHHMM,
   shiftProgramDays,
+  MAX_PROGRAM_ITEMS,
+  STARTER_PROGRAM_TEMPLATES,
   type EventProgramConfig,
 } from '@linyup/shared'
 
@@ -340,6 +342,74 @@ describe('extractTemplate', () => {
     // The plenary item stays plenary; the tracked one lands on the new Kids id.
     assert.equal(rebuiltItems[1].trackId, null)
     assert.equal(rebuiltItems[0].trackId, rebuilt.tracks[0].id)
+  })
+})
+
+describe('STARTER_PROGRAM_TEMPLATES', () => {
+  // The starter library is data that ships to studios and is applied verbatim
+  // onto events, so a malformed entry (a bad time, an item on a track that does
+  // not exist) would break a real programme. These assertions are the guard.
+
+  it('ships the built-in library with unique ids and identity fields', () => {
+    assert.ok(STARTER_PROGRAM_TEMPLATES.length >= 4)
+    const ids = STARTER_PROGRAM_TEMPLATES.map((s) => s.id)
+    assert.equal(new Set(ids).size, ids.length, 'starter ids must be unique')
+    for (const s of STARTER_PROGRAM_TEMPLATES) {
+      assert.ok(s.name.trim(), `${s.id} needs a name`)
+      assert.ok(s.description.trim(), `${s.id} needs a description`)
+      assert.ok(s.icon.trim(), `${s.id} needs an icon`)
+      assert.ok(s.items.length > 0, `${s.id} needs at least one item`)
+      assert.ok(s.items.length <= MAX_PROGRAM_ITEMS, `${s.id} exceeds the item cap`)
+    }
+  })
+
+  it('has well-formed times, tracks and day coverage in every starter', () => {
+    for (const s of STARTER_PROGRAM_TEMPLATES) {
+      const trackIds = new Set(s.tracks.map((t) => t.id))
+      const declaredDays = new Set(s.days.map((d) => d.dayIndex))
+      const maxItemDay = s.items.reduce((m, i) => Math.max(m, i.dayIndex), 0)
+      // Track ids must be unique so materialise's remap is unambiguous.
+      assert.equal(trackIds.size, s.tracks.length, `${s.id} has duplicate track ids`)
+      for (const item of s.items) {
+        assert.notEqual(parseHHMM(item.startTime), null, `${s.id}: bad startTime ${item.startTime}`)
+        if (item.endTime) {
+          assert.notEqual(parseHHMM(item.endTime), null, `${s.id}: bad endTime ${item.endTime}`)
+        }
+        assert.ok(item.dayIndex >= 0 && item.dayIndex <= maxItemDay)
+        if (item.trackId) {
+          assert.ok(trackIds.has(item.trackId), `${s.id}: item on unknown track ${item.trackId}`)
+        }
+      }
+      // Day metadata may be sparse, but must never name a day past the items.
+      for (const d of declaredDays) assert.ok(d >= 0)
+    }
+  })
+
+  it('materialises each starter cleanly onto a real event', () => {
+    let n = 0
+    for (const s of STARTER_PROGRAM_TEMPLATES) {
+      const { config, items } = materialiseTemplate(s, '2026-09-01', () => `s${++n}`)
+      const dayIds = new Set(config.days.map((d) => d.id))
+      // Every generated item lands on a generated day, dates run consecutively.
+      for (const item of items) assert.ok(dayIds.has(item.dayId), `${s.id}: item off-day`)
+      assert.equal(config.days[0].date, '2026-09-01')
+      for (let i = 1; i < config.days.length; i++) {
+        assert.equal(config.days[i].date, addDaysISO('2026-09-01', i), `${s.id}: day ${i} not consecutive`)
+      }
+      // No item is dropped — every template item references a covered day.
+      assert.equal(items.length, s.items.length, `${s.id}: lost items on apply`)
+    }
+  })
+
+  it('round-trips through extractTemplate without losing items', () => {
+    let n = 0
+    for (const s of STARTER_PROGRAM_TEMPLATES) {
+      const { config, items } = materialiseTemplate(s, '2026-09-01', () => `m${++n}`)
+      const withIds = items.map((it, i) => ({ ...it, id: `x${i}` }))
+      const back = extractTemplate(config, withIds)
+      assert.equal(back.items.length, s.items.length, `${s.id}: item count changed on extract`)
+      assert.equal(back.tracks.length, s.tracks.length, `${s.id}: track count changed on extract`)
+    }
   })
 })
 

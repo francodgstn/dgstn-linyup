@@ -790,7 +790,6 @@
     "performanceIndicator_recharge": "Récupération",
     "performanceIndicator_sense_of_progress": "Progression",
     "subscriptionTerminationReason": "Raison de fin",
-    "recurrence_per_class": "Par séance",
     "recurrence_one_time": "Unique",
     "recurrence_weekly": "Hebdomadaire",
     "recurrence_biweekly": "Toutes les 2 semaines",
@@ -1133,7 +1132,26 @@
     "recapSending": "Envoi…",
     "recapSent": "Récapitulatif envoyé à {name}.",
     "recapNotDelivered": "L'e-mail n'a pas été envoyé. L'adresse est peut-être bloquée, ou ce récapitulatif a déjà été envoyé.",
-    "recapFailed": "Le récapitulatif n'a pas pu être envoyé. Réessayez dans un instant."
+    "recapFailed": "Le récapitulatif n'a pas pu être envoyé. Réessayez dans un instant.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappOptedIn": "A accepté",
+    "whatsappOptedOut": "A refusé",
+    "whatsappNotAsked": "Pas encore demandé",
+    "whatsappMarkOptedIn": "Marquer comme accepté",
+    "whatsappMarkOptedOut": "Marquer comme refusé",
+    "whatsappConfirmOptInTitle": "Enregistrer l'accord WhatsApp",
+    "whatsappConfirmOptInDesc": "Confirmez que le membre a accepté de recevoir des messages WhatsApp du studio.",
+    "whatsappConfirmOptInAction": "Confirmer l'accord",
+    "whatsappSource_booking_form": "formulaire de réservation",
+    "whatsappSource_signup_form": "formulaire d'inscription",
+    "whatsappSource_space": "espace personnel",
+    "whatsappSource_member_app": "application membre",
+    "whatsappSource_staff": "équipe",
+    "whatsappSource_reply_stop": "a répondu STOP",
+    "whatsappRemindersRowTitle": "Rappels WhatsApp",
+    "whatsappMarketingTitle": "Actualités et offres WhatsApp",
+    "whatsappConfirmMarketingOptInDesc": "Confirmez que le membre a accepté de recevoir les actualités et offres du studio sur WhatsApp.",
+    "whatsappSource_meta_stop_promotions": "a appuyé sur « arrêter les promotions » dans WhatsApp"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -1586,6 +1604,15 @@
     "templateDeleteTitle": "Supprimer ce modèle ?",
     "templateDeleteDescription": "Les événements qui l’utilisent conservent leur programme. Cette action est irréversible.",
     "templateInherited": "Hérité de votre organisation — lecture seule.",
+    "templateClone": "Cloner",
+    "templateCloned": "Modèle cloné.",
+    "templateCopyName": "{name} (copie)",
+    "starterLibraryTitle": "Partir d’un modèle",
+    "starterLibraryHint": "Ajoutez un programme prêt à l’emploi à votre liste, puis adaptez-le lors d’un événement.",
+    "starterLibraryOrgHint": "Ajoutez un programme prêt à l’emploi à la liste partagée de l’organisation.",
+    "starterAdd": "Ajouter",
+    "starterAdded": "« {name} » ajouté à vos modèles.",
+    "starterBadge": "Prédéfini",
     "duplicateEvent": "Dupliquer",
     "duplicateTitle": "Dupliquer cet événement",
     "duplicateDescription": "Copie les réglages et tout le programme. Les RSVP, invitations et pointages ne sont pas copiés, et la copie reste privée.",
@@ -1807,7 +1834,7 @@
     "dropInModeCustom": "Prix propre à ce cours",
     "dropInModeOff": "Pas de séance à l'unité pour ce cours",
     "fieldTrialEnabled": "Cours d'essai pour les nouveaux venus",
-    "trialEnabledHint": "Une personne qui vient pour la première fois peut réserver l’un de ces cours à l’essai, même s’il est réservé aux membres ou à certains abonnements.",
+    "trialEnabledHint": "Une personne qui vient pour la première fois peut réserver un cours à l'essai — gratuit, ou au prix que vous fixez.",
     "trialPriceLabel": "Prix de l'essai",
     "trialPriceHint": "Laissez vide pour un essai gratuit, ou fixez un tarif réduit pour le premier cours d'un nouveau venu.",
     "trialPricePlaceholder": "p. ex. 15",
@@ -1905,13 +1932,21 @@
     "durationsInCatalogue": "Les durées, leurs tarifs et le tarif membre se définissent dans Accès et tarifs, à côté des abonnements auxquels ils s'appliquent.",
     "accessAllowWithoutPlan": "Les membres sans formule peuvent aussi réserver",
     "accessAllowWithoutPlanHint": "Ils paient le tarif drop-in — ou rien s'il n'y en a pas.",
-    "dropInModeStudioSetInline": "Définir",
-    "dropInStudioDefaultEdit": "Modifier le tarif par défaut du studio",
-    "dropInStudioDefaultConfirm": "Enregistrer le tarif par défaut",
-    "dropInStudioDefaultCancel": "Annuler",
-    "dropInStudioDefaultSaved": "Tarif par défaut enregistré — chaque cours qui le suit se vend désormais à ce prix.",
     "bookingMoreOptionsLabel": "Plus d'options",
-    "bookingMoreOptionsHint": "Point de rendez-vous, questions de réservation et ce qu'il faut savoir avant de venir"
+    "bookingMoreOptionsHint": "Point de rendez-vous, questions de réservation et ce qu'il faut savoir avant de venir",
+    "summaryIncluded": "les membres avec {names} réservent gratuitement",
+    "summaryMemberPrice": "{names} paient un tarif membre",
+    "summaryAnyonePays": "tous les autres paient {price}",
+    "summaryMembersPay": "les autres membres paient {price}, les visiteurs ne peuvent pas réserver",
+    "summaryFreeAnyone": "gratuit pour tous, sans inscription",
+    "summaryFreeMembers": "gratuit pour les personnes inscrites chez vous",
+    "summaryPlanHoldersOnly": "personne d'autre ne peut réserver",
+    "summaryTrialFree": "nouveaux venus : premier cours gratuit",
+    "summaryTrialPriced": "nouveaux venus : premier cours {price}",
+    "accessMoreOptionsLabel": "Plus d'options",
+    "accessMoreOptionsHint": "Réserver ce cours aux personnes inscrites chez vous",
+    "accessSignupOnly": "Seulement les personnes inscrites chez vous",
+    "accessSignupOnlyHint": "Les visiteurs ne peuvent pas réserver, même en payant. Un cours d'essai reste possible."
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
@@ -2867,7 +2902,7 @@
     "errorRemove": "Impossible de supprimer le plugin. Veuillez réessayer.",
     "errorSaveConfig": "Impossible d'enregistrer la configuration. Veuillez réessayer.",
     "whatsappName": "WhatsApp",
-    "whatsappDescription": "Envoyez des messages WhatsApp aux membres en tant qu'actions d'automatisation et déclenchez des règles sur les messages entrants.",
+    "whatsappDescription": "Envoyez des rappels de réservation et des messages aux membres via WhatsApp, avec le numéro de votre propre studio.",
     "whatsappActionSendMessage": "Envoyer un message WhatsApp",
     "whatsappTriggerMessageReceived": "Message WhatsApp reçu",
     "whatsappConfigTokenLabel": "Jeton d'accès API Meta",
@@ -3005,7 +3040,86 @@
     "siteThemesName": "Thèmes de site",
     "siteThemesDescription": "Des styles prêts à l’emploi pour votre site — police, boutons, cartes et styles de sections en un clic. Chaque réglage reste modifiable.",
     "crossfitZugSiteName": "Site web CrossFit Zug",
-    "crossfitZugSiteDescription": "Les sections, styles et thème propres à votre site, conçus pour correspondre à votre site actuel."
+    "crossfitZugSiteDescription": "Les sections, styles et thème propres à votre site, conçus pour correspondre à votre site actuel.",
+    "loading": "Chargement…",
+    "whatsappNotAvailable": "WhatsApp n'est pas encore disponible sur ce déploiement.",
+    "whatsappConnectAction": "Connecter WhatsApp",
+    "whatsappExplainOwnNumber": "Connectez le numéro WhatsApp Business de votre propre studio — Linyup n'envoie jamais depuis un numéro partagé.",
+    "whatsappExplainBilling": "Meta facture directement votre studio pour les messages envoyés — Linyup n'ajoute aucun coût supplémentaire.",
+    "whatsappExplainOptIn": "Les membres ne reçoivent des messages qu'après avoir donné leur accord — sur le formulaire de réservation, dans leur espace personnel, ou en personne auprès de l'équipe.",
+    "whatsappExplainReplies": "Les réponses continuent d'arriver dans votre propre application WhatsApp Business, comme avant.",
+    "whatsappConnected": "Connecté",
+    "whatsappQualityRating": "Évaluation de la qualité : {rating}",
+    "whatsappTemplateStatusTitle": "Modèle de rappel",
+    "whatsappTemplateApproved": "Approuvé",
+    "whatsappTemplatePending": "En cours de vérification",
+    "whatsappTemplateRejected": "Refusé",
+    "whatsappTemplatePaused": "En pause",
+    "whatsappTemplateMissing": "Pas encore créé",
+    "whatsappRefresh": "Actualiser",
+    "whatsappDisconnectAction": "Déconnecter",
+    "whatsappDisconnectTitle": "Déconnecter WhatsApp ?",
+    "whatsappDisconnectDesc": "Les rappels de réservation via WhatsApp seront arrêtés. Votre compte et votre application WhatsApp Business ne sont pas concernés — vous pouvez vous reconnecter à tout moment.",
+    "whatsappReconnect": "Se reconnecter",
+    "whatsappErrorGeneric": "Une erreur s'est produite lors de la connexion à WhatsApp. Veuillez réessayer.",
+    "whatsappErrorNotBusinessApp": "Connectez un numéro que vous utilisez dans l'application WhatsApp Business, afin que les réponses vous parviennent.",
+    "whatsappErrorNumberTaken": "Ce numéro est déjà connecté à un autre studio.",
+    "whatsappErrorNumberAmbiguous": "Impossible de déterminer quel numéro connecter. Veuillez réessayer.",
+    "whatsappConnectCancelled": "Connexion annulée.",
+    "whatsappConnectIncomplete": "La connexion n'a pas été finalisée. Veuillez réessayer.",
+    "whatsappMessagesTitle": "Messages",
+    "whatsappNewMessage": "Nouveau message",
+    "whatsappMessagesIntro": "Rédigez les messages WhatsApp que vos automatisations peuvent envoyer — Linyup les soumet à WhatsApp pour validation.",
+    "whatsappNoMessages": "Aucun message pour l'instant.",
+    "whatsappCategoryMarketingShort": "Actualités et offres",
+    "whatsappCategoryUtilityShort": "Type rappel",
+    "whatsappRecategorizedNote": "WhatsApp a reclassé ce message en Actualités et offres — il coûte plus cher et nécessite le consentement correspondant.",
+    "whatsappStateSending": "Envoi actif",
+    "whatsappStatePaused": "En pause",
+    "whatsappStateRejected": "Rejeté",
+    "whatsappStateEditRejected": "Modification rejetée",
+    "whatsappStateInReview": "En cours d'examen",
+    "whatsappStateNotSubmitted": "Non soumis",
+    "whatsappDeleteMessageTitle": "Supprimer ce message ?",
+    "whatsappDeleteMessageDesc": "Toute règle d'automatisation qui l'utilise ignorera cette étape au lieu de l'envoyer.",
+    "whatsappDeleteMessageAction": "Supprimer le message",
+    "whatsappMessageNameLabel": "Nom (pour votre référence)",
+    "whatsappMessageNamePlaceholder": "p. ex. Relance après essai",
+    "whatsappCategoryQuestion": "De quoi parle ce message ?",
+    "whatsappCategoryUtilityOption": "Quelque chose qu'ils ont réservé ou acheté",
+    "whatsappCategoryMarketingOption": "Actualités, offres ou invitations",
+    "whatsappCategoryMetaNote": "WhatsApp décide en dernier ressort de la catégorie — les actualités et offres coûtent plus cher que les messages liés aux réservations.",
+    "whatsappMessageBodyLabel": "Message",
+    "whatsappMessageBodyPlaceholder": "Bonjour {{firstname}}, …",
+    "whatsappTokenLabel_firstname": "Prénom",
+    "whatsappTokenLabel_lastname": "Nom",
+    "whatsappTokenLabel_teamName": "Nom du studio",
+    "whatsappTokenLabel_date": "Date",
+    "whatsappTokenLabel_bookingUrl": "Page de réservation",
+    "whatsappTokenLabel_membershipUrl": "Inscription à l'abonnement",
+    "whatsappTokenLabel_bioLinkUrl": "Page bio-link",
+    "whatsappTokenLabel_websiteUrl": "Site web",
+    "whatsappTokenLabel_reviewUrl": "Page d'avis",
+    "whatsappProblem_empty": "Rédigez un message avant d'enregistrer.",
+    "whatsappProblem_too_long": "Ce message est trop long (1024 caractères maximum).",
+    "whatsappProblemUnknownToken": "Jeton(s) inconnu(s) : {tokens}",
+    "whatsappProblem_starts_with_token": "Un message ne peut pas commencer par un jeton — ajoutez d'abord une formule de salutation.",
+    "whatsappProblem_ends_with_token": "Un message ne peut pas se terminer par un jeton — ajoutez une phrase de conclusion.",
+    "whatsappProblem_adjacent_tokens": "Deux jetons ne peuvent pas se suivre directement — ajoutez un mot entre les deux.",
+    "whatsappEditKeepsSendingNote": "Ce message est déjà approuvé et en cours d'envoi. Votre modification est soumise comme une nouvelle version — la version actuelle continue d'être envoyée jusqu'à l'approbation de WhatsApp.",
+    "whatsappPreviewTitle": "Aperçu",
+    "whatsappPreviewEmpty": "Votre message apparaîtra ici.",
+    "whatsappErrorLabel": "Donnez un nom à ce message.",
+    "whatsappErrorNotConnectedForMessage": "Connectez d'abord WhatsApp avant de soumettre ce message.",
+    "whatsappMessageErrorGeneric": "Une erreur s'est produite lors de l'enregistrement de ce message. Veuillez réessayer.",
+    "whatsappUsageTitle": "Messages WhatsApp ce mois-ci",
+    "whatsappUsageNone": "Aucun message envoyé ce mois-ci.",
+    "whatsappUsageCategory_utility": "Liés aux réservations",
+    "whatsappUsageCategory_marketing": "Actualités et offres",
+    "whatsappUsageCategory_service": "Réponses de service",
+    "whatsappUsageCategory_authentication": "Authentification",
+    "whatsappUsageBillingNote": "Meta facture ces messages directement à votre studio — Linyup n'ajoute aucun frais supplémentaire.",
+    "whatsappMessagesNotConnected": "Les messages pourront être rédigés dès que le ou la propriétaire du studio aura connecté un numéro WhatsApp."
   },
   "AiAssistant": {
     "launcherLabel": "Assistant IA",
@@ -4061,7 +4175,9 @@
     "starterFederation": "Accueil de la fédération",
     "starterFederationDesc": "En-tête, présentation, vos clubs, lieux et coordonnées",
     "starterSimple": "Site simple",
-    "starterSimpleDesc": "En-tête, un bloc de texte et les coordonnées"
+    "starterSimpleDesc": "En-tête, un bloc de texte et les coordonnées",
+    "sectionPosts": "Articles de blog",
+    "sectionPostsDesc": "Vos derniers articles, en cartes ou en liste"
   },
   "Courses": {
     "title": "Cours en ligne",
@@ -4494,7 +4610,17 @@
     "insuranceSave": "Enregistrer",
     "insuranceSaved": "Enregistré.",
     "insuranceSaveFailed": "Enregistrement impossible. Veuillez réessayer.",
-    "insuranceLoadFailed": "Vos données d'assurance n'ont pas pu être chargées."
+    "insuranceLoadFailed": "Vos données d'assurance n'ont pas pu être chargées.",
+    "whatsappRemindersTitle": "Rappels WhatsApp",
+    "whatsappRemindersIntro": "Recevez vos rappels de réservation sur WhatsApp plutôt que seulement par e-mail.",
+    "whatsappRemindersUnavailable": "Ce studio ne propose pas de rappels WhatsApp pour le moment.",
+    "whatsappRemindersOn": "Les rappels WhatsApp sont activés",
+    "whatsappRemindersOff": "Les rappels WhatsApp sont désactivés",
+    "whatsappRemindersSaved": "Enregistré",
+    "whatsappRemindersError": "Impossible d'enregistrer votre préférence. Veuillez réessayer.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappRemindersLabel": "Rappels de réservation",
+    "whatsappMarketingLabel": "Actualités et offres"
   },
   "FreePlan": {
     "downgradeBannerTitle": "Votre essai est terminé — vous êtes maintenant sur l'offre Gratuite",
@@ -4890,7 +5016,6 @@
     "cancel": "Annuler",
     "continueToPayment": "Continuer vers le paiement",
     "recurrence": {
-      "per_class": "/ séance",
       "one_time": "unique",
       "weekly": "/ semaine",
       "biweekly": "/ 2 semaines",
@@ -5415,10 +5540,10 @@
     "doorDropIn": "À la séance {amount}",
     "doorTrialFree": "Essai gratuit",
     "doorTrialPriced": "Essai à {amount} pour les nouveaux venus",
-    "dropInDefaultTitle": "À la séance (paiement par cours)",
+    "dropInDefaultTitle": "Tarif habituel à la séance",
     "dropInDefaultSubtitle": "Ce qu'un visiteur paie pour une séance. Chaque cours suit ce tarif sauf s'il fixe le sien ou désactive la séance à l'unité.",
-    "dropInDefaultToggle": "Proposer la séance à l'unité par défaut",
-    "dropInDefaultSummary": "{studio} cours suivent le tarif par défaut · {custom} fixent le leur · {off} n'en proposent pas",
+    "dropInDefaultToggle": "Appliquer un tarif habituel à la séance",
+    "dropInDefaultSummary": "{studio} cours l'utilisent · {custom} ont leur propre tarif · {off} n'en ont pas",
     "dropInDefaultSave": "Enregistrer",
     "dropInDefaultSaved": "Tarif à la séance par défaut enregistré",
     "dropInDefaultValidation": "Saisissez un prix d'au moins 0.50.",
@@ -5455,7 +5580,15 @@
     "discountsManageLink": "Gérer les codes promo",
     "discountPercentOff": "{percent} % de réduction",
     "discountFixedPrice": "{price} avec ce code",
-    "personaPickerLabel": "Voir les tarifs pour"
+    "personaPickerLabel": "Voir les tarifs pour",
+    "dropInDefaultCancel": "Annuler",
+    "dropInDefaultSaveFailed": "Le tarif habituel à la séance n'a pas pu être enregistré. Réessayez.",
+    "dropInDefaultButton": "À la séance · {price}",
+    "dropInDefaultButtonNone": "Définir un tarif à la séance",
+    "dropInDefaultChange": "Modifier",
+    "dropInDefaultSetOne": "En définir un",
+    "dropInDefaultReadOnly": "{price} par cours, sauf si un cours a son propre tarif ou n'en a pas.",
+    "dropInDefaultReadOnlyNone": "Pas de tarif habituel à la séance. Les cours sans tarif propre ne peuvent pas être payés à l'unité."
   },
   "PublicBooking": {
     "titleBookSession": "Réserver une séance",
@@ -5620,7 +5753,9 @@
     "memberContinueToPayment": "Continuer vers le paiement",
     "memberSomeoneElseTitle": "Réserver pour quelqu'un d'autre",
     "memberSomeoneElseSubtitle": "Réserver ce cours pour une autre personne",
-    "pricingDetailsTrigger": "Prix & accès"
+    "pricingDetailsTrigger": "Prix & accès",
+    "whatsappOptInLabel": "M'envoyer des rappels de {studioName} sur WhatsApp",
+    "whatsappMarketingOptInLabel": "Envoyez-moi aussi les actualités et offres de {studioName} sur WhatsApp"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",
@@ -5703,7 +5838,9 @@
     "registeredTitle": "Vous êtes inscrit(e) !",
     "successBody": "Bienvenue chez <strong>{teamName}</strong>. Vos informations ont été enregistrées. L'équipe vous contactera bientôt.",
     "openSpace": "Ouvrir votre Espace",
-    "toSurface": "Aller {name}"
+    "toSurface": "Aller {name}",
+    "whatsappOptInLabel": "M'envoyer des rappels de {teamName} sur WhatsApp",
+    "whatsappMarketingOptInLabel": "Envoyez-moi aussi les actualités et offres de {teamName} sur WhatsApp"
   },
   "PublicContactUpdate": {
     "teamNotFoundTitle": "Équipe introuvable",
@@ -6530,7 +6667,12 @@
       "failed": "Nous n'avons pas pu vérifier qui correspond.",
       "runFailed": "Nous n'avons pas pu exécuter cette automatisation.",
       "sentToast": "{count, plural, =0 {Rien n'a été envoyé} one {Envoyé à # contact} other {Envoyé à # contacts}}",
-      "failedCount": "{count, plural, one {# action a échoué} other {# actions ont échoué}}"
+      "failedCount": "{count, plural, one {# action a échoué} other {# actions ont échoué}}",
+      "whatsappReason": {
+        "no_phone": "pas de numéro de téléphone",
+        "no_consent": "n'a pas accepté les rappels WhatsApp",
+        "no_marketing_consent": "n'a pas accepté les actualités et offres WhatsApp"
+      }
     },
     "timeAgo": {
       "minutes": "il y a {mins} min",
@@ -6644,7 +6786,8 @@
         "webhook": "Webhook (POST)",
         "add_to_group": "Ajouter au groupe",
         "remove_from_group": "Retirer du groupe",
-        "create_alert": "Créer une alerte (bientôt disponible)"
+        "create_alert": "Créer une alerte (bientôt disponible)",
+        "send_whatsapp": "Envoyer un message WhatsApp"
       },
       "updateField": {
         "acquisitionStage": "Étape d'acquisition",
@@ -6679,7 +6822,11 @@
       "createAlertLabel": "Créer une alerte",
       "selectPresetPlaceholder": "Choisir un modèle",
       "noAlertPresets": "Aucun modèle — ajoutez-en un dans Paramètres de l'équipe",
-      "summaryCreateAlertNamed": "Alerte : {name}"
+      "summaryCreateAlertNamed": "Alerte : {name}",
+      "summarySendWhatsApp": "WhatsApp : {name}",
+      "selectMessagePlaceholder": "Sélectionner un message",
+      "noMessages": "Aucun message — ajoutez-en un dans le plugin WhatsApp",
+      "whatsappMessageNotReady": "pas encore prêt"
     },
     "placeholders": {
       "title": "Variables",
@@ -6718,7 +6865,8 @@
       "groupRequired": "Choisissez un groupe pour la condition « Est dans le groupe ».",
       "templateRequired": "Choisissez un modèle d'e-mail pour l'action « Envoyer un e-mail ».",
       "alertPresetRequired": "Choisissez un modèle pour l'action « Créer une alerte ».",
-      "groupRequiredAction": "Choisissez un groupe pour l'action « Ajouter au groupe » / « Retirer du groupe »."
+      "groupRequiredAction": "Choisissez un groupe pour l'action « Ajouter au groupe » / « Retirer du groupe ».",
+      "whatsappMessageRequired": "Choisissez un message WhatsApp."
     },
     "dialogs": {
       "rule": {
@@ -6769,7 +6917,16 @@
       "recipientsCount": "{count, plural, one {# personne atteinte} other {# personnes atteintes}}",
       "recipientsTruncated": "Affichage des {shown} premiers sur {total}.",
       "recipientsGone": "{count, plural, one {# destinataire ne figure plus dans vos contacts} other {# destinataires ne figurent plus dans vos contacts}}",
-      "recipientsNotRecorded": "Aucun destinataire n'a été enregistré pour cette exécution."
+      "recipientsNotRecorded": "Aucun destinataire n'a été enregistré pour cette exécution.",
+      "whatsappLine": "WhatsApp : {summary}",
+      "whatsappOutcome_sent": "{count} envoyé(s)",
+      "whatsappOutcome_held": "{count} en attente jusqu'à 8h",
+      "whatsappOutcome_noConsent": "{count} sans consentement",
+      "whatsappOutcome_noPhone": "{count} sans numéro de téléphone",
+      "whatsappOutcome_notReady": "{count} pas encore prêts à être envoyés",
+      "whatsappOutcome_blocked": "{count} bloqué(s)",
+      "whatsappOutcome_testSettings": "{count} retenu(s) par les paramètres de test",
+      "whatsappOutcome_duplicate": "{count} doublon(s)"
     },
     "deleteConfirmTitle": "Supprimer cette automatisation ?",
     "paymentKinds": {
@@ -6824,7 +6981,10 @@
     "deactivateAction": "Désactiver",
     "emailsSubtitle": "Gérez votre identité d'expéditeur, les e-mails système automatiques, la note de confirmation de réservation et l'expéditeur SMS.",
     "templatesSubtitle": "Modèles prédéfinis et personnalisés envoyés par vos automatisations et campagnes, ainsi que des variables réutilisables à insérer dans n'importe lequel d'entre eux.",
-    "templatesLinkNote": "Les modèles de sensibilisation prédéfinis et personnalisés, ainsi que la référence des variables, se trouvent désormais sur la page <link>Modèles d'e-mails</link>."
+    "templatesLinkNote": "Les modèles de sensibilisation prédéfinis et personnalisés, ainsi que la référence des variables, se trouvent désormais sur la page <link>Modèles d'e-mails</link>.",
+    "reminderChannelWhatsApp": "WhatsApp",
+    "reminderWhatsAppNote": "Envoyé uniquement aux membres ayant accepté les rappels WhatsApp ; pour les autres, cette étape est ignorée.",
+    "reminderWhatsAppSkippedHint": "WhatsApp n'est pas connecté pour le moment, ce rappel est donc ignoré jusqu'à ce qu'il le soit."
   },
   "Finance": {
     "exportCsv": "Exporter CSV",
@@ -8064,7 +8224,7 @@
     "deadEnds": "{count, plural, one {# activité que personne ne peut réserver} other {# activités que personne ne peut réserver}}",
     "deadEndsAction": "Afficher uniquement celles-ci",
     "deadEndsClear": "Tout afficher à nouveau",
-    "summaryClass": "{gated, plural, =0 {Ouvert à tous} one {# abonnement peut réserver} other {# abonnements peuvent réserver}} · {rated, plural, =0 {aucun tarif membre} one {# tarif membre} other {# avec tarif membre}}",
+    "summaryClass": "{gated, plural, =0 {Aucun abonnement inclus} one {# abonnement inclus} other {# abonnements inclus}} · {rated, plural, =0 {aucun tarif membre} one {# tarif membre} other {# avec tarif membre}}",
     "summaryAppointment": "Tout le monde peut réserver · {plans, plural, =0 {aucun tarif membre} one {# abonnement au tarif membre} other {# abonnements au tarif membre}}",
     "summaryPlan": "{count, plural, =0 {N'ouvre encore rien} one {Lié à # activité} other {Lié à # activités}}",
     "backToActivities": "Retour aux activités",
@@ -8752,7 +8912,9 @@
       "resumedSuccess": "Reçu {number} terminé.",
       "issueError": "Impossible d'émettre le reçu.",
       "unitPriceLabel": "Prix par unité (CHF)",
-      "unitPriceHint": "Par mois, leçon ou entrée. Laisser vide pour reprendre le prix de l'abonnement ou de l'achat ; un justificatif de présence en a besoin."
+      "unitPriceHint": "Par mois, leçon ou entrée. Laissez vide pour reprendre le prix de l'abonnement ou de l'achat.",
+      "unitPriceDoorHint": "Par leçon. Laissez vide pour utiliser le prix à la séance de ce cours, soit {price} ; saisissez un autre montant si le membre a payé un autre tarif.",
+      "unitPriceNoDoorHint": "Par leçon. Ce cours n'a pas de prix à la séance ; saisissez ce qu'une leçon a coûté à ce membre."
     },
     "history": {
       "title": "Reçus de ce contact",
@@ -8779,7 +8941,8 @@
       "attendance_truncated": "Seule une partie de l'historique de présence a pu être facturée.",
       "insured_number_missing": "Le numéro d'assuré est manquant.",
       "insurer_unknown": "Aucun assureur n'est enregistré pour ce contact.",
-      "unit_price_zero": "Une ou plusieurs lignes ont un prix de zéro."
+      "unit_price_zero": "Une ou plusieurs lignes ont un prix de zéro.",
+      "unit_price_from_drop_in": "Aucun prix n'a été saisi ; le prix à la séance du cours a donc été utilisé. Vérifiez-le si ce membre a payé un autre tarif, par exemple avec un carnet."
     },
     "bulk": {
       "title": "Émettre pour tous les membres",
@@ -8819,7 +8982,9 @@
       "noHistory": "Ce paiement mentionne un abonnement, mais aucun abonnement de ce plan n'est enregistré pour ce membre. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
       "unsupported": "Impossible de dériver un justificatif de ce paiement : un paiement à la séance ou de rendez-vous n'indique ni le cours ni la date couverte, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
       "openSegment": "Ouvrir les justificatifs du membre"
-    }
+    },
+    "checklistExpiring": "{count} positions associées ne sont plus valables après le {date}",
+    "checklistReview": "Vérifier"
   },
   "LegalProfile": {
     "title": "Profil juridique",
@@ -8920,7 +9085,9 @@
       "searchPlaceholder": "Rechercher une offre…",
       "unmappedOnly": "Non associés seulement ({count})",
       "summary": "{mapped} sur {total} associés",
-      "allMapped": "Toutes les offres sont associées."
+      "allMapped": "Toutes les offres sont associées.",
+      "stateExpiring": "Position bientôt expirée",
+      "stateExpired": "Position plus valable"
     },
     "suggest": {
       "button": "Suggérer des positions",
@@ -8933,6 +9100,18 @@
       "noneFound": "Aucune position n'a pu être suggérée pour les offres non associées.",
       "unavailable": "Les suggestions ne sont pas disponibles pour le moment. Vous pouvez toujours choisir les positions à la main.",
       "rateLimited": "Vous avez atteint la limite horaire de suggestions. Réessayez plus tard."
+    },
+    "expiry": {
+      "banner": "{count} positions associées ne sont plus valables après le {date}. La liste tarifaire change chaque 1er janvier, et une ligne de justificatif datée après le dernier jour de validité est refusée. Choisissez un remplacement d'ici là.",
+      "suggestReplacements": "Suggérer des remplacements",
+      "rowExpiring": "Valable jusqu'au {date} – les justificatifs datés plus tard seront refusés.",
+      "rowExpired": "Plus valable depuis le {date} – les nouveaux justificatifs sur cette position sont refusés.",
+      "replacementLabel": "Remplacement suggéré",
+      "useReplacement": "Utiliser",
+      "replacementsFound": "{count} remplacements suggérés. Rien ne change tant que vous n'avez pas choisi « Utiliser » sur une ligne, et rien n'est enregistré avant votre enregistrement.",
+      "replacementsNone": "Aucun remplacement n'a pu être suggéré. Choisissez à la main une position valable l'an prochain.",
+      "successorLine": "Dès le {date} : {position}",
+      "removeSuccessor": "Retirer"
     }
   },
   "QrInvoices": {

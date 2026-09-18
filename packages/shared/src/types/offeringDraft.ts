@@ -144,7 +144,6 @@ export interface DraftProblem {
 
 const ACTIVITY_TYPES: ActivityType[] = ['class', 'appointment']
 const ACCESS_TIERS: ActivityAccessTier[] = ['open', 'members', 'subscription']
-// No 'per_class': charged once, it grants unmetered access with no end (UX-104).
 const RECURRENCES: SubscriptionRecurrence[] = [
   'one_time',
   'weekly',

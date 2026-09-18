@@ -37,7 +37,7 @@ export interface RenderableSite {
   menu?: SiteMenuItem[]
   socialLinks?: SocialLink[]
   showBranding?: boolean
-  /** The site's other pages (team sites). Absent ⇒ a one-page site. */
+  /** The site's other pages. Absent ⇒ a one-page site. */
   pages?: SitePageRef[]
 }
 
@@ -52,6 +52,7 @@ export default function WebsiteRenderer({
   paymentsEnabled,
   page,
   shortenHref,
+  siteHref,
 }: {
   site: RenderableSite
   preview?: boolean
@@ -91,6 +92,12 @@ export default function WebsiteRenderer({
    * else (builder canvas, embed, our own hosts): the long path is the address.
    */
   shortenHref?: (href: string) => string
+  /**
+   * A page of THIS site as a public path — `[]` for home. Absent ⇒ a team
+   * site's (`/public/{slug}/site/…`). An organisation site passes its own
+   * (`/public/org/{slug}/…`), since its pages sit directly under the org slug.
+   */
+  siteHref?: (segments: readonly string[]) => string
 }) {
   const locale = useLocale()
   const t = useTranslations('Site')
@@ -172,14 +179,20 @@ export default function WebsiteRenderer({
   // there (`/angebot/crossfit`); elsewhere `shortenHref` is absent and the long
   // public path IS the address. See RenderCtx.shortenHref.
   const short = (href: string) => (shortenHref ? shortenHref(href) : href)
-  const homeHref = short(publicHrefLocalized(locale, site.slug, 'site'))
+  const hrefFor =
+    siteHref ??
+    ((segments: readonly string[]) =>
+      segments.length
+        ? publicSubHrefLocalized(locale, site.slug, 'site', [...segments])
+        : publicHrefLocalized(locale, site.slug, 'site'))
+  const homeHref = short(hrefFor([]))
   const pageById = new Map((site.pages ?? []).filter((p) => !p.hidden).map((p) => [p.id, p]))
   function pageHref(pageId: string, sectionId?: string): string | undefined {
     const ref = pageById.get(pageId)
     if (!ref) return undefined
     const anchor = sectionId ? `#${sectionId}` : ''
     if (page?.ref.id === ref.id) return anchor || '#top'
-    return short(publicSubHrefLocalized(locale, site.slug, 'site', sitePageSegments(ref.path))) + anchor
+    return short(hrefFor(sitePageSegments(ref.path))) + anchor
   }
   const onPageIds = new Set(pageSections.map((sec) => sec.id))
 

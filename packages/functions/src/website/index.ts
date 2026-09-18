@@ -19,6 +19,13 @@ import {
 } from '@linyup/shared'
 import type { PublishedSite, SitePageRef, WebsiteSection } from '@linyup/shared'
 import {
+  readSitePages,
+  translateSitePages,
+  publishedRedirects,
+  writeSitePages,
+  pruneUnpublishedPages,
+} from './publishPages'
+import {
   applyFormChecks,
   asDict,
   clean,
@@ -200,34 +207,21 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
   const name = optStr(team.name, 200) ?? 'Site'
   // Hidden sections omitted, unpublishable ones dropped — see ./sanitize.
   // ── PAGES ──────────────────────────────────────────────────────────────
-  // The home page is the draft doc's own sections; every other page is a doc in
-  // site_drafts/{teamId}/pages, listed by the draft's `pages` index. A page
-  // publishes only when it is in the index, not hidden, and has a doc.
-  const draftPagesSnap = await fs.collection(`${SITE_DRAFTS_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`).get()
-  const draftPageSections = new Map(
-    draftPagesSnap.docs
-      .filter((doc) => !doc.id.includes(SITE_I18N_SEPARATOR))
-      .map((doc) => [doc.id, (doc.data() as Dict).sections] as const)
-  )
-  const pageRefs: SitePageRef[] = sanitizePageRefs(draft.pages).filter(
-    (ref) => !ref.hidden && draftPageSections.has(ref.id)
-  )
-  // Section ids made unique across the whole site — an id is an anchor, a
-  // translation key and an embed address.
-  const deduped = dedupeSectionIds([
-    sanitizeSections(draft.sections),
-    ...pageRefs.map((ref) => sanitizeSections(draftPageSections.get(ref.id))),
-  ])
-  if (deduped.dropped.length) {
-    console.warn(`[publishWebsite] team ${teamId}: dropped duplicate section ids ${deduped.dropped.join(', ')}`)
-  }
-  const [sections, ...pageSections] = deduped.lists
-
+  // Everything about pages is shared with the organisation site — see
+  // ./publishPages. What is the team's own runs between reading and writing.
+  const { pageRefs, sections, pageSections, lists } = await readSitePages({
+    fs,
+    draftCollection: SITE_DRAFTS_COLLECTION,
+    id: teamId,
+    draft,
+    sanitizeList: sanitizeSections,
+    logTag: 'publishWebsite',
+  })
   // Embed selected places into 'places' sections + fill the Contact map from the
   // team's primary place. Done after sanitizing (needs Firestore reads).
-  await enrichSectionsWithPlaces(fs, teamId, team, deduped.lists)
+  await enrichSectionsWithPlaces(fs, teamId, team, lists)
   // A form section may only embed this team's published form (needs reads too).
-  await checkFormSections(fs, teamId, deduped.lists)
+  await checkFormSections(fs, teamId, lists)
 
   // Denormalise social links (already public via team.public_profile) so the
   // published doc is self-contained for footer/contact icons.
@@ -260,22 +254,15 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     srcLang,
   })
 
-  // Each page is translated into sidecars of its own, beside the page doc — a
-  // page's translations are read with that page, never with the whole site.
-  const pagesCollection = `${SITE_PUBLISHED_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`
-  const pageI18n: Awaited<ReturnType<typeof translatePublishedSite>>[] = []
-  for (const [index, ref] of pageRefs.entries()) {
-    pageI18n.push(
-      await translatePublishedSite({
-        db: fs,
-        collection: pagesCollection,
-        id: ref.id,
-        owner: { teamId },
-        published: { sections: pageSections[index] },
-        srcLang,
-      })
-    )
-  }
+  const pageI18n = await translateSitePages({
+    fs,
+    publishedCollection: SITE_PUBLISHED_COLLECTION,
+    id: teamId,
+    owner: { teamId },
+    pageRefs,
+    pageSections,
+    srcLang,
+  })
 
   // Shaped to match PublishedSite; typed as Dict for the Firestore write since
   // values are re-derived from sanitizers (platform strings, server timestamps).
@@ -291,13 +278,7 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     // Absent ⇒ a one-page site, exactly as before pages existed.
     pages: pageRefs.length ? pageRefs : undefined,
     // Old-site redirects, kept only when they lead somewhere published.
-    redirects: (() => {
-      const redirects = sanitizeRedirects(draft.redirects, {
-        pageIds: new Set(pageRefs.map((ref) => ref.id)),
-        pagePaths: new Set(pageRefs.map((ref) => ref.path)),
-      })
-      return redirects.length ? redirects : undefined
-    })(),
+    redirects: publishedRedirects(draft.redirects, pageRefs),
     socialLinks: socialLinks.length ? socialLinks : undefined,
     showBranding: plan === 'free' ? true : undefined,
     i18n,
@@ -307,35 +288,18 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
 
   // ORDER: page docs first, then the site doc that indexes them, then orphans —
   // a reader follows the index, so it never meets an entry whose page is missing.
-  if (pageRefs.length) {
-    const batch = fs.batch()
-    pageRefs.forEach((ref, index) => {
-      batch.set(
-        fs.collection(pagesCollection).doc(ref.id),
-        clean({
-          teamId,
-          pageId: ref.id,
-          sections: pageSections[index],
-          i18n: pageI18n[index],
-          published_at: FieldValue.serverTimestamp(),
-          updated_at: FieldValue.serverTimestamp(),
-        })
-      )
-    })
-    await batch.commit()
-  }
-
+  await writeSitePages({
+    fs,
+    publishedCollection: SITE_PUBLISHED_COLLECTION,
+    id: teamId,
+    owner: { teamId },
+    pageRefs,
+    pageSections,
+    pageI18n,
+  })
   await fs.doc(`${SITE_PUBLISHED_COLLECTION}/${teamId}`).set(published)
+  await pruneUnpublishedPages({ fs, publishedCollection: SITE_PUBLISHED_COLLECTION, id: teamId, pageRefs })
 
-  // A page no longer published (deleted, hidden) must not stay world-readable by
-  // its direct path — remove it and its translation sidecars.
-  const publishedPageIds = new Set(pageRefs.map((ref) => ref.id))
-  const existingPages = await fs.collection(pagesCollection).select().get()
-  for (const doc of existingPages.docs) {
-    if (doc.id.includes(SITE_I18N_SEPARATOR) || publishedPageIds.has(doc.id)) continue
-    await doc.ref.delete()
-    await deleteSiteI18nSidecars(fs, pagesCollection, doc.id)
-  }
   await draftSnap.ref.set(
     { enabled: true, updated_at: FieldValue.serverTimestamp(), updatedBy: uid },
     { merge: true },

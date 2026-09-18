@@ -65,10 +65,9 @@ export type DropInMode = 'studio' | 'custom' | 'off'
 
 export interface ActivityDropIn {
   mode?: DropInMode
-  /** LEGACY + 'custom' only: true when the class names its own price. Derived
-   *  by every reader from whether there is a price to charge — never trusted
-   *  on its own. */
-  enabled: boolean
+  /** LEGACY ONLY — read by `dropInModeOf` for a document with no `mode`, and
+   *  never written after stage 5 (docs/class-access-derived.md). */
+  enabled?: boolean
   /** Major units, the team's currency. Meaningful under 'custom' only. */
   priceAmount?: number
 }
@@ -77,8 +76,10 @@ export interface ActivityDropIn {
 export type ActivityAudience = 'anyone' | 'members'
 
 export interface ActivityAccessRule {
-  /** LEGACY + display projection. Never branch on it to decide access. */
-  type: ActivityAccessTier
+  /** LEGACY ONLY — a document written before stage 5 of
+   *  docs/class-access-derived.md. Never written any more and never read
+   *  outside `resolveActivityAccessRule` / the migration mapping. */
+  type?: ActivityAccessTier
   /** The plans that grant free (or credit-spent) access. */
   subscriptionTypeIds?: string[]
   /** Absent ⇒ derived from `type` by `resolveActivityAccessRule`. */
@@ -651,16 +652,6 @@ export function sanitizeBookingAnswers(
   }
 
   return Object.keys(out).length ? out : null
-}
-
-/** The subscription-type ids an access rule demands, or null when the rule doesn't
- *  gate on subscriptions at all (open/members). An empty array is a real (mis)config
- *  — a subscription-gated activity nobody can book — and is returned as-is. */
-export function activityRequiresSubscription(
-  accessRule: ActivityAccessRule | null | undefined,
-): string[] | null {
-  if (!accessRule || accessRule.type !== 'subscription') return null
-  return accessRule.subscriptionTypeIds ?? []
 }
 
 // Structural subset of Contact the coverage check reads — typed loosely so it

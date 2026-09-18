@@ -23,6 +23,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import {
   ACTIVITIES_COLLECTION,
+  classAccessRuleFor,
   TEAMS_COLLECTION,
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
   OFFERING_DRAFT_LIMITS,
@@ -455,11 +456,18 @@ export const applyOfferingDraft = onCall(async (request) => {
       ...(!isAppointment && activity.dropInPriceAmount !== undefined
         ? { dropIn: { enabled: true, priceAmount: activity.dropInPriceAmount } }
         : {}),
-      accessRule: {
-        type: tier,
-        ...(tier === 'subscription' ? { subscriptionTypeIds: gatePlanIds } : {}),
-      },
-      isFreeTrial: tier === 'open',
+      // WHO MAY BOOK IS DERIVED (docs/class-access-derived.md): the model says
+      // which plans include the class and whether it sells at the door, and the
+      // rule follows from those. `tier` survives only as the model's way of
+      // saying "members only" — the sign-up wall.
+      ...(isAppointment
+        ? {}
+        : {
+            accessRule: classAccessRuleFor({
+              signupRequired: tier === 'members',
+              includedPlanIds: gatePlanIds,
+            }),
+          }),
       teamId,
       createdBy: uid,
       isActive: true,

@@ -63,7 +63,7 @@ import {
   resolveBookingContactFields,
   type BookingContactField,
   type CustomFieldDefinition,
-  resolveActivityDropIn,
+  classAccessFacts,
   studioDropInOf,
   type ActivityDropIn,
 } from '@linyup/shared'
@@ -927,15 +927,24 @@ export const bookSession = onCall(async (request) => {
   // no repeat-limiting). Authenticated callers (trial accounts included) are
   // NOT affected — trialEnabled is a guest-only door, not a looser tier.
   //
-  // On an OPEN class the door is a no-op — everyone already books free, so
-  // trialEnabled grants nothing extra. It must therefore stay fully inert
-  // there: no payment gate (else a mispriced open class deadlocks — the free
-  // path would refuse with payment_required while createDropInCheckout refuses
-  // the same booking as "free to book, no payment needed") and no
+  // On a class that is FREE TO ANYONE the door is a no-op — everyone already
+  // books free, so trialEnabled grants nothing extra. It must therefore stay
+  // fully inert there: no payment gate (else a mispriced free class deadlocks —
+  // the free path would refuse with payment_required while createDropInCheckout
+  // refuses the same booking as "free to book, no payment needed") and no
   // once-per-person eligibility (else setting the flag on a free class would
   // silently block every returning guest from re-booking it).
-  const isTrialDoor =
-    !authenticatedContact && activityTrialEnabled && accessRule.type !== 'open'
+  //
+  // ASKED OF THE WHOLE CLASS, not of the legacy tier (docs/class-access-derived.md):
+  // a class anyone may book AND PAY FOR is not free, so it takes a newcomer's
+  // trial — "first class free, then CHF 25" without walling the class to
+  // members. A class that is free but walled to people who signed up still
+  // needs the door, and `trialAvailable` says so.
+  const classAccess = classAccessFacts(
+    { type: activityTypeVal, accessRule, dropIn: activityDropIn },
+    studioDropInOf(bookingSettings)
+  )
+  const isTrialDoor = !authenticatedContact && activityTrialEnabled && classAccess.trialAvailable
 
   if (isTrialDoor) {
     // Refuse a FREE booking of a PRICED trial — the price is the gate; the
@@ -977,11 +986,9 @@ export const bookSession = onCall(async (request) => {
   const gateAccessRule: ActivityAccessRule = isTrialDoor ? { type: 'open' } : accessRule
   // THE ONE READER of the drop-in price: a class that follows the studio
   // default stores no price of its own, so the raw field is not the answer
-  // (shared/utils/dropIn.ts).
-  const resolvedDropIn = resolveActivityDropIn(
-    { type: activityTypeVal, accessRule, dropIn: activityDropIn },
-    studioDropInOf(bookingSettings)
-  )
+  // (shared/utils/dropIn.ts). Resolved once, above, with the rest of the class's
+  // access facts.
+  const resolvedDropIn = classAccess.dropIn
   const { matchedSubscriptionTypeId, creditSpendTypeId, usageSpend } = await resolveBookingAccessGate({
     teamId: data.teamId,
     accessRule: gateAccessRule,

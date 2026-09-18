@@ -1,20 +1,18 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { doc, getDoc, getDocs, collection, setDoc, writeBatch, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage, functions } from '@/lib/firebase'
+import { stripUndefinedDeep, useDraftSitePages, saveDraftSitePages } from '@/lib/sitePagesClient'
 import {
   SITE_DRAFTS_COLLECTION,
   SITE_PUBLISHED_COLLECTION,
   EMBED_WIDGETS_COLLECTION,
-  SITE_PAGES_SUBCOLLECTION,
-  SITE_I18N_SEPARATOR,
 } from '@linyup/shared'
 import type {
   SiteDraft,
-  SitePageDoc,
   PublishedSite,
   EmbedWidget,
   EmbedWidgetSet,
@@ -49,26 +47,9 @@ export function usePublishedSite(teamId: string | null) {
 }
 
 /** A team's other pages (site_drafts/{teamId}/pages) — keyed by pageId, each
- *  value its `sections`. Skips translation sidecar ids (SITE_I18N_SEPARATOR)
- *  defensively — the draft side never writes one, only the published side
- *  does, but a listing that isn't defensive here is the one that breaks first
- *  if that ever changes. */
+ *  value its `sections`. The shared implementation is in lib/sitePagesClient. */
 export function useSitePageDocs(teamId: string | null) {
-  return useQuery<Record<string, WebsiteSection[]>>({
-    queryKey: ['site-pages', teamId],
-    enabled: !!teamId,
-    queryFn: async () => {
-      const snap = await getDocs(
-        collection(db, SITE_DRAFTS_COLLECTION, teamId!, SITE_PAGES_SUBCOLLECTION)
-      )
-      const out: Record<string, WebsiteSection[]> = {}
-      for (const d of snap.docs) {
-        if (d.id.includes(SITE_I18N_SEPARATOR)) continue
-        out[d.id] = (d.data() as SitePageDoc).sections ?? []
-      }
-      return out
-    },
-  })
+  return useDraftSitePages<WebsiteSection>(SITE_DRAFTS_COLLECTION, teamId, 'site-pages')
 }
 
 /** Public standalone embed widgets (embed_widgets/{teamId}) — builder reads/writes. */
@@ -132,32 +113,22 @@ export async function saveSiteDraft(teamId: string, userId: string, draft: SiteD
   })
 }
 
-/** Persist every page's sections (one `set` per page doc, full overwrite —
- *  same "the doc is the complete document" rule as `saveSiteDraft`) and
- *  delete any pages removed this session, all in one batch. */
+/** Persist every page's sections and delete the pages removed this session —
+ *  see lib/sitePagesClient. */
 export async function saveSitePages(
   teamId: string,
   userId: string,
   pages: { id: string; sections: WebsiteSection[] }[],
   removedPageIds: string[]
 ): Promise<void> {
-  const batch = writeBatch(db)
-  for (const page of pages) {
-    const payload = stripUndefinedDeep({
-      teamId,
-      pageId: page.id,
-      sections: page.sections,
-    })
-    batch.set(doc(db, SITE_DRAFTS_COLLECTION, teamId, SITE_PAGES_SUBCOLLECTION, page.id), {
-      ...payload,
-      updated_at: serverTimestamp(),
-      updatedBy: userId,
-    })
-  }
-  for (const id of removedPageIds) {
-    batch.delete(doc(db, SITE_DRAFTS_COLLECTION, teamId, SITE_PAGES_SUBCOLLECTION, id))
-  }
-  await batch.commit()
+  await saveDraftSitePages({
+    draftCollection: SITE_DRAFTS_COLLECTION,
+    id: teamId,
+    owner: { teamId },
+    userId,
+    pages,
+    removedPageIds,
+  })
 }
 
 /** Persist the team's standalone embed widgets (full overwrite — there's no
@@ -210,15 +181,3 @@ export async function uploadSiteImage(teamId: string, sectionId: string, file: F
   return getDownloadURL(sRef)
 }
 
-// Firestore rejects `undefined`; drop it recursively before writing.
-function stripUndefinedDeep<T>(value: T): T {
-  if (Array.isArray(value)) return value.map((v) => stripUndefinedDeep(v)) as unknown as T
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (v !== undefined) out[k] = stripUndefinedDeep(v)
-    }
-    return out as T
-  }
-  return value
-}

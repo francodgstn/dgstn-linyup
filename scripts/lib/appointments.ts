@@ -119,7 +119,7 @@ export function buildAppointmentSessionDocs(input: SeedAppointmentInput): {
     activityType: 'appointment',
     activityId: input.activityId,
     activityName: input.activityName,
-    // NOTE: no accessRule / isFreeTrial — appointments dropped the access gate
+    // NOTE: no accessRule — appointments dropped the access gate
     // entirely (2026-07); the price is the only gate. Matches bookAppointment.
     providerId: input.providerId,
     providerName: input.providerName,
@@ -165,10 +165,7 @@ export function buildAppointmentSessionDocs(input: SeedAppointmentInput): {
     // hardcodes this too; trackBookings reads it to drive the 'full' flip).
     max_participants: 1,
     bookings_count: 1,
-    // The live sync writes `isFreeTrial: data.isFreeTrial !== false`, and the
-    // session doc no longer carries the field — so the mirror gets `true`.
     // No accessRule: appointment mirrors dropped the gate (syncSessionPublicProfile).
-    isFreeTrial: true,
     status: 'full',
     allowBooking: true,
     ...extra,

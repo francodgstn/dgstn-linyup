@@ -31,10 +31,13 @@
  * date was also the sort key for the archive section, so the ordering moved
  * with it. Everything emitted below is derived from the TREE alone.
  */
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs'
+import { writeFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseFrontmatter, AREAS } from './lib/docsMeta.mjs'
+// readText, never readFileSync: a Windows checkout is CRLF, so the frontmatter
+// would fail to parse and `--check` would compare CRLF against LF. See its
+// header in docsMeta.mjs.
+import { readText, parseFrontmatter, AREAS } from './lib/docsMeta.mjs'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '')
 const DOCS = join(ROOT, 'docs')
@@ -70,7 +73,7 @@ const walk = (d, out = []) => {
 const docs = []
 for (const rel of walk(DOCS).sort()) {
   if (rel === 'README.md' || rel.endsWith('/README.md')) continue
-  const { data } = parseFrontmatter(readFileSync(join(DOCS, rel), 'utf8'))
+  const { data } = parseFrontmatter(readText(join(DOCS, rel)))
   if (!data?.title) continue
   docs.push({ rel, ...data })
 }
@@ -124,7 +127,7 @@ const content = out.join('\n')
 
 if (process.argv.includes('--check')) {
   let current = ''
-  try { current = readFileSync(OUT, 'utf8') } catch {}
+  try { current = readText(OUT) } catch {}
   if (current !== content) {
     console.error('docs-index: docs/README.md is stale. Run `pnpm docs:index` and commit the result.')
     process.exit(1)

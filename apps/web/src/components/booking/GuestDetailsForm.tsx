@@ -119,6 +119,21 @@ export interface GuestDetailsFormProps {
    * heard of would collect nothing and imply a partnership that does not exist.
    */
   aggregatorApps?: string[]
+  /**
+   * Offer the "send me WhatsApp reminders" checkbox — only when the studio has
+   * WhatsApp connected (`TeamPublicProfile.whatsapp_opt_in_offered`) AND this
+   * form is asking for a phone number at all. Unticked by default, always; the
+   * answer rides to the server as `contactFieldAnswers.whatsapp_opt_in`, the
+   * reserved key `buildContactFieldPatch` reads for consent (never a contact
+   * field of its own — see packages/functions/src/booking/contactFields.ts).
+   *
+   * A second, independent box rides beside it under the SAME `offered` gate —
+   * "News and offers from {studio}" — sent as
+   * `contactFieldAnswers.whatsapp_marketing_opt_in`. Two separate answers
+   * (docs/whatsapp-outbound.md → "6a"): reminders is what booking a class
+   * implies; news and offers is not, and Meta prices it differently.
+   */
+  whatsappOptIn?: { offered: boolean; studioName: string }
   submitting: boolean
   error?: string | null
   onSubmit: (values: GuestDetailsValues) => void | Promise<void>
@@ -142,6 +157,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
       customFieldDefinitions,
       showAggregatorField,
       aggregatorApps,
+      whatsappOptIn,
       submitting,
       error,
       onSubmit,
@@ -244,6 +260,34 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
               <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
             )}
           </div>
+        )}
+
+        {/* Never pre-ticked — this is Meta-required consent, not a default. Two
+            separate answers, same gate: reminders is implied by booking a
+            class, news and offers is not. */}
+        {askPhone && whatsappOptIn?.offered && (
+          <>
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                {...form.register('contactFieldAnswers.whatsapp_opt_in')}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
+              />
+              <span className="text-muted-foreground">
+                {t('whatsappOptInLabel', { studioName: whatsappOptIn.studioName })}
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                {...form.register('contactFieldAnswers.whatsapp_marketing_opt_in')}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
+              />
+              <span className="text-muted-foreground">
+                {t('whatsappMarketingOptInLabel', { studioName: whatsappOptIn.studioName })}
+              </span>
+            </label>
+          </>
         )}
 
         {/* The studio's own contact fields. Rendered from the RESOLVED list, so

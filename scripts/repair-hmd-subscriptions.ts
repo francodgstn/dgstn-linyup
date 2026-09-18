@@ -52,7 +52,7 @@
 import { parseArgs } from 'node:util'
 import { readFileSync } from 'fs'
 import { initializeApp, cert } from 'firebase-admin/app'
-import { getFirestore, type Firestore } from 'firebase-admin/firestore'
+import { FieldValue, getFirestore, type Firestore } from 'firebase-admin/firestore'
 import {
   CANONICAL_SUBSCRIPTION_TYPES,
   matchSubscriptionType,
@@ -175,6 +175,12 @@ async function main() {
     //    MERGED FIELD-BY-FIELD, never as a whole document: the studio's own
     //    edits to a class (name, tags, drop-in, prices) are not this script's to
     //    replace, and `accessRule` is a shared map whose other keys must survive.
+    //
+    //    Written in the DERIVED access shape (docs/class-access-derived.md): the
+    //    sign-up wall and the included plans. "Plan required" is derived (plans
+    //    listed, no drop-in price), so the legacy `requirePlan` / `type` /
+    //    `isFreeTrial` are deleted rather than kept in step. `dropIn` is the
+    //    studio's and is left alone — the stage-5 backfill states its mode.
     const planIds = [
       ...CANONICAL_SUBSCRIPTION_TYPES.map((t) => t.id),
       ...srcTypes.docs
@@ -193,15 +199,19 @@ async function main() {
       const linked = (rule.subscriptionTypeIds as string[] | undefined) ?? []
       const sameLinks =
         linked.length === planIds.length && planIds.every((id) => linked.includes(id))
-      if (sameLinks && rule.requirePlan === true && v.trialEnabled === true) continue
+      const legacyLeft =
+        rule.requirePlan !== undefined || rule.type !== undefined || v.isFreeTrial !== undefined
+      if (sameLinks && rule.audience === 'members' && v.trialEnabled === true && !legacyLeft) {
+        continue
+      }
       console.log(`  ${teamId}: gate "${v.name}" on ${planIds.length} plans + trial`)
       if (apply) {
         await a.ref.update({
           'accessRule.subscriptionTypeIds': planIds,
           'accessRule.audience': 'members',
-          'accessRule.requirePlan': true,
-          'accessRule.type': 'subscription',
-          isFreeTrial: false,
+          'accessRule.requirePlan': FieldValue.delete(),
+          'accessRule.type': FieldValue.delete(),
+          isFreeTrial: FieldValue.delete(),
           trialEnabled: true,
         })
       }

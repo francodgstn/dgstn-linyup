@@ -19,9 +19,8 @@
  *
  * ── WHAT IS AND IS NOT EXPRESSED ────────────────────────────────────────────
  *
- * A pack is `one_time` + `credits` — the only shape that actually grants
- * lessons; `per_class` is a display recurrence with no door semantics (see
- * `SubscriptionRecurrence`) and no template uses it. Complimentary carries NO
+ * A pack is `one_time` + `credits` — the only shape that grants lessons (the
+ * old `per_class` recurrence was removed, decision 32). Complimentary carries NO
  * prices at all, which is what "the studio charges nothing" means here — not a
  * price of zero, which would read as a free product somebody could buy.
  */

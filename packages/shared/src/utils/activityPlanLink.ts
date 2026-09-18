@@ -52,11 +52,12 @@ import {
   APPOINTMENT_EFFECTS,
   COURSE_EFFECTS,
   DROP_IN_EFFECTS,
-  canonicalClassGate,
-  classAccessTierOf,
   hasModernGate,
 } from './paymentOptions'
-import { resolveActivityDropIn, type DropInPrice } from './dropIn'
+import { dropInModeOf, resolveActivityDropIn, type DropInPrice } from './dropIn'
+// Cycle-safe: classAccess imports this module too, and each only calls the
+// other inside functions, never at module load.
+import { migrateClassAccess } from './classAccess'
 
 /** The fields the edge is read from and written to — narrow on purpose, so a
  *  caller can pass a form's partial state or a Firestore snapshot alike.
@@ -296,42 +297,27 @@ export function activityPlanEdgeUpdate(
 
   // ── the ACCESS facet, classes only ──
   if (!isAppointmentActivity(fresh) && next.access !== now.access) {
-    const gateIds = gatedPlanIds(fresh)
-    const nextGateIds = next.access
-      ? [...gateIds, subTypeId]
-      : gateIds.filter((id) => id !== subTypeId)
-    // THE TWO ANSWERS SURVIVE A PLAN EDIT. This map is written whole (see the
-    // fold), and until 2026-09-10 it was rebuilt from the id list alone —
-    // `{type:'subscription', ids}`, or `{type:'members'}` once the list was
-    // empty — which dropped `audience` / `requirePlan`, so "members only" with
-    // a drop-in price came back through `resolveClassGate`'s legacy legs as
-    // OPEN TO EVERYONE the moment a plan was ticked "included". Linking a plan
-    // says who books FREE; it never says who may book.
-    //
-    // So the pair is read through the same canonical translation the pricing
-    // form opens with, carried forward, and `type` stays its projection. A
-    // legacy document is upgraded to the two-field shape by this write exactly
-    // as the form's first save would upgrade it — and `isFreeTrial` is kept in
-    // step the way the form keeps it, for the public card's legacy reading.
-    // Dropping the last plan therefore never widens the door either: a class
-    // that required a plan still requires one, and the pricing page's health
-    // check says so until the studio changes its mind in "Who can book".
-    // The door is the RESOLVED drop-in: a class following the studio default
-    // stores no price of its own, and reading the raw fields here turned a
-    // legacy `subscription` class that sells at the door into "plan required"
-    // the first time a plan was ticked — while bookSession, which resolves,
-    // had been letting members pay the drop-in.
-    const gate = canonicalClassGate(
-      resolveActivityAccessRule(fresh),
-      resolveActivityDropIn(fresh, studioDropIn).enabled
-    )
+    // The plans the class includes AFTER the stage 5 mapping — never the raw
+    // stored list. A stale list the mapping clears (plans that did nothing on a
+    // free class) must not come back with the next tick and turn the class
+    // plan-holders-only (review of c393dbfe).
+    const current = migrateClassAccess(fresh, studioDropIn)
+    const gateIds = (current.accessRule.subscriptionTypeIds ?? []).filter((id) => id !== subTypeId)
+    const nextGateIds = next.access ? [...gateIds, subTypeId] : gateIds
+    // WHO MAY BOOK SURVIVES A PLAN EDIT. Ticking a plan says who books FREE;
+    // it never says who may book. The map is written whole (see the fold), so
+    // it is rebuilt from the class's CURRENT answer read through the stage 5
+    // mapping (`migrateClassAccess`) — which also upgrades a document written
+    // before the derived rule, closing a door the old reading never let fire,
+    // so the upgrade itself moves nobody (docs/class-access-derived.md). What
+    // is stored is the wall and the plans; "plan required" is derived on read.
     update.accessRule = {
-      type: classAccessTierOf(gate),
-      audience: gate.audience,
-      requirePlan: gate.requirePlan,
+      audience: current.accessRule.audience,
       ...(nextGateIds.length ? { subscriptionTypeIds: nextGateIds } : {}),
     }
-    update.isFreeTrial = gate.audience === 'anyone' && !gate.requirePlan
+    if (current.dropIn.mode !== dropInModeOf(fresh.dropIn)) {
+      update.dropIn = { ...current.dropIn, enabled: current.dropIn.mode === 'custom' }
+    }
   }
 
   return Object.keys(update).length ? update : null

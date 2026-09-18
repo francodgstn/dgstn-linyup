@@ -39,10 +39,12 @@ import {
   BOOKING_CONTACT_BASE_FIELDS,
   resolveBookingContactFields,
   TEAMS_COLLECTION,
+  whatsappConsentAllows,
 } from '@linyup/shared'
 import * as admin from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { loadBookingSettings } from './bookingSettings'
+import { whatsappConsentPatch } from '../whatsapp/consentPatch'
 
 /** The team's world-readable mirror, spelt the way the `public_profile` syncs
  *  spell it — `@linyup/shared` carries no team-scoped constant for it. */
@@ -51,6 +53,17 @@ const TEAM_PUBLIC_PROFILE_SUBCOLLECTION = 'public_profile'
 /** Base contact fields a book form may write. Kept as a Set of the shared
  *  vocabulary so adding one there cannot silently fail to be writable here. */
 const WRITABLE_BASE = new Set<string>(BOOKING_CONTACT_BASE_FIELDS)
+
+/**
+ * The reserved answer key a public form sends when the visitor ticked "send me
+ * reminders on WhatsApp". It is not a contact FIELD — it resolves to the
+ * member's consent record — so it rides beside the fields rather than in the
+ * resolved list. Only `true` is read: an unticked box is no answer, never an
+ * opt-out, by the same rule that an empty answer never blanks a stored value.
+ */
+export const WHATSAPP_OPT_IN_ANSWER_KEY = 'whatsapp_opt_in'
+/** The same, for WhatsApp news and offers — a separate answer, a separate box. */
+export const WHATSAPP_MARKETING_OPT_IN_ANSWER_KEY = 'whatsapp_marketing_opt_in'
 
 export interface ContactFieldPatchInput {
   /** The resolved list — `resolveBookingContactFields(bookingSettings, activity)`. */
@@ -78,6 +91,17 @@ export function buildContactFieldPatch(input: ContactFieldPatchInput): Record<st
   const answers = input.answers ?? {}
   const patch: Record<string, unknown> = {}
   const defs = new Map((input.definitions ?? []).map((d) => [d.id, d]))
+
+  // A consent already given is not re-stamped by ticking the box again.
+  if (answers[WHATSAPP_OPT_IN_ANSWER_KEY] === true && !whatsappConsentAllows(input.existing, 'reminders')) {
+    Object.assign(patch, whatsappConsentPatch('reminders', true, 'booking_form'))
+  }
+  if (
+    answers[WHATSAPP_MARKETING_OPT_IN_ANSWER_KEY] === true &&
+    !whatsappConsentAllows(input.existing, 'marketing')
+  ) {
+    Object.assign(patch, whatsappConsentPatch('marketing', true, 'booking_form'))
+  }
 
   for (const field of input.fields ?? []) {
     const key = field?.key

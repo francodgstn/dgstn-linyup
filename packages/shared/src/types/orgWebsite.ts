@@ -11,8 +11,11 @@ import type {
   FaqSection,
   TestimonialsSection,
   VideoSection,
+  PostsSection,
   SiteMenuItem,
   SiteI18nManifest,
+  SitePageRef,
+  SiteRedirect,
 } from './website'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,6 +124,8 @@ export type OrgSiteSection =
   | FaqSection
   | TestimonialsSection
   | VideoSection
+  // The newest posts of the site's blog — organisations write news too.
+  | PostsSection
   | ClubsSection
   | LocationsSection
   | CoachesSection
@@ -140,6 +145,12 @@ export interface OrgSiteDraft {
    *  which is what makes this ADDITIVE: every org site published before the
    *  field existed keeps the header it already had. */
   menu?: SiteMenuItem[]
+  /** The site's other pages and posts — the SAME index a team site keeps
+   *  (`SitePageRef`); each page's sections live in `pages/{pageId}` under this
+   *  doc. Absent ⇒ a one-page site, which is every org site before pages. */
+  pages?: SitePageRef[]
+  /** Old URLs of a site the organisation moved here — see SiteRedirect. */
+  redirects?: SiteRedirect[]
   updated_at?: Timestamp
   updatedBy?: string
 }
@@ -154,6 +165,10 @@ export interface OrgPublishedSite {
   sections: OrgSiteSection[]
   /** The header menu. Absent ⇒ derived from sections. */
   menu?: SiteMenuItem[]
+  /** Published pages and posts (hidden ones never reach here). */
+  pages?: SitePageRef[]
+  /** Old-site redirects whose target is published. */
+  redirects?: SiteRedirect[]
   /** Snapshot of member teams (from org_teams at publish). Live blocks read each
    *  team's public_profile by teamId for fresh branding / location / coaches. */
   teams: OrgSiteTeamRef[]

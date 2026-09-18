@@ -44,8 +44,8 @@ import {
 } from 'lucide-react'
 import {
   SESSIONS_COLLECTION, ACTIVITIES_COLLECTION, CONTACTS_COLLECTION,
-  PARTICIPANTS_SUBCOLLECTION, WAITLIST_SUBCOLLECTION, resolveActivityAccessRule,
-  activityRequiresSubscription, contactHoldsCoveringSubscription,
+  PARTICIPANTS_SUBCOLLECTION, WAITLIST_SUBCOLLECTION, classAccessFacts,
+  contactHoldsCoveringSubscription,
   bookingHoldsSeat, confirmClearedHoldFields, seatsFree,
   bookingContactId, buildParticipantDoc,
   CONTACT_GOALS_SUBCOLLECTION, resolveCoachingDimensions, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION,
@@ -1053,17 +1053,14 @@ export default function SessionDetailPage() {
   // Subscription gate of this session's activity. Mirrors bookSession's resolution
   // order: an appointment session's own denormalised rule is authoritative (per-slot
   // overrides); group classes read the linked activity. null/empty = not gated.
+  // The plans that INCLUDE this session's class — whose holders the roster marks
+  // covered. Derived (docs/class-access-derived.md), never off the legacy tier;
+  // an appointment has no access gate at all (the price is the gate).
   const gateActivity = (activitiesQ.data ?? []).find((a) => a.id === sessionQ.data?.activityId)
-  const sessionRule = (sessionQ.data as { accessRule?: Parameters<typeof resolveActivityAccessRule>[0]['accessRule'] } | null | undefined)?.accessRule
   const isAppointmentSession = sessionQ.data?.activityType === 'appointment'
-  const accessRule = isAppointmentSession
-    ? sessionQ.data
-      ? resolveActivityAccessRule({ accessRule: sessionRule, isFreeTrial: sessionQ.data.isFreeTrial })
-      : null
-    : gateActivity
-      ? resolveActivityAccessRule(gateActivity)
-      : null
-  const requiredSubIds = activityRequiresSubscription(accessRule)
+  const includedPlanIds =
+    !isAppointmentSession && gateActivity ? classAccessFacts(gateActivity, null).includedPlanIds : []
+  const requiredSubIds = includedPlanIds.length ? includedPlanIds : null
 
   // Contact docs (subscription snapshots included) for the roster coverage badges.
   // The one roster hook, on the shared cache entry; only fetched when the

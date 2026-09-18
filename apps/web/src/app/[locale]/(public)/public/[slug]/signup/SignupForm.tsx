@@ -42,6 +42,12 @@ function createDetailsSchema(t: ReturnType<typeof useTranslations>) {
     firstname: z.string().min(1, t('errorRequired')).max(60),
     lastname: z.string().min(1, t('errorRequired')).max(60),
     phone: z.string().max(30).optional(),
+    // Never pre-ticked — Meta-required consent, not a default. Sent to
+    // `completeSignup` only when true (contactDetails.whatsappOptIn).
+    whatsappOptIn: z.boolean().optional(),
+    // The second, independent answer — "news and offers" — sent only when true
+    // (contactDetails.whatsappMarketingOptIn). Same gate as the box above.
+    whatsappMarketingOptIn: z.boolean().optional(),
     birthdate: z.string().optional(),
     notes: z.string().max(500).optional(),
     privacyConsent: z.literal(true, {
@@ -84,6 +90,10 @@ export default function SignupForm({ slug, from }: Props) {
   // falls back to the plain consent text below — no regression for teams without
   // the plugin installed.
   const signupDocs = team.signup_documents ?? []
+  // The studio's own WhatsApp number is connected — offer the opt-in beside
+  // the phone question. `TeamPublicProfile.whatsapp_opt_in_offered` already
+  // means "plugin installed AND a number connected" (syncTeamPublicProfile).
+  const whatsappOptInOffered = team.whatsapp_opt_in_offered === true
 
   // A required waiver gets its OWN tick on this rail, never a link bundled into
   // the consent sentence beside a privacy policy — that is the weakest possible
@@ -278,6 +288,8 @@ export default function SignupForm({ slug, from }: Props) {
           firstname: values.firstname,
           lastname: values.lastname,
           phone: values.phone || undefined,
+          ...(values.whatsappOptIn === true ? { whatsappOptIn: true } : {}),
+          ...(values.whatsappMarketingOptIn === true ? { whatsappMarketingOptIn: true } : {}),
           birthdate: values.birthdate || undefined,
           notes: values.notes || undefined,
           privacyConsent: true,
@@ -528,6 +540,29 @@ export default function SignupForm({ slug, from }: Props) {
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
+
+          {/* Never pre-ticked — this is Meta-required consent, not a default.
+              Two separate answers, same gate: reminders vs. news and offers. */}
+          {whatsappOptInOffered && (
+            <>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...detailsForm.register('whatsappOptIn')}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
+                />
+                <span className="text-muted-foreground">{t('whatsappOptInLabel', { teamName })}</span>
+              </label>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...detailsForm.register('whatsappMarketingOptIn')}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
+                />
+                <span className="text-muted-foreground">{t('whatsappMarketingOptInLabel', { teamName })}</span>
+              </label>
+            </>
+          )}
 
           <div className="space-y-1">
             <label className="text-sm font-medium">

@@ -82,7 +82,6 @@ import {
 } from '@/components/ui/select'
 
 const RECURRENCES = [
-  'per_class',
   'one_time',
   'weekly',
   'biweekly',
@@ -579,15 +578,11 @@ export function PlanPricingForm({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {/* NO NEW "PER CLASS" PRICE (UX-104). It is charged once
-                              and never ends, and a held non-credit price covers
-                              every linked class — so "10-class card, per class"
-                              sold unlimited access for life. A pack is one-time
-                              plus a number of classes. A price already stored
-                              with it keeps its label so the form can show it. */}
-                          {RECURRENCES.filter(
-                            (r) => r !== 'per_class' || watch(`prices.${i}.recurrence`) === 'per_class'
-                          ).map((r) => (
+                          {/* NO "PER CLASS" (UX-104, decision 32): it was charged
+                              once, never ended, and covered every linked class —
+                              "10-class card, per class" sold unlimited access for
+                              life. A pack is one-time plus a number of classes. */}
+                          {RECURRENCES.map((r) => (
                             <SelectItem key={r} value={r}>
                               {tc(`recurrence_${r}`)}
                             </SelectItem>

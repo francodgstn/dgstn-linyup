@@ -1,4 +1,4 @@
-import { isTrialStage, leaderboardDisplayName, personInitials } from '@linyup/shared';
+import { isTrialStage, leaderboardDisplayName, personInitials, whatsappConsentAllows, type WhatsAppConsentKind } from '@linyup/shared';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -17,6 +17,7 @@ import {
 import {
   IconButton,
   Surface,
+  Switch,
   Text,
   TouchableRipple,
   useTheme,
@@ -174,6 +175,15 @@ export const ProfileScreen: React.FC = () => {
   const [isEditingWeight, setIsEditingWeight] = useState(false);
   const [weightInput, setWeightInput] = useState('');
   const [isSavingWeight, setIsSavingWeight] = useState(false);
+
+  // WhatsApp opt-ins (docs/whatsapp-outbound.md → "Opt-in surfaces" / "6a").
+  // Two independent answers — reminders and news/offers — share this one
+  // door. `waOverride[kind]` is the optimistic value while that row's toggle
+  // is in flight; undefined means "trust the contact doc", which is what
+  // whatsappConsentAllows reads.
+  const [waOverride, setWaOverride] = useState<Partial<Record<WhatsAppConsentKind, boolean>>>({});
+  const [waSaving, setWaSaving] = useState<Partial<Record<WhatsAppConsentKind, boolean>>>({});
+  const [waError, setWaError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -480,6 +490,33 @@ export const ProfileScreen: React.FC = () => {
 
   if (!contact) return <LoadingOverlay visible message={t('loadingProfile')} />;
 
+  // Each row is shown once the studio offers WhatsApp OR the contact already
+  // answered THAT question (opted in or out) — so a member who opted in
+  // before the studio disconnected can still switch it off, and a "reminders"
+  // answer never gates the "news and offers" row or vice versa.
+  // `whatsappConsentAllows` is the ONE reader of the status; never branch on
+  // `whatsapp_consent.status` / `whatsapp_marketing_consent.status` directly.
+  const whatsappOffered = teamProfile?.whatsapp_opt_in_offered === true;
+  const showWhatsAppReminders = whatsappOffered || !!contact.whatsapp_consent;
+  const showWhatsAppMarketing = whatsappOffered || !!contact.whatsapp_marketing_consent;
+  const showWhatsAppCard = showWhatsAppReminders || showWhatsAppMarketing;
+  const waOptedIn = (kind: WhatsAppConsentKind) =>
+    waOverride[kind] !== undefined ? waOverride[kind]! : whatsappConsentAllows(contact, kind);
+
+  const handleToggleWhatsApp = async (kind: WhatsAppConsentKind, next: boolean) => {
+    setWaOverride((prev) => ({ ...prev, [kind]: next }));
+    setWaSaving((prev) => ({ ...prev, [kind]: true }));
+    setWaError(null);
+    try {
+      await FirestoreService.setMyWhatsAppConsent(contact.teamId, next, kind);
+      await refreshContact();
+    } catch (err) {
+      setWaError(err instanceof Error ? err.message : t('whatsappConsentUpdateFailed'));
+    } finally {
+      setWaSaving((prev) => ({ ...prev, [kind]: false }));
+      setWaOverride((prev) => ({ ...prev, [kind]: undefined }));
+    }
+  };
 
   const handleShowContactSelection = async () => {
     await showContactSelection();
@@ -650,6 +687,50 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
       </Surface>
+
+      {/* WhatsApp opt-ins — two independent rows (reminders, news and offers)
+          in one card, each shown only when the studio offers the channel or
+          the member already answered THAT question — see showWhatsAppCard /
+          showWhatsAppReminders / showWhatsAppMarketing. Each row is an
+          optimistic toggle with rollback on failure; the error surfaces in
+          the shared Snackbar below rather than blocking the row. */}
+      {showWhatsAppCard && (
+        <Surface style={[styles.infoCard, { marginTop: 16 }]} elevation={1}>
+          <View style={styles.infoSection}>
+            <Text variant="titleMedium" style={styles.infoSectionTitle}>{t('whatsappCardTitle').toUpperCase()}</Text>
+
+            {showWhatsAppReminders && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text variant="bodyLarge" style={{ flex: 1, color: theme.colors.onSurface }}>
+                  {t('whatsappBookingReminders')}
+                </Text>
+                <Switch
+                  value={waOptedIn('reminders')}
+                  onValueChange={(next) => handleToggleWhatsApp('reminders', next)}
+                  disabled={!!waSaving.reminders}
+                />
+              </View>
+            )}
+
+            {showWhatsAppMarketing && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text variant="bodyLarge" style={{ flex: 1, color: theme.colors.onSurface }}>
+                  {t('whatsappNewsAndOffers')}
+                </Text>
+                <Switch
+                  value={waOptedIn('marketing')}
+                  onValueChange={(next) => handleToggleWhatsApp('marketing', next)}
+                  disabled={!!waSaving.marketing}
+                />
+              </View>
+            )}
+
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {t('whatsappStopHelp')}
+            </Text>
+          </View>
+        </Surface>
+      )}
 
       {/* Account closure. Set apart from the action row above: it is not one of
           the things you do here, it is the way out. A pending deletion takes
@@ -1228,6 +1309,15 @@ export const ProfileScreen: React.FC = () => {
         style={{ marginBottom: 20 }}
       >
         {t('updateRequestSubmitted')}
+      </Snackbar>
+
+      <Snackbar
+        visible={!!waError}
+        onDismiss={() => setWaError(null)}
+        duration={4000}
+        style={{ marginBottom: 20 }}
+      >
+        {waError}
       </Snackbar>
 
     </View>

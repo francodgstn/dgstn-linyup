@@ -16,7 +16,7 @@
 // callers can pass either without adapting field names.
 
 import {
-  resolveActivityAccessRule,
+  classAccessFacts,
   resolveDurationBenefit,
   resolveDurationSale,
   normalizeBenefit,
@@ -140,32 +140,43 @@ export function resolveActivityTerms(a: ActivityTermsInput): ActivityTerm[] {
   }
 
   // class (default when `type` is absent/'class')
-  const rule = resolveActivityAccessRule(a)
-  if (rule.type === 'members' || rule.type === 'subscription') {
-    terms.push({
-      kind: 'gate',
-      tier: rule.type,
-      // A subscription-gated class carries WHICH subscriptions grant access, so a
-      // surface with the plan list can render "Included with {name}" per plan.
-      ...(rule.type === 'subscription' && rule.subscriptionTypeIds?.length
-        ? { subscriptionTypeIds: rule.subscriptionTypeIds }
-        : {}),
-    })
+  //
+  // WHO MAY BOOK, DERIVED (docs/class-access-derived.md) — through the same
+  // `classAccessFacts` the booking path reads, never off the legacy tier. The
+  // studio default is `null` here: every caller hands in a document whose
+  // drop-in is already RESOLVED (a public mirror, or the admin list after
+  // `resolveActivityDropIn`), so there is no default left to follow.
+  const facts = classAccessFacts(
+    {
+      type: 'class',
+      accessRule: a.accessRule ?? undefined,
+      isFreeTrial: a.isFreeTrial,
+      dropIn:
+        a.dropIn && typeof a.dropIn.priceAmount === 'number' && a.dropIn.enabled !== false
+          ? { mode: 'custom', priceAmount: a.dropIn.priceAmount }
+          : { mode: 'off' },
+    },
+    null
+  )
+  // The wall: only people who signed up with the studio.
+  if (facts.signupRequired && !facts.planHoldersOnly) terms.push({ kind: 'gate', tier: 'members' })
+  // The plans that include it. Plan-holders-only is a GATE (nobody else gets
+  // in); otherwise the same plans are simply a way in for free, beside the door.
+  if (facts.planHoldersOnly) {
+    terms.push({ kind: 'gate', tier: 'subscription', subscriptionTypeIds: facts.includedPlanIds })
+  } else if (facts.includedPlanIds.length > 0) {
+    terms.push({ kind: 'benefitIncluded', subscriptionTypeIds: facts.includedPlanIds })
   }
-  const triable = (rule.type === 'open' && a.isFreeTrial === true) || a.trialEnabled === true
-  if (triable) {
-    // A trial price only applies where the trial door actually grants something
-    // — i.e. on a GATED class. On an open class everyone books free anyway, so
-    // the door (and its price) is inert; mirrors `bookSession`'s isTrialDoor, so
-    // the card never advertises a price the backend won't charge.
-    const priced = typeof a.trialPriceAmount === 'number' && rule.type !== 'open'
+  // The newcomer's trial, where it grants something (mirrors `bookSession`'s
+  // trial door): never on a class free to anyone.
+  if (a.trialEnabled === true && facts.trialAvailable) {
     terms.push({
       kind: 'trial',
-      ...(priced ? { amount: a.trialPriceAmount as number } : {}),
+      ...(typeof a.trialPriceAmount === 'number' ? { amount: a.trialPriceAmount } : {}),
     })
   }
-  if (a.dropIn?.enabled && typeof a.dropIn.priceAmount === 'number') {
-    terms.push({ kind: 'dropIn', amount: a.dropIn.priceAmount })
+  if (facts.dropIn.enabled && typeof facts.dropIn.priceAmount === 'number') {
+    terms.push({ kind: 'dropIn', amount: facts.dropIn.priceAmount })
   }
 
   return terms

@@ -57,6 +57,9 @@ import {
   STORE_PRESENCE_COLLECTION,
   STORE_REVIEWS_COLLECTION,
   STORE_EVENTS_COLLECTION,
+  WHATSAPP_CONNECTIONS_COLLECTION,
+  WHATSAPP_NUMBERS_COLLECTION,
+  WHATSAPP_SUPPRESSIONS_COLLECTION,
 } from './paths'
 
 /** How a top-level collection's documents are matched to a team. */
@@ -156,6 +159,15 @@ export const TENANT_DATA_COLLECTIONS: TenantCollection[] = [
   // the same reason as contact update links: a credential that outlives its team
   // is a live door into nothing — and a door nonetheless.
   { collection: API_CREDENTIALS_COLLECTION, match: { by: 'field', field: 'teamId' } },
+  // WhatsApp (docs/whatsapp-outbound.md). The connection holds the studio's
+  // sealed Meta token (doc id = teamId); the number claim would otherwise lock
+  // that number to a team that no longer exists; the suppressions are per studio.
+  // The studio's WhatsApp account itself is Meta's and the studio's — an app
+  // subscription left behind delivers events the webhook drops, since the
+  // number claim is gone.
+  { collection: WHATSAPP_CONNECTIONS_COLLECTION, match: { by: 'docId' } },
+  { collection: WHATSAPP_NUMBERS_COLLECTION, match: { by: 'field', field: 'teamId' } },
+  { collection: WHATSAPP_SUPPRESSIONS_COLLECTION, match: { by: 'field', field: 'team_id' } },
 ]
 
 /**

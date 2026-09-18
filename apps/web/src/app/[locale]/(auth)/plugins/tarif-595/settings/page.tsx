@@ -36,7 +36,13 @@ import { useActivities } from '@/hooks/useActivities'
 import { useCourses } from '@/plugins/online-courses/hooks'
 import { useTarif595Config, saveTarif595Config, useInvalidateTarif595, callSuggestTarif595Mappings } from '@/plugins/tarif-595/hooks'
 import { useTarif595PositionsTable } from '@/plugins/tarif-595/PositionPicker'
-import { OfferingsTable, type OfferingRow, type OfferingRowErrors } from '@/plugins/tarif-595/OfferingsTable'
+import {
+  OfferingsTable,
+  type ExpiryOf,
+  type OfferingReplacement,
+  type OfferingRow,
+  type OfferingRowErrors,
+} from '@/plugins/tarif-595/OfferingsTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -184,6 +190,7 @@ function rowFrom(
     ptPosition: m?.ptPosition ?? null,
     customName: m?.customName ?? '',
     suggestion: null,
+    successor: m?.successor ?? null,
   }
 }
 
@@ -196,6 +203,7 @@ function rowsToOfferings(rows: OfferingRow[]): Record<string, Tarif595OfferingMa
     if (r.unit === 'entry' && r.entries.trim()) mapping.entries = Number(r.entries)
     if (r.ptPosition) mapping.ptPosition = r.ptPosition
     if (r.position === TARIF595_FREE_TEXT_CODE && r.customName.trim()) mapping.customName = r.customName.trim()
+    if (r.successor?.position) mapping.successor = r.successor
     out[r.key] = mapping
   }
   return out
@@ -354,6 +362,78 @@ export default function Tarif595SettingsPage() {
 
   const language = watch('language')
   const providerSameAsBiller = watch('providerSameAsBiller')
+
+  // ── Expiring positions: warn ahead of 1 January, propose a replacement ─────
+  // The position list retires rows every year, and a line dated after a
+  // position's last valid day is refused by the preview. The date rule is the
+  // positions module's own (`expiry`, handed out with the lazily loaded
+  // table); there is no successor map, so a replacement is PROPOSED by the
+  // same model path as of the day after expiry and applied only by a click —
+  // unlike a fill-in suggestion, it would overwrite a mapping the manager made.
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const expiryOf = useMemo<ExpiryOf>(
+    () => (code) => (code && positionsTable ? positionsTable.expiry(code, todayIso) : null),
+    [positionsTable, todayIso]
+  )
+  const positionLabel = useMemo(
+    () => (code: string) => {
+      const p = positionsTable?.positions.find((x) => x.code === code)
+      return p ? `${p.code} — ${p.text[language]}` : code
+    },
+    [positionsTable, language]
+  )
+  const [replacements, setReplacements] = useState<Record<string, OfferingReplacement>>({})
+  const [suggestingReplacements, setSuggestingReplacements] = useState(false)
+
+  async function suggestReplacements() {
+    if (!teamId || !positionsTable) return
+    const expiring = rows
+      .map((r) => ({ r, until: expiryOf(r.position)?.status !== 'ok' ? expiryOf(r.position)?.validUntil ?? null : null }))
+      .filter((x): x is { r: OfferingRow; until: string } => !!x.until)
+    if (expiring.length === 0) return
+    // As of the day after the LATEST last valid day among them, so every
+    // proposal is valid once all of them have expired.
+    const asOf = positionsTable.dayAfter(expiring.map((x) => x.until).sort().slice(-1)[0])
+    setSuggestingReplacements(true)
+    try {
+      const { data } = await callSuggestTarif595Mappings({ teamId, asOf, keys: expiring.map((x) => x.r.key) })
+      const next: Record<string, OfferingReplacement> = {}
+      for (const s of data.suggestions) if (s.position) next[s.key] = { position: s.position, ptPosition: s.ptPosition, reason: s.reason }
+      setReplacements(next)
+      if (Object.keys(next).length > 0) toast.success(t('expiry.replacementsFound', { count: Object.keys(next).length }))
+      else toast.info(t('expiry.replacementsNone'))
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? ''
+      if (code.endsWith('resource-exhausted')) toast.error(t('suggest.rateLimited'))
+      else toast.error(t('suggest.unavailable'))
+      console.error('[tarif-595] replacement suggest failed:', err)
+    } finally {
+      setSuggestingReplacements(false)
+    }
+  }
+
+  // "Use" writes a SUCCESSOR, never an overwrite: in January the studio still
+  // issues last year's receipts, whose lines need the old position, beside
+  // the new year's. The successor starts the day after the old position's last
+  // valid day; a PT companion that survives the change is carried over, one
+  // that expires too is replaced by the proposal's (or dropped).
+  function applyReplacement(key: string) {
+    const rep = replacements[key]
+    const row = rows.find((r) => r.key === key)
+    if (!rep || !row || !positionsTable) return
+    const until = [expiryOf(row.position), expiryOf(row.ptPosition)]
+      .map((e) => (e && e.status !== 'ok' ? e.validUntil : null))
+      .filter((d): d is string => !!d)
+      .sort()[0]
+    if (!until) return
+    const from = positionsTable.dayAfter(until)
+    const ptSurvives = !!row.ptPosition && expiryOf(row.ptPosition)?.status === 'ok'
+    updateRow(key, { successor: { from, position: rep.position, ptPosition: rep.ptPosition ?? (ptSurvives ? row.ptPosition : null) } })
+    setReplacements((prev) => {
+      const { [key]: _used, ...rest } = prev
+      return rest
+    })
+  }
 
   async function onSubmit(values: Tarif595FormValues) {
     if (!teamId || !canEdit) return
@@ -582,7 +662,18 @@ export default function Tarif595SettingsPage() {
             {rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('offeringsNone')}</p>
             ) : (
-              <OfferingsTable rows={rows} language={language} errorsByKey={offeringsErrorsByKey} onUpdate={updateRow} />
+              <OfferingsTable
+                rows={rows}
+                language={language}
+                errorsByKey={offeringsErrorsByKey}
+                onUpdate={updateRow}
+                expiryOf={expiryOf}
+                positionLabel={positionLabel}
+                replacements={replacements}
+                onUseReplacement={applyReplacement}
+                onSuggestReplacements={suggestReplacements}
+                suggestingReplacements={suggestingReplacements}
+              />
             )}
           </FormSection>
 
