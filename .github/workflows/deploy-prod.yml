@@ -111,6 +111,18 @@ jobs:
           echo "::error::firebase deploy failed after 5 attempts"
           exit 1
 
+      # A green deploy step is not a deployed backend. `firebase deploy` can exit
+      # 0 while Cloud Run refuses the new revisions — the regional CPU quota did
+      # it on 2026-09-16, and 61 functions here went on serving code from as far
+      # back as 2026-09-08. Each one still read ACTIVE and already carried the new
+      # hash, so the retry above skipped it as unchanged and the run went green.
+      # This reads the truth off Cloud Run and fails the run BEFORE the App
+      # Hosting rollouts, so neither frontend goes live over a backend it is
+      # ahead of. The reasoning, and the redeploy it prints, belong to the header
+      # of scripts/check-functions-ready.mjs.
+      - name: Verify every function serves the deployed code
+        run: pnpm functions:ready --project linyup-prod
+
       # App Hosting (Next.js SSR) — web + admin. Auto-rollout is DISABLED on the
       # PROD backends (see infra/README.md §6), so prod ships ONLY through this
       # gated workflow, in lockstep with the backend deploy above. We roll out the

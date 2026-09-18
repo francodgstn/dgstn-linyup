@@ -70,6 +70,12 @@ jobs:
       - name: Unbounded reads
         run: pnpm census:reads
 
+      # scripts/*.test.mjs — node's own runner, no install beyond the above. Today
+      # that is the deploy readiness gate's verdict logic, tested against the
+      # real payloads of the stale deploy it exists to catch.
+      - name: Script tests
+        run: pnpm test:scripts
+
       # scripts/ is not a workspace, so `turbo run typecheck` never sees the
       # seeders, the backfills or the HMD migration — which is a root cause of
       # the drift docs/seed-truth-2026-08.md catalogues. This is the only place

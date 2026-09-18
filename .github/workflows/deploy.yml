@@ -141,6 +141,17 @@ jobs:
           echo "::error::firebase deploy failed after 5 attempts"
           exit 1
 
+      # A green deploy step is not a deployed backend. `firebase deploy` can exit
+      # 0 while Cloud Run refuses the new revisions — the regional CPU quota did
+      # it to sandbox and prod on 2026-09-16, leaving functions on code up to two
+      # weeks old behind green runs. Each one still reads ACTIVE and already
+      # carries the new hash, so the retry above skips it as unchanged. This
+      # reads the truth off Cloud Run so a green run means a deployed one. The
+      # reasoning, and the redeploy it prints, belong to the header of
+      # scripts/check-functions-ready.mjs.
+      - name: Verify every function serves the deployed code
+        run: pnpm functions:ready --project linyup-staging
+
       # Optional reseed — manual dispatch + reseed_data=true only, so routine
       # deploys never wipe staging data. Reuses the ADC from the auth step; the
       # deploy SA's roles/firebase.admin covers Firestore + Auth writes.

@@ -1148,6 +1148,12 @@ tripwire — a direct read of a collection that grows with time must carry a bou
 `docs/scalability-2026-09.md` §17 is the census it guards). Cloud/data ops live under `seed:*` / `reset:*` /
 `migrate:hmd` / `stripe:sync` / `emulators:export:*` — not part of day-to-day startup.
 
+**After any deploy, `pnpm functions:ready --project <id>` is the truth — not the run's
+colour.** `firebase deploy` can go green while Cloud Run refuses the new revisions, and a
+redeploy of the same tree then skips those functions as unchanged; the deploy workflows
+run this check after `firebase deploy` and fail before any web rollout. The header of
+`scripts/check-functions-ready.mjs` owns the why and the targeted redeploy it prints.
+
 **Deploy preconditions owed by the scalability work** (`docs/scalability-2026-09.md`
 Part 2 §14, Part 3 §19): `pnpm backfill:ledger-ttl` before the TTL index overrides,
 and `pnpm backfill:contact-counts` after the functions deploy — the operator console
