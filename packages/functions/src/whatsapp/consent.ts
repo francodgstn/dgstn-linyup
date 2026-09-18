@@ -14,6 +14,7 @@ import {
   coachOwnsContact,
   isLiveContact,
   type Contact,
+  type WhatsAppConsentKind,
   type WhatsAppConsentSource,
 } from '@linyup/shared'
 import { requireContactSessionForTeam } from '../utils/contactSession'
@@ -23,12 +24,21 @@ import { whatsappConsentPatch } from './consentPatch'
 
 const MEMBER_SOURCES: readonly WhatsAppConsentSource[] = ['space', 'member_app']
 
+/** Which answer a request is about; absent means reminders, which is every
+ *  client written before news-and-offers existed. */
+function consentKindOf(value: unknown): WhatsAppConsentKind {
+  if (value === undefined || value === 'reminders') return 'reminders'
+  if (value === 'marketing') return 'marketing'
+  throw new HttpsError('invalid-argument', 'kind must be reminders or marketing.')
+}
+
 /** A signed-in member sets their own answer, from the Space or the member app. */
 export const setMyWhatsAppConsent = onCall(async (request) => {
-  const { teamId, optIn, source } = (request.data ?? {}) as {
+  const { teamId, optIn, source, kind } = (request.data ?? {}) as {
     teamId?: string
     optIn?: unknown
     source?: WhatsAppConsentSource
+    kind?: unknown
   }
   if (!teamId || typeof optIn !== 'boolean') {
     throw new HttpsError('invalid-argument', 'teamId and optIn are required.')
@@ -44,7 +54,7 @@ export const setMyWhatsAppConsent = onCall(async (request) => {
     .firestore()
     .collection(CONTACTS_COLLECTION)
     .doc(session.contactId)
-    .update(whatsappConsentPatch(optIn, resolvedSource))
+    .update(whatsappConsentPatch(consentKindOf(kind), optIn, resolvedSource))
   return { ok: true }
 })
 
@@ -52,10 +62,11 @@ export const setMyWhatsAppConsent = onCall(async (request) => {
 export const setContactWhatsAppConsent = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'You must be signed in.')
   const uid = request.auth.uid
-  const { teamId, contactId, optIn } = (request.data ?? {}) as {
+  const { teamId, contactId, optIn, kind } = (request.data ?? {}) as {
     teamId?: string
     contactId?: string
     optIn?: unknown
+    kind?: unknown
   }
   if (!teamId || !contactId || typeof optIn !== 'boolean') {
     throw new HttpsError('invalid-argument', 'teamId, contactId and optIn are required.')
@@ -76,6 +87,6 @@ export const setContactWhatsAppConsent = onCall(async (request) => {
   if (!(await callerIsAllScoped(uid, teamId)) && !coachOwnsContact(contact, uid)) {
     throw new HttpsError('permission-denied', 'This contact is not in your book.')
   }
-  await ref.update(whatsappConsentPatch(optIn, 'staff', uid))
+  await ref.update(whatsappConsentPatch(consentKindOf(kind), optIn, 'staff', uid))
   return { ok: true }
 })

@@ -12,10 +12,12 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { usePluginDiscovery } from '@/hooks/usePluginDiscovery'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
+import { useCapabilities } from '@/hooks/useCapabilities'
 import {
   TEAMS_COLLECTION,
   INSTALLED_PLUGINS_SUBCOLLECTION,
   TEAM_MEMBERS_SUBCOLLECTION,
+  WHATSAPP_PLUGIN_ID,
 } from '@linyup/shared'
 import type { PluginManifest, InstalledPlugin, PluginCategory, PluginAccess } from '@linyup/shared'
 import { pluginAccessForPlan, requirementBlockers } from '@linyup/shared'
@@ -325,6 +327,7 @@ function PluginCard({
   isInstalled,
   installedByOrg,
   isOwner,
+  canConfigure,
   onInstall,
   onRemove,
   onConfigure,
@@ -338,6 +341,13 @@ function PluginCard({
   isInstalled: boolean
   installedByOrg: boolean
   isOwner: boolean
+  /**
+   * Reaches Configure even for a non-owner — today only a manager with
+   * `outreach.manage` on the WhatsApp plugin (its Messages section works for
+   * them; see plugins/whatsapp/ConfigPanel.tsx). Every other owner-only action
+   * (install/remove) still checks `isOwner` alone.
+   */
+  canConfigure: boolean
   onInstall: () => void
   onRemove: () => void
   onConfigure: () => void
@@ -391,7 +401,7 @@ function PluginCard({
       <PluginBadgeIcons manifest={manifest} access={access} />
 
       {/* Action row — stop propagation so card-click (→ details) is separate */}
-      {isOwner && (
+      {(isOwner || canConfigure) && (
         <div
           className="mt-auto pt-1 flex items-center gap-2"
           onClick={(e) => e.stopPropagation()}
@@ -402,22 +412,24 @@ function PluginCard({
               <span className="text-xs text-muted-foreground">{t('orgManagedHint')}</span>
             ) : (
               <>
-                {manifest.hasOwnerConfig && (
+                {manifest.hasOwnerConfig && canConfigure && (
                   <Button size="sm" variant="outline" onClick={onConfigure}>
                     {t('configure')}
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  onClick={onRemove}
-                >
-                  {t('remove')}
-                </Button>
+                {isOwner && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={onRemove}
+                  >
+                    {t('remove')}
+                  </Button>
+                )}
               </>
             )
-          ) : manifest.locked ? (
+          ) : !isOwner ? null : manifest.locked ? (
             <Button size="sm" variant="outline" onClick={onUnlock}>
               <Lock className="h-3.5 w-3.5" />
               {t('unlock')}
@@ -465,6 +477,7 @@ function PluginDetailModal({
   isInstalled,
   installedByOrg,
   isOwner,
+  canConfigure,
   onInstall,
   onRemove,
   onConfigure,
@@ -480,6 +493,9 @@ function PluginDetailModal({
   isInstalled: boolean
   installedByOrg: boolean
   isOwner: boolean
+  /** See PluginCard — reaches Configure even for a non-owner (WhatsApp Messages
+   *  only, today). */
+  canConfigure: boolean
   onInstall: () => void
   onRemove: () => void
   onConfigure: () => void
@@ -547,11 +563,11 @@ function PluginDetailModal({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('cancel')}</Button>
 
-          {isOwner && (
+          {(isOwner || canConfigure) && (
             isInstalled ? (
               installedByOrg ? null : (
                 <div className="flex gap-2">
-                  {manifest.hasOwnerConfig && (
+                  {manifest.hasOwnerConfig && canConfigure && (
                     <Button
                       variant="outline"
                       onClick={() => { onClose(); onConfigure() }}
@@ -559,16 +575,18 @@ function PluginDetailModal({
                       {t('configure')}
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => { onClose(); onRemove() }}
-                  >
-                    {t('remove')}
-                  </Button>
+                  {isOwner && (
+                    <Button
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => { onClose(); onRemove() }}
+                    >
+                      {t('remove')}
+                    </Button>
+                  )}
                 </div>
               )
-            ) : manifest.locked ? (
+            ) : !isOwner ? null : manifest.locked ? (
               <Button onClick={() => { onClose(); onUnlock() }}>
                 <Lock className="h-4 w-4" />
                 {t('unlock')}
@@ -764,6 +782,13 @@ export default function PluginsPage() {
   const { plugins: installedPlugins, isInstalled, getConfig, isLoading: pluginsLoading } = useInstalledPlugins()
   const { data: isOwner, isLoading: roleLoading } = useIsOwner(currentTeamId, user?.uid ?? null)
   const { canDiscover } = usePluginDiscovery()
+  // A manager holding `outreach.manage` reaches Configure for the WhatsApp
+  // plugin only — its Messages section works for them (see
+  // plugins/whatsapp/ConfigPanel.tsx); every other plugin's Configure stays
+  // owner-only, decided per-manifest below.
+  const canManageOutreach = useCapabilities().can('outreach.manage')
+  const canConfigureManifest = (manifest: PluginManifest) =>
+    !!isOwner || (manifest.id === WHATSAPP_PLUGIN_ID && canManageOutreach)
   const { plan, isTrialing } = usePlan()
   const { openUpgradeModal } = useUpgradeModal()
   const invalidateSetupChecklist = useInvalidateSetupChecklist()
@@ -949,6 +974,7 @@ export default function PluginsPage() {
         isInstalled={isInstalled(manifest.id)}
         installedByOrg={entry?.source === 'org'}
         isOwner={!!isOwner}
+        canConfigure={canConfigureManifest(manifest)}
         installing={installingId === manifest.id}
         onInstall={() => handleInstall(manifest)}
         onRemove={() => handleRemove(manifest)}
@@ -1092,6 +1118,7 @@ export default function PluginsPage() {
         isInstalled={detailIsInstalled}
         installedByOrg={detailInstalledByOrg}
         isOwner={!!isOwner}
+        canConfigure={detailPlugin ? canConfigureManifest(detailPlugin) : false}
         installing={detailPlugin ? installingId === detailPlugin.id : false}
         categoryLabel={detailPlugin ? categoryLabelMap[detailPlugin.category] : ''}
         onInstall={() => { if (detailPlugin) handleInstall(detailPlugin) }}

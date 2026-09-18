@@ -92,10 +92,12 @@ import {
   Banknote,
   Undo2,
   ShieldAlert,
+  MessageCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import {  TEAMS_COLLECTION, ALERT_PRESETS_SUBCOLLECTION, SUBSCRIPTION_ROLLUP_STATUSES, CONTACT_SOURCES, AUTOMATION_RULES_SUBCOLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION, WEBHOOK_ENDPOINTS_SUBCOLLECTION, orderedLevels, rankLevelKey } from '@linyup/shared'
-import type { SubscriptionType, CustomFieldDefinition, RankingSystem, MemberPayment } from '@linyup/shared'
+import {  TEAMS_COLLECTION, ALERT_PRESETS_SUBCOLLECTION, SUBSCRIPTION_ROLLUP_STATUSES, CONTACT_SOURCES, AUTOMATION_RULES_SUBCOLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION, WEBHOOK_ENDPOINTS_SUBCOLLECTION, WHATSAPP_PLUGIN_ID, whatsappStudioTemplateSendable, orderedLevels, rankLevelKey } from '@linyup/shared'
+import type { SubscriptionType, CustomFieldDefinition, RankingSystem, MemberPayment, WhatsAppStudioTemplate } from '@linyup/shared'
+import { useWhatsAppStudioTemplates } from '@/plugins/whatsapp/hooks'
 import { Link, useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import type { Route } from 'next'
@@ -374,6 +376,7 @@ const ACQUISITION_STAGE_VALUES = ['trial_booked', 'trial_attended', 'joined'] as
 
 const ACTION_TYPE_VALUES = [
   'send_email',
+  'send_whatsapp',
   'add_note',
   'update_field',
   'archive_contact',
@@ -468,11 +471,16 @@ function actionSummary(
   a: AutomationAction,
   templates: OutreachTemplate[],
   pluginActionLabels?: Record<string, string>,
-  alertPresets?: AlertPreset[]
+  alertPresets?: AlertPreset[],
+  waTemplates?: WhatsAppStudioTemplate[]
 ): string {
   if (a.type === 'send_email') {
     const tmpl = templates.find((tm) => tm.id === (a.templateId ?? ''))
     return t('actions.summarySendEmail', { name: tmpl?.name ?? a.templateId ?? '—' })
+  }
+  if (a.type === 'send_whatsapp') {
+    const tmpl = waTemplates?.find((tm) => tm.id === (a.templateId ?? ''))
+    return t('actions.summarySendWhatsApp', { name: tmpl?.label ?? a.templateId ?? '—' })
   }
   if (a.type === 'create_alert') {
     const preset = alertPresets?.find((p) => p.id === (a.presetId ?? ''))
@@ -598,6 +606,7 @@ function RuleCard({
   templates,
   alertPresets,
   subscriptionTypes,
+  waTemplates,
   onEdit,
   onDuplicate,
   onToggle,
@@ -617,6 +626,9 @@ function RuleCard({
   templates: OutreachTemplate[]
   alertPresets: AlertPreset[]
   subscriptionTypes: SubscriptionType[]
+  /** The studio's WhatsApp templates — for `send_whatsapp` action summaries.
+   *  Empty when the plugin isn't installed (nothing to look up). */
+  waTemplates: WhatsAppStudioTemplate[]
   onEdit: () => void
   onDuplicate: () => void
   onToggle: () => void
@@ -643,7 +655,9 @@ function RuleCard({
   const trigger = rule.trigger ?? { type: 'schedule_daily' }
   // The same summaries the card's action line renders — the dialog answers
   // "what will be sent" from this rather than re-deriving the copy.
-  const actionLabels = rule.actions.map((a) => actionSummary(t, a, templates, undefined, alertPresets))
+  const actionLabels = rule.actions.map((a) =>
+    actionSummary(t, a, templates, undefined, alertPresets, waTemplates)
+  )
 
   return (
     <div
@@ -759,6 +773,7 @@ function RuleCard({
               className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
             >
               {a.type === 'send_email' && <Mail className="h-3 w-3" />}
+              {a.type === 'send_whatsapp' && <MessageCircle className="h-3 w-3" />}
               {a.type === 'create_alert' && <Bell className="h-3 w-3" />}
               {a.type === 'update_field' && <Settings2 className="h-3 w-3" />}
               {a.type === 'notify_team' && <Bell className="h-3 w-3" />}
@@ -766,7 +781,7 @@ function RuleCard({
               {a.type === 'assign_tag' && <Tag className="h-3 w-3" />}
               {a.type === 'remove_tag' && <Tag className="h-3 w-3" />}
               {a.type === 'webhook' && <Webhook className="h-3 w-3" />}
-              {actionSummary(t, a, templates, undefined, alertPresets)}
+              {actionSummary(t, a, templates, undefined, alertPresets, waTemplates)}
             </span>
           ))}
         </div>
@@ -1130,6 +1145,8 @@ function ActionEditor({
   actionTypeLabels: labelOverrides,
   contactGroups,
   groupsEnabled,
+  waTemplates,
+  whatsappEnabled,
 }: {
   actions: FormAction[]
   templates: OutreachTemplate[]
@@ -1138,6 +1155,11 @@ function ActionEditor({
   actionTypeLabels?: Record<string, string>
   contactGroups: ContactGroup[]
   groupsEnabled: boolean
+  /** The studio's WhatsApp templates — offered only while the plugin is
+   *  installed (`whatsappEnabled`). An in-review one is shown but disabled: it
+   *  cannot be picked until Meta approves it. */
+  waTemplates: WhatsAppStudioTemplate[]
+  whatsappEnabled: boolean
 }) {
   const t = useTranslations('Automations')
   const { team } = useAuth()
@@ -1209,6 +1231,15 @@ function ActionEditor({
                   <SelectItem value="send_email" className="text-xs">
                     {t('actions.types.send_email')}
                   </SelectItem>
+                  {/* Offered only while the WhatsApp plugin is installed — the
+                      generic `plugin:*` action path has no config editor in this
+                      builder, which is why this one is BUILT-IN instead
+                      (docs/whatsapp-outbound.md → "6c"). */}
+                  {whatsappEnabled && (
+                    <SelectItem value="send_whatsapp" className="text-xs">
+                      {t('actions.types.send_whatsapp')}
+                    </SelectItem>
+                  )}
                   <SelectItem value="add_note" className="text-xs">
                     {t('actions.types.add_note')}
                   </SelectItem>
@@ -1278,6 +1309,42 @@ function ActionEditor({
                           {tm.name}
                         </SelectItem>
                       ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Inline secondary for send_whatsapp — the same shape as send_email's
+                  template picker, except an in-review/rejected/paused template
+                  is shown but disabled: it cannot be picked until its live
+                  version is APPROVED (whatsappStudioTemplateSendable). */}
+              {action.type === 'send_whatsapp' && (
+                <Select
+                  value={action.templateId}
+                  onValueChange={(v) => update(i, { templateId: v ?? '' })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <span className="flex flex-1 text-left text-xs truncate">
+                      {waTemplates.find((tm) => tm.id === action.templateId)?.label ?? (
+                        <span className="text-muted-foreground">{t('actions.selectMessagePlaceholder')}</span>
+                      )}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {waTemplates.length === 0 ? (
+                      <SelectItem value="__none" disabled className="text-xs text-muted-foreground">
+                        {t('actions.noMessages')}
+                      </SelectItem>
+                    ) : (
+                      waTemplates.map((tm) => {
+                        const sendable = whatsappStudioTemplateSendable(tm)
+                        return (
+                          <SelectItem key={tm.id} value={tm.id} disabled={!sendable} className="text-xs">
+                            {tm.label}
+                            {!sendable && ` — ${t('actions.whatsappMessageNotReady')}`}
+                          </SelectItem>
+                        )
+                      })
                     )}
                   </SelectContent>
                 </Select>
@@ -1585,6 +1652,8 @@ function RuleDialog({
   const { isInstalled } = useInstalledPlugins()
   const groupsEnabled = isInstalled('contact-groups')
   const { data: contactGroups = [] } = useContactGroups(groupsEnabled ? teamId : null)
+  const whatsappEnabled = isInstalled(WHATSAPP_PLUGIN_ID)
+  const { data: waTemplates = [] } = useWhatsAppStudioTemplates(teamId, whatsappEnabled)
   const [conditions, setConditions] = useState<FormCondition[]>([])
   const [actions, setActions] = useState<FormAction[]>([])
   const [webhookEndpointId, setWebhookEndpointId] = useState('')
@@ -1714,6 +1783,10 @@ function RuleDialog({
       setSubmitError(t('validation.templateRequired'))
       return
     }
+    if (actions.some((a) => a.type === 'send_whatsapp' && !a.templateId)) {
+      setSubmitError(t('validation.whatsappMessageRequired'))
+      return
+    }
     if (actions.some((a) => a.type === 'create_alert' && !a.presetId)) {
       setSubmitError(t('validation.alertPresetRequired'))
       return
@@ -1771,6 +1844,7 @@ function RuleDialog({
         actions: actions
           .map((a) => {
             if (a.type === 'send_email') return { type: 'send_email', templateId: a.templateId }
+            if (a.type === 'send_whatsapp') return { type: 'send_whatsapp', templateId: a.templateId }
             if (a.type === 'create_alert')
               return { type: 'create_alert', presetId: a.presetId ?? '' }
             if (a.type === 'add_note') return { type: 'add_note', note: a.note ?? '' }
@@ -2029,6 +2103,8 @@ function RuleDialog({
                 actionTypeLabels={actionTypeLabelsProp}
                 contactGroups={contactGroups}
                 groupsEnabled={groupsEnabled}
+                waTemplates={waTemplates}
+                whatsappEnabled={whatsappEnabled}
               />
             </div>
           </div>
@@ -2077,7 +2153,12 @@ export default function AutomationsPage() {
   const invalidateSetupChecklist = useInvalidateSetupChecklist()
 
   // Plugin-contributed triggers and actions
-  const { plugins: installedPlugins } = useInstalledPlugins()
+  const { plugins: installedPlugins, isInstalled } = useInstalledPlugins()
+  // send_whatsapp is BUILT-IN, not `plugin:*` (see ActionEditor's note), but it
+  // still needs the plugin's own templates for the picker and for every
+  // summary that names one — fetched once here and threaded down.
+  const whatsappEnabled = isInstalled(WHATSAPP_PLUGIN_ID)
+  const { data: waTemplates = [] } = useWhatsAppStudioTemplates(currentTeamId, whatsappEnabled)
 
   const allTriggerOptions = [
     ...TRIGGER_OPTIONS.map((o) => ({ ...o, label: triggerTypeLabel(t, o.value) })),
@@ -2370,6 +2451,7 @@ export default function AutomationsPage() {
                   templates={templates}
                   alertPresets={alertPresets}
                   subscriptionTypes={subscriptionTypes}
+                  waTemplates={waTemplates}
                   onEdit={() => {
                     setDuplicatingRule(null)
                     setEditingRule(rule)
@@ -2405,6 +2487,7 @@ export default function AutomationsPage() {
                   templates={templates}
                   alertPresets={alertPresets}
                   subscriptionTypes={subscriptionTypes}
+                  waTemplates={waTemplates}
                   onEdit={() => {
                     setDuplicatingRule(null)
                     setEditingRule(rule)

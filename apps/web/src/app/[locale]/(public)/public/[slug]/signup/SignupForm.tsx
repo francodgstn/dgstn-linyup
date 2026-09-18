@@ -45,6 +45,9 @@ function createDetailsSchema(t: ReturnType<typeof useTranslations>) {
     // Never pre-ticked — Meta-required consent, not a default. Sent to
     // `completeSignup` only when true (contactDetails.whatsappOptIn).
     whatsappOptIn: z.boolean().optional(),
+    // The second, independent answer — "news and offers" — sent only when true
+    // (contactDetails.whatsappMarketingOptIn). Same gate as the box above.
+    whatsappMarketingOptIn: z.boolean().optional(),
     birthdate: z.string().optional(),
     notes: z.string().max(500).optional(),
     privacyConsent: z.literal(true, {
@@ -286,6 +289,7 @@ export default function SignupForm({ slug, from }: Props) {
           lastname: values.lastname,
           phone: values.phone || undefined,
           ...(values.whatsappOptIn === true ? { whatsappOptIn: true } : {}),
+          ...(values.whatsappMarketingOptIn === true ? { whatsappMarketingOptIn: true } : {}),
           birthdate: values.birthdate || undefined,
           notes: values.notes || undefined,
           privacyConsent: true,
@@ -537,16 +541,27 @@ export default function SignupForm({ slug, from }: Props) {
             />
           </div>
 
-          {/* Never pre-ticked — this is Meta-required consent, not a default. */}
+          {/* Never pre-ticked — this is Meta-required consent, not a default.
+              Two separate answers, same gate: reminders vs. news and offers. */}
           {whatsappOptInOffered && (
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                {...detailsForm.register('whatsappOptIn')}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
-              />
-              <span className="text-muted-foreground">{t('whatsappOptInLabel', { teamName })}</span>
-            </label>
+            <>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...detailsForm.register('whatsappOptIn')}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
+                />
+                <span className="text-muted-foreground">{t('whatsappOptInLabel', { teamName })}</span>
+              </label>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...detailsForm.register('whatsappMarketingOptIn')}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-primary"
+                />
+                <span className="text-muted-foreground">{t('whatsappMarketingOptInLabel', { teamName })}</span>
+              </label>
+            </>
           )}
 
           <div className="space-y-1">

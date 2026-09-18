@@ -108,6 +108,30 @@ describe('firestore.rules — WhatsApp', function () {
     await assertSucceeds(setDoc(doc(db, 'contacts', 'newW'), { teamId: TEAM, firstname: 'New' }))
   })
 
+  it('the news-and-offers answer is denied to clients the same way', async () => {
+    const db = ownerSession()
+    await assertFails(
+      updateDoc(doc(db, 'contacts', CONTACT), { whatsapp_marketing_consent: { status: 'opted_in', source: 'staff' } }),
+    )
+    await assertFails(
+      setDoc(doc(db, 'contacts', 'newW2'), {
+        teamId: TEAM,
+        firstname: 'New',
+        whatsapp_marketing_consent: { status: 'opted_in', source: 'staff' },
+      }),
+    )
+  })
+
+  it('the team reads its WhatsApp templates; nobody writes them from a client', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'teams', TEAM, 'whatsapp_templates', 't1'), { label: 'Welcome' })
+    })
+    const db = ownerSession()
+    await assertSucceeds(getDoc(doc(db, 'teams', TEAM, 'whatsapp_templates', 't1')))
+    await assertFails(updateDoc(doc(db, 'teams', TEAM, 'whatsapp_templates', 't1'), { label: 'Changed' }))
+    await assertFails(setDoc(doc(db, 'teams', TEAM, 'whatsapp_templates', 't2'), { label: 'New' }))
+  })
+
   it('a member cannot set their own consent directly either — the callable does', async () => {
     const db = contactSession()
     await assertFails(updateDoc(doc(db, 'contacts', CONTACT), { whatsapp_consent: { status: 'opted_in' } }))

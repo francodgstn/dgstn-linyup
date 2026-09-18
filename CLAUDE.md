@@ -365,9 +365,11 @@ A studio connects its OWN WhatsApp Business number (kept in the WhatsApp
 Business App, so replies land there) and Meta bills the studio. Every message
 goes through **`sendStudioWhatsApp`** (`packages/functions/src/whatsapp/service.ts`),
 the one send rail; `whatsapp/graph.ts` is the only Graph API caller. A contact
-is messaged only when **`whatsappConsentAllows(contact)`** says so — the one
-reader of `Contact.whatsapp_consent`, whose one builder is
-`whatsappConsentPatch`; the rules deny the field to every client. No seeder
+is messaged only when **`whatsappConsentAllows(contact, kind)`** says so — the
+one reader of both answers, `whatsapp_consent` (reminders) and
+`whatsapp_marketing_consent` (news and offers), whose one builder is
+`whatsappConsentPatch`; the rules deny both to every client. The send rail, not
+the caller, decides which answer a template needs, from its Meta category. No seeder
 writes consent, which is what keeps fabricated-but-routable seeded numbers
 silent. A WhatsApp reminder step that cannot send is SKIPPED, never sent by
 another channel. Full docs: `docs/whatsapp-outbound.md`.

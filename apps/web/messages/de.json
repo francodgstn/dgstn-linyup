@@ -1148,7 +1148,11 @@
     "whatsappSource_space": "persönlicher Bereich",
     "whatsappSource_member_app": "Mitglieder-App",
     "whatsappSource_staff": "Team",
-    "whatsappSource_reply_stop": "hat mit STOP geantwortet"
+    "whatsappSource_reply_stop": "hat mit STOP geantwortet",
+    "whatsappRemindersRowTitle": "WhatsApp-Erinnerungen",
+    "whatsappMarketingTitle": "WhatsApp News & Angebote",
+    "whatsappConfirmMarketingOptInDesc": "Bestätige, dass das Mitglied zugestimmt hat, News und Angebote des Studios per WhatsApp zu erhalten.",
+    "whatsappSource_meta_stop_promotions": "hat in WhatsApp auf «Werbung stoppen» getippt"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -3055,7 +3059,60 @@
     "whatsappErrorNumberTaken": "Diese Nummer ist bereits mit einem anderen Studio verbunden.",
     "whatsappErrorNumberAmbiguous": "Es konnte nicht bestimmt werden, welche Nummer verbunden werden soll. Bitte versuchen Sie es erneut.",
     "whatsappConnectCancelled": "Verbindung abgebrochen.",
-    "whatsappConnectIncomplete": "Die Verbindung wurde nicht abgeschlossen. Bitte versuchen Sie es erneut."
+    "whatsappConnectIncomplete": "Die Verbindung wurde nicht abgeschlossen. Bitte versuchen Sie es erneut.",
+    "whatsappMessagesTitle": "Nachrichten",
+    "whatsappNewMessage": "Neue Nachricht",
+    "whatsappMessagesIntro": "Schreibe die WhatsApp-Nachrichten, die deine Automatisierungen senden können — Linyup reicht sie bei WhatsApp zur Prüfung ein.",
+    "whatsappNoMessages": "Noch keine Nachrichten.",
+    "whatsappCategoryMarketingShort": "News & Angebote",
+    "whatsappCategoryUtilityShort": "Erinnerungsartig",
+    "whatsappRecategorizedNote": "WhatsApp hat diese Nachricht zu News & Angebote verschoben — sie kostet mehr und braucht die Zustimmung zu News & Angeboten.",
+    "whatsappStateSending": "Wird gesendet",
+    "whatsappStatePaused": "Pausiert",
+    "whatsappStateRejected": "Abgelehnt",
+    "whatsappStateEditRejected": "Änderung abgelehnt",
+    "whatsappStateInReview": "In Prüfung",
+    "whatsappStateNotSubmitted": "Nicht eingereicht",
+    "whatsappDeleteMessageTitle": "Diese Nachricht löschen?",
+    "whatsappDeleteMessageDesc": "Automatisierungsregeln, die diese Nachricht verwenden, überspringen diesen Schritt, statt sie zu senden.",
+    "whatsappDeleteMessageAction": "Nachricht löschen",
+    "whatsappMessageNameLabel": "Name (nur für dich)",
+    "whatsappMessageNamePlaceholder": "z. B. Probetraining-Nachfassen",
+    "whatsappCategoryQuestion": "Worum geht es in dieser Nachricht?",
+    "whatsappCategoryUtilityOption": "Etwas, das sie gebucht oder gekauft haben",
+    "whatsappCategoryMarketingOption": "News, Angebote oder Einladungen",
+    "whatsappCategoryMetaNote": "WhatsApp entscheidet letztlich über die Kategorie — News und Angebote kosten mehr als buchungsbezogene Nachrichten.",
+    "whatsappMessageBodyLabel": "Nachricht",
+    "whatsappMessageBodyPlaceholder": "Hallo {{firstname}}, …",
+    "whatsappTokenLabel_firstname": "Vorname",
+    "whatsappTokenLabel_lastname": "Nachname",
+    "whatsappTokenLabel_teamName": "Studioname",
+    "whatsappTokenLabel_date": "Datum",
+    "whatsappTokenLabel_bookingUrl": "Buchungsseite",
+    "whatsappTokenLabel_membershipUrl": "Mitgliedschaft-Anmeldung",
+    "whatsappTokenLabel_bioLinkUrl": "Bio-Link-Seite",
+    "whatsappTokenLabel_websiteUrl": "Webseite",
+    "whatsappTokenLabel_reviewUrl": "Bewertungsseite",
+    "whatsappProblem_empty": "Schreibe eine Nachricht, bevor du speicherst.",
+    "whatsappProblem_too_long": "Diese Nachricht ist zu lang (maximal 1024 Zeichen).",
+    "whatsappProblemUnknownToken": "Unbekannte Platzhalter: {tokens}",
+    "whatsappProblem_starts_with_token": "Eine Nachricht darf nicht mit einem Platzhalter beginnen — füge zuerst eine Begrüssung hinzu.",
+    "whatsappProblem_ends_with_token": "Eine Nachricht darf nicht mit einem Platzhalter enden — füge einen Schlusssatz hinzu.",
+    "whatsappProblem_adjacent_tokens": "Zwei Platzhalter dürfen nicht direkt nebeneinander stehen — füge ein Wort dazwischen ein.",
+    "whatsappEditKeepsSendingNote": "Diese Nachricht ist bereits genehmigt und wird versendet. Deine Änderung wird als neue Version eingereicht — die aktuelle Version wird weiter versendet, bis WhatsApp die Änderung genehmigt.",
+    "whatsappPreviewTitle": "Vorschau",
+    "whatsappPreviewEmpty": "Deine Nachricht erscheint hier.",
+    "whatsappErrorLabel": "Gib der Nachricht einen Namen.",
+    "whatsappErrorNotConnectedForMessage": "Verbinde zuerst WhatsApp, bevor du diese Nachricht einreichst.",
+    "whatsappMessageErrorGeneric": "Beim Speichern dieser Nachricht ist etwas schiefgelaufen. Bitte versuche es erneut.",
+    "whatsappUsageTitle": "WhatsApp-Nachrichten diesen Monat",
+    "whatsappUsageNone": "Diesen Monat wurden noch keine Nachrichten gesendet.",
+    "whatsappUsageCategory_utility": "Buchungsbezogen",
+    "whatsappUsageCategory_marketing": "News & Angebote",
+    "whatsappUsageCategory_service": "Serviceantworten",
+    "whatsappUsageCategory_authentication": "Authentifizierung",
+    "whatsappUsageBillingNote": "Meta stellt deinem Studio diese Nachrichten direkt in Rechnung — Linyup verrechnet nichts zusätzlich.",
+    "whatsappMessagesNotConnected": "Nachrichten können verfasst werden, sobald die Studioinhaberin oder der Studioinhaber eine WhatsApp-Nummer verbunden hat."
   },
   "AiAssistant": {
     "launcherLabel": "KI-Assistent",
@@ -4553,7 +4610,10 @@
     "whatsappRemindersOn": "WhatsApp-Erinnerungen sind aktiviert",
     "whatsappRemindersOff": "WhatsApp-Erinnerungen sind deaktiviert",
     "whatsappRemindersSaved": "Gespeichert",
-    "whatsappRemindersError": "Ihre Einstellung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    "whatsappRemindersError": "Ihre Einstellung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappRemindersLabel": "Buchungserinnerungen",
+    "whatsappMarketingLabel": "Neuigkeiten und Angebote"
   },
   "FreePlan": {
     "downgradeBannerTitle": "Deine Testphase ist beendet — du nutzt jetzt den Free-Plan",
@@ -5680,7 +5740,8 @@
     "memberSomeoneElseTitle": "Für jemand anderen buchen",
     "memberSomeoneElseSubtitle": "Diese Klasse stattdessen für eine andere Person buchen",
     "pricingDetailsTrigger": "Preise & Zugang",
-    "whatsappOptInLabel": "Erinnerungen von {studioName} per WhatsApp senden"
+    "whatsappOptInLabel": "Erinnerungen von {studioName} per WhatsApp senden",
+    "whatsappMarketingOptInLabel": "Schicke mir auch Neuigkeiten und Angebote von {studioName} per WhatsApp"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Probetraining buchen",
@@ -5764,7 +5825,8 @@
     "successBody": "Willkommen bei <strong>{teamName}</strong>. Ihre Angaben wurden gespeichert. Das Team wird sich bald bei Ihnen melden.",
     "openSpace": "Deinen Space öffnen",
     "toSurface": "Weiter {name}",
-    "whatsappOptInLabel": "Erinnerungen von {teamName} per WhatsApp senden"
+    "whatsappOptInLabel": "Erinnerungen von {teamName} per WhatsApp senden",
+    "whatsappMarketingOptInLabel": "Schicke mir auch Neuigkeiten und Angebote von {teamName} per WhatsApp"
   },
   "PublicContactUpdate": {
     "teamNotFoundTitle": "Team nicht gefunden",
@@ -6591,7 +6653,12 @@
       "failed": "Wir konnten nicht prüfen, wer passt.",
       "runFailed": "Wir konnten diese Automation nicht ausführen.",
       "sentToast": "{count, plural, =0 {Es wurde nichts gesendet} one {An # Kontakt gesendet} other {An # Kontakte gesendet}}",
-      "failedCount": "{count, plural, one {# Aktion fehlgeschlagen} other {# Aktionen fehlgeschlagen}}"
+      "failedCount": "{count, plural, one {# Aktion fehlgeschlagen} other {# Aktionen fehlgeschlagen}}",
+      "whatsappReason": {
+        "no_phone": "keine Telefonnummer",
+        "no_consent": "hat WhatsApp-Erinnerungen nicht zugestimmt",
+        "no_marketing_consent": "hat WhatsApp-News und -Angeboten nicht zugestimmt"
+      }
     },
     "timeAgo": {
       "minutes": "vor {mins} Min.",
@@ -6705,7 +6772,8 @@
         "webhook": "Webhook (POST)",
         "add_to_group": "Zu Gruppe hinzufügen",
         "remove_from_group": "Aus Gruppe entfernen",
-        "create_alert": "Alarm erstellen (bald verfügbar)"
+        "create_alert": "Alarm erstellen (bald verfügbar)",
+        "send_whatsapp": "WhatsApp-Nachricht senden"
       },
       "updateField": {
         "acquisitionStage": "Akquisitionsphase",
@@ -6740,7 +6808,11 @@
       "createAlertLabel": "Erinnerung erstellen",
       "selectPresetPlaceholder": "Vorlage auswählen",
       "noAlertPresets": "Keine Vorlagen — in den Team-Einstellungen hinzufügen",
-      "summaryCreateAlertNamed": "Erinnerung: {name}"
+      "summaryCreateAlertNamed": "Erinnerung: {name}",
+      "summarySendWhatsApp": "WhatsApp: {name}",
+      "selectMessagePlaceholder": "Nachricht auswählen",
+      "noMessages": "Keine Nachrichten — füge eine im WhatsApp-Plugin hinzu",
+      "whatsappMessageNotReady": "noch nicht bereit"
     },
     "placeholders": {
       "title": "Platzhalter",
@@ -6779,7 +6851,8 @@
       "groupRequired": "Wählen Sie eine Gruppe für die Bedingung „Ist in Gruppe“.",
       "templateRequired": "Wählen Sie eine E-Mail-Vorlage für die Aktion „E-Mail senden“.",
       "alertPresetRequired": "Wählen Sie eine Vorlage für die Aktion „Erinnerung erstellen“.",
-      "groupRequiredAction": "Wählen Sie eine Gruppe für die Aktion „Zu Gruppe hinzufügen“ / „Aus Gruppe entfernen“."
+      "groupRequiredAction": "Wählen Sie eine Gruppe für die Aktion „Zu Gruppe hinzufügen“ / „Aus Gruppe entfernen“.",
+      "whatsappMessageRequired": "Wähle eine WhatsApp-Nachricht."
     },
     "dialogs": {
       "rule": {
@@ -6830,7 +6903,16 @@
       "recipientsCount": "{count, plural, one {# Person erreicht} other {# Personen erreicht}}",
       "recipientsTruncated": "Es werden die ersten {shown} von {total} angezeigt.",
       "recipientsGone": "{count, plural, one {# Empfänger ist nicht mehr in deinen Kontakten} other {# Empfänger sind nicht mehr in deinen Kontakten}}",
-      "recipientsNotRecorded": "Für diesen Lauf wurden keine Empfänger erfasst."
+      "recipientsNotRecorded": "Für diesen Lauf wurden keine Empfänger erfasst.",
+      "whatsappLine": "WhatsApp: {summary}",
+      "whatsappOutcome_sent": "{count} gesendet",
+      "whatsappOutcome_held": "{count} warten bis 8:00 Uhr",
+      "whatsappOutcome_noConsent": "{count} nicht zugestimmt",
+      "whatsappOutcome_noPhone": "{count} ohne Telefonnummer",
+      "whatsappOutcome_notReady": "{count} noch nicht sendebereit",
+      "whatsappOutcome_blocked": "{count} blockiert",
+      "whatsappOutcome_testSettings": "{count} durch Testeinstellungen zurückgehalten",
+      "whatsappOutcome_duplicate": "{count} Duplikat(e)"
     },
     "deleteConfirmTitle": "Diese Automation löschen?",
     "paymentKinds": {
@@ -6887,7 +6969,7 @@
     "templatesSubtitle": "Vordefinierte und individuelle Vorlagen, die Ihre Automatisierungen und Kampagnen versenden, sowie wiederverwendbare Platzhalter, die Sie in jede davon einfügen können.",
     "templatesLinkNote": "Vordefinierte und individuelle Outreach-Vorlagen sowie die Platzhalterübersicht finden Sie jetzt auf der Seite <link>E-Mail-Vorlagen</link>.",
     "reminderChannelWhatsApp": "WhatsApp",
-    "reminderWhatsAppNote": "Wird nur an Mitglieder gesendet, die WhatsApp zugestimmt haben; für alle anderen entfällt dieser Schritt.",
+    "reminderWhatsAppNote": "Wird nur an Mitglieder gesendet, die WhatsApp-Erinnerungen zugestimmt haben; für alle anderen entfällt dieser Schritt.",
     "reminderWhatsAppSkippedHint": "WhatsApp ist derzeit nicht verbunden, daher wird diese Erinnerung übersprungen, bis es verbunden ist."
   },
   "Finance": {

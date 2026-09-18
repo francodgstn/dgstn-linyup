@@ -194,6 +194,9 @@ export const WHATSAPP_CONNECTIONS_COLLECTION = 'whatsapp_connections'
 export const WHATSAPP_NUMBERS_COLLECTION = 'whatsapp_numbers'
 // whatsapp_suppressions/{sha256(E.164)}: STOP replies and permanent failures.
 export const WHATSAPP_SUPPRESSIONS_COLLECTION = 'whatsapp_suppressions'
+// teams/{teamId}/whatsapp_templates/{id}: the studio's own templates (Phase 2),
+// written only by submitWhatsAppTemplate / deleteWhatsAppTemplate.
+export const WHATSAPP_TEMPLATES_SUBCOLLECTION = 'whatsapp_templates'
 
 // In-app feedback (see types/feedback.ts).
 // feedback: client CREATE with strict rules validation; read/update via the

@@ -5,7 +5,8 @@
 //
 //   kill switch → idempotency (mail_sends, channel 'whatsapp')
 //   → recipient: test-mode redirect, or messaging policy
-//   → the CONTACT's opt-in → the studio's STOP list → connected + template approved
+//   → connected + template approved → the CONTACT's opt-in (the answer the
+//     template needs: reminders, or news and offers) → the studio's STOP list
 //   → Graph send → ledger row, carrying the message id the webhook updates it by
 //
 // The opt-in is the synthetic-recipient guard for this channel. Seeded contacts
@@ -21,11 +22,20 @@ import { defineString } from 'firebase-functions/params'
 import {
   CONTACTS_COLLECTION,
   MAIL_SENDS_COLLECTION,
+  TEAMS_COLLECTION,
+  WHATSAPP_CONSENT_FIELD,
   WHATSAPP_SUPPRESSIONS_COLLECTION,
+  WHATSAPP_TEMPLATES_SUBCOLLECTION,
   whatsappConsentAllows,
+  whatsappConsentKindFor,
+  whatsappStudioTemplateSendable,
   whatsappTemplateApproved,
+  whatsappTemplateForMeta,
+  type WhatsAppConsentKind,
   type WhatsAppLanguage,
+  type WhatsAppStudioTemplate,
   type WhatsAppTemplateDefinition,
+  type WhatsAppTemplateToken,
 } from '@linyup/shared'
 import { applySmsPolicy, envDefaultMode, resolveMessagingPolicy } from '../mail/messagingPolicy'
 import { ledgerRowSpendsKey } from '../mail/mailService'
@@ -34,7 +44,7 @@ import { ledgerExpiry } from '../utils/ledgerRetention'
 import { whatsappEnabled } from './config'
 import { loadWhatsAppCredentials, readWhatsAppIntegration } from './connection'
 import { whatsappGraph, WhatsAppGraphError } from './graph'
-import { buildTemplateSendPayload } from './templates'
+import { buildSendPayload } from './templates'
 
 const testModeEnabled = defineString('TEST_MODE', {
   description: 'Redirect all outbound mail/SMS to a single test recipient',
@@ -45,16 +55,79 @@ const testSmsNumber = defineString('TEST_SMS_NUMBER', {
   default: '',
 })
 
+/**
+ * What to send. A Linyup template (the booking reminder) is approved per account
+ * on the integration doc and always asks the REMINDERS answer; a studio's own
+ * template is read here, sends its live approved version, and asks the answer
+ * its Meta category needs (`whatsappConsentKindFor`) — decided in this one
+ * place so no caller can ask the wrong one.
+ */
+export type OutboundTemplate =
+  | {
+      kind: 'linyup'
+      def: WhatsAppTemplateDefinition
+      language: WhatsAppLanguage
+      params: Record<string, string>
+      buttonSuffix?: string
+    }
+  | {
+      kind: 'studio'
+      templateId: string
+      /** Rendered values keyed by TOKEN (`firstname`, `bookingUrl`, …). */
+      values: Partial<Record<WhatsAppTemplateToken, string>>
+    }
+
 export interface OutboundWhatsApp {
   /** The contact being messaged — whose opt-in decides. */
   contactId: string
   to: string
-  template: WhatsAppTemplateDefinition
-  language: WhatsAppLanguage
-  params: Record<string, string>
-  buttonSuffix?: string
+  template: OutboundTemplate
   tag: string
   idempotencyKey: string
+}
+
+interface ResolvedTemplate {
+  name: string
+  language: string
+  bodyParams: { name: string; text: string | null | undefined }[]
+  buttonSuffix: string | null
+  consentKind: WhatsAppConsentKind
+}
+
+/** The template as it will be sent, or why it cannot be. */
+async function resolveOutboundTemplate(
+  teamId: string,
+  template: OutboundTemplate,
+): Promise<ResolvedTemplate | 'template_not_approved'> {
+  if (template.kind === 'linyup') {
+    const integration = await readWhatsAppIntegration(teamId)
+    if (!whatsappTemplateApproved(integration, template.def.name, template.language)) return 'template_not_approved'
+    if (template.def.urlButton && !template.buttonSuffix) return 'template_not_approved'
+    return {
+      name: template.def.name,
+      language: template.language,
+      bodyParams: template.def.params.map((p) => ({ name: p.name, text: template.params[p.name] })),
+      buttonSuffix: template.def.urlButton ? template.buttonSuffix ?? null : null,
+      consentKind: 'reminders',
+    }
+  }
+  const snap = await admin
+    .firestore()
+    .collection(TEAMS_COLLECTION)
+    .doc(teamId)
+    .collection(WHATSAPP_TEMPLATES_SUBCOLLECTION)
+    .doc(template.templateId)
+    .get()
+  const doc = snap.data() as WhatsAppStudioTemplate | undefined
+  if (!doc || !whatsappStudioTemplateSendable(doc)) return 'template_not_approved'
+  const live = doc.live!
+  return {
+    name: live.meta_name,
+    language: doc.language,
+    bodyParams: whatsappTemplateForMeta(live.body).params.map((p) => ({ name: p.name, text: template.values[p.token] })),
+    buttonSuffix: null,
+    consentKind: whatsappConsentKindFor(live.category),
+  }
 }
 
 export type WhatsAppSkipReason =
@@ -68,6 +141,7 @@ export type WhatsAppSkipReason =
   | 'suppressed'
   | 'not_connected'
   | 'template_not_approved'
+  | 'no_marketing_consent'
 
 export interface WhatsAppSendOutcome {
   messageId?: string
@@ -154,23 +228,25 @@ export async function sendStudioWhatsApp(teamId: string, msg: OutboundWhatsApp):
     recipient = decision.recipient
   }
 
+  const integration = await readWhatsAppIntegration(teamId)
+  if (integration?.status !== 'connected') return drop('not_connected')
+  const template = await resolveOutboundTemplate(teamId, msg.template)
+  if (template === 'template_not_approved') return drop('template_not_approved')
+
   // The opt-in belongs to the contact being messaged, even when the policy
-  // redirected the delivery.
+  // redirected the delivery — and it is the answer THIS template needs.
   const contactSnap = await db.collection(CONTACTS_COLLECTION).doc(msg.contactId).get()
   const contact = contactSnap.data()
-  if (!contactSnap.exists || contact?.teamId !== teamId || !whatsappConsentAllows(contact)) {
-    return drop('no_consent')
+  if (!contactSnap.exists || contact?.teamId !== teamId) return drop('no_consent')
+  if (!whatsappConsentAllows(contact, template.consentKind)) {
+    return drop(template.consentKind === 'marketing' ? 'no_marketing_consent' : 'no_consent')
   }
+  const consentAt = (contact[WHATSAPP_CONSENT_FIELD[template.consentKind]] as { at?: unknown } | undefined)?.at
   const suppression = await whatsappSuppressionRef(teamId, recipient).get()
-  if (suppression.exists && suppressionBlocks(suppression.data()?.created_at, contact.whatsapp_consent?.at)) {
+  if (suppression.exists && suppressionBlocks(suppression.data()?.created_at, consentAt)) {
     return drop('suppressed')
   }
 
-  const integration = await readWhatsAppIntegration(teamId)
-  if (integration?.status !== 'connected') return drop('not_connected')
-  if (!whatsappTemplateApproved(integration, msg.template.name, msg.language)) {
-    return drop('template_not_approved')
-  }
   const credentials = await loadWhatsAppCredentials(teamId)
   if (!credentials) return drop('not_connected')
 
@@ -178,21 +254,24 @@ export async function sendStudioWhatsApp(teamId: string, msg: OutboundWhatsApp):
     const { messageId } = await whatsappGraph().sendMessage(
       credentials.token,
       credentials.phoneNumberId,
-      buildTemplateSendPayload({
+      buildSendPayload({
         toE164: recipient,
-        def: msg.template,
-        language: msg.language,
-        params: msg.params,
-        buttonSuffix: msg.buttonSuffix,
+        name: template.name,
+        language: template.language,
+        bodyParams: template.bodyParams,
+        buttonSuffix: template.buttonSuffix,
       }),
     )
-    // The contact and the number's hash let a STOP reply find who said it.
+    // The contact and the number's hash let a STOP reply find who said it; the
+    // consent kind lets Meta's "stop promotions" failure end the right answer.
     await writeLedger({
       status: 'sent',
       provider_message_id: messageId,
       recipient_count: 1,
       contact_id: msg.contactId,
       recipient_hash: phoneHash(recipient),
+      template_name: template.name,
+      consent_kind: template.consentKind,
     })
     return { messageId }
   } catch (err) {

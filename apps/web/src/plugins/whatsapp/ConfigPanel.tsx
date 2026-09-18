@@ -1,14 +1,21 @@
 'use client'
 
-// WhatsApp plugin — Settings → Plugins owner config. Connects the studio's OWN
+// WhatsApp plugin — Settings → Plugins config. Connects the studio's OWN
 // WhatsApp Business number via Meta Embedded Signup (coexistence / Business
 // App onboarding), so replies keep landing in the studio's own WhatsApp
 // Business app. See docs/whatsapp-outbound.md for the whole design; this panel
-// covers section "3. Connect / disconnect".
+// covers section "3. Connect / disconnect" plus, below it, "6b" (the studio's
+// own templates) and "6e" (the usage line).
 //
-// Owner-only, same rule as the integration doc itself (SmsSenderCard's
-// pattern): a manager cannot read `teams/{t}/integrations/whatsapp` at all, so
-// this renders nothing for them rather than a panel that would 403 on load.
+// THE CONNECTION CARD IS OWNER-ONLY, same rule as the integration doc itself
+// (SmsSenderCard's pattern): a manager cannot read
+// `teams/{t}/integrations/whatsapp` at all, so that half renders nothing for
+// them. The MESSAGES section below it is not — `teams/{t}/whatsapp_templates`
+// is readable by any team member and writable by `outreach.manage`
+// (MessagesSection.tsx), so a manager who can author automations can also
+// author WhatsApp messages, without ever seeing the connection card. The panel
+// therefore opens for owner OR a manager holding `outreach.manage`; which half
+// each of them sees is decided below, not by hiding the whole panel.
 //
 // CSP NOTE: this app defers Content-Security-Policy entirely today
 // (see apps/web/next.config.ts — "CSP is deferred"; only frame-ancestors /
@@ -33,6 +40,7 @@ import {
   Unlink,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useCapabilities } from '@/hooks/useCapabilities'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -49,9 +57,12 @@ import {
   useConnectWhatsApp,
   useRefreshWhatsAppStatus,
   useDisconnectWhatsApp,
+  useWhatsAppConnectedForTeam,
   type ConnectWhatsAppRefusalReason,
 } from './hooks'
 import { loadFacebookSdk, type FacebookSdkWindow } from './facebookSdk'
+import { WhatsAppMessagesSection } from './MessagesSection'
+import { WhatsAppUsageLine } from './UsageLine'
 
 /** Meta's Embedded Signup posts from facebook.com over https. Parsed as a URL
  *  so a look-alike host (`https://notfacebook.com`) cannot pass. */
@@ -74,6 +85,12 @@ export function ConfigPanel() {
   const t = useTranslations('Plugins')
   const { currentTeamId, teamRole } = useAuth()
   const canEdit = teamRole === 'owner'
+  // A manager who can author automations (`outreach.manage`) can also author
+  // WhatsApp messages — see the header note. Owner is always all-capable.
+  // Hook called unconditionally (Rules of Hooks); only the boolean it feeds is
+  // short-circuited.
+  const { can } = useCapabilities()
+  const canManageMessages = canEdit || can('outreach.manage')
   const { confirm, confirmDialog } = useConfirm()
   const [connecting, setConnecting] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
@@ -85,10 +102,31 @@ export function ConfigPanel() {
   const connectMutation = useConnectWhatsApp(currentTeamId)
   const refreshMutation = useRefreshWhatsAppStatus(currentTeamId)
   const disconnectMutation = useDisconnectWhatsApp(currentTeamId)
+  const managerConnectedQ = useWhatsAppConnectedForTeam(currentTeamId, !canEdit && canManageMessages)
 
-  // Managers can't read the integration doc at all — hide the card entirely,
-  // same as SmsSenderCard.
-  if (!canEdit || !currentTeamId) return null
+  if (!currentTeamId || (!canEdit && !canManageMessages)) return null
+
+  // A manager never reaches the connection card at all (they can't read the
+  // integration doc — same rule SmsSenderCard follows), only the Messages
+  // section, which needs no connection state to render: `whatsapp_templates`
+  // is readable by any team member.
+  if (!canEdit) {
+    // Until a number is connected there is nothing to submit a message to.
+    if (managerConnectedQ.data !== true) {
+      return (
+        <p className="py-2 text-sm text-muted-foreground">
+          {managerConnectedQ.isLoading ? null : t('whatsappMessagesNotConnected')}
+        </p>
+      )
+    }
+    return (
+      <div className="flex flex-col gap-4 py-2">
+        <WhatsAppMessagesSection teamId={currentTeamId} />
+        <Separator />
+        <WhatsAppUsageLine teamId={currentTeamId} />
+      </div>
+    )
+  }
 
   function connectErrorMessage(reason: string | undefined): string {
     switch (reason as ConnectWhatsAppRefusalReason | undefined) {
@@ -337,6 +375,13 @@ export function ConfigPanel() {
             {t('whatsappDisconnectAction')}
           </Button>
         </div>
+
+        {/* Messages + usage — "6b"/"6e". Shown once connected: drafting a
+            message before then would only fail on submit ("not_connected"). */}
+        <Separator />
+        <WhatsAppMessagesSection teamId={currentTeamId} />
+        <Separator />
+        <WhatsAppUsageLine teamId={currentTeamId} />
 
         {confirmDialog}
       </div>

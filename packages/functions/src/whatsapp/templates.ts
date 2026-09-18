@@ -59,27 +59,27 @@ export function cleanTemplateParam(value: string | null | undefined): string {
   return cleaned || '-'
 }
 
-export function buildTemplateSendPayload(args: {
+/** A template send, for any template: its Meta name, language, the named body
+ *  parameters in order, and the URL button's suffix when it has one. */
+export function buildSendPayload(args: {
   toE164: string
-  def: WhatsAppTemplateDefinition
-  language: WhatsAppLanguage
-  params: Record<string, string>
-  /** The dynamic part of the URL button — required when the template has one. */
-  buttonSuffix?: string
+  name: string
+  language: string
+  bodyParams: readonly { name: string; text: string | null | undefined }[]
+  buttonSuffix?: string | null
 }): Record<string, unknown> {
-  const { def } = args
-  const components: Record<string, unknown>[] = [
-    {
+  const components: Record<string, unknown>[] = []
+  if (args.bodyParams.length) {
+    components.push({
       type: 'body',
-      parameters: def.params.map((p) => ({
+      parameters: args.bodyParams.map((p) => ({
         type: 'text',
         parameter_name: p.name,
-        text: cleanTemplateParam(args.params[p.name]),
+        text: cleanTemplateParam(p.text),
       })),
-    },
-  ]
-  if (def.urlButton) {
-    if (!args.buttonSuffix) throw new Error(`template ${def.name} needs a button suffix`)
+    })
+  }
+  if (args.buttonSuffix) {
     components.push({
       type: 'button',
       sub_type: 'url',
@@ -92,8 +92,28 @@ export function buildTemplateSendPayload(args: {
     recipient_type: 'individual',
     to: args.toE164.replace(/^\+/, ''),
     type: 'template',
-    template: { name: def.name, language: { code: args.language }, components },
+    template: { name: args.name, language: { code: args.language }, ...(components.length ? { components } : {}) },
   }
+}
+
+/** A Linyup-owned template's send payload. */
+export function buildTemplateSendPayload(args: {
+  toE164: string
+  def: WhatsAppTemplateDefinition
+  language: WhatsAppLanguage
+  params: Record<string, string>
+  /** The dynamic part of the URL button — required when the template has one. */
+  buttonSuffix?: string
+}): Record<string, unknown> {
+  const { def } = args
+  if (def.urlButton && !args.buttonSuffix) throw new Error(`template ${def.name} needs a button suffix`)
+  return buildSendPayload({
+    toE164: args.toE164,
+    name: def.name,
+    language: args.language,
+    bodyParams: def.params.map((p) => ({ name: p.name, text: args.params[p.name] })),
+    buttonSuffix: def.urlButton ? args.buttonSuffix : null,
+  })
 }
 
 /** The dynamic suffix of a URL-button link, or null when the link does not sit

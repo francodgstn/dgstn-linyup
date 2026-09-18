@@ -237,6 +237,9 @@ export interface Contact {
   // WhatsApp opt-in (docs/whatsapp-outbound.md). Absent = not opted in. Read
   // through `whatsappConsentAllows`, written only by the functions' consent writer.
   whatsapp_consent?: WhatsAppConsent
+  // WhatsApp NEWS AND OFFERS — a separate answer from reminders, asked by the
+  // automation action's marketing templates. Same shape, same one writer.
+  whatsapp_marketing_consent?: WhatsAppConsent
 
   // Address
   address?: ContactAddress

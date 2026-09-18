@@ -17,6 +17,9 @@ export type WhatsAppConsentSource =
   | 'member_app'
   | 'staff'
   | 'reply_stop'
+  /** Meta refused a marketing message because the member tapped "stop
+   *  promotions" in WhatsApp — ends the marketing answer only. */
+  | 'meta_stop_promotions'
 
 /**
  * `Contact.whatsapp_consent` — present only once somebody has answered. Absent
@@ -32,10 +35,36 @@ export interface WhatsAppConsent {
   recorded_by?: string
 }
 
+/**
+ * The two answers a member gives, and they are independent (Franco,
+ * 2026-09-18): booking REMINDERS, and NEWS AND OFFERS. Almost every automation
+ * message — a welcome, a win-back, a birthday — is MARKETING in Meta's terms,
+ * which a member who ticked "reminders" never agreed to.
+ */
+export type WhatsAppConsentKind = 'reminders' | 'marketing'
+
+/** The contact field each kind is stored on. */
+export const WHATSAPP_CONSENT_FIELD: Record<WhatsAppConsentKind, 'whatsapp_consent' | 'whatsapp_marketing_consent'> = {
+  reminders: 'whatsapp_consent',
+  marketing: 'whatsapp_marketing_consent',
+}
+
 /** THE one reader of a contact's WhatsApp consent. */
-export function whatsappConsentAllows(contact: { whatsapp_consent?: unknown } | null | undefined): boolean {
-  const consent = contact?.whatsapp_consent as { status?: unknown } | null | undefined
+export function whatsappConsentAllows(
+  contact: { whatsapp_consent?: unknown; whatsapp_marketing_consent?: unknown } | null | undefined,
+  kind: WhatsAppConsentKind = 'reminders',
+): boolean {
+  const consent = (contact as Record<string, unknown> | null | undefined)?.[WHATSAPP_CONSENT_FIELD[kind]] as
+    | { status?: unknown }
+    | null
+    | undefined
   return consent?.status === 'opted_in'
+}
+
+/** Which consent a template needs: a utility message is reminder-like; anything
+ *  Meta calls marketing needs the news-and-offers answer. */
+export function whatsappConsentKindFor(category: string | null | undefined): WhatsAppConsentKind {
+  return category === 'UTILITY' ? 'reminders' : 'marketing'
 }
 
 // ─── Connection ──────────────────────────────────────────────────────────────
@@ -165,4 +194,122 @@ export function isWhatsAppStopMessage(text: string | null | undefined): boolean 
     .toLowerCase()
     .replace(/[^a-z]/g, '')
   return STOP_KEYWORDS.has(normalised)
+}
+
+// ─── Studio templates (Phase 2) ──────────────────────────────────────────────
+// `teams/{teamId}/whatsapp_templates/{id}` — written by the studio in Linyup and
+// submitted to Meta by `submitWhatsAppTemplate`; every client write is denied.
+// docs/whatsapp-outbound.md → "6b".
+
+export type WhatsAppTemplateCategory = 'UTILITY' | 'MARKETING'
+
+/** One submission at Meta. An approved template is never edited in place: an
+ *  edit is a NEW submission under a new name, and the old one keeps sending
+ *  until the new one is approved. */
+export interface WhatsAppTemplateSubmission {
+  meta_name: string
+  category: WhatsAppTemplateCategory
+  body: string
+  status: WhatsAppTemplateStatus
+  reason: string | null
+  submitted_at: Timestamp
+  /** Set when Meta moved it to another category after submission. */
+  recategorized_at?: Timestamp
+}
+
+export interface WhatsAppStudioTemplate {
+  id: string
+  /** The studio's own name for it; never sent. */
+  label: string
+  language: WhatsAppLanguage
+  /** What sends today — null until a first submission is approved. */
+  live: WhatsAppTemplateSubmission | null
+  /** An edit (or the first submission) awaiting Meta — null when none. */
+  next: WhatsAppTemplateSubmission | null
+  created_by: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+/**
+ * The tokens a studio may put in a WhatsApp template — the chat-sized subset of
+ * the email template variables (`substituteVariables`), each with the named
+ * parameter Meta sees (lowercase letters and underscores) and the sample Meta
+ * requires with every submission.
+ */
+export const WHATSAPP_TEMPLATE_TOKENS = {
+  firstname: { param: 'first_name', example: 'Anna' },
+  lastname: { param: 'last_name', example: 'Keller' },
+  teamName: { param: 'studio_name', example: 'Studio Aare' },
+  date: { param: 'date', example: '22 September 2026' },
+  bookingUrl: { param: 'booking_url', example: 'https://app.linyup.com/public/studio-aare/booking' },
+  membershipUrl: { param: 'membership_url', example: 'https://app.linyup.com/public/studio-aare/signup' },
+  bioLinkUrl: { param: 'bio_link_url', example: 'https://app.linyup.com/public/studio-aare' },
+  websiteUrl: { param: 'website_url', example: 'https://studio-aare.ch' },
+  reviewUrl: { param: 'review_url', example: 'https://g.page/r/studio-aare/review' },
+} as const
+
+export type WhatsAppTemplateToken = keyof typeof WHATSAPP_TEMPLATE_TOKENS
+
+export const WHATSAPP_TEMPLATE_BODY_MAX = 1024
+export const WHATSAPP_TEMPLATE_LABEL_MAX = 60
+
+export type WhatsAppTemplateProblem =
+  | 'empty'
+  | 'too_long'
+  | 'unknown_token'
+  | 'starts_with_token'
+  | 'ends_with_token'
+  | 'adjacent_tokens'
+
+const TOKEN_RE = /\{\{\s*([^{}]+?)\s*\}\}/g
+
+/** Every `{{token}}` in order of appearance, repeats included. */
+export function whatsappTemplateTokensIn(body: string): string[] {
+  return [...(body ?? '').matchAll(TOKEN_RE)].map((m) => m[1])
+}
+
+/**
+ * What Meta would refuse, found before Meta does: the studio should hear it in
+ * the editor, not a day later as a rejection. Returns every problem, none when
+ * the body can be submitted. Shared so the editor and the callable agree.
+ */
+export function validateWhatsAppTemplateBody(body: string): {
+  problems: WhatsAppTemplateProblem[]
+  unknown: string[]
+} {
+  const text = (body ?? '').trim()
+  if (!text) return { problems: ['empty'], unknown: [] }
+  const problems = new Set<WhatsAppTemplateProblem>()
+  if (text.length > WHATSAPP_TEMPLATE_BODY_MAX) problems.add('too_long')
+  const unknown = whatsappTemplateTokensIn(text).filter((t) => !(t in WHATSAPP_TEMPLATE_TOKENS))
+  if (unknown.length) problems.add('unknown_token')
+  if (/^\{\{/.test(text)) problems.add('starts_with_token')
+  if (/\}\}$/.test(text)) problems.add('ends_with_token')
+  if (/\}\}\s*\{\{/.test(text)) problems.add('adjacent_tokens')
+  return { problems: [...problems], unknown: [...new Set(unknown)] }
+}
+
+/** The body as Meta receives it — tokens renamed to their named parameters —
+ *  and the ordered, de-duplicated parameters with their examples. */
+export function whatsappTemplateForMeta(body: string): {
+  text: string
+  params: { token: WhatsAppTemplateToken; name: string; example: string }[]
+} {
+  const params: { token: WhatsAppTemplateToken; name: string; example: string }[] = []
+  const text = (body ?? '').trim().replace(TOKEN_RE, (whole, raw: string) => {
+    const token = raw as WhatsAppTemplateToken
+    const def = WHATSAPP_TEMPLATE_TOKENS[token]
+    if (!def) return whole
+    if (!params.some((p) => p.token === token)) params.push({ token, name: def.param, example: def.example })
+    return `{{${def.param}}}`
+  })
+  return { text, params }
+}
+
+/** Can this template send right now? */
+export function whatsappStudioTemplateSendable(
+  template: Pick<WhatsAppStudioTemplate, 'live'> | null | undefined,
+): boolean {
+  return template?.live?.status === 'APPROVED'
 }

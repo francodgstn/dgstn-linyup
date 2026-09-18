@@ -18,6 +18,7 @@ import {
   type PerformanceCheckinInput,
   type MyAttendance,
   type MyAttendanceResult,
+  type WhatsAppConsentKind,
 } from '@linyup/shared';
 import {
   Contact,
@@ -611,16 +612,19 @@ export const FirestoreService = {
   },
 
   /**
-   * The member's own WhatsApp reminder opt-in/out — one of the three doors in
+   * The member's own WhatsApp opt-in/out — one of the three doors in
    * docs/whatsapp-outbound.md → "Opt-in surfaces" (the other two are the
-   * public booking/signup forms and staff on the contact page). Always sent
-   * with `source: 'member_app'` so it's attributed correctly; an opt-in is
-   * refused server-side (`failed-precondition`) once the studio no longer
-   * offers WhatsApp.
+   * public booking/signup forms and staff on the contact page). Two
+   * independent answers share this one door: `kind` picks which
+   * (`'reminders'` | `'marketing'`, default `'reminders'` — see
+   * docs/whatsapp-outbound.md → "6a"). Always sent with
+   * `source: 'member_app'` so it's attributed correctly; an opt-in is refused
+   * server-side (`failed-precondition`) once the studio no longer offers
+   * WhatsApp.
    */
-  async setMyWhatsAppConsent(teamId: string, optIn: boolean): Promise<void> {
+  async setMyWhatsAppConsent(teamId: string, optIn: boolean, kind?: WhatsAppConsentKind): Promise<void> {
     const fn = httpsCallable(getFunctions(), 'setMyWhatsAppConsent');
-    await fn({ teamId, optIn, source: 'member_app' });
+    await fn({ teamId, optIn, source: 'member_app', kind });
   },
 
   // Book a session as the signed-in contact. No token dance: our contact session

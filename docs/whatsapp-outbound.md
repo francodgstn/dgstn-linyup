@@ -5,10 +5,11 @@ area: platform
 ---
 # WhatsApp Business — outbound
 
-Status: **Phase 1 built, not deployed** (2026-09-17), behind `WHATSAPP_ENABLED`
+Status: **Phases 1 and 2 built** — Phase 1 on staging 2026-09-18, Phase 2 in
+review — behind `WHATSAPP_ENABLED`
 (off in every environment) and waiting on the Meta app (see "Ops
-prerequisites"). Phase 2 (studio templates + the automation action) is not
-built; until it is, the plugin offers no automation action at all. Its plan is
+prerequisites"). Phase 2 — the second opt-in, templates written in Linyup,
+the `send_whatsapp` automation action held until 08:00, and the cost line — is
 section 6.
 
 Code: `packages/functions/src/whatsapp/` (its files' headers say who owns what),
@@ -166,7 +167,7 @@ Quiet hours reuse `isWithinSmsSendingHours`.
   connect. **Template names are versioned**: an approved template is edited by
   publishing `_v2`, never in place.
 
-### 6. Phase 2 — studio templates and the automation action *(plan)*
+### 6. Phase 2 — studio templates and the automation action
 
 Decisions (Franco, 2026-09-18): **two opt-ins** — booking reminders and "news
 and offers" are separate answers; studios **write templates in Linyup**, never
@@ -238,7 +239,21 @@ run on time. The run history says "held until 08:00".
 
 **6e. What it costs the studio.** The plugin page shows this month's sent
 messages by Meta category from the send log (`wa_category`), with "Meta bills
-you directly". No Linyup metering.
+you directly". No Linyup metering. `getWhatsAppUsage` counts them (the send log
+is denied to clients), on the `mail_sends (team_id, channel, wa_category,
+created_at)` index.
+
+**Where it lives.** `whatsapp/studioTemplates.ts` (submit, delete, and the
+webhook's promote-on-approval), `whatsapp/automation.ts` (the action, token
+rendering, and `sendHeldWhatsApp`), `whatsapp/usage.ts`; the engine arm is in
+`utils/automationEngine.ts` (`send_whatsapp`, `ruleSendsWhatsApp`), and the
+preview marks each contact the message would or would not reach. Tests:
+`whatsapp/phase2.test.ts` and the rules file.
+
+**Two things to confirm in the Phase 0 spike:** the failure code Meta uses for
+"this person stopped promotions" (`META_STOPPED_PROMOTIONS`, 131050 assumed),
+and that `template_category_update` is the field Meta sends on a
+reclassification.
 
 ### 7. Opt-in surfaces (one callable, three doors)
 
@@ -300,7 +315,7 @@ signed status webhook. Record in this doc, with sources:
 plugin to `beta`; rules + rules tests; i18n fragment; `pnpm census:reads` rows
 for any new LOG read. Enough for App Review.
 
-**Phase 2 — templates + automation action.** *(planned)* Section 6: 6a consent and 6b templates first (both usable on their own), then 6c the action, 6d holding, 6e the cost line.
+**Phase 2 — templates + automation action.** *(built)* Section 6: 6a consent and 6b templates first (both usable on their own), then 6c the action, 6d holding, 6e the cost line.
 
 ## Not in v1, on purpose
 
