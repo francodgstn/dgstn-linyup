@@ -1,0 +1,763 @@
+<title>Contact State Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+  :root {
+    --ground: #f6f7f9; --surface: #ffffff; --sunk: #eef0f4;
+    --ink: #191d24; --muted: #666e7b; --faint: #8b93a1;
+    --rule: #d8dce3; --rule-soft: #e6e9ee;
+    --accent: #b0702a; --accent-soft: #f4e8d8;
+    --live: #2e7a58; --live-soft: #e0f0e8;
+    --gone: #9a4038; --gone-soft: #f6e3e1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #13161b; --surface: #1a1e25; --sunk: #20252d;
+      --ink: #e8ebf0; --muted: #99a2af; --faint: #79828f;
+      --rule: #2c323b; --rule-soft: #242a32;
+      --accent: #d69a55; --accent-soft: #33281a;
+      --live: #5cb98d; --live-soft: #1b2c24;
+      --gone: #cf7a70; --gone-soft: #2e1f1e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #13161b; --surface: #1a1e25; --sunk: #20252d;
+    --ink: #e8ebf0; --muted: #99a2af; --faint: #79828f;
+    --rule: #2c323b; --rule-soft: #242a32;
+    --accent: #d69a55; --accent-soft: #33281a;
+    --live: #5cb98d; --live-soft: #1b2c24;
+    --gone: #cf7a70; --gone-soft: #2e1f1e;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--ground); color: var(--ink); font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 1000px; margin: 0 auto; padding: 52px 28px 96px; display: flex; flex-direction: column; gap: 44px; }
+  .prose { max-width: 66ch; display: flex; flex-direction: column; gap: 12px; }
+  header.head { display: flex; flex-direction: column; gap: 10px; max-width: 66ch; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-family: "IBM Plex Serif", Georgia, serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 40px); line-height: 1.15; margin: 0; text-wrap: balance; }
+  h2 { font-family: "IBM Plex Serif", Georgia, serif; font-weight: 600; font-size: 23px; line-height: 1.25; margin: 0; text-wrap: balance; }
+  h3 { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  p { margin: 0; }
+  .lede { font-size: 17.5px; color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 16px; }
+  .rulebar { height: 1px; background: var(--rule); border: 0; margin: 0; }
+  b { font-weight: 600; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .canvas { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px; overflow-x: auto; }
+  .canvas svg { display: block; width: 100%; min-width: 660px; height: auto; }
+  figcaption { font-size: 13.5px; color: var(--muted); max-width: 74ch; }
+  figcaption b { color: var(--ink); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th { text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 600; padding: 0 12px 8px 0; border-bottom: 1px solid var(--rule); }
+  td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .tablewrap { overflow-x: auto; }
+  .planned { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 3px; padding: 1px 6px; vertical-align: middle; }
+
+  .walk-bar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+  .walk-people { display: flex; flex-wrap: wrap; gap: 6px; }
+  .person { font: inherit; font-size: 13px; padding: 7px 12px; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; }
+  .person.on { border-color: var(--ink); color: var(--ink); background: var(--sunk); }
+  .person:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .walk-modes { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+  .mode { font: inherit; font-size: 13px; font-weight: 500; padding: 8px 14px; border: 0; background: var(--surface); color: var(--muted); cursor: pointer; }
+  .mode + .mode { border-left: 1px solid var(--rule); }
+  .mode.on { background: var(--accent-soft); color: var(--accent); }
+  .mode:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .walk-intro { font-size: 15px; color: var(--muted); max-width: 74ch; }
+  .walk-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .step { font: inherit; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .step .n { font-size: 11px; color: var(--faint); background: var(--sunk); border-radius: 3px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
+  .step.on { border-color: var(--accent); background: var(--accent-soft); }
+  .step.on .n { color: var(--accent); background: var(--surface); }
+  .step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .step.branch { border-style: dashed; }
+  .step.branch.on { border-style: solid; }
+  .sep { color: var(--faint); font-size: 13px; padding: 0 2px; }
+  .sep.then { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 6px; flex-basis: 100%; }
+  @media (min-width: 900px) { .sep.then { flex-basis: auto; } }
+  .walk-panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+  .walk-when { font-size: 12.5px; color: var(--faint); }
+  .walk-grid { display: flex; flex-direction: column; gap: 10px; overflow-x: auto; }
+  .axis-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 14px; min-width: 640px; }
+  .axis-name { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .axis-name.acq { color: var(--accent); }
+  .axis-name .dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; }
+  .axis-row.changed .axis-name .dot { background: var(--ink); }
+  .axis-row.diff .axis-name .dot { background: var(--accent); }
+  .chips { display: flex; flex-wrap: nowrap; gap: 6px; }
+  .chip { font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--rule-soft); color: var(--faint); white-space: nowrap; transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease; }
+  .chip.none { border-style: dashed; }
+  .chip.on { border-color: var(--ink); color: var(--ink); background: var(--sunk); font-weight: 500; }
+  .chip.on.acq { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .chip.on.live { border-color: var(--live); color: var(--live); background: var(--live-soft); }
+  .chip.on.gone { border-color: var(--gone); color: var(--gone); background: var(--gone-soft); }
+  .chip.on.proposed { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .walk-effects { display: flex; flex-direction: column; gap: 10px; }
+  .walk-effects ul { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .walk-effects li { font-size: 14px; padding-left: 18px; position: relative; color: var(--ink); }
+  .walk-effects li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 1px; background: var(--faint); }
+  .walk-effects li.diff { color: var(--accent); }
+  .walk-effects li.diff::before { background: var(--accent); width: 8px; height: 8px; top: 0.42em; border-radius: 50%; }
+  .walk-effects li.diff b { color: inherit; }
+  .walk-legend { font-size: 12.5px; color: var(--muted); display: flex; gap: 18px; align-items: center; }
+  .lg { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .lg-changed { background: var(--ink); }
+  .lg-diff { background: var(--accent); }
+  @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
+</style>
+
+<div class="page">
+
+  <header class="head">
+    <div class="eyebrow">Linyup · contacts</div>
+    <h1>How Linyup sees a contact</h1>
+    <p class="lede">
+      Four independent things are tracked about every person: how far they got on their
+      journey with you, whether they belong to the club, what they pay for, and whether
+      they're on your active roster. Nothing you do on one changes the others.
+    </p>
+  </header>
+
+  <!-- ─────────────────────────── WALKER ─────────────────────────── -->
+  <section class="walk" id="walk">
+    <h2>Follow a few people through it</h2>
+    <div class="prose">
+      <p>
+        Pick a person and step through what happens to them. Flip to
+        <b>Before External</b> to see how the same person read before September 2026,
+        when the bucket for people who train with you without being members arrived —
+        and notice where nothing changes at all.
+      </p>
+    </div>
+
+    <div class="walk-bar">
+      <div class="walk-people" role="group" aria-label="Who to follow" id="walk-people"></div>
+      <div class="walk-modes" role="group" aria-label="Model">
+        <button type="button" class="mode on" data-mode="external" aria-pressed="true">Now</button>
+        <button type="button" class="mode" data-mode="today" aria-pressed="false">Before External</button>
+      </div>
+    </div>
+
+    <p class="walk-intro" id="walk-intro"></p>
+    <div class="walk-steps" role="group" aria-label="Steps" id="walk-steps"></div>
+
+    <div class="walk-panel">
+      <div class="walk-when" id="walk-when"></div>
+      <div class="walk-grid" id="walk-grid"></div>
+      <div class="walk-effects">
+        <h3>What happens</h3>
+        <ul id="walk-effects" aria-live="polite"></ul>
+      </div>
+    </div>
+
+    <p class="walk-legend">
+      <span class="lg lg-changed"></span> changed at this step
+      <span class="lg lg-diff"></span> different before External
+    </p>
+  </section>
+
+  <hr class="rulebar">
+
+  <!-- ─────────────────────────── THE FOUR AXES ─────────────────────────── -->
+  <section>
+    <h2>The four things we track</h2>
+    <div class="prose">
+      <p>
+        A person holds one position on each. Someone can be <b>Joined</b> with no plan, on a
+        trial while already paying, or archived with everything else exactly as it was.
+      </p>
+    </div>
+
+    <figure>
+      <div class="canvas">
+        <svg viewBox="0 0 880 404" role="img"
+             aria-label="Four independent axes: Journey with Not started, Trial booked, Trial attended and Joined; Affiliation with None, Requested, Under review, Almost ready, Active and Expired, where only Active counts; Plan with None, Trialing, Active, Past due, Paused and Cancelled; and Lifecycle with Lead, Active, External, Archived, Deleted and Anonymised.">
+
+          <text x="20" y="26" font-size="11" font-weight="600" letter-spacing="1.2" fill="#b0702a">JOURNEY</text>
+          <text x="20" y="42" font-size="10.5" fill="currentColor" opacity="0.55">how far they got toward joining · only ever moves forward · history, never a proxy for "member"</text>
+          <line x1="20" y1="52" x2="860" y2="52" stroke="currentColor" stroke-width="1" opacity="0.18"></line>
+          <rect x="20" y="62" width="120" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4" opacity="0.6"></rect>
+          <text x="80" y="83" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">Not started</text>
+          <rect x="156" y="62" width="120" height="32" rx="16" fill="none" stroke="#b0702a" stroke-width="1.3"></rect>
+          <text x="216" y="83" text-anchor="middle" font-size="12" fill="#b0702a">Trial booked</text>
+          <rect x="292" y="62" width="132" height="32" rx="16" fill="none" stroke="#b0702a" stroke-width="1.3"></rect>
+          <text x="358" y="83" text-anchor="middle" font-size="12" fill="#b0702a">Trial attended</text>
+          <rect x="440" y="62" width="88" height="32" rx="16" fill="none" stroke="#b0702a" stroke-width="1.3"></rect>
+          <text x="484" y="83" text-anchor="middle" font-size="12" fill="#b0702a">Joined</text>
+
+          <text x="20" y="122" font-size="11" font-weight="600" letter-spacing="1.2" fill="currentColor" opacity="0.75">AFFILIATION</text>
+          <text x="20" y="138" font-size="10.5" fill="currentColor" opacity="0.55">belonging to the club · federation studios only</text>
+          <line x1="20" y1="148" x2="860" y2="148" stroke="currentColor" stroke-width="1" opacity="0.18"></line>
+          <rect x="20" y="158" width="88" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4" opacity="0.6"></rect>
+          <text x="64" y="179" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">None</text>
+          <rect x="124" y="158" width="104" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="176" y="179" text-anchor="middle" font-size="12" fill="currentColor">Requested</text>
+          <rect x="244" y="158" width="120" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="304" y="179" text-anchor="middle" font-size="12" fill="currentColor">Under review</text>
+          <rect x="380" y="158" width="122" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="441" y="179" text-anchor="middle" font-size="12" fill="currentColor">Almost ready</text>
+          <rect x="518" y="158" width="84" height="32" rx="16" fill="#e0f0e8" stroke="#2e7a58" stroke-width="1.6"></rect>
+          <text x="560" y="179" text-anchor="middle" font-size="12" fill="#2e7a58" font-weight="500">Active</text>
+          <rect x="618" y="158" width="88" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="662" y="179" text-anchor="middle" font-size="12" fill="currentColor">Expired</text>
+          <text x="722" y="173" font-size="10" fill="#2e7a58">← the only one that</text>
+          <text x="722" y="186" font-size="10" fill="#2e7a58">counts as a member</text>
+
+          <text x="20" y="218" font-size="11" font-weight="600" letter-spacing="1.2" fill="currentColor" opacity="0.75">PLAN</text>
+          <text x="20" y="234" font-size="10.5" fill="currentColor" opacity="0.55">what they pay for · the only one that pauses · a partner app like ClassPass can be one, if you track it</text>
+          <line x1="20" y1="244" x2="860" y2="244" stroke="currentColor" stroke-width="1" opacity="0.18"></line>
+          <rect x="20" y="254" width="88" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4" opacity="0.6"></rect>
+          <text x="64" y="275" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">None</text>
+          <rect x="124" y="254" width="92" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="170" y="275" text-anchor="middle" font-size="12" fill="currentColor">Trialing</text>
+          <rect x="232" y="254" width="84" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.4"></rect>
+          <text x="274" y="275" text-anchor="middle" font-size="12" fill="currentColor">Active</text>
+          <rect x="332" y="254" width="96" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="380" y="275" text-anchor="middle" font-size="12" fill="currentColor">Past due</text>
+          <rect x="444" y="254" width="88" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="488" y="275" text-anchor="middle" font-size="12" fill="currentColor">Paused</text>
+          <rect x="548" y="254" width="100" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="598" y="275" text-anchor="middle" font-size="12" fill="currentColor">Cancelled</text>
+          <text x="666" y="269" font-size="10" fill="currentColor" opacity="0.6">"Trialing" is a free period on a</text>
+          <text x="666" y="282" font-size="10" fill="currentColor" opacity="0.6">paid plan — not a trial class</text>
+
+          <text x="20" y="314" font-size="11" font-weight="600" letter-spacing="1.2" fill="currentColor" opacity="0.75">LIFECYCLE</text>
+          <text x="20" y="330" font-size="10.5" fill="currentColor" opacity="0.55">are they on your active roster</text>
+          <line x1="20" y1="340" x2="860" y2="340" stroke="currentColor" stroke-width="1" opacity="0.18"></line>
+          <rect x="20" y="350" width="104" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4" opacity="0.6"></rect>
+          <text x="72" y="371" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">Lead</text>
+          <rect x="140" y="350" width="84" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.4"></rect>
+          <text x="182" y="371" text-anchor="middle" font-size="12" fill="currentColor">Active</text>
+          <rect x="240" y="350" width="92" height="32" rx="16" fill="none" stroke="#b0702a" stroke-width="1.3"></rect>
+          <text x="286" y="371" text-anchor="middle" font-size="12" fill="#b0702a">External</text>
+          <rect x="348" y="350" width="96" height="32" rx="16" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.85"></rect>
+          <text x="396" y="371" text-anchor="middle" font-size="12" fill="currentColor">Archived</text>
+          <rect x="460" y="350" width="92" height="32" rx="16" fill="none" stroke="#9a4038" stroke-width="1.3"></rect>
+          <text x="506" y="371" text-anchor="middle" font-size="12" fill="#9a4038">Deleted</text>
+          <rect x="568" y="350" width="112" height="32" rx="16" fill="none" stroke="#9a4038" stroke-width="1.3"></rect>
+          <text x="624" y="371" text-anchor="middle" font-size="12" fill="#9a4038">Anonymised</text>
+          <text x="696" y="365" font-size="10" fill="#b0702a">← External: trains with you,</text>
+          <text x="696" y="378" font-size="10" fill="#b0702a">not on your roster</text>
+        </svg>
+      </div>
+      <figcaption>
+        Three of the four have a value called <b>Active</b>, and they mean different things —
+        which is why "is she active?" needs a second word.
+      </figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>"Is she active?" — on the…</th><th>means</th><th>an external</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Journey</td><td>she reached <b>Joined</b></td><td>usually not — but a former member keeps it as history</td></tr>
+          <tr><td>Affiliation</td><td>the club counts her as a member</td><td>no</td></tr>
+          <tr><td>Plan</td><td>she's paying for something</td><td>maybe — a partner-app plan is one, if you track it</td></tr>
+          <tr><td>Lifecycle</td><td>she's on your active roster</td><td><b>no</b> — that's what External means</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rulebar">
+
+  <!-- ─────────────────────────── HOW PEOPLE ARRIVE ─────────────────────────── -->
+  <section>
+    <h2>How people arrive</h2>
+    <div class="prose">
+      <p>
+        Four ways in start the journey. Four don't — a shop purchase, a form, a waitlist
+        or a coach adding someone by hand — and those people join the journey later, when
+        they book a trial or sign up.
+      </p>
+    </div>
+
+    <figure>
+      <div class="canvas">
+        <svg viewBox="0 0 880 372" role="img"
+             aria-label="Eight ways a contact arrives and the journey step each one lands on: booking a trial lands on Trial booked, walking in on Trial attended, signing up and being imported on Joined, while shop purchase, form, waitlist and added-by-staff arrive without a journey step.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker>
+            <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b0702a"></path></marker>
+          </defs>
+          <text x="20" y="30" font-size="11" font-weight="600" fill="currentColor" opacity="0.55" letter-spacing="1.2">STARTS THE JOURNEY</text>
+          <text x="20" y="212" font-size="11" font-weight="600" fill="currentColor" opacity="0.55" letter-spacing="1.2">DOESN'T, YET</text>
+          <text x="168" y="64" text-anchor="end" font-size="12.5" fill="currentColor">Books a trial</text>
+          <text x="168" y="98" text-anchor="end" font-size="12.5" fill="currentColor">Walks in</text>
+          <text x="168" y="132" text-anchor="end" font-size="12.5" fill="currentColor">Signs up</text>
+          <text x="168" y="166" text-anchor="end" font-size="12.5" fill="currentColor">Imported</text>
+          <text x="168" y="240" text-anchor="end" font-size="12.5" fill="currentColor">Buys in the shop</text>
+          <text x="168" y="268" text-anchor="end" font-size="12.5" fill="currentColor">Fills in a form</text>
+          <text x="168" y="296" text-anchor="end" font-size="12.5" fill="currentColor">Joins a waitlist</text>
+          <text x="168" y="324" text-anchor="end" font-size="12.5" fill="currentColor">Added by staff</text>
+          <rect x="300" y="40" width="140" height="42" rx="21" fill="none" stroke="#b0702a" stroke-width="1.5"></rect>
+          <text x="370" y="66" text-anchor="middle" font-size="12.5" fill="#b0702a">Trial booked</text>
+          <rect x="480" y="40" width="160" height="42" rx="21" fill="none" stroke="#b0702a" stroke-width="1.5"></rect>
+          <text x="560" y="66" text-anchor="middle" font-size="12.5" fill="#b0702a">Trial attended</text>
+          <rect x="680" y="40" width="130" height="42" rx="21" fill="none" stroke="#b0702a" stroke-width="1.5"></rect>
+          <text x="745" y="66" text-anchor="middle" font-size="12.5" fill="#b0702a">Joined</text>
+          <rect x="300" y="252" width="510" height="44" rx="22" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" opacity="0.65"></rect>
+          <text x="555" y="279" text-anchor="middle" font-size="12.5" fill="currentColor" opacity="0.8">Not on the journey yet</text>
+          <line x1="178" y1="60" x2="294" y2="60" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"></line>
+          <polyline points="178,94 560,94 560,86" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"></polyline>
+          <polyline points="178,128 720,128 720,86" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"></polyline>
+          <polyline points="178,162 780,162 780,86" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"></polyline>
+          <line x1="178" y1="236" x2="248" y2="236" stroke="currentColor" stroke-width="1.2" opacity="0.7"></line>
+          <line x1="178" y1="264" x2="248" y2="264" stroke="currentColor" stroke-width="1.2" opacity="0.7"></line>
+          <line x1="178" y1="292" x2="248" y2="292" stroke="currentColor" stroke-width="1.2" opacity="0.7"></line>
+          <line x1="178" y1="320" x2="248" y2="320" stroke="currentColor" stroke-width="1.2" opacity="0.7"></line>
+          <line x1="248" y1="236" x2="248" y2="320" stroke="currentColor" stroke-width="1.2" opacity="0.7"></line>
+          <line x1="248" y1="274" x2="294" y2="274" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"></line>
+          <line x1="440" y1="61" x2="474" y2="61" stroke="#b0702a" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+          <text x="457" y="30" text-anchor="middle" font-size="11" fill="#b0702a">checked in</text>
+          <line x1="640" y1="61" x2="674" y2="61" stroke="#b0702a" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+          <text x="657" y="30" text-anchor="middle" font-size="11" fill="#b0702a">signs up</text>
+          <polyline points="360,252 360,88" fill="none" stroke="#b0702a" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar-a)"></polyline>
+          <text x="352" y="186" text-anchor="end" font-size="11" fill="#b0702a">books a trial</text>
+          <polyline points="745,252 745,88" fill="none" stroke="#b0702a" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar-a)"></polyline>
+          <text x="755" y="186" font-size="11" fill="#b0702a">signs up</text>
+          <text x="300" y="330" font-size="11" fill="currentColor" opacity="0.6">Joining a waitlist isn't a trial booking — the journey starts if they get a seat.</text>
+          <text x="300" y="348" font-size="11" fill="currentColor" opacity="0.6">Added by staff: the journey measures what the person did, not what a coach typed.</text>
+        </svg>
+      </div>
+    </figure>
+  </section>
+
+  <hr class="rulebar">
+
+  <!-- ─────────────────────────── HOW THE JOURNEY MOVES ─────────────────────────── -->
+  <section>
+    <h2>How the journey moves</h2>
+    <div class="prose">
+      <p>It only goes forward on its own. Stepping someone back is treated as fixing a mistake.</p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Move</th><th>What causes it</th></tr></thead>
+        <tbody>
+          <tr><td>→ Trial booked</td><td>they book their first trial</td></tr>
+          <tr><td>Trial booked → Trial attended</td><td>you check them in</td></tr>
+          <tr><td>→ Joined</td><td>they complete the signup form, or you mark them Joined — counted as a conversion</td></tr>
+          <tr><td>Buying something</td><td>changes their <b>plan</b>, never their journey</td></tr>
+          <tr><td>Archiving, or marking External</td><td>changes their <b>lifecycle</b>, never their journey — what they did stays done</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rulebar">
+
+  <!-- ─────────────────────────── LIFECYCLE ─────────────────────────── -->
+  <section>
+    <h2>The lifecycle</h2>
+    <div class="prose">
+      <p>
+        Only your roster gets your attention: reminders, invitations, automations,
+        the contact count. <b>Leads</b> — a trial booked but not attended, a shop
+        sign-up not yet paid — are on it, but don't count toward your contact limit
+        until they come or pay. <b>External</b> keeps someone's history and lets them
+        keep training with you, without any of that attention.
+      </p>
+    </div>
+    <figure>
+      <div class="canvas">
+        <svg viewBox="0 0 880 170" role="img"
+             aria-label="Contact lifecycle: a lead becomes Active when they turn up or pay, and an unpaid shop sign-up is removed automatically; an active contact can be marked External and brought back, archived, deleted, and finally anonymised.">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker>
+          </defs>
+          <rect x="20" y="60" width="112" height="42" rx="21" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" opacity="0.7"></rect>
+          <text x="76" y="80" text-anchor="middle" font-size="12" fill="currentColor">Lead</text>
+          <text x="76" y="94" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">not here yet</text>
+          <rect x="168" y="60" width="104" height="42" rx="21" fill="none" stroke="currentColor" stroke-width="1.4"></rect>
+          <text x="220" y="86" text-anchor="middle" font-size="12" fill="currentColor">Active</text>
+          <rect x="308" y="60" width="104" height="42" rx="21" fill="none" stroke="#b0702a" stroke-width="1.3"></rect>
+          <text x="360" y="86" text-anchor="middle" font-size="12" fill="#b0702a">External</text>
+          <rect x="448" y="60" width="104" height="42" rx="21" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+          <text x="500" y="86" text-anchor="middle" font-size="12" fill="currentColor">Archived</text>
+          <rect x="588" y="60" width="104" height="42" rx="21" fill="none" stroke="#9a4038" stroke-width="1.3"></rect>
+          <text x="640" y="86" text-anchor="middle" font-size="12" fill="#9a4038">Deleted</text>
+          <rect x="728" y="60" width="132" height="42" rx="21" fill="none" stroke="#9a4038" stroke-width="1.3"></rect>
+          <text x="794" y="86" text-anchor="middle" font-size="12" fill="#9a4038">Anonymised</text>
+
+          <line x1="132" y1="81" x2="162" y2="81" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"></line>
+          <text x="147" y="52" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.7">comes or pays</text>
+          <line x1="272" y1="81" x2="302" y2="81" stroke="#b0702a" stroke-width="1.2" marker-end="url(#ar2)" marker-start="url(#ar2)"></line>
+          <text x="287" y="52" text-anchor="middle" font-size="10.5" fill="#b0702a">you mark</text>
+          <line x1="412" y1="81" x2="442" y2="81" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"></line>
+          <text x="427" y="52" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.7">you archive</text>
+          <line x1="552" y1="81" x2="582" y2="81" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"></line>
+          <text x="567" y="52" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.7">you delete</text>
+          <line x1="692" y1="81" x2="722" y2="81" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"></line>
+
+          <polyline points="76,102 76,146 300,146" fill="none" stroke="#9a4038" stroke-width="1.2" marker-end="url(#ar2)" opacity="0.9"></polyline>
+          <text x="308" y="150" font-size="10.5" fill="#9a4038">unpaid shop sign-ups are removed automatically — the only automatic removal</text>
+        </svg>
+      </div>
+      <figcaption>
+        Active ↔ External goes both ways: you mark someone External, and you bring them back
+        when they join. Archiving keeps every other axis exactly as it was.
+      </figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>An external can…</th><th>An external is not…</th></tr></thead>
+        <tbody>
+          <tr><td>book and attend classes</td><td>in the contacts count, the Active list, or event invitations</td></tr>
+          <tr><td>be counted in every class's attendance</td><td>swept by automations that run over "everyone"</td></tr>
+          <tr><td>keep their journey, plan and affiliation history</td><td>shown under Needs attention</td></tr>
+          <tr><td>hold a partner-app plan, if you track those</td><td>counted as a lost trial if you later archive them</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  var AXES = [
+    { key: 'acq',  name: 'Journey',     cls: 'acq', values: ['Not started', 'Trial booked', 'Trial attended', 'Joined'] },
+    { key: 'aff',  name: 'Affiliation', cls: '',    values: ['None', 'Requested', 'Under review', 'Almost ready', 'Active', 'Expired'], live: 'Active' },
+    { key: 'sub',  name: 'Plan',        cls: '',    values: ['None', 'Trialing', 'Active', 'Past due', 'Paused', 'Cancelled'] },
+    { key: 'pres', name: 'Lifecycle',   cls: '',    values: ['Lead', 'Active', 'Archived', 'Deleted', 'Anonymised'],
+      gone: ['Deleted', 'Anonymised'], proposed: 'External', proposedAt: 2 }
+  ];
+
+  var S = function (acq, aff, sub, pres, effects) { return { acq: acq, aff: aff, sub: sub, pres: pres, effects: effects }; };
+
+  var SCENARIOS = {
+    lea: {
+      name: 'Lea · comes through ClassPass',
+      intro: 'A fitness-app visitor. She tests the reminders, the lost-trial count, the endless trial, what buying does — and, at a studio without a federation, the member count.',
+      seq: ['book', 'attend', 'quiet'], branches: ['archive', 'return', 'buy', 'standalone'],
+      steps: {
+        book: { label: 'Books via ClassPass', when: 'Day 0 · your public booking page, ClassPass chosen as her app', prev: null,
+          today: S('Trial booked', 'None', 'None', 'Lead', [
+            'A new contact is created from her booking — a <b>lead</b>, on your Leads list, not yet counted toward your contact limit.',
+            'Her fitness app is noted on her profile.',
+            'Nothing happens to her plan — an app isn\'t one, unless you\'ve set ClassPass up as a partner plan.',
+            'Needs attention: <b>trial pending</b>, until she turns up.' ]), external: {} },
+        attend: { label: 'Attends', when: 'Day 0, evening · checked in at the door', prev: 'book',
+          today: S('Trial attended', 'None', 'None', 'Active', [
+            'Checking her in moves her to <b>Trial attended</b> and makes her a full contact, off the Leads list.',
+            'She\'s in the class\'s attendance — where she belongs.',
+            'Nothing yet says she isn\'t one of yours.' ]), external: {} },
+        quiet: { label: 'Weeks pass', when: 'Weeks later · past your inactivity threshold', prev: 'attend',
+          today: S('Trial attended', 'None', 'None', 'Active', [
+            'Needs attention: <b>gone quiet</b> and <b>check-in lapsed</b>.',
+            'Her journey stays at Trial attended.',
+            'She reads as a prospect you\'re failing to convert.' ]),
+          external: { pres: 'External', effects: [
+            'You mark her <b>External</b> — once. Her journey stays as history.',
+            'Off the active roster: no reminders, no invitations, not in the count.',
+            'She can still book and attend, and still shows in class attendance.' ] } },
+        archive: { label: 'Archived in a tidy-up', when: '4a · you tidy the roster', prev: 'quiet',
+          today: S('Trial attended', 'None', 'None', 'Archived', [
+            'Lifecycle → <b>Archived</b>; everything else stays as it was.',
+            'Counted as a <b>lost trial</b> in this week\'s report — she never was one.',
+            'No longer invited to events or shown in the Active list.' ]),
+          external: { effects: [
+            'External → <b>Archived</b>; everything else stays as it was.',
+            '<b>Not</b> counted as a lost trial — only people on the active roster can be.',
+            'She was already out of invitations and the Active list.' ] } },
+        return: { label: 'Back next year', when: '4b · next season, another ClassPass booking', prev: 'quiet',
+          today: S('Trial attended', 'None', 'None', 'Active', [
+            'A booking never changes an existing journey — still Trial attended.',
+            'Attending only moves someone forward from Trial booked — still Trial attended.',
+            'Perpetually "in trial", with no conversion ever coming.' ]),
+          external: { pres: 'External', effects: [
+            'Still <b>External</b> — booking and attending change neither lifecycle nor journey.',
+            'In the class stats, off the roster.',
+            'Exactly what you described.' ] } },
+        buy: { label: 'Buys a membership', when: '4c · she buys a membership in your shop', prev: 'quiet',
+          today: S('Trial attended', 'None', 'Active', 'Active', [
+            'Her plan becomes <b>Active</b>.',
+            'A purchase never moves the journey — still Trial attended until you mark her Joined.',
+            'Affiliation stays None until the club grants one — a separate question.' ]),
+          external: { pres: 'External', effects: [
+            'Her plan becomes <b>Active</b>.',
+            'A purchase moves neither lifecycle nor journey. You bring her back to <b>Active</b> and mark her <b>Joined</b>, counted as a conversion — or she completes the signup form, which does both.',
+            'Affiliation stays None until the club grants one — a separate question.' ] } },
+        standalone: { label: 'No federation · given a partner-app plan', when: '4d · a studio without a federation, tracking ClassPass as a partner plan', prev: 'quiet',
+          today: S('Trial attended', 'None', 'Active', 'Active', [
+            'Her ClassPass plan lets her through the door — and earns you the partner payout per visit.',
+            'It also makes her count as a <b>subscriber</b> in your weekly report.',
+            'So she\'s a member in your own numbers, paying you nothing.' ]),
+          external: { pres: 'External', effects: [
+            'Her ClassPass plan lets her through the door — and earns you the partner payout per visit.',
+            '<b>Not counted as a subscriber.</b> Partner-app plans are counted apart, under "Via a partner app".',
+            'And External keeps her off the roster: no reminders, no invitations, not in the count.' ] } }
+      }
+    },
+    marco: {
+      name: 'Marco · walks in and joins',
+      intro: 'The ordinary story. External doesn\'t appear anywhere in it.',
+      seq: ['walkin', 'twice', 'signup', 'pays', 'licence'], branches: [],
+      steps: {
+        walkin: { label: 'Turns up unannounced', when: 'Day 0 · you check him in at the door', prev: null,
+          today: S('Trial attended', 'None', 'None', 'Active', [
+            'Walking in creates a contact already at <b>Trial attended</b>.',
+            'No "trial pending": that only shows for a booked trial.' ]), external: {} },
+        twice: { label: 'Comes twice more', when: 'The next two weeks', prev: 'walkin',
+          today: S('Trial attended', 'None', 'None', 'Active', [
+            'More visits don\'t move the journey — attending only advances from Trial booked.',
+            'Engagement rises; nothing needs attention.',
+            'He reads as a trial to convert — and here that\'s <b>true</b>.' ]), external: {} },
+        signup: { label: 'Completes the signup form', when: 'Week 3 · your public signup page', prev: 'twice',
+          today: S('Joined', 'None', 'None', 'Active', [
+            'Completing the signup form moves him to <b>Joined</b>.',
+            'Counted as a <b>conversion</b> in this week\'s report.',
+            'Your welcome automation runs.' ]), external: {} },
+        pays: { label: 'Buys the monthly plan', when: 'Week 3 · your shop', prev: 'signup',
+          today: S('Joined', 'None', 'Active', 'Active', [
+            'His plan becomes <b>Active</b> — counted as a subscriber, correctly.',
+            'The journey doesn\'t move: he\'s already Joined.' ]), external: {} },
+        licence: { label: 'The federation grants his licence', when: 'Month 2 · federation studios only', prev: 'pays',
+          today: S('Joined', 'Active', 'Active', 'Active', [
+            'Affiliation → <b>Active</b>: he\'s in the club\'s member count.',
+            'Studios without a federation skip this step.',
+            'Four "actives", all true at once.' ]), external: {} }
+      }
+    },
+    elena: {
+      name: 'Elena · books a trial, never comes',
+      intro: 'A genuine no-show. The lost-trial count is right about her, and External leaves her alone.',
+      seq: ['book', 'noshow', 'archive'], branches: [],
+      steps: {
+        book: { label: 'Books a trial', when: 'Day 0 · your public booking page', prev: null,
+          today: S('Trial booked', 'None', 'None', 'Lead', [
+            'A <b>lead</b> at <b>Trial booked</b>; a seat is held.',
+            'Needs attention: <b>trial pending</b>.' ]), external: {} },
+        noshow: { label: 'Doesn\'t turn up', when: 'Day 0, evening · marked no-show', prev: 'book',
+          today: S('Trial booked', 'None', 'None', 'Lead', [
+            'Marked no-show: seat released, no attendance, journey unchanged.',
+            'Still a lead, and trial pending stays — she hasn\'t been given up on.' ]), external: {} },
+        archive: { label: 'Archived', when: 'Weeks later · you give up', prev: 'noshow',
+          today: S('Trial booked', 'None', 'None', 'Archived', [
+            'Counted as a <b>lost trial</b> — rightly: she\'s exactly what that number measures.',
+            'The built-in trial clean-up automation can do this for you.',
+            'Everything else stays as it was.' ]), external: {} }
+      }
+    },
+    anna: {
+      name: 'Anna · a member who lapses',
+      intro: 'A real member who stops paying and stops coming. The reminders are right for her, and External is not the answer.',
+      seq: ['member', 'cancels', 'quiet', 'archive'], branches: [],
+      steps: {
+        member: { label: 'Joined and paying', when: 'Year 1', prev: null,
+          today: S('Joined', 'Active', 'Active', 'Active', [ 'Joined, paying, affiliated — every axis says member.' ]), external: {} },
+        cancels: { label: 'Cancels her plan', when: 'Year 2 · the billing portal', prev: 'member',
+          today: S('Joined', 'Active', 'Cancelled', 'Active', [
+            'Needs attention shows <b>cancelling</b> until her period ends; then her plan reads <b>Cancelled</b>.',
+            'Journey stays Joined; her affiliation runs to its own expiry date.' ]), external: {} },
+        quiet: { label: 'Stops coming', when: 'Past your inactivity threshold', prev: 'cancels',
+          today: S('Joined', 'Active', 'Cancelled', 'Active', [
+            '<b>Gone quiet</b> and <b>check-in lapsed</b> — and they should: a lapsed member is worth a call.',
+            'A lapsed member stays on the active roster. External is for people who were never yours to keep, not for members you\'re losing.' ]), external: {} },
+        archive: { label: 'Archived', when: 'Year 3', prev: 'quiet',
+          today: S('Joined', 'Active', 'Cancelled', 'Archived', [
+            'Lifecycle → <b>Archived</b>. Not a lost trial: she had joined.',
+            'Affiliation keeps whatever it held — archiving changes nothing else.' ]), external: {} }
+      }
+    },
+    tom: {
+      name: 'Tom · a member who drifts to dropping in',
+      intro: 'A former member who keeps coming now and then, paying per class. He tests marking a Joined person External, and what happens to the conversion he once was.',
+      seq: ['member', 'cancels', 'drift'], branches: ['rejoin'],
+      steps: {
+        member: { label: 'Joined and paying', when: 'Year 1', prev: null,
+          today: S('Joined', 'None', 'Active', 'Active', [ 'A member at a studio without a federation — no affiliation in play.' ]), external: {} },
+        cancels: { label: 'Cancels, keeps dropping in', when: 'Year 2 · pays per class', prev: 'member',
+          today: S('Joined', 'None', 'Cancelled', 'Active', [
+            'He cancels but keeps coming, paying per class.',
+            'Still on the roster; between visits he goes quiet and comes back.',
+            'He reads as a member to chase.' ]), external: {} },
+        drift: { label: 'You decide what he is', when: 'Year 2 · his contact page', prev: 'cancels',
+          today: S('Joined', 'None', 'Cancelled', 'Active', [
+            'There\'s nothing to set — Active or Archived, no in-between.',
+            'He stays in the member picture and is nagged between visits.' ]),
+          external: { pres: 'External', effects: [
+            'You mark him <b>External</b>. His journey keeps <b>Joined</b> as history, and his conversion still counts.',
+            'Off the roster, quiet; still bookable and in class attendance.' ] } },
+        rejoin: { label: 'Buys a plan again next season', when: '4 · your shop', prev: 'drift',
+          today: S('Joined', 'None', 'Active', 'Active', [ 'Plan Active again; he was on the roster all along.' ]),
+          external: { pres: 'External', effects: [
+            'Plan Active; still <b>External</b> — a purchase never moves the lifecycle.',
+            'You bring him back to <b>Active</b>. He was already Joined, so nothing on the journey needs to move.' ] } }
+      }
+    },
+    sofia: {
+      name: 'Sofia · buys a 10-pack, comes monthly',
+      intro: 'Paying, present, not a member, not a prospect. She shows that External and paying go together — and that a pack isn\'t a plan at all.',
+      seq: ['pack', 'firstclass', 'monthly'], branches: [],
+      steps: {
+        pack: { label: 'Buys a 10-pack', when: 'Day 0 · your shop', prev: null,
+          today: S('Not started', 'None', 'Active', 'Active', [
+            'Created by a shop purchase — not on the journey.',
+            'Her 10-pack is the plan she holds — credits, not a subscription, so she isn\'t counted as a subscriber, rightly.',
+            'Needs attention: <b>pending signup</b> until she finishes the form.' ]), external: {} },
+        firstclass: { label: 'Books with a credit, attends', when: 'Week 1', prev: 'pack',
+          today: S('Trial attended', 'None', 'Active', 'Active', [
+            'Her first booking puts her on the journey at Trial booked; checking her in moves her to <b>Trial attended</b>.',
+            'One credit spent.' ]), external: {} },
+        monthly: { label: 'Comes once a month', when: 'Months 2 – 10 · spending credits', prev: 'firstclass',
+          today: S('Trial attended', 'None', 'Active', 'Active', [
+            'Gone quiet between visits; she reads as a trial to convert.',
+            'Never signs up: Trial attended forever.' ]),
+          external: { pres: 'External', effects: [
+            'Marked <b>External</b>: quiet, off the roster.',
+            'Her credits keep working — the door checks credits, not the roster.',
+            'Paying, present, not a member, not a prospect: what External is for.' ] } }
+      }
+    },
+    giulia: {
+      name: 'Giulia · migrated as "external"',
+      intro: 'For clubs moving over from the old system: what its "external" type becomes.',
+      seq: ['import', 'attends'], branches: [],
+      steps: {
+        import: { label: 'Imported from the old system', when: 'Migration day', prev: null,
+          today: S('Joined', 'None', 'None', 'Active', [
+            '"External" arrives as <b>Joined</b> and on the active roster, with an "external" tag.',
+            'She counts as a member in the dashboard\'s journey breakdown.' ]),
+          external: { acq: 'Trial attended', pres: 'External', effects: [
+            '"External" arrives as <b>External</b> — same word, same meaning, no tag.',
+            'Her journey records what she did: Trial attended if she ever came, otherwise Not started.',
+            'Off the roster, in the class stats, not nagged.' ] } },
+        attends: { label: 'Attends a class after the move', when: 'The first week on Linyup', prev: 'import',
+          today: S('Joined', 'None', 'None', 'Active', [ 'Attending changes nothing — already Joined and on the roster.' ]),
+          external: { acq: 'Trial attended', pres: 'External', effects: [ 'Attending changes nothing — an External stays External.' ] } }
+      }
+    }
+  };
+
+  var ORDER = ['lea', 'marco', 'elena', 'anna', 'tom', 'sofia', 'giulia'];
+  // 'external' is the model as built; 'today' is the model before External
+  // shipped (2026-09-10), kept for the comparison.
+  var mode = 'external', who = 'lea', step = 'book';
+
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function stateOf(sc, stepId, m) {
+    var s = sc.steps[stepId], out = {};
+    AXES.forEach(function (a) { out[a.key] = s.today[a.key]; });
+    if (m === 'external') AXES.forEach(function (a) { if (s.external && s.external[a.key]) out[a.key] = s.external[a.key]; });
+    out.effects = (m === 'external' && s.external && s.external.effects) ? s.external.effects : s.today.effects;
+    return out;
+  }
+
+  function renderPeople() {
+    var host = document.getElementById('walk-people');
+    host.innerHTML = '';
+    ORDER.forEach(function (id) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'person' + (id === who ? ' on' : '');
+      b.setAttribute('aria-pressed', id === who ? 'true' : 'false');
+      b.textContent = SCENARIOS[id].name;
+      b.addEventListener('click', function () { who = id; step = SCENARIOS[id].seq[0]; renderPeople(); renderSteps(); render(); });
+      host.appendChild(b);
+    });
+    document.getElementById('walk-intro').textContent = SCENARIOS[who].intro;
+  }
+
+  function stepButton(id, num, branch) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'step' + (branch ? ' branch' : '') + (id === step ? ' on' : '');
+    b.setAttribute('aria-pressed', id === step ? 'true' : 'false');
+    b.innerHTML = '<span class="n">' + esc(num) + '</span>' + esc(SCENARIOS[who].steps[id].label);
+    b.addEventListener('click', function () { step = id; renderSteps(); render(); });
+    return b;
+  }
+
+  function renderSteps() {
+    var sc = SCENARIOS[who], host = document.getElementById('walk-steps');
+    host.innerHTML = '';
+    sc.seq.forEach(function (id, i) {
+      if (i > 0) { var sep = document.createElement('span'); sep.className = 'sep'; sep.setAttribute('aria-hidden', 'true'); sep.textContent = '→'; host.appendChild(sep); }
+      host.appendChild(stepButton(id, String(i + 1), false));
+    });
+    if (sc.branches.length) {
+      var then = document.createElement('span'); then.className = 'sep then'; then.setAttribute('aria-hidden', 'true'); then.textContent = 'then one of'; host.appendChild(then);
+      sc.branches.forEach(function (id, i) { host.appendChild(stepButton(id, String(sc.seq.length + 1) + String.fromCharCode(97 + i), true)); });
+    }
+  }
+
+  function render() {
+    var sc = SCENARIOS[who], s = sc.steps[step];
+    var cur = stateOf(sc, step, mode);
+    var prev = s.prev ? stateOf(sc, s.prev, mode) : null;
+    var other = stateOf(sc, step, mode === 'today' ? 'external' : 'today');
+
+    document.getElementById('walk-when').textContent = s.when;
+
+    var grid = document.getElementById('walk-grid');
+    grid.innerHTML = '';
+    AXES.forEach(function (a) {
+      var value = cur[a.key];
+      var changed = prev ? prev[a.key] !== value : false;
+      var diff = other[a.key] !== value;
+      var row = document.createElement('div');
+      row.className = 'axis-row' + (changed ? ' changed' : '') + (diff ? ' diff' : '');
+      var name = document.createElement('div');
+      name.className = 'axis-name ' + a.cls;
+      name.innerHTML = '<span class="dot"></span>' + esc(a.name);
+      row.appendChild(name);
+      var chips = document.createElement('div');
+      chips.className = 'chips';
+      var values = a.values.slice();
+      if (a.proposed && mode === 'external') values.splice(a.proposedAt, 0, a.proposed);
+      values.forEach(function (v) {
+        var c = document.createElement('span');
+        var cls = 'chip';
+        if (v === 'None' || v === 'Not started') cls += ' none';
+        if (a.proposed && v === a.proposed) cls += ' proposed';
+        if (v === value) {
+          cls += ' on';
+          if (a.cls) cls += ' ' + a.cls;
+          if (a.live && v === a.live) cls += ' live';
+          if (a.gone && a.gone.indexOf(v) >= 0) cls += ' gone';
+        }
+        c.className = cls;
+        c.textContent = v;
+        chips.appendChild(c);
+      });
+      row.appendChild(chips);
+      grid.appendChild(row);
+    });
+
+    var ul = document.getElementById('walk-effects');
+    ul.innerHTML = '';
+    cur.effects.forEach(function (e, i) {
+      var li = document.createElement('li');
+      if (other.effects[i] !== e) li.className = 'diff';
+      li.innerHTML = e;
+      ul.appendChild(li);
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.mode'), function (b) {
+    b.addEventListener('click', function () {
+      mode = b.getAttribute('data-mode');
+      Array.prototype.forEach.call(document.querySelectorAll('.mode'), function (x) {
+        var on = x === b;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      render();
+    });
+  });
+
+  renderPeople(); renderSteps(); render();
+})();
+</script>

@@ -237,7 +237,9 @@ present (`null` when clear — what makes the Firestore `== null` query safe,
 see `apps/web/src/lib/liveContacts.ts`), while `provisional`/`external` are
 present ONLY when true — so "is external" can be queried and "is not external"
 is decided in memory after the live query. Never test the field inline; the
-census of server seams is `contacts/contactLifecycle.test.ts`.
+census of server seams is `contacts/contactLifecycle.test.ts`. The whole model —
+the four axes (Journey · Affiliation · Plan · Lifecycle), the seven people it was
+tested against, and the names that lost — is `docs/contact-state-model.md`.
 
 ### Public Space — the contacts' personal portal
 
