@@ -86,6 +86,7 @@ you may act on it:
 - [**Open decisions — parked for Franco**](./ux-review-open-decisions.md) — how it works now
 - [**Open defects**](./open-defects.md) — how it works now
 - [**UX review — 2026-09 · Offerings (activities & plans)**](./ux-review-2026-09.md) — how it works now
+- [**Who can book a class — derived from its prices, not asked**](./class-access-derived.md) — work to do
 
 ## Closed and point-in-time
 
