@@ -2388,6 +2388,10 @@ service cloud.firestore {
     // never exposed publicly. Org admins only.
     match /org_site_drafts/{orgId} {
       allow read, write: if hasOrgRole(orgId, 'org_admin');
+      // An org site's pages — same access as the draft itself.
+      match /pages/{pageId} {
+        allow read, write: if hasOrgRole(orgId, 'org_admin');
+      }
     }
 
     // PUBLIC snapshot of a published org site. Keyed by orgId. World-readable so
@@ -2397,6 +2401,12 @@ service cloud.firestore {
     match /org_site_published/{orgId} {
       allow read;            // fully public
       allow write: if false; // Cloud Functions only
+      // Published pages and their translation sidecars: public, written only by
+      // publishOrgWebsite.
+      match /pages/{pageId} {
+        allow read;
+        allow write: if false;
+      }
     }
 
     // Standalone embed widgets. Keyed by teamId. World-readable so the public

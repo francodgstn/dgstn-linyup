@@ -122,6 +122,16 @@ export function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
   return section
 }
 
+/** A page's sections, as published: hidden ones omitted (kept in the draft,
+ *  never on the site or in its menu), unknown or empty ones dropped, capped. */
+export function sanitizeOrgSections(raw: unknown): OrgSiteSection[] {
+  return (Array.isArray(raw) ? raw : [])
+    .filter((s) => !(s && typeof s === 'object' && (s as Dict).hidden === true))
+    .map(sanitizeOrgSection)
+    .filter((s): s is OrgSiteSection => s !== null)
+    .slice(0, 30)
+}
+
 /**
  * The org site's meta: the team sanitizer, plus the HEADER BUTTON RULE.
  *

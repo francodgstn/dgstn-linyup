@@ -8,7 +8,14 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { assertOrgAdmin, assertOrgSubscriptionLive } from '../orgs'
 import { translatePublishedSite } from '../translate/translateSite'
 import { asDict, clean, optStr, safeUrl, sanitizeMenu, type Dict } from '../website'
-import { sanitizeOrgSection, sanitizeOrgMeta, orgSiteSourceLocale } from './sanitize'
+import { sanitizeOrgSections, sanitizeOrgMeta, orgSiteSourceLocale } from './sanitize'
+import {
+  readSitePages,
+  translateSitePages,
+  publishedRedirects,
+  writeSitePages,
+  pruneUnpublishedPages,
+} from '../website/publishPages'
 import { unpublishSiteForOrg } from '../utils/plugins'
 import {
   ORG_SITE_DRAFTS_COLLECTION,
@@ -54,13 +61,16 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
 
   const name = optStr(draft.name, 200) ?? optStr(org.name, 200) ?? 'Site'
 
-  const sections = (Array.isArray(draft.sections) ? draft.sections : [])
-    // Drop sections the org admin toggled hidden — kept in the draft but never
-    // reach the published site (or its nav).
-    .filter((raw) => !(raw && typeof raw === 'object' && (raw as Dict).hidden === true))
-    .map(sanitizeOrgSection)
-    .filter((s): s is OrgSiteSection => s !== null)
-    .slice(0, 30)
+  // The home page's sections and every published page — the same page rules
+  // as the team site, from the one place that has them (../website/publishPages).
+  const { pageRefs, sections, pageSections } = await readSitePages({
+    fs,
+    draftCollection: ORG_SITE_DRAFTS_COLLECTION,
+    id: orgId,
+    draft,
+    sanitizeList: sanitizeOrgSections,
+    logTag: 'publishOrgWebsite',
+  })
 
   // Embed a snapshot of the org's active member teams. Only branding-level fields
   // (teamId/slug/name) are embedded; per-team live data (logo, address, coaches)
@@ -115,7 +125,16 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     collection: ORG_SITE_PUBLISHED_COLLECTION,
     id: orgId,
     owner: { orgId },
-    published: { meta, menu, sections },
+    published: { meta, menu, pages: pageRefs, sections },
+    srcLang,
+  })
+  const pageI18n = await translateSitePages({
+    fs,
+    publishedCollection: ORG_SITE_PUBLISHED_COLLECTION,
+    id: orgId,
+    owner: { orgId },
+    pageRefs,
+    pageSections,
     srcLang,
   })
 
@@ -128,6 +147,9 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     meta,
     menu,
     sections,
+    // Absent ⇒ a one-page site, exactly as every org site was before pages.
+    pages: pageRefs.length ? pageRefs : undefined,
+    redirects: publishedRedirects(draft.redirects, pageRefs),
     teams,
     socialLinks: socialLinks.length ? socialLinks : undefined,
     // The organization plan never shows the "Powered by Linyup" badge (that's a
@@ -138,7 +160,18 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     updated_at: FieldValue.serverTimestamp() as unknown as OrgPublishedSite['updated_at'],
   })
 
+  // ORDER: page docs, then the site doc that indexes them, then orphans.
+  await writeSitePages({
+    fs,
+    publishedCollection: ORG_SITE_PUBLISHED_COLLECTION,
+    id: orgId,
+    owner: { orgId },
+    pageRefs,
+    pageSections,
+    pageI18n,
+  })
   await fs.doc(`${ORG_SITE_PUBLISHED_COLLECTION}/${orgId}`).set(published)
+  await pruneUnpublishedPages({ fs, publishedCollection: ORG_SITE_PUBLISHED_COLLECTION, id: orgId, pageRefs })
   await draftSnap.ref.set(
     { enabled: true, updated_at: FieldValue.serverTimestamp(), updatedBy: uid },
     { merge: true },
