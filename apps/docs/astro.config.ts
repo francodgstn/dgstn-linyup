@@ -1,9 +1,9 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseFrontmatter, AREAS } from '../../scripts/lib/docsMeta.mjs'
+import { readText, parseFrontmatter, AREAS } from '../../scripts/lib/docsMeta.mjs'
 
 // LOCAL ONLY — this site is never deployed. docs/ carries open-defects.md
 // (a register of unfixed bugs), security-audit-2026-07.md, product-strategy.md
@@ -40,7 +40,7 @@ type Entry = { slug: string; label: string; area: string; status: string }
 const entries: Entry[] = []
 for (const rel of walk(DOCS).sort()) {
   if (rel === 'README.md' || rel.endsWith('/README.md')) continue
-  const { data } = parseFrontmatter(readFileSync(join(DOCS, rel), 'utf8'))
+  const { data } = parseFrontmatter(readText(join(DOCS, rel)))
   if (!data?.title) continue
   entries.push({
     slug: rel.replace(/\.md$/, ''),
