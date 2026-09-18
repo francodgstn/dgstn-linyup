@@ -228,12 +228,12 @@ export async function unpublishSiteForTeam(teamId: string): Promise<void> {
  * an org's `website` install still tears nothing down by itself, and
  * orgs/lifecycle.ts calls this explicitly.
  */
-export async function unpublishSiteForOrg(orgId: string): Promise<void> {
+export async function unpublishSiteForOrg(orgId: string, updatedBy?: string): Promise<void> {
   const db = admin.firestore()
   await db.doc(`${ORG_SITE_PUBLISHED_COLLECTION}/${orgId}`).delete()
   await deleteSiteI18nSidecars(db, ORG_SITE_PUBLISHED_COLLECTION, orgId)
   await db.doc(`${ORG_SITE_DRAFTS_COLLECTION}/${orgId}`).set(
-    { enabled: false, updated_at: FieldValue.serverTimestamp() },
+    { enabled: false, updated_at: FieldValue.serverTimestamp(), ...(updatedBy ? { updatedBy } : {}) },
     { merge: true }
   )
 }

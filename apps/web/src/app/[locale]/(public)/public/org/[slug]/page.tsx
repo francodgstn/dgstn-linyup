@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getTranslations } from 'next-intl/server'
-import { collection, doc, getDoc, query, where, limit, getDocs } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { restGetDocument, restRunQuery } from '@/lib/firestoreRest'
 import {
   ORG_SITE_PUBLISHED_COLLECTION,
   publicLocalePrefix,
@@ -25,15 +24,21 @@ interface Props {
 }
 
 // Resolve a published org site by slug from the fully-public
-// org_site_published collection. No auth and no restricted data, so the
-// modular client SDK runs fine in this server (generateMetadata) context.
-// Mirrors the single read the client PublicOrgSite component performs.
+// org_site_published collection — over Firestore REST. The web SDK's query
+// comes back EMPTY inside the Next server runtime (CLAUDE.md "Next.js Firebase
+// server reads"), so this read, written with the SDK, found no site at all and
+// every org site's <head> said "not found". The team site's route has read the
+// same way since it was written.
 async function fetchPublishedOrgSite(slug: string): Promise<OrgPublishedSite | null> {
   try {
-    const snap = await getDocs(
-      query(collection(db, ORG_SITE_PUBLISHED_COLLECTION), where('slug', '==', slug), limit(1))
-    )
-    return snap.empty ? null : (snap.docs[0].data() as OrgPublishedSite)
+    const found = await restRunQuery({
+      from: [{ collectionId: ORG_SITE_PUBLISHED_COLLECTION }],
+      where: {
+        fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: slug } },
+      },
+      limit: 1,
+    })
+    return found ? (found.fields as unknown as OrgPublishedSite) : null
   } catch (err: unknown) {
     // Metadata falls back to the generic title, but never silently — a broken
     // server-side read otherwise masquerades as a missing site. (The team-site
@@ -76,9 +81,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const manifest = site.i18n
   if (manifest && locale !== manifest.srcLang && (manifest.locales as string[]).includes(locale)) {
     try {
-      const sidecarSnap = await getDoc(doc(db, ORG_SITE_PUBLISHED_COLLECTION, siteI18nDocId(site.orgId, locale)))
-      if (sidecarSnap.exists()) {
-        const units = (sidecarSnap.data() as SiteTranslationDoc).units
+      const sidecar = await restGetDocument(`${ORG_SITE_PUBLISHED_COLLECTION}/${siteI18nDocId(site.orgId, locale)}`)
+      if (sidecar) {
+        const units = (sidecar.fields as unknown as SiteTranslationDoc).units
         const titleUnit = units['seo.title']
         const descUnit = units['seo.description']
         if (

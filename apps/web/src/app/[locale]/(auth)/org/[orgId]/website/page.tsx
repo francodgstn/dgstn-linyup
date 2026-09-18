@@ -154,7 +154,10 @@ function AppearancePanel({
           <Label className="text-xs">{t('apHeaderCtaLabel')}</Label>
           <Input
             value={meta.header.ctaLabel ?? ''}
-            onChange={(e) => setHeader({ ctaLabel: e.target.value })}
+            // An organisation's header button is always a link (it has no
+            // booking page) — say so the moment it gets a label, not only once
+            // an address is typed, or the stored action stays 'booking'.
+            onChange={(e) => setHeader({ ctaLabel: e.target.value, ctaAction: 'url' })}
             placeholder={t('apHeaderCtaPlaceholderOrg')}
             className="h-9"
           />
