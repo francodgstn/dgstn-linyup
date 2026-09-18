@@ -103,6 +103,7 @@ import {
 } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { ledgerExpiry } from './lib/ledgerExpiry'
+import { writeTeamContactCounter } from './lib/contactCounter'
 import {
   planSeedConnectAccounts,
   linkSeedConnectAccount,
@@ -2242,6 +2243,11 @@ async function seedTeam(opts: {
   // so it merges onto the public_profile written above rather than being
   // overwritten by it. See scripts/lib/connect.ts for the one-time setup.
   await linkSeedConnectAccount({ db, teamId })
+
+  // THE LIVE-CONTACT COUNTER. Written last, once every contact of this team
+  // exists, because it stores an ABSOLUTE count — see scripts/lib/contactCounter.ts
+  // for why a seeder owes it and why it must agree with the nightly reconciler.
+  await writeTeamContactCounter(db, teamId)
 }
 
 // ── kiosk seed ──────────────────────────────────────────────────────────────────
