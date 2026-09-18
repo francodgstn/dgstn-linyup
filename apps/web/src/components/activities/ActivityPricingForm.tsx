@@ -291,7 +291,7 @@ export function ActivityPricingForm({
       : null
   // ONE SENTENCE, built from the facts in the order a studio reads them: who is
   // already covered, what everybody else pays, then the newcomer's exception.
-  const summarySentence = [
+  const summaryParts = [
     includedPlanNames.length ? t('summaryIncluded', { names: includedPlanNames.join(', ') }) : null,
     ratedPlanNames.length && doorPrice
       ? t('summaryMemberPrice', { names: ratedPlanNames.join(', ') })
@@ -313,6 +313,8 @@ export function ActivityPricingForm({
   ]
     .filter(Boolean)
     .join(' · ')
+  // Each part is written to sit mid-sentence; the first one opens it.
+  const summarySentence = summaryParts.charAt(0).toUpperCase() + summaryParts.slice(1)
 
   const dropInPriceInvalid =
     draft.dropInMode === 'custom' &&
