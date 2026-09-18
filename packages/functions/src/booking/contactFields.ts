@@ -62,6 +62,8 @@ const WRITABLE_BASE = new Set<string>(BOOKING_CONTACT_BASE_FIELDS)
  * opt-out, by the same rule that an empty answer never blanks a stored value.
  */
 export const WHATSAPP_OPT_IN_ANSWER_KEY = 'whatsapp_opt_in'
+/** The same, for WhatsApp news and offers — a separate answer, a separate box. */
+export const WHATSAPP_MARKETING_OPT_IN_ANSWER_KEY = 'whatsapp_marketing_opt_in'
 
 export interface ContactFieldPatchInput {
   /** The resolved list — `resolveBookingContactFields(bookingSettings, activity)`. */
@@ -91,8 +93,14 @@ export function buildContactFieldPatch(input: ContactFieldPatchInput): Record<st
   const defs = new Map((input.definitions ?? []).map((d) => [d.id, d]))
 
   // A consent already given is not re-stamped by ticking the box again.
-  if (answers[WHATSAPP_OPT_IN_ANSWER_KEY] === true && !whatsappConsentAllows(input.existing)) {
-    Object.assign(patch, whatsappConsentPatch(true, 'booking_form'))
+  if (answers[WHATSAPP_OPT_IN_ANSWER_KEY] === true && !whatsappConsentAllows(input.existing, 'reminders')) {
+    Object.assign(patch, whatsappConsentPatch('reminders', true, 'booking_form'))
+  }
+  if (
+    answers[WHATSAPP_MARKETING_OPT_IN_ANSWER_KEY] === true &&
+    !whatsappConsentAllows(input.existing, 'marketing')
+  ) {
+    Object.assign(patch, whatsappConsentPatch('marketing', true, 'booking_form'))
   }
 
   for (const field of input.fields ?? []) {

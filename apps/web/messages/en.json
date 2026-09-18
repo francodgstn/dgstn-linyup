@@ -1148,7 +1148,11 @@
     "whatsappSource_space": "Space",
     "whatsappSource_member_app": "member app",
     "whatsappSource_staff": "staff",
-    "whatsappSource_reply_stop": "replied STOP"
+    "whatsappSource_reply_stop": "replied STOP",
+    "whatsappRemindersRowTitle": "WhatsApp reminders",
+    "whatsappMarketingTitle": "WhatsApp news & offers",
+    "whatsappConfirmMarketingOptInDesc": "Confirm the member agreed to receive news and offers from the studio on WhatsApp.",
+    "whatsappSource_meta_stop_promotions": "tapped \"stop promotions\" in WhatsApp"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -3055,7 +3059,60 @@
     "whatsappErrorNumberTaken": "This number is already connected to another studio.",
     "whatsappErrorNumberAmbiguous": "Couldn't determine which number to connect. Please try again.",
     "whatsappConnectCancelled": "Connection cancelled.",
-    "whatsappConnectIncomplete": "The connection wasn't completed. Please try again."
+    "whatsappConnectIncomplete": "The connection wasn't completed. Please try again.",
+    "whatsappMessagesTitle": "Messages",
+    "whatsappNewMessage": "New message",
+    "whatsappMessagesIntro": "Write the WhatsApp messages your automations can send — Linyup submits them to WhatsApp for approval.",
+    "whatsappNoMessages": "No messages yet.",
+    "whatsappCategoryMarketingShort": "News & offers",
+    "whatsappCategoryUtilityShort": "Reminder-like",
+    "whatsappRecategorizedNote": "WhatsApp moved this to News & offers — it costs more and needs the news-and-offers opt-in.",
+    "whatsappStateSending": "Sending",
+    "whatsappStatePaused": "Paused",
+    "whatsappStateRejected": "Rejected",
+    "whatsappStateEditRejected": "Edit rejected",
+    "whatsappStateInReview": "In review",
+    "whatsappStateNotSubmitted": "Not submitted",
+    "whatsappDeleteMessageTitle": "Delete this message?",
+    "whatsappDeleteMessageDesc": "Any automation rule using it will skip this step instead of sending it.",
+    "whatsappDeleteMessageAction": "Delete message",
+    "whatsappMessageNameLabel": "Name (for your own reference)",
+    "whatsappMessageNamePlaceholder": "e.g. Trial follow-up",
+    "whatsappCategoryQuestion": "What is this message about?",
+    "whatsappCategoryUtilityOption": "Something they booked or bought",
+    "whatsappCategoryMarketingOption": "News, offers or invitations",
+    "whatsappCategoryMetaNote": "WhatsApp makes the final call on the category — news and offers are priced higher than booking-related messages.",
+    "whatsappMessageBodyLabel": "Message",
+    "whatsappMessageBodyPlaceholder": "Hi {{firstname}}, …",
+    "whatsappTokenLabel_firstname": "First name",
+    "whatsappTokenLabel_lastname": "Last name",
+    "whatsappTokenLabel_teamName": "Studio name",
+    "whatsappTokenLabel_date": "Date",
+    "whatsappTokenLabel_bookingUrl": "Booking page",
+    "whatsappTokenLabel_membershipUrl": "Membership signup",
+    "whatsappTokenLabel_bioLinkUrl": "Bio-link page",
+    "whatsappTokenLabel_websiteUrl": "Website",
+    "whatsappTokenLabel_reviewUrl": "Review page",
+    "whatsappProblem_empty": "Write a message before saving.",
+    "whatsappProblem_too_long": "This message is too long (maximum 1024 characters).",
+    "whatsappProblemUnknownToken": "Unknown token(s): {tokens}",
+    "whatsappProblem_starts_with_token": "A message can't start with a token — add a greeting first.",
+    "whatsappProblem_ends_with_token": "A message can't end with a token — add a closing sentence.",
+    "whatsappProblem_adjacent_tokens": "Two tokens can't sit next to each other — add a word between them.",
+    "whatsappEditKeepsSendingNote": "This message is already approved and sending. Your edit is submitted as a new version — the current one keeps sending until WhatsApp approves the edit.",
+    "whatsappPreviewTitle": "Preview",
+    "whatsappPreviewEmpty": "Your message will appear here.",
+    "whatsappErrorLabel": "Give the message a name.",
+    "whatsappErrorNotConnectedForMessage": "Connect WhatsApp first, then submit this message.",
+    "whatsappMessageErrorGeneric": "Something went wrong saving this message. Please try again.",
+    "whatsappUsageTitle": "This month's WhatsApp messages",
+    "whatsappUsageNone": "No messages sent yet this month.",
+    "whatsappUsageCategory_utility": "Booking-related",
+    "whatsappUsageCategory_marketing": "News & offers",
+    "whatsappUsageCategory_service": "Service replies",
+    "whatsappUsageCategory_authentication": "Authentication",
+    "whatsappUsageBillingNote": "Meta bills your studio directly for these — Linyup adds no charge of its own.",
+    "whatsappMessagesNotConnected": "Messages can be written once the studio owner has connected a WhatsApp number."
   },
   "AiAssistant": {
     "launcherLabel": "AI assistant",
@@ -4553,7 +4610,10 @@
     "whatsappRemindersOn": "WhatsApp reminders are on",
     "whatsappRemindersOff": "WhatsApp reminders are off",
     "whatsappRemindersSaved": "Saved",
-    "whatsappRemindersError": "Couldn't save your preference. Please try again."
+    "whatsappRemindersError": "Couldn't save your preference. Please try again.",
+    "whatsappTitle": "WhatsApp",
+    "whatsappRemindersLabel": "Booking reminders",
+    "whatsappMarketingLabel": "News and offers"
   },
   "FreePlan": {
     "downgradeBannerTitle": "Your trial has ended — you're now on the Free plan",
@@ -5680,7 +5740,8 @@
     "memberSomeoneElseTitle": "Booking for someone else",
     "memberSomeoneElseSubtitle": "Book this class for another person instead",
     "pricingDetailsTrigger": "Prices & access",
-    "whatsappOptInLabel": "Send me reminders from {studioName} on WhatsApp"
+    "whatsappOptInLabel": "Send me reminders from {studioName} on WhatsApp",
+    "whatsappMarketingOptInLabel": "Also send me news and offers from {studioName} on WhatsApp"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",
@@ -5764,7 +5825,8 @@
     "successBody": "Welcome to <strong>{teamName}</strong>. Your details have been saved. The team will be in touch soon.",
     "openSpace": "Open your Space",
     "toSurface": "To {name}",
-    "whatsappOptInLabel": "Send me reminders from {teamName} on WhatsApp"
+    "whatsappOptInLabel": "Send me reminders from {teamName} on WhatsApp",
+    "whatsappMarketingOptInLabel": "Also send me news and offers from {teamName} on WhatsApp"
   },
   "PublicContactUpdate": {
     "teamNotFoundTitle": "Team not found",
@@ -6591,7 +6653,12 @@
       "failed": "We couldn't check who matches.",
       "runFailed": "We couldn't run this automation.",
       "sentToast": "{count, plural, =0 {Nothing was sent} one {Sent to # contact} other {Sent to # contacts}}",
-      "failedCount": "{count, plural, one {# action failed} other {# actions failed}}"
+      "failedCount": "{count, plural, one {# action failed} other {# actions failed}}",
+      "whatsappReason": {
+        "no_phone": "no phone number",
+        "no_consent": "hasn't opted in to WhatsApp reminders",
+        "no_marketing_consent": "hasn't opted in to WhatsApp news and offers"
+      }
     },
     "timeAgo": {
       "minutes": "{mins}m ago",
@@ -6705,7 +6772,8 @@
         "webhook": "Webhook (POST)",
         "add_to_group": "Add to group",
         "remove_from_group": "Remove from group",
-        "create_alert": "Create alert (coming soon)"
+        "create_alert": "Create alert (coming soon)",
+        "send_whatsapp": "Send WhatsApp message"
       },
       "updateField": {
         "acquisitionStage": "Acquisition stage",
@@ -6740,7 +6808,11 @@
       "createAlertLabel": "Create alert",
       "selectPresetPlaceholder": "Select preset",
       "noAlertPresets": "No presets — add one in Team settings",
-      "summaryCreateAlertNamed": "Alert: {name}"
+      "summaryCreateAlertNamed": "Alert: {name}",
+      "summarySendWhatsApp": "WhatsApp: {name}",
+      "selectMessagePlaceholder": "Select message",
+      "noMessages": "No messages — add one in the WhatsApp plugin",
+      "whatsappMessageNotReady": "not ready yet"
     },
     "placeholders": {
       "title": "Placeholders",
@@ -6779,7 +6851,8 @@
       "groupRequired": "Pick a group for the “Is in group” condition.",
       "templateRequired": "Pick an email template for the “Send email” action.",
       "alertPresetRequired": "Pick a preset for the “Create alert” action.",
-      "groupRequiredAction": "Pick a group for the “Add to group” / “Remove from group” action."
+      "groupRequiredAction": "Pick a group for the “Add to group” / “Remove from group” action.",
+      "whatsappMessageRequired": "Choose a WhatsApp message."
     },
     "dialogs": {
       "rule": {
@@ -6830,7 +6903,16 @@
       "recipientsCount": "{count, plural, one {Reached # person} other {Reached # people}}",
       "recipientsTruncated": "Showing the first {shown} of {total}.",
       "recipientsGone": "{count, plural, one {# recipient is no longer in your contacts} other {# recipients are no longer in your contacts}}",
-      "recipientsNotRecorded": "Recipients weren't recorded for this run."
+      "recipientsNotRecorded": "Recipients weren't recorded for this run.",
+      "whatsappLine": "WhatsApp: {summary}",
+      "whatsappOutcome_sent": "{count} sent",
+      "whatsappOutcome_held": "{count} waiting for 8:00",
+      "whatsappOutcome_noConsent": "{count} not opted in",
+      "whatsappOutcome_noPhone": "{count} no phone number",
+      "whatsappOutcome_notReady": "{count} not ready to send",
+      "whatsappOutcome_blocked": "{count} blocked",
+      "whatsappOutcome_testSettings": "{count} held back by test settings",
+      "whatsappOutcome_duplicate": "{count} duplicate"
     },
     "deleteConfirmTitle": "Delete this automation?",
     "paymentKinds": {
@@ -6887,7 +6969,7 @@
     "templatesSubtitle": "Predefined and custom templates your automations and campaigns send, plus reusable placeholders you can drop into any of them.",
     "templatesLinkNote": "Predefined and custom outreach templates, plus the placeholder reference, now live on the <link>Email templates</link> page.",
     "reminderChannelWhatsApp": "WhatsApp",
-    "reminderWhatsAppNote": "Sent only to members who opted in to WhatsApp; others receive nothing for this step.",
+    "reminderWhatsAppNote": "Sent only to members who opted in to WhatsApp reminders; others receive nothing for this step.",
     "reminderWhatsAppSkippedHint": "WhatsApp isn't connected right now, so this reminder is skipped until it is."
   },
   "Finance": {

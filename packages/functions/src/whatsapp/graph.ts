@@ -41,6 +41,8 @@ export interface WhatsAppGraph {
   unsubscribeApp(token: string, wabaId: string): Promise<void>
   listTemplates(token: string, wabaId: string): Promise<WhatsAppRemoteTemplate[]>
   createTemplate(token: string, wabaId: string, payload: Record<string, unknown>): Promise<{ status: string }>
+  /** Deletes every language of a template by name. */
+  deleteTemplate(token: string, wabaId: string, name: string): Promise<void>
   sendMessage(token: string, phoneNumberId: string, payload: Record<string, unknown>): Promise<{ messageId: string }>
 }
 
@@ -127,6 +129,10 @@ export const metaGraph: WhatsAppGraph = {
   async createTemplate(token, wabaId, payload) {
     const json = await call('POST', `${encodeURIComponent(wabaId)}/message_templates`, token, payload)
     return { status: (json.status as string) ?? 'PENDING' }
+  },
+
+  async deleteTemplate(token, wabaId, name) {
+    await call('DELETE', `${encodeURIComponent(wabaId)}/message_templates`, token, undefined, { name })
   },
 
   async sendMessage(token, phoneNumberId, payload) {

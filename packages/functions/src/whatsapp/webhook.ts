@@ -11,10 +11,14 @@
 // What it does with a verified delivery:
 //   • message statuses → the `mail_sends` row holding that message id;
 //   • an inbound message that is a STOP keyword → the studio's suppression list
-//     plus an opt-out on the contacts that number was messaged as. Every other
+//     plus an opt-out of BOTH answers on the contacts that number was messaged as. Every other
 //     inbound message is ignored and NOT stored: replies belong to the studio's
 //     WhatsApp Business app, which receives them itself;
-//   • template review results → the integration doc's template statuses.
+//   • template review results → a studio template (promoting an approved edit)
+//     or the integration doc's statuses for Linyup's own templates;
+//   • a template moved to another category → the studio template records it;
+//   • a marketing message refused because the member stopped promotions →
+//     that member's news-and-offers answer ends.
 //
 // Anything it does not recognise is acknowledged with 200, so Meta does not
 // retry an event that was deliberately ignored.
@@ -34,7 +38,8 @@ import { timingSafeEqualStr } from '../utils/secureCompare'
 import { normalizePhoneE164, phoneHash } from '../mail/smsService'
 import { META_APP_SECRET, WHATSAPP_WEBHOOK_VERIFY_TOKEN } from './config'
 import { patchWhatsAppIntegration, readWhatsAppIntegration, teamForPhoneNumberId } from './connection'
-import { whatsappConsentPatch } from './consentPatch'
+import { whatsappConsentPatch, whatsappStopPatch } from './consentPatch'
+import { applyStudioTemplateCategory, applyStudioTemplateStatus } from './studioTemplates'
 import { whatsappSuppressionRef } from './service'
 import { normaliseTemplateStatus } from './templates'
 
@@ -62,6 +67,7 @@ export type WhatsAppWebhookEvent =
     }
   | { kind: 'inbound'; phoneNumberId: string; from: string; text: string | null }
   | { kind: 'template_status'; wabaId: string; name: string; language: string; event: string; reason: string | null }
+  | { kind: 'template_category'; wabaId: string; name: string; category: string }
 
 type Json = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -103,6 +109,14 @@ export function parseWhatsAppWebhook(body: unknown): WhatsAppWebhookEvent[] {
           event: String(value.event ?? ''),
           reason: typeof value.reason === 'string' && value.reason !== 'NONE' ? value.reason : null,
         })
+      } else if (change?.field === 'template_category_update') {
+        if (typeof entry.id !== 'string' || typeof value.message_template_name !== 'string') continue
+        events.push({
+          kind: 'template_category',
+          wabaId: entry.id,
+          name: value.message_template_name,
+          category: String(value.new_category ?? ''),
+        })
       }
     }
   }
@@ -128,6 +142,10 @@ export function ledgerStatusFor(metaStatus: string): string | null {
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
+/** Meta's failure code for "this person stopped marketing messages from you".
+ *  To be confirmed against a real failure in the Phase 0 spike. */
+export const META_STOPPED_PROMOTIONS = 131050
+
 const STATUS_RANK: Record<string, number> = { sent: 1, delivered: 2, read: 3, undelivered: 3 }
 
 async function applyStatus(event: Extract<WhatsAppWebhookEvent, { kind: 'status' }>): Promise<void> {
@@ -143,6 +161,21 @@ async function applyStatus(event: Extract<WhatsAppWebhookEvent, { kind: 'status'
   if (!row || row.data().channel !== 'whatsapp') return
   // Statuses can arrive out of order; never move a row backwards.
   if ((STATUS_RANK[row.data().status] ?? 0) >= STATUS_RANK[next]) return
+  // The member tapped "stop promotions" in WhatsApp: Meta refuses marketing to
+  // them from now on, so record it as the end of the news-and-offers answer —
+  // otherwise every later marketing send would fail the same way, and the
+  // studio would never see why. Reminders are untouched.
+  if (event.errorCode === META_STOPPED_PROMOTIONS && row.data().consent_kind === 'marketing') {
+    const contactId = row.data().contact_id as string | undefined
+    const teamId = row.data().team_id as string | undefined
+    if (contactId && teamId) {
+      const contactRef = db.collection(CONTACTS_COLLECTION).doc(contactId)
+      const contact = await contactRef.get()
+      if (contact.data()?.teamId === teamId) {
+        await contactRef.update(whatsappConsentPatch('marketing', false, 'meta_stop_promotions'))
+      }
+    }
+  }
   await row.ref.update({
     status: next,
     ...(event.errorCode !== null ? { error_code: event.errorCode } : {}),
@@ -178,20 +211,31 @@ async function applyInbound(event: Extract<WhatsAppWebhookEvent, { kind: 'inboun
     const ref = db.collection(CONTACTS_COLLECTION).doc(contactId as string)
     const snap = await ref.get()
     if (snap.data()?.teamId !== teamId) continue
-    await ref.update(whatsappConsentPatch(false, 'reply_stop'))
+    await ref.update(whatsappStopPatch('reply_stop'))
   }
   console.log(`[whatsapp] STOP recorded for team ${teamId} (${contactIds.size} contact(s))`)
 }
 
-async function applyTemplateStatus(event: Extract<WhatsAppWebhookEvent, { kind: 'template_status' }>): Promise<void> {
+async function teamForWaba(wabaId: string): Promise<string | null> {
   const connections = await admin
     .firestore()
     .collection(WHATSAPP_CONNECTIONS_COLLECTION)
-    .where('waba_id', '==', event.wabaId)
+    .where('waba_id', '==', wabaId)
     .limit(1)
     .get()
-  const teamId = connections.docs[0]?.id
+  return connections.docs[0]?.id ?? null
+}
+
+async function applyTemplateCategory(event: Extract<WhatsAppWebhookEvent, { kind: 'template_category' }>): Promise<void> {
+  const teamId = await teamForWaba(event.wabaId)
+  if (teamId) await applyStudioTemplateCategory(teamId, event.name, event.category)
+}
+
+async function applyTemplateStatus(event: Extract<WhatsAppWebhookEvent, { kind: 'template_status' }>): Promise<void> {
+  const teamId = await teamForWaba(event.wabaId)
   if (!teamId) return
+  // A studio's own template first; otherwise one of Linyup's.
+  if (await applyStudioTemplateStatus(teamId, event.name, event.event, event.reason)) return
   const integration = await readWhatsAppIntegration(teamId)
   const key = whatsappTemplateStatusKey(event.name, event.language)
   // Only templates Linyup tracks; a studio's own templates are not ours to list.
@@ -235,6 +279,7 @@ export const handleWhatsAppWebhook = onRequest({ invoker: 'public' }, async (req
     try {
       if (event.kind === 'status') await applyStatus(event)
       else if (event.kind === 'inbound') await applyInbound(event)
+      else if (event.kind === 'template_category') await applyTemplateCategory(event)
       else await applyTemplateStatus(event)
     } catch (err) {
       // One bad event must not make Meta redeliver the others in the batch.

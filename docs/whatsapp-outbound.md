@@ -5,10 +5,12 @@ area: platform
 ---
 # WhatsApp Business — outbound
 
-Status: **Phase 1 built, not deployed** (2026-09-17), behind `WHATSAPP_ENABLED`
+Status: **Phases 1 and 2 built** — Phase 1 on staging 2026-09-18, Phase 2 in
+review — behind `WHATSAPP_ENABLED`
 (off in every environment) and waiting on the Meta app (see "Ops
-prerequisites"). Phase 2 (studio templates + the automation action) is not
-built; until it is, the plugin offers no automation action at all.
+prerequisites"). Phase 2 — the second opt-in, templates written in Linyup,
+the `send_whatsapp` automation action held until 08:00, and the cost line — is
+section 6.
 
 Code: `packages/functions/src/whatsapp/` (its files' headers say who owns what),
 `packages/shared/src/types/whatsapp.ts`.
@@ -165,19 +167,103 @@ Quiet hours reuse `isWithinSmsSendingHours`.
   connect. **Template names are versioned**: an approved template is edited by
   publishing `_v2`, never in place.
 
-### 6. Automation action
+### 6. Phase 2 — studio templates and the automation action
 
-- `plugin:whatsapp:send_message` config: `templateId` (the studio's APPROVED
-  templates) + a mapping from each template variable to an automation variable
-  (the `substituteVariables` set). The `message_received` trigger is **removed**
-  from the manifest — nothing will ever fire it, and the manifest's own comment
-  forbids shipping it unfired.
-- Template editor (plugin page): name, category (utility / marketing — Meta
-  decides and may reclassify), language, body with `{{variables}}`, preview;
-  **Submit** → `submitWhatsAppTemplate` → `POST /{waba}/message_templates` →
-  pending → the webhook moves it to approved / rejected with the reason.
-- Execution skips a contact without consent (new skip reason), exactly as
-  `send_email` skips `email_unsubscribed`.
+Decisions (Franco, 2026-09-18): **two opt-ins** — booking reminders and "news
+and offers" are separate answers; studios **write templates in Linyup**, never
+in Meta's tools; a WhatsApp automation message outside 08:00–21:00 is **held
+until 08:00**, not skipped and not sent.
+
+**Why marketing needs its own opt-in.** Almost every useful automation — a
+welcome, a win-back, a birthday, a trial follow-up — is MARKETING in Meta's
+categories: dearer for the studio, and outside what a member agreed to when they
+ticked "reminders". Utility is only what is tied to something the member did.
+
+#### 6a. The second consent
+
+`Contact.whatsapp_marketing_consent`, the same
+shape as `whatsapp_consent`, written by the same builder
+(`whatsappConsentPatch(kind, optIn, source)`) and read by the same predicate
+(`whatsappConsentAllows(contact, kind)`, `kind: 'reminders' | 'marketing'`).
+Every Phase 1 door gains a second, independent choice: a second unticked box on
+the booking and signup forms ("News and offers from {studio}"), a second switch
+in the Space and the member app, a second row on the contact page. A STOP ends
+**both**; Meta's own "stop promotions" failure ends **marketing** only. Denied
+to clients by the rules like the first; wiped on anonymisation; `excluded` in
+the API catalogue.
+
+#### 6b. Templates, written in Linyup
+
+`teams/{t}/whatsapp_templates/{id}`:
+`label` (the studio's name for it), `category` (`UTILITY` | `MARKETING`, asked
+in the owner's words — "about something they booked or bought" / "news, offers,
+invitations"), `language` (the studio's `Team.language`), `body` with the same
+`{{firstname}}`-style tokens as email templates (the `substituteVariables` set
+that makes sense in a chat: first name, last name, studio name, date, and the
+booking / membership / bio-link / website / review URLs), `meta_name`
+(`lyp_…`, generated), `status`, `rejected_reason`. Written only by callables:
+
+- `submitWhatsAppTemplate` validates what Meta would refuse, before Meta does —
+  body length, a token at the very start or end, two tokens side by side, an
+  unknown token — turns tokens into named parameters with generated examples,
+  and creates the template under a fresh `meta_name`.
+- **An approved template is never edited in place.** Editing submits a new
+  `meta_name`; the old one keeps sending until the new one is approved, then is
+  deleted at Meta. Rules point at the Linyup id, so they never notice.
+- `deleteWhatsAppTemplate` deletes at Meta and here; a rule still pointing at it
+  skips with a reason, like a deleted email template.
+- The webhook's template-status arm (today Linyup's own templates only) finds a
+  studio template by `meta_name`, and a new `template_category_update` arm
+  records a reclassification — the editor then says the studio is now paying
+  the marketing price and needs the marketing opt-in.
+
+Editor: on the WhatsApp plugin page, a list (label, category, review state) and
+a form with a live chat-bubble preview, filled with the same sample values the
+email template editor uses.
+
+#### 6c. The action is BUILT-IN, not a plugin action
+
+`send_whatsapp`
+`{ templateId }` joins `send_email` in the engine's action union and in the
+rule builder, offered only while the plugin is installed. The generic
+`plugin:*` action path has no config editor in the builder and untranslated
+labels, so a template picker cannot live there. At run time, per contact: the
+template must be APPROVED; the consent asked is the template's category
+(UTILITY → reminders, MARKETING → marketing); a contact without it is skipped
+with its own reason in the run history and in the preview dialog. Parameters
+are the template's tokens rendered by `substituteVariables` for that contact.
+It sends through `sendStudioWhatsApp`, keyed
+`wa-auto-{ruleId}-{contactId}-{occurrence}`.
+
+#### 6d. Held until 08:00
+
+Outside the window the action does not send and is
+not skipped: it enqueues a Cloud Task (`sendHeldWhatsApp`) for
+`nextSmsWindowOpen(now)`, task id derived from the idempotency key. The handler
+re-reads the contact and template and calls `sendStudioWhatsApp`, which asks
+consent, suppression, connection and approval again — a member who opted out
+overnight gets nothing. Only the WhatsApp action waits; the rule's other actions
+run on time. The run history says "held until 08:00".
+
+#### 6e. What it costs the studio
+
+The plugin page shows this month's sent
+messages by Meta category from the send log (`wa_category`), with "Meta bills
+you directly". No Linyup metering. `getWhatsAppUsage` counts them (the send log
+is denied to clients), on the `mail_sends (team_id, channel, wa_category,
+created_at)` index.
+
+**Where it lives.** `whatsapp/studioTemplates.ts` (submit, delete, and the
+webhook's promote-on-approval), `whatsapp/automation.ts` (the action, token
+rendering, and `sendHeldWhatsApp`), `whatsapp/usage.ts`; the engine arm is in
+`utils/automationEngine.ts` (`send_whatsapp`, `ruleSendsWhatsApp`), and the
+preview marks each contact the message would or would not reach. Tests:
+`whatsapp/phase2.test.ts` and the rules file.
+
+**Two things to confirm in the Phase 0 spike:** the failure code Meta uses for
+"this person stopped promotions" (`META_STOPPED_PROMOTIONS`, 131050 assumed),
+and that `template_category_update` is the field Meta sends on a
+reclassification.
 
 ### 7. Opt-in surfaces (one callable, three doors)
 
@@ -239,7 +325,7 @@ signed status webhook. Record in this doc, with sources:
 plugin to `beta`; rules + rules tests; i18n fragment; `pnpm census:reads` rows
 for any new LOG read. Enough for App Review.
 
-**Phase 2 — templates + automation action.** Section 6.
+**Phase 2 — templates + automation action.** *(built)* Section 6: 6a consent and 6b templates first (both usable on their own), then 6c the action, 6d holding, 6e the cost line.
 
 ## Not in v1, on purpose
 

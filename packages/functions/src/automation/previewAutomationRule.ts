@@ -11,8 +11,17 @@ import {
   normalizeRule,
   evaluateContactConditions,
   loadConditionContext,
+  ruleSendsWhatsApp,
   type ContactData,
 } from '../utils/automationEngine'
+import {
+  TEAMS_COLLECTION,
+  WHATSAPP_TEMPLATES_SUBCOLLECTION,
+  whatsappConsentAllows,
+  whatsappConsentKindFor,
+  type WhatsAppConsentKind,
+  type WhatsAppStudioTemplate,
+} from '@linyup/shared'
 
 interface MatchedContact {
   id: string
@@ -21,6 +30,37 @@ interface MatchedContact {
   email: string
   acquisition_stage: string | null
   session_id?: string
+  /**
+   * For a rule with a WhatsApp action: whether this contact would get the
+   * message, or why not. Absent for rules without one.
+   */
+  whatsapp?: 'ok' | 'no_phone' | 'no_consent' | 'no_marketing_consent'
+}
+
+/** Which answer the rule's WhatsApp message needs — from its template's live
+ *  category — or null when the rule sends no WhatsApp. */
+async function whatsappConsentKindForRule(
+  teamId: string,
+  actions: { type: string; templateId?: string }[],
+): Promise<WhatsAppConsentKind | null> {
+  const action = actions.find((a) => a.type === 'send_whatsapp')
+  if (!action) return null
+  if (!action.templateId) return 'marketing'
+  const snap = await admin
+    .firestore()
+    .collection(TEAMS_COLLECTION)
+    .doc(teamId)
+    .collection(WHATSAPP_TEMPLATES_SUBCOLLECTION)
+    .doc(action.templateId)
+    .get()
+  const template = snap.data() as WhatsAppStudioTemplate | undefined
+  return whatsappConsentKindFor(template?.live?.category ?? template?.next?.category)
+}
+
+function whatsappReach(contact: Record<string, unknown>, kind: WhatsAppConsentKind): MatchedContact['whatsapp'] {
+  if (typeof contact.phone !== 'string' || !contact.phone) return 'no_phone'
+  if (whatsappConsentAllows(contact, kind)) return 'ok'
+  return kind === 'marketing' ? 'no_marketing_consent' : 'no_consent'
 }
 
 export const previewAutomationRule = onCall(async (request) => {
@@ -63,6 +103,12 @@ export const previewAutomationRule = onCall(async (request) => {
   const conditionCtx = await loadConditionContext(
     rule, teamId, (!teamErr && teamDoc?.data()) || {}
   )
+
+  // A rule that sends WhatsApp reaches contacts without an email address, as
+  // the engine does (ruleSendsWhatsApp); each is marked with whether the
+  // WhatsApp message itself would reach them.
+  const sendsWhatsApp = ruleSendsWhatsApp(rule.actions)
+  const waKind = await whatsappConsentKindForRule(teamId, rule.actions as { type: string; templateId?: string }[])
 
   const hasBookingCondition = rule.conditions.some((c) => c.type === 'bio_link_booking_no_show')
 
@@ -132,7 +178,7 @@ export const previewAutomationRule = onCall(async (request) => {
           }
         }
 
-        if (!contact.email || contact.email_unsubscribed) continue
+        if (!sendsWhatsApp && (!contact.email || contact.email_unsubscribed)) continue
         if (!evaluateContactConditions(rule.conditions, contact, now, conditionCtx)) continue
 
         matched.push({
@@ -142,6 +188,7 @@ export const previewAutomationRule = onCall(async (request) => {
           email: contact.email || '',
           acquisition_stage: (contact.acquisition_stage as string) || null,
           session_id: sessionDoc.id,
+          ...(waKind ? { whatsapp: whatsappReach(contact as unknown as Record<string, unknown>, waKind) } : {}),
         })
       }
     }
@@ -173,7 +220,7 @@ export const previewAutomationRule = onCall(async (request) => {
     // Evaluate conditions directly (no runRule to avoid loading templates)
     for (const contact of contacts) {
       if (contact.deleted_at || contact.archived_at || contact.external) continue
-      if (!contact.email || contact.email_unsubscribed) continue
+      if (!sendsWhatsApp && (!contact.email || contact.email_unsubscribed)) continue
       if (!evaluateContactConditions(rule.conditions, contact, now, conditionCtx)) continue
 
       matched.push({
@@ -182,6 +229,7 @@ export const previewAutomationRule = onCall(async (request) => {
         lastname: contact.lastname || '',
         email: contact.email || '',
         acquisition_stage: (contact.acquisition_stage as string) || null,
+        ...(waKind ? { whatsapp: whatsappReach(contact as unknown as Record<string, unknown>, waKind) } : {}),
       })
     }
   }

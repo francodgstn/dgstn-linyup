@@ -905,6 +905,15 @@ service cloud.firestore {
       }
 
       // Outreach email templates (re-engagement campaigns)
+      // WhatsApp templates the studio wrote (docs/whatsapp-outbound.md → "6b").
+      // Read by the team (the rule builder lists them); written ONLY by
+      // submitWhatsAppTemplate / deleteWhatsAppTemplate and the webhook, because
+      // what the doc says must match what Meta approved.
+      match /whatsapp_templates/{templateId} {
+        allow read: if isTeamMember(teamId);
+        allow write: if false;
+      }
+
       match /outreach_templates/{templateId} {
         allow read: if isTeamMember(teamId);
         allow write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
@@ -1333,7 +1342,7 @@ service cloud.firestore {
                               || callerOwnsContact(request.resource)))
                        || isTeacher(request.resource)
                        || hasRole('admin'))
-                       && !request.resource.data.keys().hasAny(['whatsapp_consent', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
+                       && !request.resource.data.keys().hasAny(['whatsapp_consent', 'whatsapp_marketing_consent', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
 
       // Read/Update/Delete: Must be member of contact's team (own-scope for a coach)
       // OR old teacher-based access.
@@ -1366,7 +1375,7 @@ service cloud.firestore {
                        || hasRole('admin')
                        || (isSelfContact(contactId)
                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'last_seen_at', 'mobile_app'])))
-                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms', 'whatsapp_consent', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coaching_open_count', 'coaching_overdue_count', 'last_checkin_at', 'alerts_count', 'notes_count', 'ai_summary', 'held_plans', 'held_plan_type_ids', 'held_plans_next_change_at_ms', 'whatsapp_consent', 'whatsapp_marketing_consent', 'subscription_type_id', 'subscription_type_name', 'subscription_price_id', 'subscription_recurrence', 'subscription_amount', 'subscription_expires_at', 'subscription_source_ref', 'subscription_type_updated_at']);
       allow delete: if (canAccessContact(resource)
                           && hasTeamCapability(resource.data.teamId, 'contacts.delete'))
                        || hasRole('admin');

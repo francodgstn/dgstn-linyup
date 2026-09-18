@@ -78,10 +78,7 @@ export async function sendWhatsAppBookingReminder(args: {
   return sendStudioWhatsApp(args.teamId, {
     contactId,
     to: phone,
-    template: WHATSAPP_BOOKING_REMINDER_TEMPLATE,
-    language,
-    params,
-    buttonSuffix,
+    template: { kind: 'linyup', def: WHATSAPP_BOOKING_REMINDER_TEMPLATE, language, params, buttonSuffix },
     tag: 'booking-reminder',
     idempotencyKey: `wa-reminder-${args.sessionId}-${args.bookingId}-${args.stepId}`,
   })

@@ -170,9 +170,9 @@ describe('whatsapp — source pins', () => {
     assert.deepEqual(callers, [join('whatsapp', 'graph.ts')])
   })
 
-  it('only consentPatch.ts builds the consent record', () => {
+  it('only consentPatch.ts builds a consent record, for either answer', () => {
     const writers = files
-      .filter((f) => /whatsapp_consent:\s*\{/.test(read(f)))
+      .filter((f) => /whatsapp_(marketing_)?consent:\s*\{|'opted_in'\s*:\s*'opted_out'/.test(read(f)))
       .map((f) => f.slice(src.length + 1))
     assert.deepEqual(writers, [join('whatsapp', 'consentPatch.ts')])
   })
@@ -184,9 +184,10 @@ describe('whatsapp — source pins', () => {
     assert.deepEqual(senders, [join('whatsapp', 'service.ts')])
   })
 
-  it('the rules deny whatsapp_consent to clients, on create and update', () => {
+  it('the rules deny both consent fields to clients, on create and update', () => {
     const rules = read(join(__dirname, '..', '..', '..', '..', 'firestore.rules'))
     const contactsBlock = rules.slice(rules.indexOf('match /contacts/{contactId}'), rules.indexOf('match /subscription_history/'))
     assert.equal(contactsBlock.match(/'whatsapp_consent'/g)?.length, 2)
+    assert.equal(contactsBlock.match(/'whatsapp_marketing_consent'/g)?.length, 2)
   })
 })

@@ -107,6 +107,7 @@ export const CONTACT_IDENTIFYING_FIELDS = [
   // Consent and marketing state carry the address they were given for.
   'consent',
   'whatsapp_consent',
+  'whatsapp_marketing_consent',
   'source_detail',
 ] as const
 

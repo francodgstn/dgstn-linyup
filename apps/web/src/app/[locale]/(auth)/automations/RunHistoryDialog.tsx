@@ -76,6 +76,11 @@ interface AutomationLogRow {
   /** UNDEFINED means the run predates recipient recording — not "reached nobody". */
   recipient_ids?: string[]
   recipients_total: number
+  /** `RuleStats.whatsapp` — present only when the rule has a `send_whatsapp`
+   *  action. Keys are outcomes ('sent', 'held', 'no_phone', 'no_consent', …);
+   *  absent means the rule sends no WhatsApp at all, which reads differently
+   *  from every key being zero. */
+  whatsapp_outcomes?: Record<string, number>
   error?: string
   triggered_at?: Timestamp | null
   session_id?: string
@@ -97,6 +102,10 @@ function toRow(id: string, data: Record<string, unknown>): AutomationLogRow {
       ? (data.recipient_ids as string[])
       : undefined,
     recipients_total: (data.recipients_total as number) ?? 0,
+    whatsapp_outcomes:
+      data.whatsapp_outcomes && typeof data.whatsapp_outcomes === 'object'
+        ? (data.whatsapp_outcomes as Record<string, number>)
+        : undefined,
     error: (data.error as string) || undefined,
     triggered_at: (data.triggered_at as Timestamp | undefined) ?? null,
     session_id: (data.session_id as string) || undefined,
@@ -322,6 +331,8 @@ function RunRow({
 
       <Recipients row={row} rosterNames={rosterNames} />
 
+      <WhatsAppOutcomesLine outcomes={row.whatsapp_outcomes} />
+
       {row.error && (
         <p className="flex items-start gap-1.5 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
@@ -329,6 +340,50 @@ function RunRow({
         </p>
       )}
     </div>
+  )
+}
+
+/**
+ * The WhatsApp half of a run, in the owner's own words — e.g. "WhatsApp: 12
+ * sent, 3 waiting for 8:00, 5 not opted in". `RuleStats.whatsapp` (written only
+ * by a rule carrying a `send_whatsapp` action) has one key per raw engine
+ * outcome; several of those are the SAME sentence to an owner ("no consent"
+ * and "no marketing consent" are both "not opted in"), so outcomes are grouped
+ * here rather than listed one key at a time. Absent entirely on a rule with no
+ * WhatsApp action — nothing renders, not a "0 sent" line nobody asked for.
+ */
+const WHATSAPP_OUTCOME_GROUPS: { labelKey: Parameters<ReturnType<typeof useTranslations>>[0]; sources: string[] }[] = [
+  { labelKey: 'history.whatsappOutcome_sent', sources: ['sent'] },
+  { labelKey: 'history.whatsappOutcome_held', sources: ['held'] },
+  { labelKey: 'history.whatsappOutcome_noConsent', sources: ['no_consent', 'no_marketing_consent'] },
+  { labelKey: 'history.whatsappOutcome_noPhone', sources: ['no_phone'] },
+  {
+    labelKey: 'history.whatsappOutcome_notReady',
+    sources: ['template_not_approved', 'not_connected', 'disabled'],
+  },
+  { labelKey: 'history.whatsappOutcome_blocked', sources: ['suppressed', 'bad_number'] },
+  {
+    labelKey: 'history.whatsappOutcome_testSettings',
+    sources: ['policy_silent', 'policy_allowlist', 'test_mode_no_recipient'],
+  },
+  { labelKey: 'history.whatsappOutcome_duplicate', sources: ['duplicate'] },
+]
+
+function WhatsAppOutcomesLine({ outcomes }: { outcomes?: Record<string, number> }) {
+  const t = useTranslations('Automations')
+  if (!outcomes) return null
+
+  const parts = WHATSAPP_OUTCOME_GROUPS.map((g) => {
+    const count = g.sources.reduce((sum, key) => sum + (outcomes[key] ?? 0), 0)
+    return count > 0 ? t(g.labelKey, { count }) : null
+  }).filter((p): p is string => p !== null)
+
+  if (parts.length === 0) return null
+
+  return (
+    <p className="text-xs text-muted-foreground">
+      {t('history.whatsappLine', { summary: parts.join(', ') })}
+    </p>
   )
 }
 

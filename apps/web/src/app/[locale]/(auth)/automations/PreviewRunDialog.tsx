@@ -46,7 +46,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
-import { AlertTriangle, Users } from 'lucide-react'
+import { AlertTriangle, MessageCircleOff, Users } from 'lucide-react'
 
 /** One row of `previewAutomationRule`'s `contacts` array. */
 interface PreviewContact {
@@ -55,6 +55,14 @@ interface PreviewContact {
   lastname: string
   email: string
   acquisition_stage: string | null
+  /** Present only for a rule with a `send_whatsapp` action — whether THIS
+   *  message would reach this contact, or why not (packages/functions/src/
+   *  automation/previewAutomationRule.ts). Absent for every other rule. */
+  whatsapp?: 'ok' | 'no_phone' | 'no_consent' | 'no_marketing_consent'
+}
+
+function whatsappMarkerKey(reason: Exclude<PreviewContact['whatsapp'], 'ok' | undefined>) {
+  return `preview.whatsappReason.${reason}` as const
 }
 
 /** How many matches are rendered before the list is summarised. A studio with
@@ -193,6 +201,15 @@ export function PreviewRunDialog({
                         {`${c.firstname} ${c.lastname}`.trim() || c.email}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">{c.email}</p>
+                      {/* A rule with a WhatsApp action also reaches contacts with
+                          no email, so "will they get the message" is a second
+                          question this dialog has to answer per contact. */}
+                      {c.whatsapp && c.whatsapp !== 'ok' && (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                          <MessageCircleOff className="h-3 w-3 shrink-0" />
+                          {t(whatsappMarkerKey(c.whatsapp))}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>

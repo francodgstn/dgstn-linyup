@@ -369,6 +369,9 @@ export {
 } from './whatsapp/connect'
 export { setMyWhatsAppConsent, setContactWhatsAppConsent } from './whatsapp/consent'
 export { handleWhatsAppWebhook } from './whatsapp/webhook'
+export { submitWhatsAppTemplate, deleteWhatsAppTemplate } from './whatsapp/studioTemplates'
+export { sendHeldWhatsApp } from './whatsapp/automation'
+export { getWhatsAppUsage } from './whatsapp/usage'
 
 // Public-site localization — machine-translates tenant-authored site content
 // (team/org published sites go through publishWebsite/publishOrgWebsite
