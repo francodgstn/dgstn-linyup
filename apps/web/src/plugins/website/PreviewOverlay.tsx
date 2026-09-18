@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import WebsiteRenderer, { type RenderableSite } from '@/components/site/WebsiteRenderer'
-import type { PublicSurface, OrgSiteTeamRef } from '@linyup/shared'
+import type { PublicSurface, OrgSiteTeamRef, SitePageRef, WebsiteSection, OrgSiteSection } from '@linyup/shared'
 
 /** Phone width the mobile view renders at — the narrow end of what visitors use,
  *  so a layout that survives here survives the rest. */
@@ -47,6 +47,7 @@ export function PreviewOverlay({
   open,
   onOpenChange,
   site,
+  page,
   surfaceLinks,
   orgId,
   orgTeams,
@@ -54,6 +55,9 @@ export function PreviewOverlay({
   open: boolean
   onOpenChange: (v: boolean) => void
   site: RenderableSite
+  /** The page being previewed, when it isn't home — see the note beside this
+   *  prop on `WebsiteRenderer`. Absent ⇒ home, today's behaviour. */
+  page?: { ref: SitePageRef; sections: (WebsiteSection | OrgSiteSection)[] }
   /** Without these the renderer cannot resolve a `surface` menu item and DROPS
    *  it — so a studio who just added Shop to the menu would watch it vanish
    *  from the preview and reasonably conclude the feature is broken. */
@@ -121,6 +125,7 @@ export function PreviewOverlay({
               <WebsiteRenderer
                 site={site}
                 preview
+                page={page}
                 surfaceLinks={surfaceLinks}
                 orgId={orgId}
                 orgTeams={orgTeams}

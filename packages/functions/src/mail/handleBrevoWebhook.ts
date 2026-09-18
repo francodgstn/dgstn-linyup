@@ -70,6 +70,9 @@ async function updateLedgerStatus(providerMessageId: string, status: string): Pr
 }
 
 async function processEvent(e: BrevoWebhookEvent): Promise<void> {
+  // Email events only. Brevo's documented SMS payloads carry `msg_status` / `to`
+  // and no `event` or `email`, so they stop here and SMS ledger rows keep
+  // `sent` — see README → "SMS opt-out" for why that is not wired yet.
   if (!e?.event || !e.email) return
   const mid = messageId(e)
   const { suppression, ledgerStatus } = classifyBrevoEvent(e.event)

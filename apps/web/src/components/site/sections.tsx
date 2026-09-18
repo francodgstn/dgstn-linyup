@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   collectionGroup,
@@ -45,8 +45,11 @@ import {
   Plus,
   Minus,
   Quote,
+  Play,
+  Newspaper,
 } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/icon-picker'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import type {
   WebsiteSection,
   OrgSiteSection,
@@ -62,10 +65,19 @@ import type {
   CtaBannerSection,
   FaqSection,
   TestimonialsSection,
+  VideoSection,
+  TeamSection,
+  FormSection,
+  PostsSection,
+  SplitSection,
+  FormPublicProfile,
   SocialLink,
   OrgSiteTeamRef,
+  SitePageRef,
+  SiteCta,
 } from '@linyup/shared'
 import {
+  videoEmbedSrc,
   browseDurationMinutes,
   compareActivities,
   mergeAvailabilitySlots,
@@ -73,15 +85,22 @@ import {
   normalizeBenefit,
   resolveDurationBenefit,
   resolveDurationSale,
+  sitePosts,
   type ActivityAccessRule,
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
   isHexColor,
   isLightColor,
+  nameInitials,
+  priceTermMonths,
+  pricingTerms,
   PUBLIC_PROFILE_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  FORMS_COLLECTION,
 } from '@linyup/shared'
+import { formatSiteDate } from './siteDate'
+import { FieldInput, isFieldAnswered } from '@/components/forms/FieldInput'
 import {
   resolveActivityTerms,
   resolveActivityPricingDisplay,
@@ -175,6 +194,25 @@ export interface RenderCtx {
    * `PublicTeamProvider`, and the overlay would throw there.
    */
   onBook?: (intent: BookIntent) => void
+  /**
+   * A page of this site → its URL (`#section` appended when given), or
+   * undefined for a page that is not published. Set by WebsiteRenderer, which
+   * holds the page index; absent on hosts with no pages (org site, embed).
+   */
+  pageHref?: (pageId: string, sectionId?: string) => string | undefined
+  /**
+   * The site's page index — read by the Posts block to list blog posts newest
+   * first (`sitePosts`). Team sites only (org sites have no pages/posts yet);
+   * set by WebsiteRenderer from `site.pages`, absent on the embed.
+   */
+  pages?: SitePageRef[]
+  /**
+   * The short form of a public path, on a studio's OWN domain: the site lives
+   * at `/angebot/crossfit` there, not `/public/{slug}/site/angebot/crossfit`.
+   * Set by the live site when the request came through such a domain; absent
+   * everywhere else, where the long path IS the address.
+   */
+  shortenHref?: (href: string) => string
 }
 
 export const SOCIAL_ICONS: Record<string, React.FC<{ className?: string }>> = {
@@ -217,11 +255,32 @@ function activityBookHref(
 ): string | undefined {
   const { locale, slug } = ctx
   if (a.activityType === 'appointment')
-    return publicHrefLocalized(locale, slug, 'appointments', { activity: a.id, from: 'site' })
-  if (a.slug) return publicSubHrefLocalized(locale, slug, 'booking', a.slug, { from: 'site' })
+    return shortHref(ctx, publicHrefLocalized(locale, slug, 'appointments', { activity: a.id, from: 'site' }))
+  if (a.slug) return shortHref(ctx, publicSubHrefLocalized(locale, slug, 'booking', a.slug, { from: 'site' }))
   return fallbackToBooking
-    ? publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
+    ? shortHref(ctx, publicHrefLocalized(locale, slug, 'booking', { from: 'site' }))
     : undefined
+}
+
+/**
+ * What a studio's own CTA opens in place, or null when it is a plain navigation.
+ *
+ * 'booking' opens the panel at its own front door; 'appointment' opens it
+ * already on one activity — which is how a studio puts "Free intro" on the hero
+ * without the visitor passing through a page and a form first. Everything else
+ * (a page, the signup form, an external link) is a navigation and returns null.
+ */
+export function ctaIntent(cta: Pick<SiteCta, 'action' | 'activityId'> | undefined): BookIntent | null {
+  if (!cta) return null
+  if (cta.action === 'appointment')
+    return cta.activityId ? { kind: 'appointment', activityId: cta.activityId } : { kind: 'root' }
+  return cta.action === 'booking' ? { kind: 'root' } : null
+}
+
+/** A public path as this visitor's address bar should show it — short on the
+ *  studio's own domain, unchanged everywhere else. See RenderCtx.shortenHref. */
+export function shortHref(ctx: RenderCtx, href: string | undefined): string | undefined {
+  return href && ctx.shortenHref ? ctx.shortenHref(href) : href
 }
 
 /**
@@ -260,7 +319,8 @@ function activityIntent(a: {
  *   - the embed iframe's click delegation still has an anchor to read
  * Never turn these into bare <button>s.
  */
-export function bookProps(href: string | undefined, ctx: RenderCtx, intent: BookIntent) {
+export function bookProps(rawHref: string | undefined, ctx: RenderCtx, intent: BookIntent) {
+  const href = shortHref(ctx, rawHref)
   // Preview wins FIRST — the builder canvas stays inert no matter what.
   if (ctx.preview) return linkProps(undefined, true)
   if (!ctx.onBook || !href) return linkProps(href, ctx.preview)
@@ -287,13 +347,92 @@ function hexIsLight(hex: string): boolean {
   return isHexColor(normalised) ? isLightColor(normalised) : true
 }
 
+/**
+ * A muted, looping background video that actually plays.
+ *
+ * React sets `muted` as a PROPERTY, never as the HTML attribute, and browsers
+ * only autoplay a video they can see is muted — so `<video autoPlay muted>`
+ * rendered by React sits paused on its first frame. Setting the property again
+ * after mount and calling play() is the dependable way; a refusal (a data-saver
+ * mode, a policy) leaves the poster showing, which is fine.
+ *
+ * ONE ATTEMPT IS NOT ENOUGH. A page opened in a background tab, or a video still
+ * loading, refuses the first play() — and nothing would ask again. So it retries
+ * whenever the video becomes playable, the page becomes visible, or the video
+ * scrolls into view; each retry is a no-op once it is playing.
+ */
+function LoopVideo({ src, poster }: { src: string; poster?: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+    video.muted = true
+    const tryPlay = () => {
+      if (video.paused && !document.hidden) video.play().catch(() => {})
+    }
+    tryPlay()
+    video.addEventListener('canplay', tryPlay)
+    document.addEventListener('visibilitychange', tryPlay)
+    const observer =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) tryPlay()
+          })
+    observer?.observe(video)
+    return () => {
+      video.removeEventListener('canplay', tryPlay)
+      document.removeEventListener('visibilitychange', tryPlay)
+      observer?.disconnect()
+    }
+  }, [src])
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      autoPlay
+      muted
+      loop
+      playsInline
+      aria-hidden
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  )
+}
+
+/** The hero's shading layers — an even wash, or white/black gradients that
+ *  cover the side the copy sits on and leave the rest of the photo clear. */
+function HeroShade({ style, tone, strength }: { style: NonNullable<HeroSection['overlayStyle']>; tone: 'dark' | 'light'; strength: number }) {
+  const rgb = tone === 'light' ? '255,255,255' : '0,0,0'
+  const fade = (deg: number) =>
+    `linear-gradient(${deg}deg, rgba(${rgb},${strength}) 0%, rgba(${rgb},${strength * 0.55}) 35%, rgba(${rgb},0) 70%)`
+  if (style === 'solid') {
+    return <div className="absolute inset-0" style={{ background: `rgba(${rgb},${strength})` }} />
+  }
+  return (
+    <>
+      {(style === 'gradient-left' || style === 'gradient-left-bottom') && (
+        <div className="absolute inset-0" style={{ background: fade(90) }} />
+      )}
+      {(style === 'gradient-bottom' || style === 'gradient-left-bottom') && (
+        <div className="absolute inset-0" style={{ background: fade(0) }} />
+      )}
+    </>
+  )
+}
+
 function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
-  const href = ctaHref(section.cta, slug, locale)
+  const href = shortHref(ctx, ctaHref(section.cta, slug, locale, ctx.pageHref))
   const center = section.align !== 'left'
   const overlay = (section.overlay ?? 40) / 100
 
   const hasImage = !!section.bgImageUrl
+  // The loop never plays for a visitor who asked for less motion — the image
+  // (its poster) stands in, which is why the image is still worth setting.
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const showVideo = !!section.bgVideoUrl && !reducedMotion
   // A solid background colour, only when there is no image — an image is its own
   // background. Absent ⇒ the bold accent gradient, today's look.
   const solid = !hasImage && section.bgColor ? section.bgColor : null
@@ -304,13 +443,17 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   // colour it follows the colour's own perceived brightness, so a pale hero gets
   // dark text.
   const solidDarkText = solid ? hexIsLight(solid) : false
-  const fullText = solid ? (solidDarkText ? '#0f172a' : '#ffffff') : '#ffffff'
-  const fullMuted = solid
-    ? solidDarkText
-      ? 'rgba(15,23,42,0.72)'
-      : 'rgba(255,255,255,0.9)'
-    : 'rgba(255,255,255,0.92)'
-  const shadow = solid ? 'none' : '0 2px 18px rgba(0,0,0,0.35)'
+  // Over a photo or loop, a LIGHT wash takes dark copy and no shadow — the
+  // same decision a pale solid colour makes.
+  const lightWash = (hasImage || showVideo) && section.overlayTone === 'light'
+  const darkText = solid ? solidDarkText : lightWash
+  const fullText = darkText ? '#0f172a' : '#ffffff'
+  const fullMuted = darkText
+    ? 'rgba(15,23,42,0.78)'
+    : solid
+      ? 'rgba(255,255,255,0.9)'
+      : 'rgba(255,255,255,0.92)'
+  const shadow = solid || lightWash ? 'none' : '0 2px 18px rgba(0,0,0,0.35)'
 
   // In CARD layout the content sits on the theme's neutral surface, so it reads
   // the same way cards do everywhere — which is what makes a hero legible over a
@@ -322,10 +465,12 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   const content = (
     <>
       <h1
-        className="text-4xl @2xl:text-5xl font-bold tracking-tight"
+        // Big on a desktop, calmer on a phone: at 390px a five-word headline in
+        // capitals ran to four lines at 48px, which is a wall, not a headline.
+        className="text-4xl @xl:text-5xl @2xl:text-6xl font-bold tracking-tight"
         style={{ color: cardText, textShadow: cardShadow }}
       >
-        {section.headline}
+        {renderHeadingText(section.headline, palette)}
       </h1>
       {section.subheadline && (
         <p
@@ -338,11 +483,11 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
       {section.cta?.label && (
         <div className={`mt-8 flex ${center ? 'justify-center' : 'justify-start'}`}>
           <a
-            {...(section.cta.action === 'booking'
-              ? bookProps(href, ctx, { kind: 'root' })
+            {...(ctaIntent(section.cta)
+              ? bookProps(href, ctx, ctaIntent(section.cta)!)
               : linkProps(href, preview, section.cta.action === 'url'))}
-            className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
-            style={{ background: palette.accent, color: palette.onAccent }}
+            className="site-btn inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
+            style={{ background: palette.button, color: palette.onButton }}
           >
             {section.cta.label}
             <ArrowRight className="h-4 w-4" />
@@ -365,23 +510,30 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
             : `linear-gradient(135deg, ${palette.accent}, ${palette.accent}99)`,
       }}
     >
-      {hasImage && (
+      {(hasImage || showVideo) && (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={section.bgImageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+          {hasImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={section.bgImageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          {showVideo && <LoopVideo src={section.bgVideoUrl!} poster={section.bgImageUrl} />}
+          <HeroShade
+            style={section.overlayStyle ?? 'solid'}
+            tone={section.overlayTone ?? 'dark'}
+            strength={overlay}
           />
-          <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${overlay})` }} />
         </>
       )}
       <div
-        className={`relative mx-auto w-full max-w-5xl px-6 py-20 ${center ? 'text-center' : 'text-left'}`}
+        className={`relative mx-auto w-full site-shell px-6 py-20 ${center ? 'text-center' : 'text-left'}`}
       >
         {inCard ? (
           <div
-            className={`rounded-2xl border p-8 shadow-xl @2xl:p-12 ${center ? 'mx-auto max-w-3xl' : 'max-w-3xl'}`}
+            className={`site-card rounded-2xl border p-8 shadow-xl @2xl:p-12 ${center ? 'mx-auto max-w-3xl' : 'max-w-3xl'}`}
             style={{ background: palette.surface, borderColor: palette.border }}
           >
             {content}
@@ -396,6 +548,29 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
 
 // ─── shared section heading ─────────────────────────────────────────────────
 
+/**
+ * A studio marks words with `*asterisks*` to accent them inside a heading —
+ * "Training, das *Resultate* liefert" — and the marked run renders in the
+ * site's accent colour, markers dropped. ONE helper, used by the shared
+ * `Heading`, the hero headline and the split section's heading; unmatched or
+ * unmarked text renders exactly as it did before this existed. Dependency-free
+ * (no markdown lib) and never renders raw HTML — the split parts are always
+ * plain text nodes.
+ */
+function renderHeadingText(text: string, palette: SitePalette): React.ReactNode {
+  const parts = text.split(/\*([^*]+)\*/)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <span key={i} style={{ color: palette.accent }}>
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  )
+}
+
 function Heading({
   text,
   palette,
@@ -408,10 +583,10 @@ function Heading({
   if (!text) return null
   return (
     <h2
-      className={`text-3xl font-bold tracking-tight ${center ? 'text-center' : ''}`}
+      className={`text-3xl font-bold tracking-tight @xl:text-4xl @3xl:text-5xl ${center ? 'text-center' : ''}`}
       style={{ color: palette.text }}
     >
-      {text}
+      {renderHeadingText(text, palette)}
     </h2>
   )
 }
@@ -423,11 +598,11 @@ function ContentBlock({ section, ctx }: { section: ContentSection; ctx: RenderCt
   const imageRight = section.imageSide === 'right'
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <div className={`grid items-center gap-10 ${section.imageUrl ? '@3xl:grid-cols-2' : ''}`}>
           {section.imageUrl && imageRight && <ContentText section={section} palette={palette} />}
           {section.imageUrl && (
-            <div className="overflow-hidden rounded-2xl">
+            <div className="overflow-hidden site-card rounded-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={section.imageUrl} alt="" className="h-full w-full object-cover" />
             </div>
@@ -465,22 +640,77 @@ function ContentText({ section, palette }: { section: ContentSection; palette: S
 function GalleryBlock({ section, ctx }: { section: GallerySection; ctx: RenderCtx }) {
   const t = useTranslations('Site')
   const { palette } = ctx
+  if (!section.images.length && !section.heading) return null
+
+  if (section.layout === 'logos') {
+    // Partner / certification logos: never cropped, evenly spaced, captions as
+    // the accessible name (a logo's caption is the partner's name).
+    return (
+      <section id={section.id} className="py-16" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          <Heading text={section.heading} palette={palette} />
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+            {section.images.map((img, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} src={img.url} alt={img.caption ?? ''} className="h-12 w-auto max-w-[160px] object-contain" />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.layout === 'marquee') {
+    // THE LIST TWICE, moved by one copy's width (the keyframes in globals.css),
+    // so the loop has no seam. The second copy is decoration: hidden from
+    // assistive tech so each photo is announced once. The speed scales with the
+    // number of photos, so a short strip does not race past.
+    const duration = `${Math.max(20, section.images.length * 6)}s`
+    return (
+      <section id={section.id} className="py-16" style={{ background: palette.surface }}>
+        {section.heading && (
+          <div className="mx-auto mb-10 site-shell px-6">
+            <Heading text={section.heading} palette={palette} />
+          </div>
+        )}
+        <div className="site-marquee overflow-hidden">
+          <div
+            className="site-marquee-track flex w-max gap-4 px-2"
+            style={{ '--site-marquee-duration': duration } as CSSProperties}
+          >
+            {[0, 1].map((copy) =>
+              section.images.map((img, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${copy}-${i}`}
+                  src={img.url}
+                  alt={copy === 0 ? (img.caption ?? '') : ''}
+                  aria-hidden={copy === 1 ? true : undefined}
+                  className="site-card-sm h-48 w-auto max-w-none rounded-xl object-cover @2xl:h-64"
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   const cols =
     section.columns === 2
       ? '@2xl:grid-cols-2'
       : section.columns === 4
         ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
         : '@2xl:grid-cols-2 @5xl:grid-cols-3'
-  if (!section.images.length && !section.heading) return null
   return (
     <section id={section.id} className="py-20" style={{ background: palette.surface }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading} palette={palette} />
         <div className={`mt-10 grid grid-cols-1 gap-4 ${cols}`}>
           {section.images.map((img, i) => (
             <figure
               key={i}
-              className="overflow-hidden rounded-xl"
+              className="overflow-hidden site-card-sm rounded-xl"
               style={{ background: palette.bg }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -792,7 +1022,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
     : `mt-10 grid grid-cols-1 gap-5 ${cols}`
   // Side-by-side only once there's room; below that a list row stacks like a card.
   const cardClass = isList
-    ? 'flex flex-col overflow-hidden rounded-2xl border @2xl:flex-row'
+    ? 'flex flex-col overflow-hidden site-card rounded-2xl border @2xl:flex-row'
     : 'flex flex-col overflow-hidden rounded-2xl border'
   const mediaClass = isList
     ? 'relative aspect-[4/3] w-full shrink-0 @2xl:aspect-auto @2xl:w-56 @4xl:w-72'
@@ -800,7 +1030,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingActivities')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -1035,6 +1265,10 @@ interface PlanPrice {
   recurrence: string
   label?: string
   included_months?: number
+  /** A credit-pack price's credit count — read only by `priceTermMonths`
+   *  (a credit pack has no TERM to group by; its months are a validity
+   *  window, not a commitment). */
+  credits?: number
   /** The plan's INTRO OFFER on this price (resolved server-side by
    *  syncSubscriptionTypesToPublicProfile). Rendered through the same
    *  `IntroOfferLine` the shop uses — one discount, one sentence. */
@@ -1173,7 +1407,7 @@ function PricingTable({
     // A wide table scrolls INSIDE its own box — never the page, and never by
     // squeezing the columns until the plan names wrap to one letter.
     <div
-      className="mt-10 overflow-x-auto rounded-2xl border"
+      className="mt-10 overflow-x-auto site-card rounded-2xl border"
       style={{ borderColor: palette.border, background: palette.surface }}
     >
       <table className="w-full min-w-[36rem] border-collapse text-sm">
@@ -1259,6 +1493,93 @@ function PricingTable({
   )
 }
 
+/**
+ * One plan's card. `onlyTermMonths` is the term tabs' whole point: instead of
+ * every price the plan has, the card shows ONLY the one price for the active
+ * term — set by `PricingBlock` when `groupBy: 'term'` is grouping ≥2 terms.
+ * Absent ⇒ every price, today's card.
+ */
+function PlanCard({
+  plan,
+  onlyTermMonths,
+  currency,
+  palette,
+  preview,
+  ctaHref,
+  ctaLabel,
+  t,
+}: {
+  plan: PlanEntry
+  onlyTermMonths?: number
+  currency: string
+  palette: SitePalette
+  preview: boolean
+  ctaHref: string | undefined
+  ctaLabel: string
+  t: SiteT
+}) {
+  const prices =
+    onlyTermMonths == null
+      ? (plan.prices ?? [])
+      : (plan.prices ?? []).filter((pr) => priceTermMonths(pr) === onlyTermMonths)
+  return (
+    <div
+      className="flex flex-col site-card rounded-2xl border p-6"
+      style={{ borderColor: palette.border, background: palette.surface }}
+    >
+      <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+        {plan.name}
+      </h3>
+      {prices.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {prices.map((pr, i) => {
+            const intro = readIntroTerms(pr.intro)
+            return (
+              <div key={i}>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold" style={{ color: palette.text }}>
+                    {formatCurrency(pr.amount, currency)}
+                  </span>
+                  <span className="text-sm" style={{ color: palette.muted }}>
+                    {recurrenceSuffix(pr.recurrence, t)}
+                    {pr.label ? ` · ${pr.label}` : ''}
+                  </span>
+                </div>
+                {/* The offer, stated on the card the visitor decides from — a
+                    price promise, and a mistranslated one is a lie, which is
+                    why this sentence was the first thing here to be
+                    translated (see the module header). */}
+                {intro && (
+                  <p className="mt-1 text-sm font-semibold" style={{ color: palette.accent }}>
+                    <IntroOfferLine
+                      intro={intro}
+                      fullAmount={pr.amount}
+                      recurrence={pr.recurrence}
+                      currency={currency}
+                    />
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {plan.description && (
+        <p className="mt-2 flex-1 text-sm" style={{ color: palette.muted }}>
+          {plan.description}
+        </p>
+      )}
+      <a
+        {...linkProps(preview ? undefined : ctaHref, preview)}
+        className="site-btn mt-5 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+        style={{ background: palette.button, color: palette.onButton }}
+      >
+        {ctaLabel}
+      </a>
+    </div>
+  )
+}
+
 function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCtx }) {
   const t = useTranslations('Site')
   const { palette, slug, locale, teamId, preview } = ctx
@@ -1279,6 +1600,39 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
     () => activities.filter(activityHasMoneyStory),
     [activities]
   )
+
+  // ── Term tabs (groupBy: 'term') — cards layout only ─────────────────────────
+  //
+  // Below 2 terms there is nothing to group ("1 month" tabbed against itself is
+  // not a choice), so this falls all the way back to today's one-card-per-plan
+  // grid regardless of the studio's setting.
+  const [selectedTerm, setSelectedTerm] = useState<number | null>(null)
+  const terms = useMemo(
+    () => (section.groupBy === 'term' ? pricingTerms(plans) : []),
+    [plans, section.groupBy]
+  )
+  const showTermTabs = (section.layout ?? 'cards') === 'cards' && terms.length >= 2
+  // `pricingTerms` sorts ascending — the shortest term is the default tab.
+  const activeTerm = selectedTerm !== null && terms.includes(selectedTerm) ? selectedTerm : terms[0]
+  // Plans that DO have a price at the active term.
+  const termPlans = useMemo(
+    () =>
+      showTermTabs
+        ? plans.filter((p) => (p.prices ?? []).some((pr) => priceTermMonths(pr) === activeTerm))
+        : [],
+    [plans, showTermTabs, activeTerm]
+  )
+  // Plans with NO termed price at all (a credit pack, a per-class price) —
+  // listed below the tabs as ordinary cards showing every price they have.
+  const otherPlans = useMemo(
+    () =>
+      showTermTabs
+        ? plans.filter((p) => !(p.prices ?? []).some((pr) => priceTermMonths(pr) !== null))
+        : [],
+    [plans, showTermTabs]
+  )
+  const planCta = (planId: string): string | undefined =>
+    publicHrefLocalized(locale, slug, 'shop', { type: planId, from: 'site' })
 
   useEffect(() => {
     let alive = true
@@ -1341,7 +1695,7 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingPricing')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -1361,6 +1715,38 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             t={t}
           />
         ) : (
+        <>
+          {/* Keyboard-accessible: ordinary <button>s, Tab + Enter/Space work
+              with no extra wiring. `aria-selected` states which tab is active
+              for assistive tech; the visual state comes from the palette. */}
+          {!loading && showTermTabs && (
+            <div
+              role="tablist"
+              aria-label={t('pricingTermTabsLabel')}
+              className="mt-8 flex flex-wrap justify-center gap-2"
+            >
+              {terms.map((months) => {
+                const active = months === activeTerm
+                return (
+                  <button
+                    key={months}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setSelectedTerm(months)}
+                    className="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
+                    style={
+                      active
+                        ? { background: palette.accent, borderColor: palette.accent, color: palette.onAccent }
+                        : { background: 'transparent', borderColor: palette.border, color: palette.muted }
+                    }
+                  >
+                    {t('pricingTermMonths', { count: months })}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         <div className="mt-10 grid grid-cols-1 gap-5 @2xl:grid-cols-2 @5xl:grid-cols-3">
           {loading ? (
             <p className="col-span-full text-center text-sm" style={{ color: palette.muted }}>
@@ -1370,72 +1756,50 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             <p className="col-span-full text-center text-sm" style={{ color: palette.muted }}>
               {t('emptyPlans')}
             </p>
+          ) : showTermTabs ? (
+            <>
+              {termPlans.map((p) => (
+                <PlanCard
+                  key={p.id}
+                  plan={p}
+                  onlyTermMonths={activeTerm}
+                  currency={currency}
+                  palette={palette}
+                  preview={preview}
+                  ctaHref={planCta(p.id)}
+                  ctaLabel={section.ctaLabel ?? t('joinNow')}
+                  t={t}
+                />
+              ))}
+              {otherPlans.map((p) => (
+                <PlanCard
+                  key={p.id}
+                  plan={p}
+                  currency={currency}
+                  palette={palette}
+                  preview={preview}
+                  ctaHref={planCta(p.id)}
+                  ctaLabel={section.ctaLabel ?? t('joinNow')}
+                  t={t}
+                />
+              ))}
+            </>
           ) : (
             plans.map((p) => (
-              <div
+              <PlanCard
                 key={p.id}
-                className="flex flex-col rounded-2xl border p-6"
-                style={{ borderColor: palette.border, background: palette.surface }}
-              >
-                <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
-                  {p.name}
-                </h3>
-                {p.prices && p.prices.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    {p.prices.map((pr, i) => {
-                      const intro = readIntroTerms(pr.intro)
-                      return (
-                        <div key={i}>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl font-bold" style={{ color: palette.text }}>
-                              {formatCurrency(pr.amount, currency)}
-                            </span>
-                            <span className="text-sm" style={{ color: palette.muted }}>
-                              {recurrenceSuffix(pr.recurrence, t)}
-                              {pr.label ? ` · ${pr.label}` : ''}
-                            </span>
-                          </div>
-                          {/* The offer, stated on the card the visitor decides
-                              from — a price promise, and a mistranslated one is
-                              a lie, which is why this sentence was the first
-                              thing here to be translated (see the module
-                              header). */}
-                          {intro && (
-                            <p className="mt-1 text-sm font-semibold" style={{ color: palette.accent }}>
-                              <IntroOfferLine
-                                intro={intro}
-                                fullAmount={pr.amount}
-                                recurrence={pr.recurrence}
-                                currency={currency}
-                              />
-                            </p>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-                {p.description && (
-                  <p className="mt-2 flex-1 text-sm" style={{ color: palette.muted }}>
-                    {p.description}
-                  </p>
-                )}
-                <a
-                  {...linkProps(
-                    preview
-                      ? undefined
-                      : publicHrefLocalized(locale, slug, 'shop', { type: p.id, from: 'site' }),
-                    preview
-                  )}
-                  className="mt-5 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-                  style={{ background: palette.accent, color: palette.onAccent }}
-                >
-                  {section.ctaLabel ?? t('joinNow')}
-                </a>
-              </div>
+                plan={p}
+                currency={currency}
+                palette={palette}
+                preview={preview}
+                ctaHref={planCta(p.id)}
+                ctaLabel={section.ctaLabel ?? t('joinNow')}
+                t={t}
+              />
             ))
           )}
         </div>
+        </>
         )}
         {/* Pay per visit — the drop-in + appointment prices that aren't
             subscriptions. One card, each activity a row with its price line and
@@ -1443,7 +1807,7 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
             activity's booking). */}
         {!loading && ppvActivities.length > 0 && (
           <div
-            className="mt-6 rounded-2xl border p-6"
+            className="mt-6 site-card rounded-2xl border p-6"
             style={{ borderColor: palette.border, background: palette.surface }}
           >
             <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
@@ -1474,8 +1838,8 @@ function PricingBlock({ section, ctx }: { section: PricingSection; ctx: RenderCt
                     </div>
                     <a
                       {...bookProps(href, ctx, activityIntent(a))}
-                      className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
-                      style={{ background: palette.accent, color: palette.onAccent }}
+                      className="site-btn shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
+                      style={{ background: palette.button, color: palette.onButton }}
                     >
                       {t('book')}
                     </a>
@@ -1804,7 +2168,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
               key={s.id}
               type="button"
               onClick={() => setSelected(s)}
-              className={`flex w-full items-center gap-4 rounded-xl border px-4 py-3 text-left transition-opacity hover:opacity-80 ${past ? 'opacity-50' : ''}`}
+              className={`flex w-full items-center gap-4 site-card-sm rounded-xl border px-4 py-3 text-left transition-opacity hover:opacity-80 ${past ? 'opacity-50' : ''}`}
               style={{ borderColor: palette.border, background: palette.bg }}
             >
               <div
@@ -1865,7 +2229,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
   return (
     <section id={section.id} className="py-20" style={{ background: palette.surface }}>
       {/* Calendar view needs room for the 7-day grid; list view stays a tidy reading width. */}
-      <div className={`mx-auto px-6 ${view === 'calendar' ? 'max-w-5xl' : 'max-w-3xl'}`}>
+      <div className={`mx-auto px-6 ${view === 'calendar' ? 'site-shell' : 'max-w-3xl'}`}>
         <Heading text={section.heading ?? t('headingSchedule')} palette={palette} />
 
         <div className="mt-4 flex justify-center">
@@ -1998,8 +2362,8 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
         <div className="mt-8 text-center">
           <a
             {...bookProps(browseBookHref, ctx, { kind: 'root' })}
-            className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-            style={{ background: palette.accent, color: palette.onAccent }}
+            className="site-btn inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+            style={{ background: palette.button, color: palette.onButton }}
           >
             <CalendarDays className="h-4 w-4" />
             {t('bookASession')}
@@ -2035,7 +2399,7 @@ function SessionDetailModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border p-6 shadow-xl"
+        className="w-full max-w-sm site-card rounded-2xl border p-6 shadow-xl"
         style={{ background: palette.bg, borderColor: palette.border, color: palette.text }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -2093,8 +2457,8 @@ function SessionDetailModal({
               onBookClick()
               bookLinkProps.onClick?.(e)
             }}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
-            style={{ background: palette.accent, color: palette.onAccent }}
+            className="site-btn mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.02]"
+            style={{ background: palette.button, color: palette.onButton }}
           >
             <CalendarPlus className="h-4 w-4" />
             {t('book')}
@@ -2120,7 +2484,7 @@ function ContactBlock({ section, ctx }: { section: ContactSection; ctx: RenderCt
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingContact')} palette={palette} />
         <div
           className={`mt-10 grid gap-8 ${section.mapQuery ? '@3xl:grid-cols-2' : 'max-w-md mx-auto'}`}
@@ -2163,7 +2527,7 @@ function ContactBlock({ section, ctx }: { section: ContactSection; ctx: RenderCt
           </div>
           {section.mapQuery && (
             <div
-              className="overflow-hidden rounded-2xl border"
+              className="overflow-hidden site-card rounded-2xl border"
               style={{ borderColor: palette.border, minHeight: 240 }}
             >
               <iframe
@@ -2205,7 +2569,7 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingPlaces')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -2221,7 +2585,7 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
             places.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col rounded-2xl border p-5"
+                className="flex flex-col site-card rounded-2xl border p-5"
                 style={{ borderColor: palette.border, background: palette.surface }}
               >
                 <div className="flex items-center gap-2">
@@ -2259,57 +2623,775 @@ function PlacesBlock({ section, ctx }: { section: PlacesSection; ctx: RenderCtx 
   )
 }
 
-// ─── Features (highlight cards) ──────────────────────────────────────────────
+// ─── Team (authored coaches / contact person — see TeamSection's doc comment) ─
+//
+// NOT the roster: every name, photo, role and bio is typed in the builder, same
+// convention as Features/Testimonials. Two layouts of the SAME data:
+//   - 'grid'    a portrait card per person — the "meet the coaches" wall.
+//   - 'contact' one wide card per person with the bio and mailto:/tel:
+//     buttons — "your contact person" on an offer page.
 
-function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: RenderCtx }) {
-  const { palette } = ctx
+function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
+  const { palette, preview } = ctx
   const items = section.items ?? []
   if (items.length === 0) return null
-  const cols = section.columns ?? 3
-  const gridCols =
-    cols === 2 ? 'sm:grid-cols-2' : cols === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'
+
+  const header = (
+    <>
+      <Heading text={section.heading} palette={palette} />
+      {section.subheading && (
+        <p className="mt-3 text-center" style={{ color: palette.muted }}>
+          {section.subheading}
+        </p>
+      )}
+    </>
+  )
+
+  // A soft, neutral wash instead of a flat accent fill — a cut-out portrait
+  // needs something calm to sit on, in both light and dark themes; the two
+  // faint layers are derived from the palette's own text colour so they never
+  // fight the accent used everywhere else on the card.
+  const avatarBg = `linear-gradient(180deg, color-mix(in srgb, ${palette.text} 6%, transparent), color-mix(in srgb, ${palette.text} 12%, transparent)), ${palette.surface}`
+
+  const avatar = (item: TeamSection['items'][number], className: string) => (
+    <div className={className} style={{ background: avatarBg }}>
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <span className="text-2xl font-bold" style={{ color: palette.accent }}>
+            {nameInitials(item.name)}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+
+  const badge = (item: TeamSection['items'][number]) =>
+    item.badge && (
+      <span
+        className="mt-2 inline-block rounded-full border px-2 py-0.5 text-xs"
+        style={{ borderColor: palette.border, color: palette.muted }}
+      >
+        {item.badge}
+      </span>
+    )
+
+  if (section.layout === 'contact') {
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-4xl px-6">
+          {header}
+          <div className={`${section.heading || section.subheading ? 'mt-10' : ''} space-y-5`}>
+            {items.map((item, i) => (
+              <div
+                key={i}
+                className="site-card flex flex-col items-center gap-5 overflow-hidden rounded-2xl border p-6 text-center @xl:flex-row @xl:items-start @xl:text-left"
+                style={{ borderColor: palette.border, background: palette.surface }}
+              >
+                {avatar(item, 'flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full')}
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+                    {item.name}
+                  </h3>
+                  {item.role && (
+                    <p className="text-sm font-medium" style={{ color: palette.accent }}>
+                      {item.role}
+                    </p>
+                  )}
+                  {badge(item)}
+                  {item.bio && (
+                    <p className="mt-3 whitespace-pre-line text-sm" style={{ color: palette.muted }}>
+                      {item.bio}
+                    </p>
+                  )}
+                  {(item.email || item.phone) && (
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 @xl:justify-start">
+                      {item.email && (
+                        <a
+                          {...linkProps(`mailto:${item.email}`, preview)}
+                          className="site-btn inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold"
+                          // An address is not a label: the theme's capitals (an
+                          // unlayered .site-btn rule, so no utility can undo it)
+                          // would print one nobody can read back.
+                          style={{ background: palette.button, color: palette.onButton, textTransform: 'none' }}
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          {item.email}
+                        </a>
+                      )}
+                      {item.phone && (
+                        <a
+                          {...linkProps(`tel:${item.phone.replace(/[^\d+]/g, '')}`, preview)}
+                          className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold"
+                          style={{ borderColor: palette.border, color: palette.text }}
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          {item.phone}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const cols =
+    section.columns === 2
+      ? '@2xl:grid-cols-2'
+      : section.columns === 4
+        ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
+        : '@2xl:grid-cols-2 @5xl:grid-cols-3'
+
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
+        {header}
+        <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-1 gap-5 ${cols}`}>
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className="site-card flex flex-col overflow-hidden rounded-2xl border"
+              style={{ borderColor: palette.border, background: palette.surface }}
+            >
+              {avatar(item, 'relative aspect-[4/5] w-full')}
+              <div className="p-4 text-left">
+                <h3 className="text-base font-semibold" style={{ color: palette.text }}>
+                  {item.name}
+                </h3>
+                {item.role && (
+                  <p className="text-sm" style={{ color: palette.muted }}>
+                    {item.role}
+                  </p>
+                )}
+                {badge(item)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Split (a story on one side, a panel of facts + CTA on the other) ───────
+
+function SplitBlock({ section, ctx }: { section: SplitSection; ctx: RenderCtx }) {
+  const { palette, slug, locale, preview } = ctx
+  const items = section.items ?? []
+  const side = section.side
+  const panelFirst = section.sidePosition === 'left'
+  const hasPanel = !!(side && (side.heading || side.text || side.imageUrl || side.facts?.length || side.cta?.label))
+
+  if (!section.heading && !section.subheading && !section.body && items.length === 0 && !hasPanel) return null
+
+  const main = (
+    <div className="min-w-0">
+      <Heading text={section.heading} palette={palette} center={false} />
+      {section.subheading && (
+        <p className={`text-lg ${section.heading ? 'mt-3' : ''}`} style={{ color: palette.muted }}>
+          {section.subheading}
+        </p>
+      )}
+      {section.body && (
+        // Body is rich HTML — sanitized at publish time, same as the content block.
+        <div
+          className={`site-prose leading-relaxed ${section.heading || section.subheading ? 'mt-5' : ''}`}
+          style={{ color: palette.text, '--site-accent': palette.accent } as React.CSSProperties}
+          dangerouslySetInnerHTML={{ __html: section.body }}
+        />
+      )}
+      {items.length > 0 && (
+        <ul className={`space-y-4 ${section.heading || section.subheading || section.body ? 'mt-6' : ''}`}>
+          {items.map((item, i) => (
+            <li key={i} className="flex gap-3">
+              <span
+                className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                style={{ background: `${palette.accent}1a`, color: palette.accent }}
+              >
+                {item.icon ? (
+                  <DynamicIcon name={item.icon} className="h-3.5 w-3.5" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+              </span>
+              <div>
+                <p className="font-semibold" style={{ color: palette.text }}>
+                  {item.title}
+                </p>
+                {item.text && (
+                  <p className="mt-1 text-sm" style={{ color: palette.muted }}>
+                    {item.text}
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+
+  const href = side?.cta?.label ? shortHref(ctx, ctaHref(side.cta, slug, locale, ctx.pageHref)) : undefined
+  const panel = hasPanel && side && (
+    <div
+      className={`site-card overflow-hidden rounded-2xl border ${section.sideSticky ? '@3xl:sticky @3xl:top-24' : ''}`}
+      style={{ borderColor: palette.border, background: palette.surface }}
+    >
+      {side.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={side.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+      )}
+      <div className="p-6">
+        {side.heading && (
+          <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+            {side.heading}
+          </h3>
+        )}
+        {side.text && (
+          <p className={`text-sm ${side.heading ? 'mt-2' : ''}`} style={{ color: palette.muted }}>
+            {side.text}
+          </p>
+        )}
+        {side.facts && side.facts.length > 0 && (
+          <div className={side.heading || side.text ? 'mt-4' : ''}>
+            {side.facts.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-4 border-t py-2.5 text-sm first:border-t-0 first:pt-0"
+                style={{ borderColor: palette.border }}
+              >
+                <span style={{ color: palette.muted }}>{f.label}</span>
+                <span className="font-medium" style={{ color: palette.text }}>
+                  {f.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {side.cta?.label && (
+          <a
+            {...(ctaIntent(side.cta)
+              ? bookProps(href, ctx, ctaIntent(side.cta)!)
+              : linkProps(href, preview, side.cta.action === 'url'))}
+            className="site-btn mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
+            style={{ background: palette.button, color: palette.onButton }}
+          >
+            {side.cta.label}
+          </a>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto site-shell px-6">
+        <div className={`grid items-start gap-10 @3xl:gap-14 ${panel ? '@3xl:grid-cols-[1.6fr_1fr]' : ''}`}>
+          {panel && panelFirst && panel}
+          {main}
+          {panel && !panelFirst && panel}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Form (one of the team's own forms, filled in on the page) ───────────────
+//
+// Reads the SAME world-readable mirror the standalone /forms/{slug} page reads
+// (`forms/{formId}/public_profile/{formId}`) and submits through the SAME
+// `submitForm` callable — this is the standalone form's fields and submit path,
+// just embedded on the page instead of linked to. A `access: 'contacts'` form
+// is NOT re-implemented here (the sign-in gate lives on the standalone page,
+// which already carries it) — this block links out to it instead.
+
+type FormLoadState =
+  | { status: 'loading' }
+  | { status: 'notfound' }
+  | { status: 'gated'; formId: string; profile: FormPublicProfile }
+  | { status: 'ready'; formId: string; profile: FormPublicProfile }
+
+function useFormMirror(teamId: string | undefined, formId: string): FormLoadState {
+  const [state, setState] = useState<FormLoadState>({ status: 'loading' })
+  useEffect(() => {
+    if (!teamId || !formId) {
+      setState({ status: 'notfound' })
+      return
+    }
+    let alive = true
+    setState({ status: 'loading' })
+    getDoc(doc(db, FORMS_COLLECTION, formId, PUBLIC_PROFILE_SUBCOLLECTION, formId))
+      .then((snap) => {
+        if (!alive) return
+        if (!snap.exists()) {
+          setState({ status: 'notfound' })
+          return
+        }
+        const profile = snap.data() as FormPublicProfile
+        if (profile.teamId !== teamId) {
+          setState({ status: 'notfound' })
+          return
+        }
+        setState(
+          profile.access === 'contacts'
+            ? { status: 'gated', formId, profile }
+            : { status: 'ready', formId, profile }
+        )
+      })
+      .catch((err: unknown) => {
+        reportPublicLoadFailure('site/form', err)
+        if (alive) setState({ status: 'notfound' })
+      })
+    return () => {
+      alive = false
+    }
+  }, [teamId, formId])
+  return state
+}
+
+function FormBlock({ section, ctx }: { section: FormSection; ctx: RenderCtx }) {
+  const t = useTranslations('Site')
+  const { palette, preview, locale, slug, teamId } = ctx
+  const state = useFormMirror(teamId, section.formId)
+  const [answers, setAnswers] = useState<Record<string, unknown>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const profile = state.status === 'ready' || state.status === 'gated' ? state.profile : null
+  const sortedFields = useMemo(
+    () => (profile?.fields ?? []).slice().sort((a, b) => a.order - b.order),
+    [profile?.fields]
+  )
+
+  // No form chosen, no team to read it from (an org site / an embed with no
+  // team context), or the mirror doesn't resolve — nothing to render. This is
+  // ALSO what publish drops the section for, so a live site never shows this.
+  if (!section.formId || !teamId || state.status === 'notfound') return null
+
+  const submit = async () => {
+    if (preview || state.status !== 'ready') return
+    setError(null)
+    for (const f of sortedFields) {
+      if (f.required && !isFieldAnswered(f, answers[f.id])) {
+        setError(t('formMissingRequired', { label: f.label }))
+        return
+      }
+    }
+    setSubmitting(true)
+    try {
+      const fn = httpsCallable(functions, 'submitForm')
+      await fn({ teamId, formId: state.formId, answers })
+      setDone(true)
+      // The enquiry and the intro call are ONE step for the visitor: open the
+      // booking straight away. The thank-you keeps a button that reopens it, and
+      // a host with no overlay (an embed) is left with that button — a plain link.
+      if (section.next?.kind === 'appointment' && ctx.onBook) {
+        ctx.onBook({ kind: 'appointment', activityId: section.next.activityId })
+      }
+    } catch (err: unknown) {
+      setError((err as { message?: string })?.message || t('formSubmitError'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto max-w-xl px-6">
         <Heading text={section.heading} palette={palette} />
+        {section.text && (
+          <p className="mt-3 text-center" style={{ color: palette.muted }}>
+            {section.text}
+          </p>
+        )}
+        <div
+          className={`site-card ${section.heading || section.text ? 'mt-10' : ''} rounded-2xl border p-6 @xl:p-8`}
+          style={{ borderColor: palette.border, background: palette.surface }}
+        >
+          {state.status === 'loading' ? (
+            <p className="text-center text-sm" style={{ color: palette.muted }}>
+              {t('loading')}
+            </p>
+          ) : state.status === 'gated' ? (
+            <div className="text-center">
+              <p className="text-sm" style={{ color: palette.muted }}>
+                {t('formSignInRequired')}
+              </p>
+              {profile?.slug && (
+                <a
+                  {...linkProps(
+                    shortHref(ctx, publicSubHrefLocalized(locale, slug, 'forms', profile.slug)),
+                    preview
+                  )}
+                  className="site-btn mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold"
+                  style={{ background: palette.button, color: palette.onButton }}
+                >
+                  {t('formOpenForm')}
+                </a>
+              )}
+            </div>
+          ) : done ? (
+            <div className="text-center">
+              <p className="text-sm font-medium" style={{ color: palette.text }}>
+                {t('formThankYou')}
+              </p>
+              {section.next?.kind === 'appointment' && (
+                <a
+                  {...bookProps(
+                    publicHrefLocalized(locale, slug, 'appointments', {
+                      activity: section.next.activityId,
+                      from: 'site',
+                    }),
+                    ctx,
+                    { kind: 'appointment', activityId: section.next.activityId }
+                  )}
+                  className="site-btn mt-4 inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold"
+                  style={{ background: palette.button, color: palette.onButton }}
+                >
+                  {t('formChooseTime')}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedFields.map((field) => (
+                <div key={field.id} className="space-y-1.5">
+                  {field.type !== 'checkbox' && (
+                    <label className="text-sm font-medium" style={{ color: palette.text }}>
+                      {field.label}
+                      {field.required && <span style={{ color: '#dc2626' }}> *</span>}
+                    </label>
+                  )}
+                  <FieldInput
+                    field={field}
+                    value={answers[field.id]}
+                    onChange={(v) => setAnswers((prev) => ({ ...prev, [field.id]: v }))}
+                  />
+                </div>
+              ))}
+              {error && (
+                <p className="text-sm" style={{ color: '#dc2626' }}>
+                  {error}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={submit}
+                disabled={submitting}
+                className="site-btn inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+                style={{ background: palette.button, color: palette.onButton }}
+              >
+                {submitting ? t('formSubmitting') : t('formSubmit')}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Posts (a site's own blog — pages with kind: 'post') ────────────────────
+//
+// No extra read: `sitePosts` filters and sorts the SAME page index the site
+// already carries (`ctx.pages`, set by WebsiteRenderer from `site.pages`), so a
+// hidden or unpublished post is simply not in it — nothing here decides that.
+
+function PostsBlock({ section, ctx }: { section: PostsSection; ctx: RenderCtx }) {
+  const t = useTranslations('Site')
+  const { palette, preview } = ctx
+  const posts = sitePosts(ctx.pages).slice(0, section.limit ?? 6)
+
+  if (posts.length === 0) {
+    // The live site simply omits an empty blog block; the builder canvas says
+    // why, so a studio doesn't wonder whether the section is broken.
+    if (!preview) return null
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          <Heading text={section.heading ?? t('headingPosts')} palette={palette} />
+          <p
+            className="mt-6 rounded-lg border border-dashed p-6 text-center text-sm"
+            style={{ color: palette.muted, borderColor: palette.border }}
+          >
+            {t('emptyPosts')}
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  const isList = section.layout === 'list'
+  const cols =
+    section.columns === 2
+      ? '@2xl:grid-cols-2'
+      : section.columns === 4
+        ? '@2xl:grid-cols-2 @5xl:grid-cols-4'
+        : '@2xl:grid-cols-2 @5xl:grid-cols-3'
+  const containerClass = isList ? 'mt-10 flex flex-col gap-4' : `mt-10 grid grid-cols-1 gap-5 ${cols}`
+  const cardClass = isList
+    ? 'flex flex-col overflow-hidden site-card rounded-2xl border @2xl:flex-row'
+    : 'flex flex-col overflow-hidden site-card rounded-2xl border'
+  const mediaClass = isList
+    ? 'relative aspect-[16/10] w-full shrink-0 @2xl:aspect-auto @2xl:w-56 @4xl:w-72'
+    : 'relative aspect-[16/10] w-full'
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto site-shell px-6">
+        <Heading text={section.heading ?? t('headingPosts')} palette={palette} />
         {section.subheading && (
-          <p className="mt-3 text-center text-lg" style={{ color: palette.muted }}>
+          <p className="mt-3 text-center" style={{ color: palette.muted }}>
             {section.subheading}
           </p>
         )}
+        <div className={containerClass}>
+          {posts.map((post) => {
+            const href = ctx.pageHref?.(post.id)
+            const inner = (
+              <>
+                <div className={mediaClass} style={{ background: palette.accent }}>
+                  {post.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={post.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Newspaper className="h-8 w-8" style={{ color: palette.onAccent, opacity: 0.85 }} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  {post.publishedOn && (
+                    <p className="text-xs" style={{ color: palette.muted }}>
+                      {formatSiteDate(post.publishedOn, ctx.locale)}
+                    </p>
+                  )}
+                  <h3 className="mt-1 text-lg font-semibold" style={{ color: palette.text }}>
+                    {post.title}
+                  </h3>
+                  {post.excerpt && (
+                    <p className="mt-2 line-clamp-3 flex-1 text-sm" style={{ color: palette.muted }}>
+                      {post.excerpt}
+                    </p>
+                  )}
+                  <span
+                    className="mt-4 inline-flex items-center gap-1.5 self-start text-sm font-semibold"
+                    style={{ color: palette.accent }}
+                  >
+                    {t('readMore')}
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </>
+            )
+            return href ? (
+              <a
+                key={post.id}
+                {...linkProps(href, preview)}
+                className={cardClass}
+                style={{ borderColor: palette.border, background: palette.surface }}
+              >
+                {inner}
+              </a>
+            ) : (
+              <div
+                key={post.id}
+                className={cardClass}
+                style={{ borderColor: palette.border, background: palette.surface }}
+              >
+                {inner}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Features (highlight cards) ──────────────────────────────────────────────
+
+/** A feature link: a `#section` anchor stays in the page; anything else is an
+ *  external URL and opens in a new tab. */
+function featureLinkProps(url: string, preview: boolean) {
+  // An anchor or a page of this site stays in the tab; anything else is external.
+  if (url.startsWith('#') || url.startsWith('/')) return linkProps(url, preview, false)
+  return linkProps(url, preview, true)
+}
+
+function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: RenderCtx }) {
+  const { palette, preview } = ctx
+  const items = section.items ?? []
+  if (items.length === 0) return null
+  const cols = section.columns ?? 3
+  // CONTAINER queries, like every other block: the builder preview and an embed
+  // iframe are narrower than the viewport, and viewport breakpoints laid the
+  // columns out for a screen the section is not in.
+  const gridCols =
+    cols === 2 ? '@2xl:grid-cols-2' : cols === 4 ? '@2xl:grid-cols-2 @4xl:grid-cols-4' : '@2xl:grid-cols-3'
+  const style = section.style ?? 'cards'
+
+  const header = (
+    <>
+      <Heading text={section.heading} palette={palette} />
+      {section.subheading && (
+        <p className="mt-3 text-center text-lg" style={{ color: palette.muted }}>
+          {section.subheading}
+        </p>
+      )}
+    </>
+  )
+
+  // A page link wins over the address; a page that is not published gives none.
+  const linkHref = (item: (typeof items)[number]) =>
+    item.linkPageId ? ctx.pageHref?.(item.linkPageId) : item.linkUrl
+  const link = (item: (typeof items)[number]) =>
+    item.linkLabel && linkHref(item) ? (
+      <a
+        {...featureLinkProps(linkHref(item) as string, preview)}
+        className="mt-3 inline-flex items-center gap-1 text-sm font-medium"
+        style={{ color: palette.accent }}
+      >
+        {item.linkLabel}
+        <ArrowRight className="h-3.5 w-3.5" />
+      </a>
+    ) : null
+
+  if (style === 'stats') {
+    // Big figures, no cards — `title` is the figure, `text` its caption.
+    return (
+      <section id={section.id} className="py-16" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          {header}
+          <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-2 gap-8 ${cols === 2 ? '' : cols === 4 ? '@3xl:grid-cols-4' : '@3xl:grid-cols-3'}`}>
+            {items.map((item, i) => (
+              <div key={i} className="text-center">
+                <p className="text-4xl font-bold tracking-tight @2xl:text-5xl" style={{ color: palette.text }}>
+                  {item.title}
+                </p>
+                {item.text && (
+                  <p className="mt-2 text-sm" style={{ color: palette.muted }}>
+                    {item.text}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (style === 'checklist') {
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          {header}
+          <ul className={`mt-10 grid grid-cols-1 gap-x-8 gap-y-5 ${gridCols}`}>
+            {items.map((item, i) => (
+              <li key={i} className="flex gap-3">
+                <span
+                  className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                  style={{ background: palette.accent, color: palette.onAccent }}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <div>
+                  <p className="font-semibold" style={{ color: palette.text }}>
+                    {item.title}
+                  </p>
+                  {item.text && (
+                    <p className="mt-1 text-sm" style={{ color: palette.muted }}>
+                      {item.text}
+                    </p>
+                  )}
+                  {link(item)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  if (style === 'panels') {
+    // Solid panels — the row of statements a performance gym puts under its
+    // hero. The studio's BUTTON colour when it chose one (a box that picked
+    // black buttons means black blocks, which is the look this style is for),
+    // else the page's own ink, so a site that never touched the brand fields
+    // still gets a panel that reads on a light or a dark theme. No icon, text
+    // left, and the studio's corner choice via `site-card`.
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          {header}
+          <div className={`mt-10 grid grid-cols-1 gap-5 ${gridCols}`}>
+            {items.map((item, i) => (
+              <div
+                key={i}
+                className="site-card flex flex-col gap-2 p-8"
+                style={{ background: palette.panel, color: palette.onPanel }}
+              >
+                <h3 className="text-xl font-bold @xl:text-2xl">{item.title}</h3>
+                {item.text && (
+                  <p className="text-base leading-relaxed" style={{ opacity: 0.85 }}>
+                    {item.text}
+                  </p>
+                )}
+                {link(item)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+      <div className="mx-auto site-shell px-6">
+        {header}
         <div className={`mt-10 grid grid-cols-1 gap-4 ${gridCols}`}>
           {items.map((item, i) => (
             <div
               key={i}
-              className="rounded-xl border p-5 shadow-sm"
+              className={`site-card-sm flex flex-col overflow-hidden rounded-xl border shadow-sm ${item.imageUrl ? '' : 'p-5'}`}
               style={{ background: palette.surface, borderColor: palette.border }}
             >
-              {item.icon && (
-                <span
-                  className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg"
-                  style={{ background: `${palette.accent}1a`, color: palette.accent }}
-                >
-                  <DynamicIcon name={item.icon} className="h-5 w-5" />
-                </span>
+              {item.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+              ) : (
+                item.icon && (
+                  <span
+                    className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg"
+                    style={{ background: `${palette.accent}1a`, color: palette.accent }}
+                  >
+                    <DynamicIcon name={item.icon} className="h-5 w-5" />
+                  </span>
+                )
               )}
-              <h3 className="text-base font-semibold" style={{ color: palette.text }}>
-                {item.title}
-              </h3>
-              {item.text && (
-                <p className="mt-1.5 text-sm" style={{ color: palette.muted }}>
-                  {item.text}
-                </p>
-              )}
-              {item.linkLabel && item.linkUrl && (
-                <a
-                  {...linkProps(item.linkUrl, ctx.preview, true)}
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium"
-                  style={{ color: palette.accent }}
-                >
-                  {item.linkLabel}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </a>
-              )}
+              <div className={item.imageUrl ? 'flex flex-1 flex-col p-5' : ''}>
+                <h3 className="text-base font-semibold" style={{ color: palette.text }}>
+                  {item.title}
+                </h3>
+                {item.text && (
+                  <p className="mt-1.5 text-sm" style={{ color: palette.muted }}>
+                    {item.text}
+                  </p>
+                )}
+                {link(item)}
+              </div>
             </div>
           ))}
         </div>
@@ -2322,12 +3404,58 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
 
 function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
-  const href = ctaHref(section.cta, slug, locale)
+  const href = shortHref(ctx, ctaHref(section.cta, slug, locale, ctx.pageHref))
+  const ctaButton = section.cta?.label ? (
+    <a
+      {...(ctaIntent(section.cta)
+        ? bookProps(href, ctx, ctaIntent(section.cta)!)
+        : linkProps(href, preview, section.cta.action === 'url'))}
+      className="site-btn inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] @xl:w-auto @xl:min-w-[16rem]"
+      style={{ background: palette.button, color: palette.onButton }}
+    >
+      {section.cta.label}
+      <ArrowRight className="h-4 w-4" />
+    </a>
+  ) : null
+
+  if (section.style === 'band') {
+    // Edge to edge. Over an image the text is white on a dimmed photo; without
+    // one the band is the accent colour and the text its ink.
+    const onImage = !!section.bgImageUrl
+    const ink = onImage ? '#ffffff' : palette.onAccent
+    return (
+      <section
+        id={section.id}
+        className="relative overflow-hidden py-20"
+        style={{ background: onImage ? '#000000' : palette.accent }}
+      >
+        {onImage && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={section.bgImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />
+          </>
+        )}
+        <div className="relative mx-auto max-w-3xl px-6 text-center">
+          <h2 className="text-3xl font-bold tracking-tight @2xl:text-4xl" style={{ color: ink }}>
+            {section.heading}
+          </h2>
+          {section.text && (
+            <p className="mx-auto mt-3 max-w-xl text-lg" style={{ color: ink, opacity: 0.9 }}>
+              {section.text}
+            </p>
+          )}
+          {ctaButton && <div className="mt-8">{ctaButton}</div>}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id={section.id} className="py-16" style={{ background: palette.bg }}>
       <div className="mx-auto max-w-3xl px-6">
         <div
-          className="rounded-2xl border px-6 py-10 text-center shadow-sm @2xl:px-12"
+          className="site-card rounded-2xl border px-6 py-10 text-center shadow-sm @2xl:px-12"
           style={{ background: palette.surface, borderColor: palette.border }}
         >
           <h2 className="text-2xl font-bold tracking-tight @2xl:text-3xl" style={{ color: palette.text }}>
@@ -2338,20 +3466,7 @@ function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: Rend
               {section.text}
             </p>
           )}
-          {section.cta?.label && (
-            <div className="mt-7">
-              <a
-                {...(section.cta.action === 'booking'
-                  ? bookProps(href, ctx, { kind: 'root' })
-                  : linkProps(href, preview, section.cta.action === 'url'))}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold shadow-lg transition-transform hover:scale-[1.02] sm:w-auto sm:min-w-[16rem]"
-                style={{ background: palette.accent, color: palette.onAccent }}
-              >
-                {section.cta.label}
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-          )}
+          {ctaButton && <div className="mt-7">{ctaButton}</div>}
         </div>
       </div>
     </section>
@@ -2367,6 +3482,62 @@ function FaqBlock({ section, ctx }: { section: FaqSection; ctx: RenderCtx }) {
   // bars a visitor has to probe to know it has content.
   const [open, setOpen] = useState(0)
   if (items.length === 0) return null
+
+  if (section.style === 'panels') {
+    // ONE block, not a stack of cards: hard edges, heavy rules between the
+    // rows, and the open row filled in the panel colour — the same contrast the
+    // panel features carry, so a bold page stays bold at the questions. The
+    // corner choice is the studio's own, like everywhere else.
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto max-w-3xl px-6">
+          <Heading text={section.heading} palette={palette} />
+          <div
+            className="site-card mt-10 overflow-hidden border-2"
+            style={{ borderColor: palette.panel }}
+          >
+            {items.map((item, i) => {
+              const isOpen = open === i
+              return (
+                <div
+                  key={i}
+                  className={i > 0 ? 'border-t-2' : undefined}
+                  style={{
+                    borderColor: palette.panel,
+                    background: isOpen ? palette.panel : 'transparent',
+                    color: isOpen ? palette.onPanel : palette.text,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpen(isOpen ? -1 : i)}
+                    aria-expanded={isOpen}
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left @xl:px-6 @xl:py-5"
+                  >
+                    <span className="text-base font-bold @xl:text-lg">{item.question}</span>
+                    {isOpen ? (
+                      <Minus className="h-5 w-5 shrink-0" />
+                    ) : (
+                      <Plus className="h-5 w-5 shrink-0" />
+                    )}
+                  </button>
+                  {isOpen && (
+                    <p
+                      className="whitespace-pre-line px-5 pb-5 text-base leading-relaxed @xl:px-6"
+                      style={{ opacity: 0.85 }}
+                    >
+                      {item.answer}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
       <div className="mx-auto max-w-3xl px-6">
@@ -2377,7 +3548,7 @@ function FaqBlock({ section, ctx }: { section: FaqSection; ctx: RenderCtx }) {
             return (
               <div
                 key={i}
-                className="overflow-hidden rounded-xl border shadow-sm"
+                className="overflow-hidden site-card-sm rounded-xl border shadow-sm"
                 style={{ background: palette.surface, borderColor: palette.border }}
               >
                 <button
@@ -2439,7 +3610,7 @@ function TestimonialsBlock({ section, ctx }: { section: TestimonialsSection; ctx
             </button>
           )}
           <div
-            className="flex-1 rounded-2xl border px-6 py-8 text-center shadow-sm"
+            className="flex-1 site-card rounded-2xl border px-6 py-8 text-center shadow-sm"
             style={{ background: palette.surface, borderColor: palette.border }}
           >
             <Quote className="mx-auto h-6 w-6" style={{ color: palette.accent }} />
@@ -2483,6 +3654,137 @@ function TestimonialsBlock({ section, ctx }: { section: TestimonialsSection; ctx
   )
 }
 
+// ─── Video (YouTube / Vimeo, inline or lightbox, optional background loop) ────
+
+function VideoBlock({ section, ctx }: { section: VideoSection; ctx: RenderCtx }) {
+  const t = useTranslations('Site')
+  const { palette, preview } = ctx
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  // The player address is built HERE from the validated pair — a published site
+  // never stores an iframe URL (utils/videoEmbed.ts).
+  const film = section.provider && section.videoId ? { provider: section.provider, videoId: section.videoId } : null
+  if (!film && !section.bgVideoUrl) return null
+  const title = section.heading || t('videoPlayerTitle')
+
+  const player = (autoplay: boolean) =>
+    film ? (
+      <iframe
+        src={videoEmbedSrc(film.provider, film.videoId, { autoplay })}
+        title={title}
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        allowFullScreen
+        loading="lazy"
+        className="h-full w-full"
+      />
+    ) : null
+
+  // INLINE: the player sits in the page under the heading.
+  if (film && section.display !== 'lightbox') {
+    return (
+      <section id={section.id} className="py-20" style={{ background: palette.bg }}>
+        <div className="mx-auto site-shell px-6">
+          <Heading text={section.heading} palette={palette} />
+          {section.text && (
+            <p className="mx-auto mt-3 max-w-2xl text-center text-lg" style={{ color: palette.muted }}>
+              {section.text}
+            </p>
+          )}
+          <div
+            className={`site-card ${section.heading || section.text ? 'mt-10' : ''} aspect-video w-full overflow-hidden rounded-2xl border`}
+            style={{ borderColor: palette.border, background: '#000000' }}
+          >
+            {player(false)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // LIGHTBOX (or a background loop on its own): a block over the loop / poster,
+  // with a play button that opens the film over the page.
+  const hasBackdrop = !!section.bgVideoUrl || !!section.posterUrl
+  const showLoop = !!section.bgVideoUrl && !reducedMotion
+  const ink = hasBackdrop ? '#ffffff' : palette.text
+  const mutedInk = hasBackdrop ? 'rgba(255,255,255,0.9)' : palette.muted
+
+  return (
+    <section
+      id={section.id}
+      className="relative flex min-h-[60vh] items-center overflow-hidden"
+      style={{ background: hasBackdrop ? '#000000' : palette.surface }}
+    >
+      {section.posterUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={section.posterUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      )}
+      {showLoop && <LoopVideo src={section.bgVideoUrl!} poster={section.posterUrl} />}
+      {hasBackdrop && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />}
+      <div className="relative mx-auto w-full max-w-3xl px-6 py-20 text-center">
+        {section.heading && (
+          <h2 className="text-3xl font-bold tracking-tight @2xl:text-4xl" style={{ color: ink }}>
+            {section.heading}
+          </h2>
+        )}
+        {section.text && (
+          <p className="mx-auto mt-4 max-w-2xl text-lg" style={{ color: mutedInk }}>
+            {section.text}
+          </p>
+        )}
+        {film && (
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => {
+                if (!preview) setOpen(true)
+              }}
+              className="site-btn inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-lg transition-transform hover:scale-[1.03]"
+              style={{ background: palette.button, color: palette.onButton }}
+            >
+              <Play className="h-4 w-4" />
+              {section.playLabel || t('videoPlay')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {open && film && (
+        // Hand-rolled rather than the app Dialog: a portal would render outside
+        // .site-root and lose the site's brand variables and container queries.
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div className="relative w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label={t('videoClose')}
+              className="absolute -top-11 right-0 flex h-9 w-9 items-center justify-center rounded-full text-white transition-opacity hover:opacity-70"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="site-card aspect-video w-full overflow-hidden rounded-2xl bg-black">{player(true)}</div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionBlock({
@@ -2518,6 +3820,16 @@ export function SectionBlock({
       return <FaqBlock section={section} ctx={ctx} />
     case 'testimonials':
       return <TestimonialsBlock section={section} ctx={ctx} />
+    case 'video':
+      return <VideoBlock section={section} ctx={ctx} />
+    case 'team':
+      return <TeamBlock section={section} ctx={ctx} />
+    case 'form':
+      return <FormBlock section={section} ctx={ctx} />
+    case 'posts':
+      return <PostsBlock section={section} ctx={ctx} />
+    case 'split':
+      return <SplitBlock section={section} ctx={ctx} />
     case 'clubs':
       return <ClubsBlock section={section} ctx={ctx} />
     case 'locations':
@@ -2560,6 +3872,16 @@ export function sectionNavLabel(section: WebsiteSection | OrgSiteSection, t: Sit
       return section.heading || t('navFaq')
     case 'testimonials':
       return section.heading || t('navTestimonials')
+    case 'video':
+      return section.heading || t('navVideo')
+    case 'team':
+      return section.heading || t('navTeam')
+    case 'form':
+      return section.heading || t('navForm')
+    case 'posts':
+      return section.heading || t('navPosts')
+    case 'split':
+      return section.heading || t('navSplit')
     case 'clubs':
       return section.heading || t('navClubs')
     case 'locations':

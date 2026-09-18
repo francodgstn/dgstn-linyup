@@ -559,6 +559,31 @@ export type LeadSiteSection = Record<string, unknown> & {
   imagesAssets?: string[]
 }
 
+/**
+ * A page of the website besides home, at `/site/{path}` — the shape of
+ * SitePageRef plus the page's own sections. Section ids must be unique across
+ * the whole site (home and every page); a menu reaches a page with
+ * `{ kind: 'page', pageId, sectionId? }`.
+ */
+export interface LeadSitePage {
+  id: string
+  /** Lowercase words joined by dashes, up to three `/` segments: 'ueber-uns/team'. */
+  path: string
+  title: string
+  navLabel?: string
+  hidden?: boolean
+  seo?: { title?: string; description?: string }
+  /** 'post' makes the page a blog post (see SitePageRef.kind). */
+  kind?: 'page' | 'post'
+  /** Posts: 'YYYY-MM-DD'. */
+  publishedOn?: string
+  /** Posts: card, header and social image. */
+  coverImageUrl?: string
+  /** Posts: the teaser on cards and the meta description. */
+  excerpt?: string
+  sections: LeadSiteSection[]
+}
+
 export interface LeadProfile {
   /** Lead id — folder name, workflow choice value, teamId `lead-{id}`. */
   id: string
@@ -665,6 +690,23 @@ export interface LeadProfile {
   events: LeadEventDef[]
 
   siteSections: LeadSiteSection[]
+  /** Optional pages besides home — see LeadSitePage. Absent ⇒ a one-page site. */
+  sitePages?: LeadSitePage[]
+  /**
+   * 301s from the lead's CURRENT website's paths to pages of the rebuilt one
+   * (SiteRedirect): `{ from: '/ueber-uns/unsere-box', to: { kind: 'page', pageId } }`,
+   * `to: { kind: 'home' }` or `{ kind: 'url', url: 'https://…' }`.
+   */
+  siteRedirects?: Record<string, unknown>[]
+  /** The surface the tenant root `/` lands on. Default 'bio-link'; 'site' makes
+   *  the website the front door (and the root of a custom domain). */
+  defaultPublicSurface?: 'bio-link' | 'site' | 'booking' | 'shop'
+  /**
+   * EMULATOR ONLY — claims this hostname for the tenant (public_domains +
+   * integrations/public_domain), so the custom-domain mapping can be exercised
+   * locally by sending `X-Linyup-Host: <hostname>`. Never seeded to the cloud.
+   */
+  customDomain?: string
   /**
    * Optional stored header MENU (a `SiteMenuItem[]` tree). Absent ⇒ the header
    * is DERIVED from the sections — every nav-visible section becomes a top-level
@@ -674,6 +716,24 @@ export interface LeadProfile {
    * Authored by hand as `{ id, label?, target, children? }`; see SiteMenuItem.
    */
   siteMenu?: Record<string, unknown>[]
+  /**
+   * Optional website BRAND, merged over the seeder's defaults (title, light
+   * theme, the profile accent, system font). `header` and `footer` merge onto
+   * their defaults rather than replacing them. Everything here goes through the
+   * publish sanitizer like a studio's own edit, so an unsupported value is
+   * dropped, never faked. Menu item ids must be unique across `siteMenu`, the
+   * top bar, the footer columns and the legal row (they share translation keys).
+   */
+  // Structural, not SiteMeta: this file re-declares shared vocabulary (see the
+  // header note). The shape is SiteMeta's — `font`, `headingCase`, `buttonShape`,
+  // `buttonColor`, `logoUrl`, `header.topBar`, `footer.columns|logos|appLinks|legal`.
+  siteMeta?: Record<string, unknown> & {
+    header?: Record<string, unknown>
+    footer?: Record<string, unknown>
+  }
+  /** Assets-folder base name of the website logo — uploaded and set as
+   *  `siteMeta.logoUrl`. A `siteMeta.logoUrl` pointing elsewhere also works. */
+  logoAsset?: string
   courses: LeadCourseDef[]
   products: LeadProductDef[]
   /** Gift cards (settings.giftCards + the team public_profile mirror): lets the

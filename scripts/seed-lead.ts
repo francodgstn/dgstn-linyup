@@ -62,6 +62,9 @@ import {
   SITE_PUBLISHED_COLLECTION,
   PUBLIC_LOCALES,
   siteI18nDocId,
+  findSiteTheme,
+  CLIENT_SITE_PARTS,
+  type SiteThemeId,
   normalizeActivityTags,
   withRankLevelIds,
   type RankLevelInput,
@@ -110,6 +113,14 @@ import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
+import {
+  dedupeSectionIds,
+  sanitizeMenu,
+  sanitizeMeta,
+  sanitizePageRefs,
+  sanitizeRedirects,
+  sanitizeSections,
+} from '../packages/functions/src/website/sanitize'
 import type {
   LeadProfile,
   LeadContactDef,
@@ -861,6 +872,9 @@ async function seedLeadTenant(profile: LeadProfile) {
       plan: 'studio',
       plan_status: 'active',
       default_currency: profile.currency,
+      // The team doc owns it; syncTeamPublicProfile copies it to the mirror, so
+      // writing it only on the mirror would be undone by the first trigger run.
+      default_public_surface: profile.defaultPublicSurface ?? 'bio-link',
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       affiliations_enabled: true,
       ranking_systems: rankingSystem
@@ -1079,7 +1093,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         })),
       showBranding: false, // studio plan carries no "Powered by Linyup" badge
       default_currency: profile.currency,
-      default_public_surface: 'bio-link',
+      default_public_surface: profile.defaultPublicSurface ?? 'bio-link',
       // Written directly (sync triggers may not be deployed on the sandbox):
       // site + shop + space are all live for a seeded lead tenant; `forms` only
       // when the profile authors one (syncTeamPublicProfile gates it on there
@@ -1560,7 +1574,7 @@ async function seedLeadTenant(profile: LeadProfile) {
   }
 
   // ── subscription types (raw docs) ─────────────────────────────────────────
-  for (const st of profile.subscriptions) {
+  for (const [stIndex, st] of profile.subscriptions.entries()) {
     const id = subIdOf(st.key)
     const prices = subPricesOf(st)
     await db
@@ -1576,6 +1590,9 @@ async function seedLeadTenant(profile: LeadProfile) {
         public: true,
         checkout_contact_mode: subCheckoutMode(st),
         prices,
+        // The profile's order is the studio's order — the public pricing cards
+        // and the shop sort by it (else alphabetically).
+        order: stIndex,
         // Usage limit on covered class bookings (window counters enforce it).
         ...(st.limits ? { limits: st.limits } : {}),
         // Aggregator payout per attended visit (drives the partner_visits ledger).
@@ -2783,6 +2800,14 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     // gift cards configured needs it, or the offer silently vanishes from the
     // shop mid prospect demo.
     ...(profile.giftCards?.enabled ? [{ id: 'gift-cards' }] : []),
+    // A profile that names a website theme gets the plugin that OWNS it
+    // (CLIENT_SITE_PARTS) — which also offers that client's own sections and
+    // styles, so the studio can re-apply or edit them in the demo.
+    ...(() => {
+      const theme = profile.siteMeta?.appliedTheme
+      const owner = typeof theme === 'string' ? CLIENT_SITE_PARTS.themes[theme as SiteThemeId] : undefined
+      return owner ? [{ id: owner }] : []
+    })(),
     // NOT 'documents' — a default feature on every plan, not a plugin. Its
     // signup-consent selection goes to teams/{teamId}/settings/documents below.
   ]
@@ -2812,6 +2837,28 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
   for (const s of profile.siteSections) {
     sections.push(await resolveSectionAssets(s, teamId))
   }
+  // Brand overrides from the profile (logo, fonts, top bar, footer) merge over
+  // these defaults; header and footer merge field-by-field. The logo asset, when
+  // given, is uploaded like every other site image.
+  const brand = profile.siteMeta ?? {}
+  // A named theme is layered UNDER the profile: its look below the profile's own
+  // brand values, and its section styles below each section's explicit ones —
+  // the same result as applying the theme in the builder and then editing.
+  const siteTheme = findSiteTheme(typeof brand.appliedTheme === 'string' ? brand.appliedTheme : undefined)
+  const themeStyles = (siteTheme?.sections ?? {}) as Record<string, Record<string, unknown> | undefined>
+  const themed = (section: Record<string, unknown>) => ({ ...(themeStyles[String(section.type)] ?? {}), ...section })
+  sections.forEach((section, i) => {
+    sections[i] = themed(section)
+  })
+  // The site's other pages — each a doc of its own beside the site doc, with the
+  // same asset resolution and theme layering as the home page.
+  const sitePages: { ref: Record<string, unknown>; sections: Record<string, unknown>[] }[] = []
+  for (const { sections: pageSections, ...ref } of profile.sitePages ?? []) {
+    const resolved: Record<string, unknown>[] = []
+    for (const s of pageSections) resolved.push(themed(await resolveSectionAssets(s, teamId)))
+    sitePages.push({ ref, sections: resolved })
+  }
+  const logoUrl = profile.logoAsset ? await uploadAsset(profile.logoAsset, `teams/${teamId}/site/brand/logo`) : null
   const siteMeta = {
     title: profile.teamName,
     theme: 'light',
@@ -2821,13 +2868,67 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
     // custom page background pairs with the light theme's dark text.
     ...(profile.publicBackground ? { background: profile.publicBackground } : {}),
     seo: { title: profile.teamName, description: profile.description },
-    header: { showNav: true, ctaLabel: 'Book now', ctaAction: 'booking' },
-    footer: { showSocial: true },
+    ...(siteTheme ? siteTheme.look : {}),
+    ...brand,
+    header: { showNav: true, ctaLabel: 'Book now', ctaAction: 'booking', ...(brand.header ?? {}) },
+    footer: { showSocial: true, ...(brand.footer ?? {}) },
+    ...(logoUrl ? { logoUrl } : {}),
   }
   // A stored menu, when the profile provides one — else the header derives its
   // menu from the sections (see WebsiteRenderer). Written to both docs so the
   // published site and the builder draft agree.
   const menu = profile.siteMenu ? { menu: profile.siteMenu } : {}
+  // The PUBLISHED doc goes through the same sanitizer as the publishWebsite
+  // callable, so a demo can never show a site the studio could not publish
+  // itself. The draft keeps the profile as authored (hidden sections included),
+  // exactly as the builder would store it.
+  // Pages mirror publishWebsite: refs sanitized, hidden ones and ones without a
+  // doc left out, section ids unique across the whole site.
+  const draftPageRefs = sitePages.map((p) => p.ref)
+  const publishedPageRefs = sanitizePageRefs(draftPageRefs).filter(
+    (ref) => !ref.hidden && sitePages.some((p) => p.ref.id === ref.id),
+  )
+  const deduped = dedupeSectionIds([
+    sanitizeSections(sections),
+    ...publishedPageRefs.map((ref) => sanitizeSections(sitePages.find((p) => p.ref.id === ref.id)?.sections)),
+  ])
+  const [publishedSections, ...publishedPageSections] = deduped.lists
+  if (draftPageRefs.length !== publishedPageRefs.length) {
+    console.warn(`  ⚠ website: publish would drop ${draftPageRefs.length - publishedPageRefs.length} page(s) — hidden, or an invalid/duplicate path`)
+  }
+  if (deduped.dropped.length > 0) {
+    console.warn(`  ⚠ website: duplicate section id(s) ${deduped.dropped.join(', ')} — only the first is published`)
+  }
+  const authored = [sections, ...publishedPageRefs.map((ref) => sitePages.find((p) => p.ref.id === ref.id)?.sections ?? [])]
+  const droppedSectionIds = authored
+    .flat()
+    .filter((s) => s.hidden !== true)
+    .map((s) => String(s.id))
+    .filter((id) => !deduped.lists.flat().some((p) => p.id === id) && !deduped.dropped.includes(id))
+  if (droppedSectionIds.length > 0) {
+    console.warn(
+      `  ⚠ website: publish would drop section(s) ${droppedSectionIds.join(', ')} — unknown type or a missing required field`,
+    )
+  }
+  const publishedMenu = sanitizeMenu(profile.siteMenu)
+  // Old-site redirects publish through the same rule as publishWebsite: only to
+  // a published page, never over a real page path.
+  const publishedRedirects = sanitizeRedirects(profile.siteRedirects, {
+    pageIds: new Set(publishedPageRefs.map((ref) => ref.id)),
+    pagePaths: new Set(publishedPageRefs.map((ref) => ref.path)),
+  })
+  if ((profile.siteRedirects?.length ?? 0) !== publishedRedirects.length) {
+    console.warn(`  ⚠ website: publish would drop ${(profile.siteRedirects?.length ?? 0) - publishedRedirects.length} redirect(s) — invalid path, unknown page, or shadowing a page`)
+  }
+  // A reseed without --reset must not leave a removed page behind.
+  await db.recursiveDelete(db.collection(`site_drafts/${teamId}/pages`))
+  await db.recursiveDelete(db.collection(`site_published/${teamId}/pages`))
+  for (const p of sitePages) {
+    await db
+      .collection(`site_drafts/${teamId}/pages`)
+      .doc(String(p.ref.id))
+      .set({ teamId, pageId: p.ref.id, sections: p.sections, updated_at: ts(daysFromNow(-12)) })
+  }
   await db
     .collection('site_drafts')
     .doc(teamId)
@@ -2839,9 +2940,24 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       meta: siteMeta,
       sections,
       ...menu,
+      ...(draftPageRefs.length ? { pages: draftPageRefs } : {}),
+      ...(profile.siteRedirects?.length ? { redirects: profile.siteRedirects } : {}),
       updated_at: ts(daysFromNow(-12)),
       updatedBy: uid,
     })
+  // Page docs before the site doc that indexes them — the publish order.
+  for (const [index, ref] of publishedPageRefs.entries()) {
+    await db
+      .collection(`site_published/${teamId}/pages`)
+      .doc(ref.id)
+      .set({
+        teamId,
+        pageId: ref.id,
+        sections: publishedPageSections[index],
+        published_at: ts(daysFromNow(-12)),
+        updated_at: ts(daysFromNow(-12)),
+      })
+  }
   await db
     .collection('site_published')
     .doc(teamId)
@@ -2849,14 +2965,34 @@ async function seedLeadPlugins(profile: LeadProfile, teamId: string, uid: string
       teamId,
       slug: profile.slug,
       name: profile.teamName,
-      meta: siteMeta,
-      sections,
-      ...menu,
+      meta: sanitizeMeta(siteMeta, profile.teamName),
+      sections: publishedSections,
+      ...(publishedMenu ? { menu: publishedMenu } : {}),
+      ...(publishedPageRefs.length ? { pages: publishedPageRefs } : {}),
+      ...(publishedRedirects.length ? { redirects: publishedRedirects } : {}),
       socialLinks: profile.socialLinks,
       showBranding: false, // studio plan
       published_at: ts(daysFromNow(-12)),
       updated_at: ts(daysFromNow(-12)),
     })
+
+  // ── custom domain (emulator only) ──────────────────────────────────────────
+  // Claims a hostname for the tenant exactly as connecting a domain would, so
+  // the app's custom-domain mapping can be tried locally with
+  // `curl -H 'X-Linyup-Host: <host>' localhost:3000/`. Never against the cloud:
+  // a claimed hostname there is a real routing decision.
+  if (profile.customDomain && USE_EMULATOR) {
+    const hostname = profile.customDomain.toLowerCase()
+    await db.collection('public_domains').doc(hostname).set({ entityId: teamId, scope: 'team', created_at: ts(now()) })
+    await db
+      .collection('teams')
+      .doc(teamId)
+      .collection('integrations')
+      .doc('public_domain')
+      .set({ status: 'active', hostname, updated_at: ts(now()) })
+  } else if (profile.customDomain) {
+    console.warn(`  ⚠ customDomain '${profile.customDomain}' is emulator-only — not claimed on ${PROJECT_ID}`)
+  }
 
   // ── online courses ─────────────────────────────────────────────────────────
   for (const c of profile.courses) {

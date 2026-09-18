@@ -10,6 +10,7 @@ import type {
   CtaBannerSection,
   FaqSection,
   TestimonialsSection,
+  VideoSection,
   SiteMenuItem,
   SiteI18nManifest,
 } from './website'
@@ -119,6 +120,7 @@ export type OrgSiteSection =
   | CtaBannerSection
   | FaqSection
   | TestimonialsSection
+  | VideoSection
   | ClubsSection
   | LocationsSection
   | CoachesSection

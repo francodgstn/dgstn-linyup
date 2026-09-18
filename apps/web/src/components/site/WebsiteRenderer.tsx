@@ -6,6 +6,7 @@ import { ChevronDown, Globe, Menu, Moon, Sun, X } from 'lucide-react'
 import type {
   SiteMeta,
   SiteMenuItem,
+  SitePageRef,
   PublicSurface,
   WebsiteSection,
   OrgSiteSection,
@@ -13,11 +14,14 @@ import type {
   SocialLink,
 } from '@linyup/shared'
 import { resolveThemePreset } from '@linyup/shared'
-import { deriveSiteMenu } from '@linyup/shared'
-import { buildPalette, FONT_STACK, ctaHref } from './theme'
-import { SectionBlock, sectionNavLabel, bookProps, SOCIAL_ICONS, type RenderCtx } from './sections'
+import { deriveSiteMenu, sitePageSegments } from '@linyup/shared'
+import { publicHrefLocalized, publicSubHrefLocalized } from '@/lib/publicRoutes'
+import { buildPalette, ctaHref } from './theme'
+import { siteBrandRootProps } from './siteFonts'
+import { SectionBlock, sectionNavLabel, bookProps, ctaIntent, SOCIAL_ICONS, type RenderCtx } from './sections'
 import type { BookIntent } from '@/components/booking/BookingOverlay'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
+import { formatSiteDate } from './siteDate'
 
 /** Structural subset satisfied by SiteDraft/PublishedSite (team sites, builder
  *  preview) AND OrgSiteDraft/OrgPublishedSite (org sites). `teamId` is only
@@ -33,6 +37,8 @@ export interface RenderableSite {
   menu?: SiteMenuItem[]
   socialLinks?: SocialLink[]
   showBranding?: boolean
+  /** The site's other pages (team sites). Absent ⇒ a one-page site. */
+  pages?: SitePageRef[]
 }
 
 export default function WebsiteRenderer({
@@ -44,6 +50,8 @@ export default function WebsiteRenderer({
   surfaceLinks,
   memberControl,
   paymentsEnabled,
+  page,
+  shortenHref,
 }: {
   site: RenderableSite
   preview?: boolean
@@ -70,6 +78,19 @@ export default function WebsiteRenderer({
    *  the live team site (the one host that resolves the team) — see
    *  RenderCtx.paymentsEnabled for why absent is not the same as false. */
   paymentsEnabled?: boolean
+  /**
+   * The page being shown, when it is not the home page. Header, footer and theme
+   * are the site's; only `<main>` changes. Absent ⇒ the home page
+   * (`site.sections`).
+   */
+  page?: { ref: SitePageRef; sections: (WebsiteSection | OrgSiteSection)[] }
+  /**
+   * Turns a public path into what the address bar should show — set only by the
+   * live team site, and only when the request came through the studio's OWN
+   * domain, where `/public/{slug}/site/x` is written `/x`. Absent everywhere
+   * else (builder canvas, embed, our own hosts): the long path is the address.
+   */
+  shortenHref?: (href: string) => string
 }) {
   const locale = useLocale()
   const t = useTranslations('Site')
@@ -140,7 +161,28 @@ export default function WebsiteRenderer({
 
   const effectiveDark = toggleEnabled && override ? override === 'dark' : systemDark
   const palette = buildPalette(site.meta, effectiveDark)
-  const font = FONT_STACK[site.meta.font] ?? FONT_STACK.sans
+  // Fonts, heading case and button shape, as root CSS variables (see siteFonts).
+  const brandRoot = siteBrandRootProps(site.meta)
+  // ── PAGES ───────────────────────────────────────────────────────────────
+  // Every page is its own URL (a full navigation, not a client transition), so
+  // a link to a section is `#id` only when that section is on THIS page — from
+  // any other page it is the home URL plus the anchor.
+  const pageSections = page?.sections ?? site.sections
+  // On a studio's own domain every in-page link is the short one a visitor sees
+  // there (`/angebot/crossfit`); elsewhere `shortenHref` is absent and the long
+  // public path IS the address. See RenderCtx.shortenHref.
+  const short = (href: string) => (shortenHref ? shortenHref(href) : href)
+  const homeHref = short(publicHrefLocalized(locale, site.slug, 'site'))
+  const pageById = new Map((site.pages ?? []).filter((p) => !p.hidden).map((p) => [p.id, p]))
+  function pageHref(pageId: string, sectionId?: string): string | undefined {
+    const ref = pageById.get(pageId)
+    if (!ref) return undefined
+    const anchor = sectionId ? `#${sectionId}` : ''
+    if (page?.ref.id === ref.id) return anchor || '#top'
+    return short(publicSubHrefLocalized(locale, site.slug, 'site', sitePageSegments(ref.path))) + anchor
+  }
+  const onPageIds = new Set(pageSections.map((sec) => sec.id))
+
   const ctx: RenderCtx = {
     palette,
     slug: site.slug,
@@ -155,6 +197,9 @@ export default function WebsiteRenderer({
     // renders this component inside /(auth) with NO PublicTeamProvider, so a
     // leaked onBook would make the overlay throw and blank the canvas.
     onBook: preview ? undefined : onBook,
+    pageHref,
+    pages: site.pages,
+    shortenHref,
   }
 
   // ── THE MENU ────────────────────────────────────────────────────────────
@@ -171,12 +216,14 @@ export default function WebsiteRenderer({
         ? site.menu
         : deriveSiteMenu({
             sections: site.sections,
+            pages: site.pages,
             surfaceLinks: (surfaceLinks ?? []).flatMap((l) => (l.surface ? [{ surface: l.surface }] : [])),
           }))
     : []
 
   const surfaceByKey = new Map((surfaceLinks ?? []).flatMap((l) => (l.surface ? [[l.surface, l] as const] : [])))
-  const sectionById = new Map(site.sections.map((sec) => [sec.id, sec]))
+  // Home sections and this page's — a menu may point at either.
+  const sectionById = new Map([...site.sections, ...pageSections].map((sec) => [sec.id, sec]))
 
   /** Resolve one stored item to what the header actually needs to draw. A null
    *  href is a GROUP — a row that only opens its children. Items pointing at a
@@ -187,7 +234,16 @@ export default function WebsiteRenderer({
       case 'section': {
         const sec = sectionById.get(item.target.sectionId)
         if (!sec) return null
-        return { href: `#${sec.id}`, label: item.label?.trim() || sectionNavLabel(sec, t) }
+        return {
+          href: onPageIds.has(sec.id) ? `#${sec.id}` : `${homeHref}#${sec.id}`,
+          label: item.label?.trim() || sectionNavLabel(sec, t),
+        }
+      }
+      case 'page': {
+        const ref = pageById.get(item.target.pageId)
+        const href = pageHref(item.target.pageId, item.target.sectionId)
+        if (!ref || !href) return null
+        return { href, label: item.label?.trim() || ref.navLabel?.trim() || ref.title }
       }
       case 'surface': {
         const link = surfaceByKey.get(item.target.surface)
@@ -222,14 +278,16 @@ export default function WebsiteRenderer({
           <a
             href={preview ? undefined : node.resolved.href}
             onClick={preview ? inert : undefined}
-            className="block rounded-lg px-3 py-1.5 text-sm transition-opacity hover:opacity-70"
+            className="site-nav block rounded-lg px-3 py-1.5 text-sm transition-opacity hover:opacity-70"
             style={{ color: palette.muted, paddingLeft: `${0.75 + depth * 0.75}rem` }}
           >
             {node.resolved.label}
           </a>
         ) : (
           // A group deeper in the tree is a LABEL, not a control: its children
-          // are already visible beneath it, so there is nothing to open.
+          // are already visible beneath it, so there is nothing to open. Its
+          // capitals are a fixed eyebrow-label style, not the navCase toggle —
+          // no `site-nav` here, or a 'normal' navCase would flatten it.
           <p
             className="px-3 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide"
             style={{ color: palette.text, opacity: 0.55, paddingLeft: `${0.75 + depth * 0.75}rem` }}
@@ -254,12 +312,13 @@ export default function WebsiteRenderer({
               if (preview) inert(e)
               setMobileOpen(false)
             }}
-            className="block rounded-md py-2 text-sm transition-opacity hover:opacity-70"
+            className="site-nav block rounded-md py-2 text-sm transition-opacity hover:opacity-70"
             style={{ color: palette.muted, paddingLeft: `${depth * 0.875}rem` }}
           >
             {node.resolved.label}
           </a>
         ) : (
+          // Same fixed eyebrow-label style as the desktop panel — no `site-nav`.
           <p
             className="pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide"
             style={{ color: palette.text, opacity: 0.55, paddingLeft: `${depth * 0.875}rem` }}
@@ -278,15 +337,20 @@ export default function WebsiteRenderer({
   const inert = (e: React.MouseEvent) => e.preventDefault()
 
   const headerAction = site.meta.header.ctaAction ?? 'booking'
-  const headerHref = site.meta.header.ctaLabel
-    ? ctaHref({ action: headerAction, url: site.meta.header.ctaUrl }, site.slug, locale)
-    : undefined
+  const headerCta = {
+    action: headerAction,
+    url: site.meta.header.ctaUrl,
+    pageId: site.meta.header.ctaPageId,
+    activityId: site.meta.header.ctaActivityId,
+  }
+  const headerHrefRaw = site.meta.header.ctaLabel ? ctaHref(headerCta, site.slug, locale, pageHref) : undefined
+  const headerHref = headerHrefRaw ? short(headerHrefRaw) : undefined
 
   // The header CTA is the most-clicked booking entry on the whole site, so it
-  // opens the overlay like every other one. Signup/external CTAs stay plain
-  // navigations. Null when this isn't a booking CTA.
-  const headerBookProps =
-    headerAction === 'booking' ? bookProps(headerHref, ctx, { kind: 'root' }) : null
+  // opens the overlay like every other one — on its own activity when the
+  // studio named one. Signup/page/external CTAs stay plain navigations.
+  const headerIntent = ctaIntent(headerCta)
+  const headerBookProps = headerIntent ? bookProps(headerHref, ctx, headerIntent) : null
 
   /** Plain-navigation fallback, matching the nav links' preview behaviour. */
   const headerLinkProps = { href: preview ? undefined : headerHref, onClick: preview ? inert : undefined }
@@ -294,21 +358,81 @@ export default function WebsiteRenderer({
   const socials = (site.socialLinks ?? []).filter((s) => s.url)
   const year = new Date().getFullYear()
 
+  /** A FLAT link list — top bar, footer column, legal row — resolved exactly
+   *  like the header menu, so a link to a deleted section or an unavailable
+   *  surface drops out instead of rendering dead. Groups have no destination
+   *  and nothing to open in a strip, so they are skipped. */
+  function flatLinks(items: readonly SiteMenuItem[] | undefined): { id: string; href: string; label: string }[] {
+    return (items ?? []).flatMap((item) => {
+      const resolved = resolveItem(item)
+      return resolved?.href ? [{ id: item.id, href: resolved.href, label: resolved.label }] : []
+    })
+  }
+
+  const topBar = site.meta.header.topBar
+  const topBarLinks = flatLinks(topBar?.items)
+  const footer = site.meta.footer
+  const footerColumns = (footer.columns ?? [])
+    .map((column) => ({ ...column, links: flatLinks(column.items) }))
+    .filter((column) => column.heading || column.links.length > 0)
+  const footerLogos = footer.logos ?? []
+  const legalLinks = flatLinks(footer.legal)
+  const appLinks = footer.appLinks
+  const hasFooterGrid = !!footer.text || footerColumns.length > 0 || !!appLinks?.ios || !!appLinks?.android
+
   return (
-    <div className="@container min-h-full w-full" style={{ background: palette.bg, color: palette.text, fontFamily: font }}>
+    <div
+      className={`@container min-h-full w-full ${brandRoot.className}`}
+      style={{ ...brandRoot.style, background: palette.bg, color: palette.text }}
+    >
+      {/* Top bar — scrolls away above the sticky header. */}
+      {(topBar?.text || topBarLinks.length > 0) && (
+        <div className="text-xs" style={{ background: palette.surface, borderBottom: `1px solid ${palette.border}` }}>
+          <div className="mx-auto flex site-shell flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-2">
+            {topBar?.text ? (
+              <p style={{ color: palette.muted }}>{topBar.text}</p>
+            ) : (
+              <span />
+            )}
+            {topBarLinks.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {topBarLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={preview ? undefined : link.href}
+                    onClick={preview ? inert : undefined}
+                    className="site-nav font-medium transition-opacity hover:opacity-70"
+                    style={{ color: palette.text }}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header
         className="sticky top-0 z-20 backdrop-blur"
         style={{ background: palette.headerBg, borderBottom: `1px solid ${palette.border}` }}
       >
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
+        <div className="mx-auto flex site-shell items-center justify-between gap-4 px-6 py-3">
           <a
-            href={preview ? undefined : '#top'}
+            href={preview ? undefined : page ? homeHref : '#top'}
             onClick={preview ? inert : undefined}
-            className="font-bold tracking-tight"
+            className="flex items-center font-bold tracking-tight"
             style={{ color: palette.text }}
           >
-            {site.meta.title || site.name}
+            {site.meta.logoUrl ? (
+              // A plain <img>: the logo is an arbitrary tenant URL, so next/image
+              // would need every host allow-listed. The title stays the name.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={site.meta.logoUrl} alt={site.meta.title || site.name} className="h-8 w-auto max-w-[200px] object-contain" />
+            ) : (
+              site.meta.title || site.name
+            )}
           </a>
           <nav className="hidden items-center gap-5 @3xl:flex">
             {/* ── LEVELS 1 AND 2+, DRAWN DIFFERENTLY ──────────────────────
@@ -326,7 +450,7 @@ export default function WebsiteRenderer({
                   key={top.item.id}
                   href={preview || !top.resolved.href ? undefined : top.resolved.href}
                   onClick={preview ? inert : undefined}
-                  className="text-sm transition-opacity hover:opacity-70"
+                  className="site-nav whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                   style={{ color: palette.muted }}
                 >
                   {top.resolved.label}
@@ -346,7 +470,7 @@ export default function WebsiteRenderer({
                     <a
                       href={preview ? undefined : top.resolved.href}
                       onClick={preview ? inert : undefined}
-                      className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-70"
+                      className="site-nav inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                       style={{ color: palette.muted }}
                     >
                       {top.resolved.label}
@@ -359,7 +483,7 @@ export default function WebsiteRenderer({
                     <button
                       type="button"
                       aria-expanded={false}
-                      className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-70"
+                      className="site-nav inline-flex items-center gap-1 whitespace-nowrap text-sm transition-opacity hover:opacity-70"
                       style={{ color: palette.muted }}
                     >
                       {top.resolved.label}
@@ -381,8 +505,8 @@ export default function WebsiteRenderer({
             {site.meta.header.ctaLabel && (
               <a
                 {...(headerBookProps ?? headerLinkProps)}
-                className="rounded-full px-4 py-1.5 text-sm font-semibold"
-                style={{ background: palette.accent, color: palette.onAccent }}
+                className="site-btn shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold"
+                style={{ background: palette.button, color: palette.onButton }}
               >
                 {site.meta.header.ctaLabel}
               </a>
@@ -403,7 +527,10 @@ export default function WebsiteRenderer({
             {/* Hidden in the builder preview — a visitor-only control the
                 studio never needs while editing its own site. */}
             {!preview && (
-              <LocaleSwitcher triggerStyle={{ borderColor: palette.border, color: palette.muted }} />
+              <LocaleSwitcher
+                plain
+                triggerStyle={{ border: 'none', background: 'transparent', color: palette.muted }}
+              />
             )}
           </nav>
 
@@ -456,7 +583,7 @@ export default function WebsiteRenderer({
             className="@3xl:hidden"
             style={{ background: palette.bg, borderTop: `1px solid ${palette.border}` }}
           >
-            <nav className="mx-auto flex max-w-5xl flex-col gap-1 px-6 py-3">
+            <nav className="mx-auto flex site-shell flex-col gap-1 px-6 py-3">
               {/* THE WHOLE TREE, FLAT AND INDENTED — no dropdowns on a phone.
                   A tap-to-open submenu inside an already-open sheet is two
                   gestures to reach one page, and it hides the shape of the menu
@@ -473,8 +600,8 @@ export default function WebsiteRenderer({
                     if (headerBookProps) headerBookProps.onClick?.(e)
                     else if (preview) inert(e)
                   }}
-                  className="mt-2 rounded-full px-4 py-2 text-center text-sm font-semibold"
-                  style={{ background: palette.accent, color: palette.onAccent }}
+                  className="site-btn mt-2 rounded-full px-4 py-2 text-center text-sm font-semibold"
+                  style={{ background: palette.button, color: palette.onButton }}
                 >
                   {site.meta.header.ctaLabel}
                 </a>
@@ -495,7 +622,10 @@ export default function WebsiteRenderer({
               )}
               {!preview && (
                 <div className="pt-2">
-                  <LocaleSwitcher triggerStyle={{ borderColor: palette.border, color: palette.muted }} />
+                  <LocaleSwitcher
+                    plain
+                    triggerStyle={{ border: 'none', background: 'transparent', color: palette.muted }}
+                  />
                 </div>
               )}
             </nav>
@@ -504,14 +634,147 @@ export default function WebsiteRenderer({
       </header>
 
       <main id="top">
-        {site.sections.map((s: WebsiteSection | OrgSiteSection) => (
+        {/* A POST'S OWN HEADER — date, title, excerpt, cover image — sits above
+            its sections like a printed article's byline; the sections below
+            are the body, same as any other page. Never on a plain page or the
+            home page (`page?.ref.kind` is only ever 'post' when a post is
+            being viewed). */}
+        {page?.ref.kind === 'post' && (
+          <section className="py-16" style={{ background: palette.bg }}>
+            <div className="mx-auto site-shell px-6">
+              {page.ref.publishedOn && (
+                <p className="text-sm" style={{ color: palette.muted }}>
+                  {formatSiteDate(page.ref.publishedOn, locale)}
+                </p>
+              )}
+              <h1
+                className="mt-2 text-3xl font-bold tracking-tight @2xl:text-4xl"
+                style={{ color: palette.text }}
+              >
+                {page.ref.title}
+              </h1>
+              {page.ref.excerpt && (
+                <p className="mt-4 max-w-3xl text-lg" style={{ color: palette.muted }}>
+                  {page.ref.excerpt}
+                </p>
+              )}
+              {page.ref.coverImageUrl && (
+                <div className="site-card mt-8 overflow-hidden rounded-2xl border" style={{ borderColor: palette.border }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={page.ref.coverImageUrl}
+                    alt=""
+                    className="aspect-[16/9] w-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+        {pageSections.map((s: WebsiteSection | OrgSiteSection) => (
           <SectionBlock key={s.id} section={s} ctx={ctx} />
         ))}
       </main>
 
+      {/* Partner / certification logos — a strip above the footer. */}
+      {footerLogos.length > 0 && (
+        <div style={{ background: palette.bg, borderTop: `1px solid ${palette.border}` }}>
+          <div className="mx-auto flex site-shell flex-wrap items-center justify-center gap-x-10 gap-y-6 px-6 py-8">
+            {footerLogos.map((logo, i) => {
+              // eslint-disable-next-line @next/next/no-img-element
+              const img = <img src={logo.url} alt={logo.alt ?? ''} className="h-10 w-auto max-w-[140px] object-contain" />
+              return logo.link ? (
+                <a
+                  key={i}
+                  href={preview ? undefined : logo.link}
+                  onClick={preview ? inert : undefined}
+                  target={preview ? undefined : '_blank'}
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-70"
+                >
+                  {img}
+                </a>
+              ) : (
+                <span key={i}>{img}</span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="py-10" style={{ background: palette.surface, borderTop: `1px solid ${palette.border}` }}>
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-6 text-center">
+        {hasFooterGrid && (
+          <div
+            className="mx-auto mb-8 grid site-shell gap-8 border-b px-6 pb-8 text-left @xl:grid-cols-2 @3xl:grid-cols-4"
+            style={{ borderColor: palette.border }}
+          >
+            <div className="space-y-3">
+              {site.meta.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={site.meta.logoUrl} alt={site.meta.title || site.name} className="h-8 w-auto max-w-[180px] object-contain" />
+              ) : (
+                <p className="font-bold tracking-tight" style={{ color: palette.text }}>
+                  {site.meta.title || site.name}
+                </p>
+              )}
+              {footer.text && (
+                <p className="whitespace-pre-line text-sm" style={{ color: palette.muted }}>
+                  {footer.text}
+                </p>
+              )}
+              {(appLinks?.ios || appLinks?.android) && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {/* Store names are proper nouns — not translated. */}
+                  {(
+                    [
+                      ['App Store', appLinks?.ios],
+                      ['Google Play', appLinks?.android],
+                    ] as const
+                  ).map(([store, href]) =>
+                    href ? (
+                      <a
+                        key={store}
+                        href={preview ? undefined : href}
+                        onClick={preview ? inert : undefined}
+                        target={preview ? undefined : '_blank'}
+                        rel="noopener noreferrer"
+                        className="rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+                        style={{ background: palette.text, color: palette.bg }}
+                      >
+                        {store}
+                      </a>
+                    ) : null
+                  )}
+                </div>
+              )}
+            </div>
+            {footerColumns.map((column) => (
+              <div key={column.id} className="space-y-2">
+                {column.heading && (
+                  <p className="text-sm font-semibold" style={{ color: palette.text }}>
+                    {column.heading}
+                  </p>
+                )}
+                <ul className="space-y-1.5">
+                  {column.links.map((link) => (
+                    <li key={link.id}>
+                      <a
+                        href={preview ? undefined : link.href}
+                        onClick={preview ? inert : undefined}
+                        className="site-nav text-sm transition-opacity hover:opacity-70"
+                        style={{ color: palette.muted }}
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="mx-auto flex site-shell flex-col items-center gap-4 px-6 text-center">
           {site.meta.footer.showSocial && socials.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2">
               {socials.map((s) => {
@@ -534,6 +797,21 @@ export default function WebsiteRenderer({
             </div>
           )}
           <p className="text-sm" style={{ color: palette.muted }}>© {year} {site.name}</p>
+          {legalLinks.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+              {legalLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={preview ? undefined : link.href}
+                  onClick={preview ? inert : undefined}
+                  className="text-xs transition-opacity hover:opacity-70"
+                  style={{ color: palette.muted }}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          )}
           {site.showBranding && (
             <p className="text-xs" style={{ color: palette.muted }}>
               {t('poweredBy')}{' '}

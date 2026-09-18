@@ -144,6 +144,10 @@ await waitForPort(9199)
 console.log('    emulators up')
 
 console.log('==> Seeding emulator data')
+// The seed then waits for the trigger queue it causes to drain (minutes, not
+// seconds), so "Ready" below means the derived data exists too. An explicitly
+// empty value opts out. See scripts/lib/triggerDrain.ts.
+process.env.SEED_FUNCTIONS_EMULATOR_HOST ??= '127.0.0.1:5001'
 const seedCode = await runToCompletion('pnpm', ['exec', 'tsx', 'scripts/seed-emulator.ts'])
 if (seedCode !== 0) console.log('    seed failed (continuing anyway)')
 

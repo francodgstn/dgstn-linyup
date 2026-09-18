@@ -44,6 +44,7 @@ import {
   Trash2,
   Plus,
   FileText,
+  File,
   Globe,
   Folder,
 } from 'lucide-react'
@@ -77,6 +78,7 @@ import { Tip } from '@/components/ui/tip'
 export function MenuPanel({
   menu,
   sections,
+  pages,
   surfaces,
   surfaceLabel,
   sectionLabel,
@@ -87,6 +89,10 @@ export function MenuPanel({
    *  tenant-agnostic in exactly the way `siteMenu.ts`'s tree operations and
    *  `RenderableSite` already are. */
   sections: (WebsiteSection | OrgSiteSection)[]
+  /** The site's other pages (home excluded — a `page` target always names ONE
+   *  of these). Absent ⇒ no page items offered, which is exactly the org
+   *  builder today: org sites have no pages yet. */
+  pages?: { id: string; label: string }[]
   /** Surfaces that are actually live — the only ones worth offering. */
   surfaces: readonly PublicSurface[]
   surfaceLabel: (s: PublicSurface) => string
@@ -98,6 +104,7 @@ export function MenuPanel({
   const depth = siteMenuDepth(menu)
 
   const sectionById = new Map(sections.map((s) => [s.id, s]))
+  const pageById = new Map((pages ?? []).map((p) => [p.id, p] as const))
 
   /** What a row says when the studio has not written its own label. */
   function derivedLabel(item: SiteMenuItem): string {
@@ -105,6 +112,10 @@ export function MenuPanel({
       case 'section': {
         const s = sectionById.get(item.target.sectionId)
         return s ? sectionLabel(s) : t('menuMissingSection')
+      }
+      case 'page': {
+        const p = pageById.get(item.target.pageId)
+        return p ? p.label : t('menuMissingPage')
       }
       case 'surface':
         return surfaceLabel(item.target.surface)
@@ -122,11 +133,13 @@ export function MenuPanel({
   const iconFor = (item: SiteMenuItem) =>
     item.target.kind === 'section'
       ? FileText
-      : item.target.kind === 'surface'
-        ? Globe
-        : item.target.kind === 'url'
-          ? Link2
-          : Folder
+      : item.target.kind === 'page'
+        ? File
+        : item.target.kind === 'surface'
+          ? Globe
+          : item.target.kind === 'url'
+            ? Link2
+            : Folder
 
   /** One sibling group: its own sortable context, so a drag can reorder inside
    *  this parent and nowhere else. Children recurse into their own group. */
@@ -275,6 +288,14 @@ export function MenuPanel({
                   {sectionLabel(s)}
                 </DropdownMenuItem>
               ))}
+            {/* The site's other pages — home has no target of its own (it's
+                where the menu lives), so `pages` never includes it. */}
+            {(pages ?? []).map((p) => (
+              <DropdownMenuItem key={p.id} onClick={() => add({ kind: 'page', pageId: p.id })}>
+                <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+                {p.label}
+              </DropdownMenuItem>
+            ))}
             {surfaces.map((s) => (
               <DropdownMenuItem key={s} onClick={() => add({ kind: 'surface', surface: s })}>
                 <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />

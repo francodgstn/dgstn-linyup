@@ -183,4 +183,50 @@ describe('translate/siteTranslation (extractor/resolver contract)', () => {
     const out = applySiteTranslations({ sections: [features] }, units)
     assert.equal((out.sections[0] as FeaturesSection).items[0].title, 'Schnell')
   })
+
+  // The brand chrome — top bar, footer text, footer columns, legal row — is
+  // tenant-authored prose like any section, so it rides the same pipeline.
+  const brandMeta = (): SiteMeta => ({
+    title: 'CFZ',
+    theme: 'light',
+    accentColor: '#0749ff',
+    font: 'montserrat',
+    header: {
+      showNav: true,
+      topBar: { text: 'Open 24/7', items: [{ id: 'tb1', label: 'Login', target: { kind: 'url', url: 'https://x.ch' } }] },
+    },
+    footer: {
+      showSocial: true,
+      text: 'Your box in Zug',
+      columns: [{ id: 'col1', heading: 'Offers', items: [{ id: 'fc1', label: 'CrossFit', target: { kind: 'none' } }] }],
+      logos: [{ url: 'https://x.ch/logo.png', alt: 'SWICA' }],
+      legal: [{ id: 'lg1', label: 'Imprint', target: { kind: 'url', url: 'https://x.ch/imprint' } }],
+    },
+  })
+
+  it('top bar, footer text, footer columns and the legal row extract under their own keys', () => {
+    const byKey = new Map(extractSiteUnits({ meta: brandMeta(), sections: [] }).map((u) => [u.key, u.text]))
+    assert.equal(byKey.get('topbar.text'), 'Open 24/7')
+    assert.equal(byKey.get('menu.tb1'), 'Login')
+    assert.equal(byKey.get('footer.text'), 'Your box in Zug')
+    assert.equal(byKey.get('footer.col.col1.heading'), 'Offers')
+    assert.equal(byKey.get('menu.fc1'), 'CrossFit')
+    assert.equal(byKey.get('menu.lg1'), 'Imprint')
+    // A partner logo's alt is a brand name, never prose to translate.
+    assert.equal([...byKey.values()].includes('SWICA'), false)
+  })
+
+  it('translated brand chrome is substituted back, and a stale unit is not', () => {
+    const units: SiteTranslationUnits = {
+      'topbar.text': { text: 'Rund um die Uhr offen', srcHash: translationSourceHash('Open 24/7') },
+      'footer.col.col1.heading': { text: 'Angebote', srcHash: translationSourceHash('Offers') },
+      'menu.lg1': { text: 'Impressum', srcHash: translationSourceHash('Imprint') },
+      'footer.text': { text: 'Veraltet', srcHash: translationSourceHash('some older footer') },
+    }
+    const out = applySiteTranslations({ meta: brandMeta(), sections: [] }, units)
+    assert.equal(out.meta?.header.topBar?.text, 'Rund um die Uhr offen')
+    assert.equal(out.meta?.footer.columns?.[0].heading, 'Angebote')
+    assert.equal(out.meta?.footer.legal?.[0].label, 'Impressum')
+    assert.equal(out.meta?.footer.text, 'Your box in Zug')
+  })
 })

@@ -230,8 +230,9 @@ export interface Contact {
   weight?: number
   avatar_url?: string
   // Contact asked not to receive SMS (reminders etc.). Email is unaffected.
-  // Checked by the SMS service before every send; a global per-number opt-out
-  // additionally lives in sms_suppressions.
+  // Honoured by the SMS service (functions mail/smsService.ts) for every send
+  // that names this contact; a dropped send leaves a 'suppressed' ledger row.
+  // A per-number block lives separately in sms_suppressions.
   sms_opt_out?: boolean
   // WhatsApp opt-in (docs/whatsapp-outbound.md). Absent = not opted in. Read
   // through `whatsappConsentAllows`, written only by the functions' consent writer.

@@ -36,6 +36,11 @@ ui-debug.log
 .local-env.json
 firebase.local.json
 
+# Playwright (apps/web/e2e) — run artifacts
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+
 # Turbo
 .turbo/
 

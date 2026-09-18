@@ -3,296 +3,42 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { hasTeamRole } from '../utils/teams'
 import { unpublishSiteForTeam, touchTeamForSurfaceRecompute, pluginIsActive } from '../utils/plugins'
-import { sanitizeRichHtml } from '../utils/sanitizeHtml'
-import { translatePublishedSite } from '../translate/translateSite'
+import { deleteSiteI18nSidecars, translatePublishedSite } from '../translate/translateSite'
 import {
   SITE_PUBLISHED_COLLECTION,
+  FORMS_COLLECTION,
+  ACTIVITIES_COLLECTION,
+  SITE_I18N_SEPARATOR,
+  SITE_PAGES_SUBCOLLECTION,
   SITE_DRAFTS_COLLECTION,
   TEAMS_COLLECTION,
   TEAM_PLACES_SUBCOLLECTION,
   ORGANIZATIONS_COLLECTION,
   ORG_PLACES_SUBCOLLECTION,
-  isPublicSurface,
-  SITE_MENU_MAX_DEPTH,
   resolveSiteSourceLocale,
 } from '@linyup/shared'
-import type {
-  PublishedSite,
-  SiteMenuItem,
-  SiteMeta,
-  SiteSurfaceLinkConfig,
-  WebsiteSection,
-  HeroSection,
-  ContentSection,
-  GallerySection,
-  ContactSection,
-} from '@linyup/shared'
+import type { PublishedSite, SitePageRef, WebsiteSection } from '@linyup/shared'
+import {
+  applyFormChecks,
+  asDict,
+  clean,
+  optStr,
+  safeUrl,
+  sanitizeMenu,
+  sanitizePageRefs,
+  sanitizeRedirects,
+  dedupeSectionIds,
+  sanitizeMeta,
+  sanitizeSections,
+  str,
+  type Dict,
+  type FormCheckFacts,
+} from './sanitize'
 
-// ─── sanitizers ───────────────────────────────────────────────────────────────
-// The draft is authored by a (semi-trusted) manager, but site_published is
-// fully public. We re-derive every published field from an explicit whitelist so
-// nothing unexpected — and nothing restricted — can leak into the public doc.
-//
-// The primitives + the four "presentational" section builders below (hero,
-// content, gallery, contact) are exported so the organization website module
-// (../orgWebsite) can reuse the EXACT same rules instead of re-implementing them —
-// those four section types are shared verbatim between the team site and the org
-// site; only the aggregate section types (activities/pricing/schedule/places at
-// team level, clubs/locations/coaches at org level) differ.
-
-export type Dict = Record<string, unknown>
-
-export const asDict = (v: unknown): Dict => (v && typeof v === 'object' ? (v as Dict) : {})
-
-export function str(v: unknown, max = 2000): string {
-  return typeof v === 'string' ? v.slice(0, max) : ''
-}
-export function optStr(v: unknown, max = 2000): string | undefined {
-  const s = str(v, max)
-  return s ? s : undefined
-}
-/** Allow only https?:// URLs; everything else (javascript:, data:, …) is dropped. */
-export function safeUrl(v: unknown): string | undefined {
-  return typeof v === 'string' && /^https?:\/\/.+/.test(v) ? v.slice(0, 2000) : undefined
-}
-export function num(v: unknown, min: number, max: number, fallback: number): number {
-  const n = Number(v)
-  if (!Number.isFinite(n)) return fallback
-  return Math.min(max, Math.max(min, n))
-}
-export function bool(v: unknown): boolean {
-  return v === true
-}
-export function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
-  return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback
-}
-/** Drop keys whose value is undefined (Firestore rejects undefined). */
-export function clean<T extends Dict>(obj: T): T {
-  for (const k of Object.keys(obj)) if (obj[k] === undefined) delete obj[k]
-  return obj
-}
-
-// Rich-text HTML sanitizer (RICH_TEXT_OPTIONS + sanitizeRichHtml) lives in
-// ../utils/sanitizeHtml so the documents plugin's public sync shares the exact
-// same allowlist. Everything else — <script>, styles, event handlers, non-http(s)
-// URLs — is stripped before the HTML reaches the fully-public site_published doc.
-
-export function sanitizeCta(v: unknown): Dict | undefined {
-  const d = asDict(v)
-  const label = optStr(d.label, 120)
-  if (!label) return undefined
-  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url'] as const, 'url')
-  const action = action0 === 'membership' ? 'signup' : action0 // normalize legacy alias
-  return clean({ label, action, url: action === 'url' ? safeUrl(d.url) : undefined })
-}
-
-// ─── shared section builders (reused by ../orgWebsite) ─────────────────────────
-
-export function sanitizeHeroSection(d: Dict, id: string): HeroSection | null {
-  const headline = optStr(d.headline, 200)
-  if (!headline) return null
-  return clean({
-    id, type: 'hero', headline,
-    subheadline: optStr(d.subheadline, 400),
-    bgImageUrl: safeUrl(d.bgImageUrl),
-    overlay: num(d.overlay, 0, 100, 40),
-    align: oneOf(d.align, ['left', 'center'] as const, 'center'),
-    cta: sanitizeCta(d.cta),
-  }) as unknown as HeroSection
-}
-
-// Generic content block. 'about' is the legacy literal — normalized to 'content'
-// on publish. Heading is optional; drop only when fully empty.
-export function sanitizeContentSection(d: Dict, id: string): ContentSection | null {
-  const heading = optStr(d.heading, 200)
-  const body = sanitizeRichHtml(str(d.body, 50000))
-  const imageUrl = safeUrl(d.imageUrl)
-  if (!heading && !body && !imageUrl) return null
-  return clean({
-    id, type: 'content', heading, body,
-    imageUrl,
-    imageSide: oneOf(d.imageSide, ['left', 'right'] as const, 'left'),
-  }) as unknown as ContentSection
-}
-
-export function sanitizeGallerySection(d: Dict, id: string): GallerySection | null {
-  const images = (Array.isArray(d.images) ? d.images : [])
-    .map((img) => {
-      const i = asDict(img)
-      const url = safeUrl(i.url)
-      return url ? clean({ url, caption: optStr(i.caption, 200) }) : null
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null)
-    .slice(0, 60)
-  const columns = num(d.columns, 2, 4, 3)
-  return clean({
-    id, type: 'gallery',
-    heading: optStr(d.heading, 200),
-    images,
-    columns: (columns === 2 || columns === 4 ? columns : 3) as 2 | 3 | 4,
-  }) as unknown as GallerySection
-}
-
-export function sanitizeContactSection(d: Dict, id: string): ContactSection {
-  return clean({
-    id, type: 'contact',
-    heading: optStr(d.heading, 200),
-    address: optStr(d.address, 400),
-    phone: optStr(d.phone, 64),
-    email: optStr(d.email, 200),
-    hours: optStr(d.hours, 400),
-    mapQuery: optStr(d.mapQuery, 400),
-    showSocial: bool(d.showSocial),
-  }) as unknown as ContactSection
-}
-
-/**
- * The header menu tree.
- *
- * EVERY FIELD IS RE-DERIVED, like every other published field — the draft is
- * authored by a manager but `site_published` is world-readable, so a stored menu
- * is untrusted input. Three things this enforces that the editor also enforces,
- * because the editor is not the only thing that can write a draft:
- *
- *  • DEPTH. Recursion stops at SITE_MENU_MAX_DEPTH; anything deeper is dropped
- *    rather than flattened, so a hand-edited draft cannot publish a menu the
- *    renderer would have to guess at.
- *  • URL TARGETS go through `safeUrl`, the same guard every other published link
- *    uses — an unchecked one here would be a `javascript:` URL in a public header.
- *  • BREADTH. A cap per level, so a malformed draft cannot publish thousands of
- *    rows into a header.
- *
- * A section target is NOT checked against the published sections here: the
- * renderer already drops an item whose section is missing, and doing it twice
- * would mean this function had to run after `enrichSectionsWithPlaces`.
- */
-const MENU_MAX_PER_LEVEL = 24
-
-/** Exported for `../orgWebsite`, which publishes the same menu tree. The rules
- *  above are tenant-agnostic: they bound depth and breadth and validate a
- *  target's shape, none of which differs between a studio and an organisation. */
-export function sanitizeMenu(raw: unknown, depth = 1): SiteMenuItem[] | undefined {
-  if (!Array.isArray(raw) || depth > SITE_MENU_MAX_DEPTH) return undefined
-  const items = raw
-    .slice(0, MENU_MAX_PER_LEVEL)
-    .map((entry): SiteMenuItem | null => {
-      const d = asDict(entry)
-      const id = optStr(d.id, 64)
-      if (!id) return null
-      const t = asDict(d.target)
-      let target: SiteMenuItem['target'] | null = null
-      if (t.kind === 'section') {
-        const sectionId = optStr(t.sectionId, 64)
-        if (sectionId) target = { kind: 'section', sectionId }
-      } else if (t.kind === 'surface') {
-        // The real guard, not a cast: an unknown surface would publish a menu
-        // row the renderer cannot resolve, and it would render as nothing with
-        // no way to tell why.
-        const surface = optStr(t.surface, 32)
-        if (surface && isPublicSurface(surface)) target = { kind: 'surface', surface }
-      } else if (t.kind === 'url') {
-        const url = safeUrl(t.url)
-        if (url) target = { kind: 'url', url }
-      } else if (t.kind === 'none') {
-        target = { kind: 'none' }
-      }
-      if (!target) return null
-      const label = optStr(d.label, 120)
-      const children = sanitizeMenu(d.children, depth + 1)
-      return clean({
-        id,
-        target,
-        label: label || undefined,
-        children: children?.length ? children : undefined,
-      }) as SiteMenuItem
-    })
-    .filter((x): x is SiteMenuItem => x !== null)
-  return items.length ? items : undefined
-}
-
-function sanitizeSection(raw: unknown): WebsiteSection | null {
-  const d = asDict(raw)
-  const id = optStr(d.id, 64)
-  const type = d.type
-  if (!id || typeof type !== 'string') return null
-
-  const section = buildSection(d, id, type)
-  if (!section) return null
-  // Nav membership is common to every section type. Stored only when explicitly
-  // hidden; absence means "visible" (the renderer defaults showInNav to true).
-  if (d.showInNav === false) section.showInNav = false
-  // Optional terse nav label (falls back to the heading in the renderer).
-  const menuLabel = optStr(d.menuLabel, 120)
-  if (menuLabel) section.menuLabel = menuLabel
-  return section
-}
-
-function buildSection(d: Dict, id: string, type: string): WebsiteSection | null {
-  switch (type) {
-    case 'hero':
-      return sanitizeHeroSection(d, id)
-    // Generic content block. 'about' is the legacy literal — normalized to
-    // 'content' on publish. Heading is optional; drop only when fully empty.
-    case 'content':
-    case 'about':
-      return sanitizeContentSection(d, id)
-    case 'gallery':
-      return sanitizeGallerySection(d, id)
-    case 'activities': {
-      const columns = num(d.columns, 2, 4, 3)
-      return clean({
-        id, type: 'activities',
-        heading: optStr(d.heading, 200),
-        subheading: optStr(d.subheading, 400),
-        source: 'activities',
-        columns: (columns === 2 || columns === 4 ? columns : 3) as 2 | 3 | 4,
-        layout: oneOf(d.layout, ['grid', 'list'] as const, 'grid'),
-        showBooking: bool(d.showBooking),
-      }) as unknown as WebsiteSection
-    }
-    case 'pricing': {
-      return clean({
-        id, type: 'pricing',
-        heading: optStr(d.heading, 200),
-        subheading: optStr(d.subheading, 400),
-        source: 'subscriptions',
-        ctaLabel: optStr(d.ctaLabel, 120),
-      }) as unknown as WebsiteSection
-    }
-    case 'schedule': {
-      return clean({
-        id, type: 'schedule',
-        heading: optStr(d.heading, 200),
-        source: 'sessions',
-        windowDays: num(d.windowDays, 1, 60, 7),
-        maxItems: num(d.maxItems, 0, 50, 0) || undefined,
-        activityId: optStr(d.activityId, 64),
-        displayMode: d.displayMode === 'list' ? 'list' : 'calendar',
-        showBooking: bool(d.showBooking),
-      }) as unknown as WebsiteSection
-    }
-    case 'contact':
-      return sanitizeContactSection(d, id)
-    // Places: keep only the selection + presentation here; the actual place data
-    // is embedded at publish time (enrichSectionsWithPlaces) — sanitizers are pure.
-    case 'places': {
-      const columns = num(d.columns, 2, 4, 3)
-      const placeIds = (Array.isArray(d.placeIds) ? d.placeIds : [])
-        .map((x) => optStr(x, 64))
-        .filter((x): x is string => !!x)
-        .slice(0, 50)
-      return clean({
-        id, type: 'places',
-        heading: optStr(d.heading, 200),
-        subheading: optStr(d.subheading, 400),
-        columns: (columns === 2 || columns === 4 ? columns : 3) as 2 | 3 | 4,
-        placeIds: placeIds.length ? placeIds : undefined,
-      }) as unknown as WebsiteSection
-    }
-    default:
-      return null
-  }
-}
+// The publish sanitizers live in ./sanitize — pure, so the lead seeder publishes
+// through exactly the same rules. Re-exported so ../orgWebsite and the tests keep
+// importing them from here.
+export * from './sanitize'
 
 // Resolve a team's place pool (own team_places + inherited org_places) into a
 // public-safe map + the team's primary place, for publish-time embedding.
@@ -382,73 +128,40 @@ async function enrichSectionsWithPlaces(
   fs: admin.firestore.Firestore,
   teamId: string,
   team: Dict,
-  sections: WebsiteSection[]
+  lists: WebsiteSection[][]
 ): Promise<void> {
-  if (!sections.some((s) => s.type === 'places' || s.type === 'contact')) return
-  applyPlacePool(sections, await loadPlacePool(fs, teamId, team))
+  // Every page of the site, one pool read — and none when no page reads it.
+  if (!lists.some((sections) => sections.some((s) => s.type === 'places' || s.type === 'contact'))) return
+  const pool = await loadPlacePool(fs, teamId, team)
+  for (const sections of lists) applyPlacePool(sections, pool)
 }
 
-/**
- * Studio overrides for the header's cross-surface links.
- *
- * Only the OVERRIDE is stored — the link list itself is derived at render time
- * from `active_public_surfaces`, so nothing here can conjure a link to a surface
- * the team hasn't got. An entry naming an unknown surface is dropped; one naming
- * a currently-inactive surface is KEPT, so a studio's label survives toggling the
- * plugin off and on.
- */
-function sanitizeSurfaceLinks(raw: unknown): SiteSurfaceLinkConfig[] | undefined {
-  if (!Array.isArray(raw)) return undefined
-  const seen = new Set<string>()
-  const out: SiteSurfaceLinkConfig[] = []
-  for (const entry of raw.slice(0, 20)) {
-    const d = asDict(entry)
-    // Explicit guard rather than oneOf(): oneOf coerces an unknown value to its
-    // fallback, which would silently rewrite a bad entry into a real surface.
-    if (!isPublicSurface(d.surface)) continue
-    const surface = d.surface
-    if (seen.has(surface)) continue
-    seen.add(surface)
-    out.push(
-      clean({
-        surface,
-        hidden: d.hidden === true ? true : undefined,
-        label: optStr(d.label, 60),
-        order: typeof d.order === 'number' && Number.isFinite(d.order) ? d.order : undefined,
-      }) as SiteSurfaceLinkConfig
-    )
+/** Loads the forms and activities that form sections point at — one `getAll`,
+ *  and none when no page has a form — then lets `applyFormChecks` decide. */
+async function checkFormSections(
+  fs: admin.firestore.Firestore,
+  teamId: string,
+  lists: WebsiteSection[][]
+): Promise<void> {
+  const formSections = lists.flat().filter((s): s is Extract<WebsiteSection, { type: 'form' }> => s.type === 'form')
+  if (formSections.length === 0) return
+  const formIds = [...new Set(formSections.map((s) => s.formId))]
+  const activityIds = [...new Set(formSections.flatMap((s) => (s.next ? [s.next.activityId] : [])))]
+  const snaps = await fs.getAll(
+    ...formIds.map((id) => fs.collection(FORMS_COLLECTION).doc(id)),
+    ...activityIds.map((id) => fs.collection(ACTIVITIES_COLLECTION).doc(id))
+  )
+  const facts: FormCheckFacts = { forms: new Map(), activities: new Map() }
+  snaps.forEach((snap, index) => {
+    if (!snap.exists) return
+    const data = snap.data() as Dict
+    if (index < formIds.length) (facts.forms as Map<string, Dict>).set(snap.id, { teamId: data.teamId, status: data.status })
+    else (facts.activities as Map<string, Dict>).set(snap.id, { teamId: data.teamId, type: data.type })
+  })
+  const removed = applyFormChecks(lists, teamId, facts)
+  if (removed.length) {
+    console.warn(`[publishWebsite] team ${teamId}: dropped form section(s) ${removed.join(', ')} — form missing, not this team's, or not published`)
   }
-  return out.length ? out : undefined
-}
-
-export function sanitizeMeta(raw: unknown, fallbackTitle: string): SiteMeta {
-  const d = asDict(raw)
-  const header = asDict(d.header)
-  const footer = asDict(d.footer)
-  const seo = asDict(d.seo)
-  const headerCtaAction0 = oneOf(header.ctaAction, ['booking', 'signup', 'membership', 'url'] as const, 'booking')
-  const headerCtaAction = headerCtaAction0 === 'membership' ? 'signup' : headerCtaAction0 // normalize legacy
-
-  return clean({
-    title: optStr(d.title, 200) ?? fallbackTitle,
-    theme: oneOf(d.theme, ['light', 'dark', 'auto'] as const, 'light'),
-    accentColor: optStr(d.accentColor, 32) ?? '#6366f1',
-    font: oneOf(d.font, ['sans', 'serif', 'rounded'] as const, 'sans'),
-    seo: clean({
-      title: optStr(seo.title, 200),
-      description: optStr(seo.description, 400),
-      ogImageUrl: safeUrl(seo.ogImageUrl),
-    }),
-    header: clean({
-      showNav: header.showNav !== false,
-      ctaLabel: optStr(header.ctaLabel, 120),
-      ctaAction: headerCtaAction,
-      ctaUrl: headerCtaAction === 'url' ? safeUrl(header.ctaUrl) : undefined,
-      showSignIn: header.showSignIn !== false,
-      surfaceLinks: sanitizeSurfaceLinks(header.surfaceLinks),
-    }),
-    footer: clean({ showSocial: footer.showSocial !== false }),
-  }) as SiteMeta
 }
 
 // ─── publishWebsite ─────────────────────────────────────────────────────────────
@@ -485,17 +198,36 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
   if (!slug) throw new HttpsError('failed-precondition', 'Set a team URL (slug) before publishing')
 
   const name = optStr(team.name, 200) ?? 'Site'
-  const sections = (Array.isArray(draft.sections) ? draft.sections : [])
-    // Drop sections the studio toggled hidden — they stay in the draft but never
-    // reach the published site (or its nav).
-    .filter((raw) => !(raw && typeof raw === 'object' && (raw as Dict).hidden === true))
-    .map(sanitizeSection)
-    .filter((s): s is WebsiteSection => s !== null)
-    .slice(0, 30)
+  // Hidden sections omitted, unpublishable ones dropped — see ./sanitize.
+  // ── PAGES ──────────────────────────────────────────────────────────────
+  // The home page is the draft doc's own sections; every other page is a doc in
+  // site_drafts/{teamId}/pages, listed by the draft's `pages` index. A page
+  // publishes only when it is in the index, not hidden, and has a doc.
+  const draftPagesSnap = await fs.collection(`${SITE_DRAFTS_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`).get()
+  const draftPageSections = new Map(
+    draftPagesSnap.docs
+      .filter((doc) => !doc.id.includes(SITE_I18N_SEPARATOR))
+      .map((doc) => [doc.id, (doc.data() as Dict).sections] as const)
+  )
+  const pageRefs: SitePageRef[] = sanitizePageRefs(draft.pages).filter(
+    (ref) => !ref.hidden && draftPageSections.has(ref.id)
+  )
+  // Section ids made unique across the whole site — an id is an anchor, a
+  // translation key and an embed address.
+  const deduped = dedupeSectionIds([
+    sanitizeSections(draft.sections),
+    ...pageRefs.map((ref) => sanitizeSections(draftPageSections.get(ref.id))),
+  ])
+  if (deduped.dropped.length) {
+    console.warn(`[publishWebsite] team ${teamId}: dropped duplicate section ids ${deduped.dropped.join(', ')}`)
+  }
+  const [sections, ...pageSections] = deduped.lists
 
   // Embed selected places into 'places' sections + fill the Contact map from the
   // team's primary place. Done after sanitizing (needs Firestore reads).
-  await enrichSectionsWithPlaces(fs, teamId, team, sections)
+  await enrichSectionsWithPlaces(fs, teamId, team, deduped.lists)
+  // A form section may only embed this team's published form (needs reads too).
+  await checkFormSections(fs, teamId, deduped.lists)
 
   // Denormalise social links (already public via team.public_profile) so the
   // published doc is self-contained for footer/contact icons.
@@ -516,15 +248,34 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
   // the tenant's other supported locales. Throw-free: a translation failure
   // degrades to fewer/no locales, never to a failed publish. See
   // translate/translateSite.ts.
-  const srcLang = resolveSiteSourceLocale(team as { language?: string | null })
+  // The WEBSITE's own language when the studio set one — a studio may work in
+  // one language and publish its site in another. Else the team’s.
+  const srcLang = resolveSiteSourceLocale({ language: meta.language ?? (team.language as string | undefined) })
   const i18n = await translatePublishedSite({
     db: fs,
     collection: SITE_PUBLISHED_COLLECTION,
     id: teamId,
     owner: { teamId },
-    published: { meta, menu, sections },
+    published: { meta, menu, pages: pageRefs, sections },
     srcLang,
   })
+
+  // Each page is translated into sidecars of its own, beside the page doc — a
+  // page's translations are read with that page, never with the whole site.
+  const pagesCollection = `${SITE_PUBLISHED_COLLECTION}/${teamId}/${SITE_PAGES_SUBCOLLECTION}`
+  const pageI18n: Awaited<ReturnType<typeof translatePublishedSite>>[] = []
+  for (const [index, ref] of pageRefs.entries()) {
+    pageI18n.push(
+      await translatePublishedSite({
+        db: fs,
+        collection: pagesCollection,
+        id: ref.id,
+        owner: { teamId },
+        published: { sections: pageSections[index] },
+        srcLang,
+      })
+    )
+  }
 
   // Shaped to match PublishedSite; typed as Dict for the Firestore write since
   // values are re-derived from sanitizers (platform strings, server timestamps).
@@ -537,6 +288,16 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     // Absent ⇒ the renderer derives the old two-run header, so a site that has
     // never opened the menu editor publishes exactly what it published before.
     menu,
+    // Absent ⇒ a one-page site, exactly as before pages existed.
+    pages: pageRefs.length ? pageRefs : undefined,
+    // Old-site redirects, kept only when they lead somewhere published.
+    redirects: (() => {
+      const redirects = sanitizeRedirects(draft.redirects, {
+        pageIds: new Set(pageRefs.map((ref) => ref.id)),
+        pagePaths: new Set(pageRefs.map((ref) => ref.path)),
+      })
+      return redirects.length ? redirects : undefined
+    })(),
     socialLinks: socialLinks.length ? socialLinks : undefined,
     showBranding: plan === 'free' ? true : undefined,
     i18n,
@@ -544,7 +305,37 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
     updated_at: FieldValue.serverTimestamp() as unknown as PublishedSite['updated_at'],
   })
 
+  // ORDER: page docs first, then the site doc that indexes them, then orphans —
+  // a reader follows the index, so it never meets an entry whose page is missing.
+  if (pageRefs.length) {
+    const batch = fs.batch()
+    pageRefs.forEach((ref, index) => {
+      batch.set(
+        fs.collection(pagesCollection).doc(ref.id),
+        clean({
+          teamId,
+          pageId: ref.id,
+          sections: pageSections[index],
+          i18n: pageI18n[index],
+          published_at: FieldValue.serverTimestamp(),
+          updated_at: FieldValue.serverTimestamp(),
+        })
+      )
+    })
+    await batch.commit()
+  }
+
   await fs.doc(`${SITE_PUBLISHED_COLLECTION}/${teamId}`).set(published)
+
+  // A page no longer published (deleted, hidden) must not stay world-readable by
+  // its direct path — remove it and its translation sidecars.
+  const publishedPageIds = new Set(pageRefs.map((ref) => ref.id))
+  const existingPages = await fs.collection(pagesCollection).select().get()
+  for (const doc of existingPages.docs) {
+    if (doc.id.includes(SITE_I18N_SEPARATOR) || publishedPageIds.has(doc.id)) continue
+    await doc.ref.delete()
+    await deleteSiteI18nSidecars(fs, pagesCollection, doc.id)
+  }
   await draftSnap.ref.set(
     { enabled: true, updated_at: FieldValue.serverTimestamp(), updatedBy: uid },
     { merge: true },

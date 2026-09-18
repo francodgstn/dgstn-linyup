@@ -1,13 +1,16 @@
 import type { Timestamp } from './common'
 import type { SurfaceThemePresetId } from './themePreset'
+import type { SiteThemeId } from './siteTheme'
 import type { PublicSurface, SocialLink } from './team'
 import type { UiLanguage } from '../utils/regional'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Website plugin — studio site builder.
 //
-// A site is a single scrolling page made of stacked, typed sections. Two docs
-// back it:
+// A site is one or more pages made of stacked, typed sections. The HOME page's
+// sections live on the site doc itself; every other page is a doc of its own in
+// a `pages` subcollection, listed by the site doc's `pages` index (see
+// SitePageRef). Two docs back the site:
 //   • site_drafts/{teamId}    — PRIVATE working copy (manager+ read/write)
 //   • site_published/{teamId}  — PUBLIC, fully-public snapshot containing ONLY
 //                                whitelisted fields. Written by the publishWebsite
@@ -20,17 +23,36 @@ import type { UiLanguage } from '../utils/regional'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type SiteTheme = 'light' | 'dark' | 'auto'
-export type SiteFont = 'sans' | 'serif' | 'rounded'
+
+/**
+ * Curated brand typefaces, loaded from Google Fonts by the renderer and served
+ * from our own origin (next/font), so a visitor's IP never reaches Google.
+ * A CLOSED list on purpose: every entry is a font file the public site ships,
+ * and the publish sanitizer refuses anything else. The ids are stored — a
+ * rename is a migration.
+ */
+export const SITE_BRAND_FONTS = ['montserrat', 'inter', 'poppins', 'oswald', 'playfair', 'dm-sans'] as const
+export type SiteBrandFont = (typeof SITE_BRAND_FONTS)[number]
+
+/** The three system stacks sites have always had, plus the brand typefaces. */
+export const SITE_FONTS = ['sans', 'serif', 'rounded', ...SITE_BRAND_FONTS] as const
+export type SiteFont = (typeof SITE_FONTS)[number]
 export type SectionAlign = 'left' | 'center'
-export type SiteCtaAction = 'booking' | 'signup' | 'url'
+export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment'
 
 /** A call-to-action button. `booking`/`signup` resolve to the team's bio-link
- *  flows; `url` opens an external link. ('membership' is a legacy alias for
- *  'signup', still accepted on read/publish for older stored sites.) */
+ *  flows; `appointment` opens the booking panel straight on ONE appointment
+ *  activity (a free intro, a trial call) instead of sending the visitor to a
+ *  page first; `url` opens an external link. ('membership' is a legacy alias
+ *  for 'signup', still accepted on read/publish for older stored sites.) */
 export interface SiteCta {
   label: string
   action: SiteCtaAction
   url?: string
+  /** For `action: 'page'` — the page to open (a SitePageRef id). */
+  pageId?: string
+  /** For `action: 'appointment'` — the appointment activity to open. */
+  activityId?: string
 }
 
 export interface SiteImage {
@@ -79,16 +101,51 @@ export interface HeroSection extends SectionBase {
   layout?: 'full' | 'card'
   align: SectionAlign
   cta?: SiteCta
+  /**
+   * A muted, looping background video (an https mp4/webm URL). EXTERNAL ONLY —
+   * the studio's own host or CDN, never an upload: hosted video is billed per
+   * byte to every visitor (storage.rules, docs/scalability-2026-09.md §12).
+   * `bgImageUrl` is its poster and what visitors who prefer reduced motion see.
+   */
+  bgVideoUrl?: string
+  /**
+   * How the `overlay` is laid over the image:
+   *  - 'solid' (default): an even wash across the whole hero — today's look.
+   *  - 'gradient-left': strongest behind the text on the left, fading out to
+   *    the right, so the photo stays vivid where there is no copy.
+   *  - 'gradient-bottom': strongest at the bottom, fading upwards.
+   *  - 'gradient-left-bottom': both at once — the corner behind the text is
+   *    covered and the top right of the photo stays clear.
+   * `overlay` still sets how strong the wash is where it is strongest.
+   */
+  overlayStyle?: 'solid' | 'gradient-left' | 'gradient-bottom' | 'gradient-left-bottom'
+  /**
+   * The wash colour. 'dark' (default): black, white text — today's look.
+   * 'light': white, dark text, for a bright, airy hero.
+   */
+  overlayTone?: 'dark' | 'light'
 }
 
-/** A row of highlight cards — icon, title, a short line, an optional link. For
- *  "why us" / feature callouts. Deliberately simple: no rich text, no images. */
+/** A row of highlight items. For "why us" callouts, offer cards, a stats row or
+ *  a checklist — one list of items, drawn in the chosen `style`. No rich text. */
 export interface FeaturesSection extends SectionBase {
   type: 'features'
   heading?: string
   subheading?: string
   columns: 2 | 3 | 4
   items: FeatureItem[]
+  /**
+   * How the items are drawn:
+   *  - 'cards' (default): a card per item — icon, or an image on top when the
+   *    item has one (an offer grid).
+   *  - 'stats': big figures in a row — `title` is the figure ("500 m²"), `text`
+   *    the caption.
+   *  - 'checklist': a tick per item, no cards.
+   *  - 'panels': solid ink panels, text left, no icon — the bold row of
+   *    statements a performance gym puts under its hero.
+   * Absent ⇒ 'cards', so existing sections are unaffected.
+   */
+  style?: 'cards' | 'stats' | 'checklist' | 'panels'
 }
 
 export interface FeatureItem {
@@ -97,23 +154,71 @@ export interface FeatureItem {
   title: string
   text?: string
   linkLabel?: string
+  /** An https URL, or `#sectionId` to jump to a section of the same page. */
   linkUrl?: string
+  /** A page of this site. Wins over `linkUrl`; a page that is not published
+   *  renders no link at all. */
+  linkPageId?: string
+  /** Image across the top of the card ('cards' style). Replaces the icon. */
+  imageUrl?: string
 }
 
-/** One centred card, spaced above and below, with a heading, a line and a wide
- *  button — an offer or a single call to action mid-page. */
+/** A call to action mid-page — a heading, a line and a wide button. */
 export interface CtaBannerSection extends SectionBase {
   type: 'cta_banner'
   heading: string
   text?: string
   cta?: SiteCta
+  /**
+   * - 'card' (default): one centred card, spaced above and below.
+   * - 'band': full width, edge to edge — over `bgImageUrl` when set.
+   */
+  style?: 'card' | 'band'
+  /** Background image, dimmed so the text stays readable. */
+  bgImageUrl?: string
 }
+
+/**
+ * A video block — a YouTube or Vimeo film, shown inline or opened in a lightbox
+ * from a play button, optionally over a muted background loop.
+ *
+ * Only `provider` + `videoId` are stored, never an embed URL: the renderer
+ * builds the privacy-friendly player address itself (utils/videoEmbed.ts), so
+ * no arbitrary iframe source can ever be published.
+ */
+export interface VideoSection extends SectionBase {
+  type: 'video'
+  heading?: string
+  text?: string
+  provider?: VideoProvider
+  videoId?: string
+  /** 'inline' (default): the player sits in the page. 'lightbox': a play button
+   *  opens it over the page. */
+  display?: 'inline' | 'lightbox'
+  /** The play button's label in lightbox mode ("Video abspielen"). */
+  playLabel?: string
+  /** Muted background loop behind the block — external https mp4/webm only,
+   *  like `HeroSection.bgVideoUrl`. */
+  bgVideoUrl?: string
+  /** Still image: the lightbox block's background, and the loop's poster. */
+  posterUrl?: string
+}
+
+export type VideoProvider = 'youtube' | 'vimeo'
 
 /** A list of question/answer pairs, rendered as an accordion. */
 export interface FaqSection extends SectionBase {
   type: 'faq'
   heading?: string
   items: FaqItem[]
+  /**
+   * 'cards' (the default) is one soft card per question. 'panels' is the bold
+   * treatment — one hard-edged block, heavy rules between the rows, and the
+   * open row filled in the panel colour — so an FAQ can carry the same contrast
+   * as the panel features and a black-button brand instead of going soft
+   * halfway down the page.
+   */
+  style?: 'cards' | 'panels'
 }
 
 export interface FaqItem {
@@ -155,6 +260,14 @@ export interface GallerySection extends SectionBase {
   heading?: string
   images: SiteImage[]
   columns: 2 | 3 | 4
+  /**
+   * - 'grid' (default): cropped tiles in `columns`, with captions.
+   * - 'marquee': one endlessly scrolling strip of photos (still for visitors
+   *   who prefer reduced motion).
+   * - 'logos': partner / certification logos — never cropped, evenly spaced.
+   * Absent ⇒ 'grid'.
+   */
+  layout?: 'grid' | 'marquee' | 'logos'
 }
 
 /** Pulls live activities from the team's public_profile mirrors (type: 'activity').
@@ -222,6 +335,14 @@ export interface PricingSection extends SectionBase {
    * Absent ⇒ 'cards'.
    */
   layout?: 'cards' | 'table'
+  /**
+   * 'term': cards grouped into tabs by commitment length ("1 month", "6
+   * months", "12 months"), each plan showing its price for the chosen term —
+   * see `priceTermMonths`. A plan with no termed price (a credit pack, a
+   * per-class price) is listed below the tabs. Cards layout only.
+   * Absent ⇒ every price on one card.
+   */
+  groupBy?: 'term'
 }
 
 /** Pulls upcoming bookable sessions from the session public_profile mirrors. */
@@ -268,6 +389,56 @@ export interface PlacesSection extends SectionBase {
   places?: { id: string; name: string; address?: string; mapsLink?: string }[]
 }
 
+/**
+ * People, authored in the builder — a studio's coaches on a team page, or the
+ * one contact person on an offer page. Nothing is read from the team roster:
+ * a website shows who the studio chooses, with the role and photo it chooses.
+ * (The org site's `coaches` block is the roster-driven one; different type.)
+ */
+export interface TeamSection extends SectionBase {
+  type: 'team'
+  heading?: string
+  subheading?: string
+  columns: 2 | 3 | 4
+  /**
+   * - 'grid' (default): a portrait card per person — photo, name, role, badge.
+   * - 'contact': a wide card per person with the bio and email / phone
+   *   buttons — "your contact person" on an offer page.
+   */
+  layout?: 'grid' | 'contact'
+  items: TeamMemberItem[]
+}
+
+export interface TeamMemberItem {
+  name: string
+  role?: string
+  /** A short tag on the card, e.g. a certification ("CF-L2"). Not translated. */
+  badge?: string
+  bio?: string
+  imageUrl?: string
+  email?: string
+  phone?: string
+}
+
+/**
+ * One of the team's published forms, filled in on the page itself. The fields
+ * are read live from the form's public mirror; publish drops the section when
+ * the form is not the team's or not published.
+ */
+export interface FormSection extends SectionBase {
+  type: 'form'
+  heading?: string
+  text?: string
+  formId: string
+  /**
+   * What follows a successful submit. Absent ⇒ a thank-you line.
+   * 'appointment' opens the appointment booking for that activity — a free
+   * intro call booked straight after the enquiry. Publish drops a `next` whose
+   * activity is not one of the team's appointment activities.
+   */
+  next?: { kind: 'appointment'; activityId: string }
+}
+
 export type WebsiteSection =
   | HeroSection
   | ContentSection
@@ -281,6 +452,68 @@ export type WebsiteSection =
   | CtaBannerSection
   | FaqSection
   | TestimonialsSection
+  | VideoSection
+  | TeamSection
+  | FormSection
+  | PostsSection
+  | SplitSection
+
+/**
+ * Two columns: the story on one side, a panel on the other — the shape almost
+ * every "what this offer is" page takes. A heading and text, a stacked list of
+ * what it includes, and beside it a card with the facts (level, duration,
+ * price), an image or a contact person, and one button.
+ *
+ * A SECTION, not a page layout: a page is still a column of sections, and this
+ * is the one that has two. That keeps every other block, the editor's reorder
+ * and the publish rules exactly as they are.
+ */
+export interface SplitSection extends SectionBase {
+  type: 'split'
+  heading?: string
+  subheading?: string
+  /** Rich text (the same sanitized HTML as a content section). */
+  body?: string
+  /** What the offer includes — a stacked list under the text. */
+  items?: SplitItem[]
+  side?: SplitPanel
+  /** Which side the panel sits on. Absent ⇒ 'right'. */
+  sidePosition?: 'left' | 'right'
+  /** The panel follows the reader down a long text (wide screens only). */
+  sideSticky?: boolean
+}
+
+export interface SplitItem {
+  title: string
+  text?: string
+  /** A lucide icon name, validated at render like a feature item's. */
+  icon?: string
+}
+
+export interface SplitPanel {
+  heading?: string
+  text?: string
+  imageUrl?: string
+  /** Label / value rows — "Dauer: 60 Min.", "Level: Alle". */
+  facts?: { label: string; value: string }[]
+  cta?: SiteCta
+}
+
+/**
+ * The site's newest blog posts (pages with `kind: 'post'`), read from the page
+ * index the site already carries — no extra reads, and a post that is hidden
+ * or unpublished is simply not in it.
+ */
+export interface PostsSection extends SectionBase {
+  type: 'posts'
+  heading?: string
+  subheading?: string
+  /** How many posts, newest first. Publish defaults it to 6. */
+  limit?: number
+  /** 'grid' (default): cover cards. 'list': rows with a small image. */
+  layout?: 'grid' | 'list'
+  columns: 2 | 3 | 4
+}
 
 export type WebsiteSectionType = WebsiteSection['type']
 
@@ -332,7 +565,10 @@ export interface SiteSurfaceLinkConfig {
  * that tree wins from then on.
  */
 export type SiteMenuTarget =
+  /** A section of the HOME page — an anchor there, from any page. */
   | { kind: 'section'; sectionId: string }
+  /** Another page of the site, optionally scrolled to one of its sections. */
+  | { kind: 'page'; pageId: string; sectionId?: string }
   | { kind: 'surface'; surface: PublicSurface }
   | { kind: 'url'; url: string }
   /** A parent that only opens its children — no destination of its own. */
@@ -385,6 +621,8 @@ export function flattenSiteMenu(
 export function deriveSiteMenu(params: {
   sections: readonly { id: string; type: string; showInNav?: boolean }[]
   surfaceLinks: readonly { surface: PublicSurface }[]
+  /** A multi-page site lists its visible pages after the home anchors. */
+  pages?: readonly { id: string; hidden?: boolean; kind?: 'page' | 'post' }[]
 }): SiteMenuItem[] {
   const anchors = params.sections
     .filter((s) => s.type !== 'hero' && s.showInNav !== false)
@@ -392,11 +630,15 @@ export function deriveSiteMenu(params: {
       id: `section:${s.id}`,
       target: { kind: 'section', sectionId: s.id },
     }))
+  // Posts are reached through a posts section, never one menu item each.
+  const pages = (params.pages ?? [])
+    .filter((p) => !p.hidden && p.kind !== 'post')
+    .map((p): SiteMenuItem => ({ id: `page:${p.id}`, target: { kind: 'page', pageId: p.id } }))
   const surfaces = params.surfaceLinks.map((l): SiteMenuItem => ({
     id: `surface:${l.surface}`,
     target: { kind: 'surface', surface: l.surface },
   }))
-  return [...anchors, ...surfaces]
+  return [...anchors, ...pages, ...surfaces]
 }
 
 export interface SiteHeader {
@@ -405,6 +647,10 @@ export interface SiteHeader {
   ctaLabel?: string
   ctaAction?: SiteCtaAction
   ctaUrl?: string
+  /** The page the header button opens, when `ctaAction` is 'page'. */
+  ctaPageId?: string
+  /** The appointment the header button opens, when `ctaAction` is 'appointment'. */
+  ctaActivityId?: string
   /**
    * Show the member control ("Sign in" / "My space") in the header. Absent ⇒
    * shown: a returning member on the website otherwise has no way into their
@@ -413,6 +659,38 @@ export interface SiteHeader {
   showSignIn?: boolean
   /** Per-surface overrides for the auto-derived links. See SiteSurfaceLinkConfig. */
   surfaceLinks?: SiteSurfaceLinkConfig[]
+  /** A thin utility strip ABOVE the header — contact details, a login link.
+   *  Absent ⇒ no strip, today's header. */
+  topBar?: SiteTopBar
+}
+
+/**
+ * The utility strip above the header. Links are ordinary menu items so they
+ * share the menu's targets, sanitizer and translation keys — but FLAT: a strip
+ * with dropdowns is a second menu, and the publish sanitizer drops children.
+ */
+export interface SiteTopBar {
+  /** Free text on the leading side ("info@studio.ch · +41 …"). */
+  text?: string
+  items?: SiteMenuItem[]
+}
+
+/** One link column in the footer. `id` keys its heading's translation, so a
+ *  reorder cannot rebind one column's heading onto another. */
+export interface SiteFooterColumn {
+  id: string
+  heading?: string
+  /** Flat, like the top bar. */
+  items: SiteMenuItem[]
+}
+
+/** A partner / certification logo in the footer strip. */
+export interface SiteFooterLogo {
+  url: string
+  /** Where the logo links to. Absent ⇒ not a link. */
+  link?: string
+  /** Alt text — the partner's name. */
+  alt?: string
 }
 
 /**
@@ -451,8 +729,22 @@ export function resolveSiteSurfaceLinks(
     .map(({ surface, label }) => ({ surface, label }))
 }
 
+/**
+ * The footer. Everything past `showSocial` is optional and absent on every
+ * site that predates it, which renders exactly the footer it always had.
+ */
 export interface SiteFooter {
   showSocial: boolean
+  /** A line of prose — an address block, a tagline. Plain text, pre-line. */
+  text?: string
+  /** Link columns ("Unsere Angebote", "Gut zu wissen"). */
+  columns?: SiteFooterColumn[]
+  /** Partner / certification logos, shown as a strip above the footer. */
+  logos?: SiteFooterLogo[]
+  /** Store badges for the studio's member app. */
+  appLinks?: { ios?: string; android?: string }
+  /** The bottom row — Impressum, Datenschutz, AGB. Flat. */
+  legal?: SiteMenuItem[]
 }
 
 export interface SiteMeta {
@@ -504,7 +796,46 @@ export interface SiteMeta {
    *  text and not for the page. That is the bug presets exist to remove. */
   theme: SiteTheme
   accentColor: string
+  /** Body typeface — and headings too, unless `headingFont` says otherwise. */
   font: SiteFont
+  /** A separate display face for headings. Absent ⇒ `font`. */
+  headingFont?: SiteFont
+  /** Headings set in capitals. Absent ⇒ 'normal', today's look. */
+  headingCase?: 'normal' | 'uppercase'
+  /** The shape of every call-to-action button. Absent ⇒ 'pill', today's look. */
+  buttonShape?: 'pill' | 'rounded' | 'square'
+  /** The corners of cards and image tiles. Absent ⇒ 'rounded', today's look. */
+  cardShape?: 'rounded' | 'square'
+  /**
+   * How wide the page runs on a large screen — header, sections and footer all
+   * follow it (`--site-width`):
+   *  - 'standard' (default): 64rem, today's measure, best for reading;
+   *  - 'wide': 80rem;
+   *  - 'full': 96rem — the airy, edge-to-edge look of a photo-led studio site.
+   */
+  contentWidth?: 'standard' | 'wide' | 'full'
+  /** Header and footer navigation in capitals. Absent ⇒ as written. */
+  navCase?: 'normal' | 'uppercase'
+  /**
+   * The language the WEBSITE is written in — the one a visitor gets when the
+   * URL names none, and the source the other locales are translated from.
+   *
+   * Separate from `Team.language`, which is the language the STUDIO works in:
+   * a Zug box run in German may keep an English back office, and an English
+   * studio may write its public site in French. Absent ⇒ the team's language.
+   */
+  language?: UiLanguage
+  /** The theme whose look was last applied (types/siteTheme.ts). A note for the
+   *  builder — which theme to preselect, which section defaults to start new
+   *  sections in — never read by the renderer: the look itself lives in the
+   *  fields above, where the studio may have changed it since. */
+  appliedTheme?: SiteThemeId
+  /** Button fill, when it should differ from the accent (a black button on a
+   *  blue-accented site). Absent ⇒ the accent colour, today's look. */
+  buttonColor?: string
+  /** The studio's logo, shown in the header in place of the site title. The
+   *  title stays the accessible name. Absent ⇒ the title as text. */
+  logoUrl?: string
   // Optional custom page background (a hex color or full CSS value, e.g. a
   // linear-gradient). Overrides the theme's default page background; the header
   // keeps a theme-based translucent bar. Text stays theme-driven, so pick a
@@ -513,6 +844,64 @@ export interface SiteMeta {
   seo?: SiteSeo
   header: SiteHeader
   footer: SiteFooter
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pages
+//
+// The home page is the site doc's own `sections`; every other page is a
+// SitePageDoc in `{site_drafts|site_published}/{teamId}/pages/{pageId}`, listed
+// by the site doc's `pages` index. A page lives at `/site/{path}`.
+//
+// WHY A DOC PER PAGE, not an array on the site doc: a site of thirty pages of
+// rich sections does not fit in one Firestore document (1 MiB, and translations
+// roughly double it). The index stays on the site doc so a renderer resolves a
+// URL to a page with the one read it already makes.
+//
+// ABSENT MEANS ONE PAGE: a site with no `pages` renders exactly as it always
+// did, so nothing existing needs a backfill.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One page in the site's index. */
+export interface SitePageRef {
+  /** Stable id — the page doc id, and what menu / CTA targets point at. */
+  id: string
+  /** URL path under /site, e.g. 'angebot/crossfit'. Lowercase words and
+   *  dashes, '/'-separated — see utils/sitePages.ts. Never 'slug': the public
+   *  slug queries on these collections must never match a page. */
+  path: string
+  title: string
+  /** Shorter label for menus that list the page. Absent ⇒ the title. */
+  navLabel?: string
+  /** Kept in the draft, never published. */
+  hidden?: boolean
+  seo?: SiteSeo
+  /**
+   * 'post' makes the page a blog post: listed by `posts` sections newest first,
+   * shown under a post header (title, date, cover image), and left out of the
+   * derived menu. A post is otherwise an ordinary page — its own URL, sections,
+   * translations and SEO. Absent ⇒ 'page'.
+   */
+  kind?: 'page' | 'post'
+  /** Posts: the date shown and sorted by, 'YYYY-MM-DD'. A calendar date, not a
+   *  Timestamp, so it never shifts with the reader's timezone. */
+  publishedOn?: string
+  /** Posts: the card and header image, and the social preview image. */
+  coverImageUrl?: string
+  /** Posts: a sentence or two for the card and the meta description. */
+  excerpt?: string
+}
+
+/** A page's content — `{site_drafts|site_published}/{teamId}/pages/{pageId}`. */
+export interface SitePageDoc {
+  teamId: string
+  pageId: string
+  sections: WebsiteSection[]
+  /** Published docs only: which translation sidecars exist for this page.
+   *  Sidecars sit beside the page doc, id `{pageId}__i18n_{locale}`. */
+  i18n?: SiteI18nManifest
+  published_at?: Timestamp
+  updated_at?: Timestamp
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -580,8 +969,29 @@ export interface SiteDraft {
   sections: WebsiteSection[]
   /** The header menu. Absent ⇒ derived from sections + live surfaces. */
   menu?: SiteMenuItem[]
+  /** The other pages of the site. Absent ⇒ a one-page site. Each page's
+   *  sections are in the `pages` subcollection. */
+  pages?: SitePageRef[]
+  /** Old URLs of a site the studio moved here — see SiteRedirect. */
+  redirects?: SiteRedirect[]
   updated_at?: Timestamp
   updatedBy?: string
+}
+
+/**
+ * A permanent (301) redirect from a path of the studio's PREVIOUS website to a
+ * page of this one, so moving a site onto Linyup does not break the links the
+ * old one earned — search results, printed flyers, bookmarks.
+ *
+ * Applied only where the site would otherwise answer "not found": a real page
+ * always wins over a redirect with the same path.
+ */
+export interface SiteRedirect {
+  /** The old path as requested: lowercase, leading slash, no query or locale —
+   *  '/ueber-uns/unsere-box'. See `normalizeSiteRedirectPath`. */
+  from: string
+  /** Where it goes: the home page, a page of this site, or an https address. */
+  to: { kind: 'home' } | { kind: 'page'; pageId: string } | { kind: 'url'; url: string }
 }
 
 /** PUBLIC snapshot — site_published/{teamId}. Public read, function-write only.
@@ -594,6 +1004,10 @@ export interface PublishedSite {
   sections: WebsiteSection[]
   /** The header menu. Absent ⇒ derived from sections + live surfaces. */
   menu?: SiteMenuItem[]
+  /** The published pages (hidden ones never are). Absent ⇒ a one-page site. */
+  pages?: SitePageRef[]
+  /** Old-site redirects whose target is published. */
+  redirects?: SiteRedirect[]
   /** Denormalised from the team at publish time, for footer/contact icons. */
   socialLinks?: SocialLink[]
   /** Denormalised from the plan — true on the free plan ("Powered by Linyup"). */

@@ -9,6 +9,8 @@
 // forged into the redirect by a crafted /pay/result link (which is exactly why
 // the value is still re-validated on read).
 
+import { isLinyupOwnHost, isRestorableReturnPath } from '@linyup/shared'
+
 const KEY = 'linyup:booking:return'
 
 /**
@@ -17,16 +19,13 @@ const KEY = 'linyup:booking:return'
  * feeds a navigation — so it is treated as untrusted on the way out.
  *
  * Rejects absolute URLs, protocol-relative `//host` (which the browser resolves
- * off-site), and anything that isn't a public tenant path.
+ * off-site), and anything that isn't a public tenant path. On a studio's OWN
+ * domain every page is theirs, so the short form (`/site/angebot`, `/booking`)
+ * is accepted there too — the rule itself is `isRestorableReturnPath`.
  */
 export function isRestorableBookingReturn(value: string | null | undefined): value is string {
-  if (!value) return false
-  if (value.length > 512) return false
-  // Must be a root-relative path, never `//evil.com` or `https://…` or `javascript:`.
-  if (!value.startsWith('/') || value.startsWith('//')) return false
-  if (value.includes('\\')) return false
-  // Confined to the public tenant surfaces, optionally locale-prefixed.
-  return /^(\/[a-z]{2})?\/public\/[A-Za-z0-9_-]+(\/[A-Za-z0-9._-]*)*(\?[^#]*)?$/.test(value)
+  const customDomain = typeof window !== 'undefined' && !isLinyupOwnHost(window.location.hostname)
+  return isRestorableReturnPath(value, { customDomain })
 }
 
 /** Called immediately before handing off to Stripe. */

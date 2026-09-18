@@ -4,15 +4,19 @@ import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import type {
-  WebsiteSection, ActivitiesSection, PricingSection, ScheduleSection, PlacesSection, SiteCta,
+  WebsiteSection, ActivitiesSection, PricingSection, ScheduleSection, PlacesSection, FormSection,
+  PostsSection, SiteCta,
 } from '@linyup/shared'
 import { uploadSiteImage } from './hooks'
 import { usePlaces } from '@/hooks/usePlaces'
+import { useActivities } from '@/hooks/useActivities'
 import { useAuth } from '@/contexts/AuthContext'
+import { useForms } from '@/plugins/custom-forms/hooks'
 import {
   ContactFields,
   ContentFields,
@@ -22,7 +26,10 @@ import {
   Field,
   GalleryFields,
   HeroFields,
+  SplitFields,
+  TeamFields,
   TestimonialsFields,
+  VideoFields,
   type SiteEditorTenant,
 } from '@/components/website/SiteSectionFields'
 
@@ -36,8 +43,24 @@ import {
 
 type Patch = Record<string, unknown>
 
-function CtaEditor({ cta, onChange }: { cta?: SiteCta; onChange: (cta: SiteCta | undefined) => void }) {
+function CtaEditor({
+  cta,
+  pages,
+  teamId,
+  onChange,
+}: {
+  cta?: SiteCta
+  /** The site's other pages — offered as a CTA destination alongside booking,
+   *  sign-up and an external URL. Absent/empty ⇒ the "Page" action still shows
+   *  (it's a fixed option like the others), just with nothing to pick yet. */
+  pages?: { id: string; label: string }[]
+  teamId: string
+  onChange: (cta: SiteCta | undefined) => void
+}) {
   const t = useTranslations('Website')
+  const { data: activities = [] } = useActivities(teamId)
+  // Appointment activities only — a class has no availability picker to open.
+  const appointmentActivities = activities.filter((a) => a.type === 'appointment')
   const value = cta ?? { label: '', action: 'booking' as const }
   const set = (patch: Partial<SiteCta>) => {
     const next = { ...value, ...patch }
@@ -54,11 +77,50 @@ function CtaEditor({ cta, onChange }: { cta?: SiteCta; onChange: (cta: SiteCta |
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="booking">{t('editorCtaActionBooking')}</SelectItem>
+            <SelectItem value="appointment">{t('editorCtaActionAppointment')}</SelectItem>
             <SelectItem value="signup">{t('editorCtaActionSignup')}</SelectItem>
+            <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
             <SelectItem value="url">{t('editorCtaActionUrl')}</SelectItem>
           </SelectContent>
         </Select>
       </Field>
+      {value.action === 'page' && (
+        <Field label={t('editorCtaPage')}>
+          <Select value={value.pageId ?? ''} onValueChange={(v) => set({ pageId: v || undefined })}>
+            <SelectTrigger className="h-9"><SelectValue placeholder={t('editorCtaPagePlaceholder')} /></SelectTrigger>
+            <SelectContent>
+              {(pages ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
+      {value.action === 'appointment' && (
+        <Field label={t('editorCtaAppointment')}>
+          {appointmentActivities.length === 0 ? (
+            <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+              {t('editorCtaAppointmentEmptyHint')}
+            </p>
+          ) : (
+            <>
+              <Select value={value.activityId ?? ''} onValueChange={(v) => set({ activityId: v || undefined })}>
+                <SelectTrigger className="h-9"><SelectValue placeholder={t('editorCtaAppointmentPlaceholder')} /></SelectTrigger>
+                <SelectContent>
+                  {appointmentActivities.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* Publish turns an activity-less appointment CTA into a plain
+                  booking button — say so here rather than let it surprise. */}
+              {!value.activityId && (
+                <p className="mt-1 text-xs text-muted-foreground">{t('editorCtaAppointmentFallbackHint')}</p>
+              )}
+            </>
+          )}
+        </Field>
+      )}
       {value.action === 'url' && (
         <Field label={t('editorCtaUrl')}>
           <Input value={value.url ?? ''} onChange={(e) => set({ url: e.target.value })} placeholder="https://" className="h-9 font-mono text-xs" />
@@ -156,6 +218,20 @@ function PricingFields({ s, onChange }: { s: PricingSection; onChange: (p: Patch
         </Select>
         <p className="text-xs text-muted-foreground">{t('pricingLayoutHint')}</p>
       </Field>
+      {/* Term grouping is a CARD arrangement — the table already puts every
+          plan side by side, so there is no "which term" question to group by. */}
+      {(s.layout ?? 'cards') === 'cards' && (
+        <label className="flex items-center justify-between rounded-lg border p-3">
+          <span className="text-sm">{t('pricingGroupByTermLabel')}</span>
+          <Switch
+            checked={s.groupBy === 'term'}
+            onCheckedChange={(v) => onChange({ groupBy: v ? 'term' : undefined })}
+          />
+        </label>
+      )}
+      {s.groupBy === 'term' && (s.layout ?? 'cards') === 'cards' && (
+        <p className="text-xs text-muted-foreground">{t('pricingGroupByTermHint')}</p>
+      )}
     </div>
   )
 }
@@ -271,19 +347,172 @@ function PlacesFields({ s, teamId, onChange }: { s: PlacesSection; teamId: strin
   )
 }
 
+// ─── Form (one of the team's own published forms, filled in on the page) ────
+
+function FormFields({ s, teamId, onChange }: { s: FormSection; teamId: string; onChange: (p: Patch) => void }) {
+  const t = useTranslations('Website')
+  const { data: forms = [] } = useForms(teamId)
+  const { data: activities = [] } = useActivities(teamId)
+  // Appointment activities only — a class has no availability picker to open.
+  const appointmentActivities = activities.filter((a) => a.type === 'appointment')
+  // Archived forms drop out entirely; a draft stays listed but disabled, so a
+  // studio mid-build sees why its own form isn't offered instead of it just
+  // vanishing.
+  const selectable = forms.filter((f) => f.status !== 'archived')
+  const next = s.next
+
+  return (
+    <div className="space-y-3">
+      <Field label={t('editorHeadingOptional')}>
+        <Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" />
+      </Field>
+      <Field label={t('editorTextOptional')}>
+        <Textarea value={s.text ?? ''} onChange={(e) => onChange({ text: e.target.value })} rows={2} />
+      </Field>
+      <Field label={t('editorFormPicker')}>
+        {selectable.length === 0 ? (
+          <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+            {t('editorFormEmptyHint')}
+          </p>
+        ) : (
+          <>
+            <Select value={s.formId || undefined} onValueChange={(v) => onChange({ formId: v })}>
+              <SelectTrigger className="h-9"><SelectValue placeholder={t('editorFormPickerPlaceholder')} /></SelectTrigger>
+              <SelectContent>
+                {selectable.map((f) => (
+                  <SelectItem
+                    key={f.id}
+                    value={f.id}
+                    disabled={f.status !== 'published'}
+                    label={f.title}
+                  >
+                    {f.status !== 'published' ? t('editorFormDraftSuffix') : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* An empty formId is dropped at publish — the studio should know
+                before it publishes, not after. */}
+            {!s.formId && <p className="text-xs text-muted-foreground">{t('editorFormMissingHint')}</p>}
+          </>
+        )}
+      </Field>
+      <Field label={t('editorFormNext')}>
+        <Select
+          value={next?.kind ?? 'none'}
+          onValueChange={(v) =>
+            onChange({ next: v === 'appointment' ? { kind: 'appointment', activityId: '' } : undefined })
+          }
+        >
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t('editorFormNextNone')}</SelectItem>
+            <SelectItem value="appointment">{t('editorFormNextAppointment')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {next?.kind === 'appointment' && (
+        appointmentActivities.length === 0 ? (
+          <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+            {t('editorFormNoActivitiesHint')}
+          </p>
+        ) : (
+          <Field label={t('editorFormNextActivity')}>
+            <Select
+              value={next.activityId || undefined}
+              onValueChange={(v) => onChange({ next: { kind: 'appointment', activityId: v } })}
+            >
+              <SelectTrigger className="h-9"><SelectValue placeholder={t('editorFormNextActivityPlaceholder')} /></SelectTrigger>
+              <SelectContent>
+                {appointmentActivities.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )
+      )}
+    </div>
+  )
+}
+
+// ─── Posts (a site's own blog — team sites only, like Activities/Pricing/etc) ─
+
+function PostsFields({ s, onChange }: { s: PostsSection; onChange: (p: Patch) => void }) {
+  const t = useTranslations('Website')
+  const layout = s.layout ?? 'grid'
+  return (
+    <div className="space-y-3">
+      <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+        {t('editorPostsNote')}
+      </p>
+      <Field label={t('editorHeadingOptional')}><Input value={s.heading ?? ''} onChange={(e) => onChange({ heading: e.target.value })} className="h-9" /></Field>
+      <Field label={t('editorSubheadingOptional')}><Input value={s.subheading ?? ''} onChange={(e) => onChange({ subheading: e.target.value })} className="h-9" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('editorLayout')}>
+          <Select
+            value={layout}
+            onValueChange={(v) => onChange({ layout: v === 'grid' ? undefined : (v as PostsSection['layout']) })}
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="grid">{t('editorLayoutGrid')}</SelectItem>
+              <SelectItem value="list">{t('editorLayoutList')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        {/* A list row is always one per row — the column count is meaningless
+            there. Hidden rather than reset, so switching back to grid restores
+            whatever the studio had picked. */}
+        {layout === 'grid' && (
+          <Field label={t('editorColumns')}>
+            <Select value={String(s.columns)} onValueChange={(v) => onChange({ columns: Number(v) })}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+      </div>
+      <Field label={t('editorPostsLimit')}>
+        <Input
+          type="number"
+          min={1}
+          max={24}
+          value={s.limit ?? 6}
+          onChange={(e) => {
+            const n = Number(e.target.value)
+            if (Number.isFinite(n)) onChange({ limit: Math.min(24, Math.max(1, Math.round(n))) })
+          }}
+          className="h-9 w-24"
+        />
+      </Field>
+    </div>
+  )
+}
+
 // ─── dispatcher ───────────────────────────────────────────────────────────────
 
 export function SectionEditor({
-  section, teamId, onChange,
+  section, teamId, pages, hasPlugin, onChange,
 }: {
   section: WebsiteSection
   teamId: string
+  /** The builder's installed-plugin check, for client-owned styles. */
+  hasPlugin?: (pluginId: string) => boolean
+  /** The site's other pages — threaded into the CTA editor (hero, CTA banner)
+   *  as a destination option. Absent ⇒ no pages offered yet. */
+  pages?: { id: string; label: string }[]
   onChange: (patch: Patch) => void
 }) {
   const tenant: SiteEditorTenant = {
     kind: 'team',
     id: teamId,
     uploadImage: (sectionId, file) => uploadSiteImage(teamId, sectionId, file),
+    hasPlugin,
   }
   switch (section.type) {
     case 'hero':
@@ -292,7 +521,7 @@ export function SectionEditor({
           s={section}
           tenant={tenant}
           onChange={onChange}
-          cta={<CtaEditor cta={section.cta} onChange={(cta) => onChange({ cta })} />}
+          cta={<CtaEditor cta={section.cta} pages={pages} teamId={teamId} onChange={(cta) => onChange({ cta })} />}
         />
       )
     case 'content':
@@ -303,24 +532,40 @@ export function SectionEditor({
     case 'schedule': return <ScheduleFields s={section} onChange={onChange} />
     case 'contact':  return <ContactFields s={section} onChange={onChange} />
     case 'places':   return <PlacesFields s={section} teamId={teamId} onChange={onChange} />
-    // TEAM-ONLY FOR NOW, and only because nobody has done the org half yet.
-    // These four are purely presentational, so nothing about them is
-    // studio-specific the way pricing or schedule are — the org builder
-    // simply predates them. Offering them there means extending
-    // `OrgSiteSection`, `ORG_SECTION_LIBRARY` and `newOrgSection`, which is
-    // its own change; they are kept here so this merge preserves behaviour
-    // exactly rather than quietly widening it.
-    case 'features':    return <FeaturesFields s={section} onChange={onChange} />
+    // Presentational — shared with the org builder via SiteSectionFields, since
+    // none of these say anything commerce-specific about a studio.
+    case 'features':    return <FeaturesFields s={section} tenant={tenant} pages={pages} onChange={onChange} />
     case 'cta_banner':
       return (
         <CtaBannerFields
           s={section}
+          tenant={tenant}
           onChange={onChange}
-          cta={<CtaEditor cta={section.cta} onChange={(cta) => onChange({ cta })} />}
+          cta={<CtaEditor cta={section.cta} pages={pages} teamId={teamId} onChange={(cta) => onChange({ cta })} />}
         />
       )
-    case 'faq':         return <FaqFields s={section} onChange={onChange} />
+    case 'faq':         return <FaqFields s={section} hasPlugin={hasPlugin} onChange={onChange} />
     case 'testimonials': return <TestimonialsFields s={section} onChange={onChange} />
+    case 'video':        return <VideoFields key={section.id} s={section} tenant={tenant} onChange={onChange} />
+    case 'team':         return <TeamFields s={section} tenant={tenant} onChange={onChange} />
+    case 'form':         return <FormFields s={section} teamId={teamId} onChange={onChange} />
+    case 'posts':        return <PostsFields s={section} onChange={onChange} />
+    case 'split':
+      return (
+        <SplitFields
+          s={section}
+          tenant={tenant}
+          onChange={onChange}
+          cta={
+            <CtaEditor
+              cta={section.side?.cta}
+              pages={pages}
+              teamId={teamId}
+              onChange={(cta) => onChange({ side: { ...(section.side ?? {}), cta } })}
+            />
+          }
+        />
+      )
     default:         return null
   }
 }

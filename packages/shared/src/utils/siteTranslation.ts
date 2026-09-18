@@ -25,7 +25,13 @@
  *   surf.{surface}                  SiteMeta.header.surfaceLinks[].label
  *   menu.{itemId}                   SiteMenuItem.label (tree flattened; only
  *                                   explicit labels — a derived label is
- *                                   already localized by its source)
+ *                                   already localized by its source). The
+ *                                   SAME key space covers the top-bar links,
+ *                                   every footer column's links and the legal
+ *                                   row — item ids are unique across them
+ *   topbar.text                     SiteMeta.header.topBar.text
+ *   footer.text                     SiteMeta.footer.text
+ *   footer.col.{columnId}.heading   SiteFooterColumn.heading
  *   s.{sectionId}.headline          hero
  *   s.{sectionId}.subheadline       hero
  *   s.{sectionId}.cta               hero SiteCta.label
@@ -39,6 +45,23 @@
  *                                   guard fall back to base until re-publish —
  *                                   accepted)
  *   s.{sectionId}.hours             ContactSection free-prose hours
+ *   s.{sectionId}.text              CTA banner / video block body line
+ *   s.{sectionId}.playLabel         video block play-button label
+ *   s.{sectionId}.item.{i}.{field}  repeatable items — features, FAQ,
+ *                                   testimonials, team, split (see
+ *                                   SECTION_ITEM_TEXT_PROPS)
+ *   s.{sectionId}.side.heading      the split section's panel
+ *   s.{sectionId}.side.text         "
+ *   s.{sectionId}.side.cta          " — SiteCta.label
+ *   s.{sectionId}.side.fact.{i}.label|value   " — its label/value rows
+ *   page.{pageId}.title             SitePageRef.title (the site doc's page index)
+ *   page.{pageId}.navLabel          SitePageRef.navLabel
+ *   page.{pageId}.excerpt           SitePageRef.excerpt (a blog post's teaser)
+ *   page.{pageId}.seo.title         SitePageRef.seo.title
+ *   page.{pageId}.seo.description   SitePageRef.seo.description
+ *
+ * A PAGE's sections are translated into a sidecar of their own, beside the page
+ * doc — the same `s.{sectionId}.*` grammar, one sidecar per page.
  *
  * EXCLUDED — never extracted, because it is a brand name, data, or a link
  * rather than prose: `SiteMeta.title` and the team/org name, contact
@@ -56,6 +79,7 @@
 import type {
   SiteMeta,
   SiteMenuItem,
+  SitePageRef,
   WebsiteSection,
   SiteTranslationUnits,
 } from '../types/website'
@@ -142,9 +166,11 @@ const SECTION_TEXT_PROPS: ReadonlyArray<{ prop: string; format: 'plain' | 'html'
   { prop: 'subheading', format: 'plain' },
   { prop: 'ctaLabel', format: 'plain' },
   { prop: 'hours', format: 'plain' },
-  // The CTA-banner body line. Only that section carries a top-level `text`; the
+  // A section-level body line — the CTA banner's and the video block's. The
   // per-item `text` (a feature card) is bound by index below, not here.
   { prop: 'text', format: 'plain' },
+  // The video block's play-button label.
+  { prop: 'playLabel', format: 'plain' },
   { prop: 'body', format: 'html' },
 ]
 
@@ -157,6 +183,9 @@ const SECTION_ITEM_TEXT_PROPS: Record<string, readonly string[]> = {
   features: ['title', 'text', 'linkLabel'],
   faq: ['question', 'answer'],
   testimonials: ['activity', 'feedback'],
+  // A person's name and badge (a certification) stay as written.
+  team: ['role', 'bio'],
+  split: ['title', 'text'],
 }
 
 function propBinding(
@@ -214,13 +243,36 @@ function sectionBindings(section: AnySection): UnitBinding[] {
       }
     })
   }
+  // The split section's PANEL — its own heading, line, facts and button, keyed
+  // under `side.` so they can never collide with the main column's.
+  const side = s['side']
+  if (side && typeof side === 'object') {
+    const panel = side as Record<string, unknown>
+    bindings.push(propBinding(panel, `${prefix}side.heading`, 'heading', 'plain'))
+    bindings.push(propBinding(panel, `${prefix}side.text`, 'text', 'plain'))
+    const sideCta = panel['cta']
+    if (sideCta && typeof sideCta === 'object') {
+      bindings.push(propBinding(sideCta as Record<string, unknown>, `${prefix}side.cta`, 'label', 'plain'))
+    }
+    const facts = panel['facts']
+    if (Array.isArray(facts)) {
+      facts.forEach((fact, index) => {
+        if (fact && typeof fact === 'object') {
+          const f = fact as Record<string, unknown>
+          bindings.push(propBinding(f, `${prefix}side.fact.${index}.label`, 'label', 'plain'))
+          bindings.push(propBinding(f, `${prefix}side.fact.${index}.value`, 'value', 'plain'))
+        }
+      })
+    }
+  }
   return bindings
 }
 
-/** Bindings for a whole site (meta + menu + sections). */
+/** Bindings for a whole site (meta + menu + page index + sections). */
 function siteBindings(target: {
   meta?: SiteMeta
   menu?: readonly SiteMenuItem[]
+  pages?: readonly SitePageRef[]
   sections?: readonly AnySection[]
 }): UnitBinding[] {
   const bindings: UnitBinding[] = []
@@ -244,12 +296,52 @@ function siteBindings(target: {
           )
         )
       }
+      if (meta.header.topBar) {
+        bindings.push(
+          propBinding(meta.header.topBar as unknown as Record<string, unknown>, 'topbar.text', 'text', 'plain')
+        )
+      }
+    }
+    if (meta.footer) {
+      bindings.push(propBinding(meta.footer as unknown as Record<string, unknown>, 'footer.text', 'text', 'plain'))
+      for (const column of meta.footer.columns ?? []) {
+        bindings.push(
+          propBinding(
+            column as unknown as Record<string, unknown>,
+            `footer.col.${column.id}.heading`,
+            'heading',
+            'plain'
+          )
+        )
+      }
     }
   }
-  for (const { item } of flattenSiteMenu(target.menu)) {
-    bindings.push(
-      propBinding(item as unknown as Record<string, unknown>, `menu.${item.id}`, 'label', 'plain')
-    )
+  // Every link list shares the `menu.{itemId}` key — the header menu, the top
+  // bar, the footer columns and the legal row. Item ids are unique across all
+  // of them (the editor mints them that way), which is what keeps one key space.
+  const linkLists = [
+    target.menu,
+    meta?.header?.topBar?.items,
+    ...(meta?.footer?.columns ?? []).map((column) => column.items),
+    meta?.footer?.legal,
+  ]
+  for (const list of linkLists) {
+    for (const { item } of flattenSiteMenu(list)) {
+      bindings.push(
+        propBinding(item as unknown as Record<string, unknown>, `menu.${item.id}`, 'label', 'plain')
+      )
+    }
+  }
+  for (const page of target.pages ?? []) {
+    const ref = page as unknown as Record<string, unknown>
+    bindings.push(propBinding(ref, `page.${page.id}.title`, 'title', 'plain'))
+    bindings.push(propBinding(ref, `page.${page.id}.navLabel`, 'navLabel', 'plain'))
+    bindings.push(propBinding(ref, `page.${page.id}.excerpt`, 'excerpt', 'plain'))
+    if (page.seo) {
+      const seo = page.seo as unknown as Record<string, unknown>
+      bindings.push(propBinding(seo, `page.${page.id}.seo.title`, 'title', 'plain'))
+      bindings.push(propBinding(seo, `page.${page.id}.seo.description`, 'description', 'plain'))
+    }
   }
   for (const section of target.sections ?? []) {
     bindings.push(...sectionBindings(section))
@@ -268,6 +360,7 @@ function siteBindings(target: {
 export function extractSiteUnits(input: {
   meta?: SiteMeta
   menu?: readonly SiteMenuItem[]
+  pages?: readonly SitePageRef[]
   sections: readonly AnySection[]
 }): TranslatableUnit[] {
   const units: TranslatableUnit[] = []
@@ -327,6 +420,7 @@ export function applySiteTranslations<
   S extends {
     meta?: SiteMeta
     menu?: SiteMenuItem[]
+    pages?: SitePageRef[]
     sections: readonly AnySection[]
   },
 >(site: S, units: SiteTranslationUnits | null | undefined): S {
@@ -335,6 +429,7 @@ export function applySiteTranslations<
     ...site,
     ...(site.meta !== undefined ? { meta: cloneDeep(site.meta) } : {}),
     ...(site.menu !== undefined ? { menu: cloneDeep(site.menu) } : {}),
+    ...(site.pages !== undefined ? { pages: cloneDeep(site.pages) } : {}),
     sections: cloneDeep(site.sections as AnySection[]),
   }
   applyBindings(siteBindings(next), units)

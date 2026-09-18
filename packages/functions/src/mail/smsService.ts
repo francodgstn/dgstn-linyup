@@ -4,8 +4,10 @@
 //   • SMS_ENABLED kill switch (default OFF — SMS costs prepaid credits; enable
 //     per environment once the Brevo account has SMS credits)
 //   • TEST_MODE redirect to TEST_SMS_NUMBER (empty → drop + log)
-//   • per-number suppression list (sms_suppressions, sha256(E.164) doc ids)
-//   • mail_sends idempotency ledger reuse (channel: 'sms')
+//   • per-contact opt-out (Contact.sms_opt_out, read from the contact the send
+//     names) and per-number suppression list (sms_suppressions, sha256(E.164))
+//   • mail_sends idempotency ledger reuse (channel: 'sms'), including a
+//     'suppressed' row for a send dropped on the recipient's account
 // Sender resolution: teams/{id}/integrations/sms_sender.senderName (≤11
 // alphanumeric chars), falling back to 'Linyup'.
 import * as admin from 'firebase-admin'
@@ -13,6 +15,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { createHash } from 'crypto'
 import { defineString } from 'firebase-functions/params'
 import {
+  CONTACTS_COLLECTION,
   MAIL_SENDS_COLLECTION,
   SMS_SUPPRESSIONS_COLLECTION,
   SMS_SENDER_INTEGRATION_DOC,
@@ -69,6 +72,16 @@ export function normalizePhoneE164(raw: string | null | undefined, defaultCountr
   return /^\+[1-9]\d{6,14}$/.test(s) ? s : null
 }
 
+// Why a send was dropped on the RECIPIENT's account — the SMS sibling of
+// mailService's SuppressReason. Environment facts (kill switch, TEST_MODE with no
+// TEST_SMS_NUMBER) are deliberately not reasons: they file nothing.
+export type SmsSuppressReason =
+  | 'opt_out'
+  | 'invalid_number'
+  | 'policy_silent'
+  | 'policy_allowlist'
+  | 'suppressed_number'
+
 export function phoneHash(phoneE164: string): string {
   return createHash('sha256').update(phoneE164.trim()).digest('hex')
 }
@@ -82,7 +95,16 @@ async function isPhoneSuppressed(phoneE164: string): Promise<boolean> {
   return snap.exists
 }
 
+// Whether the contact asked not to be texted. Only an explicit `true` opts out;
+// a missing contact has no preference on file. A READ ERROR PROPAGATES — the
+// caller retries later rather than texting someone who may have said no.
+async function contactOptedOutOfSms(contactId: string): Promise<boolean> {
+  const snap = await admin.firestore().collection(CONTACTS_COLLECTION).doc(contactId).get()
+  return snap.data()?.sms_opt_out === true
+}
+
 // Upserts a phone suppression (opt-out or undeliverable). Mirrors mail/suppression.
+// No inbound STOP handling writes here yet — see the README's SMS section.
 export async function addSmsSuppression(phoneE164: string, reason: string): Promise<void> {
   const ref = admin.firestore().collection(SMS_SUPPRESSIONS_COLLECTION).doc(phoneHash(phoneE164))
   const existing = await ref.get()
@@ -123,6 +145,66 @@ async function resolveSmsSender(teamId: string): Promise<string> {
   }
 }
 
+// ── ledger ────────────────────────────────────────────────────────────────────
+interface SmsLedgerSlot {
+  ref: FirebaseFirestore.DocumentReference
+  /** False once the row already exists — which is what keeps `created_at` put. */
+  isNew: boolean
+}
+
+// The one shape of an SMS `mail_sends` row, for both a send and a drop.
+function smsLedgerFields(
+  slot: { isNew: boolean },
+  f: {
+    teamId: string
+    idempotencyKey?: string
+    status: 'sent' | 'suppressed'
+    providerMessageId?: string
+    suppressReason?: SmsSuppressReason
+  },
+): Record<string, unknown> {
+  const now = FieldValue.serverTimestamp()
+  return {
+    ...(f.idempotencyKey ? { idempotency_key: f.idempotencyKey } : {}),
+    provider: 'brevo',
+    ...(f.providerMessageId ? { provider_message_id: f.providerMessageId } : {}),
+    channel: 'sms',
+    stream: 'studio',
+    team_id: f.teamId,
+    status: f.status,
+    recipient_count: f.status === 'sent' ? 1 : 0,
+    // A send that follows a suppressed row on the same key must not keep the
+    // old drop reason beside its new status.
+    ...(f.suppressReason
+      ? { suppress_reason: f.suppressReason }
+      : slot.isNew ? {} : { suppress_reason: FieldValue.delete() }),
+    updated_at: now,
+    // Stamped once, at creation — a resend after a 'failed' or 'suppressed' row
+    // must not move the send date onto the retry. Same rule as mailService.
+    ...(slot.isNew ? { created_at: now, expires_at: ledgerExpiry('mail_sends') } : {}),
+  }
+}
+
+// Records an SMS dropped before the provider so ledger gaps are explainable.
+// A suppressed row does NOT spend the idempotency key (`ledgerRowSpendsKey`): an
+// opt-in or a policy flip lets the next keyed send go out. Never throws — the
+// drop already happened, and a failed log write must not turn it into an error.
+async function writeSuppressedSmsLedger(
+  slot: SmsLedgerSlot,
+  teamId: string,
+  idempotencyKey: string | undefined,
+  reason: SmsSuppressReason,
+): Promise<void> {
+  try {
+    await slot.ref.set(
+      smsLedgerFields(slot, { teamId, idempotencyKey, status: 'suppressed', suppressReason: reason }),
+      { merge: true },
+    )
+  } catch (err) {
+    console.warn('[sms] failed to write suppressed ledger entry:', err)
+  }
+}
+
 // ── send ──────────────────────────────────────────────────────────────────────
 export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<SmsSendOutcome> {
   if (!msg.to || !msg.content?.trim()) {
@@ -142,12 +224,14 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
   // shape as mailService: a keyed send is deduped on its key as the doc id, a
   // keyless one gets an auto id — every send is recorded either way, so the SMS
   // figure beside the email one counts sends rather than keyed sends.
-  const ledgerRef = msg.idempotencyKey
-    ? db.collection(MAIL_SENDS_COLLECTION).doc(msg.idempotencyKey)
-    : db.collection(MAIL_SENDS_COLLECTION).doc()
-  let ledgerIsNew = true
+  const slot: SmsLedgerSlot = {
+    ref: msg.idempotencyKey
+      ? db.collection(MAIL_SENDS_COLLECTION).doc(msg.idempotencyKey)
+      : db.collection(MAIL_SENDS_COLLECTION).doc(),
+    isNew: true,
+  }
   if (msg.idempotencyKey) {
-    const existing = await ledgerRef.get()
+    const existing = await slot.ref.get()
     if (existing.exists) {
       // Same predicate as mail — it owns "did this reach the provider?" for
       // both channels, so an SMS cannot answer it differently.
@@ -155,8 +239,16 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
         console.log(`[sms] idempotent skip for key ${msg.idempotencyKey}`)
         return { providerMessageId: existing.data()?.provider_message_id, skipped: true }
       }
-      ledgerIsNew = false
+      slot.isNew = false
     }
+  }
+
+  // The contact's own "no SMS" — checked before the test-mode redirect too, so a
+  // redirected test run shows what production would actually send.
+  if (msg.contactId && (await contactOptedOutOfSms(msg.contactId))) {
+    console.log(`[sms] contact ${msg.contactId} opted out of SMS — skipping`)
+    await writeSuppressedSmsLedger(slot, teamId, msg.idempotencyKey, 'opt_out')
+    return { skipped: true }
   }
 
   // Recipient: normalize, then test-mode redirect, else policy → suppression.
@@ -175,6 +267,7 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
     recipient = redirect
   } else if (!recipient) {
     console.warn(`[sms] unusable phone number '${msg.to}' — skipping`)
+    await writeSuppressedSmsLedger(slot, teamId, msg.idempotencyKey, 'invalid_number')
     return { skipped: true }
   } else {
     if (bypassTestMode) {
@@ -189,11 +282,13 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
     const decision = applySmsPolicy(recipient, policy, envDefaultMode())
     if (!decision.recipient) {
       console.log(`[sms] policy '${policy?.mode ?? envDefaultMode()}' for '${teamId}' dropped recipient (${decision.droppedReason})`)
+      await writeSuppressedSmsLedger(slot, teamId, msg.idempotencyKey, decision.droppedReason ?? 'policy_silent')
       return { skipped: true }
     }
     recipient = decision.recipient
     if (await isPhoneSuppressed(recipient)) {
       console.warn(`[sms] recipient suppressed — skipping`)
+      await writeSuppressedSmsLedger(slot, teamId, msg.idempotencyKey, 'suppressed_number')
       return { skipped: true }
     }
   }
@@ -207,22 +302,13 @@ export async function sendStudioSms(teamId: string, msg: OutboundSms): Promise<S
     tag: msg.tag,
   })
 
-  const now = FieldValue.serverTimestamp()
-  await ledgerRef.set(
-    {
-      ...(msg.idempotencyKey ? { idempotency_key: msg.idempotencyKey } : {}),
-      provider: 'brevo',
-      provider_message_id: result.providerMessageId,
-      channel: 'sms',
-      stream: 'studio',
-      team_id: teamId,
+  await slot.ref.set(
+    smsLedgerFields(slot, {
+      teamId,
+      idempotencyKey: msg.idempotencyKey,
       status: 'sent',
-      recipient_count: 1,
-      updated_at: now,
-      // Stamped once, at creation — a resend after a 'failed' row must not move
-      // the send date onto the retry. Same rule as mailService.
-      ...(ledgerIsNew ? { created_at: now, expires_at: ledgerExpiry('mail_sends') } : {}),
-    },
+      providerMessageId: result.providerMessageId,
+    }),
     { merge: true },
   )
 
