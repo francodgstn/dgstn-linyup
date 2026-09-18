@@ -17,15 +17,21 @@
 import * as admin from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import {
+  ACTIVITIES_COLLECTION,
   CONTACTS_COLLECTION,
   CONTACT_SUBSCRIPTION_HISTORY_SUBCOLLECTION,
   COURSES_COLLECTION,
   COURSE_PURCHASES_SUBCOLLECTION,
   PARTICIPANTS_SUBCOLLECTION,
   SESSIONS_COLLECTION,
+  resolveActivityDropIn,
+  studioDropInOf,
+  toMinorUnits,
+  type Activity,
   type SubscriptionHistoryEntry,
   type Tarif595Unit,
 } from '@linyup/shared'
+import { loadBookingSettings } from '../booking/bookingSettings'
 import { ATTENDANCE_SCAN_MARGIN_DAYS, MY_ATTENDANCE_SCAN_PAGE } from '../booking/myAttendance'
 
 export const TARIF595_TIMEZONE = 'Europe/Zurich'
@@ -153,6 +159,34 @@ export async function listAttendedDays(params: {
     }
   }
   return { days: [...days].sort(), truncated: snap.size === MY_ATTENDANCE_SCAN_PAGE }
+}
+
+// ─── The lesson price of a class ──────────────────────────────────────────────
+
+/**
+ * What one lesson of a class costs, in minor units — the class's RESOLVED
+ * drop-in price, or null when it has none.
+ *
+ * An attendance receipt has no record carrying a price (a check-in is not a
+ * sale), so the manager used to type it on every receipt. The studio already
+ * answers "what does one lesson of this class cost" once, for the shop and the
+ * booking flow, and THE ONE READER of that answer is `resolveActivityDropIn`
+ * — a class following the studio default stores no price of its own, so
+ * reading `activity.dropIn.priceAmount` here would be zero for exactly the
+ * classes that most often have a price. This is a DEFAULT, never a rule: a
+ * typed price always wins, because a member on a ten-pass paid a different
+ * rate per lesson than the door price.
+ */
+export async function loadClassLessonPriceMinor(teamId: string, activityId: string): Promise<number | null> {
+  const [snap, bookingSettings] = await Promise.all([
+    admin.firestore().collection(ACTIVITIES_COLLECTION).doc(activityId).get(),
+    loadBookingSettings(teamId),
+  ])
+  if (!snap.exists) return null
+  const activity = snap.data() as Activity
+  if (activity.teamId !== teamId) return null
+  const dropIn = resolveActivityDropIn(activity, studioDropInOf(bookingSettings))
+  return dropIn.enabled && typeof dropIn.priceAmount === 'number' ? toMinorUnits(dropIn.priceAmount) : null
 }
 
 // ─── Course purchase ──────────────────────────────────────────────────────────

@@ -8816,7 +8816,9 @@
       "resumedSuccess": "Receipt {number} completed.",
       "issueError": "Couldn't issue the receipt.",
       "unitPriceLabel": "Price per unit (CHF)",
-      "unitPriceHint": "Per month, lesson or entry. Leave blank to take the price from the subscription or purchase; an attendance receipt needs it."
+      "unitPriceHint": "Per month, lesson or entry. Leave blank to take the price from the subscription or purchase.",
+      "unitPriceDoorHint": "Per lesson. Leave blank to use this class's drop-in price of {price}; enter another amount if the member paid a different rate.",
+      "unitPriceNoDoorHint": "Per lesson. This class has no drop-in price, so enter what one lesson cost this member."
     },
     "history": {
       "title": "This contact's receipts",
@@ -8843,7 +8845,8 @@
       "attendance_truncated": "Only part of the attendance history could be billed.",
       "insured_number_missing": "The insured number is missing.",
       "insurer_unknown": "No insurer is on file for this contact.",
-      "unit_price_zero": "One or more lines have a price of zero."
+      "unit_price_zero": "One or more lines have a price of zero.",
+      "unit_price_from_drop_in": "No price was entered, so the class's drop-in price was used. Check it if this member paid a different rate, for example with a pass."
     },
     "bulk": {
       "title": "Issue for every member",

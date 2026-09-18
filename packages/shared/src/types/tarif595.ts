@@ -432,6 +432,21 @@ export type Tarif595WarningCode =
   | 'insured_number_missing'
   | 'insurer_unknown'
   | 'unit_price_zero'
+  /** No price was typed for an attendance receipt, so the class's resolved
+   *  drop-in price was used — a default worth a glance, since a pass holder
+   *  paid a different rate per lesson than the door price. */
+  | 'unit_price_from_drop_in'
+
+/** THE list of warning codes, for a reader that holds a code of either kind
+ *  (a bulk run's skip) and must pick the namespace its copy lives in. */
+export const TARIF595_WARNING_CODES: readonly Tarif595WarningCode[] = [
+  'overlapping_receipt',
+  'attendance_truncated',
+  'insured_number_missing',
+  'insurer_unknown',
+  'unit_price_zero',
+  'unit_price_from_drop_in',
+]
 
 export interface Tarif595PreviewIssue {
   code: Tarif595BlockingCode

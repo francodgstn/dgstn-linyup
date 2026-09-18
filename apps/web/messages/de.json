@@ -8816,7 +8816,9 @@
       "resumedSuccess": "Beleg {number} abgeschlossen.",
       "issueError": "Der Beleg konnte nicht ausgestellt werden.",
       "unitPriceLabel": "Preis pro Einheit (CHF)",
-      "unitPriceHint": "Pro Monat, Lektion oder Eintritt. Leer lassen, um den Preis aus dem Abonnement oder Kauf zu übernehmen; ein Anwesenheitsbeleg braucht ihn."
+      "unitPriceHint": "Pro Monat, Lektion oder Eintritt. Leer lassen, um den Preis aus dem Abo oder Kauf zu übernehmen.",
+      "unitPriceDoorHint": "Pro Lektion. Leer lassen, um den Einzeleintrittspreis dieses Kurses von {price} zu verwenden; erfassen Sie einen anderen Betrag, falls das Mitglied einen anderen Tarif bezahlt hat.",
+      "unitPriceNoDoorHint": "Pro Lektion. Dieser Kurs hat keinen Einzeleintrittspreis; erfassen Sie, was eine Lektion dieses Mitglied gekostet hat."
     },
     "history": {
       "title": "Belege dieses Kontakts",
@@ -8843,7 +8845,8 @@
       "attendance_truncated": "Nur ein Teil der Anwesenheiten konnte verrechnet werden.",
       "insured_number_missing": "Die Versichertennummer fehlt.",
       "insurer_unknown": "Für diesen Kontakt ist keine Versicherung hinterlegt.",
-      "unit_price_zero": "Eine oder mehrere Positionen haben einen Preis von null."
+      "unit_price_zero": "Eine oder mehrere Positionen haben einen Preis von null.",
+      "unit_price_from_drop_in": "Es wurde kein Preis erfasst, daher wurde der Einzeleintrittspreis des Kurses verwendet. Prüfen Sie ihn, falls dieses Mitglied einen anderen Tarif bezahlt hat, zum Beispiel mit einem Abo-Pass."
     },
     "bulk": {
       "title": "Für alle Mitglieder ausstellen",

@@ -8816,7 +8816,9 @@
       "resumedSuccess": "Reçu {number} terminé.",
       "issueError": "Impossible d'émettre le reçu.",
       "unitPriceLabel": "Prix par unité (CHF)",
-      "unitPriceHint": "Par mois, leçon ou entrée. Laisser vide pour reprendre le prix de l'abonnement ou de l'achat ; un justificatif de présence en a besoin."
+      "unitPriceHint": "Par mois, leçon ou entrée. Laissez vide pour reprendre le prix de l'abonnement ou de l'achat.",
+      "unitPriceDoorHint": "Par leçon. Laissez vide pour utiliser le prix à la séance de ce cours, soit {price} ; saisissez un autre montant si le membre a payé un autre tarif.",
+      "unitPriceNoDoorHint": "Par leçon. Ce cours n'a pas de prix à la séance ; saisissez ce qu'une leçon a coûté à ce membre."
     },
     "history": {
       "title": "Reçus de ce contact",
@@ -8843,7 +8845,8 @@
       "attendance_truncated": "Seule une partie de l'historique de présence a pu être facturée.",
       "insured_number_missing": "Le numéro d'assuré est manquant.",
       "insurer_unknown": "Aucun assureur n'est enregistré pour ce contact.",
-      "unit_price_zero": "Une ou plusieurs lignes ont un prix de zéro."
+      "unit_price_zero": "Une ou plusieurs lignes ont un prix de zéro.",
+      "unit_price_from_drop_in": "Aucun prix n'a été saisi ; le prix à la séance du cours a donc été utilisé. Vérifiez-le si ce membre a payé un autre tarif, par exemple avec un carnet."
     },
     "bulk": {
       "title": "Émettre pour tous les membres",
