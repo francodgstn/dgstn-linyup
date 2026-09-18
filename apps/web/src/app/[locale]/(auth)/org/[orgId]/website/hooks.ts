@@ -5,8 +5,9 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage, functions } from '@/lib/firebase'
+import { stripUndefinedDeep, useDraftSitePages, saveDraftSitePages } from '@/lib/sitePagesClient'
 import { ORG_SITE_DRAFTS_COLLECTION, ORG_SITE_PUBLISHED_COLLECTION } from '@linyup/shared'
-import type { OrgSiteDraft, OrgPublishedSite } from '@linyup/shared'
+import type { OrgSiteDraft, OrgPublishedSite, OrgSiteSection } from '@linyup/shared'
 
 // Mirrors apps/web/src/plugins/website/hooks.ts (the team site builder) but keyed
 // by orgId instead of teamId, against the org_site_drafts / org_site_published
@@ -23,6 +24,29 @@ export function useOrgSiteDraft(orgId: string | null) {
       const d = await getDoc(doc(db, ORG_SITE_DRAFTS_COLLECTION, orgId!))
       return d.exists() ? (d.data() as OrgSiteDraft) : null
     },
+  })
+}
+
+/** An org site's other pages (org_site_drafts/{orgId}/pages) — the same reader
+ *  the team builder uses (lib/sitePagesClient). */
+export function useOrgSitePageDocs(orgId: string | null) {
+  return useDraftSitePages<OrgSiteSection>(ORG_SITE_DRAFTS_COLLECTION, orgId, 'org-site-pages')
+}
+
+/** Persist every page's sections and delete the pages removed this session. */
+export async function saveOrgSitePages(
+  orgId: string,
+  userId: string,
+  pages: { id: string; sections: OrgSiteSection[] }[],
+  removedPageIds: string[]
+): Promise<void> {
+  await saveDraftSitePages({
+    draftCollection: ORG_SITE_DRAFTS_COLLECTION,
+    id: orgId,
+    owner: { orgId },
+    userId,
+    pages,
+    removedPageIds,
   })
 }
 
@@ -96,15 +120,3 @@ export async function uploadOrgSiteImage(
   return getDownloadURL(sRef)
 }
 
-// Firestore rejects `undefined`; drop it recursively before writing.
-function stripUndefinedDeep<T>(value: T): T {
-  if (Array.isArray(value)) return value.map((v) => stripUndefinedDeep(v)) as unknown as T
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (v !== undefined) out[k] = stripUndefinedDeep(v)
-    }
-    return out as T
-  }
-  return value
-}
