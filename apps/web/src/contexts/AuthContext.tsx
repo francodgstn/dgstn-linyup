@@ -214,14 +214,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       (err) => {
         // Same unlogged-denial problem as the profile listener above: this line
-        // is the only trace. Clear team + role/capability/scope exactly as the
-        // no-currentTeamId branch above does, so a denial degrades to "no team"
-        // rather than leaving stale state on screen.
+        // is the only trace. A team we cannot read is treated like a team that
+        // does not exist — the missing-document branch above, INCLUDING
+        // isOrgAdmin. Without that, an org admin switching to a denied team
+        // keeps the previous team's org-admin UI.
         console.error(`[AuthContext] team snapshot error (${teamRef.path}):`, err)
         setTeam(null)
         setTeamRole(null)
         setTeamCapabilities(null)
         setTeamScope(null)
+        setIsOrgAdmin(false)
       },
     )
     return unsub
