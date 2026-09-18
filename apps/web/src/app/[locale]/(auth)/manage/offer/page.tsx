@@ -112,6 +112,7 @@ import {
 import { ActivityScheduleSheet } from '@/components/activities/ActivityScheduleSheet'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
+import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -995,11 +996,18 @@ export default function CataloguePage() {
         // two drift apart.
         action={
           canEdit ? (
+            // THE USUAL DROP-IN PRICE sits beside Create: it prices every class
+            // that follows it, so it is a catalogue-wide setting and belongs in
+            // the catalogue's own header rather than on the read-only Pricing
+            // page (decision 29).
+            <div className="flex flex-wrap items-center gap-2">
+            <StudioDropInButton currency={currency} />
             <CreateAction
               tabs={tabs}
               onOpen={setCreating}
               onDraftWithAi={aiDrafting ? () => setAiOpen(true) : undefined}
             />
+            </div>
           ) : undefined
         }
       />

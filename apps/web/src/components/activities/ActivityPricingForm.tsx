@@ -46,9 +46,8 @@
 import { useEffect, useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
-import { doc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
-import { Check, Pencil, X } from 'lucide-react'
 import {
   ACTIVITIES_COLLECTION,
   benefitOpensDoorAt,
@@ -69,8 +68,7 @@ import {
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
-import { useAuth } from '@/contexts/AuthContext'
-import { bookingSettingsRef, useBookingSettings } from '@/hooks/useBookingSettings'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { useReportPaneDirty } from '@/components/offer/paneDirty'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -79,6 +77,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { FormSection, FormSections, SettingRow, SettingRows } from '@/components/offer/FormLayout'
 import { MoreOptions } from '@/components/forms/MoreOptions'
+import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { ActivityPlanLinks } from '@/components/offer/ActivityPlanLinks'
 import {
   AppointmentDurationsEditor,
@@ -179,134 +178,6 @@ function same(a: Draft, b: Draft): boolean {
     // keystroke, so a reference check would report every appointment dirty
     // forever and arm the Save button on a form nobody touched.
     JSON.stringify(a.durations) === JSON.stringify(b.durations)
-  )
-}
-
-/**
- * THE STUDIO DEFAULT, CHANGED IN PLACE. This option used to send the studio to
- * Offerings → Pricing to set or change the number — but a class's pricing tab
- * is where the question comes up, so the answer is taken here: a pencil (or
- * "Set one" while there is none), a price, a tick. It writes THE SAME FIELD the
- * Pricing page writes, the same way — `bookingSettings.dropIn` replaced whole
- * under `mergeFields`, so no stale price can survive beneath it — and
- * `syncStudioDropIn` fans the change out to every following class's mirror
- * exactly as it would from there. Only ever writes an ENABLED default: the one
- * way to switch the studio default off is still the Pricing page, because
- * doing it from inside one class's form would silently change every other
- * class that follows it.
- */
-function StudioDropInDefault({
-  studioDropIn,
-  currency,
-  canEdit,
-}: {
-  studioDropIn: DropInPrice | null
-  currency: string
-  canEdit: boolean
-}) {
-  const t = useTranslations('Activities')
-  const { currentTeamId } = useAuth()
-  const qc = useQueryClient()
-  const [editing, setEditing] = useState(false)
-  const [price, setPrice] = useState('')
-  const [saving, setSaving] = useState(false)
-  const parsed = parsePrice(price)
-  const invalid = !(price.trim() !== '' && parsed >= 0.5)
-
-  function open() {
-    setPrice(studioDropIn?.priceAmount != null ? String(studioDropIn.priceAmount) : '')
-    setEditing(true)
-  }
-
-  async function confirm() {
-    if (!currentTeamId || invalid || saving) return
-    setSaving(true)
-    try {
-      await setDoc(
-        bookingSettingsRef(currentTeamId),
-        { bookingSettings: { dropIn: { enabled: true, priceAmount: parsed } } },
-        { mergeFields: ['bookingSettings.dropIn'] }
-      )
-      await qc.invalidateQueries({ queryKey: ['booking-settings', currentTeamId] })
-      toast.success(t('dropInStudioDefaultSaved'))
-      setEditing(false)
-    } catch (err) {
-      console.error('[drop-in default save] failed:', err)
-      toast.error(err instanceof Error ? err.message : t('dropInStudioDefaultSaved'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (!canEdit) return null
-
-  if (editing) {
-    return (
-      <span className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">{currency}</span>
-        <Input
-          type="number"
-          min={0}
-          step="0.01"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              void confirm()
-            } else if (e.key === 'Escape') {
-              setEditing(false)
-            }
-          }}
-          placeholder={t('dropInPricePlaceholder')}
-          aria-label={t('dropInStudioDefaultEdit')}
-          className="h-8 w-24 text-sm"
-          autoFocus
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          disabled={invalid || saving}
-          onClick={() => void confirm()}
-          aria-label={t('dropInStudioDefaultConfirm')}
-        >
-          <Check aria-hidden />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          disabled={saving}
-          onClick={() => setEditing(false)}
-          aria-label={t('dropInStudioDefaultCancel')}
-        >
-          <X aria-hidden />
-        </Button>
-        {invalid && price.trim() !== '' && (
-          <span className="basis-full text-xs text-destructive">{t('dropInPriceValidation')}</span>
-        )}
-      </span>
-    )
-  }
-
-  return studioDropIn ? (
-    <button
-      type="button"
-      onClick={open}
-      aria-label={t('dropInStudioDefaultEdit')}
-      className="text-muted-foreground transition-colors hover:text-foreground"
-    >
-      <Pencil aria-hidden className="h-3.5 w-3.5" />
-    </button>
-  ) : (
-    <button
-      type="button"
-      onClick={open}
-      className="text-xs text-primary underline-offset-2 hover:underline"
-    >
-      {t('dropInModeStudioSetInline')}
-    </button>
   )
 }
 
@@ -597,11 +468,10 @@ export function ActivityPricingForm({
                                   })
                                 : t('dropInModeStudioNone')}
                             </label>
-                            <StudioDropInDefault
-                              studioDropIn={studioDropIn}
-                              currency={currency}
-                              canEdit={canEdit}
-                            />
+                            {/* The SAME dialog the Offerings header opens — one
+                                editor of the usual price, reached from where the
+                                question comes up (decision 29). */}
+                            {canEdit && <StudioDropInButton currency={currency} variant="link" />}
                           </>
                         ) : (
                           <>
