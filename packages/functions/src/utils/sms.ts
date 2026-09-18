@@ -1,10 +1,11 @@
 // Thin façade over the SMS service (src/mail/smsService.ts), parallel to
 // utils/email.ts. Call sites send AS a studio:
 //
-//   await sendSms({ to: contact.phone, content: '…', teamId })
+//   await sendSms({ to: contact.phone, contactId: contact.id, content: '…', teamId })
 //
 // The service handles E.164 normalization (CH default), the SMS_ENABLED kill
-// switch, TEST_MODE redirect, suppression and the idempotency ledger.
+// switch, TEST_MODE redirect, the contact's sms_opt_out, suppression and the
+// idempotency ledger.
 import { sendStudioSms, type SmsSendOutcome } from '../mail/smsService'
 
 export { idempotencyKey } from '../mail/mailService'
@@ -12,6 +13,8 @@ export { normalizePhoneE164 } from '../mail/smsService'
 
 export interface SendSmsOptions {
   to: string
+  /** Whose opt-out applies — see OutboundSms.contactId. */
+  contactId: string | null
   content: string
   teamId: string
   tag?: string

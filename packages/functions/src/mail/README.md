@@ -167,6 +167,32 @@ polls Brevo (`authenticate` + `getDomainConfiguration`) and flips the status to
   keyed send is skipped, and keyed sends are retried with backoff (safe because
   Brevo dedupes on the key).
 
+### SMS opt-out
+
+Every SMS names the contact it is for (`OutboundSms.contactId`, `null` only for a
+send about no contact). `sendStudioSms` reads that contact and drops the send when
+`sms_opt_out === true`, before the test-mode redirect, writing a `suppressed` row
+with `suppress_reason: 'opt_out'`. A failed contact read throws rather than sends.
+`sms_suppressions/{sha256(E.164)}` is the separate per-NUMBER block, checked after
+the tenant policy.
+
+**Nothing writes `sms_suppressions` yet, and there is no inbound STOP handler** —
+deliberately, because Brevo's docs do not support one for transactional SMS
+(checked 2026-09-17, developers.brevo.com):
+
+- A transactional SMS that carries a stop code is **reclassified as marketing** by
+  Brevo (then held outside 08:00–22:00, Sundays and French holidays), so the
+  STOP-reply mechanism does not exist on the transactional path we use.
+- The webhook API accepts `channel: 'sms'`, but its `events` enum is shared with
+  email and the SMS mapping is undocumented. The documented SMS payloads use
+  `msg_status` / `to` / numeric `messageId` — no `event`, no `email` — and the
+  unsubscribe payload does not carry the reply text.
+- The send API has no opt-out parameter.
+
+Consequence: `handleBrevoWebhook` ignores SMS payloads (it returns early without
+`event`/`email`), so SMS ledger rows stay `sent`. Wiring SMS delivery status or
+`addSmsSuppression` needs a captured real payload first, not the docs.
+
 ## The send log (`mail_sends`)
 
 **Every send is recorded** — keyed or not. A keyed send uses its key as the doc
@@ -185,7 +211,7 @@ Admin-SDK collection.
 | `stream` | `'system'` (Linyup's own mail) \| `'studio'` (sent AS a tenant). |
 | `team_id` | Present on studio mail only — system mail is attributable to no studio. |
 | `status` | `'sent'` → flipped by the Brevo webhook to delivered / bounced / blocked / spam / failed; or `'suppressed'` for a send dropped before the provider. |
-| `suppress_reason` | `synthetic` / `policy_silent` / `policy_allowlist` / `dead_address`. |
+| `suppress_reason` | Both channels: `policy_silent` / `policy_allowlist`. Email: `synthetic` / `dead_address`. SMS: `opt_out` (the contact's `sms_opt_out`) / `invalid_number` / `suppressed_number` (on `sms_suppressions`). |
 | `recipient_count` | Addresses handed to the provider — a row is one provider call, which may carry several. `0` on a suppressed row. |
 | `created_at` | The SEND time, stamped **once**. `updated_at` moves when a delivery webhook lands, so it is not a send-time axis and no count ranges over it. |
 
@@ -200,7 +226,7 @@ and a keyed resend is skipped only once the row shows the message REACHED THE
 PROVIDER — `sent`, or whatever the webhook made of it (`delivered`, `bounced`,
 `blocked`, `spam`). `failed` and `suppressed` both mean nothing left the process.
 A suppressed row records a seeded `@example.com` address, a policy the operator
-set, or an address on the suppression list; every one of those can be true today
+set, an address on the suppression list, or a contact's SMS opt-out; every one of those can be true today
 and false tomorrow, while the key is derived from the message and never changes.
 Treat the drop as terminal and the legitimate send that follows the fix is
 skipped forever. The rule lives in one predicate, `ledgerRowSpendsKey`
@@ -230,6 +256,8 @@ TTL is ever added, the lifetime figures must move to the daily snapshot.
 - `handleBrevoWebhook.test.ts` — event classification.
 - `mailMetrics.test.ts` — the Zurich day window, including both DST switches.
 - `mailService.test.ts` — which ledger states spend an idempotency key.
+- `smsService.test.ts` — phone normalisation, sender sanitising, and the
+  opt-out / suppressed-ledger path of `sendStudioSms` against a fake Firestore.
 - `brevo.integration.test.ts` — live, runs only when `BREVO_API_KEY` (and
   `BREVO_TEST_RECIPIENT` for sends) is set; covers system, managed-studio and BYO sends
   plus a domain-status read.
