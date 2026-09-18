@@ -9,9 +9,19 @@
 // caller rather than letting PDFKit default to `new Date()`, because PDFKit
 // derives the file's `/ID` trailer entry from `info` at construction time
 // (`PDFSecurity.generateFileID`, hashing `info.CreationDate.getTime()` plus
-// every other info key). Two renders of the same content at the same
-// `creationDate` are therefore byte-identical — which is what lets a receipt
-// re-render after a crash keep the sha256 it already told an insurer about.
+// every other info key). That is what lets a receipt re-render after a crash
+// and keep the sha256 it already told an insurer about.
+//
+// A pinned date is NECESSARY BUT NOT SUFFICIENT, and the gap is the caller's to
+// close: it fixes the trailer, not the ORDER PDFKit numbers objects in.
+// `doc.image()` on a PNG WITH AN ALPHA CHANNEL decodes asynchronously
+// (`splitAlphaChannel`) and emits the image and its `/SMask` whenever the zlib
+// callback fires, so two renders of identical content came out with different
+// bytes — see `drawQrSheet` in tarif595/render.ts, which draws its QR codes
+// without alpha for exactly that reason. The Swiss QR-bill part (pdf/qrBill.ts)
+// is vector-drawn and has no such hazard. A renderer that embeds images owes
+// its own determinism guard, and one that samples by rendering twice will miss
+// this — CLAUDE.md, "A guard that SAMPLES a race is not a guard".
 
 import PDFDocument from 'pdfkit'
 

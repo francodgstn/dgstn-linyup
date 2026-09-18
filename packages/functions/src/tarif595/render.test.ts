@@ -28,39 +28,27 @@ describe('tarif595 render — the three-sheet PDF', function () {
     }
   })
 
-  it('embeds the QR images with NO alpha channel — no /SMask', async () => {
+  it('embeds its QR images with NO alpha channel — no /SMask, so the object order is the call order', async () => {
     // THE DETERMINISTIC GUARD for the race above, and the reason it is worth a
-    // second test: the fix is one option (`rendererOpts: { colorType: 2 }`)
-    // travelling through qrcode → pngjs → PDFKit. If any link in that chain
-    // stops honouring it the alpha channel returns, PDFKit goes back to
-    // embedding each image through an async `splitAlphaChannel` decode, and the
-    // object order races again — while the repeat check above would only catch
-    // it sometimes.
+    // second test: the repeat check SAMPLES the race, so a regression comes
+    // back as a flake rather than a failure. This pins the CAUSE. The fix is
+    // one option (`rendererOpts: { colorType: 2 }`) travelling through
+    // qrcode → pngjs → PDFKit; if any link in that chain stops honouring it the
+    // alpha channel returns, PDFKit goes back to embedding each image through an
+    // async `splitAlphaChannel` decode, and the object order races again.
     //
     // An alpha channel shows up as an /SMask entry per image (and doubles the
     // image objects, since each mask is its own XObject), so its ABSENCE is the
     // exact signature of the fix still working. Verified by removing the option:
     // /SMask appears and the image count goes 2 → 4.
     const r = monthlyReceipt()
-    const pdf = await renderTarif595Pdf(r, buildTarif595Xml(r))
-    assert.doesNotMatch(
-      pdf.toString('latin1'),
-      /\/SMask/,
-      'an alpha channel is back in the QR PNGs — PDFKit will embed them asynchronously and two renders can differ',
-    )
-  })
-
-  // The twice-render above only catches nondeterminism when the timing happens
-  // to go wrong, so a regression would come back as a flake, not a failure.
-  // This pins the cause structurally: PDFKit decodes a PNG WITH an alpha
-  // channel asynchronously and writes the image and its /SMask in callback
-  // order (see drawQrSheet in render.ts). No soft mask means no alpha, which
-  // means the synchronous embed path.
-  it('embeds its QR images without an alpha channel, so the object order is the call order', async () => {
-    const r = monthlyReceipt()
     const text = (await renderTarif595Pdf(r, buildTarif595Xml(r))).toString('latin1')
     assert.ok(/\/Subtype\s*\/Image/.test(text), 'the QR sheet embeds its codes as images')
-    assert.doesNotMatch(text, /\/SMask/, 'an image with an alpha channel is embedded asynchronously and lands in decode order')
+    assert.doesNotMatch(
+      text,
+      /\/SMask/,
+      'an alpha channel is back in the QR PNGs — PDFKit embeds them asynchronously and two renders can differ',
+    )
   })
 
   it('renders the VAT-registered attendance receipt in every language', async () => {

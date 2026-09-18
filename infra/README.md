@@ -665,6 +665,23 @@ Demo logins (all `linyup123`, plan `studio`/`active`): `grappling@`, `crossfit@`
   `modules/iam`) or gen2 function deploys fail with an `actAs` error.
 - `id-token: write` permission is mandatory in the deploy workflows for WIF.
 - **Never** put secret values in Terraform — containers only.
+- **`terraform validate` in CI (verify.yml) catches SCHEMA errors and nothing
+  else.** It is worth having — a wrong argument name is invisible to every
+  other check in this repo, and `monitor_notification_channels` reached a live
+  `plan` exactly once. But two whole classes still get past it to an apply, and
+  both did:
+  - **Plan-time expression errors.** `validate` does not evaluate `for`-
+    expression keys, so a `Duplicate object key` from a repeated entry in a
+    `setproduct` over a `secret_ids` list only surfaces at `plan`. Guard the
+    data instead — `modules/secrets` wraps both inputs in `distinct()`.
+  - **A resource that is well-formed but can never succeed.** The budget's
+    Pub/Sub IAM binding validated perfectly and failed the apply with
+    `Error 400: Service account billing-budgets@system.gserviceaccount.com does
+    not exist` (see the budget section above). Only a real plan/apply, or the
+    provider's own acceptance-test examples, tell you this.
+
+  So `validate` passing is not a green light to apply unattended: run `plan` per
+  environment and read it.
 
 ---
 
