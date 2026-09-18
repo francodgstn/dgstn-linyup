@@ -74,6 +74,8 @@ import {
   // stays the same rule onTeamCreated provisions.
   TRIAL_CLEANUP_RULE,
   withRankLevelIds,
+  activityDocForWrite,
+  resolveActivityDropIn,
 } from '@linyup/shared'
 // The document/version/mirror writer moved to lib/fixtures/documents.ts, and the
 // sanitizer + hasher moved with it — a stored fingerprint must not depend on
@@ -734,7 +736,10 @@ async function seedTeam(opts: {
   // MMA showcases the activity↔subscription link: gated on the plan tier's
   // "unlimited" subscription types, so seeded contacts split into covered and
   // uncovered (exercises the session badges, the warn+confirm, and the
-  // subscription-side activities editor). isFreeTrial stays in sync (open ⇔ true).
+  // subscription-side activities editor). Classes are authored in the DERIVED
+  // access shape (docs/class-access-derived.md) and still written through
+  // `activityDocForWrite`, so a seeded class is exactly what the stage-5
+  // backfill would leave behind.
   // Starter is INCLUDED but usage-limited (3/week — see its `limits`): bookings
   // 1–3 in a week are covered, the 4th falls to the drop-in pay path at
   // Starter's 50% member rate. Premium/Elite are unlimited. On the studio team
@@ -758,22 +763,20 @@ async function seedTeam(opts: {
     slug: string
     color: string
     tags: string[]
-    isFreeTrial: boolean
     type: 'class'
     accessRule: {
-      type: string
+      /** 'members' = only people who signed up with the studio may book. */
+      audience: 'anyone' | 'members'
+      /** The plans that INCLUDE the class — the only plans that decide access. */
       subscriptionTypeIds?: string[]
-      /** Who may book AT ALL — the door, free path and paid path alike. */
-      audience?: 'anyone' | 'members'
-      /** Must the booker hold a linked plan? */
-      requirePlan?: boolean
     }
-    /** Independent of the tier: a gated class still accepts a newcomer's trial. */
+    /** A newcomer's trial — offered whenever the class is not free. */
     trialEnabled?: boolean
-    /** Pay-per-class price for uncovered contacts (the ONE drop-in concept). */
-    dropIn?: { enabled: boolean; priceAmount?: number }
+    /** The door for someone with no including plan: the studio's usual price,
+     *  the class's own, or none. */
+    dropIn: { mode: 'studio' | 'custom' | 'off'; priceAmount?: number }
     /** Member rate on the drop-in price (Activity.memberBenefit on a CLASS):
-     *  holders of a listed type who are NOT covered by the accessRule pay a
+     *  holders of a listed type who are NOT covered by an included plan pay a
      *  reduced drop-in. Price-modifying effects only. */
     memberBenefit?: { subscriptionTypeIds: string[]; effect: 'percent_off'; percent: number }
   }
@@ -784,39 +787,34 @@ async function seedTeam(opts: {
       slug: 'bjj',
       color: accentColor,
       tags: [],
-      isFreeTrial: true,
       type: 'class',
-      accessRule: { type: 'open' },
+      // Free to anyone: no door, no including plan.
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
     },
     {
-      // MMA demos the FULL ordinary offer (members included + trial + drop-in):
-      // gated to plans, but `trialEnabled` lets a newcomer book a free trial,
-      // and an uncovered MEMBER can pay the per-class drop-in price instead —
-      // the three toggles are independent and coexist.
-      //
-      // It is also the cell the old single tier could not express: MEMBERS ONLY
-      // WITH A PAID DOOR. Under `members` the price never fired (every member
-      // was free); under `subscription` a stranger could buy in. Here the studio
-      // says both things — you must be on our list, and if your plan does not
-      // cover this you pay the drop-in.
+      // MMA demos the FULL ordinary offer (plans included + trial + drop-in)
+      // behind the one access switch still asked — "Only people who signed up
+      // with you" (`audience: 'members'`):
+      //   - holders of an included plan book free;
+      //   - everyone else who signed up with the studio pays the drop-in;
+      //   - a visitor who never signed up cannot book, even paying — except
+      //     through the newcomer trial (`trialEnabled`), which admits them once.
+      // Catalogue chip: "Members · CHF 30". Under the derived rule it is the
+      // drop-in price that keeps this from being plan-holders-only.
       id: `${teamId}-act-mma`,
       name: 'MMA',
       slug: 'mma',
       color: '#dc2626',
       tags: ['intermediate'],
-      isFreeTrial: false,
       type: 'class',
       accessRule: {
-        // `type` is the DISPLAY projection of the pair below and must agree with
-        // it: members-only without a required plan reads as "Members only".
-        type: 'members',
-        subscriptionTypeIds: mmaSubIds,
         audience: 'members',
-        requirePlan: false,
+        subscriptionTypeIds: mmaSubIds,
       },
       trialEnabled: true,
       dropIn: {
-        enabled: true,
+        mode: 'custom',
         priceAmount: plan === 'coach' ? 25 : plan === 'studio' ? 30 : 35,
       },
       // Starter subscribers aren't covered for MMA, but pay HALF the drop-in
@@ -838,9 +836,10 @@ async function seedTeam(opts: {
       slug: 'kickboxing',
       color: '#ea580c',
       tags: [],
-      isFreeTrial: true,
       type: 'class',
-      accessRule: { type: 'open' },
+      // Free to anyone: no door, no including plan.
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
     },
     {
       id: `${teamId}-act-yoga`,
@@ -848,12 +847,18 @@ async function seedTeam(opts: {
       slug: 'yoga-mobility',
       color: '#059669',
       tags: [],
-      isFreeTrial: true,
       type: 'class',
-      accessRule: { type: 'open' },
+      // Free to anyone: no door, no including plan.
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
     },
   ]
-  for (const a of activities) {
+  // These teams' bookingSettings (above) set no usual drop-in price.
+  const studioDropIn = null
+  for (const authored of activities) {
+    const a = activityDocForWrite(authored, studioDropIn)
+    // The RESOLVED door, exactly as syncActivityPublicProfile mirrors it.
+    const door = resolveActivityDropIn(a, studioDropIn)
     await db
       .collection('activities')
       .doc(a.id)
@@ -876,15 +881,12 @@ async function seedTeam(opts: {
       slug: a.slug,
       color: a.color,
       image_url: null,
-      isFreeTrial: a.isFreeTrial,
       accessRule: a.accessRule,
-      // Drop-in config, mirrored only when enabled + priced — exactly as
-      // syncActivityPublicProfile does. trialEnabled IS mirrored (when true):
-      // the public flow needs it to OFFER the newcomer trial door on a gated
-      // class; bookSession stays the enforcement.
-      ...(a.dropIn?.enabled && typeof a.dropIn.priceAmount === 'number'
-        ? { dropIn: { enabled: true, priceAmount: a.dropIn.priceAmount } }
-        : {}),
+      // The RESOLVED drop-in, mirrored only when there is a price to charge —
+      // exactly as syncActivityPublicProfile does. trialEnabled IS mirrored
+      // (when true): the public flow needs it to OFFER the newcomer trial door
+      // on a gated class; bookSession stays the enforcement.
+      ...(door.enabled ? { dropIn: { enabled: true, priceAmount: door.priceAmount } } : {}),
       ...(a.trialEnabled ? { trialEnabled: true } : {}),
       // Class member rate mirrored verbatim (as syncActivityPublicProfile does)
       // so the public booking page can show the struck-through drop-in price.
@@ -962,8 +964,6 @@ async function seedTeam(opts: {
       slug: '1on1-coaching',
       color: accentColor,
       image_url: null,
-      // The doc carries no isFreeTrial; the live sync mirrors `|| false`.
-      isFreeTrial: false,
       // Duration menu ("from CHF 45" on public cards) + the per-length member
       // rules, both mirrored verbatim, exactly as syncActivityPublicProfile
       // does (public-safe: the subscription-type ids are already public in the
@@ -1191,7 +1191,6 @@ async function seedTeam(opts: {
           activityName: s.actName,
           activityColor: act?.color ?? null,
           activitySlug: act?.slug ?? null,
-          activityIsFreeTrial: act?.isFreeTrial ?? false,
           activityImage: null,
           start: ts(base),
           end: ts(end),
@@ -3032,7 +3031,10 @@ async function seedFreeTeam() {
       name: 'Vinyasa Flow',
       slug: 'vinyasa-flow',
       color: '#0d9488',
-      isFreeTrial: true,
+      type: 'class',
+      // Free to anyone, in the derived access shape (docs/class-access-derived.md).
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
       isActive: true,
       created_at: ts(daysFromNow(-60)),
     })
@@ -3044,7 +3046,7 @@ async function seedFreeTeam() {
     slug: 'vinyasa-flow',
     color: '#0d9488',
     image_url: null,
-    isFreeTrial: true,
+    accessRule: { audience: 'anyone' },
   })
 
   // EXACTLY the Free plan's contact cap, DERIVED so it self-corrects if the cap

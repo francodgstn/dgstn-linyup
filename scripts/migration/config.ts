@@ -158,7 +158,8 @@ export const EXCLUDED_SOURCE_TEAMS: string[] = ['jtTJcfqxDkvjfDQz9JTM']
  * the plans are real".
  *
  * So a club joins this list when its plans are real. Everything else keeps the
- * shape it had before: no `accessRule`, which reads as legacy `open`.
+ * access it had before (hmd-lineup's `isFreeTrial`: free to anyone unless it
+ * was false), stated in the derived shape by `transformActivity`.
  */
 export const PLAN_GATED_TEAMS: string[] = [
   'DVyzKM5DXAarcUuJ5SnXD5kIgT43', // HMD Basel

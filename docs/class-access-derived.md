@@ -79,6 +79,13 @@ change is a narrowing, not a new engine.
 4. **A new class starts free and public** until it gets a price or a plan (today
    it starts members-only). Its chip says `Free for anyone`, and the setup
    checklist asks for the usual drop-in price early.
+5. **"Members free, visitors pay" is not expressible** (found while writing the
+   fixtures, 2026-09-18). A legacy `members` class with a drop-in price let every
+   member book free and let a visitor pay. The derived rule can make members free
+   only through a plan. The rewrite keeps members free and the wall, and closes
+   the door (`legacy_members_door_closed`), so visitors can no longer pay; a studio
+   that wants that shape again gives its members a plan that includes the class
+   and sets a drop-in price.
 
 A document written before the drop-in default names no `dropIn.mode` and so
 FOLLOWS the studio (shipped with the default itself, #289). A studio that sets a
@@ -125,15 +132,27 @@ Each stage leaves main green and deployable. Owners in brackets.
    seeds — the emulator and staging "10-Class Pack" is one-time + 10 classes,
    valid 3 months, and the Swimli lead profile's single lesson is a one-lesson
    pack (that profile is a gitignored local file, edited in the main checkout).
-5. **Backfill and delete** [scripts + shared] — `scripts/backfill-class-access.ts`,
-   dry-run by default, through the Backfill workflow for staging and sandbox:
-   every class gets `audience`, `subscriptionTypeIds` and `dropIn.mode` in the new
-   shape with the mappings above, and loses `type`, `requirePlan`, `isFreeTrial`,
-   `dropIn.enabled`; sessions lose `isFreeTrial`. Seeds, lead seeding and the HMD
-   migration transform write the new shape directly. Then delete
-   `legacyClassCoverage`, `hasModernGate`, `canonicalClassGate`, the
-   `resolveActivityAccessRule` fallback and the stored `ActivityAccessTier`, with a
-   census test that no class reader names them again.
+5. **Backfill and delete** [scripts + shared] — DONE in code; the backfill is a
+   DEPLOY STEP. `resolveClassGate` derives "plan required" (a plan includes the
+   class AND no door sells it) and ignores any stored `requirePlan`; the legacy
+   coverage engine (`legacyClassCoverage`), `canonicalClassGate`,
+   `classAccessTierOf` and `activityRequiresSubscription` are deleted. Every
+   reader — the public cards and booking flow (`activityTerms`, the website
+   pricing table, `BookingForm`), the session roster, the Pricing page, the API
+   projection, purchase receipts — asks `classAccessFacts` / `gatedPlanIds`.
+   Every writer stores `{ audience, subscriptionTypeIds? }` and `dropIn.mode`:
+   the pricing form (clearing the legacy fields on save), the plan table's edge
+   writer (through `migrateClassAccess`, so a legacy class's first edit moves
+   nobody), the class dialog, the AI drafter, the review studio, the seeders and
+   the HMD migration (`activityDocForWrite`). The mirrors stop carrying
+   `isFreeTrial`. What remains of the legacy reading is small and in one place —
+   `hasModernGate`, `classIsFreeForEveryone`, `classDoorIsInert` and the wall's
+   fallback in `resolveClassGate` — so an un-rewritten document still reads
+   safely; it can go once every environment has run the backfill.
+   **`pnpm backfill:class-access`** (`scripts/backfill-class-access.ts`, also in
+   the Backfill workflow) rewrites every class through `migrateClassAccess`,
+   cleans appointments and sessions, and prints each class it changed with the
+   note that says how. Run it right after deploying this stage.
 
 The mobile app does not read a class's `accessRule` or `isFreeTrial` (checked
 2026-09-17: its only mention is a comment in `utils/appointmentAccess.ts`), so no

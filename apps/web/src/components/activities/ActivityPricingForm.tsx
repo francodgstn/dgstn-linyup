@@ -46,7 +46,7 @@
 import { useEffect, useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
-import { doc, updateDoc } from 'firebase/firestore'
+import { deleteField, doc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
 import {
   ACTIVITIES_COLLECTION,
@@ -127,7 +127,6 @@ interface Draft {
 function draftDropInField(d: Pick<Draft, 'dropInMode' | 'dropInPrice'>): ActivityDropIn {
   return {
     mode: d.dropInMode,
-    enabled: d.dropInMode === 'custom',
     ...(d.dropInMode === 'custom' && d.dropInPrice
       ? { priceAmount: parsePrice(d.dropInPrice) }
       : {}),
@@ -163,7 +162,6 @@ function storedRuleFor(
   return classAccessRuleFor({
     signupRequired: d.signupRequired,
     includedPlanIds: facts.includedPlanIds,
-    paidDoor: facts.dropIn.enabled,
   })
 }
 
@@ -363,15 +361,16 @@ export function ActivityPricingForm({
               // matcher stores and the door this form sets — so nothing here
               // asks the studio who may book (docs/class-access-derived.md).
               'accessRule.audience': storedRule.audience,
-              'accessRule.requirePlan': storedRule.requirePlan,
-              'accessRule.type': storedRule.type,
-              isFreeTrial: storedRule.audience === 'anyone' && !storedRule.requirePlan,
+              // The legacy projections go on the first save — "plan required" is
+              // derived on every read now (docs/class-access-derived.md).
+              'accessRule.requirePlan': deleteField(),
+              'accessRule.type': deleteField(),
+              isFreeTrial: deleteField(),
               // The three answers (`DropInMode`), written whole: a price is
               // stored only under 'custom', so a class that follows the studio
               // carries none and cannot go stale against the default.
               dropIn: {
                 mode: draft.dropInMode,
-                enabled: draft.dropInMode === 'custom',
                 ...(draft.dropInMode === 'custom' && draft.dropInPrice
                   ? { priceAmount: parsePrice(draft.dropInPrice) }
                   : {}),
@@ -551,16 +550,17 @@ export function ActivityPricingForm({
           onBeforeSave={async () => {
             const current = storedRuleFor(stored, activity, studioDropIn)
             if (
-              storedRule.audience === current.audience &&
-              storedRule.requirePlan === current.requirePlan
+              storedRule.audience === current.audience
             ) {
               return
             }
             await updateDoc(doc(db, ACTIVITIES_COLLECTION, activity.id), {
               'accessRule.audience': storedRule.audience,
-              'accessRule.requirePlan': storedRule.requirePlan,
-              'accessRule.type': storedRule.type,
-              isFreeTrial: storedRule.audience === 'anyone' && !storedRule.requirePlan,
+              // The legacy projections go on the first save — "plan required" is
+              // derived on every read now (docs/class-access-derived.md).
+              'accessRule.requirePlan': deleteField(),
+              'accessRule.type': deleteField(),
+              isFreeTrial: deleteField(),
             })
             refreshQueries(qc, ['activities'])
           }}

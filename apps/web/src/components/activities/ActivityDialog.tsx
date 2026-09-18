@@ -498,11 +498,12 @@ export function ActivityDialog({
     // kept it. A blank activity starts on the tier the cards used to default to.
     return {
       ...base,
-      accessRule: duplicating?.accessRule ?? { type: 'members' as const },
-      isFreeTrial: duplicating?.isFreeTrial ?? false,
-      // A new class FOLLOWS THE STUDIO DEFAULT (`DropInMode`) — it names a
-      // price only when a studio changes it to.
-      dropIn: duplicating?.dropIn ?? { mode: 'studio' as const, enabled: false },
+      // A NEW CLASS, IN THE DERIVED SHAPE (docs/class-access-derived.md): no
+      // wall, no plan, and it FOLLOWS THE USUAL DROP-IN PRICE — so it is paid
+      // for anyone when the studio has one, and free until it does. A copy
+      // carries the original's answers.
+      accessRule: duplicating?.accessRule ?? { audience: 'anyone' as const },
+      dropIn: duplicating?.dropIn ?? { mode: 'studio' as const },
       trialEnabled: duplicating?.trialEnabled ?? false,
       trialPriceAmount: duplicating?.trialPriceAmount ?? null,
       memberBenefit: duplicating?.memberBenefit ?? null,

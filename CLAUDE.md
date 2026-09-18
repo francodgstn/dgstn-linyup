@@ -407,6 +407,16 @@ Six invariants, each a bug before it was a rule:
   default stores no price of its own. The mirror carries the RESOLVED price and
   `syncStudioDropIn` rewrites every following class when the default moves.
   `docs/payment-contact-studio.md` → "Drop-in".
+- **Who may book a class is DERIVED from its prices, never asked or stored.** A
+  class stores two answers: `accessRule.audience` (the "only people who signed
+  up with you" wall) and `accessRule.subscriptionTypeIds` (the plans that
+  INCLUDE it). "Plan required" = a plan includes it AND no door sells it,
+  computed on every read by `resolveClassGate`; a member PRICE never decides
+  access. Read it through **`classAccessFacts(activity, studioDropIn)`**
+  (`packages/shared/src/utils/classAccess.ts`) and write it through
+  **`classAccessRuleFor`** — never branch on the legacy `accessRule.type`,
+  `accessRule.requirePlan` or `isFreeTrial`, which only un-rewritten documents
+  carry (`pnpm backfill:class-access` removes them). `docs/class-access-derived.md`.
 - **THE ONE READER of a per-length member rule is `resolveDurationBenefit`.**
   Never touch the fields directly: `durationBenefits` present ⇒ it is the whole
   answer and a missing entry means no rule; absent ⇒ the legacy

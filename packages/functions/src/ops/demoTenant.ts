@@ -286,7 +286,6 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
         accessRule: classAccessRuleFor({
           signupRequired: false,
           includedPlanIds: [],
-          paidDoor: false,
         }),
         dropIn: { mode: 'off', enabled: false },
         max_participants: 12,

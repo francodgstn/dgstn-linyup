@@ -8,6 +8,7 @@ import {
   normalizeBenefit,
   resolveActivityAccessRule,
   classAccessFacts,
+  gatedPlanIds,
   resolveAppointmentDurations,
   resolveDurationBenefit,
   resolveDurationSale,
@@ -338,10 +339,9 @@ export function grantsForType(
   for (const a of activities) {
     const isAppointment = a.type === 'appointment'
     if (!isAppointment) {
-      const rule = resolveActivityAccessRule(a)
-      if (rule.type === 'subscription' && (rule.subscriptionTypeIds ?? []).includes(typeId)) {
-        coveredClassNames.push(a.name)
-      }
+      // The plans that INCLUDE the class — derived, so a class with a door
+      // counts too (its holders book free, everybody else pays).
+      if (gatedPlanIds(a).includes(typeId)) coveredClassNames.push(a.name)
     }
     // AN APPOINTMENT HAS ONE RULE PER LENGTH, so it can grant this plan several
     // different things — 60 min included, 90 min at 20% off. Each is its own

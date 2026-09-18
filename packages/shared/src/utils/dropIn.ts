@@ -23,7 +23,7 @@
 // its own, and reading the field finds nothing where the studio put CHF 25.
 
 import { resolveActivityAccessRule, type Activity, type ActivityDropIn, type DropInMode } from '../types/activity'
-import { classIsFreeForEveryone } from './paymentOptions'
+import { classDoorIsInert } from './paymentOptions'
 
 /** A drop-in price as every consumer sees it — the same shape the activity
  *  mirror carries and `hasPaidDoor` reads. */
@@ -74,7 +74,10 @@ export function resolveActivityDropIn(
   studio: DropInPrice | null | undefined
 ): ResolvedDropIn {
   if (activity.type === 'appointment') return { enabled: false, source: 'off' }
-  if (classIsFreeForEveryone(resolveActivityAccessRule(activity))) {
+  // A LEGACY `open` or `members` class never let its price fire (everyone, or
+  // every member, was covered first) — so it has no door until the backfill
+  // states one. A class asked the two questions is not this case.
+  if (classDoorIsInert(resolveActivityAccessRule(activity))) {
     return { enabled: false, source: 'off' }
   }
   const mode = dropInModeOf(activity.dropIn)

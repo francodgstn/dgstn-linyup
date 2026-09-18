@@ -81,7 +81,7 @@ import {
   browseDurationMinutes,
   compareActivities,
   mergeAvailabilitySlots,
-  resolveActivityAccessRule,
+  classAccessFacts,
   normalizeBenefit,
   resolveDurationBenefit,
   resolveDurationSale,
@@ -1078,10 +1078,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
               // Whether "Included with {plan}" is a REQUIREMENT here. Only a
               // class carries an access rule; an appointment's identical-looking
               // line comes from its member benefit and is a saving.
-              const subscriptionGated =
-                d.type === 'class' &&
-                resolveActivityAccessRule({ accessRule: a.accessRule, isFreeTrial: a.isFreeTrial })
-                  .type === 'subscription'
+              const subscriptionGated = d.type === 'class' && siteClassFacts(a).planHoldersOnly
               const gate: string[] = []
               const money: string[] = []
               // A 'members'-tier class (the DEFAULT for every new class) used to
@@ -1364,10 +1361,10 @@ function pricingCell(
     return { kind: 'text', text: t('termFrom', { price: formatCurrency(min, currency) }) }
   }
 
-  const rule = resolveActivityAccessRule({ accessRule: a.accessRule, isFreeTrial: a.isFreeTrial })
-  // Open to anyone, or open to anyone signed up: every plan-holder qualifies.
-  if (rule.type === 'open' || rule.type === 'members') return { kind: 'yes' }
-  if (rule.subscriptionTypeIds?.includes(planId)) return { kind: 'yes' }
+  const facts = siteClassFacts(a)
+  // Free to everyone it admits: every plan-holder qualifies.
+  if (facts.free) return { kind: 'yes' }
+  if (facts.includedPlanIds.includes(planId)) return { kind: 'yes' }
   // Not included — but say what a holder of THIS plan can still do rather than
   // leaving a bare dash where a door exists.
   if (a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number')
@@ -1383,10 +1380,27 @@ function pricingRowNote(a: ActivityEntry, t: SiteT): string | null {
     )
     return priced ? null : t('tableFreeNote')
   }
-  const rule = resolveActivityAccessRule({ accessRule: a.accessRule, isFreeTrial: a.isFreeTrial })
-  if (rule.type === 'members') return t('tableAnyPlanNote')
-  if (rule.type === 'open') return t('tableOpenNote')
+  const facts = siteClassFacts(a)
+  if (facts.free) return facts.signupRequired ? t('tableAnyPlanNote') : t('tableOpenNote')
   return null
+}
+
+/** WHO MAY BOOK a class on the site, derived (docs/class-access-derived.md) —
+ *  from the mirror, whose drop-in is already RESOLVED, so no studio default is
+ *  left to follow. */
+function siteClassFacts(a: ActivityEntry) {
+  return classAccessFacts(
+    {
+      type: 'class',
+      accessRule: a.accessRule ?? undefined,
+      isFreeTrial: a.isFreeTrial,
+      dropIn:
+        a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
+          ? { mode: 'custom', priceAmount: a.dropIn.priceAmount }
+          : { mode: 'off' },
+    },
+    null
+  )
 }
 
 function PricingTable({

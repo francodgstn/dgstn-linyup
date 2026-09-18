@@ -466,7 +466,6 @@ export const applyOfferingDraft = onCall(async (request) => {
             accessRule: classAccessRuleFor({
               signupRequired: tier === 'members',
               includedPlanIds: gatePlanIds,
-              paidDoor: activity.dropInPriceAmount !== undefined,
             }),
           }),
       teamId,

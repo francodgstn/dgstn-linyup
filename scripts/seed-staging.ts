@@ -87,7 +87,12 @@ import {
 } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { partnerAppNames } from './lib/partnerApps'
-import { normalizeActivityTags, withRankLevelIds } from '@linyup/shared'
+import {
+  activityDocForWrite,
+  normalizeActivityTags,
+  resolveActivityDropIn,
+  withRankLevelIds,
+} from '@linyup/shared'
 import {
   appointmentOccurrences,
   buildAppointmentSessionDocs,
@@ -986,15 +991,17 @@ async function seedTeam(opts: TeamSeed) {
     slug: string
     color: string
     tags: string[]
-    isFreeTrial: boolean
     type: 'class'
     base_score: number
     description: string
-    accessRule: { type: string; subscriptionTypeIds?: string[] }
-    /** Independent of the tier: a gated class still accepts a newcomer's trial. */
+    /** The derived access shape (docs/class-access-derived.md): the sign-up
+     *  wall and the plans that INCLUDE the class — nothing else is stored. */
+    accessRule: { audience: 'anyone' | 'members'; subscriptionTypeIds?: string[] }
+    /** A newcomer's trial — offered whenever the class is not free. */
     trialEnabled?: boolean
-    /** Pay-per-class price for uncovered contacts (the ONE drop-in concept). */
-    dropIn?: { enabled: boolean; priceAmount?: number }
+    /** The door for someone with no including plan: the studio's usual price,
+     *  the class's own, or none. */
+    dropIn: { mode: 'studio' | 'custom' | 'off'; priceAmount?: number }
   }
   const activities: ClassActivitySeed[] = [
     {
@@ -1003,36 +1010,36 @@ async function seedTeam(opts: TeamSeed) {
       slug: 'bjj',
       color: accentColor,
       tags: [],
-      isFreeTrial: true,
       type: 'class',
       base_score: 12,
       description:
         'Gi grappling from fundamentals to advanced — positions, escapes and submissions.',
-      accessRule: { type: 'open' },
+      // Free to anyone: no door, no including plan.
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
     },
     {
-      // MMA demos the FULL ordinary offer (members included + trial + drop-in):
-      // subscription-gated, but `trialEnabled` lets a newcomer book a free trial,
-      // and an uncovered contact can pay the per-class drop-in price instead.
+      // MMA demos the FULL ordinary offer (plans included + trial + drop-in):
+      // the listed plans include it, anyone else pays the per-class drop-in
+      // price, and `trialEnabled` gives a newcomer a free first class.
       id: `${teamId}-act-mma`,
       name: 'MMA',
       slug: 'mma',
       color: '#dc2626',
       tags: ['intermediate'],
-      isFreeTrial: false,
       type: 'class',
       base_score: 15,
       description: 'Striking-to-grappling transitions and cage craft for experienced athletes.',
       // Showcases the activity↔subscription link (see seed-emulator.ts).
       accessRule: {
-        type: 'subscription',
+        audience: 'anyone',
         subscriptionTypeIds:
           plan === 'coach'
             ? [`${teamId}-sub-monthly`, `${teamId}-sub-10class`]
             : [`${teamId}-sub-premium`, `${teamId}-sub-elite`],
       },
       trialEnabled: true,
-      dropIn: { enabled: true, priceAmount: plan === 'coach' ? 25 : 30 },
+      dropIn: { mode: 'custom', priceAmount: plan === 'coach' ? 25 : 30 },
     },
     {
       id: `${teamId}-act-kickbox`,
@@ -1040,11 +1047,12 @@ async function seedTeam(opts: TeamSeed) {
       slug: 'kickboxing',
       color: '#ea580c',
       tags: [],
-      isFreeTrial: true,
       type: 'class',
       base_score: 10,
       description: 'Pad work, combinations and conditioning — a serious workout for every level.',
-      accessRule: { type: 'open' },
+      // Free to anyone: no door, no including plan.
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
     },
     {
       id: `${teamId}-act-yoga`,
@@ -1052,14 +1060,22 @@ async function seedTeam(opts: TeamSeed) {
       slug: 'yoga-mobility',
       color: '#059669',
       tags: [],
-      isFreeTrial: true,
       type: 'class',
       base_score: 8,
       description: 'Recovery-focused mobility and breath work to keep you on the mats.',
-      accessRule: { type: 'open' },
+      // Free to anyone: no door, no including plan.
+      accessRule: { audience: 'anyone' },
+      dropIn: { mode: 'off' },
     },
   ]
-  for (const a of activities) {
+  // Staging's bookingSettings set no usual drop-in price. Written through
+  // `activityDocForWrite` so a seeded class is exactly what the stage-5
+  // backfill would leave (docs/class-access-derived.md).
+  const studioDropIn = null
+  for (const authored of activities) {
+    const a = activityDocForWrite(authored, studioDropIn)
+    // The RESOLVED door, exactly as syncActivityPublicProfile mirrors it.
+    const door = resolveActivityDropIn(a, studioDropIn)
     await db
       .collection('activities')
       .doc(a.id)
@@ -1083,15 +1099,12 @@ async function seedTeam(opts: TeamSeed) {
       color: a.color,
       description: a.description,
       image_url: null,
-      isFreeTrial: a.isFreeTrial,
       accessRule: a.accessRule,
-      // Drop-in config, mirrored only when enabled + priced — exactly as
-      // syncActivityPublicProfile does. trialEnabled IS mirrored (when true):
-      // the public flow needs it to OFFER the newcomer trial door on a gated
-      // class; bookSession stays the enforcement.
-      ...(a.dropIn?.enabled && typeof a.dropIn.priceAmount === 'number'
-        ? { dropIn: { enabled: true, priceAmount: a.dropIn.priceAmount } }
-        : {}),
+      // The RESOLVED drop-in, mirrored only when there is a price to charge —
+      // exactly as syncActivityPublicProfile does. trialEnabled IS mirrored
+      // (when true): the public flow needs it to OFFER the newcomer trial door
+      // on a gated class; bookSession stays the enforcement.
+      ...(door.enabled ? { dropIn: { enabled: true, priceAmount: door.priceAmount } } : {}),
       ...(a.trialEnabled ? { trialEnabled: true } : {}),
       // Tags mirrored only when non-empty, exactly as syncActivityPublicProfile does.
       ...(a.tags?.length ? { tags: normalizeActivityTags(a.tags) } : {}),
@@ -1169,8 +1182,6 @@ async function seedTeam(opts: TeamSeed) {
       color: accentColor,
       description: appointmentActDescription,
       image_url: null,
-      // The doc carries no isFreeTrial; the live sync mirrors `|| false`.
-      isFreeTrial: false,
       // Duration menu ("from CHF 45" on public cards) + the per-length member
       // rules, both mirrored verbatim, exactly as syncActivityPublicProfile
       // does (public-safe: the subscription-type ids are already public in the
@@ -1388,7 +1399,6 @@ async function seedTeam(opts: TeamSeed) {
           activityName: s.actName,
           activityColor: act?.color ?? null,
           activitySlug: act?.slug ?? null,
-          activityIsFreeTrial: act?.isFreeTrial ?? false,
           activityImage: null,
           start: ts(base),
           end: ts(end),
