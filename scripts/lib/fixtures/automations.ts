@@ -25,6 +25,7 @@
  */
 
 import admin from 'firebase-admin'
+import { ledgerExpiry } from '../ledgerExpiry'
 
 const TEAMS_COLLECTION = 'teams'
 const CONTACTS_COLLECTION = 'contacts'
@@ -422,18 +423,22 @@ export async function seedAutomations(opts: {
     },
   ]
   for (const l of logs) {
+    // The run's OWN date, so the TTL stamp ages this row exactly as a real one
+    // of the same age would age — see scripts/lib/ledgerExpiry.ts.
+    const triggeredAt = daysFrom(-l.days)
     await teamRef
       .collection(AUTOMATION_LOGS_SUBCOLLECTION)
       .doc(l.id)
       .set({
         rule_id: l.rule_id,
         rule_name: l.rule_name,
-        triggered_at: tsOf(daysFrom(-l.days)),
+        triggered_at: tsOf(triggeredAt),
         trigger_type: l.trigger_type,
         trigger_tier: l.trigger_tier,
         contacts_matched: l.contacts_matched,
         actions_executed: l.actions_executed,
         actions_failed: 0,
+        expires_at: ledgerExpiry('automation_logs', triggeredAt),
       })
   }
 }

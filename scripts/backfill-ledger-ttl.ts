@@ -27,6 +27,20 @@
  *     regular `firebase deploy --only firestore:indexes`). Deletions begin
  *     within 24 hours of the policy going active.
  *
+ * ── WHAT THIS PASS IS *NOT* FOR ─────────────────────────────────────────────
+ * Rows written by a SCRIPT no longer need it. The four seeders, the shared
+ * automations fixture and the HMD migration each stamp `expires_at` as they
+ * write, through `scripts/lib/ledgerExpiry.ts`. Repairing seeded rows afterwards
+ * was work the next reseed threw away — the `/try` sandbox reseeds nightly and
+ * `pnpm emulators:seed` wipes and rewrites — so the pass would have been owed
+ * again after every seed, forever, and nobody would have remembered.
+ *
+ * What is left, and what this was built for, is the APP's own backlog: rows
+ * written before `packages/functions/src/utils/ledgerRetention.ts` was deployed.
+ * On an environment that has been running the app for a while that is real and
+ * this is how it is repaired. On one with no such history there is nothing to
+ * repair, and the honest dry-run count will say so.
+ *
  * ── WHAT IT READS / WRITES ──────────────────────────────────────────────────
  * One collection-group scan per ledger, paged; one single-field `update()` per
  * row that lacks the field, batched 400 to a commit. It never rewrites a row
