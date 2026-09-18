@@ -1586,6 +1586,15 @@
     "templateDeleteTitle": "Diese Vorlage löschen?",
     "templateDeleteDescription": "Events, die sie bereits nutzen, behalten ihr Programm. Das kann nicht rückgängig gemacht werden.",
     "templateInherited": "Von deiner Organisation übernommen — schreibgeschützt.",
+    "templateClone": "Klonen",
+    "templateCloned": "Vorlage geklont.",
+    "templateCopyName": "{name} (Kopie)",
+    "starterLibraryTitle": "Mit einer Vorlage starten",
+    "starterLibraryHint": "Füge ein fertiges Programm zu deiner Liste hinzu und passe es dann bei einem Event an.",
+    "starterLibraryOrgHint": "Füge ein fertiges Programm zur gemeinsamen Liste der Organisation hinzu.",
+    "starterAdd": "Hinzufügen",
+    "starterAdded": "„{name}“ zu deinen Vorlagen hinzugefügt.",
+    "starterBadge": "Starter",
     "duplicateEvent": "Duplizieren",
     "duplicateTitle": "Dieses Event duplizieren",
     "duplicateDescription": "Kopiert die Einstellungen und das gesamte Programm. Rückmeldungen, Einladungen und Check-ins werden nicht kopiert, und die Kopie bleibt privat.",
@@ -8821,7 +8830,9 @@
       "noHistory": "Diese Zahlung nennt ein Abo, aber für das Mitglied ist kein Abo dieses Plans erfasst, das bescheinigt werden könnte. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
       "unsupported": "Aus dieser Zahlung lässt sich kein Beleg ableiten: Eine Einzeleintritts- oder Terminzahlung sagt nicht, welchen Kurs oder welches Datum sie abdeckt, und Produkte sind keine Gesundheitsförderung. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
       "openSegment": "Belege des Mitglieds öffnen"
-    }
+    },
+    "checklistExpiring": "{count} zugeordnete Positionen sind nach dem {date} nicht mehr gültig",
+    "checklistReview": "Prüfen"
   },
   "LegalProfile": {
     "title": "Rechtliches Profil",
@@ -8922,7 +8933,9 @@
       "searchPlaceholder": "Angebote suchen…",
       "unmappedOnly": "Nur nicht zugeordnete ({count})",
       "summary": "{mapped} von {total} zugeordnet",
-      "allMapped": "Alle Angebote sind zugeordnet."
+      "allMapped": "Alle Angebote sind zugeordnet.",
+      "stateExpiring": "Position läuft bald ab",
+      "stateExpired": "Position nicht mehr gültig"
     },
     "suggest": {
       "button": "Positionen vorschlagen",
@@ -8935,6 +8948,18 @@
       "noneFound": "Für die nicht zugeordneten Angebote konnte keine Position vorgeschlagen werden.",
       "unavailable": "Vorschläge sind im Moment nicht verfügbar. Sie können die Positionen weiterhin manuell wählen.",
       "rateLimited": "Sie haben das Stundenlimit für Vorschläge erreicht. Versuchen Sie es später erneut."
+    },
+    "expiry": {
+      "banner": "{count} zugeordnete Positionen sind nach dem {date} nicht mehr gültig. Die Tarifliste ändert jeweils am 1. Januar, und eine Belegzeile mit späterem Datum wird abgelehnt. Wählen Sie vorher einen Ersatz.",
+      "suggestReplacements": "Ersatz vorschlagen",
+      "rowExpiring": "Gültig bis {date} – Belege mit späterem Datum werden abgelehnt.",
+      "rowExpired": "Seit dem {date} nicht mehr gültig – neue Belege auf dieser Position werden abgelehnt.",
+      "replacementLabel": "Vorgeschlagener Ersatz",
+      "useReplacement": "Übernehmen",
+      "replacementsFound": "{count} Ersatzvorschläge. Es ändert sich nichts, bis Sie in einer Zeile «Übernehmen» wählen, und nichts wird gespeichert, bis Sie speichern.",
+      "replacementsNone": "Es konnte kein Ersatz vorgeschlagen werden. Wählen Sie manuell eine Position, die im nächsten Jahr gültig ist.",
+      "successorLine": "Ab {date}: {position}",
+      "removeSuccessor": "Entfernen"
     }
   },
   "QrInvoices": {

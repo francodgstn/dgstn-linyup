@@ -41,6 +41,7 @@ you may act on it:
 - [**AI insights — the AI plugin container**](./ai-insights.md) — how it works now
 - [**Contact AI summary**](./contact-summary.md) — how it works now
 - [**Decoupling the rank scale — a plan**](./rank-scale-decoupling.md) — work to do
+- [**How Linyup sees a contact — the contact state model**](./contact-state-model.md) — how it works now
 - [**What an organisation may see of a member studio's people — design**](./org-contact-visibility.md) — how it works now
 
 ## Public content and localisation

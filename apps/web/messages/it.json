@@ -1586,6 +1586,15 @@
     "templateDeleteTitle": "Eliminare questo modello?",
     "templateDeleteDescription": "Gli eventi che lo usano mantengono il loro programma. Operazione irreversibile.",
     "templateInherited": "Ereditato dalla tua organizzazione — sola lettura.",
+    "templateClone": "Clona",
+    "templateCloned": "Modello clonato.",
+    "templateCopyName": "{name} (copia)",
+    "starterLibraryTitle": "Parti da un modello",
+    "starterLibraryHint": "Aggiungi un programma pronto all’uso al tuo elenco, poi personalizzalo su un evento.",
+    "starterLibraryOrgHint": "Aggiungi un programma pronto all’uso all’elenco condiviso dell’organizzazione.",
+    "starterAdd": "Aggiungi",
+    "starterAdded": "« {name} » aggiunto ai tuoi modelli.",
+    "starterBadge": "Predefinito",
     "duplicateEvent": "Duplica",
     "duplicateTitle": "Duplica questo evento",
     "duplicateDescription": "Copia le impostazioni e tutto il programma. RSVP, inviti e check-in non vengono copiati e la copia resta privata.",
@@ -8821,7 +8830,9 @@
       "noHistory": "Questo pagamento indica un abbonamento, ma per il membro non risulta alcun abbonamento di quel piano da attestare. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
       "unsupported": "Da questo pagamento non si può derivare un giustificativo: un pagamento a lezione singola o per appuntamento non indica quale corso o data copre, e i prodotti non sono promozione della salute. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
       "openSegment": "Apri i giustificativi del membro"
-    }
+    },
+    "checklistExpiring": "{count} posizioni associate non sono più valide dopo il {date}",
+    "checklistReview": "Verifica"
   },
   "LegalProfile": {
     "title": "Profilo legale",
@@ -8922,7 +8933,9 @@
       "searchPlaceholder": "Cerca offerte…",
       "unmappedOnly": "Solo non associati ({count})",
       "summary": "{mapped} su {total} associati",
-      "allMapped": "Tutte le offerte sono associate."
+      "allMapped": "Tutte le offerte sono associate.",
+      "stateExpiring": "Posizione in scadenza",
+      "stateExpired": "Posizione non più valida"
     },
     "suggest": {
       "button": "Suggerisci posizioni",
@@ -8935,6 +8948,18 @@
       "noneFound": "Nessuna posizione suggerita per le offerte non associate.",
       "unavailable": "I suggerimenti non sono disponibili al momento. Può comunque scegliere le posizioni manualmente.",
       "rateLimited": "Ha raggiunto il limite orario di suggerimenti. Riprovi più tardi."
+    },
+    "expiry": {
+      "banner": "{count} posizioni associate non sono più valide dopo il {date}. L'elenco tariffario cambia ogni 1° gennaio e una riga di giustificativo con data successiva all'ultimo giorno di validità viene rifiutata. Scelga una sostituzione prima di allora.",
+      "suggestReplacements": "Suggerisci sostituzioni",
+      "rowExpiring": "Valida fino al {date} – i giustificativi con data successiva saranno rifiutati.",
+      "rowExpired": "Non più valida dal {date} – i nuovi giustificativi su questa posizione vengono rifiutati.",
+      "replacementLabel": "Sostituzione suggerita",
+      "useReplacement": "Usa",
+      "replacementsFound": "{count} sostituzioni suggerite. Nulla cambia finché non sceglie «Usa» su una riga, e nulla viene salvato finché non salva.",
+      "replacementsNone": "Non è stato possibile suggerire una sostituzione. Scelga manualmente una posizione valida l'anno prossimo.",
+      "successorLine": "Dal {date}: {position}",
+      "removeSuccessor": "Rimuovi"
     }
   },
   "QrInvoices": {

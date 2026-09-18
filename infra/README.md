@@ -540,6 +540,26 @@ close to reality, because the first actual-spend alert fires at half of it:
   function `maxInstances: 20` and App Hosting's `maxInstances` are the actual
   ceilings.
 
+**Decided 2026-09-18 (Franco): the defaults stand** — prod 500, staging 100,
+sandbox 30 CHF. This is a deliberate call against the bullets above, not an
+unset value, so nothing here is waiting on a number. What that means in
+practice, stated plainly so nobody re-opens it as a defect:
+
+- **The 50 % actual-spend rule on prod will not fire in any normal month.** It
+  lands at 250 CHF, far above a pre-launch bill. Treat the actual-spend rules as
+  the record, not as detection.
+- **The FORECASTED_SPEND rule is what does the detecting**, and it needs no
+  re-tuning to do it: it fires mid-month the moment the trend projects past the
+  full 500, which is the runaway case the ceiling exists for.
+- **The early-warning line moved to the Providers page instead.** The budget's
+  Pub/Sub feed writes month-to-date spend to the daily platform-metrics snapshot
+  (`analytics/budgetNotification.ts`), so the real number is on a screen several
+  times a day regardless of where the thresholds sit. Watching it is what
+  replaces a tight ceiling here.
+- **Revisit on the first real tenants, or after anything that changes the egress
+  or invocation shape** — then set it from the last full month per the bullets
+  above.
+
 ---
 
 ## Sandbox environment (demo playground)
@@ -665,6 +685,23 @@ Demo logins (all `linyup123`, plan `studio`/`active`): `grappling@`, `crossfit@`
   `modules/iam`) or gen2 function deploys fail with an `actAs` error.
 - `id-token: write` permission is mandatory in the deploy workflows for WIF.
 - **Never** put secret values in Terraform — containers only.
+- **`terraform validate` in CI (verify.yml) catches SCHEMA errors and nothing
+  else.** It is worth having — a wrong argument name is invisible to every
+  other check in this repo, and `monitor_notification_channels` reached a live
+  `plan` exactly once. But two whole classes still get past it to an apply, and
+  both did:
+  - **Plan-time expression errors.** `validate` does not evaluate `for`-
+    expression keys, so a `Duplicate object key` from a repeated entry in a
+    `setproduct` over a `secret_ids` list only surfaces at `plan`. Guard the
+    data instead — `modules/secrets` wraps both inputs in `distinct()`.
+  - **A resource that is well-formed but can never succeed.** The budget's
+    Pub/Sub IAM binding validated perfectly and failed the apply with
+    `Error 400: Service account billing-budgets@system.gserviceaccount.com does
+    not exist` (see the budget section above). Only a real plan/apply, or the
+    provider's own acceptance-test examples, tell you this.
+
+  So `validate` passing is not a green light to apply unattended: run `plan` per
+  environment and read it.
 
 ---
 

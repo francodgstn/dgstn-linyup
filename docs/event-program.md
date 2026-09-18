@@ -76,10 +76,41 @@ first and the config last: an interruption leaves a programme that is visibly
 *missing* rows (fix it by applying again) rather than one showing two templates'
 items merged, which would look correct and not be.
 
-Templates are edited by **apply → adjust on a real event → save back**. There is
-deliberately no standalone template editor; the event page already is one.
+Templates are edited in **`ProgramTemplateEditor`**, reached from the settings
+list, and can still be produced by **apply → adjust on a real event → save
+back**. The editor was added because authoring was the case the event route
+served badly: a studio writing its standard camp agenda before any camp exists
+had to invent an event, build on it, save, and delete the event again. It also
+holds the name and description, which is why there is no rename dialog.
 A studio that applies an **org** template and saves it back produces its own
 **team** template — the rules refuse a club write to the organisation's copy.
+
+### Starter library + cloning
+
+A studio need not build the first programme from a blank agenda. Two shortcuts
+produce a full template without authoring one on an event first:
+
+- **A built-in starter library** — `STARTER_PROGRAM_TEMPLATES`
+  (`packages/shared/src/data/programTemplates.ts`), a handful of ready-made
+  programmes (half-day workshop, weekend seminar, five-day camp, one-day
+  competition, grading day). Each entry **is** a `ProgramTemplate` body, so it
+  flows through `materialiseTemplate` and the save hook **unchanged** — no
+  special-casing in the engine. A starter can be **applied straight onto an
+  event** (it appears in the Apply-template picker, badged *Starter*) or
+  **added to the studio's own list** ("Add" in the settings manager, which just
+  saves the body as a new team/org template).
+- **Clone** — any template row (in the settings manager) clones into the
+  current scope: an owned one becomes a `… (copy)`, and an **inherited org**
+  template clones **down** into an editable **team** copy. Cloning is a plain
+  create through the same save hook and counts against `MAX_PROGRAM_TEMPLATES`.
+
+Starter *content* (day titles, item titles, `note`) is authoring-language free
+text like every other programme field — see the "Never translated" list in
+`docs/site-translations.md`. The surrounding UI chrome is translated; the
+library entries are seeded in the source language and renamed on clone. Their
+well-formedness (valid times, tracks that exist, complete day coverage, clean
+materialise + round-trip) is pinned by `STARTER_PROGRAM_TEMPLATES` tests in
+`packages/functions/src/events/programTime.test.ts`.
 
 ## Org events
 
@@ -184,6 +215,6 @@ Per-item booking or capacity · FK links to Places/Activities/Coaches ·
 drag-and-drop reordering (times drive the order; `order` is only a tie-break) ·
 attendee-personalised programmes in Space (the `attendees` subcollection is not
 readable by a contact session, so it needs a callable) · bulk time-shift ·
-per-item media · a standalone template editor · duplicating across teams ·
+per-item media · duplicating across teams ·
 unifying the team and org event detail pages (only the tab strip was added) ·
 letting org events use plugin/custom event types.

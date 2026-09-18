@@ -27,7 +27,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Tarif595Lang } from '@linyup/shared'
-import type { Tarif595Chapter, Tarif595Position } from '@linyup/shared/tarif595-positions'
+import type { Tarif595Chapter, Tarif595Position, Tarif595PositionExpiry } from '@linyup/shared/tarif595-positions'
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -36,6 +36,11 @@ function todayIso(): string {
 export interface Tarif595PositionsTable {
   positions: readonly Tarif595Position[]
   chapters: readonly Tarif595Chapter[]
+  /** The module's own expiry helpers, handed out with the table so a caller
+   *  never imports the subpath statically (that would pull the whole table
+   *  into its bundle) and never re-implements the date rule. */
+  expiry: (code: string, todayIso: string) => Tarif595PositionExpiry | null
+  dayAfter: (validUntil: string) => string
 }
 
 export const TARIF595_POSITIONS_QUERY_KEY = ['tarif595-positions-table']
@@ -49,7 +54,12 @@ export function useTarif595PositionsTable() {
     staleTime: Infinity,
     queryFn: async () => {
       const mod = await import('@linyup/shared/tarif595-positions')
-      return { positions: mod.TARIF595_POSITIONS, chapters: mod.TARIF595_CHAPTERS }
+      return {
+        positions: mod.TARIF595_POSITIONS,
+        chapters: mod.TARIF595_CHAPTERS,
+        expiry: (code, todayIso) => mod.tarif595PositionExpiry(code, todayIso),
+        dayAfter: mod.tarif595DayAfter,
+      }
     },
   })
 }

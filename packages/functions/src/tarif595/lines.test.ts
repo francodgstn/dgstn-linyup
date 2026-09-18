@@ -184,3 +184,48 @@ describe('tarif595 buildTarif595Lines — one case per line rule', () => {
     assert.deepEqual(r.issues, [{ code: 'period_invalid' }])
   })
 })
+
+// The list changes every 1 January, and BOTH editions are needed at once: in
+// January a studio still issues last year's receipts. A mapping therefore
+// carries a SUCCESSOR with a start date, and the builder asks
+// `tarif595MappingOn` per line — it never overwrites.
+describe('tarif595 buildTarif595Lines — a successor takes over by the LINE date', () => {
+  const straddling = { period: { from: '2026-12-01', to: '2027-01-31' }, attendanceDates: ['2026-12-20', '2027-01-05'], unitPriceMinor: 2500 }
+  const pilates: Tarif595OfferingMapping = { position: '3016', unit: 'lesson', successor: { from: '2027-01-01', position: '3039' } }
+
+  it('the December lesson bills on the old position, the January one on the successor', () => {
+    const r = buildTarif595Lines(input(pilates, straddling))
+    assert.deepEqual(r.issues, [])
+    assert.deepEqual(
+      r.lines.map((l) => [l.date_begin, l.code]),
+      [
+        ['2026-12-20', '3016'],
+        ['2027-01-05', '3039'],
+      ]
+    )
+  })
+
+  it('WITHOUT a successor the January line is refused — the defect the warning exists to prevent', () => {
+    const r = buildTarif595Lines(input({ position: '3016', unit: 'lesson' }, straddling))
+    assert.deepEqual(r.issues, [{ code: 'position_invalid_on_date', detail: '3016@2027-01-05' }])
+  })
+
+  it('an OVERWRITE would have broken the old year instead: the new position is not valid in December', () => {
+    const r = buildTarif595Lines(input({ position: '3039', unit: 'lesson' }, straddling))
+    assert.deepEqual(r.issues, [{ code: 'position_invalid_on_date', detail: '3039@2026-12-20' }])
+  })
+
+  it('the successor carries its own PT companion, and drops the old one', () => {
+    const r = buildTarif595Lines(
+      input({ position: '3016', unit: 'lesson', successor: { from: '2027-01-01', position: '3039', ptPosition: '3037' } }, straddling)
+    )
+    assert.deepEqual(
+      r.lines.map((l) => [l.date_begin, l.code, l.amount_minor]),
+      [
+        ['2026-12-20', '3016', 2500],
+        ['2027-01-05', '3039', 2500],
+        ['2027-01-05', '3037', 0],
+      ]
+    )
+  })
+})

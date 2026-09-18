@@ -63,7 +63,10 @@ Every issue writes `[review-otp] issued fixed code for …` to Cloud Logging.
 ## C. Cutover verification (the canary)
 
 1. **Sign up through the real wizard** at app.linyup.com. That path is the thing
-   being verified — do not provision it.
+   being verified — do not provision it. Use a **fresh plus-address every run**
+   (`you+canary3@…`): the Stripe account step 5 creates is registered to it and
+   outlives the canary (see step 6), and a reused address risks Stripe offering
+   the previous run's account, which is not what a new studio sees.
 2. Confirm it appears correctly in the operator console, **then** set
    `flags.internal` so it stops counting.
 3. `messaging_policies/{teamId}` → `allowlist`, your addresses only, **before**
@@ -78,13 +81,49 @@ Every issue writes `[review-otp] issued fixed code for …` to Cloud Logging.
    - *Connect*: onboard → one small member charge → confirm `payment_events`,
      the finance journal row, the receipt → refund.
 6. **Teardown, in this order:**
-   - console → the team → **Disconnect this account** (Stripe)
-   - `pnpm purge:team --team <id> --project linyup-prod` (dry-run first)
+   - **Check the Stripe account, and write down its id.** In the connected
+     account, confirm there is no live subscription and the balance is zero — a
+     refund larger than the balance takes it negative, and Stripe clears that by
+     debiting the linked bank account. Copy the `acct_…` id from the console's
+     payments card: the purge below deletes the only team → account mapping.
+   - console → the team → **Disconnect this account**. This unlinks it on
+     Linyup's side **only**; its own confirmation says the account still exists
+     at Stripe.
+   - Stripe Dashboard → **Connect → Accounts** → the account → **⋯ → Remove
+     account**. That is the platform-side disconnect — Stripe's UI never uses the
+     word "disconnect".
+   - `pnpm purge:team --team <id> --project linyup-prod` (dry-run first).
 
-### Precondition
-`readiness-2026-08.md` records that **no `stripe-secret-key` version exists in
-prod**. Step 5 cannot run until that is set (console → Settings → Stripe).
-Confirm before booking the cutover window.
+   **The Stripe account itself cannot be deleted from the platform side.**
+   Onboarding creates a Standard-profile account — full dashboard, Stripe liable
+   for losses (`MODEL_DASHBOARD` in `packages/functions/src/utils/connect/client.ts`)
+   — and Stripe refuses that profile both API deletion
+   (`stripe_loss_liable_cannot_be_deleted`) and rejection (platform-liable
+   accounts only). Only its owner can close it, from inside its own dashboard, at
+   a zero balance. So **every canary that onboards leaves one live account behind
+   for good** — which is why step 1 uses a fresh address and the id gets written
+   down before the purge.
+
+### Preconditions
+**`stripe-secret-key` in prod must be a standard `sk_live_…` key, not a
+restricted one.** A restricted key passes `pnpm stripe:sync` and creates both
+webhook endpoints without complaint, then fails step 5 at Connect onboarding:
+`startConnectOnboarding` 500s on `stripe.v2.core.accounts.create` with
+`StripePermissionError … API Key does not have permission to access account`,
+and enabling every Connect permission in the key editor does not clear it
+(tried 2026-08-22). Stripe's response never names a missing permission. Since
+that date version 2 is a standard key; version 1, the restricted one, is still
+enabled but is not `latest`.
+
+**Contact sign-in needs the functions runtime to sign custom tokens** —
+`roles/iam.serviceAccountTokenCreator` on its own service account, declared in
+`infra/modules/iam`. It was missing in all three projects until 2026-08-22, and
+nothing but a real person signing in exercises it. If a contact login or a
+shop-registration OTP returns `internal`, look for `signBlob` in the
+`logincontactwithcode` logs before anything else.
+
+(`readiness-2026-08.md` records that no `stripe-secret-key` existed in prod at
+the time; that is a dated record, and no longer true.)
 
 ---
 

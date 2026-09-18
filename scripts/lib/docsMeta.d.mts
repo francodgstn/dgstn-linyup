@@ -2,6 +2,10 @@
  *  scripts run with no build step; TypeScript consumers (apps/docs's Astro
  *  config) need the shapes. */
 
+/** Read a text file with CRLF normalised to LF — the only way to read input
+ *  for the parsers below, which are line-based. */
+export declare function readText(path: string): string
+
 export declare const AREAS: readonly string[]
 export declare const STATUSES: readonly string[]
 
