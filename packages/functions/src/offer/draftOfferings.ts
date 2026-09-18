@@ -90,7 +90,8 @@ Shape:
   "note": "one line on anything you assumed, optional"
 }
 
-recurrence is one of: per_class, one_time, weekly, biweekly, monthly, quarterly, annual.
+recurrence is one of: one_time, weekly, biweekly, monthly, quarterly, annual.
+A class pack is one_time with credits (the number of classes).
 limit.per is one of: day, week, month.
 
 Rules:
@@ -101,6 +102,8 @@ Rules:
 - Prices are in the studio's own currency, as plain numbers. If the description
   gives no price, LEAVE PRICES OUT rather than guessing a number the studio
   might not notice.
+- Descriptions are plain text shown to members on public pages: no Markdown,
+  no bullets, no bold. The "note" may use Markdown.
 - Do not duplicate anything in "Already set up" below; complement it.
 - Keep it small and realistic: a handful of activities, two or three plans.`
 
@@ -175,7 +178,6 @@ const RESPONSE_SCHEMA = {
                 recurrence: {
                   type: Type.STRING,
                   enum: [
-                    'per_class',
                     'one_time',
                     'weekly',
                     'biweekly',

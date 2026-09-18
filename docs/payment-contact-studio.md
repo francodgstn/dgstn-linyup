@@ -125,8 +125,8 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
    So every rate change owes ONE Stripe-side check, per environment: walk the
    platform's connected accounts, list each account's billable subscriptions
    (`active`, `trialing`, `past_due`, `unpaid`, `paused`) and compare the stored
-   `application_fee_percent` against `takeRatePercent(team.plan, waived)` — resolved
-   through those functions and through `resolveFeeWaiver`'s read-to-the-organisation,
+   `application_fee_percent` against `takeRatePercent(team.plan, waived, rate)` — resolved
+   through those functions and through `resolvePlatformFee`'s read-to-the-organisation,
    never re-derived, because a second implementation of a money decision is the one
    copy never worth making. The map from account to team is
    `connect_accounts/{acct}.teamId`; an account with no such document has no
@@ -136,7 +136,14 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
    separate backfill — the update emits `customer.subscription.updated`, which the
    Connect webhook already re-mirrors.
 
-   **There is deliberately no script for this.** The 2026-08-29 change ran the check
+   **Per tenant, this is now a button** (2026-09-17): the operator console's
+   *Platform fee on member payments* card calls `resyncTenantFeeRate`, which runs
+   exactly that comparison and repair for one team or every team in an
+   organisation (`connect/feeRateSync.ts`). It exists for negotiated rates (below),
+   and is the right tool after a plan change too. A platform-wide sweep after a
+   change to `CONNECT_TAKE_RATE` still has no script, for the reason that follows.
+
+   **There is deliberately no platform-wide script.** The 2026-08-29 change ran the check
    against `linyup-sandbox` and `linyup-prod` and found zero stale subscriptions in
    both — pre-launch, no recurring membership had been sold yet — so the deploy WAS
    the whole migration. A tool kept alive for months without ever running would go
@@ -145,6 +152,30 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
 
    The Stripe **catalogue** (`pnpm stripe:sync`) is NOT involved: it holds Linyup's
    own plan Products and Prices, and the take-rate is not a catalogue object.
+
+   **Negotiated rates (per tenant, 2026-09-17).** An operator can agree a flat rate
+   with a club — `TenantFlags.fee_rate: { bps, reason, since, expires_at | null }`,
+   set on a team or on an organisation (which reaches all its studios) from the
+   console. `resolveTakeRate` (shared) is the one decision:
+   comped → the team's rate → its org's → the plan, and a negotiated rate is
+   **capped at the published rate** — a discount, never a surcharge, so a plan
+   upgrade past a deal gives the cheaper plan rate. Malformed values fall back to
+   the published rate, as does a failed organisation read.
+
+   - **Expiry** is the first instant the rate no longer applies (the console asks
+     for the *last day*, in Zurich time). One-off charges compare it at checkout,
+     so nothing has to run. Recurring memberships are brought back by the daily
+     `resyncExpiredFeeRates` task, which re-runs the per-tenant repair for tenants
+     whose rate expired in the last three days.
+   - **Setting or ending a rate does NOT touch existing memberships** until the
+     operator presses *Apply to existing subscriptions*. Deliberately two steps:
+     saving a typo should not be a Stripe write across every member of an
+     organisation.
+   - Each one-off payment records the rate it was charged at —
+     `member_payments.platform_fee_bps` + `platform_fee_source` (`plan` /
+     `team_rate` / `org_rate` / `comped`), stamped into Checkout metadata.
+   - The studio sees the rate it actually pays, and its last day, in Settings →
+     Payments (`getConnectStatus` returns it; the browser never derives it).
 3. **TWINT + direct-charge + Connect — validate in test mode.** Documented constraint:
    only **one active TWINT mandate per studio↔member pair**. See "Validate in test mode".
 

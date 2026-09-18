@@ -11,6 +11,10 @@ import DOMPurify from 'isomorphic-dompurify'
  * the text is model output that quotes studio data (activity names, notes a tool
  * returned), so it is attacker-influenceable and never trusted as HTML.
  *
+ * Also the offer draft dialog's model NOTE (`components/offer/AiDraftDialog.tsx`)
+ * — display-only text, like a reply. Model text that is STORED in a plain-text
+ * field goes the other way, through `markdownToPlainText` in @linyup/shared.
+ *
  * Three decisions, each deliberate:
  *
  *  - **A private `Marked` instance.** `marked.use()` on the shared default would

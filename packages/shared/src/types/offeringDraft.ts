@@ -31,6 +31,7 @@
 
 import type { ActivityType, ActivityAccessTier } from './activity'
 import type { SubscriptionRecurrence, UsageLimitPeriod } from './contact'
+import { markdownToPlainText } from '../utils/markdownToPlainText'
 
 /** Hard caps. One prompt must not be able to produce fifty records — a studio
  *  reviewing a wall of proposals stops reviewing, which defeats the confirm
@@ -118,7 +119,8 @@ export interface OfferingDraft {
   activities: DraftActivity[]
   plans: DraftPlan[]
   /** One line the model may use to say what it assumed. Display only — never
-   *  stored on any record. */
+   *  stored on any record — so it is the one draft text kept as Markdown and
+   *  rendered as such in the review dialog. */
   note?: string
 }
 
@@ -142,8 +144,8 @@ export interface DraftProblem {
 
 const ACTIVITY_TYPES: ActivityType[] = ['class', 'appointment']
 const ACCESS_TIERS: ActivityAccessTier[] = ['open', 'members', 'subscription']
+// No 'per_class': charged once, it grants unmetered access with no end (UX-104).
 const RECURRENCES: SubscriptionRecurrence[] = [
-  'per_class',
   'one_time',
   'weekly',
   'biweekly',
@@ -163,6 +165,18 @@ function money(v: unknown): v is number {
 
 function text(v: unknown, max: number): v is string {
   return typeof v === 'string' && v.trim().length > 0 && v.length <= max
+}
+
+/**
+ * A description as it will be STORED: plain text. Activity and plan descriptions
+ * are a plain textarea in their editors and plain text on every public page, so
+ * Markdown the model wrote anyway ("**Beginners** welcome") is stripped here —
+ * on both ends of the round trip, like everything else in this parser — and the
+ * review dialog shows exactly what the record will hold. `undefined` for a value
+ * that is not a string.
+ */
+function plainDescription(v: unknown): string | undefined {
+  return typeof v === 'string' ? markdownToPlainText(v) : undefined
 }
 
 /**
@@ -211,8 +225,9 @@ export function parseOfferingDraft(input: unknown): {
 
     const out: DraftActivity = { key, name: (a.name as string).trim() }
     if (a.description !== undefined) {
-      if (text(a.description, OFFERING_DRAFT_LIMITS.descriptionChars)) {
-        out.description = (a.description as string).trim()
+      const description = plainDescription(a.description)
+      if (text(description, OFFERING_DRAFT_LIMITS.descriptionChars)) {
+        out.description = description
       } else bad(`${path}.description`, 'too_long')
     }
     if (a.type !== undefined) {
@@ -272,8 +287,9 @@ export function parseOfferingDraft(input: unknown): {
 
     const out: DraftPlan = { key, name: (p.name as string).trim() }
     if (p.description !== undefined) {
-      if (text(p.description, OFFERING_DRAFT_LIMITS.descriptionChars)) {
-        out.description = (p.description as string).trim()
+      const description = plainDescription(p.description)
+      if (text(description, OFFERING_DRAFT_LIMITS.descriptionChars)) {
+        out.description = description
       } else bad(`${path}.description`, 'too_long')
     }
     if (Array.isArray(p.prices)) {

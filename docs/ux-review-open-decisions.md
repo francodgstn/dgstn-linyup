@@ -454,15 +454,73 @@ Everything else in this file is a decision or a follow-up, not a defect.
 
 ---
 
+# Offerings review — 2026-09-17 (`docs/ux-review-2026-09.md`)
+
+Parked during the autonomous run on the activities/plans review. Numbering
+continues from the 2026-08 run.
+
+## 29. Where the studio default drop-in is edited (UX-112)
+**PARKED.** Two places edit `BookingSettings.dropIn`: Pricing → Drop-in (set, change,
+turn off) and a class's pricing tab (set or change, never off). The reviewer
+proposes Pricing becomes display-only and the class tab gains "turn off"; the
+alternative is the reverse (Pricing owns it, the class tab only links). Either
+satisfies "one place". *Meanwhile:* both stay, unchanged.
+
+## 30. A plan that covers "all classes" by default (UX-114)
+**PARKED — the highest-value model change in the review.** Today a plan stores no
+scope; each class lists the plans that include it, so an unlimited membership
+covers no class added after it was set up. Proposal (model review S2): a plan-side
+scope, `all classes` (default for new memberships and passes) or `selected`, unioned
+into the class's allowed plans by the snapshot loader so `resolvePaymentOptions`
+is untouched. Questions for Franco: default `all` for new plans only, or also
+migrate existing ones? Do workshops/events need an "excluded from all-classes"
+flag on the class? *Meanwhile:* nothing built.
+
+## 31. Trial on classes open to anyone, and one meaning of "newcomer" (UX-115)
+**PARKED.** "First class free (or CHF 15), then CHF 25 drop-in for anyone" cannot
+be expressed: the trial door opens only on members-only classes. Also three
+definitions of "new": trial (`trial_used_at`), promo `new_contacts` (`!joined`),
+purchase caps. Questions: should a class open to anyone with a paid drop-in offer a
+trial? Should a contact who used a trial still count as "new" for a promo code?
+Should the trial get a studio-wide default like the drop-in? *Meanwhile:* nothing
+built.
+
+## 32. Stored `per_class` plan prices (UX-104)
+**ASSUMED.** `per_class` sells unlimited, never-ending access on linked classes.
+Shipped: removed from the picker for new prices and from the AI drafter.
+**Not done:** refusing checkout on an already-stored `per_class` price, or
+converting them. The emulator and staging seeds ship a "10-Class Pack" priced
+`per_class` (converting it to one-time + 10 credits changes which seeded contacts
+are covered, since credits need grants); HMD migration
+(`scripts/migration/transforms/subscriptions.ts`) can emit it, and some may be
+tracking-only plans nobody buys online. Decide: refuse at checkout, convert
+(seeds + a backfill), or leave.
+
+## 33. The legacy class-gate backfill (model review S1)
+**PARKED — needs a deploy window, not a design call.** Retires `accessRule.type` as
+stored data, `isFreeTrial`, the legacy coverage engine and `dropIn` without
+`mode`, by backfilling every class to `audience`/`requirePlan`/`dropIn.mode`.
+Pre-launch, so acceptable; but it touches every environment's data and the mobile
+app's readers were not reviewed. Decide when, and whether mobile needs a release
+first.
+
+## 34. Remove "What you sell" from Pricing (UX-117)
+**PARKED.** The declutter audit found the section repeats each plan's prices,
+limit and coverage that the Offerings plan pane already shows, and proposes one
+link instead. Kept because it is the only all-plans-at-a-glance view and the page
+was reshaped recently on purpose. Decide: remove, or keep as the overview.
+
+---
+
 # Website builder review — 2026-09-16
 
 A second, self-contained review, prompted by the CrossFit Zug rebuild: the builder
 became genuinely powerful, and "settings and pages seem hard to handle" for the
-non-technical studio owner it is for. Eight findings; the mechanical five are
+non-technical studio owner it is for. Numbered after the Offerings review, which merged first. Eight findings; the mechanical five are
 FIXED on `claude/crossfit-zug-website-strategy-4776aa` (PR #378). What is left
 here is what needs Franco.
 
-## 29. Should Pages be top-level navigation in the builder?
+## 35. Should Pages be top-level navigation in the builder?
 **ANSWERED 2026-09-16 — Franco: (b), the persistent page rail.** Built: `PagesRail` beside every tab (lg+), picking a page opens it in Sections; posts in their own scroll; a page header with Settings above the sections; the compact switcher stays below lg; the menu column moves beside the editor only at xl. The original question follows.
 
 **Was PARKED.** There is no Pages destination: page switching is a `<Select>` inside
@@ -483,7 +541,7 @@ review. The shapes worth choosing between:
 *Meanwhile:* the strip is labelled "Pages · 8/30" and the row actions are named,
 so the current arrangement is at least legible. Nothing here is hard to undo.
 
-## 30. Does Publish get a real diff?
+## 36. Does Publish get a real diff?
 **PARKED.** Publish takes the whole draft live — the typo you came to fix plus
 the half-finished page beside it. Shipped now: a confirmation stating what is
 about to go live, counted from the draft (home + N pages + M posts, and how many
@@ -493,7 +551,7 @@ client-side deep comparison of two whole sites, or a server-computed diff at
 publish), and it is only worth it if studios actually hesitate at that button.
 *Decide after CFZ or the first real site uses it in anger.*
 
-## 31. Autosave, or keep an explicit Save?
+## 37. Autosave, or keep an explicit Save?
 **ANSWERED 2026-09-16 — Franco: autosave.** Built: `hooks/useAutosave.ts` saves the draft 1.5 s after the last edit in both builders; an edit counter keeps an edit made mid-save dirty, and a failed save stops retrying until the next edit and shows "Nicht gespeichert · Erneut versuchen". The Save draft button is gone; the header shows the save state beside the publish state. Publishing is unchanged. The unsaved-changes guard stays for the seconds before a save lands. The original question follows.
 
 **Was PARKED.** `useUnsavedChangesGuard` (new, in `hooks/`) now asks before a
@@ -504,7 +562,7 @@ the draft on a debounce would remove the whole failure class — the draft is on
 `setDoc` overwrite — but it changes what "Save draft" means and makes every
 half-finished edit durable. Product call, not a code one.
 
-## 32. Does the organisation builder track the team builder?
+## 38. Does the organisation builder track the team builder?
 **PARKED.** `(auth)/org/[orgId]/website/` re-implements its own AppearancePanel
 and has no Pages, no Posts, no Embed tab. The two have already drifted once for
 real (a bug where the org builder read the wrong i18n namespace). Two questions,
@@ -513,7 +571,7 @@ scope cut? (ii) regardless, the shared half of AppearancePanel should be one
 component with a capability flag, the way `BrandFields` and `MenuPanel` already
 are. (ii) is worth doing either way; (i) decides how much.
 
-## 33. `Common.close` — the dialog primitive's only untranslated string
+## 39. `Common.close` — the dialog primitive's only untranslated string
 **FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
 Close</span>`. Screen-reader-only, so no sighted user sees English in a German
 UI, but it is the one string in that file. Needs a `Common.close` key and
@@ -521,7 +579,7 @@ UI, but it is the one string in that file. Needs a `Common.close` key and
 pattern exists; left alone only because the reward is small and the file is
 shared by every dialog in the app.
 
-## 34. The publish integrity test cannot run in this environment
+## 40. The publish integrity test cannot run in this environment
 **BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
 studio, press Publish with no changes, confirm the live site is unchanged". Run
 on 2026-09-16 it destroyed most of the CrossFit Zug site — page index,
@@ -544,7 +602,7 @@ What the run DID prove, and what was fixed from it: the draft save was deleting
 the redirect table on every save (now fixed, and the payload is typed so the
 next omission fails the build).
 
-## 35. Turbopack cannot resolve one dependency in a deep worktree
+## 41. Turbopack cannot resolve one dependency in a deep worktree
 **ENVIRONMENT, not code.** `next dev --turbopack` in this worktree fails with
 `Can't resolve '@tiptap/extension-drag-handle-react'` on a cold cache, so every
 route that pulls `RichTextEditor` 500s. Node resolves it fine both ways
@@ -560,7 +618,7 @@ restarting the server is not enough, and a stale `.next.old-*` left inside
 `apps/web` makes Tailwind scan a 500 MB build output and fail on a CSS class
 candidate containing a NUL byte.
 
-## 36. A new page starts empty — should it start from a layout?
+## 42. A new page starts empty — should it start from a layout?
 **ANSWERED 2026-09-16 — Franco: build it.** Built: `starterSections` in `plugins/website/defaults.ts` — Simple page (default: hero with the page title + text), Offer page (hero + two columns + a booking CTA band), Empty page; placeholder copy is passed in translated. The original proposal follows.
 
 **Was PARKED.** Creating a blog post now opens on a text

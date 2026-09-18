@@ -33,6 +33,7 @@ import {
   PUBLIC_PROFILE_SUBCOLLECTION,
   SESSIONS_COLLECTION,
   type RegionalFormatter,
+  heldSubscriptionTypeIds as heldPlanIdsOf,
 } from '@linyup/shared'
 import { FieldInput, isFieldAnswered } from '@/components/forms/FieldInput'
 import { publicHref, publicHrefLocalized, returnHref } from '@/lib/publicRoutes'
@@ -48,6 +49,7 @@ import { FlowShell } from '@/components/booking/FlowShell'
 import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
+import { usePublicContactRecord } from '../usePublicContactRecord'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -392,6 +394,20 @@ export default function BookingForm({
   // member rate here; checkout/booking always re-resolve authoritatively
   // server-side (the callable trusts its own session token, not this).
   const { contact, isAuthenticated } = usePublicContactAuth()
+
+  // WHAT THIS MEMBER HOLDS — every plan on the live record, not the single
+  // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
+  // covered by a second plan was told she held none and routed to pay a drop-in
+  // the server then refused to sell her. The frozen slot survives only as the
+  // floor for a FAILED read, as in AppointmentPicker. Display only: the
+  // callables re-resolve from their own snapshot.
+  const contactRecord = usePublicContactRecord()
+  const heldPlanIds = contactRecord.data
+    ? heldPlanIdsOf(contactRecord.data)
+    : contact?.subscription_type_id
+      ? [contact.subscription_type_id]
+      : []
+  const heldPlanKey = heldPlanIds.join(',')
   // 'page' unless an overlay host wraps this flow — see BookingChrome.
   const chrome = useBookingChrome()
   // Closes the panel, or navigates the page — see useExitFlow.
@@ -534,7 +550,7 @@ export default function BookingForm({
       guestPath ?? '',
       promoApplied?.code ?? '',
       isAuthenticated ? (contact?.id ?? 'auth') : 'guest',
-      contact?.subscription_type_id ?? '',
+      heldPlanKey,
     ].join('|')
   )
 
@@ -941,9 +957,7 @@ export default function BookingForm({
   // team-root sign-in bar) whose held subscription earns a benefit sees the
   // reduced price with the base struck through, BEFORE they even reach
   // checkout. DISPLAY only: createDropInCheckout re-resolves authoritatively
-  // from its own session, never from this. Today's public contact session
-  // only carries one primary `subscription_type_id` — same simplification
-  // ShopHome's held union uses.
+  // from its own session, never from this. Held plans: `heldPlanIds` above.
   //
   // ONE COMPUTATION FOR THIS SURFACE. The member rate, the promo discount and
   // the subtotal the gift card draws against all come out of this single
@@ -954,8 +968,10 @@ export default function BookingForm({
   const dropInQuote = useMemo(() => {
     if (!selectedActivity || !dropInAvailable) return null
     const rule = resolveActivityAccessRule(selectedActivity)
-    const heldSubscriptionTypeIds = contact?.subscription_type_id ? [contact.subscription_type_id] : []
-    const snapshot = clientPaymentSnapshot({ authenticated: isAuthenticated, heldSubscriptionTypeIds })
+    const snapshot = clientPaymentSnapshot({
+      authenticated: isAuthenticated,
+      heldSubscriptionTypeIds: heldPlanIds,
+    })
     const result = resolvePaymentOptions(
       snapshot,
       {
@@ -969,7 +985,8 @@ export default function BookingForm({
     const pay = result.options[0]
     if (pay?.type !== 'pay') return null
     return { pay, promo: result.promo ?? null }
-  }, [selectedActivity, dropInAvailable, contact, isAuthenticated, promoApplied])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- heldPlanKey stands for heldPlanIds
+  }, [selectedActivity, dropInAvailable, heldPlanKey, isAuthenticated, promoApplied])
 
   // The member rate as the catalogue card renders it (base struck through). Read
   // OFF the one result above — `appliedBenefit` and `appliedPromo` are mutually
@@ -988,13 +1005,11 @@ export default function BookingForm({
   const memberAccess = useMemo(() => {
     if (!isAuthenticated || !selectedActivity) return null
     const accessRule = resolveActivityAccessRule(selectedActivity)
-    const heldSubscriptionTypeIds = contact?.subscription_type_id
-      ? [contact.subscription_type_id]
-      : []
-    const snapshot = clientPaymentSnapshot({ authenticated: true, heldSubscriptionTypeIds })
+    const snapshot = clientPaymentSnapshot({ authenticated: true, heldSubscriptionTypeIds: heldPlanIds })
     const { denial } = resolvePaymentOptions(snapshot, { kind: 'class_booking', accessRule })
     return { covered: !denial }
-  }, [isAuthenticated, selectedActivity, contact])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- heldPlanKey stands for heldPlanIds
+  }, [isAuthenticated, selectedActivity, heldPlanKey])
 
   // Gated class with drop-in enabled → pay-per-class. NOT when the visitor
   // explicitly took the free-trial door — a trial newcomer must never be
@@ -2025,6 +2040,36 @@ export default function BookingForm({
                     // required there.
                     const d = resolveActivityPricingDisplay({ ...a, type: a.activityType }, subLookup)
                     const lines: string[] = []
+                    // A SIGNED-IN MEMBER SEES HER OWN PRICE, not the list (UX-110).
+                    // Asked through the same resolver the who's-booking step uses,
+                    // so the card and the next screen cannot quote two numbers.
+                    // A plan that covers the class replaces every line with one;
+                    // a member rate replaces the drop-in figure. Display only.
+                    let memberDropInAmount: number | null = null
+                    let coveredByPlan = false
+                    if (isAuthenticated && heldPlanIds.length > 0 && a.activityType !== 'appointment') {
+                      const accessRule = resolveActivityAccessRule(a)
+                      const snapshot = clientPaymentSnapshot({
+                        authenticated: true,
+                        heldSubscriptionTypeIds: heldPlanIds,
+                      })
+                      const booking = resolvePaymentOptions(snapshot, { kind: 'class_booking', accessRule })
+                      const first = booking.options[0]
+                      // 'subscription' only: 'open' / 'members' coverage is not a
+                      // plan paying for it, and the lines above already say so.
+                      if (first?.type === 'covered' && first.via.reason === 'subscription') {
+                        coveredByPlan = true
+                      }
+                      if (d.dropInAmount != null && a.dropIn) {
+                        const quote = resolvePaymentOptions(snapshot, {
+                          kind: 'drop_in',
+                          accessRule,
+                          dropIn: a.dropIn,
+                          benefit: a.memberBenefit,
+                        }).options[0]
+                        if (quote?.type === 'pay' && quote.appliedBenefit) memberDropInAmount = quote.amount
+                      }
+                    }
                     // 'members' tier — the DEFAULT for every new class — used to
                     // render NO access line at all. It gets one now, and it names
                     // the gate that is actually enforced: being signed up with
@@ -2051,7 +2096,11 @@ export default function BookingForm({
                     // above stay: "included with X" states how access works,
                     // it is not a checkout this page can open.
                     if (d.dropInAmount != null && paymentsEnabled)
-                      lines.push(t('badgeDropInPrice', { price: formatCurrency(d.dropInAmount, currency, locale) }))
+                      lines.push(
+                        t('badgeDropInPrice', {
+                          price: formatCurrency(memberDropInAmount ?? d.dropInAmount, currency, locale),
+                        })
+                      )
                     if (d.appointmentPrice && paymentsEnabled)
                       lines.push(
                         d.appointmentPrice.min === d.appointmentPrice.max
@@ -2061,6 +2110,7 @@ export default function BookingForm({
                               max: formatCurrency(d.appointmentPrice.max, currency, locale),
                             })
                       )
+                    if (coveredByPlan) lines.splice(0, lines.length, t('memberCovered'))
                     return (
                       <>
                         <div className="flex items-start gap-1.5 flex-wrap">

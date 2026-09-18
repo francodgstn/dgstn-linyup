@@ -27,6 +27,7 @@ import {
   type MemberSubscription,
   type PartnerVisit,
   type PaymentLineItem,
+  type TakeRateSource,
   TEAM_INTEGRATIONS_SUBCOLLECTION,
   LIVE_SUBSCRIPTION_STATUSES,
 } from '@linyup/shared'
@@ -49,6 +50,11 @@ export interface ConnectStatusResult {
   requirements_currently_due?: string[]
   /** Linyup takes no platform fee from this studio — resolved server-side. */
   feeWaived?: boolean
+  /** The take-rate actually charged, in percent — plan, negotiated or 0. Server-side. */
+  feePercent?: number
+  feeSource?: TakeRateSource
+  /** When a negotiated rate ends (epoch ms); null when open-ended or not negotiated. */
+  feeExpiresAtMs?: number | null
 }
 
 /** Live account status (refreshes from Stripe). Only call when the feature flag is on. */

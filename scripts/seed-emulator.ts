@@ -133,6 +133,7 @@ import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { partnerAppNames } from './lib/partnerApps'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
 import { importPlanGrants } from './lib/planGrantImport'
+import { waitForTriggerQueue } from './lib/triggerDrain'
 
 admin.initializeApp({ projectId: 'demo-linyup' })
 
@@ -3033,7 +3034,7 @@ async function seedFreeTeam() {
   // at 10, which made the block, the over-cap upgrade prompt and the meter-at-
   // limit all unreachable, and printed a tenant that *claims* to be at cap yet
   // takes more contacts fine (so "is the cap wired?" reads as broken).
-  const freeCap = PLAN_PRICING.free.includedContacts ?? 15
+  const freeCap = PLAN_PRICING.free.includedContacts ?? 50
   const freeNamePool = [
     { firstname: 'Mia', lastname: 'Keller', gender: 'F' },
     { firstname: 'Jonas', lastname: 'Frei', gender: 'M' },
@@ -3293,6 +3294,12 @@ async function main() {
   // migration run, so a seeded tenant starts in the shape production will have.
   const planGrants = await importPlanGrants(db, { apply: true })
   console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
+
+  // The writes are done; the triggers they fired are not. See lib/triggerDrain.ts.
+  await waitForTriggerQueue(db, {
+    functionsHost: process.env.SEED_FUNCTIONS_EMULATOR_HOST,
+    teamId: 'seed-team-studio',
+  })
 
   console.log('\n✅ Emulator seeded successfully!\n')
   console.log('   ┌─────────────────────┬──────────────────────┬──────────────┬────────────┐')

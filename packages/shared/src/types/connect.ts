@@ -17,7 +17,7 @@
 
 import type { Timestamp } from './common'
 import type { PaymentLineItem } from './payment'
-import type { SaasPlan } from './team'
+import type { SaasPlan, TenantFlags } from './team'
 import type { SubscriptionCancellationDetails } from '../utils/subscriptionLifecycle'
 
 // ─── Onboarding model (HISTORICAL — the two members are indistinguishable) ──────
@@ -91,6 +91,12 @@ export interface PlatformFeeInput {
    */
   waived?: boolean
   /**
+   * The tenant's RESOLVED rate — `resolveTakeRate(...).rate`, carried on the
+   * server's `EnabledTeam`. Absent = the tier's published rate, so a caller
+   * that forgets it charges the published rate, never less.
+   */
+  rate?: ConnectTakeRate
+  /**
    * Onboarding model. Reserved: both models currently use the same take-rate and
    * fee-payer (account), but the fee function takes the model so per-model
    * adjustments can be added without touching call sites. See the brief §6.
@@ -134,10 +140,9 @@ export function applyTakeRate(amount: number, rate: ConnectTakeRate): number {
  * highest (free) rate, never zero — so a misconfiguration never silently ships a
  * free transaction.
  */
-export function computePlatformFee({ tier, amount, waived }: PlatformFeeInput): number {
+export function computePlatformFee({ tier, amount, waived, rate }: PlatformFeeInput): number {
   if (waived === true) return 0
-  const rate = CONNECT_TAKE_RATE[tier] ?? CONNECT_TAKE_RATE.free
-  return applyTakeRate(amount, rate)
+  return applyTakeRate(amount, rate ?? CONNECT_TAKE_RATE[tier] ?? CONNECT_TAKE_RATE.free)
 }
 
 /**
@@ -146,9 +151,109 @@ export function computePlatformFee({ tier, amount, waived }: PlatformFeeInput): 
  * fixed Rappen amount). 200 bps → 2. Min-fee does not apply to the percent path.
  * Same central config as computePlatformFee — never hardcode a percentage.
  */
-export function takeRatePercent(tier: SaasPlan, waived?: boolean): number {
+export function takeRatePercent(tier: SaasPlan, waived?: boolean, rate?: ConnectTakeRate): number {
   if (waived === true) return 0
-  return (CONNECT_TAKE_RATE[tier] ?? CONNECT_TAKE_RATE.free).bps / 100
+  return (rate ?? CONNECT_TAKE_RATE[tier] ?? CONNECT_TAKE_RATE.free).bps / 100
+}
+
+// ─── Per-tenant rate: THE ONE RESOLVER ───────────────────────────────────────────
+// Which take-rate applies to one studio's member payment. Pure, so the web, the
+// functions and the operator console answer identically. Order:
+//
+//   comped (team or org) → the team's negotiated rate → its org's → the plan.
+//
+// Two rules, both in the direction of never charging MORE than was published:
+//   • a negotiated rate is capped at the plan's published rate — it is a
+//     discount, and a studio that later upgrades to a cheaper tier gets the
+//     cheaper tier rather than keeping an old deal that is now worse;
+//   • anything malformed (non-integer bps, out of range, unreadable expiry) is
+//     ignored and the published rate applies — the fallback CHARGES.
+
+/** Where the applied rate came from. `plan` also covers a negotiated rate that
+ *  is no lower than the published one, since it changed nothing. */
+export type TakeRateSource = 'plan' | 'team_rate' | 'org_rate' | 'comped'
+
+export interface ResolvedTakeRate {
+  rate: ConnectTakeRate
+  source: TakeRateSource
+  /** Epoch ms the negotiated rate stops applying; null when open-ended or not negotiated. */
+  expiresAtMs: number | null
+}
+
+/** A negotiated rate that is well-formed and in force at `nowMs`, or null. */
+export function activeNegotiatedRate(
+  flags: TenantFlags | null | undefined,
+  nowMs: number
+): { bps: number; expiresAtMs: number | null } | null {
+  const r = flags?.fee_rate
+  if (!r) return null
+  if (!Number.isInteger(r.bps) || r.bps < 0 || r.bps > 10_000) return null
+  if (r.expires_at == null) return { bps: r.bps, expiresAtMs: null }
+  const expiresAtMs = typeof r.expires_at.toMillis === 'function' ? r.expires_at.toMillis() : NaN
+  if (!Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs) return null
+  return { bps: r.bps, expiresAtMs }
+}
+
+/**
+ * The `expires_at` instant for a rate whose LAST DAY is `lastDay` ('YYYY-MM-DD'):
+ * the start of the following day in `timeZone`. A deal "until 31 December" is
+ * agreed in the studio's calendar, not in UTC, so the rate must still apply at
+ * 23:30 Zurich time on the 31st. Null for a malformed date.
+ */
+export function negotiatedRateExpiresAtMs(lastDay: string, timeZone = 'Europe/Zurich'): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(lastDay)
+  if (!m) return null
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const probe = new Date(Date.UTC(y, mo - 1, d))
+  if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== d) {
+    return null // 2026-02-30 and the like
+  }
+  // Midnight of the NEXT day as a wall-clock reading, then corrected by the
+  // zone's offset at that instant. Two passes settle a DST boundary.
+  const wall = Date.UTC(y, mo - 1, d + 1)
+  const offsetAt = (ms: number): number => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).formatToParts(new Date(ms))
+    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value)
+    return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second')) - ms
+  }
+  const first = wall - offsetAt(wall)
+  return wall - offsetAt(first)
+}
+
+export function resolveTakeRate(input: {
+  tier: SaasPlan
+  teamFlags?: TenantFlags | null
+  /** The team's organisation's flags; null/absent when it has none or the read failed. */
+  orgFlags?: TenantFlags | null
+  nowMs: number
+}): ResolvedTakeRate {
+  const published = CONNECT_TAKE_RATE[input.tier] ?? CONNECT_TAKE_RATE.free
+
+  if (input.teamFlags?.comped === true || input.orgFlags?.comped === true) {
+    return { rate: { bps: 0, minFeeRappen: 0 }, source: 'comped', expiresAtMs: null }
+  }
+
+  const team = activeNegotiatedRate(input.teamFlags, input.nowMs)
+  const org = team ? null : activeNegotiatedRate(input.orgFlags, input.nowMs)
+  const negotiated = team ?? org
+  if (!negotiated || negotiated.bps >= published.bps) {
+    return { rate: published, source: 'plan', expiresAtMs: null }
+  }
+  return {
+    // A zero rate means no fee at all, so the minimum must not reintroduce one.
+    rate: { bps: negotiated.bps, minFeeRappen: negotiated.bps === 0 ? 0 : published.minFeeRappen },
+    source: team ? 'team_rate' : 'org_rate',
+    expiresAtMs: negotiated.expiresAtMs,
+  }
 }
 
 /**
@@ -278,6 +383,10 @@ export interface MemberPayment {
   currency: string // 'chf'
   /** Platform application fee taken (Rappen) — from computePlatformFee. */
   application_fee_amount: number
+  /** The rate that fee was charged at (bps), stamped at checkout. Absent on older payments. */
+  platform_fee_bps?: number
+  /** Why that rate applied. Absent on older payments. */
+  platform_fee_source?: TakeRateSource | null
   status: MemberPaymentStatus
   amount_refunded: number // cumulative Rappen refunded
   refunds: MemberPaymentRefund[]

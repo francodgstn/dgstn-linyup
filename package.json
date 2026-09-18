@@ -21,6 +21,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:e2e:web": "pnpm --filter @linyup/web test:e2e",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
     "i18n:check": "node scripts/i18n-check.mjs",
     "census:reads": "node scripts/census-reads.mjs",

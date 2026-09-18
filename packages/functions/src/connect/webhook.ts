@@ -730,6 +730,15 @@ async function handlePaymentIntent(
       amount: pi.amount ?? 0,
       currency: pi.currency ?? 'chf',
       application_fee_amount: pi.application_fee_amount ?? 0,
+      // Which rate that fee was charged at, and why (plan / negotiated / comped),
+      // stamped at checkout by `platformFeeMetadata`. Absent on payments that
+      // predate it and on rails that do not go through Checkout.
+      ...(md.platform_fee_bps != null && Number.isInteger(Number(md.platform_fee_bps))
+        ? {
+            platform_fee_bps: Number(md.platform_fee_bps),
+            platform_fee_source: md.platform_fee_source ?? null,
+          }
+        : {}),
       status,
       ...(status === 'succeeded' ? { amount_refunded: 0 } : {}),
       last_event_id: eventId,
@@ -1909,7 +1918,7 @@ async function handleCourseCheckout(
  *   1. Creating a contact exists to hang a per-person effect off it (a course
  *      entitlement, membership fields, credits). A gift card has none — the
  *      entitlement travels with the code, to whoever the buyer hands it to.
- *   2. The Free plan's 15-contact cap is HARD, and provisional contacts are
+ *   2. The Free plan's contact cap is HARD, and provisional contacts are
  *      deliberately excluded from it (utils/contactCap.ts). A studio selling
  *      twenty Christmas cards would otherwise fill its own allowance with
  *      people who are not its customers, and confirming a provisional buyer

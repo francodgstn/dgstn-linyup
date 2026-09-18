@@ -20,6 +20,7 @@ import { rollSessionSeries } from './rollSessionSeries'
 import { stampOverdueGoals } from './stampOverdueGoals'
 import { sweepWaitlistOffers } from '../booking/waitlist/sweep'
 import { publishMessagingEnv } from '../mail/messagingEnvStatus'
+import { resyncExpiredFeeRates } from '../connect/feeRateSync'
 
 // Booking reminders run HOURLY (not in the 02:00 batch): multi-step schedules
 // (e.g. SMS 24h before) need offset accuracy, and SMS quiet-hour deferrals need
@@ -115,6 +116,11 @@ export const dailyTasks = onSchedule(
       // wakes `trackGoals`' counter recompute. Clearing the stamp back off
       // lives in `trackGoals` itself, not here — see stampOverdueGoals.ts.
       { name: 'stampOverdueGoals', handler: stampOverdueGoals },
+      // A negotiated platform-fee rate that EXPIRED. One-off payments return to
+      // the published rate on their own (the resolver reads the expiry at
+      // charge time); recurring member subscriptions carry their fee percent on
+      // the Stripe object, so they are brought back here. Idempotent.
+      { name: 'resyncExpiredFeeRates', handler: () => resyncExpiredFeeRates() },
     ]
 
     const results: TaskResult[] = []

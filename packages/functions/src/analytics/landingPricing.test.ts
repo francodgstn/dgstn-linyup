@@ -3,10 +3,11 @@
 // `apps/landing` cannot import `@linyup/shared`: it compiles to CommonJS and
 // Astro's Rollup build fails on it outright, which is why every price on that
 // page is hand-copied — the plan prices into four locale files, the
-// +250-contacts note into four more, the payment fees again.
+// contact-block note into four more, the payment fees again.
 //
-// The organisation's numbers are mirrored into ONE place (the Pricing.astro
-// frontmatter) instead of four, and this test is what keeps that mirror honest.
+// The organisation's numbers, and the per-tier CONTACT CAPS, are mirrored into
+// ONE place (the Pricing.astro
+// frontmatter) instead of being scattered, and this test keeps that mirror honest.
 // It reads the .astro source and compares it to plan.ts, so raising the rate in
 // one place and forgetting the other fails the build rather than quietly showing
 // visitors a price the product does not charge.
@@ -18,7 +19,7 @@
 import { strict as assert } from 'assert'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { ORG_MAX_LISTED_STUDIOS, ORG_MIN_STUDIOS, ORG_PER_STUDIO } from '@linyup/shared'
+import { ORG_MAX_LISTED_STUDIOS, ORG_MIN_STUDIOS, ORG_PER_STUDIO, PLAN_PRICING } from '@linyup/shared'
 
 const ROOT = join(__dirname, '..', '..', '..', '..')
 const PRICING = join(ROOT, 'apps', 'landing', 'src', 'components', 'Pricing.astro')
@@ -69,6 +70,25 @@ describe('the landing page mirrors the organisation pricing exactly', () => {
       'the org card must state the unit — a bare number reads as the whole price'
     )
   })
+
+  // The caps used to be four literals in the comparison row. A cap raised in
+  // plan.ts and forgotten here shows a visitor an allowance the product does not
+  // grant — the same failure mode as the org rate, one row down.
+  const CAPS: [string, 'free' | 'coach' | 'studio'][] = [
+    ['FREE_CONTACTS', 'free'],
+    ['COACH_CONTACTS', 'coach'],
+    ['STUDIO_CONTACTS', 'studio'],
+  ]
+
+  for (const [name, plan] of CAPS) {
+    it(`the ${plan} contact cap matches`, () => {
+      assert.equal(
+        constant(src, name),
+        PLAN_PRICING[plan].includedContacts,
+        `the comparison table would advertise a ${plan} allowance the product does not grant`
+      )
+    })
+  }
 
   it('the org card never goes through the currency/amount split', () => {
     // The other cards store "CHF 18" and split on the first space. "CHF 25 per

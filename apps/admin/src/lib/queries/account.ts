@@ -9,8 +9,10 @@ import type {
   SaasPlan,
   SaasStatus,
   ContactUsage,
+  TenantFlags,
 } from '@linyup/shared'
 import {
+  CONNECT_TAKE_RATE,
   contactUsageForPlan,
   PLAN_PRICING,
   ORG_PER_STUDIO,
@@ -143,6 +145,15 @@ export interface AccountDetail {
   internal: boolean
   compedReason: string | null
   compedSinceMs: number | null
+  /** `flags.fee_rate` as stored — including an expired one, which the card says is over. */
+  feeRate: {
+    bps: number
+    reason: string
+    sinceMs: number | null
+    expiresAtMs: number | null
+  } | null
+  /** The plan's published take-rate (bps). Null for an org, whose studios each have their own. */
+  publishedFeeBps: number | null
 }
 
 /**
@@ -373,6 +384,8 @@ async function getTeamDetail(id: string): Promise<AccountDetail | null> {
     internal: team.flags?.internal === true,
     compedReason: team.flags?.comped_reason ?? null,
     compedSinceMs: team.flags?.comped_since?.toMillis?.() ?? null,
+    feeRate: toFeeRateView(team.flags),
+    publishedFeeBps: plan ? (CONNECT_TAKE_RATE[plan]?.bps ?? null) : null,
   }
 }
 
@@ -418,6 +431,19 @@ async function getOrgDetail(id: string): Promise<AccountDetail | null> {
     internal: org.flags?.internal === true,
     compedReason: org.flags?.comped_reason ?? null,
     compedSinceMs: org.flags?.comped_since?.toMillis?.() ?? null,
+    feeRate: toFeeRateView(org.flags),
+    publishedFeeBps: null,
+  }
+}
+
+function toFeeRateView(flags: TenantFlags | undefined): AccountDetail['feeRate'] {
+  const r = flags?.fee_rate
+  if (!r || typeof r.bps !== 'number') return null
+  return {
+    bps: r.bps,
+    reason: r.reason ?? '',
+    sinceMs: r.since?.toMillis?.() ?? null,
+    expiresAtMs: r.expires_at?.toMillis?.() ?? null,
   }
 }
 

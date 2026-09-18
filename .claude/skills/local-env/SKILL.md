@@ -162,7 +162,11 @@ stopped.
    older than its `src` in the header), no `! EMPTY`, and the app rows answer
    HTTP.
 2. The seed output ends in `✅ Ready` and contains no `Enter a string value`
-   line (that is the `defineString` prompt below, firing).
+   line (that is the `defineString` prompt below, firing). Expect it to sit on
+   `⏳ Waiting for the functions emulator to work through the trigger queue…`
+   for **about ten minutes** before that — see the trap below. A seed run
+   without `SEED_FUNCTIONS_EMULATOR_HOST` (a hand-run `tsx`) skips the wait and
+   says so; its `✅` then means only that the seed's own writes are done.
 3. The functions registry is non-empty — `status` reports `functions N loaded`.
    `! EMPTY` means every callable will answer a bare `internal`, which surfaces
    in the browser as a misleading CORS error on `localhost:5001`.
@@ -234,6 +238,15 @@ provisions from the console. Everything else: `docs/test-accounts.md`.
   ```bash
   grep -rhoE "define(String|Secret|Int|Bool)\('[A-Z_]+'" packages/functions/src --include='*.ts' | sort -u
   ```
+- **A Firestore trigger "never runs" on a freshly seeded slot** (an
+  `installed_plugins` status flip, a missing public mirror, a zero counter). It
+  is queued, not broken. The Firestore emulator delivers trigger events one at a
+  time and a full seed causes ~6,500 of them, so a write made right after the
+  seed runs 9–11 minutes later — same on firebase-tools 15.18 and 15.30. The
+  log hides it: an event's `time` is when it was DELIVERED, not written. `reset`
+  and `emulators:seed` now hold `✅` until the queue drains
+  (`scripts/lib/triggerDrain.ts`); set `SEED_FUNCTIONS_EMULATOR_HOST=` (empty)
+  to skip that wait and accept the lag.
 - **Your change is built but the app behaves like the old code.** The functions
   emulator does not reload `dist`. `status` flags this as `! STALE`. Restart
   the slot; rebuilding alone changes nothing.
@@ -270,3 +283,7 @@ provisions from the console. Everything else: `docs/test-accounts.md`.
   skill assumes a developed machine with several worktrees on it.
 - **`persona-ux-test`** and **`ux-review`** assume the stack is already up; bring
   it up here first, and do **not** reseed for them.
+- **`apps/web/e2e`** (Playwright, real browser — not the Browser pane) is the
+  same story: it drives an already-up slot rather than starting its own, and
+  needs `PLAYWRIGHT_BASE_URL` pointed at your slot if it isn't slot 0. See
+  `apps/web/e2e/README.md`.

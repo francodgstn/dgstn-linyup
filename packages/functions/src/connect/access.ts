@@ -9,7 +9,9 @@ import {
   CONNECT_ACCOUNTS_COLLECTION,
   ORGANIZATIONS_COLLECTION,
   TEAMS_COLLECTION,
+  resolveTakeRate,
   type ConnectOnboardingModel,
+  type ResolvedTakeRate,
   type SaasPlan,
   type TenantFlags,
 } from '@linyup/shared'
@@ -43,6 +45,12 @@ export interface EnabledTeam {
    * that nobody remembered to tell about comping.
    */
   feeWaived: boolean
+  /**
+   * The take-rate this studio's member payments are charged at — comped, a
+   * negotiated rate (its own or its organisation's) or the plan's published one.
+   * Resolved in the same read as `feeWaived`, which is `fee.source === 'comped'`.
+   */
+  fee: ResolvedTakeRate
   name?: string
   /** ISO 4217, as the studio set it (uppercase). The currency prices are
    *  authored in — asked at signup, editable in Settings → Payments. */
@@ -54,6 +62,18 @@ export interface EnabledTeam {
     connectStatus?: string
   }
   data: FirebaseFirestore.DocumentData
+}
+
+/**
+ * The applied rate, as Checkout metadata. The Connect webhook copies it onto the
+ * `member_payments` row, so a payment records WHICH rate it was charged at and
+ * why — the fee amount alone cannot say whether 0.5 % was a deal or a plan.
+ */
+export function platformFeeMetadata(team: EnabledTeam): Record<string, string> {
+  return {
+    platform_fee_bps: String(team.fee.rate.bps),
+    platform_fee_source: team.fee.source,
+  }
 }
 
 /**
@@ -69,19 +89,24 @@ export async function loadEnabledTeam(teamId: string): Promise<EnabledTeam> {
   if (data.payments?.connectEnabled === false) {
     throw new HttpsError('failed-precondition', 'Connect payments are disabled for this team')
   }
+  const plan = (data.plan as SaasPlan | undefined) ?? 'free'
+  const fee = await resolvePlatformFee(data, plan)
   return {
     id: snap.id,
-    plan: (data.plan as SaasPlan | undefined) ?? 'free',
+    plan,
     name: data.name as string | undefined,
     default_currency: data.default_currency as string | undefined,
     payments: data.payments,
-    feeWaived: await resolveFeeWaiver(data),
+    feeWaived: fee.source === 'comped',
+    fee,
     data,
   }
 }
 
 /**
- * Is Linyup's platform fee waived for this studio?
+ * Which platform-fee rate applies to this studio — comped, negotiated, or the
+ * plan's published rate. The decision is `resolveTakeRate` in @linyup/shared;
+ * this only fetches the two flag sets it needs.
  *
  * ── WHY IT IS READ THROUGH TO THE ORGANISATION, NOT COPIED ONTO THE TEAM ─────
  * A comp is normally decided for an ORGANISATION — Linyup's first migrated one
@@ -113,25 +138,33 @@ export async function loadEnabledTeam(teamId: string): Promise<EnabledTeam> {
  * on the team rule — is pinned in the same change. Without those three the
  * waiver would be self-serve for every studio owner on the platform.
  */
-async function resolveFeeWaiver(data: FirebaseFirestore.DocumentData): Promise<boolean> {
+export async function resolvePlatformFee(
+  data: FirebaseFirestore.DocumentData,
+  plan: SaasPlan
+): Promise<ResolvedTakeRate> {
+  const nowMs = Date.now()
   const teamFlags = data.flags as TenantFlags | undefined
-  if (teamFlags?.comped === true) return true
+  // A comp or a rate of the studio's own settles it without the org read.
+  if (teamFlags?.comped === true || teamFlags?.fee_rate) {
+    const own = resolveTakeRate({ tier: plan, teamFlags, nowMs })
+    if (own.source !== 'plan') return own
+  }
 
   const orgId = data.org_id as string | undefined
-  if (!orgId) return false
+  if (!orgId) return resolveTakeRate({ tier: plan, teamFlags, nowMs })
 
+  let orgFlags: TenantFlags | undefined
   try {
     const org = await admin.firestore().collection(ORGANIZATIONS_COLLECTION).doc(orgId).get()
-    const orgFlags = org.data()?.flags as TenantFlags | undefined
-    return orgFlags?.comped === true
+    orgFlags = org.data()?.flags as TenantFlags | undefined
   } catch (err) {
-    // FAIL TOWARDS CHARGING. A read that failed is not evidence of a comp, and
-    // the alternative — treating an unavailable organisation document as "bills
-    // nothing" — turns a transient Firestore error into free transactions for
-    // every studio in every organisation until it clears.
-    console.error(`[connect] fee-waiver lookup failed for org ${orgId}:`, err)
-    return false
+    // FAIL TOWARDS THE PUBLISHED RATE. A read that failed is not evidence of a
+    // comp or a deal, and the alternative — treating an unavailable organisation
+    // document as "bills nothing" — turns a transient Firestore error into free
+    // transactions for every studio in every organisation until it clears.
+    console.error(`[connect] fee-rate lookup failed for org ${orgId}:`, err)
   }
+  return resolveTakeRate({ tier: plan, teamFlags, orgFlags, nowMs })
 }
 
 /**

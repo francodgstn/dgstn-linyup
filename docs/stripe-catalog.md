@@ -19,8 +19,8 @@ reproducible.
   (`{ coachPriceMonthly, stripeLookupKey }`).
 - Studio contact block → `STUDIO_CONTACT_BLOCK` in
   `packages/shared/src/types/plan.ts`
-  (`{ size: 250, monthly: 10, stripeLookupKey: 'linyup_studio_contact_block_monthly' }`).
-  A Studio team that grows past its included cap buys room in flat **+250
+  (`{ size: 300, monthly: 10, stripeLookupKey: 'linyup_studio_contact_block_monthly' }`).
+  A Studio team that grows past its included cap buys room in flat **+300
   blocks** (Stripe quantity = number of blocks) — there is **no per-contact
   metering**. Coach over its cap is prompted to upgrade to Studio instead; Free
   is a hard cap. See `contactOverageForPlan`.

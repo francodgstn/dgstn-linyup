@@ -51,6 +51,7 @@ import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { usePlanName } from '@/hooks/usePlanName'
 import { ColorPicker, DEFAULT_ACCENT } from '@/components/ui/color-picker'
+import { MoreOptions } from '@/components/forms/MoreOptions'
 import { ImageIcon, X } from 'lucide-react'
 /**
  * THE ACTIVITY EDITOR, as a component rather than a page fixture.
@@ -304,6 +305,20 @@ export function ActivityDialog({
   // one being copied. `editing` alone still decides which BRANCH of onSubmit
   // runs — a duplicate is a create, and must go down the create path.
   const seed = editing ?? duplicating
+
+  // Does the class being copied already say anything the dialog tucks under
+  // More options? Then it opens showing it (MoreOptions' one `defaultOpen` job).
+  const bookingExtrasHaveValue = !!(
+    seed?.meetingPoint ||
+    seed?.prerequisites ||
+    seed?.confirmationInstructions ||
+    seed?.whatsIncluded ||
+    seed?.whatsNotIncluded ||
+    seed?.faq ||
+    seed?.cancellationPolicy ||
+    seed?.bookingQuestions?.length ||
+    seed?.contactFields?.length
+  )
 
   const {
     register,
@@ -868,6 +883,14 @@ export function ActivityDialog({
             </SettingRows>
           </FormSection>
 
+          {/* THE OPTIONAL TAIL, TUCKED AWAY WHEN CREATING (declutter audit,
+              2026-09-17). A new class needs a name, a kind and whether bookings
+              confirm themselves; the meeting point, booking questions and the
+              public prose are right when empty, so the dialog folds them under
+              one More options — open by itself when the copied class already
+              carries any of them. The pane's Booking tab shows them as before. */}
+          {inline ? (
+            <>
           {/* THE SHORT CONTROL FIRST, THEN THE FORM, THEN THE PROSE — and the
               prose runs FULL WIDTH, one field per row. Two columns halved every
               textarea, so six paragraphs of public copy were written in boxes
@@ -974,6 +997,125 @@ export function ActivityDialog({
               <p className="text-xs text-muted-foreground">{t('cancellationPolicyHelp')}</p>
             </div>
           </FormSection>
+            </>
+          ) : (
+            <FormSection>
+              <MoreOptions
+                label={t('bookingMoreOptionsLabel')}
+                hint={t('bookingMoreOptionsHint')}
+                defaultOpen={bookingExtrasHaveValue}
+              >
+                <FormSections>
+          {/* THE SHORT CONTROL FIRST, THEN THE FORM, THEN THE PROSE — and the
+              prose runs FULL WIDTH, one field per row. Two columns halved every
+              textarea, so six paragraphs of public copy were written in boxes
+              narrower than the sentences going into them (Franco, 2026-09-02). */}
+          <FormSection>
+<div className="space-y-1.5">
+              <Label htmlFor="act-meeting-point">{t('fieldMeetingPoint')}</Label>
+              <Input
+                id="act-meeting-point"
+                {...register('meetingPoint')}
+                placeholder={t('meetingPointPlaceholder')}
+              />
+            </div>
+
+            <Controller
+              control={control}
+              name="bookingQuestions"
+              render={({ field }) => (
+                <BookingQuestionsEditor
+                  value={(field.value ?? []) as FormField[]}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="contactFields"
+              render={({ field }) => (
+                <BookingContactFieldsEditor
+                  value={(field.value ?? []) as BookingContactField[]}
+                  onChange={field.onChange}
+                  definitions={customFieldDefinitions}
+                  extendsTeamDefault
+                  inheritedKeys={teamContactFieldKeys}
+                  customFieldsInstalled={isInstalled('custom-fields')}
+                />
+              )}
+            />
+          </FormSection>
+
+          <FormSection>
+<div className="space-y-1.5">
+              <Label htmlFor="act-prereq">{t('fieldPrerequisites')}</Label>
+              <textarea
+                id="act-prereq"
+                {...register('prerequisites')}
+                rows={3}
+                placeholder={t('prerequisitesPlaceholder')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none"
+              />
+              <p className="text-xs text-muted-foreground">{t('prerequisitesHelp')}</p>
+            </div>
+<div className="space-y-1.5">
+              <Label htmlFor="act-confirm-instructions">{t('fieldConfirmationInstructions')}</Label>
+              <textarea
+                id="act-confirm-instructions"
+                {...register('confirmationInstructions')}
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-y"
+              />
+              <p className="text-xs text-muted-foreground">{t('confirmationInstructionsHelp')}</p>
+            </div>
+<div className="space-y-1.5">
+              <Label htmlFor="act-whats-included">{t('fieldWhatsIncluded')}</Label>
+              <textarea
+                id="act-whats-included"
+                {...register('whatsIncluded')}
+                rows={3}
+                placeholder={t('whatsIncludedPlaceholder')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-y"
+              />
+              <p className="text-xs text-muted-foreground">{t('whatsIncludedHelp')}</p>
+            </div>
+<div className="space-y-1.5">
+              <Label htmlFor="act-whats-not-included">{t('fieldWhatsNotIncluded')}</Label>
+              <textarea
+                id="act-whats-not-included"
+                {...register('whatsNotIncluded')}
+                rows={3}
+                placeholder={t('whatsIncludedPlaceholder')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-y"
+              />
+            </div>
+<div className="space-y-1.5">
+              <Label htmlFor="act-faq">{t('fieldFaq')}</Label>
+              <textarea
+                id="act-faq"
+                {...register('faq')}
+                rows={4}
+                placeholder={t('faqPlaceholder')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-y"
+              />
+            </div>
+<div className="space-y-1.5">
+              <Label htmlFor="act-cancellation-policy">{t('fieldCancellationPolicy')}</Label>
+              <textarea
+                id="act-cancellation-policy"
+                {...register('cancellationPolicy')}
+                rows={3}
+                placeholder={t('cancellationPolicyPlaceholder')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-y"
+              />
+              <p className="text-xs text-muted-foreground">{t('cancellationPolicyHelp')}</p>
+            </div>
+          </FormSection>
+                </FormSections>
+              </MoreOptions>
+            </FormSection>
+          )}
         </>
       )}
     </>

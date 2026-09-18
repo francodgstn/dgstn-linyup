@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { MoreOptions } from '@/components/forms/MoreOptions'
 import { Globe } from 'lucide-react'
 
 /**
@@ -182,6 +183,16 @@ export function SubTypeDialog({
       ? duplicateDefaults(duplicating, tCommon('copyName', { name: duplicating.name }))
       : emptyDefaults(editing)
 
+  // Read ONCE per mount — this component remounts on every target change (every
+  // call site keys it on `editing`/`duplicating`'s id), so this is never stale.
+  // UX-108: the disclosure it feeds must open BY ITSELF whenever a stored plan
+  // already holds a value nobody would type by accident — a partner source, or
+  // a checkout-contact mode other than the default.
+  const initial = initialValues()
+  const dialogMoreOptionsDefaultOpen =
+    initial.source === 'aggregator' ||
+    (!!initial.public && (initial.checkout_contact_mode ?? 'minimal') !== 'minimal')
+
   const {
     register,
     handleSubmit,
@@ -191,7 +202,7 @@ export function SubTypeDialog({
     formState: { isSubmitting },
   } = useForm<SubTypeData>({
     resolver: zodResolver(subTypeSchema),
-    defaultValues: initialValues(),
+    defaultValues: initial,
   })
 
   useEffect(() => {
@@ -266,53 +277,6 @@ export function SubTypeDialog({
               className="resize-none"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>{t('fieldSubTypeSource')}</Label>
-            <div className="flex gap-2">
-              {(['internal', 'aggregator'] as const).map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setValue('source', val)}
-                  className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors text-left ${
-                    source === val
-                      ? 'border-primary bg-primary/5 text-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:border-foreground/30'
-                  }`}
-                >
-                  <p className="font-medium">
-                    {t(val === 'internal' ? 'subTypeSourceInternal' : 'subTypeSourceAggregator')}
-                  </p>
-                  <p className="text-xs font-normal mt-0.5 text-muted-foreground">
-                    {val === 'internal'
-                      ? t('subTypeSourceInternalDesc')
-                      : t('subTypeSourceAggregatorDesc')}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {source === 'aggregator' && (
-            <div className="space-y-1">
-              <Label>{t('subTypePayoutPerVisit')}</Label>
-              <div className="relative max-w-[200px]">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register('payoutPerVisit')}
-                  className="pr-12"
-                  placeholder="0.00"
-                />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
-                  {currency}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">{t('subTypePayoutPerVisitDesc')}</p>
-            </div>
-          )}
-
           <div className="flex items-center justify-between py-1">
             <div className="space-y-0.5">
               <Label>{t('subTypeActive')}</Label>
@@ -332,43 +296,102 @@ export function SubTypeDialog({
             <Switch checked={isPublic} onCheckedChange={(v) => setValue('public', v)} />
           </div>
 
-          {isPublic && (
+          {/* UX-108: a partner source, its payout and the checkout contact mode
+              are the RARE path — most studios sell their own plans and never
+              touch these. Collapsed by default; opens itself the moment a
+              stored plan already holds a non-default answer (computed once at
+              mount from the record being edited, above), so nothing a studio
+              already configured is ever hidden from it. */}
+          <MoreOptions
+            label={t('subTypeMoreOptionsLabel')}
+            hint={t('subTypeMoreOptionsHint')}
+            defaultOpen={dialogMoreOptionsDefaultOpen}
+          >
             <div className="space-y-1.5">
-              <Label>{t('subTypeCheckoutContact')}</Label>
-              {/* Selectable option cards — the same shape the activity editor's
-                  "who can book" uses, and for the same reason: each option's
-                  explanation belongs INSIDE the box it explains. These three
-                  used to be bare pills with all three explanations concatenated
-                  into one sentence underneath, which the reader had to map back
-                  to the buttons by position — and which no translator could keep
-                  in the button order, being a single string. */}
-              <div className="grid gap-2 lg:grid-cols-3">
-                {(['off', 'minimal', 'full'] as const).map((val) => (
-                  <label
+              <Label>{t('fieldSubTypeSource')}</Label>
+              <div className="flex gap-2">
+                {(['internal', 'aggregator'] as const).map((val) => (
+                  <button
                     key={val}
-                    className={`flex items-start gap-2 cursor-pointer text-sm rounded-lg border p-2.5 transition-colors ${
-                      contactMode === val ? 'border-primary bg-primary/5' : 'hover:border-foreground/30'
+                    type="button"
+                    onClick={() => setValue('source', val)}
+                    className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors text-left ${
+                      source === val
+                        ? 'border-primary bg-primary/5 text-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:border-foreground/30'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      className="mt-0.5 accent-primary"
-                      checked={contactMode === val}
-                      onChange={() => setValue('checkout_contact_mode', val)}
-                    />
-                    <span>
-                      <span className="font-medium">
-                        {t(`subTypeContactMode_${val}` as Parameters<typeof t>[0])}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {t(`subTypeContactMode_${val}_desc` as Parameters<typeof t>[0])}
-                      </span>
-                    </span>
-                  </label>
+                    <p className="font-medium">
+                      {t(val === 'internal' ? 'subTypeSourceInternal' : 'subTypeSourceAggregator')}
+                    </p>
+                    <p className="text-xs font-normal mt-0.5 text-muted-foreground">
+                      {val === 'internal'
+                        ? t('subTypeSourceInternalDesc')
+                        : t('subTypeSourceAggregatorDesc')}
+                    </p>
+                  </button>
                 ))}
               </div>
             </div>
-          )}
+
+            {source === 'aggregator' && (
+              <div className="space-y-1">
+                <Label>{t('subTypePayoutPerVisit')}</Label>
+                <div className="relative max-w-[200px]">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register('payoutPerVisit')}
+                    className="pr-12"
+                    placeholder="0.00"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                    {currency}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('subTypePayoutPerVisitDesc')}</p>
+              </div>
+            )}
+
+            {isPublic && (
+              <div className="space-y-1.5">
+                <Label>{t('subTypeCheckoutContact')}</Label>
+                {/* Selectable option cards — the same shape the activity editor's
+                    "who can book" uses, and for the same reason: each option's
+                    explanation belongs INSIDE the box it explains. These three
+                    used to be bare pills with all three explanations concatenated
+                    into one sentence underneath, which the reader had to map back
+                    to the buttons by position — and which no translator could keep
+                    in the button order, being a single string. */}
+                <div className="grid gap-2 lg:grid-cols-3">
+                  {(['off', 'minimal', 'full'] as const).map((val) => (
+                    <label
+                      key={val}
+                      className={`flex items-start gap-2 cursor-pointer text-sm rounded-lg border p-2.5 transition-colors ${
+                        contactMode === val ? 'border-primary bg-primary/5' : 'hover:border-foreground/30'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="mt-0.5 accent-primary"
+                        checked={contactMode === val}
+                        onChange={() => setValue('checkout_contact_mode', val)}
+                      />
+                      <span>
+                        <span className="font-medium">
+                          {t(`subTypeContactMode_${val}` as Parameters<typeof t>[0])}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {t(`subTypeContactMode_${val}_desc` as Parameters<typeof t>[0])}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </MoreOptions>
 
           {/* Pricing (optional) — kept secondary so the simple flow stays one-field */}
 

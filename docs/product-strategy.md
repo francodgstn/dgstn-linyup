@@ -41,7 +41,7 @@ The system is structured around **business maturity**, not arbitrary feature gro
 **Model:**
 
 * Full Coach feature set, differentiated by **limits**, not feature flags:
-  * **15 active contacts — hard cap** (manual adds blocked at the limit; public
+  * **50 active contacts — hard cap** (manual adds blocked at the limit; public
     bio link signups still land, so the cap breach itself becomes the upgrade prompt)
   * **Single user** (no team member invitations)
   * **No plugin add-ons** (catalogue browsable, everything upgrade-locked)
@@ -162,7 +162,7 @@ outgrows it quickly, converting exactly when the product has proven its value.
 **Persona:**
 
 * Gym / club (e.g. boxing, martial arts, fitness studio)
-* 50–250+ members (buy contact blocks beyond 250)
+* 50–300+ members (buy contact blocks beyond 300)
 * Wants growth + retention
 
 **Goal:**
@@ -297,7 +297,7 @@ outgrows it quickly, converting exactly when the product has proven its value.
 
 1. Base subscription fee per tier
 2. A contact cap per tier (counts **active, non-archived** contacts only)
-3. Studio-only **contact blocks** — buy more room in flat +250 increments
+3. Studio-only **contact blocks** — buy more room in flat +300 increments
 4. Optional per-plugin add-ons (Coach plan — see *Plugin add-ons* below)
 
 There is **no per-active-contact metering**. The earlier "variable fee per
@@ -344,9 +344,9 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
 
 | Tier         | Base Price | Included Contacts | Over the cap |
 |--------------|------------|-------------------|--------------|
-| Free         | CHF 0      | 15 (hard cap)     | Blocked — prompt to upgrade to Coach / Studio |
-| Coach        | CHF 9      | 50                | Prompt to upgrade to Studio (no overage charge) |
-| Studio       | CHF 35     | 250               | Add +250-contact blocks at CHF 10/mo each, or upgrade to Organisation |
+| Free         | CHF 0      | 50 (hard cap)     | Blocked — prompt to upgrade to Coach / Studio |
+| Coach        | CHF 9      | 150               | Prompt to upgrade to Studio (no overage charge) |
+| Studio       | CHF 35     | 300               | Add +300-contact blocks at CHF 10/mo each, or upgrade to Organisation |
 | Organization | From CHF 103 · *Talk to us* | Unlimited | — |
 
 > **Organisation pricing (not flat-published).** Org is **base CHF 79/mo + CHF 12
@@ -358,16 +358,16 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
 > `ORG_PER_STUDIO` (`linyup_organization_studio_monthly`, quantity = studios).
 > Eligibility: studios under common ownership or a single federating body.
 
-* **Free (15)** — hard cap. Manual adds are blocked at the limit; public bio-link
+* **Free (50)** — hard cap. Manual adds are blocked at the limit; public bio-link
   signups still land, so the breach itself becomes the upsell.
-* **Coach (50)** — when exceeded, prompt to upgrade to Studio (the coach has
+* **Coach (150)** — when exceeded, prompt to upgrade to Studio (the coach has
   grown past a solo operation into a studio). No per-contact charge.
-* **Studio (250)** — **never hard-block** an active Studio for being slightly
-  over. Prompt to add a flat **+250 block (~CHF 10/mo)** for predictable extra
+* **Studio (300)** — **never hard-block** an active Studio for being slightly
+  over. Prompt to add a flat **+300 block (~CHF 10/mo)** for predictable extra
   room, or to move to Organisation when going multi-location.
 * **Organisation** — unlimited contacts.
 
-> **Implementation status (2026-06):** the new caps (15 / 50 / 250 / unlimited)
+> **Implementation status (2026-09):** the caps (50 / 150 / 300 / unlimited)
 > are live in `PLAN_PRICING` and enforced — Free hard-blocks, while Coach and
 > Studio show tier-specific over-cap prompts (upgrade / add a block) on the
 > contacts page. The **legacy per-student soft overage** (`syncContactOverage`,
@@ -436,7 +436,7 @@ Only if you provide real billing + subscription value — otherwise skip to avoi
 
 * **Freemium + trial combined** (decision 2026-06): every signup starts on a
   14-day full-access Studio trial; on expiry the team downgrades to the **Free
-  plan** (15-contact hard cap) instead of being walled and purged.
+  plan** (hard contact cap) instead of being walled and purged.
 * The trial sells the full product; Free keeps non-converters in the funnel at
   near-zero marginal cost and converts them when they outgrow the cap.
 
@@ -447,13 +447,13 @@ Only if you provide real billing + subscription value — otherwise skip to avoi
 The system must naturally push users upward:
 
 * **Free → Coach triggers:**
-  * Hits the 15-contact hard cap (the primary, success-aligned trigger)
+  * Hits the Free hard contact cap (the primary, success-aligned trigger)
   * Wants a second team member on the account
   * Wants plugin add-ons (gamification, referrals, …)
   * Wants the "Powered by Linyup" badge off their bio link
 
 * **Coach → Studio — hard pulls (Studio-only, never à la carte):**
-  * Outgrows the 50-contact cap — no per-contact overage on Coach, so growth past
+  * Outgrows the Coach contact cap — no per-contact overage on Coach, so growth past
     a solo operation means moving up to Studio
   * Wants a branded client mobile app (in-app booking, push reminders, coaching history)
   * Wants automated outreach (inactivity follow-ups, onboarding sequences)
@@ -468,8 +468,8 @@ The system must naturally push users upward:
 * **Studio → Organization trigger:**
   * Manages multiple locations
   * Needs centralized control
-  * Consistently exceeds 250 contacts and prefers one multi-location account
-    over stacking +250 contact blocks
+  * Consistently exceeds 300 contacts and prefers one multi-location account
+    over stacking +300 contact blocks
 
 Features must be distributed to **create pull**, not force upgrades artificially.
 

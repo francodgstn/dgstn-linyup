@@ -347,7 +347,7 @@
     "cmpCore": "Studio führen",
     "cmpOrg": "Multi-Studio-Organisation",
     "cmpContacts": "Kontakte",
-    "cmpContactsNote": "Zählt nur aktive (nicht archivierte) Kontakte. Studio kann +250er-Blöcke für CHF 10/Monat hinzufügen; archivierte Kontakte werden nach 2 Jahren automatisch anonymisiert.",
+    "cmpContactsNote": "Zählt nur aktive (nicht archivierte) Kontakte. Studio kann +300er-Blöcke für CHF 10/Monat hinzufügen; archivierte Kontakte werden nach 2 Jahren automatisch anonymisiert.",
     "cmpMembers": "Mehrere Studio-Manager/Betrachter",
     "cmpUiLanguages": "Moderne UI in 4 Sprachen",
     "cmpUiLanguagesNote": "English · Deutsch · Français · Italiano",
@@ -375,7 +375,7 @@
       "price": "Kostenlos",
       "audience": "Für Coaches, die gerade erst starten.",
       "features": [
-        "Bis zu 15 Kontakte",
+        "Bis zu 50 Kontakte",
         "Buchungsseite & Bio-Link",
         "Lektionen, Abos & Ziele"
       ]
@@ -387,7 +387,7 @@
       "audience": "Für Einzeltrainer und Privatcoaches, die Fahrt aufnehmen.",
       "features": [
         "Alles aus Free",
-        "50 Kontakte",
+        "150 Kontakte",
         "Mitglieder-App + Gruppen & eigene Felder",
         "Add-ons à la carte"
       ]

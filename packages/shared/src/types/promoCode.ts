@@ -399,8 +399,8 @@ export function looksLikeGiftCardCode(raw: string): boolean {
  * Per-plan cap on ACTIVE codes, in the shape of PRODUCT_LIMITS. Zero on
  * free/coach is the same statement as the requirePlan(teamId, 'studio') gate on
  * creation, expressed as data so the admin page can render "4 of 20" without a
- * second rule. Free inherits Coach, which is why Coach is zero: a 15-contact
- * hobbyist running discount campaigns is not a real persona.
+ * second rule. Free inherits Coach, which is why Coach is zero: a hobbyist at
+ * the free contact cap running discount campaigns is not a real persona.
  *
  * The gate is on CREATION ONLY. A team downgraded to free keeps its live codes
  * previewable, reservable, committable and releasable.

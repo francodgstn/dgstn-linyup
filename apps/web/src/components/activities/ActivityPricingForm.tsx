@@ -353,7 +353,6 @@ export function ActivityPricingForm({
   // The plan table is meaningful in EVERY state now, so it is never hidden: a
   // class anyone may book can still make holders of a plan free and charge the
   // rest, which is the ordinary "members free, visitors pay" shape.
-  const noPlanEdge = false
   /**
    * THE MATCHER READS THE DRAFT TIER, not the stored one.
    *
@@ -384,10 +383,12 @@ export function ActivityPricingForm({
       { ...activity, durations: toActivityDurations(draft.durations) }
     : {
         ...activity,
-        dropIn: {
-          enabled: draftDropIn.enabled,
-          ...(draftDropIn.priceAmount != null ? { priceAmount: draftDropIn.priceAmount } : {}),
-        },
+        // ALREADY RESOLVED, so it says so: 'custom' carries the price, 'off' none.
+        // Without a mode an unpriced draft reads as 'studio' and the matcher
+        // would resolve the default back in under a class set to "no drop-in".
+        dropIn: draftDropIn.enabled
+          ? { mode: 'custom', enabled: true, priceAmount: draftDropIn.priceAmount }
+          : { mode: 'off', enabled: false },
         accessRule: {
           ...draftAccessRule(draft),
           ...(resolveActivityAccessRule(activity).subscriptionTypeIds?.length
@@ -488,7 +489,6 @@ export function ActivityPricingForm({
           <FormSection>
           <div className="space-y-2">
             <Label>{t('accessLabel')}</Label>
-            <p className="text-xs text-muted-foreground">{t('accessHint')}</p>
             {/* TWO cards, not three. The third used to be "Specific
                 subscriptions", which was the same field the plan table below
                 already edits — so it asked one question twice and left the
@@ -729,19 +729,10 @@ export function ActivityPricingForm({
         />
       )}
 
-      {/* WHERE THE MATCHER WOULD BE, on a class no plan can bear on. An open
-          class is free to book for everybody: nothing for a plan to open, and
-          no price for one to reduce. The switch that changes that is directly
-          above, which is why this sentence sits here and not on the pane. */}
-      {noPlanEdge ? (
-        <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-          {tCat('openNoPlanEdge')}
-        </p>
-      ) : (
-        // NO RULE ABOVE THE MATCHER. The tab is one continuous answer to "who
-        // can book this and what does it cost", and a line across the middle of
-        // it proposed a boundary that is not there.
-        <div className={isAppointment ? '' : 'pt-2'}>
+      {/* NO RULE ABOVE THE MATCHER. The tab is one continuous answer to "who
+          can book this and what does it cost", and a line across the middle of
+          it proposed a boundary that is not there. */}
+      <div className={isAppointment ? '' : 'pt-2'}>
         <ActivityPlanLinks
           direction="from-offering"
           offering={{
@@ -777,7 +768,6 @@ export function ActivityPricingForm({
           saveHandle={setLinks}
         />
       </div>
-      )}
 
       {/* ONE BUTTON FOR THE TAB, at its foot, below everything it saves. */}
       {canEdit && (

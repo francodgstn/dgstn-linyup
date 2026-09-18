@@ -1,8 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import {
+  negotiatedRateExpiresAtMs,
   ORGANIZATIONS_COLLECTION,
   TEAMS_COLLECTION,
   MEMBER_SUBSCRIPTIONS_SUBCOLLECTION,
@@ -98,6 +99,82 @@ export async function setTenantComped(
   }
 
   await ref.update(patch)
+  revalidatePath(`/accounts/${kind}/${entityId}`)
+  return { ok: true }
+}
+
+/**
+ * NEGOTIATE a platform-fee rate for a tenant — a flat percentage on its member
+ * payments in place of the plan's published take-rate, optionally until a date.
+ *
+ * On an organisation it reaches every studio in it, read through at charge time
+ * like the comp. The resolver (`resolveTakeRate`) charges the LOWER of this and
+ * the published rate, so a rate at or above it simply has no effect.
+ *
+ * Written whole — `flags.fee_rate` is one map, and a key-by-key write would
+ * deep-merge a new rate with an old expiry. A reason is required for the same
+ * reason the comp requires one.
+ *
+ * This changes what the NEXT one-off payment is charged. Live member
+ * subscriptions carry their fee percent on the Stripe object and are updated by
+ * the separate `resyncTenantFeeRate` callable (the button beside this form).
+ */
+export async function setTenantFeeRate(
+  kind: 'team' | 'org',
+  entityId: string,
+  input: { percent: string; reason: string; lastDay: string | null }
+): Promise<ActionResult> {
+  await requireOperator()
+
+  const pct = Number(input.percent.trim().replace(',', '.'))
+  const bps = Math.round(pct * 100)
+  if (!input.percent.trim() || !Number.isFinite(pct) || Math.abs(pct * 100 - bps) > 1e-6) {
+    return { ok: false, error: 'Enter the rate as a percentage with at most two decimals, e.g. 0.5.' }
+  }
+  if (bps < 0 || bps > 10_000) {
+    return { ok: false, error: 'The rate must be between 0 and 100 %.' }
+  }
+  const reason = input.reason.trim()
+  if (!reason) {
+    return { ok: false, error: 'A reason is required — it is the record of what was agreed.' }
+  }
+
+  let expiresAt: Timestamp | null = null
+  if (input.lastDay) {
+    const ms = negotiatedRateExpiresAtMs(input.lastDay)
+    if (ms == null) return { ok: false, error: 'The last day is not a valid date.' }
+    if (ms <= Date.now()) return { ok: false, error: 'The last day has already passed.' }
+    expiresAt = Timestamp.fromMillis(ms)
+  }
+
+  const collection = kind === 'org' ? ORGANIZATIONS_COLLECTION : TEAMS_COLLECTION
+  const ref = adminDb.collection(collection).doc(entityId)
+  if (!(await ref.get()).exists) {
+    return { ok: false, error: `No such ${kind}: ${entityId}` }
+  }
+
+  await ref.update({
+    'flags.fee_rate': {
+      bps,
+      reason,
+      since: FieldValue.serverTimestamp(),
+      expires_at: expiresAt,
+    },
+    updated_at: FieldValue.serverTimestamp(),
+  })
+  revalidatePath(`/accounts/${kind}/${entityId}`)
+  return { ok: true }
+}
+
+/** END a negotiated rate now — the tenant returns to its plan's published rate. */
+export async function clearTenantFeeRate(kind: 'team' | 'org', entityId: string): Promise<ActionResult> {
+  await requireOperator()
+  const collection = kind === 'org' ? ORGANIZATIONS_COLLECTION : TEAMS_COLLECTION
+  const ref = adminDb.collection(collection).doc(entityId)
+  if (!(await ref.get()).exists) {
+    return { ok: false, error: `No such ${kind}: ${entityId}` }
+  }
+  await ref.update({ 'flags.fee_rate': null, updated_at: FieldValue.serverTimestamp() })
   revalidatePath(`/accounts/${kind}/${entityId}`)
   return { ok: true }
 }

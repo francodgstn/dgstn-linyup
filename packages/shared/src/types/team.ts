@@ -595,6 +595,40 @@ export interface TenantFlags {
   /** Why, in one line — e.g. 'founding customer, migrated 2026'. */
   comped_reason?: string
   comped_since?: Timestamp
+  /**
+   * A platform-fee rate NEGOTIATED with this tenant, replacing its plan's
+   * published take-rate on member payments. Null or absent = the published rate.
+   *
+   * On an ORGANISATION it applies to every studio in it, read through at charge
+   * time exactly like `comped` (see `resolvePlatformFee` in functions) — a
+   * studio's OWN rate wins over its organisation's.
+   *
+   * Operator-set only (`flags` is pinned against client writes). Written WHOLE
+   * or set to null, never key-by-key: Firestore deep-merges a nested map, so a
+   * partial write would pair a new rate with an old expiry.
+   *
+   * It is a DISCOUNT, never a surcharge: `resolveTakeRate` charges the lower of
+   * this and the published rate, so a plan upgrade past it is never undone.
+   */
+  fee_rate?: NegotiatedFeeRate | null
+}
+
+/** See `TenantFlags.fee_rate`. */
+export interface NegotiatedFeeRate {
+  /** Basis points, integer 0–10000. 100 bps = 1 %. */
+  bps: number
+  /** What was agreed, in one line — required, like `comped_reason`. */
+  reason: string
+  since: Timestamp
+  /**
+   * The first instant the rate NO LONGER applies. Null = open-ended.
+   *
+   * Nothing runs when it passes: the resolver compares it with the charge time,
+   * so one-off payments return to the published rate on their own. Recurring
+   * member subscriptions carry their fee percent on the Stripe object and are
+   * brought back by the daily `resyncExpiredFeeRates` task.
+   */
+  expires_at: Timestamp | null
 }
 
 /**
