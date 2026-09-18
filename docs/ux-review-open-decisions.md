@@ -563,7 +563,9 @@ the draft on a debounce would remove the whole failure class — the draft is on
 half-finished edit durable. Product call, not a code one.
 
 ## 38. Does the organisation builder track the team builder?
-**PARKED.** `(auth)/org/[orgId]/website/` re-implements its own AppearancePanel
+**ANSWERED 2026-09-18 — Franco: yes, the same functionality, plus the org's own sub-team sections.** Built on `claude/org-website-pages`: org sites publish pages, posts and redirects through the team's own page publisher (`website/publishPages.ts`); the public org site is a catch-all route rendered on the server; and the org builder uses the page tools moved out of the team builder (`components/website/pages/SitePageTools.tsx`). Org buttons open a page or a link — never booking, signup or an appointment. The original question follows.
+
+**Was PARKED.** `(auth)/org/[orgId]/website/` re-implements its own AppearancePanel
 and has no Pages, no Posts, no Embed tab. The two have already drifted once for
 real (a bug where the org builder read the wrong i18n namespace). Two questions,
 in order: (i) do org sites ever get pages/posts, or is single-page a deliberate
