@@ -13,6 +13,19 @@
  * `//engines.pnpm` note) — a lockfile change is not free here. Anything richer
  * than this subset should fail loudly rather than be guessed at, so it does.
  */
+import { readFileSync } from 'node:fs'
+
+/**
+ * Read a text file with its line endings normalised to LF.
+ *
+ * Every parse here is line-based, and a Windows checkout (core.autocrlf=true,
+ * `* text=auto`) hands us CRLF while the committed blobs — and CI's Linux
+ * checkout — are LF. Unnormalised, the trailing `\r` defeats every `(.*)$`, so
+ * each frontmatter line fails to parse and the index is built from failed
+ * parses: a local-only failure CI never sees. \r\n → \n keeps the line count,
+ * so every reported line number still points at the right line.
+ */
+export const readText = (path) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 
 /** The `area` values. A doc's area groups it in the index and, later, in the
  *  Starlight sidebar. Kept here so both readers share one list. */
