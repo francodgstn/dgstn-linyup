@@ -173,7 +173,8 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
     // A floor, not an equality: the point of deriving the list is that a new
     // route appears here without anybody editing this file.
     assert.ok(ALL.length >= 15, `expected the public route tree, found ${ALL.length}`)
-    for (const known of ['appointments', 'booking', 'shop', 'signup', 'site', 'space']) {
+    // The website is a catch-all route since it gained pages (site/[[...path]]).
+    for (const known of ['appointments', 'booking', 'shop', 'signup', 'site/[[...path]]', 'space']) {
       assert.ok(ALL.includes(known), `${known} must be in the census`)
     }
   })

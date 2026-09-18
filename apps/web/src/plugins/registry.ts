@@ -32,6 +32,8 @@ import { giftCardsManifest } from './gift-cards/manifest'
 import { promoCodesManifest } from './promo-codes/manifest'
 import { tarif595Manifest } from './tarif-595/manifest'
 import { qrInvoicesManifest } from './qr-invoices/manifest'
+import { siteThemesManifest } from './site-themes/manifest'
+import { crossfitZugSiteManifest } from './crossfitzug/manifest'
 import { apiConnectorsManifest } from './api-connectors/manifest'
 
 export const PLUGIN_REGISTRY: PluginManifest[] = [
@@ -60,6 +62,8 @@ export const PLUGIN_REGISTRY: PluginManifest[] = [
   promoCodesManifest,
   tarif595Manifest,
   qrInvoicesManifest,
+  siteThemesManifest,
+  crossfitZugSiteManifest,
   apiConnectorsManifest,
 ]
 

@@ -24,7 +24,9 @@ export const restString = (v?: RestValue) => v?.stringValue
 export const restMap = (v?: RestValue) => v?.mapValue?.fields ?? {}
 export const restArray = (v?: RestValue) => v?.arrayValue?.values ?? []
 
-function restEndpointBase(): { base: string; key?: string } {
+// Exported so `firestoreRest.ts` (the general REST decoder) reuses the same
+// emulator/API-key endpoint logic instead of a second copy.
+export function restEndpointBase(): { base: string; key?: string } {
   const base = USE_EMULATORS
     ? `http://${process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080'}/v1`
     : 'https://firestore.googleapis.com/v1'

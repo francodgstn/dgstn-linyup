@@ -361,7 +361,9 @@ export function EmbedWidgets({
           {t('embedAddWidget')}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
-          {SECTION_LIBRARY.map((lib) => (
+          {/* 'managed' sections (none today) are authored by Linyup, not offered
+              here — but stay editable once present. */}
+          {SECTION_LIBRARY.filter((lib) => lib.maturity !== 'managed').map((lib) => (
             <DropdownMenuItem key={lib.type} onClick={() => addWidget(lib.type)} className="gap-2">
               <DynamicIcon name={lib.icon} className="h-4 w-4 text-muted-foreground" />
               <span className="flex flex-col">

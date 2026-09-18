@@ -35,6 +35,7 @@ import {
   GalleryFields,
   HeroFields,
   TestimonialsFields,
+  VideoFields,
   type SiteEditorTenant,
 } from '@/components/website/SiteSectionFields'
 
@@ -302,16 +303,17 @@ export function OrgSectionEditor({
       return <GalleryFields s={section} tenant={tenant} onChange={onChange} />
     case 'contact':
       return <ContactFields s={section} onChange={onChange} />
-    // The presentational four, from the shared module — the same components the
-    // team builder mounts. `OrgCtaEditor` is passed in for the same reason the
-    // hero above takes it: an org's call to action has no booking page to point
-    // at, so the TARGETS differ while the fields do not.
+    // The presentational sections, from the shared module — the same components
+    // the team builder mounts. `OrgCtaEditor` is passed in for the same reason
+    // the hero above takes it: an org's call to action has no booking page to
+    // point at, so the TARGETS differ while the fields do not.
     case 'features':
-      return <FeaturesFields s={section} onChange={onChange} />
+      return <FeaturesFields s={section} tenant={tenant} onChange={onChange} />
     case 'cta_banner':
       return (
         <CtaBannerFields
           s={section}
+          tenant={tenant}
           onChange={onChange}
           cta={<OrgCtaEditor cta={section.cta} onChange={onChange} />}
         />
@@ -320,6 +322,8 @@ export function OrgSectionEditor({
       return <FaqFields s={section} onChange={onChange} />
     case 'testimonials':
       return <TestimonialsFields s={section} onChange={onChange} />
+    case 'video':
+      return <VideoFields key={section.id} s={section} tenant={tenant} onChange={onChange} />
     case 'clubs':
       return <ClubsFields s={section} onChange={onChange} />
     case 'locations':

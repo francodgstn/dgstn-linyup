@@ -19,6 +19,7 @@
  */
 
 import admin from 'firebase-admin'
+import { sanitizeMeta, sanitizeSections } from '../../packages/functions/src/website/sanitize'
 
 // ── Firestore path constants (mirror @linyup/shared/paths) ─────────────────────
 const TEAMS_COLLECTION = 'teams'
@@ -354,8 +355,10 @@ export async function seedStoreWebsite(o: StorefrontOpts): Promise<void> {
       teamId: o.teamId,
       slug: o.teamSlug,
       name: o.teamName,
-      meta,
-      sections,
+      // Through the publish callable's own sanitizer — a demo site can never
+      // show more than a studio pressing Publish would get.
+      meta: sanitizeMeta(meta, o.teamName),
+      sections: sanitizeSections(sections),
       socialLinks: [{ platform: 'instagram', url: `https://instagram.com/${o.teamSlug}` }],
       showBranding: !!o.freePlan,
       published_at: tsOf(daysAgo(12)),

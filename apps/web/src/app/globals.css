@@ -541,3 +541,60 @@
     page-break-inside: avoid;
   }
 }
+
+/* ── Studio website brand layer ──────────────────────────────────────────────
+   The public studio website (WebsiteRenderer, EmbedSection) carries its brand
+   as CSS variables on `.site-root` — set by siteBrandRootProps in
+   components/site/siteFonts.ts. UNLAYERED on purpose: the heading font lives
+   in `@layer base` and button shapes in Tailwind's utilities layer, and an
+   unlayered rule outranks both without !important. Every variable falls back
+   to the look sites had before brand settings existed. */
+.site-root :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--site-font-heading, var(--font-sora), var(--font-jakarta), sans-serif);
+  text-transform: var(--site-heading-case, none);
+}
+.site-root .site-btn {
+  border-radius: var(--site-btn-radius, 9999px);
+  text-transform: var(--site-heading-case, none);
+}
+
+/* How wide the page runs — header, sections and footer all share one measure
+   so the shell never drifts between blocks. Set by `contentWidth`. */
+.site-root .site-shell {
+  max-width: var(--site-width, 64rem);
+  margin-inline: auto;
+}
+
+/* Header/footer navigation links, in capitals when `navCase: 'uppercase'`. */
+.site-root .site-nav {
+  text-transform: var(--site-nav-case, none);
+}
+
+/* Cards and image tiles on the studio website. Two groups, matching the two
+   radii the blocks were drawn with (large surfaces 1rem, compact tiles
+   0.75rem), so the default look is unchanged; `cardShape: 'square'` zeroes
+   both. Same unlayered reasoning as the button rule above. */
+.site-root .site-card {
+  border-radius: var(--site-card-radius, 1rem);
+}
+.site-root .site-card-sm {
+  border-radius: var(--site-card-radius-sm, 0.75rem);
+}
+
+/* The gallery marquee: the strip is its image list twice, moved by exactly
+   one copy's width, so the loop has no seam. Still for visitors who prefer
+   reduced motion — the strip then scrolls by hand instead. */
+@keyframes site-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.site-root .site-marquee-track {
+  animation: site-marquee var(--site-marquee-duration, 40s) linear infinite;
+}
+.site-root .site-marquee:hover .site-marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-root .site-marquee-track { animation: none; }
+  .site-root .site-marquee { overflow-x: auto; }
+}

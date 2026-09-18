@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
@@ -20,6 +21,10 @@ import {
   EyeOff,
   ExternalLink,
   Check,
+  Settings,
+  House,
+  FileText,
+  Newspaper,
 } from 'lucide-react'
 import { ThemePresetPicker } from '@/components/theme/ThemePresetPicker'
 import { ThemePreview } from '@/components/theme/ThemePreview'
@@ -36,10 +41,14 @@ import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Segmented } from '@/components/ui/segmented'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -56,6 +65,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { DynamicIcon } from '@/components/ui/icon-picker'
 import { ColorPicker } from '@/components/ui/color-picker'
 import type {
@@ -63,35 +80,100 @@ import type {
   SiteDraft,
   SiteMenuItem,
   SiteMeta,
+  SitePageRef,
   WebsiteSection,
   WebsiteSectionType,
 } from '@linyup/shared'
 import {
+  applySiteTheme,
   deriveSiteMenu,
+  findSiteTheme,
   resolveThemePreset,
+  themedSection,
+  normalizeSitePagePath,
+  isValidSitePagePath,
+  isValidSiteDate,
+  SITE_PAGE_LIMITS,
+  SITE_THEMES,
+  CLIENT_SITE_PARTS,
+  sitePartOffered,
+  type SiteThemeDef,
 } from '@linyup/shared'
+import { toDateInputValue } from '@/lib/format'
+import {
+  ImageField,
+  type SiteEditorTenant,
+} from '@/components/website/SiteSectionFields'
 import { usePublicSurfaces } from '@/hooks/usePublicSurfaces'
 import { type RenderableSite } from '@/components/site/WebsiteRenderer'
 import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
 import { MenuPanel } from '@/plugins/website/MenuPanel'
 import { sectionNavLabel } from '@/components/site/sections'
 import { SectionEditor } from '@/plugins/website/SectionEditor'
-import { useSiteDraft, saveSiteDraft, publishSite, unpublishSite } from '@/plugins/website/hooks'
+import {
+  useSiteDraft,
+  useSitePageDocs,
+  saveSiteDraft,
+  saveSitePages,
+  publishSite,
+  unpublishSite,
+  uploadSiteImage,
+} from '@/plugins/website/hooks'
+import { BrandFields } from '@/components/website/BrandFields'
+import { ThemePicker } from '@/components/website/ThemePicker'
 import { EmbedWidgets } from '@/plugins/website/EmbedWidgets'
-import { SECTION_LIBRARY, newSection, newSectionId, emptyDraft } from '@/plugins/website/defaults'
+import {
+  SECTION_LIBRARY,
+  newSection,
+  newSectionId,
+  emptyDraft,
+  PAGE_STARTERS,
+  starterSections,
+  type PageStarter,
+} from '@/plugins/website/defaults'
+import { SectionPicker } from '@/components/website/SectionPicker'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { useAutosave } from '@/hooks/useAutosave'
 import { getWebsiteLimits } from '@/plugins/website/limits'
 import { Tip } from '@/components/ui/tip'
 
 const limits = getWebsiteLimits()
+
+/** Removes every menu item (at any depth) whose target names the given page —
+ *  used when deleting a page, so a dangling `{kind:'page'}` link never
+ *  survives it. Children go with a removed item: a `page` target names ONE
+ *  page, so a subtree hung off a link to a since-deleted page has nothing
+ *  left to point at either. */
+function removeMenuItemsTargetingPage(items: SiteMenuItem[], pageId: string): SiteMenuItem[] {
+  return items
+    .filter((item) => !(item.target.kind === 'page' && item.target.pageId === pageId))
+    .map((item) =>
+      item.children ? { ...item, children: removeMenuItemsTargetingPage(item.children, pageId) } : item
+    )
+}
 
 // ─── appearance panel ─────────────────────────────────────────────────────────
 
 function AppearancePanel({
   meta,
   onChange,
+  sections,
+  pages,
+  uploadImage,
+  themes,
+  onApplyTheme,
 }: {
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
+  sections: { id: string; label: string }[]
+  /** The site's other pages — offered as link destinations alongside sections. */
+  pages: { id: string; label: string }[]
+  uploadImage: (file: File) => Promise<string>
+  /** The Site Themes plugin unlocks the picker. */
+  /** Themes this tenant may apply; the picker is hidden when there are none. */
+  themes: readonly SiteThemeDef[]
+  /** Applies a theme to the WHOLE draft — look and section styles. */
+  onApplyTheme: (theme: SiteThemeDef) => void
 }) {
   const t = useTranslations('Website')
 
@@ -111,8 +193,6 @@ function AppearancePanel({
 
   const setHeader = (p: Partial<SiteMeta['header']>) =>
     onChange({ header: { ...meta.header, ...p } })
-  const setSeo = (p: Partial<NonNullable<SiteMeta['seo']>>) =>
-    onChange({ seo: { ...meta.seo, ...p } })
 
   return (
     <div className="space-y-5">
@@ -124,6 +204,17 @@ function AppearancePanel({
           className="h-9"
         />
       </div>
+
+      {/* Themes first: a theme sets most of what follows, so picking one before
+          fine-tuning is the order that does not undo a studio's own edits.
+          Only when this studio has a theme to pick — every theme is currently
+          a client's own. */}
+      {themes.length > 0 && (
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('themesTitle')}</Label>
+          <ThemePicker appliedTheme={meta.appliedTheme} themes={themes} onApply={onApplyTheme} />
+        </div>
+      )}
 
       {/* Theme — TWO COLUMNS: the controls on the left (2/3), a live preview on
           the right (1/3). A studio changing colours wants to watch them decide
@@ -192,23 +283,6 @@ function AppearancePanel({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs">{t('apFont')}</Label>
-        <Select
-          value={meta.font}
-          onValueChange={(v) => onChange({ font: v as SiteMeta['font'] })}
-        >
-          <SelectTrigger className="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sans">Sans</SelectItem>
-            <SelectItem value="serif">Serif</SelectItem>
-            <SelectItem value="rounded">Rounded</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="space-y-2">
         <Label className="text-xs">{t('apAccentColor')}</Label>
         <ColorPicker
@@ -248,10 +322,31 @@ function AppearancePanel({
             <SelectContent>
               <SelectItem value="booking">Open booking</SelectItem>
               <SelectItem value="signup">Sign-up</SelectItem>
+              <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
               <SelectItem value="url">External link</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        {meta.header.ctaAction === 'page' && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('editorCtaPage')}</Label>
+            <Select
+              value={meta.header.ctaPageId ?? ''}
+              onValueChange={(v) => setHeader({ ctaPageId: v || undefined })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder={t('editorCtaPagePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {pages.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {meta.header.ctaAction === 'url' && (
           <div className="space-y-1.5">
             <Label className="text-xs">{t('apHeaderCtaUrl')}</Label>
@@ -288,62 +383,743 @@ function AppearancePanel({
             edited, so no existing header changes. */}
       </div>
 
+      <BrandFields meta={meta} onChange={onChange} sections={sections} pages={pages} uploadImage={uploadImage} />
+
       <label className="flex items-center justify-between rounded-lg border p-3">
         <span className="text-sm">{t('apShowSocialFooter')}</span>
         <Switch
           checked={meta.footer.showSocial}
-          onCheckedChange={(v) => onChange({ footer: { showSocial: v } })}
+          onCheckedChange={(v) => onChange({ footer: { ...meta.footer, showSocial: v } })}
         />
       </label>
 
-      <div className="space-y-3 rounded-lg border p-3">
-        <p className="text-xs font-medium text-muted-foreground">SEO (optional)</p>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('apPageTitle')}</Label>
-          <Input
-            value={meta.seo?.title ?? ''}
-            onChange={(e) => setSeo({ title: e.target.value })}
-            className="h-9"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{t('apMetaDescription')}</Label>
-          <Input
-            value={meta.seo?.description ?? ''}
-            onChange={(e) => setSeo({ description: e.target.value })}
-            className="h-9"
-          />
-        </div>
-      </div>
+      {/* NO SEO BLOCK HERE ANY MORE. These two fields were never site-wide —
+          they are the HOME page's title and description (the public route reads
+          them only for the site root), sitting in a tab a studio reads as
+          global, while every other page had its own pair behind Page settings.
+          A manager tuning her About page had two identical-looking forms and no
+          way to tell which one she was in. Home now uses the same Page-settings
+          entry point as every other page. */}
     </div>
+  )
+}
+
+/**
+ * The home page's settings. Every other page opens the page-settings dialog; home
+ * has no path, no menu label, nothing to hide and nothing to delete, so what is
+ * left is the search listing — but it opens from the SAME button, because "the
+ * page I am looking at" is the only mental model a studio should need here.
+ */
+function HomeSettingsDialog({
+  open,
+  onOpenChange,
+  meta,
+  onChange,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  meta: SiteMeta
+  onChange: (patch: Partial<SiteMeta>) => void
+}) {
+  const t = useTranslations('Website')
+  const setSeo = (patch: Partial<NonNullable<SiteMeta['seo']>>) =>
+    onChange({ seo: { ...meta.seo, ...patch } })
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('pagesHomeSettingsTitle')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t('pagesSeoHint')}</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesSeoTitleField')}</Label>
+            <Input
+              value={meta.seo?.title ?? ''}
+              onChange={(e) => setSeo({ title: e.target.value })}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesSeoDescriptionField')}</Label>
+            <Input
+              value={meta.seo?.description ?? ''}
+              onChange={(e) => setSeo({ description: e.target.value })}
+              className="h-9"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" onClick={() => onOpenChange(false)}>
+            {t('pagesDone')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 // ─── section list row ──────────────────────────────────────────────────────────
 
-function sectionSummary(s: WebsiteSection): string {
+/**
+ * The second line of a section's row: what THIS section says, under the type
+ * name the row already shows above it.
+ *
+ * Every fallback here used to be an English noun ("Content", "Membership
+ * plans", "3 photo(s)") sitting under a translated label — the only English
+ * left in a German studio's builder. A section with no heading of its own now
+ * says nothing rather than saying it twice in two languages; the two that
+ * carry a real count keep it, translated.
+ */
+function sectionSummary(s: WebsiteSection, t: (key: string, values?: Record<string, number>) => string): string {
   switch (s.type) {
     case 'hero':
       return s.headline
+    case 'gallery':
+      return t('summaryPhotos', { count: s.images.length })
+    case 'team':
+      return s.heading ?? t('summaryPeople', { count: s.items?.length ?? 0 })
     case 'content':
     case 'about':
-      return s.heading || 'Content'
-    case 'gallery':
-      return `${s.images.length} photo(s)`
     case 'activities':
-      return s.heading ?? 'Activities'
     case 'pricing':
-      return s.heading ?? 'Membership plans'
     case 'schedule':
-      return s.heading ?? 'Upcoming sessions'
     case 'contact':
-      return s.heading ?? 'Contact details'
+    case 'form':
+    case 'posts':
+    case 'split':
+      return s.heading ?? ''
     default:
       return ''
   }
 }
 
+// ─── the current-page param ─────────────────────────────────────────────────
+//
+// `useTabParam` reads its param ONCE at mount and keeps the URL in sync from
+// then on — see its own header for why. That works for `?tab=` because the
+// valid ids (sections/appearance/embed) are known at compile time. A page id
+// is not: the draft loads asynchronously, so at the moment this component
+// first mounts `draft.pages` is still null, and validating against an empty
+// list would strand every reload back on Home — exactly the bug this whole
+// selector exists to avoid.
+//
+// So this reads the raw `?page=` value at mount, unvalidated, and only
+// corrects it once the real page list is known (the effect below): a stale or
+// forged id falls back to Home, same as an unknown `?tab=` would.
+function useCurrentPageParam(pageIds: string[] | null): [string, (id: string) => void] {
+  const searchParams = useSearchParams()
+  const [pageId, setPageId] = useState(() => searchParams.get('page') || 'home')
+
+  useEffect(() => {
+    if (pageId === 'home' || !pageIds) return
+    if (!pageIds.includes(pageId)) setPageId('home')
+  }, [pageId, pageIds])
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const current = p.get('page')
+    if (pageId === 'home') {
+      if (current === null) return
+      p.delete('page')
+    } else {
+      if (current === pageId) return
+      p.set('page', pageId)
+    }
+    const qs = p.toString()
+    window.history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname)
+  }, [pageId])
+
+  return [pageId, setPageId]
+}
+
+// ─── add-page dialog ────────────────────────────────────────────────────────
+
+function AddPageDialog({
+  open,
+  onOpenChange,
+  existingPaths,
+  pagesFull,
+  postsFull,
+  onCreate,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  /** Every OTHER page's path — the new one must not collide. */
+  existingPaths: string[]
+  /** Whether each kind's own cap (SITE_PAGE_LIMITS.maxPages / maxPosts) is
+   *  already reached — checked at creation, against whichever kind is chosen. */
+  pagesFull: boolean
+  postsFull: boolean
+  onCreate: (page: {
+    title: string
+    path: string
+    kind: 'page' | 'post'
+    publishedOn?: string
+    starter: PageStarter
+  }) => void
+}) {
+  const t = useTranslations('Website')
+  const tCommon = useTranslations('Common')
+  const [kind, setKind] = useState<'page' | 'post'>('page')
+  // 'simple' by default: a hero carrying the page's own title and a text block
+  // under it is what most second pages are, and it is never the wrong start —
+  // deleting two sections is easier than facing an empty page.
+  const [starter, setStarter] = useState<PageStarter>('simple')
+  const [title, setTitle] = useState('')
+  const [path, setPath] = useState('')
+  // Once the studio has edited the path by hand, typing in Title (or switching
+  // Page ↔ Post) stops overwriting it — the same "don't fight the last thing
+  // they touched" rule `normalizeSitePagePath` itself follows on blur.
+  const [pathTouched, setPathTouched] = useState(false)
+  const [pathOpen, setPathOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) return
+    setKind('page')
+    setStarter('simple')
+    setTitle('')
+    setPath('')
+    setPathTouched(false)
+    setPathOpen(false)
+    setError(null)
+  }, [open])
+
+  /** A post's suggested path lives under 'blog/' — a suffix, not a rename: the
+   *  title itself is untouched, only where a fresh path is offered from it. */
+  function suggestPath(nextKind: 'page' | 'post', nextTitle: string): string {
+    if (!nextTitle) return ''
+    return nextKind === 'post' ? normalizeSitePagePath(`blog/${nextTitle}`) : normalizeSitePagePath(nextTitle)
+  }
+
+  function handleCreate() {
+    if (!title.trim()) {
+      setError(t('pagesTitleRequired'))
+      return
+    }
+    const normalized = normalizeSitePagePath(path)
+    if (!normalized || !isValidSitePagePath(normalized)) {
+      setError(t('pagesPathInvalid'))
+      return
+    }
+    if (existingPaths.includes(normalized)) {
+      setError(t('pagesPathTaken'))
+      return
+    }
+    if (kind === 'post' && postsFull) {
+      setError(t('pagesPostsLimitReached', { max: SITE_PAGE_LIMITS.maxPosts }))
+      return
+    }
+    if (kind === 'page' && pagesFull) {
+      setError(t('pagesLimitReached', { max: SITE_PAGE_LIMITS.maxPages }))
+      return
+    }
+    onCreate({
+      title: title.trim(),
+      path: normalized,
+      kind,
+      publishedOn: kind === 'post' ? toDateInputValue(new Date()) : undefined,
+      starter,
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{kind === 'post' ? t('pagesNewPostTitle') : t('pagesNewTitle')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesKindField')}</Label>
+            <Segmented
+              ariaLabel={t('pagesKindField')}
+              options={[
+                { value: 'page' as const, label: t('pagesKindPage') },
+                { value: 'post' as const, label: t('pagesKindPost') },
+              ]}
+              value={kind}
+              onChange={(v) => {
+                setKind(v)
+                if (!pathTouched) setPath(suggestPath(v, title))
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesTitleField')}</Label>
+            <Input
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                if (!pathTouched) setPath(suggestPath(kind, e.target.value))
+              }}
+              placeholder={t('pagesTitlePlaceholder')}
+              className="h-9"
+              autoFocus
+            />
+          </div>
+          {/* A page picks its starting shape; a post always starts as a text
+              block to write in, so it is not asked. */}
+          {kind === 'page' && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesStarterField')}</Label>
+              <div role="radiogroup" aria-label={t('pagesStarterField')} className="grid gap-2">
+                {PAGE_STARTERS.map((option) => {
+                  const selected = starter === option
+                  const copy = {
+                    simple: [t('pagesStarterSimple'), t('pagesStarterSimpleDesc')],
+                    offer: [t('pagesStarterOffer'), t('pagesStarterOfferDesc')],
+                    empty: [t('pagesStarterEmpty'), t('pagesStarterEmptyDesc')],
+                  }[option]
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setStarter(option)}
+                      className={`rounded-lg border p-2.5 text-left transition-colors ${
+                        selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50'
+                      }`}
+                    >
+                      <span className="block text-sm font-medium">{copy[0]}</span>
+                      <span className="block text-xs text-muted-foreground">{copy[1]}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {/* THE ADDRESS IS A CONSEQUENCE OF THE TITLE, NOT A QUESTION.
+              A studio owner writing "Unsere Werte" has no opinion about
+              "unsere-werte" and should not be asked to form one — so the
+              derived address is shown as a fact, and only a studio that WANTS
+              to change it opens the field. */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('pagesPathField')}</Label>
+            {pathOpen ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span className="shrink-0 text-xs text-muted-foreground">/site/</span>
+                  <Input
+                    value={path}
+                    onChange={(e) => {
+                      setPathTouched(true)
+                      setPath(e.target.value)
+                    }}
+                    onBlur={() => setPath((p) => normalizeSitePagePath(p))}
+                    className="h-9 font-mono text-xs"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t('pagesPathHint')}</p>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="truncate font-mono text-xs text-muted-foreground">
+                  /site/{path || <span className="italic">…</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPathOpen(true)}
+                  className="shrink-0 text-xs font-medium text-primary hover:underline"
+                >
+                  {t('pagesPathEdit')}
+                </button>
+              </div>
+            )}
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {tCommon('cancel')}
+          </Button>
+          <Button type="button" onClick={handleCreate}>
+            {kind === 'post' ? t('pagesCreatePostAction') : t('pagesCreateAction')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * A POST'S HEADLINE, DATE, COVER AND TEASER ARE THE POST — NOT ITS SETTINGS.
+ *
+ * They were in the settings dialog, one button away from the article they
+ * belong to, next to SEO and the delete button. An author writing a post has
+ * to think about all four of them and about none of the things they were
+ * filed with, so they sit here, above the body, in the order a blog card
+ * shows them. What stays behind the Settings button is what a post shares
+ * with every other page: its address, its menu label, whether it is hidden,
+ * and SEO.
+ */
+function PostHeaderCard({
+  page,
+  teamId,
+  onChange,
+}: {
+  page: SitePageRef
+  teamId: string
+  onChange: (patch: Partial<SitePageRef>) => void
+}) {
+  const t = useTranslations('Website')
+  const excerptLength = (page.excerpt ?? '').length
+  const tenant: SiteEditorTenant = {
+    kind: 'team',
+    id: teamId,
+    uploadImage: (sectionId, file) => uploadSiteImage(teamId, sectionId, file),
+  }
+  return (
+    <div className="space-y-3 rounded-lg border bg-card p-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs">{t('pagesPostTitleField')}</Label>
+        <Input
+          value={page.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          className="h-10 text-base font-semibold"
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t('pagesPostDateField')}</Label>
+          <Input
+            type="date"
+            value={page.publishedOn ?? ''}
+            onChange={(e) => onChange({ publishedOn: e.target.value })}
+            className="h-9"
+          />
+        </div>
+        <ImageField
+          label={t('pagesPostCoverField')}
+          url={page.coverImageUrl}
+          tenant={tenant}
+          sectionId={page.id}
+          onChange={(u) => onChange({ coverImageUrl: u })}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">{t('pagesPostExcerptField')}</Label>
+        <Textarea
+          value={page.excerpt ?? ''}
+          onChange={(e) => onChange({ excerpt: e.target.value.slice(0, 400) })}
+          rows={2}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t('pagesPostExcerptHint', { count: excerptLength, max: 400 })}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── page settings dialog ───────────────────────────────────────────────────
+
+function PageSettingsDialog({
+  open,
+  onOpenChange,
+  page,
+  teamId,
+  existingPaths,
+  onChange,
+  onDelete,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  page: SitePageRef
+  /** Where a post's cover image is uploaded to. */
+  teamId: string
+  /** Every OTHER page's path — this page's own path may stay unchanged. */
+  existingPaths: string[]
+  onChange: (patch: Partial<SitePageRef>) => void
+  onDelete: () => void
+}) {
+  const t = useTranslations('Website')
+  const tCommon = useTranslations('Common')
+  const [path, setPath] = useState(page.path)
+  const [pathError, setPathError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const isPost = page.kind === 'post'
+  const excerptLength = (page.excerpt ?? '').length
+  const tenant: SiteEditorTenant = {
+    kind: 'team',
+    id: teamId,
+    uploadImage: (sectionId, file) => uploadSiteImage(teamId, sectionId, file),
+  }
+
+  // Re-seed the local path draft whenever the dialog opens on a (possibly
+  // different) page — the path field has its own commit-on-blur step, so it
+  // cannot just read `page.path` directly like every other field here does.
+  useEffect(() => {
+    if (!open) return
+    setPath(page.path)
+    setPathError(null)
+  }, [open, page.id, page.path])
+
+  function commitPath() {
+    const normalized = normalizeSitePagePath(path)
+    if (!normalized || !isValidSitePagePath(normalized)) {
+      setPathError(t('pagesPathInvalid'))
+      return
+    }
+    if (existingPaths.includes(normalized)) {
+      setPathError(t('pagesPathTaken'))
+      return
+    }
+    setPathError(null)
+    setPath(normalized)
+    if (normalized !== page.path) onChange({ path: normalized })
+  }
+
+  const setSeo = (patch: Partial<NonNullable<SitePageRef['seo']>>) =>
+    onChange({ seo: { ...page.seo, ...patch } })
+
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('pagesSettingsTitle')}</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="space-y-3">
+            {!isPost && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('pagesTitleField')}</Label>
+                <Input
+                  value={page.title}
+                  onChange={(e) => onChange({ title: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesKindField')}</Label>
+              <Segmented
+                ariaLabel={t('pagesKindField')}
+                options={[
+                  { value: 'page' as const, label: t('pagesKindPage') },
+                  { value: 'post' as const, label: t('pagesKindPost') },
+                ]}
+                value={isPost ? 'post' : 'page'}
+                onChange={(v) =>
+                  onChange({
+                    kind: v === 'post' ? 'post' : undefined,
+                    // A page turning into a post needs SOME date to sort and
+                    // display by; a post turning back into a page keeps
+                    // whatever it had, since the field is simply unread until
+                    // it becomes a post again.
+                    publishedOn: v === 'post' ? page.publishedOn || toDateInputValue(new Date()) : page.publishedOn,
+                  })
+                }
+              />
+            </div>
+            {/* A post's headline, date, cover and teaser are NOT here — they
+                are the post, and they are edited beside it (PostHeaderCard).
+                Said out loud, because a Title field that disappears the moment
+                you switch Type to Post looks like a field that was taken away. */}
+            {isPost && (
+              <p className="rounded-lg border border-dashed p-2.5 text-xs text-muted-foreground">
+                {t('pagesPostFieldsMovedHint')}
+              </p>
+            )}
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesPathField')}</Label>
+              <div className="flex items-center gap-1.5">
+                <span className="shrink-0 text-xs text-muted-foreground">/site/</span>
+                <Input
+                  value={path}
+                  onChange={(e) => setPath(e.target.value)}
+                  onBlur={commitPath}
+                  className="h-9 font-mono text-xs"
+                />
+              </div>
+              {pathError && <p className="text-xs text-destructive">{pathError}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('pagesNavLabelField')}</Label>
+              <Input
+                value={page.navLabel ?? ''}
+                onChange={(e) => onChange({ navLabel: e.target.value || undefined })}
+                placeholder={page.title}
+                className="h-9"
+              />
+              <p className="text-xs text-muted-foreground">{t('pagesNavLabelHint')}</p>
+            </div>
+            <div className="rounded-lg border p-2.5">
+              <label className="flex items-center justify-between">
+                <span className="text-sm">{t('pagesHiddenField')}</span>
+                <Switch checked={!!page.hidden} onCheckedChange={(v) => onChange({ hidden: v })} />
+              </label>
+              <p className="mt-1 text-xs text-muted-foreground">{t('pagesHiddenHint')}</p>
+            </div>
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-xs font-medium text-muted-foreground">SEO</p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('pagesSeoTitleField')}</Label>
+                <Input
+                  value={page.seo?.title ?? ''}
+                  onChange={(e) => setSeo({ title: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('pagesSeoDescriptionField')}</Label>
+                <Input
+                  value={page.seo?.description ?? ''}
+                  onChange={(e) => setSeo({ description: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mr-auto text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t('pagesDelete')}
+            </Button>
+            <Button type="button" onClick={() => onOpenChange(false)}>
+              {t('pagesDone')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('pagesDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('pagesDeleteBody')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmDelete(false)
+                onOpenChange(false)
+                onDelete()
+              }}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {t('pagesDelete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 // ─── page ─────────────────────────────────────────────────────────────────────
+
+/**
+ * THE PAGE RAIL — "MY WEBSITE HAS THESE PAGES", ALWAYS ON SCREEN.
+ *
+ * Pages used to be a dropdown inside the Sections tab, so the one thing a
+ * studio owner thinks of a website as — a set of pages — had no place of its
+ * own: you had to already be in Sections, notice the grey strip, and open a
+ * select to see what existed. The rail is the Wix/Squarespace answer: the list
+ * is permanent, beside every tab, and picking a page opens it.
+ *
+ * Design and Embed are site-wide, so choosing a page from either of them
+ * switches to Sections — the only tab a page changes. Below lg there is no
+ * room for a column, and the compact page switcher above the sections is used
+ * instead; both drive the same ?page= param.
+ *
+ * Posts are listed apart, newest first, in their own scroll: a studio with
+ * sixty posts should still see its pages without scrolling past them.
+ */
+function PagesRail({
+  currentPageId,
+  pages,
+  posts,
+  onSelect,
+  onAdd,
+  addDisabled,
+  addDisabledReason,
+}: {
+  currentPageId: string
+  pages: SitePageRef[]
+  posts: SitePageRef[]
+  onSelect: (id: string) => void
+  onAdd: () => void
+  addDisabled: boolean
+  addDisabledReason?: string
+}) {
+  const t = useTranslations('Website')
+  const row = (id: string, icon: React.ReactNode, title: string, sub?: string, hidden?: boolean) => {
+    const active = id === currentPageId
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => onSelect(id)}
+        aria-current={active ? 'page' : undefined}
+        className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+          active ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+        }${hidden ? ' opacity-60' : ''}`}
+      >
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm">{title}</span>
+          {sub && <span className="block truncate text-xs font-normal text-muted-foreground">{sub}</span>}
+        </span>
+        {hidden && <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t('pagesHiddenField')} />}
+      </button>
+    )
+  }
+  return (
+    <nav
+      aria-label={t('pagesGroupLabel')}
+      className="hidden space-y-3 rounded-lg border bg-card p-2 lg:sticky lg:top-4 lg:block lg:w-60 lg:shrink-0"
+    >
+      <div className="flex items-center justify-between px-2 pt-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t('pagesGroupLabel')}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {pages.length + 1}/{SITE_PAGE_LIMITS.maxPages}
+        </span>
+      </div>
+      <div className="space-y-0.5">
+        {row('home', <House className="h-4 w-4" />, t('pagesHome'), '/')}
+        {pages.map((p) => row(p.id, <FileText className="h-4 w-4" />, p.title, `/${p.path}`, p.hidden))}
+      </div>
+      {posts.length > 0 && (
+        <div className="space-y-0.5">
+          <div className="flex items-center justify-between px-2 pt-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('pagesPostsGroup')}
+            </span>
+            <span className="text-xs text-muted-foreground">{posts.length}</span>
+          </div>
+          <div className="max-h-72 space-y-0.5 overflow-y-auto">
+            {posts.map((p) => row(p.id, <Newspaper className="h-4 w-4" />, p.title, p.publishedOn, p.hidden))}
+          </div>
+        </div>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={addDisabled}
+        title={addDisabled ? addDisabledReason : undefined}
+        onClick={onAdd}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {t('pagesAdd')}
+      </Button>
+    </nav>
+  )
+}
 
 const SITE_TABS = ['sections', 'appearance', 'embed'] as const
 
@@ -361,9 +1137,16 @@ export default function WebsiteBuilderPage() {
   const { isInstalled, isLoading: pluginsLoading } = useInstalledPlugins()
 
   const { data: savedDraft, isLoading: draftLoading } = useSiteDraft(currentTeamId)
+  const { data: pageDocs, isLoading: pagesLoading } = useSitePageDocs(currentTeamId)
 
   const [draft, setDraft] = useState<SiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
+  const editRev = useRef(0)
+  const [revision, setRevision] = useState(0)
+  // A draft lives in this component's state until Save writes it, so leaving
+  // the page throws the work away — silently, which is the part that makes it
+  // expensive. See the hook for what it can and cannot intercept.
+  useUnsavedChangesGuard(dirty, t('unsavedLeaveConfirm'))
   const [tab, setTab] = useTabParam(SITE_TABS, 'sections')
   const [openId, setOpenId] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -377,6 +1160,25 @@ export default function WebsiteBuilderPage() {
   // untouched), so the copy says so. An overstated warning trains people to
   // click through the next one.
   const [confirmUnpublish, setConfirmUnpublish] = useState(false)
+
+  // ── multi-page state ──
+  // Each OTHER page's sections, keyed by page id — the home page's own live in
+  // `draft.sections` like before. Seeded from `useSitePageDocs` once both it
+  // and the draft (which names which pages exist) have settled; a page listed
+  // in `draft.pages` with no doc yet (added this session, never saved) starts
+  // at an empty list rather than waiting on a doc that will never arrive.
+  const [pageSections, setPageSections] = useState<Record<string, WebsiteSection[]> | null>(null)
+  // Pages removed this session — their doc is deleted on the next save
+  // alongside every surviving page's overwrite (saveSitePages).
+  const [removedPageIds, setRemovedPageIds] = useState<string[]>([])
+  const pageIds = useMemo(() => draft?.pages?.map((p) => p.id) ?? null, [draft?.pages])
+  const [currentPageId, setCurrentPageId] = useCurrentPageParam(pageIds)
+  const [addPageOpen, setAddPageOpen] = useState(false)
+  const [pageSettingsOpen, setPageSettingsOpen] = useState(false)
+  // Publish takes the WHOLE site live — every page, every post, every menu
+  // change sitting in the draft, not just the typo you came to fix. So it says
+  // what it is about to put in front of visitors before it does it.
+  const [confirmPublish, setConfirmPublish] = useState(false)
 
   // Initialise the working draft once data has settled.
   useEffect(() => {
@@ -392,25 +1194,64 @@ export default function WebsiteBuilderPage() {
     )
   }, [draft, draftLoading, savedDraft, currentTeamId, team])
 
+  useEffect(() => {
+    if (pageSections || pagesLoading || !draft) return
+    const initial: Record<string, WebsiteSection[]> = {}
+    for (const ref of draft.pages ?? []) {
+      initial[ref.id] = pageDocs?.[ref.id] ?? []
+    }
+    setPageSections(initial)
+  }, [pageSections, pagesLoading, draft, pageDocs])
+
   // ── mutators ──
+  // Every change goes through markDirty, which also bumps the edit counter
+  // autosave keys on — see useAutosave for why a boolean alone is not enough.
+  function markDirty() {
+    editRev.current += 1
+    setRevision(editRev.current)
+    setDirty(true)
+  }
   function mutate(updater: (d: SiteDraft) => SiteDraft) {
     setDraft((d) => (d ? updater(d) : d))
-    setDirty(true)
+    markDirty()
   }
   const patchMeta = (patch: Partial<SiteMeta>) =>
     mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))
+
+  // THE CURRENT PAGE'S sections, and the one place that writes them. Every
+  // section mutator below goes through this rather than touching
+  // `draft.sections` / `pageSections` directly, so none of them need to know
+  // which page they're editing.
+  const isHome = currentPageId === 'home'
+  const currentSections: WebsiteSection[] = isHome
+    ? (draft?.sections ?? [])
+    : (pageSections?.[currentPageId] ?? [])
+  function setCurrentSections(updater: (sections: WebsiteSection[]) => WebsiteSection[]) {
+    if (isHome) {
+      mutate((d) => ({ ...d, sections: updater(d.sections) }))
+    } else {
+      setPageSections((prev) => ({
+        ...(prev ?? {}),
+        [currentPageId]: updater((prev ?? {})[currentPageId] ?? []),
+      }))
+      markDirty()
+    }
+  }
+
   const updateSection = (id: string, patch: Record<string, unknown>) =>
-    mutate((d) => ({
-      ...d,
-      sections: d.sections.map((s) => (s.id === id ? ({ ...s, ...patch } as WebsiteSection) : s)),
-    }))
+    setCurrentSections((sections) =>
+      sections.map((s) => (s.id === id ? ({ ...s, ...patch } as WebsiteSection) : s))
+    )
   function addSection(type: WebsiteSectionType) {
-    if (draft && draft.sections.length >= limits.maxSections) {
+    if (currentSections.length >= limits.maxSections) {
       toast.error(t('limitSections', { max: limits.maxSections }))
       return
     }
-    const sec = newSection(type)
-    mutate((d) => ({ ...d, sections: [...d.sections, sec] }))
+    // Under an applied theme a new section starts in the theme's style (a CTA as
+    // a band, a video as a lightbox) — the same result as applying it afterwards.
+    const theme = findSiteTheme(draft?.meta.appliedTheme)
+    const sec = theme ? themedSection(newSection(type), theme) : newSection(type)
+    setCurrentSections((sections) => [...sections, sec])
     setOpenId(sec.id)
     setTab('sections')
   }
@@ -425,44 +1266,149 @@ export default function WebsiteBuilderPage() {
    * until Publish, which is already its own explicit step.
    */
   function duplicateSection(id: string) {
-    if (draft && draft.sections.length >= limits.maxSections) {
+    if (currentSections.length >= limits.maxSections) {
       toast.error(t('limitSections', { max: limits.maxSections }))
       return
     }
-    const source = draft?.sections.find((s) => s.id === id)
+    const source = currentSections.find((s) => s.id === id)
     if (!source) return
     const copy = { ...source, id: newSectionId() } as WebsiteSection
-    mutate((d) => {
-      const at = d.sections.findIndex((s) => s.id === id)
-      const next = [...d.sections]
+    setCurrentSections((sections) => {
+      const at = sections.findIndex((s) => s.id === id)
+      const next = [...sections]
       next.splice(at + 1, 0, copy)
-      return { ...d, sections: next }
+      return next
     })
     setOpenId(copy.id)
   }
 
   const removeSection = (id: string) =>
-    mutate((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }))
+    setCurrentSections((sections) => sections.filter((s) => s.id !== id))
   function reorderSections(from: number, to: number) {
-    mutate((d) => ({ ...d, sections: arrayMove(d.sections, from, to) }))
+    setCurrentSections((sections) => arrayMove(sections, from, to))
+  }
+
+  // ── pages ──
+  function handleCreatePage({
+    title,
+    path,
+    kind,
+    publishedOn,
+    starter,
+  }: {
+    title: string
+    path: string
+    kind: 'page' | 'post'
+    publishedOn?: string
+    starter: PageStarter
+  }) {
+    const id = `p-${Math.random().toString(36).slice(2, 8)}${Math.random().toString(36).slice(2, 6)}`
+    const ref: SitePageRef = {
+      id,
+      path,
+      title,
+      // Absent ⇒ 'page' (SitePageRef.kind) — omit the field entirely for an
+      // ordinary page rather than writing 'page' explicitly.
+      ...(kind === 'post' ? { kind: 'post' as const, publishedOn } : {}),
+    }
+    mutate((d) => ({ ...d, pages: [...(d.pages ?? []), ref] }))
+    // A POST OPENS ON SOMETHING TO WRITE IN. An author who just named an
+    // article should not have to know that a paragraph is a "section" and pick
+    // it out of a library before typing the first word; an ordinary page, whose
+    // shape is the author's choice, starts from the starter they picked.
+    const first =
+      kind === 'post'
+        ? [newSection('content')]
+        : starterSections(starter, title, {
+            offerHeading: t('starterOfferHeading'),
+            offerItemWhat: t('starterOfferItemWhat'),
+            offerItemWho: t('starterOfferItemWho'),
+            itemText: t('starterItemText'),
+            factsHeading: t('starterFactsHeading'),
+            ctaHeading: t('starterCtaHeading'),
+            ctaText: t('starterCtaText'),
+            ctaLabel: t('starterCtaLabel'),
+          })
+    setPageSections((prev) => ({ ...(prev ?? {}), [id]: first }))
+    // Open the block the author writes in first — the post's text, or the
+    // section under a starter's hero (the hero already carries the title).
+    setOpenId((kind === 'post' ? first[0] : first[1] ?? first[0])?.id ?? null)
+    setAddPageOpen(false)
+    setCurrentPageId(id)
+  }
+  function patchPage(id: string, patch: Partial<SitePageRef>) {
+    mutate((d) => ({
+      ...d,
+      pages: (d.pages ?? []).map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    }))
+  }
+  /** Removes the page's ref, its local sections and every menu item pointing
+   *  at it (whole-branch — a `page` target names ONE page, so a subtree under
+   *  a deleted page has nothing left to point at either). The page's own doc
+   *  is deleted on the next save via `removedPageIds`. */
+  function deletePage(id: string) {
+    mutate((d) => ({
+      ...d,
+      pages: (d.pages ?? []).filter((p) => p.id !== id),
+      menu: d.menu ? removeMenuItemsTargetingPage(d.menu, id) : d.menu,
+    }))
+    setPageSections((prev) => {
+      if (!prev) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    setRemovedPageIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
+    setPageSettingsOpen(false)
+    if (currentPageId === id) setCurrentPageId('home')
   }
 
   // ── save / publish ──
-  async function handleSave(): Promise<boolean> {
+  async function handleSave({ silent = false }: { silent?: boolean } = {}): Promise<boolean> {
     if (!currentTeamId || !user || !draft) return false
+    // What this save is about to write. An edit that lands while it is in
+    // flight bumps the counter, and must stay dirty for the next save.
+    const rev = editRev.current
+    const removed = removedPageIds
+    // A post's date is what it sorts and displays by — catch a hand-typed or
+    // carried-over bad value here rather than at publish, where sitePosts()
+    // would silently sort it last instead of saying why.
+    const badDate = (draft.pages ?? []).find(
+      (p) => p.kind === 'post' && p.publishedOn && !isValidSiteDate(p.publishedOn)
+    )
+    if (badDate) {
+      toast.error(t('pagesPostDateInvalid'))
+      return false
+    }
     setSaving(true)
     try {
       await saveSiteDraft(currentTeamId, user.uid, draft)
-      setDirty(false)
+      const pagesToSave = (draft.pages ?? []).map((ref) => ({
+        id: ref.id,
+        sections: pageSections?.[ref.id] ?? [],
+      }))
+      await saveSitePages(currentTeamId, user.uid, pagesToSave, removed)
+      setRemovedPageIds((ids) => ids.filter((id) => !removed.includes(id)))
+      if (editRev.current === rev) setDirty(false)
       await qc.invalidateQueries({ queryKey: ['site-draft', currentTeamId] })
+      await qc.invalidateQueries({ queryKey: ['site-pages', currentTeamId] })
       return true
     } catch {
-      toast.error(t('errorSave'))
+      // An autosave failure is shown as a status with a retry, not a toast —
+      // a toast per attempt is noise, and autosave stops after one failure.
+      if (!silent) toast.error(t('errorSave'))
       return false
     } finally {
       setSaving(false)
     }
   }
+
+  const autosave = useAutosave({
+    revision,
+    dirty,
+    paused: saving || publishing,
+    save: () => handleSave({ silent: true }),
+  })
 
   async function handlePublish() {
     if (!currentTeamId || !draft) return
@@ -501,7 +1447,7 @@ export default function WebsiteBuilderPage() {
   }
 
   // ── gates ──
-  if (pluginsLoading || draftLoading || !draft) {
+  if (pluginsLoading || draftLoading || !draft || pagesLoading || !pageSections) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -531,11 +1477,9 @@ export default function WebsiteBuilderPage() {
     typeof window !== 'undefined'
       ? `${window.location.origin}/public/${slug}/site`
       : `/public/${slug}/site`
-  const status = dirty
-    ? t('statusUnsaved')
-    : draft.enabled
-      ? t('statusPublished')
-      : t('statusDraft')
+  // Whether the site is live. Saving is its own line beside it now — with
+  // autosave, "unsaved" is a few seconds long and says nothing about publishing.
+  const status = draft.enabled ? t('statusPublished') : t('statusDraft')
   // THE MENU THE EDITOR WORKS ON. Absent in storage ⇒ derive today's layout, so
   // a studio that has never opened this tab sees exactly the menu their site
   // already has and can start rearranging it rather than rebuilding it. The
@@ -553,20 +1497,55 @@ export default function WebsiteBuilderPage() {
 
   const menu: SiteMenuItem[] =
     draft?.menu ??
-    deriveSiteMenu({ sections: draft?.sections ?? [], surfaceLinks: liveSurfaces.map((surface) => ({ surface })) })
+    deriveSiteMenu({
+      sections: draft?.sections ?? [],
+      surfaceLinks: liveSurfaces.map((surface) => ({ surface })),
+      pages: draft?.pages,
+    })
 
   function setMenu(next: SiteMenuItem[]) {
     setDraft((d) => (d ? { ...d, menu: next } : d))
-    setDirty(true)
+    markDirty()
   }
 
-  /** Append a section to the end of the menu, from the section editor's button. */
+  /** Append a section to the end of the menu, from the section editor's button.
+   *  A home section is a direct anchor; a section on another page is scoped TO
+   *  that page — `page` is the only target kind that can name a section
+   *  outside the home page. */
   function addSectionToMenu(section: WebsiteSection) {
-    setMenu([
-      ...menu,
-      { id: `m${Date.now().toString(36)}`, target: { kind: 'section', sectionId: section.id } },
-    ])
+    const target: SiteMenuItem['target'] = isHome
+      ? { kind: 'section', sectionId: section.id }
+      : { kind: 'page', pageId: currentPageId, sectionId: section.id }
+    setMenu([...menu, { id: `m${Date.now().toString(36)}`, target }])
   }
+
+  // The site's other pages, as the id+label pairs every picker here wants
+  // (menu editor, CTA editor, brand link lists, card link pickers). These are
+  // all FLAT lists — a post is suffixed rather than grouped, so it stays
+  // pickable everywhere a page already is without a second UI for it.
+  const menuPages = (draft.pages ?? []).map((p) => ({
+    id: p.id,
+    label: (p.navLabel || p.title) + (p.kind === 'post' ? ` · ${t('pagesPostSuffix')}` : ''),
+  }))
+  const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
+  const hiddenPageCount = (draft.pages ?? []).filter((p) => p.hidden).length
+  // Does ANY page of the site list posts? Home's sections live on the draft,
+  // every other page's in the loaded page docs — a post is findable if either
+  // carries a 'posts' section.
+  // Unknown until the page docs are in — an empty map would otherwise read as
+  // "no page lists posts" and flash the wrong advice while they load.
+  const hasPostsSection =
+    pageSections === null ||
+    draft.sections.some((s) => s.type === 'posts') ||
+    Object.values(pageSections).some((list) => list.some((s) => s.type === 'posts'))
+  const nonPostPages = (draft.pages ?? []).filter((p) => p.kind !== 'post')
+  // Newest first, like the live site's `sitePosts` — but WITHOUT its hidden
+  // filter: a studio editing a hidden draft post still needs to find it here.
+  const postPages = (draft.pages ?? [])
+    .filter((p) => p.kind === 'post')
+    .sort((a, b) => (b.publishedOn ?? '').localeCompare(a.publishedOn ?? '') || a.title.localeCompare(b.title))
+  const pagesFull = nonPostPages.length >= SITE_PAGE_LIMITS.maxPages
+  const postsFull = postPages.length >= SITE_PAGE_LIMITS.maxPosts
 
   const previewSite: RenderableSite = {
     teamId: draft.teamId,
@@ -577,8 +1556,14 @@ export default function WebsiteBuilderPage() {
     // The menu being edited, so the overlay previews the tree as it stands —
     // not the derived fallback it would show from an unsaved draft.
     menu,
+    pages: draft.pages,
     socialLinks: team?.socialLinks,
   }
+  // The page being previewed, when it isn't Home — WebsiteRenderer swaps its
+  // main area for this instead of `site.sections`. Reads the SAME
+  // `currentSections` the editor itself is showing, so the preview never lags
+  // an unsaved edit.
+  const previewPage = currentPageRef ? { ref: currentPageRef, sections: currentSections } : undefined
 
   return (
     <div className="space-y-4">
@@ -625,10 +1610,23 @@ export default function WebsiteBuilderPage() {
             <Eye className="h-4 w-4" />
             {t('preview')}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? t('saving') : t('saveDraft')}
-          </Button>
-          <Button size="sm" onClick={handlePublish} disabled={publishing}>
+          {/* SAVE STATE, NOT A SAVE BUTTON. The draft saves itself a moment
+              after the last edit; a button appears only when that failed. */}
+          <span aria-live="polite" className="text-xs text-muted-foreground">
+            {autosave.failed ? (
+              <span className="text-destructive">{t('autosaveFailed')}</span>
+            ) : saving || dirty ? (
+              t('autosaveSaving')
+            ) : (
+              t('autosaveSaved')
+            )}
+          </span>
+          {autosave.failed && (
+            <Button variant="outline" size="sm" onClick={() => handleSave()} disabled={saving}>
+              {t('autosaveRetry')}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setConfirmPublish(true)} disabled={publishing || saving}>
             {publishing ? (
               t('publishing')
             ) : (
@@ -641,9 +1639,27 @@ export default function WebsiteBuilderPage() {
         </div>
       </div>
 
-      {/* Two columns */}
+      {/* Rail | editor | menu. The rail is beside every tab; the menu only
+          beside Sections, and below the editor until the screen is wide
+          enough for three columns. */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        {/* Left: editor */}
+        <PagesRail
+          currentPageId={currentPageId}
+          pages={nonPostPages}
+          posts={postPages}
+          onSelect={(id) => {
+            setCurrentPageId(id)
+            setTab('sections')
+          }}
+          onAdd={() => setAddPageOpen(true)}
+          addDisabled={pagesFull && postsFull}
+          addDisabledReason={t('pagesAndPostsLimitReached', {
+            maxPages: SITE_PAGE_LIMITS.maxPages,
+            maxPosts: SITE_PAGE_LIMITS.maxPosts,
+          })}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-6 xl:flex-row xl:items-start">
+        {/* Editor */}
         <div className="min-w-0 flex-1 space-y-4">
           {/* Tabs */}
           <div className="flex gap-0 border-b">
@@ -666,7 +1682,20 @@ export default function WebsiteBuilderPage() {
           </div>
 
           {tab === 'appearance' ? (
-            <AppearancePanel meta={draft.meta} onChange={patchMeta} />
+            <AppearancePanel
+              meta={draft.meta}
+              onChange={patchMeta}
+              sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
+              pages={menuPages}
+              uploadImage={(file) => uploadSiteImage(currentTeamId!, 'brand', file)}
+              themes={SITE_THEMES.filter((theme) =>
+                sitePartOffered(CLIENT_SITE_PARTS.themes[theme.id], isInstalled)
+              )}
+              onApplyTheme={(theme) => {
+                mutate((d) => applySiteTheme(d, theme))
+                toast.success(t('themeAppliedToast'))
+              }}
+            />
           ) : tab === 'embed' ? (
             <EmbedWidgets
               teamId={currentTeamId!}
@@ -676,8 +1705,122 @@ export default function WebsiteBuilderPage() {
             />
           ) : (
             <div className="space-y-2.5">
-              <SortableList ids={draft.sections.map((s) => s.id)} onReorder={reorderSections}>
-                {draft.sections.map((s) => {
+              {/* THE CURRENT PAGE. Every mutator below (add/duplicate/remove/
+                  reorder/update section, the section limit, "add to menu") acts
+                  on whichever page is selected here — see `currentSections` /
+                  `setCurrentSections`. */}
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5 lg:hidden">
+                {/* A studio thinking "my website has these pages" had nothing
+                    on screen saying "pages" — only an unlabelled dropdown in a
+                    grey strip. The count is here for the same reason: the caps
+                    (30 pages, 100 posts) were only ever mentioned by the error
+                    you got when you hit one. */}
+                <Label className="shrink-0 text-xs font-medium text-muted-foreground">
+                  {t('pagesGroupLabel')} · {nonPostPages.length + 1}/{SITE_PAGE_LIMITS.maxPages}
+                </Label>
+                <Select value={currentPageId} onValueChange={(v) => v && setCurrentPageId(v)}>
+                  <SelectTrigger className="h-8 w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="home">{t('pagesHome')}</SelectItem>
+                    {nonPostPages.map((p) => (
+                      // The title is the LABEL (what the closed trigger shows);
+                      // the path rides along as the item's sublabel. Without
+                      // that split the trigger printed the page's id.
+                      <SelectItem key={p.id} value={p.id} label={p.title}>
+                        /{p.path}
+                      </SelectItem>
+                    ))}
+                    {postPages.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>{t('pagesPostsGroup')}</SelectLabel>
+                        {postPages.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.title}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  // The kind is chosen INSIDE the dialog, so only the rare case
+                  // where NEITHER kind has room left disables the trigger —
+                  // each kind's own cap is enforced at creation time instead
+                  // (AddPageDialog's `pagesFull` / `postsFull`).
+                  disabled={pagesFull && postsFull}
+                  // Native title, not <Tip>: the button already carries a visible
+                  // label ("Add page") — this only extends it, and only while
+                  // disabled, with the reason.
+                  title={
+                    pagesFull && postsFull
+                      ? t('pagesAndPostsLimitReached', {
+                          maxPages: SITE_PAGE_LIMITS.maxPages,
+                          maxPosts: SITE_PAGE_LIMITS.maxPosts,
+                        })
+                      : undefined
+                  }
+                  onClick={() => setAddPageOpen(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('pagesAdd')}
+                </Button>
+              </div>
+
+              {/* WHICH PAGE THIS IS. With the list in the rail, the editor
+                  itself has to say what it is editing — and settings belong to
+                  the page, so they sit on its header, not in the list. */}
+              <div className="flex items-center gap-3 border-b pb-2.5">
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-base font-semibold">
+                    {currentPageRef ? currentPageRef.title : t('pagesHome')}
+                  </h2>
+                  <p className="truncate font-mono text-xs text-muted-foreground">
+                    /site{currentPageRef ? `/${currentPageRef.path}` : ''}
+                    {currentPageRef?.hidden ? ` · ${t('pagesHiddenField')}` : ''}
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPageSettingsOpen(true)}>
+                  <Settings className="h-3.5 w-3.5" />
+                  {t('pagesSettings')}
+                </Button>
+              </div>
+
+              {/* A POST NOBODY CAN FIND. Writing one puts it at its own
+                  address and nowhere else: unless some page carries a "Blog
+                  posts" section, the only way to the article is the link the
+                  author has not shared yet. The builder knows this the moment
+                  the post is opened, so it says so once, quietly, instead of
+                  letting a studio publish into a void. */}
+              {currentPageRef?.kind === 'post' && !hasPostsSection && (
+                <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                  {t('pagesPostOrphanHint')}
+                </p>
+              )}
+
+              {currentPageRef?.kind === 'post' && currentTeamId && (
+                <PostHeaderCard
+                  page={currentPageRef}
+                  teamId={currentTeamId}
+                  onChange={(patch) => patchPage(currentPageRef.id, patch)}
+                />
+              )}
+
+              {/* A brand-new page is a dashed button and nothing else, which
+                  reads as "something failed to load" rather than "this page is
+                  yours to fill". One line is enough to say which it is. */}
+              {currentSections.length === 0 && (
+                <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  {t('pagesEmptyHint')}
+                </p>
+              )}
+
+              <SortableList ids={currentSections.map((s) => s.id)} onReorder={reorderSections}>
+                {currentSections.map((s) => {
                   const lib = SECTION_LIBRARY.find((l) => l.type === s.type)
                   const open = openId === s.id
                   return (
@@ -695,6 +1838,7 @@ export default function WebsiteBuilderPage() {
                               type="button"
                               {...attributes}
                               {...listeners}
+                              aria-label={t('menuReorder')}
                               className="shrink-0 cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
                             >
                               <GripVertical className="h-4 w-4" />
@@ -711,7 +1855,7 @@ export default function WebsiteBuilderPage() {
                                 {lib ? t(lib.labelKey as Parameters<typeof t>[0]) : s.type}
                               </p>
                               <p className="truncate text-xs text-muted-foreground">
-                                {sectionSummary(s)}
+                                {sectionSummary(s, t as (k: string, v?: Record<string, number>) => string)}
                               </p>
                             </button>
                             <div className="flex items-center gap-0.5">
@@ -748,13 +1892,20 @@ export default function WebsiteBuilderPage() {
                                   )}
                                 </button>
                               </Tip>
-                              <button
-                                type="button"
-                                onClick={() => setOpenId(open ? null : s.id)}
-                                className="rounded p-1 hover:bg-muted"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
+                              {/* The pencil and the bin were the only two
+                                  row actions with no name — hovered, they said
+                                  nothing, and to a screen reader they were two
+                                  unlabelled buttons beside three labelled ones. */}
+                              <Tip label={t('editSection')}>
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenId(open ? null : s.id)}
+                                  aria-label={t('editSection')}
+                                  className="rounded p-1 hover:bg-muted"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </Tip>
                               <Tip label={tCommon('duplicate')}>
                                 <button
                                   type="button"
@@ -765,13 +1916,16 @@ export default function WebsiteBuilderPage() {
                                   <Copy className="h-3.5 w-3.5" />
                                 </button>
                               </Tip>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteId(s.id)}
-                                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              <Tip label={t('delete')}>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteId(s.id)}
+                                  aria-label={t('delete')}
+                                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </Tip>
                             </div>
                           </div>
                           {open && currentTeamId && (
@@ -779,6 +1933,8 @@ export default function WebsiteBuilderPage() {
                               <SectionEditor
                                 section={s}
                                 teamId={currentTeamId}
+                                pages={menuPages}
+                                hasPlugin={isInstalled}
                                 onChange={(patch) => updateSection(s.id, patch)}
                               />
                               {/* NO "menu label" FIELD HERE ANY MORE. A menu
@@ -802,32 +1958,20 @@ export default function WebsiteBuilderPage() {
                 })}
               </SortableList>
 
-              {/* Add section */}
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input py-3 text-sm font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground">
-                  <Plus className="h-4 w-4" />
-                  {t('addSection')}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  {SECTION_LIBRARY.map((lib) => (
-                    <DropdownMenuItem
-                      key={lib.type}
-                      onClick={() => addSection(lib.type)}
-                      className="gap-2"
-                    >
-                      <DynamicIcon name={lib.icon} className="h-4 w-4 text-muted-foreground" />
-                      <span className="flex flex-col">
-                        <span className="text-sm">
-                          {t(lib.labelKey as Parameters<typeof t>[0])}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {t(lib.descKey as Parameters<typeof t>[0])}
-                        </span>
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Add section — a dialog of grouped tiles, not a dropdown of
+                  seventeen rows. 'managed' sections (none today) are authored by
+                  Linyup, not offered here — but stay editable once present. */}
+              <SectionPicker
+                entries={SECTION_LIBRARY.filter(
+                  (lib) =>
+                    lib.maturity !== 'managed' &&
+                    // A client-owned section type is offered to its client only;
+                    // one already on the page stays listed and editable.
+                    sitePartOffered(CLIENT_SITE_PARTS.sectionTypes[lib.type], isInstalled)
+                )}
+                t={(key) => t(key as Parameters<typeof t>[0])}
+                onPick={addSection}
+              />
             </div>
           )}
         </div>
@@ -839,7 +1983,7 @@ export default function WebsiteBuilderPage() {
             with the Sections tab for the same reason — beside Appearance or the
             embed snippets it would be answering a question nobody asked. */}
         {tab === 'sections' && (
-          <div className="space-y-2 lg:w-[420px] lg:flex-shrink-0 lg:self-start">
+          <div className="space-y-2 xl:w-[380px] xl:flex-shrink-0 xl:self-start">
             <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               <ListTree className="h-3.5 w-3.5" />
               {t('tabMenu')}
@@ -847,6 +1991,7 @@ export default function WebsiteBuilderPage() {
             <MenuPanel
               menu={menu}
               sections={draft.sections}
+              pages={menuPages}
               surfaces={liveSurfaces}
               surfaceLabel={(sf) => tSurface(sf as Parameters<typeof tSurface>[0])}
               sectionLabel={(sec) => sectionNavLabel(sec, tSite)}
@@ -854,6 +1999,7 @@ export default function WebsiteBuilderPage() {
             />
           </div>
         )}
+        </div>
       </div>
 
       {/* The preview opens over the page rather than living beside it — see the
@@ -863,6 +2009,7 @@ export default function WebsiteBuilderPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         site={previewSite}
+        page={previewPage}
         // Labels are what a preview is read for; the hrefs are inert under
         // `preview` anyway, so they point at the real public paths without
         // needing the locale-aware builder the live site uses.
@@ -900,6 +2047,35 @@ export default function WebsiteBuilderPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Publish confirmation — what is about to go live, counted from the
+          draft in hand. Not a diff against what is published today (that needs
+          a field-by-field comparison against the published snapshot); this is
+          the honest half that can be said with no new machinery, and it is
+          already the difference between "I clicked the big button" and "I put
+          three pages and a half-finished post in front of my members". */}
+      <AlertDialog open={confirmPublish} onOpenChange={setConfirmPublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('publishConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('publishConfirmBody', { pages: nonPostPages.length, posts: postPages.length })}
+              {hiddenPageCount > 0 ? ` ${t('publishConfirmHidden', { count: hiddenPageCount })}` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmPublish(false)
+                void handlePublish()
+              }}
+            >
+              {t('publish')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Unpublish confirmation. States the consequence in the visitor's terms —
           the site goes offline now, and any bio-link entry pointing at it stops
           being offered (BioLinkHome filters page links through
@@ -926,6 +2102,38 @@ export default function WebsiteBuilderPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddPageDialog
+        open={addPageOpen}
+        onOpenChange={setAddPageOpen}
+        existingPaths={(draft.pages ?? []).map((p) => p.path)}
+        pagesFull={pagesFull}
+        postsFull={postsFull}
+        onCreate={handleCreatePage}
+      />
+
+      {isHome && (
+        <HomeSettingsDialog
+          open={pageSettingsOpen}
+          onOpenChange={setPageSettingsOpen}
+          meta={draft.meta}
+          onChange={(patch) => mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))}
+        />
+      )}
+
+      {currentPageRef && (
+        <PageSettingsDialog
+          open={pageSettingsOpen}
+          onOpenChange={setPageSettingsOpen}
+          page={currentPageRef}
+          teamId={currentTeamId!}
+          existingPaths={(draft.pages ?? [])
+            .filter((p) => p.id !== currentPageRef.id)
+            .map((p) => p.path)}
+          onChange={(patch) => patchPage(currentPageRef.id, patch)}
+          onDelete={() => deletePage(currentPageRef.id)}
+        />
+      )}
     </div>
   )
 }

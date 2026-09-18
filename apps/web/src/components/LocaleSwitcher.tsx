@@ -12,12 +12,14 @@ import { Globe } from 'lucide-react'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 const LABEL: Record<string, string> = { en: 'EN', de: 'DE', fr: 'FR', it: 'IT' }
 
 export function LocaleSwitcher({
   className,
   triggerStyle,
+  plain,
 }: {
   className?: string
   /** Inline style overrides for the trigger — the public site/bio-link mounts
@@ -25,6 +27,10 @@ export function LocaleSwitcher({
    *  light/dark), which Tailwind utility classes can't express. One switcher,
    *  no fork. */
   triggerStyle?: React.CSSProperties
+  /** Drops the trigger's border and background classes — the studio website's
+   *  own mount, where the switcher sits beside plain nav links rather than in
+   *  a toolbar. Every other mount keeps its bordered chip look untouched. */
+  plain?: boolean
 }) {
   const locale = useLocale()
   const pathname = usePathname()
@@ -52,7 +58,11 @@ export function LocaleSwitcher({
       <SelectTrigger
         aria-label={t('language')}
         style={triggerStyle}
-        className={`h-8 w-auto gap-1.5 px-2 text-xs ${className ?? ''}`}
+        className={cn(
+          'h-8 w-auto gap-1.5 px-2 text-xs',
+          plain && 'border-0 bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent',
+          className
+        )}
       >
         <Globe className="h-3.5 w-3.5 text-muted-foreground" />
         <SelectValue />

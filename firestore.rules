@@ -103,7 +103,7 @@ service cloud.firestore {
     // honest (a test that reads the manifests, that file and this one).
     function clientInstallableRank(pluginId) {
       return pluginId in ['gift-cards'] ? 0
-           : pluginId in ['asset-register', 'contact-groups', 'custom-fields', 'tarif-595', 'qr-invoices'] ? 1
+           : pluginId in ['asset-register', 'contact-groups', 'custom-fields', 'tarif-595', 'qr-invoices', 'site-themes'] ? 1
            : 2;
     }
 
@@ -2358,6 +2358,10 @@ service cloud.firestore {
     // never exposed publicly. Managers and owners only.
     match /site_drafts/{teamId} {
       allow read, write: if hasTeamRole(teamId, 'manager');
+      // A multi-page site's pages — same access as the draft itself.
+      match /pages/{pageId} {
+        allow read, write: if hasTeamRole(teamId, 'manager');
+      }
     }
 
     // PUBLIC snapshot of a published site. Keyed by teamId. World-readable so
@@ -2367,6 +2371,12 @@ service cloud.firestore {
     match /site_published/{teamId} {
       allow read;            // fully public
       allow write: if false; // Cloud Functions only
+      // Published pages and their translation sidecars: public, written only by
+      // publishWebsite.
+      match /pages/{pageId} {
+        allow read;
+        allow write: if false;
+      }
     }
 
     // ----------------------------------------------

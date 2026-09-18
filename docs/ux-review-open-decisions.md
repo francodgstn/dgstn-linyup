@@ -509,3 +509,125 @@ first.
 limit and coverage that the Offerings plan pane already shows, and proposes one
 link instead. Kept because it is the only all-plans-at-a-glance view and the page
 was reshaped recently on purpose. Decide: remove, or keep as the overview.
+
+---
+
+# Website builder review — 2026-09-16
+
+A second, self-contained review, prompted by the CrossFit Zug rebuild: the builder
+became genuinely powerful, and "settings and pages seem hard to handle" for the
+non-technical studio owner it is for. Numbered after the Offerings review, which merged first. Eight findings; the mechanical five are
+FIXED on `claude/crossfit-zug-website-strategy-4776aa` (PR #378). What is left
+here is what needs Franco.
+
+## 35. Should Pages be top-level navigation in the builder?
+**ANSWERED 2026-09-16 — Franco: (b), the persistent page rail.** Built: `PagesRail` beside every tab (lg+), picking a page opens it in Sections; posts in their own scroll; a page header with Settings above the sections; the compact switcher stays below lg; the menu column moves beside the editor only at xl. The original question follows.
+
+**Was PARKED.** There is no Pages destination: page switching is a `<Select>` inside
+the Sections tab, with Add page and Page settings beside it
+(`(auth)/plugins/website/page.tsx`). A studio thinking "I need to manage my
+pages" has nowhere to go that says so, which is the friction that prompted the
+review. The shapes worth choosing between:
+
+- **(a) A fourth tab** — Sections / Pages / Appearance / Embed. Cheapest; costs
+  one round trip every time you switch page to edit it.
+- **(b) A persistent page rail** (Wix's model) — the page list is always on the
+  left and Sections/Appearance operate *within* the selected page. Best match for
+  the mental model, biggest change: the tab bar, the current-page URL param and
+  the right-hand column all move.
+- **(c) Leave it where it is.** Defensible for a one-page site, which is most
+  studios today; CFZ (12 pages + posts) is the case that breaks it.
+
+*Meanwhile:* the strip is labelled "Pages · 8/30" and the row actions are named,
+so the current arrangement is at least legible. Nothing here is hard to undo.
+
+## 36. Does Publish get a real diff?
+**PARKED.** Publish takes the whole draft live — the typo you came to fix plus
+the half-finished page beside it. Shipped now: a confirmation stating what is
+about to go live, counted from the draft (home + N pages + M posts, and how many
+hidden pages stay behind). A REAL answer compares against `site_published`
+field by field and lists what changed. That is a genuine piece of work (either a
+client-side deep comparison of two whole sites, or a server-computed diff at
+publish), and it is only worth it if studios actually hesitate at that button.
+*Decide after CFZ or the first real site uses it in anger.*
+
+## 37. Autosave, or keep an explicit Save?
+**ANSWERED 2026-09-16 — Franco: autosave.** Built: `hooks/useAutosave.ts` saves the draft 1.5 s after the last edit in both builders; an edit counter keeps an edit made mid-save dirty, and a failed save stops retrying until the next edit and shows "Nicht gespeichert · Erneut versuchen". The Save draft button is gone; the header shows the save state beside the publish state. Publishing is unchanged. The unsaved-changes guard stays for the seconds before a save lands. The original question follows.
+
+**Was PARKED.** `useUnsavedChangesGuard` (new, in `hooks/`) now asks before a
+navigation throws a draft away — the browser's own prompt on unload, and a
+capture-phase click interception for in-app links. It cannot catch the back
+button (`popstate` fires after the history entry has already moved). Autosaving
+the draft on a debounce would remove the whole failure class — the draft is one
+`setDoc` overwrite — but it changes what "Save draft" means and makes every
+half-finished edit durable. Product call, not a code one.
+
+## 38. Does the organisation builder track the team builder?
+**PARKED.** `(auth)/org/[orgId]/website/` re-implements its own AppearancePanel
+and has no Pages, no Posts, no Embed tab. The two have already drifted once for
+real (a bug where the org builder read the wrong i18n namespace). Two questions,
+in order: (i) do org sites ever get pages/posts, or is single-page a deliberate
+scope cut? (ii) regardless, the shared half of AppearancePanel should be one
+component with a capability flag, the way `BrandFields` and `MenuPanel` already
+are. (ii) is worth doing either way; (i) decides how much.
+
+## 39. `Common.close` — the dialog primitive's only untranslated string
+**FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
+Close</span>`. Screen-reader-only, so no sighted user sees English in a German
+UI, but it is the one string in that file. Needs a `Common.close` key and
+`useTranslations` inside a ui primitive — four of them already do this, so the
+pattern exists; left alone only because the reward is small and the file is
+shared by every dialog in the app.
+
+## 40. The publish integrity test cannot run in this environment
+**BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
+studio, press Publish with no changes, confirm the live site is unchanged". Run
+on 2026-09-16 it destroyed most of the CrossFit Zug site — page index,
+redirects, half the theme fields, the header's appointment CTA, and every menu
+item pointing at a page.
+
+**The cause is the environment, not the code.** The functions emulator on this
+machine belongs to the MAIN checkout and loads `packages/functions/dist` built
+from it, which predates everything after phase 0 — so `publishWebsite` ran a
+sanitizer with no `pages`, no `redirects` and none of the newer `SiteMeta`
+fields, and dropped what it did not know. The tenant was restored by reseeding.
+
+To actually close it, one of: build this branch's functions into the checkout
+that owns the running emulator, or give this worktree its own slot
+(`node scripts/local-env.mjs status` first — restarting the shared emulator
+wipes every tenant in it, including work belonging to other sessions, so it was
+deliberately not done unattended).
+
+What the run DID prove, and what was fixed from it: the draft save was deleting
+the redirect table on every save (now fixed, and the payload is typed so the
+next omission fails the build).
+
+## 41. Turbopack cannot resolve one dependency in a deep worktree
+**ENVIRONMENT, not code.** `next dev --turbopack` in this worktree fails with
+`Can't resolve '@tiptap/extension-drag-handle-react'` on a cold cache, so every
+route that pulls `RichTextEditor` 500s. Node resolves it fine both ways
+(CJS and ESM), the pnpm junction and files are intact, Windows long paths ARE
+enabled, and `pnpm install` does not change it; the real path is 277 characters.
+`next dev --webpack` compiles and serves the same tree without complaint, which
+is how this session's UI was verified.
+
+*Meanwhile:* run the dev server with `--webpack` in a deep worktree. Worth a
+turbopack issue with the path length if it shows up outside this machine.
+Related, and separate: a poisoned `.next` needs the DIRECTORY moved away —
+restarting the server is not enough, and a stale `.next.old-*` left inside
+`apps/web` makes Tailwind scan a 500 MB build output and fail on a CSS class
+candidate containing a NUL byte.
+
+## 42. A new page starts empty — should it start from a layout?
+**ANSWERED 2026-09-16 — Franco: build it.** Built: `starterSections` in `plugins/website/defaults.ts` — Simple page (default: hero with the page title + text), Offer page (hero + two columns + a booking CTA band), Empty page; placeholder copy is passed in translated. The original proposal follows.
+
+**Was PARKED.** Creating a blog post now opens on a text
+block; creating a PAGE still opens on nothing but an "Add section" button.
+CrossFit Zug's seven offer pages are the same four blocks in the same order
+(hero → text → features → call to action), which is what a studio's pages
+usually are. Offering two or three starters at creation — "Offer page",
+"Simple page", "Empty" — would remove the blankest moment in the builder, reuse
+the section library that already exists, and cost one extra step in the create
+dialog. It needs a product call on WHICH starters exist and what they are
+called, so it was not built.
+

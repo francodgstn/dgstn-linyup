@@ -1,21 +1,34 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { collection, doc, getDoc, query, where, limit, getDocs } from 'firebase/firestore'
 import { useLocale, useTranslations } from 'next-intl'
 import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
+import { reviveTimestamps } from '@/lib/restTimestamps'
 import {
+  SITE_PAGES_SUBCOLLECTION,
   SITE_PUBLISHED_COLLECTION,
   applySiteTranslations,
+  findSitePageByPath,
   siteI18nDocId,
   parseDocId,
   parseDateKey,
   parseSlug,
   resolveSiteSurfaceLinks,
   routableSurfaces,
+  toTenantPublicPath,
 } from '@linyup/shared'
-import type { PublishedSite, PublicSurface, SiteTranslationDoc, SiteTranslationUnits } from '@linyup/shared'
+import type {
+  PublishedSite,
+  PublicSurface,
+  SiteI18nManifest,
+  SitePageDoc,
+  SitePageRef,
+  SiteTranslationDoc,
+  SiteTranslationUnits,
+  WebsiteSection,
+} from '@linyup/shared'
 import { useRouter } from '@/i18n/navigation'
 import { publicHref, publicHrefLocalized } from '@/lib/publicRoutes'
 import { usePublicTeam } from '../PublicTeamProvider'
@@ -32,8 +45,39 @@ import { takeBookingConfirmed } from '@/lib/bookingReturn'
 // `PublicTeamProvider` (via the /public/[slug] layout) and outside the embed, so
 // it is where the booking overlay is hosted. The builder canvas and the embed
 // render the same blocks without a provider and must never receive `onBook`.
-export default function PublicSite({ slug }: { slug: string }) {
-  const { team } = usePublicTeam()
+//
+// `path` names a page of the site other than home ([] ⇒ home). Every page is its
+// own route, so moving between pages remounts this component — see the note on
+// full-page navigation in WebsiteRenderer.
+
+/** Server-resolved site data (`site/[[...path]]/page.tsx` → Firestore REST),
+ *  decoded JSON — any Timestamp field is still a `{ __ts }` marker, revived by
+ *  `reviveTimestamps` before it lands in state. */
+export interface PublicSiteInitial {
+  site: PublishedSite
+  units: SiteTranslationUnits | null
+  page: { ref: SitePageRef; sections: WebsiteSection[] } | null
+  pageUnits: SiteTranslationUnits | null
+}
+
+export default function PublicSite({
+  slug,
+  path = [],
+  initial,
+}: {
+  slug: string
+  path?: string[]
+  /**
+   * Present when the server component resolved the site — seeds state so the
+   * FIRST render already has real content (SSR), and the client-side query
+   * below is skipped entirely for that render. Absent when the REST read
+   * failed; the component then behaves exactly as it did before this existed.
+   */
+  initial?: PublicSiteInitial
+}) {
+  // `domain` is set only when the visitor came through the studio's OWN domain
+  // — resolved once in the tenant layout and carried on the team context.
+  const { team, domain } = usePublicTeam()
   const { isAuthenticated, contact, openSignIn } = usePublicContactAuth()
   const locale = useLocale()
   const router = useRouter()
@@ -42,9 +86,27 @@ export default function PublicSite({ slug }: { slug: string }) {
   const tSurfaces = useTranslations('PublicSurfaceNav')
   const tSpace = useTranslations('Space')
   const tSite = useTranslations('Site')
-  const [site, setSite] = useState<PublishedSite | null>(null)
-  const [i18nUnits, setI18nUnits] = useState<SiteTranslationUnits | null>(null)
-  const [loading, setLoading] = useState(true)
+  // A stable dependency for the load effect — the array itself is new each render.
+  const pathKey = path.join('/')
+  // The slug+locale+pathKey `initial` was computed FOR. A client-side locale or
+  // path change re-runs the server component (a new `initial` for the NEW key
+  // arrives as a prop) while THIS component instance stays mounted — App Router
+  // reconciles it in place rather than remounting, so a `useState` initializer
+  // alone would only ever see the FIRST key. Comparing this ref against the
+  // CURRENT key in the effect below is what tells "already seeded for this
+  // exact render" apart from "a fresh initial just arrived for a new render".
+  const initialKeyRef = useRef<string | null>(initial ? `${slug}:${locale}:${pathKey}` : null)
+  const [site, setSite] = useState<PublishedSite | null>(() => (initial ? reviveTimestamps(initial.site) : null))
+  const [i18nUnits, setI18nUnits] = useState<SiteTranslationUnits | null>(() =>
+    initial ? reviveTimestamps(initial.units) : null
+  )
+  const [page, setPage] = useState<{ ref: SitePageRef; sections: WebsiteSection[] } | null>(() =>
+    initial ? reviveTimestamps(initial.page) : null
+  )
+  const [pageUnits, setPageUnits] = useState<SiteTranslationUnits | null>(() =>
+    initial ? reviveTimestamps(initial.pageUnits) : null
+  )
+  const [loading, setLoading] = useState(!initial)
   const [bookIntent, setBookIntent] = useState<BookIntent | null>(null)
   // The session a real, verified payment confirmed — NOT a boolean: pinning it to
   // the id stops the confirmation leaking onto a LATER, different booking if the
@@ -54,7 +116,29 @@ export default function PublicSite({ slug }: { slug: string }) {
   const [paidSessionId, setPaidSessionId] = useState<string | null>(null)
 
   useEffect(() => {
+    const key = `${slug}:${locale}:${pathKey}`
+    if (initial) {
+      if (initialKeyRef.current === key) {
+        // Already seeded for this exact render (the common case: first mount
+        // with SSR data) — nothing to fetch.
+        return
+      }
+      // A NEW `initial` for a DIFFERENT key just arrived (a client-side locale
+      // or path change caused the server component to re-run) — adopt it
+      // directly. The server already did the read; no network round trip
+      // needed here.
+      initialKeyRef.current = key
+      setSite(reviveTimestamps(initial.site))
+      setI18nUnits(reviveTimestamps(initial.units))
+      setPage(reviveTimestamps(initial.page))
+      setPageUnits(reviveTimestamps(initial.pageUnits))
+      setLoading(false)
+      return
+    }
+    // No `initial` at all (the server-side REST read failed) — the original
+    // client-side fallback, unchanged.
     let cancelled = false
+    setLoading(true)
     async function run() {
       let base: PublishedSite | null = null
       try {
@@ -73,9 +157,10 @@ export default function PublicSite({ slug }: { slug: string }) {
       // component is NOT remounted when only the [locale] param changes) can
       // never leave the PREVIOUS locale's units applied — srcLang or a locale
       // with no sidecar degrades to base text, not to the last language viewed.
+      const wantsLocale = (manifest: SiteI18nManifest | undefined): manifest is SiteI18nManifest =>
+        !!manifest && locale !== manifest.srcLang && manifest.locales.includes(locale as (typeof manifest.locales)[number])
       let units: SiteTranslationUnits | null = null
-      const manifest = base?.i18n
-      if (base && manifest && locale !== manifest.srcLang && manifest.locales.includes(locale as (typeof manifest.locales)[number])) {
+      if (base && wantsLocale(base.i18n)) {
         try {
           const sidecarSnap = await getDoc(doc(db, SITE_PUBLISHED_COLLECTION, siteI18nDocId(base.teamId, locale)))
           if (sidecarSnap.exists()) {
@@ -85,19 +170,58 @@ export default function PublicSite({ slug }: { slug: string }) {
           reportPublicLoadFailure('site/i18n-sidecar', err) // falls back to base-language text
         }
       }
+
+      // A page other than home: its sections are a doc of their own under the
+      // site doc, with translation sidecars beside it. A path the site does not
+      // have renders not-found, exactly like a slug with no site.
+      const segments = pathKey ? pathKey.split('/') : []
+      const ref = base && segments.length ? findSitePageByPath(base.pages, segments) : null
+      let loadedPage: { ref: SitePageRef; sections: WebsiteSection[] } | null = null
+      let loadedPageUnits: SiteTranslationUnits | null = null
+      if (base && ref) {
+        try {
+          const pageSnap = await getDoc(doc(db, SITE_PUBLISHED_COLLECTION, base.teamId, SITE_PAGES_SUBCOLLECTION, ref.id))
+          if (pageSnap.exists()) {
+            const pageDoc = pageSnap.data() as SitePageDoc
+            loadedPage = { ref, sections: pageDoc.sections ?? [] }
+            if (wantsLocale(pageDoc.i18n)) {
+              try {
+                const pageSidecar = await getDoc(
+                  doc(db, SITE_PUBLISHED_COLLECTION, base.teamId, SITE_PAGES_SUBCOLLECTION, siteI18nDocId(ref.id, locale))
+                )
+                if (pageSidecar.exists()) loadedPageUnits = (pageSidecar.data() as SiteTranslationDoc).units
+              } catch (err: unknown) {
+                reportPublicLoadFailure('site/page-i18n-sidecar', err) // base-language text
+              }
+            }
+          }
+        } catch (err: unknown) {
+          reportPublicLoadFailure('site/page', err) // terminal not-found, but never silent
+        }
+      }
       if (cancelled) return
-      setSite(base)
+      setSite(segments.length && !loadedPage ? null : base)
       setI18nUnits(units)
+      setPage(loadedPage)
+      setPageUnits(loadedPageUnits)
       setLoading(false)
     }
     run()
     return () => {
       cancelled = true
     }
-  }, [slug, locale])
+  }, [slug, locale, pathKey, initial])
 
   // The ONE resolver (packages/shared) — never re-derive translated fields here.
   const translatedSite = useMemo(() => (site ? applySiteTranslations(site, i18nUnits) : null), [site, i18nUnits])
+  const translatedPage = useMemo(() => {
+    if (!page) return undefined
+    return {
+      // The page's title lives in the site's index, translated with the site.
+      ref: translatedSite?.pages?.find((p) => p.id === page.ref.id) ?? page.ref,
+      sections: applySiteTranslations({ sections: page.sections }, pageUnits).sections,
+    }
+  }, [page, pageUnits, translatedSite])
 
   // Reopen the overlay from the URL, so a refresh or a shared link lands the
   // visitor back where they were instead of on a bare website. Same param names
@@ -196,6 +320,23 @@ export default function PublicSite({ slug }: { slug: string }) {
     }
   }, [])
 
+  // Every link on the page, as the address bar should show it. The links are
+  // plain `<a href>`s, so a click is a FULL navigation and the domain's rewrite
+  // resolves the short path server-side — which is why `memberControl` below,
+  // the one CLIENT-side navigation here, keeps the long path.
+  const shortenHref = useMemo(
+    () =>
+      domain
+        ? (href: string) =>
+            toTenantPublicPath(href, {
+              slug,
+              tenantLanguage: domain.tenantLanguage,
+              siteAtRoot: domain.siteAtRoot,
+            })
+        : undefined,
+    [domain, slug]
+  )
+
   // Cross-surface reachability, derived from what's actually live — no studio
   // configuration, no new data model. The website deliberately keeps its own
   // chrome (PublicContactBar opts out of /site), so these render as the site's
@@ -213,11 +354,14 @@ export default function PublicSite({ slug }: { slug: string }) {
         // `surface` is carried so a stored menu item can resolve its own href —
         // the renderer looks links up by it rather than re-deriving URLs.
         surface,
-        href: publicHrefLocalized(locale, slug, surface, { from: 'site' }),
+        href: (() => {
+          const href = publicHrefLocalized(locale, slug, surface, { from: 'site' })
+          return shortenHref ? shortenHref(href) : href
+        })(),
         label,
       })
     )
-  }, [team.active_public_surfaces, translatedSite?.meta.header, locale, slug, tSurfaces])
+  }, [team.active_public_surfaces, translatedSite?.meta.header, locale, slug, tSurfaces, shortenHref])
 
   const memberControl = useMemo(
     () =>
@@ -258,6 +402,8 @@ export default function PublicSite({ slug }: { slug: string }) {
     <>
       <WebsiteRenderer
         site={translatedSite}
+        page={translatedPage}
+        shortenHref={shortenHref}
         onBook={openBooking}
         surfaceLinks={surfaceLinks}
         memberControl={memberControl}

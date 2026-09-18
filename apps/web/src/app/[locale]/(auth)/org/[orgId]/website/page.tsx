@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTabParam } from '@/hooks/useTabParam'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -20,7 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -46,8 +45,19 @@ import { PreviewOverlay } from '@/plugins/website/PreviewOverlay'
 import { sectionNavLabel } from '@/components/site/sections'
 import { type RenderableSite } from '@/components/site/WebsiteRenderer'
 import { OrgSectionEditor } from './OrgSectionEditor'
-import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite } from './hooks'
-import { ORG_SECTION_LIBRARY, newOrgSection, emptyOrgDraft } from './defaults'
+import { useOrgSiteDraft, saveOrgSiteDraft, publishOrgSite, unpublishOrgSite, uploadOrgSiteImage } from './hooks'
+import { BrandFields } from '@/components/website/BrandFields'
+import {
+  ORG_SECTION_LIBRARY,
+  ORG_SITE_STARTERS,
+  newOrgSection,
+  emptyOrgDraft,
+  orgStarterSections,
+  type OrgSiteStarter,
+} from './defaults'
+import { SectionPicker } from '@/components/website/SectionPicker'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { useAutosave } from '@/hooks/useAutosave'
 import { Tip } from '@/components/ui/tip'
 
 const MAX_SECTIONS = 12
@@ -89,9 +99,13 @@ function useOrgPreviewTeams(orgId: string | null) {
 function AppearancePanel({
   meta,
   onChange,
+  sections,
+  uploadImage,
 }: {
   meta: SiteMeta
   onChange: (patch: Partial<SiteMeta>) => void
+  sections: { id: string; label: string }[]
+  uploadImage: (file: File) => Promise<string>
 }) {
   const t = useTranslations('Website')
 
@@ -119,20 +133,6 @@ function AppearancePanel({
           onChange={(id) => onChange({ themePreset: id })}
           accentColor={meta.accentColor}
         />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs">{t('apFont')}</Label>
-        <Select value={meta.font} onValueChange={(v) => onChange({ font: v as SiteMeta['font'] })}>
-          <SelectTrigger className="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sans">Sans</SelectItem>
-            <SelectItem value="serif">Serif</SelectItem>
-            <SelectItem value="rounded">Rounded</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-2">
@@ -172,11 +172,13 @@ function AppearancePanel({
         )}
       </div>
 
+      <BrandFields meta={meta} onChange={onChange} sections={sections} uploadImage={uploadImage} />
+
       <label className="flex items-center justify-between rounded-lg border p-3">
         <span className="text-sm">{t('apShowSocialFooter')}</span>
         <Switch
           checked={meta.footer.showSocial}
-          onCheckedChange={(v) => onChange({ footer: { showSocial: v } })}
+          onCheckedChange={(v) => onChange({ footer: { ...meta.footer, showSocial: v } })}
         />
       </label>
 
@@ -201,22 +203,20 @@ function AppearancePanel({
 
 // ─── section list row ──────────────────────────────────────────────────────────
 
-function sectionSummary(s: OrgSiteSection): string {
+/** See the team builder's copy of this: an un-headed section says nothing
+ *  rather than repeating its own type name in English under a translated one. */
+function sectionSummary(s: OrgSiteSection, t: (key: string, values?: Record<string, number>) => string): string {
   switch (s.type) {
     case 'hero':
       return s.headline
-    case 'content':
-      return s.heading || 'Content'
     case 'gallery':
-      return `${s.images.length} photo(s)`
+      return t('summaryPhotos', { count: s.images.length })
+    case 'content':
     case 'contact':
-      return s.heading ?? 'Contact details'
     case 'clubs':
-      return s.heading ?? 'Our clubs'
     case 'locations':
-      return s.heading ?? 'Find us'
     case 'coaches':
-      return s.heading ?? 'Our coaches'
+      return s.heading ?? ''
     default:
       return ''
   }
@@ -238,6 +238,13 @@ export default function OrgWebsiteBuilderPage() {
 
   const [draft, setDraft] = useState<OrgSiteDraft | null>(null)
   const [dirty, setDirty] = useState(false)
+  // The edit counter autosave keys on — see useAutosave.
+  const editRev = useRef(0)
+  const [revision, setRevision] = useState(0)
+  // A draft lives in this component's state until Save writes it, so leaving
+  // the page throws the work away — silently, which is the part that makes it
+  // expensive. See the hook for what it can and cannot intercept.
+  useUnsavedChangesGuard(dirty, t('unsavedLeaveConfirm'))
   const [tab, setTab] = useTabParam(SITE_TABS, 'sections')
   const tSite = useTranslations('Site')
   // The `Website` namespace, for the copy this page shares with the studio's
@@ -264,9 +271,14 @@ export default function OrgWebsiteBuilderPage() {
   }, [draft, draftLoading, savedDraft, org])
 
   // ── mutators ──
+  function markDirty() {
+    editRev.current += 1
+    setRevision(editRev.current)
+    setDirty(true)
+  }
   function mutate(updater: (d: OrgSiteDraft) => OrgSiteDraft) {
     setDraft((d) => (d ? updater(d) : d))
-    setDirty(true)
+    markDirty()
   }
   const patchMeta = (patch: Partial<SiteMeta>) => mutate((d) => ({ ...d, meta: { ...d.meta, ...patch } }))
   const updateSection = (id: string, patch: Record<string, unknown>) =>
@@ -285,26 +297,43 @@ export default function OrgWebsiteBuilderPage() {
     setTab('sections')
   }
   const removeSection = (id: string) => mutate((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }))
+  function applyStarter(starter: OrgSiteStarter) {
+    if (!org) return
+    const sections = orgStarterSections(starter, org)
+    mutate((d) => ({ ...d, sections }))
+    // Open the block under the hero — the hero already carries the org's name,
+    // the text beneath it is what nobody has written yet.
+    setOpenId(sections[1]?.id ?? null)
+  }
   function reorderSections(from: number, to: number) {
     mutate((d) => ({ ...d, sections: arrayMove(d.sections, from, to) }))
   }
 
   // ── save / publish ──
-  async function handleSave(): Promise<boolean> {
+  async function handleSave({ silent = false }: { silent?: boolean } = {}): Promise<boolean> {
     if (!orgId || !user || !draft) return false
+    // An edit made while this save is in flight stays dirty for the next one.
+    const rev = editRev.current
     setSaving(true)
     try {
       await saveOrgSiteDraft(orgId, user.uid, draft)
-      setDirty(false)
+      if (editRev.current === rev) setDirty(false)
       await qc.invalidateQueries({ queryKey: ['org-site-draft', orgId] })
       return true
     } catch {
-      toast.error(t('errorSave'))
+      if (!silent) toast.error(t('errorSave'))
       return false
     } finally {
       setSaving(false)
     }
   }
+
+  const autosave = useAutosave({
+    revision,
+    dirty,
+    paused: saving || publishing,
+    save: () => handleSave({ silent: true }),
+  })
 
   async function handlePublish() {
     if (!orgId || !draft) return
@@ -367,7 +396,7 @@ export default function OrgWebsiteBuilderPage() {
     typeof window !== 'undefined'
       ? `${window.location.origin}/public/org/${slug}`
       : `/public/org/${slug}`
-  const status = dirty ? t('statusUnsaved') : draft.enabled ? t('statusPublished') : t('statusDraft')
+  const status = draft.enabled ? t('statusPublished') : t('statusDraft')
   // THE HEADER MENU — the same stored tree a studio edits, through the same
   // panel and the same sanitiser. Absent until the org first touches it, and
   // `deriveSiteMenu` then produces exactly the header it had before, which is
@@ -381,7 +410,7 @@ export default function OrgWebsiteBuilderPage() {
 
   function setMenu(next: SiteMenuItem[]) {
     setDraft((d) => (d ? { ...d, menu: next } : d))
-    setDirty(true)
+    markDirty()
   }
 
   const previewSite: RenderableSite = {
@@ -440,10 +469,22 @@ export default function OrgWebsiteBuilderPage() {
             <Eye className="mr-1 h-4 w-4" />
             {t('preview')}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? t('saving') : t('saveDraft')}
-          </Button>
-          <Button size="sm" onClick={handlePublish} disabled={publishing}>
+          {/* Save state, not a Save button — same as the studio builder. */}
+          <span aria-live="polite" className="text-xs text-muted-foreground">
+            {autosave.failed ? (
+              <span className="text-destructive">{tWeb('autosaveFailed')}</span>
+            ) : saving || dirty ? (
+              tWeb('autosaveSaving')
+            ) : (
+              tWeb('autosaveSaved')
+            )}
+          </span>
+          {autosave.failed && (
+            <Button variant="outline" size="sm" onClick={() => handleSave()} disabled={saving}>
+              {tWeb('autosaveRetry')}
+            </Button>
+          )}
+          <Button size="sm" onClick={handlePublish} disabled={publishing || saving}>
             {publishing ? (
               t('publishing')
             ) : (
@@ -480,9 +521,44 @@ export default function OrgWebsiteBuilderPage() {
           </div>
 
           {tab === 'appearance' ? (
-            <AppearancePanel meta={draft.meta} onChange={patchMeta} />
+            <AppearancePanel
+              meta={draft.meta}
+              onChange={patchMeta}
+              sections={draft.sections.map((sec) => ({ id: sec.id, label: sectionNavLabel(sec, tSite) }))}
+              uploadImage={(file) => uploadOrgSiteImage(orgId, 'brand', file)}
+            />
           ) : (
             <div className="space-y-2.5">
+              {/* AN EMPTY SITE OFFERS A SHAPE. Only while there is nothing to
+                  lose: the moment a section exists, this is gone and the
+                  section list is the site. Adding sections one by one below
+                  stays open the whole time. */}
+              {draft.sections.length === 0 && (
+                <div className="space-y-2 rounded-lg border border-dashed p-3">
+                  <p className="text-sm font-medium">{t('starterTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('starterHint')}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ORG_SITE_STARTERS.map((option) => {
+                      const copy = {
+                        federation: [t('starterFederation'), t('starterFederationDesc')],
+                        simple: [t('starterSimple'), t('starterSimpleDesc')],
+                      }[option]
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => applyStarter(option)}
+                          className="rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/60 hover:bg-accent/40"
+                        >
+                          <span className="block text-sm font-semibold">{copy[0]}</span>
+                          <span className="block text-xs text-muted-foreground">{copy[1]}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               <SortableList ids={draft.sections.map((s) => s.id)} onReorder={reorderSections}>
                 {draft.sections.map((s) => {
                   const lib = ORG_SECTION_LIBRARY.find((l) => l.type === s.type)
@@ -517,7 +593,9 @@ export default function OrgWebsiteBuilderPage() {
                               <p className="text-sm font-medium">
                                 {lib ? t(lib.labelKey as Parameters<typeof t>[0]) : s.type}
                               </p>
-                              <p className="truncate text-xs text-muted-foreground">{sectionSummary(s)}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {sectionSummary(s, tWeb as (k: string, v?: Record<string, number>) => string)}
+                              </p>
                             </button>
                             <div className="flex items-center gap-0.5">
                               <Tip label={t('toggleVisible')}>
@@ -575,26 +653,14 @@ export default function OrgWebsiteBuilderPage() {
                 })}
               </SortableList>
 
-              {/* Add section */}
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input py-3 text-sm font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground">
-                  <Plus className="h-4 w-4" />
-                  {t('addSection')}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  {ORG_SECTION_LIBRARY.map((lib) => (
-                    <DropdownMenuItem key={lib.type} onClick={() => addSection(lib.type)} className="gap-2">
-                      <DynamicIcon name={lib.icon} className="h-4 w-4 text-muted-foreground" />
-                      <span className="flex flex-col">
-                        <span className="text-sm">{t(lib.labelKey as Parameters<typeof t>[0])}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {t(lib.descKey as Parameters<typeof t>[0])}
-                        </span>
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Add section — the same grouped-tile dialog the team builder
+                  opens. 'managed' sections (none today) are authored by Linyup,
+                  not offered here — but stay editable once present. */}
+              <SectionPicker
+                entries={ORG_SECTION_LIBRARY.filter((lib) => lib.maturity !== 'managed')}
+                t={(key) => t(key as Parameters<typeof t>[0])}
+                onPick={addSection}
+              />
             </div>
           )}
         </div>

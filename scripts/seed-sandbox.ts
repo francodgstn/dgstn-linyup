@@ -99,6 +99,7 @@ import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
+import { sanitizeMeta, sanitizeSections } from '../packages/functions/src/website/sanitize'
 import { importPlanGrants } from './lib/planGrantImport'
 
 const USE_EMULATOR = !!process.env.FIRESTORE_EMULATOR_HOST
@@ -2746,8 +2747,10 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
       teamId,
       slug: teamSlug,
       name: teamName,
-      meta: siteMeta,
-      sections: siteSections,
+      // Through the publish callable's own sanitizer — a demo site can never
+      // show more than a studio pressing Publish would get.
+      meta: sanitizeMeta(siteMeta, teamName),
+      sections: sanitizeSections(siteSections),
       socialLinks: [{ platform: 'instagram', url: `https://instagram.com/${teamSlug}` }],
       showBranding: false, // studio plan
       published_at: ts(daysFromNow(-12)),

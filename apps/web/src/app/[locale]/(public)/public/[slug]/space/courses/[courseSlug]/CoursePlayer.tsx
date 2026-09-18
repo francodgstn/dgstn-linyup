@@ -15,6 +15,8 @@ import {
   COURSE_MODULES_SUBCOLLECTION,
   COURSE_LESSONS_SUBCOLLECTION,
   PUBLIC_PROFILE_SUBCOLLECTION,
+  parseVideoUrl,
+  videoEmbedSrc,
 } from '@linyup/shared'
 import { formatCurrency } from '@/lib/format'
 import { sanitizeRichHtml } from '@/lib/sanitizeHtml'
@@ -31,19 +33,6 @@ const LESSON_ICON: Record<LessonType, typeof FileText> = {
   audio: Music,
 }
 
-function getYouTubeId(url: string): string | null {
-  const m =
-    url.match(/[?&]v=([^&]+)/) ??
-    url.match(/youtu\.be\/([^?]+)/) ??
-    url.match(/embed\/([^?]+)/)
-  return m?.[1] ?? null
-}
-
-function getVimeoId(url: string): string | null {
-  const m = url.match(/vimeo\.com\/(\d+)/)
-  return m?.[1] ?? null
-}
-
 // ─── Media player ─────────────────────────────────────────────────────────────
 
 function MediaPlayer({ lesson }: { lesson: Lesson }) {
@@ -51,33 +40,25 @@ function MediaPlayer({ lesson }: { lesson: Lesson }) {
   const src = lesson.mediaUrl
   const source = lesson.mediaSource
 
-  if (source === 'youtube') {
-    const id = getYouTubeId(src)
-    if (!id) return null
+  if (source === 'youtube' || source === 'vimeo') {
+    // ONE parser + embed-URL builder, shared with the site editor/renderer and
+    // the publish sanitizer (@linyup/shared/utils/videoEmbed). A link that does
+    // not parse falls through to no player — same as before.
+    const parsed = parseVideoUrl(src)
+    if (!parsed) return null
+    const isYouTube = source === 'youtube'
     return (
       <div className="aspect-video w-full overflow-hidden rounded-lg">
         <iframe
-          src={`https://www.youtube.com/embed/${id}`}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          src={videoEmbedSrc(parsed.provider, parsed.videoId)}
+          allow={
+            isYouTube
+              ? 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+              : 'autoplay; fullscreen; picture-in-picture'
+          }
           allowFullScreen
           className="w-full h-full"
-          title="YouTube video"
-        />
-      </div>
-    )
-  }
-
-  if (source === 'vimeo') {
-    const id = getVimeoId(src)
-    if (!id) return null
-    return (
-      <div className="aspect-video w-full overflow-hidden rounded-lg">
-        <iframe
-          src={`https://player.vimeo.com/video/${id}`}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          className="w-full h-full"
-          title="Vimeo video"
+          title={isYouTube ? 'YouTube video' : 'Vimeo video'}
         />
       </div>
     )

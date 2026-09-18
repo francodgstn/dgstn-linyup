@@ -46,8 +46,10 @@ export async function saveOrgSiteDraft(
   userId: string,
   draft: OrgSiteDraft
 ): Promise<void> {
-  const payload = stripUndefinedDeep({
-    orgId,
+  // EVERY FIELD OF OrgSiteDraft MUST APPEAR HERE — see saveSiteDraft
+  // (plugins/website/hooks.ts) for what a forgotten one costs. Typed against
+  // the document's shape so a new field fails tsc until it is carried.
+  const fields: { [K in keyof Omit<Required<OrgSiteDraft>, 'orgId' | 'updated_at' | 'updatedBy'>]: OrgSiteDraft[K] } = {
     slug: draft.slug,
     name: draft.name,
     enabled: draft.enabled,
@@ -56,8 +58,10 @@ export async function saveOrgSiteDraft(
     // Absent until the org first edits its header — `stripUndefinedDeep` drops
     // it, and an absent menu still derives, so no existing org site changes.
     menu: draft.menu,
-  })
+  }
+  const payload = stripUndefinedDeep(fields)
   await setDoc(doc(db, ORG_SITE_DRAFTS_COLLECTION, orgId), {
+    orgId,
     ...payload,
     updated_at: serverTimestamp(),
     updatedBy: userId,

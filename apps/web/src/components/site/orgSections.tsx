@@ -137,7 +137,7 @@ function ClubsBlock({ section, ctx }: { section: ClubsSection; ctx: RenderCtx })
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingClubs')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -176,7 +176,7 @@ function ClubsBlock({ section, ctx }: { section: ClubsSection; ctx: RenderCtx })
         <div
           className={
             asList
-              ? 'mt-10 divide-y overflow-y-auto rounded-2xl border'
+              ? 'mt-10 divide-y overflow-y-auto site-card rounded-2xl border'
               : `mt-10 grid grid-cols-1 gap-5 ${cols}`
           }
           style={
@@ -234,7 +234,7 @@ function ClubsBlock({ section, ctx }: { section: ClubsSection; ctx: RenderCtx })
               <a
                 key={c.teamId}
                 {...linkProps(publicHrefLocalized(locale, c.slug), preview)}
-                className="flex flex-col overflow-hidden rounded-2xl border transition-transform hover:scale-[1.01]"
+                className="flex flex-col overflow-hidden site-card rounded-2xl border transition-transform hover:scale-[1.01]"
                 style={{ borderColor: palette.border, background: palette.surface }}
               >
                 <div
@@ -348,7 +348,7 @@ function LocationsBlock({ section, ctx }: { section: LocationsSection; ctx: Rend
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.surface }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingPlaces')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -370,7 +370,7 @@ function LocationsBlock({ section, ctx }: { section: LocationsSection; ctx: Rend
               return (
                 <div
                   key={l.id}
-                  className="flex flex-col rounded-2xl border p-5"
+                  className="flex flex-col site-card rounded-2xl border p-5"
                   style={{ borderColor: palette.border, background: palette.bg }}
                 >
                   <div className="flex items-center gap-2">
@@ -464,7 +464,7 @@ function CoachesBlock({ section, ctx }: { section: CoachesSection; ctx: RenderCt
 
   return (
     <section id={section.id} className="py-20" style={{ background: palette.bg }}>
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto site-shell px-6">
         <Heading text={section.heading ?? t('headingCoaches')} palette={palette} />
         {section.subheading && (
           <p className="mt-3 text-center" style={{ color: palette.muted }}>
@@ -484,7 +484,7 @@ function CoachesBlock({ section, ctx }: { section: CoachesSection; ctx: RenderCt
             coaches.map((c, i) => (
               <div
                 key={`${c.uid}-${i}`}
-                className="flex flex-col items-center rounded-2xl border p-6 text-center"
+                className="flex flex-col items-center site-card rounded-2xl border p-6 text-center"
                 style={{ borderColor: palette.border, background: palette.surface }}
               >
                 <div

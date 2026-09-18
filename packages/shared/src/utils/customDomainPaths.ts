@@ -59,6 +59,50 @@ export const CUSTOM_DOMAIN_PASSTHROUGH_EXACT = new Set([
   '/embed.js',
 ])
 
+/**
+ * The first path segments of a tenant's own routes (`/public/{slug}/{segment}`).
+ * With the website at the domain root, these still reach their surface and
+ * every OTHER path is a page of the site — which is why a site page path may
+ * never start with one (`isValidSitePagePath`).
+ */
+export const TENANT_ROUTE_SEGMENTS: readonly string[] = [
+  'site',
+  'space',
+  'booking',
+  'shop',
+  'signup',
+  'documents',
+  'kiosk',
+  'events',
+  'appointments',
+  'manage-booking',
+  'waitlist',
+  'contact-update',
+  'trial-booking',
+  'forms',
+  'public',
+  'pay',
+  'embed',
+  'api',
+]
+
+/**
+ * Hosts that are OURS — the app, the marketing site, the previews, localhost.
+ * Anything else reaching the app is a studio's own domain, forwarded by the
+ * Cloudflare tenant-router.
+ */
+export function isLinyupOwnHost(hostname: string): boolean {
+  const host = hostname.toLowerCase()
+  return (
+    host === 'linyup.com' ||
+    host.endsWith('.linyup.com') ||
+    host.endsWith('.hosted.app') ||
+    host.endsWith('.web.app') ||
+    host === 'localhost' ||
+    host === '127.0.0.1'
+  )
+}
+
 /** Splits a leading locale segment off a path. `/de/shop` → `['de', '/shop']`. */
 export function splitPathLocale(pathname: string): [locale: string, rest: string] {
   const segments = pathname.split('/').filter(Boolean)
@@ -85,17 +129,58 @@ export function isCustomDomainPassthrough(pathname: string): boolean {
  *
  * `scope` picks the tree: a team's surfaces live at `/public/{slug}`, an
  * organisation's at `/public/org/{slug}`.
+ *
+ * `siteAtRoot` (a team whose website is its front door): `/` is the site's
+ * home, `/angebot/crossfit` its page, and only the tenant's own route segments
+ * (`/shop`, `/booking`, … — `TENANT_ROUTE_SEGMENTS`) still reach their surface.
  */
 export function toTenantInternalPath(
   pathname: string,
   slug: string,
-  scope: 'team' | 'org' = 'team'
+  scope: 'team' | 'org' = 'team',
+  opts: { siteAtRoot?: boolean } = {}
 ): string {
   const [locale, rest] = splitPathLocale(pathname)
   const prefix = locale ? `/${locale}` : ''
   const root = scope === 'org' ? `/public/org/${slug}` : `/public/${slug}`
-  const tail = rest === '/' ? '' : rest.replace(/\/$/, '')
+  let tail = rest === '/' ? '' : rest.replace(/\/$/, '')
+  if (scope === 'team' && opts.siteAtRoot) {
+    const first = tail.split('/')[1] ?? ''
+    if (!TENANT_ROUTE_SEGMENTS.includes(first)) tail = `/site${tail}`
+  }
   return `${prefix}${root}${tail}`
+}
+
+/**
+ * The address of a page of a team's website ON ITS OWN DOMAIN — for canonical
+ * tags, hreflang and the sitemap, which must name the URL a visitor sees.
+ *
+ *     siteAtRoot, de tenant, de   →  https://crossfitzug.ch/angebot/crossfit
+ *     siteAtRoot, de tenant, fr   →  https://crossfitzug.ch/fr/angebot/crossfit
+ *     no siteAtRoot               →  https://crossfitzug.ch/site/angebot/crossfit
+ *
+ * The tenant's own language is unprefixed (the domain answers in it). English
+ * on a non-English tenant has NO ADDRESS on the domain at all — `/en` is not a
+ * locale prefix under `as-needed`, and the unprefixed path is taken by the
+ * tenant's own language — so this returns null and the caller omits it rather
+ * than advertising a URL that answers in another language.
+ */
+export function customDomainSiteUrl(opts: {
+  host: string
+  slug: string
+  locale: string
+  tenantLanguage: string
+  siteAtRoot: boolean
+  segments: readonly string[]
+}): string | null {
+  const origin = `https://${opts.host}`
+  const sub = opts.segments.filter(Boolean).join('/')
+  if (opts.locale === opts.tenantLanguage || PREFIXED_LOCALES.includes(opts.locale)) {
+    const prefix = opts.locale === opts.tenantLanguage ? '' : `/${opts.locale}`
+    const path = opts.siteAtRoot ? (sub ? `/${sub}` : '') : `/site${sub ? `/${sub}` : ''}`
+    return `${origin}${prefix}${path}` || origin
+  }
+  return null
 }
 
 /** Escapes a string for literal use inside a RegExp. */

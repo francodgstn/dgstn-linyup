@@ -1,8 +1,14 @@
 import createMiddleware from 'next-intl/middleware'
-import { NextResponse, type NextRequest } from 'next/server'
-import { isCustomDomainPassthrough, splitPathLocale, toTenantInternalPath } from '@linyup/shared'
+import { NextRequest, NextResponse } from 'next/server'
+import {
+  isCustomDomainPassthrough,
+  isLinyupOwnHost,
+  splitPathLocale,
+  toTenantInternalPath,
+} from '@linyup/shared'
 import { routing } from './i18n/routing'
 import { resolveCustomDomainTenant } from './lib/customDomainTenant'
+import { resolveSiteLanguage } from './lib/siteLanguage'
 
 const handleI18n = createMiddleware(routing)
 
@@ -21,20 +27,31 @@ const APP_FRAME_CSP =
 // Matches /embed/… with or without an as-needed locale prefix (/de/embed/…).
 const EMBED_PATH = /^\/(?:(?:de|fr|it)\/)?embed\//
 
+// Which hosts are ours is `isLinyupOwnHost` (@linyup/shared) — one list, shared
+// with the booking return and pinned by functions/src/domains/siteAtRoot.test.ts.
+const isOwnHost = isLinyupOwnHost
+
+/** An internal rewrite, and the locale the rewritten path is in. */
+interface Rewrite {
+  url: URL
+  locale: string
+}
+
 /**
- * Hosts that are OURS — the app, the marketing site, the previews, localhost.
- * Anything else reaching this app is a studio's own domain, forwarded here by
- * the Cloudflare tenant-router.
+ * Rewrite internally, CARRYING THE LOCALE.
+ *
+ * next-intl resolves the request locale from a header ITS OWN middleware sets
+ * (`X-NEXT-INTL-LOCALE`), not from the `[locale]` path segment — so a rewrite
+ * that goes around it lands on the German page with the ENGLISH catalogue: the
+ * studio's own copy in German, every app string around it (the language
+ * switcher, "read more", the booking funnel) in English, and `<html lang>`
+ * wrong for a screen reader. Setting the header is what the locale-prefixed
+ * path is FOR, so the two can never disagree.
  */
-function isOwnHost(hostname: string): boolean {
-  return (
-    hostname === 'linyup.com' ||
-    hostname.endsWith('.linyup.com') ||
-    hostname.endsWith('.hosted.app') ||
-    hostname.endsWith('.web.app') ||
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1'
-  )
+function rewriteWithLocale(request: NextRequest, rewrite: Rewrite): NextResponse {
+  const headers = new Headers(request.headers)
+  headers.set('X-NEXT-INTL-LOCALE', rewrite.locale)
+  return NextResponse.rewrite(rewrite.url, { request: { headers } })
 }
 
 /**
@@ -55,7 +72,7 @@ function isOwnHost(hostname: string): boolean {
  * work on the domain today; making the links themselves emit the short form is
  * the remaining half (see docs/custom-domains.md).
  */
-async function tenantRewrite(request: NextRequest): Promise<URL | null> {
+async function tenantRewrite(request: NextRequest): Promise<Rewrite | null> {
   // The Worker preserves the visitor's host here, because forwarding to App
   // Hosting necessarily overwrites `Host` with the backend's own name.
   const host = (request.headers.get('x-linyup-host') || request.nextUrl.hostname).toLowerCase()
@@ -75,16 +92,60 @@ async function tenantRewrite(request: NextRequest): Promise<URL | null> {
   // gets the TENANT's language, not the browser's.
   const language = locale || tenant.language || 'en'
   const url = request.nextUrl.clone()
-  url.pathname = `/${language}${toTenantInternalPath(rest, tenant.slug, tenant.scope)}`
-  return url
+  // A studio whose website is its front door gets the site at `/` and its pages
+  // at the root; every other studio keeps `/` as its default surface.
+  url.pathname = `/${language}${toTenantInternalPath(rest, tenant.slug, tenant.scope, { siteAtRoot: tenant.siteAtRoot })}`
+  return { url, locale: language }
+}
+
+/** `/public/{slug}/site…` — the website, on the app's own hosts. */
+const PUBLIC_SITE_PATH = /^\/public\/([A-Za-z0-9_-]+)\/site(?:\/|$)/
+
+/**
+ * A website answers in ITS OWN language when the URL names none.
+ *
+ * `localePrefix: 'as-needed'` leaves the default locale unprefixed, so an
+ * unprefixed request resolved to English — and a German site then rendered its
+ * German copy with an English switcher and English booking chrome. The studio's
+ * `SiteMeta.language` decides instead. A REWRITE, not a redirect: the short URL
+ * stays what a studio shares. (On a studio's own domain the same answer comes
+ * from the tenant lookup, which already prefers the site's language.)
+ */
+async function siteLanguageRewrite(request: NextRequest): Promise<Rewrite | null> {
+  const pathname = request.nextUrl.pathname
+  // `/en/…` — ENGLISH, ASKED FOR EXPLICITLY. `as-needed` has no prefix for the
+  // default locale, so next-intl would redirect this to the unprefixed path,
+  // which now answers in the SITE's language: on a German site that would make
+  // English unreachable, and its hreflang a lie. Serving it here keeps English
+  // addressable (the app routes live under `[locale]`, so the path already is
+  // the internal one).
+  if (pathname.startsWith('/en/') && PUBLIC_SITE_PATH.test(pathname.slice(3))) {
+    return { url: request.nextUrl.clone(), locale: 'en' }
+  }
+  const [locale, rest] = splitPathLocale(pathname)
+  if (locale) return null // the visitor named a language — theirs wins
+  const slug = PUBLIC_SITE_PATH.exec(rest)?.[1]
+  if (!slug) return null
+  const language = await resolveSiteLanguage(slug)
+  // English IS the unprefixed locale; anything else needs the prefix.
+  if (!language || language === 'en') return null
+  const url = request.nextUrl.clone()
+  url.pathname = `/${language}${rest}`
+  return { url, locale: language }
 }
 
 export default async function proxy(request: NextRequest) {
   // A studio's own domain is resolved BEFORE anything else, because the rules
   // below are about the app's own hosts: a bare `/` must reach the studio's
   // landing surface, not be redirected to the operator login.
-  const tenantUrl = await tenantRewrite(request)
-  if (tenantUrl) return withFramingPolicy(NextResponse.rewrite(tenantUrl), request)
+  const tenantRewriteResult = await tenantRewrite(request)
+  if (tenantRewriteResult) return withFramingPolicy(rewriteWithLocale(request, tenantRewriteResult), request)
+
+  // On our own hosts, a website with its own language gets it — the same
+  // internal rewrite the custom-domain branch above does, so the short URL the
+  // studio shares stays what the visitor sees.
+  const siteLangRewrite = await siteLanguageRewrite(request)
+  if (siteLangRewrite) return withFramingPolicy(rewriteWithLocale(request, siteLangRewrite), request)
 
   // Embed snippet language pinning (WidgetTheme.locale): 'de'/'fr'/'it' bake
   // straight into the path prefix, but English is the UNPREFIXED locale under
