@@ -103,10 +103,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Keep profile in sync — handles the case where the doc is created after
       // auth (e.g. new user completing signup wizard after magic-link sign-in).
-      profileUnsub = onSnapshot(doc(db, USERS_COLLECTION, firebaseUser.uid), (snap) => {
-        setProfile(snap.exists() ? ({ id: snap.id, ...snap.data() } as UserProfile) : null)
-        setLoading(false)
-      })
+      const profileRef = doc(db, USERS_COLLECTION, firebaseUser.uid)
+      profileUnsub = onSnapshot(
+        profileRef,
+        (snap) => {
+          setProfile(snap.exists() ? ({ id: snap.id, ...snap.data() } as UserProfile) : null)
+          setLoading(false)
+        },
+        (err) => {
+          // A denial here is never audited server-side (rules evaluations aren't
+          // logged, and data-access audit logs are off) — the path in this line
+          // is the only evidence a real one ever leaves. Degrade rather than
+          // hang: without this, `loading` would stay true forever.
+          console.error(`[AuthContext] profile snapshot error (${profileRef.path}):`, err)
+          setProfile(null)
+          setLoading(false)
+        },
+      )
     })
 
     return () => {
@@ -161,41 +174,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTeamScope(null)
       return
     }
-    const unsub = onSnapshot(doc(db, TEAMS_COLLECTION, currentTeamId), (snap) => {
-      if (snap.exists()) {
-        const teamData = { id: snap.id, ...snap.data() } as Team
-        setTeam(teamData)
-        const orgId = (teamData as unknown as { org_id?: string }).org_id
-        const uid = user?.uid
-        if (uid) {
-          getDoc(doc(db, TEAMS_COLLECTION, currentTeamId, TEAM_MEMBERS_SUBCOLLECTION, uid))
-            .then((m) => {
-              const data = m.exists() ? m.data() : null
-              setTeamRole((data?.role as TeamRole) ?? null)
-              setTeamCapabilities((data?.capabilities as Capability[] | undefined) ?? null)
-              setTeamScope((data?.scope as DataScope | undefined) ?? null)
-            })
-            .catch(() => {
-              setTeamRole(null)
-              setTeamCapabilities(null)
-              setTeamScope(null)
-            })
-          if (orgId) {
-            getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId, ORG_MEMBERS_SUBCOLLECTION, uid))
-              .then((m) => setIsOrgAdmin(m.exists() && m.data()?.role === 'org_admin'))
-              .catch(() => setIsOrgAdmin(false))
-          } else {
-            setIsOrgAdmin(false)
+    const teamRef = doc(db, TEAMS_COLLECTION, currentTeamId)
+    const unsub = onSnapshot(
+      teamRef,
+      (snap) => {
+        if (snap.exists()) {
+          const teamData = { id: snap.id, ...snap.data() } as Team
+          setTeam(teamData)
+          const orgId = (teamData as unknown as { org_id?: string }).org_id
+          const uid = user?.uid
+          if (uid) {
+            getDoc(doc(db, TEAMS_COLLECTION, currentTeamId, TEAM_MEMBERS_SUBCOLLECTION, uid))
+              .then((m) => {
+                const data = m.exists() ? m.data() : null
+                setTeamRole((data?.role as TeamRole) ?? null)
+                setTeamCapabilities((data?.capabilities as Capability[] | undefined) ?? null)
+                setTeamScope((data?.scope as DataScope | undefined) ?? null)
+              })
+              .catch(() => {
+                setTeamRole(null)
+                setTeamCapabilities(null)
+                setTeamScope(null)
+              })
+            if (orgId) {
+              getDoc(doc(db, ORGANIZATIONS_COLLECTION, orgId, ORG_MEMBERS_SUBCOLLECTION, uid))
+                .then((m) => setIsOrgAdmin(m.exists() && m.data()?.role === 'org_admin'))
+                .catch(() => setIsOrgAdmin(false))
+            } else {
+              setIsOrgAdmin(false)
+            }
           }
+        } else {
+          setTeam(null)
+          setTeamRole(null)
+          setTeamCapabilities(null)
+          setTeamScope(null)
+          setIsOrgAdmin(false)
         }
-      } else {
+      },
+      (err) => {
+        // Same unlogged-denial problem as the profile listener above: this line
+        // is the only trace. A team we cannot read is treated like a team that
+        // does not exist — the missing-document branch above, INCLUDING
+        // isOrgAdmin. Without that, an org admin switching to a denied team
+        // keeps the previous team's org-admin UI.
+        console.error(`[AuthContext] team snapshot error (${teamRef.path}):`, err)
         setTeam(null)
         setTeamRole(null)
         setTeamCapabilities(null)
         setTeamScope(null)
         setIsOrgAdmin(false)
-      }
-    })
+      },
+    )
     return unsub
   }, [currentTeamId])
 

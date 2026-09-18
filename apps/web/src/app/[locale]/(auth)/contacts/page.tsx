@@ -653,21 +653,29 @@ function useSavedQueries(teamId: string | null) {
   useEffect(() => {
     if (!teamId) return
     const colRef = collection(db, TEAMS_COLLECTION, teamId, CONTACT_FILTERS_SUBCOLLECTION)
-    return onSnapshot(colRef, (snap) => {
-      const presetPinsDoc = snap.docs.find((d) => d.id === '_preset_pins')
-      setPinnedPresets(presetPinsDoc?.data()?.ids ?? [])
-      setSaved(
-        snap.docs
-          .filter((d) => d.id !== '_preset_pins')
-          .map((d) => ({
-            id: d.id,
-            name: d.data().name as string,
-            // Older saved filters may predate newer keys (e.g. groups) — backfill defaults.
-            filters: { ...EMPTY_FILTERS, ...(d.data().filters as Partial<Filters>) },
-            pinned: d.data().pinned ?? false,
-          }))
-      )
-    })
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        const presetPinsDoc = snap.docs.find((d) => d.id === '_preset_pins')
+        setPinnedPresets(presetPinsDoc?.data()?.ids ?? [])
+        setSaved(
+          snap.docs
+            .filter((d) => d.id !== '_preset_pins')
+            .map((d) => ({
+              id: d.id,
+              name: d.data().name as string,
+              // Older saved filters may predate newer keys (e.g. groups) — backfill defaults.
+              filters: { ...EMPTY_FILTERS, ...(d.data().filters as Partial<Filters>) },
+              pinned: d.data().pinned ?? false,
+            }))
+        )
+      },
+      (err) => {
+        console.error(`[useSavedQueries] snapshot error (${colRef.path}):`, err)
+        setSaved([])
+        setPinnedPresets([])
+      },
+    )
   }, [teamId])
 
   function save(name: string, filters: Filters) {
