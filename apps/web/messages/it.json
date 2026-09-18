@@ -1935,7 +1935,20 @@
     "dropInStudioDefaultCancel": "Annulla",
     "dropInStudioDefaultSaved": "Prezzo predefinito salvato — ogni lezione che lo segue ora si vende a questo prezzo.",
     "bookingMoreOptionsLabel": "Altre opzioni",
-    "bookingMoreOptionsHint": "Punto d'incontro, domande di prenotazione e cosa sapere prima di venire"
+    "bookingMoreOptionsHint": "Punto d'incontro, domande di prenotazione e cosa sapere prima di venire",
+    "summaryIncluded": "{names} prenotano gratis",
+    "summaryMemberPrice": "{names} pagano un prezzo per membri",
+    "summaryAnyonePays": "tutti gli altri pagano {price}",
+    "summaryMembersPay": "gli altri membri pagano {price}, i visitatori non possono prenotare",
+    "summaryFreeAnyone": "gratis per tutti, senza registrazione",
+    "summaryFreeMembers": "gratis per chi si è registrato da te",
+    "summaryPlanHoldersOnly": "nessun altro può prenotare",
+    "summaryTrialFree": "nuovi arrivati: prima lezione gratis",
+    "summaryTrialPriced": "nuovi arrivati: prima lezione {price}",
+    "accessMoreOptionsLabel": "Altre opzioni",
+    "accessMoreOptionsHint": "Limitare questa lezione a chi si è registrato da te",
+    "accessSignupOnly": "Solo chi si è registrato da te",
+    "accessSignupOnlyHint": "I visitatori non possono prenotare, nemmeno pagando. La lezione di prova resta possibile."
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",

@@ -48,17 +48,18 @@ import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { doc, setDoc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
-import { Check, DoorOpen, Pencil, Users, X } from 'lucide-react'
+import { Check, Pencil, X } from 'lucide-react'
 import {
   ACTIVITIES_COLLECTION,
   benefitOpensDoorAt,
-  canonicalClassGate,
-  classAccessTierOf,
+  classAccessFacts,
+  classAccessRuleFor,
   isAppointmentActivity,
+  normalizeBenefit,
   resolveActivityAccessRule,
   type Activity,
   type ActivityAccessRule,
-  type ActivityAudience,
+  type ActivityDropIn,
   type SubscriptionType,
   dropInModeOf,
   resolveActivityDropIn,
@@ -75,9 +76,9 @@ import { useReportPaneDirty } from '@/components/offer/paneDirty'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { FormSection, FormSections, SettingRow, SettingRows } from '@/components/offer/FormLayout'
+import { MoreOptions } from '@/components/forms/MoreOptions'
 import { ActivityPlanLinks } from '@/components/offer/ActivityPlanLinks'
 import {
   AppointmentDurationsEditor,
@@ -104,8 +105,10 @@ function parsePrice(raw: string): number {
 }
 
 interface Draft {
-  audience: ActivityAudience
-  requirePlan: boolean
+  /** The ONE access question left: the club case, under More options. Who may
+   *  book otherwise follows from the plans and the drop-in price
+   *  (docs/class-access-derived.md). */
+  signupRequired: boolean
   trialEnabled: boolean
   trialPrice: string
   /** How this class answers the drop-in question — see `DropInMode`. */
@@ -119,37 +122,25 @@ interface Draft {
   durations: DurationFormValue[]
 }
 
-/**
- * The two answers, read through the GATE'S OWN translation of a stored rule
- * (`canonicalClassGate`), so the form opens showing exactly what the booking
- * path is already doing — including for a document that predates both fields.
- * The plan matcher stores the pair through the same call, so the two writers
- * of `accessRule` cannot spell one door two ways.
- */
-function audienceDraftOf(
-  a: Activity,
-  studioDropIn: DropInPrice | null
-): { audience: ActivityAudience; requirePlan: boolean } {
-  return canonicalClassGate(
-    resolveActivityAccessRule(a),
-    resolveActivityDropIn(a, studioDropIn).enabled
-  )
-}
-
-/** The stored rule a draft means — the two answers plus the display tier they
- *  imply, so `type` can never drift from them. */
-function draftAccessRule(d: Pick<Draft, 'audience' | 'requirePlan'>): ActivityAccessRule {
+/** The `dropIn` field a draft means — written here once, and read by everything
+ *  that asks what the draft would do (the matcher's columns, the summary, the
+ *  save). A price rides only under 'custom', as it is stored. */
+function draftDropInField(d: Pick<Draft, 'dropInMode' | 'dropInPrice'>): ActivityDropIn {
   return {
-    type: classAccessTierOf(d),
-    audience: d.audience,
-    requirePlan: d.requirePlan,
+    mode: d.dropInMode,
+    enabled: d.dropInMode === 'custom',
+    ...(d.dropInMode === 'custom' && d.dropInPrice
+      ? { priceAmount: parsePrice(d.dropInPrice) }
+      : {}),
   }
 }
 
 function draftOf(a: Activity, studioDropIn: DropInPrice | null): Draft {
   const dropInMode = dropInModeOf(a.dropIn)
   return {
-    ...audienceDraftOf(a, studioDropIn),
+    // Read through THE ONE READER, so the switch opens showing the wall the
+    // booking path is already enforcing — on a class stored the old way too.
+    signupRequired: classAccessFacts(a, studioDropIn).signupRequired,
     trialEnabled: a.trialEnabled ?? false,
     trialPrice: a.trialPriceAmount != null ? String(a.trialPriceAmount) : '',
     dropInMode,
@@ -159,10 +150,27 @@ function draftOf(a: Activity, studioDropIn: DropInPrice | null): Draft {
   }
 }
 
+/** The access rule a draft would STORE — the plans from the document (the
+ *  matcher owns them), the door from the draft, the wall from its one switch. */
+function storedRuleFor(
+  d: Draft,
+  a: Activity,
+  studioDropIn: DropInPrice | null
+): ActivityAccessRule {
+  const facts = classAccessFacts(
+    { type: a.type, accessRule: resolveActivityAccessRule(a), dropIn: draftDropInField(d) },
+    studioDropIn
+  )
+  return classAccessRuleFor({
+    signupRequired: d.signupRequired,
+    includedPlanIds: facts.includedPlanIds,
+    paidDoor: facts.dropIn.enabled,
+  })
+}
+
 function same(a: Draft, b: Draft): boolean {
   return (
-    a.audience === b.audience &&
-    a.requirePlan === b.requirePlan &&
+    a.signupRequired === b.signupRequired &&
     a.trialEnabled === b.trialEnabled &&
     a.trialPrice === b.trialPrice &&
     a.dropInMode === b.dropInMode &&
@@ -366,14 +374,7 @@ export function ActivityPricingForm({
    *  follows it — so the matcher's rate columns light up under a price the
    *  class does not store itself. Through THE ONE READER, like every surface. */
   const draftDropIn = resolveActivityDropIn(
-    {
-      ...activity,
-      dropIn: {
-        mode: draft.dropInMode,
-        enabled: draft.dropInMode === 'custom',
-        ...(draft.dropInPrice ? { priceAmount: parsePrice(draft.dropInPrice) } : {}),
-      },
-    },
+    { ...activity, dropIn: draftDropInField(draft) },
     studioDropIn
   )
   const draftActivity: Activity = isAppointment
@@ -389,26 +390,60 @@ export function ActivityPricingForm({
         dropIn: draftDropIn.enabled
           ? { mode: 'custom', enabled: true, priceAmount: draftDropIn.priceAmount }
           : { mode: 'off', enabled: false },
-        accessRule: {
-          ...draftAccessRule(draft),
-          ...(resolveActivityAccessRule(activity).subscriptionTypeIds?.length
-            ? { subscriptionTypeIds: resolveActivityAccessRule(activity).subscriptionTypeIds }
-            : {}),
-        },
+        // DERIVED, like the save's: the matcher must see the door this form
+        // is holding, not the one the document was stored with.
+        accessRule: storedRuleFor(draft, activity, studioDropIn),
       }
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const dropInId = useId()
   const rowId = useId()
+
   /**
-   * THE TRIAL DOOR EXISTS ONLY ON A GATED CLASS. `bookSession` opens it for a
-   * guest when `accessRule.type !== 'open'` and treats it as fully inert
-   * otherwise — on an open class a newcomer already books through the front
-   * door (and becomes a trial contact by doing so, which is what the
-   * "Open to anyone" card says). So the control is not shown there, and what
-   * it governs is cleared on save rather than left standing as data no
-   * surface can show or change — the same rule the trial price follows.
+   * WHAT THE DRAFT WOULD MEAN IF SAVED — the same answer the booking path will
+   * give, asked of the draft rather than of the stored document so the sentence
+   * below moves with the switch the studio is holding.
+   *
+   * The PLAN IDS come from the stored activity: the matcher owns them and
+   * writes them itself, and its ticks are saved in the same click as this form.
    */
-  const openTier = classAccessTierOf(draft) === 'open'
+  const draftFacts = classAccessFacts(
+    { type: activity.type, accessRule: resolveActivityAccessRule(activity), dropIn: draftDropInField(draft) },
+    studioDropIn
+  )
+  const includedPlanNames = draftFacts.includedPlanIds
+    .map((id) => plans.find((pl) => pl.id === id)?.name)
+    .filter((n): n is string => !!n)
+  const ratedPlanNames = (normalizeBenefit(activity.memberBenefit)?.subscriptionTypeIds ?? [])
+    .map((id) => plans.find((pl) => pl.id === id)?.name)
+    .filter((n): n is string => !!n)
+  const doorPrice =
+    draftFacts.dropIn.enabled && draftFacts.dropIn.priceAmount != null
+      ? formatCurrency(draftFacts.dropIn.priceAmount, currency)
+      : null
+  // ONE SENTENCE, built from the facts in the order a studio reads them: who is
+  // already covered, what everybody else pays, then the newcomer's exception.
+  const summarySentence = [
+    includedPlanNames.length ? t('summaryIncluded', { names: includedPlanNames.join(', ') }) : null,
+    ratedPlanNames.length && doorPrice
+      ? t('summaryMemberPrice', { names: ratedPlanNames.join(', ') })
+      : null,
+    draftFacts.free
+      ? draftFacts.signupRequired
+        ? t('summaryFreeMembers')
+        : t('summaryFreeAnyone')
+      : doorPrice
+        ? draftFacts.signupRequired
+          ? t('summaryMembersPay', { price: doorPrice })
+          : t('summaryAnyonePays', { price: doorPrice })
+        : t('summaryPlanHoldersOnly'),
+    draftFacts.trialAvailable && draft.trialEnabled
+      ? draft.trialPrice.trim() !== ''
+        ? t('summaryTrialPriced', { price: formatCurrency(parsePrice(draft.trialPrice), currency) })
+        : t('summaryTrialFree')
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   const dropInPriceInvalid =
     draft.dropInMode === 'custom' &&
@@ -427,6 +462,10 @@ export function ActivityPricingForm({
   /** EITHER half being touched arms the one button. */
   const anyDirty = dirty || !!links?.dirty
   useReportPaneDirty('activity-pricing', anyDirty)
+
+  /** What the pair and the tier become, derived exactly as the booking path
+   *  will read them back. Both writers of `accessRule` go through this call. */
+  const storedRule = storedRuleFor(draft, activity, studioDropIn)
 
   async function save() {
     if (invalid || !anyDirty || links?.blocked) return
@@ -448,14 +487,14 @@ export function ActivityPricingForm({
           ? { durations: toActivityDurations(draft.durations) }
           : {
               // FIELD PATHS, not the whole map: `accessRule.subscriptionTypeIds`
-              // is the matcher's and must survive every save from here.
-              'accessRule.audience': draft.audience,
-              'accessRule.requirePlan': draft.requirePlan,
-              // The display projection, kept in step so a surface that only
-              // wants to say "open / members only / plan required" never
-              // disagrees with the two fields above.
-              'accessRule.type': draftAccessRule(draft).type,
-              isFreeTrial: draft.audience === 'anyone' && !draft.requirePlan,
+              // is the matcher's and must survive every save from here. The
+              // pair and the display tier are DERIVED — from the plans the
+              // matcher stores and the door this form sets — so nothing here
+              // asks the studio who may book (docs/class-access-derived.md).
+              'accessRule.audience': storedRule.audience,
+              'accessRule.requirePlan': storedRule.requirePlan,
+              'accessRule.type': storedRule.type,
+              isFreeTrial: storedRule.audience === 'anyone' && !storedRule.requirePlan,
               // The three answers (`DropInMode`), written whole: a price is
               // stored only under 'custom', so a class that follows the studio
               // carries none and cannot go stale against the default.
@@ -466,10 +505,14 @@ export function ActivityPricingForm({
                   ? { priceAmount: parsePrice(draft.dropInPrice) }
                   : {}),
               },
-              // Both cleared on an open tier — see `openTier`.
-              trialEnabled: openTier ? false : draft.trialEnabled,
+              // Both cleared where the door grants nothing — a class free to
+              // anyone (`trialAvailable`), which is also the one state
+              // `bookSession` keeps the trial door inert in.
+              trialEnabled: draftFacts.trialAvailable ? draft.trialEnabled : false,
               trialPriceAmount:
-                draft.trialPrice && !openTier ? parsePrice(draft.trialPrice) : null,
+                draft.trialPrice && draftFacts.trialAvailable
+                  ? parsePrice(draft.trialPrice)
+                  : null,
             }
       )
       refreshQueries(qc, ['activities'])
@@ -486,132 +529,17 @@ export function ActivityPricingForm({
     <div className="space-y-4">
       {!isAppointment && (
         <FormSections>
+          {/* WHO CAN BOOK, SAID RATHER THAN ASKED (docs/class-access-derived.md).
+              The studio answers the plans, the drop-in and the trial; the door
+              follows from them, so this line is the only place the answer
+              appears — and it is read-only. */}
           <FormSection>
-          <div className="space-y-2">
-            <Label>{t('accessLabel')}</Label>
-            {/* TWO cards, not three. The third used to be "Specific
-                subscriptions", which was the same field the plan table below
-                already edits — so it asked one question twice and left the
-                studio deciding which control won. */}
-            <div className="grid gap-2 sm:grid-cols-2">
-              {(['anyone', 'members'] as const).map((who) => {
-                // A DOOR, not a padlock. `Lock` already means "you cannot have
-                // this" everywhere a member sees it (shop, course player,
-                // gamification), and a members-only class is not locked — the
-                // studio picked an audience.
-                //
-                // `Users` and NOT `IdCard`, which was the first choice: the
-                // catalogue already spends `IdCard` on PLANS (its rail tab and
-                // its menu entry), so a card here would mean "a plan" and
-                // "members" on one screen. `Users` is what the org nav already
-                // calls Members, and the rail's third state — "Plan required" —
-                // is the one that gets the card.
-                const Icon = who === 'anyone' ? DoorOpen : Users
-                const active = draft.audience === who
-                return (
-                  <label
-                    key={who}
-                    className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-sm transition-colors ${
-                      active ? 'border-primary bg-primary/5' : 'hover:border-foreground/30'
-                    } ${canEdit ? '' : 'pointer-events-none opacity-60'}`}
-                  >
-                    <input
-                      type="radio"
-                      className="mt-0.5 accent-primary"
-                      checked={active}
-                      onChange={() => set('audience', who)}
-                      disabled={!canEdit}
-                    />
-                    <span className="min-w-0">
-                      {/* Literal keys per branch, never a template-literal key:
-                          i18n:check counts computed keys and never fails them. */}
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <Icon
-                          aria-hidden
-                          className={`h-4 w-4 shrink-0 ${
-                            active ? 'text-primary' : 'text-muted-foreground'
-                          }`}
-                        />
-                        {who === 'anyone' ? t('access_open') : t('access_members')}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {who === 'anyone' ? t('access_open_desc') : t('access_members_desc')}
-                      </span>
-                    </span>
-                  </label>
-                )
-              })}
-            </div>
-          </div>
-          {/* Only under MEMBERS ONLY: a guest holds no plan by definition, so
-              "anyone may book" and "a plan is required" cannot both be true.
-              And it is a separate control from the table on purpose — ticking
-              a plan there must never silently narrow the door. */}
-          {draft.audience === 'members' && (
-            <SettingRow
-              htmlFor={`${rowId}-allow`}
-              label={t('accessAllowWithoutPlan')}
-              hint={t('accessAllowWithoutPlanHint')}
-              disabled={!canEdit}
-              control={
-                <Switch
-                  id={`${rowId}-allow`}
-                  checked={!draft.requirePlan}
-                  onCheckedChange={(on) => set('requirePlan', !on)}
-                  disabled={!canEdit}
-                />
-              }
-            />
-          )}
+            <p className="text-xs text-muted-foreground">{t('accessLabel')}</p>
+            <p className="text-sm">{summarySentence}</p>
           </FormSection>
 
           <FormSection>
             <SettingRows>
-              {/* Independent of WHICH gate is above — a members-only class and a
-                  plan-required one both take a newcomer's trial booking. Absent
-                  on an open class: see `openTier`. */}
-              {!openTier && (
-                <SettingRow
-                  htmlFor={`${rowId}-trial`}
-                  label={t('fieldTrialEnabled')}
-                  hint={t('trialEnabledHint')}
-                  disabled={!canEdit}
-                  control={
-                    <Switch
-                      id={`${rowId}-trial`}
-                      checked={draft.trialEnabled}
-                      onCheckedChange={(on) => set('trialEnabled', on)}
-                      disabled={!canEdit}
-                    />
-                  }
-                >
-                {draft.trialEnabled && (
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 pr-4">
-                      <p className="text-xs font-medium">{t('trialPriceLabel')}</p>
-                      <p className="text-xs text-muted-foreground">{t('trialPriceHint')}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground">{currency}</span>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={draft.trialPrice}
-                        onChange={(e) => set('trialPrice', e.target.value)}
-                        placeholder={t('trialPricePlaceholder')}
-                        className="h-8 w-24 text-sm"
-                        disabled={!canEdit}
-                      />
-                    </div>
-                  </div>
-                )}
-                  {trialPriceInvalid && (
-                    <p className="text-xs text-destructive">{t('trialPriceValidation')}</p>
-                  )}
-                </SettingRow>
-              )}
-
               {/* THE SAME SHAPE AS THE TRIAL ABOVE: the switch on the right says
                   whether this class sells a drop-in at all, and only then do
                   the two ways of pricing it appear. The three answers of
@@ -751,23 +679,106 @@ export function ActivityPricingForm({
           // tier has to land first or a tick is computed against the old one —
           // the same seam the course settings form uses.
           onBeforeSave={async () => {
+            const current = storedRuleFor(stored, activity, studioDropIn)
             if (
-              draft.audience === stored.audience &&
-              draft.requirePlan === stored.requirePlan
+              storedRule.audience === current.audience &&
+              storedRule.requirePlan === current.requirePlan
             ) {
               return
             }
             await updateDoc(doc(db, ACTIVITIES_COLLECTION, activity.id), {
-              'accessRule.audience': draft.audience,
-              'accessRule.requirePlan': draft.requirePlan,
-              'accessRule.type': draftAccessRule(draft).type,
-              isFreeTrial: draft.audience === 'anyone' && !draft.requirePlan,
+              'accessRule.audience': storedRule.audience,
+              'accessRule.requirePlan': storedRule.requirePlan,
+              'accessRule.type': storedRule.type,
+              isFreeTrial: storedRule.audience === 'anyone' && !storedRule.requirePlan,
             })
             refreshQueries(qc, ['activities'])
           }}
           saveHandle={setLinks}
         />
       </div>
+
+      {/* THE TRIAL AND THE ONE REMAINING QUESTION, below the prices they are
+          about. A newcomer's first class is an exception to what everybody else
+          pays, so it reads after that price rather than before it, and the
+          sign-up wall — the club case, which most studios never touch — sits
+          under More options (Franco, 2026-09-17). */}
+      {!isAppointment && (
+        <FormSections>
+          <FormSection>
+            <SettingRows>
+              {/* Independent of WHICH gate is above — a members-only class and a
+                  plan-required one both take a newcomer's trial booking. Absent
+                  on an open class: see `openTier`. */}
+              {draftFacts.trialAvailable && (
+                <SettingRow
+                  htmlFor={`${rowId}-trial`}
+                  label={t('fieldTrialEnabled')}
+                  hint={t('trialEnabledHint')}
+                  disabled={!canEdit}
+                  control={
+                    <Switch
+                      id={`${rowId}-trial`}
+                      checked={draft.trialEnabled}
+                      onCheckedChange={(on) => set('trialEnabled', on)}
+                      disabled={!canEdit}
+                    />
+                  }
+                >
+                {draft.trialEnabled && (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 pr-4">
+                      <p className="text-xs font-medium">{t('trialPriceLabel')}</p>
+                      <p className="text-xs text-muted-foreground">{t('trialPriceHint')}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground">{currency}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={draft.trialPrice}
+                        onChange={(e) => set('trialPrice', e.target.value)}
+                        placeholder={t('trialPricePlaceholder')}
+                        className="h-8 w-24 text-sm"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+                )}
+                  {trialPriceInvalid && (
+                    <p className="text-xs text-destructive">{t('trialPriceValidation')}</p>
+                  )}
+                </SettingRow>
+              )}
+            </SettingRows>
+          </FormSection>
+          <FormSection>
+            <MoreOptions
+              label={t('accessMoreOptionsLabel')}
+              hint={t('accessMoreOptionsHint')}
+              defaultOpen={draft.signupRequired}
+            >
+              <SettingRows>
+                <SettingRow
+                  htmlFor={`${rowId}-signup`}
+                  label={t('accessSignupOnly')}
+                  hint={t('accessSignupOnlyHint')}
+                  disabled={!canEdit}
+                  control={
+                    <Switch
+                      id={`${rowId}-signup`}
+                      checked={draft.signupRequired}
+                      onCheckedChange={(on) => set('signupRequired', on)}
+                      disabled={!canEdit}
+                    />
+                  }
+                />
+              </SettingRows>
+            </MoreOptions>
+          </FormSection>
+        </FormSections>
+      )}
 
       {/* ONE BUTTON FOR THE TAB, at its foot, below everything it saves. */}
       {canEdit && (

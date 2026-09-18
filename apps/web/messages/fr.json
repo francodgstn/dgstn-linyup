@@ -1935,7 +1935,20 @@
     "dropInStudioDefaultCancel": "Annuler",
     "dropInStudioDefaultSaved": "Tarif par défaut enregistré — chaque cours qui le suit se vend désormais à ce prix.",
     "bookingMoreOptionsLabel": "Plus d'options",
-    "bookingMoreOptionsHint": "Point de rendez-vous, questions de réservation et ce qu'il faut savoir avant de venir"
+    "bookingMoreOptionsHint": "Point de rendez-vous, questions de réservation et ce qu'il faut savoir avant de venir",
+    "summaryIncluded": "{names} réservent gratuitement",
+    "summaryMemberPrice": "{names} paient un tarif membre",
+    "summaryAnyonePays": "tous les autres paient {price}",
+    "summaryMembersPay": "les autres membres paient {price}, les visiteurs ne peuvent pas réserver",
+    "summaryFreeAnyone": "gratuit pour tous, sans inscription",
+    "summaryFreeMembers": "gratuit pour les personnes inscrites chez vous",
+    "summaryPlanHoldersOnly": "personne d'autre ne peut réserver",
+    "summaryTrialFree": "nouveaux venus : premier cours gratuit",
+    "summaryTrialPriced": "nouveaux venus : premier cours {price}",
+    "accessMoreOptionsLabel": "Plus d'options",
+    "accessMoreOptionsHint": "Réserver ce cours aux personnes inscrites chez vous",
+    "accessSignupOnly": "Seulement les personnes inscrites chez vous",
+    "accessSignupOnlyHint": "Les visiteurs ne peuvent pas réserver, même en payant. Un cours d'essai reste possible."
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",

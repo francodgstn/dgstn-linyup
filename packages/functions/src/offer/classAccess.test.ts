@@ -214,6 +214,31 @@ describe('who may book a class', () => {
     })
   })
 
+  describe('states that can no longer exist', () => {
+    it('plan-holders-only always names at least one plan', () => {
+      // `gated_empty_allowlist` — "a plan is required and none is listed,
+      // so nobody can book" — is unreachable by construction: requiring a plan
+      // IS "a plan includes it and no door sells it". The pricing page keeps the
+      // warning for documents written before the derivation.
+      for (const ids of [[], ['premium'], ['premium', 'pack']]) {
+        for (const paidDoor of [false, true]) {
+          const rule = classAccessRuleFor({ signupRequired: false, includedPlanIds: ids, paidDoor })
+          const facts = classAccessFacts(
+            {
+              type: 'class',
+              accessRule: rule,
+              dropIn: paidDoor
+                ? { mode: 'custom', enabled: true, priceAmount: 25 }
+                : { mode: 'off', enabled: false },
+            },
+            NO_STUDIO
+          )
+          if (facts.planHoldersOnly) assert.ok(facts.includedPlanIds.length > 0)
+        }
+      }
+    })
+  })
+
   describe('classAccessRuleFor — what a writer stores', () => {
     it('derives requirePlan from the plans and the door', () => {
       assert.deepEqual(

@@ -1935,7 +1935,20 @@
     "dropInStudioDefaultCancel": "Cancel",
     "dropInStudioDefaultSaved": "Studio default saved — every class that follows it now sells at this price.",
     "bookingMoreOptionsLabel": "More options",
-    "bookingMoreOptionsHint": "Meeting point, booking questions, and what people should know before they come"
+    "bookingMoreOptionsHint": "Meeting point, booking questions, and what people should know before they come",
+    "summaryIncluded": "{names} book free",
+    "summaryMemberPrice": "{names} pay a member price",
+    "summaryAnyonePays": "everyone else pays {price}",
+    "summaryMembersPay": "other members pay {price}, visitors can't book",
+    "summaryFreeAnyone": "free for anyone, no sign-up",
+    "summaryFreeMembers": "free for people who signed up with you",
+    "summaryPlanHoldersOnly": "nobody else can book",
+    "summaryTrialFree": "newcomers: first class free",
+    "summaryTrialPriced": "newcomers: first class {price}",
+    "accessMoreOptionsLabel": "More options",
+    "accessMoreOptionsHint": "Limit this class to people who signed up with you",
+    "accessSignupOnly": "Only people who signed up with you",
+    "accessSignupOnlyHint": "Visitors can't book, even paying. Newcomers can still take a trial class."
   },
   "Benefit": {
     "fieldLabel": "Member benefit",

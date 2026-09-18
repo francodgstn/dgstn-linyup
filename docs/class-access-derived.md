@@ -106,12 +106,16 @@ Each stage leaves main green and deployable. Owners in brackets.
    rule, so `classAccessFacts(mirror, null)` answers for a public reader exactly
    as it does for the admin one. The stored `isFreeTrial` / `type` fields go with
    stage 5's backfill, not here.
-3. **Pricing tab** [web] — the mockup: summary sentence, plan table, drop-in
-   (usual / own / none), trial, More options → sign-up switch. The access cards and
-   the "members without a plan" switch go. Catalogue chips, the Pricing preview,
-   the health checks (`gated_empty_allowlist` can no longer occur; it becomes a
-   test that it cannot) and the public card lines move to `classAccessSummary`.
-   Tab descriptions → tooltip (done, `4cbb3b2b`).
+3. **Pricing tab** [web] — DONE. The tab reads: the derived sentence, the
+   drop-in (usual / own / none), the plan table, the trial, then More options →
+   the sign-up switch. The access cards and the "members without a plan" switch
+   are gone; the draft holds `signupRequired` and nothing else about access, and
+   both writers (`save` and the matcher's `onBeforeSave`) store through
+   `classAccessRuleFor`. The catalogue chip and the Pricing page's doors and
+   health loop ask `classAccessFacts`; `gated_empty_allowlist` is now unreachable
+   and a fixture pins that. Tab descriptions → tooltip (`4cbb3b2b`).
+   PUBLIC surfaces still read the stored `accessRule.type`, which every writer
+   keeps in step — they move in stage 5, when the field goes.
 4. **Drop-in modal and the per-class leftovers** [web + scripts] — decision 29: one
    "Drop-in price" modal opened from the Offerings header and from a class's
    pricing tab (set, change, turn off, "follows it: N classes"); Pricing goes back

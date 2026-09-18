@@ -88,9 +88,7 @@ import {
   resolveAppointmentDurations,
   anyRatedPlanIds,
   ratedPlanIds,
-  resolveActivityAccessRule,
-  classAccessTierOf,
-  resolveClassGate,
+  classAccessFacts,
   type Activity,
   type Course,
   type Product,
@@ -588,25 +586,25 @@ export default function CataloguePage() {
   // NO KIND BADGE IN THE CHIPS. The pane's header already carries it beside the
   // name, and in the rail the row sits under a heading that says it — so it was
   // printed twice on one screen and told the reader nothing either time.
-  /** The tier a class's gate actually amounts to — see the chip below. */
-  const classTierOf = (a: Activity): 'open' | 'members' | 'subscription' =>
-    classAccessTierOf(
-      resolveClassGate(resolveActivityAccessRule(a), resolveActivityDropIn(a, studioDropIn).enabled)
-    )
+  /** WHAT A CLASS IS, derived from its prices (docs/class-access-derived.md):
+   *  plan holders only when no door sells it, the sign-up wall when the studio
+   *  set one, open otherwise. The three still map onto the three words the
+   *  editor used to ask with, so the chip keeps its vocabulary. */
+  const classTierOf = (a: Activity): 'open' | 'members' | 'subscription' => {
+    const facts = classAccessFacts(a, studioDropIn)
+    return facts.planHoldersOnly ? 'subscription' : facts.signupRequired ? 'members' : 'open'
+  }
 
   const activityChips = (a: Activity): OfferChip[] => {
     const appointment = isAppointmentActivity(a)
-    const rule = resolveActivityAccessRule(a)
     return [
-      // THE FORM'S OWN WORDS for who can book. The editor now asks TWO
-      // questions — open to anyone / members only, then whether a plan is
-      // required — and `accessRule.type` is the display projection of that
-      // pair, so `access_open` / `access_members` / `access_subscription`
-      // ("Plan required") still name exactly what was chosen. It used to be a shorter private vocabulary ("Members",
-      // "Subscription") that appeared nowhere the studio had chosen from, and
-      // said NOTHING AT ALL for an open class — the commonest answer of the
-      // three rendered as an absent chip, which reads as "not configured"
-      // rather than "anyone can book" (Franco, 2026-08-31).
+      // WHO CAN BOOK, in the words the studio would use: "Open to anyone",
+      // "Members only", "Plan required". Nobody chooses these any more — they
+      // are derived from the plans and the drop-in price
+      // (docs/class-access-derived.md) — but they are still the right three
+      // words for a list, and the chip is never absent: the commonest answer
+      // rendering as no chip read as "not configured" rather than "anyone can
+      // book" (Franco, 2026-08-31).
       //
       // CLASS-ONLY. An appointment has no access rule — the price is the gate —
       // so `resolveActivityAccessRule` falls back to 'open' for one, and
@@ -637,7 +635,7 @@ export default function CataloguePage() {
       // does this. A PRICED trial is money and comes through the money chips
       // below as "Trial {amount}" instead — one trial fact per row, not two.
       ...(!appointment &&
-      classTierOf(a) !== 'open' &&
+      classAccessFacts(a, studioDropIn).trialAvailable &&
       a.trialEnabled === true &&
       a.trialPriceAmount == null
         ? [{ label: tAct('freeTrialBadge') }]

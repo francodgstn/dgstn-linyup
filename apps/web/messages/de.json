@@ -1935,7 +1935,20 @@
     "dropInStudioDefaultCancel": "Abbrechen",
     "dropInStudioDefaultSaved": "Studio-Standard gespeichert — jede Klasse, die ihm folgt, wird jetzt zu diesem Preis verkauft.",
     "bookingMoreOptionsLabel": "Weitere Optionen",
-    "bookingMoreOptionsHint": "Treffpunkt, Buchungsfragen und was man vor dem Besuch wissen sollte"
+    "bookingMoreOptionsHint": "Treffpunkt, Buchungsfragen und was man vor dem Besuch wissen sollte",
+    "summaryIncluded": "{names} buchen kostenlos",
+    "summaryMemberPrice": "{names} zahlen einen Mitgliederpreis",
+    "summaryAnyonePays": "alle anderen zahlen {price}",
+    "summaryMembersPay": "andere Mitglieder zahlen {price}, Gäste können nicht buchen",
+    "summaryFreeAnyone": "kostenlos für alle, ohne Anmeldung",
+    "summaryFreeMembers": "kostenlos für alle, die sich bei dir angemeldet haben",
+    "summaryPlanHoldersOnly": "niemand sonst kann buchen",
+    "summaryTrialFree": "Neue: erste Stunde gratis",
+    "summaryTrialPriced": "Neue: erste Stunde {price}",
+    "accessMoreOptionsLabel": "Weitere Optionen",
+    "accessMoreOptionsHint": "Diese Stunde auf angemeldete Personen beschränken",
+    "accessSignupOnly": "Nur Personen, die sich bei dir angemeldet haben",
+    "accessSignupOnlyHint": "Gäste können nicht buchen, auch nicht zahlend. Eine Probestunde bleibt möglich."
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",

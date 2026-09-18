@@ -7,7 +7,7 @@ import {
   GUEST_SNAPSHOT,
   normalizeBenefit,
   resolveActivityAccessRule,
-  resolveClassGate,
+  classAccessFacts,
   resolveAppointmentDurations,
   resolveDurationBenefit,
   resolveDurationSale,
@@ -163,8 +163,8 @@ export type PriceCell =
  * drop-in price or the trial the same class also sells.
  *
  * Both mirror the server: the trial door is `bookSession`'s `isTrialDoor`
- * (`trialEnabled` on a class whose display tier is not `open` — on an open
- * class a newcomer already books through the front door and the flag is
+ * (`trialEnabled` on a class where a newcomer has no other way in —
+ * `classAccessFacts(...).trialAvailable`; on a class free to anyone the flag is
  * inert), the drop-in is the resolver's `hasPaidDoor`.
  */
 export interface ClassDoors {
@@ -173,15 +173,17 @@ export interface ClassDoors {
 }
 
 export function classDoors(activity: Activity, studioDropIn: DropInPrice | null = null): ClassDoors {
-  const accessRule = resolveActivityAccessRule(activity)
+  // ONE CALL for both doors: the resolved drop-in (the studio default when the
+  // class follows it) and whether a newcomer has any other way in.
+  const facts = classAccessFacts(activity, studioDropIn)
   const trial =
-    activity.trialEnabled === true && accessRule.type !== 'open'
+    activity.trialEnabled === true && facts.trialAvailable
       ? { priceAmount: typeof activity.trialPriceAmount === 'number' ? activity.trialPriceAmount : null }
       : null
-  // THE ONE READER (shared/utils/dropIn.ts): the studio default when the
-  // class follows it, so the doors line prices such a class like the server.
-  const dropIn = resolveActivityDropIn(activity, studioDropIn)
-  const dropInAmount = dropIn.enabled && typeof dropIn.priceAmount === 'number' ? dropIn.priceAmount : null
+  const dropInAmount =
+    facts.dropIn.enabled && typeof facts.dropIn.priceAmount === 'number'
+      ? facts.dropIn.priceAmount
+      : null
   return { trial, dropInAmount }
 }
 
@@ -490,18 +492,17 @@ export function computePricingHealth(
       continue
     }
     checkBenefit(a.memberBenefit, a.name, 'activity', a.id)
-    const rule = resolveActivityAccessRule(a)
-    // 'open' is the only tier a newcomer can always walk into. BOTH gated tiers
-    // ('members' and 'subscription') refuse a stranger — resolveClassCoverage
-    // denies 'guest'/'not_joined' before it ever looks at subscriptions — so the
-    // newcomer-path check below must run on both. It used to `continue` on
-    // anything but 'subscription', which blinded it to 'members': the DEFAULT
-    // tier of every new class.
-    if (rule.type === 'open') continue
-    const hasDropIn = resolveActivityDropIn(a, studioDropIn).enabled
-    const gate = resolveClassGate(rule, hasDropIn)
-    if (gate.requirePlan) {
-      const allowed = rule.subscriptionTypeIds ?? []
+    // A class FREE TO ANYONE is the only one a newcomer can always walk into.
+    // A class free but walled to people who signed up still refuses a stranger —
+    // resolveClassCoverage denies 'guest'/'not_joined' before it looks at any
+    // plan — so the newcomer-path check below must run on it too. It used to
+    // skip anything but the plan-required tier, which blinded it to exactly
+    // that case (docs/class-access-derived.md).
+    const facts = classAccessFacts(a, studioDropIn)
+    if (facts.free && !facts.signupRequired) continue
+    const hasDropIn = facts.dropIn.enabled
+    if (facts.planHoldersOnly) {
+      const allowed = facts.includedPlanIds
       allowed.forEach((id) => acceptedTypeIds.add(id))
       // NOW IT IS A REAL DEAD END, and only now. Under the old tiers "gated to
       // subscriptions with none ticked" was ambiguous — usually a studio that
@@ -513,6 +514,12 @@ export function computePricingHealth(
       // `acceptedTypeIds` stays scoped to this branch for the other reason it
       // always was: it feeds `credits_unusable`, which asks where a credit gets
       // SPENT. A class that covers its audience outright burns no credit.
+      //
+      // `gated_empty_allowlist` — plan required with no plan named — CANNOT
+      // OCCUR any more: plan-holders-only IS "a plan includes it and no door
+      // sells it", so the list is non-empty by construction. The code stays for
+      // the pricing page's message map and for a document written before the
+      // derivation; `classAccess.test.ts` pins that the state is unreachable.
       if (allowed.length === 0) {
         warnings.push({
           code: 'gated_empty_allowlist',
