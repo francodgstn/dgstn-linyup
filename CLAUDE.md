@@ -1145,8 +1145,22 @@ studio `linyup-demo` + fixed code that every seeder provisions — are in
 Quality / CI checks (run anytime): `pnpm build` · `pnpm lint` · `pnpm typecheck` ·
 `pnpm test` · `pnpm format` · `pnpm i18n:check` · `pnpm census:reads` (the LOG-list
 tripwire — a direct read of a collection that grows with time must carry a bound;
-`docs/scalability-2026-09.md` §17 is the census it guards). Cloud/data ops live under `seed:*` / `reset:*` /
-`migrate:hmd` / `stripe:sync` / `emulators:export:*` — not part of day-to-day startup.
+`docs/scalability-2026-09.md` §17 is the census it guards) · `pnpm typecheck:seeds`
+· `pnpm docs:check` · `pnpm docs:index:check`. Cloud/data ops live under
+`seed:*` / `reset:*` / `migrate:hmd` / `stripe:sync` / `emulators:export:*` — not
+part of day-to-day startup.
+
+**`pnpm typecheck` does NOT cover `scripts/`** — `pnpm typecheck:seeds` does, and
+the reason is worth knowing before trusting a clean run: `scripts/` is not a
+workspace, so `turbo run typecheck` never sees it (the whole reasoning, and why
+its include is a glob rather than a list, is the `"//"` key in
+`tsconfig.seedcheck.json`). **Touching a seeder, a backfill or a migration pass
+means running `typecheck:seeds` explicitly.** This is not hypothetical twice
+over: `scripts/migrate-hmd.ts` sat in the blind spot until it broke, and a
+migration pass shipped to CI passing a `targetDb` accessor where a `Firestore`
+was wanted, after a local `pnpm typecheck` came back clean across every
+workspace. `typecheck:seeds`, `docs:check` and `docs:index:check` are the rest
+of CI's **Lint** job, which runs more than `pnpm lint`.
 
 **Deploy preconditions owed by the scalability work** (`docs/scalability-2026-09.md`
 Part 2 §14, Part 3 §19): `pnpm backfill:ledger-ttl` before the TTL index overrides,
