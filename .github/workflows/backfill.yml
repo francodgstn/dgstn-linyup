@@ -66,6 +66,7 @@ on:
           - affiliation-active-orgs
           - activity-type-mirrors
           - booking-joined-at
+          - class-access
           - contact-counts
           - contact-notes-count
           - document-mirrors

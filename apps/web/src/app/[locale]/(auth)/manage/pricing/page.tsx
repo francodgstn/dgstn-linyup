@@ -17,7 +17,7 @@
 // Everything else is read-only — every fix link routes to the surface that
 // owns the data.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import {
@@ -28,12 +28,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Link } from '@/i18n/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { setDoc } from 'firebase/firestore'
-import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
-import { bookingSettingsRef, useBookingSettings } from '@/hooks/useBookingSettings'
+import { useBookingSettings } from '@/hooks/useBookingSettings'
+import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
 import { useProducts } from '@/plugins/products/hooks'
 import { useCourses } from '@/plugins/online-courses/hooks'
@@ -42,8 +40,6 @@ import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useTeamPromoCodes } from '@/hooks/usePromoCodes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertTriangle, AlertCircle, BadgePercent, Info } from 'lucide-react'
@@ -272,34 +268,17 @@ function ClassDoorsLine({
  * object to Settings → Booking.
  */
 function DropInDefaultCard({
-  teamId,
   classes,
   stored,
   currency,
 }: {
-  teamId: string | null
   classes: Activity[]
   stored: DropInPrice | null
   currency: string
 }) {
   const t = useTranslations('OfferPricing')
-  const qc = useQueryClient()
-  const storedPrice = stored?.priceAmount ?? null
-  const [enabled, setEnabled] = useState(storedPrice !== null)
-  const [price, setPrice] = useState(storedPrice !== null ? String(storedPrice) : '')
-  const [saving, setSaving] = useState(false)
-  // Re-seed when the store changes under us — a refetch, or a save elsewhere.
-  useEffect(() => {
-    setEnabled(storedPrice !== null)
-    setPrice(storedPrice !== null ? String(storedPrice) : '')
-  }, [storedPrice])
-
-  const parsed = parseFloat(price.replace(',', '.'))
-  const invalid = enabled && !(price.trim() !== '' && parsed >= 0.5)
-  const dirty = enabled !== (storedPrice !== null) || (enabled && parsed !== storedPrice)
-  // How the classes relate to this price — read off each document's own
-  // answer, not the resolved price, so "follow the default" counts even while
-  // the default is off.
+  // How the classes relate to the usual price — read off each document's own
+  // answer, not the resolved price, so "follows it" counts while there is none.
   const counts = classes.reduce(
     (acc, a) => {
       acc[dropInModeOf(a.dropIn)] += 1
@@ -308,60 +287,23 @@ function DropInDefaultCard({
     { studio: 0, custom: 0, off: 0 }
   )
 
-  async function save() {
-    if (!teamId || invalid || !dirty) return
-    setSaving(true)
-    try {
-      // The ONE field, replaced whole — `mergeFields` so an old price cannot
-      // survive under a switched-off default the way a deep merge would keep it.
-      await setDoc(
-        bookingSettingsRef(teamId),
-        { bookingSettings: { dropIn: enabled ? { enabled: true, priceAmount: parsed } : { enabled: false } } },
-        { mergeFields: ['bookingSettings.dropIn'] }
-      )
-      await qc.invalidateQueries({ queryKey: ['booking-settings', teamId] })
-      toast.success(t('dropInDefaultSaved'))
-    } catch (err) {
-      console.error('[drop-in default save] failed:', err)
-      toast.error(err instanceof Error ? err.message : t('dropInDefaultSaved'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
+  // READ-ONLY HERE (decision 29). The number is edited in ONE dialog, opened
+  // from the Offerings header and from a class's pricing tab — this page states
+  // what every class costs and says where to change it.
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('dropInDefaultTitle')}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t('dropInDefaultSubtitle')}</p>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-          <label className="flex cursor-pointer items-center gap-3">
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
-            <span className="text-sm font-medium">{t('dropInDefaultToggle')}</span>
-          </label>
-          {enabled && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">{currency}</span>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="h-8 w-28 text-sm"
-                aria-label={t('dropInDefaultToggle')}
-              />
-            </div>
-          )}
-        </div>
-        {invalid && <p className="text-xs text-destructive">{t('dropInDefaultValidation')}</p>}
+      <CardContent className="space-y-2">
+        <p className="text-sm">
+          {stored?.priceAmount != null
+            ? t('dropInDefaultReadOnly', { price: formatCurrency(stored.priceAmount, currency) })
+            : t('dropInDefaultReadOnlyNone')}
+        </p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">{t('dropInDefaultSummary', counts)}</p>
-          <Button size="sm" disabled={!dirty || invalid || saving} onClick={() => void save()}>
-            {t('dropInDefaultSave')}
-          </Button>
+          <StudioDropInButton currency={currency} variant="link" />
         </div>
       </CardContent>
     </Card>
@@ -950,7 +892,6 @@ export default function PricingPage() {
           {/* The door price BEFORE the preview that quotes it — set once here,
               read by every class below that follows it. */}
           <DropInDefaultCard
-            teamId={currentTeamId}
             classes={classes}
             stored={studioDropIn}
             currency={currency}

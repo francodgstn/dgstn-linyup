@@ -67,6 +67,8 @@ import {
   type SiteThemeId,
   normalizeActivityTags,
   withRankLevelIds,
+  activityDocForWrite,
+  resolveActivityDropIn,
   type RankLevelInput,
 } from '@linyup/shared'
 
@@ -717,7 +719,7 @@ async function seedLeadTenant(profile: LeadProfile) {
   // Shop contact-capture mode: 'full' when any price creates a lasting membership.
   function subCheckoutMode(st: (typeof profile.subscriptions)[number]) {
     const prices = subPricesOf(st)
-    return prices.some((p) => p.recurrence !== 'per_class') ? 'full' : 'minimal'
+    return prices.some((p) => p.recurrence !== 'one_time') ? 'full' : 'minimal'
   }
   function resolveSub(subKey: string | null): {
     id: string
@@ -1213,15 +1215,30 @@ async function seedLeadTenant(profile: LeadProfile) {
       ? await uploadAsset(a.imageAsset, `teams/${teamId}/activities/${actIds[i]}/cover`)
       : null
     actImageUrls.push(imageUrl)
-    // Paid-access gate; keep isFreeTrial in sync (legacy queries read it).
-    const accessRule = {
-      type: a.accessTier ?? (a.isFreeTrial ? 'open' : 'members'),
-      ...(a.accessTier === 'subscription'
-        ? { subscriptionTypeIds: (a.accessSubKeys ?? []).map(subIdOf) }
-        : {}),
-    }
-    const dropIn =
-      a.dropInPrice != null ? { enabled: true, priceAmount: a.dropInPrice } : { enabled: false }
+    // Lead profiles are authored in the LEGACY vocabulary (a tier + an own
+    // drop-in price) and converted here, through `activityDocForWrite`, into
+    // the derived access shape (docs/class-access-derived.md) — so a seeded
+    // class is exactly what the stage-5 backfill would produce. Lead tenants
+    // set no usual drop-in price in their bookingSettings.
+    const studioDropIn = null
+    const { accessRule, dropIn } = activityDocForWrite(
+      {
+        type: 'class' as const,
+        accessRule: {
+          type: a.accessTier ?? (a.isFreeTrial === false ? 'members' : 'open'),
+          ...(a.accessTier === 'subscription'
+            ? { subscriptionTypeIds: (a.accessSubKeys ?? []).map(subIdOf) }
+            : {}),
+        },
+        dropIn:
+          a.dropInPrice != null
+            ? { enabled: true, priceAmount: a.dropInPrice }
+            : { enabled: false },
+      },
+      studioDropIn
+    )
+    // The RESOLVED door, exactly as syncActivityPublicProfile mirrors it.
+    const door = resolveActivityDropIn({ type: 'class', accessRule, dropIn }, studioDropIn)
     // Class member rate on the drop-in price (Activity.memberBenefit on a
     // CLASS): holders of a listed type who are NOT covered by the access rule
     // pay a reduced drop-in. The profile references subscriptions by key —
@@ -1257,10 +1274,8 @@ async function seedLeadTenant(profile: LeadProfile) {
         ...(a.confirmationInstructions
           ? { confirmationInstructions: a.confirmationInstructions }
           : {}),
-        isFreeTrial: accessRule.type === 'open',
         accessRule,
-        // Independent of the tier: a gated class still accepts a newcomer's
-        // trial booking (guest path identical to 'open').
+        // A newcomer's trial — offered whenever the class is not free.
         ...(a.trialEnabled ? { trialEnabled: true } : {}),
         // A PAID trial — a reduced-price first class instead of a free one.
         // Absent ⇒ the trial is free (the common case).
@@ -1299,13 +1314,13 @@ async function seedLeadTenant(profile: LeadProfile) {
         // what the callables accept.
         ...(a.contactFields?.length ? { contactFields: a.contactFields } : {}),
         image_url: imageUrl,
-        isFreeTrial: accessRule.type === 'open',
         accessRule,
-        ...(dropIn.enabled ? { dropIn } : {}),
+        // The RESOLVED drop-in, only when there is a price to charge.
+        ...(door.enabled ? { dropIn: { enabled: true, priceAmount: door.priceAmount } } : {}),
         // The class member rate, mirrored ONLY alongside a live, priced drop-in
         // (exactly as syncActivityPublicProfile does) — the public booking page
         // renders the struck-through drop-in price from it.
-        ...(memberBenefit && dropIn.enabled ? { memberBenefit } : {}),
+        ...(memberBenefit && door.enabled ? { memberBenefit } : {}),
         // Mirrored so the public flow can OFFER the newcomer trial door on a
         // gated class (matches syncActivityPublicProfile).
         ...(a.trialEnabled ? { trialEnabled: true } : {}),
@@ -1375,7 +1390,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         providerId: uidOf(providerKey),
         providerName: staffName(providerKey),
         // Per-duration BASE pricing (major units, team currency). No access
-        // rule / isFreeTrial: the price is the only gate for appointments.
+        // rule and no drop-in: the price is the only gate for appointments.
         durations: apt.durations.map((d) => ({
           minutes: d.minutes,
           priceAmount: d.priceAmount ?? null,
@@ -1403,9 +1418,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         color: profile.accentColor,
         description: apt.description,
         image_url: imageUrl,
-        // The doc carries no isFreeTrial; the live sync mirrors `|| false`.
         // No accessRule — appointment mirrors dropped the access gate.
-        isFreeTrial: false,
         // Duration menu ("from CHF 45" on public cards) + the per-length member
         // rules, both mirrored verbatim, exactly as syncActivityPublicProfile
         // does (public-safe: the type ids are already public in the shop).
@@ -1432,7 +1445,7 @@ async function seedLeadTenant(profile: LeadProfile) {
     const tplPlace = resolvePlace(av.placeKey)
     // The offerings bookable in this window — all of them unless narrowed. The
     // availability carries ONLY these ids: no durations, no capacity, no access
-    // rule (those are the activity's), and no isFreeTrial.
+    // rule (those are the activity's).
     const avActivityKeys = av.activityKeys ?? profile.appointments.activities.map((a) => a.key)
     await db
       .collection('availability')
@@ -1482,7 +1495,7 @@ async function seedLeadTenant(profile: LeadProfile) {
       const clientEmail = `${slugEmail(client)}.${teamId}@example.com`
 
       // Which offering was booked — the session INHERITS the activity's name,
-      // exactly as bookAppointment does (no accessRule/isFreeTrial: appointment
+      // exactly as bookAppointment does (no accessRule: appointment
       // sessions dropped the access gate).
       const bookedApt = aptDefOf(b.activityKey ?? avActivityKeys[0])
       if (!bookedApt) continue
@@ -1703,7 +1716,6 @@ async function seedLeadTenant(profile: LeadProfile) {
         activityName: a.name,
         activityColor: a.color,
         activitySlug: a.slug,
-        activityIsFreeTrial: a.isFreeTrial,
         activityImage: actImageUrls[s.actIdx],
         start: ts(s.date),
         end: ts(s.end),

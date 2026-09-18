@@ -679,7 +679,6 @@ export function suggestTarif595Unit(f: Tarif595OfferingFacts): { unit: Tarif595U
   // the number of months covers either purchase (Qualitop FAQ 3.6).
   if (rec.has('monthly') || rec.has('quarterly') || rec.has('weekly') || rec.has('biweekly')) return { unit: 'month', entries: null }
   if (rec.has('annual')) return { unit: 'year', entries: null }
-  if (rec.has('per_class')) return { unit: 'lesson', entries: null }
   if (rec.has('one_time')) return { unit: 'flat', entries: null }
   return null
 }

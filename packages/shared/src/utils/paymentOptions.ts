@@ -323,21 +323,19 @@ function hasPaidDoor(dropIn?: { enabled?: boolean; priceAmount?: number } | null
 }
 
 /**
- * THE CLASS GATE — who may book, as the two facts the studio actually chose.
+ * WHO MAY BOOK A CLASS, AS TWO ANSWERS — `audience` (the sign-up wall) and
+ * `requirePlan` — derived, never read from storage (docs/class-access-derived.md):
  *
- * This is the one place the LEGACY tier is translated, and it lives here rather
- * than beside the type because the translation needs the drop-in price:
+ *   requirePlan = a plan INCLUDES the class AND no door sells it.
  *
- *   open          → anyone may book, no plan needed
- *   members       → members may book, no plan needed
- *   subscription  → anyone may book; a plan is required only when there is NO
- *                   price for a non-holder to pay. That is not a reading of the
- *                   tier's name, it is what the tier DID: with a drop-in price a
- *                   non-holder could always buy in, and without one she was
- *                   refused. Both stay true.
+ * That is exactly what the legacy `subscription` tier always meant ("a plan is
+ * required unless there is a price a non-holder can pay"), now read for every
+ * class. A stored `requirePlan` is ignored: the form and the plan table used to
+ * write one, and the stage 5 backfill removes it.
  *
- * A stored `audience` / `requirePlan` wins outright — that is a studio's own
- * answer, and it can say things the tier cannot (members-only WITH a paid door).
+ * The audience is the one stored answer — the "only people who signed up with
+ * you" switch. A document from before the two questions reads its wall off the
+ * legacy tier (`members` walls, `open` and `subscription` do not).
  */
 export function resolveClassGate(
   accessRule: ActivityAccessRule,
@@ -345,60 +343,25 @@ export function resolveClassGate(
 ): { audience: ActivityAudience; requirePlan: boolean } {
   return {
     audience: accessRule.audience ?? (accessRule.type === 'members' ? 'members' : 'anyone'),
-    requirePlan:
-      accessRule.requirePlan ?? (accessRule.type === 'subscription' ? !paidDoor : false),
+    requirePlan: gateIdsOf(accessRule).length > 0 && !paidDoor,
   }
 }
 
-/**
- * The DISPLAY tier a gate amounts to — the one projection of the two answers
- * onto `accessRule.type`.
- *
- * Every writer of `type` and every surface that names a tier ("open / members
- * only / plan required") goes through this, so the stored projection, the
- * pricing form's draft and the catalogue's chip can never disagree about what
- * the same pair means. It is the inverse of `resolveClassGate`'s legacy legs:
- * a plan required is 'subscription', a members wall without one is 'members',
- * and anyone-may-book is 'open' — whatever it costs.
- */
-export function classAccessTierOf(gate: {
-  audience: ActivityAudience
-  requirePlan: boolean
-}): ActivityAccessTier {
-  return gate.requirePlan ? 'subscription' : gate.audience === 'members' ? 'members' : 'open'
-}
-
-/**
- * The pair as a studio would SAY it — `resolveClassGate` plus the one
- * normalisation every WRITER applies before storing it: "anyone may book, but
- * a plan is required" is not a state a studio can mean, since a guest holds no
- * plan. The gate derives it for a legacy `subscription` class that sells no
- * drop-in, and it is stored — by the pricing form and by the plan matcher alike
- * — as MEMBERS ONLY with the plan required, the same door said out loud instead
- * of by implication. Deciders keep reading `resolveClassGate`; the two agree on
- * every outcome, because a guest fails either spelling.
- */
-export function canonicalClassGate(
-  accessRule: ActivityAccessRule,
-  paidDoor: boolean
-): { audience: ActivityAudience; requirePlan: boolean } {
-  const gate = resolveClassGate(accessRule, paidDoor)
-  return {
-    audience: gate.requirePlan ? 'members' : gate.audience,
-    requirePlan: gate.requirePlan,
+/** The plans that INCLUDE a class — the access list. A legacy `open` or
+ *  `members` document never had one (any ids it carries were ignored), so it
+ *  reads as none. */
+function gateIdsOf(accessRule: ActivityAccessRule): string[] {
+  if (hasModernGate(accessRule) || accessRule.type === 'subscription') {
+    return accessRule.subscriptionTypeIds ?? []
   }
+  return []
 }
 
 /**
- * Has this activity been asked the new questions?
- *
- * A document that has not is read by the LEGACY path below, which reproduces the
- * three old tiers exactly rather than approximating them through the new fields.
- * The approximation was tried and it moved two behaviours: an `open` class with
- * a stray drop-in price started charging for a class that had been free, and a
- * guest lost the ability to buy into a `members` class. Both are arguably
- * improvements and NEITHER is something a deploy should do to a studio that
- * changed nothing — the new shape is available the moment they open the form.
+ * Has this activity been asked the new questions? A document that has not is a
+ * LEGACY one, written before the two questions; it is read by the few legacy
+ * arms that remain (`classIsFreeForEveryone`, `classDoorIsInert`, the wall
+ * above) until the stage 5 backfill has rewritten it.
  */
 export function hasModernGate(accessRule: ActivityAccessRule): boolean {
   return accessRule.audience !== undefined || accessRule.requirePlan !== undefined
@@ -409,28 +372,23 @@ export function hasModernGate(accessRule: ActivityAccessRule): boolean {
  *
  * ONLY a legacy `open` rule. A MODERN rule with `audience: 'anyone'` is not the
  * same statement: it says anyone may book, and whether they pay is the drop-in
- * price's business — which is precisely the combination the old tier could not
- * hold, since it refused payment outright.
+ * price's business.
  */
 export function classIsFreeForEveryone(accessRule: ActivityAccessRule): boolean {
-  return !hasModernGate(accessRule) && accessRule.type === 'open'
+  return !hasModernGate(accessRule) && (accessRule.type ?? 'open') === 'open'
 }
 
-/** The three old tiers, verbatim. Do not "simplify" this into the modern path:
- *  its whole job is to be the thing that did not change. */
-function legacyClassCoverage(
-  snapshot: ContactPaymentSnapshot,
-  accessRule: ActivityAccessRule
-): PaymentOptionsResult | null {
-  if (accessRule.type === 'open') {
-    return { options: [{ type: 'covered', via: { reason: 'open' } }], denial: null }
-  }
-  if (!snapshot.authenticated) return { options: [], denial: 'guest' }
-  if (!snapshot.joined) return { options: [], denial: 'not_joined' }
-  if (accessRule.type === 'members') {
-    return { options: [{ type: 'covered', via: { reason: 'members' } }], denial: null }
-  }
-  return null // 'subscription' — fall through to the shared plan checks
+/**
+ * Does this class's drop-in price never fire? A legacy `open` class covered
+ * everyone before looking at a price, and a legacy `members` class covered
+ * every member and walled everyone else — so on either a stored price was
+ * inert. The resolver reads them that way until the backfill states the door
+ * as `off`.
+ */
+export function classDoorIsInert(accessRule: ActivityAccessRule): boolean {
+  if (hasModernGate(accessRule)) return false
+  const tier = accessRule.type ?? 'open'
+  return tier === 'open' || tier === 'members'
 }
 
 function attachedToCreditType(snapshot: ContactPaymentSnapshot, id: string): boolean {
@@ -447,39 +405,31 @@ function resolveClassCoverage(
    *  not, "not covered by a plan" resolves to FREE rather than to a refusal —
    *  which is how `open` and `members` classes stay free without a tier saying
    *  so. See the table on `ActivityAccessRule`. */
-  hasPaidDoor = false
+  hasPaidDoorIn = false
 ): PaymentOptionsResult {
-  const modern = hasModernGate(accessRule)
-  if (!modern) {
-    const legacy = legacyClassCoverage(snapshot, accessRule)
-    if (legacy) return legacy
-  }
+  // A legacy `open` / `members` class never let a price fire, whatever price
+  // the caller hands in — the same reading `resolveActivityDropIn` gives it.
+  const hasPaidDoor = hasPaidDoorIn && !classDoorIsInert(accessRule)
   const gate = resolveClassGate(accessRule, hasPaidDoor)
+  const allowed = gateIdsOf(accessRule)
 
-  if (modern) {
-    // 1) THE AUDIENCE WALL — who may book at all, free path and paid path alike.
-    //    Checked before anything about plans, because it is not about what
-    //    someone holds: a stranger is refused a members-only class even with a
-    //    drop-in price in hand, which the old tiers could not say (their paid
-    //    door was open to everyone the moment a price existed).
-    if (gate.audience === 'members') {
-      if (!snapshot.authenticated) return { options: [], denial: 'guest' }
-      if (!snapshot.joined) return { options: [], denial: 'not_joined' }
-    }
-    // 2) IDENTITY IS STILL REQUIRED WHENEVER A PLAN COULD MATTER. Being covered
-    //    means holding something, and a not-yet-joined contact holds nothing the
-    //    gate will honour — the rule the old tiers applied to everything except
-    //    'open'. Only a class where nothing about the person matters (anyone may
-    //    book, no plan required, no plan listed) needs no identity at all.
-    const gatedOnSomething =
-      gate.requirePlan || (accessRule.subscriptionTypeIds ?? []).length > 0
-    if (gatedOnSomething) {
-      if (!snapshot.authenticated) return { options: [], denial: 'guest' }
-      if (!snapshot.joined) return { options: [], denial: 'not_joined' }
-    }
+  // 1) THE AUDIENCE WALL — who may book at all, free path and paid path alike.
+  //    Checked before anything about plans, because it is not about what
+  //    someone holds: a stranger is refused a walled class even with a drop-in
+  //    price in hand.
+  if (gate.audience === 'members') {
+    if (!snapshot.authenticated) return { options: [], denial: 'guest' }
+    if (!snapshot.joined) return { options: [], denial: 'not_joined' }
+  }
+  // 2) IDENTITY IS STILL REQUIRED WHENEVER A PLAN COULD MATTER. Being covered
+  //    means holding something, and a not-yet-joined contact holds nothing the
+  //    gate will honour. Only a class where nothing about the person matters (no
+  //    plan includes it) needs no identity at all.
+  if (allowed.length > 0) {
+    if (!snapshot.authenticated) return { options: [], denial: 'guest' }
+    if (!snapshot.joined) return { options: [], denial: 'not_joined' }
   }
 
-  const allowed = accessRule.subscriptionTypeIds ?? []
   const windowRemaining = (id: string): number | null => {
     const r = snapshot.usageRemaining?.[id]
     return typeof r === 'number' ? r : null // null = unlimited
@@ -535,10 +485,8 @@ function resolveClassCoverage(
   //    `members` used to be, expressed as the absence of a price instead of as a
   //    tier that made the price unreachable.
   if (gate.requirePlan) return { options: [], denial: 'no_subscription' }
-  // A legacy 'subscription' class never granted free access to a non-holder —
-  // it denied, and the drop-in door sold if it could. Preserve that: only a
-  // modern rule reaches the free fallback below.
-  if (!modern || hasPaidDoor) return { options: [], denial: 'no_subscription' }
+  // A door to pay at: the drop-in target sells it; a free booking is refused.
+  if (hasPaidDoor) return { options: [], denial: 'no_subscription' }
   return {
     options: [
       { type: 'covered', via: { reason: gate.audience === 'members' ? 'members' : 'open' } },
@@ -925,7 +873,6 @@ function resolveTarget(
       // close — until now a guest could buy into any members-only class simply
       // because a price existed.
       if (
-        hasModernGate(target.accessRule) &&
         (coverage.denial === 'guest' || coverage.denial === 'not_joined') &&
         resolveClassGate(target.accessRule, hasPaidDoor(target.dropIn)).audience === 'members'
       ) {
@@ -935,7 +882,6 @@ function resolveTarget(
       // of a merely-discounted plan is still a holder: she is not covered free,
       // and she pays her reduced price.
       if (
-        hasModernGate(target.accessRule) &&
         resolveClassGate(target.accessRule, hasPaidDoor(target.dropIn)).requirePlan &&
         !holdsLinkedPlan(snapshot, target.accessRule, target.benefit)
       ) {

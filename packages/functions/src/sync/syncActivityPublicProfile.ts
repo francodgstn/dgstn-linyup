@@ -69,7 +69,6 @@ export function buildActivityPublicProfile(
     image_url: data.image_url || null,
     // Denormalised display order so public consumers sort like the admin list.
     order: typeof data.order === 'number' ? data.order : null,
-    isFreeTrial: data.isFreeTrial || false,
     // Free-text display labels for the public cards. Normalised here as well as
     // in the editor — the mirror is the copy the world reads, and an activity
     // written by anything other than that form still has to arrive tidy.

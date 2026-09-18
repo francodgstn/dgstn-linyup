@@ -27,8 +27,8 @@ export async function pass03Activities(
     //
     // OPT-IN PER CLUB. Gating on plans a club's members do not hold locks every
     // one of them out — see `PLAN_GATED_TEAMS` for the club that looks ready and
-    // is not. `undefined` leaves the activity as it was: no `accessRule`, which
-    // reads as legacy `open`.
+    // is not. `undefined` keeps the access the activity had (free to anyone
+    // unless its source `isFreeTrial` was false), stated in the derived shape.
     let planIds: string[] | undefined
     if (PLAN_GATED_TEAMS.includes(teamId)) {
       const srcTypes = await src.collection('teams').doc(teamId).collection('subscription_types').get()

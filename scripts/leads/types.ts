@@ -13,7 +13,6 @@
  */
 
 export type LeadRecurrence =
-  | 'per_class'
   | 'one_time'
   | 'weekly'
   | 'biweekly'
@@ -101,7 +100,11 @@ export interface LeadActivityDef {
   slug: string
   color: string
   level: 'all' | 'beginner' | 'intermediate' | 'advanced'
-  isFreeTrial: boolean
+  /** AUTHORING shorthand in the legacy vocabulary, not a stored field: false =
+   *  members only, true/absent = free to anyone (when `accessTier` is unset).
+   *  seed-lead.ts converts it into the derived access shape at write time
+   *  (`activityDocForWrite`, docs/class-access-derived.md). */
+  isFreeTrial?: boolean
   base_score: number
   description: string
   /** Group-class capacity shown/enforced on the public booking surface. */
@@ -115,7 +118,9 @@ export interface LeadActivityDef {
   contactFields?: LeadBookingContactField[]
   /** Per-activity confirmation-email note (overrides the team-wide one). */
   confirmationInstructions?: string
-  /** Paid-access gate; defaults derived from isFreeTrial when unset. */
+  /** Legacy access tier, converted at write time like `isFreeTrial` (which it
+   *  overrides). 'subscription' = the `accessSubKeys` plans include it; with a
+   *  `dropInPrice` anyone else pays, without one only those holders book. */
   accessTier?: 'open' | 'members' | 'subscription'
   /** For accessTier 'subscription': LeadSubscriptionDef.keys that grant access. */
   accessSubKeys?: string[]

@@ -87,7 +87,11 @@ describe('projectActivity', () => {
     const out = projectActivity(base(), { currency: 'CHF', studioDropIn: { enabled: true, priceAmount: 25 } })!
     assert.deepStrictEqual(out.drop_in, { enabled: true, price: { amount: 2500, currency: 'CHF' }, follows: 'studio' })
     assert.deepStrictEqual(out.trial, { enabled: true, price: { amount: 2000, currency: 'CHF' } })
-    assert.deepStrictEqual(out.access, { tier: 'subscription', audience: 'members', require_plan: true, plan_ids: ['p-1'] })
+    // rule 1 (class-access stage 5): require_plan/tier are DERIVED from the
+    // resolved door, not the stored fields — a studio default price is live
+    // here, so the door is open (require_plan false) even though the stored
+    // rule says requirePlan: true.
+    assert.deepStrictEqual(out.access, { tier: 'members', audience: 'members', require_plan: false, plan_ids: ['p-1'] })
 
     const open = projectActivity(base({ accessRule: undefined }), { currency: 'CHF', studioDropIn: { enabled: true, priceAmount: 25 } })!
     assert.strictEqual(open.drop_in?.enabled, false, 'a class free for everyone has no drop-in price')

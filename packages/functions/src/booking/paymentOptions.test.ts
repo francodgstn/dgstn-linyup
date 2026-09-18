@@ -118,10 +118,14 @@ describe('resolvePaymentOptions — class_booking (bookSession gate parity)', ()
       expected: denied('no_subscription'),
     },
     {
-      name: 'subscription class with EMPTY allow-list (misconfig): denied no_subscription',
+      // rule 5d (class-access stage 5, 'dead_end_reopened'): "plan required"
+      // with NO plan named is no longer expressible — with no gate ids
+      // requirePlan derives false, so this misconfigured class is free rather
+      // than a dead end nobody can book.
+      name: 'subscription class with EMPTY allow-list (misconfig): no ids to gate on, so it is free (dead_end_reopened)',
       snapshot: contact({ heldUnmeteredTypeIds: ['gold'] }),
       target: { kind: 'class_booking', accessRule: { type: 'subscription', subscriptionTypeIds: [] } },
-      expected: denied('no_subscription'),
+      expected: { options: [{ type: 'covered', via: { reason: 'open' } }], denial: null },
     },
     {
       name: 'subscription class: holder of an UNLISTED type denied no_subscription',

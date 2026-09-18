@@ -67,7 +67,10 @@ describe('tarif595 draft — the default never beats a typed price', () => {
 })
 
 describe('the resolver, on the shapes this path meets', () => {
-  const gated = { type: 'class' as const, accessRule: { type: 'members' as const } }
+  // A class limited to people who signed up — a MODERN wall. A legacy
+  // `{ type: 'members' }` document's price never fires (`classDoorIsInert`,
+  // docs/class-access-derived.md), so it would not exercise the price at all.
+  const gated = { type: 'class' as const, accessRule: { audience: 'members' as const } }
 
   it('a class with its own price', () => {
     const d = resolveActivityDropIn({ ...gated, dropIn: { mode: 'custom', enabled: true, priceAmount: 30 } }, null)

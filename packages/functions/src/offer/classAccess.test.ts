@@ -1,0 +1,439 @@
+import assert from 'node:assert/strict'
+import {
+  classAccessChip,
+  classAccessFacts,
+  classAccessRuleFor,
+  migrateClassAccess,
+  activityPlanEdgeUpdate,
+  type ClassAccessInput,
+} from '@linyup/shared'
+
+// WHO MAY BOOK A CLASS, derived from its prices (docs/class-access-derived.md).
+// The table in `utils/classAccess.ts` is what these pin, case by case, plus the
+// two readings that must NOT change: an included plan decides access, a member
+// rate never does.
+// Run with: pnpm --filter @linyup/functions test
+
+const STUDIO = { enabled: true, priceAmount: 25 }
+const NO_STUDIO = null
+
+/** A class asked the modern questions — no legacy tier to reason about. */
+function cls(overrides: Partial<ClassAccessInput> = {}): ClassAccessInput {
+  return {
+    type: 'class',
+    accessRule: { type: 'open', audience: 'anyone', requirePlan: false },
+    dropIn: { mode: 'off', enabled: false },
+    ...overrides,
+  } as ClassAccessInput
+}
+
+const included = (ids: string[]): Partial<ClassAccessInput> => ({
+  accessRule: {
+    type: 'members' as const,
+    audience: 'members' as const,
+    requirePlan: false,
+    subscriptionTypeIds: ids,
+  },
+})
+
+describe('who may book a class', () => {
+  describe('the table', () => {
+    it('a drop-in price lets anyone in, with or without plans', () => {
+      const paid = classAccessFacts(cls({ dropIn: { mode: 'studio', enabled: false } }), STUDIO)
+      assert.equal(paid.dropIn.priceAmount, 25)
+      assert.equal(paid.free, false)
+      assert.equal(paid.planHoldersOnly, false)
+      assert.equal(classAccessChip(paid), 'paid_anyone')
+
+      const withPlan = classAccessFacts(
+        cls({ ...included(['premium']), dropIn: { mode: 'custom', enabled: true, priceAmount: 30 } }),
+        STUDIO
+      )
+      assert.equal(withPlan.dropIn.priceAmount, 30)
+      assert.equal(withPlan.planHoldersOnly, false)
+      assert.deepEqual(withPlan.includedPlanIds, ['premium'])
+    })
+
+    it('a plan and no price means plan holders only', () => {
+      const f = classAccessFacts(cls(included(['premium'])), STUDIO)
+      assert.equal(f.planHoldersOnly, true)
+      assert.equal(f.free, false)
+      assert.equal(classAccessChip(f), 'plan_holders')
+    })
+
+    it('no price and no plan is free', () => {
+      const f = classAccessFacts(cls(), STUDIO)
+      assert.equal(f.free, true)
+      assert.equal(f.planHoldersOnly, false)
+      assert.equal(classAccessChip(f), 'free_anyone')
+    })
+
+    it('the studio default is the door — a class following it is not free', () => {
+      const following = cls({ dropIn: { mode: 'studio', enabled: false } })
+      assert.equal(classAccessFacts(following, STUDIO).free, false)
+      // …and the same class under a studio with no default has no door at all.
+      assert.equal(classAccessFacts(following, NO_STUDIO).free, true)
+    })
+  })
+
+  describe('a MEMBER PRICE never decides access', () => {
+    // The whole point of the split: `memberBenefit` reduces what a holder pays,
+    // `accessRule.subscriptionTypeIds` says who may book. A class with a price
+    // and a discounting plan stays open to everyone.
+    it('a plan on the rate alone leaves the class open', () => {
+      const f = classAccessFacts(
+        cls({
+          dropIn: { mode: 'custom', enabled: true, priceAmount: 25 },
+          memberBenefit: { effect: 'percent_off', percentOff: 20, subscriptionTypeIds: ['premium'] },
+        } as Partial<ClassAccessInput>),
+        STUDIO
+      )
+      assert.deepEqual(f.includedPlanIds, [])
+      assert.equal(f.planHoldersOnly, false)
+      assert.equal(classAccessChip(f), 'paid_anyone')
+    })
+
+    it('…and does not keep a class off the free state when the door closes', () => {
+      const f = classAccessFacts(
+        cls({
+          dropIn: { mode: 'off', enabled: false },
+          memberBenefit: { effect: 'percent_off', percentOff: 20, subscriptionTypeIds: ['premium'] },
+        } as Partial<ClassAccessInput>),
+        STUDIO
+      )
+      assert.equal(f.free, true)
+    })
+  })
+
+  describe('the sign-up switch', () => {
+    it('keeps the club case: free for people who signed up, closed to visitors', () => {
+      const f = classAccessFacts(
+        cls({ accessRule: { type: 'members', audience: 'members', requirePlan: false } }),
+        STUDIO
+      )
+      assert.equal(f.signupRequired, true)
+      assert.equal(f.free, true)
+      assert.equal(classAccessChip(f), 'free_members')
+    })
+
+    it('and rides on a paid class too', () => {
+      const f = classAccessFacts(
+        cls({
+          accessRule: { type: 'members', audience: 'members', requirePlan: false },
+          dropIn: { mode: 'studio', enabled: false },
+        }),
+        STUDIO
+      )
+      assert.equal(classAccessChip(f), 'paid_members')
+    })
+  })
+
+  describe('the trial', () => {
+    it('is available on anything a newcomer cannot already do', () => {
+      // Free to anyone: the door grants nothing, so it stays inert.
+      assert.equal(classAccessFacts(cls(), STUDIO).trialAvailable, false)
+      // Free but walled: the trial is the newcomer's one way in.
+      assert.equal(
+        classAccessFacts(
+          cls({ accessRule: { type: 'members', audience: 'members', requirePlan: false } }),
+          NO_STUDIO
+        ).trialAvailable,
+        true
+      )
+      assert.equal(
+        classAccessFacts(cls({ dropIn: { mode: 'studio', enabled: false } }), STUDIO).trialAvailable,
+        true
+      )
+      assert.equal(classAccessFacts(cls(included(['premium'])), STUDIO).trialAvailable, true)
+    })
+  })
+
+  describe('legacy documents, until the backfill', () => {
+    it('a legacy open class is free and sells nothing', () => {
+      const f = classAccessFacts(
+        { type: 'class', accessRule: { type: 'open' }, dropIn: { enabled: true, priceAmount: 30 } },
+        STUDIO
+      )
+      assert.equal(f.free, true)
+      assert.equal(f.dropIn.enabled, false)
+    })
+
+    it('a legacy members class keeps its wall, and its price never fires', () => {
+      // The old resolver covered every member of a legacy `members` class before
+      // it looked at a price, and walled everyone else — so no studio default,
+      // and no stored price, ever charged anyone there (`classDoorIsInert`).
+      for (const studio of [STUDIO, NO_STUDIO]) {
+        const f = classAccessFacts({ type: 'class', accessRule: { type: 'members' } }, studio)
+        assert.equal(f.signupRequired, true)
+        assert.equal(f.free, true)
+        assert.equal(f.dropIn.enabled, false)
+        assert.equal(classAccessChip(f), 'free_members')
+      }
+    })
+
+    it('a legacy subscription class with a door lets a payer in', () => {
+      const f = classAccessFacts(
+        {
+          type: 'class',
+          accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
+          dropIn: { mode: 'studio', enabled: false },
+        },
+        STUDIO
+      )
+      assert.equal(f.signupRequired, false)
+      assert.equal(f.planHoldersOnly, false)
+      assert.deepEqual(f.includedPlanIds, ['premium'])
+    })
+
+    it('…and without one it is plan holders only', () => {
+      const f = classAccessFacts(
+        {
+          type: 'class',
+          accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
+          dropIn: { mode: 'off', enabled: false },
+        },
+        STUDIO
+      )
+      assert.equal(f.planHoldersOnly, true)
+      // A legacy document with no `dropIn` at all follows the studio, so the
+      // same class is plan-holders-only only where there is no default to follow.
+      const noDefault = classAccessFacts(
+        { type: 'class', accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] } },
+        NO_STUDIO
+      )
+      assert.equal(noDefault.planHoldersOnly, true)
+    })
+  })
+
+  describe('an appointment answers nothing here', () => {
+    it('the price is its gate', () => {
+      const f = classAccessFacts({ type: 'appointment', durations: [{ minutes: 60, priceAmount: 90 }] } as ClassAccessInput, STUDIO)
+      assert.equal(f.free, false)
+      assert.equal(f.trialAvailable, false)
+      assert.equal(f.dropIn.enabled, false)
+      assert.deepEqual(f.includedPlanIds, [])
+    })
+  })
+
+  describe('states that can no longer exist', () => {
+    it('plan-holders-only always names at least one plan', () => {
+      // `gated_empty_allowlist` — "a plan is required and none is listed,
+      // so nobody can book" — is unreachable by construction: requiring a plan
+      // IS "a plan includes it and no door sells it".
+      for (const ids of [[], ['premium'], ['premium', 'pack']]) {
+        for (const paidDoor of [false, true]) {
+          const facts = classAccessFacts(
+            {
+              type: 'class',
+              accessRule: classAccessRuleFor({ signupRequired: false, includedPlanIds: ids }),
+              dropIn: paidDoor ? { mode: 'custom', priceAmount: 25 } : { mode: 'off' },
+            },
+            NO_STUDIO
+          )
+          if (facts.planHoldersOnly) assert.ok(facts.includedPlanIds.length > 0)
+        }
+      }
+    })
+  })
+
+  describe('classAccessRuleFor — what a writer stores', () => {
+    it('stores the wall and the plans, and nothing that could disagree with them', () => {
+      assert.deepEqual(classAccessRuleFor({ signupRequired: false, includedPlanIds: ['premium'] }), {
+        audience: 'anyone',
+        subscriptionTypeIds: ['premium'],
+      })
+      assert.deepEqual(classAccessRuleFor({ signupRequired: true, includedPlanIds: [] }), {
+        audience: 'members',
+      })
+    })
+
+    it('what it stores is what classAccessFacts reads back', () => {
+      for (const paidDoor of [false, true]) {
+        for (const ids of [[], ['premium']]) {
+          for (const signupRequired of [false, true]) {
+            const facts = classAccessFacts(
+              {
+                type: 'class',
+                accessRule: classAccessRuleFor({ signupRequired, includedPlanIds: ids }),
+                dropIn: paidDoor ? { mode: 'custom', priceAmount: 25 } : { mode: 'off' },
+              },
+              STUDIO
+            )
+            assert.deepEqual(facts.includedPlanIds, ids)
+            assert.equal(facts.planHoldersOnly, ids.length > 0 && !paidDoor)
+            assert.equal(facts.free, ids.length === 0 && !paidDoor)
+            assert.equal(facts.signupRequired, signupRequired)
+          }
+        }
+      }
+    })
+  })
+})
+
+describe('the plan table on a class with a stale plan list', () => {
+  it('ticking a plan does not bring back plans the mapping cleared', () => {
+    // A free class (no door) whose old list named 'gold' with requirePlan:false
+    // — the plans did nothing. Ticking 'silver' included must store silver only,
+    // not gold+silver (which would make the class plan-holders-only for gold too).
+    const fresh = {
+      type: 'class',
+      accessRule: { type: 'open', audience: 'anyone', requirePlan: false, subscriptionTypeIds: ['gold'] },
+      dropIn: { mode: 'off', enabled: false },
+    } as never
+    const update = activityPlanEdgeUpdate(fresh, 'silver', { access: true, rate: false }, undefined, undefined, null)
+    assert.deepEqual((update as { accessRule: unknown }).accessRule, {
+      audience: 'anyone',
+      subscriptionTypeIds: ['silver'],
+    })
+  })
+})
+
+describe('migrateClassAccess — the stage 5 rewrite', () => {
+  // What the OLD resolver let each kind of person do, next to what the derived
+  // rule lets them do once the class is rewritten. They must agree wherever the
+  // mapping reports no note.
+  const migrated = (doc: ClassAccessInput, studio = STUDIO) => {
+    const m = migrateClassAccess(doc, studio)
+    return { m, facts: classAccessFacts({ type: 'class', accessRule: m.accessRule, dropIn: m.dropIn }, studio) }
+  }
+
+  it('a legacy open class stays free and loses a stray price', () => {
+    const { m, facts } = migrated({
+      type: 'class',
+      accessRule: { type: 'open' },
+      dropIn: { enabled: true, priceAmount: 30 },
+    })
+    assert.deepEqual(m.accessRule, { audience: 'anyone' })
+    assert.deepEqual(m.dropIn, { mode: 'off' })
+    assert.deepEqual(m.notes, ['legacy_open_door_closed'])
+    assert.equal(facts.free, true)
+    assert.equal(facts.signupRequired, false)
+  })
+
+  it('a legacy members class keeps its wall and states its door as off', () => {
+    // Its price never fired, so the rewrite says so — and it stays free for
+    // members when the studio sets a usual price later.
+    const { m, facts } = migrated({ type: 'class', accessRule: { type: 'members' } })
+    assert.deepEqual(m.accessRule, { audience: 'members' })
+    assert.deepEqual(m.dropIn, { mode: 'off' })
+    assert.deepEqual(m.notes, ['legacy_members_door_closed'])
+    assert.equal(facts.signupRequired, true)
+    assert.equal(facts.free, true)
+  })
+
+  it('a legacy subscription class with no door stays plan-holders-only, unwalled', () => {
+    const { m, facts } = migrated(
+      {
+        type: 'class',
+        accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
+        dropIn: { mode: 'off', enabled: false },
+      }
+    )
+    assert.deepEqual(m.accessRule, { audience: 'anyone', subscriptionTypeIds: ['premium'] })
+    assert.deepEqual(m.notes, [])
+    assert.equal(facts.planHoldersOnly, true)
+  })
+
+  it('a legacy subscription class with a door stays open to payers', () => {
+    const { m, facts } = migrated({
+      type: 'class',
+      accessRule: { type: 'subscription', subscriptionTypeIds: ['premium'] },
+      dropIn: { mode: 'custom', enabled: true, priceAmount: 25 },
+    })
+    assert.deepEqual(m.dropIn, { mode: 'custom', priceAmount: 25 })
+    assert.deepEqual(m.notes, [])
+    assert.equal(facts.planHoldersOnly, false)
+    assert.equal(facts.signupRequired, false)
+  })
+
+  it('members-only + plan required + a price: kept plan-holders-only, wall kept, door closed', () => {
+    const { m, facts } = migrated({
+      type: 'class',
+      accessRule: {
+        type: 'subscription',
+        audience: 'members',
+        requirePlan: true,
+        subscriptionTypeIds: ['premium'],
+      },
+      dropIn: { mode: 'studio', enabled: false },
+    })
+    assert.deepEqual(m.accessRule, { audience: 'members', subscriptionTypeIds: ['premium'] })
+    assert.deepEqual(m.dropIn, { mode: 'off' })
+    assert.deepEqual(m.notes, ['plan_required_door_closed'])
+    assert.equal(facts.planHoldersOnly, true)
+    assert.equal(facts.signupRequired, true)
+  })
+
+  it('plans listed on a free class are cleared, so it stays free', () => {
+    const { m, facts } = migrated({
+      type: 'class',
+      accessRule: {
+        type: 'members',
+        audience: 'members',
+        requirePlan: false,
+        subscriptionTypeIds: ['premium'],
+      },
+      dropIn: { mode: 'off', enabled: false },
+    })
+    assert.deepEqual(m.accessRule, { audience: 'members' })
+    assert.deepEqual(m.notes, ['inert_plans_cleared'])
+    assert.equal(facts.free, true)
+  })
+
+  it('a dead end — plan required, none named — is reported, not hidden', () => {
+    const { m } = migrated({
+      type: 'class',
+      accessRule: { type: 'subscription', audience: 'members', requirePlan: true },
+      dropIn: { mode: 'off', enabled: false },
+    })
+    assert.deepEqual(m.notes, ['dead_end_reopened'])
+  })
+
+  it('its own output is a no-op — a plan-holders-only class in the derived shape keeps its plans', () => {
+    // The shape the new pricing form saves: plans, no door, no stored
+    // `requirePlan`. Reading that absence as "not required" would clear the
+    // plans and make the class free (found 2026-09-18, before any run).
+    const doc: ClassAccessInput = {
+      type: 'class',
+      accessRule: { audience: 'members', subscriptionTypeIds: ['premium'] },
+      dropIn: { mode: 'off' },
+    }
+    const { m, facts } = migrated(doc)
+    assert.deepEqual(m, {
+      accessRule: { audience: 'members', subscriptionTypeIds: ['premium'] },
+      dropIn: { mode: 'off' },
+      notes: [],
+    })
+    assert.equal(facts.planHoldersOnly, true)
+    // …and every derived-shape combination maps to itself.
+    for (const audience of ['anyone', 'members'] as const) {
+      for (const ids of [[], ['premium']]) {
+        for (const dropIn of [{ mode: 'off' as const }, { mode: 'custom' as const, priceAmount: 25 }, { mode: 'studio' as const }]) {
+          const d: ClassAccessInput = {
+            type: 'class',
+            accessRule: { audience, ...(ids.length ? { subscriptionTypeIds: ids } : {}) },
+            dropIn,
+          }
+          const out = migrateClassAccess(d, STUDIO)
+          assert.deepEqual(out.accessRule, d.accessRule)
+          assert.deepEqual(out.dropIn, d.dropIn)
+          assert.deepEqual(out.notes, [])
+        }
+      }
+    }
+  })
+
+  it('a modern class already in the derived shape is left as it is', () => {
+    const doc: ClassAccessInput = {
+      type: 'class',
+      accessRule: { type: 'open', audience: 'anyone', requirePlan: false, subscriptionTypeIds: ['premium'] },
+      dropIn: { mode: 'custom', enabled: true, priceAmount: 30 },
+    }
+    const { m } = migrated(doc)
+    assert.deepEqual(m, {
+      accessRule: { audience: 'anyone', subscriptionTypeIds: ['premium'] },
+      dropIn: { mode: 'custom', priceAmount: 30 },
+      notes: [],
+    })
+  })
+})

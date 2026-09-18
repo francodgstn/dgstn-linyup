@@ -152,9 +152,9 @@ function claimErrorKey(err: unknown): string {
     case 'price_changed':
       return 'priceChanged'
     // Every coverage denial the resolver can return for a class seat, and ALL of
-    // them belong here. `not_joined` is not an exotic one: an activity with no
-    // explicit accessRule and `isFreeTrial: false` resolves to `{type:'members'}`
-    // (resolveActivityAccessRule), and joining the queue is deliberately NOT
+    // them belong here. `not_joined` is not an exotic one: a class limited to
+    // people who signed up (`audience: 'members'`) refuses anyone who has not,
+    // and joining the queue is deliberately NOT
     // gated on access — the badge on the public form is a warning, the claim is
     // the gate — so a prospect who was offered a seat and is refused at the claim
     // is the ordinary shape of this page's most important error, not an edge.

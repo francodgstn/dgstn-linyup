@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {
-  activityRequiresSubscription,
+  classAccessFacts,
   contactHoldsCoveringSubscription,
   type HeldPlan,
   type SubscriptionCoverageSnapshot,
@@ -22,19 +22,30 @@ function plan(p: Partial<HeldPlan> & Pick<HeldPlan, 'subscription_type_id' | 'so
   }
 }
 
-describe('activityRequiresSubscription', () => {
-  it('returns null for open and members rules', () => {
-    assert.equal(activityRequiresSubscription({ type: 'open' }), null)
-    assert.equal(activityRequiresSubscription({ type: 'members' }), null)
-    assert.equal(activityRequiresSubscription(undefined), null)
+// `activityRequiresSubscription` was removed (class-access stage 5,
+// docs/class-access-derived.md): "plan required" is now DERIVED, so callers
+// read it off `classAccessFacts(...).planHoldersOnly` / `.includedPlanIds`
+// instead of a stored/legacy-tier answer.
+describe('classAccessFacts — plan-holders-only, derived', () => {
+  it('open and members rules with no linked plans are not plan-holders-only', () => {
+    assert.equal(classAccessFacts({ type: 'class', accessRule: { type: 'open' } }, null).planHoldersOnly, false)
+    assert.equal(classAccessFacts({ type: 'class', accessRule: { type: 'members' } }, null).planHoldersOnly, false)
+    assert.equal(classAccessFacts({ type: 'class' }, null).planHoldersOnly, false)
   })
 
-  it('returns the ids (or empty array) for subscription rules', () => {
-    assert.deepEqual(
-      activityRequiresSubscription({ type: 'subscription', subscriptionTypeIds: ['a', 'b'] }),
-      ['a', 'b'],
+  it('a subscription rule with ids and no door is plan-holders-only, and names the ids', () => {
+    const facts = classAccessFacts(
+      { type: 'class', accessRule: { type: 'subscription', subscriptionTypeIds: ['a', 'b'] } },
+      null
     )
-    assert.deepEqual(activityRequiresSubscription({ type: 'subscription' }), [])
+    assert.equal(facts.planHoldersOnly, true)
+    assert.deepEqual(facts.includedPlanIds, ['a', 'b'])
+  })
+
+  it('a subscription rule with NO ids has nothing to gate on, so it is not plan-holders-only', () => {
+    const facts = classAccessFacts({ type: 'class', accessRule: { type: 'subscription' } }, null)
+    assert.equal(facts.planHoldersOnly, false)
+    assert.deepEqual(facts.includedPlanIds, [])
   })
 })
 

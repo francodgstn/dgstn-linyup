@@ -1,3 +1,5 @@
+import { activityDocForWrite, type ClassAccessInput } from '@linyup/shared'
+
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
@@ -43,22 +45,29 @@ export function transformActivity(
   // (Franco, 2026-09-08). A trial is once per person — `Contact.trial_used_at` —
   // so this is a door, not a hole.
   //
-  // The field shape is the one `ActivityPricingForm` writes, deliberately:
-  // `audience` + `requirePlan` are what the gate decides on, and `type` is the
-  // display projection kept in step so no surface disagrees with them.
+  // Stated here in the LEGACY vocabulary on purpose (`requirePlan: true`) and
+  // converted below by `activityDocForWrite`, which stores the DERIVED shape
+  // (docs/class-access-derived.md): `audience: 'members'` + the included plans,
+  // no drop-in price ⇒ plan-holders-only, with `requirePlan` derived rather than
+  // stored. Handing the mapping the derived shape directly would be read as
+  // "plans listed, plan not required" and have its plan list cleared.
   //
   // CLASSES ONLY. `Activity.accessRule` is class-only by design — appointment
   // paths ignore it, and the price is the gate there.
   if (planIds && out.type !== 'appointment') {
     out.accessRule = {
-      type:                'subscription',
       audience:            'members',
       requirePlan:         true,
       subscriptionTypeIds: [...planIds],
     }
-    out.isFreeTrial  = false
     out.trialEnabled = true
   }
 
-  return out
+  // EVERY activity leaves in the derived shape, through the same mapping the
+  // stage-5 backfill runs: a class that was not plan-gated keeps what its source
+  // fields meant (hmd-lineup's `isFreeTrial` — false read as members-only, else
+  // free to anyone) with `dropIn.mode` stated; the legacy `isFreeTrial` is
+  // dropped; an appointment carries no access rule and no drop-in. HMD's
+  // bookingSettings set no usual drop-in price, hence `null`.
+  return activityDocForWrite(out as ClassAccessInput & Record<string, unknown>, null)
 }

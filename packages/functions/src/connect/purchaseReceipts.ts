@@ -44,6 +44,7 @@ import {
   COURSES_COLLECTION,
   PRODUCTS_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  gatedPlanIds,
   localizedPublicUrl,
   localizedPublicSubUrl,
   resolveProductCollectionNote,
@@ -260,9 +261,10 @@ async function activitiesCoveredBy(
         // activity in this list would read as a promise the timetable does not
         // keep. (`isActive` absent ⇒ active, as everywhere else.)
         if (a.archived_at || a.isActive === false) return false
-        const rule = a.accessRule as { type?: string; subscriptionTypeIds?: string[] } | undefined
-        if (rule?.type !== 'subscription') return false
-        return (rule.subscriptionTypeIds ?? []).includes(subscriptionTypeId)
+        // The plans that INCLUDE the class (docs/class-access-derived.md) —
+        // `gatedPlanIds` reads the modern list and a legacy `subscription` one
+        // alike; an appointment has none.
+        return gatedPlanIds({ type: a.type, accessRule: a.accessRule, isFreeTrial: a.isFreeTrial } as never).includes(subscriptionTypeId)
       })
       .map((d) => (d.data().name as string | undefined) ?? '')
       .filter(Boolean)

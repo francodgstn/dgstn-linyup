@@ -52,7 +52,6 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
       onlineUrl: data.onlineUrl || null,
       max_participants: data.max_participants || null,
       bookings_count: data.bookings_count || 0,
-      isFreeTrial: data.isFreeTrial !== false,
       // NOTE: no accessRule any more — appointments dropped the access gate
       // entirely (2026-07); the price is the only gate. See docs/appointments.md.
       status: data.status || 'open',

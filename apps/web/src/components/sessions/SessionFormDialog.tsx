@@ -562,9 +562,10 @@ export function SessionFormDialog({
         color: '',
         // Open and free to book, which is the least surprising default: a gate
         // nobody asked for is invisible until a member is refused at the door.
-        isFreeTrial: true,
-        accessRule: { type: 'open' as const },
-        dropIn: { enabled: false },
+        // No plan and no drop-in is what makes a class free
+        // (docs/class-access-derived.md).
+        accessRule: { audience: 'anyone' as const },
+        dropIn: { mode: 'off' as const },
         trialEnabled: false,
         waitlistEnabled: false,
         autoConfirm: true,

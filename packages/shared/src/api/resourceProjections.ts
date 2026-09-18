@@ -8,6 +8,7 @@ import type { FinanceMonthlyReport, FinanceTotals } from '../types/finance'
 import { FINANCE_TIMEZONE } from '../types/finance'
 import type { Booking } from '../types/session'
 import { bookingWasPaidFor } from '../types/session'
+import { classAccessFacts } from '../utils/classAccess'
 import { contactLifecycle } from '../utils/contactLifecycle'
 import { resolveActivityDropIn, type DropInPrice } from '../utils/dropIn'
 import { introOffersOf } from '../utils/introOffer'
@@ -93,6 +94,7 @@ export function projectActivity(
   if (activity.archived_at) return null
   const isAppointment = activity.type === 'appointment'
   const access = isAppointment ? null : resolveActivityAccessRule(activity)
+  const accessFacts = isAppointment ? null : classAccessFacts(activity, ctx.studioDropIn)
   const dropIn = isAppointment ? null : resolveActivityDropIn(activity, ctx.studioDropIn)
   return {
     object: 'activity',
@@ -109,10 +111,16 @@ export function projectActivity(
     provider: activity.providerId ? { id: activity.providerId, name: apiStr(activity.providerName) } : null,
     access: access
       ? {
-          tier: access.type,
-          audience: access.audience ?? null,
-          require_plan: access.requirePlan === true,
-          plan_ids: apiStrings(access.subscriptionTypeIds),
+          // DERIVED, like every other reader (docs/class-access-derived.md):
+          // the three words the API has always used, from the class's prices.
+          tier: accessFacts!.planHoldersOnly
+            ? 'subscription'
+            : accessFacts!.signupRequired
+              ? 'members'
+              : 'open',
+          audience: accessFacts!.signupRequired ? 'members' : 'anyone',
+          require_plan: accessFacts!.planHoldersOnly,
+          plan_ids: accessFacts!.includedPlanIds,
         }
       : null,
     drop_in: dropIn

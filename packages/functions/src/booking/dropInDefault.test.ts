@@ -13,9 +13,13 @@ import { buildActivityPublicProfile } from '../sync/syncActivityPublicProfile'
 const STUDIO = { enabled: true, priceAmount: 25 }
 
 describe('resolveActivityDropIn — the three answers', () => {
+  // rule 7 (class-access stage 5): `{ type: 'members' }` alone is a LEGACY
+  // rule and its door is now inert (rule 3, classDoorIsInert) — that case is
+  // pinned separately below. A MODERN gated class (`audience` present) still
+  // resolves its door normally, which is what these fixtures exercise.
   it('a class that follows the studio takes the studio price', () => {
     assert.deepEqual(
-      resolveActivityDropIn({ type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'studio', enabled: false } }, STUDIO),
+      resolveActivityDropIn({ type: 'class', accessRule: { audience: 'members' }, dropIn: { mode: 'studio', enabled: false } }, STUDIO),
       { enabled: true, priceAmount: 25, source: 'studio' }
     )
   })
@@ -23,7 +27,7 @@ describe('resolveActivityDropIn — the three answers', () => {
   it('…and has none when the studio has none', () => {
     for (const studio of [null, undefined, { enabled: false }, { enabled: true }]) {
       assert.deepEqual(
-        resolveActivityDropIn({ type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'studio', enabled: false } }, studio),
+        resolveActivityDropIn({ type: 'class', accessRule: { audience: 'members' }, dropIn: { mode: 'studio', enabled: false } }, studio),
         { enabled: false, source: 'studio' }
       )
     }
@@ -32,7 +36,7 @@ describe('resolveActivityDropIn — the three answers', () => {
   it('a custom price wins over the studio', () => {
     assert.deepEqual(
       resolveActivityDropIn(
-        { type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'custom', enabled: true, priceAmount: 30 } },
+        { type: 'class', accessRule: { audience: 'members' }, dropIn: { mode: 'custom', enabled: true, priceAmount: 30 } },
         STUDIO
       ),
       { enabled: true, priceAmount: 30, source: 'custom' }
@@ -41,7 +45,7 @@ describe('resolveActivityDropIn — the three answers', () => {
 
   it('a custom class without a price sells nothing — enabled is derived, never copied', () => {
     assert.deepEqual(
-      resolveActivityDropIn({ type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'custom', enabled: true } }, STUDIO),
+      resolveActivityDropIn({ type: 'class', accessRule: { audience: 'members' }, dropIn: { mode: 'custom', enabled: true } }, STUDIO),
       { enabled: false, source: 'custom' }
     )
   })
@@ -49,7 +53,17 @@ describe('resolveActivityDropIn — the three answers', () => {
   it('off is off, whatever the studio says', () => {
     assert.deepEqual(
       resolveActivityDropIn(
-        { type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'off', enabled: true, priceAmount: 30 } },
+        { type: 'class', accessRule: { audience: 'members' }, dropIn: { mode: 'off', enabled: true, priceAmount: 30 } },
+        STUDIO
+      ),
+      { enabled: false, source: 'off' }
+    )
+  })
+
+  it('rule 3: a LEGACY members class (no audience) has its door closed — the price never fired', () => {
+    assert.deepEqual(
+      resolveActivityDropIn(
+        { type: 'class', accessRule: { type: 'members' }, dropIn: { mode: 'custom', enabled: true, priceAmount: 30 } },
         STUDIO
       ),
       { enabled: false, source: 'off' }
@@ -101,7 +115,7 @@ describe('the pre-2026-09-11 document', () => {
   it('enabled + priced reads as custom', () => {
     assert.equal(dropInModeOf({ enabled: true, priceAmount: 30 }), 'custom')
     assert.deepEqual(
-      resolveActivityDropIn({ type: 'class', accessRule: { type: 'members' }, dropIn: { enabled: true, priceAmount: 30 } }, STUDIO),
+      resolveActivityDropIn({ type: 'class', accessRule: { audience: 'members' }, dropIn: { enabled: true, priceAmount: 30 } }, STUDIO),
       { enabled: true, priceAmount: 30, source: 'custom' }
     )
   })
@@ -111,13 +125,13 @@ describe('the pre-2026-09-11 document', () => {
     assert.equal(dropInModeOf({ enabled: true }), 'studio')
     assert.equal(dropInModeOf(undefined), 'studio')
     assert.equal(dropInModeOf(null), 'studio')
-    assert.deepEqual(resolveActivityDropIn({ type: 'class', accessRule: { type: 'members' }, dropIn: { enabled: false } }, STUDIO), {
+    assert.deepEqual(resolveActivityDropIn({ type: 'class', accessRule: { audience: 'members' }, dropIn: { enabled: false } }, STUDIO), {
       enabled: true,
       priceAmount: 25,
       source: 'studio',
     })
     // …and stay exactly what they were while the studio has no default.
-    assert.deepEqual(resolveActivityDropIn({ type: 'class', accessRule: { type: 'members' }, dropIn: { enabled: false } }, null), {
+    assert.deepEqual(resolveActivityDropIn({ type: 'class', accessRule: { audience: 'members' }, dropIn: { enabled: false } }, null), {
       enabled: false,
       source: 'studio',
     })
@@ -142,7 +156,9 @@ describe('the studio default as stored', () => {
 })
 
 describe('the activity mirror carries the RESOLVED price', () => {
-  const base = { teamId: 't', type: 'class', name: 'MMA', accessRule: { type: 'members' } }
+  // rule 7: a MODERN gated class, so the mirror's door resolves normally —
+  // a legacy `{ type: 'members' }` class's door is inert (rule 3).
+  const base = { teamId: 't', type: 'class', name: 'MMA', accessRule: { audience: 'members' } }
 
   it('a class that follows the studio mirrors the studio price', () => {
     const mirror = buildActivityPublicProfile({ ...base, dropIn: { enabled: false } }, STUDIO)

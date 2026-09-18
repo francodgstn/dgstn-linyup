@@ -58,7 +58,6 @@ describe('introOfferDurationFor — what Stripe can express', () => {
   })
 
   it('REFUSES the non-subscription recurrences outright', () => {
-    assert.equal(introOfferDurationFor('per_class', 1), null)
     assert.equal(introOfferDurationFor('one_time', 1), null)
   })
 
