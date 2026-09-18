@@ -4061,7 +4061,9 @@
     "starterFederation": "Federation home",
     "starterFederationDesc": "Header, introduction, your clubs, locations and contact details",
     "starterSimple": "Simple site",
-    "starterSimpleDesc": "Header, a block of text and contact details"
+    "starterSimpleDesc": "Header, a block of text and contact details",
+    "sectionPosts": "Blog posts",
+    "sectionPostsDesc": "Your latest posts, as cards or a list"
   },
   "Courses": {
     "title": "Online Courses",

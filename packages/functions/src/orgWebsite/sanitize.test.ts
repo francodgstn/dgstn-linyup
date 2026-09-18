@@ -58,6 +58,25 @@ describe('org website publish — the aggregate sections round-trip', () => {
   })
 })
 
+describe('org website publish — section buttons open a page or a link', () => {
+  it('keeps a page button and a link button', () => {
+    const hero = (cta: Record<string, unknown>) =>
+      (sanitizeOrgSection({ id: 'h', type: 'hero', headline: 'Verband', align: 'center', cta }) as unknown as {
+        cta?: { action: string }
+      }).cta
+    assert.equal(hero({ label: 'Über uns', action: 'page', pageId: 'p-about' })?.action, 'page')
+    assert.equal(hero({ label: 'Mehr', action: 'url', url: 'https://example.ch' })?.action, 'url')
+  })
+  it('drops a booking, signup or appointment button', () => {
+    for (const action of ['booking', 'signup', 'appointment']) {
+      const banner = sanitizeOrgSection({
+        id: 'c', type: 'cta_banner', heading: 'Los', cta: { label: 'Buchen', action, activityId: 'a1' },
+      }) as unknown as { cta?: unknown }
+      assert.equal(banner.cta, undefined, action)
+    }
+  })
+})
+
 describe('org website publish — the header button is a link or nothing', () => {
   const header = (h: Record<string, unknown>) => sanitizeOrgMeta({ header: { showNav: true, ...h } }, 'Federation').header
 

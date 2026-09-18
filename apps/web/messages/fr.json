@@ -4061,7 +4061,9 @@
     "starterFederation": "Accueil de la fédération",
     "starterFederationDesc": "En-tête, présentation, vos clubs, lieux et coordonnées",
     "starterSimple": "Site simple",
-    "starterSimpleDesc": "En-tête, un bloc de texte et les coordonnées"
+    "starterSimpleDesc": "En-tête, un bloc de texte et les coordonnées",
+    "sectionPosts": "Articles de blog",
+    "sectionPostsDesc": "Vos derniers articles, en cartes ou en liste"
   },
   "Courses": {
     "title": "Cours en ligne",

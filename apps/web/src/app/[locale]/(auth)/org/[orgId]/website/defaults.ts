@@ -48,6 +48,7 @@ export const ORG_SECTION_LIBRARY: {
   { type: 'features', group: 'content', labelKey: 'sectionFeatures', descKey: 'sectionFeaturesDesc', icon: 'Sparkles' },
   { type: 'cta_banner', group: 'content', labelKey: 'sectionCta', descKey: 'sectionCtaDesc', icon: 'Megaphone' },
   { type: 'faq', group: 'trust', labelKey: 'sectionFaq', descKey: 'sectionFaqDesc', icon: 'HelpCircle' },
+  { type: 'posts', group: 'trust', labelKey: 'sectionPosts', descKey: 'sectionPostsDesc', icon: 'Newspaper' },
   {
     type: 'testimonials',
     group: 'trust',

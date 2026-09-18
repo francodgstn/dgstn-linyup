@@ -4061,7 +4061,9 @@
     "starterFederation": "Home della federazione",
     "starterFederationDesc": "Intestazione, presentazione, i vostri club, sedi e contatti",
     "starterSimple": "Sito semplice",
-    "starterSimpleDesc": "Intestazione, un blocco di testo e i contatti"
+    "starterSimpleDesc": "Intestazione, un blocco di testo e i contatti",
+    "sectionPosts": "Articoli del blog",
+    "sectionPostsDesc": "I tuoi articoli più recenti, in schede o elenco"
   },
   "Courses": {
     "title": "Corsi online",

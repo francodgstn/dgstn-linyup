@@ -117,6 +117,11 @@ export function sanitizeOrgSection(raw: unknown): OrgSiteSection | null {
   if (!id || typeof type !== 'string' || !(type in ORG_SECTION_BUILDERS)) return null
   const section = ORG_SECTION_BUILDERS[type as OrgSiteSectionType](d, id)
   if (!section) return null
+  // An org button opens one of its own pages or an external link — the shared
+  // builders also accept booking, signup and appointment buttons, which on an
+  // organisation's site would point at surfaces it does not have.
+  const withCta = section as { cta?: { action?: string } }
+  if (withCta.cta && withCta.cta.action !== 'url' && withCta.cta.action !== 'page') delete withCta.cta
   // Nav membership + menu label — one rule for both tenants.
   applyNavFields(section, d)
   return section
