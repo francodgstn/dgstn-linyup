@@ -179,7 +179,9 @@ welcome, a win-back, a birthday, a trial follow-up — is MARKETING in Meta's
 categories: dearer for the studio, and outside what a member agreed to when they
 ticked "reminders". Utility is only what is tied to something the member did.
 
-**6a. The second consent.** `Contact.whatsapp_marketing_consent`, the same
+#### 6a. The second consent
+
+`Contact.whatsapp_marketing_consent`, the same
 shape as `whatsapp_consent`, written by the same builder
 (`whatsappConsentPatch(kind, optIn, source)`) and read by the same predicate
 (`whatsappConsentAllows(contact, kind)`, `kind: 'reminders' | 'marketing'`).
@@ -190,7 +192,9 @@ in the Space and the member app, a second row on the contact page. A STOP ends
 to clients by the rules like the first; wiped on anonymisation; `excluded` in
 the API catalogue.
 
-**6b. Templates, written in Linyup.** `teams/{t}/whatsapp_templates/{id}`:
+#### 6b. Templates, written in Linyup
+
+`teams/{t}/whatsapp_templates/{id}`:
 `label` (the studio's name for it), `category` (`UTILITY` | `MARKETING`, asked
 in the owner's words — "about something they booked or bought" / "news, offers,
 invitations"), `language` (the studio's `Team.language`), `body` with the same
@@ -217,7 +221,9 @@ Editor: on the WhatsApp plugin page, a list (label, category, review state) and
 a form with a live chat-bubble preview, filled with the same sample values the
 email template editor uses.
 
-**6c. The action is BUILT-IN, not a plugin action.** `send_whatsapp`
+#### 6c. The action is BUILT-IN, not a plugin action
+
+`send_whatsapp`
 `{ templateId }` joins `send_email` in the engine's action union and in the
 rule builder, offered only while the plugin is installed. The generic
 `plugin:*` action path has no config editor in the builder and untranslated
@@ -229,7 +235,9 @@ are the template's tokens rendered by `substituteVariables` for that contact.
 It sends through `sendStudioWhatsApp`, keyed
 `wa-auto-{ruleId}-{contactId}-{occurrence}`.
 
-**6d. Held until 08:00.** Outside the window the action does not send and is
+#### 6d. Held until 08:00
+
+Outside the window the action does not send and is
 not skipped: it enqueues a Cloud Task (`sendHeldWhatsApp`) for
 `nextSmsWindowOpen(now)`, task id derived from the idempotency key. The handler
 re-reads the contact and template and calls `sendStudioWhatsApp`, which asks
@@ -237,7 +245,9 @@ consent, suppression, connection and approval again — a member who opted out
 overnight gets nothing. Only the WhatsApp action waits; the rule's other actions
 run on time. The run history says "held until 08:00".
 
-**6e. What it costs the studio.** The plugin page shows this month's sent
+#### 6e. What it costs the studio
+
+The plugin page shows this month's sent
 messages by Meta category from the send log (`wa_category`), with "Meta bills
 you directly". No Linyup metering. `getWhatsAppUsage` counts them (the send log
 is denied to clients), on the `mail_sends (team_id, channel, wa_category,

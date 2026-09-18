@@ -1339,7 +1339,7 @@ function ActionEditor({
                       waTemplates.map((tm) => {
                         const sendable = whatsappStudioTemplateSendable(tm)
                         return (
-                          <SelectItem key={tm.id} value={tm.id} disabled={!sendable} className="text-xs">
+                          <SelectItem key={tm.id} value={tm.id} disabled={!sendable} textValue={tm.label} className="text-xs">
                             {tm.label}
                             {!sendable && ` — ${t('actions.whatsappMessageNotReady')}`}
                           </SelectItem>
