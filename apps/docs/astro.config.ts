@@ -83,7 +83,20 @@ export default defineConfig({
       description: 'Internal documentation. Not published.',
       sidebar,
       pagefind: true,
-      customCss: ['./src/styles/docs.css'],
+      customCss: ['./src/styles/brand.css', './src/styles/docs.css'],
+      components: { SiteTitle: './src/components/SiteTitle.astro' },
+      favicon: '/favicon.svg',
+      head: [
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' } },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@700&display=swap',
+          },
+        },
+      ],
     }),
   ],
   vite: {
