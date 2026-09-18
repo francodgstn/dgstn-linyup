@@ -784,6 +784,10 @@ function cmdReset(flags) {
       FIRESTORE_EMULATOR_HOST: `localhost:${fsPort}`,
       FIREBASE_AUTH_EMULATOR_HOST: `localhost:${authPort}`,
       FIREBASE_STORAGE_EMULATOR_HOST: `localhost:${portFor('storage', slot)}`,
+      // Hold the seed until the trigger queue it causes has drained — minutes,
+      // not seconds. An explicitly empty value opts out. See lib/triggerDrain.ts.
+      SEED_FUNCTIONS_EMULATOR_HOST:
+        process.env.SEED_FUNCTIONS_EMULATOR_HOST ?? `127.0.0.1:${portFor('functions', slot)}`,
     },
   })
   process.exit(r.status ?? 1)

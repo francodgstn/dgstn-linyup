@@ -133,6 +133,7 @@ import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { partnerAppNames } from './lib/partnerApps'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
 import { importPlanGrants } from './lib/planGrantImport'
+import { waitForTriggerQueue } from './lib/triggerDrain'
 
 admin.initializeApp({ projectId: 'demo-linyup' })
 
@@ -3293,6 +3294,12 @@ async function main() {
   // migration run, so a seeded tenant starts in the shape production will have.
   const planGrants = await importPlanGrants(db, { apply: true })
   console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
+
+  // The writes are done; the triggers they fired are not. See lib/triggerDrain.ts.
+  await waitForTriggerQueue(db, {
+    functionsHost: process.env.SEED_FUNCTIONS_EMULATOR_HOST,
+    teamId: 'seed-team-studio',
+  })
 
   console.log('\n✅ Emulator seeded successfully!\n')
   console.log('   ┌─────────────────────┬──────────────────────┬──────────────┬────────────┐')
