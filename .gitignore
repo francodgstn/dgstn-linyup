@@ -102,3 +102,4 @@ packages/functions/tmp/
 # stays tracked — it has no content collection, so Astro emits only stable
 # scaffolding there.
 apps/docs/.astro/
+apps/help/.astro/
