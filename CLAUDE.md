@@ -865,6 +865,17 @@ data only. Post-launch, renames must be display-only.
 
 ---
 
+## Roadmap board
+
+The lead-facing roadmap is the GitHub project **Linyup roadmap**
+(`francodgstn` #2) — a few dozen high-level draft items, no dates, written as if
+public. **When a change starts, ships to production, or drops a roadmap item,
+run `/roadmap`** to propose the board update; it never writes without Franco's
+yes. Everything about wording, statuses and commands lives in
+`.claude/skills/roadmap/SKILL.md` — `docs/` stays a log, the board is the status.
+
+---
+
 ## Firebase projects
 
 | Alias | Project ID |
