@@ -669,3 +669,49 @@ export function tarif595PositionOn(code: string, dateIso: string): Tarif595Posit
 export function tarif595PositionsOn(dateIso: string): Tarif595Position[] {
   return TARIF595_POSITIONS.filter((p) => dateIso >= p.valid_from && (p.valid_until === null || dateIso <= p.valid_until))
 }
+
+// ─── Expiry: the list changes every 1 January ────────────────────────────────
+// A studio maps its offerings once; the list then retires positions under it.
+// A line dated after a position's last valid day is REFUSED by the preview
+// (position_invalid_on_date), so a mapping that is fine today can block the
+// first receipt of the new year. The settings page warns ahead of that.
+//
+// There is NO successor map: the new edition regroups methods (no 2027 row is
+// called "Pilates"), so a replacement is a judgement, proposed by
+// suggestTarif595Mappings as of the day after expiry and confirmed by the
+// studio — never derived here.
+
+/** How long before a position's last valid day the warning starts. */
+export const TARIF595_EXPIRY_WARNING_DAYS = 120
+
+export type Tarif595PositionExpiryStatus = 'ok' | 'expiring' | 'expired'
+
+export interface Tarif595PositionExpiry {
+  status: Tarif595PositionExpiryStatus
+  /** YYYY-MM-DD, the last valid day; null when open-ended. */
+  validUntil: string | null
+}
+
+function addDaysIso(dateIso: string, days: number): string {
+  const [y, m, d] = dateIso.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+/** Where a mapped position stands on `todayIso`; null for an unknown code. */
+export function tarif595PositionExpiry(
+  code: string,
+  todayIso: string,
+  horizonDays: number = TARIF595_EXPIRY_WARNING_DAYS
+): Tarif595PositionExpiry | null {
+  const p = BY_CODE.get(code)
+  if (!p) return null
+  if (p.valid_until === null) return { status: 'ok', validUntil: null }
+  if (todayIso > p.valid_until) return { status: 'expired', validUntil: p.valid_until }
+  if (addDaysIso(todayIso, horizonDays) > p.valid_until) return { status: 'expiring', validUntil: p.valid_until }
+  return { status: 'ok', validUntil: p.valid_until }
+}
+
+/** The first day a replacement for `validUntil` must be valid on. */
+export function tarif595DayAfter(validUntil: string): string {
+  return addDaysIso(validUntil, 1)
+}

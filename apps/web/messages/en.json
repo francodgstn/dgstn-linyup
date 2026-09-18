@@ -8828,7 +8828,9 @@
       "noHistory": "This payment names a plan, but the member has no subscription of that plan on record to attest. Pick the source by hand on the member's Receipts segment.",
       "unsupported": "A receipt can't be derived from this payment: a drop-in or appointment payment doesn't say which class or date it covered, and products aren't health promotion. Pick the source by hand on the member's Receipts segment.",
       "openSegment": "Open the member's receipts"
-    }
+    },
+    "checklistExpiring": "{count} mapped positions stop being valid after {date}",
+    "checklistReview": "Review"
   },
   "LegalProfile": {
     "title": "Legal profile",
@@ -8929,7 +8931,9 @@
       "searchPlaceholder": "Search offerings…",
       "unmappedOnly": "Unmapped only ({count})",
       "summary": "{mapped} of {total} mapped",
-      "allMapped": "Every offering is mapped."
+      "allMapped": "Every offering is mapped.",
+      "stateExpiring": "Position expires soon",
+      "stateExpired": "Position no longer valid"
     },
     "suggest": {
       "button": "Suggest positions",
@@ -8942,6 +8946,18 @@
       "noneFound": "No position could be suggested for the unmapped offerings.",
       "unavailable": "Suggestions aren't available right now. You can still pick positions by hand.",
       "rateLimited": "You've reached the hourly limit for suggestions. Try again later."
+    },
+    "expiry": {
+      "banner": "{count} mapped positions stop being valid after {date}. The tariff list changes every 1 January, and a receipt line dated after a position's last valid day is refused. Choose a replacement before then.",
+      "suggestReplacements": "Suggest replacements",
+      "rowExpiring": "Valid until {date} — receipts dated later will be refused.",
+      "rowExpired": "No longer valid since {date} — new receipts on this position are refused.",
+      "replacementLabel": "Suggested replacement",
+      "useReplacement": "Use",
+      "replacementsFound": "{count} replacements suggested. Nothing changes until you press Use on a row, and nothing is saved until you save.",
+      "replacementsNone": "No replacement could be suggested. Pick one by hand from the positions valid next year.",
+      "successorLine": "From {date}: {position}",
+      "removeSuccessor": "Remove"
     }
   },
   "QrInvoices": {
