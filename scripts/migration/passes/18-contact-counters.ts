@@ -31,7 +31,7 @@ export async function pass18ContactCounters(
   }
   let total = 0
   for (const teamId of teamIds) {
-    const live = await writeTeamContactCounter(targetDb, teamId)
+    const live = await writeTeamContactCounter(targetDb(), teamId)
     total += live
     console.log(`   ${teamId}: ${live} live`)
   }
