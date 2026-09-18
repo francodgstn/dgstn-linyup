@@ -1,7 +1,7 @@
 ---
 title: WhatsApp Business — outbound
 status: living
-area: messaging
+area: platform
 ---
 # WhatsApp Business — outbound
 
