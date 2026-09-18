@@ -1145,6 +1145,17 @@ reconciliation has written it. Against a deployed project run them through the
 default, reviewer-gated per project) rather than from a laptop holding ADC; each
 script's own header owns its place in the release.
 
+**`backfill:ledger-ttl` is for rows the APP wrote before its writers shipped, and
+nothing else.** Every ledger row a SCRIPT writes — the four seeders, the shared
+automations fixture, the HMD migration — now stamps `expires_at` at the write,
+through `scripts/lib/ledgerExpiry.ts` (whose header owns the reasoning) and from
+the row's OWN date, so a seeded ledger ages exactly like a real one. Backfilling
+seeded data was work the next reseed threw away: `/try` reseeds nightly and
+`pnpm emulators:seed` wipes and rewrites, so the pass would have been owed again
+after every seed, forever. A new script that writes a ledger collection is caught
+by `packages/functions/src/utils/seedLedgerExpiry.test.ts`, which re-derives the
+writer set from the source rather than trusting its own list.
+
 ---
 
 ## UI/UX porting principles

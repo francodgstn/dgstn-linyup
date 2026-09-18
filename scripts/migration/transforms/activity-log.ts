@@ -27,6 +27,8 @@
  * mapping decision.
  */
 
+import { ledgerExpiry } from '../../lib/ledgerExpiry'
+
 export function transformActivityLogEntry(src: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...src }
 
@@ -35,5 +37,35 @@ export function transformActivityLogEntry(src: Record<string, unknown>): Record<
     delete out.date
   }
 
+  // ── AND STAMP THE TTL ──────────────────────────────────────────────────────
+  // hmd-lineup has no retention at all, so no source row carries `expires_at`,
+  // and a row without it is never touched by a TTL policy — a migrated studio's
+  // whole history would sit in the ledger forever while a new studio's aged out
+  // at eighteen months. Stamped here rather than in a pass afterwards because a
+  // migration is re-runnable: repairing the rows later is work the next run
+  // throws away. See scripts/lib/ledgerExpiry.ts.
+  //
+  // Counted from the row's OWN date (after the rename above), so a 2019 entry
+  // expires as if the policy had always existed. A row with no usable date is
+  // counted from now — the same fallback scripts/backfill-ledger-ttl.ts uses,
+  // because the alternative is leaving it immortal.
+  if (!('expires_at' in out)) {
+    out.expires_at = ledgerExpiry('activity_log', asDate(out.created_at) ?? new Date())
+  }
+
   return out
+}
+
+/** A Firestore Timestamp, a Date, or an ISO string — whatever the source held. */
+function asDate(v: unknown): Date | null {
+  if (v instanceof Date) return v
+  if (v && typeof v === 'object' && typeof (v as { toDate?: unknown }).toDate === 'function') {
+    const d = (v as { toDate: () => Date }).toDate()
+    return Number.isFinite(d.getTime()) ? d : null
+  }
+  if (typeof v === 'string') {
+    const d = new Date(v)
+    return Number.isFinite(d.getTime()) ? d : null
+  }
+  return null
 }

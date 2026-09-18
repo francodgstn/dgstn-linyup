@@ -100,6 +100,7 @@ import {
   seedStoreCourses,
 } from './lib/storefront'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
+import { ledgerExpiry } from './lib/ledgerExpiry'
 import {
   planSeedConnectAccounts,
   linkSeedConnectAccount,
@@ -1600,6 +1601,9 @@ async function seedTeam(opts: {
   ]
   for (let i = 0; i < logEntries.length; i++) {
     const e = logEntries[i]
+    // The row's OWN date, so the TTL stamp ages this row exactly as a real one
+    // of the same age would age — see scripts/lib/ledgerExpiry.ts.
+    const loggedAt = daysFromNow(-i - 1)
     await db
       .collection('teams')
       .doc(teamId)
@@ -1607,12 +1611,13 @@ async function seedTeam(opts: {
       .doc(`${teamId}-log-${i}`)
       .set({
         event: e.event,
-        created_at: ts(daysFromNow(-i - 1)),
+        created_at: ts(loggedAt),
         parameters: { description: e.desc },
         refs: {
           contact: `${teamId}-contact-${e.contactIndex.toString().padStart(3, '0')}`,
           user: teamId,
         },
+        expires_at: ledgerExpiry('activity_log', loggedAt),
       })
   }
 
