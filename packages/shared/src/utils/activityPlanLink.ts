@@ -297,10 +297,13 @@ export function activityPlanEdgeUpdate(
 
   // ── the ACCESS facet, classes only ──
   if (!isAppointmentActivity(fresh) && next.access !== now.access) {
-    const gateIds = gatedPlanIds(fresh)
-    const nextGateIds = next.access
-      ? [...gateIds, subTypeId]
-      : gateIds.filter((id) => id !== subTypeId)
+    // The plans the class includes AFTER the stage 5 mapping — never the raw
+    // stored list. A stale list the mapping clears (plans that did nothing on a
+    // free class) must not come back with the next tick and turn the class
+    // plan-holders-only (review of c393dbfe).
+    const current = migrateClassAccess(fresh, studioDropIn)
+    const gateIds = (current.accessRule.subscriptionTypeIds ?? []).filter((id) => id !== subTypeId)
+    const nextGateIds = next.access ? [...gateIds, subTypeId] : gateIds
     // WHO MAY BOOK SURVIVES A PLAN EDIT. Ticking a plan says who books FREE;
     // it never says who may book. The map is written whole (see the fold), so
     // it is rebuilt from the class's CURRENT answer read through the stage 5
@@ -308,7 +311,6 @@ export function activityPlanEdgeUpdate(
     // before the derived rule, closing a door the old reading never let fire,
     // so the upgrade itself moves nobody (docs/class-access-derived.md). What
     // is stored is the wall and the plans; "plan required" is derived on read.
-    const current = migrateClassAccess(fresh, studioDropIn)
     update.accessRule = {
       audience: current.accessRule.audience,
       ...(nextGateIds.length ? { subscriptionTypeIds: nextGateIds } : {}),

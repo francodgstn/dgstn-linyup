@@ -287,7 +287,7 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
           signupRequired: false,
           includedPlanIds: [],
         }),
-        dropIn: { mode: 'off', enabled: false },
+        dropIn: { mode: 'off' },
         max_participants: 12,
         archived_at: null,
         order: ACTIVITIES.indexOf(a),

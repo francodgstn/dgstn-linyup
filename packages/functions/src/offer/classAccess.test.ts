@@ -4,6 +4,7 @@ import {
   classAccessFacts,
   classAccessRuleFor,
   migrateClassAccess,
+  activityPlanEdgeUpdate,
   type ClassAccessInput,
 } from '@linyup/shared'
 
@@ -265,6 +266,24 @@ describe('who may book a class', () => {
           }
         }
       }
+    })
+  })
+})
+
+describe('the plan table on a class with a stale plan list', () => {
+  it('ticking a plan does not bring back plans the mapping cleared', () => {
+    // A free class (no door) whose old list named 'gold' with requirePlan:false
+    // — the plans did nothing. Ticking 'silver' included must store silver only,
+    // not gold+silver (which would make the class plan-holders-only for gold too).
+    const fresh = {
+      type: 'class',
+      accessRule: { type: 'open', audience: 'anyone', requirePlan: false, subscriptionTypeIds: ['gold'] },
+      dropIn: { mode: 'off', enabled: false },
+    } as never
+    const update = activityPlanEdgeUpdate(fresh, 'silver', { access: true, rate: false }, undefined, undefined, null)
+    assert.deepEqual((update as { accessRule: unknown }).accessRule, {
+      audience: 'anyone',
+      subscriptionTypeIds: ['silver'],
     })
   })
 })
