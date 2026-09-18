@@ -1,3 +1,8 @@
+---
+title: WhatsApp Business — outbound
+status: living
+area: messaging
+---
 # WhatsApp Business — outbound
 
 Status: **Phase 1 built, not deployed** (2026-09-17), behind `WHATSAPP_ENABLED`
