@@ -36,9 +36,26 @@
  * Each written activity fires `syncActivityPublicProfile`, which rewrites its
  * mirror. Session writes fire the session mirror sync. Both are idempotent.
  *
+ * ── MIRRORS: THE TRIGGER IS NOT ENOUGH ──────────────────────────────────────
+ * The trigger only fires for a document this pass WRITES. An appointment whose
+ * document was already clean, or a class already in the derived shape, is never
+ * written, so its mirror keeps whatever the pre-stage-5 sync put there. The first
+ * sandbox run (2026-09-19) left `isFreeTrial: false` on every appointment mirror,
+ * which is the legacy spelling of "members only", and several public readers
+ * still fall back to it. Without the functions emulator no trigger runs at all,
+ * so a rewritten class keeps its stale mirror too.
+ *
+ * So this pass also rebuilds every active activity's mirror itself, with the
+ * trigger's own `buildActivityPublicProfile`, from the document as this pass
+ * leaves it, and rewrites any stored mirror that differs. It prints the keys
+ * that differ. The trigger's copy for a rewritten class is identical, so the
+ * second write changes nothing. It never creates a missing mirror and never
+ * touches an inactive activity's: those are the trigger's create and delete
+ * paths, not class access.
+ *
  * ── RE-RUNNABLE ─────────────────────────────────────────────────────────────
- * A class already in the derived shape is left alone, so a second run writes
- * nothing.
+ * A class already in the derived shape, and a mirror already equal to what the
+ * trigger would write, are left alone, so a second run writes nothing.
  *
  * Auth: gcloud Application Default Credentials (ADC), like the other backfills.
  * Against the emulator, set FIRESTORE_EMULATOR_HOST and use the demo project.
@@ -64,6 +81,9 @@ import {
   type ClassAccessMigrationNote,
   type DropInPrice,
 } from '@linyup/shared'
+// The trigger's own builder, so a rebuilt mirror cannot drift from a synced one
+// (same arrangement as backfill-partner-apps and syncTeamPublicProfile).
+import { buildActivityPublicProfile } from '../packages/functions/src/sync/syncActivityPublicProfile'
 
 const { values } = parseArgs({
   options: {
@@ -136,20 +156,66 @@ async function main() {
     }
   }
 
+  let mirrorsResynced = 0
+  let mirrorsMissing = 0
+  // Rebuild the mirror from `after` (the document as this pass leaves it) with
+  // the trigger's builder, and rewrite the stored one when they differ. See
+  // "MIRRORS" in the header for why the trigger alone does not do this.
+  const syncMirror = async (
+    snap: FirebaseFirestore.QueryDocumentSnapshot,
+    after: FirebaseFirestore.DocumentData,
+    studio: DropInPrice | null,
+    label: string
+  ) => {
+    if (after.isActive === false) return
+    const ref = snap.ref.collection(PUBLIC_PROFILE_SUBCOLLECTION).doc(snap.id)
+    const stored = await ref.get()
+    if (!stored.exists) {
+      mirrorsMissing += 1
+      return
+    }
+    // A JSON round trip drops undefined keys, as the trigger's write does.
+    const want = JSON.parse(JSON.stringify(buildActivityPublicProfile(after, studio))) as Record<
+      string,
+      unknown
+    >
+    const have = stored.data() ?? {}
+    const differing = [...new Set([...Object.keys(have), ...Object.keys(want)])]
+      .filter((k) => !same(have[k] ?? null, want[k] ?? null))
+      .sort()
+    if (differing.length === 0) return
+    mirrorsResynced += 1
+    console.log(
+      `   ${values.apply ? 're-sync' : 'would re-sync'} mirror ${label}: ${differing.join(', ')}`
+    )
+    if (values.apply) {
+      batch.set(ref, want)
+      pending += 1
+      await flush()
+    }
+  }
+  const without = (data: FirebaseFirestore.DocumentData, keys: string[]) =>
+    Object.fromEntries(Object.entries(data).filter(([k]) => !keys.includes(k)))
+
   for (const snap of activities.docs) {
     const data = snap.data()
     const label = `${snap.id} [${data.teamId ?? '?'}] ${data.name ?? '?'}`
 
     if (data.type === 'appointment') {
       const stale = ['accessRule', 'dropIn', 'isFreeTrial'].filter((k) => k in data)
-      if (stale.length === 0) continue
-      appointmentsCleaned += 1
-      console.log(`   ${values.apply ? 'clean' : 'would clean'} appointment ${label}: drop ${stale.join(', ')}`)
-      if (values.apply) {
-        batch.update(snap.ref, Object.fromEntries(stale.map((k) => [k, FieldValue.delete()])))
-        pending += 1
-        await flush()
+      if (stale.length) {
+        appointmentsCleaned += 1
+        console.log(
+          `   ${values.apply ? 'clean' : 'would clean'} appointment ${label}: drop ${stale.join(', ')}`
+        )
+        if (values.apply) {
+          batch.update(snap.ref, Object.fromEntries(stale.map((k) => [k, FieldValue.delete()])))
+          pending += 1
+          await flush()
+        }
       }
+      // An appointment never reads the studio default.
+      await syncMirror(snap, without(data, stale), null, label)
       continue
     }
 
@@ -161,6 +227,7 @@ async function main() {
       same(data.dropIn ?? null, m.dropIn)
     if (inShape) {
       unchanged += 1
+      await syncMirror(snap, data, studio, label)
       continue
     }
 
@@ -181,6 +248,12 @@ async function main() {
       pending += 1
       await flush()
     }
+    await syncMirror(
+      snap,
+      { ...without(data, ['isFreeTrial']), accessRule: m.accessRule, dropIn: m.dropIn },
+      studio,
+      label
+    )
   }
   await flush(true)
 
@@ -188,7 +261,9 @@ async function main() {
   // never read (a session collection grows with time).
   let sessionsCleaned = 0
   for (const flag of [true, false]) {
-    let sq: FirebaseFirestore.Query = db.collection(SESSIONS_COLLECTION).where('isFreeTrial', '==', flag)
+    let sq: FirebaseFirestore.Query = db
+      .collection(SESSIONS_COLLECTION)
+      .where('isFreeTrial', '==', flag)
     if (values.team) sq = sq.where('teamId', '==', values.team)
     const sessions = await sq.get()
     for (const s of sessions.docs) {
@@ -204,13 +279,17 @@ async function main() {
 
   console.log(
     `\n   classes rewritten: ${rewrite}   already in shape: ${unchanged}` +
-      `   appointments cleaned: ${appointmentsCleaned}   sessions cleaned: ${sessionsCleaned}`
+      `   appointments cleaned: ${appointmentsCleaned}   sessions cleaned: ${sessionsCleaned}` +
+      `\n   mirrors re-synced: ${mirrorsResynced}` +
+      (mirrorsMissing
+        ? `   active activities without a mirror (left alone): ${mirrorsMissing}`
+        : '')
   )
   if (noteCounts.size) {
     console.log('   rewrites that changed who may book, or stated it differently:')
     for (const [n, c] of noteCounts) console.log(`     ${n}: ${c}`)
   }
-  if (!values.apply && rewrite + appointmentsCleaned + sessionsCleaned > 0) {
+  if (!values.apply && rewrite + appointmentsCleaned + sessionsCleaned + mirrorsResynced > 0) {
     console.log('\n   Re-run with --apply to write.')
   }
   console.log(values.apply ? '\n✅ Done.\n' : '\n✅ Dry-run complete.\n')
