@@ -20,8 +20,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
-import { httpsCallable, type FunctionsError } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
+import { type FunctionsError } from 'firebase/functions'
 import { signIn, signUp, signOut, resetPassword } from '@/lib/auth'
 import { useAuth } from '@/contexts/AuthContext'
 import { Link } from '@/i18n/navigation'
@@ -34,6 +33,7 @@ import { Logo } from '@/components/Logo'
 import { CheckCircle2, ShieldAlert, UserCog, XCircle } from 'lucide-react'
 import type { Route } from 'next'
 import type { OrgRole } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 interface InvitationDetails {
   orgId: string
@@ -73,8 +73,7 @@ export default function OrgMemberInvitePage() {
     let cancelled = false
     async function load() {
       try {
-        const fn = httpsCallable<{ orgId: string; token: string }, InvitationDetails>(
-          functions,
+        const fn = callFunction<{ orgId: string; token: string }, InvitationDetails>(
           'getOrgMemberInvitation'
         )
         const res = await fn({ orgId, token })
@@ -101,7 +100,7 @@ export default function OrgMemberInvitePage() {
 
   const accept = useCallback(
     async (displayName?: string) => {
-      const fn = httpsCallable(functions, 'acceptOrgMemberInvitation')
+      const fn = callFunction('acceptOrgMemberInvitation')
       await fn({ orgId, token, displayName })
       setStatus('accepted')
     },
@@ -132,7 +131,7 @@ export default function OrgMemberInvitePage() {
     setBusy(true)
     setActionError(null)
     try {
-      const fn = httpsCallable(functions, 'declineOrgMemberInvitation')
+      const fn = callFunction('declineOrgMemberInvitation')
       await fn({ orgId, token })
       setStatus('declined')
     } catch (err) {

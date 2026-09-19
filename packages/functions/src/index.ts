@@ -599,6 +599,7 @@ export { rpcSpike } from './routers/spike'
 export { rpcOps } from './routers/ops'
 export { rpcFinance } from './routers/finance'
 export { rpcBilling } from './routers/billing'
+export { rpcOrg } from './routers/org'
 
 // --- Stubs (TODO: port from hmd-lineup) ---
 // export { generateDashboardInsight } from './analytics'

@@ -4,8 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { collection, getDocs, query as firestoreQuery } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrg } from '@/contexts/OrgContext'
@@ -50,6 +49,7 @@ import {
 } from '@linyup/shared'
 import type { OrgMember, OrgMemberInvitation, OrgRole } from '@linyup/shared'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 interface OrgMemberRow extends OrgMember {
   id: string
@@ -128,7 +128,7 @@ function InviteMemberDialog({
       //
       // `locale` only pins the language of the emailed link (the studio's admin
       // is the best signal we have for the invitee's); the server validates it.
-      const fn = httpsCallable(functions, 'inviteOrgMember')
+      const fn = callFunction('inviteOrgMember')
       await fn({ orgId, email: email.trim(), role, locale })
       setEmail('')
       onSuccess()
@@ -256,7 +256,7 @@ export default function OrgMembersPage() {
     if (!revokeTarget) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'revokeOrgMemberInvitation')
+      const fn = callFunction('revokeOrgMemberInvitation')
       await fn({ orgId, invitationId: revokeTarget.id })
       showToast(t('inviteRevoked'))
       invalidate()
@@ -272,7 +272,7 @@ export default function OrgMembersPage() {
     if (role === m.role) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'updateOrgMemberRole')
+      const fn = callFunction('updateOrgMemberRole')
       await fn({ orgId, userId: m.userId, role })
       showToast(t('roleChangedSuccess'))
       invalidate()
@@ -296,7 +296,7 @@ export default function OrgMembersPage() {
     if (!removeTarget) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'removeOrgMember')
+      const fn = callFunction('removeOrgMember')
       await fn({ orgId: orgId, userId: removeTarget.userId })
       showToast(t('removedSuccess'))
       invalidate()

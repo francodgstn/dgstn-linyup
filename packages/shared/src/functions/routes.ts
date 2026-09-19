@@ -85,6 +85,25 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   reactivateOrgSubscription: 'rpcBilling',
   getOrgBillingPortalUrl: 'rpcBilling',
   getOrgInvoices: 'rpcBilling',
+
+  // The organisation tier: member studios, org members and their invitations.
+  // Called by apps/web; the invitation pages call some of these signed out.
+  createOrganization: 'rpcOrg',
+  inviteTeamToOrg: 'rpcOrg',
+  acceptOrgInvitation: 'rpcOrg',
+  declineOrgInvitation: 'rpcOrg',
+  removeTeamFromOrg: 'rpcOrg',
+  getOrgInvitationDetails: 'rpcOrg',
+  requestTeamAccess: 'rpcOrg',
+  addOrgMember: 'rpcOrg',
+  updateOrgMemberRole: 'rpcOrg',
+  removeOrgMember: 'rpcOrg',
+  inviteOrgMember: 'rpcOrg',
+  getOrgMemberInvitation: 'rpcOrg',
+  acceptOrgMemberInvitation: 'rpcOrg',
+  declineOrgMemberInvitation: 'rpcOrg',
+  revokeOrgMemberInvitation: 'rpcOrg',
+  unpublishOrgWebsite: 'rpcOrg',
 }
 
 export function routerForCallable(name: string): RouterName | null {

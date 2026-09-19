@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -20,6 +18,7 @@ import { Building2, CheckCircle2, Info, XCircle } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
 import { TEAMS_COLLECTION, TEAM_MEMBERS_SUBCOLLECTION } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 interface InvitationDetails {
   orgId: string
@@ -54,10 +53,10 @@ export default function OrgInvitePage() {
   useEffect(() => {
     async function load() {
       try {
-        const fn = httpsCallable<
+        const fn = callFunction<
           { invitationId: string; orgId: string },
           InvitationDetails
-        >(functions, 'getOrgInvitationDetails')
+        >('getOrgInvitationDetails')
         const result = await fn({ invitationId: params.invId, orgId: params.orgId })
         setInvitation(result.data)
         // Pre-select teamId if invitation targets a specific team
@@ -121,7 +120,7 @@ export default function OrgInvitePage() {
     if (!selectedTeamId) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'acceptOrgInvitation')
+      const fn = callFunction('acceptOrgInvitation')
       await fn({ invitationId: params.invId, teamId: selectedTeamId })
       setStatus('accepted')
     } catch (err: unknown) {
@@ -146,7 +145,7 @@ export default function OrgInvitePage() {
   async function handleDecline() {
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'declineOrgInvitation')
+      const fn = callFunction('declineOrgInvitation')
       await fn({ invitationId: params.invId, orgId: params.orgId })
       setStatus('declined')
     } catch (err: unknown) {
