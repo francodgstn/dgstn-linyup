@@ -1949,7 +1949,8 @@
     "accessMoreOptionsLabel": "Weitere Optionen",
     "accessMoreOptionsHint": "Diese Stunde auf angemeldete Personen beschränken",
     "accessSignupOnly": "Nur Personen, die sich bei dir angemeldet haben",
-    "accessSignupOnlyHint": "Gäste können nicht buchen, auch nicht zahlend. Eine Probestunde bleibt möglich."
+    "accessSignupOnlyHint": "Gäste können nicht buchen, auch nicht zahlend. Eine Probestunde bleibt möglich.",
+    "waitlistExperimental": "Experimentell"
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",

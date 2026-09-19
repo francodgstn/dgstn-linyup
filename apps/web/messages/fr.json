@@ -1949,7 +1949,8 @@
     "accessMoreOptionsLabel": "Plus d'options",
     "accessMoreOptionsHint": "Réserver ce cours aux personnes inscrites chez vous",
     "accessSignupOnly": "Seulement les personnes inscrites chez vous",
-    "accessSignupOnlyHint": "Les visiteurs ne peuvent pas réserver, même en payant. Un cours d'essai reste possible."
+    "accessSignupOnlyHint": "Les visiteurs ne peuvent pas réserver, même en payant. Un cours d'essai reste possible.",
+    "waitlistExperimental": "Expérimental"
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
