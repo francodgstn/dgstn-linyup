@@ -142,38 +142,45 @@ The tag body is the release note (same convention as the backend's `v*`
 tags). Store build numbers are EAS-managed (`appVersionSource: remote`,
 `autoIncrement` on `store`).
 
-## An update during the Play closed test (before production access)
+## A native Android update (production track)
 
-A mid-test update is a STORE build, not an OTA: Play only sees a new version code on the
-closed track, and an EAS Update is invisible to it. Testers who uninstall a
-broken build drop the count below twelve and the fourteen days restart, so the
-order below puts your own phone before theirs.
+Play production access was granted on 2026-09-19, and 1.0.3 (version code 6)
+was the first production release. `submit.store.android.track` is now
+`production`, so `eas submit` puts a build in front of the public (after
+Google's review) — there is no closed-track stop on the way any more.
 
 ```bash
 # 1. version — the notes live beside the listing assets
 pnpm --filter @linyup/mobile version patch --no-git-tag-version
 #    write apps/mobile/store/release-notes/<version>/{en-US,de-DE,fr-FR,it-IT}.txt
-git commit -am "chore(mobile): v1.0.1 — <what testers get>"     # PR, merge
+git commit -am "chore(mobile): vX.Y.Z — <what members get>"     # PR, merge
 
-# 2. tag — CI builds it. Do NOT `eas build` a store binary from here:
+# 2. tag — CI builds it when the fingerprint changed; a JS-only change is an
+#    OTA and needs none of this. To force a binary anyway, use the manual
+#    `store_build` run. Do NOT `eas build` a store binary from the laptop:
 #    see "Where a store binary must come from".
-git tag -a mobile-v1.0.2 -m "<why>" && git push origin mobile-v1.0.2
+git tag -a mobile-vX.Y.Z -m "<why>" && git push origin mobile-vX.Y.Z
 #    then approve the `production` environment gate and wait for the build
 
-# 3. submit the build CI made (submit.store.android.track = alpha)
+# 3. submit the build CI made — FROM apps/mobile. The repo root has no app
+#    config, so eas-cli says "EAS project not configured" there; never answer
+#    that with `eas init`, which creates a second EAS project.
 cd apps/mobile
-npx eas-cli submit --profile store --platform android --latest
+npx eas-cli submit --profile store --platform android --id <build-id>
 
-# 4. The submit ROLLS OUT BY ITSELF: `eas submit` creates the track release
-#    as `completed`, so there is no moment between upload and testers to try
-#    it on your phone first. Want one? Set submit.store.android.releaseStatus
-#    to "draft" in eas.json, then promote in Play Console. Either way the
-#    upload carries NO release notes — paste store/release-notes/<version>/*
-#    per language in the console, or push all four in one Play API edit.
-# 5. Tell the testers what changed and ask for ONE concrete thing
-#    ("switch the phone to German, book a class, reply with what annoyed you") —
-#    the production-access questionnaire asks for feedback and what you changed.
+# 4. The upload carries NO release notes — paste store/release-notes/<version>/*
+#    per language in Play Console. Changes then collect on Publishing overview
+#    and go to review; managed publishing is OFF, so approval = live.
 ```
+
+Want your own phone first? Set `submit.store.android.releaseStatus` to
+`"draft"` in `eas.json` (or temporarily `track: "alpha"`) and promote in
+Play Console after testing.
+
+**A version code uploads once.** Play refuses a re-upload of a version code it
+already holds, so `eas submit` cannot move a build between tracks — a build
+already on closed testing reaches production through Play Console
+(Production → Create new release → *Add from library*), not through EAS.
 
 ## Backend compatibility — the rule the web never needed
 
@@ -267,8 +274,8 @@ Apple/Google (see the roadmap §7), plus the prod key.
   the app resolves one android package for every profile (from `APP_VARIANT`,
   not the Firebase env), so EAS has one credentials slot — push will work on
   store builds and not on preview builds. The whole store path — both consoles,
-  the credentials, and the 14-day Play closed-testing clock that gates going
-  public — is `docs/mobile-store-setup.md`.
+  the credentials, and the 14-day Play closed-testing clock that gated going
+  public (passed 2026-09-19) — is `docs/mobile-store-setup.md`.
 - `FIREBASE_API_KEY` — **both** `eas.json`'s `env` block per profile **and**
   an EAS environment variable per environment. Not redundancy: the `env`
   block is the only thing in scope when `eas build` evaluates app.config.js
