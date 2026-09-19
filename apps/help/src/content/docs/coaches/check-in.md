@@ -14,7 +14,7 @@ Open a session from the schedule or the dashboard. Its roster is split into:
 - **Check-ins**: people who are here
 - **Confirmed, not checked in**: booked, not yet marked
 - **No-shows**
-- **Waitlist**
+- **Waitlist**: people queuing for a seat, if the class is full ([experimental](/studio/waitlist/))
 
 On each person, choose **Confirm attendance** or **Mark no-show**. You can also remove a booking or undo a check-in. **Export CSV** downloads the list.
 
