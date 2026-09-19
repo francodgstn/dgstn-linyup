@@ -141,16 +141,19 @@ export function sanitizeOrgSections(raw: unknown): OrgSiteSection[] {
  * The org site's meta: the team sanitizer, plus the HEADER BUTTON RULE.
  *
  * An organisation has no booking page, no signup form and no appointments, so
- * its header button can only be a link. The shared sanitizer defaults the
- * button's action to 'booking' — right for a studio, and for an org a button
- * pointing at `/public/{orgSlug}/booking`, a page that does not exist. So the
- * button is published only as a link with an address; a label with nowhere to
- * go is dropped rather than shipped dead.
+ * its header button opens one of the site's own PAGES or a link — exactly the
+ * two actions its section buttons offer (`sanitizeOrgSection`). The shared
+ * sanitizer defaults the button's action to 'booking' — right for a studio, and
+ * for an org a button pointing at `/public/{orgSlug}/booking`, a page that does
+ * not exist. So anything but a page with an id or a link with an address is
+ * dropped rather than shipped dead.
  */
 export function sanitizeOrgMeta(raw: unknown, fallbackTitle: string): SiteMeta {
   const meta = sanitizeMeta(raw, fallbackTitle)
-  const { ctaLabel, ctaUrl: _url, ctaAction: _action, ctaPageId: _page, ctaActivityId: _activity, ...header } =
-    meta.header
+  const { ctaLabel, ctaUrl: _url, ctaAction, ctaPageId, ctaActivityId: _activity, ...header } = meta.header
+  if (ctaLabel && ctaAction === 'page' && ctaPageId) {
+    return { ...meta, header: { ...header, ctaLabel, ctaAction: 'page', ctaPageId } }
+  }
   // Read the address from the draft directly: the shared sanitizer keeps it only
   // when the stored action is already 'url', and an org draft whose button was
   // saved before the action was set would lose a perfectly good link.

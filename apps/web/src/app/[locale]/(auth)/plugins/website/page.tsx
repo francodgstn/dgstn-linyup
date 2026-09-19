@@ -100,6 +100,7 @@ import {
   PagesRail,
   PostHeaderCard,
   removeMenuItemsTargetingPage,
+  removeHeaderButtonTargetingPage,
   useCurrentPageParam,
 } from '@/components/website/pages/SitePageTools'
 
@@ -628,6 +629,7 @@ export default function WebsiteBuilderPage() {
       ...d,
       pages: (d.pages ?? []).filter((p) => p.id !== id),
       menu: d.menu ? removeMenuItemsTargetingPage(d.menu, id) : d.menu,
+      meta: removeHeaderButtonTargetingPage(d.meta, id),
     }))
     setPageSections((prev) => {
       if (!prev) return prev
