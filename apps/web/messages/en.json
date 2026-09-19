@@ -4677,7 +4677,24 @@
     "feesTitle": "What you pay",
     "feeNoneNote": "Linyup takes no fee on your payments.",
     "feeAgreedNote": "Linyup's fee is {pct}% per payment, the rate agreed with you.",
-    "feeAgreedUntilNote": "Linyup's fee is {pct}% per payment, the rate agreed with you, until {date}."
+    "feeAgreedUntilNote": "Linyup's fee is {pct}% per payment, the rate agreed with you, until {date}.",
+    "requirementsTitle": "Still needed",
+    "requirementsHint": "Finish setup takes you to Stripe, which shows exactly what to fill in.",
+    "requirement": {
+      "bank_account": "Your bank account for payouts",
+      "id_document": "A photo of your ID or a supporting document",
+      "personal_id_number": "Your personal ID number",
+      "personal_details": "Your personal details (name, date of birth, address)",
+      "business_owners": "The owners or directors of your business",
+      "business_tax_id": "Your business registration or VAT number",
+      "business_details": "Your studio's details (name, address, phone)",
+      "business_type": "What kind of business you run",
+      "website": "Your studio's website, or a short description of what you offer",
+      "statement_descriptor": "The name your customers see on their card statement",
+      "customer_support": "How your customers can reach you (phone or email)",
+      "terms": "Accepting Stripe's terms of service",
+      "other": "A detail Stripe still needs"
+    }
   },
   "PaymentsDashboard": {
     "title": "Payments",
