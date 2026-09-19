@@ -35,10 +35,11 @@ h1#_top,
   color: #2e1065;
 }
 
-/* A thin brand line under the header. */
-.header {
+/* A thin brand line under the header. `header.header`, not `.header`: Starlight
+   also puts a `header` class on the flex row INSIDE the header, and a bare
+   `.header` painted the line twice. */
+header.header {
   border-bottom: 0;
-  box-shadow: inset 0 -3px 0 0 transparent;
   background-image: linear-gradient(90deg, #a78bfa, #7c3aed 45%, #5b21b6);
   background-size: 100% 3px;
   background-repeat: no-repeat;
