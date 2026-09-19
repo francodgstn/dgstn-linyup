@@ -1,0 +1,1 @@
+• Lo scanner QR per il check-in spiega a cosa serve la fotocamera prima di chiedere l'accesso, e ti porta alle Impostazioni se l'accesso alla fotocamera è disattivato.

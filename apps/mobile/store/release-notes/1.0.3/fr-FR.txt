@@ -1,0 +1,1 @@
+• Le scanner QR de check-in explique à quoi sert la caméra avant de demander l'accès, et te renvoie aux Réglages si l'accès à la caméra est désactivé.
