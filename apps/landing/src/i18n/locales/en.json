@@ -10,12 +10,14 @@
     "liveDemo": "Try it live",
     "login": "Log in",
     "cta": "Get early access",
+    "ctaShort": "Early access",
     "language": "Language",
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSystem": "System",
-    "menu": "Menu"
+    "menu": "Menu",
+    "resources": "Resources"
   },
   "hero": {
     "consent": "By signing up you agree to our <a href=\"/privacy\">Privacy Policy</a>. Unsubscribe anytime.",
@@ -24,7 +26,7 @@
     "subtitle": "Less admin, more coaching — the modern, affordable platform for coaches and small studios.",
     "cta": "Start for free",
     "ctaSecondary": "See features",
-    "comingSoon": "Coming soon",
+    "limitedAccess": "Limited access",
     "emailPlaceholder": "Your email address",
     "emailCta": "Get early access",
     "emailSending": "Sending…",
@@ -81,6 +83,10 @@
     },
     "all": {
       "title": "Check all features"
+    },
+    "help": {
+      "title": "Help centre",
+      "body": "Guides for every step"
     }
   },
   "proof": {
@@ -498,7 +504,12 @@
       "cookies": "Cookie settings",
       "roadmap": "Roadmap"
     },
-    "copyright": "© {year} Linyup. All rights reserved."
+    "copyright": "© {year} Linyup. All rights reserved.",
+    "cols": {
+      "product": "Product",
+      "legal": "Legal",
+      "contact": "Contact"
+    }
   },
   "roadmap": {
     "metaTitle": "Roadmap — Linyup",

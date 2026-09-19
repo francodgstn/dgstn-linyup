@@ -24,7 +24,7 @@ const options = (Object.keys(languages) as Language[]).map((lang) => ({
 ---
 
 <div class="ls-wrap">
-  <select id="lang-select" aria-label="Language" class="ls-select">
+  <select aria-label="Language" class="ls-select" data-lang-select>
     {options.map(({ label, href, selected }) => (
       <option value={href} selected={selected}>{label}</option>
     ))}
@@ -42,37 +42,33 @@ const options = (Object.keys(languages) as Language[]).map((lang) => ({
     display: inline-flex;
     align-items: center;
   }
+  /* Unboxed, like the nav links: the chevron alone says it opens. The nav and
+     the footer both render this, so the handler below binds by attribute. */
   .ls-select {
     appearance: none;
-    background: var(--card);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: 0;
     color: var(--muted-foreground);
     font-family: var(--font-sans);
     font-size: 13px;
     font-weight: 600;
     height: 34px;
-    padding: 0 28px 0 10px;
+    padding: 0 20px 0 4px;
     border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
+    transition: color 0.15s;
     line-height: 1;
   }
-  .ls-select:hover {
-    border-color: var(--primary);
-    color: var(--foreground);
-  }
-  .ls-select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 25%, transparent);
-  }
+  .ls-select:hover { color: var(--foreground); }
+  .ls-select:focus { outline: none; }
+  .ls-select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .ls-select option {
     background: var(--card);
     color: var(--foreground);
   }
   .ls-chevron {
     position: absolute;
-    right: 8px;
+    right: 2px;
     pointer-events: none;
     color: var(--muted-foreground);
     display: flex;
@@ -81,7 +77,7 @@ const options = (Object.keys(languages) as Language[]).map((lang) => ({
 </style>
 
 <script>
-  document.getElementById('lang-select')?.addEventListener('change', (e) => {
+  document.querySelectorAll<HTMLSelectElement>('[data-lang-select]').forEach((el) => el.addEventListener('change', (e) => {
     const target = e.target as HTMLSelectElement;
     if (!target.value) return;
     // Persist the explicit choice so the root-locale nudge respects it next time
@@ -95,5 +91,5 @@ const options = (Object.keys(languages) as Language[]).map((lang) => ({
       }
     }
     window.location.href = target.value;
-  });
+  }));
 </script>

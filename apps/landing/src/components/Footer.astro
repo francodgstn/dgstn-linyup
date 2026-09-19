@@ -3,6 +3,7 @@ import Logo from './Logo.astro';
 import LanguageSwitcher from './LanguageSwitcher.astro';
 import type { Language } from '~/i18n';
 import { useTranslations, getLocalizedPath } from '~/i18n';
+import { HELP_URL } from '~/links';
 
 interface Props {
   lang: Language;
@@ -15,25 +16,32 @@ const copyright = t('footer.copyright').replace('{year}', String(year));
 // Only show "Cookie settings" when analytics is actually wired (a key exists);
 // it reopens the consent banner via window.linyupOpenConsent() (BaseLayout).
 const analyticsEnabled = !!import.meta.env.PUBLIC_POSTHOG_KEY;
-// The public help centre (apps/help). One address for every environment, like
-// the legal pages: staging's landing links to production's help too.
-const HELP_URL = 'https://help.linyup.com';
 ---
 
 <footer>
   <div class="wrap">
     <div class="foot">
-      <a href={getLocalizedPath('/', lang)} class="brand" aria-label={t('site.name')}>
-        <Logo size={18} />
-      </a>
-      <span class="tag">{t('footer.tagline')}</span>
-      <div class="foot-links">
+      <div class="foot-brand">
+        <a href={getLocalizedPath('/', lang)} class="brand" aria-label={t('site.name')}>
+          <Logo size={18} />
+        </a>
+        <span class="tag">{t('footer.tagline')}</span>
+      </div>
+
+      <nav class="foot-col" aria-labelledby="foot-product">
+        <h3 id="foot-product">{t('footer.cols.product')}</h3>
+        <a href={getLocalizedPath('/#features', lang)}>{t('nav.features')}</a>
+        <a href={getLocalizedPath('/#pricing', lang)}>{t('nav.pricing')}</a>
+        <a href={getLocalizedPath('/roadmap', lang)}>{t('footer.links.roadmap')}</a>
+        <a href={HELP_URL}>{t('footer.links.help')}</a>
+      </nav>
+
+      <nav class="foot-col" aria-labelledby="foot-legal">
+        <h3 id="foot-legal">{t('footer.cols.legal')}</h3>
         {/* Legal pages are English-only at the site root for now; localised
             versions follow later. Terms + DPA landed with the signup acceptance
             step — the checkbox there links straight here, so these must not be
             removed without also removing that link. */}
-        <a href={HELP_URL}>{t('footer.links.help')}</a>
-        <a href={getLocalizedPath('/roadmap', lang)}>{t('footer.links.roadmap')}</a>
         <a href="/privacy">{t('footer.links.privacy')}</a>
         <a href="/terms">{t('footer.links.terms')}</a>
         <a href="/dpa">{t('footer.links.dpa')}</a>
@@ -43,11 +51,18 @@ const HELP_URL = 'https://help.linyup.com';
             {t('footer.links.cookies')}
           </button>
         )}
-        <a href="mailto:hello@linyup.com">{t('footer.links.contact')}</a>
-        <LanguageSwitcher currentLang={lang} />
+      </nav>
+
+      <div class="foot-col">
+        <h3>{t('footer.cols.contact')}</h3>
+        <a href="mailto:hello@linyup.com">hello@linyup.com</a>
       </div>
     </div>
-    <div class="copy">{copyright}</div>
+
+    <div class="foot-bottom">
+      <div class="copy">{copyright}</div>
+      <LanguageSwitcher currentLang={lang} />
+    </div>
   </div>
 </footer>
 
@@ -59,20 +74,45 @@ const HELP_URL = 'https://help.linyup.com';
 </script>
 
 <style>
-  footer { padding: 48px 0; border-top: 1px solid var(--border); }
-  .foot { display: flex; align-items: center; gap: 16px; }
+  footer { padding: 56px 0 40px; border-top: 1px solid var(--border); }
+  .foot {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+    gap: 32px;
+  }
+  .foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
   .brand { display: inline-flex; align-items: center; }
-  .foot .tag { font-size: 13.5px; color: var(--muted-foreground); max-width: 36ch; }
-  .foot-links { margin-left: auto; display: flex; align-items: center; gap: 22px; }
-  .foot-links a,
-  .foot-links .link-btn { font-size: 13.5px; color: var(--muted-foreground); }
-  .foot-links a:hover,
-  .foot-links .link-btn:hover { color: var(--foreground); }
+  .foot-brand .tag { font-size: 13.5px; color: var(--muted-foreground); max-width: 32ch; }
+
+  .foot-col { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .foot-col h3 {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--foreground);
+    margin: 0 0 4px;
+  }
+  .foot-col a,
+  .foot-col .link-btn { font-size: 13.5px; color: var(--muted-foreground); text-align: left; }
+  .foot-col a:hover,
+  .foot-col .link-btn:hover { color: var(--foreground); }
   .link-btn { padding: 0; border: 0; background: none; font-family: inherit; cursor: pointer; }
-  .copy { font-size: 12.5px; color: var(--muted-foreground); margin-top: 22px; }
+
+  .foot-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .copy { font-size: 12.5px; color: var(--muted-foreground); }
 
   @media (max-width: 860px) {
-    .foot { flex-direction: column; align-items: flex-start; gap: 14px; }
-    .foot-links { margin-left: 0; flex-wrap: wrap; }
+    .foot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 20px; }
+    .foot-brand { grid-column: 1 / -1; }
   }
 </style>

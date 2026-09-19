@@ -185,29 +185,6 @@
         }
       },
       {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
-        "area": null,
-        "en": {
-          "title": "Public help centre",
-          "body": "Step-by-step guides for setting up and running your studio, at help.linyup.com."
-        },
-        "de": {
-          "title": "Öffentliches Hilfe-Center",
-          "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios, auf help.linyup.com.",
-          "srcHash": "7187608a91a9"
-        },
-        "fr": {
-          "title": "Centre d'aide public",
-          "body": "Des guides pas à pas pour configurer et gérer votre studio, sur help.linyup.com.",
-          "srcHash": "7187608a91a9"
-        },
-        "it": {
-          "title": "Centro assistenza pubblico",
-          "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
-          "srcHash": "7187608a91a9"
-        }
-      },
-      {
         "id": "DI_lAHOADowus4Bj7lNzgLJQLk",
         "area": {
           "key": "booking-and-schedule",

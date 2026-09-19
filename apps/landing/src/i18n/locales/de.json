@@ -10,12 +10,14 @@
     "liveDemo": "Live testen",
     "login": "Anmelden",
     "cta": "Frühen Zugang sichern",
+    "ctaShort": "Früher Zugang",
     "language": "Sprache",
     "theme": "Design",
     "themeLight": "Hell",
     "themeDark": "Dunkel",
     "themeSystem": "System",
-    "menu": "Menü"
+    "menu": "Menü",
+    "resources": "Ressourcen"
   },
   "hero": {
     "consent": "Mit der Anmeldung stimmst du unserer <a href=\"/privacy\">Datenschutzerklärung</a> zu. Jederzeit abbestellbar.",
@@ -24,7 +26,7 @@
     "subtitle": "Weniger Verwaltung, mehr Coaching — die moderne, erschwingliche Plattform für Coaches und kleine Studios.",
     "cta": "Kostenlos starten",
     "ctaSecondary": "Funktionen ansehen",
-    "comingSoon": "Bald verfügbar",
+    "limitedAccess": "Begrenzter Zugang",
     "emailPlaceholder": "Deine E-Mail-Adresse",
     "emailCta": "Frühen Zugang sichern",
     "emailSending": "Wird gesendet…",
@@ -81,6 +83,10 @@
     },
     "all": {
       "title": "Alle Funktionen ansehen"
+    },
+    "help": {
+      "title": "Hilfe-Center",
+      "body": "Anleitungen für jeden Schritt"
     }
   },
   "proof": {
@@ -498,7 +504,12 @@
       "cookies": "Cookie-Einstellungen",
       "roadmap": "Roadmap"
     },
-    "copyright": "© {year} Linyup. Alle Rechte vorbehalten."
+    "copyright": "© {year} Linyup. Alle Rechte vorbehalten.",
+    "cols": {
+      "product": "Produkt",
+      "legal": "Rechtliches",
+      "contact": "Kontakt"
+    }
   },
   "roadmap": {
     "metaTitle": "Roadmap — Linyup",
