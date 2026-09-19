@@ -991,21 +991,30 @@ export function ActivityPlanLinks({
 
   return (
     <div className="space-y-3">
+      {/* FROM A CLASS it is one more setting on the tab, so it is set like one
+          (label + hint, the SettingRow type) rather than as a section heading
+          that out-shouts the rows around it (Franco, 2026-09-19). From a plan
+          it still heads that pane's own section. */}
+      {direction === 'from-offering' ? (
+        <div>
+          <p className="text-sm font-medium">{t('plansHeading')}</p>
+          <p className="text-xs text-muted-foreground">
+            {rows.some((r) => r.group !== null) ? t('durationRulesHint') : t('plansHint')}
+          </p>
+        </div>
+      ) : (
       <SectionHeading
         level="sub"
-        title={direction === 'from-offering' ? t('plansHeading') : t('includesHeading')}
+        title={t('includesHeading')}
         description={
           // SAID ONCE, ABOVE THE TABLES, rather than repeated on each heading
           // band: a studio meeting three copies of the same plan list needs to
           // know WHY before it reads the first one, and the reason is the same
           // for every group.
-          rows.some((r) => r.group !== null)
-            ? t('durationRulesHint')
-            : direction === 'from-offering'
-              ? t('plansHint')
-              : t('includesHint')
+          rows.some((r) => r.group !== null) ? t('durationRulesHint') : t('includesHint')
         }
       />
+      )}
 
       {/* UX-109 (interim) — the ONLY explanation of what a column means used to
           be the `title` on its header cell, which a mouse can find and a touch

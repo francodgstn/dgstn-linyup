@@ -1247,6 +1247,34 @@ export default function CataloguePage() {
               after it (Franco, 2026-09-02).
               Absent on activities and plans: nothing about either is edited
               anywhere else any more. */}
+          {/* ADD, WHERE THE LIST IS (Franco, 2026-09-19). The header's Create
+              menu stays — it makes any kind from anywhere — but it sits across
+              the page from the list it adds to, and a studio looking at its
+              classes looks for "add one" among them. One quiet row at the head
+              of each tab's list, doing exactly what that tab's Create item does. */}
+          {canEdit && (activeTab === 'activities' || activeTab === 'plans') && (
+            <button
+              type="button"
+              onClick={() => setCreating(activeTab === 'activities' ? 'activity' : 'plan')}
+              className="mx-2 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-muted hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0 flex-1">
+                {activeTab === 'activities' ? t('newActivity') : t('newPlan')}
+              </span>
+            </button>
+          )}
+          {canEdit && (activeTab === 'courses' || activeTab === 'products') && (
+            <Link
+              href={(activeTab === 'courses' ? '/manage/online-courses?new=1' : '/manage/products?new=1') as Route}
+              className="mx-2 flex items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-muted hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0 flex-1">
+                {activeTab === 'courses' ? t('newCourse') : t('newProduct')}
+              </span>
+            </Link>
+          )}
           {(activeTab === 'courses' || activeTab === 'products') && (
             <Link
               href={(activeTab === 'courses' ? '/manage/online-courses' : '/manage/products') as Route}
@@ -1744,6 +1772,7 @@ export default function CataloguePage() {
           duplicating={null}
           nextOrder={activities.length}
           currency={currency}
+          defaultPlanIds={plans.filter((p) => p.active !== false).map((p) => p.id)}
           onCreated={(id) => select({ kind: 'activity', id })}
         />
       )}

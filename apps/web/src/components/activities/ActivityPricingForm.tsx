@@ -45,6 +45,7 @@
 
 import { useEffect, useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Users } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { deleteField, doc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
@@ -406,8 +407,20 @@ export function ActivityPricingForm({
               follows from them, so this line is the only place the answer
               appears — and it is read-only. */}
           <FormSection>
-            <p className="text-xs text-muted-foreground">{t('accessLabel')}</p>
-            <p className="text-sm">{summarySentence}</p>
+            {/* A CALLOUT, NOT A ROW (Franco, 2026-09-19): set like a setting, the
+                line read as one more thing to fill in. A tinted panel with an
+                icon says "this is what the settings below add up to". */}
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-start gap-2.5 rounded-lg bg-primary/5 px-3 py-2.5 text-sm"
+            >
+              <Users aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <p className="min-w-0">
+                <span className="font-medium">{t('accessLabel')}: </span>
+                {summarySentence}
+              </p>
+            </div>
           </FormSection>
 
           <FormSection>
@@ -423,7 +436,6 @@ export function ActivityPricingForm({
               <SettingRow
                 htmlFor={`${rowId}-dropin`}
                 label={t('dropInLabel')}
-                hint={t('dropInHelp')}
                 disabled={!canEdit}
                 control={
                   <Switch
