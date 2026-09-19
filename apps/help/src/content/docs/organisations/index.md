@@ -1,7 +1,7 @@
 ---
 title: "Organisations"
 description: "For federations and multi-studio groups: one place above your member studios."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 0
 ---

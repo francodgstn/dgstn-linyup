@@ -1,7 +1,7 @@
 ---
 title: "Waivers"
 description: "Ask people to accept your liability waiver before they train."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 10
 ---

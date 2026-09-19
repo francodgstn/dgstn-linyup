@@ -1,7 +1,7 @@
 ---
 title: "Data & privacy"
 description: "Where your data lives, who can see it, exporting it, and deleting it."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 2
 ---

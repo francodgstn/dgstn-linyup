@@ -1,7 +1,7 @@
 ---
 title: "Shop"
 description: "Sell memberships, packs, products and courses from one storefront."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 2
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Emails to your members"
 description: "The emails Linyup sends for you, how they look, and sending from your own domain."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 1
 ---

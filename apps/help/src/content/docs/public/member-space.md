@@ -1,7 +1,7 @@
 ---
 title: "Member space"
 description: "Your members' personal area: their plan, bookings, profile and courses."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 3
 ---

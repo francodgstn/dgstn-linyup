@@ -1,7 +1,7 @@
 ---
 title: "Events"
 description: "Camps, workshops, gradings and seminars, with their own programme and registration."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 11
 ---

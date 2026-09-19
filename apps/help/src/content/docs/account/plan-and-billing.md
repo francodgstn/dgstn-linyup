@@ -1,7 +1,7 @@
 ---
 title: "Your plan & billing"
 description: "Linyup's plans, what each includes, and how your subscription is billed."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 1
 ---

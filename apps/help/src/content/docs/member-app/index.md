@@ -1,7 +1,7 @@
 ---
 title: "The member app"
 description: "The Linyup app for your members on iOS and Android."
-comingSoon: true
+comingSoon: feature
 sidebar:
   order: 0
 ---
