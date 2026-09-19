@@ -444,6 +444,7 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
       // Give the reviewer a booking on the next few upcoming sessions, so their
       // own screens are not empty the moment they sign in.
       if (offset >= 0 && offset <= 7) {
+        const reviewer = CONTACTS[0]
         await db
           .collection(SESSIONS_COLLECTION)
           .doc(sessionId)
@@ -453,6 +454,11 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
             contact: DEMO_REVIEW_CONTACT_ID,
             teamId: DEMO_TEAM_ID,
             sessionId,
+            // Named like every other seeded booking — trackBookings copies the
+            // name off the booking into the activity log.
+            firstname: reviewer.firstname,
+            lastname: reviewer.lastname,
+            email: DEMO_REVIEW_EMAIL,
             status: 'confirmed',
             created_at: FieldValue.serverTimestamp(),
           })

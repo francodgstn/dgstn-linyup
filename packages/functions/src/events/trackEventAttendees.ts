@@ -113,9 +113,9 @@ async function trackInActivityLog(
   if (!teamId) return
 
   const contact = checkinData.contact as Record<string, unknown> | undefined
-  const contactFullname = contact
-    ? `${contact.firstname} ${contact.lastname}`
-    : 'Unknown contact'
+  const contactFullname =
+    `${(contact?.firstname as string) || ''} ${(contact?.lastname as string) || ''}`.trim() ||
+    'Unknown contact'
 
   const activityLogItem = {
     date: FieldValue.serverTimestamp(),
