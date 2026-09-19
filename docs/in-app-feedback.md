@@ -1,9 +1,11 @@
 ---
-title: In-app feedback system
+title: Feedback widget
+description: In-app feedback system
 status: living
 area: product
+order: 5
 ---
-# In-app feedback system
+# Feedback widget
 
 Lightweight feedback channel for the tenant dashboard (`apps/web`), built for the
 lead-sandbox phase: users report general or scoped feedback with minimal friction,

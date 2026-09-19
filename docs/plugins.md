@@ -1,9 +1,11 @@
 ---
-title: Plugins
+title: Plugin model
+description: Plugins
 status: living
-area: platform
+area: plugins
+order: 1
 ---
-# Plugins
+# Plugin model
 
 A plugin packages a feature that not every tenant gets. **Manifests are code**
 (`apps/web/src/plugins/*/manifest.ts`, collected in `PLUGIN_REGISTRY`); **only

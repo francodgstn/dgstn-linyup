@@ -1,9 +1,10 @@
 ---
-title: FareHarbor → Linyup — competitive feature analysis
+title: FareHarbor analysis
+description: FareHarbor → Linyup — competitive feature analysis
 status: record
 area: product
 ---
-# FareHarbor → Linyup — competitive feature analysis
+# FareHarbor analysis
 
 > **Status: analysis, not a commitment.** Nothing here is scheduled. Effort
 > estimates are order-of-magnitude. The **Reject** verdicts are as much the point

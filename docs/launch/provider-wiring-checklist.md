@@ -1,9 +1,11 @@
 ---
-title: Provider wiring checklist (go-live QA)
+title: Provider wiring
+description: Provider wiring checklist (go-live QA)
 status: living
 area: ops
+order: 6
 ---
-# Provider wiring checklist (go-live QA)
+# Provider wiring
 
 Goal: prove every third-party path (Stripe Connect, Stripe SaaS billing, Brevo,
 Payrexx) is wired correctly **in sandbox/test mode first**, then run a single

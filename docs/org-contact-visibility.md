@@ -1,9 +1,11 @@
 ---
-title: "What an organisation may see of a member studio's people — design"
+title: Member visibility
+description: "What an organisation may see of a member studio's people — design"
 status: living
-area: contacts
+area: orgs
+order: 2
 ---
-# What an organisation may see of a member studio's people — design
+# Member visibility
 
 **Status: BUILT 2026-09-08** (Franco). A studio inside an organisation keeps its
 own contacts to itself. The federation sees a person only once that person is on

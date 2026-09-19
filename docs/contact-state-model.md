@@ -1,9 +1,11 @@
 ---
-title: "How Linyup sees a contact — the contact state model"
+title: Contact state model
+description: How Linyup sees a contact — the contact state model
 status: living
 area: contacts
+order: 1
 ---
-# How Linyup sees a contact — the contact state model
+# Contact state model
 
 **Status: BUILT.** Designed with Franco on 2026-09-10. The External bucket shipped
 the same day in [#274](https://github.com/francodgstn/dgstn-linyup/pull/274),

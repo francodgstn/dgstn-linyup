@@ -2,6 +2,7 @@
 title: Open defects
 status: living
 area: product
+order: 4
 ---
 # Open defects
 

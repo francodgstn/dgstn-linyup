@@ -1,9 +1,10 @@
 ---
-title: Member app — scan and roadmap (2026-09-02)
+title: Mobile scan 2026-09
+description: Member app — scan and roadmap (2026-09-02)
 status: record
 area: mobile
 ---
-# Member app — scan and roadmap (2026-09-02)
+# Mobile scan 2026-09
 
 The member app (`apps/mobile`, Expo 54 / React Native 0.81) was ported from
 `hmd-lineup/student-app` on 2026-08-19 and has not shipped. This document is

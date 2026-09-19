@@ -3,7 +3,15 @@ import starlight from '@astrojs/starlight'
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readText, parseFrontmatter, AREAS } from '../../scripts/lib/docsMeta.mjs'
+import {
+  readText,
+  parseFrontmatter,
+  AREAS,
+  AREA_TITLE,
+  byOrder,
+  EXTERNAL_DOCS,
+  claudeSections,
+} from '../../scripts/lib/docsMeta.mjs'
 
 // LOCAL ONLY — this site is never deployed. docs/ carries open-defects.md
 // (a register of unfixed bugs), security-audit-2026-07.md, product-strategy.md
@@ -14,17 +22,6 @@ import { readText, parseFrontmatter, AREAS } from '../../scripts/lib/docsMeta.mj
 const ROOT = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]$/, '')
 const DOCS = join(ROOT, 'docs')
 
-const AREA_TITLE: Record<string, string> = {
-  payments: 'Payments & finance',
-  booking: 'Booking',
-  contacts: 'Contacts & membership',
-  content: 'Public content',
-  platform: 'Platform & API',
-  mobile: 'Member app',
-  ops: 'Operations',
-  product: 'Product & registers',
-}
-
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir)) {
     const f = join(dir, e)
@@ -34,9 +31,11 @@ function walk(dir: string, out: string[] = []): string[] {
   return out
 }
 
-// The sidebar is built from the SAME frontmatter the index generator reads, so
-// the two can never disagree about which area a document belongs to.
-type Entry = { slug: string; label: string; area: string; status: string }
+// The sidebar is built from the SAME metadata the index generator and the home
+// page read (docs frontmatter + docsMeta.mjs), so they can never disagree about
+// where a page belongs. Every area is a collapsed group — the sidebar reads as a
+// table of contents first; Starlight opens the group holding the current page.
+type Entry = { slug: string; title: string; area: string; status: string; order?: number | string }
 const entries: Entry[] = []
 for (const rel of walk(DOCS).sort()) {
   if (rel === 'README.md' || rel.endsWith('/README.md')) continue
@@ -44,29 +43,35 @@ for (const rel of walk(DOCS).sort()) {
   if (!data?.title) continue
   entries.push({
     slug: rel.replace(/\.md$/, ''),
-    label: String(data.title),
+    title: String(data.title),
     area: String(data.area),
     status: String(data.status),
+    order: data.order as string | undefined,
   })
 }
+for (const d of EXTERNAL_DOCS) entries.push({ slug: d.id, title: d.title, area: d.area, status: 'living', order: d.order })
+for (const s of claudeSections(readText(join(ROOT, 'CLAUDE.md')))) {
+  entries.push({ slug: s.id, title: s.title, area: s.area, status: 'living', order: s.order })
+}
 
-const live = entries.filter((e) => e.status === 'living' || e.status === 'plan')
+const item = (e: Entry) => ({
+  label: e.title,
+  slug: e.slug,
+  ...(e.status === 'plan' ? { badge: { text: 'plan', variant: 'caution' as const } } : {}),
+})
+const current = entries.filter((e) => e.status === 'living' || e.status === 'plan')
 const past = entries.filter((e) => e.status === 'record' || e.status === 'closed')
 
 const sidebar = [
-  ...AREAS.filter((a) => live.some((e) => e.area === a)).map((a) => ({
+  ...AREAS.filter((a) => current.some((e) => e.area === a)).map((a) => ({
     label: AREA_TITLE[a] ?? a,
-    items: live
-      .filter((e) => e.area === a)
-      .sort((x, y) => x.label.localeCompare(y.label))
-      .map((e) => ({ label: e.label, slug: e.slug })),
+    collapsed: a !== 'start',
+    items: current.filter((e) => e.area === a).sort(byOrder).map(item),
   })),
   {
-    label: 'Closed & point-in-time',
+    label: 'Records',
     collapsed: true,
-    items: past
-      .sort((x, y) => x.label.localeCompare(y.label))
-      .map((e) => ({ label: e.label, slug: e.slug })),
+    items: past.sort((x, y) => x.title.localeCompare(y.title)).map(item),
   },
 ]
 
@@ -78,6 +83,20 @@ export default defineConfig({
       description: 'Internal documentation. Not published.',
       sidebar,
       pagefind: true,
+      customCss: ['./src/styles/brand.css', './src/styles/docs.css'],
+      components: { SiteTitle: './src/components/SiteTitle.astro' },
+      favicon: '/favicon.svg',
+      head: [
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' } },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@700&display=swap',
+          },
+        },
+      ],
     }),
   ],
   vite: {

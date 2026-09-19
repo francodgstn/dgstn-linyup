@@ -1,9 +1,11 @@
 ---
-title: "Test accounts — every environment, web and member app"
+title: Test accounts
+description: "Test accounts — every environment, web and member app"
 status: living
-area: ops
+area: start
+order: 9
 ---
-# Test accounts — every environment, web and member app
+# Test accounts
 
 The one page that says who can sign in where, so nobody re-derives a login
 from a seeder's source. Two kinds of person exist in Linyup and they sign in

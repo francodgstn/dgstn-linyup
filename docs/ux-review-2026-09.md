@@ -1,9 +1,10 @@
 ---
-title: UX review — 2026-09 · Offerings (activities & plans)
-status: living
+title: UX review 2026-09
+description: "UX review — 2026-09 · Offerings (activities & plans)"
+status: record
 area: product
 ---
-# UX review — 2026-09 · Offerings (activities & plans)
+# UX review 2026-09
 
 Reviewed on `origin/main` 23d7ea30 (2026-09-17), after the studio default drop-in
 (#289) and the two-question class gate (#279). Scope: the manager's Offerings area

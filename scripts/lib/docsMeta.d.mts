@@ -7,7 +7,42 @@
 export declare function readText(path: string): string
 
 export declare const AREAS: readonly string[]
+export declare const DOMAIN_AREAS: readonly string[]
+export declare const AREA_TITLE: Record<string, string>
 export declare const STATUSES: readonly string[]
+
+export declare function byOrder(
+  a: { order?: number | string; title: string },
+  b: { order?: number | string; title: string },
+): number
+
+export interface ExternalDoc {
+  path: string
+  id: string
+  title: string
+  area: string
+  order: number
+}
+export declare const EXTERNAL_DOCS: readonly ExternalDoc[]
+
+export interface ClaudeSectionSpec {
+  id?: string
+  title?: string
+  area?: string
+  order?: number
+  skip?: boolean
+  whole?: boolean
+}
+export declare const CLAUDE_SECTIONS: Record<string, ClaudeSectionSpec>
+
+export declare function claudeSections(src: string): {
+  id: string
+  title: string
+  area: string
+  order: number
+  heading: string
+  body: string
+}[]
 
 export interface DocFrontmatter {
   title?: string

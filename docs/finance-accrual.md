@@ -1,9 +1,11 @@
 ---
-title: "Finance v2 — Accrual & Assets (plan)"
+title: "Accrual & assets"
+description: "Finance v2 — Accrual & Assets (plan)"
 status: plan
 area: payments
+order: 11
 ---
-# Finance v2 — Accrual & Assets (plan)
+# Accrual & assets
 
 **Status: PLAN.** Phases 1 and 3 below are not implemented. What IS shipped from
 this plan: Phase 0 (`MemberSubscription.current_period_start` is persisted),

@@ -1,0 +1,10 @@
+/* Every document opens with an H1 equal to its title (docs-check enforces it),
+   and Starlight prints the title as the page's H1 too, so without this every
+   page showed its name twice. The source keeps its H1 for GitHub and for agents
+   reading the file from disk; only the rendered page hides it. (Astro 7's default
+   Markdown processor no longer runs remark plugins, which would otherwise be the
+   place to drop it.) */
+.sl-markdown-content > h1:first-child,
+.sl-markdown-content > .sl-heading-wrapper.level-h1:first-child {
+  display: none;
+}

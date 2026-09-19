@@ -1,9 +1,10 @@
 ---
-title: "Staging manual review, 2026-08-24 — the 29 findings"
-status: living
+title: Staging review 2026-08
+description: "Staging manual review, 2026-08-24 — the 29 findings"
+status: record
 area: ops
 ---
-# Staging manual review, 2026-08-24 — the 29 findings
+# Staging review 2026-08
 
 Franco ran a manual review against **staging** and came back with 29 findings
 across Schedule, Booking, Subscriptions, Activities, Ops, and signup/onboarding.

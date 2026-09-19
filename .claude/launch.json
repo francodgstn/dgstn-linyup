@@ -61,6 +61,20 @@
       "port": 4322
     },
     {
+      "name": "docs",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@linyup/docs",
+        "exec",
+        "astro",
+        "dev",
+        "--port",
+        "4324"
+      ],
+      "port": 4324
+    },
+    {
       "name": "emulators-worktree",
       "runtimeExecutable": "node",
       "runtimeArgs": [

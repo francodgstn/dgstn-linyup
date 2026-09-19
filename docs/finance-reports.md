@@ -1,9 +1,11 @@
 ---
-title: "Finance reports — journal, monthly rollups, CSV export"
+title: Finance reports
+description: "Finance reports — journal, monthly rollups, CSV export"
 status: living
 area: payments
+order: 9
 ---
-# Finance reports — journal, monthly rollups, CSV export
+# Finance reports
 
 The financial reporting substrate. For the double-entry accounting module built
 on top of it, see [accounting.md](./accounting.md).

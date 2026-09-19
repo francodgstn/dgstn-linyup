@@ -1,0 +1,54 @@
+---
+// The Linyup wordmark in place of Starlight's plain-text title: the swoosh mark
+// and the two-tone "liny"+"up" in Fredoka, as on linyup.com (apps/landing's
+// Logo.astro), plus a small tag saying which site this is. A copy of apps/help's; keep the two in step.
+---
+
+<a href="/" class="lu-title" aria-label="Linyup engineering docs, home">
+  <svg class="lu-mark" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <linearGradient id="lu-swoosh" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="#a78bfa"></stop>
+        <stop offset="1" stop-color="#5b21b6"></stop>
+      </linearGradient>
+    </defs>
+    <path d="M16 82 Q42 80 58 52 T86 16" fill="none" stroke="url(#lu-swoosh)" stroke-width="14" stroke-linecap="round"></path>
+  </svg>
+  <span class="lu-word"><span>liny</span><span class="lu-up">up</span></span>
+  <span class="lu-tag">engineering</span>
+</a>
+
+<style>
+  .lu-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+    color: var(--sl-color-white);
+  }
+  .lu-mark {
+    width: 1.6rem;
+    height: 1.6rem;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+  .lu-word {
+    font-family: 'Fredoka', var(--sl-font);
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .lu-up {
+    color: var(--sl-color-accent);
+  }
+  .lu-tag {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    color: var(--sl-color-accent-high);
+    background: var(--sl-color-accent-low);
+    border-radius: 9999px;
+    padding: 0.1rem 0.5rem;
+    margin-left: 0.15rem;
+  }
+</style>

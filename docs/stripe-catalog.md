@@ -1,9 +1,11 @@
 ---
-title: Stripe catalog — declarative
+title: Stripe catalogue
+description: Stripe catalog — declarative
 status: living
 area: payments
+order: 4
 ---
-# Stripe catalog — declarative
+# Stripe catalogue
 
 The **whole catalogue** (subscription plans **and** plugin add-ons) is defined
 **in the repo** and applied to Stripe idempotently, so test and prod stay

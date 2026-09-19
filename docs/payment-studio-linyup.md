@@ -1,9 +1,11 @@
 ---
-title: "Payments: studio → Linyup (SaaS billing)"
+title: SaaS billing
+description: "Payments: studio → Linyup (SaaS billing)"
 status: living
 area: payments
+order: 2
 ---
-# Payments: studio → Linyup (SaaS billing)
+# SaaS billing
 
 > **Scope:** how **Linyup charges studios** for their plan (Coach / Studio /
 > Organization) via Stripe subscriptions. Money settles on **Linyup's** Stripe

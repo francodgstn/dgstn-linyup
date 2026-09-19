@@ -1,9 +1,11 @@
 ---
-title: Waivers — architecture
+title: Waivers
+description: Waivers — architecture
 status: living
 area: booking
+order: 6
 ---
-# Waivers — architecture
+# Waivers
 
 A waiver is **a liability release a visitor accepts before they are allowed into
 a room**. It is a kind of Document (`kind: 'waiver'`), it is published as an

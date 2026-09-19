@@ -1,9 +1,11 @@
 ---
-title: "Appointments (1:1) — architecture"
+title: Appointments
+description: "Appointments (1:1) — architecture"
 status: living
 area: booking
+order: 3
 ---
-# Appointments (1:1) — architecture
+# Appointments
 
 An appointment is **a booking of a provider's exclusive time**, as opposed to a
 class, which is **a seat in a scheduled event**. That's the whole distinction —

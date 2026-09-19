@@ -1,9 +1,11 @@
 ---
-title: Receiving replies (inbound mail)
+title: Inbound mail
+description: Receiving replies (inbound mail)
 status: living
-area: platform
+area: messaging
+order: 2
 ---
-# Receiving replies (inbound mail)
+# Inbound mail
 
 > **Scope:** how Linyup **receives** replies to the mail it sends. Brevo
 > (`packages/functions/src/mail/`) is **send-only** — it has no inbox — so replies

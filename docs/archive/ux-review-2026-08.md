@@ -1,7 +1,8 @@
 ---
-title: "UX review, August 2026"
+title: UX review 2026-08
+description: "UX review, August 2026"
 status: closed
-area: ops
+area: product
 ---
 > ## CLOSED — archived 2026-08-24
 >

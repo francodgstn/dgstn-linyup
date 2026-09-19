@@ -1,9 +1,11 @@
 ---
-title: "Payments: contact → studio"
+title: Member payments
+description: "Payments: contact → studio"
 status: living
 area: payments
+order: 1
 ---
-# Payments: contact → studio
+# Member payments
 
 > **Scope:** how a studio/coach collects money **from their contacts** (members) —
 > memberships, drop-ins, shop, courses. Two rails exist; both feed **one** unified

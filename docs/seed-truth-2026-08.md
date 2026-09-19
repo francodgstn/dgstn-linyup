@@ -1,9 +1,10 @@
 ---
-title: Seed truth — the 2026-08 coverage audit
+title: Seed coverage 2026-08
+description: Seed truth — the 2026-08 coverage audit
 status: record
 area: ops
 ---
-# Seed truth — the 2026-08 coverage audit
+# Seed coverage 2026-08
 
 Phase 1 of `docs/archive/seed-alignment-plan.md` (that plan is now closed; this
 document is the live deliverable and remains the schema reference). **Analysis only**: no seeder was run, no

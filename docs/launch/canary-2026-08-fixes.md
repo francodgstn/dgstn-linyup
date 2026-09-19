@@ -1,9 +1,10 @@
 ---
-title: "Prod canary, 2026-08-23 — triage and fix plan"
-status: living
+title: Prod canary 2026-08
+description: "Prod canary, 2026-08-23 — triage and fix plan"
+status: record
 area: ops
 ---
-# Prod canary, 2026-08-23 — triage and fix plan
+# Prod canary 2026-08
 
 Franco ran a manual canary against **production** and came back with 24 findings.
 This file is the triage: what each one actually is against the code, what groups

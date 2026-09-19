@@ -1,60 +1,86 @@
 ---
-// Home page. Without it `/` is a 404 — every document lives at its own slug
-// (e.g. /accounting/) and nothing claimed the root, which made a perfectly
-// healthy dev server look broken.
+// Home page: the whole site on one screen. Without it `/` is a 404 — every
+// document lives at its own slug and nothing claimed the root.
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
+import { Card, CardGrid, LinkCard, Badge } from '@astrojs/starlight/components'
 import { getCollection } from 'astro:content'
-import { AREAS } from '../../../../scripts/lib/docsMeta.mjs'
-
-// Keep in step with AREA_TITLE in astro.config.ts.
-const AREA_TITLE: Record<string, string> = {
-  payments: 'Payments & finance',
-  booking: 'Booking',
-  contacts: 'Contacts & membership',
-  content: 'Public content',
-  platform: 'Platform & API',
-  mobile: 'Member app',
-  ops: 'Operations',
-  product: 'Product & registers',
-}
-const KIND: Record<string, string> = {
-  living: 'how it works now',
-  plan: 'work to do',
-  record: 'true as of a date',
-  closed: 'finished',
-}
+import { AREAS, AREA_TITLE, byOrder } from '../../../../scripts/lib/docsMeta.mjs'
 
 const docs = await getCollection('docs')
-const live = docs.filter((d) => d.data.status === 'living' || d.data.status === 'plan')
-const groups = AREAS.map((area: string) => ({
-  area,
-  title: AREA_TITLE[area] ?? area,
-  items: live
+const current = docs.filter((d) => d.data.status === 'living' || d.data.status === 'plan')
+const records = docs.length - current.length
+const inArea = (area: string) =>
+  current
     .filter((d) => d.data.area === area)
-    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
-})).filter((g: { items: unknown[] }) => g.items.length > 0)
-const pastCount = docs.length - live.length
+    .map((d) => ({ id: d.id, title: d.data.title, order: d.data.order, plan: d.data.status === 'plan' }))
+    .sort(byOrder)
+
+const start = inArea('start')
+const FIRST = ['overview', 'glossary', 'rules/local-development', 'test-accounts']
+type Group = { area: string; title: string; items: ReturnType<typeof inArea> }
+const areas: Group[] = AREAS.filter((a) => a !== 'start')
+  .map((a) => ({ area: a, title: AREA_TITLE[a] ?? a, items: inArea(a) }))
+  .filter((g) => g.items.length > 0)
 ---
 
-<StarlightPage frontmatter={{ title: 'Linyup engineering', description: 'Internal documentation. Not published.', status: 'living', area: 'ops' }}>
+<StarlightPage
+  frontmatter={{
+    title: 'Linyup engineering',
+    description: 'Internal documentation. Local only, never published.',
+    status: 'living',
+    area: 'start',
+  }}
+>
   <p>
-    Every current document under <code>docs/</code>, grouped by area. Each one says what kind of
-    document it is: <em>how it works now</em> means the rules hold today, <em>work to do</em> is a plan
-    that may be stale. The {pastCount} closed and point-in-time documents are in the sidebar under
-    <strong>Closed &amp; point-in-time</strong>.
+    How Linyup is built and why. If you are new here, start with the four pages below.
+    Pages marked <Badge text="plan" variant="caution" /> describe work still to do.
   </p>
-  {
-    groups.map((g: { area: string; title: string; items: typeof docs }) => (
-      <>
-        <h2 id={g.area}>{g.title}</h2>
-        <ul>
-          {g.items.map((d) => (
-            <li>
-              <a href={`/${d.id}/`}>{d.data.title}</a> — {KIND[d.data.status]}
-            </li>
-          ))}
-        </ul>
-      </>
-    ))
-  }
+
+  <CardGrid>
+    {start.filter((d) => FIRST.includes(d.id)).map((d) => <LinkCard title={d.title} href={`/${d.id}/`} />)}
+  </CardGrid>
+
+  <h2 id="map">Map</h2>
+  <CardGrid>
+    {
+      areas.map((g) => (
+        <Card title={g.title}>
+          <ul class="map-list">
+            {g.items.map((d) => (
+              <li>
+                <a href={`/${d.id}/`}>{d.title}</a>
+                {d.plan && <Badge text="plan" variant="caution" size="small" />}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ))
+    }
+  </CardGrid>
+
+  <p>
+    There are {records} audits, reviews and closed plans under <strong>Records</strong> in the
+    sidebar. Each was true on its date. Check one against the code before you act on it.
+  </p>
 </StarlightPage>
+
+<style>
+  .map-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    columns: 2 11rem;
+    column-gap: 1rem;
+  }
+  .map-list li {
+    margin: 0 0 0.25rem;
+    break-inside: avoid;
+    font-size: var(--sl-text-sm);
+  }
+  .map-list a {
+    text-decoration: none;
+  }
+  .map-list a:hover {
+    text-decoration: underline;
+  }
+</style>

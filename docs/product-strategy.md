@@ -1,13 +1,15 @@
 ---
-title: "HMD SaaS Strategy — Product & Pricing Blueprint"
-status: living
+title: Strategy
+description: "HMD SaaS Strategy — Product & Pricing Blueprint"
+status: plan
 area: product
+order: 1
 ---
 > **⚠️ STATUS: DRAFT / WORK IN PROGRESS — not definitive. Pricing figures and tier boundaries are indicative and subject to change.**
 
 ---
 
-# HMD SaaS Strategy — Product & Pricing Blueprint
+# Strategy
 
 ## 1. Product Philosophy
 

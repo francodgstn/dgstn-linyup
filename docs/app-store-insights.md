@@ -1,9 +1,11 @@
 ---
-title: App-store insights in the operator console
+title: Store insights
+description: App-store insights in the operator console
 status: living
 area: mobile
+order: 7
 ---
-# App-store insights in the operator console
+# Store insights
 
 **Status: experimental spike.** Local emulator only — no Terraform, no deploy, no
 CI. `STORE_INGEST_ENABLED` is `false` in every tracked environment, so merging

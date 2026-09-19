@@ -1,9 +1,10 @@
 ---
-title: Offerings copy pass — 2026-09 (working notes for UX-105/106/107/113)
+title: UX copy pass 2026-09
+description: Offerings copy pass — 2026-09 (working notes for UX-105/106/107/113)
 status: record
 area: product
 ---
-# Offerings copy pass — 2026-09 (working notes for UX-105/106/107/113)
+# UX copy pass 2026-09
 
 Companion to `docs/ux-review-2026-09.md`. Audience: a studio owner who is not a
 tech person. Rule: the owner's words, never the data model's. Every change applies

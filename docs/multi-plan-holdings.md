@@ -1,9 +1,11 @@
 ---
-title: Multi-plan holdings — a contact holds a LIST of plans
+title: Multi-plan holdings
+description: Multi-plan holdings — a contact holds a LIST of plans
 status: plan
 area: payments
+order: 7
 ---
-# Multi-plan holdings — a contact holds a LIST of plans
+# Multi-plan holdings
 
 Status: **phases 0–2 and 3a built** — the guard, the store and mirror, the
 writers, and coverage and pricing reading the plan list; the other readers, the UI

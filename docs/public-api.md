@@ -1,9 +1,11 @@
 ---
-title: Public API + remote MCP server
+title: "Public API & MCP"
+description: Public API + remote MCP server
 status: living
-area: platform
+area: architecture
+order: 13
 ---
-# Public API + remote MCP server
+# Public API & MCP
 
 Studio staff reach their studio's data from outside Linyup in two ways:
 
