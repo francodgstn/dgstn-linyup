@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase-client'
+import { callFunction } from '@/lib/callFunction'
 import { clearTenantFeeRate, setTenantFeeRate } from './actions'
 
 /**
@@ -132,8 +131,7 @@ export function FeeRateCard({
     setResync(null)
     setResyncing(true)
     try {
-      const fn = httpsCallable<{ kind: string; entityId: string }, { results: ResyncRow[] }>(
-        functions,
+      const fn = callFunction<{ kind: string; entityId: string }, { results: ResyncRow[] }>(
         'resyncTenantFeeRate'
       )
       setResync((await fn({ kind, entityId })).data.results)

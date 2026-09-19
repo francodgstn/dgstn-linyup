@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { httpsCallable } from 'firebase/functions'
 import {
   PLATFORM_NOTICE_TEMPLATES,
   PLATFORM_NOTICE_VARIABLES,
@@ -13,7 +12,7 @@ import {
   type PlatformNoticeTemplateId,
   type SaasPlan,
 } from '@linyup/shared'
-import { functions } from '@/lib/firebase-client'
+import { callFunction } from '@/lib/callFunction'
 
 // Compose → PREVIEW → send. The preview step is not decoration: a send to "all"
 // is irreversible and outward-facing, so the operator sees the resolved count,
@@ -117,10 +116,10 @@ export function NoticeComposer() {
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { audience: PlatformNoticeAudience; includeManagers: boolean },
         PreviewResult
-      >(functions, 'previewPlatformNotice')
+      >('previewPlatformNotice')
       const { data } = await fn({ audience, includeManagers })
       setPreview(data)
     } catch (err) {
@@ -139,7 +138,7 @@ export function NoticeComposer() {
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         {
           subject: string
           body: string
@@ -149,7 +148,7 @@ export function NoticeComposer() {
           values: Record<string, string>
         },
         SendResult
-      >(functions, 'sendPlatformNotice')
+      >('sendPlatformNotice')
       const { data } = await fn({ subject, body, templateId, audience, includeManagers, values })
       setSent(data)
       setPreview(null)

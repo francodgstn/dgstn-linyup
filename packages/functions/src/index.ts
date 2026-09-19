@@ -596,6 +596,7 @@ export {
 // the deploy runs with --force. See utils/callableRouter.ts and
 // utils/frozenFunctions.test.ts.
 export { rpcSpike } from './routers/spike'
+export { rpcOps } from './routers/ops'
 
 // --- Stubs (TODO: port from hmd-lineup) ---
 // export { generateDashboardInsight } from './analytics'

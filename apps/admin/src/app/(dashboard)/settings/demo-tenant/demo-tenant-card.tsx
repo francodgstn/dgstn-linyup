@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase-client'
+import { callFunction } from '@/lib/callFunction'
 import { Button } from '@/components/ui/button'
 import type { DemoTenantStatus } from '@/lib/queries/demoTenant'
 
@@ -25,8 +24,7 @@ export function DemoTenantCard({ status }: { status: DemoTenantStatus }) {
     setDone(null)
     setBusy(action)
     try {
-      const fn = httpsCallable<{ action: string }, { counts: Record<string, number> }>(
-        functions,
+      const fn = callFunction<{ action: string }, { counts: Record<string, number> }>(
         'manageDemoTenant'
       )
       const res = await fn({ action })
