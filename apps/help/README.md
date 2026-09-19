@@ -1,7 +1,7 @@
-# @linyup/help — public docs (help.linyup.com)
+# @linyup/help — the public help centre (help.linyup.com)
 
 Public product documentation for studio owners, coaches and developers. Starlight, static.
-**Not** the internal `apps/docs` (engineering docs, local only) — nothing here may link to or
+It is called **help** everywhere (the app, the `hosting:help` target and the domain). **Not** the internal `apps/docs` (engineering docs, local only) — nothing here may link to or
 import from the repo's `docs/` folder.
 
 ```

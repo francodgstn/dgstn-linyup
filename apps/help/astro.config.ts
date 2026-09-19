@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
-// PUBLIC product documentation — help.linyup.com. The opposite of apps/docs
+// The PUBLIC help centre — help.linyup.com. The opposite of apps/docs
 // (internal, never deployed): everything under src/content/docs/ is meant to be
 // read by studios and integrators. Never import or link from the repo's docs/.
 //
@@ -14,7 +14,7 @@ export default defineConfig({
   output: 'static',
   integrations: [
     starlight({
-      title: 'Linyup Docs',
+      title: 'Linyup Help',
       description: 'How to run your studio on Linyup — setup, pricing, scheduling, and the developer API.',
       // English only for now, at the root. Adding de/fr/it later is additive:
       // `locales: { root: { label: 'English', lang: 'en' }, de: {...}, ... }`
