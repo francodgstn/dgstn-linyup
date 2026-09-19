@@ -1,7 +1,7 @@
 ---
 title: "WhatsApp"
 description: "Send reminders and news from your own WhatsApp Business number."
-comingSoon: true
+comingSoon: feature
 sidebar:
   order: 2
 ---

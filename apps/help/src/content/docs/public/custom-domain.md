@@ -1,7 +1,7 @@
 ---
 title: "Use your own domain"
 description: "Serve your public pages from your own address, such as book.yourstudio.com."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 4
 ---

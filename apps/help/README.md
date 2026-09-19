@@ -15,9 +15,12 @@ left out of the build, so nothing unfinished can go public.
 ## Pages: draft, coming soon, live
 
 - `draft: true`: an outline. Visible in dev, left out of the build.
-- `comingSoon: true`: **published**, with a banner and a "Soon" badge in the sidebar, so an area
-  exists on the site before its guide does. Give it a truthful one-paragraph summary. To make it
-  a real page, write it and delete the line.
+- `comingSoon: guide`: **published**, with a "Guide soon" badge and a banner saying the feature is
+  already in Linyup and only the guide is missing. Most placeholders are this one.
+- `comingSoon: feature`: **published**, with a "Coming soon" badge, for a feature that is not
+  available yet (the member app, WhatsApp).
+- For either, give the page a truthful one-paragraph summary. To make it a real page, write it
+  and delete the line.
 - Neither: a live page.
 
 A folder under `src/content/docs/` is a product area; `astro.config.ts` lists the folders in

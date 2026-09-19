@@ -1,7 +1,7 @@
 ---
 title: "Automations"
 description: "Rules that act for you: follow up a trial, welcome a new member, chase a failed payment."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 3
 ---

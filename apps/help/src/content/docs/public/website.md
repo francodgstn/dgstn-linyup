@@ -1,7 +1,7 @@
 ---
 title: "Your website"
 description: "Build a studio website from blocks, published at your public address."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 1
 ---

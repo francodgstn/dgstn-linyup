@@ -1,7 +1,7 @@
 ---
 title: "Promo codes & gift cards"
 description: "Discount codes for campaigns, and gift cards people can buy and redeem."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 12
 ---

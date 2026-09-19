@@ -1,7 +1,7 @@
 ---
 title: "Waitlist"
 description: "Let people queue for a full class and take a seat when one frees up."
-comingSoon: true
+comingSoon: guide
 sidebar:
   order: 9
 ---
