@@ -3,8 +3,14 @@ import {
   httpsCallableFromURL,
   type HttpsCallable,
   type HttpsCallableOptions,
+  type HttpsCallableResult,
 } from 'firebase/functions'
-import { callableRouteUrl, functionsBaseUrl, routerForCallable } from '@linyup/shared'
+import {
+  callableRouteUrl,
+  functionsBaseUrl,
+  routerForCallable,
+  withRouterFallback,
+} from '@linyup/shared'
 import { functions, EMULATOR_PORTS, emulatorHost, emulatorProxy } from './firebase'
 
 // ─── callFunction ─────────────────────────────────────────────────────────────
@@ -58,20 +64,33 @@ export function callFunction<Req = unknown, Res = unknown>(
   const router = routerForCallable(name)
   if (!router) return httpsCallable<Req, Res>(functions, name, options)
 
-  // LAZY, because call sites build their callables at MODULE LOAD
-  // (`export const callX = callFunction('x')` in the plugin hooks), and a module
-  // is also loaded on the server while Next prerenders. Building the URL there
-  // would read the emulator host with no `window`, and would THROW on a build
-  // whose env has no project id — the crash firebase.ts was split to avoid.
-  // `httpsCallable` has neither problem: it resolves its URL per call.
-  let built: HttpsCallable<Req, Res> | undefined
-  const get = () =>
-    (built ??= httpsCallableFromURL<Req, Res>(
+  // LAZY: neither callable is built until a call is made. Call sites may build
+  // theirs at module load, and a module can load where there is no window, no
+  // project id, or no Firebase app yet.
+  let routed: HttpsCallable<Req, Res> | undefined
+  let direct: HttpsCallable<Req, Res> | undefined
+  const getRouted = () =>
+    (routed ??= httpsCallableFromURL<Req, Res>(
       functions,
       callableRouteUrl({ base: functionsBase(), router, name }),
       options
     ))
-  const lazy = ((data?: Req | null) => get()(data)) as HttpsCallable<Req, Res>
-  lazy.stream = (data, streamOptions) => get().stream(data, streamOptions)
-  return lazy
+  const getDirect = () => (direct ??= httpsCallable<Req, Res>(functions, name, options))
+
+  // A project that does not have the router YET (a client and its backend do not
+  // deploy together) is answered under the callable's own name, which stays
+  // deployed. @linyup/shared → withRouterFallback says when that is safe: only
+  // when no member ran.
+  const call = withRouterFallback<Req, HttpsCallableResult<Res>>({
+    router,
+    routed: (data) => getRouted()(data),
+    direct: (data) => getDirect()(data),
+    onFallback: (r) =>
+      console.warn(
+        `[callFunction] ${r} is not deployed here — calling its members by their own names`
+      ),
+  })
+  const callable = call as HttpsCallable<Req, Res>
+  callable.stream = (data, streamOptions) => getRouted().stream(data, streamOptions)
+  return callable
 }
