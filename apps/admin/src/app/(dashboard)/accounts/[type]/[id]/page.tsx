@@ -23,6 +23,7 @@ import { InternalCard } from './internal-card'
 import { ConnectToggle } from './connect-toggle'
 import { DisconnectConnect } from './disconnect-connect'
 import { MessagingPolicyCard } from './messaging-policy-card'
+import { groupConnectRequirements } from '@/lib/connectRequirements'
 import { LEDGER_RETENTION_DAYS } from '@linyup/shared'
 
 export const dynamic = 'force-dynamic'
@@ -332,13 +333,21 @@ export default async function AccountDetailPage({
                   <span className="text-xs uppercase tracking-wide text-muted-foreground">
                     Outstanding requirements
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {account.payments.requirementsDue.map((r) => (
-                      <Badge key={r} variant="warning" className="font-normal">
-                        {r}
-                      </Badge>
+                  {/* The studio's own words for it (the shared grouping the
+                      Payments card uses), with Stripe's exact field names
+                      beneath each line for the support conversation. */}
+                  <ul className="flex flex-col gap-1.5">
+                    {groupConnectRequirements(account.payments.requirementsDue).map((g) => (
+                      <li key={g.kind} className="flex flex-col gap-0.5">
+                        <Badge variant="warning" className="w-fit font-normal">
+                          {g.label}
+                        </Badge>
+                        <code className="break-all text-xs text-muted-foreground">
+                          {g.fields.join(', ')}
+                        </code>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
             </CardContent>
