@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * The roster-composition views of "Who is training" — acquisition stage,
+ * affiliation and subscription over time. These read `team_weekly_reports`,
+ * unlike the age/gender views beside them, which is why they live in their own
+ * panel: `DemographicsTrendCard` owns the frame and the dimension picker, and
+ * mounts this for the three report-backed dimensions.
+ */
+
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Users } from 'lucide-react'
@@ -7,10 +15,6 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import { ChartEmptyState } from './ChartEmptyState'
 import { buildWeekKeys, shortWeekLabel, formatTooltipWeek, formatAxisWeek } from '@/lib/isoWeek'
 import type { WeeklyReport, SubscriptionTypeDoc } from '@/hooks/useDashboardData'
@@ -139,27 +143,24 @@ function SeriesSelector({ options, selected, onToggle }: {
 
 // ─── component ────────────────────────────────────────────────────────────────
 
+export type ContactsDimension = 'type' | 'affiliation' | 'subscription_type'
+
 interface Props {
+  dimension: ContactsDimension
   weeklyReports: WeeklyReport[]
   comparisonWeeklyReports?: WeeklyReport[]
   compareWith?: string
   trendsWeeks?: number
   subscriptionTypes?: SubscriptionTypeDoc[]
-  title?: string
 }
 
-export function ContactsSummaryCard({
-  weeklyReports, comparisonWeeklyReports = [], compareWith = 'none',
-  trendsWeeks = 13, subscriptionTypes = [], title,
+/** Mounted with `key={dimension}` by its host, so a dimension change starts
+ *  from the "all" series again rather than carrying stale selections. */
+export function ContactsTrendPanel({
+  dimension, weeklyReports, comparisonWeeklyReports = [], compareWith = 'none',
+  trendsWeeks = 13, subscriptionTypes = [],
 }: Props) {
-  const DIMENSIONS = [
-    { value: 'type',              label: 'Acquisition stage' },
-    { value: 'affiliation',       label: 'Affiliation' },
-    { value: 'subscription_type', label: 'Subscription' },
-  ]
-
   const td = useTranslations('Dashboard')
-  const [dimension, setDimension] = useState('type')
   const [selectedValues, setSelectedValues] = useState<string[]>(['all'])
 
   const comparisonOffset = compareWith === 'last_year' ? 52 : trendsWeeks
@@ -191,11 +192,6 @@ export function ContactsSummaryCard({
       ...ids.map((id, i) => ({ value: id, label: nameMap[id] ?? id, color: paletteColor(i) })),
     ]
   }, [dimension, weeklyReports, subscriptionTypes, td])
-
-  const handleDimensionChange = (dim: string) => {
-    setDimension(dim)
-    setSelectedValues(['all'])
-  }
 
   const handleToggle = (val: string) => {
     if (val === 'all') { setSelectedValues(['all']); return }
@@ -245,23 +241,10 @@ export function ContactsSummaryCard({
     : (chartData as { value: number; comparison?: number }[]).some((d) => d.value > 0 || (d.comparison ?? 0) > 0)
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-
-          <CardTitle className="flex-1">{title || td('chartTitleContacts')}</CardTitle>
-          <Select value={dimension} onValueChange={(v) => { if (v) handleDimensionChange(v) }}>
-            <SelectTrigger size="sm" className="w-[130px] text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {DIMENSIONS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        {valueOptions.length > 1 && (
-          <SeriesSelector options={valueOptions} selected={selectedValues} onToggle={handleToggle} />
-        )}
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col pb-4 pt-3">
+    <div className="flex flex-1 flex-col gap-3">
+      {valueOptions.length > 1 && (
+        <SeriesSelector options={valueOptions} selected={selectedValues} onToggle={handleToggle} />
+      )}
         {!hasData ? (
           <ChartEmptyState
             icon={Users}
@@ -344,7 +327,6 @@ export function ContactsSummaryCard({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   )
 }

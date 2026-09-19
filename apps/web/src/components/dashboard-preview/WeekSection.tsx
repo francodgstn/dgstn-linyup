@@ -4,7 +4,7 @@
  * THE TRENDS — carried over by instruction, and the one place cards are right.
  *
  * A chart needs a plotting surface, so it gets a frame; that was settled before
- * this lane started and nothing here relitigates it. The four existing cards are
+ * this lane started and nothing here relitigates it. The existing cards are
  * imported as they are — this page competes on COMPOSITION, not on redrawing
  * charts that already work.
  *
@@ -29,12 +29,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { ContactsSummaryCard } from '@/components/dashboard/ContactsSummaryCard'
 import { BookingsTrendCard } from '@/components/dashboard/BookingsTrendCard'
 import { TopActivitiesCard } from '@/components/dashboard/TopActivitiesCard'
 import { SessionsHeatmapCard } from '@/components/dashboard/SessionsHeatmapCard'
 import { ActivitiesTrendCard } from '@/components/dashboard/ActivitiesTrendCard'
 import { DemographicsTrendCard } from '@/components/dashboard/DemographicsTrendCard'
+import { AppUsageCard } from '@/components/dashboard/AppUsageCard'
+import { PlanGate } from '@/components/plan/PlanGate'
+import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
+import { usePlan } from '@/hooks/usePlan'
 import type { Contact } from '@linyup/shared'
 
 type CompareWith = 'none' | 'prev_period' | 'last_year'
@@ -91,6 +94,8 @@ export function WeekSection({
   contacts?: Contact[]
 }) {
   const t = useTranslations('NewDashboard')
+  const tApp = useTranslations('AppUsage')
+  const { minimumPlanFor } = usePlan()
   const [weeks, setWeeks] = useState(13)
   const [compare, setCompare] = useState<CompareWith>('none')
   const data = useDashboardData(teamId, weeks, compare)
@@ -133,21 +138,14 @@ export function WeekSection({
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <ContactsSummaryCard
-            weeklyReports={data.weeklyReports}
-            comparisonWeeklyReports={data.comparisonWeeklyReports}
-            subscriptionTypes={data.subscriptionTypes}
-            {...shared}
-          />
-          <BookingsTrendCard
+          {/* `TopActivitiesCard` ranks activities over the window; the trend
+              beside it plots the same measure through it. Ranking answers what
+              is popular, the curve answers what is growing — neither
+              substitutes for the other, which is why both are here. */}
+          <ActivitiesTrendCard
             sessions={data.sessions}
-            allBookings={data.allBookings}
-            newContactBookings={data.newContactBookings}
-            weeklyReports={data.weeklyReports}
-            comparisonWeeklyReports={data.comparisonWeeklyReports}
             comparisonSessions={data.comparisonSessions}
-            comparisonAllBookings={data.comparisonAllBookings}
-            comparisonNewContactBookings={data.comparisonNewContactBookings}
+            activities={data.activities}
             {...shared}
           />
           <TopActivitiesCard
@@ -160,6 +158,17 @@ export function WeekSection({
             comparisonNewContactBookings={data.comparisonNewContactBookings}
             compareWith={compare}
           />
+          <BookingsTrendCard
+            sessions={data.sessions}
+            allBookings={data.allBookings}
+            newContactBookings={data.newContactBookings}
+            weeklyReports={data.weeklyReports}
+            comparisonWeeklyReports={data.comparisonWeeklyReports}
+            comparisonSessions={data.comparisonSessions}
+            comparisonAllBookings={data.comparisonAllBookings}
+            comparisonNewContactBookings={data.comparisonNewContactBookings}
+            {...shared}
+          />
           <SessionsHeatmapCard
             sessions={data.sessions}
             newContactBookings={data.newContactBookings}
@@ -167,20 +176,37 @@ export function WeekSection({
             comparisonSessions={data.comparisonSessions}
             comparisonNewContactBookings={data.comparisonNewContactBookings}
           />
-          {/* `TopActivitiesCard` above ranks activities over the window; this
-              plots the same measure through it. Ranking answers what is
-              popular, the curve answers what is growing — neither substitutes
-              for the other, which is why both are here. */}
-          <ActivitiesTrendCard
-            sessions={data.sessions}
-            comparisonSessions={data.comparisonSessions}
-            activities={data.activities}
+          {/* Age and gender read the roster (see the card's header), so this is
+              the one card here that takes anything the dashboard data hook
+              does not return; its stage/affiliation/subscription views read
+              the weekly reports like everything else. */}
+          <DemographicsTrendCard
+            contacts={contacts}
+            weeklyReports={data.weeklyReports}
+            comparisonWeeklyReports={data.comparisonWeeklyReports}
+            subscriptionTypes={data.subscriptionTypes}
             {...shared}
           />
-          {/* The one trend NOT backed by weekly reports — see its header. It
-              needs the roster, so it is the only card here that takes anything
-              the dashboard data hook does not return. */}
-          <DemographicsTrendCard contacts={contacts} trendsWeeks={weeks} />
+          {/* A plan without the member app gets the upgrade notice in this
+              slot rather than a gap — the figure is about the app, so the
+              reason it is missing is the app. */}
+          <PlanGate
+            feature="member_app"
+            fallback={
+              <Card className="flex h-full flex-col">
+                <CardContent className="flex flex-1 flex-col justify-center p-5">
+                  <PlanUpgradeNotice
+                    minPlan={minimumPlanFor('member_app')}
+                    feature="member_app"
+                    title={tApp('title')}
+                    description={tApp('upsell')}
+                  />
+                </CardContent>
+              </Card>
+            }
+          >
+            <AppUsageCard teamId={teamId} />
+          </PlanGate>
         </div>
       )}
     </section>

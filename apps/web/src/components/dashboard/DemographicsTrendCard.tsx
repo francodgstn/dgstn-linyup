@@ -46,6 +46,14 @@
  * history. That is acceptable — it is a correction, and the alternative is no
  * dimension at all — but it is not the same kind of fact as the age curve, and
  * it should not be described as one.
+ *
+ * ── THE ROSTER-COMPOSITION VIEWS ────────────────────────────────────────────
+ *
+ * Acquisition stage, affiliation and subscription used to be a separate
+ * "Contacts" card. They answer the same question — who is training — so they
+ * are dimensions of this card now. They DO read weekly reports (they have the
+ * history age and gender lack), and live in `ContactsTrendPanel`; this card
+ * owns only the frame and the picker.
  */
 
 import { useMemo, useState } from 'react'
@@ -62,6 +70,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ChartEmptyState } from './ChartEmptyState'
+import { ContactsTrendPanel, type ContactsDimension } from './ContactsTrendPanel'
+import type { SubscriptionTypeDoc, WeeklyReport } from '@/hooks/useDashboardData'
 import { buildWeekKeys, formatAxisWeek, formatTooltipWeek, isoWeekToDate, shortWeekLabel } from '@/lib/isoWeek'
 import { endOfISOWeek } from 'date-fns'
 
@@ -119,15 +129,31 @@ function weekEndMs(isoWeek: string): number {
   return endOfISOWeek(isoWeekToDate(isoWeek)).getTime()
 }
 
-type Dimension = 'age' | 'gender'
+type Dimension = 'age' | 'gender' | ContactsDimension
+
+function isContactsDimension(d: Dimension): d is ContactsDimension {
+  return d === 'type' || d === 'affiliation' || d === 'subscription_type'
+}
 
 interface Props {
   contacts?: Contact[]
   trendsWeeks?: number
+  weeklyReports?: WeeklyReport[]
+  comparisonWeeklyReports?: WeeklyReport[]
+  compareWith?: string
+  subscriptionTypes?: SubscriptionTypeDoc[]
   title?: string
 }
 
-export function DemographicsTrendCard({ contacts = [], trendsWeeks = 13, title }: Props) {
+export function DemographicsTrendCard({
+  contacts = [],
+  trendsWeeks = 13,
+  weeklyReports = [],
+  comparisonWeeklyReports = [],
+  compareWith = 'none',
+  subscriptionTypes = [],
+  title,
+}: Props) {
   const td = useTranslations('Dashboard')
   const tc = useTranslations('Contacts')
   const [dimension, setDimension] = useState<Dimension>('age')
@@ -154,7 +180,9 @@ export function DemographicsTrendCard({ contacts = [], trendsWeeks = 13, title }
     () =>
       dimension === 'age'
         ? AGE_GROUPS.map((g) => ({ value: g.key, label: td(g.key), color: g.color }))
-        : GENDER_CONFIG.map((g) => ({ value: g.key, label: tc(g.tKey), color: g.color })),
+        : dimension === 'gender'
+          ? GENDER_CONFIG.map((g) => ({ value: g.key, label: tc(g.tKey), color: g.color }))
+          : [],
     [dimension, td, tc],
   )
 
@@ -197,21 +225,36 @@ export function DemographicsTrendCard({ contacts = [], trendsWeeks = 13, title }
               if (v) setDimension(v as Dimension)
             }}
           >
-            <SelectTrigger size="sm" className="w-[130px] text-xs">
+            <SelectTrigger size="sm" className="w-[150px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="age">{td('demoViewAge')}</SelectItem>
               <SelectItem value="gender">{td('demoViewGender')}</SelectItem>
+              <SelectItem value="type">{td('demoViewStage')}</SelectItem>
+              <SelectItem value="affiliation">{td('demoViewAffiliation')}</SelectItem>
+              <SelectItem value="subscription_type">{td('demoViewSubscription')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {dimension === 'age' ? td('demoTrendAgeHint') : td('demoTrendGenderHint')}
-        </p>
+        {!isContactsDimension(dimension) && (
+          <p className="text-xs text-muted-foreground">
+            {dimension === 'age' ? td('demoTrendAgeHint') : td('demoTrendGenderHint')}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex flex-1 flex-col pb-4 pt-3">
-        {!hasData ? (
+        {isContactsDimension(dimension) ? (
+          <ContactsTrendPanel
+            key={dimension}
+            dimension={dimension}
+            weeklyReports={weeklyReports}
+            comparisonWeeklyReports={comparisonWeeklyReports}
+            compareWith={compareWith}
+            trendsWeeks={trendsWeeks}
+            subscriptionTypes={subscriptionTypes}
+          />
+        ) : !hasData ? (
           <ChartEmptyState
             icon={Users}
             title={td('chartEmptyTitle')}
