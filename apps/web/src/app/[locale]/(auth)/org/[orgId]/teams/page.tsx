@@ -4,8 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { collection, getDocs, query, where, getDoc, doc, getCountFromServer, limit } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { liveContactConstraints } from '@/lib/liveContacts'
 import { useTranslations } from 'next-intl'
 import { useOrg } from '@/contexts/OrgContext'
@@ -47,6 +46,7 @@ import {
 import type { OrgTeam, TeamAccessRequest, TeamAccessType } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 interface OrgTeamRow extends OrgTeam {
   id: string
@@ -193,7 +193,7 @@ function RequestAccessDialog({
     setLoading(true)
     setError(null)
     try {
-      const fn = httpsCallable(functions, 'requestTeamAccess')
+      const fn = callFunction('requestTeamAccess')
       await fn({ orgId, teamId: team?.teamId, accessType })
       onSuccess()
       onClose()
@@ -266,7 +266,7 @@ function InviteDialog({
     setLoading(true)
     setError(null)
     try {
-      const fn = httpsCallable(functions, 'inviteTeamToOrg')
+      const fn = callFunction('inviteTeamToOrg')
       await fn({ orgId, inviteeEmail: email.trim() })
       setEmail('')
       onSuccess()
@@ -353,7 +353,7 @@ export default function OrgTeamsPage() {
     if (!removeTarget) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'removeTeamFromOrg')
+      const fn = callFunction('removeTeamFromOrg')
       await fn({ orgId: orgId, teamId: removeTarget.teamId })
       showToast(t('removedSuccess'))
       invalidate()

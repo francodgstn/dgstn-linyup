@@ -91,17 +91,17 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
 Output of `pnpm functions:inventory --md`. It includes the routers built so far (`rpcSpike`, the throwaway
-Phase 0 one, `rpcOps`, the pilot, `rpcFinance` and `rpcBilling`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
+Phase 0 one, `rpcOps`, the pilot, `rpcFinance`, `rpcBilling` and `rpcOrg`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**301 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T21:49Z. Global options: region=europe-west6, maxInstances=20.
+**302 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T22:13Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
 | `callable` | 215 |
-| `https` | 14 |
+| `https` | 15 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
 | `firestore.updated` | 2 |
@@ -138,10 +138,10 @@ binds a secret and none sets a service account.
 | `gamification` | 4 |  | 1 |  |  |  |  |  |  |  | 5 |
 | `invoices` | 5 |  |  |  |  |  |  |  |  |  | 5 |
 | `mail` | 4 | 1 |  |  |  |  |  |  |  |  | 5 |
+| `routers` |  | 5 |  |  |  |  |  |  |  |  | 5 |
 | `affiliations` | 4 |  |  |  |  |  |  |  |  |  | 4 |
 | `coaching` |  |  |  | 1 |  | 3 |  |  |  |  | 4 |
 | `referrals` | 4 |  |  |  |  |  |  |  |  |  | 4 |
-| `routers` |  | 4 |  |  |  |  |  |  |  |  | 4 |
 | `appstores` | 1 | 1 |  |  |  |  |  | 1 |  |  | 3 |
 | `domains` | 3 |  |  |  |  |  |  |  |  |  | 3 |
 | `plugins` | 1 |  |  |  |  | 2 |  |  |  |  | 3 |
@@ -160,7 +160,7 @@ binds a secret and none sets a service account.
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **14** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **301** |
+| **Total** | **215** | **15** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **302** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -200,6 +200,7 @@ binds a secret and none sets a service account.
 | `rpcBilling` | `routers` | https | `cpu=1` `concurrency=40` |
 | `rpcFinance` | `routers` | https | `memory=512` `timeout=120` `cpu=1` `concurrency=40` |
 | `rpcOps` | `routers` | https | `memory=512` `timeout=540` `cpu=1` `concurrency=10` `maxInstances=3` |
+| `rpcOrg` | `routers` | https | `cpu=1` `concurrency=40` |
 | `rpcSpike` | `routers` | https | `memory=512` `timeout=60` `cpu=1` `concurrency=40` |
 | `handleStripeWebhook` | `saas-billing` | https | `invoker=public` |
 | `handleTrialLifecycle` | `saas-billing` | schedule | `memory=1024` `timeout=540` |
@@ -569,6 +570,18 @@ environment that turns the flag on.
   authorisation. That hook still picks the name from the billing scope, so its names
   reach `callFunction` through a variable and the client-names recipe in §2.1 does not
   see them — read the hook.
+- **`rpcBilling` is on staging since 2026-09-19**, deployed as written, and the spike with
+  `--routers rpcBilling` passes there. Owed: a signed-in look at Settings → Billing
+  (invoices list, portal link).
+- **`rpcOrg` built 2026-09-20** (`packages/functions/src/routers/org.ts`): member studios,
+  org members and their invitations, taking the org website offline. The invitation pages
+  call some of its members signed out, which stays each member's own decision.
+  `publishOrgWebsite` runs for minutes, so it waits for `rpcHeavy`.
+- **Every routing PR is a FULL redeploy.** The route table lives in `packages/shared`,
+  which is vendored into every function, so changing it changes every function's source
+  hash: the staging deploy step for `rpcBilling` took about eleven minutes, 429 retries
+  included. That is how any change to shared behaves, and it shrinks as aliases are
+  removed — but until then, prefer routing several domains in one PR over one PR each.
 - **Web builds its callables at module load** (`export const callX = …` in the plugin
   hooks), and those modules are also loaded on the server while Next prerenders. So
   `apps/web/src/lib/callFunction.ts` builds a routed URL lazily, on first call: building

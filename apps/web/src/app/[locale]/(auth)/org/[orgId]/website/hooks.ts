@@ -8,6 +8,7 @@ import { db, storage, functions } from '@/lib/firebase'
 import { stripUndefinedDeep, useDraftSitePages, saveDraftSitePages } from '@/lib/sitePagesClient'
 import { ORG_SITE_DRAFTS_COLLECTION, ORG_SITE_PUBLISHED_COLLECTION } from '@linyup/shared'
 import type { OrgSiteDraft, OrgPublishedSite, OrgSiteSection } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 // Mirrors apps/web/src/plugins/website/hooks.ts (the team site builder) but keyed
 // by orgId instead of teamId, against the org_site_drafts / org_site_published
@@ -104,7 +105,7 @@ export async function publishOrgSite(orgId: string): Promise<{ slug: string }> {
 
 /** Remove the public snapshot (and flag the draft disabled) via Cloud Function. */
 export async function unpublishOrgSite(orgId: string): Promise<void> {
-  await httpsCallable(functions, 'unpublishOrgWebsite')({ orgId })
+  await callFunction('unpublishOrgWebsite')({ orgId })
 }
 
 /** Upload an org site image to Storage and return its public download URL. */
