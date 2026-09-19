@@ -1,0 +1,19 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Roadmap from '~/components/Roadmap.astro';
+import Footer from '~/components/Footer.astro';
+import { defaultLang, useTranslations } from '~/i18n';
+
+// English at the root; /de|fr|it/roadmap come from [lang]/roadmap.astro.
+const lang = defaultLang;
+const t = useTranslations(lang);
+---
+
+<BaseLayout title={t('roadmap.metaTitle')} description={t('roadmap.metaDescription')} lang={lang}>
+  <Nav lang={lang} />
+  <main>
+    <Roadmap lang={lang} />
+  </main>
+  <Footer lang={lang} />
+</BaseLayout>

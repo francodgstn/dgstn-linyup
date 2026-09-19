@@ -29,6 +29,7 @@ const analyticsEnabled = !!import.meta.env.PUBLIC_POSTHOG_KEY;
             versions follow later. Terms + DPA landed with the signup acceptance
             step — the checkbox there links straight here, so these must not be
             removed without also removing that link. */}
+        <a href={getLocalizedPath('/roadmap', lang)}>{t('footer.links.roadmap')}</a>
         <a href="/privacy">{t('footer.links.privacy')}</a>
         <a href="/terms">{t('footer.links.terms')}</a>
         <a href="/dpa">{t('footer.links.dpa')}</a>

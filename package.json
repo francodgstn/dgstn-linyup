@@ -25,6 +25,7 @@
     "test:e2e:web": "pnpm --filter @linyup/web test:e2e",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
     "i18n:check": "node scripts/i18n-check.mjs",
+    "roadmap:export": "node scripts/roadmap-export.mjs",
     "census:reads": "node scripts/census-reads.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
     "functions:ready": "node scripts/check-functions-ready.mjs",

@@ -494,8 +494,30 @@
       "dpa": "Trattamento dati",
       "legal": "Note legali",
       "contact": "Contatto",
-      "cookies": "Impostazioni cookie"
+      "cookies": "Impostazioni cookie",
+      "roadmap": "Roadmap"
     },
     "copyright": "© {year} Linyup. Tutti i diritti riservati."
+  },
+  "roadmap": {
+    "metaTitle": "Roadmap — Linyup",
+    "metaDescription": "Cosa stiamo costruendo ora per gli studi, e cosa arriva dopo.",
+    "eyebrow": "Roadmap",
+    "title": "Cosa stiamo costruendo",
+    "subtitle": "Cosa è in sviluppo adesso e cosa arriva dopo. Guidato dagli studi che usano Linyup ogni giorno.",
+    "inProgress": "In sviluppo",
+    "next": "In arrivo",
+    "disclaimer": "Senza date, di proposito: i piani cambiano man mano che impariamo dagli studi, e preferiamo fare le cose bene piuttosto che rispettare una scadenza.",
+    "askTitle": "Ti manca qualcosa?",
+    "askBody": "Dicci di cosa ha bisogno il tuo studio. Quasi tutto ciò che vedi in questa pagina è nato dalla richiesta di uno studio.",
+    "askCta": "Scrivici",
+    "areas": {
+      "booking-and-schedule": "Prenotazioni & orari",
+      "members": "Membri",
+      "payments-and-shop": "Pagamenti & shop",
+      "your-website": "Il tuo sito",
+      "member-app": "App per i membri",
+      "integrations": "Integrazioni"
+    }
   }
 }
