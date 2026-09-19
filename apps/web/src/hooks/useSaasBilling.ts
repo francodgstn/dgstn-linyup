@@ -49,9 +49,8 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import type { SaasPlan } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** Where to send an owner whose subscription doc is missing its Stripe ids —
  *  the one refusal the server itself answers with "contact support". */
@@ -173,8 +172,7 @@ export function useCreateSaasCheckoutSession() {
 
   return useMutation({
     mutationFn: async ({ teamId, plan }: { teamId: string; plan: SaasPlan }) => {
-      const fn = httpsCallable<{ teamId: string; plan: string; locale?: string }, { url: string }>(
-        functions,
+      const fn = callFunction<{ teamId: string; plan: string; locale?: string }, { url: string }>(
         'createCheckoutSession'
       )
       const url = (await fn({ teamId, plan, locale })).data.url
@@ -202,7 +200,7 @@ export function useCancelSaasSubscription(options: SaasBillingOptions = {}) {
   return useMutation({
     mutationFn: async (id: string) => {
       const { name, key } = billingCall(scope, 'cancelSaasSubscription', 'cancelOrgSubscription')
-      const fn = httpsCallable<Record<string, string>>(functions, name)
+      const fn = callFunction<Record<string, string>>(name)
       await fn({ [key]: id })
     },
     onSuccess: async (_data, id) => {
@@ -230,7 +228,7 @@ export function useReactivateSaasSubscription(options: SaasBillingOptions = {}) 
         'reactivateSaasSubscription',
         'reactivateOrgSubscription'
       )
-      const fn = httpsCallable<Record<string, string>>(functions, name)
+      const fn = callFunction<Record<string, string>>(name)
       await fn({ [key]: id })
     },
     onSuccess: async (_data, id) => {
@@ -256,10 +254,10 @@ export function useCreateOrgCheckoutSession() {
 
   return useMutation({
     mutationFn: async (orgId: string) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { orgId: string; locale: string; origin?: string },
         { url: string }
-      >(functions, 'createOrgCheckoutSession')
+      >('createOrgCheckoutSession')
       const url = (await fn({ orgId, locale, origin: window.location.origin })).data.url
       if (
         !url.startsWith('https://checkout.stripe.com/') &&
@@ -285,7 +283,7 @@ export function useOpenBillingPortal(options: SaasBillingOptions = {}) {
   return useMutation({
     mutationFn: async ({ id, returnUrl }: { id: string; returnUrl: string }) => {
       const { name, key } = billingCall(scope, 'getBillingPortalUrl', 'getOrgBillingPortalUrl')
-      const fn = httpsCallable<Record<string, string>, { url: string }>(functions, name)
+      const fn = callFunction<Record<string, string>, { url: string }>(name)
       const url = (await fn({ [key]: id, returnUrl })).data.url
       if (!url.startsWith('https://billing.stripe.com/')) throw new Error('Unexpected portal URL')
       window.location.href = url

@@ -6,8 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { useSearchParams } from 'next/navigation'
 import { doc, getDoc } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
-import { httpsCallable } from 'firebase/functions'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePlanName } from '@/hooks/usePlanName'
 import {
@@ -54,6 +53,7 @@ import {
 import { SubscriptionCancellationNote } from '@/components/payments/SubscriptionCancellationNote'
 import { ORG_ENQUIRY_MAILTO } from '@/lib/salesContact'
 import { OrgStudioPricer } from '@/components/plan/OrgStudioPricer'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -115,10 +115,7 @@ function useInvoices(teamId: string | null, enabled: boolean) {
     queryKey: ['saas-invoices', teamId],
     enabled: !!teamId && enabled,
     queryFn: async () => {
-      const getSaasInvoices = httpsCallable<{ teamId: string }, { invoices: Invoice[] }>(
-        functions,
-        'getSaasInvoices'
-      )
+      const getSaasInvoices = callFunction<{ teamId: string }, { invoices: Invoice[] }>('getSaasInvoices')
       const result = await getSaasInvoices({ teamId: teamId! })
       return result.data.invoices
     },

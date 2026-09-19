@@ -70,6 +70,21 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   downloadTarif595Receipt: 'rpcFinance',
   emailTarif595Receipt: 'rpcFinance',
   suggestTarif595Mappings: 'rpcFinance',
+
+  // What a studio or an organisation pays Linyup: checkout, cancel/reactivate,
+  // the portal, invoices, plugin add-ons. Called by apps/web.
+  createCheckoutSession: 'rpcBilling',
+  cancelSaasSubscription: 'rpcBilling',
+  getSaasInvoices: 'rpcBilling',
+  reactivateSaasSubscription: 'rpcBilling',
+  getBillingPortalUrl: 'rpcBilling',
+  activatePluginAddon: 'rpcBilling',
+  deactivatePluginAddon: 'rpcBilling',
+  createOrgCheckoutSession: 'rpcBilling',
+  cancelOrgSubscription: 'rpcBilling',
+  reactivateOrgSubscription: 'rpcBilling',
+  getOrgBillingPortalUrl: 'rpcBilling',
+  getOrgInvoices: 'rpcBilling',
 }
 
 export function routerForCallable(name: string): RouterName | null {

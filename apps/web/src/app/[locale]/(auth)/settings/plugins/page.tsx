@@ -50,6 +50,7 @@ import {
   Tooltip as UITooltip, TooltipTrigger, TooltipContent, TooltipProvider,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
 
@@ -877,7 +878,7 @@ export default function PluginsPage() {
   const activateAddonMutation = useMutation({
     mutationFn: async (manifest: PluginManifest) => {
       if (!currentTeamId) throw new Error('Not authenticated')
-      await httpsCallable(functions, 'activatePluginAddon')({ teamId: currentTeamId, pluginId: manifest.id })
+      await callFunction('activatePluginAddon')({ teamId: currentTeamId, pluginId: manifest.id })
     },
     onMutate: (manifest) => setInstallingId(manifest.id),
     onSettled: () => setInstallingId(null),
@@ -891,7 +892,7 @@ export default function PluginsPage() {
   const deactivateAddonMutation = useMutation({
     mutationFn: async (pluginId: string) => {
       if (!currentTeamId) throw new Error('Not authenticated')
-      await httpsCallable(functions, 'deactivatePluginAddon')({ teamId: currentTeamId, pluginId })
+      await callFunction('deactivatePluginAddon')({ teamId: currentTeamId, pluginId })
     },
     onSuccess: () => { void invalidateSetupChecklist() },
     onError: () => toast.error(t('errorRemove')),
