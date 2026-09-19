@@ -179,6 +179,22 @@ export default ({ config }) => {
       // would put a store build and its review queue in front of the first
       // notification we ever want to send.
       'expo-notifications',
+      // R8 on Android release builds. Play scores DEX optimization and warned
+      // (2026-09-19) that obfuscation under 25% may cost visibility. R8 fails
+      // at RUNTIME, not at build time — a class reached only by reflection is
+      // stripped and that screen crashes — so a change here ships only after a
+      // preview build (also a release build, so also minified) has been clicked
+      // through: sign-in, booking, the QR check-in camera. A library that needs
+      // a keep rule gets it in `extraProguardRules`, beside this comment.
+      [
+        'expo-build-properties',
+        {
+          android: {
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+          },
+        },
+      ],
     ],
     splash: {
       image: variant.splash,
