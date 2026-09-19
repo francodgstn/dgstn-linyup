@@ -243,8 +243,12 @@ const DEMO_STUDIOS = [
   .theme-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .theme-btn svg { display: block; }
 
-  /* "Live demo" secondary button — stays visible (even on mobile) so the demo is
-     always one click away. Outlined to read as secondary next to the primary CTA. */
+  /* "Try it live" secondary button — the demo in one tap on phones and tablets,
+     where the "Live demo" menu has moved into the drawer. On desktop that menu
+     is in the bar and opens each demo studio directly, so the button would only
+     repeat it (it leads to the same demo studios, via /try's picker): hidden
+     there, see the min-width: 861px block. Outlined to read as secondary next
+     to the primary CTA. */
   .demo-cta { gap: 6px; border: 1px solid var(--border); }
   .demo-cta:hover { border-color: var(--primary); color: var(--primary); }
   .demo-cta :global(svg) { width: 16px; height: 16px; display: inline-block; }
@@ -320,9 +324,11 @@ const DEMO_STUDIOS = [
     .nav-lang, .theme-btn { display: none; }
     .nav-burger { display: inline-flex; }
   }
-  /* Drawer only exists on mobile — never let it show on desktop (e.g. after a resize). */
+  /* Drawer only exists on mobile — never let it show on desktop (e.g. after a resize).
+     The "Try it live" button goes too: the "Live demo" menu is in the bar here. */
   @media (min-width: 861px) {
     .mobile-menu { display: none !important; }
+    .demo-cta { display: none; }
   }
   /* The primary CTA never wraps: a wrapped label overflowed the 40px button
      ("Frühen Zugang sichern" ran to three clipped lines on a phone). */
