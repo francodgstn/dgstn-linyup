@@ -25,17 +25,18 @@
  *
  * Usage:
  *   node scripts/local-env.mjs status [--json]
- *   node scripts/local-env.mjs init [--slot N] [--no-copy]
+ *   node scripts/local-env.mjs init [--slot N] [--no-copy] [--refresh-leads [lead,…]]
  *   node scripts/local-env.mjs env [--slot N] [--shell bash|pwsh]
  *   node scripts/local-env.mjs stop  [--slot N|--all] [--yes]
  *   node scripts/local-env.mjs kill  [--slot N|--all] [--yes]
  *   node scripts/local-env.mjs reset [--slot N] --yes [--force]
  */
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync, mkdirSync, cpSync, statSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, cpSync, statSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BUILT_PACKAGES, distState } from './lib/distState.mjs'
+import { LEADS_DIR, describeLeadDrift, importLeads, leadDrift } from './lib/leadData.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const WIN = process.platform === 'win32'
@@ -298,12 +299,33 @@ function distMtime(checkout) {
 
 const rel = (p) => (p.startsWith(ROOT) ? '.' + p.slice(ROOT.length) : p)
 
+/**
+ * The `! LEADS` warning — this checkout's lead data against the main
+ * checkout's, which scripts/lib/leadData.mjs compares and words. Silent in the
+ * main checkout and when they match; returns whether it printed.
+ */
+function printLeadDrift(main) {
+  let drift
+  try {
+    drift = leadDrift(main, ROOT)
+  } catch (e) {
+    console.log(`  ! LEADS   could not compare with the main checkout's lead data: ${e?.message || e}`)
+    return true
+  }
+  if (!drift.length) return false
+  const { heading, rows, fix } = describeLeadDrift(drift)
+  console.log(`  ! LEADS   ${heading}`)
+  for (const row of rows) console.log(`              ${row}`)
+  if (fix) console.log(`            ${fix}`)
+  return true
+}
+
 // ── commands ─────────────────────────────────────────────────────────────────
 
 async function cmdStatus(flags) {
   const listen = listeners()
   const info = processInfo([...listen.values()])
-  const { slots } = describeSlots(listen, info)
+  const { slots, worktrees: wts } = describeSlots(listen, info)
   const mySlot = slotOfCheckout(ROOT)
 
   if (flags.json) {
@@ -346,6 +368,7 @@ async function cmdStatus(flags) {
       } — run \`pnpm bootstrap\``
     )
   }
+  printLeadDrift(wts[0]?.path)
   console.log('')
 
   for (const s of slots) {
@@ -437,15 +460,17 @@ function pickSlot() {
 
 // Files the main checkout has and a worktree does not: they are gitignored, so a
 // fresh worktree starts with no env vars, no provider secrets and no lead
-// profile — and every failure that causes looks like a code bug.
+// profile — and every failure that causes looks like a code bug. Each of these
+// is copied once and kept from then on, which is right for config this checkout
+// may have patched. Lead data (profiles, assets, scripts/leads/.env.local) is
+// imported by scripts/lib/leadData.mjs instead: it is content the main checkout
+// keeps changing, so a worktree's copy also has to be checked for drift.
 const IMPORTS = [
   { path: 'apps/web/.env.local', why: 'web Firebase config + NEXT_PUBLIC_USE_EMULATORS' },
   { path: 'apps/admin/.env.local', why: 'admin Firebase config + OPERATOR_EMAILS' },
   { path: 'packages/functions/.env.local', why: 'EVERY defineString param — one missing hangs function discovery' },
   { path: 'apps/mobile/.env.staging', why: 'the staging web API key the member app targets by default' },
   { path: 'apps/landing/.env', why: 'landing site URLs + optional PostHog key' },
-  { path: 'scripts/leads/.env.local', why: 'lead demo passwords + Stripe test account ids' },
-  { path: 'scripts/leads', why: 'lead profiles (each lead dir is gitignored)', subdirsOnly: true },
   { path: 'keys', why: 'service-account keys (migrate:hmd source creds)', dir: true },
 ]
 
@@ -477,19 +502,6 @@ function cmdInit(flags) {
         console.log(`    -  ${item.path}  (absent in the main checkout too)`)
         continue
       }
-      if (item.subdirsOnly) {
-        let copied = 0
-        for (const entry of readdirSync(from, { withFileTypes: true })) {
-          if (!entry.isDirectory()) continue
-          const dst = join(to, entry.name)
-          if (existsSync(dst)) continue
-          cpSync(join(from, entry.name), dst, { recursive: true })
-          copied++
-          console.log(`    +  ${item.path}/${entry.name}/`)
-        }
-        if (!copied) console.log(`    =  ${item.path}/*  (already present)`)
-        continue
-      }
       if (existsSync(to)) {
         console.log(`    =  ${item.path}  (kept — already present)`)
         continue
@@ -498,8 +510,27 @@ function cmdInit(flags) {
       cpSync(from, to, { recursive: !!item.dir })
       console.log(`    +  ${item.path}   — ${item.why}`)
     }
+    // A lead only the main checkout has is always imported; anything that
+    // would overwrite a file here waits for --refresh-leads.
+    const leads = importLeads(main, ROOT, flags['refresh-leads'] ?? false)
+    for (const p of leads.imported) console.log(`    +  ${LEADS_DIR}/${p}   — lead data`)
+    for (const p of leads.refreshed) console.log(`    ~  ${LEADS_DIR}/${p}  (refreshed from the main checkout)`)
+    for (const n of leads.unknown) console.log(`    ?  ${LEADS_DIR}/${n}  (not in the main checkout — nothing to refresh)`)
+    if (!leads.imported.length && !leads.refreshed.length) console.log(`    =  ${LEADS_DIR}/*  (nothing to import)`)
     console.log('')
   }
+  if (flags['refresh-leads'] && (isMain || flags['no-copy'])) {
+    console.log(
+      isMain
+        ? '  --refresh-leads: this IS the main checkout — the copy every worktree refreshes from.'
+        : '  --refresh-leads ignored: --no-copy copies nothing from the main checkout.'
+    )
+    console.log('')
+  }
+  // Whatever still differs after the import: anything out of date unless
+  // --refresh-leads was passed, a local edit unless its lead was named, and a
+  // lead only this worktree has.
+  if (!isMain && printLeadDrift(main)) console.log('')
 
   // 2. Record the slot.
   writeFileSync(join(ROOT, SLOT_FILE), JSON.stringify({ slot, checkout: ROOT }, null, 2) + '\n')
@@ -839,6 +870,9 @@ switch (cmd) {
     init [--slot N] [--no-copy]          claim a slot; import the main checkout's untracked env /
                                          lead / key files; generate ${FIREBASE_LOCAL}; point the
                                          apps at this slot's ports
+         [--refresh-leads [lead,…]]      also re-copy lead data that differs from the main
+                                         checkout's: every out-of-date file, or — for the leads
+                                         named — every differing file, local edits included
     env [--slot N] [--shell bash|pwsh]   emulator-host exports, for running a script against a slot
     stop [--slot N|--all] [--yes]        graceful shutdown
     kill [--slot N|--all] [--yes]        forced, plus orphaned listeners

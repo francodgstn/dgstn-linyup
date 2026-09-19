@@ -13,6 +13,8 @@ status [--json]                      what is running, in which slot, owned by wh
 init [--slot N] [--no-copy]          claim a slot; import the main checkout's untracked
                                      env / lead / key files; generate firebase.local.json;
                                      point this checkout's apps at its own ports
+     [--refresh-leads [lead,…]]      also re-copy lead data that has drifted from the main
+                                     checkout's (see "Lead data drifts" below)
 env [--slot N] [--shell bash|pwsh]   emulator-host exports, for running a script against a slot
 stop [--slot N|--all] [--yes]        graceful shutdown
 kill [--slot N|--all] [--yes]        forced, plus orphaned listeners
@@ -90,16 +92,54 @@ copies every env file from the committed `*.example` beside it (emulator-first;
 `dist` is missing or older than `src`, and — once, when `.local-env.json` is
 absent — runs `init`, which imports the untracked files only the main checkout
 has (`IMPORTS` in `local-env.mjs`: the env files above, the mobile staging key,
-lead profiles, `keys/`; never overwriting one that is already there), claims the
-lowest free slot, writes `firebase.local.json`, and patches a managed block into
-`apps/web/.env.local`, `apps/admin/.env.local` and `apps/mobile/.env.local`
-pointing them at this slot. Every generated file is gitignored. The SessionStart
-hook in `.claude/settings.json` runs the same bootstrap for every agent session.
+`keys/`; plus the lead data, which `scripts/lib/leadData.mjs` owns; never
+overwriting a file that is already there), claims the lowest free slot, writes
+`firebase.local.json`, and patches a managed block into `apps/web/.env.local`,
+`apps/admin/.env.local` and `apps/mobile/.env.local` pointing them at this slot.
+Every generated file is gitignored. The SessionStart hook in
+`.claude/settings.json` runs the same bootstrap for every agent session.
 
 To make a worktree talk to the **main checkout's** emulator instead — occasionally
 what you want for a read-only look at seeded data — delete the managed block
 from the `.env.local` files. Do not do it to save starting a suite: the
 functions you would be exercising are the main checkout's build, not yours.
+
+## Lead data drifts — the main checkout's copy is the authority
+
+Lead profiles, their assets and `scripts/leads/.env.local` (the per-lead
+password pins) are gitignored, so the main checkout holds the only real copy,
+and a worktree runs on the one `init` took when it was bootstrapped. **Nothing
+refreshes that copy.** When the main checkout's profile changes, a worktree's
+goes stale without a sound: `pnpm typecheck:seeds` fails there and nowhere
+else, `pnpm lead:seed` seeds an offering the lead no longer has onto a live
+prospect sandbox, and a `LEAD_DEMO_PASSWORD_*` pin the copy lacks rotates that
+lead's login.
+
+So a worktree compares its lead data with the main checkout's, file by file,
+and says so when they differ: a `[bootstrap] LEADS` block from the SessionStart
+hook at the start of every session, `! LEADS` in the `status` header, and the
+same block after `init`'s import. Each row is a lead folder or `.env.local`:
+
+| Row | Means |
+|---|---|
+| *out of date* | the main checkout's file is newer, or missing here |
+| *newer here* | changed in this worktree after the main checkout's last change — a local edit? |
+| *only in the main checkout* | a lead added since the import |
+| *only here* | the main checkout has no copy — and `git worktree remove` deletes ignored files without asking |
+
+For `.env.local` the row names the keys that differ, never a value.
+
+Refreshing is never automatic, because a worktree may hold a deliberate edit and
+an ignored file has no history to get one back from:
+
+```bash
+node scripts/local-env.mjs init --refresh-leads          # every out-of-date file; anything newer here is kept
+node scripts/local-env.mjs init --refresh-leads swimli   # every differing file of swimli, a local edit included
+```
+
+A plain `init` imports a lead only the main checkout has, since that overwrites
+nothing; `--refresh-leads` is what copies over a file that already exists. Only
+the main checkout's copy reaches other worktrees.
 
 ## Starting
 
@@ -257,6 +297,11 @@ provisions from the console. Everything else: `docs/test-accounts.md`.
   in its header; `pnpm bootstrap` rebuilds exactly what is stale.
 - **The app behaves like a branch you are not on.** You are pointed at another
   checkout's slot. `status` names the owner.
+- **`pnpm typecheck:seeds` fails on a lead profile in one worktree only**
+  (`Type '"per_class"' is not assignable to type 'LeadRecurrence'`), or a lead
+  seeded from a worktree lacks what the main checkout's profile has. The
+  worktree's lead copy is stale: the bootstrap hook and `status` print `LEADS`,
+  and `init --refresh-leads` fixes it. See "Lead data drifts" above.
 - **`pnpm --filter @linyup/web build` fails on a missing `@tiptap/...` module in
   a deep worktree.** Worktree path + pnpm's store path exceeds Windows MAX_PATH;
   Node resolves it, Turbopack does not. Verify through the dev server and let

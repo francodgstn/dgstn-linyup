@@ -35,6 +35,17 @@ For a persistent local snapshot: seed into running emulators, then
 (including uploaded images — note the snapshot bakes `localhost:9199` URLs, so it
 is for local rehearsal only).
 
+### Seeding from a git worktree
+
+The main checkout's lead folders and `.env.local` are the authority. A worktree
+gets its copy once, when it is bootstrapped, and nothing refreshes it — so a
+worktree created before a profile changed typechecks, and seeds, the old one.
+The bootstrap hook and `node scripts/local-env.mjs status` print `LEADS` when the
+copies differ; `node scripts/local-env.mjs init --refresh-leads` copies the
+out-of-date files over and keeps anything edited in the worktree (name a lead,
+`--refresh-leads swimli`, to overwrite that too). Details:
+`.claude/skills/local-env/SKILL.md` → "Lead data drifts".
+
 ### Payments — "pay with Linyup" (Stripe Connect)
 
 To let a seeded lead tenant take payments, wire an already-onboarded Stripe **test**
