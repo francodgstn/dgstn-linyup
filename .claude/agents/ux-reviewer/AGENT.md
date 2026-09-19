@@ -78,7 +78,7 @@ If a finding is really about the **coach/staff** role (`/coaches`, roles, Studio
 | id | Area | Persona | Bounds |
 |---|---|---|---|
 | M1 | Shell & navigation | manager | `(auth)/layout.tsx`, `components/layout/*` |
-| M2 | First run & onboarding | manager | `signup/`, `components/onboarding/*`, `(auth)/how-to`, `components/howto/*` |
+| M2 | First run & onboarding | manager | `signup/`, `components/onboarding/*` (the in-app How-to was retired 2026-09-19; guides live in `apps/help`) |
 | M3 | Schedule & bookings | manager | `(auth)/schedule`, `/bookings`, `/sessions/[id]`, `/events/[id]` |
 | M4 | Contacts | manager | `(auth)/contacts`, `/contacts/[id]` |
 | M5 | Offer & pricing | manager | `(auth)/offer/*`, `/subscriptions` |

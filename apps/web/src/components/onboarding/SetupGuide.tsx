@@ -28,7 +28,7 @@
  * it is per-BROWSER (localStorage) because it is a "not right now", not a
  * decision about the studio. Dismissing is per-TEAM (`teams/{id}.setup_dismissed`,
  * the flag that already existed) because it IS a decision about the studio — and
- * it stays undoable from How-to, which is where the restore control lives.
+ * it stays undoable from the user menu, whose setup entry reopens the guide.
  *
  * ── THE FIRST TIME, IT IS OPEN. AFTER THAT, WHATEVER THEY LEFT IT ──────────
  * Three facts, three homes, and the bug was reading one off another:
@@ -76,7 +76,7 @@ import { cn } from '@/lib/utils'
 import { Tip } from '@/components/ui/tip'
 
 /** Ask the guide to open — dispatched from anywhere that would otherwise have
- *  to reproduce the list (the dashboard queue's setup row, How-to). Same
+ *  to reproduce the list (the dashboard queue's setup row, the user menu). Same
  *  mechanism as `START_TOUR_EVENT`, for the same reason: the sender does not
  *  have to know where the guide is mounted. */
 export const OPEN_SETUP_GUIDE_EVENT = 'linyup:open-setup-guide'

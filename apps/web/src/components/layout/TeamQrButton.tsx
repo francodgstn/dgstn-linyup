@@ -12,7 +12,7 @@ import { QRDialog } from '@/components/layout/QRDialog'
  * It used to sit beside the user avatar at the foot of the sidebar, which put a
  * STUDIO-level action inside the ACCOUNT cluster — it has nothing to do with
  * who is signed in. It now lives with the other occasional-but-deliberate
- * destinations (plugins, settings, how-to) at the top.
+ * destinations (plugins, settings, the help centre) at the top.
  *
  * Owns its own dialog state so the utility row stays a flat list of icons; the
  * alternative was lifting `qrOpen` into the sidebar and threading it down.

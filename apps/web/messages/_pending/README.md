@@ -64,8 +64,8 @@ no `IntlMessages` type augmentation in this repo, so **message keys are untyped
 strings** — a component referencing a key that was never merged compiles,
 lints, and renders the raw key id to every visitor. Nothing else catches it.
 
-The same check enforces parity across all 5,360 keys, including the 18 arrays
-that hold real copy (plan feature lists, the HowTo cards). Before this existed,
+The same check enforces parity across every key, including the arrays that
+hold real copy (plan feature lists, for one). Before this existed,
 `apps/web` had no test runner and parity was held by discipline alone.
 
 ## Fragments are not committed

@@ -1079,7 +1079,7 @@ apps/web/
   of each key together, then `pnpm i18n:merge` applies them — refusing, rather than
   guessing, on a missing locale, a dropped `{placeholder}`, two lanes claiming one key, or
   a clobber of shipped copy. Contract: `apps/web/messages/_pending/README.md`.
-- `pnpm i18n:check` enforces parity across all keys (including the 18 **arrays** that hold
+- `pnpm i18n:check` enforces parity across all keys (including the **arrays** that hold
   real copy) and runs in CI's Lint job. It is the ONLY enforcement there is: `apps/web` has
   no test runner, and there is no `IntlMessages` augmentation, so **message keys are untyped
   strings**.

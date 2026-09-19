@@ -13,9 +13,9 @@ import { TEAMS_COLLECTION, USERS_COLLECTION, type UserProfile } from '@linyup/sh
  * went with it; `users/{uid}.onboarding.tourDone` survives on existing profiles
  * as inert data, which is cheaper to leave than to migrate away.
  *
- * The per-page section-intro popovers were removed in 2026-08 — the How-to page
- * does that job in one place and reaches every page, where the popovers reached
- * three and carried two competing "seen" flags between them.
+ * The per-page section-intro popovers were removed in 2026-08, and the How-to
+ * page that replaced them in 2026-09, when the guides moved to the public help
+ * centre (help.linyup.com).
  */
 
 /**
@@ -25,8 +25,8 @@ import { TEAMS_COLLECTION, USERS_COLLECTION, type UserProfile } from '@linyup/sh
  *
  * Writing it needs the `team.settings` capability (owner), which the callers
  * check; a manager's dismissal is local to their session and the card is back
- * on the next load. Reversible from How-to → "Setup checklist", which is the
- * only reason this is exported rather than inlined in the card.
+ * on the next load. Reversible: the user menu's setup entry reopens the guide,
+ * which clears the flag (SetupGuide's OPEN_SETUP_GUIDE_EVENT listener).
  */
 export async function setSetupDismissed(teamId: string, dismissed: boolean): Promise<void> {
   await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { setup_dismissed: dismissed })
