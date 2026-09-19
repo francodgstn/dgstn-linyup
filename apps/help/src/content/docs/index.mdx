@@ -5,11 +5,11 @@ template: splash
 hero:
   tagline: Everything you need to set up your studio, price what you offer, and connect Linyup to the rest of your tools.
   actions:
-    - text: Start with the core concepts
-      link: /getting-started/core-concepts/
+    - text: Set up your studio
+      link: /getting-started/setup-checklist/
       icon: right-arrow
-    - text: Developer docs
-      link: /developers/
+    - text: What is Linyup?
+      link: /getting-started/what-is-linyup/
       variant: minimal
 ---
 
@@ -18,18 +18,23 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components'
 <CardGrid>
   <Card title="Studio owners & managers" icon="rocket">
     Set up your studio, sell memberships and packs, open your public pages and get paid.
+    <LinkCard title="Schedule & classes" href="/studio/schedule/" />
     <LinkCard title="How pricing fits together" href="/studio/pricing/" />
   </Card>
   <Card title="Coaches" icon="star">
-    Your schedule, your appointments and your people — the day-to-day side of Linyup.
-    <LinkCard title="Appointments & availability" href="/coaches/appointments/" />
+    Your day, your appointments and your people — the day-to-day side of Linyup.
+    <LinkCard title="Your day in Linyup" href="/coaches/your-day/" />
+    <LinkCard title="Check-in & attendance" href="/coaches/check-in/" />
+  </Card>
+  <Card title="Public pages & plugins" icon="puzzle">
+    What your members and visitors see, and the extras you switch on when you need them.
+    <LinkCard title="Public pages" href="/public/" />
+    <LinkCard title="Plugins" href="/plugins/" />
   </Card>
   <Card title="Developers" icon="seti:json">
-    Read your studio's data over a REST API or connect an AI assistant through MCP.
+    Read your studio's data over a REST API, connect an AI assistant through MCP, or embed booking.
     <LinkCard title="Developer overview" href="/developers/" />
   </Card>
-  <Card title="Common questions" icon="information">
-    Six questions every new studio asks, answered through one example studio.
-    <LinkCard title="FAQ" href="/faq/" />
-  </Card>
 </CardGrid>
+
+Some guides are still being written. They are marked **Soon** in the menu. If you need one of them now, write to [hello@linyup.com](mailto:hello@linyup.com).

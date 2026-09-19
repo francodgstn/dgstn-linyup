@@ -302,6 +302,31 @@ jobs:
       - name: Build
         run: pnpm --filter @linyup/docs run build
 
+  # The PUBLIC docs site (help.linyup.com), deployed by deploy.yml and
+  # deploy-prod.yml as hosting:help. `astro check` first: its content schema is
+  # what keeps a mistyped frontmatter key from building quietly.
+  build-help:
+    name: Build Help Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check
+        run: pnpm --filter @linyup/help run typecheck
+
+      - name: Build
+        run: pnpm --filter @linyup/help run build
+
   build-landing:
     name: Build Landing Site
     runs-on: ubuntu-latest

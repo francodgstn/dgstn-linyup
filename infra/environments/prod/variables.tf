@@ -70,6 +70,12 @@ variable "api_site_id" {
   default     = "linyup-api-prod"
 }
 
+variable "help_site_id" {
+  type        = string
+  description = "Hosting site ID for the public product docs, apps/help (custom domain help.linyup.com)."
+  default     = "linyup-help-prod"
+}
+
 # ── Secrets ───────────────────────────────────────────────────────────────────
 variable "secret_ids" {
   type        = list(string)

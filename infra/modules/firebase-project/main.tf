@@ -2,7 +2,7 @@
 # Firebase CLI later fills with content:
 #   - the Firebase project itself
 #   - a Web App (whose generated config feeds the NEXT_PUBLIC_* env vars)
-#   - the Hosting sites (app + landing, and api where an environment has one)
+#   - the Hosting sites (app + landing, and api / help where an environment has one)
 #
 # All google_firebase_* resources REQUIRE the google-beta provider.
 
@@ -58,6 +58,18 @@ resource "google_firebase_hosting_site" "api" {
   provider = google-beta
   project  = var.project_id
   site_id  = var.api_site_id
+
+  depends_on = [google_firebase_project.this]
+}
+
+# The public product docs site (apps/help -> Hosting target `help`,
+# help.linyup.com). Optional like `api`: sandbox has none. Its custom domain
+# stays out of Terraform with the others.
+resource "google_firebase_hosting_site" "help" {
+  count    = var.help_site_id == null ? 0 : 1
+  provider = google-beta
+  project  = var.project_id
+  site_id  = var.help_site_id
 
   depends_on = [google_firebase_project.this]
 }

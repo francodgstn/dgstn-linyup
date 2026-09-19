@@ -2,8 +2,8 @@
 title: Public pages
 description: The surfaces people see without logging in — bio-link, website, booking page, shop, member space, appointments and kiosk.
 sidebar:
-  order: 5
-  label: Public pages
+  order: 0
+  label: Overview
 ---
 
 Public pages are what people see without logging in, and they're where your new contacts and bookings actually come from. Each one is optional and switched on when you need it, so you only show what your studio uses.

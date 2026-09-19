@@ -6,12 +6,14 @@
     "production": "linyup-prod"
   },
   "_comment_targets": [
-    "Two real Firebase Hosting targets:",
+    "Three real Firebase Hosting targets:",
     "- `landing`: apps/landing, the static marketing site (linyup.com).",
     "- `api`: the public API + MCP server (docs/public-api.md), every path rewritten",
     "  to the gen2 `api` function. Mapped in every environment; the deploy workflows",
     "  name it explicitly (hosting:api) alongside hosting:landing. The obvious name",
     "  linyup-staging-api is gone: a deleted site ID is reserved forever.",
+    "- `help`: apps/help, the public product docs (help.linyup.com, help-stg.linyup.com",
+    "  on staging). Staging and prod only; sandbox has none.",
     "",
     "There used to be an `app` target here too, pointing at the {project} sites",
     "(linyup-staging.web.app and friends). It predates the web app moving to App",
@@ -39,6 +41,9 @@
         "landing": [
           "linyup-staging-landing"
         ],
+        "help": [
+          "linyup-help-staging"
+        ],
         "api": [
           "linyup-api-staging"
         ]
@@ -48,6 +53,9 @@
       "hosting": {
         "landing": [
           "linyup-prod-landing"
+        ],
+        "help": [
+          "linyup-help-prod"
         ],
         "api": [
           "linyup-api-prod"

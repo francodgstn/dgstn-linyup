@@ -71,6 +71,9 @@ jobs:
       - name: Vendor @linyup/shared for Cloud Build
         run: node scripts/vendor-shared-for-deploy.mjs
 
+      - name: Build help site
+        run: pnpm --filter @linyup/help run build
+
       - name: Build landing site
         run: pnpm --filter @linyup/landing run build
         env:
@@ -113,7 +116,7 @@ jobs:
           set -o pipefail
           log="$RUNNER_TEMP/firebase-deploy.log"
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project production --only functions,hosting:landing,hosting:api,firestore,storage --non-interactive --force 2>&1 | tee "$log" \
+            if npx firebase-tools deploy --project production --only functions,hosting:landing,hosting:help,hosting:api,firestore,storage --non-interactive --force 2>&1 | tee "$log" \
               && grep -q 'Deploy complete!' "$log"; then
               exit 0
             fi
