@@ -1,10 +1,10 @@
 import type { Metadata, Route } from 'next'
 import { cache } from 'react'
-import { headers } from 'next/headers'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import {
   ORG_SITE_PUBLISHED_COLLECTION,
+  customDomainSiteUrl,
   SITE_PAGES_SUBCOLLECTION,
   findSitePageByPath,
   findSiteRedirect,
@@ -27,6 +27,7 @@ import type {
 } from '@linyup/shared'
 import { restGetDocument, restRunQuery } from '@/lib/firestoreRest'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
+import { resolveRequestHost, tenantDomainContext } from '@/lib/tenantHostContext'
 import PublicOrgSite, { type PublicOrgSiteInitial } from '../PublicOrgSite'
 
 // An organisation's public website — its home at /public/org/{slug} and every
@@ -66,23 +67,57 @@ const fetchOrgSite = cache(async (slug: string): Promise<OrgPublishedSite | null
   }
 })
 
-/** The absolute address of a page of this site for this request, or undefined
- *  when the request carries no host. */
-async function orgSiteAddress(slug: string, locale: string, segments: readonly string[]): Promise<string | undefined> {
-  const h = await headers()
-  const host = h.get('x-forwarded-host') ?? h.get('host')
-  if (!host) return undefined
-  const proto = h.get('x-forwarded-proto') ?? 'https'
-  return `${proto}://${host}${publicLocalePrefix(locale)}${publicOrgPath(slug, segments)}`
+/**
+ * The address of a page of `slug`'s site (`segments` [] ⇒ home) for this
+ * request, or undefined when that language has no address here.
+ *
+ * On the organisation's OWN domain it is the short one a visitor sees
+ * (`https://verband.ch/ueber-uns`) — its site is always the domain's root —
+ * and English on a non-English organisation has none (the unprefixed path is
+ * the organisation's language). On our own hosts the unprefixed path answers
+ * in the SITE's language too (proxy.ts), so English there needs its `/en`.
+ */
+async function orgSiteAddress(
+  slug: string,
+  locale: string,
+  segments: readonly string[],
+  siteLanguage: string | undefined
+): Promise<string | undefined> {
+  const { visitorHost, tenant, origin } = await resolveRequestHost()
+  if (tenant && tenant.scope === 'org' && tenant.slug === slug) {
+    return (
+      customDomainSiteUrl({
+        host: visitorHost,
+        slug,
+        locale,
+        tenantLanguage: tenant.language,
+        siteAtRoot: true,
+        segments,
+      }) ?? undefined
+    )
+  }
+  if (!origin) return undefined
+  const prefix = locale === 'en' && siteLanguage && siteLanguage !== 'en' ? '/en' : publicLocalePrefix(locale)
+  return `${origin}${prefix}${publicOrgPath(slug, segments)}`
 }
 
 /** Where an old-site redirect sends a visitor, or null when its page is gone. */
-function redirectTarget(to: SiteRedirect['to'], site: OrgPublishedSite, slug: string, locale: string): string | null {
+async function redirectTarget(
+  to: SiteRedirect['to'],
+  site: OrgPublishedSite,
+  slug: string,
+  locale: string
+): Promise<string | null> {
   if (to.kind === 'url') return to.url
   const ref = to.kind === 'page' ? (site.pages ?? []).find((p) => p.id === to.pageId && !p.hidden) : null
   if (to.kind === 'page' && !ref) return null
-  // Relative: the visitor stays on whichever host they used.
-  return `${publicLocalePrefix(locale)}${publicOrgPath(slug, ref ? sitePageSegments(ref.path) : [])}`
+  const segments = ref ? sitePageSegments(ref.path) : []
+  const { tenant } = await resolveRequestHost()
+  if (tenant && tenant.scope === 'org' && tenant.slug === slug) {
+    return (await orgSiteAddress(slug, locale, segments, site.meta?.language)) ?? null
+  }
+  // Relative on the app's own hosts: the visitor stays on whichever one they used.
+  return `${publicLocalePrefix(locale)}${publicOrgPath(slug, segments)}`
 }
 
 /** Whether `locale` has a translation sidecar worth fetching for a manifest. */
@@ -140,14 +175,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = isPost ? { type: 'article' as const, ...(page?.publishedOn ? { publishedTime: page.publishedOn } : {}) } : {}
 
   const pageSegments = page ? sitePageSegments(page.path) : []
-  const url = await orgSiteAddress(slug, locale, pageSegments)
+  const url = await orgSiteAddress(slug, locale, pageSegments, site.meta?.language)
   // hreflang — only the locales the site actually carries; x-default is the
   // authoring language, the one never gated on a translation existing.
   let languages: Record<string, string> | undefined
   if (manifest && url) {
     const entries: Record<string, string> = {}
     for (const l of [manifest.srcLang, ...manifest.locales]) {
-      const href = await orgSiteAddress(slug, l, pageSegments)
+      const href = await orgSiteAddress(slug, l, pageSegments, site.meta?.language)
       if (href) entries[l] = href
     }
     const xDefault = entries[manifest.srcLang]
@@ -173,14 +208,17 @@ export default async function OrgSiteRoutePage({ params }: Props) {
     // website goes to its new page, permanently; anything else is a real 404,
     // status code included, so a crawler drops a deleted page.
     const redirect = findSiteRedirect(site.redirects, `/${segments.join('/')}`)
-    const target = redirect ? redirectTarget(redirect.to, site, slug, locale) : null
+    const target = redirect ? await redirectTarget(redirect.to, site, slug, locale) : null
     if (target) permanentRedirect(target as Route)
     notFound()
   }
 
   // The server read failed — the client reads the site itself and renders its
   // own not-found, as this page always did.
-  if (!site) return <PublicOrgSite slug={slug} path={segments} />
+  // On the organisation's own domain the site's links are the short ones.
+  const domain = await tenantDomainContext(slug, 'org')
+
+  if (!site) return <PublicOrgSite slug={slug} path={segments} domain={domain} />
 
   let units: SiteTranslationUnits | null = null
   if (wantsLocale(site.i18n, locale)) {
@@ -205,5 +243,5 @@ export default async function OrgSiteRoutePage({ params }: Props) {
   }
 
   const initial: PublicOrgSiteInitial = { site, units, page, pageUnits }
-  return <PublicOrgSite slug={slug} path={segments} initial={initial} />
+  return <PublicOrgSite slug={slug} path={segments} initial={initial} domain={domain} />
 }

@@ -2,6 +2,7 @@
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { OrgContactDetailsCard } from '@/components/org/OrgContactDetailsCard'
+import { CustomDomainCard } from '@/app/[locale]/(auth)/public-page/CustomDomainCard'
 import type { Route } from 'next'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
@@ -590,6 +591,15 @@ export default function OrgSettingsPage() {
 
       <OrgContactDetailsCard orgId={orgId} org={org} isAdmin={isAdmin} onSaved={showToast} />
       <OrgSocialLinksCard orgId={orgId} org={org} isAdmin={isAdmin} onSaved={showToast} />
+
+      {/* The organisation's own domain for its public pages — its website and
+          events. Beside the email sender because an organisation has no
+          public-pages hub for it to sit under (a studio's lives there). */}
+      {isAdmin && org && (
+        <Card className="p-4 md:p-5">
+          <CustomDomainCard scope="org" entityId={orgId} plan={org.plan} slug={org.slug ? `org/${org.slug}` : undefined} />
+        </Card>
+      )}
 
       <OrgEmailSenderCard orgId={orgId} isAdmin={isAdmin} />
 

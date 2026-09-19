@@ -1,10 +1,17 @@
 import type { MetadataRoute } from 'next'
 import { headers } from 'next/headers'
-import { SITE_PUBLISHED_COLLECTION, customDomainSiteUrl, isLinyupOwnHost, sitePageSegments } from '@linyup/shared'
+import {
+  ORG_SITE_PUBLISHED_COLLECTION,
+  SITE_PUBLISHED_COLLECTION,
+  customDomainSiteUrl,
+  isLinyupOwnHost,
+  sitePageSegments,
+} from '@linyup/shared'
 import { resolveCustomDomainTenant } from '@/lib/customDomainTenant'
 import { fetchDocumentFields, restArray, restMap, restString, type RestValue } from '@/lib/publicMetaRest'
 
-// A sitemap for a studio's OWN domain — its website's home, pages and posts, at
+// A sitemap for a studio's or an organisation's OWN domain — its website's
+// home, pages and posts, at
 // the addresses a visitor sees (`customDomainSiteUrl`), with the other languages
 // the site is translated into as alternates.
 //
@@ -24,9 +31,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!host || isLinyupOwnHost(host) || !isProduction) return []
 
   const tenant = await resolveCustomDomainTenant(host)
-  if (!tenant || tenant.scope !== 'team') return []
+  if (!tenant) return []
+  // An organisation's site is always its domain's root; a studio's only when
+  // its website is the front door (`siteAtRoot`).
+  const isOrg = tenant.scope === 'org'
+  const collection = isOrg ? ORG_SITE_PUBLISHED_COLLECTION : SITE_PUBLISHED_COLLECTION
+  const siteAtRoot = isOrg || tenant.siteAtRoot
 
-  const fields = await fetchDocumentFields(`${SITE_PUBLISHED_COLLECTION}/${tenant.teamId}`)
+  // `teamId` is the claim's entity id — the org id for an organisation.
+  const fields = await fetchDocumentFields(`${collection}/${tenant.teamId}`)
   if (!fields) return []
 
   const manifest = restMap(fields.i18n)
@@ -46,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         slug: tenant.slug,
         locale,
         tenantLanguage: tenant.language,
-        siteAtRoot: tenant.siteAtRoot,
+        siteAtRoot,
         segments,
       })
     // The domain always answers in the tenant's own language; a locale with no

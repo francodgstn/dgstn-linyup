@@ -215,7 +215,16 @@ Two document GETs by known id (`lib/customDomainTenant.ts`), cached in-process
 for five minutes:
 
 1. `public_domains/{hostname}` → which tenant claimed the host
-2. `{teams|organizations}/{id}/public_profile/{id}` → that tenant's slug
+2. `teams/{id}/public_profile/{id}` → that studio's slug — or, for an
+   organisation, `org_site_published/{id}` → its slug and its site's language
+
+**An organisation has no `public_profile` mirror** — nothing writes one — so
+until 2026-09-19 every org domain resolved to nothing. Its published website
+is world-readable, carries the slug, and is what the domain serves anyway
+(`/public/org/{slug}` IS the site, so an org's site is always the domain's
+root): no published site, nothing to serve, not a tenant domain. On the domain
+the org site writes short links, canonical and hreflang, and the sitemap lists
+its pages, exactly as a studio's site does.
 
 **Two reads rather than one, deliberately.** The slug could be denormalised onto
 the claim, but a team's slug is EDITABLE — that copy would go stale the moment

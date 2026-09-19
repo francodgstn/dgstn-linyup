@@ -32,9 +32,12 @@ export const resolveRequestHost = cache(async () => {
  * THIS tenant's own domain. Undefined everywhere else, which is what keeps the
  * long path the address on our own hosts.
  */
-export async function tenantDomainContext(slug: string): Promise<PublicTeamDomain | undefined> {
+export async function tenantDomainContext(
+  slug: string,
+  scope: 'team' | 'org' = 'team'
+): Promise<PublicTeamDomain | undefined> {
   const { tenant } = await resolveRequestHost()
-  return tenant && tenant.scope === 'team' && tenant.slug === slug
+  return tenant && tenant.scope === scope && tenant.slug === slug
     ? { tenantLanguage: tenant.language, siteAtRoot: tenant.siteAtRoot }
     : undefined
 }
