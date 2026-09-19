@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase-client'
+import { callFunction } from '@/lib/callFunction'
 import { Button } from '@/components/ui/button'
 import type { ReviewAccessStatus } from '@/lib/queries/demoTenant'
 
@@ -35,7 +34,7 @@ export function ReviewAccessCard({ status }: { status: ReviewAccessStatus }) {
     setDone(null)
     setBusy('enable')
     try {
-      const fn = httpsCallable(functions, 'setReviewAccess')
+      const fn = callFunction('setReviewAccess')
       // The reviewer's own address is always included: it is the one the store
       // actually needs, and an operator narrowing the tester list should not be
       // able to lock out a review by accident.
@@ -56,7 +55,7 @@ export function ReviewAccessCard({ status }: { status: ReviewAccessStatus }) {
     setDone(null)
     setBusy('disable')
     try {
-      const fn = httpsCallable(functions, 'setReviewAccess')
+      const fn = callFunction('setReviewAccess')
       await fn({ enabled: false })
       setDone('Review login disabled.')
       router.refresh()

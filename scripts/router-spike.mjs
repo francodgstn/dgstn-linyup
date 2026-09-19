@@ -11,10 +11,14 @@
 //
 //   node scripts/router-spike.mjs --target emulator [--functions-port 5001] [--auth-port 9099]
 //   node scripts/router-spike.mjs --target linyup-staging --api-key <web API key>
+//   … --routers rpcOps,rpcFinance     also compare every member of those routers
 //
 // Comparing is what makes it safe to point at a deployed project: it needs no
 // fixture data, because "the same refusal both ways" is as good a proof as the
-// same result. The members it calls are read-only.
+// same result. The members it calls are read-only. `--routers` calls each member of
+// the named routers SIGNED OUT with an empty payload, which every callable refuses
+// or rejects before it does anything — so it proves the route exists and the
+// refusal is the member's own, without performing a single operation.
 //
 // SIGNED-IN CHECK. Against the emulator it mints a contact-session custom token
 // itself (the Auth emulator accepts an unsigned one). Against a deployed project
@@ -82,16 +86,12 @@ if (!onEmulator && typeof flags['api-key'] !== 'string') {
 const web = createRequire(join(ROOT, 'apps/web/package.json'))
 const fns = createRequire(join(ROOT, 'packages/functions/package.json'))
 const { initializeApp } = web('firebase/app')
-const {
-  getAuth,
-  connectAuthEmulator,
-  signInWithCustomToken,
-  signInWithEmailAndPassword,
-  signOut,
-} = web('firebase/auth')
+const { getAuth, connectAuthEmulator, signInWithCustomToken, signInWithEmailAndPassword, signOut } =
+  web('firebase/auth')
 const { getFunctions, connectFunctionsEmulator, httpsCallable, httpsCallableFromURL } =
   web('firebase/functions')
-const { functionsBaseUrl, callableRouteUrl, routerForCallable } = web('@linyup/shared')
+const { functionsBaseUrl, callableRouteUrl, routerForCallable, CALLABLE_ROUTES } =
+  web('@linyup/shared')
 
 const app = initializeApp({
   projectId,
@@ -201,6 +201,16 @@ async function main() {
     console.log(
       'skip  signed-in check — set ROUTER_SPIKE_EMAIL and ROUTER_SPIKE_PASSWORD to run it'
     )
+  }
+
+  const wanted = typeof flags.routers === 'string' ? flags.routers.split(',') : []
+  for (const r of wanted) {
+    const members = Object.keys(CALLABLE_ROUTES).filter((n) => CALLABLE_ROUTES[n] === r)
+    report(members.length > 0, `${r} has members in CALLABLE_ROUTES`)
+    for (const name of members) {
+      const out = await same(`signed-out ${name}, empty payload (${r})`, name, {})
+      report(out.code !== undefined, `${name} refused a signed-out empty call`)
+    }
   }
 
   const router = routerForCallable('listAvailability')

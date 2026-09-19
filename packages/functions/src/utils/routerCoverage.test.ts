@@ -51,6 +51,15 @@ function moduleKey(fromFile: string, specifier: string): string {
     .join('/')
 }
 
+/** Is `definedIn` (a file key) what the specifier `moduleKeyOf` resolves to? A
+ *  specifier names a file, or a FOLDER — `./ops` is ops/index.ts — and a folder's
+ *  barrel may re-export from a file beside it (`./booking` → booking/myBookings.ts),
+ *  so a definition anywhere under that folder counts. A namesake in ANOTHER folder
+ *  still fails, which is the defect this guards. */
+function definesModule(moduleKeyOf: string, definedIn: string): boolean {
+  return definedIn === moduleKeyOf || definedIn.startsWith(moduleKeyOf + '/')
+}
+
 /** The same key, for a module's own file. */
 const fileKey = (file: string) => relative(SRC, file).split(sep).join('/').replace(/\.ts$/, '')
 
@@ -133,6 +142,15 @@ describe('router coverage — the extractors see what they claim to see', () => 
     // The point of the key: same module ⇒ equal, a namesake elsewhere ⇒ not.
     assert.equal(imported.get('a'), exported.get('a'))
     assert.notEqual(imported.get('b'), exported.get('b'))
+  })
+
+  it('definesModule: a file, a folder index, a barrel — and never a namesake elsewhere', () => {
+    assert.ok(definesModule('appointments/window', 'appointments/window'))
+    assert.ok(definesModule('ops', 'ops/index'))
+    assert.ok(definesModule('booking', 'booking/myBookings'))
+    assert.ok(!definesModule('ops', 'opsLegacy/index'))
+    assert.ok(!definesModule('ops', 'contacts/ops'))
+    assert.ok(!definesModule('booking/myBookings', 'booking/index'))
   })
 
   it('onCallNames: annotation, generics, a break after `=` — and nothing that is not an onCall', () => {
@@ -299,7 +317,7 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
           `${router} must take ${member} from the module index.ts exports it from (${exportedFrom})`
         )
         assert.ok(
-          (onCalls.get(member) ?? []).includes(exportedFrom),
+          (onCalls.get(member) ?? []).some((file) => definesModule(exportedFrom, file)),
           `${member} is not an \`export const ${member} = onCall(\` in ${exportedFrom}`
         )
       }

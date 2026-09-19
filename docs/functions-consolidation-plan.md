@@ -90,18 +90,18 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
-Output of `pnpm functions:inventory --md`. It includes `rpcSpike`, the throwaway Phase 0
-router, as one `https` function in the `routers` domain. Every endpoint is `gcfv2`, none
+Output of `pnpm functions:inventory --md`. It includes the routers built so far (`rpcSpike`, the throwaway
+Phase 0 one, and `rpcOps`, the pilot) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**298 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T17:27Z. Global options: region=europe-west6, maxInstances=20.
+**299 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T18:52Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
 | `callable` | 215 |
-| `https` | 11 |
+| `https` | 12 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
 | `firestore.updated` | 2 |
@@ -150,6 +150,7 @@ binds a secret and none sets a service account.
 | `offer` | 2 |  |  |  |  |  |  |  |  |  | 2 |
 | `orgWebsite` | 2 |  |  |  |  |  |  |  |  |  | 2 |
 | `payments` | 2 |  |  |  |  |  |  |  |  |  | 2 |
+| `routers` |  | 2 |  |  |  |  |  |  |  |  | 2 |
 | `website` | 2 |  |  |  |  |  |  |  |  |  | 2 |
 | `assistant` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `bio-link` |  | 1 |  |  |  |  |  |  |  |  | 1 |
@@ -158,9 +159,8 @@ binds a secret and none sets a service account.
 | `forms` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
-| `routers` |  | 1 |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **11** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **298** |
+| **Total** | **215** | **12** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **299** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -197,6 +197,7 @@ binds a secret and none sets a service account.
 | `sendOutreachEmail` | `outreach` | callable | `memory=512` `timeout=540` |
 | `onOrgBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
 | `onTeamBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
+| `rpcOps` | `routers` | https | `memory=512` `timeout=540` `cpu=1` `concurrency=10` `maxInstances=3` |
 | `rpcSpike` | `routers` | https | `memory=512` `timeout=60` `cpu=1` `concurrency=40` |
 | `handleStripeWebhook` | `saas-billing` | https | `invoker=public` |
 | `handleTrialLifecycle` | `saas-billing` | schedule | `memory=1024` `timeout=540` |
@@ -517,6 +518,10 @@ environment that turns the flag on.
   - The router's 5xx rate is no worse than the alias services had before.
   - The alias services' request_count falls to zero once the admin rollout is live.
 - **Rollback:** flip the route-table entries back.
+- **Built 2026-09-19, not yet deployed.** `node scripts/router-spike.mjs --target emulator
+  --routers rpcOps` calls every member signed out, direct and routed, and requires the
+  same refusal both ways; it passes. Run the same command with `--target linyup-staging`
+  once it is deployed, then click through the console.
 
 ### Phase 2: staff web domains (~1–2 days each)
 - Order: `rpcFinance`, `rpcBilling`, `rpcOrg`, `rpcHeavy`, `rpcStudio`.
