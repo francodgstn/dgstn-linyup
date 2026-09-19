@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '@/lib/firebase'
+import { callFunction } from '@/lib/callFunction'
 import {
   ACCOUNTING_ACCOUNTS_SUBCOLLECTION,
   ACCOUNTING_ENTRIES_SUBCOLLECTION,
@@ -343,7 +344,7 @@ export const callRebuildLedger = httpsCallable<
   { entries_written: number; skipped_foreign_currency: number }
 >(functions, 'rebuildAccountingLedger')
 
-export const callCreateManualEntry = httpsCallable<
+export const callCreateManualEntry = callFunction<
   {
     teamId: string
     dateMs: number
@@ -356,22 +357,21 @@ export const callCreateManualEntry = httpsCallable<
     }>
   },
   { id: string; period: string }
->(functions, 'createManualEntry')
+>('createManualEntry')
 
-export const callReverseEntry = httpsCallable<{ teamId: string; entryId: string }, { id: string }>(
-  functions,
+export const callReverseEntry = callFunction<{ teamId: string; entryId: string }, { id: string }>(
   'reverseEntry'
 )
 
-export const callCloseFiscalYear = httpsCallable<
+export const callCloseFiscalYear = callFunction<
   { teamId: string; fiscalYear: number },
   { id: string; period: string }
->(functions, 'closeFiscalYear')
+>('closeFiscalYear')
 
-export const callSetChartTemplate = httpsCallable<
+export const callSetChartTemplate = callFunction<
   { teamId: string; template: ChartTemplateId },
   { template: ChartTemplateId }
->(functions, 'setChartTemplate')
+>('setChartTemplate')
 
 /** Invalidate everything accounting after a mutating callable. */
 export function useInvalidateAccounting(teamId: string | null) {

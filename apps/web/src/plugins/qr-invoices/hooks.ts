@@ -19,7 +19,6 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import {
   INVOICES_SUBCOLLECTION,
   INVOICE_SETTINGS_DOC,
@@ -36,7 +35,8 @@ import {
   type MarkInvoicePaidResult,
   type VoidInvoiceRequest,
 } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
+import { callFunction } from '@/lib/callFunction'
 import { usePagedQuery } from '@/hooks/usePagedQuery'
 import { saveDownloadedFile } from '@/plugins/tarif-595/hooks'
 
@@ -119,11 +119,11 @@ export function useInvalidateInvoices(teamId: string | null) {
 
 // ─── Callables ────────────────────────────────────────────────────────────────
 
-export const callCreateInvoice = httpsCallable<CreateInvoiceRequest, CreateInvoiceResult>(functions, 'createInvoice')
-export const callVoidInvoice = httpsCallable<VoidInvoiceRequest, { invoiceId: string; status: 'void' }>(functions, 'voidInvoice')
-export const callDownloadInvoice = httpsCallable<InvoiceRefRequest, DocumentDownloadResult>(functions, 'downloadInvoice')
-export const callEmailInvoice = httpsCallable<EmailInvoiceRequest, { sent: boolean; send_count: number }>(functions, 'emailInvoice')
-export const callMarkInvoicePaid = httpsCallable<MarkInvoicePaidRequest, MarkInvoicePaidResult>(functions, 'markInvoicePaid')
+export const callCreateInvoice = callFunction<CreateInvoiceRequest, CreateInvoiceResult>('createInvoice')
+export const callVoidInvoice = callFunction<VoidInvoiceRequest, { invoiceId: string; status: 'void' }>('voidInvoice')
+export const callDownloadInvoice = callFunction<InvoiceRefRequest, DocumentDownloadResult>('downloadInvoice')
+export const callEmailInvoice = callFunction<EmailInvoiceRequest, { sent: boolean; send_count: number }>('emailInvoice')
+export const callMarkInvoicePaid = callFunction<MarkInvoicePaidRequest, MarkInvoicePaidResult>('markInvoicePaid')
 
 export async function downloadInvoice(teamId: string, invoiceId: string): Promise<void> {
   const { data } = await callDownloadInvoice({ teamId, invoiceId })
