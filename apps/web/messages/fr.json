@@ -445,7 +445,10 @@
     "chartTitleDemographics": "Qui s'entraîne",
     "demoTrendAgeHint": "L'âge est calculé pour chaque semaine, pas pour aujourd'hui.",
     "demoTrendGenderHint": "La réponse d'aujourd'hui, appliquée à chaque semaine passée.",
-    "demoTrendTotal": "Total"
+    "demoTrendTotal": "Total",
+    "demoViewStage": "Étape d'acquisition",
+    "demoViewAffiliation": "Affiliation",
+    "demoViewSubscription": "Abonnement"
   },
   "Contacts": {
     "noteColor_none": "Sans couleur",
@@ -8675,11 +8678,12 @@
     "nNewBookings": "{n, plural, one {# nouvelle réservation} other {# nouvelles réservations}}"
   },
   "AppUsage": {
-    "title": "Membres actifs",
+    "title": "Actifs dans l'app membre",
     "today": "Aujourd'hui",
     "week": "7 jours",
     "month": "30 jours",
-    "note": "Sur {members} membres. Compte celles et ceux qui ont ouvert l'application ou se sont connectés à votre page publique — pas ce qu'ils y ont fait."
+    "note": "Sur {members} membres. Compte celles et ceux qui ont ouvert l'application ou se sont connectés à votre page publique — pas ce qu'ils y ont fait.",
+    "upsell": "Voyez combien de vos membres ouvrent l'app membre chaque jour, semaine et mois."
   },
   "OrgAffiliationSettings": {
     "pageTitle": "Paramètres d'affiliation",

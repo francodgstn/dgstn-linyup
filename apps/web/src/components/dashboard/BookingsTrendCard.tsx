@@ -219,7 +219,7 @@ export function BookingsTrendCard({
   title,
 }: Props) {
   const td = useTranslations('Dashboard')
-  const [source, setSource] = useState('checkins')
+  const [source, setSource] = useState('engagement_rate')
   const selectedOption = SOURCE_OPTIONS.find((o) => o.value === source)!
   const comparisonOffset = compareWith === 'last_year' ? 52 : trendsWeeks
   const isRate = source === 'engagement_rate' || source === 'no_show_rate'

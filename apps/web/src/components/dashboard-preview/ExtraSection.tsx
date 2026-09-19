@@ -37,6 +37,9 @@
  * see the header of `dashboard/DashboardFinanceSection.tsx`, which now holds
  * only the plugin charts below.
  *
+ * Active members GRADUATED (2026-09-19) to the Trends section above, gated on
+ * the plan's `member_app` feature with an upgrade notice in its place.
+ *
  * ── WHY ONE SWITCH AND NOT FOUR ──────────────────────────────────────────────
  * The engagement matrix already had its own experimental id. Keeping it once the
  * card moved in here would have meant two switches gating one card — the outer
@@ -78,7 +81,6 @@ import { EngagementMatrixCard } from '@/components/dashboard/EngagementMatrixCar
 import { TopSellingCard } from '@/components/dashboard/TopSellingCard'
 import { TrialFunnelCard } from '@/components/dashboard/TrialFunnelCard'
 import { CorrelationExplorerCard } from '@/components/dashboard/CorrelationExplorerCard'
-import { AppUsageCard } from '@/components/dashboard/AppUsageCard'
 
 /** WeekSection's defaults. Matching them is what makes the query a cache hit. */
 const EXTRA_WEEKS = 13
@@ -103,7 +105,6 @@ export function ExtraSection({ teamId }: { teamId: string | null }) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TopSellingCard teamId={teamId} trendsWeeks={EXTRA_WEEKS} />
-        <AppUsageCard teamId={teamId} />
         <EngagementMatrixCard weeklyReports={data.weeklyReports} trendsWeeks={EXTRA_WEEKS} />
       </div>
 
