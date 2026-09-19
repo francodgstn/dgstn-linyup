@@ -513,8 +513,10 @@
   },
   "QrScanner": {
     "scanStudioQr": "Scanner le QR du studio",
-    "cameraPermissionBody": "L'accès à la caméra est requis pour scanner le code QR de check-in de ton studio.",
-    "grantPermission": "Autoriser l'accès",
+    "cameraPermissionBody": "Linyup utilise la caméra uniquement pour scanner le code QR de check-in de ton studio.",
+    "continue": "Continuer",
+    "cameraDeniedBody": "L'accès à la caméra est désactivé pour Linyup. Tu peux l'activer dans les Réglages pour scanner le code QR de check-in de ton studio.",
+    "openSettings": "Ouvrir les Réglages",
     "pointCamera": "Pointe la caméra vers le code QR de ton studio"
   },
   "UpdateRequired": {
