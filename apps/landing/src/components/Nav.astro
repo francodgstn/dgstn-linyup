@@ -100,7 +100,9 @@ const DEMO_STUDIOS = [
       <a class="btn btn-ghost demo-cta" href={`${DEMO_URL}/try`} target="_blank" rel="noopener">
         <i data-lucide="play-circle"></i> <span class="demo-cta-label">{t('nav.liveDemo')}</span>
       </a>
-      <button class="btn btn-primary" type="button" data-early-access data-ea-source="nav">{t('nav.cta')}</button>
+      <button class="btn btn-primary nav-cta" type="button" data-early-access data-ea-source="nav">
+        <span class="cta-full">{t('nav.cta')}</span><span class="cta-short">{t('nav.ctaShort')}</span>
+      </button>
       <button id="nav-burger" class="nav-burger" type="button" aria-label={t('nav.menu')} aria-expanded="false" aria-controls="mobile-menu">
         <i data-lucide="menu"></i>
       </button>
@@ -322,9 +324,26 @@ const DEMO_STUDIOS = [
   @media (min-width: 861px) {
     .mobile-menu { display: none !important; }
   }
-  /* On the tightest screens, collapse the demo button to its icon to save room. */
+  /* The primary CTA never wraps: a wrapped label overflowed the 40px button
+     ("Frühen Zugang sichern" ran to three clipped lines on a phone). */
+  .nav-cta { white-space: nowrap; }
+  .cta-short { display: none; }
+
+  /* On the tightest screens, collapse the demo button to its icon and give the
+     CTA its short label to save room. */
   @media (max-width: 520px) {
+    .nav { gap: 12px; }
+    .nav-right { gap: 8px; }
     .demo-cta-label { display: none; }
+    .demo-cta { padding: 0 11px; }
+    .nav-cta { padding: 0 13px; font-size: 13px; }
+    .cta-full { display: none; }
+    .cta-short { display: inline; }
+  }
+  /* Narrowest phones: the demo button leaves the bar (the drawer still has
+     "Try it live"), so the primary CTA + menu fit in every locale at 320px. */
+  @media (max-width: 400px) {
+    .demo-cta { display: none; }
   }
 </style>
 
