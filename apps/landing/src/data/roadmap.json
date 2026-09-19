@@ -185,6 +185,29 @@
         }
       },
       {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
+        "area": null,
+        "en": {
+          "title": "Public help centre",
+          "body": "Step-by-step guides for setting up and running your studio, at help.linyup.com."
+        },
+        "de": {
+          "title": "Öffentliches Hilfe-Center",
+          "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios, auf help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        },
+        "fr": {
+          "title": "Centre d'aide public",
+          "body": "Des guides pas à pas pour configurer et gérer votre studio, sur help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        },
+        "it": {
+          "title": "Centro assistenza pubblico",
+          "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        }
+      },
+      {
         "id": "DI_lAHOADowus4Bj7lNzgLJQLk",
         "area": {
           "key": "booking-and-schedule",
@@ -234,6 +257,33 @@
         }
       }
     ],
-    "next": []
+    "next": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJen4",
+        "area": {
+          "key": "your-website",
+          "label": "Your website"
+        },
+        "en": {
+          "title": "A simpler website editor, with AI help",
+          "body": "Making it quicker and easier to build and update your website, with AI to help along the way."
+        },
+        "de": {
+          "title": "Ein einfacherer Website-Editor, mit KI-Unterstützung",
+          "body": "Deine Website schneller und einfacher erstellen und aktualisieren – mit KI, die dir dabei hilft.",
+          "srcHash": "902886f2f379"
+        },
+        "fr": {
+          "title": "Un éditeur de site plus simple, avec l'aide de l'IA",
+          "body": "Créer et mettre à jour votre site plus rapidement et plus simplement, avec l'IA pour vous aider en chemin.",
+          "srcHash": "902886f2f379"
+        },
+        "it": {
+          "title": "Un editor del sito più semplice, con l'aiuto dell'IA",
+          "body": "Creare e aggiornare il tuo sito in modo più rapido e semplice, con l'IA ad aiutarti lungo il percorso.",
+          "srcHash": "902886f2f379"
+        }
+      }
+    ]
   }
 }
