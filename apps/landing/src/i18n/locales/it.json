@@ -75,6 +75,10 @@
       "automations": {
         "title": "Automatizza il lavoro ripetitivo",
         "benefit": "Dai il benvenuto, ricorda e recupera i contatti in automatico."
+      },
+      "ai": {
+        "title": "Ottieni analisi con l'IA",
+        "benefit": "Un breve riepilogo su ogni membro e una lettura di tutto il tuo studio."
       }
     },
     "cta": {
@@ -82,7 +86,8 @@
       "body": "Prova la demo dal vivo — senza registrazione"
     },
     "all": {
-      "title": "Vedi tutte le funzioni"
+      "title": "Vedi tutte le funzioni",
+      "body": "Tutto ciò che Linyup sa fare"
     },
     "help": {
       "title": "Centro assistenza",

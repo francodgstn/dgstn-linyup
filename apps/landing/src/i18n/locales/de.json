@@ -75,6 +75,10 @@
       "automations": {
         "title": "Routinearbeit automatisieren",
         "benefit": "Begrüsse, erinnere und gewinne Kontakte zurück — automatisch."
+      },
+      "ai": {
+        "title": "KI-Einblicke erhalten",
+        "benefit": "Eine kurze Zusammenfassung zu jedem Mitglied und ein Blick auf dein ganzes Studio."
       }
     },
     "cta": {
@@ -82,7 +86,8 @@
       "body": "Die Live-Demo ausprobieren — ohne Registrierung"
     },
     "all": {
-      "title": "Alle Funktionen ansehen"
+      "title": "Alle Funktionen ansehen",
+      "body": "Alles, was Linyup kann"
     },
     "help": {
       "title": "Hilfe-Center",
