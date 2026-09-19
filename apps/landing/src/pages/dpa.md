@@ -5,26 +5,26 @@ description: How Linyup processes personal data on behalf of its customers.
 lastUpdated: 13 September 2026
 ---
 
-# 4. Data Processing Agreement
+# Data Processing Agreement
 
 This agreement forms part of the [Terms of Service](/terms) and applies whenever
 you use Linyup to process personal data about your own contacts.
 
-## 4.1 Roles
+## 1. Roles
 
 You are the **controller**. We are your **processor**. This agreement covers the
 personal data you put into Linyup about your members, students, clients,
 prospects and staff. It does not cover your own account data, for which we are
 the controller — see the [Privacy Policy](/privacy).
 
-## 4.2 Subject matter, duration, nature and purpose
+## 2. Subject matter, duration, nature and purpose
 
 We process your contacts' personal data only to provide the service described in
 the Terms — storing records, scheduling, taking bookings, sending messages you
 configure, and processing payments through your own Stripe account — for as long
-as your account exists, plus the deletion windows in §4.8.
+as your account exists, plus the deletion windows in §8.
 
-## 4.3 Categories of data subject and personal data
+## 3. Categories of data subject and personal data
 
 **Data subjects:** the people you manage — members, students, clients, prospects,
 and the staff you invite.
@@ -54,7 +54,7 @@ and the staff you invite.
   fields, so the categories above cannot be exhaustive. You decide what goes in
   them, and you are responsible for the lawfulness of collecting it.
 
-## 4.4 Our obligations
+## 4. Our obligations
 
 We will:
 
@@ -65,21 +65,21 @@ We will:
   your use of the service's features: using a feature is an instruction to
   process the data that feature needs;
 - ensure people authorised to process it are bound by confidentiality;
-- take appropriate technical and organisational security measures (§4.6);
-- respect the sub-processor conditions in §4.5;
+- take appropriate technical and organisational security measures (§6);
+- respect the sub-processor conditions in §5;
 - help you, so far as we reasonably can, to respond to data-subject requests and
   to meet your obligations on security, breach notification and impact
   assessments;
 - tell you without undue delay if we become aware of a personal-data breach
   affecting your data;
-- on termination, at your choice return or delete the data as set out in §4.8,
+- on termination, at your choice return or delete the data as set out in §8,
   and delete any existing copies unless we are required to keep them by law;
 - make available the information reasonably needed to demonstrate compliance with
   this agreement.
 
 If we believe an instruction breaches data-protection law, we will tell you.
 
-## 4.5 Sub-processors
+## 5. Sub-processors
 
 You give general authorisation for us to engage the sub-processors below. We
 impose on each of them, by contract, data-protection obligations materially the
@@ -98,7 +98,7 @@ adding or replacing a sub-processor. You may object within that period on
 reasonable data-protection grounds; if we cannot resolve your objection, either of
 us may end the agreement.
 
-## 4.6 Security
+## 6. Security
 
 Measures currently in place include: tenant isolation enforced at the database
 layer rather than in application code; encryption in transit; credentials held in
@@ -106,14 +106,14 @@ a managed secret store rather than in configuration; short-lived tokens for
 member sign-in; rate limiting on public endpoints; and role-based access within
 each studio account.
 
-## 4.7 International transfers
+## 7. International transfers
 
 Application data is processed in Switzerland. Where a sub-processor processes
 data outside Switzerland or the EEA, that transfer is covered by recognised
 safeguards — the EU and Swiss Standard Contractual Clauses and, where applicable,
 an adequacy mechanism such as the EU–U.S. / Swiss–U.S. Data Privacy Framework.
 
-## 4.8 Return and deletion
+## 8. Return and deletion
 
 You can delete individual contacts at any time from within the application; a
 contact deletion request starts a **30-day** window, after which the record is
@@ -132,14 +132,14 @@ period.
 connected account you created. That account is yours and is governed by your own
 agreement with Stripe; close it with Stripe directly.
 
-## 4.9 Audits
+## 9. Audits
 
 We will respond to reasonable written requests for information needed to
 demonstrate compliance. Where an on-site audit is required by law, it will be at
 your cost, on reasonable notice, no more than once a year unless a regulator
 requires otherwise, and subject to confidentiality.
 
-## 4.10 Precedence
+## 10. Precedence
 
 If this agreement conflicts with the Terms of Service on the processing of your
 contacts' personal data, this agreement prevails.

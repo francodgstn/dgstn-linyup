@@ -5,7 +5,7 @@ description: Legal notice (Impressum) for linyup.com and the Linyup service.
 lastUpdated: 23 June 2026
 ---
 
-# 1. Legal Notice (Impressum / Mentions légales)
+# Legal Notice (Impressum / Mentions légales)
 
 **Site operator**
 
