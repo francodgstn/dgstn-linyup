@@ -26,7 +26,8 @@
     "ratingAriaLabel": "Valuta {n} su 5",
     "loadMore": "Carica altri",
     "showingCount": "{count} caricati",
-    "showingOf": "{shown} di {total} caricati"
+    "showingOf": "{shown} di {total} caricati",
+    "close": "Chiudi"
   },
   "Plans": {
     "free": "Free",

@@ -261,6 +261,13 @@ provisions from the console. Everything else: `docs/test-accounts.md`.
   a deep worktree.** Worktree path + pnpm's store path exceeds Windows MAX_PATH;
   Node resolves it, Turbopack does not. Verify through the dev server and let
   CI do the build — this is not a code defect.
+- **In a deep worktree, run the web dev server with `--webpack`.** Turbopack
+  (the default) cannot resolve `@tiptap/extension-drag-handle-react` when the
+  real path runs past ~260 characters, so every page with the rich-text editor
+  500s with `Can't resolve …`. Node resolves it and webpack serves the same
+  tree fine: `pnpm --filter @linyup/web exec next dev --webpack` (add
+  `--port` on slot N). Dev only — CI and the real build are unaffected.
+  `docs/ux-review-open-decisions.md` §41 has the investigation.
 - **`next dev` rewrites `apps/web/next-env.d.ts`.** Restore it before
   committing: `git checkout -- apps/web/next-env.d.ts`.
 - **Emulator start fails with "port taken" right after a stop.** A previous run

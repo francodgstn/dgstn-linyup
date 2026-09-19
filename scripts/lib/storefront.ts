@@ -360,7 +360,8 @@ export async function seedStoreWebsite(o: StorefrontOpts): Promise<void> {
       meta: sanitizeMeta(meta, o.teamName),
       sections: sanitizeSections(sections),
       socialLinks: [{ platform: 'instagram', url: `https://instagram.com/${o.teamSlug}` }],
-      showBranding: !!o.freePlan,
+      // As publishWebsite writes it: true on the free plan, absent otherwise.
+      ...(o.freePlan ? { showBranding: true } : {}),
       published_at: tsOf(daysAgo(12)),
       updated_at: tsOf(daysAgo(12)),
     })

@@ -544,7 +544,9 @@ review. The shapes worth choosing between:
 so the current arrangement is at least legible. Nothing here is hard to undo.
 
 ## 36. Does Publish get a real diff?
-**PARKED.** Publish takes the whole draft live — the typo you came to fix plus
+**ANSWERED 2026-09-18 — Franco: leave it as is.** The confirmation stating what goes live stays; no diff. Revisit only if a studio actually hesitates at the button (a per-page "what changed" list would be the step, not a field diff). The original entry follows.
+
+**Was PARKED.** Publish takes the whole draft live — the typo you came to fix plus
 the half-finished page beside it. Shipped now: a confirmation stating what is
 about to go live, counted from the draft (home + N pages + M posts, and how many
 hidden pages stay behind). A REAL answer compares against `site_published`
@@ -576,7 +578,9 @@ component with a capability flag, the way `BrandFields` and `MenuPanel` already
 are. (ii) is worth doing either way; (i) decides how much.
 
 ## 39. `Common.close` — the dialog primitive's only untranslated string
-**FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
+**DONE 2026-09-18.** `Common.close` added in all four locales and used by the dialog's X button, the dialog footer's optional Close button, and the sheet's X button (`sheet.tsx` had the same string). The original entry follows.
+
+**Was FOLLOW-UP.** `components/ui/dialog.tsx` renders `<span className="sr-only">
 Close</span>`. Screen-reader-only, so no sighted user sees English in a German
 UI, but it is the one string in that file. Needs a `Common.close` key and
 `useTranslations` inside a ui primitive — four of them already do this, so the
@@ -584,7 +588,9 @@ pattern exists; left alone only because the reward is small and the file is
 shared by every dialog in the app.
 
 ## 40. The publish integrity test cannot run in this environment
-**BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
+**RESOLVED 2026-09-18 — passed.** Re-run on main `b4d07bb3` (both website PRs merged) with the stack started from the same checkout: CrossFit Zug seeded, Publish pressed in the builder as the studio with no edits. The published site doc and all 11 page docs came back identical, timestamps and translations aside; the one difference was `showBranding: false` becoming absent (same meaning — the seeders now write it the way publish does). 33 translation sidecars were written, and the live pages, `/en` included, answer correctly. The original entry follows.
+
+**Was BLOCKED, not failed.** The plan's acceptance test is "open the builder as the
 studio, press Publish with no changes, confirm the live site is unchanged". Run
 on 2026-09-16 it destroyed most of the CrossFit Zug site — page index,
 redirects, half the theme fields, the header's appointment CTA, and every menu
@@ -607,6 +613,8 @@ the redirect table on every save (now fixed, and the payload is typed so the
 next omission fails the build).
 
 ## 41. Turbopack cannot resolve one dependency in a deep worktree
+**ANSWERED 2026-09-18 — Franco: accept it.** Deep worktrees run the dev server with `--webpack`; the local-env skill (`.claude/skills/local-env/SKILL.md`, traps) now says so. The original entry follows.
+
 **ENVIRONMENT, not code.** `next dev --turbopack` in this worktree fails with
 `Can't resolve '@tiptap/extension-drag-handle-react'` on a cold cache, so every
 route that pulls `RichTextEditor` 500s. Node resolves it fine both ways
