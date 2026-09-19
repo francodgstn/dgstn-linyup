@@ -1,5 +1,5 @@
 import 'server-only'
-import { SITE_PUBLISHED_COLLECTION } from '@linyup/shared'
+import { ORG_SITE_PUBLISHED_COLLECTION, SITE_PUBLISHED_COLLECTION } from '@linyup/shared'
 import { restEndpointBase, restMap, restString, type RestValue } from './publicMetaRest'
 
 // ─── The language a website is written in ─────────────────────────────────────
@@ -12,12 +12,15 @@ import { restEndpointBase, restMap, restString, type RestValue } from './publicM
 //
 // One REST read per slug per instance, cached like the custom-domain lookup —
 // it runs in middleware, on every unprefixed site request.
+//
+// `scope` picks whose site: a studio's (`site_published`) or an organisation's
+// (`org_site_published`) — both carry the slug and `meta.language`.
 
 const TTL_MS = 5 * 60 * 1000
 const cache = new Map<string, { value: string | null; expires: number }>()
 
-export async function resolveSiteLanguage(slug: string): Promise<string | null> {
-  const key = slug.toLowerCase()
+export async function resolveSiteLanguage(slug: string, scope: 'team' | 'org' = 'team'): Promise<string | null> {
+  const key = `${scope}:${slug.toLowerCase()}`
   const hit = cache.get(key)
   if (hit && hit.expires > Date.now()) return hit.value
 
@@ -32,7 +35,7 @@ export async function resolveSiteLanguage(slug: string): Promise<string | null> 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         structuredQuery: {
-          from: [{ collectionId: SITE_PUBLISHED_COLLECTION }],
+          from: [{ collectionId: scope === 'org' ? ORG_SITE_PUBLISHED_COLLECTION : SITE_PUBLISHED_COLLECTION }],
           where: {
             fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: slug } },
           },

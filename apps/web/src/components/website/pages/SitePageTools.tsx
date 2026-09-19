@@ -40,6 +40,19 @@ export function removeMenuItemsTargetingPage(items: SiteMenuItem[], pageId: stri
     )
 }
 
+/** The header button, without its destination when that was the given page —
+ *  used alongside `removeMenuItemsTargetingPage` when deleting a page. The
+ *  whole button goes, label included: it was named for that page, and the
+ *  publish would otherwise fall back to a destination nobody chose. */
+export function removeHeaderButtonTargetingPage(meta: SiteMeta, pageId: string): SiteMeta {
+  if (meta.header.ctaAction !== 'page' || meta.header.ctaPageId !== pageId) return meta
+  const header = { ...meta.header }
+  delete header.ctaLabel
+  delete header.ctaAction
+  delete header.ctaPageId
+  return { ...meta, header }
+}
+
 /**
  * The home page's settings. Every other page opens the page-settings dialog; home
  * has no path, no menu label, nothing to hide and nothing to delete, so what is

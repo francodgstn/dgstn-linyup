@@ -2,7 +2,7 @@ import 'server-only'
 import {
   PUBLIC_DOMAINS_COLLECTION,
   TEAMS_COLLECTION,
-  ORGANIZATIONS_COLLECTION,
+  ORG_SITE_PUBLISHED_COLLECTION,
   USER_PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 import { resolveSiteLanguage } from './siteLanguage'
@@ -14,7 +14,8 @@ import { resolveSiteLanguage } from './siteLanguage'
  * composite index and no query planner:
  *
  *   1. `public_domains/{hostname}`            → which tenant claimed this host
- *   2. `{teams|organizations}/{id}/public_profile/{id}` → that tenant's slug
+ *   2. `teams/{id}/public_profile/{id}` → that studio's slug, or
+ *      `org_site_published/{id}` → that organisation's (see below)
  *
  * **Two reads rather than one, deliberately.** The slug could have been
  * denormalised onto the claim to save a hop, but a team's slug is EDITABLE
@@ -51,7 +52,8 @@ export interface CustomDomainTenant {
    * The studio's WEBSITE owns the domain's root: its default public surface is
    * the site and the site is live. Then `/` is the site's home and every path
    * that is not another surface is a page of the site — see
-   * `toTenantInternalPath`'s `siteAtRoot`.
+   * `toTenantInternalPath`'s `siteAtRoot`. Team only: an organisation's site
+   * is always its root, so this is false for an org.
    */
   siteAtRoot: boolean
 }
@@ -109,21 +111,30 @@ export async function resolveCustomDomainTenant(
     const entityId = str(claim ?? undefined, 'entityId')
     const scope = str(claim ?? undefined, 'scope') === 'org' ? 'org' : 'team'
 
-    if (entityId) {
-      const collection = scope === 'org' ? ORGANIZATIONS_COLLECTION : TEAMS_COLLECTION
+    if (entityId && scope === 'org') {
+      // An ORGANISATION has no public_profile mirror — nothing writes one — so
+      // its slug comes from its published website, which is world-readable,
+      // carries the slug, and is what its domain serves anyway: `/public/org/
+      // {slug}` IS the site. No published site ⇒ nothing to serve ⇒ not a
+      // tenant domain. One read, and the site's language comes with it.
+      const site = await fetchDoc(`${ORG_SITE_PUBLISHED_COLLECTION}/${entityId}`)
+      const slug = str(site ?? undefined, 'slug')
+      const meta = site?.meta?.mapValue?.fields
+      const manifest = site?.i18n?.mapValue?.fields
+      const language = str(meta, 'language') || str(manifest, 'srcLang') || 'en'
+      if (slug) value = { slug, teamId: entityId, scope, language, siteAtRoot: false }
+    } else if (entityId) {
       const profile = await fetchDoc(
-        `${collection}/${entityId}/${USER_PUBLIC_PROFILE_SUBCOLLECTION}/${entityId}`
+        `${TEAMS_COLLECTION}/${entityId}/${USER_PUBLIC_PROFILE_SUBCOLLECTION}/${entityId}`
       )
       const slug = str(profile ?? undefined, 'slug')
       // The WEBSITE's own language wins over the team's: the domain is the
       // site's front door, and a studio may work in one language and publish
       // its site in another (SiteMeta.language).
-      const siteLanguage = scope === 'team' ? await resolveSiteLanguage(slug ?? '') : null
+      const siteLanguage = slug ? await resolveSiteLanguage(slug) : null
       const language = siteLanguage || str(profile ?? undefined, 'language') || 'en'
-      // Only a team has a website; the same gate the root page's redirect uses
-      // (the default must name the site AND the site must be live).
+      // Only when the site is the default AND live — the root page's own gate.
       const siteAtRoot =
-        scope === 'team' &&
         str(profile ?? undefined, 'default_public_surface') === 'site' &&
         profile?.active_public_surfaces?.mapValue?.fields?.site?.booleanValue === true
       if (slug) value = { slug, teamId: entityId, scope, language, siteAtRoot }

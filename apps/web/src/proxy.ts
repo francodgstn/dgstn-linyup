@@ -100,6 +100,17 @@ async function tenantRewrite(request: NextRequest): Promise<Rewrite | null> {
 
 /** `/public/{slug}/site…` — the website, on the app's own hosts. */
 const PUBLIC_SITE_PATH = /^\/public\/([A-Za-z0-9_-]+)\/site(?:\/|$)/
+/** `/public/org/{slug}…` — an organisation's website, which IS its root; only
+ *  the static `events` segment beside the site's catch-all is not a site page. */
+const PUBLIC_ORG_SITE_PATH = /^\/public\/org\/([A-Za-z0-9_-]+)(?:\/(?!events(?:\/|$))|$)/
+
+/** Whose website a path is, if it is one. */
+function publicSiteOf(path: string): { slug: string; scope: 'team' | 'org' } | null {
+  const org = PUBLIC_ORG_SITE_PATH.exec(path)?.[1]
+  if (org) return { slug: org, scope: 'org' }
+  const team = PUBLIC_SITE_PATH.exec(path)?.[1]
+  return team ? { slug: team, scope: 'team' } : null
+}
 
 /**
  * A website answers in ITS OWN language when the URL names none.
@@ -119,14 +130,14 @@ async function siteLanguageRewrite(request: NextRequest): Promise<Rewrite | null
   // English unreachable, and its hreflang a lie. Serving it here keeps English
   // addressable (the app routes live under `[locale]`, so the path already is
   // the internal one).
-  if (pathname.startsWith('/en/') && PUBLIC_SITE_PATH.test(pathname.slice(3))) {
+  if (pathname.startsWith('/en/') && publicSiteOf(pathname.slice(3))) {
     return { url: request.nextUrl.clone(), locale: 'en' }
   }
   const [locale, rest] = splitPathLocale(pathname)
   if (locale) return null // the visitor named a language — theirs wins
-  const slug = PUBLIC_SITE_PATH.exec(rest)?.[1]
-  if (!slug) return null
-  const language = await resolveSiteLanguage(slug)
+  const site = publicSiteOf(rest)
+  if (!site) return null
+  const language = await resolveSiteLanguage(site.slug, site.scope)
   // English IS the unprefixed locale; anything else needs the prefix.
   if (!language || language === 'en') return null
   const url = request.nextUrl.clone()

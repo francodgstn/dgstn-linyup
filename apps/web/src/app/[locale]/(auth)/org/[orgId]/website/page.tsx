@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,6 +85,7 @@ import {
   PagesRail,
   PostHeaderCard,
   removeMenuItemsTargetingPage,
+  removeHeaderButtonTargetingPage,
   useCurrentPageParam,
 } from '@/components/website/pages/SitePageTools'
 
@@ -147,6 +149,9 @@ function AppearancePanel({
   const t = useTranslations('Website')
 
   const setHeader = (p: Partial<SiteMeta['header']>) => onChange({ header: { ...meta.header, ...p } })
+  // Only a page or a link — anything else stored reads as a link, which is what
+  // the publish would make of it (sanitizeOrgMeta).
+  const headerAction: 'page' | 'url' = meta.header.ctaAction === 'page' ? 'page' : 'url'
 
   return (
     <div className="space-y-5">
@@ -190,15 +195,48 @@ function AppearancePanel({
           <Label className="text-xs">{t('apHeaderCtaLabel')}</Label>
           <Input
             value={meta.header.ctaLabel ?? ''}
-            // An organisation's header button is always a link (it has no
-            // booking page) — say so the moment it gets a label, not only once
-            // an address is typed, or the stored action stays 'booking'.
-            onChange={(e) => setHeader({ ctaLabel: e.target.value, ctaAction: 'url' })}
+            // An organisation's header button opens one of its pages or a link
+            // (it has no booking page) — so a first label makes it a link, and
+            // a button already set to a page keeps that.
+            onChange={(e) =>
+              setHeader({ ctaLabel: e.target.value, ctaAction: headerAction === 'page' ? 'page' : 'url' })
+            }
             placeholder={t('apHeaderCtaPlaceholderOrg')}
             className="h-9"
           />
         </div>
-        {meta.header.ctaLabel && (
+        {meta.header.ctaLabel && pages.length > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('apHeaderCtaAction')}</Label>
+            <Select value={headerAction} onValueChange={(v) => setHeader({ ctaAction: v as 'page' | 'url' })}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
+                <SelectItem value="url">{t('editorCtaActionUrl')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {meta.header.ctaLabel && headerAction === 'page' && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('editorCtaPage')}</Label>
+            <Select value={meta.header.ctaPageId ?? ''} onValueChange={(v) => setHeader({ ctaPageId: v || undefined })}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder={t('editorCtaPagePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {pages.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {meta.header.ctaLabel && headerAction === 'url' && (
           <div className="space-y-1.5">
             <Label className="text-xs">{t('apHeaderCtaUrl')}</Label>
             <Input
@@ -299,6 +337,9 @@ export default function OrgWebsiteBuilderPage() {
   // onto the draft, leaving its pages, wording and images alone — so the copy
   // says so instead of implying destruction.
   const [confirmUnpublish, setConfirmUnpublish] = useState(false)
+  // Publish takes the WHOLE draft live, so it says what that is first — the
+  // same confirmation as the team builder.
+  const [confirmPublish, setConfirmPublish] = useState(false)
 
   // Initialise the working draft once data has settled.
   useEffect(() => {
@@ -399,6 +440,7 @@ export default function OrgWebsiteBuilderPage() {
       ...d,
       pages: (d.pages ?? []).filter((p) => p.id !== id),
       menu: d.menu ? removeMenuItemsTargetingPage(d.menu, id) : d.menu,
+      meta: removeHeaderButtonTargetingPage(d.meta, id),
     }))
     setPageSections((prev) => {
       if (!prev) return prev
@@ -546,6 +588,7 @@ export default function OrgWebsiteBuilderPage() {
   }))
   const currentPageRef = isHome ? null : (draft.pages ?? []).find((p) => p.id === currentPageId) ?? null
   const nonPostPages = (draft.pages ?? []).filter((p) => p.kind !== 'post')
+  const hiddenPageCount = (draft.pages ?? []).filter((p) => p.hidden).length
   const postPages = (draft.pages ?? [])
     .filter((p) => p.kind === 'post')
     .sort((a, b) => (b.publishedOn ?? '').localeCompare(a.publishedOn ?? '') || a.title.localeCompare(b.title))
@@ -630,7 +673,7 @@ export default function OrgWebsiteBuilderPage() {
               {tWeb('autosaveRetry')}
             </Button>
           )}
-          <Button size="sm" onClick={handlePublish} disabled={publishing || saving}>
+          <Button size="sm" onClick={() => setConfirmPublish(true)} disabled={publishing || saving}>
             {publishing ? (
               t('publishing')
             ) : (
@@ -932,6 +975,30 @@ export default function OrgWebsiteBuilderPage() {
           onDelete={() => deletePage(currentPageRef.id)}
         />
       )}
+
+      {/* Publish confirmation — what is about to go live, counted from the draft. */}
+      <AlertDialog open={confirmPublish} onOpenChange={setConfirmPublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tWeb('publishConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tWeb('publishConfirmBody', { pages: nonPostPages.length, posts: postPages.length })}
+              {hiddenPageCount > 0 ? ` ${tWeb('publishConfirmHidden', { count: hiddenPageCount })}` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmPublish(false)
+                void handlePublish()
+              }}
+            >
+              {t('publish')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Unpublish confirmation. States the consequence in the visitor's terms
           — the site goes offline now — and then states, equally plainly, that

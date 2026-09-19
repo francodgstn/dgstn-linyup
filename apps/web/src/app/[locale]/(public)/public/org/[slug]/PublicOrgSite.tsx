@@ -13,6 +13,7 @@ import {
   applySiteTranslations,
   findSitePageByPath,
   siteI18nDocId,
+  toTenantPublicPath,
 } from '@linyup/shared'
 import type {
   OrgPublishedSite,
@@ -24,6 +25,7 @@ import type {
   SiteTranslationUnits,
 } from '@linyup/shared'
 import WebsiteRenderer from '@/components/site/WebsiteRenderer'
+import type { PublicTeamDomain } from '../../[slug]/PublicTeamProvider'
 
 /** What the server component resolved, so the first render has real content.
  *  Mirrors the team site's `PublicSiteInitial`. */
@@ -43,14 +45,29 @@ export default function PublicOrgSite({
   slug,
   path = [],
   initial,
+  domain,
 }: {
   slug: string
   path?: string[]
   /** Present when the server read the site (SSR); absent ⇒ read it here. */
   initial?: PublicOrgSiteInitial
+  /** The organisation's own domain, when the request came through it — the
+   *  site's links are then the short ones a visitor sees there. */
+  domain?: PublicTeamDomain
 }) {
   const locale = useLocale()
   const t = useTranslations('Site')
+  // Plain `<a href>`s, so each click is a full navigation the domain's rewrite
+  // resolves server-side. Anything with no short form (English on a German
+  // organisation) keeps its long path, which the domain still serves.
+  const shortenHref = useMemo(
+    () =>
+      domain
+        ? (href: string) =>
+            toTenantPublicPath(href, { slug, scope: 'org', tenantLanguage: domain.tenantLanguage, siteAtRoot: false })
+        : undefined,
+    [domain, slug]
+  )
   const pathKey = path.join('/')
   // Which slug+locale+path `initial` was computed for — a client-side locale or
   // path change re-runs the server component while this instance stays
@@ -179,6 +196,7 @@ export default function PublicOrgSite({
       orgTeams={translatedSite.teams}
       // An org's pages sit directly under its slug — no /site level.
       siteHref={(segments) => publicOrgHrefLocalized(locale, slug, segments)}
+      shortenHref={shortenHref}
     />
   )
 }

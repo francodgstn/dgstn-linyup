@@ -77,7 +77,7 @@ describe('org website publish — section buttons open a page or a link', () => 
   })
 })
 
-describe('org website publish — the header button is a link or nothing', () => {
+describe('org website publish — the header button is a page, a link, or nothing', () => {
   const header = (h: Record<string, unknown>) => sanitizeOrgMeta({ header: { showNav: true, ...h } }, 'Federation').header
 
   it('keeps a labelled button with an address, as a link', () => {
@@ -96,6 +96,25 @@ describe('org website publish — the header button is a link or nothing', () =>
     const h = header({ ctaLabel: 'Join', ctaAction: 'booking', ctaUrl: 'https://example.ch/join' })
     assert.equal(h.ctaAction, 'url')
     assert.equal(h.ctaUrl, 'https://example.ch/join')
+  })
+
+  it("opens one of the site's own pages", () => {
+    const h = header({ ctaLabel: 'Membership', ctaAction: 'page', ctaPageId: 'p-join', ctaUrl: 'https://stale.example' })
+    assert.equal(h.ctaAction, 'page')
+    assert.equal(h.ctaPageId, 'p-join')
+    assert.equal(h.ctaUrl, undefined)
+  })
+
+  it('drops a page button that names no page, unless it still has an address', () => {
+    assert.equal(header({ ctaLabel: 'Membership', ctaAction: 'page' }).ctaLabel, undefined)
+    const h = header({ ctaLabel: 'Join', ctaAction: 'page', ctaUrl: 'https://example.ch/join' })
+    assert.equal(h.ctaAction, 'url')
+  })
+
+  it('never publishes an appointment button', () => {
+    const h = header({ ctaLabel: 'Book', ctaAction: 'appointment', ctaActivityId: 'a1' })
+    assert.equal(h.ctaLabel, undefined)
+    assert.equal(h.ctaActivityId, undefined)
   })
 })
 
