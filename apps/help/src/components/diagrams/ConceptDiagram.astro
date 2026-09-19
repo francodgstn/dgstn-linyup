@@ -1,0 +1,288 @@
+---
+// An interactive concept map: boxes joined by labelled arrows. Select a box
+// (click, tap, or Tab + Enter) and the panel under the map explains it, and the
+// arrows that touch it light up. One component for every map in the help docs,
+// so they all behave the same — core concepts and pricing today.
+//
+// Plain inline SVG + a few lines of script: no framework, no diagram library.
+// Colours are Starlight's own variables, so light and dark mode just work.
+// The maps descend from the retired in-app How-to (ConceptMap, PricingMoneyMap).
+
+export interface DiagramNode {
+  id: string
+  /** Text in the box. `\n` breaks the line; SVG text does not wrap. */
+  label: string
+  x: number
+  y: number
+  w: number
+  h: number
+  /** Panel: a heading, a one-line tagline and a short explanation. */
+  title: string
+  tagline: string
+  body: string
+  /** Optional "Read more" target, usually a heading further down the page. */
+  href?: string
+}
+
+export interface DiagramEdge {
+  from: string
+  to: string
+  label: string
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  /** Where the label sits, nudged clear of the line. */
+  lx: number
+  ly: number
+}
+
+interface Props {
+  /** Accessible name for the whole map. */
+  label: string
+  viewBox: string
+  nodes: DiagramNode[]
+  edges: DiagramEdge[]
+  /** Which node the panel shows first. Defaults to the first one. */
+  initial?: string
+  /** Narrowest width before the map scrolls sideways instead of shrinking. */
+  minWidth?: number
+}
+
+const { label, viewBox, nodes, edges, initial = nodes[0]?.id, minWidth = 480 } = Astro.props
+const uid = `cd-${Math.random().toString(36).slice(2, 8)}`
+---
+
+<figure class="cd not-content" data-concept-diagram data-initial={initial}>
+  <div class="cd-scroll">
+    <svg viewBox={viewBox} role="group" aria-label={label} style={`min-width:${minWidth}px`}>
+      <defs>
+        <marker id={`${uid}-arrow`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="cd-arrowhead"></path>
+        </marker>
+        <marker id={`${uid}-arrow-on`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="cd-arrowhead cd-arrowhead-on"></path>
+        </marker>
+      </defs>
+
+      {
+        edges.map((e) => (
+          <line
+            class="cd-edge"
+            data-from={e.from}
+            data-to={e.to}
+            data-marker-off={`url(#${uid}-arrow)`}
+            data-marker-on={`url(#${uid}-arrow-on)`}
+            x1={e.x1}
+            y1={e.y1}
+            x2={e.x2}
+            y2={e.y2}
+            marker-end={`url(#${uid}-arrow)`}
+          />
+        ))
+      }
+
+      {
+        nodes.map((n) => {
+          const lines = n.label.split('\n')
+          const mid = n.y + n.h / 2 + 4.5
+          return (
+            <g class="cd-node" data-node={n.id} role="button" tabindex="0" aria-pressed="false" aria-label={n.title}>
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx="12" />
+              <text x={n.x + n.w / 2} y={lines.length > 1 ? mid - 7 : mid} text-anchor="middle">
+                {lines.map((line, i) => (
+                  <tspan x={n.x + n.w / 2} dy={i === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+          )
+        })
+      }
+
+      {/* Labels last, so no box is painted over one. */}
+      {
+        edges.map((e) => (
+          <text class="cd-edge-label" data-from={e.from} data-to={e.to} x={e.lx} y={e.ly} text-anchor="middle">
+            {e.label}
+          </text>
+        ))
+      }
+    </svg>
+  </div>
+
+  <figcaption class="cd-hint">Select a box to see what it means.</figcaption>
+
+  {
+    nodes.map((n) => (
+      <div class="cd-panel" data-panel={n.id} hidden={n.id !== initial} aria-live="polite">
+        <p class="cd-panel-title">{n.title}</p>
+        <p class="cd-panel-tagline">{n.tagline}</p>
+        <p class="cd-panel-body">{n.body}</p>
+        {n.href && (
+          <a class="cd-panel-link" href={n.href}>
+            Read more →
+          </a>
+        )}
+      </div>
+    ))
+  }
+</figure>
+
+<script>
+  function wire(root: HTMLElement) {
+    const nodes = [...root.querySelectorAll<SVGGElement>('.cd-node')]
+    const edges = [...root.querySelectorAll<SVGLineElement>('.cd-edge')]
+    const labels = [...root.querySelectorAll<SVGTextElement>('.cd-edge-label')]
+    const panels = [...root.querySelectorAll<HTMLElement>('.cd-panel')]
+
+    function select(id: string) {
+      for (const n of nodes) {
+        const on = n.dataset.node === id
+        n.classList.toggle('is-selected', on)
+        n.setAttribute('aria-pressed', String(on))
+      }
+      const touches = (el: SVGElement) => el.dataset.from === id || el.dataset.to === id
+      for (const e of edges) {
+        const on = touches(e)
+        e.classList.toggle('is-on', on)
+        e.setAttribute('marker-end', (on ? e.dataset.markerOn : e.dataset.markerOff) ?? '')
+      }
+      for (const l of labels) l.classList.toggle('is-on', touches(l))
+      for (const p of panels) p.hidden = p.dataset.panel !== id
+    }
+
+    for (const n of nodes) {
+      const id = n.dataset.node!
+      n.addEventListener('click', () => select(id))
+      n.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault()
+          select(id)
+        }
+      })
+    }
+    select(root.dataset.initial ?? nodes[0]?.dataset.node ?? '')
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-concept-diagram]')) wire(root)
+</script>
+
+<style>
+  .cd {
+    margin: 1.5rem 0;
+  }
+  .cd-scroll {
+    overflow-x: auto;
+  }
+  .cd svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 44rem;
+    margin: 0 auto;
+    font-family: var(--sl-font);
+  }
+  .cd-edge {
+    stroke: var(--sl-color-gray-4);
+    stroke-width: 1.5;
+    transition: stroke 0.15s;
+  }
+  .cd-edge.is-on {
+    stroke: var(--sl-color-accent);
+    stroke-width: 2;
+  }
+  .cd-arrowhead {
+    fill: var(--sl-color-gray-4);
+  }
+  .cd-arrowhead-on {
+    fill: var(--sl-color-accent);
+  }
+  .cd-edge-label {
+    font-size: 12px;
+    fill: var(--sl-color-gray-3);
+    paint-order: stroke;
+    stroke: var(--sl-color-bg);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  .cd-edge-label.is-on {
+    fill: var(--sl-color-accent-high);
+    font-weight: 600;
+  }
+  .cd-node {
+    cursor: pointer;
+    outline: none;
+  }
+  .cd-node rect {
+    fill: var(--sl-color-bg);
+    stroke: var(--sl-color-gray-4);
+    stroke-width: 1;
+    transition: fill 0.15s, stroke 0.15s;
+  }
+  .cd-node:hover rect {
+    stroke: var(--sl-color-accent);
+  }
+  .cd-node:focus-visible rect {
+    stroke: var(--sl-color-accent);
+    stroke-width: 2.5;
+  }
+  .cd-node text {
+    font-size: 13px;
+    font-weight: 500;
+    fill: var(--sl-color-white);
+    user-select: none;
+  }
+  .cd-node.is-selected rect {
+    fill: var(--sl-color-accent-low);
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.5;
+  }
+  .cd-node.is-selected text {
+    fill: var(--sl-color-accent-high);
+    font-weight: 700;
+  }
+  .cd-hint {
+    text-align: center;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    margin-top: 0.25rem;
+  }
+  .cd-panel {
+    margin: 0.75rem auto 0;
+    max-width: 44rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-left: 3px solid var(--sl-color-accent);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .cd-panel p {
+    margin: 0;
+  }
+  .cd-panel-title {
+    font-weight: 700;
+    color: var(--sl-color-white);
+  }
+  .cd-panel-tagline {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-accent-high);
+    margin-bottom: 0.5rem !important;
+  }
+  .cd-panel-body {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .cd-panel-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--sl-color-text-accent);
+    text-decoration: none;
+  }
+  .cd-panel-link:hover {
+    text-decoration: underline;
+  }
+</style>
