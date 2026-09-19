@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useTranslations, useLocale } from 'next-intl'
 import { CalendarDays, MapPin, CreditCard, CheckCircle2, AlertCircle, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { createRegionalFormatter, type RegionalFormatter } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,8 +88,7 @@ export default function EventInvitationPage() {
       return
     }
 
-    const fn = httpsCallable<{ token: string; trackView: boolean }, InvitationDetails>(
-      functions,
+    const fn = callFunction<{ token: string; trackView: boolean }, InvitationDetails>(
       'getEventInvitationDetails'
     )
 
@@ -114,10 +112,10 @@ export default function EventInvitationPage() {
     setSubmitError(null)
 
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { token: string; action: 'attend' | 'decline'; notes?: string },
         { success: boolean }
-      >(functions, 'handleEventInvitationResponse')
+      >('handleEventInvitationResponse')
 
       await fn({ token, action, notes: notes || undefined })
 

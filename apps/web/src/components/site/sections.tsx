@@ -13,8 +13,7 @@ import {
   doc,
   Timestamp,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -115,6 +114,7 @@ import type { BookIntent } from '@/components/booking/BookingOverlay'
 import { usePlaces } from '@/hooks/usePlaces'
 import { ClubsBlock, LocationsBlock, CoachesBlock } from './orgSections'
 import { WeeklyCalendar } from '@/components/schedule/WeeklyCalendar'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * THE CHROME FOLLOWS THE VISITOR; THE STUDIO'S CONTENT IS RESOLVED BEFORE IT
@@ -2051,10 +2051,10 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
       )
       if (!alive || offerings.empty) return
 
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; days?: number; activityId?: string },
         { coaches: AvailCoachLite[] }
-      >(functions, 'listAvailability')
+      >('listAvailability')
       const res = await fn({
         teamId: teamId!,
         days: windowDays,
@@ -3000,7 +3000,7 @@ function FormBlock({ section, ctx }: { section: FormSection; ctx: RenderCtx }) {
     }
     setSubmitting(true)
     try {
-      const fn = httpsCallable(functions, 'submitForm')
+      const fn = callFunction('submitForm')
       await fn({ teamId, formId: state.formId, answers })
       setDone(true)
       // The enquiry and the intro call are ONE step for the visitor: open the

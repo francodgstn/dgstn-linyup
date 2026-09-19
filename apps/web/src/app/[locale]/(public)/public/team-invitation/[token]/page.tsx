@@ -14,8 +14,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import type { Route } from 'next'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure, reportPublicActionFailure } from '@/lib/publicQueryError'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
@@ -23,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Users, Mail, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { callFunction } from '@/lib/callFunction'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,9 +101,8 @@ export default function TeamInvitationPage() {
       return
     }
 
-    const fn = httpsCallable<{ token: string }, InvitationDetails>(
-      functions,
-      'getTeamInvitationDetails',
+    const fn = callFunction<{ token: string }, InvitationDetails>(
+      'getTeamInvitationDetails'
     )
 
     let cancelled = false
@@ -132,9 +130,8 @@ export default function TeamInvitationPage() {
     setFailure(null)
 
     try {
-      const fn = httpsCallable<{ token: string }, { teamId: string }>(
-        functions,
-        'acceptTeamInvitation',
+      const fn = callFunction<{ token: string }, { teamId: string }>(
+        'acceptTeamInvitation'
       )
       await fn({ token })
       setAccepted(true)

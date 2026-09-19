@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
 import { CreditCard, Receipt, ExternalLink, Loader2 } from 'lucide-react'
 import { QueryErrorState } from '@/components/ui/query-error'
@@ -14,6 +12,7 @@ import { useSpaceTheme } from '../useSpaceTheme'
 import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpacePayments } from '../useSpacePayments'
 import { usePublicFormat } from '../../usePublicFormat'
+import { callFunction } from '@/lib/callFunction'
 
 /** What "this money did not arrive" actually looks like on a payment row.
  *  'refunded' and 'partially_refunded' are deliberately absent: the money DID
@@ -42,8 +41,7 @@ export default function PaymentsHome() {
   async function openBillingPortal() {
     setPortalLoading(true)
     try {
-      const fn = httpsCallable<{ slug: string; locale: string; origin: string }, { url: string }>(
-        functions,
+      const fn = callFunction<{ slug: string; locale: string; origin: string }, { url: string }>(
         'createContactBillingPortalSession'
       )
       const res = await fn({ slug, locale, origin: window.location.origin })

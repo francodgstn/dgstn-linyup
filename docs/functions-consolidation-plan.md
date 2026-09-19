@@ -90,18 +90,17 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
-Output of `pnpm functions:inventory --md`. It includes the routers built so far (`rpcSpike`, the throwaway
-Phase 0 one, `rpcOps`, the pilot, `rpcFinance`, `rpcBilling`, `rpcOrg`, `rpcHeavy` and `rpcStudio`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
+Output of `pnpm functions:inventory --md`. It includes every router: all callables are now routed, and each ALSO still deploys under its own name until its alias is removed (Phase 5), which is why the total has gone UP, not down as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**304 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T22:49Z. Global options: region=europe-west6, maxInstances=20.
+**305 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T23:26Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
 | `callable` | 215 |
-| `https` | 17 |
+| `https` | 18 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
 | `firestore.updated` | 2 |
@@ -126,11 +125,11 @@ binds a secret and none sets a service account.
 | `saas-billing` | 7 | 1 |  |  |  |  |  | 1 |  |  | 9 |
 | `tarif595` | 8 |  |  |  |  |  |  |  | 1 |  | 9 |
 | `automation` | 2 | 1 |  |  |  | 4 |  |  | 1 |  | 8 |
+| `routers` |  | 8 |  |  |  |  |  |  |  |  | 8 |
 | `analytics` |  |  |  |  |  | 4 | 1 | 2 |  |  | 7 |
 | `api` | 6 | 1 |  |  |  |  |  |  |  |  | 7 |
 | `auth` | 5 |  | 1 |  |  |  |  |  |  | 1 | 7 |
 | `dailyTasks` |  |  |  |  |  |  |  | 2 | 5 |  | 7 |
-| `routers` |  | 7 |  |  |  |  |  |  |  |  | 7 |
 | `sessions` | 6 |  |  |  |  |  |  |  | 1 |  | 7 |
 | `accounting` | 5 |  |  |  |  | 1 |  |  |  |  | 6 |
 | `appointments` | 6 |  |  |  |  |  |  |  |  |  | 6 |
@@ -160,7 +159,7 @@ binds a secret and none sets a service account.
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **17** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **304** |
+| **Total** | **215** | **18** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **305** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -198,11 +197,12 @@ binds a secret and none sets a service account.
 | `onOrgBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
 | `onTeamBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
 | `rpcBilling` | `routers` | https | `cpu=1` `concurrency=40` |
+| `rpcCheckout` | `routers` | https | `memory=512` `cpu=1` `concurrency=80` |
 | `rpcFinance` | `routers` | https | `memory=512` `timeout=120` `cpu=1` `concurrency=40` |
 | `rpcHeavy` | `routers` | https | `memory=1024` `timeout=540` `cpu=1` `concurrency=4` |
+| `rpcMember` | `routers` | https | `memory=512` `cpu=1` `concurrency=80` |
 | `rpcOps` | `routers` | https | `memory=512` `timeout=540` `cpu=1` `concurrency=10` `maxInstances=3` |
 | `rpcOrg` | `routers` | https | `cpu=1` `concurrency=40` |
-| `rpcSpike` | `routers` | https | `memory=512` `timeout=60` `cpu=1` `concurrency=40` |
 | `rpcStudio` | `routers` | https | `memory=512` `timeout=120` `cpu=1` `concurrency=40` |
 | `handleStripeWebhook` | `saas-billing` | https | `invoker=public` |
 | `handleTrialLifecycle` | `saas-billing` | schedule | `memory=1024` `timeout=540` |
@@ -359,11 +359,10 @@ the floor. Only Phase 6 moves it, and only a little.
 - **Enforcement.** A unit test asserts that every callable in the inventory is in
   exactly one router table, or on a named "not routed" list. Nothing is silently
   unrouted.
-- **Until routing is nearly complete.** Full-coverage enforcement (every callable
-  routed, or deliberately listed as not routed) switches on once routing is nearly
-  complete. Until then `packages/functions/src/utils/routerCoverage.test.ts` pins
-  agreement between the router tables and `packages/shared/src/functions/routes.ts`,
-  and that no callable sits in two routers.
+- **Enforced since every domain moved (2026-09-20).**
+  `packages/functions/src/utils/routerCoverage.test.ts` pins agreement between the router
+  tables and `packages/shared/src/functions/routes.ts`, that no callable sits in two routers,
+  and that no deployed callable is in none.
 
 ### 4.3 Clients
 
@@ -595,6 +594,10 @@ environment that turns the flag on.
   of member payments (Connect, subscriptions, refunds, manual payments, gift cards, promo
   codes) joined `rpcFinance`. What is left unrouted is exactly Phase 3: everything a member,
   a guest or the member app calls.
+- **`rpcHeavy`, `rpcStudio` and the payments side of `rpcFinance` are on staging since
+  2026-09-20**, each deployed as written. The spike passes for every router there, run with
+  the DEPLOYED commit's route table (`--routes-ref`, see Phase 3). The two differences left are
+  the staging invoker defect above, where the routed side is the one that works.
 - **Some callables have no client caller at all** — no literal, no variable, in web, admin or
   mobile. They were routed with their domain. `scripts/functions-inventory.mjs` lists
   callables; pair it with the client-names recipe in §2.1 to list these, and consider
@@ -619,9 +622,33 @@ environment that turns the flag on.
 ### Phase 3: public and member web (~2 days + 1 week soak)
 - `rpcCheckout`, then `rpcMember`, web side only. This is the hot path.
 - Watch the checkout 5xx rate against Stripe checkout-session creation counts.
-- Decide `minInstances: 1` on `rpcMember` from the measured cold start.
-- Keep `sendContactVerificationCode` and `loginContactWithCode` on their mobile App
-  Check flag inside the router.
+- Decide `minInstances: 1` on `rpcMember` from the measured cold start (about four seconds,
+  the same routed as direct). It is NOT set: an open question below.
+- **Built 2026-09-20.** `packages/functions/src/routers/checkout.ts` is where a member or a
+  guest PAYS — its own router for blast radius, apart from the booking surface and apart from
+  staff finance. `packages/functions/src/routers/member.ts` is everything else a member or a
+  guest does. Both run at concurrency 80, what a plain callable gets today, so routing takes
+  nothing away from the hot path. App Check stays on each member that carries it (the checkouts,
+  `previewPromoCode`, `checkGiftCard`, `submitForm`; the contact sign-in pair on the mobile
+  flag) and is enforced inside the member's own handler.
+- **Staff onboarding went to `rpcStudio`**, not here: `createTeam` and the two team-invitation
+  callables are called from public-looking paths (the signup page, the invitation link), but
+  the person is joining as staff.
+- **The member app is untouched.** It calls some `rpcMember` names by their own name, from
+  store binaries, and keeps doing so until Phase 4. Listing a name in the route table moves only
+  callers that go through `callFunction`.
+- **`rpcSpike` is retired.** Its two members moved to `rpcMember`; the deploy deletes the
+  function (`--force`). `scripts/router-spike.mjs` needs no spike router — it compares whatever
+  the route table says.
+- **Full coverage is now ENFORCED.** Every domain has moved, so
+  `packages/functions/src/utils/routerCoverage.test.ts` fails when a deployed callable is in no
+  router and not on its `NOT_ROUTED` list (empty, and meant to stay so). From here a callable
+  that skips its router is a new deployed function, and that test is the only thing that says so.
+- **Run the spike with the DEPLOYED commit's route table.** Run from a branch that has already
+  moved a name to a new router, every such name "fails" with a not-found the deployed project is
+  right to give. It happened: eight false failures, from a Phase 3 checkout pointed at a Phase 2
+  staging. `node scripts/router-spike.mjs … --routes-ref origin/main` reads the table at that
+  commit instead.
 
 ### Phase 4: mobile (~1 day of code, then months of calendar)
 - Move `apps/mobile/src/services/firestore.ts` to `callFunction`.

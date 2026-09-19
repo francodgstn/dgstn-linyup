@@ -13,8 +13,7 @@ import {
   getDocs,
   Timestamp,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import {
   resolveActivityAccessRule,
   compareActivities,
@@ -82,6 +81,7 @@ import {
   type AppliedPromo,
 } from '@/components/booking/PromoCodeField'
 import { usePublicFormat } from '../usePublicFormat'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -1089,10 +1089,10 @@ export default function BookingForm({
     // Returns the raw response so the caller can also detect the gift-card
     // FULL-COVER shape ({ url: null, paidWithGiftCard: true }).
     const checkout = async (trial: boolean) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         Record<string, unknown>,
         { url?: string | null; paidWithGiftCard?: boolean }
-      >(functions, 'createDropInCheckout')
+      >('createDropInCheckout')
       const res = await fn({
         teamId,
         sessionId: selectedSession!.id,
@@ -1158,8 +1158,7 @@ export default function BookingForm({
         throw new Error(t('errorCheckoutFailed'))
       }
 
-      const bookSessionFn = httpsCallable<Record<string, unknown>, { bookingReference?: string }>(
-        functions,
+      const bookSessionFn = callFunction<Record<string, unknown>, { bookingReference?: string }>(
         'bookSession'
       )
       const bookRes = await bookSessionFn({
@@ -1297,8 +1296,7 @@ export default function BookingForm({
     setIsSubmitting(true)
     setBookingError(null)
     try {
-      const fn = httpsCallable<Record<string, unknown>, { position: number; entryToken: string }>(
-        functions,
+      const fn = callFunction<Record<string, unknown>, { position: number; entryToken: string }>(
         'joinWaitlist'
       )
       const res = await fn({
@@ -1430,8 +1428,7 @@ export default function BookingForm({
     }
     const waiverAcceptances = waiverGate.acceptances
 
-    const bookSessionFn = httpsCallable<Record<string, unknown>, { bookingReference?: string }>(
-      functions,
+    const bookSessionFn = callFunction<Record<string, unknown>, { bookingReference?: string }>(
       'bookSession'
     )
     try {
@@ -1500,8 +1497,7 @@ export default function BookingForm({
         return
       }
       const waiverAcceptances = waiverGate.acceptances
-      const bookSessionFn = httpsCallable<Record<string, unknown>, { bookingReference?: string }>(
-        functions,
+      const bookSessionFn = callFunction<Record<string, unknown>, { bookingReference?: string }>(
         'bookSession'
       )
       const res = await bookSessionFn({

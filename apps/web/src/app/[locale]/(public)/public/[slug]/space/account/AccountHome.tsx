@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { User, Pencil, Check } from 'lucide-react'
 import { loadFailureDetail } from '@/lib/publicQueryError'
 import { toDateInputValue } from '@/lib/format'
@@ -17,6 +15,7 @@ import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceContact } from '../useSpaceContact'
 import { usePublicFormat } from '../../usePublicFormat'
+import { callFunction } from '@/lib/callFunction'
 
 /** Whatever a birthdate has been stored as — a Timestamp, a `{seconds}` map,
  *  an ISO string — as a Date, or null. The `<input type="date">` value is then
@@ -74,7 +73,7 @@ export default function AccountHome() {
     setStatus('saving')
     setErrMsg('')
     try {
-      const fn = httpsCallable(functions, 'requestContactUpdate')
+      const fn = callFunction('requestContactUpdate')
       await fn({
         contactDetails: {
           firstname: form.firstname,

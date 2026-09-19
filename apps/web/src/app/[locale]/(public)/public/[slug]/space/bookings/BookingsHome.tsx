@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { useTranslations } from 'next-intl'
 import { CalendarClock, MapPin, X, UserRound, Loader2 } from 'lucide-react'
 import type { BookingCancelEffect, CancelBookingResult, MyBooking, MyBookingsResult } from '@linyup/shared'
@@ -22,6 +20,7 @@ import SpaceSignInWall from '../SpaceSignInWall'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { usePublicFormat } from '../../usePublicFormat'
+import { callFunction } from '@/lib/callFunction'
 
 // "My bookings" — one server read of HER bookings, through `getMyBookings`.
 //
@@ -100,8 +99,7 @@ export default function BookingsHome() {
     initialPageParam: null as number | null,
     queryFn: async ({ pageParam }): Promise<MyBookingsResult> => {
       try {
-        const fn = httpsCallable<{ teamId: string; cursor: number | null }, MyBookingsResult>(
-          functions,
+        const fn = callFunction<{ teamId: string; cursor: number | null }, MyBookingsResult>(
           'getMyBookings'
         )
         const res = await fn({ teamId: teamId ?? '', cursor: pageParam })
@@ -139,7 +137,7 @@ export default function BookingsHome() {
     setCancelling(b.sessionId)
     setCancelError(null)
     try {
-      const fn = httpsCallable<{ token: string }, CancelBookingResult>(functions, 'cancelBooking')
+      const fn = callFunction<{ token: string }, CancelBookingResult>('cancelBooking')
       const res = await fn({ token: b.cancelToken })
       // The server says what it gave back; the banner repeats that answer. A
       // returned lesson credit is the single most useful thing this surface can

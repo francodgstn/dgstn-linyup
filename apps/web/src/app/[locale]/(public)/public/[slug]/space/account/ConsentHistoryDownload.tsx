@@ -17,11 +17,10 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Download } from 'lucide-react'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { usePublicTeam } from '../../PublicTeamProvider'
+import { callFunction } from '@/lib/callFunction'
 
 export function ConsentHistoryDownload() {
   const t = useTranslations('Space')
@@ -40,10 +39,10 @@ export function ConsentHistoryDownload() {
     setBusy(true)
     setError(false)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { contactId: string; format: 'html' },
         { format: 'html'; html: string }
-      >(functions, 'exportContactConsentHistory')
+      >('exportContactConsentHistory')
       const res = await fn({ contactId: contact.id, format: 'html' })
       const blob = new Blob([res.data.html], { type: 'text/html;charset=utf-8' })
       const url = URL.createObjectURL(blob)

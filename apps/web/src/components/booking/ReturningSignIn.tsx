@@ -20,9 +20,8 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { useTranslations } from 'next-intl'
+import { callFunction } from '@/lib/callFunction'
 
 export interface MatchedContact {
   id: string
@@ -171,8 +170,7 @@ export function ReturningSignIn({
   const onSendCode = async (values: EmailValues) => {
     setError(null)
     try {
-      const fn = httpsCallable<{ email: string; teamId: string }, { codeId: string; hasContacts?: boolean }>(
-        functions,
+      const fn = callFunction<{ email: string; teamId: string }, { codeId: string; hasContacts?: boolean }>(
         'sendBookingVerificationCode'
       )
       const result = await fn({ email: values.email, teamId })
@@ -193,7 +191,7 @@ export function ReturningSignIn({
   const onVerifyCode = async (values: CodeValues) => {
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { codeId: string; code: string },
         {
           verified: boolean
@@ -203,7 +201,7 @@ export function ReturningSignIn({
           contactData?: ContactData
           matchedContacts?: MatchedContact[]
         }
-      >(functions, 'verifyBookingCode')
+      >('verifyBookingCode')
       const result = await fn({ codeId, code: values.code })
 
       if (result.data.requiresContactSelection) {
@@ -227,10 +225,10 @@ export function ReturningSignIn({
     setError(null)
     setSelectingContactId(contactId)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { codeId: string; selectedContactId: string },
         { verified: boolean; codeId: string; selectedContactId?: string; contactData?: ContactData }
-      >(functions, 'verifyBookingCode')
+      >('verifyBookingCode')
       const result = await fn({ codeId, selectedContactId: contactId })
       await runVerified(
         result.data.selectedContactId!,
@@ -254,8 +252,7 @@ export function ReturningSignIn({
     if (countdown > 0) return
     setError(null)
     try {
-      const fn = httpsCallable<{ email: string; teamId: string }, { codeId: string }>(
-        functions,
+      const fn = callFunction<{ email: string; teamId: string }, { codeId: string }>(
         'sendBookingVerificationCode'
       )
       const result = await fn({ email, teamId })

@@ -20,9 +20,6 @@
 // Compatibility and aliases").
 
 export const ROUTER_NAMES = [
-  // Throwaway: proves auth, App Check, CORS and error codes survive routing.
-  // Deleted once the pilot router has shipped.
-  'rpcSpike',
   'rpcMember',
   'rpcCheckout',
   'rpcStudio',
@@ -37,12 +34,9 @@ export type RouterName = (typeof ROUTER_NAMES)[number]
 
 /**
  * Callable name → the router that serves it. Listing a name moves traffic only
- * for call sites that go through `callFunction`; the spike's members have none.
+ * for call sites that go through `callFunction`.
  */
 export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
-  listAvailability: 'rpcSpike',
-  getMyBookings: 'rpcSpike',
-
   // The operator console — the pilot. Called by apps/admin only.
   manageDemoTenant: 'rpcOps',
   setReviewAccess: 'rpcOps',
@@ -224,6 +218,66 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   refreshWhatsAppStatus: 'rpcStudio',
   setContactWhatsAppConsent: 'rpcStudio',
   submitWhatsAppTemplate: 'rpcStudio',
+  // … and joining a studio as staff: signing up and accepting a team invitation.
+  createTeam: 'rpcStudio',
+  acceptTeamInvitation: 'rpcStudio',
+  getTeamInvitationDetails: 'rpcStudio',
+
+  // Where a member or a guest PAYS. Its own router for blast radius.
+  createAppointmentCheckout: 'rpcCheckout',
+  createDropInCheckout: 'rpcCheckout',
+  createCourseCheckout: 'rpcCheckout',
+  createGiftCardCheckout: 'rpcCheckout',
+  createMembershipCheckout: 'rpcCheckout',
+  createProductCheckout: 'rpcCheckout',
+  checkGiftCard: 'rpcCheckout',
+  previewPromoCode: 'rpcCheckout',
+  claimCheckoutSession: 'rpcCheckout',
+  createContactBillingPortalSession: 'rpcCheckout',
+
+  // Everything else a member or a guest does: booking, the Space, contact sign-in,
+  // the kiosk. The member app calls some of these by their OWN name and keeps
+  // doing so until it routes (Phase 4) — listing them here moves only callFunction callers.
+  listAvailability: 'rpcMember',
+  getMyBookings: 'rpcMember',
+  bookAppointment: 'rpcMember',
+  completeSignup: 'rpcMember',
+  loginContactWithCode: 'rpcMember',
+  sendContactVerificationCode: 'rpcMember',
+  verifyContactCode: 'rpcMember',
+  bookSession: 'rpcMember',
+  cancelBooking: 'rpcMember',
+  claimWaitlistSeat: 'rpcMember',
+  getBookingDetails: 'rpcMember',
+  getMyAttendance: 'rpcMember',
+  getWaitlistEntry: 'rpcMember',
+  joinWaitlist: 'rpcMember',
+  leaveWaitlist: 'rpcMember',
+  listMyWaitlist: 'rpcMember',
+  rebookSession: 'rpcMember',
+  sendBookingVerificationCode: 'rpcMember',
+  verifyBookingCode: 'rpcMember',
+  cancelContactDeletion: 'rpcMember',
+  getContactQR: 'rpcMember',
+  listMyContactPayments: 'rpcMember',
+  requestContactDeletion: 'rpcMember',
+  requestContactUpdate: 'rpcMember',
+  resolveContactUpdateLink: 'rpcMember',
+  submitContactUpdateLink: 'rpcMember',
+  switchActiveContact: 'rpcMember',
+  getPublicDocumentVersion: 'rpcMember',
+  getEventInvitationDetails: 'rpcMember',
+  handleEventInvitationResponse: 'rpcMember',
+  submitForm: 'rpcMember',
+  unlockKiosk: 'rpcMember',
+  getMyReferralCode: 'rpcMember',
+  getMyReferralStats: 'rpcMember',
+  selfCheckIn: 'rpcMember',
+  listMyTarif595Receipts: 'rpcMember',
+  exportContactConsentHistory: 'rpcMember',
+  resolveWaiverRequirement: 'rpcMember',
+  signWaiverInSpace: 'rpcMember',
+  setMyWhatsAppConsent: 'rpcMember',
 }
 
 export function routerForCallable(name: string): RouterName | null {

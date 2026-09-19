@@ -18,16 +18,15 @@ import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { httpsCallable } from 'firebase/functions'
 import { useTranslations } from 'next-intl'
 import { X, ChevronLeft, UserPlus, CheckCircle2 } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import { WaiverStep } from '@/components/booking/WaiverStep'
 import { useWaiverGate } from '@/hooks/useWaiverGate'
 import { waiverErrorMessage } from '@/lib/waiver'
 import { usePublicTeam } from '../PublicTeamProvider'
 import type { KioskSession } from './useKioskSessions'
 import { usePublicFormat } from '../usePublicFormat'
+import { callFunction } from '@/lib/callFunction'
 
 const formSchema = z.object({
   name: z.string().min(1).max(120),
@@ -175,7 +174,7 @@ export default function WalkIn({ teamId, sessions, walkInActivityIds }: Props) {
       }
     }
     try {
-      const bookSession = httpsCallable(functions, 'bookSession')
+      const bookSession = callFunction('bookSession')
       await bookSession({
         teamId,
         sessionId: selected.id,

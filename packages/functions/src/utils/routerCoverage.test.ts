@@ -16,10 +16,11 @@
 // environment. It is read as source instead (line endings normalised, comments
 // stripped), and the extractors are checked against synthetic source below.
 //
-// NOT ENFORCED YET, ON PURPOSE: that every callable is routed. Routing moves a
-// domain at a time and an unrouted callable is simply called the way it always
-// was, so full coverage — every `onCall` in exactly one router or on an
-// explicit not-routed list — switches on when the migration is nearly complete.
+// FULL COVERAGE IS ENFORCED: every deployed `onCall` is in exactly one router, or
+// on NOT_ROUTED below with its reason. It was off while routing moved a domain at
+// a time; it is on now that every domain has moved, because from here a new
+// callable that skips its router is a new deployed function — the thing this work
+// exists to stop — and nothing else would say so.
 // docs/functions-consolidation-plan.md → "Phases".
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
@@ -34,6 +35,12 @@ import {
 
 const SRC = join(__dirname, '..')
 const ROUTERS_DIR = join(SRC, 'routers')
+
+/** Callables that deploy as a function of their OWN, on purpose. Each entry
+ *  states why, because "it was easier" is how the count grows back. Empty is the
+ *  expected state: a callable has no event source and nobody outside the repo
+ *  holds its name, so there is rarely a reason. */
+const NOT_ROUTED = new Set<string>([])
 
 const readText = (file: string) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
 
@@ -321,6 +328,39 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
           `${member} is not an \`export const ${member} = onCall(\` in ${exportedFrom}`
         )
       }
+    }
+  })
+
+  it('every DEPLOYED callable is routed, or is deliberately not', () => {
+    const onCalls = new Map<string, string[]>()
+    for (const file of walk(SRC)) {
+      for (const name of onCallNames(readText(file))) {
+        onCalls.set(name, [...(onCalls.get(name) ?? []), fileKey(file)])
+      }
+    }
+    // Deployed = exported from index.ts AND defined as an onCall in the module it
+    // is exported from. (An onCall nobody exports is not a function anywhere.)
+    const deployed = [...indexExports].filter(([name, from]) =>
+      (onCalls.get(name) ?? []).some((file) => definesModule(from, file))
+    )
+    assert.ok(deployed.length > 0, 'found no deployed callable at all — the extractors are broken')
+
+    const unrouted = deployed
+      .map(([name]) => name)
+      .filter((name) => !routedNames.includes(name) && !NOT_ROUTED.has(name))
+    assert.deepEqual(
+      unrouted,
+      [],
+      'a callable that is in no router deploys as a function of its own, which is what this work ' +
+        'exists to stop. Add it to the router for its audience (src/routers) and to CALLABLE_ROUTES, ' +
+        'or to NOT_ROUTED above with the reason.'
+    )
+    for (const name of NOT_ROUTED) {
+      assert.ok(
+        deployed.some(([n]) => n === name),
+        `NOT_ROUTED lists ${name}, which is not a deployed callable — the entry is stale`
+      )
+      assert.ok(!routedNames.includes(name), `${name} is both routed and on NOT_ROUTED`)
     }
   })
 })

@@ -64,8 +64,6 @@
 // printing into a dead end.
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import {
   waiverAcceptancePayload,
@@ -78,6 +76,7 @@ import {
   type WaiverRequirementResponse,
   type WaiverSignerChoice,
 } from '@/lib/waiver'
+import { callFunction } from '@/lib/callFunction'
 
 /** The summary rows the team's public mirror carries. Only its LENGTH is read
  *  here: the mirror is a rendering hint and never a decision (the gate reads the
@@ -208,8 +207,7 @@ export function useWaiverGate({ teamId, requiredWaivers, activityId }: Options):
 
   const call = useCallback(
     async (identity: WaiverCallerIdentity) => {
-      const fn = httpsCallable<Record<string, unknown>, WaiverRequirementResponse>(
-        functions,
+      const fn = callFunction<Record<string, unknown>, WaiverRequirementResponse>(
         'resolveWaiverRequirement'
       )
       const res = await fn({

@@ -3,12 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Route } from 'next'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
 import { signInWithCustomToken } from 'firebase/auth'
 import { Link } from '@/i18n/navigation'
-import { functions } from '@/lib/firebase'
 import { auth } from '@/lib/firebase-auth'
 import { saveContactSession } from '@/lib/contactSession'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * Sign the buyer in from the checkout they just paid for (UX-88).
@@ -86,8 +85,7 @@ export function ClaimCheckoutSession({
     started.current = true
     let cancelled = false
 
-    const claim = httpsCallable<{ checkoutSessionId: string; slug: string }, ClaimResult>(
-      functions,
+    const claim = callFunction<{ checkoutSessionId: string; slug: string }, ClaimResult>(
       'claimCheckoutSession'
     )
 

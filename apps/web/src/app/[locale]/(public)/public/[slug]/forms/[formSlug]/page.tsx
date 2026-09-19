@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { collectionGroup, getDocs, limit, query, where } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -16,6 +15,7 @@ import { FieldInput } from '@/components/forms/FieldInput'
 import { usePublicTeam } from '../../PublicTeamProvider'
 import { useSpaceAuth } from '../../space/SpaceAuthProvider'
 import { PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── Form loader ────────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ function FormView({ formSlug }: { formSlug: string }) {
     }
     setSubmitting(true)
     try {
-      const fn = httpsCallable(functions, 'submitForm')
+      const fn = callFunction('submitForm')
       await fn({ teamId, formId: state.formId, answers })
       setDone(true)
     } catch (err) {

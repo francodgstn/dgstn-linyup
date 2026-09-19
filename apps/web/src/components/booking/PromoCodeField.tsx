@@ -34,11 +34,11 @@
 // for, and why each surface calls it in its checkout catch.
 
 import { useCallback, useState } from 'react'
-import { httpsCallable, type FunctionsError } from 'firebase/functions'
+import { type FunctionsError } from 'firebase/functions'
 import { useTranslations } from 'next-intl'
 import { Loader2, X } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import type { PromoEffect } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** The qualified modifier a surface feeds straight into its ONE
  *  `resolvePaymentOptions(..., { promo })` call, and forwards as `promoCode` at
@@ -339,10 +339,10 @@ export function PromoCodeField({
     setChecking(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; code: string; target: PromoPreviewTarget },
         PreviewResponse
-      >(functions, 'previewPromoCode')
+      >('previewPromoCode')
       const res = await fn({ teamId, code: trimmed, target })
       const data = res.data
       if (!data?.valid) {

@@ -2,9 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
 import { useTranslations } from 'next-intl'
-import { functions } from '@/lib/firebase'
 import {
   callableErrorCode,
   cancelEffectKeys,
@@ -18,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CalendarDays, MapPin, CheckCircle2, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
 import { usePublicFormat } from '../usePublicFormat'
 import { type RegionalFormatter } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 export const dynamic = 'force-dynamic'
 
@@ -127,8 +126,7 @@ export default function ManageBookingPage() {
     setLoading(true)
     setError(null)
     try {
-      const fn = httpsCallable<{ token: string }, { success: boolean } & BookingDetails>(
-        functions,
+      const fn = callFunction<{ token: string }, { success: boolean } & BookingDetails>(
         'getBookingDetails'
       )
       const result = await fn({ token: tok })
@@ -155,7 +153,7 @@ export default function ManageBookingPage() {
     setCancelling(true)
     setCancelFailure(null)
     try {
-      const fn = httpsCallable<{ token: string }, CancelBookingResult>(functions, 'cancelBooking')
+      const fn = callFunction<{ token: string }, CancelBookingResult>('cancelBooking')
       const res = await fn({ token: activeToken })
       // The server reports what it actually gave back; the screen repeats that
       // rather than describing cancellation in general.
@@ -174,10 +172,10 @@ export default function ManageBookingPage() {
     if (!activeToken || !selectedSessionId) return
     setRebooking(true)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { token: string; newSessionId: string },
         { success: boolean; newBookingToken?: string }
-      >(functions, 'rebookSession')
+      >('rebookSession')
       const result = await fn({ token: activeToken, newSessionId: selectedSessionId })
       setRebookDone(true)
       if (result.data.newBookingToken) {

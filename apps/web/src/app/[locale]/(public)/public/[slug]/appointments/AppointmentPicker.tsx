@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { httpsCallable, type FunctionsError } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
+import { type FunctionsError } from 'firebase/functions'
 import {
   resolvePaymentOptions,
   resolveBookingContactFields,
@@ -59,6 +58,7 @@ import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { CalendarClock, MapPin, Video, Clock, User, Check, ChevronRight, Tag } from 'lucide-react'
 import { usePublicFormat } from '../usePublicFormat'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 // Mirrors the listAvailability callable's contract: availability is the ONLY
@@ -1982,10 +1982,10 @@ export default function AppointmentPicker({
       setLoading(true)
       setLoadError(null)
       try {
-        const availFn = httpsCallable<
+        const availFn = callFunction<
           { teamId: string; days?: number; activityId?: string },
           { coaches: AvailCoach[]; settleAtStudio?: boolean }
-        >(functions, 'listAvailability')
+        >('listAvailability')
         const res = await availFn({
           teamId,
           days: 60,
@@ -2261,7 +2261,7 @@ export default function AppointmentPicker({
               backLabel={t('back')}
               onExit={backFromBook}
               book={(args) =>
-                httpsCallable(functions, 'bookAppointment')({
+                callFunction('bookAppointment')({
                   teamId,
                   providerId: windowBooking.providerId,
                   activityId: windowBooking.activityId,
@@ -2271,8 +2271,7 @@ export default function AppointmentPicker({
                 }).then(() => undefined)
               }
               checkout={(args) =>
-                httpsCallable<Record<string, unknown>, { url?: string; amount?: number }>(
-                  functions,
+                callFunction<Record<string, unknown>, { url?: string; amount?: number }>(
                   'createAppointmentCheckout'
                 )({
                   teamId,

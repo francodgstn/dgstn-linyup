@@ -11,11 +11,11 @@
 
 import { useEffect, useState } from 'react'
 import { collectionGroup, query, where, getDocs, Timestamp } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import {  browseDurationMinutes, mergeAvailabilitySlots, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import type { KioskSession } from './useKioskSessions'
+import { callFunction } from '@/lib/callFunction'
 
 interface AvailCoachLite {
   providerId: string
@@ -68,8 +68,7 @@ export function useKioskAvailability(teamId: string, enabled: boolean, days = 7)
       )
       if (!alive || offerings.empty) return
 
-      const fn = httpsCallable<{ teamId: string; days?: number }, { coaches: AvailCoachLite[] }>(
-        functions,
+      const fn = callFunction<{ teamId: string; days?: number }, { coaches: AvailCoachLite[] }>(
         'listAvailability'
       )
       const res = await fn({ teamId, days })

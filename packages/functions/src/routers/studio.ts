@@ -24,6 +24,9 @@
 // none. This module must NOT call `setGlobalOptions` — src/index.ts owns it.
 
 import { callableRouter } from '../utils/callableRouter'
+import { acceptTeamInvitation } from '../teams/acceptTeamInvitation'
+import { createTeam } from '../teams/createTeam'
+import { getTeamInvitationDetails } from '../teams/getTeamInvitationDetails'
 import {
   approveAffiliation,
   removeAffiliation,
@@ -118,6 +121,9 @@ export const rpcStudio = callableRouter(
     concurrency: 40,
   },
   {
+    createTeam,
+    acceptTeamInvitation,
+    getTeamInvitationDetails,
     approveAffiliation,
     removeAffiliation,
     renewAffiliation,
