@@ -7,16 +7,6 @@ lastUpdated: 13 September 2026
 
 # 2. Privacy Policy (Datenschutzerklärung / Politique de confidentialité)
 
-> Written to satisfy both the Swiss revFADP (nDSG) and the EU GDPR. It covers
-> Linyup acting as the **controller** for website visitors and Customers.
-> Where a studio uploads its own contacts into the product, Linyup acts as a
-> **processor** on the studio's behalf; that relationship is governed by a
-> separate [Data Processing Agreement](/dpa), not by this policy.
->
-> If you are a **member** signing into the Linyup app because your studio
-> invited you, start at [Section 2.10](#210-the-linyup-member-app) — it is
-> written for you.
-
 ## 2.1 Who is responsible
 
 The controller responsible for processing personal data described here is:
