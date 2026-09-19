@@ -36,8 +36,7 @@ These are optional and don't count towards your progress.
 - **Set up an automation**, for example a follow-up after a first trial.
 - **Check your payments page.**
 - **Invite your coaches.** Available on the Studio plan and above. See [Team & roles](/studio/team/).
-- **Star a favourite** in How-to, to keep a guide you use often close at hand.
 
 :::note[Closed the checklist?]
-You can bring it back any time: open **How-to** and use **Show it on the dashboard again** on the Setup checklist card.
+You can bring it back any time: open the menu under your name at the bottom of the sidebar and choose **Get set up**.
 :::

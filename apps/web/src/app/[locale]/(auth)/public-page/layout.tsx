@@ -13,8 +13,8 @@
 // rather than a small section, which is exactly what it is.
 //
 // So the group is gone and the shell applies to both. The routes are unchanged
-// — /public-page and /public-page/space are bookmarked, linked from the main nav
-// and named in How-to — which is the property the route group was protecting and
+// — /public-page and /public-page/space are bookmarked and linked from the main
+// nav — which is the property the route group was protecting and
 // this keeps for free: a layout adds no path segment either.
 //
 // /public-page/shop was a third section here until 2026-09-01. It wrote nothing
