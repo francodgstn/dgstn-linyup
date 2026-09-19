@@ -503,8 +503,11 @@ and its `functions:ready` gate were green):
 - The signed-in check with a real ID token. The script does it when `ROUTER_SPIKE_EMAIL`
   and `ROUTER_SPIKE_PASSWORD` are set, and skips it otherwise. The emulator run proved
   it with a contact-session token.
-- A true cold start. The first requests after the deploy were not one: the deploy's own
-  health check had already started an instance.
+
+**Cold start, measured on staging 2026-09-19** after 25 idle minutes, one call each: routed
+3.97s, direct 3.69s; warm, 111ms and 101ms. A router starts no slower than the callable it
+serves, which is what loading the same bundle predicts. It is one sample per side, so read
+it as "the same", not as a 0.3s difference.
 
 **App Check cannot be exercised on a deployed project today.** `APP_CHECK_ENFORCE` and
 `APP_CHECK_ENFORCE_MOBILE` are `false` in every environment, so nothing is refused for
@@ -533,10 +536,15 @@ environment that turns the flag on.
   - The router's 5xx rate is no worse than the alias services had before.
   - The alias services' request_count falls to zero once the admin rollout is live.
 - **Rollback:** flip the route-table entries back.
-- **Built 2026-09-19, not yet deployed.** `node scripts/router-spike.mjs --target emulator
+- **On staging since 2026-09-19.** `node scripts/router-spike.mjs --target linyup-staging
   --routers rpcOps` calls every member signed out, direct and routed, and requires the
-  same refusal both ways; it passes. Run the same command with `--target linyup-staging`
-  once it is deployed, then click through the console.
+  same refusal both ways; it passes there and on the emulator. The deployed service is as
+  written: concurrency 10, 1 cpu, 512Mi, max 3 instances, 540s.
+- **Still owed before production:** a click-through of the operator console on staging
+  with the console itself routing (demo tenant, review access, fee-rate resync, notice
+  preview). The staging deploy workflow has no step for the console — only the production
+  one does — so the console routes once its App Hosting backend has rolled out, and keeps
+  working on the standalone names until then.
 
 ### Phase 2: staff web domains (~1–2 days each)
 - Order: `rpcFinance`, `rpcBilling`, `rpcOrg`, `rpcHeavy`, `rpcStudio`.
