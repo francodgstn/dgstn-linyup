@@ -91,17 +91,17 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
 Output of `pnpm functions:inventory --md`. It includes the routers built so far (`rpcSpike`, the throwaway
-Phase 0 one, `rpcOps`, the pilot, and `rpcFinance`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
+Phase 0 one, `rpcOps`, the pilot, `rpcFinance` and `rpcBilling`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**300 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T21:05Z. Global options: region=europe-west6, maxInstances=20.
+**301 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T21:49Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
 | `callable` | 215 |
-| `https` | 13 |
+| `https` | 14 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
 | `firestore.updated` | 2 |
@@ -141,10 +141,10 @@ binds a secret and none sets a service account.
 | `affiliations` | 4 |  |  |  |  |  |  |  |  |  | 4 |
 | `coaching` |  |  |  | 1 |  | 3 |  |  |  |  | 4 |
 | `referrals` | 4 |  |  |  |  |  |  |  |  |  | 4 |
+| `routers` |  | 4 |  |  |  |  |  |  |  |  | 4 |
 | `appstores` | 1 | 1 |  |  |  |  |  | 1 |  |  | 3 |
 | `domains` | 3 |  |  |  |  |  |  |  |  |  | 3 |
 | `plugins` | 1 |  |  |  |  | 2 |  |  |  |  | 3 |
-| `routers` |  | 3 |  |  |  |  |  |  |  |  | 3 |
 | `aiInsights` | 1 |  |  |  |  |  |  |  | 1 |  | 2 |
 | `billing` |  | 2 |  |  |  |  |  |  |  |  | 2 |
 | `finance` | 1 |  |  |  |  |  |  | 1 |  |  | 2 |
@@ -160,7 +160,7 @@ binds a secret and none sets a service account.
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **13** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **300** |
+| **Total** | **215** | **14** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **301** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -197,6 +197,7 @@ binds a secret and none sets a service account.
 | `sendOutreachEmail` | `outreach` | callable | `memory=512` `timeout=540` |
 | `onOrgBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
 | `onTeamBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
+| `rpcBilling` | `routers` | https | `cpu=1` `concurrency=40` |
 | `rpcFinance` | `routers` | https | `memory=512` `timeout=120` `cpu=1` `concurrency=40` |
 | `rpcOps` | `routers` | https | `memory=512` `timeout=540` `cpu=1` `concurrency=10` `maxInstances=3` |
 | `rpcSpike` | `routers` | https | `memory=512` `timeout=60` `cpu=1` `concurrency=40` |
@@ -558,13 +559,22 @@ environment that turns the flag on.
   `rebuildAccountingLedger` and `startTarif595BulkIssue` (minutes-long, so `rpcHeavy`)
   and `listMyTarif595Receipts` (the member's own copy, so `rpcMember`). The manual-payment
   and refund callables in `apps/web/src/hooks/useConnect.ts` join it in a later step.
+- **`rpcFinance` is on staging since 2026-09-19**, deployed as written, and
+  `node scripts/router-spike.mjs --target linyup-staging --routers rpcFinance` passes.
+  Owed: a signed-in click through the finance screens there (a month's CSV export, an
+  invoice PDF, a Tarif 595 preview) — the one path the spike cannot take.
+- **`rpcBilling` built 2026-09-19** (`packages/functions/src/routers/billing.ts`): what
+  a studio or an organisation pays Linyup. Team and org callables sit together because
+  `apps/web/src/hooks/useSaasBilling.ts` treats them as one flow; each keeps its own
+  authorisation. That hook still picks the name from the billing scope, so its names
+  reach `callFunction` through a variable and the client-names recipe in §2.1 does not
+  see them — read the hook.
 - **Web builds its callables at module load** (`export const callX = …` in the plugin
   hooks), and those modules are also loaded on the server while Next prerenders. So
   `apps/web/src/lib/callFunction.ts` builds a routed URL lazily, on first call: building
   it at import would read the emulator host with no `window`, and throw on a build whose
   env has no project id.
-- Migrate `apps/web/src/hooks/useSaasBilling.ts` and
-  `apps/web/src/hooks/usePromoCodes.ts` to literal `callFunction` names here.
+- `apps/web/src/hooks/usePromoCodes.ts` moves with `rpcCheckout` in Phase 3.
 
 ### Phase 3: public and member web (~2 days + 1 week soak)
 - `rpcCheckout`, then `rpcMember`, web side only. This is the hot path.

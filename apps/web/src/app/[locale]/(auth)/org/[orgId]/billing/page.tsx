@@ -4,8 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useParams, useSearchParams } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
-import { functions, db } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { useOrg } from '@/contexts/OrgContext'
 import { useQuery } from '@tanstack/react-query'
@@ -38,6 +37,7 @@ import {
   useOpenBillingPortal,
   useReactivateSaasSubscription,
 } from '@/hooks/useSaasBilling'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ function InvoicesSection({
       // getOrgInvoices, not getSaasInvoices: the latter guards on team ownership,
       // so an org id put through it was refused and this list rendered as
       // "No invoices yet" — a wrong answer with no way to see through it (UX-75).
-      const fn = httpsCallable<{ orgId: string }, { invoices: Invoice[] }>(functions, 'getOrgInvoices')
+      const fn = callFunction<{ orgId: string }, { invoices: Invoice[] }>('getOrgInvoices')
       const result = await fn({ orgId })
       return result.data.invoices
     },
