@@ -1949,7 +1949,8 @@
     "accessMoreOptionsLabel": "Altre opzioni",
     "accessMoreOptionsHint": "Limitare questa lezione a chi si è registrato da te",
     "accessSignupOnly": "Solo chi si è registrato da te",
-    "accessSignupOnlyHint": "I visitatori non possono prenotare, nemmeno pagando. La lezione di prova resta possibile."
+    "accessSignupOnlyHint": "I visitatori non possono prenotare, nemmeno pagando. La lezione di prova resta possibile.",
+    "waitlistExperimental": "Sperimentale"
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",

@@ -25,6 +25,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { FormSection, FormSections, SettingRow, SettingRows } from '@/components/offer/FormLayout'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { ACTIVITIES_COLLECTION, resolveAutoConfirm } from '@linyup/shared'
@@ -861,7 +862,21 @@ export function ActivityDialog({
               {type === 'class' && (waitlistOffered || editing?.waitlistEnabled === true) && (
                 <SettingRow
                   htmlFor={`${rowId}-wait`}
-                  label={t('waitlistEnabledLabel')}
+                  // The waitlist is switched on for the whole studio in Settings →
+                  // Experimental; this chip says so where a studio actually meets
+                  // it, on each class. Same chip as a Beta plugin's, so "not
+                  // settled yet" reads the same everywhere in the app.
+                  label={
+                    <span className="inline-flex items-center gap-2">
+                      {t('waitlistEnabledLabel')}
+                      <Badge
+                        variant="secondary"
+                        className="border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300"
+                      >
+                        {t('waitlistExperimental')}
+                      </Badge>
+                    </span>
+                  }
                   hint={t('waitlistEnabledHint')}
                   control={
                     <Controller

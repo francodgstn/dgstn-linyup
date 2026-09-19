@@ -1949,7 +1949,8 @@
     "accessMoreOptionsLabel": "More options",
     "accessMoreOptionsHint": "Limit this class to people who signed up with you",
     "accessSignupOnly": "Only people who signed up with you",
-    "accessSignupOnlyHint": "Visitors can't book, even paying. Newcomers can still take a trial class."
+    "accessSignupOnlyHint": "Visitors can't book, even paying. Newcomers can still take a trial class.",
+    "waitlistExperimental": "Experimental"
   },
   "Benefit": {
     "fieldLabel": "Member benefit",
