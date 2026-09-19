@@ -50,6 +50,26 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   resyncTenantFeeRate: 'rpcOps',
   previewPlatformNotice: 'rpcOps',
   sendPlatformNotice: 'rpcOps',
+
+  // The finance desk: journal, monthly export, QR invoices, Tarif 595. Staff-only,
+  // called by apps/web. The long jobs and the member's own receipt list are not
+  // here — packages/functions/src/routers/finance.ts says why.
+  exportFinanceReport: 'rpcFinance',
+  createManualEntry: 'rpcFinance',
+  reverseEntry: 'rpcFinance',
+  closeFiscalYear: 'rpcFinance',
+  setChartTemplate: 'rpcFinance',
+  createInvoice: 'rpcFinance',
+  voidInvoice: 'rpcFinance',
+  downloadInvoice: 'rpcFinance',
+  emailInvoice: 'rpcFinance',
+  markInvoicePaid: 'rpcFinance',
+  previewTarif595Receipt: 'rpcFinance',
+  issueTarif595Receipt: 'rpcFinance',
+  voidTarif595Receipt: 'rpcFinance',
+  downloadTarif595Receipt: 'rpcFinance',
+  emailTarif595Receipt: 'rpcFinance',
+  suggestTarif595Mappings: 'rpcFinance',
 }
 
 export function routerForCallable(name: string): RouterName | null {

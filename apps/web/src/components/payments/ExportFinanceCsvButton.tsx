@@ -7,11 +7,10 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
 import { Download, Loader2 } from 'lucide-react'
 import { monthKey } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
+import { callFunction } from '@/lib/callFunction'
 import {
   Select,
   SelectContent,
@@ -48,8 +47,7 @@ export function ExportFinanceCsvButton({ teamId }: { teamId: string }) {
     setBusy(true)
     setError(null)
     try {
-      const call = httpsCallable<{ teamId: string; month: string }, ExportResult>(
-        functions,
+      const call = callFunction<{ teamId: string; month: string }, ExportResult>(
         'exportFinanceReport'
       )
       const { data } = await call({ teamId, month })

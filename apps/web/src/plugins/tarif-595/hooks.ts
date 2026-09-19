@@ -51,6 +51,7 @@ import {
   type Tarif595VoidRequest,
 } from '@linyup/shared'
 import { db, functions } from '@/lib/firebase'
+import { callFunction } from '@/lib/callFunction'
 import { usePagedQuery } from '@/hooks/usePagedQuery'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -221,36 +222,18 @@ export function useInvalidateTarif595(teamId: string | null) {
 
 // ─── Callables ────────────────────────────────────────────────────────────────
 
-export const callPreviewTarif595Receipt = httpsCallable<Tarif595ReceiptRequest, Tarif595PreviewResult>(
-  functions,
-  'previewTarif595Receipt'
-)
-export const callIssueTarif595Receipt = httpsCallable<Tarif595IssueRequest, Tarif595IssueResult>(
-  functions,
-  'issueTarif595Receipt'
-)
-export const callVoidTarif595Receipt = httpsCallable<Tarif595VoidRequest, { receiptId: string; status: 'voided' }>(
-  functions,
-  'voidTarif595Receipt'
-)
-export const callDownloadTarif595Receipt = httpsCallable<Tarif595DownloadRequest, Tarif595DownloadResult>(
-  functions,
-  'downloadTarif595Receipt'
-)
-export const callEmailTarif595Receipt = httpsCallable<Tarif595EmailRequest, Tarif595EmailResult>(
-  functions,
-  'emailTarif595Receipt'
-)
+export const callPreviewTarif595Receipt = callFunction<Tarif595ReceiptRequest, Tarif595PreviewResult>('previewTarif595Receipt')
+export const callIssueTarif595Receipt = callFunction<Tarif595IssueRequest, Tarif595IssueResult>('issueTarif595Receipt')
+export const callVoidTarif595Receipt = callFunction<Tarif595VoidRequest, { receiptId: string; status: 'voided' }>('voidTarif595Receipt')
+export const callDownloadTarif595Receipt = callFunction<Tarif595DownloadRequest, Tarif595DownloadResult>('downloadTarif595Receipt')
+export const callEmailTarif595Receipt = callFunction<Tarif595EmailRequest, Tarif595EmailResult>('emailTarif595Receipt')
 export const callStartTarif595BulkIssue = httpsCallable<Tarif595BulkRequest, Tarif595BulkResult>(
   functions,
   'startTarif595BulkIssue'
 )
 /** A proposal of the offering → position map; the settings page marks the
  *  rows it fills as suggested and saves nothing until the manager does. */
-export const callSuggestTarif595Mappings = httpsCallable<Tarif595SuggestRequest, Tarif595SuggestResult>(
-  functions,
-  'suggestTarif595Mappings'
-)
+export const callSuggestTarif595Mappings = callFunction<Tarif595SuggestRequest, Tarif595SuggestResult>('suggestTarif595Mappings')
 
 /** Turn a download result into a browser download (the ExportFinanceCsvButton shape). */
 export function saveDownloadedFile(result: Tarif595DownloadResult): void {

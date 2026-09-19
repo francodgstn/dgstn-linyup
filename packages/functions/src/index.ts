@@ -597,6 +597,7 @@ export {
 // utils/frozenFunctions.test.ts.
 export { rpcSpike } from './routers/spike'
 export { rpcOps } from './routers/ops'
+export { rpcFinance } from './routers/finance'
 
 // --- Stubs (TODO: port from hmd-lineup) ---
 // export { generateDashboardInsight } from './analytics'
