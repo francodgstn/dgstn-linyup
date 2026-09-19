@@ -24,9 +24,9 @@ export const rpcOps = callableRouter(
     // to 540s, and the rebuild asks for 512MiB.
     timeoutSeconds: 540,
     memory: '512MiB',
-    // Explicit, or a function this small defaults to a fractional CPU, which
-    // pins concurrency to 1 (routers/spike.ts has the long version). A handful
-    // of operators is the whole audience, so both numbers stay small.
+    // A router's ceiling is concurrency × maxInstances for its WHOLE domain, so
+    // it is sized on purpose. A handful of operators is the whole audience
+    // here, so both numbers stay small.
     cpu: 1,
     concurrency: 10,
     maxInstances: 3,

@@ -26,12 +26,11 @@ import { getMyBookings } from '../booking/myBookings'
 export const rpcSpike = callableRouter(
   'rpcSpike',
   {
-    // `cpu` and `concurrency` are explicit because the default is a trap for a
-    // router in particular: a function this small defaults to cpu 'gcf_gen1',
-    // a fractional CPU, and a fractional CPU pins concurrency to 1 — so a
-    // router left on the defaults would serve a whole domain's callables one
-    // request at a time per instance. Forty matches `api`. Confirm both on the
-    // deployed service with `gcloud run services describe`.
+    // `cpu` and `concurrency` are stated rather than inherited because a router
+    // carries a whole domain, so its ceiling (concurrency × maxInstances) is a
+    // sizing decision somebody should be able to read here. It is not a rescue
+    // from a bad default: a plain callable already deploys at 1 cpu and
+    // concurrency 80. Forty matches `api`.
     cpu: 1,
     concurrency: 40,
     // The ROUTER's memory and timeout govern; a member's own are ignored when
