@@ -489,6 +489,7 @@
   "footer": {
     "tagline": "The modern management tool for coaches and studios.",
     "links": {
+      "help": "Help centre",
       "privacy": "Privacy",
       "terms": "Terms",
       "dpa": "Data processing",

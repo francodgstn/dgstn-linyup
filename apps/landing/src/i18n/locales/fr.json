@@ -489,6 +489,7 @@
   "footer": {
     "tagline": "L'outil de gestion moderne pour coaches et studios.",
     "links": {
+      "help": "Centre d'aide",
       "privacy": "Confidentialité",
       "terms": "CGU",
       "dpa": "Traitement des données",
