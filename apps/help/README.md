@@ -1,4 +1,4 @@
-# @linyup/help — public docs (docs.linyup.com)
+# @linyup/help — public docs (help.linyup.com)
 
 Public product documentation for studio owners, coaches and developers. Starlight, static.
 **Not** the internal `apps/docs` (engineering docs, local only) — nothing here may link to or
@@ -39,7 +39,7 @@ A static Firebase Hosting target, the same pattern as `landing` / `api`:
   `.firebaserc`.
 - **Deploy**: `deploy.yml` (staging, on push to `main`) and `deploy-prod.yml` (prod, on a `v*`
   tag) build it and ship `hosting:help`. `verify.yml` checks and builds it on every PR.
-- **Domain**: `docs.linyup.com` (prod), `docs-stg.linyup.com` (staging). Added as a custom
+- **Domain**: `help.linyup.com` (prod), `help-stg.linyup.com` (staging). Added as a custom
   domain on the Hosting site, with a **DNS-only** (grey-cloud) record in Cloudflare — never
   proxied, see `infra/README.md`.
 

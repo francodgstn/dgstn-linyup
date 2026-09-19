@@ -63,7 +63,7 @@ resource "google_firebase_hosting_site" "api" {
 }
 
 # The public product docs site (apps/help -> Hosting target `help`,
-# docs.linyup.com). Optional like `api`: sandbox has none. Its custom domain
+# help.linyup.com). Optional like `api`: sandbox has none. Its custom domain
 # stays out of Terraform with the others.
 resource "google_firebase_hosting_site" "help" {
   count    = var.help_site_id == null ? 0 : 1

@@ -12,7 +12,7 @@
     "  to the gen2 `api` function. Mapped in every environment; the deploy workflows",
     "  name it explicitly (hosting:api) alongside hosting:landing. The obvious name",
     "  linyup-staging-api is gone: a deleted site ID is reserved forever.",
-    "- `help`: apps/help, the public product docs (docs.linyup.com, docs-stg.linyup.com",
+    "- `help`: apps/help, the public product docs (help.linyup.com, help-stg.linyup.com",
     "  on staging). Staging and prod only; sandbox has none.",
     "",
     "There used to be an `app` target here too, pointing at the {project} sites",

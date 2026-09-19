@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
-// PUBLIC product documentation — docs.linyup.com. The opposite of apps/docs
+// PUBLIC product documentation — help.linyup.com. The opposite of apps/docs
 // (internal, never deployed): everything under src/content/docs/ is meant to be
 // read by studios and integrators. Never import or link from the repo's docs/.
 //
@@ -10,7 +10,7 @@ import starlight from '@astrojs/starlight'
 // never reach the public site.
 
 export default defineConfig({
-  site: 'https://docs.linyup.com',
+  site: 'https://help.linyup.com',
   output: 'static',
   integrations: [
     starlight({

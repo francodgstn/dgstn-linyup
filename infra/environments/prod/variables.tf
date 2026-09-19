@@ -72,7 +72,7 @@ variable "api_site_id" {
 
 variable "help_site_id" {
   type        = string
-  description = "Hosting site ID for the public product docs, apps/help (custom domain docs.linyup.com)."
+  description = "Hosting site ID for the public product docs, apps/help (custom domain help.linyup.com)."
   default     = "linyup-help-prod"
 }
 

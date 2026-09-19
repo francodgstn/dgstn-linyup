@@ -302,7 +302,7 @@ jobs:
       - name: Build
         run: pnpm --filter @linyup/docs run build
 
-  # The PUBLIC docs site (docs.linyup.com), deployed by deploy.yml and
+  # The PUBLIC docs site (help.linyup.com), deployed by deploy.yml and
   # deploy-prod.yml as hosting:help. `astro check` first: its content schema is
   # what keeps a mistyped frontmatter key from building quietly.
   build-help:
