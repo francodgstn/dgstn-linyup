@@ -5,11 +5,6 @@ description: The agreement between Linyup and the businesses that use it.
 lastUpdated: 29 August 2026
 ---
 
-> **DRAFT — NOT YET REVIEWED BY A LAWYER.** This text is a starting point
-> prepared from how the product actually works, not legal advice, and it has not
-> been reviewed. Do not rely on it, and remove this notice only once a qualified
-> lawyer has reviewed and approved the wording.
-
 # 3. Terms of Service
 
 ## 3.1 Who this agreement is between

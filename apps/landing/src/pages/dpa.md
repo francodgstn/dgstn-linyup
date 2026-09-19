@@ -5,13 +5,6 @@ description: How Linyup processes personal data on behalf of its customers.
 lastUpdated: 13 September 2026
 ---
 
-> **DRAFT — NOT YET REVIEWED BY A LAWYER.** This text is a starting point
-> prepared from how the product actually works, not legal advice, and it has not
-> been reviewed. Do not rely on it, and remove this notice only once a qualified
-> lawyer has reviewed and approved the wording. In particular, the Art. 28 GDPR
-> and FADP wording, the sub-processor notice period and the return-and-deletion
-> commitments need checking against what we can actually deliver.
-
 # 4. Data Processing Agreement
 
 This agreement forms part of the [Terms of Service](/terms) and applies whenever
