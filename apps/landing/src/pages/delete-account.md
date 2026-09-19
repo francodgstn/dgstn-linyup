@@ -49,7 +49,7 @@ is left cannot be traced back to you.
 If you want your studio to erase something beyond this, ask the studio directly.
 Your studio decides what it records about you and is the **controller** of that
 data; Linyup runs the software on its behalf as its **processor**. Our
-[Privacy Policy](/privacy) explains this split, and Section 2.6 sets out the
+[Privacy Policy](/privacy) explains this split, and its Section 6 sets out the
 rights you can exercise against the controller.
 
 ## Deleting a studio account instead

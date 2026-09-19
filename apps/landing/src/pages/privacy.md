@@ -5,9 +5,24 @@ description: How Linyup processes personal data for website visitors, customers,
 lastUpdated: 13 September 2026
 ---
 
-# 2. Privacy Policy (Datenschutzerklärung / Politique de confidentialité)
+# Privacy Policy (Datenschutzerklärung / Politique de confidentialité)
 
-## 2.1 Who is responsible
+## At a glance
+
+A summary of the sections below. The sections themselves are what applies.
+
+| What we do | What data | Legal basis | How long we keep it |
+|---|---|---|---|
+| Deliver and secure the website | IP address, browser and device, page and time of access | Legitimate interest (GDPR Art. 6(1)(f); FADP Art. 31) | Up to 30 days |
+| Answer your enquiry or sign-up | What you enter: name, email, studio, message | Steps you ask for before a contract, and/or consent (GDPR Art. 6(1)(b), (a)) | Until your request is handled, or until you ask us to delete it |
+| Provide Linyup to Customers | Account, profile, billing and usage data | Performance of the contract (GDPR Art. 6(1)(b)) | For the contract, then as long as legal retention requires (generally 10 years for accounting records) |
+| Payments | Transaction details from Stripe (status, amount, reference), never card details | Performance of the contract (GDPR Art. 6(1)(b)) | As billing data above |
+| Product news by email | Name and email address | Consent, withdrawable at any time (GDPR Art. 6(1)(a)) | See [section 5](#5-how-long-we-keep-data) |
+| Website analytics | Usage of the website, only if you accept | Consent, withdrawable at any time (GDPR Art. 6(1)(a); FADP) | See [section 5](#5-how-long-we-keep-data) |
+| App analytics, for Customers | Usage of the app; you can opt out in the app | Legitimate interest (GDPR Art. 6(1)(f); FADP Art. 31) | See [section 5](#5-how-long-we-keep-data) |
+| A studio's own contacts | Whatever the studio records about its members | The studio is the controller and decides; we process on its behalf | As the studio decides; see [section 9](#9-data-you-upload-as-a-customer-contacts) and the [Data Processing Agreement](/dpa) |
+
+## 1. Who is responsible
 
 The controller responsible for processing personal data described here is:
 
@@ -17,7 +32,7 @@ Email: hello@linyup.com
 
 For Customers and visitors in the EU/EEA, this controller processes personal data in connection with offering its service in those markets.
 
-## 2.2 What data we collect and why
+## 2. What data we collect and why
 
 **a) When you visit the website**
 
@@ -41,7 +56,7 @@ To provide the service we process account and profile data (name, email, languag
 
 **d) Payments**
 
-Payments are processed by Stripe. Card and payment details are entered directly with Stripe and are not stored by us; we receive limited transaction metadata (such as status, amount, and a reference). See Section 2.4.
+Payments are processed by Stripe. Card and payment details are entered directly with Stripe and are not stored by us; we receive limited transaction metadata (such as status, amount, and a reference). See Section 4.
 
 *Legal basis:* performance of the contract (GDPR Art. 6(1)(b)).
 
@@ -51,7 +66,7 @@ If you opt in, we may send you product news through our email provider. You can 
 
 *Legal basis:* consent (GDPR Art. 6(1)(a)); withdrawable at any time.
 
-## 2.3 Cookies and analytics
+## 3. Cookies and analytics
 
 We use **PostHog** for product analytics — to understand which pages and features visitors engage with (for example, expanding the pricing comparison or opening a feature detail) so we can improve the site. We do not use advertising cookies, advertising pixels, or cross-site tracking, and session recording is switched off.
 
@@ -63,9 +78,9 @@ We use **PostHog** for product analytics — to understand which pages and featu
 
 For two strictly functional purposes we use your browser's local storage: to remember your light or dark theme preference, and to remember your analytics-consent choice. These are essential to honour your own settings, are kept only on your device, hold no personal data, and are not shared — so no separate consent is needed for them.
 
-To display the site, your browser loads some resources from third-party content-delivery networks — web fonts from Google Fonts (Google) and interface icons from unpkg. Fetching those files makes your IP address and browser information visible to those providers; we do not use this to track you. When you submit an email form, the address you enter is sent to Google Firestore to record your request (see Sections 2.2 and 2.4).
+To display the site, your browser loads some resources from third-party content-delivery networks — web fonts from Google Fonts (Google) and interface icons from unpkg. Fetching those files makes your IP address and browser information visible to those providers; we do not use this to track you. When you submit an email form, the address you enter is sent to Google Firestore to record your request (see Sections 2 and 4).
 
-## 2.4 Service providers and recipients
+## 4. Service providers and recipients
 
 We use carefully selected providers who process data on our behalf under contract. We do not sell personal data.
 
@@ -78,16 +93,16 @@ We use carefully selected providers who process data on our behalf under contrac
 
 Our application infrastructure runs in Google's europe-west6 (Zurich, Switzerland) region and our email provider is in France (EU), so most processing stays within Switzerland and the EU/EEA. Some providers may process data outside Switzerland and the EU/EEA (for example in the United States). Where this happens, transfers are protected by recognized safeguards such as the EU and Swiss Standard Contractual Clauses and, where applicable, an adequacy mechanism such as the EU-U.S. / Swiss-U.S. Data Privacy Framework.
 
-## 2.5 How long we keep data
+## 5. How long we keep data
 
 We keep personal data only as long as needed for the purposes above or as required by law.
 
 - Website logs: up to 30 days (Google Cloud's default log retention).
 - Contact and waitlist data: until your request is handled, or until you ask us to delete it.
 - Customer account and billing data: for the duration of the contract and for as long as legal retention duties (for example Swiss accounting law, generally 10 years for accounting records) require.
-- Documents a Customer issues through Linyup to its own contacts — health-insurance reimbursement receipts (Tarif 595) and invoices — are accounting records of the Customer and are kept for as long as the Customer's own retention duties require (generally 10 years); see Sections 2.9 and 2.10.
+- Documents a Customer issues through Linyup to its own contacts — health-insurance reimbursement receipts (Tarif 595) and invoices — are accounting records of the Customer and are kept for as long as the Customer's own retention duties require (generally 10 years); see Sections 9 and 10.
 
-## 2.6 Your rights
+## 6. Your rights
 
 Depending on the law that applies to you (Swiss FADP and/or EU GDPR), you have the right to:
 
@@ -103,15 +118,15 @@ To exercise any of these, email hello@linyup.com. You also have the right to lod
 - in Switzerland, with the Federal Data Protection and Information Commissioner (FDPIC / EDÖB), edoeb.admin.ch;
 - in the EU/EEA, with your local data-protection supervisory authority.
 
-## 2.7 Data security
+## 7. Data security
 
 We use appropriate technical and organizational measures to protect personal data against loss, misuse, and unauthorized access, including encryption in transit and access controls. No method of transmission over the internet is fully secure, so we cannot guarantee absolute security.
 
-## 2.8 Children
+## 8. Children
 
-The service is intended for businesses (coaches and studios), not for use by children directly. Where a studio stores data about minors among its contacts, the studio is responsible for the lawful basis for doing so, including any guardian consent. See Section 2.9.
+The service is intended for businesses (coaches and studios), not for use by children directly. Where a studio stores data about minors among its contacts, the studio is responsible for the lawful basis for doing so, including any guardian consent. See Section 9.
 
-## 2.9 Data you upload as a Customer (contacts)
+## 9. Data you upload as a Customer (contacts)
 
 When you use Linyup to manage your own people (your "contacts," such as your members, students, or clients), you remain the controller of that data and Linyup acts as your processor. This means:
 
@@ -119,9 +134,9 @@ When you use Linyup to manage your own people (your "contacts," such as your mem
 - we process that data only on your documented instructions, as set out in our [Data Processing Agreement](/dpa);
 - where you store data about minors, you are responsible for any required guardian consent.
 
-**Health-insurance receipts and invoices (Switzerland).** If you enable the Tarif 595 plugin to issue reimbursement receipts (Rückforderungsbelege) for your members' supplementary insurers, you may record, per contact, their **AHV social security number**, their health insurer and their insured number, because the Swiss XML 5.0 invoice standard and the insurers' guidance require them on the receipt. This is your decision as controller: you are responsible for the lawful basis for collecting the AHV number and for telling your members why you hold it. Linyup keeps these values in a record that only your managers and owners can read — never in the member's profile as shown in the member app, and never on any public page — and prints them only on the receipts you issue. A receipt or invoice, once issued, is a frozen document with the details printed on it; it is kept as your accounting record, can be downloaded by your managers, and is sent to the member as a PDF attachment by email through Brevo (Section 2.4) when you choose to send it.
+**Health-insurance receipts and invoices (Switzerland).** If you enable the Tarif 595 plugin to issue reimbursement receipts (Rückforderungsbelege) for your members' supplementary insurers, you may record, per contact, their **AHV social security number**, their health insurer and their insured number, because the Swiss XML 5.0 invoice standard and the insurers' guidance require them on the receipt. This is your decision as controller: you are responsible for the lawful basis for collecting the AHV number and for telling your members why you hold it. Linyup keeps these values in a record that only your managers and owners can read — never in the member's profile as shown in the member app, and never on any public page — and prints them only on the receipts you issue. A receipt or invoice, once issued, is a frozen document with the details printed on it; it is kept as your accounting record, can be downloaded by your managers, and is sent to the member as a PDF attachment by email through Brevo (Section 4) when you choose to send it.
 
-## 2.10 The Linyup member app
+## 10. The Linyup member app
 
 This section is for **members**: the students, clients and athletes who sign
 into the Linyup app because a studio, coach or club invited them.
@@ -131,8 +146,8 @@ because your studio put you there — it decides what to record about you and
 why, which makes it the **controller**. Linyup runs the software on the
 studio's behalf as its **processor**, under our [Data Processing
 Agreement](/dpa). So a question about *why* your studio holds something, or a
-request to correct it, goes to your studio first. Section 2.6 sets out your
-rights and Section 2.4 who else may see the data.
+request to correct it, goes to your studio first. Section 6 sets out your
+rights and Section 4 who else may see the data.
 
 **Signing in.** The app has no password. You enter your email address, we
 email you a six-digit code, and entering it opens a session on your device
@@ -196,8 +211,8 @@ want your studio to erase something beyond this, ask the studio directly — as
 controller, that is its decision to make.
 
 **Children.** Where a studio records data about minors, the studio is
-responsible for any guardian consent (Sections 2.8 and 2.9).
+responsible for any guardian consent (Sections 8 and 9).
 
-## 2.11 Changes
+## 11. Changes
 
 We may update this policy as the service evolves. The current version is always available at linyup.com, with the date of the last update shown below.

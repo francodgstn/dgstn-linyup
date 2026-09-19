@@ -125,12 +125,25 @@ const { title, description = '', lastUpdated } = frontmatter;
     border-radius: 5px;
   }
 
-  /* Real tables (e.g. the providers/recipients table in Privacy 2.4). */
+  /* Real tables (the Privacy Policy's "At a glance" summary and its
+     providers/recipients table in section 4). */
   .legal-body :global(table) {
     width: 100%;
     border-collapse: collapse;
     margin: 8px 0 20px;
     font-size: 14px;
+  }
+  /* On a phone a four-column table would squeeze every column into a few
+     letters: let it scroll sideways inside its own box instead. */
+  @media (max-width: 640px) {
+    .legal-body :global(table) {
+      display: block;
+      overflow-x: auto;
+    }
+    .legal-body :global(th),
+    .legal-body :global(td) {
+      min-width: 9rem;
+    }
   }
   .legal-body :global(th),
   .legal-body :global(td) {
