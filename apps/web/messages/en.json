@@ -8851,5 +8851,9 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "loading": "Loading…",
     "teamBlocked": "This is a shared demo studio, so it cannot connect apps. Pick another studio, or connect from your own."
+  },
+  "LeadDemo": {
+    "notOfficial": "Demo by Linyup — this is not the official website of {name}.",
+    "officialSite": "Official website: {site}"
   }
 }

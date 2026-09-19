@@ -622,6 +622,13 @@ export interface LeadProfile {
   location: { label: string; address: string; mapsUrl?: string }
   contactPhone: string
   contactEmail: string
+  /**
+   * The lead's REAL website (https), linked from the fixed "a demo by Linyup,
+   * not the official website of {teamName}" disclaimer that every lead tenant's
+   * public pages carry (Team.lead_demo). Optional: without it the disclaimer
+   * still shows, just with no link. A non-https value is dropped.
+   */
+  officialWebsite?: string
 
   /** Physical locations (pools, gyms, studios). Slots reference them by key. */
   places?: LeadPlaceDef[]

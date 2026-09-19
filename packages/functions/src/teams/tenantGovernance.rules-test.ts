@@ -114,6 +114,26 @@ describe('firestore.rules — tenant governance fields', function () {
     await assertFails(updateDoc(teamDoc(asOwner()), { flags: { comped: true } }))
   })
 
+  it('an owner CANNOT remove or rewrite the lead-demo disclaimer', async () => {
+    // A lead tenant's owner login goes to the prospect; the disclaimer protects
+    // the real studio's name from being impersonated by our demo copy.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'teams', TEAM), {
+        lead_demo: { official_url: 'https://studio.example' },
+      })
+    })
+    await assertFails(updateDoc(teamDoc(asOwner()), { lead_demo: null }))
+    await assertFails(
+      updateDoc(teamDoc(asOwner()), { lead_demo: { official_url: 'https://elsewhere.example' } })
+    )
+    await assertFails(updateDoc(teamDoc(asOwner()), { lead_demo: { official_url: null } }))
+    // …and a non-lead studio cannot give itself one either.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'teams', TEAM), { lead_demo: null })
+    })
+    await assertFails(updateDoc(teamDoc(asOwner()), { lead_demo: { official_url: null } }))
+  })
+
   it('the payments guard still holds', async () => {
     await assertFails(updateDoc(teamDoc(asOwner()), { payments: { connectEnabled: true } }))
   })

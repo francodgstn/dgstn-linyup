@@ -8851,5 +8851,9 @@
     "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     "loading": "Wird geladen …",
     "teamBlocked": "Dies ist ein gemeinsam genutztes Demo-Studio und kann keine Apps verbinden. Wähle ein anderes Studio oder verbinde von deinem eigenen aus."
+  },
+  "LeadDemo": {
+    "notOfficial": "Demo von Linyup — dies ist nicht die offizielle Website von {name}.",
+    "officialSite": "Offizielle Website: {site}"
   }
 }

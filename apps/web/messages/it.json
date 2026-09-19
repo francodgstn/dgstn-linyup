@@ -8851,5 +8851,9 @@
     "errorGeneric": "Qualcosa è andato storto. Riprova.",
     "loading": "Caricamento…",
     "teamBlocked": "Questo è uno studio dimostrativo condiviso e non può collegare app. Scegli un altro studio oppure collega dal tuo."
+  },
+  "LeadDemo": {
+    "notOfficial": "Demo di Linyup — questo non è il sito ufficiale di {name}.",
+    "officialSite": "Sito ufficiale: {site}"
   }
 }

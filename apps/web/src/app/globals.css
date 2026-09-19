@@ -598,3 +598,9 @@
   .site-root .site-marquee-track { animation: none; }
   .site-root .site-marquee { overflow-x: auto; }
 }
+
+/* A lead demo tenant's own disclaimer (LeadDemoBanner) replaces the generic
+   "live demo of Linyup" strip of the sandbox build (AnnouncementBar): one
+   notice, the one that names the real studio. CSS rather than state, so the
+   server-rendered page never shows both, not even for a frame. */
+body:has([data-lead-demo-banner]) [data-linyup-demo-strip] { display: none; }
