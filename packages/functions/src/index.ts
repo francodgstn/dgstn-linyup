@@ -590,5 +590,12 @@ export {
   inboundWebhook,
 } from './automation'
 
+// Callable routers — one deployed function serving many callables, each of
+// which ALSO stays exported above under its own name until that name is
+// provably unused. Never remove a standalone export because a router lists it:
+// the deploy runs with --force. See utils/callableRouter.ts and
+// utils/frozenFunctions.test.ts.
+export { rpcSpike } from './routers/spike'
+
 // --- Stubs (TODO: port from hmd-lineup) ---
 // export { generateDashboardInsight } from './analytics'

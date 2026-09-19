@@ -1,0 +1,69 @@
+// ─── Callable routes ──────────────────────────────────────────────────────────
+//
+// The ONE place that says which ROUTER function serves a callable. Every gen2
+// function is its own Cloud Run service, and nearly every recurring deploy
+// failure scales with how many there are, so callables are being folded into a
+// few domain routers (`docs/functions-consolidation-plan.md`). A router is an
+// `onRequest` that hands `(req, res)` to the EXISTING `onCall` value, so auth,
+// App Check and error serialisation are the SDK's own — nothing is
+// re-implemented.
+//
+// Lives in @linyup/shared because both sides read it: the clients build the URL
+// from it (`callFunction` in web, mobile and admin) and packages/functions
+// asserts its router tables agree with it
+// (`packages/functions/src/utils/routerCoverage.test.ts`).
+//
+// A name that is ABSENT here is called the way it always was,
+// `httpsCallable(functions, name)`. That is also the rollback: delete a name's
+// entry and every client goes back to the standalone function, which stays
+// deployed under its old name until it is provably unused (the plan → "5.
+// Compatibility and aliases").
+
+export const ROUTER_NAMES = [
+  // Throwaway: proves auth, App Check, CORS and error codes survive routing.
+  // Deleted once the pilot router has shipped.
+  'rpcSpike',
+  'rpcMember',
+  'rpcCheckout',
+  'rpcStudio',
+  'rpcFinance',
+  'rpcOrg',
+  'rpcBilling',
+  'rpcHeavy',
+  'rpcOps',
+] as const
+
+export type RouterName = (typeof ROUTER_NAMES)[number]
+
+/**
+ * Callable name → the router that serves it. No call site goes through
+ * `callFunction` for the spike's members yet, so listing them moves no traffic.
+ */
+export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
+  listAvailability: 'rpcSpike',
+  getMyBookings: 'rpcSpike',
+}
+
+export function routerForCallable(name: string): RouterName | null {
+  return Object.prototype.hasOwnProperty.call(CALLABLE_ROUTES, name) ? CALLABLE_ROUTES[name] : null
+}
+
+/**
+ * Where functions are served from, WITHOUT a trailing slash. `httpsCallableFromURL`
+ * ignores `connectFunctionsEmulator`, so the emulator origin has to be spelled
+ * out here rather than inherited from the Functions instance.
+ */
+export function functionsBaseUrl(args: {
+  projectId: string
+  region: string
+  emulator?: { host: string; port: number } | null
+}): string {
+  const { projectId, region, emulator } = args
+  if (emulator) return `http://${emulator.host}:${emulator.port}/${projectId}/${region}`
+  return `https://${region}-${projectId}.cloudfunctions.net`
+}
+
+/** The router reads the callable's name from the LAST path segment. */
+export function callableRouteUrl(args: { base: string; router: RouterName; name: string }): string {
+  return `${args.base.replace(/\/+$/, '')}/${args.router}/${encodeURIComponent(args.name)}`
+}
