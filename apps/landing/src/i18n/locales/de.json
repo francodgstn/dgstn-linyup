@@ -489,6 +489,7 @@
   "footer": {
     "tagline": "Das moderne Verwaltungstool für Trainer und Studios.",
     "links": {
+      "help": "Hilfe-Center",
       "privacy": "Datenschutz",
       "terms": "AGB",
       "dpa": "Auftragsverarbeitung",

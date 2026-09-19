@@ -199,7 +199,8 @@
     "sectionManage": "Amministrazione",
     "groupCommunication": "Comunicazione",
     "catalogue": "Offerte",
-    "apiKeys": "Chiavi API"
+    "apiKeys": "Chiavi API",
+    "helpCentre": "Centro assistenza"
   },
   "PublicHub": {
     "title": "Pagine pubbliche",

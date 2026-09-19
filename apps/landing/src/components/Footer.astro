@@ -15,6 +15,9 @@ const copyright = t('footer.copyright').replace('{year}', String(year));
 // Only show "Cookie settings" when analytics is actually wired (a key exists);
 // it reopens the consent banner via window.linyupOpenConsent() (BaseLayout).
 const analyticsEnabled = !!import.meta.env.PUBLIC_POSTHOG_KEY;
+// The public help centre (apps/help). One address for every environment, like
+// the legal pages: staging's landing links to production's help too.
+const HELP_URL = 'https://help.linyup.com';
 ---
 
 <footer>
@@ -29,6 +32,7 @@ const analyticsEnabled = !!import.meta.env.PUBLIC_POSTHOG_KEY;
             versions follow later. Terms + DPA landed with the signup acceptance
             step — the checkbox there links straight here, so these must not be
             removed without also removing that link. */}
+        <a href={HELP_URL}>{t('footer.links.help')}</a>
         <a href={getLocalizedPath('/roadmap', lang)}>{t('footer.links.roadmap')}</a>
         <a href="/privacy">{t('footer.links.privacy')}</a>
         <a href="/terms">{t('footer.links.terms')}</a>

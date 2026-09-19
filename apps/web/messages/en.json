@@ -199,7 +199,8 @@
     "sectionManage": "Manage",
     "groupCommunication": "Communication",
     "catalogue": "Offerings",
-    "apiKeys": "API keys"
+    "apiKeys": "API keys",
+    "helpCentre": "Help centre"
   },
   "PublicHub": {
     "title": "Public pages",

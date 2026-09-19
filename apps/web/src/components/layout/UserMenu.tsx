@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Lock,
   ExternalLink,
+  LifeBuoy,
 } from 'lucide-react'
 import { posthog } from '@/lib/posthog'
 import { OPEN_SETUP_GUIDE_EVENT } from '@/components/onboarding/SetupGuide'
@@ -234,6 +235,16 @@ export function UserMenu({ collapsed }: { collapsed: boolean }) {
             >
               <Rocket className="h-4 w-4 mr-2" />
               {tOnb('setup.title')}
+            </DropdownMenuItem>
+            {/* The public help centre (apps/help). External for the same reason
+                as the legal links below: one published copy, opened in a new tab
+                so the studio keeps its place in the app. */}
+            <DropdownMenuItem
+              onClick={() => window.open('https://help.linyup.com', '_blank', 'noopener,noreferrer')}
+            >
+              <LifeBuoy className="h-4 w-4 mr-2" />
+              {tNav('helpCentre')}
+              <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
 
