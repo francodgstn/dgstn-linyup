@@ -2,6 +2,7 @@
 import * as admin from 'firebase-admin'
 import { to } from './async'
 import { withLedgerExpiry } from './ledgerRetention'
+import { withDefinedParameters } from '../analytics/activityParameters'
 
 const TEAMS_COLLECTION = 'teams'
 const ACTIVITY_LOG_SUBCOLLECTION = 'activity_log'
@@ -18,7 +19,7 @@ export async function logActivity(teamId: string, logData: Record<string, unknow
     .collection(ACTIVITY_LOG_SUBCOLLECTION)
     .doc()
 
-  const [createErr] = await to(activityLogRef.set(withLedgerExpiry('activity_log', logData)))
+  const [createErr] = await to(activityLogRef.set(withLedgerExpiry('activity_log', withDefinedParameters(logData))))
   if (createErr) {
     console.error('Error creating activity_log entry', createErr.message || createErr)
     throw createErr

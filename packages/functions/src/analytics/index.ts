@@ -23,6 +23,7 @@ import {
 import { withLedgerExpiry } from '../utils/ledgerRetention'
 import { dispatchTenantJob } from '../utils/tenantFanOut'
 import { advancesLastSession } from './lastSession'
+import { withDefinedParameters } from './activityParameters'
 
 // The acquisition funnel only ever advances forward by design, so a stage that
 // moves to a LOWER ordinal is a deliberate manual correction (e.g. undoing a
@@ -45,7 +46,7 @@ async function logActivity(teamId: string, entry: Record<string, unknown>): Prom
       .collection('activity_log')
       .add(
         withLedgerExpiry('activity_log', {
-          ...entry,
+          ...withDefinedParameters(entry),
           created_at: FieldValue.serverTimestamp(),
         }),
       )
