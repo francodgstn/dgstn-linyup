@@ -22,7 +22,10 @@
 //   3. `local-env init`, ONCE — claims a port slot for this checkout and, for
 //      a worktree, imports the untracked env/secret/lead files from the main
 //      checkout. Skipped when `.local-env.json` already exists.
-//   4. prints what to run next.
+//   4. in a worktree, reports lead data that has drifted from the main
+//      checkout's since that import (scripts/lib/leadData.mjs). Reports only:
+//      refreshing it is `local-env init --refresh-leads`, on purpose.
+//   5. prints what to run next.
 //
 // It deliberately does NOT start anything, seed anything, or touch the cloud.
 //
@@ -34,6 +37,7 @@ import { dirname, join } from 'node:path'
 import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { BUILT_PACKAGES, distState } from './lib/distState.mjs'
+import { describeLeadDrift, leadDrift, mainCheckout } from './lib/leadData.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const flags = new Set(process.argv.slice(2))
@@ -118,13 +122,33 @@ if (!NO_BUILD) {
 }
 
 // 3. port slot + worktree imports, once
-if (!existsSync(join(ROOT, '.local-env.json'))) {
+const initNow = !existsSync(join(ROOT, '.local-env.json'))
+if (initNow) {
   run('node scripts/local-env.mjs init')
 } else {
   detail('slot    claimed (.local-env.json present)')
 }
 
-// 4. next steps
+// 4. lead data. The import above runs once per worktree, and the main
+// checkout's copy keeps changing after it — so say so at the start of every
+// session, not when a lead typecheck or seed goes wrong. Never fixed here: this
+// copy may hold a deliberate edit. A visible `init` has just printed the same
+// report itself; a quiet one printed nothing.
+if (!initNow || QUIET) {
+  try {
+    const drift = leadDrift(mainCheckout(ROOT), ROOT)
+    if (drift.length) {
+      const { heading, rows, fix } = describeLeadDrift(drift)
+      say(`LEADS   ${heading}`)
+      for (const row of rows) say(`          ${row}`)
+      if (fix) say(`        ${fix}`)
+    }
+  } catch (e) {
+    say(`LEADS   could not compare with the main checkout's lead data: ${e?.message || e}`)
+  }
+}
+
+// 5. next steps
 for (const { target, manual } of needsManual) {
   say(`TODO    ${target}: set ${manual} (the ${target.includes('mobile') ? 'staging web app key, Firebase console → project settings' : 'value'})`)
 }
