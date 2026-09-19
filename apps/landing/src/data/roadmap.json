@@ -283,6 +283,32 @@
           "body": "Creare e aggiornare il tuo sito in modo più rapido e semplice, con l'IA ad aiutarti lungo il percorso.",
           "srcHash": "902886f2f379"
         }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJfcI",
+        "area": {
+          "key": "payments-and-shop",
+          "label": "Payments & shop"
+        },
+        "en": {
+          "title": "Pricing recipes for a quick setup",
+          "body": "Start from ready-made setups for classes and plans, such as a membership with a trial or a class pack with drop-ins, and adapt them to your studio."
+        },
+        "de": {
+          "title": "Preisrezepte für eine schnelle Einrichtung",
+          "body": "Starte mit fertigen Vorlagen für Kurse und Abos, etwa eine Mitgliedschaft mit Probetraining oder ein Kurspaket mit Einzeleintritten, und passe sie an dein Studio an.",
+          "srcHash": "8badc50cdbe0"
+        },
+        "fr": {
+          "title": "Recettes tarifaires pour démarrer vite",
+          "body": "Partez de configurations prêtes à l'emploi pour vos cours et formules, comme un abonnement avec séance d'essai ou une carte de cours avec entrées à l'unité, et adaptez-les à votre studio.",
+          "srcHash": "8badc50cdbe0"
+        },
+        "it": {
+          "title": "Ricette di prezzo per partire in fretta",
+          "body": "Parti da configurazioni pronte per corsi e piani, come un abbonamento con lezione di prova o un pacchetto di lezioni con ingressi singoli, e adattale al tuo studio.",
+          "srcHash": "8badc50cdbe0"
+        }
       }
     ]
   }
