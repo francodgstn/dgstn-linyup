@@ -28,18 +28,20 @@ export function LeadDemoBanner() {
   if (!marker) return null
   const url = marker.official_url
 
-  // Loud on purpose — it is public-facing and must not read as part of the
-  // studio's own design: a warm gradient every studio palette clashes with, and
-  // a black/amber hazard stripe along the edge that faces the page. Near-black
-  // text on the amber-to-orange range keeps AA contrast in both themes (the bar
-  // does not follow dark mode: a warning should look the same everywhere).
+  // Loud on purpose, and in LINYUP's colours rather than the studio's: the bar
+  // is Linyup speaking, so it wears the brand purples (apps/landing's
+  // --purple-* scale: 950 → 600 primary → 950) and a 950/400 stripe along the
+  // edge that faces the page. White text keeps AA contrast on every stop of the
+  // gradient, including the brightest (the primary, ~5.7:1). The bar does not
+  // follow dark mode: a notice should look the same everywhere.
   const content = (
     <>
       <div
         aria-hidden
         className="h-1.5 w-full"
         style={{
-          backgroundImage: 'repeating-linear-gradient(135deg, #0a0a0a 0 10px, #fbbf24 10px 20px)',
+          backgroundImage:
+            'repeating-linear-gradient(135deg, oklch(0.26 0.13 288) 0 10px, oklch(0.68 0.18 288) 10px 20px)',
         }}
       />
       <p className="px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs font-semibold leading-snug sm:text-sm">
@@ -51,7 +53,7 @@ export function LeadDemoBanner() {
             <a
               href={url}
               rel="noopener"
-              className="ml-1 inline-block rounded-full bg-neutral-950 px-2.5 py-0.5 text-amber-300 hover:underline"
+              className="ml-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[oklch(0.35_0.18_288)] hover:underline"
             >
               {t('officialSite', { site: leadDemoUrlLabel(url) })}
             </a>
@@ -71,7 +73,7 @@ export function LeadDemoBanner() {
       <div
         role="note"
         data-lead-demo-banner=""
-        className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-r from-amber-300 via-orange-400 to-amber-300 text-neutral-950 shadow-[0_-4px_16px_rgba(0,0,0,0.25)]"
+        className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-r from-[oklch(0.35_0.18_288)] via-[oklch(0.556_0.237_292)] to-[oklch(0.35_0.18_288)] text-white shadow-[0_-4px_16px_rgba(0,0,0,0.25)]"
       >
         {content}
       </div>
