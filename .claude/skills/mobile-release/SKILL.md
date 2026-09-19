@@ -10,13 +10,14 @@ on **`mobile-v*` tags**, never on the backend's `v*` tags. The two cadences are
 deliberately decoupled (`docs/mobile-roadmap-2026-09.md` §3): a web rollout is
 instant and pinnable, a store build takes days and cannot be un-shipped.
 
-## The three lanes (`.github/workflows/mobile.yml`)
+## The lanes (`.github/workflows/mobile.yml`)
 
 | Trigger | What runs | You do |
 |---|---|---|
 | PR touching `apps/mobile/**` or `packages/shared/**` | lint, jest, `tsc`, `expo config` per project (catches config-time throws) | nothing |
 | `main` merge touching the same | Expo's `continuous-deploy-fingerprint` action against the `preview` profile / `staging` branch: a build with the current fingerprint exists → OTA update; none → a preview build (internal distribution, staging Firebase). It comments the result on the commit. | install the preview build link on your phone |
 | `mobile-v*` tag | same action, `store` profile / `production` branch: OTA when possible, otherwise a store build. It does **NOT** submit. | approve the `production` gate, then `eas submit` the build CI made |
+| manual run, `store_build` = `ios` / `android` / `all` | `eas build --profile store --no-wait` on the runner, **whatever the fingerprint says**. Same `production` gate and "store targets linyup-prod" guard; does **NOT** submit. | approve the gate, wait for EAS, `eas submit --id <build>` |
 
 ## Where a store binary must come from
 
@@ -92,6 +93,39 @@ lever: operator console → `Settings → Member app` → minimum supported vers
 (`app_settings/mobile`). Older builds open on an update-required screen with
 the store links. It fails OPEN on a malformed value; the console validates.
 Use it rarely — an OTA reaches every build on the same fingerprint without it.
+
+## A new binary when the fingerprint did not change
+
+The tag lane can only answer "unchanged fingerprint → publish an update", so a
+JS-only change can never produce a binary from a tag. Usually that is exactly
+right. It is wrong when a store needs a NEW BINARY to look at, most often
+**App Review**: a rejection fixed in JS still has to be resubmitted as a build,
+and a reviewer on a fresh install sees the embedded bundle, not the OTA
+(expo-updates applies a downloaded update on the NEXT cold start).
+
+Do not build it on the laptop (see "Where a store binary must come from").
+Force it on the runner instead. First run of this: 2026-09-19, App Review
+5.1.1(iv), the camera pre-prompt (#448, #449), which gave iOS 1.0.3(6).
+
+```bash
+# 1. Fix + version bump + release notes merged to main (as in "Cutting a release")
+# 2. Tag it anyway: the OTA brings existing installs the fix
+git tag -a mobile-vX.Y.Z origin/main -m "<why>" && git push origin mobile-vX.Y.Z
+# 3. Force the binary (dispatch from main or the tag)
+gh workflow run mobile.yml --ref main -f store_build=ios
+#    approve the production gate. The job goes green when the build is QUEUED,
+#    so follow the EAS build itself (note: build:view takes --json but
+#    REJECTS --non-interactive; a poll loop with that flag never sees a status)
+cd apps/mobile && npx eas-cli build:list --platform ios --limit 2 --json
+npx eas-cli build:view <build-id> --json
+# 4. Submit THAT build by id, not --latest
+npx eas-cli submit --profile store --platform ios --id <build-id> --non-interactive
+```
+
+The binary carries the same fingerprint as the one already in the store, so
+later updates reach both. On iOS the version string is the ASC version: attach
+the new build to a version with THAT number (rename the rejected version or
+create one), then reply in the Resolution Center naming the build.
 
 ## Cutting a release
 

@@ -163,10 +163,12 @@ server-side decisions are tested in
 ## Releases
 
 The app ships on its own **`mobile-v*` tag**, decoupled from the backend's `v*`
-releases. `.github/workflows/mobile.yml` runs three lanes — PR checks; `main` →
+releases. `.github/workflows/mobile.yml` runs these lanes — PR checks; `main` →
 the `staging` channel (OTA update, or a `preview` build when the native
 fingerprint changed); `mobile-v*` → the `production` channel (OTA, or a `store`
-build auto-submitted to TestFlight / Play internal). How to cut a release, what
+build — never submitted, that stays a deliberate `eas submit`); and a manual run
+with `store_build` that forces a `store` build even when the fingerprint is
+unchanged (e.g. a binary App Review needs for a JS-only fix). How to cut a release, what
 needs a native build, rollback, and the store checklist:
 `.claude/skills/mobile-release/SKILL.md`.
 
