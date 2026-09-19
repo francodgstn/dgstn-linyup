@@ -108,6 +108,33 @@ change, tell Franco what to click.
    items superseded or dropped. Show it as one table and stop.
 5. Apply only what Franco approves, then print the board grouped by status.
 
+## Publish — the public /roadmap page on the landing site
+
+`linyup.com/roadmap` (and `/de|fr|it/roadmap`) shows the board's **In progress**
+and **Next** cards — nothing else leaves the board. The page reads
+`apps/landing/src/data/roadmap.json`, written ONLY by
+`node scripts/roadmap-export.mjs` (header explains the determinism). The weekly
+routine publishes; run it by hand only when asked.
+
+1. Work in a throwaway worktree off `origin/main`, never the main checkout (a
+   parallel session may be using it). If an open PR from a `roadmap/publish-*`
+   branch exists, work on THAT branch and push to it instead of opening another.
+2. `node scripts/roadmap-export.mjs`. If it prints `MISSING translations`,
+   translate exactly the listed cards into the listed locales (landing tone:
+   German *du*, French *vous*, Italian *tu*; Swiss German spelling, no ß), write
+   them in the printed shape to a scratch JSON, and re-run with
+   `--translations <file>`. Finish with `--check` (exits 1 if anything is missing).
+3. `git diff --quiet -- apps/landing/src/data/roadmap.json` → **no change: stop.
+   No branch, no commit, no PR.** Remove the worktree.
+4. Otherwise commit only that file, push, and open (or update) the PR, titled
+   "Roadmap page: <what changed>". The body lists cards added / moved / removed /
+   reworded in plain words. Franco merging it is the approval; it goes live with
+   the next landing deploy (the next production release).
+
+A new board Area needs its four labels under `roadmap.areas.<slug>` in
+`apps/landing/src/i18n/locales/*.json`; until then the page shows the English
+area name. Never hand-edit `roadmap.json`.
+
 ## Answering "what's on the roadmap"
 
 Read the board and summarise by status in the same public-grade language. The

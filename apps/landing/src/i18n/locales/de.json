@@ -494,8 +494,30 @@
       "dpa": "Auftragsverarbeitung",
       "legal": "Impressum",
       "contact": "Kontakt",
-      "cookies": "Cookie-Einstellungen"
+      "cookies": "Cookie-Einstellungen",
+      "roadmap": "Roadmap"
     },
     "copyright": "© {year} Linyup. Alle Rechte vorbehalten."
+  },
+  "roadmap": {
+    "metaTitle": "Roadmap — Linyup",
+    "metaDescription": "Woran wir gerade für Studios arbeiten – und was als Nächstes kommt.",
+    "eyebrow": "Roadmap",
+    "title": "Woran wir arbeiten",
+    "subtitle": "Was gerade entsteht und was als Nächstes kommt. Geprägt von den Studios, die Linyup jeden Tag nutzen.",
+    "inProgress": "In Arbeit",
+    "next": "Als Nächstes",
+    "disclaimer": "Bewusst ohne Daten: Pläne ändern sich, während wir von Studios lernen – und wir liefern lieber richtig als nach Termin.",
+    "askTitle": "Fehlt dir etwas?",
+    "askBody": "Sag uns, was dein Studio braucht. Das meiste auf dieser Seite begann als Wunsch eines Studios.",
+    "askCta": "Schreib uns",
+    "areas": {
+      "booking-and-schedule": "Buchung & Stundenplan",
+      "members": "Mitglieder",
+      "payments-and-shop": "Zahlungen & Shop",
+      "your-website": "Deine Website",
+      "member-app": "Mitglieder-App",
+      "integrations": "Integrationen"
+    }
   }
 }

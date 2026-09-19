@@ -1,0 +1,263 @@
+{
+  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next). Do not edit by hand — change the board and re-export.",
+  "sections": {
+    "inProgress": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
+        "area": {
+          "key": "member-app",
+          "label": "Member app"
+        },
+        "en": {
+          "title": "Member app for iPhone and Android",
+          "body": "Members book, cancel and follow their progress from their phone. Rolling out to the app stores."
+        },
+        "de": {
+          "title": "Mitglieder-App für iPhone und Android",
+          "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Die App kommt gerade in die App Stores.",
+          "srcHash": "19444eb3d3d4"
+        },
+        "fr": {
+          "title": "Application membres pour iPhone et Android",
+          "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. L'app arrive dans les stores.",
+          "srcHash": "19444eb3d3d4"
+        },
+        "it": {
+          "title": "App per i membri su iPhone e Android",
+          "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
+          "srcHash": "19444eb3d3d4"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQK4",
+        "area": {
+          "key": "payments-and-shop",
+          "label": "Payments & shop"
+        },
+        "en": {
+          "title": "Members hold several plans at once",
+          "body": "A member can have, say, a membership and a class pack at the same time, each counted correctly."
+        },
+        "de": {
+          "title": "Mehrere Abos pro Mitglied",
+          "body": "Ein Mitglied kann zum Beispiel gleichzeitig eine Mitgliedschaft und ein Kurspaket haben – beide werden korrekt verrechnet.",
+          "srcHash": "bda24bf8be04"
+        },
+        "fr": {
+          "title": "Plusieurs formules par membre",
+          "body": "Un membre peut avoir en même temps, par exemple, un abonnement et une carte de cours, chacun décompté correctement.",
+          "srcHash": "bda24bf8be04"
+        },
+        "it": {
+          "title": "Più piani per lo stesso membro",
+          "body": "Un membro può avere contemporaneamente, ad esempio, un abbonamento e un pacchetto di lezioni, ciascuno conteggiato correttamente.",
+          "srcHash": "bda24bf8be04"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLA",
+        "area": {
+          "key": "members",
+          "label": "Members"
+        },
+        "en": {
+          "title": "WhatsApp messages",
+          "body": "Reach members on WhatsApp for reminders and updates, with their consent."
+        },
+        "de": {
+          "title": "WhatsApp-Nachrichten",
+          "body": "Erreiche deine Mitglieder auf WhatsApp mit Erinnerungen und Neuigkeiten – mit ihrer Zustimmung.",
+          "srcHash": "6b0dc61e5daf"
+        },
+        "fr": {
+          "title": "Messages WhatsApp",
+          "body": "Touchez vos membres sur WhatsApp pour les rappels et les nouvelles, avec leur accord.",
+          "srcHash": "6b0dc61e5daf"
+        },
+        "it": {
+          "title": "Messaggi WhatsApp",
+          "body": "Raggiungi i tuoi membri su WhatsApp con promemoria e novità, con il loro consenso.",
+          "srcHash": "6b0dc61e5daf"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLE",
+        "area": {
+          "key": "your-website",
+          "label": "Your website"
+        },
+        "en": {
+          "title": "Your own web address",
+          "body": "Serve your booking pages and website on your own domain."
+        },
+        "de": {
+          "title": "Deine eigene Webadresse",
+          "body": "Deine Buchungsseiten und deine Website laufen unter deiner eigenen Domain.",
+          "srcHash": "da83530bb7c4"
+        },
+        "fr": {
+          "title": "Votre propre adresse web",
+          "body": "Vos pages de réservation et votre site web sur votre propre nom de domaine.",
+          "srcHash": "da83530bb7c4"
+        },
+        "it": {
+          "title": "Il tuo indirizzo web",
+          "body": "Le tue pagine di prenotazione e il tuo sito sul tuo dominio.",
+          "srcHash": "da83530bb7c4"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLQ",
+        "area": {
+          "key": "payments-and-shop",
+          "label": "Payments & shop"
+        },
+        "en": {
+          "title": "Health-insurance receipts (Switzerland)",
+          "body": "Issue the receipts members need to claim fitness costs from their insurer."
+        },
+        "de": {
+          "title": "Belege für die Krankenkasse (Schweiz)",
+          "body": "Stelle die Belege aus, mit denen Mitglieder Fitnesskosten bei ihrer Krankenkasse zurückfordern.",
+          "srcHash": "bd3da0e259d1"
+        },
+        "fr": {
+          "title": "Attestations pour l'assurance maladie (Suisse)",
+          "body": "Émettez les attestations dont vos membres ont besoin pour se faire rembourser leurs frais de fitness par leur assurance.",
+          "srcHash": "bd3da0e259d1"
+        },
+        "it": {
+          "title": "Ricevute per la cassa malati (Svizzera)",
+          "body": "Emetti le ricevute che servono ai membri per chiedere il rimborso dei costi di fitness alla loro cassa malati.",
+          "srcHash": "bd3da0e259d1"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
+        "area": {
+          "key": "members",
+          "label": "Members"
+        },
+        "en": {
+          "title": "AI summaries of your members",
+          "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
+        },
+        "de": {
+          "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
+          "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
+          "srcHash": "5d1578dd63ee"
+        },
+        "fr": {
+          "title": "Résumés IA de vos membres",
+          "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
+          "srcHash": "5d1578dd63ee"
+        },
+        "it": {
+          "title": "Riepiloghi IA dei tuoi membri",
+          "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
+          "srcHash": "5d1578dd63ee"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLc",
+        "area": {
+          "key": "integrations",
+          "label": "Integrations"
+        },
+        "en": {
+          "title": "Connect Linyup to your tools and AI assistants",
+          "body": "Read-only access to your studio data through an API and AI-assistant connectors."
+        },
+        "de": {
+          "title": "Linyup mit deinen Tools und KI-Assistenten verbinden",
+          "body": "Lesezugriff auf deine Studiodaten über eine API und Anbindungen für KI-Assistenten.",
+          "srcHash": "f1da12bec7d2"
+        },
+        "fr": {
+          "title": "Connecter Linyup à vos outils et assistants IA",
+          "body": "Un accès en lecture seule aux données de votre studio, via une API et des connecteurs pour assistants IA.",
+          "srcHash": "f1da12bec7d2"
+        },
+        "it": {
+          "title": "Collega Linyup ai tuoi strumenti e assistenti IA",
+          "body": "Accesso in sola lettura ai dati del tuo studio tramite un'API e connettori per assistenti IA.",
+          "srcHash": "f1da12bec7d2"
+        }
+      }
+    ],
+    "next": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
+        "area": null,
+        "en": {
+          "title": "Public help centre",
+          "body": "Step-by-step guides for setting up and running your studio."
+        },
+        "de": {
+          "title": "Öffentliches Hilfe-Center",
+          "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios.",
+          "srcHash": "02abbc9ea758"
+        },
+        "fr": {
+          "title": "Centre d'aide public",
+          "body": "Des guides pas à pas pour configurer et gérer votre studio.",
+          "srcHash": "02abbc9ea758"
+        },
+        "it": {
+          "title": "Centro assistenza pubblico",
+          "body": "Guide passo passo per configurare e gestire il tuo studio.",
+          "srcHash": "02abbc9ea758"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLk",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "Simpler setup for classes and plans",
+          "body": "Fewer steps and clearer choices when you create what you sell."
+        },
+        "de": {
+          "title": "Einfachere Einrichtung von Kursen und Abos",
+          "body": "Weniger Schritte und klarere Optionen, wenn du anlegst, was du verkaufst.",
+          "srcHash": "3bcc78c5e018"
+        },
+        "fr": {
+          "title": "Configuration simplifiée des cours et formules",
+          "body": "Moins d'étapes et des choix plus clairs quand vous créez ce que vous vendez.",
+          "srcHash": "3bcc78c5e018"
+        },
+        "it": {
+          "title": "Configurazione più semplice di corsi e piani",
+          "body": "Meno passaggi e scelte più chiare quando crei ciò che vendi.",
+          "srcHash": "3bcc78c5e018"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLo",
+        "area": null,
+        "en": {
+          "title": "Multi-location organisations",
+          "body": "Run several studios under one organisation with a shared website and shared content."
+        },
+        "de": {
+          "title": "Organisationen mit mehreren Standorten",
+          "body": "Führe mehrere Studios unter einer Organisation, mit gemeinsamer Website und gemeinsamen Inhalten.",
+          "srcHash": "99c21dc1596f"
+        },
+        "fr": {
+          "title": "Organisations multi-sites",
+          "body": "Gérez plusieurs studios au sein d'une même organisation, avec un site web et des contenus partagés.",
+          "srcHash": "99c21dc1596f"
+        },
+        "it": {
+          "title": "Organizzazioni con più sedi",
+          "body": "Gestisci più studi in un'unica organizzazione, con un sito web e contenuti condivisi.",
+          "srcHash": "99c21dc1596f"
+        }
+      }
+    ]
+  }
+}
