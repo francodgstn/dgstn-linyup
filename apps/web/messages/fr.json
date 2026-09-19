@@ -8851,5 +8851,9 @@
     "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
     "loading": "Chargement…",
     "teamBlocked": "Ceci est un studio de démonstration partagé : il ne peut pas connecter d'applications. Choisissez un autre studio, ou connectez depuis le vôtre."
+  },
+  "LeadDemo": {
+    "notOfficial": "Démo de Linyup — ceci n’est pas le site officiel de {name}.",
+    "officialSite": "Site officiel : {site}"
   }
 }

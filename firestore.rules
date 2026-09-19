@@ -133,7 +133,11 @@ service cloud.firestore {
       return request.resource.data.get('flags', {}) == resource.data.get('flags', {})
              && request.resource.data.get('plan', null) == resource.data.get('plan', null)
              && request.resource.data.get('plan_status', null) == resource.data.get('plan_status', null)
-             && request.resource.data.get('trial_ends_at', null) == resource.data.get('trial_ends_at', null);
+             && request.resource.data.get('trial_ends_at', null) == resource.data.get('trial_ends_at', null)
+             // The lead-demo disclaimer (Team.lead_demo): a lead's owner login is
+             // handed to the prospect, and the bar exists to protect the real
+             // studio's name — so only the seeder / an operator may clear it.
+             && request.resource.data.get('lead_demo', null) == resource.data.get('lead_demo', null);
     }
 
     // Organization Helper functions

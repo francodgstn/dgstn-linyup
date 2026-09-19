@@ -69,6 +69,7 @@ import {
   withRankLevelIds,
   activityDocForWrite,
   resolveActivityDropIn,
+  leadDemoMarkerOf,
   type RankLevelInput,
 } from '@linyup/shared'
 
@@ -811,6 +812,9 @@ async function seedLeadTenant(profile: LeadProfile) {
   // publicBackground overrides the named gradient — the renderer uses the CSS
   // value verbatim when it isn't a BIO_LINK_GRADIENTS key. 'solid' for a bare
   // hex, 'gradient' for a linear-/radial-gradient string.
+  // Through the shared helper, so the seeder's direct mirror write and
+  // syncTeamPublicProfile publish the same shape.
+  const leadDemoMarker = leadDemoMarkerOf({ official_url: profile.officialWebsite ?? null })
   const bioLinkBackground = profile.publicBackground
     ? {
         type: /gradient\s*\(/i.test(profile.publicBackground) ? 'gradient' : 'solid',
@@ -879,6 +883,10 @@ async function seedLeadTenant(profile: LeadProfile) {
       // The team doc owns it; syncTeamPublicProfile copies it to the mirror, so
       // writing it only on the mirror would be undone by the first trigger run.
       default_public_surface: profile.defaultPublicSurface ?? 'bio-link',
+      // EVERY lead tenant is marked: its public pages carry the fixed "a demo
+      // by Linyup, not the official website of {name}" disclaimer, linking the
+      // real site when the profile names one. Operator-owned (firestore.rules).
+      lead_demo: leadDemoMarker,
       payment_modes: [...DEFAULT_PAYMENT_MODES],
       affiliations_enabled: true,
       ranking_systems: rankingSystem
@@ -1095,6 +1103,8 @@ async function seedLeadTenant(profile: LeadProfile) {
           type: f.type,
           ...(f.options?.length ? { options: f.options } : {}),
         })),
+      // Same value syncTeamPublicProfile mirrors — see the team doc above.
+      lead_demo: leadDemoMarker,
       showBranding: false, // studio plan carries no "Powered by Linyup" badge
       default_currency: profile.currency,
       default_public_surface: profile.defaultPublicSurface ?? 'bio-link',

@@ -29,6 +29,7 @@ import {
   resolveDurationSale,
   effectiveRankingSystems,
   pickPublicGamificationSettings,
+  leadDemoMarkerOf,
   PUBLIC_LOCALES,
   type CustomFieldDefinition,
 } from '@linyup/shared'
@@ -428,6 +429,9 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     // Free-plan bio-links carry a "Powered by Linyup" badge. Denormalized here
     // because bio-link pages only ever read public_profile, never teams/.
     showBranding: (data.plan ?? 'free') === 'free',
+    // Lead demo tenants only — drives the fixed "not the official website"
+    // disclaimer on every public page. See Team.lead_demo.
+    lead_demo: leadDemoMarkerOf(data.lead_demo),
     // Whether this team's public pages may be crawled. Denormalized for the same
     // reason as showBranding — the pages that need it read public_profile alone —
     // but it is DELIBERATELY NOT the same boolean: showBranding asks "is this the

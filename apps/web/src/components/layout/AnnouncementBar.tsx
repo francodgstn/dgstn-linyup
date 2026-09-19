@@ -53,9 +53,11 @@ export function AnnouncementBar() {
   }
 
   // 2) Sandbox/demo builds: always flag the demo + link to the marketing site.
+  //    Hidden by CSS on a LEAD tenant's pages (globals.css), whose own fixed
+  //    disclaimer (LeadDemoBanner) already says it is a demo by Linyup.
   if (isDemoMode()) {
     return (
-      <div role="status" className={`${BASE} ${STYLES.info}`}>
+      <div role="status" data-linyup-demo-strip="" className={`${BASE} ${STYLES.info}`}>
         <Megaphone className="h-4 w-4 shrink-0" />
         <span>{t('demoBanner')}</span>
         <a

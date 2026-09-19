@@ -676,6 +676,12 @@ export function trialSweepExemption(flags?: TenantFlags): 'internal' | 'pilot' |
   return null
 }
 
+/** See `Team.lead_demo`. */
+export interface LeadDemoMarker {
+  /** The studio's real website (https), or null when it has none. */
+  official_url: string | null
+}
+
 export interface Team {
   id: string
   name: string
@@ -691,6 +697,17 @@ export interface Team {
    * Read through `apiAccessBlocked` (types/api.ts), never inline.
    */
   api_access_blocked?: boolean
+  /**
+   * Set on a LEAD DEMO tenant (scripts/seed-lead.ts): a sandbox that mirrors a
+   * real studio's public content. Every public page then carries a fixed
+   * disclaimer — "a demo by Linyup, not the official website of {name}" — so a
+   * visitor who lands on it by mistake is not misled. `official_url` links the
+   * real site when the lead has one. Operator-owned: firestore.rules
+   * (`tenantGovernanceUnchanged`) refuses any client change, because the
+   * owner login is handed to the prospect. Mirrored as
+   * `TeamPublicProfile.lead_demo`.
+   */
+  lead_demo?: LeadDemoMarker | null
   // Day thresholds for the derived contact engagement band. Unset → defaults
   // (DEFAULT_ENGAGEMENT_THRESHOLDS). The band itself is never stored.
   engagement_thresholds?: EngagementThresholds
@@ -1214,6 +1231,10 @@ export interface TeamPublicProfile {
   // free plan, where the bio-link shows a "Powered by Linyup" badge. The bio-link
   // must never read teams/, so the flag lives here.
   showBranding?: boolean
+  // Mirrored from teams/{id}.lead_demo by syncTeamPublicProfile — present only
+  // on a lead demo tenant, where every public page shows the "not the official
+  // website" disclaimer. Null/absent ⇒ a real studio, no disclaimer.
+  lead_demo?: LeadDemoMarker | null
   // Whether the studio can actually BE PAID online right now — its Stripe
   // Connect account is chargeable AND the operator kill-switch is not down.
   // Computed by syncTeamPublicProfile from the same two facts

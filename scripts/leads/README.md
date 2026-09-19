@@ -100,6 +100,14 @@ receives codes, so for the lead to self-serve, switch the tenant policy to
 
 Profile ground rules:
 
+- **Every lead tenant carries a disclaimer.** The seeder stamps `lead_demo` on
+  the team, and every public page (website, booking, shop, Space…) then shows a
+  fixed bar at the bottom of the screen: "Demo by Linyup — this is not the
+  official website of {teamName}", in the visitor's language. Set
+  `officialWebsite` (https) in the profile so it links the real site. Only the
+  seeder or an operator can remove it — the owner login cannot
+  (`firestore.rules`, `tenantGovernanceUnchanged`).
+
 - **Public data only** for the business side (schedule, pricing, copy, images),
   gathered with the lead's permission. Mark any invented/assumed values (e.g.
   unconfirmed prices) via `priceAssumed` + a `notes` entry so the demo never

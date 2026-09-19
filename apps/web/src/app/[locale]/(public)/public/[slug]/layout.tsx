@@ -2,6 +2,7 @@ import { PublicTeamProvider } from './PublicTeamProvider'
 import { PublicContactAuthProvider } from './PublicContactAuthProvider'
 import { PublicContactBar, PublicContactSignIn } from './PublicContactBar'
 import { PublicReturnBar } from './PublicReturnBar'
+import { LeadDemoBanner } from './LeadDemoBanner'
 import { fetchPublicTeam } from '@/lib/publicTeamRest'
 import { tenantDomainContext } from '@/lib/tenantHostContext'
 
@@ -38,6 +39,8 @@ export default async function PublicTeamLayout({ children, params }: Props) {
             of the pill — the website draws its own sign-in control and opens
             this same instance. */}
         <PublicContactSignIn />
+        {/* Lead demo tenants only: the fixed "not the official website" bar. */}
+        <LeadDemoBanner />
       </PublicContactAuthProvider>
     </PublicTeamProvider>
   )
