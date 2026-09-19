@@ -413,9 +413,15 @@ describe('wiring', () => {
 
   it('the Members tab sends an invitation rather than the grant that could not reach a stranger', () => {
     const page = readWeb('app/[locale]/(auth)/org/[orgId]/members/page.tsx')
-    assert.ok(page.includes("httpsCallable(functions, 'inviteOrgMember')"))
+    // Either spelling of a call — `httpsCallable(functions, 'x')` or `callFunction('x')`:
+    // the page changed from one to the other when the org callables moved behind a router.
+    const calls = (name: string) =>
+      new RegExp(
+        `(?:httpsCallable\\(functions,\\s*|callFunction(?:<[^()]*>)?\\(\\s*)'${name}'`
+      ).test(page)
+    assert.ok(calls('inviteOrgMember'))
     assert.ok(
-      !page.includes("httpsCallable(functions, 'addOrgMember')"),
+      !calls('addOrgMember'),
       'addOrgMember refuses an address with no Linyup account — a dead end, which is what decision 12 fixed',
     )
   })

@@ -65,7 +65,12 @@ ${read('orgs/memberInvitations.ts')}`
 
   it('every callable the Members tab invokes actually exists', () => {
     const page = readWeb('app/[locale]/(auth)/org/[orgId]/members/page.tsx')
-    const invoked = [...page.matchAll(/httpsCallable\(functions,\s*'([^']+)'/g)].map((m) => m[1])
+    // Either spelling of a call: the page went from `httpsCallable(functions, 'x')`
+    // to `callFunction('x')` when the org callables moved behind a router, and a pin
+    // on ONE spelling reads that move as "invokes nothing".
+    const invoked = [
+      ...page.matchAll(/(?:httpsCallable\(functions,\s*|callFunction(?:<[^()]*>)?\(\s*)'([^']+)'/g),
+    ].map((m) => m[1])
     assert.ok(invoked.length > 0, 'the Members tab invokes no callable at all — did the file move?')
     for (const name of invoked) {
       assert.ok(
