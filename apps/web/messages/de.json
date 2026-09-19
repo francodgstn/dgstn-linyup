@@ -4677,7 +4677,24 @@
     "feesTitle": "Das zahlst du",
     "feeNoneNote": "Linyup erhebt keine Gebühr auf deine Zahlungen.",
     "feeAgreedNote": "Die Gebühr von Linyup beträgt {pct}% pro Zahlung, der mit dir vereinbarte Satz.",
-    "feeAgreedUntilNote": "Die Gebühr von Linyup beträgt {pct}% pro Zahlung, der mit dir vereinbarte Satz, bis {date}."
+    "feeAgreedUntilNote": "Die Gebühr von Linyup beträgt {pct}% pro Zahlung, der mit dir vereinbarte Satz, bis {date}.",
+    "requirementsTitle": "Noch benötigt",
+    "requirementsHint": "«Einrichtung abschliessen» führt dich zu Stripe, wo du genau siehst, was noch fehlt.",
+    "requirement": {
+      "bank_account": "Dein Bankkonto für Auszahlungen",
+      "id_document": "Ein Foto deines Ausweises oder ein Nachweisdokument",
+      "personal_id_number": "Deine persönliche Ausweisnummer",
+      "personal_details": "Deine persönlichen Angaben (Name, Geburtsdatum, Adresse)",
+      "business_owners": "Die Inhaber oder die Geschäftsführung deines Unternehmens",
+      "business_tax_id": "Deine Handelsregister- oder MWST-Nummer",
+      "business_details": "Die Angaben zu deinem Studio (Name, Adresse, Telefon)",
+      "business_type": "Welche Art von Unternehmen du führst",
+      "website": "Die Website deines Studios oder eine kurze Beschreibung deines Angebots",
+      "statement_descriptor": "Der Name, den deine Kundschaft auf der Kartenabrechnung sehen",
+      "customer_support": "Wie deine Kundschaft dich erreicht (Telefon oder E-Mail)",
+      "terms": "Die Nutzungsbedingungen von Stripe akzeptieren",
+      "other": "Eine Angabe, die Stripe noch braucht"
+    }
   },
   "PaymentsDashboard": {
     "title": "Zahlungen",

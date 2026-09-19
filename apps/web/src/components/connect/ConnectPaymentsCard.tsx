@@ -15,7 +15,7 @@ import {
   Loader2,
   Unlink,
 } from 'lucide-react'
-import { takeRatePercent } from '@linyup/shared'
+import { connectRequirementKinds, takeRatePercent } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePlan } from '@/hooks/usePlan'
 import {
@@ -83,6 +83,7 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
   const isEnabled = status?.status === 'enabled'
   const needsSetup =
     status?.connected && (status.status === 'pending' || status.status === 'restricted')
+  const requirementKinds = connectRequirementKinds(status?.requirements_currently_due)
 
   return (
     <Card>
@@ -228,12 +229,24 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
         // ── Onboarding incomplete — finish setup ─────────────────────────────────
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">{t('incompleteBody')}</p>
-          {!!status.requirements_currently_due?.length && (
-            <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-0.5">
-              {status.requirements_currently_due.slice(0, 8).map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
+          {/* Stripe's raw requirement names (`external_account`,
+              `identity.individual.verification.document`) mean nothing to an
+              owner. The ONE mapping groups them into plain-language kinds and
+              collapses anything it does not recognise into a single generic
+              line — the raw string is never shown. Stripe's own form names the
+              exact fields, which is why "Finish setup" stays the way to act. */}
+          {requirementKinds.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t('requirementsTitle')}
+              </p>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {requirementKinds.map((kind) => (
+                  <FeeLine key={kind}>{t(`requirement.${kind}`)}</FeeLine>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">{t('requirementsHint')}</p>
+            </div>
           )}
           <div className="flex gap-2">
             <Button onClick={() => beginOnboarding()} disabled={start.isPending}>

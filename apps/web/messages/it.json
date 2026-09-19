@@ -4677,7 +4677,24 @@
     "feesTitle": "Cosa paghi",
     "feeNoneNote": "Linyup non applica alcuna commissione sui tuoi pagamenti.",
     "feeAgreedNote": "La commissione di Linyup è del {pct}% per pagamento, la tariffa concordata con te.",
-    "feeAgreedUntilNote": "La commissione di Linyup è del {pct}% per pagamento, la tariffa concordata con te, fino al {date}."
+    "feeAgreedUntilNote": "La commissione di Linyup è del {pct}% per pagamento, la tariffa concordata con te, fino al {date}.",
+    "requirementsTitle": "Ancora necessario",
+    "requirementsHint": "«Completa la configurazione» ti porta su Stripe, che ti mostra esattamente cosa compilare.",
+    "requirement": {
+      "bank_account": "Il tuo conto bancario per i versamenti",
+      "id_document": "Una foto del tuo documento d'identità o un documento giustificativo",
+      "personal_id_number": "Il tuo numero d'identificazione personale",
+      "personal_details": "I tuoi dati personali (nome, data di nascita, indirizzo)",
+      "business_owners": "I titolari o dirigenti della tua attività",
+      "business_tax_id": "Il tuo numero d'impresa (IDI) o di IVA",
+      "business_details": "I dati del tuo studio (nome, indirizzo, telefono)",
+      "business_type": "Il tipo di attività che gestisci",
+      "website": "Il sito web del tuo studio, o una breve descrizione della tua offerta",
+      "statement_descriptor": "Il nome che i tuoi clienti vedono sull'estratto della carta",
+      "customer_support": "Come i tuoi clienti possono contattarti (telefono o e-mail)",
+      "terms": "Accettare le condizioni d'uso di Stripe",
+      "other": "Un dato di cui Stripe ha ancora bisogno"
+    }
   },
   "PaymentsDashboard": {
     "title": "Pagamenti",
