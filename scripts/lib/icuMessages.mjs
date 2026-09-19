@@ -43,10 +43,10 @@ export function placeholders(message) {
 /**
  * Flattens a nested message object to `Namespace.key` → string.
  *
- * ARRAYS ARE WALKED, with the index as a path segment. There are 18 of them and
- * they hold real user-visible copy — plan feature lists, the HowTo concept
- * cards, the engagement-matrix actions — some containing objects rather than
- * bare strings. Skipping them left 72 translated strings unguarded, and a
+ * ARRAYS ARE WALKED, with the index as a path segment. They hold real
+ * user-visible copy — plan feature lists, the engagement-matrix actions — some
+ * containing objects rather than bare strings. Skipping them once left 72
+ * translated strings unguarded, and a
  * feature list that is three bullets in English and two in German is exactly
  * the silent drift this file exists to catch. The index in the path also means
  * a REORDERED array reads as a mismatch, which is correct: position is meaning

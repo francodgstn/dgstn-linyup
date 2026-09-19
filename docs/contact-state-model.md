@@ -277,7 +277,8 @@ as "has a plan" for a standalone one.
   for now: the partner app is a fact, while External is the studio's judgement.
 - An owner-facing home for the interactive page. The two options discussed were
   the in-app How-to and a public docs site. `apps/docs` is internal and never
-  deployed, so it isn't that home.
+  deployed, so it isn't that home. The in-app How-to was retired on 2026-09-19,
+  which leaves the public help centre (`apps/help`, help.linyup.com).
 
 ## Where it lives in code
 

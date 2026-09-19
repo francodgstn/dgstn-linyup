@@ -381,10 +381,9 @@ mid-task while scheduling, so only Places moved — but a two-row group is worth
 second look.
 
 ## 23. One sticky bar still needs the mobile-header offset (UX-36)
-**FOLLOW-UP, one line.** `components/howto/HowToToc.tsx:96` is `sticky top-0 z-20
-… xl:hidden` — the section-tab strip on /how-to. It needs `top-14 md:top-0` or it
-pins behind the now-sticky app header on phones. Reserved by another lane at the
-time. `components/site/WebsiteRenderer.tsx:121` was deliberately left alone: it is
+**CLOSED 2026-09-19, by removal.** The bar was the section-tab strip on /how-to,
+and the in-app How-to was retired: its guides moved to the public help centre
+(`apps/help`, help.linyup.com). `components/site/WebsiteRenderer.tsx:121` was deliberately left alone: it is
 shared with public routes that have no app header.
 
 ## 24. /offer/activities has no quick link yet (UX-71)

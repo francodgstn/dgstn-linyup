@@ -55,6 +55,7 @@ import {
   Check,
   MoreHorizontal,
   Library,
+  ExternalLink,
 } from 'lucide-react'
 import { Eraser } from 'lucide-react'
 import type { Route } from 'next'
@@ -107,6 +108,9 @@ type NavItem = {
   // Stable id used for pinning (distinct from href, which can carry query params).
   id: string
   href: string
+  // An absolute URL outside the app (the help centre). Rendered as a plain
+  // new-tab <a>, never through the locale-aware Link, and never "active".
+  external?: boolean
   labelKey: string
   icon: React.ElementType
   minPlan?: SaasPlan
@@ -221,13 +225,16 @@ const ALL_SETTINGS_ITEM: NavItem = {
   icon: Settings, // cog — the settings hub
   exact: true,
 }
-// How-to — high-level product guides + onboarding workflow. A general utility
-// destination like Settings; always visible, no plan gate.
-const HOW_TO_ITEM: NavItem = {
-  id: 'howTo',
-  href: '/how-to',
-  labelKey: 'howTo',
+// The public help centre (help.linyup.com, apps/help). It replaced the in-app
+// How-to area on 2026-09-19: the guides live in ONE published place, written for
+// a studio owner, instead of a second copy inside the app that went stale. An
+// external link, so it opens in a new tab and the studio keeps its place.
+const HELP_CENTRE_ITEM: NavItem = {
+  id: 'helpCentre',
+  href: 'https://help.linyup.com',
+  labelKey: 'helpCentre',
   icon: HelpCircle, // question mark — help
+  external: true,
 }
 
 // Action-oriented sidebar sections for high-frequency destinations. Lower-frequency
@@ -459,7 +466,6 @@ const NAV_HREFS: string[] = [
   SCHEDULE_ITEM.href,
   EXPLORE_PLUGINS_ITEM.href,
   ALL_SETTINGS_ITEM.href,
-  HOW_TO_ITEM.href,
 ]
 
 // ─── nav link ─────────────────────────────────────────────────────────────────
@@ -661,7 +667,7 @@ function NavTile({
 }
 
 // A compact icon-only link for the utility destinations (plugins, settings,
-// how-to) that sit in their own row under the search bar rather than in the nav
+// the help centre) that sit in their own row under the search bar rather than in the nav
 // list. Always shows its label as a tooltip, since there's no text beside the
 // icon.
 function UtilityIconLink({
@@ -680,21 +686,38 @@ function UtilityIconLink({
   const t = useTranslations('Nav')
   const Icon = item.icon
   const label = t(item.labelKey as Parameters<typeof t>[0])
-  const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+  const isActive =
+    !item.external && (item.exact ? pathname === item.href : pathname.startsWith(item.href))
+  const className = `flex h-8 items-center rounded-lg transition-colors ${
+    showLabel ? 'w-full gap-2 px-2 text-sm' : 'w-8 justify-center'
+  } ${
+    isActive
+      ? 'bg-primary/10 text-primary'
+      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+  }`
+  if (item.external) {
+    return (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClick}
+        title={label}
+        aria-label={label}
+        className={className}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        {showLabel && (
+          <>
+            <span className="truncate">{label}</span>
+            <ExternalLink className="ml-auto h-3 w-3 shrink-0 opacity-50" />
+          </>
+        )}
+      </a>
+    )
+  }
   return (
-    <Link
-      href={item.href as Route}
-      onClick={onClick}
-      title={label}
-      aria-label={label}
-      className={`flex h-8 items-center rounded-lg transition-colors ${
-        showLabel ? 'w-full gap-2 px-2 text-sm' : 'w-8 justify-center'
-      } ${
-        isActive
-          ? 'bg-primary/10 text-primary'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-      }`}
-    >
+    <Link href={item.href as Route} onClick={onClick} title={label} aria-label={label} className={className}>
       <Icon className="h-4 w-4 shrink-0" />
       {showLabel && <span className="truncate">{label}</span>}
     </Link>
@@ -702,7 +725,7 @@ function UtilityIconLink({
 }
 
 /**
- * The occasional utilities — Plugins, Settings, How-to, plus the studio QR when
+ * The occasional utilities — Plugins, Settings, the help centre, plus the studio QR when
  * the sidebar is collapsed — behind ONE "⋯" control. Used in BOTH modes.
  *
  * WHY IT EXISTS: collapsed, the icons stack vertically and cost ~144px, which
@@ -803,9 +826,9 @@ function UtilityTray({ onLinkClick }: { onLinkClick?: () => void }) {
               { ...ALL_SETTINGS_ITEM, href: orgHref(orgId, 'settings') },
             ]
           : []),
-        HOW_TO_ITEM,
+        HELP_CENTRE_ITEM,
       ]
-    : [EXPLORE_PLUGINS_ITEM, ALL_SETTINGS_ITEM, HOW_TO_ITEM]
+    : [EXPLORE_PLUGINS_ITEM, ALL_SETTINGS_ITEM, HELP_CENTRE_ITEM]
 
   // In org scope the first tool is the RESTING icon, so it is not also in the
   // reveal — one control never appears twice on one row.
@@ -833,7 +856,7 @@ function UtilityTray({ onLinkClick }: { onLinkClick?: () => void }) {
       onMouseLeave={() => setHovered(false)}
     >
       {!orgId ? <TeamQrButton /> : <UtilityIconLink item={tools[0]} onClick={onLinkClick} />}
-      {/* A member studio's org tray is How-to alone, so there is nothing to
+      {/* A member studio's org tray is the help centre alone, so there is nothing to
           reveal and the chevron would open onto empty space. */}
       {/* THE SECOND RESTING ICON. Notifications are a studio-level fact — "does
           my team have something waiting" — not a scope-level one, so it sits
@@ -891,14 +914,14 @@ function UtilityFlyout({
   // paths, so in org scope "All settings" and "Explore plugins" walked the
   // reader straight out of the organisation and into the studio's settings —
   // silently, because both screens look plausible on arrival. An organisation
-  // has its own of each; How-to is the product's help and belongs to neither.
+  // has its own of each; the help centre is the product's help and belongs to neither.
   //
   // The QR is studio-only for the same reason and is not swapped: it encodes a
   // STUDIO's public links, and there is no org equivalent to put in its place.
   //
   // AND THE ROLE. An organisation's settings and plugins are `adminOnly` in
   // ORG_RAIL_ITEMS; offering them here to a member studio was the same leak the
-  // tray had. A non-admin in org scope is left with How-to, which is the honest
+  // tray had. A non-admin in org scope is left with the help centre, which is the honest
   // answer: the other two belong to the people who run the federation.
   const { current: scope } = useScope()
   const orgId = scope?.kind === 'org' ? scope.id : null
@@ -945,7 +968,7 @@ function UtilityFlyout({
             not fit. The QR belongs to the full set alone: expanded, the tray
             shows it at rest, and one control must not appear twice on a row. */}
         {!items && !orgId && <TeamQrButton showLabel />}
-        {(items ?? (orgToolsAllowed ? [pluginsItem, settingsItem, HOW_TO_ITEM] : [HOW_TO_ITEM])).map((item) => (
+        {(items ?? (orgToolsAllowed ? [pluginsItem, settingsItem, HELP_CENTRE_ITEM] : [HELP_CENTRE_ITEM])).map((item) => (
           <UtilityIconLink key={item.id} item={item} onClick={onLinkClick} showLabel />
         ))}
       </div>
@@ -2849,22 +2872,12 @@ function SidebarContent({
       }))
     : []
 
+  // Search finds pages INSIDE the app; the help centre is an external site and
+  // is reached from the utility row and the user menu instead.
   const searchEntries: SearchEntry[] = orgScopeId ? [
-    // How-to is the product's own help and belongs to neither scope, so it is
-    // the one studio-side entry that survives the swap.
-    ...[HOW_TO_ITEM].map((item) => ({
-      id: item.id,
-      href: item.href,
-      label: t(item.labelKey as Parameters<typeof t>[0]),
-      icon: item.icon,
-      exact: item.exact,
-      keywords: kwOf(item.id),
-      canShortcut: false,
-      kind: 'page' as SearchKind,
-    })),
     ...orgSearchEntries,
   ] : [
-    ...[DASHBOARD_ITEM, ALL_SETTINGS_ITEM, HOW_TO_ITEM].map((item) => ({
+    ...[DASHBOARD_ITEM, ALL_SETTINGS_ITEM].map((item) => ({
       id: item.id,
       href: item.href,
       label: t(item.labelKey as Parameters<typeof t>[0]),
@@ -3016,7 +3029,7 @@ function SidebarContent({
 
             Expanded they cost only one 32px row, so nothing forced it there —
             but the same argument holds for ATTENTION rather than for space.
-            Plugins, Settings and How-to are reached deliberately, minutes
+            Plugins, Settings and the help centre are reached deliberately, minutes
             apart, never mid-task; sitting permanently beside the search field
             they compete with the working areas below for the top of the pane.
             Behind "⋯" they cost one click and stop competing (Franco,

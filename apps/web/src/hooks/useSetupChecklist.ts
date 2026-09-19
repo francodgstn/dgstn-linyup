@@ -141,7 +141,7 @@ export const setupChecklistKey = (teamId: string | null) =>
  * makes the checklist need telling, and it always is.
  *
  * PREFIX MATCH, on purpose: the caller does not have to know the teamId, and the
- * dashboard's and How-to's observers of the same key refresh with the guide's —
+ * dashboard's observers of the same key refresh with the guide's —
  * they show the same numbers, so they must never show different ones.
  *
  * It cannot cover a write the browser does not make: a recurring save writes one
@@ -189,7 +189,6 @@ export type SetupStepKey =
   | 'qrCodes'
   | 'automations'
   | 'paymentsReview'
-  | 'shortcuts'
 
 export type SetupSection = 'offer' | 'doors' | 'extra'
 
@@ -592,18 +591,6 @@ export function useSetupChecklist(teamId: string | null, team?: Team | null, pla
       ack: 'skip',
       requiresPlan: 'studio',
       done: !!d?.hasOtherMembers,
-    },
-    {
-      // NEVER DERIVED (rule 1): `NavPinsContext` falls back to
-      // `DEFAULT_SHORTCUT_IDS`, so a studio has shortcuts from its first render
-      // and a derived check could not be false. It is also per-browser
-      // localStorage rather than a fact about the studio. The row exists to
-      // teach the gesture; How-to is where the gesture is explained.
-      key: 'shortcuts',
-      section: 'extra',
-      href: '/how-to',
-      ack: 'review',
-      done: false,
     },
   ]
 
