@@ -21,7 +21,11 @@ export default defineConfig({
       // puts them under /de/ etc. and leaves every English URL where it is.
       locales: { root: { label: 'English', lang: 'en' } },
       customCss: ['./src/styles/custom.css'],
-      components: { SiteTitle: './src/components/SiteTitle.astro' },
+      components: {
+        SiteTitle: './src/components/SiteTitle.astro',
+        // linyup.com + Log in, in the header's right group and the mobile menu.
+        SocialIcons: './src/components/HeaderLinks.astro',
+      },
       favicon: '/favicon.svg',
       // The brand fonts, as on linyup.com (apps/landing BaseLayout).
       head: [

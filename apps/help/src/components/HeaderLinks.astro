@@ -1,0 +1,38 @@
+---
+// The way back out of the help centre: linyup.com and the app's sign-in, in
+// the header's right-hand group (Starlight's `SocialIcons` slot, which the
+// header shows on wide screens and the mobile menu shows in its footer). The
+// wordmark stays pointed at the help home, so these are the exits.
+const SITE_URL = 'https://linyup.com'
+const APP_LOGIN_URL = 'https://app.linyup.com/login'
+---
+
+<a class="lu-out" href={SITE_URL}>linyup.com</a>
+<a class="lu-out lu-login" href={APP_LOGIN_URL}>Log in</a>
+
+<style>
+  .lu-out {
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0.3rem 0.4rem;
+    border-radius: 0.5rem;
+  }
+  .lu-out:hover {
+    color: var(--sl-color-white);
+  }
+  .lu-login {
+    color: var(--sl-color-accent-high);
+    border: 1px solid var(--sl-color-accent);
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+  }
+  .lu-login:hover {
+    color: var(--sl-color-white);
+    background: var(--sl-color-accent);
+  }
+</style>
