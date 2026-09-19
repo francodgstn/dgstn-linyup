@@ -89,6 +89,7 @@ you may act on it:
 - [**Prod demo tenant**](./launch/prod-demo-and-store-review.md) — how it works now
 - [**HMD port checklist**](./migration-checklist.md) — how it works now
 - [**Legal input pack**](./launch/legal-input-pack.md) — how it works now
+- [**Cloud Functions consolidation plan (2026-09)**](./functions-consolidation-plan.md) — work to do
 
 ## Product
 

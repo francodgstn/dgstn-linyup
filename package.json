@@ -29,6 +29,7 @@
     "census:reads": "node scripts/census-reads.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
     "functions:ready": "node scripts/check-functions-ready.mjs",
+    "functions:inventory": "node scripts/functions-inventory.mjs",
     "docs:check": "node scripts/docs-check.mjs",
     "docs:index": "node scripts/docs-index.mjs",
     "docs:index:check": "node scripts/docs-index.mjs --check",
