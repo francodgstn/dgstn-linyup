@@ -36,12 +36,20 @@ export const ROUTER_NAMES = [
 export type RouterName = (typeof ROUTER_NAMES)[number]
 
 /**
- * Callable name → the router that serves it. No call site goes through
- * `callFunction` for the spike's members yet, so listing them moves no traffic.
+ * Callable name → the router that serves it. Listing a name moves traffic only
+ * for call sites that go through `callFunction`; the spike's members have none.
  */
 export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   listAvailability: 'rpcSpike',
   getMyBookings: 'rpcSpike',
+
+  // The operator console — the pilot. Called by apps/admin only.
+  manageDemoTenant: 'rpcOps',
+  setReviewAccess: 'rpcOps',
+  getReviewAccess: 'rpcOps',
+  resyncTenantFeeRate: 'rpcOps',
+  previewPlatformNotice: 'rpcOps',
+  sendPlatformNotice: 'rpcOps',
 }
 
 export function routerForCallable(name: string): RouterName | null {

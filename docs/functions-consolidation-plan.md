@@ -90,18 +90,18 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
-Output of `pnpm functions:inventory --md`. It includes `rpcSpike`, the throwaway Phase 0
-router, as one `https` function in the `routers` domain. Every endpoint is `gcfv2`, none
+Output of `pnpm functions:inventory --md`. It includes the routers built so far (`rpcSpike`, the throwaway
+Phase 0 one, and `rpcOps`, the pilot) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**298 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T17:27Z. Global options: region=europe-west6, maxInstances=20.
+**299 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T18:52Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
 | `callable` | 215 |
-| `https` | 11 |
+| `https` | 12 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
 | `firestore.updated` | 2 |
@@ -150,6 +150,7 @@ binds a secret and none sets a service account.
 | `offer` | 2 |  |  |  |  |  |  |  |  |  | 2 |
 | `orgWebsite` | 2 |  |  |  |  |  |  |  |  |  | 2 |
 | `payments` | 2 |  |  |  |  |  |  |  |  |  | 2 |
+| `routers` |  | 2 |  |  |  |  |  |  |  |  | 2 |
 | `website` | 2 |  |  |  |  |  |  |  |  |  | 2 |
 | `assistant` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `bio-link` |  | 1 |  |  |  |  |  |  |  |  | 1 |
@@ -158,9 +159,8 @@ binds a secret and none sets a service account.
 | `forms` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
-| `routers` |  | 1 |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **11** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **298** |
+| **Total** | **215** | **12** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **299** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -197,6 +197,7 @@ binds a secret and none sets a service account.
 | `sendOutreachEmail` | `outreach` | callable | `memory=512` `timeout=540` |
 | `onOrgBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
 | `onTeamBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
+| `rpcOps` | `routers` | https | `memory=512` `timeout=540` `cpu=1` `concurrency=10` `maxInstances=3` |
 | `rpcSpike` | `routers` | https | `memory=512` `timeout=60` `cpu=1` `concurrency=40` |
 | `handleStripeWebhook` | `saas-billing` | https | `invoker=public` |
 | `handleTrialLifecycle` | `saas-billing` | schedule | `memory=1024` `timeout=540` |
@@ -321,10 +322,11 @@ the floor. Only Phase 6 moves it, and only a little.
   - The router sets no `invoker`, the same as today's callables. Their invoker
     posture is carried over unchanged; confirm it in the spike.
 - **Router options:**
-  - `cpu: 1` and an explicit `concurrency` (start at 40, like `api`). Without them,
-    Firebase defaults a small function to `cpu: 'gcf_gen1'`, which pins concurrency
-    to 1. That is the firebase-functions `options.d.ts` default; confirm it on the
-    deployed service with `gcloud run services describe`.
+  - `cpu: 1` and an explicit `concurrency` (start at 40, like `api`). This is a sizing
+    choice, not a rescue: a plain callable here already deploys at 1 cpu and concurrency
+    80 (measured on staging, 2026-09-19 — an earlier draft of this plan claimed a
+    fractional-CPU, concurrency-1 default, and that was wrong). A router carries a whole
+    domain, so its concurrency is stated where the next reader will look for it.
   - Its own `maxInstances`, sized per router. The global 20 is per function, and a
     router puts many functions under one cap.
   - `memory` and `timeoutSeconds` set to the max of its members.
@@ -483,12 +485,26 @@ node scripts/router-spike.mjs --target emulator --functions-port 5001 --auth-por
 node scripts/router-spike.mjs --target linyup-staging --api-key <the web API key>
 ```
 
-**Still owed, and they need `rpcSpike` deployed to staging:**
-- Path pass-through on `cloudfunctions.net`, and the signed-in check with a real ID
-  token. The script does both. It reads the sign-in from `ROUTER_SPIKE_EMAIL` and
-  `ROUTER_SPIKE_PASSWORD`, and skips that check when they are unset.
-- The deployed cpu and concurrency (`gcloud run services describe rpcSpike --region europe-west6`).
-- The cold-start measurement.
+**Done on staging, 2026-09-19** (`rpcSpike` deployed by the merge of Phase 0; the deploy
+and its `functions:ready` gate were green):
+
+| Check | Result |
+|---|---|
+| Path pass-through on `cloudfunctions.net` | works: `…cloudfunctions.net/rpcSpike/listAvailability` reaches the member |
+| Results and error codes, direct vs routed | identical |
+| Signed-out `getMyBookings` | `unauthenticated` both ways |
+| CORS preflight from the staging web origin | identical, allowed methods included — the emulator difference above does not exist off the emulator |
+| Invoker | `allUsers` on the router, the same as on a plain callable |
+| Deployed options (`gcloud run services describe rpcspike`) | concurrency 40, 1 cpu, 512Mi, max 20 instances — as written |
+| Warm latency (Cloud Run request log) | the same direct and routed, to within a few milliseconds |
+| Router log line | present in Cloud Logging with `router`, `callable`, `status`, `ms` |
+
+**Still owed:**
+- The signed-in check with a real ID token. The script does it when `ROUTER_SPIKE_EMAIL`
+  and `ROUTER_SPIKE_PASSWORD` are set, and skips it otherwise. The emulator run proved
+  it with a contact-session token.
+- A true cold start. The first requests after the deploy were not one: the deploy's own
+  health check had already started an instance.
 
 **App Check cannot be exercised on a deployed project today.** `APP_CHECK_ENFORCE` and
 `APP_CHECK_ENFORCE_MOBILE` are `false` in every environment, so nothing is refused for
@@ -517,6 +533,10 @@ environment that turns the flag on.
   - The router's 5xx rate is no worse than the alias services had before.
   - The alias services' request_count falls to zero once the admin rollout is live.
 - **Rollback:** flip the route-table entries back.
+- **Built 2026-09-19, not yet deployed.** `node scripts/router-spike.mjs --target emulator
+  --routers rpcOps` calls every member signed out, direct and routed, and requires the
+  same refusal both ways; it passes. Run the same command with `--target linyup-staging`
+  once it is deployed, then click through the console.
 
 ### Phase 2: staff web domains (~1–2 days each)
 - Order: `rpcFinance`, `rpcBilling`, `rpcOrg`, `rpcHeavy`, `rpcStudio`.
@@ -567,9 +587,11 @@ See §8.
   whole index. There are fewer services and warmer instances. If routers still cold
   start slowly, lazily `require` members inside the router table; `api` already does
   this for `./mcp/server`.
-- **Concurrency.** This is the biggest correctness risk of the whole plan. A router
-  left at concurrency 1 serialises a whole domain behind the `maxInstances` cap.
-  Hence the explicit `cpu` and `concurrency` settings and the spike check.
+- **Concurrency and `maxInstances`.** Today each callable has its own 20 instances at
+  concurrency 80. A router puts a whole domain behind ONE such pool, so its
+  `concurrency` × `maxInstances` is the domain's ceiling and has to be sized on purpose:
+  small for `rpcOps`, generous for `rpcMember`. Size it from the alias services'
+  request_count before each phase.
 - **Blast radius.**
   - A bad router deploy takes down a domain, not one function.
   - Mitigation: separate `rpcCheckout` and `rpcOps`.
@@ -611,7 +633,7 @@ See §8.
 |---|---|---|
 | Auth context lost under the router | Spike test; `unauthenticated` rate on the router rises | Flip route table back |
 | App Check silently not enforced | Spike test with the flag on; a call without a token must fail | Block the phase |
-| Router stuck at concurrency 1 | p95 latency up, instance count at `maxInstances` | Fix options, redeploy |
+| Router pool too small for its domain | p95 latency up, instance count at `maxInstances`, 429s from Cloud Run | Raise `concurrency` or `maxInstances`, redeploy |
 | `HttpsError` codes change shape | Client error telemetry; the router unit test | Flip back, fix |
 | Alias removed while still called | `frozenFunctions.test.ts` fails CI; request_count checked in the PR | Re-export the name (same object) |
 | Task queue or webhook renamed by accident | `frozenFunctions.test.ts` | CI blocks it |
@@ -661,6 +683,4 @@ window.
   recipe.
 - Every claim that has not been proven at runtime is marked unverified. That covers:
   - `cloudfunctions.net` path pass-through
-  - the `gcf_gen1` default on deployed services
   - the CPU-quota arithmetic
-  - router invoker posture
