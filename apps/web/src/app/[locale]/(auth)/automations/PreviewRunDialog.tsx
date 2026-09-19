@@ -32,8 +32,6 @@
 import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import {
   Dialog,
   DialogBody,
@@ -47,6 +45,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { AlertTriangle, MessageCircleOff, Users } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 /** One row of `previewAutomationRule`'s `contacts` array. */
 interface PreviewContact {
@@ -112,10 +111,10 @@ export function PreviewRunDialog({
     staleTime: 0,
     retry: false,
     queryFn: async () => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; ruleId: string },
         { contacts: PreviewContact[]; count: number }
-      >(functions, 'previewAutomationRule')
+      >('previewAutomationRule')
       const res = await fn({ teamId, ruleId })
       return res.data
     },

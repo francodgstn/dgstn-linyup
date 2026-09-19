@@ -25,9 +25,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { QRCodeCanvas } from 'qrcode.react'
-import { httpsCallable } from 'firebase/functions'
 import { Check, Copy, QrCode, RefreshCw, ShieldOff, UserPen } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import {
   CONTACT_LINK_DEFAULT_TTL_MINUTES,
   CONTACT_LINK_TTL_CHOICES,
@@ -44,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { callFunction } from '@/lib/callFunction'
 
 interface Minted {
   url: string
@@ -123,10 +122,10 @@ export function ContactUpdateLinkDialog({
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; contactId: string; ttlMinutes: number; requireOtp: boolean },
         Minted
-      >(functions, 'createContactUpdateLink')
+      >('createContactUpdateLink')
       const res = await fn({ teamId, contactId, ttlMinutes: ttl, requireOtp: withOtp })
       setMinted(res.data)
     } catch {
@@ -140,8 +139,7 @@ export function ContactUpdateLinkDialog({
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<{ teamId: string; contactId: string }, { revoked: number }>(
-        functions,
+      const fn = callFunction<{ teamId: string; contactId: string }, { revoked: number }>(
         'revokeContactUpdateLinks'
       )
       await fn({ teamId, contactId })

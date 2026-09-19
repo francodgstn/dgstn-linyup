@@ -30,11 +30,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { MailWarning, Check, Loader2 } from 'lucide-react'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { sendVerificationEmail } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
+import { callFunction } from '@/lib/callFunction'
 
 export function VerifyEmailBanner() {
   const t = useTranslations('VerifyEmail')
@@ -52,8 +51,7 @@ export function VerifyEmailBanner() {
       // flipped by clicking a link somewhere else entirely.
       await user.reload()
       if (!user.emailVerified) return false
-      const fn = httpsCallable<Record<string, never>, { verified: boolean }>(
-        functions,
+      const fn = callFunction<Record<string, never>, { verified: boolean }>(
         'confirmEmailVerified'
       )
       await fn({})

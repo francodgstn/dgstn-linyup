@@ -11,8 +11,7 @@
 // `pickable`, so a solo owner/manager can still be assigned.
 
 import { useQuery } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
+import { callFunction } from '@/lib/callFunction'
 
 export interface CoachOption {
   userId: string
@@ -36,7 +35,7 @@ export function useCoaches(teamId: string | null) {
     enabled: !!teamId,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const res = await httpsCallable(functions, 'listTeamMembers')({ teamId })
+      const res = await callFunction('listTeamMembers')({ teamId })
       return (res.data as { members?: CoachOption[] }).members ?? []
     },
   })

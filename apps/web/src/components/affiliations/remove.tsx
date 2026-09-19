@@ -1,8 +1,6 @@
 'use client'
 
-import { httpsCallable } from 'firebase/functions'
 import { Trash2 } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * TAKING SOMEBODY OFF THE BOOKS — the action that replaced the 'guest' status.
@@ -61,9 +60,8 @@ export const NO_AFFILIATION = '__none__'
 
 /** Call the removeAffiliation callable for a single affiliation. */
 export async function removeAffiliationCall(args: RemoveAffiliationArgs): Promise<void> {
-  const fn = httpsCallable<RemoveAffiliationArgs, { success?: boolean }>(
-    functions,
-    'removeAffiliation',
+  const fn = callFunction<RemoveAffiliationArgs, { success?: boolean }>(
+    'removeAffiliation'
   )
   await fn(args)
 }

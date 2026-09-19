@@ -37,6 +37,7 @@ import { Link } from '@/i18n/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useContactDocumentRows } from '@/hooks/useContactDocuments'
+import { callFunction } from '@/lib/callFunction'
 
 export function ConsentHistoryPanel({
   contactId,
@@ -73,10 +74,10 @@ export function ConsentHistoryPanel({
     if (!teamId) return
     setAsking(documentId)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; documentId: string; contactIds: string[] },
         { counts: Record<string, number> }
-      >(functions, 'requestWaiverAcceptance')
+      >('requestWaiverAcceptance')
       const res = await fn({ teamId: teamId!, documentId, contactIds: [contactId] })
       const counts = res.data.counts
       // One recipient, so exactly one count is 1 — reported as the sentence for
@@ -102,10 +103,10 @@ export function ConsentHistoryPanel({
     setRevokeBusy(true)
     setRevokeError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { documentId: string; contactId: string; reason?: string },
         { revoked: boolean }
-      >(functions, 'revokeWaiverAcceptance')
+      >('revokeWaiverAcceptance')
       await fn({ documentId, contactId, reason: revokeReason.trim() || undefined })
       setRevoking(null)
       setRevokeReason('')

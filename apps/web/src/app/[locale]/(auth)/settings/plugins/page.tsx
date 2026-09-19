@@ -6,8 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import {
   doc, setDoc, deleteDoc, getDoc, serverTimestamp,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { usePluginDiscovery } from '@/hooks/usePluginDiscovery'
@@ -690,7 +689,7 @@ function PluginUnlockDialog({
     setSubmitting(true)
     setError(null)
     try {
-      await httpsCallable(functions, 'unlockPlugin')({ teamId, pluginId: manifest.id, key: key.trim() })
+      await callFunction('unlockPlugin')({ teamId, pluginId: manifest.id, key: key.trim() })
       void invalidateSetupChecklist()
       toast.success(`${t(manifest.nameKey as Parameters<typeof t>[0])} · ${t('unlockSuccess')}`)
       reset()

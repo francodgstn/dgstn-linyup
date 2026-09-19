@@ -16,8 +16,6 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { MessageCircle } from 'lucide-react'
 import {
   whatsappConsentAllows,
@@ -32,6 +30,7 @@ import { useCapabilities } from '@/hooks/useCapabilities'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { callFunction } from '@/lib/callFunction'
 
 function formatConsentDate(ts: unknown): string {
   const d = (ts as { toDate?: () => Date } | null | undefined)?.toDate?.()
@@ -101,10 +100,10 @@ function WhatsAppConsentKindRow({
     }
     setBusy(optIn ? 'in' : 'out')
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; contactId: string; optIn: boolean; kind: WhatsAppConsentKind },
         { ok: boolean }
-      >(functions, 'setContactWhatsAppConsent')
+      >('setContactWhatsAppConsent')
       await fn({ teamId, contactId: contact.id, optIn, kind })
       await qc.invalidateQueries({ queryKey: ['contact', contact.id] })
     } finally {

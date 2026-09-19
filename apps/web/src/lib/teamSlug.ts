@@ -1,5 +1,4 @@
-import { httpsCallable } from 'firebase/functions'
-import { functions } from './firebase'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * Is this slug free? — asked of the server, which is the only place that can
@@ -33,8 +32,7 @@ export type SlugCheck = {
 }
 
 export async function checkTeamSlug(slug: string, teamId?: string): Promise<SlugCheck> {
-  const res = await httpsCallable<{ slug: string; teamId?: string }, SlugCheck>(
-    functions,
+  const res = await callFunction<{ slug: string; teamId?: string }, SlugCheck>(
     'validateTeamSlug'
   )({ slug, teamId })
   return res.data

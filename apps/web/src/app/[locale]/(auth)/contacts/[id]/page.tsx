@@ -27,8 +27,7 @@ import {
   limit,
   documentId,
 } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
-import { httpsCallable } from 'firebase/functions'
+import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
 import { ConsentHistoryPanel } from '@/components/contacts/ConsentHistoryPanel'
 import { useAuth } from '@/contexts/AuthContext'
@@ -261,6 +260,7 @@ import {
 } from '@/hooks/useBookingActions'
 import { useContactBookedSessions, type SessionInfo } from '@/hooks/useBookingsWindow'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -2880,7 +2880,7 @@ function GrantCreditsDialog({
     setSaving(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         {
           contactId: string
           subscriptionTypeId: string
@@ -2891,7 +2891,7 @@ function GrantCreditsDialog({
           sendReceipt?: boolean
         },
         { success: boolean; credits: number; duplicate?: boolean }
-      >(functions, 'grantCredits')
+      >('grantCredits')
       await fn({
         contactId: contact.id,
         subscriptionTypeId: typeId,
@@ -3095,10 +3095,10 @@ function SetSubscriptionDialog({
     try {
       // Stop current billing first (if chosen) so a failure aborts before we reassign.
       if (stopCurrent && liveStripeSubs.length > 0 && teamId) {
-        const cancelFn = httpsCallable<
+        const cancelFn = callFunction<
           { teamId: string; subscriptionId: string },
           { ok: boolean }
-        >(functions, 'cancelMemberSubscription')
+        >('cancelMemberSubscription')
         for (const s of liveStripeSubs) {
           await cancelFn({ teamId, subscriptionId: s.subscriptionId })
         }
@@ -3111,7 +3111,7 @@ function SetSubscriptionDialog({
       // date computed from the chosen price there), and keeps the legacy slot
       // in step until the readers move to the plan list.
       const chosenPrice = activePrices.find((p) => p.id === priceId)
-      const assignFn = httpsCallable<
+      const assignFn = callFunction<
         {
           contactId: string
           subscriptionTypeId: string
@@ -3120,7 +3120,7 @@ function SetSubscriptionDialog({
           replace: boolean
         },
         { grantId: string }
-      >(functions, 'assignPlan')
+      >('assignPlan')
       await assignFn({
         contactId: contact.id,
         subscriptionTypeId: typeId,
@@ -3158,10 +3158,10 @@ function SetSubscriptionDialog({
     setError(null)
     try {
       if (stopCurrent && liveStripeSubs.length > 0 && teamId) {
-        const cancelFn = httpsCallable<
+        const cancelFn = callFunction<
           { teamId: string; subscriptionId: string },
           { ok: boolean }
-        >(functions, 'cancelMemberSubscription')
+        >('cancelMemberSubscription')
         for (const sub of liveStripeSubs) {
           await cancelFn({ teamId, subscriptionId: sub.subscriptionId })
         }
@@ -3169,8 +3169,7 @@ function SetSubscriptionDialog({
       }
       // Ends every open plan the contact holds and empties the legacy slot, on
       // the server (docs/multi-plan-holdings.md, phase 2).
-      const endFn = httpsCallable<{ contactId: string; allCurrent: true }, { ended: string[] }>(
-        functions,
+      const endFn = callFunction<{ contactId: string; allCurrent: true }, { ended: string[] }>(
         'endPlan'
       )
       await endFn({ contactId: contact.id, allCurrent: true })
@@ -4434,7 +4433,7 @@ function SendOutreachDialog({
     setSending(true)
     setError(null)
     try {
-      const fn = httpsCallable(functions, 'sendOutreachEmail')
+      const fn = callFunction('sendOutreachEmail')
       await fn({ contactIds: [contact.id], templateId, teamId })
       await qc.invalidateQueries({ queryKey: ['contact-activity-log', contact.id] })
       onOpenChange(false)
@@ -4855,7 +4854,7 @@ function AffiliationsTab({
     if (!ok) return
     setRemoving(affiliationId)
     try {
-      const fn = httpsCallable(functions, 'removeAffiliation')
+      const fn = callFunction('removeAffiliation')
       await fn({ teamId: contact.teamId, contactId: contact.id, affiliationId })
       invalidate()
     } finally {
@@ -4895,7 +4894,7 @@ function AffiliationsTab({
   const handleApprove = async (affiliationId: string) => {
     setApproving(affiliationId)
     try {
-      const fn = httpsCallable(functions, 'approveAffiliation')
+      const fn = callFunction('approveAffiliation')
       await fn({
         teamId: contact.teamId,
         contactId: contact.id,
@@ -5155,7 +5154,7 @@ function UpsertAffiliationDialog({
     setSaving(true)
     try {
       const typeDef = affiliationTypes.find((at) => at.id === typeId)
-      const fn = httpsCallable(functions, 'upsertAffiliation')
+      const fn = callFunction('upsertAffiliation')
       await fn({
         teamId: contact.teamId,
         contactId: contact.id,

@@ -12,8 +12,7 @@ import {
   doc, serverTimestamp, Timestamp, deleteField, onSnapshot, deleteDoc, setDoc,
   arrayUnion, arrayRemove,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { RankBadge } from '@/components/ranking/RankBadge'
 import { useCapabilities } from '@/hooks/useCapabilities'
@@ -88,6 +87,7 @@ import { RosterCard } from '@/components/dashboard/RosterCard'
 import { DemographicsCard } from '@/components/dashboard/DemographicsCard'
 import { QUICK_ACTION_PARAM } from '@/lib/quickActions'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -2081,7 +2081,7 @@ function ContactRequestDialog({
     setBusy(action)
     setError(false)
     try {
-      const fn = httpsCallable(functions, 'manageContactUpdateRequest')
+      const fn = callFunction('manageContactUpdateRequest')
       await fn({ teamId, requestId: request.id, action })
       onActioned()
       onClose()
@@ -2972,12 +2972,11 @@ export default function ContactsPage() {
     type: SubscriptionType | null,
     price: SubscriptionPrice | null
   ) => {
-    const assignFn = httpsCallable<
+    const assignFn = callFunction<
       { contactId: string; subscriptionTypeId: string; priceId: string | null },
       { grantId: string }
-    >(functions, 'assignPlan')
-    const endFn = httpsCallable<{ contactId: string; allCurrent: true }, { ended: string[] }>(
-      functions,
+    >('assignPlan')
+    const endFn = callFunction<{ contactId: string; allCurrent: true }, { ended: string[] }>(
       'endPlan'
     )
     await Promise.all([...selected].map((id) =>

@@ -7,8 +7,7 @@ import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { collection, doc, getDoc, query, updateDoc, where, orderBy } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +32,7 @@ import { Tip } from '@/components/ui/tip'
 import { usePagedQuery } from '@/hooks/usePagedQuery'
 import { useContactsByIds } from '@/hooks/useContactsByIds'
 import { LoadMoreFooter } from '@/components/ui/load-more-footer'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * A referral names two people, and both ids are on the row — so both are links
@@ -250,7 +250,7 @@ function SettingsTab({
   async function handleGenerateCodes() {
     setGenerating(true)
     try {
-      const fn = httpsCallable<{ teamId: string }, { generated: number }>(functions, 'generateReferralCodes')
+      const fn = callFunction<{ teamId: string }, { generated: number }>('generateReferralCodes')
       const result = await fn({ teamId })
       toast.success(t('settings.generateSuccess', { count: result.data.generated }))
     } catch (err: unknown) {
@@ -356,10 +356,10 @@ function ReferralsTab({
     reward_notes?: string
   }) {
     if (!selectedReferral) return
-    const fn = httpsCallable<
+    const fn = callFunction<
       { referralId: string; action: ReferralAction; reward?: { reward_type: string; reward_amount: number }; reward_notes?: string },
       { success: boolean; newStatus: string }
-    >(functions, 'confirmReferral')
+    >('confirmReferral')
     await fn({ referralId: selectedReferral.id, ...payload })
     toast.success(t('toasts.updateSuccess'))
     queryClient.invalidateQueries({ queryKey: ['referrals', teamId] })

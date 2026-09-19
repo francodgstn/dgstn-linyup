@@ -28,7 +28,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import { HeartPulse, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -43,11 +42,12 @@ import {
   type TeamSentimentDoc,
   type TeamSentimentMood,
 } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { callFunction } from '@/lib/callFunction'
 
 function toDate(ts: unknown): Date | undefined {
   if (!ts) return undefined
@@ -110,7 +110,7 @@ export function TeamSentimentSection({ teamId }: { teamId: string | null }) {
     if (!teamId || busy || running || runsLeft <= 0) return
     setBusy(true)
     try {
-      const res = await httpsCallable<{ teamId: string }, StartResult>(functions, 'generateTeamSentiment')({ teamId })
+      const res = await callFunction<{ teamId: string }, StartResult>('generateTeamSentiment')({ teamId })
       toast.success(t('sentimentStarted', { count: res.data.members }))
     } catch (err) {
       console.error('[team-sentiment] start failed:', err)

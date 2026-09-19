@@ -7,8 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   collection, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { useEventCheckins as useCheckins } from '@/hooks/useEventCheckins'
@@ -45,6 +44,7 @@ import { PLUGIN_REGISTRY } from '@/plugins/registry'
 import { pluginSlot } from '@/plugins/slots'
 import type { ComponentType } from 'react'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 interface PluginCheckinFormProps {
   contact: Contact
@@ -462,9 +462,7 @@ export function CheckinPanel({
     if (!sheetTarget) return
     setBusy(true)
     try {
-      const fn = httpsCallable<unknown, { id: string; is_completed: boolean }>(
-        functions, 'addEventCheckin',
-      )
+      const fn = callFunction<unknown, { id: string; is_completed: boolean }>('addEventCheckin')
       // No `contact` payload: the callable reads the stored contact itself, so
       // the name on a check-in cannot be whatever the client felt like sending.
       await fn({
@@ -499,9 +497,7 @@ export function CheckinPanel({
    * twenty rejections from one batch are twenty copies of the same cause.
    */
   async function handleAddBaseCheckins(chosen: Contact[]) {
-    const fn = httpsCallable<unknown, { id: string; is_completed: boolean }>(
-      functions, 'addEventCheckin',
-    )
+    const fn = callFunction<unknown, { id: string; is_completed: boolean }>('addEventCheckin')
     const teamIdForCheckin = selectedAddTeamId || currentTeamId || ''
     const results = await Promise.allSettled(
       chosen.map((c) =>

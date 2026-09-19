@@ -8,8 +8,7 @@ import type { Route } from 'next'
 import {
   collection, doc, getDoc, getDocs, query, where, orderBy, updateDoc, limit,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Trophy, Flame, Star, Plus, Trash2, Save, ChevronDown, ChevronRight, Info,
 } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 // The stored bag is `StoredGamificationSettings` (@linyup/shared, the ONE
@@ -353,7 +353,7 @@ function ScoringTab({
   async function handleRecalculate() {
     setRecalculating(true)
     try {
-      const fn = httpsCallable(functions, 'recalculateScores')
+      const fn = callFunction('recalculateScores')
       await fn({ teamId, month: currentMonth() })
     } catch (e) {
       console.error(e)
@@ -366,7 +366,7 @@ function ScoringTab({
     setResetDialogOpen(false)
     setResetting(true)
     try {
-      const fn = httpsCallable(functions, 'resetScores')
+      const fn = callFunction('resetScores')
       await fn({ teamId, month: currentMonth() })
     } catch (e) {
       console.error(e)

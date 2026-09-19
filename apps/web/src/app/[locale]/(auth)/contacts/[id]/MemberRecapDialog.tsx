@@ -17,7 +17,6 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -26,7 +25,6 @@ import {
   type Contact,
   type ContactAiMemberRecap,
 } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { callFunction } from '@/lib/callFunction'
 
 type SendResult = { sent: true } | { sent: false; reason: 'not_delivered' }
 
@@ -103,10 +102,10 @@ function RecapForm({
     if (!canSend) return
     setSending(true)
     try {
-      const call = httpsCallable<
+      const call = callFunction<
         { teamId: string; contactId: string; sendId: string; status: string; nextSession: string },
         SendResult
-      >(functions, 'sendContactRecapEmail')
+      >('sendContactRecapEmail')
       const res = await call({
         teamId: contact.teamId,
         contactId: contact.id,

@@ -7,9 +7,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { httpsCallable } from 'firebase/functions'
 import { Timestamp, collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { usePaymentMutationErrorToast } from './usePaymentErrorToast'
 import {
   detectByoStripeDoubleRecording,
@@ -31,6 +30,7 @@ import {
   TEAM_INTEGRATIONS_SUBCOLLECTION,
   LIVE_SUBSCRIPTION_STATUSES,
 } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** The browser origin to send to checkout/onboarding callables so Stripe returns
  * here (localhost in dev) instead of the env-configured hosting URL. */
@@ -63,7 +63,7 @@ export function useConnectStatus(teamId: string | null, enabled: boolean) {
     queryKey: ['connect-status', teamId],
     enabled: !!teamId && enabled,
     queryFn: async (): Promise<ConnectStatusResult> => {
-      const fn = httpsCallable<{ teamId: string }, ConnectStatusResult>(functions, 'getConnectStatus')
+      const fn = callFunction<{ teamId: string }, ConnectStatusResult>('getConnectStatus')
       return (await fn({ teamId: teamId! })).data
     },
   })
@@ -75,10 +75,10 @@ export function useStartConnectOnboarding() {
     // No `model`: onboarding produces one kind of account, so the caller has
     // nothing to choose. See the note on ConnectOnboardingModel in @linyup/shared.
     mutationFn: async (vars: { teamId: string; locale?: string }) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; locale?: string; origin?: string },
         { accountId: string; model: ConnectOnboardingModel; url: string }
-      >(functions, 'startConnectOnboarding')
+      >('startConnectOnboarding')
       return (await fn({ ...vars, origin: clientOrigin() })).data
     },
     onError,
@@ -97,8 +97,7 @@ export function useDisconnectConnectAccount() {
   const onError = usePaymentMutationErrorToast()
   return useMutation({
     mutationFn: async (vars: { teamId: string }) => {
-      const fn = httpsCallable<{ teamId: string }, { ok: boolean; disconnected: boolean }>(
-        functions,
+      const fn = callFunction<{ teamId: string }, { ok: boolean; disconnected: boolean }>(
         'disconnectConnectAccount'
       )
       return (await fn(vars)).data
@@ -122,10 +121,10 @@ export function useCreateMembershipPayment() {
       customerEmail?: string
       locale?: string
     }) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         typeof vars & { origin?: string },
         { url: string; sessionId: string; recurring: boolean }
-      >(functions, 'createMembershipPayment')
+      >('createMembershipPayment')
       return (await fn({ ...vars, origin: clientOrigin() })).data
     },
     onError,
@@ -249,7 +248,7 @@ export function useRefundMemberPayment() {
       amount?: number
       reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer'
     }) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         typeof vars,
         {
           refundId: string
@@ -259,7 +258,7 @@ export function useRefundMemberPayment() {
            *  must surface it, because nothing else will. */
           reversal: MemberPaymentEffectsReversal | null
         }
-      >(functions, 'refundMemberPayment')
+      >('refundMemberPayment')
       return (await fn(vars)).data
     },
     onSuccess: (_data, vars) =>
@@ -396,8 +395,7 @@ export function useUpdatePaymentRecord() {
       // Tell the buyer what they now hold (UX-80). Omitted ⇒ no mail.
       sendReceipt?: boolean
     }) => {
-      const fn = httpsCallable<typeof vars, { ok: boolean; contactId: string | null }>(
-        functions,
+      const fn = callFunction<typeof vars, { ok: boolean; contactId: string | null }>(
         'updatePaymentRecord'
       )
       return (await fn(vars)).data
@@ -427,7 +425,7 @@ export function useVoidManualPayment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (vars: { teamId: string; paymentId: string; reason?: string | null }) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         typeof vars,
         {
           ok: boolean
@@ -439,7 +437,7 @@ export function useVoidManualPayment() {
             course: string
           } | null
         }
-      >(functions, 'voidManualPayment')
+      >('voidManualPayment')
       return (await fn(vars)).data
     },
     onSuccess: (_data, vars) => {
@@ -495,8 +493,7 @@ export function useRecordManualPayment() {
       // Tell the buyer what they now hold (UX-80). Omitted ⇒ no mail.
       sendReceipt?: boolean
     }) => {
-      const fn = httpsCallable<typeof vars, { id: string; duplicate?: boolean }>(
-        functions,
+      const fn = callFunction<typeof vars, { id: string; duplicate?: boolean }>(
         'recordManualPayment'
       )
       return (await fn(vars)).data

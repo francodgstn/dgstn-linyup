@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTranslations } from 'next-intl'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
@@ -62,6 +61,7 @@ import {
 import type { TeamInvitation, TeamRole } from '@linyup/shared'
 import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 // ----- types ----------------------------------------------------------------
 
@@ -133,7 +133,7 @@ function InviteDialog({ open, onClose, onSuccess }: InviteDialogProps) {
     setLoading(true)
     setError(null)
     try {
-      const fn = httpsCallable(functions, 'sendTeamInvitation')
+      const fn = callFunction('sendTeamInvitation')
       await fn({ teamId, email: email.trim(), role })
       setEmail('')
       setRole('manager')
@@ -289,7 +289,7 @@ function ChangeRoleDialog({ open, member, canAssignOwner, onClose, onSuccess }: 
     setLoading(true)
     setError(null)
     try {
-      const fn = httpsCallable(functions, 'manageTeamMember')
+      const fn = callFunction('manageTeamMember')
       await fn({ teamId, userId: member.userId, action: 'updateRole', role })
       onSuccess()
       onClose()
@@ -431,7 +431,7 @@ export default function TeamMembersPage() {
     queryKey: ['team-members', teamId],
     enabled: !!teamId,
     queryFn: async () => {
-      const fn = httpsCallable<{ teamId: string }, { members: Array<{
+      const fn = callFunction<{ teamId: string }, { members: Array<{
         userId: string
         role: TeamRole
         joined: string | null
@@ -439,7 +439,7 @@ export default function TeamMembersPage() {
         displayName: string | null
         email: string | null
         isCoach: boolean
-      }> }>(functions, 'listTeamMembers')
+      }> }>('listTeamMembers')
       const result = await fn({ teamId: teamId! })
       return result.data.members.map((m) => ({
         id: m.userId,
@@ -499,7 +499,7 @@ export default function TeamMembersPage() {
     if (!removeTarget || !teamId) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'manageTeamMember')
+      const fn = callFunction('manageTeamMember')
       await fn({ teamId, userId: removeTarget.userId, action: 'remove' })
       addToast(t('removedSuccess'))
       invalidate()
@@ -516,7 +516,7 @@ export default function TeamMembersPage() {
     if (!cancelInviteTarget || !teamId) return
     setActionLoading(true)
     try {
-      const fn = httpsCallable(functions, 'manageTeamInvitation')
+      const fn = callFunction('manageTeamInvitation')
       await fn({ teamId, invitationId: cancelInviteTarget.id, action: 'cancel' })
       addToast(t('inviteCancelledSuccess'))
       invalidate()
@@ -536,7 +536,7 @@ export default function TeamMembersPage() {
       prev?.map((x) => (x.userId === m.userId ? { ...x, isCoach } : x)),
     )
     try {
-      const fn = httpsCallable(functions, 'manageTeamMember')
+      const fn = callFunction('manageTeamMember')
       await fn({ teamId, userId: m.userId, action: 'setCoach', isCoach })
       qc.invalidateQueries({ queryKey: ['team-coaches-roster', teamId] })
     } catch (err: unknown) {

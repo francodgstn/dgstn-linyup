@@ -1,5 +1,7 @@
 // The studio's finance desk, behind one function: the accounting journal, the
-// monthly export, QR invoices and Tarif 595 receipts. Staff-only and low
+// monthly export, QR invoices and Tarif 595 receipts, and the STAFF side of member
+// payments — Connect onboarding, subscriptions, refunds, manual payments, gift
+// cards and promo codes. (What a MEMBER calls to pay is Phase 3, not here.) Staff-only and low
 // traffic, and the first router with real studio traffic behind it
 // (docs/functions-consolidation-plan.md → "Phase 2").
 //
@@ -35,6 +37,27 @@ import {
   emailTarif595Receipt,
   suggestTarif595Mappings,
 } from '../tarif595'
+import { disconnectConnectAccount, getConnectStatus, startConnectOnboarding } from '../connect'
+import { issueGiftCard, voidGiftCard } from '../connect/giftCards'
+import {
+  cancelMemberSubscription,
+  createMemberPayment,
+  createMembershipPayment,
+  createMemberSubscription,
+  pauseMemberSubscription,
+  resumeMemberSubscription,
+} from '../connect/payments'
+import {
+  clearPromoRedemption,
+  createPromoCode,
+  releasePromoReservations,
+  setPromoCodeStatus,
+  updatePromoCode,
+} from '../connect/promoCodes'
+import { refundMemberPayment } from '../connect/refunds'
+import { updatePaymentRecord } from '../connect/updatePayment'
+import { recordManualPayment } from '../payments/recordManualPayment'
+import { voidManualPayment } from '../payments/voidManualPayment'
 
 export const rpcFinance = callableRouter(
   'rpcFinance',
@@ -66,5 +89,25 @@ export const rpcFinance = callableRouter(
     downloadTarif595Receipt,
     emailTarif595Receipt,
     suggestTarif595Mappings,
+    cancelMemberSubscription,
+    clearPromoRedemption,
+    createMemberPayment,
+    createMembershipPayment,
+    createMemberSubscription,
+    createPromoCode,
+    disconnectConnectAccount,
+    getConnectStatus,
+    issueGiftCard,
+    pauseMemberSubscription,
+    refundMemberPayment,
+    releasePromoReservations,
+    resumeMemberSubscription,
+    setPromoCodeStatus,
+    startConnectOnboarding,
+    updatePaymentRecord,
+    updatePromoCode,
+    voidGiftCard,
+    recordManualPayment,
+    voidManualPayment,
   }
 )

@@ -14,9 +14,8 @@
 // writer of that entry would serve one of them a row shape it does not expect.
 
 import { useQuery } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import type { TeamRole } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 interface SeatRow {
   userId: string
@@ -37,7 +36,7 @@ export function useTeamSeats(teamId: string | null, enabled = true) {
     queryKey: ['team-seats', teamId],
     enabled: !!teamId && enabled,
     queryFn: async () => {
-      const res = await httpsCallable(functions, 'listTeamMembers')({ teamId })
+      const res = await callFunction('listTeamMembers')({ teamId })
       const members = (res.data as { members?: SeatRow[] }).members ?? []
       return {
         count: members.length,

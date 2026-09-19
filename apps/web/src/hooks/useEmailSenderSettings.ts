@@ -2,10 +2,10 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import type { EmailSenderConfig } from '@linyup/shared'
 import { EMAIL_SENDER_INTEGRATION_DOC, ORGANIZATIONS_COLLECTION, TEAMS_COLLECTION, TEAM_INTEGRATIONS_SUBCOLLECTION } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 type EmailSenderScope = 'team' | 'org'
 
@@ -94,8 +94,7 @@ export function useEmailSenderSettings(
 
   const { mutateAsync: registerDomainMutation, isPending: isRegistering } = useMutation({
     mutationFn: async ({ domain, fromLocalPart }: { domain: string; fromLocalPart: string }) => {
-      const fn = httpsCallable<RegisterDomainPayload, RegisterDomainResult>(
-        functions,
+      const fn = callFunction<RegisterDomainPayload, RegisterDomainResult>(
         'registerSenderDomain'
       )
       await fn({ scope, entityId: entityId!, domain, fromLocalPart })
@@ -107,8 +106,7 @@ export function useEmailSenderSettings(
 
   const { mutateAsync: checkDomainMutation, isPending: isChecking } = useMutation({
     mutationFn: async () => {
-      const fn = httpsCallable<CheckDomainPayload, CheckDomainResult>(
-        functions,
+      const fn = callFunction<CheckDomainPayload, CheckDomainResult>(
         'checkSenderDomain'
       )
       await fn({ scope, entityId: entityId! })
@@ -120,8 +118,7 @@ export function useEmailSenderSettings(
 
   const { mutateAsync: revertToManagedMutation, isPending: isReverting } = useMutation({
     mutationFn: async () => {
-      const fn = httpsCallable<UseManagedSenderPayload, UseManagedSenderResult>(
-        functions,
+      const fn = callFunction<UseManagedSenderPayload, UseManagedSenderResult>(
         'useManagedSender'
       )
       await fn({ scope, entityId: entityId! })
@@ -133,8 +130,7 @@ export function useEmailSenderSettings(
 
   const { mutateAsync: sendTestMutation, isPending: isSendingTest } = useMutation({
     mutationFn: async (to?: string) => {
-      const fn = httpsCallable<SendTestEmailPayload, SendTestEmailResult>(
-        functions,
+      const fn = callFunction<SendTestEmailPayload, SendTestEmailResult>(
         'sendTestEmail'
       )
       const result = await fn({ scope, entityId: entityId!, ...(to ? { to } : {}) })

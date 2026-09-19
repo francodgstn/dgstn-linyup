@@ -22,8 +22,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { coachLabel, type CoachOption } from '@/hooks/useCoaches'
 import { usePlaces } from '@/hooks/usePlaces'
@@ -63,6 +61,7 @@ import { useActivities } from '@/hooks/useActivities'
 import { formatDuration } from '@/components/sessions/SessionFormDialog'
 import { Pause, Play, Pencil, Plus, MapPin, Video, CalendarClock, CalendarOff, ChevronRight, Trash2, X, User } from 'lucide-react'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── error surfacing (mirrors AppointmentFormDialog / TemplateDialog conventions) ──
 
@@ -232,7 +231,7 @@ function useTeamMemberOptions(teamId: string | null) {
     enabled: !!teamId,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const res = await httpsCallable(functions, 'listTeamMembers')({ teamId })
+      const res = await callFunction('listTeamMembers')({ teamId })
       return (res.data as { members?: CoachOption[] }).members ?? []
     },
     select: (ms) => ms.map((m) => ({ id: m.userId, name: coachLabel(m) })),
@@ -906,10 +905,10 @@ export function AppointmentDetail({ slot, onClose, onCancelled }: {
     if (!slot) return
     setCancelling(true)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; sessionId: string },
         { ok: boolean; cancelled: boolean; reason?: string; linkStillOpen?: boolean }
-      >(functions, 'cancelAppointmentSlot')
+      >('cancelAppointmentSlot')
       const res = await fn({ teamId: slot.teamId, sessionId: slot.id })
       if (res.data?.ok === false) {
         // The client paid the link in the seconds before this call. Nothing was

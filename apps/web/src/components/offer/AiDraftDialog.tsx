@@ -29,7 +29,6 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
 import { Sparkles, Zap, IdCard, AlertTriangle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -43,10 +42,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { functions } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
 import { renderChatMarkdown } from '@/lib/chatMarkdown'
 import { OFFERING_DRAFT_LIMITS, type OfferingDraft } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 type DraftResult = { draft: OfferingDraft; problems: { path: string; code: string }[] }
 
@@ -104,8 +103,7 @@ export function AiDraftDialog({
     setDrafting(true)
     reset()
     try {
-      const call = httpsCallable<{ teamId: string; prompt: string }, DraftResult>(
-        functions,
+      const call = callFunction<{ teamId: string; prompt: string }, DraftResult>(
         'draftOfferings'
       )
       const res = await call({ teamId, prompt: prompt.trim() })
@@ -126,10 +124,10 @@ export function AiDraftDialog({
     }
     setApplying(true)
     try {
-      const call = httpsCallable<
+      const call = callFunction<
         { teamId: string; draft: OfferingDraft },
         { activities: number; plans: number }
-      >(functions, 'applyOfferingDraft')
+      >('applyOfferingDraft')
       const res = await call({ teamId, draft: kept })
       toast.success(t('aiApplied', { activities: res.data.activities, plans: res.data.plans }))
       onApplied()

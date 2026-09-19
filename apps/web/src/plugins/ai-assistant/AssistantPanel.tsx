@@ -18,8 +18,6 @@
 import { useState, useRef, useEffect, useMemo, type MouseEvent } from 'react'
 import type { Route } from 'next'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { renderChatMarkdown } from '@/lib/chatMarkdown'
 import { useRouter } from '@/i18n/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -32,6 +30,7 @@ import { Button } from '@/components/ui/button'
 import { FloatingSlot } from '@/components/layout/FloatingDock'
 import { Sparkles, Send, Loader2 } from 'lucide-react'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
@@ -65,7 +64,7 @@ function AssistantPanel() {
     setSending(true)
     setError(null)
     try {
-      const res = await httpsCallable(functions, 'assistantChat')({ teamId: currentTeamId, messages: next })
+      const res = await callFunction('assistantChat')({ teamId: currentTeamId, messages: next })
       const reply = (res.data as { reply?: string })?.reply?.trim()
       if (!reply) throw new Error('empty')
       setMessages((m) => [...m, { role: 'assistant', content: reply }])

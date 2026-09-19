@@ -8,8 +8,7 @@
 
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import {
   TEAMS_COLLECTION,
   PUBLIC_PROFILE_SUBCOLLECTION,
@@ -20,6 +19,7 @@ import {
   type WhatsAppStudioTemplate,
   type WhatsAppTemplateCategory,
 } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 function integrationRef(teamId: string) {
   return doc(db, TEAMS_COLLECTION, teamId, TEAM_INTEGRATIONS_SUBCOLLECTION, WHATSAPP_INTEGRATION_DOC)
@@ -50,8 +50,7 @@ export function useWhatsAppSignupConfig(teamId: string | null, enabled: boolean)
     queryKey: ['whatsapp-signup-config', teamId],
     enabled: !!teamId && enabled,
     queryFn: async () => {
-      const fn = httpsCallable<{ teamId: string }, GetWhatsAppSignupConfigResult>(
-        functions,
+      const fn = callFunction<{ teamId: string }, GetWhatsAppSignupConfigResult>(
         'getWhatsAppSignupConfig'
       )
       return (await fn({ teamId: teamId! })).data
@@ -88,7 +87,7 @@ export function useConnectWhatsApp(teamId: string | null) {
   const invalidate = useInvalidateWhatsApp(teamId)
   return useMutation({
     mutationFn: async (vars: ConnectWhatsAppRequest) => {
-      const fn = httpsCallable<ConnectWhatsAppRequest, { ok: boolean }>(functions, 'connectWhatsApp')
+      const fn = callFunction<ConnectWhatsAppRequest, { ok: boolean }>('connectWhatsApp')
       return (await fn(vars)).data
     },
     onSuccess: invalidate,
@@ -99,7 +98,7 @@ export function useRefreshWhatsAppStatus(teamId: string | null) {
   const invalidate = useInvalidateWhatsApp(teamId)
   return useMutation({
     mutationFn: async (vars: { teamId: string }) => {
-      const fn = httpsCallable<{ teamId: string }, { ok: boolean }>(functions, 'refreshWhatsAppStatus')
+      const fn = callFunction<{ teamId: string }, { ok: boolean }>('refreshWhatsAppStatus')
       return (await fn(vars)).data
     },
     onSuccess: invalidate,
@@ -110,7 +109,7 @@ export function useDisconnectWhatsApp(teamId: string | null) {
   const invalidate = useInvalidateWhatsApp(teamId)
   return useMutation({
     mutationFn: async (vars: { teamId: string }) => {
-      const fn = httpsCallable<{ teamId: string }, { ok: boolean }>(functions, 'disconnectWhatsApp')
+      const fn = callFunction<{ teamId: string }, { ok: boolean }>('disconnectWhatsApp')
       return (await fn(vars)).data
     },
     onSuccess: invalidate,
@@ -164,8 +163,7 @@ export function useSubmitWhatsAppTemplate(teamId: string | null) {
   const invalidate = useInvalidateWhatsAppTemplates(teamId)
   return useMutation({
     mutationFn: async (vars: SubmitWhatsAppTemplateRequest) => {
-      const fn = httpsCallable<SubmitWhatsAppTemplateRequest, { id: string; status: string }>(
-        functions,
+      const fn = callFunction<SubmitWhatsAppTemplateRequest, { id: string; status: string }>(
         'submitWhatsAppTemplate'
       )
       return (await fn(vars)).data
@@ -178,8 +176,7 @@ export function useDeleteWhatsAppTemplate(teamId: string | null) {
   const invalidate = useInvalidateWhatsAppTemplates(teamId)
   return useMutation({
     mutationFn: async (vars: { teamId: string; templateId: string }) => {
-      const fn = httpsCallable<{ teamId: string; templateId: string }, { ok: boolean }>(
-        functions,
+      const fn = callFunction<{ teamId: string; templateId: string }, { ok: boolean }>(
         'deleteWhatsAppTemplate'
       )
       return (await fn(vars)).data
@@ -202,7 +199,7 @@ export function useWhatsAppUsage(teamId: string | null, enabled: boolean) {
     queryKey: ['whatsapp-usage', teamId],
     enabled: !!teamId && enabled,
     queryFn: async () => {
-      const fn = httpsCallable<{ teamId: string }, WhatsAppUsage>(functions, 'getWhatsAppUsage')
+      const fn = callFunction<{ teamId: string }, WhatsAppUsage>('getWhatsAppUsage')
       return (await fn({ teamId: teamId! })).data
     },
   })

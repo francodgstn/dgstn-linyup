@@ -5,11 +5,11 @@
 // resend the payment-link email or waive a pending fee.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { usePaymentMutationErrorToast } from './usePaymentErrorToast'
 import { POLICY_FEES_SUBCOLLECTION, TEAMS_COLLECTION, type PolicyFee } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** Recent policy fees for the team (manager read — see firestore.rules).
  *  Single-field orderBy; the caller filters by status client-side. */
@@ -35,7 +35,7 @@ export function useResendPolicyFeeLink() {
   const onError = usePaymentMutationErrorToast()
   return useMutation({
     mutationFn: async (vars: { teamId: string; feeId: string }) => {
-      const fn = httpsCallable<typeof vars, { ok: boolean }>(functions, 'resendPolicyFeeLink')
+      const fn = callFunction<typeof vars, { ok: boolean }>('resendPolicyFeeLink')
       return (await fn(vars)).data
     },
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ['policy-fees', vars.teamId] }),
@@ -48,7 +48,7 @@ export function useWaivePolicyFee() {
   const onError = usePaymentMutationErrorToast()
   return useMutation({
     mutationFn: async (vars: { teamId: string; feeId: string }) => {
-      const fn = httpsCallable<typeof vars, { ok: boolean }>(functions, 'waivePolicyFee')
+      const fn = callFunction<typeof vars, { ok: boolean }>('waivePolicyFee')
       return (await fn(vars)).data
     },
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ['policy-fees', vars.teamId] }),

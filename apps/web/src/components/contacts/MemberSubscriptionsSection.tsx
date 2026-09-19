@@ -25,9 +25,8 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Snowflake, Play, Ban } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import { collection, getDocs, query, where } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import type { MemberSubscription, SubscriptionRollupStatus } from '@linyup/shared'
 import {
   MEMBER_SUBSCRIPTIONS_SUBCOLLECTION,
@@ -50,6 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── rollup badge ─────────────────────────────────────────────────────────────
 
@@ -96,8 +96,7 @@ function usePauseMemberSubscription(teamId: string | null, contactId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (subscriptionId: string) => {
-      const fn = httpsCallable<{ teamId: string; subscriptionId: string }, { ok: boolean }>(
-        functions,
+      const fn = callFunction<{ teamId: string; subscriptionId: string }, { ok: boolean }>(
         'pauseMemberSubscription'
       )
       return (await fn({ teamId: teamId!, subscriptionId })).data
@@ -113,8 +112,7 @@ function useResumeMemberSubscription(teamId: string | null, contactId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (subscriptionId: string) => {
-      const fn = httpsCallable<{ teamId: string; subscriptionId: string }, { ok: boolean }>(
-        functions,
+      const fn = callFunction<{ teamId: string; subscriptionId: string }, { ok: boolean }>(
         'resumeMemberSubscription'
       )
       return (await fn({ teamId: teamId!, subscriptionId })).data
@@ -142,8 +140,7 @@ function useCancelMemberSubscription(teamId: string | null, contactId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (subscriptionId: string) => {
-      const fn = httpsCallable<{ teamId: string; subscriptionId: string }, { ok: boolean }>(
-        functions,
+      const fn = callFunction<{ teamId: string; subscriptionId: string }, { ok: boolean }>(
         'cancelMemberSubscription'
       )
       return (await fn({ teamId: teamId!, subscriptionId })).data

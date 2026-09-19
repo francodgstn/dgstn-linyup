@@ -1,7 +1,7 @@
 import { doc, getDoc } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from './firebase'
+import { db } from './firebase'
 import { USERS_COLLECTION } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * Account/team provisioning shared by the signup wizard and the social-auth
@@ -60,7 +60,7 @@ export async function provisionTeam(
   sportType: string | undefined,
   options: TeamProvisioningOptions = {}
 ): Promise<string> {
-  const call = httpsCallable<
+  const call = callFunction<
     {
       name: string
       sportType?: string
@@ -69,7 +69,7 @@ export async function provisionTeam(
       termsVersion?: string
     },
     { teamId: string; slug: string }
-  >(functions, 'createStudioTeam')
+  >('createStudioTeam')
 
   const res = await call({
     name: teamName,

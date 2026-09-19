@@ -18,8 +18,7 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { callFunction } from '@/lib/callFunction'
 import {
   ACCOUNTING_ACCOUNTS_SUBCOLLECTION,
@@ -339,10 +338,10 @@ export async function deleteEntryTemplate(teamId: string, id: string): Promise<v
 
 // ─── Callables ──────────────────────────────────────────────────────────────
 
-export const callRebuildLedger = httpsCallable<
+export const callRebuildLedger = callFunction<
   { teamId: string },
   { entries_written: number; skipped_foreign_currency: number }
->(functions, 'rebuildAccountingLedger')
+>('rebuildAccountingLedger')
 
 export const callCreateManualEntry = callFunction<
   {

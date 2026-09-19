@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { CONTACTS_COLLECTION, type Contact } from '@linyup/shared'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { Check } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 // Multi-coach assignment for a contact. Owners/managers (members.manage) pick one or
 // more coaches; a coach-role member then sees the contact in their own book (own
@@ -29,7 +29,7 @@ export function CoachAssignment({ contact, teamId }: { contact: Contact; teamId:
       // cross-user client-side — so the roster comes from the listTeamMembers callable
       // (same source as useCoaches / the /coaches page). Coach roster = members flagged
       // as coaches (per-member is_coach; absent ⇒ coach).
-      const res = await httpsCallable(functions, 'listTeamMembers')({ teamId })
+      const res = await callFunction('listTeamMembers')({ teamId })
       const members =
         (res.data as {
           members?: Array<{

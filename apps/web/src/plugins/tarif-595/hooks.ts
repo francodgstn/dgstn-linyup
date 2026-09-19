@@ -24,7 +24,6 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import {
   TARIF595_CONTACTS_SUBCOLLECTION,
   TARIF595_JOBS_SUBCOLLECTION,
@@ -50,7 +49,7 @@ import {
   type Tarif595SuggestResult,
   type Tarif595VoidRequest,
 } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { callFunction } from '@/lib/callFunction'
 import { usePagedQuery } from '@/hooks/usePagedQuery'
 
@@ -227,8 +226,7 @@ export const callIssueTarif595Receipt = callFunction<Tarif595IssueRequest, Tarif
 export const callVoidTarif595Receipt = callFunction<Tarif595VoidRequest, { receiptId: string; status: 'voided' }>('voidTarif595Receipt')
 export const callDownloadTarif595Receipt = callFunction<Tarif595DownloadRequest, Tarif595DownloadResult>('downloadTarif595Receipt')
 export const callEmailTarif595Receipt = callFunction<Tarif595EmailRequest, Tarif595EmailResult>('emailTarif595Receipt')
-export const callStartTarif595BulkIssue = httpsCallable<Tarif595BulkRequest, Tarif595BulkResult>(
-  functions,
+export const callStartTarif595BulkIssue = callFunction<Tarif595BulkRequest, Tarif595BulkResult>(
   'startTarif595BulkIssue'
 )
 /** A proposal of the offering → position map; the settings page marks the
