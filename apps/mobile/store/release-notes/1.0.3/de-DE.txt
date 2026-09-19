@@ -1,0 +1,1 @@
+• Der QR-Check-in-Scanner erklärt vor der Anfrage, wofür die Kamera genutzt wird, und führt dich zu den Einstellungen, wenn der Kamerazugriff ausgeschaltet ist.

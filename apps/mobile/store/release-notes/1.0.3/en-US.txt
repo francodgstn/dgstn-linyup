@@ -1,0 +1,1 @@
+• The QR check-in scanner explains what the camera is for before asking, and points you to Settings if camera access is turned off.

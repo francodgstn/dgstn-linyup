@@ -64,7 +64,19 @@ on:
       - 'packages/shared/**'
       - '.github/workflows/mobile.yml'
     tags: ['mobile-v*']
-  workflow_dispatch: {}
+  # A manual run can force a STORE build even when the fingerprint is
+  # unchanged — the case the release lane cannot express, since an unchanged
+  # fingerprint always means "publish an update". App Review is why it exists:
+  # a rejection fixed in JS still needs a new binary for the reviewer, and it
+  # must be built HERE, not on a laptop (see the mobile-release skill, "Where a
+  # store binary must come from"). Dispatch it from the main branch or a mobile-v* tag.
+  workflow_dispatch:
+    inputs:
+      store_build:
+        description: 'Force a store build (no submit) for this platform'
+        type: choice
+        options: [none, ios, android, all]
+        default: none
 
 concurrency:
   group: mobile-${{ github.ref }}
@@ -178,6 +190,49 @@ jobs:
           # the Apple account is set up (docs/mobile-roadmap-2026-09.md §7).
           platform: android
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── manual → forced store build ───────────────────────────────────────────
+  force-store-build:
+    name: Forced store build
+    if: github.event_name == 'workflow_dispatch' && inputs.store_build != 'none'
+    needs: check
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The store profile must target production
+        run: |
+          id=$(node -p "require('./apps/mobile/eas.json').build.store.env.FIREBASE_PROJECT_ID")
+          if [ "$id" != "linyup-prod" ]; then
+            echo "::error::eas.json store profile targets $id, not linyup-prod."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - uses: expo/expo-github-action@v9
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @linyup/shared run build
+
+      # --no-wait: the job goes green when the build is QUEUED, exactly like
+      # the release lane. Check the outcome on EAS (`eas build:list`).
+      - name: Store build
+        working-directory: apps/mobile
+        run: eas build --profile store --platform ${{ inputs.store_build }} --non-interactive --no-wait
 
   # ── mobile-v* → production channel / store ────────────────────────────────
   release:
