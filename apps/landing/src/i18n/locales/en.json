@@ -75,6 +75,10 @@
       "automations": {
         "title": "Automate the busywork",
         "benefit": "Welcome, remind, and win back contacts on autopilot."
+      },
+      "ai": {
+        "title": "Get AI insights",
+        "benefit": "A short briefing on each member, and a read on your whole studio."
       }
     },
     "cta": {
@@ -82,7 +86,8 @@
       "body": "Explore the live demo — no sign-up needed"
     },
     "all": {
-      "title": "Check all features"
+      "title": "Check all features",
+      "body": "Everything Linyup can do"
     },
     "help": {
       "title": "Help centre",
