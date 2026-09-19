@@ -189,6 +189,7 @@ export function ActivityDialog({
   onCreated,
   inline = false,
   section,
+  defaultPlanIds,
 }: {
   open: boolean
   onClose: () => void
@@ -242,6 +243,9 @@ export function ActivityDialog({
   /** Which group of fields to render when `inline`. Omitted renders both,
    *  which is what the dialog does — creating asks for everything at once. */
   section?: 'details' | 'booking'
+  /** The plans a NEW class includes from the start — every active plan the
+   *  host knows of (Franco, 2026-09-19). A copy keeps its original's list. */
+  defaultPlanIds?: string[]
 }) {
   const t = useTranslations('Activities')
   const tCommon = useTranslations('Common')
@@ -499,10 +503,16 @@ export function ActivityDialog({
     return {
       ...base,
       // A NEW CLASS, IN THE DERIVED SHAPE (docs/class-access-derived.md): no
-      // wall, no plan, and it FOLLOWS THE USUAL DROP-IN PRICE — so it is paid
-      // for anyone when the studio has one, and free until it does. A copy
-      // carries the original's answers.
-      accessRule: duplicating?.accessRule ?? { audience: 'anyone' as const },
+      // wall, EVERY PLAN INCLUDED (Franco, 2026-09-19 — a new class is part of
+      // what a member's plan already gives them, not a thing to link by hand),
+      // and it FOLLOWS THE USUAL DROP-IN PRICE. So members book free and
+      // everyone else pays the usual price; with no usual price set it is
+      // plan holders only until the studio sets one. A copy carries the
+      // original's answers.
+      accessRule: duplicating?.accessRule ?? {
+        audience: 'anyone' as const,
+        ...(defaultPlanIds?.length ? { subscriptionTypeIds: defaultPlanIds } : {}),
+      },
       dropIn: duplicating?.dropIn ?? { mode: 'studio' as const },
       trialEnabled: duplicating?.trialEnabled ?? false,
       trialPriceAmount: duplicating?.trialPriceAmount ?? null,
