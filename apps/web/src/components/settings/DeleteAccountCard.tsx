@@ -26,15 +26,14 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import { toast } from 'sonner'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import type { Team } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { callFunction } from '@/lib/callFunction'
 
 export function DeleteAccountCard({
   teamId,
@@ -56,10 +55,10 @@ export function DeleteAccountCard({
 
   const request = useMutation({
     mutationFn: async () => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; confirm: string },
         { scheduledFor: number; subscriptionsStopped: number }
-      >(functions, 'requestTeamDeletion')
+      >('requestTeamDeletion')
       return (await fn({ teamId, confirm: typed.trim() })).data
     },
     onSuccess: (data) => {
@@ -77,7 +76,7 @@ export function DeleteAccountCard({
 
   const cancel = useMutation({
     mutationFn: async () => {
-      const fn = httpsCallable<{ teamId: string }, { ok: boolean }>(functions, 'cancelTeamDeletion')
+      const fn = callFunction<{ teamId: string }, { ok: boolean }>('cancelTeamDeletion')
       return (await fn({ teamId })).data
     },
     onSuccess: () => {

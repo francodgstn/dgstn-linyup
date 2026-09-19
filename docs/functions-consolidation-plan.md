@@ -91,17 +91,17 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
 Output of `pnpm functions:inventory --md`. It includes the routers built so far (`rpcSpike`, the throwaway
-Phase 0 one, `rpcOps`, the pilot, `rpcFinance`, `rpcBilling` and `rpcOrg`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
+Phase 0 one, `rpcOps`, the pilot, `rpcFinance`, `rpcBilling`, `rpcOrg`, `rpcHeavy` and `rpcStudio`) as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**302 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T22:13Z. Global options: region=europe-west6, maxInstances=20.
+**304 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T22:49Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
 | `callable` | 215 |
-| `https` | 15 |
+| `https` | 17 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
 | `firestore.updated` | 2 |
@@ -130,6 +130,7 @@ binds a secret and none sets a service account.
 | `api` | 6 | 1 |  |  |  |  |  |  |  |  | 7 |
 | `auth` | 5 |  | 1 |  |  |  |  |  |  | 1 | 7 |
 | `dailyTasks` |  |  |  |  |  |  |  | 2 | 5 |  | 7 |
+| `routers` |  | 7 |  |  |  |  |  |  |  |  | 7 |
 | `sessions` | 6 |  |  |  |  |  |  |  | 1 |  | 7 |
 | `accounting` | 5 |  |  |  |  | 1 |  |  |  |  | 6 |
 | `appointments` | 6 |  |  |  |  |  |  |  |  |  | 6 |
@@ -138,7 +139,6 @@ binds a secret and none sets a service account.
 | `gamification` | 4 |  | 1 |  |  |  |  |  |  |  | 5 |
 | `invoices` | 5 |  |  |  |  |  |  |  |  |  | 5 |
 | `mail` | 4 | 1 |  |  |  |  |  |  |  |  | 5 |
-| `routers` |  | 5 |  |  |  |  |  |  |  |  | 5 |
 | `affiliations` | 4 |  |  |  |  |  |  |  |  |  | 4 |
 | `coaching` |  |  |  | 1 |  | 3 |  |  |  |  | 4 |
 | `referrals` | 4 |  |  |  |  |  |  |  |  |  | 4 |
@@ -160,7 +160,7 @@ binds a secret and none sets a service account.
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **15** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **302** |
+| **Total** | **215** | **17** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **304** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -199,9 +199,11 @@ binds a secret and none sets a service account.
 | `onTeamBundleInstallChange` | `plugins` | firestore.written | `retry=true` |
 | `rpcBilling` | `routers` | https | `cpu=1` `concurrency=40` |
 | `rpcFinance` | `routers` | https | `memory=512` `timeout=120` `cpu=1` `concurrency=40` |
+| `rpcHeavy` | `routers` | https | `memory=1024` `timeout=540` `cpu=1` `concurrency=4` |
 | `rpcOps` | `routers` | https | `memory=512` `timeout=540` `cpu=1` `concurrency=10` `maxInstances=3` |
 | `rpcOrg` | `routers` | https | `cpu=1` `concurrency=40` |
 | `rpcSpike` | `routers` | https | `memory=512` `timeout=60` `cpu=1` `concurrency=40` |
+| `rpcStudio` | `routers` | https | `memory=512` `timeout=120` `cpu=1` `concurrency=40` |
 | `handleStripeWebhook` | `saas-billing` | https | `invoker=public` |
 | `handleTrialLifecycle` | `saas-billing` | schedule | `memory=1024` `timeout=540` |
 | `runSeriesTeardown` | `sessions` | taskQueue | `timeout=540` |
@@ -577,6 +579,30 @@ environment that turns the flag on.
   org members and their invitations, taking the org website offline. The invitation pages
   call some of its members signed out, which stays each member's own decision.
   `publishOrgWebsite` runs for minutes, so it waits for `rpcHeavy`.
+- **`rpcOrg` is on staging since 2026-09-20**, deployed as written. Its spike found a
+  STAGING defect that has nothing to do with routing: the standalone `inviteOrgMember` and
+  `getOrgMemberInvitation` services there have an EMPTY invoker policy (no `allUsers`), so
+  Cloud Run refuses every direct call with a bare `permission-denied` before the callable
+  runs. Sandbox and production have the binding. The routed path works, because the router
+  has its own policy. It is the "green deploy, broken function" class that
+  `scripts/check-functions-ready.mjs` cannot see — it checks revisions, not invoker IAM —
+  and the spike script is, by accident, a check for it: a direct-vs-routed difference where
+  the direct side is a bare `permission-denied`.
+- **`rpcHeavy` and `rpcStudio` built 2026-09-20, in ONE PR** (see the redeploy note below).
+  `packages/functions/src/routers/heavy.ts` takes the callables that run for minutes or want
+  a gigabyte, so that their profile is paid only by the calls that need it.
+  `packages/functions/src/routers/studio.ts` takes every other staff callable. The staff side
+  of member payments (Connect, subscriptions, refunds, manual payments, gift cards, promo
+  codes) joined `rpcFinance`. What is left unrouted is exactly Phase 3: everything a member,
+  a guest or the member app calls.
+- **Some callables have no client caller at all** — no literal, no variable, in web, admin or
+  mobile. They were routed with their domain. `scripts/functions-inventory.mjs` lists
+  callables; pair it with the client-names recipe in §2.1 to list these, and consider
+  deleting them instead of carrying them.
+- **A test may pin the SPELLING of a call.** Two tests read the org Members page for the
+  literal `httpsCallable(functions, 'x')` and read its move to `callFunction('x')` as "invokes
+  nothing". They now accept either spelling. Run the WHOLE functions suite before a routing
+  PR, not only the router tests: that failure reached CI because only the latter were run.
 - **Every routing PR is a FULL redeploy.** The route table lives in `packages/shared`,
   which is vendored into every function, so changing it changes every function's source
   hash: the staging deploy step for `rpcBilling` took about eleven minutes, 429 retries
@@ -587,7 +613,8 @@ environment that turns the flag on.
   `apps/web/src/lib/callFunction.ts` builds a routed URL lazily, on first call: building
   it at import would read the emulator host with no `window`, and throw on a build whose
   env has no project id.
-- `apps/web/src/hooks/usePromoCodes.ts` moves with `rpcCheckout` in Phase 3.
+- `apps/web/src/hooks/usePromoCodes.ts` manages codes (staff), so it moved with `rpcFinance`;
+  only `previewPromoCode`, which a buyer calls, waits for `rpcCheckout` in Phase 3.
 
 ### Phase 3: public and member web (~2 days + 1 week soak)
 - `rpcCheckout`, then `rpcMember`, web side only. This is the hot path.

@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2 } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 interface ExportResult {
   filename: string
@@ -32,7 +31,7 @@ export function ExportContactsButton({ teamId }: { teamId: string }) {
     setBusy(true)
     setError(null)
     try {
-      const call = httpsCallable<{ teamId: string }, ExportResult>(functions, 'exportContacts')
+      const call = callFunction<{ teamId: string }, ExportResult>('exportContacts')
       const { data } = await call({ teamId })
       const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)

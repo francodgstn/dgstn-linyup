@@ -11,8 +11,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePlan } from '@/hooks/usePlan'
 import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
@@ -36,6 +35,7 @@ import {
 import { UserCog, UserPlus, Trash2, Mail, Clock, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 type Member = { userId: string; role: TeamRole; displayName?: string; email?: string; isCoach?: boolean }
 type Invite = { id: string; email: string; role: string }
@@ -84,7 +84,7 @@ export default function CoachesPage() {
     queryKey: ['team-members', currentTeamId],
     enabled: !!currentTeamId && studioPlus,
     queryFn: async () => {
-      const res = await httpsCallable(functions, 'listTeamMembers')({ teamId: currentTeamId })
+      const res = await callFunction('listTeamMembers')({ teamId: currentTeamId })
       return (res.data as { members?: Member[] }).members ?? []
     },
   })
@@ -112,7 +112,7 @@ export default function CoachesPage() {
 
   const removeMutation = useMutation({
     mutationFn: async (userId: string) => {
-      await httpsCallable(functions, 'manageTeamMember')({ teamId: currentTeamId, userId, action: 'remove' })
+      await callFunction('manageTeamMember')({ teamId: currentTeamId, userId, action: 'remove' })
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['team-members', currentTeamId] })
@@ -124,7 +124,7 @@ export default function CoachesPage() {
 
   const cancelInviteMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      await httpsCallable(functions, 'manageTeamInvitation')({ teamId: currentTeamId, invitationId, action: 'cancel' })
+      await callFunction('manageTeamInvitation')({ teamId: currentTeamId, invitationId, action: 'cancel' })
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['team-invitations', currentTeamId, 'coach'] }),
     onError: () => toast.error(t('errorGeneric')),
@@ -311,7 +311,7 @@ function InviteCoachDialog({
     setError(null)
     setErrorDetail(null)
     try {
-      await httpsCallable(functions, 'sendTeamInvitation')({ teamId, email: value, role: 'coach' })
+      await callFunction('sendTeamInvitation')({ teamId, email: value, role: 'coach' })
       toast.success(t('inviteSent'))
       onInvited()
       reset()

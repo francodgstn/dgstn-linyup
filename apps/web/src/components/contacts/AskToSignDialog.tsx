@@ -21,13 +21,12 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import type { AskedDocument } from '@/hooks/useContactDocuments'
+import { callFunction } from '@/lib/callFunction'
 
 export type WaiverRequestOutcome =
   | 'sent'
@@ -94,10 +93,10 @@ export function AskToSignDialog({
     setSending(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; documentId: string; contactIds: string[] },
         { counts: WaiverRequestCounts }
-      >(functions, 'requestWaiverAcceptance')
+      >('requestWaiverAcceptance')
       let total: WaiverRequestCounts = {
         sent: 0, already_signed: 0, no_email: 0, not_delivered: 0, skipped: 0,
       }

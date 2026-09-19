@@ -7,10 +7,10 @@
 // only covers what the Payments dashboard needs: listing + voiding.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { GIFT_CARDS_SUBCOLLECTION, TEAMS_COLLECTION, type GiftCard } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** Recent gift cards for the team (manager read, function-only write — see
  *  firestore.rules). Single-field orderBy, no composite index needed. */
@@ -50,8 +50,7 @@ export function useIssueGiftCard() {
       purchaserContactId?: string
       idempotencyKey: string
     }) => {
-      const fn = httpsCallable<typeof vars, { code: string; duplicate: boolean }>(
-        functions,
+      const fn = callFunction<typeof vars, { code: string; duplicate: boolean }>(
         'issueGiftCard'
       )
       return (await fn(vars)).data
@@ -64,7 +63,7 @@ export function useVoidGiftCard() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (vars: { teamId: string; code: string }) => {
-      const fn = httpsCallable<typeof vars, { ok: boolean }>(functions, 'voidGiftCard')
+      const fn = callFunction<typeof vars, { ok: boolean }>('voidGiftCard')
       return (await fn(vars)).data
     },
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ['gift-cards', vars.teamId] }),

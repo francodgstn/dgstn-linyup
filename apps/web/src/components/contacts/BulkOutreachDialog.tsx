@@ -16,8 +16,7 @@ import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { TEAMS_COLLECTION, OUTREACH_TEMPLATES_SUBCOLLECTION } from '@linyup/shared'
 import type { Contact } from '@linyup/shared'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -26,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
 import { AlertCircle, CheckCircle2, Mail, MailX } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 interface OutreachTemplateOption {
   id: string
@@ -111,10 +111,10 @@ export function BulkOutreachDialog({
     const id = sendId || crypto.randomUUID()
     setSendId(id)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { contactIds: string[]; templateId: string; teamId: string; sendId: string },
         { success: boolean; stats: OutreachStats }
-      >(functions, 'sendOutreachEmail')
+      >('sendOutreachEmail')
       const res = await fn({
         contactIds: mailable.map((c) => c.id),
         templateId,

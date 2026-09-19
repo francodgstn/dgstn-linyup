@@ -10,13 +10,11 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
 import { toast } from 'sonner'
 import { Ban, Loader2, Plus, UserPlus, UserRound } from 'lucide-react'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
-import { functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatCurrency } from '@/lib/format'
 import { formatDuration } from '@/components/sessions/SessionFormDialog'
@@ -34,6 +32,7 @@ import {
 import { DEFAULT_PAYMENT_MODES, resolveAppointmentDurations, resolveDurationSale } from '@linyup/shared'
 import type { Activity, ActivityDuration } from '@linyup/shared'
 import { coachLabel, type CoachOption } from '@/hooks/useCoaches'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── error surfacing (mirrors SessionFormDialog / TemplateDialog conventions) ──
 
@@ -247,9 +246,7 @@ export function AppointmentFormDialog({
         if (paymentMode === 'paid_offline') payload.method = method.trim()
       }
 
-      const fn = httpsCallable<CreateStaffAppointmentRequest, CreateStaffAppointmentResponse>(
-        functions, 'createStaffAppointment',
-      )
+      const fn = callFunction<CreateStaffAppointmentRequest, CreateStaffAppointmentResponse>('createStaffAppointment')
       const res = await withTimeout(fn(payload))
       const { paymentUrl } = res.data
 

@@ -2,10 +2,10 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import type { PublicDomainConfig, PublicDomainDnsRecord, PublicDomainStatus } from '@linyup/shared'
 import { PUBLIC_DOMAIN_INTEGRATION_DOC, TEAM_INTEGRATIONS_SUBCOLLECTION } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 // The domain a studio's PUBLIC PAGES are served from — the sibling of
 // useEmailSenderSettings, which owns the domain they SEND from. Two different
@@ -65,8 +65,7 @@ export function useCustomDomain(
 
   const { mutateAsync: register, isPending: isRegistering } = useMutation({
     mutationFn: async (hostname: string) => {
-      const fn = httpsCallable<ScopedPayload & { hostname: string }, RegisterResult>(
-        functions,
+      const fn = callFunction<ScopedPayload & { hostname: string }, RegisterResult>(
         'registerPublicDomain'
       )
       const result = await fn({ scope, entityId: entityId!, hostname })
@@ -77,7 +76,7 @@ export function useCustomDomain(
 
   const { mutateAsync: check, isPending: isChecking } = useMutation({
     mutationFn: async () => {
-      const fn = httpsCallable<ScopedPayload, CheckResult>(functions, 'checkPublicDomain')
+      const fn = callFunction<ScopedPayload, CheckResult>('checkPublicDomain')
       const result = await fn({ scope, entityId: entityId! })
       return result.data
     },
@@ -86,7 +85,7 @@ export function useCustomDomain(
 
   const { mutateAsync: remove, isPending: isRemoving } = useMutation({
     mutationFn: async () => {
-      const fn = httpsCallable<ScopedPayload, { removed: boolean }>(functions, 'removePublicDomain')
+      const fn = callFunction<ScopedPayload, { removed: boolean }>('removePublicDomain')
       await fn({ scope, entityId: entityId! })
     },
     onSuccess: () => qc.invalidateQueries({ queryKey }),

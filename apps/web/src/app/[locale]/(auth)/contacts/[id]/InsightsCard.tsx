@@ -21,7 +21,6 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import {
   XAxis,
   YAxis,
@@ -39,13 +38,13 @@ import type {
   ContactAiSummarySections,
   EngagementThresholds,
 } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { isoWeekLabel, useContactWeeklyReports } from './AttendanceTrendCard'
 import { ENGAGEMENT_BAR, ENGAGEMENT_TEXT } from './engagement'
 import { MemberRecapDialog } from './MemberRecapDialog'
+import { callFunction } from '@/lib/callFunction'
 
 function toDate(ts: unknown): Date | undefined {
   if (!ts) return undefined
@@ -138,8 +137,7 @@ function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean
     if (busy) return
     setBusy(true)
     try {
-      const call = httpsCallable<{ teamId: string; contactId: string }, SummaryResult>(
-        functions,
+      const call = callFunction<{ teamId: string; contactId: string }, SummaryResult>(
         'generateContactSummary'
       )
       const res = await call({ teamId: contact.teamId, contactId: contact.id })

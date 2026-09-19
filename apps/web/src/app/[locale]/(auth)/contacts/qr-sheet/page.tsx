@@ -25,9 +25,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { QRCodeCanvas } from 'qrcode.react'
-import { httpsCallable } from 'firebase/functions'
 import { Printer, ArrowLeft } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
@@ -46,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { callFunction } from '@/lib/callFunction'
 
 interface Slip {
   contactId: string
@@ -79,10 +78,10 @@ export default function ContactQrSheetPage() {
     setError(null)
     setProgress(0)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; contactIds: string[]; ttlMinutes: number },
         { links: Slip[]; skipped: string[] }
-      >(functions, 'createContactUpdateLinksBatch')
+      >('createContactUpdateLinksBatch')
 
       const all: Slip[] = []
       // Sequential, not Promise.all: each call revokes the previous grants for

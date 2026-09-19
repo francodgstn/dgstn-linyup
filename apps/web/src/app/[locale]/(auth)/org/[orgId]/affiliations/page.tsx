@@ -7,8 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   collection, getCountFromServer, getDocs, query, where, collectionGroup,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useWindowedList } from '@/hooks/useWindowedList'
 import { statusBadgeClass, statusFillClass } from '@/lib/affiliationStatusColors'
 import { AffiliationTypePicker } from '@/components/affiliations/AffiliationTypePicker'
@@ -44,6 +43,7 @@ import {
   RemoveConfirmDialog,
   removeAffiliationCall,
 } from '@/components/affiliations/remove'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── colour map ───────────────────────────────────────────────────────────────
 
@@ -373,7 +373,7 @@ function ContactAffiliationRow({
   const [showExpiry, setShowExpiry] = useState(false)
   const [showRemove, setShowRemove] = useState(false)
 
-  const upsertAffiliation = httpsCallable(functions, 'upsertAffiliation')
+  const upsertAffiliation = callFunction('upsertAffiliation')
 
   const { mutate: saveAffiliation, isPending: saving } = useMutation({
     mutationFn: async ({ statusId, validUntil }: { statusId: string; validUntil?: string | null }) => {
@@ -663,7 +663,7 @@ export default function OrgAffiliationsPage() {
   // so the end date comes from the type's own validity rule — HMD's 1 September
   // for a fixed-date type — instead of this page guessing a date per contact.
   const [bulkStatus, setBulkStatus] = useState<OrgAffiliationStatusDef | null>(null)
-  const upsertAffiliationCall = httpsCallable(functions, 'upsertAffiliation')
+  const upsertAffiliationCall = callFunction('upsertAffiliation')
 
   async function applyBulkStatus(def: OrgAffiliationStatusDef) {
     setRenewBusy(true)

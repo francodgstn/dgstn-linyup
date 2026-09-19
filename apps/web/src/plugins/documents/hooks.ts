@@ -12,8 +12,7 @@ import {
   collection, doc, getDoc, getDocs, query, where, orderBy,
   setDoc, updateDoc, deleteDoc, serverTimestamp, getCountFromServer, writeBatch,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import {
   DOCUMENTS_COLLECTION,
   DOCUMENTS_SETTINGS_DOC_ID,
@@ -32,6 +31,7 @@ import type {
   PublishOutcome,
   WaiverConfig,
 } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** The plugin's id — the doc id under `installed_plugins`, not a collection path. */
 const DOCUMENTS_PLUGIN_ID = 'documents'
@@ -301,9 +301,8 @@ export async function publishDocument(
   documentId: string,
   outcome: PublishOutcome,
 ): Promise<PublishResult> {
-  const fn = httpsCallable<{ documentId: string; outcome: PublishOutcome }, PublishResult>(
-    functions,
-    'publishDocumentVersion',
+  const fn = callFunction<{ documentId: string; outcome: PublishOutcome }, PublishResult>(
+    'publishDocumentVersion'
   )
   return (await fn({ documentId, outcome })).data
 }
@@ -330,7 +329,7 @@ export async function createWaiver(input: {
   title: string
   source: DocumentSource
 }): Promise<string> {
-  const fn = httpsCallable<typeof input, { documentId: string }>(functions, 'createWaiver')
+  const fn = callFunction<typeof input, { documentId: string }>('createWaiver')
   return (await fn(input)).data.documentId
 }
 
@@ -346,7 +345,7 @@ export async function updateWaiverContent(
     externalUrl?: string
   },
 ): Promise<void> {
-  const fn = httpsCallable(functions, 'updateWaiver')
+  const fn = callFunction('updateWaiver')
   await fn({ documentId, ...patch })
 }
 
@@ -359,19 +358,19 @@ export async function updateWaiverSettings(
   documentId: string,
   patch: Partial<Pick<WaiverConfig, 'mayIncludeMinors' | 'validityMonths' | 'scope'>>,
 ): Promise<void> {
-  const fn = httpsCallable(functions, 'updateWaiver')
+  const fn = callFunction('updateWaiver')
   await fn({ documentId, ...patch })
 }
 
 /** ASYMMETRIC: turning it ON calls `requirePlan`, turning it OFF never does. */
 export async function setWaiverRequirement(documentId: string, required: boolean): Promise<void> {
-  const fn = httpsCallable(functions, 'setWaiverRequirement')
+  const fn = callFunction('setWaiverRequirement')
   await fn({ documentId, required })
 }
 
 /** No plan gate at all — retiring is not creating. */
 export async function archiveWaiver(documentId: string): Promise<void> {
-  const fn = httpsCallable(functions, 'archiveWaiver')
+  const fn = callFunction('archiveWaiver')
   await fn({ documentId })
 }
 

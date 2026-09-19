@@ -10,8 +10,7 @@ import {
   collection, doc, getDoc, getDocs, query, where, orderBy, limit,
   increment, serverTimestamp, deleteField, writeBatch, addDoc,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActiveContacts } from '@/hooks/useActiveContacts'
 import { Badge } from '@/components/ui/badge'
@@ -58,6 +57,7 @@ import { SessionFormDialog } from '@/components/sessions/SessionFormDialog'
 import { SessionDeleteDialog } from '@/components/sessions/SessionDeleteDialog'
 import { toast } from 'sonner'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -1442,7 +1442,7 @@ export default function SessionDetailPage() {
     setWaitlistBusy(entry.id)
     setWaitlistError(null)
     try {
-      const fn = httpsCallable(functions, name)
+      const fn = callFunction(name)
       await fn({ teamId: currentTeamId, sessionId, contactId: entry.id })
       invalidate()
     } catch (err: unknown) {
@@ -1462,7 +1462,7 @@ export default function SessionDetailPage() {
     setScanMsg(null)
     try {
       const { c: contactId, h: hash } = JSON.parse(raw) as { c: string; h: string }
-      const fn = httpsCallable(functions, 'checkInContact')
+      const fn = callFunction('checkInContact')
       const result = await fn({ sessionId, contactId, hash, scope: 'sessions' }) as { data: { success: boolean; alreadyCheckedIn?: boolean; contactName?: string } }
       setScanMsg({
         text: result.data.alreadyCheckedIn

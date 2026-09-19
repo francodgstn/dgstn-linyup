@@ -5,8 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   collection, doc, getDoc, getDocs, query, where, collectionGroup,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { statusBadgeClass, statusFillClass } from '@/lib/affiliationStatusColors'
 import { AffiliationTypePicker } from '@/components/affiliations/AffiliationTypePicker'
 import { useTranslations } from 'next-intl'
@@ -44,6 +43,7 @@ import {
   removeAffiliationCall,
 } from '@/components/affiliations/remove'
 import { AffiliationTypesManager } from '@/components/affiliations/AffiliationTypesManager'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── colour map ────────────────────────────────────────────────────────────────
 
@@ -297,7 +297,7 @@ function ContactAffiliationRow({
   const [showExpiry, setShowExpiry] = useState(false)
   const [showRemove, setShowRemove] = useState(false)
 
-  const upsertAffiliation = httpsCallable(functions, 'upsertAffiliation')
+  const upsertAffiliation = callFunction('upsertAffiliation')
 
   const { mutate: saveAffiliation, isPending: saving } = useMutation({
     mutationFn: async ({ statusId, validUntil }: { statusId: string; validUntil?: string | null }) => {

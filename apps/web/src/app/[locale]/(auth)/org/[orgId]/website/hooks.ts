@@ -2,9 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage, functions } from '@/lib/firebase'
+import { db, storage } from '@/lib/firebase'
 import { stripUndefinedDeep, useDraftSitePages, saveDraftSitePages } from '@/lib/sitePagesClient'
 import { ORG_SITE_DRAFTS_COLLECTION, ORG_SITE_PUBLISHED_COLLECTION } from '@linyup/shared'
 import type { OrgSiteDraft, OrgPublishedSite, OrgSiteSection } from '@linyup/shared'
@@ -99,7 +98,7 @@ export async function saveOrgSiteDraft(
 
 /** Publish via Cloud Function (sanitizes the draft into the public snapshot). */
 export async function publishOrgSite(orgId: string): Promise<{ slug: string }> {
-  const res = await httpsCallable(functions, 'publishOrgWebsite')({ orgId })
+  const res = await callFunction('publishOrgWebsite')({ orgId })
   return res.data as { slug: string }
 }
 

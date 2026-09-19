@@ -14,9 +14,8 @@
 // See firestore.rules, the promo_codes block, for the argument in full.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import {
   PROMO_CODES_SUBCOLLECTION,
   TEAMS_COLLECTION,
@@ -25,6 +24,7 @@ import {
   type PromoEffect,
   type PromoScopeKind,
 } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 /** What the create/edit form sends. `maxUses` is REQUIRED and `null` means "no
  *  limit" — the server refuses a payload that omits the key entirely, so the
@@ -75,7 +75,7 @@ function useTeamMutation<TVars extends { teamId: string }, TOut>(name: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (vars: TVars) => {
-      const fn = httpsCallable<TVars, TOut>(functions, name)
+      const fn = callFunction<TVars, TOut>(name)
       return (await fn(vars)).data
     },
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['promo-codes', vars.teamId] }),

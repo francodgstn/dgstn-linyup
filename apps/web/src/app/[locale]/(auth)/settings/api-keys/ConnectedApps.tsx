@@ -9,17 +9,17 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import { toast } from 'sonner'
 import { PlugZap } from 'lucide-react'
 import { OAUTH_GRANTS_SUBCOLLECTION, TEAMS_COLLECTION, type OAuthGrant } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { ApiScopeName } from '@/components/api/ApiScopeText'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { callFunction } from '@/lib/callFunction'
 
 const GRANT_LIST_LIMIT = 50
 
@@ -55,7 +55,7 @@ export function ConnectedApps({ teamId }: { teamId: string }) {
     if (!ok) return
     setPending(grant.id)
     try {
-      await httpsCallable(functions, 'revokeOAuthGrant')({ teamId, grantId: grant.id })
+      await callFunction('revokeOAuthGrant')({ teamId, grantId: grant.id })
       toast.success(t('disconnectedToast', { name: grant.client_name }))
     } catch (err) {
       console.error('[connected apps] disconnect failed:', err)

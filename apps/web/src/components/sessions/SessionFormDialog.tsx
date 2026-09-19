@@ -9,8 +9,7 @@ import { z } from 'zod'
 import {
   collection, addDoc, updateDoc, doc, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateTimePicker } from '@/components/ui/date-picker'
@@ -39,6 +38,7 @@ import { Loader2, Repeat2, Plus, AlertTriangle, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { PlacesSheet } from '@/components/schedule/PlacesSheet'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── shared helpers (single source of truth for session forms) ─────────────────
 
@@ -708,7 +708,7 @@ export function SessionFormDialog({
         // reported failure rather than a request nobody watches: the catch
         // still runs if the promise rejects, and the toast is the only place
         // that failure could surface once the dialog is gone.
-        const generate = httpsCallable<{ seriesId: string }, { generatedCount: number }>(functions, 'generateRecurringSessions')
+        const generate = callFunction<{ seriesId: string }, { generatedCount: number }>('generateRecurringSessions')
         void generate({ seriesId: seriesRef.id }).catch((err) => {
           toast.error(t('seriesGenerateFailed', { message: errorMessage(err) }))
         })
@@ -768,9 +768,7 @@ export function SessionFormDialog({
     const startDate = values.start
     const endDate   = new Date(startDate.getTime() + values.duration * 60000)
     const activityEntry = activities.find(a => a.id === values.activityId)
-    const update = httpsCallable<{ sessionId: string; editScope: string; updates: Record<string, unknown> }, { updatedCount: number }>(
-      functions, 'updateRecurringSession',
-    )
+    const update = callFunction<{ sessionId: string; editScope: string; updates: Record<string, unknown> }, { updatedCount: number }>('updateRecurringSession')
     try {
       const res = await withTimeout(update({
         sessionId: editing!.id,

@@ -17,11 +17,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Route } from 'next'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
 import { AlertTriangle } from 'lucide-react'
 import type { ApiScope, TeamRole } from '@linyup/shared'
 import { API_SCOPE_REQUIREMENTS } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Link, useRouter } from '@/i18n/navigation'
 import { Logo } from '@/components/Logo'
@@ -29,6 +27,7 @@ import { ApiScopeHint, ApiScopeName } from '@/components/api/ApiScopeText'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { callFunction } from '@/lib/callFunction'
 
 interface ConsentTeamOption {
   teamId: string
@@ -89,7 +88,7 @@ export default function OAuthConsentPage() {
   useEffect(() => {
     if (!user || !requestId) return
     let cancelled = false
-    httpsCallable<{ requestId: string }, ConsentRequest>(functions, 'getOAuthAuthorizationRequest')({ requestId })
+    callFunction<{ requestId: string }, ConsentRequest>('getOAuthAuthorizationRequest')({ requestId })
       .then(({ data }) => {
         if (cancelled) return
         setRequest(data)
@@ -135,11 +134,10 @@ export default function OAuthConsentPage() {
     setError(null)
     try {
       const { data } = allow
-        ? await httpsCallable<{ requestId: string; teamId: string; scopes: ApiScope[] }, { redirect: string }>(
-            functions,
+        ? await callFunction<{ requestId: string; teamId: string; scopes: ApiScope[] }, { redirect: string }>(
             'approveOAuthAuthorization'
           )({ requestId, teamId: teamId!, scopes: [...chosen] })
-        : await httpsCallable<{ requestId: string }, { redirect: string }>(functions, 'denyOAuthAuthorization')({ requestId })
+        : await callFunction<{ requestId: string }, { redirect: string }>('denyOAuthAuthorization')({ requestId })
       // The app's own registered return address, from the server.
       window.location.assign(data.redirect)
     } catch (err) {

@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { deleteDoc, doc, onSnapshot } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import { toast } from 'sonner'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   SESSIONS_COLLECTION,
@@ -15,6 +14,7 @@ import {
 } from '@linyup/shared'
 import type { Session } from '@linyup/shared'
 import { Loader2, Repeat2, AlertTriangle } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 /**
  * Series-aware session delete. Standalone sessions are removed directly; sessions
@@ -124,7 +124,7 @@ export function SessionDeleteDialog({
     setBusy(true)
     try {
       if (isSeries) {
-        const cancel = httpsCallable<{ sessionId: string; deleteScope: string }, CancelResult>(functions, 'cancelSession')
+        const cancel = callFunction<{ sessionId: string; deleteScope: string }, CancelResult>('cancelSession')
         const res = await cancel({ sessionId: session.id, deleteScope: scope })
         if (res.data?.mode === 'background' && res.data.jobId) {
           const total = res.data.total ?? 0
@@ -135,10 +135,10 @@ export function SessionDeleteDialog({
         }
       } else {
         if (session.activityType === 'appointment' && session.payment_checkout_session_id) {
-          const closeLink = httpsCallable<
+          const closeLink = callFunction<
             { teamId: string; sessionId: string },
             { ok: boolean; cancelled: boolean; reason?: string; linkStillOpen?: boolean }
-          >(functions, 'cancelAppointmentSlot')
+          >('cancelAppointmentSlot')
           const res = await closeLink({ teamId: session.teamId, sessionId: session.id })
           if (res.data?.ok === false) {
             // The client paid in the window. Do NOT delete: the appointment is

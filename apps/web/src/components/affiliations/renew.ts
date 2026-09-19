@@ -2,8 +2,7 @@ import {
   resolveAffiliationValidUntil,
   type AffiliationValidityConfig,
 } from '@linyup/shared'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
+import { callFunction } from '@/lib/callFunction'
 
 // Shared helpers for the "renew affiliation" action (single + bulk). Renew extends
 // an affiliation's validity window and flips it back to active — reversing the daily
@@ -29,7 +28,7 @@ export interface RenewAffiliationResult {
 export async function renewAffiliationCall(
   args: RenewAffiliationArgs,
 ): Promise<RenewAffiliationResult> {
-  const fn = httpsCallable<RenewAffiliationArgs, RenewAffiliationResult>(functions, 'renewAffiliation')
+  const fn = callFunction<RenewAffiliationArgs, RenewAffiliationResult>('renewAffiliation')
   const res = await fn(args)
   return res.data
 }

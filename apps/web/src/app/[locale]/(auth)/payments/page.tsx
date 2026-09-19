@@ -12,9 +12,8 @@ import { ChevronDown, FileText, Loader2, Plus, Copy, Check, Search } from 'lucid
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { toast } from 'sonner'
-import { httpsCallable } from 'firebase/functions'
 import { collection, getDocs, query, where } from 'firebase/firestore'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import {
   DEFAULT_PAYMENT_MODES,
   SESSIONS_COLLECTION,
@@ -210,6 +209,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { QUICK_ACTION_PARAM } from '@/lib/quickActions'
+import { callFunction } from '@/lib/callFunction'
 
 // The statuses the subscriptions tab lists — ONE definition, on the hook that
 // now queries by it, so the query and this page can never disagree.
@@ -1327,10 +1327,10 @@ function MarkPaidDialog({
     if (!target || !method) return
     setSubmitting(true)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; sessionId: string; method: string },
         { ok: boolean; recorded: boolean; reason?: string; linkStillOpen?: boolean }
-      >(functions, 'markAppointmentPaid')
+      >('markAppointmentPaid')
       const res = await fn({ teamId, sessionId: target.id, method })
       if (res.data?.recorded === false) {
         // The client paid the link in the seconds before this call. Nothing was

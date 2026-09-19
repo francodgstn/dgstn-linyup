@@ -6,8 +6,7 @@ import { useTabParam } from '@/hooks/useTabParam'
 import { useParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { usePlaces } from '@/hooks/usePlaces'
@@ -48,6 +47,7 @@ import { useOrg } from '@/contexts/OrgContext'
 import { pluginSlot } from '@/plugins/slots'
 import type { Route } from 'next'
 import { Tip } from '@/components/ui/tip'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── subcollection types ──────────────────────────────────────────────────────
 
@@ -424,9 +424,8 @@ export default function EventDetailPage() {
     setSending(true)
     setSendResult(null)
     try {
-      const fn = httpsCallable<{ eventId: string; resend: boolean }, { stats: { sent: number; skipped: number } }>(
-        functions,
-        'sendEventInvitations',
+      const fn = callFunction<{ eventId: string; resend: boolean }, { stats: { sent: number; skipped: number } }>(
+        'sendEventInvitations'
       )
       const result = await fn({ eventId: id, resend })
       const { sent, skipped } = result.data.stats

@@ -17,7 +17,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import { toast } from 'sonner'
 import { Check, Copy, KeyRound, Plus } from 'lucide-react'
 import {
@@ -33,7 +32,7 @@ import {
   type ApiKey,
   type ApiScope,
 } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
@@ -57,6 +56,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ConnectedApps } from './ConnectedApps'
+import { callFunction } from '@/lib/callFunction'
 
 /** Where the API answers. Local development points this at the functions emulator. */
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.linyup.com').replace(/\/+$/, '')
@@ -137,7 +137,7 @@ export default function ApiKeysSettingsPage() {
     if (!ok) return
     setRevoking(key.id)
     try {
-      await httpsCallable(functions, 'revokeApiKey')({ teamId: currentTeamId, keyId: key.id })
+      await callFunction('revokeApiKey')({ teamId: currentTeamId, keyId: key.id })
       toast.success(t('revokedToast', { name: key.name }))
     } catch (err) {
       console.error('[api keys] revoke failed:', err)
@@ -388,10 +388,10 @@ function CreateKeyDialog({
     setSubmitting(true)
     setError(null)
     try {
-      const res = await httpsCallable<
+      const res = await callFunction<
         { teamId: string; name: string; scopes: ApiScope[]; expiresInDays: number | null },
         CreateResult
-      >(functions, 'createApiKey')({
+      >('createApiKey')({
         teamId,
         name: name.trim(),
         scopes: API_SCOPES.filter((s) => scopes.has(s)),

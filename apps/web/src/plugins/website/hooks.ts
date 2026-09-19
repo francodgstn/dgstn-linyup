@@ -2,9 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage, functions } from '@/lib/firebase'
+import { db, storage } from '@/lib/firebase'
 import { stripUndefinedDeep, useDraftSitePages, saveDraftSitePages } from '@/lib/sitePagesClient'
 import {
   SITE_DRAFTS_COLLECTION,
@@ -19,6 +18,7 @@ import type {
   SocialLink,
   WebsiteSection,
 } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── queries ────────────────────────────────────────────────────────────────
 
@@ -163,13 +163,13 @@ export async function saveEmbedWidgets(
 
 /** Publish via Cloud Function (sanitizes the draft into the public snapshot). */
 export async function publishSite(teamId: string): Promise<{ slug: string }> {
-  const res = await httpsCallable(functions, 'publishWebsite')({ teamId })
+  const res = await callFunction('publishWebsite')({ teamId })
   return res.data as { slug: string }
 }
 
 /** Remove the public snapshot (and flag the draft disabled) via Cloud Function. */
 export async function unpublishSite(teamId: string): Promise<void> {
-  await httpsCallable(functions, 'unpublishWebsite')({ teamId })
+  await callFunction('unpublishWebsite')({ teamId })
 }
 
 /** Upload a site image to Storage and return its public download URL. */

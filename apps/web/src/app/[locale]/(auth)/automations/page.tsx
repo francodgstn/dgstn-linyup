@@ -16,8 +16,7 @@ import {
   doc,
   serverTimestamp,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRankingSystems } from '@/hooks/useRankingSystems'
 import { useForm } from 'react-hook-form'
@@ -110,6 +109,7 @@ import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { useContactGroups, flattenGroupTree, isDynamicGroup } from '@/plugins/contact-groups/hooks'
 import type { ContactGroup } from '@linyup/shared'
 import { useConfirm } from '@/components/ui/confirm-dialog'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -2309,10 +2309,10 @@ export default function AutomationsPage() {
   // gets a dialog that says so and names the number first.
   async function handleRunNow(rule: AutomationRule) {
     if (!currentTeamId) return
-    const fn = httpsCallable<
+    const fn = callFunction<
       { teamId: string; ruleId: string },
       { success: boolean; stats: { matched: number; executed: number; failed: number } }
-    >(functions, 'triggerAutomationRule')
+    >('triggerAutomationRule')
     try {
       const res = await fn({ teamId: currentTeamId as string, ruleId: rule.id })
       const stats = res.data?.stats

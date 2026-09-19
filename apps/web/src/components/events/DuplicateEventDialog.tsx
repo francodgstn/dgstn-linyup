@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
@@ -13,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { toISODate } from '@linyup/shared'
 import { useResetOnOpen } from '@/hooks/useResetOnOpen'
 import type { Event } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 // Duplicating copies the event's SETUP — settings, categories, the whole
 // programme — and never its participants. The server callable owns that
@@ -53,10 +52,10 @@ export function DuplicateEventDialog({
     setBusy(true)
     setError(null)
     try {
-      const call = httpsCallable<
+      const call = callFunction<
         { eventId: string; newStart?: string; title?: string },
         { eventId: string }
-      >(functions, 'duplicateEvent')
+      >('duplicateEvent')
       const res = await call({
         eventId: event.id,
         newStart: startDate || undefined,
