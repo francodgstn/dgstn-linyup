@@ -273,7 +273,7 @@ describe('frozen functions — the extractors see what they claim to see', () =>
       '  onTaskDispatched<Payload>({ retryConfig }, h)',
       'export const spaced = https.onRequest(h)',
       '// export const commented = onRequest(h)',
-      'export const router = callableRouter("rpcSpike", {}, {})',
+      'export const router = callableRouter("rpcMember", {}, {})',
       'export const callable = onCall(h)',
       'const notExported = onRequest(h)',
     ].join('\n')

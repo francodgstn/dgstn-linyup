@@ -50,9 +50,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { httpsCallable } from 'firebase/functions'
 import { CheckCircle2, FileText, ShieldAlert } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import { RichTextContent } from '@/components/RichTextEditor'
 import {
   waiverAcceptancePayload,
@@ -66,6 +64,7 @@ import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from './SpaceAuthProvider'
 import { useSpaceTheme } from './useSpaceTheme'
 import { usePublicTeam } from '../PublicTeamProvider'
+import { callFunction } from '@/lib/callFunction'
 
 export function SpaceWaiverCard({ variant }: { variant: 'banner' | 'card' }) {
   const t = useTranslations('Waiver')
@@ -95,8 +94,7 @@ export function SpaceWaiverCard({ variant }: { variant: 'banner' | 'card' }) {
     async () => {
       if (!applies) return
       try {
-        const fn = httpsCallable<Record<string, unknown>, WaiverRequirementResponse>(
-          functions,
+        const fn = callFunction<Record<string, unknown>, WaiverRequirementResponse>(
           'resolveWaiverRequirement'
         )
         // `surface: 'space'` is what asks for EVERY required waiver rather than
@@ -144,8 +142,7 @@ export function SpaceWaiverCard({ variant }: { variant: 'banner' | 'card' }) {
       // snapshots it onto the acceptance in the same call.
       const payload = waiverAcceptancePayload(items, ticks, choices, guardianNames)
       if (payload.length === 0) return
-      const fn = httpsCallable<Record<string, unknown>, { recorded: number }>(
-        functions,
+      const fn = callFunction<Record<string, unknown>, { recorded: number }>(
         'signWaiverInSpace'
       )
       await fn({ teamId, locale, waiverAcceptances: payload })

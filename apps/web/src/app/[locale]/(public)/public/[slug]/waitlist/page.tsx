@@ -21,11 +21,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
 import { useLocale, useTranslations } from 'next-intl'
 import { CalendarDays, CheckCircle2, Clock, MapPin, Users, XCircle } from 'lucide-react'
 import type { WaitlistStatus } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency } from '@/lib/format'
@@ -42,6 +40,7 @@ import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicFormat } from '../usePublicFormat'
 import { type RegionalFormatter } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 export const dynamic = 'force-dynamic'
 
@@ -219,7 +218,7 @@ export default function WaitlistPage() {
     setLoading(true)
     setError(null)
     try {
-      const fn = httpsCallable<{ token: string }, WaitlistEntryView>(functions, 'getWaitlistEntry')
+      const fn = callFunction<{ token: string }, WaitlistEntryView>('getWaitlistEntry')
       const res = await fn({ token })
       setEntry(res.data)
     } catch (err: unknown) {
@@ -267,8 +266,7 @@ export default function WaitlistPage() {
       }
       const waiverAcceptances = waiverGate.acceptances
 
-      const fn = httpsCallable<Record<string, unknown>, ClaimResult>(
-        functions,
+      const fn = callFunction<Record<string, unknown>, ClaimResult>(
         'claimWaitlistSeat'
       )
       const res = await fn({
@@ -317,10 +315,10 @@ export default function WaitlistPage() {
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         Record<string, unknown>,
         { url?: string | null; paidWithGiftCard?: boolean }
-      >(functions, 'createDropInCheckout')
+      >('createDropInCheckout')
       const res = await fn({
         teamId: entry.teamId,
         sessionId: entry.sessionId,
@@ -361,7 +359,7 @@ export default function WaitlistPage() {
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<{ entryToken: string }, { ok: boolean }>(functions, 'leaveWaitlist')
+      const fn = callFunction<{ entryToken: string }, { ok: boolean }>('leaveWaitlist')
       await fn({ entryToken: token })
       setLeft(true)
       setShowLeaveConfirm(false)

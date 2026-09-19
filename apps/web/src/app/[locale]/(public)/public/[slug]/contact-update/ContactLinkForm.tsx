@@ -17,10 +17,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { httpsCallable, FunctionsError } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
+import { FunctionsError } from 'firebase/functions'
 import type { CustomFieldDefinition } from '@linyup/shared'
 import { CONTACT_LINK_OTP_LENGTH } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 interface ResolvedContact {
   firstname: string
@@ -73,8 +73,7 @@ export default function ContactLinkForm({ token }: { token: string }) {
     async (code?: string) => {
       setError(null)
       try {
-        const fn = httpsCallable<{ token: string; otp?: string }, Resolved>(
-          functions,
+        const fn = callFunction<{ token: string; otp?: string }, Resolved>(
           'resolveContactUpdateLink'
         )
         const res = await fn({ token, otp: code })
@@ -117,10 +116,10 @@ export default function ContactLinkForm({ token }: { token: string }) {
     setBusy(true)
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { token: string; otp?: string; values: Record<string, unknown> },
         { status: string }
-      >(functions, 'submitContactUpdateLink')
+      >('submitContactUpdateLink')
       await fn({ token, otp: otp || undefined, values })
       setState('done')
     } catch (err) {

@@ -82,8 +82,8 @@ function recordingTable(names: string[]) {
 describe('resolveCallableName — the last non-empty path segment', () => {
   const cases: [string | null | undefined, string | null][] = [
     ['/listAvailability', 'listAvailability'],
-    ['/demo-linyup/europe-west6/rpcSpike/listAvailability', 'listAvailability'],
-    ['/rpcSpike/listAvailability/', 'listAvailability'],
+    ['/demo-linyup/europe-west6/rpcMember/listAvailability', 'listAvailability'],
+    ['/rpcMember/listAvailability/', 'listAvailability'],
     ['//listAvailability//', 'listAvailability'],
     ['listAvailability', 'listAvailability'],
     ['/listAvailability?x=/other', 'listAvailability'],
@@ -110,11 +110,11 @@ describe('resolveCallableName — the last non-empty path segment', () => {
 
 describe('createRouterHandler — dispatch', () => {
   it('hands (req, res) to the member named by the last segment, with or without a prefix', () => {
-    for (const path of ['/beta', '/prefix/beta', '/p/europe-west6/rpcSpike/beta', '/beta/']) {
+    for (const path of ['/beta', '/prefix/beta', '/p/europe-west6/rpcMember/beta', '/beta/']) {
       const { table, calls } = recordingTable(['alpha', 'beta'])
       const req = fakeReq('POST', path)
       const res = new FakeRes()
-      void createRouterHandler('rpcSpike', table, () => undefined)(req, asRes(res))
+      void createRouterHandler('rpcMember', table, () => undefined)(req, asRes(res))
       assert.deepEqual(
         calls.map((c) => c.name),
         ['beta'],
@@ -137,7 +137,7 @@ describe('createRouterHandler — dispatch', () => {
       },
     }
     await createRouterHandler(
-      'rpcSpike',
+      'rpcMember',
       table,
       () => undefined
     )(fakeReq('POST', '/slow'), asRes(new FakeRes()))
@@ -148,14 +148,14 @@ describe('createRouterHandler — dispatch', () => {
     const { table, calls } = recordingTable(['alpha'])
     const res = new FakeRes()
     void createRouterHandler(
-      'rpcSpike',
+      'rpcMember',
       table,
       () => undefined
     )(fakeReq('POST', '/nope', { origin: 'https://studio.example' }), asRes(res))
     assert.deepEqual(calls, [])
     assert.equal(res.statusCode, 404)
     assert.deepEqual(res.body, {
-      error: { status: 'NOT_FOUND', message: 'No such callable on rpcSpike' },
+      error: { status: 'NOT_FOUND', message: 'No such callable on rpcMember' },
     })
     assert.equal(res.headers['access-control-allow-origin'], '*')
   })
@@ -165,7 +165,7 @@ describe('createRouterHandler — dispatch', () => {
       const { table, calls } = recordingTable(['alpha'])
       const res = new FakeRes()
       void createRouterHandler(
-        'rpcSpike',
+        'rpcMember',
         table,
         () => undefined
       )(fakeReq('POST', path), asRes(res))
@@ -184,7 +184,7 @@ describe('createRouterHandler — dispatch', () => {
       const res = new FakeRes()
       assert.doesNotThrow(() => {
         void createRouterHandler(
-          'rpcSpike',
+          'rpcMember',
           table,
           () => undefined
         )(fakeReq('POST', `/${key}`), asRes(res))
@@ -198,10 +198,10 @@ describe('createRouterHandler — dispatch', () => {
     const { table, calls } = recordingTable(['alpha'])
     const res = new FakeRes()
     void createRouterHandler(
-      'rpcSpike',
+      'rpcMember',
       table,
       () => undefined
-    )(fakeReq('POST', '/p/r/rpcSpike'), asRes(res))
+    )(fakeReq('POST', '/p/r/rpcMember'), asRes(res))
     assert.deepEqual(calls, [])
     assert.equal(res.statusCode, 404)
   })
@@ -210,7 +210,7 @@ describe('createRouterHandler — dispatch', () => {
     const { table, calls } = recordingTable(['alpha'])
     const req = fakeReq('OPTIONS', '/alpha', { origin: 'https://studio.example' })
     const res = new FakeRes()
-    void createRouterHandler('rpcSpike', table, () => undefined)(req, asRes(res))
+    void createRouterHandler('rpcMember', table, () => undefined)(req, asRes(res))
     assert.deepEqual(
       calls.map((c) => c.name),
       ['alpha']
@@ -224,7 +224,7 @@ describe('createRouterHandler — dispatch', () => {
     const { table, calls } = recordingTable(['alpha'])
     const res = new FakeRes()
     void createRouterHandler(
-      'rpcSpike',
+      'rpcMember',
       table,
       () => undefined
     )(
@@ -250,14 +250,14 @@ describe('createRouterHandler — dispatch', () => {
         res.status(409).send({ error: {} })
       },
     }
-    void createRouterHandler('rpcSpike', table, (l) => lines.push(l))(
+    void createRouterHandler('rpcMember', table, (l) => lines.push(l))(
       fakeReq('POST', '/alpha'),
       asRes(new FakeRes())
     )
     assert.equal(lines.length, 1)
     // `router` and `callable` are the log-based metric's label extractors.
     assert.deepEqual(Object.keys(lines[0]).sort(), ['callable', 'ms', 'router', 'status'])
-    assert.equal(lines[0].router, 'rpcSpike')
+    assert.equal(lines[0].router, 'rpcMember')
     assert.equal(lines[0].callable, 'alpha')
     assert.equal(lines[0].status, 409)
     assert.ok(Number.isFinite(lines[0].ms) && lines[0].ms >= 0)
@@ -266,7 +266,7 @@ describe('createRouterHandler — dispatch', () => {
   it('an unknown name writes no metric line — a stranger cannot mint label values', () => {
     const lines: RouterLogLine[] = []
     const { table } = recordingTable(['alpha'])
-    void createRouterHandler('rpcSpike', table, (l) => lines.push(l))(
+    void createRouterHandler('rpcMember', table, (l) => lines.push(l))(
       fakeReq('POST', '/nope'),
       asRes(new FakeRes())
     )
@@ -278,9 +278,9 @@ describe('callableRouter — the deployed function', () => {
   const echo = onCall((r) => ({ echoed: r.data }))
 
   it('is an https endpoint (not a callable one) exposing its router name and members', () => {
-    const fn = callableRouter('rpcSpike', { cpu: 1, concurrency: 40 }, { echo })
+    const fn = callableRouter('rpcMember', { cpu: 1, concurrency: 40 }, { echo })
     assert.equal(isCallableRouter(fn), true)
-    assert.equal(routerNameOf(fn), 'rpcSpike')
+    assert.equal(routerNameOf(fn), 'rpcMember')
     assert.deepEqual([...routerMembers(fn)], ['echo'])
     const endpoint = fn.__endpoint as unknown as Record<string, unknown>
     assert.ok(endpoint.httpsTrigger, 'a router is deployed as an onRequest')
@@ -292,7 +292,7 @@ describe('callableRouter — the deployed function', () => {
   })
 
   it('keeps the accessor off the enumerable surface and immutable', () => {
-    const fn = callableRouter('rpcSpike', {}, { echo })
+    const fn = callableRouter('rpcMember', {}, { echo })
     assert.deepEqual(
       Object.keys(fn).filter((k) => k === '__members' || k === '__router'),
       []
@@ -303,11 +303,11 @@ describe('callableRouter — the deployed function', () => {
   it('refuses at load a member that is not an onCall — it would skip token verification', () => {
     const plain = onRequest((_req, res) => void res.send('ok'))
     assert.throws(
-      () => callableRouter('rpcSpike', {}, { plain } as never),
+      () => callableRouter('rpcMember', {}, { plain } as never),
       /"plain" is not an onCall function/
     )
-    assert.throws(() => callableRouter('rpcSpike', {}, { nope: undefined } as never), /"nope"/)
-    assert.throws(() => callableRouter('rpcSpike', {}, {}), /table is empty/)
+    assert.throws(() => callableRouter('rpcMember', {}, { nope: undefined } as never), /"nope"/)
+    assert.throws(() => callableRouter('rpcMember', {}, {}), /table is empty/)
   })
 
   it('routerMembers refuses anything callableRouter did not build', () => {
@@ -449,7 +449,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
       }
       realInfo(...(args as Parameters<typeof logger.info>))
     }
-    routed = await serve(callableRouter('rpcSpike', { cpu: 1, concurrency: 40 }, members))
+    routed = await serve(callableRouter('rpcMember', { cpu: 1, concurrency: 40 }, members))
     direct = {} as typeof direct
     for (const name of Object.keys(members) as (keyof typeof members)[]) {
       direct[name] = await serve(members[name])
@@ -464,7 +464,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   })
 
   it('a result comes back as { result }', async () => {
-    const answer = await post(`${routed.base}/rpcSpike/echo`, { a: 1, nested: { b: [true, null] } })
+    const answer = await post(`${routed.base}/rpcMember/echo`, { a: 1, nested: { b: [true, null] } })
     assert.equal(answer.status, 200)
     assert.deepEqual(answer.body, {
       result: { echoed: { a: 1, nested: { b: [true, null] } }, uid: null },
@@ -472,7 +472,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   })
 
   it('an HttpsError keeps its code, message, details and HTTP status', async () => {
-    const answer = await post(`${routed.base}/rpcSpike/boom`, {})
+    const answer = await post(`${routed.base}/rpcMember/boom`, {})
     assert.equal(answer.status, 400)
     assert.deepEqual(answer.body, {
       error: { status: 'FAILED_PRECONDITION', message: 'nope', details: { reason: 'because' } },
@@ -480,14 +480,14 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   })
 
   it('an unexpected throw is still masked as INTERNAL by the SDK', async () => {
-    const answer = await post(`${routed.base}/rpcSpike/crash`, {})
+    const answer = await post(`${routed.base}/rpcMember/crash`, {})
     assert.equal(answer.status, 500)
     assert.deepEqual(answer.body, { error: { status: 'INTERNAL', message: 'INTERNAL' } })
   })
 
   it('the ID token is verified in-process: a bad one is UNAUTHENTICATED before the handler runs', async () => {
     const answer = await post(
-      `${routed.base}/rpcSpike/echo`,
+      `${routed.base}/rpcMember/echo`,
       {},
       { authorization: 'Bearer not-a-jwt' }
     )
@@ -498,14 +498,14 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   })
 
   it('a member keeps its OWN enforceAppCheck', async () => {
-    const refused = await post(`${routed.base}/rpcSpike/guarded`, {})
+    const refused = await post(`${routed.base}/rpcMember/guarded`, {})
     assert.equal(refused.status, 401)
     // …and it is the member's, not the router's: its neighbour answers the same call.
-    assert.equal((await post(`${routed.base}/rpcSpike/echo`, {})).status, 200)
+    assert.equal((await post(`${routed.base}/rpcMember/echo`, {})).status, 200)
   })
 
   it('a preflight for a known name is answered by the member’s own cors policy', async () => {
-    const answer = await call(`${routed.base}/rpcSpike/fenced`, {
+    const answer = await call(`${routed.base}/rpcMember/fenced`, {
       method: 'OPTIONS',
       headers: {
         origin: 'https://somewhere-else.example',
@@ -521,7 +521,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   })
 
   it('a protocol violation is refused by the SDK exactly as it is today', async () => {
-    const get = await call(`${routed.base}/rpcSpike/echo`, { method: 'GET' })
+    const get = await call(`${routed.base}/rpcMember/echo`, { method: 'GET' })
     assert.equal(get.status, 400)
     assert.deepEqual(get.body, { error: { status: 'INVALID_ARGUMENT', message: 'Bad Request' } })
   })
@@ -532,7 +532,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
       probes.push({
         name,
         init: async () => [
-          await send(`${routed.base}/rpcSpike/${name}`),
+          await send(`${routed.base}/rpcMember/${name}`),
           await send(`${direct[name].base}/${name}`),
         ],
       })
@@ -555,13 +555,13 @@ describe('callableRouter — the callable protocol survives routing, end to end'
   })
 
   it('an unknown name over the wire: 404 NOT_FOUND, and a preflight that lets the POST happen', async () => {
-    const answer = await post(`${routed.base}/rpcSpike/doesNotExist`, {}, { origin: ORIGIN })
+    const answer = await post(`${routed.base}/rpcMember/doesNotExist`, {}, { origin: ORIGIN })
     assert.equal(answer.status, 404)
     assert.deepEqual(answer.body, {
-      error: { status: 'NOT_FOUND', message: 'No such callable on rpcSpike' },
+      error: { status: 'NOT_FOUND', message: 'No such callable on rpcMember' },
     })
     assert.equal(answer.headers['access-control-allow-origin'], '*')
-    const preflight = await call(`${routed.base}/rpcSpike/constructor`, {
+    const preflight = await call(`${routed.base}/rpcMember/constructor`, {
       method: 'OPTIONS',
       headers: { origin: ORIGIN, 'access-control-request-method': 'POST' },
     })
@@ -574,7 +574,7 @@ describe('callableRouter — the callable protocol survives routing, end to end'
     assert.ok(logged.length > 0, 'nothing was logged through firebase-functions/logger')
     for (const { fields } of logged) {
       assert.deepEqual(Object.keys(fields).sort(), ['callable', 'ms', 'router', 'status'])
-      assert.equal(fields.router, 'rpcSpike')
+      assert.equal(fields.router, 'rpcMember')
       assert.ok(Object.prototype.hasOwnProperty.call(members, fields.callable as string))
     }
     // The status is the one the MEMBER wrote, read after it finished — the

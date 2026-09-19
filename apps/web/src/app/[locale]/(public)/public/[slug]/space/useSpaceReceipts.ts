@@ -1,11 +1,10 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
 import type { Tarif595MyReceiptsRequest, Tarif595MyReceiptsResult } from '@linyup/shared'
-import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from './SpaceAuthProvider'
+import { callFunction } from '@/lib/callFunction'
 
 // The signed-in contact's own health-insurance receipts (Tarif 595) + whether
 // the studio issues them at all. Backed by `listMyTarif595Receipts` — the
@@ -30,7 +29,7 @@ export function useSpaceReceipts() {
     staleTime: 60_000,
     queryFn: async () => {
       try {
-        const fn = httpsCallable<Tarif595MyReceiptsRequest, Tarif595MyReceiptsResult>(functions, 'listMyTarif595Receipts')
+        const fn = callFunction<Tarif595MyReceiptsRequest, Tarif595MyReceiptsResult>('listMyTarif595Receipts')
         const res = await fn({ teamId: teamId! })
         return res.data ?? EMPTY
       } catch (err: unknown) {

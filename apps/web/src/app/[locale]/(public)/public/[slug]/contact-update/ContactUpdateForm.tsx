@@ -4,14 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { useTranslations } from 'next-intl'
 import type { PublicFrom } from '@linyup/shared'
 import { Link } from '@/i18n/navigation'
 import { publicHref, returnHref } from '@/lib/publicRoutes'
 import { BioLinkShell, BioLinkButton } from '../BioLinkShell'
 import { usePublicTeam } from '../PublicTeamProvider'
+import { callFunction } from '@/lib/callFunction'
 
 // ─── steps ───────────────────────────────────────────────────────────────────
 
@@ -92,8 +91,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
     if (!teamId) return
     setError(null)
     try {
-      const fn = httpsCallable<{ email: string; teamId: string }, { codeId: string }>(
-        functions,
+      const fn = callFunction<{ email: string; teamId: string }, { codeId: string }>(
         'sendContactVerificationCode'
       )
       const result = await fn({ email: values.email, teamId })
@@ -114,8 +112,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
   const onVerifyCode = async (values: CodeValues) => {
     setError(null)
     try {
-      const fn = httpsCallable<{ codeId: string; code: string }, { verified: boolean }>(
-        functions,
+      const fn = callFunction<{ codeId: string; code: string }, { verified: boolean }>(
         'verifyContactCode'
       )
       await fn({ codeId, code: values.code })
@@ -130,8 +127,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
     if (countdown > 0 || !teamId) return
     setError(null)
     try {
-      const fn = httpsCallable<{ email: string; teamId: string }, { codeId: string }>(
-        functions,
+      const fn = callFunction<{ email: string; teamId: string }, { codeId: string }>(
         'sendContactVerificationCode'
       )
       const result = await fn({ email, teamId })
@@ -152,7 +148,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
     if (!teamId) return
     setError(null)
     try {
-      const fn = httpsCallable<
+      const fn = callFunction<
         {
           codeId: string
           contactId: string
@@ -161,7 +157,7 @@ export default function ContactUpdateForm({ slug, contactId, from }: Props) {
           note?: string
         },
         { success: boolean; requestId: string }
-      >(functions, 'requestContactUpdate')
+      >('requestContactUpdate')
 
       await fn({
         codeId,

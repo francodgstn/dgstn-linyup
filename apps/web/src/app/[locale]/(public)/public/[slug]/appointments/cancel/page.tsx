@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { cancelEffectKeys, cancelFailureKey } from '@/lib/bookingCancellation'
 import type { BookingCancelEffect, CancelBookingResult } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
 import { CalendarX, Check, AlertCircle } from 'lucide-react'
+import { callFunction } from '@/lib/callFunction'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +35,7 @@ export default function AppointmentCancelPage() {
     try {
       // Shared cancellation callable (there is no separate appointment one) —
       // token-based, releases the appointment slot and emails the confirmation.
-      const fn = httpsCallable<{ token: string }, CancelBookingResult>(functions, 'cancelBooking')
+      const fn = callFunction<{ token: string }, CancelBookingResult>('cancelBooking')
       const res = await fn({ token })
       setReturned(res.data?.returned ?? null)
       setState('done')

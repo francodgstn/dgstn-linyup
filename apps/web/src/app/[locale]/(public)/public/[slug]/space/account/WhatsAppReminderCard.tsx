@@ -17,14 +17,13 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { MessageCircle, Check } from 'lucide-react'
 import { whatsappConsentAllows, type WhatsAppConsentKind } from '@linyup/shared'
 import { useSpaceAuth } from '../SpaceAuthProvider'
 import { useSpaceTheme } from '../useSpaceTheme'
 import { useSpaceContact } from '../useSpaceContact'
 import { usePublicTeam } from '../../PublicTeamProvider'
+import { callFunction } from '@/lib/callFunction'
 
 export function WhatsAppReminderCard() {
   const t = useTranslations('Space')
@@ -42,10 +41,10 @@ export function WhatsAppReminderCard() {
   // show at all) must not skip any of them on a later render.
   const mutation = useMutation({
     mutationFn: async (vars: { optIn: boolean; kind: WhatsAppConsentKind }) => {
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; optIn: boolean; source: 'space'; kind: WhatsAppConsentKind },
         { ok: boolean }
-      >(functions, 'setMyWhatsAppConsent')
+      >('setMyWhatsAppConsent')
       return (await fn({ teamId: teamId!, optIn: vars.optIn, source: 'space', kind: vars.kind })).data
     },
     onSuccess: async (_data, vars) => {

@@ -1,10 +1,9 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from './SpaceAuthProvider'
+import { callFunction } from '@/lib/callFunction'
 
 // The signed-in contact's own payment history + whether a Stripe billing portal is
 // available to them. Backed by the `listMyContactPayments` callable (sanitized —
@@ -45,8 +44,7 @@ export function useSpacePayments() {
     staleTime: 60_000,
     queryFn: async () => {
       try {
-        const fn = httpsCallable<Record<string, never>, SpacePaymentsResult>(
-          functions,
+        const fn = callFunction<Record<string, never>, SpacePaymentsResult>(
           'listMyContactPayments'
         )
         const res = await fn({})

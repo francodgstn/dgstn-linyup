@@ -595,13 +595,14 @@ export {
 // provably unused. Never remove a standalone export because a router lists it:
 // the deploy runs with --force. See utils/callableRouter.ts and
 // utils/frozenFunctions.test.ts.
-export { rpcSpike } from './routers/spike'
 export { rpcOps } from './routers/ops'
 export { rpcFinance } from './routers/finance'
 export { rpcBilling } from './routers/billing'
 export { rpcOrg } from './routers/org'
 export { rpcHeavy } from './routers/heavy'
 export { rpcStudio } from './routers/studio'
+export { rpcCheckout } from './routers/checkout'
+export { rpcMember } from './routers/member'
 
 // --- Stubs (TODO: port from hmd-lineup) ---
 // export { generateDashboardInsight } from './analytics'

@@ -12,6 +12,14 @@
 //   node scripts/router-spike.mjs --target emulator [--functions-port 5001] [--auth-port 9099]
 //   node scripts/router-spike.mjs --target linyup-staging --api-key <web API key>
 //   … --routers rpcOps,rpcFinance     also compare every member of those routers
+//   … --routes-ref origin/main        use THAT commit's route table, not this checkout's
+//
+// THE ROUTE TABLE MUST BE THE DEPLOYED ONE. By default it is this checkout's
+// (@linyup/shared's build), which is right only when the checkout IS what is
+// deployed. Run from a branch that has already moved a name to a new router and
+// every such name "fails" with a not-found the deployed project is right to give.
+// `--routes-ref <git ref>` reads packages/shared/src/functions/routes.ts at that
+// ref instead — pass the commit the target was deployed from.
 //
 // Comparing is what makes it safe to point at a deployed project: it needs no
 // fixture data, because "the same refusal both ways" is as good a proof as the
@@ -40,6 +48,7 @@
 //
 // Exit codes: 0 every check passed · 1 a check failed · 2 could not run.
 
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -90,8 +99,29 @@ const { getAuth, connectAuthEmulator, signInWithCustomToken, signInWithEmailAndP
   web('firebase/auth')
 const { getFunctions, connectFunctionsEmulator, httpsCallable, httpsCallableFromURL } =
   web('firebase/functions')
-const { functionsBaseUrl, callableRouteUrl, routerForCallable, CALLABLE_ROUTES } =
-  web('@linyup/shared')
+const { functionsBaseUrl, callableRouteUrl } = web('@linyup/shared')
+const CALLABLE_ROUTES =
+  typeof flags['routes-ref'] === 'string'
+    ? routesAtRef(flags['routes-ref'])
+    : web('@linyup/shared').CALLABLE_ROUTES
+const routerForCallable = (name) =>
+  Object.prototype.hasOwnProperty.call(CALLABLE_ROUTES, name) ? CALLABLE_ROUTES[name] : null
+
+/** The route table as committed at `ref`. Read as SOURCE, not built: the table is
+ *  one object literal of `name: 'router'` lines, and building another commit's
+ *  package to read forty strings would need a second checkout. */
+function routesAtRef(ref) {
+  const src = execFileSync('git', ['show', `${ref}:packages/shared/src/functions/routes.ts`], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  }).replace(/\r\n/g, '\n')
+  const body = src.split('export const CALLABLE_ROUTES')[1]?.split('\n}\n')[0]
+  if (!body) throw new Error(`no CALLABLE_ROUTES in routes.ts at ${ref}`)
+  const table = {}
+  for (const m of body.matchAll(/^\s*(\w+):\s*'(\w+)',\s*$/gm)) table[m[1]] = m[2]
+  if (Object.keys(table).length === 0) throw new Error(`CALLABLE_ROUTES at ${ref} parsed as empty`)
+  return table
+}
 
 const app = initializeApp({
   projectId,

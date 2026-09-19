@@ -21,11 +21,11 @@
 // instead of duplicating it per surface namespace.
 
 import { useState } from 'react'
-import { httpsCallable, type FunctionsError } from 'firebase/functions'
+import { type FunctionsError } from 'firebase/functions'
 import { useTranslations } from 'next-intl'
 import { Loader2, X } from 'lucide-react'
-import { functions } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
+import { callFunction } from '@/lib/callFunction'
 
 export interface AppliedGiftCard {
   code: string
@@ -92,8 +92,7 @@ export function GiftCardRedeemField({
     setChecking(true)
     setError(null)
     try {
-      const fn = httpsCallable<{ teamId: string; code: string }, CheckGiftCardResponse>(
-        functions,
+      const fn = callFunction<{ teamId: string; code: string }, CheckGiftCardResponse>(
         'checkGiftCard'
       )
       const res = await fn({ teamId, code: trimmed })

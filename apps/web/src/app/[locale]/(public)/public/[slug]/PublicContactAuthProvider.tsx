@@ -1,11 +1,10 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
-import { httpsCallable } from 'firebase/functions'
 import { onAuthStateChanged, signInWithCustomToken, signOut } from 'firebase/auth'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { CONTACTS_COLLECTION } from '@linyup/shared'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { auth } from '@/lib/firebase-auth'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import {
@@ -16,6 +15,7 @@ import {
   type StoredPublicContact,
 } from '@/lib/contactSession'
 import { usePublicTeam } from './PublicTeamProvider'
+import { callFunction } from '@/lib/callFunction'
 
 // The passwordless CONTACT-SESSION auth, lifted from Space to the team root so it
 // wraps EVERY public surface (bio-link, booking, signup, documents, shop, space).
@@ -274,8 +274,7 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
         return
       }
       try {
-        const fn = httpsCallable<{ email: string; teamId: string }, { codeId: string }>(
-          functions,
+        const fn = callFunction<{ email: string; teamId: string }, { codeId: string }>(
           'sendContactVerificationCode'
         )
         const result = await fn({ email, teamId })
@@ -294,8 +293,7 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
     async (code: string) => {
       setError(null)
       try {
-        const fn = httpsCallable<{ codeId: string; code: string }, LoginResult>(
-          functions,
+        const fn = callFunction<{ codeId: string; code: string }, LoginResult>(
           'loginContactWithCode'
         )
         const result = await fn({ codeId, code })
@@ -341,10 +339,10 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
     async (contactId: string) => {
       setError(null)
       try {
-        const fn = httpsCallable<
+        const fn = callFunction<
           { codeId: string; code: string; selectedContactId: string },
           LoginResult
-        >(functions, 'loginContactWithCode')
+        >('loginContactWithCode')
         const result = await fn({ codeId, code: pendingCode, selectedContactId: contactId })
         const data = result.data
 
@@ -374,10 +372,10 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
     async (firstname: string, lastname: string) => {
       setError(null)
       try {
-        const fn = httpsCallable<
+        const fn = callFunction<
           { codeId: string; code: string; newContact: { firstname: string; lastname: string } },
           LoginResult
-        >(functions, 'loginContactWithCode')
+        >('loginContactWithCode')
         const result = await fn({
           codeId,
           code: pendingCode,

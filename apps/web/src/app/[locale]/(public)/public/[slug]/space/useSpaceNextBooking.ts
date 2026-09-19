@@ -1,11 +1,10 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
 import type { MyBooking, MyBookingsResult } from '@linyup/shared'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { useSpaceAuth } from './SpaceAuthProvider'
+import { callFunction } from '@/lib/callFunction'
 
 // "What's next" — the single soonest booking the signed-in contact holds.
 //
@@ -34,8 +33,7 @@ export function useSpaceNextBooking() {
     enabled: isAuthenticated && !!teamId && !!contactId,
     queryFn: async () => {
       try {
-        const fn = httpsCallable<{ teamId: string; cursor: number | null }, MyBookingsResult>(
-          functions,
+        const fn = callFunction<{ teamId: string; cursor: number | null }, MyBookingsResult>(
           'getMyBookings'
         )
         const res = await fn({ teamId, cursor: null })

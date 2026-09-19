@@ -24,13 +24,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
-import { httpsCallable, type FunctionsError } from 'firebase/functions'
+import { type FunctionsError } from 'firebase/functions'
 import { useTranslations, useLocale } from 'next-intl'
 import { toast } from 'sonner'
 import { ShoppingBag, GraduationCap, Gift, Loader2, X, Play, Lock, LogIn } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { resolveBackground, getTextColor } from '@/lib/bioLink'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -78,6 +78,7 @@ import {
 } from '@/components/booking/GiftCardRedeemField'
 // The plan's intro offer, said the SAME way on the card and in the modal.
 import { IntroOfferLine, readIntroTerms } from '@/components/pricing/IntroOfferLine'
+import { callFunction } from '@/lib/callFunction'
 
 interface PlanPrice {
   id?: string
@@ -902,7 +903,7 @@ export default function ShopHome({
     try {
       if (checkout.kind === 'membership') {
         if (!checkout.price.id) throw new Error('no-price')
-        const fn = httpsCallable<
+        const fn = callFunction<
           {
             teamId: string
             subscriptionTypeId: string
@@ -912,7 +913,7 @@ export default function ShopHome({
             origin?: string
           },
           { url: string }
-        >(functions, 'createMembershipCheckout')
+        >('createMembershipCheckout')
         const res = await fn({
           teamId,
           subscriptionTypeId: checkout.typeId,
@@ -924,7 +925,7 @@ export default function ShopHome({
         if (res.data?.url) window.location.href = res.data.url
         else throw new Error('no-url')
       } else if (checkout.kind === 'product') {
-        const fn = httpsCallable<
+        const fn = callFunction<
           {
             teamId: string
             productId: string
@@ -937,7 +938,7 @@ export default function ShopHome({
             quotedAmount?: number
           },
           { url: string | null; paidWithGiftCard?: boolean }
-        >(functions, 'createProductCheckout')
+        >('createProductCheckout')
         const res = await fn({
           teamId,
           productId: checkout.product.id,
@@ -965,7 +966,7 @@ export default function ShopHome({
           window.location.href = res.data.url
         } else throw new Error('no-url')
       } else if (checkout.kind === 'course') {
-        const fn = httpsCallable<
+        const fn = callFunction<
           {
             teamId: string
             courseId: string
@@ -977,7 +978,7 @@ export default function ShopHome({
             quotedAmount?: number
           },
           { url: string | null; paidWithGiftCard?: boolean }
-        >(functions, 'createCourseCheckout')
+        >('createCourseCheckout')
         const res = await fn({
           teamId,
           courseId: checkout.course.id,
@@ -1000,7 +1001,7 @@ export default function ShopHome({
           window.location.href = res.data.url
         } else throw new Error('no-url')
       } else {
-        const fn = httpsCallable<
+        const fn = callFunction<
           {
             teamId: string
             amount: number
@@ -1010,7 +1011,7 @@ export default function ShopHome({
             purchaserEmail?: string
           },
           { url: string; sessionId: string }
-        >(functions, 'createGiftCardCheckout')
+        >('createGiftCardCheckout')
         const res = await fn({
           teamId,
           amount: checkout.amount,

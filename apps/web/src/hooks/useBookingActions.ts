@@ -19,8 +19,7 @@ import {
   increment,
   deleteField,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import {
   bookingContactId,
   confirmClearedHoldFields,
@@ -31,6 +30,7 @@ import {
   SESSIONS_COLLECTION,
   SESSION_BOOKINGS_SUBCOLLECTION,
 } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 export type BookingAction = 'confirm' | 'no_show' | 'cancel' | 'revert'
 
@@ -166,7 +166,7 @@ export function useRebookAction(teamId: string | null) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ token, newSessionId }: { token: string; newSessionId: string }) => {
-      const fn = httpsCallable(functions, 'rebookSession')
+      const fn = callFunction('rebookSession')
       await fn({ token, newSessionId })
     },
     onSuccess: () => invalidateBookings(qc, teamId),

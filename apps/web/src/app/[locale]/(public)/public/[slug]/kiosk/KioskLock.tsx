@@ -10,13 +10,12 @@
 // persistence the kiosk is allowed to keep (see the privacy note in WalkIn.tsx).
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { onAuthStateChanged, signInWithCustomToken, type User } from 'firebase/auth'
-import { httpsCallable } from 'firebase/functions'
 import { useTranslations } from 'next-intl'
 import { Delete } from 'lucide-react'
 import { auth } from '@/lib/firebase-auth'
-import { functions } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import type { KioskPublicLock } from '@linyup/shared'
+import { callFunction } from '@/lib/callFunction'
 
 interface Props {
   slug: string
@@ -90,8 +89,7 @@ export default function KioskLock({ slug, teamId, lock, children }: Props) {
     setSubmitting(true)
     setError(null)
     try {
-      const unlockKiosk = httpsCallable<{ slug: string; pin: string }, { token: string }>(
-        functions,
+      const unlockKiosk = callFunction<{ slug: string; pin: string }, { token: string }>(
         'unlockKiosk'
       )
       const result = await unlockKiosk({ slug, pin })

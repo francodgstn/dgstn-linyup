@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { collectionGroup, getDocs, limit, query, where } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
@@ -14,6 +13,7 @@ import { useDocumentLinkTargets } from '@/hooks/useDocumentLinkTargets'
 import { ChevronLeft, ExternalLink, FileText, History } from 'lucide-react'
 import {  parseDocumentLinkVersion, type DocumentPublicProfile, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { usePublicTeam } from '../../PublicTeamProvider'
+import { callFunction } from '@/lib/callFunction'
 
 type LoadState =
   | { status: 'loading' }
@@ -73,10 +73,10 @@ function usePinnedVersion(documentId: string | null, version: number | null) {
     let cancelled = false
     ;(async () => {
       try {
-        const call = httpsCallable<
+        const call = callFunction<
           { documentId: string; version: number },
           { title: string; bodyHtml: string }
-        >(functions, 'getPublicDocumentVersion')
+        >('getPublicDocumentVersion')
         const res = await call({ documentId, version })
         if (!cancelled) setPinned({ title: res.data.title, bodyHtml: res.data.bodyHtml })
       } catch (err: unknown) {
