@@ -3,6 +3,7 @@ import Logo from './Logo.astro';
 import LanguageSwitcher from './LanguageSwitcher.astro';
 import type { Language } from '~/i18n';
 import { useTranslations, getLocalizedPath, stripLocale, languages, defaultLang } from '~/i18n';
+import { HELP_URL } from '~/links';
 
 interface Props {
   lang: Language;
@@ -68,6 +69,15 @@ const DEMO_STUDIOS = [
           }
         </div>
       </div>
+      <div class="nav-dropdown">
+        <button type="button" class="nav-dropdown-trigger" aria-haspopup="true">
+          {t('nav.resources')} <i data-lucide="chevron-down"></i>
+        </button>
+        <div class="nav-dropdown-menu">
+          <a href={HELP_URL}><i data-lucide="life-buoy"></i>{t('footer.links.help')}</a>
+          <a href={getLocalizedPath('/roadmap', lang)}><i data-lucide="map"></i>{t('footer.links.roadmap')}</a>
+        </div>
+      </div>
     </nav>
 
     <div class="nav-right">
@@ -104,6 +114,8 @@ const DEMO_STUDIOS = [
       <a href={getLocalizedPath('/#features', lang)}>{t('nav.features')}</a>
       <a href={getLocalizedPath('/#pricing', lang)}>{t('nav.pricing')}</a>
       <a href={`${DEMO_URL}/try`} target="_blank" rel="noopener">{t('nav.liveDemo')}</a>
+      <a href={HELP_URL}>{t('footer.links.help')}</a>
+      <a href={getLocalizedPath('/roadmap', lang)}>{t('footer.links.roadmap')}</a>
       <a href={`${APP_URL}/login`}>{t('nav.login')}</a>
     </nav>
     <div class="mm-row">
@@ -200,6 +212,8 @@ const DEMO_STUDIOS = [
     white-space: nowrap;
   }
   .nav-dropdown-menu a:hover { background: var(--purple-50); color: var(--primary); }
+  .nav-dropdown-menu a :global(svg) { width: 16px; height: 16px; color: var(--muted-foreground); flex-shrink: 0; }
+  .nav-dropdown-menu a:hover :global(svg) { color: var(--primary); }
   .nav-dropdown-menu .dot {
     width: 8px;
     height: 8px;
@@ -216,14 +230,15 @@ const DEMO_STUDIOS = [
     width: 34px;
     height: 34px;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: var(--card);
+    border: 0;
+    background: transparent;
     color: var(--muted-foreground);
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
+    transition: color 0.15s;
     padding: 0;
   }
-  .theme-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .theme-btn:hover { color: var(--foreground); }
+  .theme-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .theme-btn svg { display: block; }
 
   /* "Live demo" secondary button — stays visible (even on mobile) so the demo is

@@ -15,7 +15,8 @@
     "themeLight": "Hell",
     "themeDark": "Dunkel",
     "themeSystem": "System",
-    "menu": "Menü"
+    "menu": "Menü",
+    "resources": "Ressourcen"
   },
   "hero": {
     "consent": "Mit der Anmeldung stimmst du unserer <a href=\"/privacy\">Datenschutzerklärung</a> zu. Jederzeit abbestellbar.",
@@ -81,6 +82,10 @@
     },
     "all": {
       "title": "Alle Funktionen ansehen"
+    },
+    "help": {
+      "title": "Hilfe-Center",
+      "body": "Anleitungen für jeden Schritt"
     }
   },
   "proof": {
@@ -498,7 +503,12 @@
       "cookies": "Cookie-Einstellungen",
       "roadmap": "Roadmap"
     },
-    "copyright": "© {year} Linyup. Alle Rechte vorbehalten."
+    "copyright": "© {year} Linyup. Alle Rechte vorbehalten.",
+    "cols": {
+      "product": "Produkt",
+      "legal": "Rechtliches",
+      "contact": "Kontakt"
+    }
   },
   "roadmap": {
     "metaTitle": "Roadmap — Linyup",

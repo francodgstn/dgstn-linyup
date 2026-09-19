@@ -15,7 +15,8 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSystem": "System",
-    "menu": "Menu"
+    "menu": "Menu",
+    "resources": "Resources"
   },
   "hero": {
     "consent": "By signing up you agree to our <a href=\"/privacy\">Privacy Policy</a>. Unsubscribe anytime.",
@@ -81,6 +82,10 @@
     },
     "all": {
       "title": "Check all features"
+    },
+    "help": {
+      "title": "Help centre",
+      "body": "Guides for every step"
     }
   },
   "proof": {
@@ -498,7 +503,12 @@
       "cookies": "Cookie settings",
       "roadmap": "Roadmap"
     },
-    "copyright": "© {year} Linyup. All rights reserved."
+    "copyright": "© {year} Linyup. All rights reserved.",
+    "cols": {
+      "product": "Product",
+      "legal": "Legal",
+      "contact": "Contact"
+    }
   },
   "roadmap": {
     "metaTitle": "Roadmap — Linyup",

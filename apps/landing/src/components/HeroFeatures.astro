@@ -1,6 +1,7 @@
 ---
 import type { Language } from '~/i18n';
 import { useTranslations } from '~/i18n';
+import { HELP_URL } from '~/links';
 
 interface Props {
   lang: Language;
@@ -14,8 +15,8 @@ const DEMO_URL = import.meta.env.PUBLIC_DEMO_URL ?? 'https://demo.linyup.com';
 // The day-to-day essentials, shown directly under the hero as calm, static cards
 // (no marquee). Labels are verb + benefit; copy lives in
 // heroFeatures.cards.<key>.{title,benefit}. The eighth cell completes the row
-// with a link to the full list (#more-features, Features.astro); the accent demo
-// CTA then spans the row beneath it.
+// with a link to the full list (#more-features, Features.astro). The row beneath
+// is the accent demo CTA (three quarters) beside a quieter help-centre tile.
 const cards = [
   { key: 'sessions', icon: 'calendar-range' },
   { key: 'bookings', icon: 'clipboard-list' },
@@ -54,6 +55,11 @@ const cards = [
         <div class="hf-icon hf-cta-icon"><i data-lucide="play"></i></div>
         <h3>{t('heroFeatures.cta.title')}</h3>
         <p>{t('heroFeatures.cta.body')} <i data-lucide="arrow-right"></i></p>
+      </a>
+      <a class="hf-card hf-help" href={HELP_URL}>
+        <div class="hf-icon hf-help-icon"><i data-lucide="life-buoy"></i></div>
+        <h3>{t('heroFeatures.help.title')}</h3>
+        <p>{t('heroFeatures.help.body')} <i data-lucide="arrow-right"></i></p>
       </a>
     </div>
   </div>
@@ -95,9 +101,9 @@ const cards = [
   .hf-all-arrow :global(svg) { width: 18px; height: 18px; transition: transform 0.15s ease; }
   .hf-all:hover .hf-all-arrow :global(svg) { transform: translateX(3px); }
 
-  /* Accent demo CTA — spans the row beneath the cards, draws the eye in primary. */
+  /* Accent demo CTA — three quarters of the row beneath the cards, in primary. */
   .hf-cta {
-    grid-column: 1 / -1;
+    grid-column: span 3;
     background: linear-gradient(160deg, var(--primary), color-mix(in oklch, var(--primary) 78%, black));
     border: 0;
     color: #fff;
@@ -111,6 +117,20 @@ const cards = [
   .hf-cta p :global(svg) { width: 16px; height: 16px; transition: transform 0.15s ease; }
   .hf-cta:hover p :global(svg) { transform: translateX(3px); }
   .hf-cta-icon { background: color-mix(in oklch, #fff 18%, transparent); border-color: color-mix(in oklch, #fff 28%, transparent); color: #fff; }
+
+  /* Help centre — the third style: neither the primary CTA nor a plain card.
+     A tinted surface with a primary hairline reads as "a door", not a feature. */
+  .hf-help {
+    background: var(--purple-50);
+    box-shadow: inset 0 0 0 1px var(--purple-200), var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+  }
+  .hf-help:hover { box-shadow: inset 0 0 0 1px var(--primary), var(--shadow-md); }
+  .hf-help-icon { background: var(--card); }
+  .hf-card.hf-help p { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 600; }
+  .hf-help p :global(svg) { width: 15px; height: 15px; transition: transform 0.15s ease; }
+  .hf-help:hover p :global(svg) { transform: translateX(3px); }
 
   .hf-icon {
     width: 52px;
@@ -143,6 +163,7 @@ const cards = [
 
   @media (max-width: 1100px) {
     .hf-grid { grid-template-columns: repeat(2, 1fr); }
+    .hf-cta, .hf-help { grid-column: 1 / -1; }
   }
   @media (max-width: 860px) {
     .hf { padding: 52px 0 12px; }
