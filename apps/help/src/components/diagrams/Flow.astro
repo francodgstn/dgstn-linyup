@@ -1,0 +1,185 @@
+---
+// A simple flat diagram: steps joined by arrows, left to right on a wide screen
+// and top to bottom on a phone. For flows that need no interaction — the contact
+// funnel, where the money goes. Server-rendered HTML and CSS only: no script,
+// no diagram library, and it follows the light/dark theme like everything else.
+
+export interface FlowStep {
+  title: string
+  text?: string
+  /** Optional short list under the text (e.g. "enters from" items). */
+  items?: string[]
+  /** Highlight a step as the one the diagram is about. */
+  accent?: boolean
+}
+
+interface Props {
+  /** Accessible name for the diagram. */
+  label: string
+  steps: FlowStep[]
+  /** Optional label on each arrow, in order (one fewer than steps). */
+  arrows?: string[]
+  /** Heading above each step's items, e.g. "Enters from". */
+  itemsLabel?: string
+}
+
+const { label, steps, arrows = [], itemsLabel } = Astro.props
+---
+
+<figure class="flow not-content" role="group" aria-label={label}>
+  <ol class="flow-steps">
+    {
+      steps.map((s, i) => (
+        <>
+          <li class:list={['flow-step', { 'flow-step-accent': s.accent }]}>
+            <p class="flow-title">{s.title}</p>
+            {s.text && <p class="flow-text">{s.text}</p>}
+            {s.items && s.items.length > 0 && (
+              <>
+                {itemsLabel && <p class="flow-items-label">{itemsLabel}</p>}
+                <ul class="flow-items">
+                  {s.items.map((it) => (
+                    <li>{it}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </li>
+          {i < steps.length - 1 && (
+            <li class="flow-arrow" aria-hidden="true">
+              <span class="flow-arrow-line" />
+              {arrows[i] && <span class="flow-arrow-label">{arrows[i]}</span>}
+            </li>
+          )}
+        </>
+      ))
+    }
+  </ol>
+</figure>
+
+<style>
+  .flow {
+    margin: 1.5rem 0;
+  }
+  .flow-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .flow-step {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .flow-step-accent {
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+  }
+  .flow-step p {
+    margin: 0;
+  }
+  .flow-title {
+    font-weight: 700;
+    color: var(--sl-color-white);
+  }
+  .flow-step-accent .flow-title {
+    color: var(--sl-color-accent-high);
+  }
+  .flow-text {
+    margin-top: 0.25rem !important;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .flow-items-label {
+    margin-top: 0.6rem !important;
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-gray-3);
+  }
+  .flow-items {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .flow-items li {
+    margin: 0;
+    font-size: var(--sl-text-xs);
+    padding: 0.1rem 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid var(--sl-color-gray-5);
+    color: var(--sl-color-gray-2);
+    background: var(--sl-color-bg);
+  }
+
+  /* Arrow: vertical on a phone. */
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.3rem 0;
+  }
+  .flow-arrow-line {
+    position: relative;
+    width: 2px;
+    height: 1.4rem;
+    background: var(--sl-color-accent);
+  }
+  .flow-arrow-line::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top: 6px solid var(--sl-color-accent);
+    border-bottom: 0;
+  }
+  .flow-arrow-label {
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    text-align: center;
+    margin-top: 0.3rem;
+  }
+
+  /* Side by side once there is room. */
+  @media (min-width: 50rem) {
+    .flow-steps {
+      flex-direction: row;
+      align-items: stretch;
+    }
+    .flow-arrow {
+      flex: 0 0 5.5rem;
+      justify-content: center;
+      padding: 0 0.3rem;
+    }
+    .flow-arrow-line {
+      width: 100%;
+      height: 2px;
+    }
+    .flow-arrow-line::after {
+      left: auto;
+      right: -5px;
+      bottom: auto;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 5px solid transparent;
+      border-left: 6px solid var(--sl-color-accent);
+      border-right: 0;
+    }
+    .flow-arrow-label {
+      margin-top: 0.35rem;
+    }
+  }
+</style>

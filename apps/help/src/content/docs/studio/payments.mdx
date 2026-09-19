@@ -5,7 +5,19 @@ sidebar:
   order: 6
 ---
 
+import Flow from '../../../components/diagrams/Flow.astro'
+
 Members pay your studio directly, through your own Stripe account. Memberships, class packs, drop-ins, trials, appointments, courses and shop items are all paid this way. Every payment goes straight into your Stripe account, and Stripe pays it out to your bank. **Linyup never holds your money.**
+
+<Flow
+  label="Where the money goes: from the member, through your Stripe account, to your bank"
+  arrows={['pays', 'Stripe pays out']}
+  steps={[
+    { title: 'Your member', text: 'Pays at checkout, or automatically when a membership renews.' },
+    { title: 'Your Stripe account', text: "The payment lands here. Linyup's fee and Stripe's fee are taken off.", accent: true },
+    { title: 'Your bank', text: 'Stripe pays out the rest, on the schedule set in your Stripe account.' },
+  ]}
+/>
 
 ## Connect Stripe
 

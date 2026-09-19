@@ -1,0 +1,79 @@
+---
+title: How pricing fits together
+description: What you offer, what you sell, and the member benefits that connect them.
+sidebar:
+  order: 3
+  label: How pricing fits together
+---
+
+import ConceptDiagram from '../../../components/diagrams/ConceptDiagram.astro'
+
+Pricing pulls together three ideas that usually live in different places: **what you offer**, **what you sell**, and the **member benefits** that connect them. A fourth piece, the **price preview**, shows the result for anyone.
+
+<ConceptDiagram
+  label="How pricing fits together"
+  viewBox="0 0 560 290"
+  initial="offer"
+  nodes={[
+    { id: 'offer', label: 'What you\noffer', x: 15, y: 14, w: 170, h: 48,
+      title: 'What you offer', tagline: 'Your bookable and sellable catalogue',
+      body: 'Classes, appointments, online courses and shop items. Each has its own base price, or none, before any benefit changes it.',
+      href: '#what-you-offer' },
+    { id: 'sell', label: 'What you\nsell', x: 375, y: 14, w: 170, h: 48,
+      title: 'What you sell', tagline: 'What members actually hold',
+      body: 'Memberships, class packs and gift cards: the things people pay for once or on a schedule. Holding one is what a member benefit checks for.',
+      href: '#what-you-sell' },
+    { id: 'benefits', label: 'Member\nbenefits', x: 195, y: 118, w: 170, h: 48,
+      title: 'Member benefits', tagline: 'The connector between the two',
+      body: 'One rule on an offering: holders of a chosen plan get it included, a percentage off, or a fixed member price. With no rule, everyone pays the base price.',
+      href: '#member-benefits' },
+    { id: 'preview', label: 'The price\npreview', x: 195, y: 222, w: 170, h: 48,
+      title: 'The price preview', tagline: 'What anyone would actually pay',
+      body: 'Pick a guest, a member or a specific plan, and Offer → Pricing shows what they would pay for everything, exactly as checkout would.',
+      href: '#the-price-preview' },
+  ]}
+  edges={[
+    { from: 'offer', to: 'benefits', label: 'priced via', x1: 100, y1: 62, x2: 245, y2: 118, lx: 148, ly: 92 },
+    { from: 'sell', to: 'benefits', label: 'grants', x1: 460, y1: 62, x2: 315, y2: 118, lx: 412, ly: 92 },
+    { from: 'benefits', to: 'preview', label: 'shown in', x1: 280, y1: 166, x2: 280, y2: 222, lx: 312, ly: 196 },
+  ]}
+/>
+
+## What you offer
+
+Everything a visitor can book or buy. Each item has its own base price, or none at all, before any benefit changes it.
+
+- **Classes**: scheduled sessions people book a seat in
+- **Appointments**: a coach's time, booked from their availability
+- **Online courses**: self-paced lessons, sold or included
+- **Shop items**: products and gift cards
+
+## What you sell
+
+The things people pay for once or on a schedule. Holding one of these is exactly what a member benefit checks for.
+
+- **Memberships**: recurring plans, optionally capped per week
+- **Class packs**: one-time credits, spent per booking
+- **Gift cards**: a prepaid balance, spent at checkout (not on memberships or appointments)
+
+## Member benefits
+
+One rule on an offering says what holding a chosen plan changes about its price. There are three kinds:
+
+- **Included**: holders book for free (a pack spends one credit instead)
+- **Percentage off**: a reduced price for holders
+- **Fixed member price**: a flat price that replaces the base one
+
+With no benefit set, everyone pays the base price.
+
+## The price preview
+
+Pick anyone (a guest, a member, or a specific plan) and **Offer → Pricing** shows exactly what they would pay for every class, appointment, course and product. It uses the same logic as checkout.
+
+- One persona at a time: guest, member, or a specific plan
+- Every offering priced exactly as checkout would price it
+- Health checks flag pricing that doesn't add up
+
+:::tip[Next]
+See [Pricing recipes](/studio/pricing-recipes/) for step-by-step setups: memberships, class packs, trials, drop-ins, partner passes and more.
+:::
