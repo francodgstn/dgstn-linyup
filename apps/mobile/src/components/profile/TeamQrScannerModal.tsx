@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Linking, Modal, StyleSheet, View } from 'react-native';
 import { Button, IconButton, Text, useTheme, ActivityIndicator } from 'react-native-paper';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslations } from '../../i18n';
@@ -60,16 +60,26 @@ export const TeamQrScannerModal: React.FC<TeamQrScannerModalProps> = ({
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         ) : !permission.granted ? (
+          // App Review 5.1.1(iv): the pre-prompt explains and moves on with a
+          // neutral "Continue" — never "Grant"/"Allow", which reads as steering
+          // the user's answer. Once iOS stops asking (canAskAgain false),
+          // requestPermission is a no-op, so offer Settings instead.
           <View style={styles.center}>
             <Text
               variant="bodyMedium"
               style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginBottom: 20 }}
             >
-              {t('cameraPermissionBody')}
+              {permission.canAskAgain ? t('cameraPermissionBody') : t('cameraDeniedBody')}
             </Text>
-            <Button mode="contained" onPress={requestPermission}>
-              {t('grantPermission')}
-            </Button>
+            {permission.canAskAgain ? (
+              <Button mode="contained" onPress={requestPermission}>
+                {t('continue')}
+              </Button>
+            ) : (
+              <Button mode="outlined" onPress={() => { Linking.openSettings().catch(() => undefined); }}>
+                {t('openSettings')}
+              </Button>
+            )}
           </View>
         ) : (
           <View style={styles.cameraContainer}>
