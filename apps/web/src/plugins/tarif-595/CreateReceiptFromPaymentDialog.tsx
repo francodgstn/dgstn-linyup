@@ -82,26 +82,43 @@ interface SourceChoice {
 }
 
 /**
- * The subscription-history row a plan payment most plausibly paid for: the one
+ * The subscription-history row a plan payment most plausibly paid for, narrowed
+ * by the strongest thing the payment says and then ranked by date: the period
  * COVERING the payment date, else the latest that started before it.
  *
- * `typeId` NULL MEANS "RANK ACROSS EVERY PLAN", which is the case that matters.
- * A payment row names a plan type only when the Connect webhook stamped a
- * `line_item` on it; a legacy row, and every row any seeder writes, carries
- * `kind: 'membership'` and a NAME and no id at all. Filtering by a type id that
- * is null used to leave nothing to rank, and the dialog refused outright — so
- * on the emulator, /try and every lead tenant, this shortcut could not work at
- * all. Ranking by date alone is a guess, which is why the caller shows the
- * result in a picker rather than acting on it silently.
+ * ── NARROW BY ID, THEN BY NAME, THEN NOT AT ALL ─────────────────────────────
+ * A payment names a plan TYPE ID only when the Connect webhook stamped a
+ * `line_item` on it. A legacy row, and every row any seeder writes, carries
+ * `kind: 'membership'` and a NAME and no id — filtering on a null id used to
+ * leave nothing to rank and the dialog refused outright, which is why this
+ * shortcut worked on no non-production dataset at all.
+ *
+ * The NAME is the step between, and it is not decoration. Seeded contact Luca
+ * Ferrari holds four periods; his CHF 189 payment labelled "Elite" falls on
+ * 2026-08-21, and TWO periods cover that day — "Starter" and "Elite". Date
+ * alone picked Starter, so the dialog pre-selected a plan the row it was opened
+ * from visibly contradicts (found by clicking it, 2026-09-20). Matching the
+ * label first picks Elite.
+ *
+ * A name match is still a GUESS — names are not unique, a plan can be renamed,
+ * and the label may be a manager's free text — so the caller keeps showing the
+ * picker and the "this is our best match" warning. It is a better first offer,
+ * not an answer.
  */
 function pickHistoryRow(
   history: SubscriptionHistoryEntry[],
   typeId: string | null,
-  paidOn: string
+  paidOn: string,
+  nameHint: string | null
 ): SubscriptionHistoryEntry | null {
-  const ofType = typeId ? history.filter((h) => h.subscription_type_id === typeId) : history
-  if (ofType.length === 0) return null
-  const withDates = ofType.map((h) => ({ h, start: tsToIsoDate(h.start_date), end: tsToIsoDate(h.end_date) }))
+  const byId = typeId ? history.filter((h) => h.subscription_type_id === typeId) : []
+  const hint = nameHint?.trim().toLowerCase()
+  const byName = hint
+    ? history.filter((h) => (h.subscription_type_name ?? '').trim().toLowerCase() === hint)
+    : []
+  const candidates = byId.length > 0 ? byId : byName.length > 0 ? byName : history
+  if (candidates.length === 0) return null
+  const withDates = candidates.map((h) => ({ h, start: tsToIsoDate(h.start_date), end: tsToIsoDate(h.end_date) }))
   const covering = withDates.find((x) => x.start && x.start <= paidOn && (!x.end || x.end >= paidOn))
   if (covering) return covering.h
   const before = withDates.filter((x) => x.start && x.start <= paidOn).sort((a, b) => (a.start! < b.start! ? 1 : -1))
@@ -179,7 +196,9 @@ export function CreateReceiptFromPaymentDialog({
         }
       })
       const typeId = row.lineItem?.subscriptionTypeId ?? row.planTypeId ?? null
-      const best = pickHistoryRow(history, typeId, paidOn)
+      // The label is what the payment itself calls the plan — the only clue a
+      // row without a stamped id still carries.
+      const best = pickHistoryRow(history, typeId, paidOn, row.lineItem?.label ?? row.defaultLabel ?? null)
       return { choices: all, defaultKey: best ? `subscription:${best.id}` : null, named: !!typeId }
     }
 
