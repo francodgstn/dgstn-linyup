@@ -812,6 +812,33 @@ export interface LeadProfile {
    */
   demoPassword?: string
 
+  /**
+   * Tarif 595 (health-insurance receipts) — the tariff POSITION each offering
+   * maps to, keyed `activity:{slug}` or `subscription:{key}`. Anything not
+   * named here falls back to the free-text position 9999 carrying the
+   * offering's own title, so the plugin always demos; naming the real ones is
+   * what makes the demo the lead's own business.
+   *
+   * The list is `packages/shared/src/data/tarif595/positions.ts`. Mind the
+   * VALIDITY dates: a position of the 2027 edition cannot carry a line dated
+   * today, and one expiring on 2026-12-31 wants a `successor` so January's
+   * receipts for December's lessons still resolve (`tarif595MappingOn`).
+   */
+  tarif595Positions?: Record<
+    string,
+    {
+      position: string
+      unit: 'month' | 'year' | 'lesson' | 'entry' | 'flat'
+      customName?: string | null
+      entries?: number | null
+      successor?: { from: string; position: string; ptPosition?: string | null } | null
+    }
+  >
+  /** Two-letter canton for the studio's legal profile. Default 'ZH'. */
+  tarif595Canton?: string
+  /** Receipt numbering prefix (`{prefix}-{year}-00001`). Default 'RB'. */
+  tarif595Prefix?: string
+
   /** Caveats printed after seeding (e.g. which prices are assumptions). */
   notes?: string[]
 }

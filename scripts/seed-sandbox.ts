@@ -104,6 +104,7 @@ import {
 import { seedPerformanceCheckins } from './lib/fixtures/coaching'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
+import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
@@ -3031,6 +3032,24 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
   await seedTeamFinance({ teamId, uid })
   // The asset register is its own Coach+ plugin — seeded beside finance, not by it.
   await seedTeamAssetRegister({ teamId, uid })
+
+  // ── Tarif 595 (health-insurance receipts) ─────────────────────────────────
+  // A Swiss studio with a Qualitop/Qualicert label hands members a receipt
+  // their supplementary insurance reimburses. Seeded for the same reason as the
+  // register above: the pitch is one button, and a tenant with no identifiers,
+  // no mappings and no member insurance data opens on "incomplete" instead.
+  // Placeholder identity, modus 'test' (scripts/lib/tarif595.ts); the fixture
+  // reads this team's own activities and plans and maps each to the free-text
+  // position 9999 with its own name — these are invented studios, and real
+  // tariff codes for invented offerings would be invented billing advice.
+  await seedTeamLegalProfile({
+    teamId,
+    uid,
+    legalName: teamName,
+    postal: { street_name: 'Studio Lane', house_no: '12', zip: '8001', city: 'Zürich' },
+    canton: 'ZH',
+  })
+  await seedTeamTarif595({ teamId, uid, prefix: 'RB' })
 
   // ── documents plugin: 3 published documents (terms, privacy, house rules) ──
   const docSeeds = [
