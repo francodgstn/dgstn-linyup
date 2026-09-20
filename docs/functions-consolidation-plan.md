@@ -728,6 +728,20 @@ environment that turns the flag on.
   tag), confirm with `node scripts/router-spike.mjs --target linyup-prod --routes-ref <that tag>`,
   THEN cut the mobile release. The fallback is a seat belt; a release that leans on it spends one
   failed round trip per router on every app start until production catches up.
+- **Production has the routers since 2026-09-20 (`v0.32.0`); the mobile release was deliberately
+  NOT cut** (Franco, the same day). This change is JS-only, but `main` no longer is: after it
+  merged, two native-config commits landed — the Play track in `apps/mobile/eas.json`, and an R8
+  minification plugin in `apps/mobile/app.config.js`. Both files are hashed WHOLE into the
+  fingerprint, and the lane said so on that merge: a new Android fingerprint, "No existing Android
+  build found … starting a new build". A `mobile-v*` tag on `main` would therefore publish NO
+  update to installed apps and would start store builds carrying R8 — which fails at RUNTIME, not
+  at build time, and whose own comment says it ships only after a preview build has been clicked
+  through. So: wait for that click-through, then cut ONE release carrying both.
+  Nothing is lost by waiting. The app works on production by calling callables under their own
+  names, which stay deployed; and the mobile aliases cannot go until a store BINARY that routes is
+  the minimum supported version anyway, because a fresh install runs its embedded bundle first.
+  **Before calling any mobile change "JS-only", diff the native config against the last tag:**
+  `git diff <last mobile-v tag>..origin/main -- apps/mobile/eas.json apps/mobile/app.config.js apps/mobile/package.json`.
 
 ### Phase 5: alias-removal waves (~0.5 day per wave)
 - Per router, once the exit criterion holds:
