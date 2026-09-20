@@ -42,6 +42,39 @@ const ROUTERS_DIR = join(SRC, 'routers')
  *  holds its name, so there is rarely a reason. */
 const NOT_ROUTED = new Set<string>([])
 
+/** Callables whose OWN function is gone: the router is the only way in. This list
+ *  is the record of why each could go, because index.ts cannot say — a name that
+ *  is simply absent there looks the same as one that was dropped by mistake, and
+ *  the deploy runs with --force.
+ *
+ *  THE BAR (docs/functions-consolidation-plan.md → "5. Compatibility and aliases"):
+ *  the clients route AND THEN the alias is quiet for the window, measured with
+ *  `node scripts/alias-usage.mjs`; a name the member app calls additionally waits
+ *  for `app_settings/mobile.min_supported_version`, and stays on the frozen list
+ *  (utils/frozenFunctions.test.ts) until then.
+ *
+ *  WAVE 1, 2026-09-20 — callables NOTHING has ever called. No quoted mention in
+ *  web, admin, mobile, landing, help or scripts today; none in any commit that ever
+ *  touched apps/ or scripts/ (`git log --all -S`); and no successful call on
+ *  production, staging or sandbox in the six weeks Cloud Monitoring keeps. "The
+ *  clients route" holds vacuously: there is no client. */
+const ALIAS_REMOVED = new Set<string>([
+  'changePlan',
+  'createMemberPayment',
+  'createMemberSubscription',
+  'deleteContact',
+  'generateContactQR',
+  'getReviewAccess',
+  'listMyWaitlist',
+  'moveContacts',
+  'recalculateScoresFromDate',
+  'refreshStorePresence',
+  'restoreContact',
+  'setSessionLocation',
+  'setSessionTags',
+  'triggerScoresRebuild',
+])
+
 const readText = (file: string) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
 
 /** CODE only: block comments and whole-line `//` comments removed. */
@@ -297,7 +330,7 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
     }
   })
 
-  it('every member is the SAME onCall that index.ts still exports under that name', () => {
+  it('every member is the SAME onCall index.ts still exports under that name — or its alias was removed on the record', () => {
     const onCalls = new Map<string, string[]>()
     for (const file of walk(SRC)) {
       for (const name of onCallNames(readText(file))) {
@@ -310,10 +343,28 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
       const imports = namedBindings(file, readText(file), 'import')
       for (const member of routerMembers(fn)) {
         const exportedFrom = indexExports.get(member)
+        if (ALIAS_REMOVED.has(member)) {
+          // Removed on purpose: the router is now the ONLY way in. It must be gone
+          // from index.ts (or the entry is a lie and the function still deploys),
+          // and it must still be a real onCall in the module the router takes it from.
+          assert.equal(
+            exportedFrom,
+            undefined,
+            `${member} is on ALIAS_REMOVED but src/index.ts still exports it, so it still deploys`
+          )
+          const from = imports.get(member)
+          assert.ok(from !== undefined, `${router} lists ${member} without importing it`)
+          assert.ok(
+            (onCalls.get(member) ?? []).some((f) => definesModule(from, f)),
+            `${member} is not an \`export const ${member} = onCall(\` in ${from}`
+          )
+          continue
+        }
         assert.ok(
           exportedFrom !== undefined,
-          `${router} serves ${member}, which src/index.ts does not export. While the name is in its ` +
-            'alias window the standalone function must stay deployed (utils/frozenFunctions.test.ts).'
+          `${router} serves ${member}, which src/index.ts does not export, and it is not on ` +
+            'ALIAS_REMOVED. A name leaves index.ts only with its evidence recorded there — the deploy ' +
+            'runs with --force, so dropping the export deletes the function (utils/frozenFunctions.test.ts).'
         )
         // Same module on both sides ⇒ the same object ⇒ no duplicated logic,
         // and never a namesake from another folder. A renamed table key
@@ -361,6 +412,19 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
         `NOT_ROUTED lists ${name}, which is not a deployed callable — the entry is stale`
       )
       assert.ok(!routedNames.includes(name), `${name} is both routed and on NOT_ROUTED`)
+    }
+  })
+
+  it('an alias that was removed is still ROUTED — removing a name never removes the callable', () => {
+    for (const name of ALIAS_REMOVED) {
+      assert.ok(
+        routedNames.includes(name),
+        `${name} is on ALIAS_REMOVED but not in CALLABLE_ROUTES: with its own function gone and no ` +
+          'router serving it, the callable is unreachable. Deleting a callable is a different change — ' +
+          'take it off this list and delete the code.'
+      )
+      const served = [...routers.values()].filter(({ fn }) => routerMembers(fn).includes(name))
+      assert.equal(served.length, 1, `${name} must be served by exactly one router`)
     }
   })
 })
