@@ -91,7 +91,7 @@ export {
 } from './sync/heldPlans'
 // Staff plan changes (docs/multi-plan-holdings.md, phase 2) — the callables
 // that replaced the browser's writes to the legacy plan slot.
-export { assignPlan, changePlan, endPlan } from './contacts/planCallables'
+export { assignPlan, endPlan } from './contacts/planCallables'
 // Availability writes re-run the team sync so the appointment picker's liveness
 // flag (active_public_surfaces.appointments) can't go stale — see the file.
 export { onAvailabilityWrite } from './sync/onAvailabilityWrite'
@@ -133,8 +133,10 @@ export { joinWaitlist } from './booking/waitlist/join'
 export { claimWaitlistSeat } from './booking/waitlist/claim'
 // `listMyWaitlist` is the signed-in counterpart: the rules can authorise a
 // contact to GET their own entry, but never to LIST their entries across
-// sessions, so the member surfaces need a callable for it.
-export { getWaitlistEntry, leaveWaitlist, listMyWaitlist } from './booking/waitlist/manage'
+// sessions, so the member surfaces need a callable for it. No surface calls it
+// yet, so it has no function of its own: it is served by rpcMember only
+// (utils/routerCoverage.test.ts → ALIAS_REMOVED).
+export { getWaitlistEntry, leaveWaitlist } from './booking/waitlist/manage'
 export { promoteWaitlistOnSeatFreed } from './booking/waitlist/promote'
 // A queue whose class will never run. Hung on the session document, not on
 // cancelSession, because a standalone session is deleted client-side.
@@ -145,9 +147,7 @@ export { promoteWaitlistEntry, removeWaitlistEntry } from './booking/waitlist/ad
 
 // Gamification
 export { recalculateScores, resetScores } from './gamification'
-export { triggerScoresRebuild } from './gamification/triggerScoresRebuild'
 export { processScoresRebuildJob } from './gamification/processScoresRebuildJob'
-export { recalculateScoresFromDate } from './gamification/recalculateScoresFromDate'
 
 // Sessions
 export {
@@ -156,17 +156,14 @@ export {
   updateRecurringSession,
   selfCheckIn,
 } from './sessions'
-export { setSessionLocation } from './sessions/setSessionLocation'
 // The background drain for "delete this and all following" on a large series.
 // Enqueued by cancelSession; chains itself batch by batch. The Cloud Tasks queue
 // is created by Firebase with this function's name, which is why the enqueuer
 // addresses it as locations/europe-west6/functions/runSeriesTeardown.
 export { runSeriesTeardown } from './sessions/teardownWorker'
-export { setSessionTags } from './sessions/setSessionTags'
 
 // Contacts
-export { deleteContact, restoreContact, checkInContact, moveContacts } from './contacts'
-export { generateContactQR } from './contacts/generateContactQR'
+export { checkInContact } from './contacts'
 export { getContactQR } from './contacts/getContactQR'
 export { requestContactUpdate } from './contacts/requestContactUpdate'
 export { grantCredits } from './contacts/grantCredits'
@@ -226,7 +223,6 @@ export { handleBudgetNotification } from './analytics/budgetNotification'
 // Read-only; gated by STORE_INGEST_ENABLED, which is 'false' everywhere until
 // somebody turns it on. See appstores/ingest.ts.
 export { ingestAppStores } from './appstores/ingest'
-export { refreshStorePresence } from './appstores/ops'
 // App Store Connect push notifications (WWDC25 webhooks). Registered manually
 // per app in ASC → Users and Access → Integrations → Webhooks; verifies Apple's
 // HMAC and fails closed when no secret is configured.
@@ -390,8 +386,6 @@ export {
 // Stripe Connect (member → studio payments; studio's own Stripe balance + platform fee)
 export { startConnectOnboarding, getConnectStatus, disconnectConnectAccount } from './connect'
 export {
-  createMemberPayment,
-  createMemberSubscription,
   createMembershipPayment,
   createMembershipCheckout,
   createProductCheckout,
@@ -559,7 +553,7 @@ export { requestContactDeletion, cancelContactDeletion } from './contacts/selfDe
 // Operator-only: the production demo tenant and the app-store review login.
 // Triggered from the operator console, executed here so the code ships through
 // the reviewed prod deploy rather than from a workstation — see ops/demoTenant.ts.
-export { manageDemoTenant, setReviewAccess, getReviewAccess } from './ops'
+export { manageDemoTenant, setReviewAccess } from './ops'
 
 // Operator-only: re-apply a tenant's platform-fee rate to its live member
 // subscriptions, which carry their fee percent on the Stripe object. See

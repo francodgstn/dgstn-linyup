@@ -93,13 +93,13 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 Output of `pnpm functions:inventory --md`. It includes every router: all callables are now routed, and each ALSO still deploys under its own name until its alias is removed (Phase 5), which is why the total has gone UP, not down as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
-**305 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-19T23:26Z. Global options: region=europe-west6, maxInstances=20.
+**291 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-20T00:07Z. Global options: region=europe-west6, maxInstances=20.
 
 **By kind**
 
 | Kind | Count |
 | --- | ---: |
-| `callable` | 215 |
+| `callable` | 201 |
 | `https` | 18 |
 | `firestore.created` | 5 |
 | `firestore.deleted` | 2 |
@@ -114,11 +114,11 @@ binds a secret and none sets a service account.
 
 | Domain | callable | https | fs.created | fs.deleted | fs.updated | fs.written | pubsub | schedule | taskQueue | blocking | Total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `contacts` | 25 |  |  |  |  | 2 |  |  |  |  | 27 |
 | `sync` |  |  |  |  | 2 | 25 |  |  |  |  | 27 |
-| `connect` | 25 | 1 |  |  |  |  |  |  |  |  | 26 |
-| `booking` | 18 |  |  | 1 |  | 1 |  |  |  |  | 20 |
+| `connect` | 23 | 1 |  |  |  |  |  |  |  |  | 24 |
+| `contacts` | 20 |  |  |  |  | 2 |  |  |  |  | 22 |
 | `orgs` | 20 |  |  |  |  |  |  |  |  |  | 20 |
+| `booking` | 17 |  |  | 1 |  | 1 |  |  |  |  | 19 |
 | `teams` | 11 |  | 1 |  |  |  |  |  |  |  | 12 |
 | `waivers` | 10 |  | 1 |  |  |  |  |  |  |  | 11 |
 | `whatsapp` | 9 | 1 |  |  |  |  |  |  | 1 |  | 11 |
@@ -130,21 +130,21 @@ binds a secret and none sets a service account.
 | `api` | 6 | 1 |  |  |  |  |  |  |  |  | 7 |
 | `auth` | 5 |  | 1 |  |  |  |  |  |  | 1 | 7 |
 | `dailyTasks` |  |  |  |  |  |  |  | 2 | 5 |  | 7 |
-| `sessions` | 6 |  |  |  |  |  |  |  | 1 |  | 7 |
 | `accounting` | 5 |  |  |  |  | 1 |  |  |  |  | 6 |
 | `appointments` | 6 |  |  |  |  |  |  |  |  |  | 6 |
 | `events` | 5 |  |  |  |  | 1 |  |  |  |  | 6 |
-| `ops` | 6 |  |  |  |  |  |  |  |  |  | 6 |
-| `gamification` | 4 |  | 1 |  |  |  |  |  |  |  | 5 |
 | `invoices` | 5 |  |  |  |  |  |  |  |  |  | 5 |
 | `mail` | 4 | 1 |  |  |  |  |  |  |  |  | 5 |
+| `ops` | 5 |  |  |  |  |  |  |  |  |  | 5 |
+| `sessions` | 4 |  |  |  |  |  |  |  | 1 |  | 5 |
 | `affiliations` | 4 |  |  |  |  |  |  |  |  |  | 4 |
 | `coaching` |  |  |  | 1 |  | 3 |  |  |  |  | 4 |
 | `referrals` | 4 |  |  |  |  |  |  |  |  |  | 4 |
-| `appstores` | 1 | 1 |  |  |  |  |  | 1 |  |  | 3 |
 | `domains` | 3 |  |  |  |  |  |  |  |  |  | 3 |
+| `gamification` | 2 |  | 1 |  |  |  |  |  |  |  | 3 |
 | `plugins` | 1 |  |  |  |  | 2 |  |  |  |  | 3 |
 | `aiInsights` | 1 |  |  |  |  |  |  |  | 1 |  | 2 |
+| `appstores` |  | 1 |  |  |  |  |  | 1 |  |  | 2 |
 | `billing` |  | 2 |  |  |  |  |  |  |  |  | 2 |
 | `finance` | 1 |  |  |  |  |  |  | 1 |  |  | 2 |
 | `offer` | 2 |  |  |  |  |  |  |  |  |  | 2 |
@@ -159,7 +159,7 @@ binds a secret and none sets a service account.
 | `kiosk` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `outreach` | 1 |  |  |  |  |  |  |  |  |  | 1 |
 | `translate` |  |  |  |  |  | 1 |  |  |  |  | 1 |
-| **Total** | **215** | **18** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **305** |
+| **Total** | **201** | **18** | **5** | **2** | **2** | **44** | **1** | **7** | **10** | **1** | **291** |
 
 **Non-default options** (set by the function, or different from the global options)
 
@@ -173,7 +173,6 @@ binds a secret and none sets a service account.
 | `api` | `api` | https | `memory=512` `timeout=60` `concurrency=40` `minInstances=param:API_MIN_INSTANCES` `maxInstances=10` `invoker=public` |
 | `handleAppStoreWebhook` | `appstores` | https | `memory=512` `timeout=120` |
 | `ingestAppStores` | `appstores` | schedule | `memory=512` `timeout=540` |
-| `refreshStorePresence` | `appstores` | callable | `memory=512` `timeout=540` |
 | `inboundWebhook` | `automation` | https | `invoker=public` |
 | `handlePayrexxWebhook` | `billing` | https | `invoker=public` |
 | `handleTeamStripeWebhook` | `billing` | https | `invoker=public` |
@@ -187,7 +186,6 @@ binds a secret and none sets a service account.
 | `weeklyReportForTeam` | `dailyTasks` | taskQueue | `timeout=540` |
 | `monthlyFinanceReports` | `finance` | schedule | `memory=512` `timeout=540` |
 | `processScoresRebuildJob` | `gamification` | firestore.created | `memory=1024` `timeout=540` |
-| `recalculateScoresFromDate` | `gamification` | callable | `memory=1024` `timeout=540` |
 | `handleBrevoWebhook` | `mail` | https | `invoker=public` |
 | `manageDemoTenant` | `ops` | callable | `memory=512` `timeout=540` |
 | `resyncTenantFeeRate` | `ops` | callable | `timeout=300` |
@@ -650,6 +648,9 @@ environment that turns the flag on.
   staging. `node scripts/router-spike.mjs … --routes-ref origin/main` reads the table at that
   commit instead.
 
+- **On staging since 2026-09-20.** `rpcCheckout` and `rpcMember` deployed as written, and the
+  spike passes for every router there with the deployed commit's route table. `rpcSpike` is gone.
+
 ### Phase 4: mobile (~1 day of code, then months of calendar)
 - Move `apps/mobile/src/services/firestore.ts` to `callFunction`.
 - Ship it as an OTA **and** in the next store build.
@@ -684,12 +685,49 @@ environment that turns the flag on.
 
 ### Phase 5: alias-removal waves (~0.5 day per wave)
 - Per router, once the exit criterion holds:
-  - remove the standalone exports from `index.ts`
-  - drop the names from the frozen list
+  - remove the standalone exports from `packages/functions/src/index.ts`
+  - record each name, with its evidence, on `ALIAS_REMOVED` in
+    `packages/functions/src/utils/routerCoverage.test.ts`
   - deploy
 - **This is where the deployable count actually drops.** Web and admin waves can
-  start about 14 days after their phase ships. The mobile wave waits on
+  start about 14 days after their phase ships TO PRODUCTION. The mobile wave waits on
   `min_supported_version`.
+- **Measure with `node scripts/alias-usage.mjs --project <id>`** (`pnpm functions:alias-usage`).
+  An alias is its own Cloud Run service, so the platform already counts who calls it.
+  **A raw request count never reaches zero:** every function — callables no client has ever
+  called included — shows requests in fixed pairs, a 400 and a 404, on a handful of days that
+  line up with deploys. Something probes each service. A client that really calls a callable
+  gets a 2xx, so the script counts `ok` (2xx) apart from `other`, and QUIET MEANS NO 2xx. It
+  prints the router beside each alias, because a quiet alias beside a quiet router is a quiet
+  project, not a finished migration.
+- **Read the window before the number.** Quiet means unused only if the clients had stopped
+  using the name before the window opened. Closing a fiscal year happens once a year: it is
+  quiet in almost any window and very much in use. The bar is "the clients route, AND THEN N
+  quiet days" — never quiet alone.
+- **The guards know three states now.** A router member is exported from `index.ts` (alias live),
+  or it is on `ALIAS_REMOVED` and NOT exported (the router is the only way in) — never both, never
+  neither. Dropping an export without recording it fails; listing a name that still deploys
+  fails; a removed alias that no router serves fails, because removing a NAME must never remove the
+  callable. Each was run against the defect it describes.
+- **`scripts/router-spike.mjs` reports a removed alias as `gone`,** not as a failure: there is
+  nothing to compare the routed answer with, and the router answering is the only thing left to
+  prove. The list is printed at the end, so an alias that is gone by accident is on the screen.
+- **Wave 1, 2026-09-20: callables nothing has ever called.** No quoted mention in any client or
+  script today; none in any commit that ever touched `apps/` or `scripts/`; no successful call on
+  production, staging or sandbox in the six weeks Cloud Monitoring keeps. "The clients route"
+  holds vacuously — there is no client — which is the only reason this wave could go before
+  production has routers. They stay routed: removing a name is not deleting a callable, and
+  whether some of them should be deleted outright (`listMyWaitlist` says a member surface needs
+  it; none calls it) is a product question, not this one.
+- **Every other wave waits, and that is the plan working.** Production has no routers until a
+  `v*` tag deploys them; the web there still calls every name directly; six weeks of metrics on
+  production show successful calls on only a fraction of the callables, which says how little a
+  quiet window would prove today. Next: release to production, let the clients route, run
+  `pnpm functions:alias-usage` after 14 days, and remove what is quiet beside a busy router.
+- **Shipped store binaries call nothing outside the frozen list.** Checked against every
+  `mobile-v*` tag: the names each shipped build calls are a subset of what the app calls today,
+  so the frozen list — derived from today's source — covers the binaries in the stores. Older
+  commits called names that no longer exist as functions at all.
 
 ### Phase 6 (optional): same-path trigger merges (~2–3 days)
 - Use the trigger-path recipe (§2.1) to find paths that more than one trigger listens
