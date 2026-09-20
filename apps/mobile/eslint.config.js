@@ -8,6 +8,9 @@ const expoConfig = require("eslint-config-expo/flat");
 // The rule module is ESM; this config is CommonJS, hence the dynamic import.
 module.exports = (async () => {
   const { firestorePathLiteralRule } = await import('../web/eslint.firestorePaths.mjs');
+  // Same arrangement for the callables tripwire: a Cloud Function is called
+  // through callFunction, never httpsCallable. The reasoning lives beside the rule.
+  const { noDirectCallables } = await import('../web/eslint.callables.mjs');
   return defineConfig([
     expoConfig,
     {
@@ -17,6 +20,13 @@ module.exports = (async () => {
       files: ['src/**/*.{ts,tsx}'],
       rules: {
         'no-restricted-syntax': ['error', firestorePathLiteralRule(require)],
+      },
+    },
+    {
+      files: ['src/**/*.{ts,tsx}'],
+      ignores: ['src/services/callFunction.ts'],
+      rules: {
+        'no-restricted-imports': ['error', noDirectCallables],
       },
     },
   ]);

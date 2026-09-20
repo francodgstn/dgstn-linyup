@@ -116,11 +116,69 @@ import { setGlobalOptions } from 'firebase-functions/v2'
 setGlobalOptions({ region: 'europe-west6' })
 
 export const myFn = onCall(async (request) => { … })
+// …and a callable is then listed in a ROUTER, not exported from index.ts —
+// see "Callables are served by routers" below.
 
 // OLD v1 pattern from hmd-lineup — do NOT copy as-is
 import { regionalFunctions } from '../utils/functions'
 export const myFn = regionalFunctions.firestore.document('…').onCreate(…)
 ```
+
+### Callables are served by routers — a new callable is NOT a new function
+
+Every gen2 function is its own Cloud Run service, and nearly every recurring deploy
+failure here scaled with how many there were. So callables are served by a few
+**domain routers** (`packages/functions/src/routers/`): an `onRequest` that hands
+`(req, res)` to the existing `onCall` value, so auth, App Check, CORS and
+`HttpsError` stay the SDK's own. Triggers, schedules, task queues and webhooks are
+NOT routed — each is bound to an event source or to a URL somebody outside the repo
+holds. Full doc: `docs/functions-consolidation-plan.md`.
+
+**Adding a callable — all four, or CI fails:**
+
+1. Define it as always: `export const myFn = onCall(…)` in its domain folder.
+2. Add it to the table of the router for its AUDIENCE (`routers/studio.ts` staff,
+   `member.ts` member/guest, `checkout.ts` paying, `finance.ts`, `billing.ts`,
+   `org.ts`, `ops.ts`, `heavy.ts`).
+3. Add `myFn: 'rpcX'` to `CALLABLE_ROUTES` (`packages/shared/src/functions/routes.ts`).
+4. Name it on `BORN_ROUTED` in `packages/functions/src/utils/routerCoverage.test.ts`.
+
+**Do NOT export it from `src/index.ts`.** That is the old pattern, and it deploys
+one more function — the thing this work exists to stop. `index.ts` exports
+callables only as ALIASES of ones that predate the routers, kept until each name is
+provably unused.
+
+Five invariants, each a bug before it was a rule:
+
+- **Clients call through `callFunction('name')`, never `httpsCallable`** —
+  `apps/web/src/lib/callFunction.ts`, `apps/admin/src/lib/callFunction.ts`,
+  `apps/mobile/src/services/callFunction.ts`. Lint enforces it
+  (`apps/web/eslint.callables.mjs`). A bare `httpsCallable` still WORKS against an
+  aliased name, which is the trap: it bypasses the router, so that alias never goes
+  quiet and can never be removed; against a router-only callable it is a 404.
+- **The ROUTER's options govern; a member's own are ignored** when it is reached
+  through a router. A callable that needs minutes or a gigabyte goes in
+  `routers/heavy.ts`, whatever its domain — put it in `rpcStudio` and it is cut off
+  at that router's timeout with no error at deploy time.
+- **The router adds no authorisation and removes none.** Each callable keeps its own
+  check, and the tenant boundary is never the router's to enforce.
+- **A name leaves `index.ts` only on the record.** The deploy runs with `--force`,
+  so a dropped export DELETES the function. `ALIAS_REMOVED` (same test file) holds
+  each removal with its evidence — the clients route, AND THEN the alias is quiet,
+  measured with `pnpm functions:alias-usage`. Names held outside the repo (webhooks,
+  task queues, `api`, everything the member app calls) are pinned by
+  `packages/functions/src/utils/frozenFunctions.test.ts` and never go.
+- **A green deploy is not proof a function can be called.** `pnpm functions:ready`
+  also checks that every public function has an invoker; `node
+  scripts/router-spike.mjs` compares each callable with its router on a deployed
+  project — pass `--routes-ref <deployed commit>`, or a checkout that is ahead of the
+  deploy reports failures that are not there.
+
+**The member app is a client you cannot update.** Store binaries call callables by
+name for as long as they are installed, and the route table is compiled into the
+bundle. So `callFunction` falls back to the callable's own name when the router is
+missing (`withRouterFallback`), and the names the app calls stay deployed until the
+minimum supported version has moved past the first binary that routes.
 
 ### Public tenant routes — ONLY read `public_profile` subcollections
 

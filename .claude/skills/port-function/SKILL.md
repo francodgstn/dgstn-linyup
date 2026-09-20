@@ -26,11 +26,20 @@ Port a Cloud Function from hmd-lineup. Usage: `/port-function <functionName>`
    - TypeScript types; no `any` unless unavoidable
    - `to()` helper from `../utils/async` for async error handling
 
-6. **Wire the export** — add to `packages/functions/src/index.ts`:
-   ```typescript
-   export { <functionName> } from './<functionName>'
-   ```
-   Remove the stub comment if one existed.
+6. **Wire it up — and HOW depends on the kind** (CLAUDE.md → "Callables are served by routers"):
+   - **A callable (`onCall`) is NOT exported from `index.ts`.** That would deploy it as one
+     more function. Instead: add it to the table of the router for its audience
+     (`packages/functions/src/routers/`), add `<functionName>: 'rpcX'` to `CALLABLE_ROUTES`
+     (`packages/shared/src/functions/routes.ts`), and name it on `BORN_ROUTED` in
+     `packages/functions/src/utils/routerCoverage.test.ts`. A callable that runs for minutes or
+     needs a gigabyte goes in `routers/heavy.ts` — the router's options govern, not its own.
+   - **Anything else** (a trigger, a schedule, a task-queue handler, an `onRequest` webhook)
+     is exported from `packages/functions/src/index.ts` as before:
+     ```typescript
+     export { <functionName> } from './<functionName>'
+     ```
+   Remove the stub comment if one existed. Client code calls a callable through
+   `callFunction('<functionName>')`, never `httpsCallable` — lint enforces it.
 
 7. **Build check**: `pnpm --filter @linyup/functions run build`
    Fix any type errors before finishing.

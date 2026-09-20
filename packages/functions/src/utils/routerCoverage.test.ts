@@ -75,6 +75,21 @@ const ALIAS_REMOVED = new Set<string>([
   'triggerScoresRebuild',
 ])
 
+/** Callables that were BORN behind a router: added after the routers existed, so
+ *  they never had a function of their own and there is no alias to remove. This is
+ *  the NORMAL way to add a callable now (CLAUDE.md → "Callables are served by
+ *  routers"): define it with `onCall`, list it in its router's table and in
+ *  CALLABLE_ROUTES, name it here — and do NOT export it from src/index.ts, which
+ *  would deploy it as one more function, the thing this work exists to stop.
+ *
+ *  It is a list, not an inference, for the same reason ALIAS_REMOVED is: a name
+ *  that is merely absent from index.ts looks the same as one dropped by mistake,
+ *  and the deploy runs with --force. */
+const BORN_ROUTED = new Set<string>([])
+
+/** Every callable the router is the ONLY way into, however it got there. */
+const ROUTER_ONLY = new Set<string>([...ALIAS_REMOVED, ...BORN_ROUTED])
+
 const readText = (file: string) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
 
 /** CODE only: block comments and whole-line `//` comments removed. */
@@ -220,7 +235,11 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
   // (callableRouter refuses a non-onCall member) then fails THIS block by name
   // instead of taking the whole mocha run down before a single test reports.
   before(function () {
-    this.timeout(60_000) // ts-node compiles the members' whole import graph
+    // ts-node compiles the members' whole import graph, and with every domain routed that
+    // is most of the codebase: a COLD compile ran past the 60s this had when one small
+    // router existed, and failed the hook — a flake that reads as a broken router. The
+    // budget is for the cold case; warm, it takes seconds.
+    this.timeout(300_000)
     for (const file of routerFiles) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mod = require(file) as Record<string, unknown>
@@ -343,14 +362,14 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
       const imports = namedBindings(file, readText(file), 'import')
       for (const member of routerMembers(fn)) {
         const exportedFrom = indexExports.get(member)
-        if (ALIAS_REMOVED.has(member)) {
+        if (ROUTER_ONLY.has(member)) {
           // Removed on purpose: the router is now the ONLY way in. It must be gone
           // from index.ts (or the entry is a lie and the function still deploys),
           // and it must still be a real onCall in the module the router takes it from.
           assert.equal(
             exportedFrom,
             undefined,
-            `${member} is on ALIAS_REMOVED but src/index.ts still exports it, so it still deploys`
+            `${member} is listed as router-only (ALIAS_REMOVED or BORN_ROUTED) but src/index.ts still exports it, so it still deploys as a function of its own`
           )
           const from = imports.get(member)
           assert.ok(from !== undefined, `${router} lists ${member} without importing it`)
@@ -362,9 +381,10 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
         }
         assert.ok(
           exportedFrom !== undefined,
-          `${router} serves ${member}, which src/index.ts does not export, and it is not on ` +
-            'ALIAS_REMOVED. A name leaves index.ts only with its evidence recorded there — the deploy ' +
-            'runs with --force, so dropping the export deletes the function (utils/frozenFunctions.test.ts).'
+          `${router} serves ${member}, which src/index.ts does not export, and no list says why. ` +
+            'A NEW callable belongs on BORN_ROUTED (it never gets a function of its own). An EXISTING ' +
+            'one leaves index.ts only with its evidence recorded on ALIAS_REMOVED — the deploy runs with ' +
+            '--force, so dropping the export deletes the function (utils/frozenFunctions.test.ts).'
         )
         // Same module on both sides ⇒ the same object ⇒ no duplicated logic,
         // and never a namesake from another folder. A renamed table key
@@ -403,8 +423,9 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
       unrouted,
       [],
       'a callable that is in no router deploys as a function of its own, which is what this work ' +
-        'exists to stop. Add it to the router for its audience (src/routers) and to CALLABLE_ROUTES, ' +
-        'or to NOT_ROUTED above with the reason.'
+        'exists to stop. A NEW callable is not exported from src/index.ts at all: list it in the router ' +
+        'for its audience (src/routers), in CALLABLE_ROUTES and on BORN_ROUTED above. NOT_ROUTED is for ' +
+        'the rare callable that must deploy on its own, with the reason.'
     )
     for (const name of NOT_ROUTED) {
       assert.ok(
@@ -415,13 +436,22 @@ describe('router coverage — src/routers agrees with CALLABLE_ROUTES', () => {
     }
   })
 
-  it('an alias that was removed is still ROUTED — removing a name never removes the callable', () => {
-    for (const name of ALIAS_REMOVED) {
+  it('a callable is never on both lists', () => {
+    const both = [...ALIAS_REMOVED].filter((n) => BORN_ROUTED.has(n))
+    assert.deepEqual(
+      both,
+      [],
+      'ALIAS_REMOVED is for a name that HAD a function; BORN_ROUTED for one that never did'
+    )
+  })
+
+  it('a router-only callable is still ROUTED — it has no other way in', () => {
+    for (const name of ROUTER_ONLY) {
       assert.ok(
         routedNames.includes(name),
-        `${name} is on ALIAS_REMOVED but not in CALLABLE_ROUTES: with its own function gone and no ` +
-          'router serving it, the callable is unreachable. Deleting a callable is a different change — ' +
-          'take it off this list and delete the code.'
+        `${name} is listed as router-only but is not in CALLABLE_ROUTES: with no function of its own and ` +
+          'no router serving it, the callable is unreachable. Deleting a callable is a different change — ' +
+          'take it off the list and delete the code.'
       )
       const served = [...routers.values()].filter(({ fn }) => routerMembers(fn).includes(name))
       assert.equal(served.length, 1, `${name} must be served by exactly one router`)
