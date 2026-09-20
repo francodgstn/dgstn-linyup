@@ -32,6 +32,21 @@ Not wired into `pnpm test` / CI — it needs a live seeded stack, which the rest
 of that pipeline doesn't assume. Local-only for now (see `fixtures.ts`'s
 worker-scoped login instead of a `webServer` + CI reporter setup).
 
+## What `callable-routing.spec.ts` is for
+
+Callables are served by domain routers (`docs/functions-consolidation-plan.md`). Every
+other proof of that runs from Node, which has no CORS and never loads a module on the
+server. This spec walks real screens — staff, signed in; public, signed out — and watches
+the network: a routed callable must be requested at `/{router}/{name}`, must get a
+callable's answer, and must NEVER also appear at `/{name}`, which would be
+`withRouterFallback` having fired because the browser could not reach a router that is
+there. It asserts on whatever the pages call, not on a fixed list of names.
+
+It walks several cold routes in one test, so it carries its own long timeout.
+`promo-code-checkout.spec.ts` is the one that reaches `rpcCheckout`, and it needs a seed
+with a Stripe test account (`STRIPE_CONNECT_TEST_ACCOUNT`): without one the seeded studios
+show no shop, by design, and the spec stops at a Buy button that is not there.
+
 ## Auth: not `storageState`
 
 Tests get an already-authenticated `page` from `./fixtures` (not
