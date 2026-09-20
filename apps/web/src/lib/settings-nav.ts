@@ -238,11 +238,16 @@ export const SETTINGS_GROUPS: { key: SettingsGroupKey; labelKey: string }[] = [
 export const DEFAULT_SHORTCUT_IDS: string[] = []
 
 /**
- * The destination in the head tile beside Dashboard before the studio picks one.
+ * The head tiles beside Dashboard before the studio picks its own.
  *
- * Schedule: it is the surface a studio opens every session, and the tile exists
- * to put exactly that one click from anywhere. Census item 5 in
- * contexts/NavPinsContext.tsx owns the storage and the absent-vs-cleared rule —
- * this constant is only the fallback for "never chosen".
+ * Schedule, and ONLY Schedule: it is the surface a studio opens every session,
+ * and the tiles exist to put exactly that one click from anywhere. The grid
+ * holds more now (census item 5, HEAD_TILES_MAX) but a default is a guess at
+ * what somebody needs, and one guess is the most a new studio should have to
+ * undo — the same reasoning that left DEFAULT_SHORTCUT_IDS empty above.
+ *
+ * Census item 5 in contexts/NavPinsContext.tsx owns the storage and the
+ * absent-vs-cleared rule; this constant is only the fallback for "never
+ * chosen".
  */
-export const DEFAULT_HEAD_TILE_ID = 'calendar'
+export const DEFAULT_HEAD_TILE_IDS: string[] = ['calendar']
