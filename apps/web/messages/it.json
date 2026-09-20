@@ -4950,7 +4950,10 @@
     "journalStripeFeeKept": "Stripe trattiene la sua commissione di elaborazione in caso di rimborso.",
     "journalNetAfterRefundCost": "Ti è costato",
     "receipt": "Giustificativo",
-    "rowMenuLabel": "Altre azioni"
+    "rowMenuLabel": "Altre azioni",
+    "openStripeReceipt": "Apri la ricevuta Stripe",
+    "stripeReceiptNone": "Stripe non ha una ricevuta per questo pagamento.",
+    "stripeReceiptError": "Impossibile recuperare la ricevuta Stripe."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",

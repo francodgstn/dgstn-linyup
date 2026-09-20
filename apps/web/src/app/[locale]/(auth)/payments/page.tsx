@@ -175,6 +175,7 @@ import { RefundPaymentDialog } from '@/components/payments/RefundPaymentDialog'
 import { VoidPaymentDialog } from '@/components/payments/VoidPaymentDialog'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
 import { PaymentsTable, type PaymentRowAction } from '@/components/payments/PaymentsTable'
+import { useStripeReceiptAction } from '@/components/payments/useStripeReceiptAction'
 import { GiftCardsSection } from '@/components/payments/GiftCardsSection'
 import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
 import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
@@ -346,9 +347,11 @@ export default function PaymentsDashboardPage() {
   const [receiptTarget, setReceiptTarget] = useState<UnifiedPaymentRow | null>(null)
   // The menu ITEM goes to the table, the DIALOG stays here — see the
   // `extraActions` note in components/payments/PaymentsTable.tsx.
+  const stripeReceiptActions = useStripeReceiptAction(canManage ? teamId : null)
   const rowActions = useMemo<PaymentRowAction[]>(
-    () =>
-      receiptsInstalled && canManage
+    () => [
+      ...stripeReceiptActions,
+      ...(receiptsInstalled && canManage
         ? [
             {
               key: 'tarif-595',
@@ -358,8 +361,9 @@ export default function PaymentsDashboardPage() {
               onSelect: setReceiptTarget,
             },
           ]
-        : [],
-    [receiptsInstalled, canManage, tT]
+        : []),
+    ],
+    [stripeReceiptActions, receiptsInstalled, canManage, tT]
   )
   const [filter, setFilter] = useState<'all' | 'unassigned'>('all')
   const [search, setSearch] = useState('')

@@ -4950,7 +4950,10 @@
     "journalStripeFeeKept": "Stripe behält bei einer Erstattung seine Bearbeitungsgebühr.",
     "journalNetAfterRefundCost": "Das kostet dich",
     "receipt": "Beleg",
-    "rowMenuLabel": "Weitere Aktionen"
+    "rowMenuLabel": "Weitere Aktionen",
+    "openStripeReceipt": "Stripe-Beleg öffnen",
+    "stripeReceiptNone": "Stripe hat für diese Zahlung keinen Beleg.",
+    "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden."
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",

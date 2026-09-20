@@ -77,6 +77,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   issueGiftCard: 'rpcFinance',
   pauseMemberSubscription: 'rpcFinance',
   refundMemberPayment: 'rpcFinance',
+  getPaymentReceiptUrl: 'rpcFinance',
   releasePromoReservations: 'rpcFinance',
   resumeMemberSubscription: 'rpcFinance',
   setPromoCodeStatus: 'rpcFinance',

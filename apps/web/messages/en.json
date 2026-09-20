@@ -4950,7 +4950,10 @@
     "journalStripeFeeKept": "Stripe keeps its processing fee on a refund.",
     "journalNetAfterRefundCost": "This cost you",
     "receipt": "Receipt",
-    "rowMenuLabel": "More actions"
+    "rowMenuLabel": "More actions",
+    "openStripeReceipt": "Open Stripe receipt",
+    "stripeReceiptNone": "Stripe has no receipt for this payment.",
+    "stripeReceiptError": "Could not fetch the Stripe receipt."
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",

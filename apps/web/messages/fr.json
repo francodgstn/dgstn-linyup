@@ -4950,7 +4950,10 @@
     "journalStripeFeeKept": "Stripe conserve ses frais de traitement en cas de remboursement.",
     "journalNetAfterRefundCost": "Cela vous coûte",
     "receipt": "Justificatif",
-    "rowMenuLabel": "Plus d'actions"
+    "rowMenuLabel": "Plus d'actions",
+    "openStripeReceipt": "Ouvrir le reçu Stripe",
+    "stripeReceiptNone": "Stripe n'a pas de reçu pour ce paiement.",
+    "stripeReceiptError": "Impossible de récupérer le reçu Stripe."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
