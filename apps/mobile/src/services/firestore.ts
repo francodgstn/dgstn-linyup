@@ -1,4 +1,4 @@
-import { db, getFunctions } from '../config/firebase';
+import { db } from '../config/firebase';
 import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, collectionGroup, orderBy, Timestamp, addDoc, serverTimestamp, limit, writeBatch } from 'firebase/firestore';
 import {
   CONTACTS_COLLECTION,
@@ -47,7 +47,7 @@ import { resolveCoachingDimensions, resolveGoalCategories } from '../utils/goalC
 import { readAlert, alertIsFired, RawContactAlert } from '../utils/contactAlerts';
 import { mapPublicProfileMirror } from '../utils/publicProfileMapper';
 import { resolveAffiliationTerm } from '../utils/profileUtils';
-import { httpsCallable } from 'firebase/functions';
+import { callFunction } from './callFunction';
 import { SESSION_MIRROR_TYPE } from './sessionMirror';
 
 export { SESSION_MIRROR_TYPE };
@@ -95,8 +95,7 @@ export const FirestoreService = {
    * packages/functions/src/contacts/selfDeletion.ts.
    */
   async requestAccountDeletion(): Promise<{ scheduledForMs: number; graceDays: number }> {
-    const fn = httpsCallable<Record<string, never>, { scheduledForMs: number; graceDays: number }>(
-      getFunctions(),
+    const fn = callFunction<Record<string, never>, { scheduledForMs: number; graceDays: number }>(
       'requestContactDeletion'
     );
     const res = await fn({});
@@ -105,7 +104,7 @@ export const FirestoreService = {
 
   /** Change your mind, any time before the sweep actually runs. */
   async cancelAccountDeletion(): Promise<void> {
-    const fn = httpsCallable(getFunctions(), 'cancelContactDeletion');
+    const fn = callFunction('cancelContactDeletion');
     await fn({});
   },
 
@@ -120,8 +119,7 @@ export const FirestoreService = {
     teamSummaries?: { id: string; name: string }[] | null;
   }> {
     try {
-      const sendContactVerificationCode = httpsCallable(
-        getFunctions(),
+      const sendContactVerificationCode = callFunction(
         'sendContactVerificationCode'
       );
 
@@ -163,7 +161,7 @@ export const FirestoreService = {
     teams?: { teamId: string; teamName: string | null; slug: string | null }[];
   }> {
     try {
-      const loginContactWithCode = httpsCallable(getFunctions(), 'loginContactWithCode');
+      const loginContactWithCode = callFunction('loginContactWithCode');
 
       const result = await loginContactWithCode({
         codeId,
@@ -282,8 +280,7 @@ export const FirestoreService = {
     contact: Contact;
   } | null> {
     try {
-      const switchActiveContact = httpsCallable(
-        getFunctions(),
+      const switchActiveContact = callFunction(
         'switchActiveContact'
       );
 
@@ -321,7 +318,7 @@ export const FirestoreService = {
     };
   } | null> {
     try {
-      const getContactQRFn = httpsCallable(getFunctions(), 'getContactQR');
+      const getContactQRFn = callFunction('getContactQR');
       const result = await getContactQRFn({});
       return result.data as any;
     } catch (error) {
@@ -399,10 +396,10 @@ export const FirestoreService = {
   ): Promise<HydratedSession[]> {
     try {
       if (!teamId) return [];
-      const fn = httpsCallable<
+      const fn = callFunction<
         { teamId: string; fromMs: number; toMs: number },
         MyAttendanceResult
-      >(getFunctions(), 'getMyAttendance');
+      >('getMyAttendance');
       const res = await fn({
         teamId,
         fromMs: startDate.getTime(),
@@ -602,7 +599,7 @@ export const FirestoreService = {
     note?: string;
   }): Promise<{ success: boolean; requestId: string }> {
     try {
-      const requestContactUpdateFn = httpsCallable(getFunctions(), 'requestContactUpdate');
+      const requestContactUpdateFn = callFunction('requestContactUpdate');
       const result = await requestContactUpdateFn(params);
       return result.data as any;
     } catch (error) {
@@ -623,7 +620,7 @@ export const FirestoreService = {
    * WhatsApp.
    */
   async setMyWhatsAppConsent(teamId: string, optIn: boolean, kind?: WhatsAppConsentKind): Promise<void> {
-    const fn = httpsCallable(getFunctions(), 'setMyWhatsAppConsent');
+    const fn = callFunction('setMyWhatsAppConsent');
     await fn({ teamId, optIn, source: 'member_app', kind });
   },
 
@@ -636,7 +633,7 @@ export const FirestoreService = {
     sessionId: string;
   }): Promise<{ success: boolean; message?: string }> {
     try {
-      const bookSessionFn = httpsCallable(getFunctions(), 'bookSession');
+      const bookSessionFn = callFunction('bookSession');
       const result = await bookSessionFn({
         teamId: params.teamId,
         sessionId: params.sessionId,
@@ -657,7 +654,7 @@ export const FirestoreService = {
    * team-volume cap, and bookings with no public mirror at all).
    */
   async getMyBookings(teamId: string, cursor?: number | null): Promise<MyBookingsResult> {
-    const fn = httpsCallable(getFunctions(), 'getMyBookings');
+    const fn = callFunction('getMyBookings');
     const result = await fn({ teamId, cursor: cursor ?? null });
     return result.data as MyBookingsResult;
   },
@@ -699,7 +696,7 @@ export const FirestoreService = {
   // Whether a booking is cancellable is the SERVER's answer (`cancellable` +
   // `cancelToken` on the row, BookedSession), never re-derived here.
   async cancelBookingByToken(token: string): Promise<{ success: boolean; message?: string }> {
-    const cancelBookingFn = httpsCallable(getFunctions(), 'cancelBooking');
+    const cancelBookingFn = callFunction('cancelBooking');
     const result = await cancelBookingFn({ token });
     return result.data as any;
   },
@@ -715,7 +712,7 @@ export const FirestoreService = {
     | { status: 'session_required'; sessions: { id: string; activityName: string; start: any; end: any }[] }
     | { status: 'no_sessions' }
   > {
-    const fn = httpsCallable(getFunctions(), 'selfCheckIn');
+    const fn = callFunction('selfCheckIn');
     const result = await fn(params);
     return result.data as any;
   },
@@ -723,7 +720,7 @@ export const FirestoreService = {
   // Get the authenticated student's personal referral code and shareable URL
   async getMyReferralCode(): Promise<ReferralInfo | null> {
     try {
-      const fn = httpsCallable(getFunctions(), 'getMyReferralCode');
+      const fn = callFunction('getMyReferralCode');
       const result = await fn({});
       return result.data as ReferralInfo;
     } catch (error) {
@@ -735,7 +732,7 @@ export const FirestoreService = {
   // Get the count of rewards received by the authenticated student
   async getMyReferralStats(): Promise<{ rewarded_count: number }> {
     try {
-      const fn = httpsCallable(getFunctions(), 'getMyReferralStats');
+      const fn = callFunction('getMyReferralStats');
       const result = await fn({});
       return result.data as { rewarded_count: number };
     } catch (error) {
@@ -985,7 +982,7 @@ export const FirestoreService = {
    * payload.
    */
   async listAppointmentAvailability(teamId: string, days: number = 60): Promise<ListAvailabilityCoach[]> {
-    const listAvailabilityFn = httpsCallable(getFunctions(), 'listAvailability');
+    const listAvailabilityFn = callFunction('listAvailability');
     const result = await listAvailabilityFn({ teamId, days });
     return (result.data as { coaches: ListAvailabilityCoach[] })?.coaches ?? [];
   },
@@ -1006,7 +1003,7 @@ export const FirestoreService = {
     startMs: number;
     durationMinutes: number;
   }): Promise<{ success: boolean }> {
-    const bookAppointmentFn = httpsCallable(getFunctions(), 'bookAppointment');
+    const bookAppointmentFn = callFunction('bookAppointment');
     const result = await bookAppointmentFn(params);
     return result.data as { success: boolean };
   },

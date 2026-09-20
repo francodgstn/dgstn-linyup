@@ -656,6 +656,31 @@ environment that turns the flag on.
 - Record the first store version that routes. That version is what
   `min_supported_version` has to reach.
 - Every name mobile calls stays on the frozen list until its §5 criterion holds.
+- **Code built 2026-09-20; NOT released.** Every call in
+  `apps/mobile/src/services/firestore.ts` goes through
+  `apps/mobile/src/services/callFunction.ts`. It is JS-only, so the release lane will choose an
+  over-the-air update (`.claude/skills/mobile-release/SKILL.md` → "OTA or native build? The
+  fingerprint decides — but know the rule").
+- **A client and its backend do not deploy together, so `callFunction` falls back.** The member
+  app ships on its own lane and talks to production, which gets routers only when a release tag
+  deploys them — an update that routes could reach phones first, and the only way back from a
+  broken member app is another update. `withRouterFallback` in
+  `packages/shared/src/functions/routes.ts` answers a call under the callable's own name when
+  there is NO ROUTER to take it: the function does not exist (the platform's 404, which the SDK
+  reports as a bare `not-found`), or the router does not serve that name (its own 404). In both
+  the member never ran, so nothing executes twice; a `not-found` the MEMBER throws has its own
+  message and is never a fallback. Pinned by
+  `packages/functions/src/utils/routerFallback.test.ts`, and checked live against staging from
+  Node: a missing router lands on the direct name and returns its result.
+- **What the fallback does NOT cover: a missing function, in a BROWSER.** The platform's 404
+  carries no CORS headers, so the browser withholds it and the SDK reports `internal` — which
+  could be a member that ran and crashed, so it is never a fallback. The web still depends on
+  its rollout being ordered after the functions deploy, which the production workflow does. A
+  phone has no CORS and gets both cases.
+- **Release order, even with the fallback:** deploy the routers to production FIRST (a `v*`
+  tag), confirm with `node scripts/router-spike.mjs --target linyup-prod --routes-ref <that tag>`,
+  THEN cut the mobile release. The fallback is a seat belt; a release that leans on it spends one
+  failed round trip per router on every app start until production catches up.
 
 ### Phase 5: alias-removal waves (~0.5 day per wave)
 - Per router, once the exit criterion holds:

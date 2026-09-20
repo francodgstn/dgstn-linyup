@@ -303,3 +303,74 @@ export function functionsBaseUrl(args: {
 export function callableRouteUrl(args: { base: string; router: RouterName; name: string }): string {
   return `${args.base.replace(/\/+$/, '')}/${args.router}/${encodeURIComponent(args.name)}`
 }
+
+// ─── When the router is not there ─────────────────────────────────────────────
+//
+// A client and the backend it talks to do not deploy together. The member app
+// ships over the air on its own lane, so a build that routes can reach a phone
+// BEFORE the project it talks to has that router — and the only way back from a
+// broken member app is another over-the-air update. The web has a smaller window
+// of the same kind wherever its rollout is not ordered after the functions deploy.
+//
+// So a routed call that finds NO ROUTER falls back to the callable's own name,
+// which stays deployed until it is provably unused. That is safe for one reason
+// only: in both cases below the member never ran, so nothing is executed twice.
+//
+//   - the function does not exist → the platform answers 404, which the SDK
+//     reports as `not-found` with the bare message 'not-found'
+//   - the router exists but does not serve that name (a route rolled back on the
+//     server first) → the router's own 404, 'No such callable on <router>'
+//
+// A `not-found` a MEMBER throws ('Session not found') has its own message and is
+// NOT a fallback: the member ran, and running it again is not ours to decide.
+//
+// WHAT IT DOES NOT COVER: a missing function, IN A BROWSER. The platform's 404
+// carries no CORS headers, so the browser withholds the response and the SDK
+// reports `internal` — which could equally be a member that ran and crashed, so
+// it is never a fallback. The web therefore still depends on its rollout being
+// ordered after the functions deploy (the production workflow does that); only
+// the router's OWN 404, which answers with CORS headers, reaches it. A phone has
+// no CORS, so the member app gets both cases — and it is the one that needs them.
+
+const ROUTER_UNKNOWN_NAME = 'No such callable on '
+
+export function isRouterMissingError(error: unknown): boolean {
+  const e = error as { code?: unknown; message?: unknown } | null
+  if (!e || typeof e.code !== 'string' || typeof e.message !== 'string') return false
+  if (e.code !== 'functions/not-found' && e.code !== 'not-found') return false
+  return e.message.toLowerCase() === 'not-found' || e.message.startsWith(ROUTER_UNKNOWN_NAME)
+}
+
+// Remembered for the life of the page or app session, so a project without the
+// router costs ONE failed round trip per router, not one per call. A reload or an
+// app restart asks again, which is how a client notices the router has arrived.
+const routersFoundMissing = new Set<RouterName>()
+
+/**
+ * `routed`, falling back to `direct` when the router is not there. Both are built
+ * lazily by the caller; neither is invoked until a call is made.
+ */
+export function withRouterFallback<Req, Res>(args: {
+  router: RouterName
+  routed: (data?: Req | null) => Promise<Res>
+  direct: (data?: Req | null) => Promise<Res>
+  onFallback?: (router: RouterName) => void
+}): (data?: Req | null) => Promise<Res> {
+  const { router, routed, direct, onFallback } = args
+  return async (data) => {
+    if (routersFoundMissing.has(router)) return direct(data)
+    try {
+      return await routed(data)
+    } catch (error) {
+      if (!isRouterMissingError(error)) throw error
+      routersFoundMissing.add(router)
+      onFallback?.(router)
+      return direct(data)
+    }
+  }
+}
+
+/** Test seam: forget which routers were found missing. */
+export function resetRouterFallbackMemory(): void {
+  routersFoundMissing.clear()
+}
