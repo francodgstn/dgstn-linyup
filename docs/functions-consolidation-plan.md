@@ -585,6 +585,11 @@ environment that turns the flag on.
   `scripts/check-functions-ready.mjs` cannot see — it checks revisions, not invoker IAM —
   and the spike script is, by accident, a check for it: a direct-vs-routed difference where
   the direct side is a bare `permission-denied`.
+  **Fixed 2026-09-20** by granting `allUsers` the `roles/run.invoker` role on those two
+  services (`gcloud run services add-iam-policy-binding`), which is what every other callable
+  there already had. The spike then passed on staging with no failure at all, for every router.
+  How the two lost the binding was not established; a redeploy that fails to set IAM on a new
+  function is the likely cause, and nothing in the pipeline would notice it happening again.
 - **`rpcHeavy` and `rpcStudio` built 2026-09-20, in ONE PR** (see the redeploy note below).
   `packages/functions/src/routers/heavy.ts` takes the callables that run for minutes or want
   a gigabyte, so that their profile is paid only by the calls that need it.
