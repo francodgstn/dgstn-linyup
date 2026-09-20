@@ -53,6 +53,27 @@
  *      the most recently updated function. If functions ever bind secrets, the
  *      hashes legitimately split by secret set and this rule has to learn that.
  *
+ * The THIRD way, found on 2026-09-20: a function can be ACTIVE, Ready, on its
+ * newest revision and on the latest hash — every one of 1–4 — and still refuse
+ * every caller, because its Cloud Run service has NO INVOKER. Two staging
+ * callables (`inviteOrgMember`, `getOrgMemberInvitation`) had an empty IAM
+ * policy: Cloud Run answered 403 before the code ran, the client SDK reported a
+ * bare `permission-denied`, and inviting somebody to an organisation was simply
+ * broken there behind green deploys. How they lost the binding was never
+ * established — a deploy that creates a function and then fails to set its IAM
+ * is the likely cause — and it was found by accident (scripts/router-spike.mjs
+ * compares a callable with its router, and the two disagreed). So:
+ *
+ *   5. a function that is meant to be called from outside — a callable, or a
+ *      plain HTTP function: the webhooks, `api`, the callable routers — must
+ *      grant `roles/run.invoker` to `allUsers`. WHICH functions those are is
+ *      read off the labels firebase-tools writes (`deployment-callable`,
+ *      `-taskqueue`, `-scheduled`, `-blocking`) and the presence of an event
+ *      trigger, not listed here: a task queue, a schedule, a blocking function
+ *      and an event trigger are invoked by a service account and are NOT judged.
+ *      A redeploy does not repair this one — the hash is current, so the deploy
+ *      skips the function — which is why the remedy printed is the IAM binding.
+ *
  * A function missing from the project entirely (a create that never ran) is
  * not visible here: the deploy step's "Deploy complete!" check owns that case.
  *
@@ -64,8 +85,10 @@
  * Auth: Application Default Credentials — in CI the credential file the
  * google-github-actions/auth step writes, locally
  * `gcloud auth application-default login`. Read-only; it needs
- * run.services.list, run.revisions.get, cloudfunctions.functions.list and
- * serviceusage.services.use on the project.
+ * run.services.list, run.services.getIamPolicy, run.revisions.get,
+ * cloudfunctions.functions.list and serviceusage.services.use on the project
+ * (roles/run.admin, which the deploy identity holds, and roles/viewer both
+ * carry getIamPolicy). A policy that cannot be READ is exit 2, never a pass.
  */
 import { appendFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -204,6 +227,65 @@ export function redeployCommands({ project, region, failed }) {
   return [...deletes, `npx firebase-tools deploy --project ${project} --only ${only}`]
 }
 
+// ─── invoker (check 5) ───────────────────────────────────────────────────────
+
+/** Labels firebase-tools puts on a function that a SERVICE ACCOUNT invokes. */
+const NOT_CALLED_FROM_OUTSIDE = [
+  'deployment-taskqueue',
+  'deployment-scheduled',
+  'deployment-blocking',
+]
+
+/**
+ * HTTP functions that are PRIVATE on purpose (`invoker: 'private'` or a named
+ * service account). Each entry says why. Empty is the expected state: every
+ * plain HTTP function here is a webhook, the public API or a callable router.
+ */
+const PRIVATE_ON_PURPOSE = new Set([])
+
+/** Is this function meant to be called by anyone on the internet? Pure. */
+export function expectsPublicInvoker(fn) {
+  if (fn.eventTrigger) return false
+  const labels = fn.labels ?? {}
+  if (NOT_CALLED_FROM_OUTSIDE.some((l) => l in labels)) return false
+  return !PRIVATE_ON_PURPOSE.has(lastSegment(fn.name))
+}
+
+/** Does this IAM policy let anyone invoke the service? Pure. */
+export function grantsPublicInvoker(policy) {
+  return (policy?.bindings ?? []).some(
+    (b) => b.role === 'roles/run.invoker' && (b.members ?? []).includes('allUsers')
+  )
+}
+
+/**
+ * One verdict per function that is meant to be public. `policies` maps a Cloud
+ * Run service name to its IAM policy. A function with no service is not judged
+ * here — assessReadiness already failed it, for a better reason. Pure.
+ *
+ * @returns {Array<{ id: string, service: string, verdict: 'ok'|'failed', reason?: string }>}
+ */
+export function assessInvokers({ functions, policies }) {
+  const out = []
+  for (const fn of functions) {
+    if (!expectsPublicInvoker(fn)) continue
+    const service = lastSegment(fn.serviceConfig?.service)
+    if (!service || !policies.has(service)) continue
+    const id = lastSegment(fn.name)
+    if (grantsPublicInvoker(policies.get(service))) out.push({ id, service, verdict: 'ok' })
+    else out.push({ id, service, verdict: 'failed', reason: 'no public invoker' })
+  }
+  return out
+}
+
+/** The commands that restore the binding. A redeploy does not: see the header. Pure. */
+export function invokerCommands({ project, region, failed }) {
+  return failed.map(
+    (f) =>
+      `gcloud run services add-iam-policy-binding ${f.service} --region ${region} --project ${project} --member allUsers --role roles/run.invoker`
+  )
+}
+
 /** The reasons behind the failures, most common first, with revision names taken out so identical causes group. Pure. */
 export function summariseReasons(failed) {
   const counts = new Map()
@@ -284,6 +366,65 @@ async function servingDates({ project, region, failed, headers }) {
   return dates
 }
 
+/**
+ * The IAM policy of every service a public function runs on. Eight at a time,
+ * like servingDates. A policy that cannot be read THROWS: "could not check" must
+ * never look like "checked, fine" — main turns it into exit 2.
+ */
+async function invokerPolicies({ project, region, functions, headers }) {
+  const services = [
+    ...new Set(
+      functions
+        .filter(expectsPublicInvoker)
+        .map((fn) => lastSegment(fn.serviceConfig?.service))
+        .filter(Boolean)
+    ),
+  ]
+  const policies = new Map()
+  const queue = [...services]
+  const worker = async () => {
+    for (let s = queue.shift(); s; s = queue.shift()) {
+      const url = `${RUN_API}/projects/${project}/locations/${region}/services/${s}:getIamPolicy`
+      policies.set(s, await getJson(url, headers))
+    }
+  }
+  await Promise.all(Array.from({ length: 8 }, worker))
+  return policies
+}
+
+/** Prints check 5's verdict; returns its exit code (0 or 1). */
+function reportInvokers({ project, region, invokers }) {
+  const failed = invokers
+    .filter((v) => v.verdict === 'failed')
+    .sort((a, b) => a.id.localeCompare(b.id))
+  if (!failed.length) {
+    console.log(
+      `✔ every function meant to be called from outside can be (${invokers.length} checked for a public invoker)`
+    )
+    return 0
+  }
+  const headline = `${project} (${region}): ${failed.length} of ${invokers.length} public functions have NO public invoker — every call to them is refused with 403 before the code runs`
+  console.log(`\n${headline}`)
+  for (const f of failed) console.log(`  ${f.id}`)
+  console.log(
+    '\nA redeploy does not repair this: the deploy hash is current, so the function is skipped.' +
+      '\nRestore the binding:'
+  )
+  for (const c of invokerCommands({ project, region, failed })) console.log(`  ${c}`)
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(`::error title=Functions with no public invoker::${headline}. See this step's log.`)
+  }
+  stepSummary([
+    '',
+    `### Cloud Functions: NO public invoker`,
+    '',
+    headline,
+    '',
+    ...failed.slice(0, 150).map((f) => `- \`${f.id}\``),
+  ])
+  return 1
+}
+
 async function accessToken() {
   // Imported here so the pure functions above load without firebase-admin.
   const { applicationDefault } = await import('firebase-admin/app')
@@ -305,8 +446,10 @@ async function main() {
   const deadline = Date.now() + args.timeout * 1000
 
   let verdicts
+  let functions
   for (;;) {
-    const [functions, services] = await Promise.all([
+    let services
+    ;[functions, services] = await Promise.all([
       listAll(
         `${FUNCTIONS_API}/projects/${project}/locations/${region}/functions`,
         'functions',
@@ -338,10 +481,16 @@ async function main() {
     (settling.length ? `, ${settling.length} still settling after ${args.timeout}s` : '')
   console.log(headline)
 
+  // Check 5 runs on its own: a function can pass 1–4 and still refuse everybody.
+  const invokers = assessInvokers({
+    functions,
+    policies: await invokerPolicies({ project, region, functions, headers }),
+  })
+
   if (!failed.length && !settling.length) {
     console.log('✔ every function is serving the code that was deployed')
     stepSummary([`### Cloud Functions: ready`, '', headline])
-    return 0
+    return reportInvokers({ project, region, invokers })
   }
 
   const dates = await servingDates({ project, region, failed, headers })
@@ -392,6 +541,8 @@ async function main() {
     '| --- | --- |',
     ...rows.slice(0, 150).map((r) => `| \`${r.id}\` | ${r.text} |`),
   ])
+  // Still say what check 5 found: the two failures have different remedies.
+  reportInvokers({ project, region, invokers })
   return 1
 }
 

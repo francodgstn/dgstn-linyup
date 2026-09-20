@@ -589,7 +589,17 @@ environment that turns the flag on.
   services (`gcloud run services add-iam-policy-binding`), which is what every other callable
   there already had. The spike then passed on staging with no failure at all, for every router.
   How the two lost the binding was not established; a redeploy that fails to set IAM on a new
-  function is the likely cause, and nothing in the pipeline would notice it happening again.
+  function is the likely cause.
+  **`scripts/check-functions-ready.mjs` now checks it (check 5):** every function meant to be
+  called from outside — read off the labels firebase-tools writes, not listed — must grant
+  `roles/run.invoker` to `allUsers`. Run read-only on the day it was written it found the SAME
+  defect on production (`suggestTarif595Mappings`, `handleAppStoreWebhook`,
+  `refreshStorePresence`) and on sandbox (`suggestTarif595Mappings`): healthy by every other
+  check, and refusing every caller. They are all recently CREATED functions, which fits a create
+  that succeeded followed by an IAM call that was rate-limited. **It fails the deploy workflows
+  until those bindings are restored** — the script prints the command for each — and that is the
+  check working: a release whose new routers came up without an invoker would now stop at the
+  gate instead of reaching users.
 - **`rpcHeavy` and `rpcStudio` built 2026-09-20, in ONE PR** (see the redeploy note below).
   `packages/functions/src/routers/heavy.ts` takes the callables that run for minutes or want
   a gigabyte, so that their profile is paid only by the calls that need it.
