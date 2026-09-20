@@ -8569,9 +8569,12 @@
       "preview": "Anteprima",
       "issue": "Emetti giustificativo",
       "cancel": "Annulla",
-      "noHistory": "Questo pagamento indica un abbonamento, ma per il membro non risulta alcun abbonamento di quel piano da attestare. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
-      "unsupported": "Da questo pagamento non si può derivare un giustificativo: un pagamento a lezione singola o per appuntamento non indica quale corso o data copre, e i prodotti non sono promozione della salute. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
-      "openSegment": "Apri i giustificativi del membro"
+      "noHistory": "Per questo membro non risultano periodi di abbonamento, quindi una ricevuta non avrebbe nulla da attestare. Scegli la fonte a mano nella sezione Ricevute.",
+      "unsupported": "Da questo pagamento non si può creare una ricevuta. Un ingresso singolo o un appuntamento non registra quale lezione copriva, e i prodotti non sono promozione della salute. Scegli la fonte a mano nella sezione Ricevute.",
+      "openSegment": "Apri i giustificativi del membro",
+      "pickSource": "Scegli per cosa è stato pagato",
+      "guessedSource": "Il pagamento non indica quale — questa è la corrispondenza migliore per data. Controlla prima di emettere.",
+      "noCourses": "Per questo membro non risultano corsi acquistati, quindi una ricevuta non avrebbe nulla da attestare. Scegli la fonte a mano nella sezione Ricevute."
     },
     "checklistExpiring": "{count} posizioni associate non sono più valide dopo il {date}",
     "checklistReview": "Verifica"

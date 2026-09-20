@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -25,6 +26,7 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import {
+  COURSE_PURCHASES_SUBCOLLECTION,
   TARIF595_CONTACTS_SUBCOLLECTION,
   TARIF595_JOBS_SUBCOLLECTION,
   TARIF595_RECEIPTS_SUBCOLLECTION,
@@ -157,6 +159,39 @@ export function useContactTarif595Receipts(teamId: string | null, contactId: str
         )
       )
       return snap.docs.map(toReceipt)
+    },
+  })
+}
+
+// ─── This contact's course purchases (lifetime entitlements) ─────────────────
+//
+// No shared hook lists a CONTACT's purchases from the (auth) side — only the
+// public Space/Shop do, scoped to the signed-in visitor. Same collection-group
+// shape (`contactId` + `teamId`), read here for the studio's own surfaces.
+//
+// It lives in the PLUGIN, not in a core page. It was declared inside
+// contacts/[id]/ReceiptsSegment.tsx until 2026-09-20, which was fine while the
+// segment was its only reader; the payment-row dialog is the second, and a
+// plugin concern copied into two core files is how the two drift.
+
+/** A person buys a handful of courses in a lifetime; the bound is a tripwire, not a page. */
+const COURSE_PURCHASES_SCAN = 100
+
+/** The course ids this contact owns outright. */
+export function useContactCoursePurchases(teamId: string | null, contactId: string | null) {
+  return useQuery<string[]>({
+    queryKey: ['tarif595-course-purchases', teamId, contactId],
+    enabled: !!teamId && !!contactId,
+    queryFn: async () => {
+      const snap = await getDocs(
+        query(
+          collectionGroup(db, COURSE_PURCHASES_SUBCOLLECTION),
+          where('contactId', '==', contactId),
+          where('teamId', '==', teamId),
+          limit(COURSE_PURCHASES_SCAN)
+        )
+      )
+      return snap.docs.map((d) => (d.data().courseId as string | undefined) ?? d.id)
     },
   })
 }

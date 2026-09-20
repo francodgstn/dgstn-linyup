@@ -8569,9 +8569,12 @@
       "preview": "Aperçu",
       "issue": "Émettre le justificatif",
       "cancel": "Annuler",
-      "noHistory": "Ce paiement mentionne un abonnement, mais aucun abonnement de ce plan n'est enregistré pour ce membre. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
-      "unsupported": "Impossible de dériver un justificatif de ce paiement : un paiement à la séance ou de rendez-vous n'indique ni le cours ni la date couverte, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
-      "openSegment": "Ouvrir les justificatifs du membre"
+      "noHistory": "Aucune période d'abonnement n'est enregistrée pour ce membre : un justificatif n'aurait rien à attester. Choisissez la source à la main dans la section Justificatifs.",
+      "unsupported": "Aucun justificatif ne peut être établi à partir de ce paiement. Une entrée à l'unité ou un rendez-vous n'indique pas quel cours il couvrait, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source à la main dans la section Justificatifs.",
+      "openSegment": "Ouvrir les justificatifs du membre",
+      "pickSource": "Choisissez ce qui a été payé",
+      "guessedSource": "Le paiement n'indique pas lequel — voici notre meilleure correspondance par date. Vérifiez avant d'émettre.",
+      "noCourses": "Aucun cours acheté n'est enregistré pour ce membre : un justificatif n'aurait rien à attester. Choisissez la source à la main dans la section Justificatifs."
     },
     "checklistExpiring": "{count} positions associées ne sont plus valables après le {date}",
     "checklistReview": "Vérifier"

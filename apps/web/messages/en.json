@@ -8569,9 +8569,12 @@
       "preview": "Preview",
       "issue": "Issue receipt",
       "cancel": "Cancel",
-      "noHistory": "This payment names a plan, but the member has no subscription of that plan on record to attest. Pick the source by hand on the member's Receipts segment.",
-      "unsupported": "A receipt can't be derived from this payment: a drop-in or appointment payment doesn't say which class or date it covered, and products aren't health promotion. Pick the source by hand on the member's Receipts segment.",
-      "openSegment": "Open the member's receipts"
+      "noHistory": "This member has no plan periods on record, so there is nothing for a receipt to attest. Pick a source by hand on their Receipts segment.",
+      "unsupported": "A receipt can't be built from this payment. A drop-in or appointment doesn't record which class it covered, and products aren't health promotion. Pick a source by hand on the member's Receipts segment.",
+      "openSegment": "Open the member's receipts",
+      "pickSource": "Choose what this paid for",
+      "guessedSource": "The payment doesn't record which one — this is our best match on the date. Check it before issuing.",
+      "noCourses": "This member owns no courses on record, so there is nothing for a receipt to attest. Pick a source by hand on their Receipts segment."
     },
     "checklistExpiring": "{count} mapped positions stop being valid after {date}",
     "checklistReview": "Review"

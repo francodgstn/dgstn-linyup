@@ -74,12 +74,27 @@ const PAYMENT_STATUS_STYLES: Record<string, string> = {
  * reconciliation that silently disagrees with a bank statement by a few francs
  * is worse than one that said it was an estimate.
  */
-/** A live row for something health promotion can attest — never a product or
- *  a gift card, and never a voided record. The dialog decides the rest. */
+/**
+ * A live row a Tarif 595 receipt can actually be built FROM — never a product or
+ * a gift card, and never a voided record.
+ *
+ * ── SUBSCRIPTION AND COURSE ONLY, AND THE OTHER TWO ARE NOT AN OVERSIGHT ─────
+ * This used to admit `drop_in` and `appointment` as well, on the reasoning that
+ * "the dialog decides the rest". The dialog's decision was to refuse, every
+ * single time — there is no branch for either kind and there cannot be one:
+ * a `Tarif595Source` of kind `attendance` needs an `activityId`, and
+ * `PaymentLineItem` records no activity and no session. So the row genuinely
+ * cannot name the class it paid for, and the button was offered on rows that
+ * were guaranteed to dead-end in a paragraph of explanation.
+ *
+ * An attendance receipt is still issuable — from the contact's Receipts
+ * segment, where the activity is picked by hand. It is just not derivable from
+ * a payment, which is what this predicate is about.
+ */
 function receiptable(row: UnifiedPaymentRow): boolean {
   if (row.voided) return false
   const kind = row.lineItem?.kind ?? (row.planTypeId ? 'subscription' : null)
-  return kind === 'subscription' || kind === 'course' || kind === 'drop_in' || kind === 'appointment'
+  return kind === 'subscription' || kind === 'course'
 }
 
 function JournalDetails({
