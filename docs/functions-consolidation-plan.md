@@ -600,6 +600,8 @@ environment that turns the flag on.
   until those bindings are restored** — the script prints the command for each — and that is the
   check working: a release whose new routers came up without an invoker would now stop at the
   gate instead of reaching users.
+  **All four bindings were restored the same day (2026-09-20)**, and `pnpm functions:ready` then
+  passed on production, sandbox and staging, so the gate went in without blocking a deploy.
 - **`rpcHeavy` and `rpcStudio` built 2026-09-20, in ONE PR** (see the redeploy note below).
   `packages/functions/src/routers/heavy.ts` takes the callables that run for minutes or want
   a gigabyte, so that their profile is paid only by the calls that need it.
