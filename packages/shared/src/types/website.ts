@@ -38,12 +38,13 @@ export type SiteBrandFont = (typeof SITE_BRAND_FONTS)[number]
 export const SITE_FONTS = ['sans', 'serif', 'rounded', ...SITE_BRAND_FONTS] as const
 export type SiteFont = (typeof SITE_FONTS)[number]
 export type SectionAlign = 'left' | 'center'
-export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment'
+export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment' | 'class'
 
 /** A call-to-action button. `booking`/`signup` resolve to the team's bio-link
  *  flows; `appointment` opens the booking panel straight on ONE appointment
- *  activity (a free intro, a trial call) instead of sending the visitor to a
- *  page first; `url` opens an external link. ('membership' is a legacy alias
+ *  activity (a free intro, a trial call) and `class` does the same for ONE
+ *  class — both save the visitor a hunt through the catalogue for the thing
+ *  the page they are reading is about; `url` opens an external link. ('membership' is a legacy alias
  *  for 'signup', still accepted on read/publish for older stored sites.) */
 export interface SiteCta {
   label: string
@@ -51,8 +52,15 @@ export interface SiteCta {
   url?: string
   /** For `action: 'page'` — the page to open (a SitePageRef id). */
   pageId?: string
-  /** For `action: 'appointment'` — the appointment activity to open. */
+  /** For `action: 'appointment'` — the appointment activity to open (by id,
+   *  which is what the slot picker takes). Degrades to the booking list when
+   *  absent, rather than dropping the studio's button off its page. */
   activityId?: string
+  /** For `action: 'class'` — the class whose dates to open, BY SLUG: that is
+   *  the class funnel's own address (`/booking/{activitySlug}`, what an
+   *  activity card links to), so the CTA, the card and the overlay all reach it
+   *  the same way. Degrades to the booking list when absent. */
+  activitySlug?: string
 }
 
 export interface SiteImage {

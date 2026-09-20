@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Diese Stunde auf angemeldete Personen beschränken",
     "accessSignupOnly": "Nur Personen, die sich bei dir angemeldet haben",
     "accessSignupOnlyHint": "Gäste können nicht buchen, auch nicht zahlend. Eine Probestunde bleibt möglich.",
-    "waitlistExperimental": "Experimentell"
+    "waitlistExperimental": "Experimentell",
+    "fieldBookingGroup": "Gruppe auf der Buchungsseite",
+    "fieldBookingGroupPlaceholder": "z. B. Kurse",
+    "fieldBookingGroupHint": "Fasst die Buchungsseite unter einer Überschrift zusammen. Leer lassen, um einzeln zu erscheinen."
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",
@@ -3988,7 +3991,12 @@
     "autosaveSaving": "Wird gespeichert…",
     "autosaveSaved": "Entwurf gespeichert",
     "autosaveFailed": "Nicht gespeichert",
-    "autosaveRetry": "Erneut versuchen"
+    "autosaveRetry": "Erneut versuchen",
+    "editorCtaActionClass": "Kurs buchen",
+    "editorCtaClass": "Kurs",
+    "editorCtaClassPlaceholder": "Kurs wählen",
+    "editorCtaClassEmptyHint": "Noch keine Kurse — lege unter Angebot einen an.",
+    "editorCtaClassFallbackHint": "Ohne Kurs öffnet diese Schaltfläche die Buchungsseite."
   },
   "Kiosk": {
     "title": "Kiosk",

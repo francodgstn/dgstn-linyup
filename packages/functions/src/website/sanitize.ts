@@ -149,13 +149,19 @@ export function sanitizeCta(v: unknown): Dict | undefined {
   const d = asDict(v)
   const label = optStr(d.label, 120)
   if (!label) return undefined
-  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url', 'page', 'appointment'] as const, 'url')
+  const action0 = oneOf(d.action, ['booking', 'signup', 'membership', 'url', 'page', 'appointment', 'class'] as const, 'url')
   const action = action0 === 'membership' ? 'signup' : action0 // normalize legacy alias
   if (action === 'page') {
     // A page CTA with no page is a button that goes nowhere — drop it. Whether
     // the page still exists is the renderer's question (it hides a dead one).
     const pageId = optStr(d.pageId, 64)
     return pageId ? { label, action, pageId } : undefined
+  }
+  if (action === 'class') {
+    // Same degradation as the appointment branch below: a class CTA naming no
+    // class still has the booking list to open.
+    const activitySlug = optStr(d.activitySlug, 120)
+    return activitySlug ? { label, action, activitySlug } : { label, action: 'booking' }
   }
   if (action === 'appointment') {
     // An appointment CTA that names no activity still has somewhere sensible to

@@ -192,6 +192,10 @@ export const ACTIVITY_FIELD_CATALOG: FieldCatalog<Activity> = {
   slug: 'exposed',
   color: 'exposed',
   tags: 'exposed',
+  // The booking page's section heading — already world-readable on the public
+  // mirror, and a caller listing offerings wants the same grouping the visitor
+  // sees rather than inventing one.
+  bookingGroup: 'exposed',
   type: 'exposed',
   providerId: 'exposed',
   providerName: 'exposed',

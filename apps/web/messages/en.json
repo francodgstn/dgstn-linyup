@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Limit this class to people who signed up with you",
     "accessSignupOnly": "Only people who signed up with you",
     "accessSignupOnlyHint": "Visitors can't book, even paying. Newcomers can still take a trial class.",
-    "waitlistExperimental": "Experimental"
+    "waitlistExperimental": "Experimental",
+    "fieldBookingGroup": "Booking page group",
+    "fieldBookingGroupPlaceholder": "e.g. Courses",
+    "fieldBookingGroupHint": "Groups the booking page under a heading. Leave empty to list it on its own."
   },
   "Benefit": {
     "fieldLabel": "Member benefit",
@@ -3988,7 +3991,12 @@
     "autosaveSaving": "Saving…",
     "autosaveSaved": "Draft saved",
     "autosaveFailed": "Not saved",
-    "autosaveRetry": "Try again"
+    "autosaveRetry": "Try again",
+    "editorCtaActionClass": "Book a class",
+    "editorCtaClass": "Class",
+    "editorCtaClassPlaceholder": "Choose a class",
+    "editorCtaClassEmptyHint": "No classes yet — add one under Offer.",
+    "editorCtaClassFallbackHint": "Without a class this button opens the booking page."
   },
   "Kiosk": {
     "title": "Kiosk",

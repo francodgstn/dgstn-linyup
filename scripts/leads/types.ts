@@ -107,6 +107,11 @@ export interface LeadActivityDef {
   isFreeTrial?: boolean
   base_score: number
   description: string
+  /** The heading this activity sits under on the public booking page
+   *  (Activity.bookingGroup) — the studio's own words, open set, absent ⇒
+   *  ungrouped (renders last). A long catalogue reads as a few sections
+   *  instead of one flat list. */
+  bookingGroup?: string
   /** Group-class capacity shown/enforced on the public booking surface. */
   capacity: number | null
   /** Assets-folder base name for the cover image (e.g. 'activity-squad-technique'). */
