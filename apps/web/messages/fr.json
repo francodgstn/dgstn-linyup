@@ -3988,7 +3988,18 @@
     "autosaveSaving": "Enregistrement…",
     "autosaveSaved": "Brouillon enregistré",
     "autosaveFailed": "Non enregistré",
-    "autosaveRetry": "Réessayer"
+    "autosaveRetry": "Réessayer",
+    "editorHeroMotion": "Mouvement de l'image",
+    "editorHeroMotionNone": "Fixe",
+    "editorHeroMotionKenBurns": "Zoom et panoramique lents",
+    "editorFeaturesCountUp": "Compter les chiffres",
+    "editorTeamCaption": "Nom et rôle",
+    "editorTeamCaptionBelow": "Sous la photo",
+    "editorTeamCaptionOverlayDark": "Sur la photo, sombre",
+    "editorTeamCaptionOverlayLight": "Sur la photo, clair",
+    "editorTeamBioDisplay": "Texte du profil",
+    "editorTeamBioInline": "Sur la carte",
+    "editorTeamBioModal": "S'ouvre dans une fenêtre"
   },
   "Kiosk": {
     "title": "Kiosque",

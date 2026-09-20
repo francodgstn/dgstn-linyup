@@ -33,6 +33,7 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
     headline: 'Training, das Resultate liefert',
     subheadline: 'CrossFit in Zug',
     bgImageUrl: 'https://example.ch/hero.avif',
+    bgMotion: 'kenburns',
     overlay: 55,
     bgColor: '#111827',
     layout: 'card',
@@ -65,6 +66,7 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
   },
   features: {
     id: 'features', type: 'features', ...nav,
+    countUp: true,
     heading: 'Dein Erfolg beginnt hier',
     subheading: 'Drei Werte',
     columns: 3,
@@ -158,6 +160,8 @@ const FIXTURES: { [K in WebsiteSectionType]: Fixture<K> } = {
   },
   team: {
     id: 'team', type: 'team', ...nav,
+    captionStyle: 'overlay-dark',
+    bioDisplay: 'modal',
     heading: 'Unser Team',
     subheading: '12 Coaches',
     columns: 4,

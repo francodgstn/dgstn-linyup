@@ -3988,7 +3988,18 @@
     "autosaveSaving": "Saving…",
     "autosaveSaved": "Draft saved",
     "autosaveFailed": "Not saved",
-    "autosaveRetry": "Try again"
+    "autosaveRetry": "Try again",
+    "editorHeroMotion": "Image motion",
+    "editorHeroMotionNone": "Still",
+    "editorHeroMotionKenBurns": "Slow zoom & pan",
+    "editorFeaturesCountUp": "Count the figures up",
+    "editorTeamCaption": "Name and role",
+    "editorTeamCaptionBelow": "Below the photo",
+    "editorTeamCaptionOverlayDark": "On the photo, dark",
+    "editorTeamCaptionOverlayLight": "On the photo, light",
+    "editorTeamBioDisplay": "Profile text",
+    "editorTeamBioInline": "On the card",
+    "editorTeamBioModal": "Opens in a dialog"
   },
   "Kiosk": {
     "title": "Kiosk",

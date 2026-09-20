@@ -3988,7 +3988,18 @@
     "autosaveSaving": "Salvataggio…",
     "autosaveSaved": "Bozza salvata",
     "autosaveFailed": "Non salvato",
-    "autosaveRetry": "Riprova"
+    "autosaveRetry": "Riprova",
+    "editorHeroMotion": "Movimento dell'immagine",
+    "editorHeroMotionNone": "Fissa",
+    "editorHeroMotionKenBurns": "Zoom e panoramica lenti",
+    "editorFeaturesCountUp": "Conta i numeri",
+    "editorTeamCaption": "Nome e ruolo",
+    "editorTeamCaptionBelow": "Sotto la foto",
+    "editorTeamCaptionOverlayDark": "Sulla foto, scuro",
+    "editorTeamCaptionOverlayLight": "Sulla foto, chiaro",
+    "editorTeamBioDisplay": "Testo del profilo",
+    "editorTeamBioInline": "Sulla scheda",
+    "editorTeamBioModal": "Si apre in una finestra"
   },
   "Kiosk": {
     "title": "Kiosk",
