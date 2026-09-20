@@ -64,7 +64,7 @@ import { usePlan } from '@/hooks/usePlan'
 import { usePlanName } from '@/hooks/usePlanName'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { useUpgradeModal, UpgradeModalProvider } from '@/contexts/UpgradeModalContext'
-import { NavPinsProvider, useNavPins } from '@/contexts/NavPinsContext'
+import { HEAD_TILES_MAX, NavPinsProvider, useNavPins } from '@/contexts/NavPinsContext'
 import { useAffiliationTerm } from '@/hooks/useAffiliationTerm'
 import { OpenTabsProvider, useOpenTabs } from '@/contexts/OpenTabsContext'
 import { normalizeTabPath } from '@/lib/tab-routes'
@@ -188,7 +188,13 @@ const SCHEDULE_ITEM: NavItem = {
  * So a prefix match yields to a MORE SPECIFIC row that also matches. That fixes
  * the whole class rather than the one pair that was noticed —
  * `/public-page` under `/public-page/space` and `/settings` under
- * `/settings/plugins` had it too.
+ * `/settings/team` had it too.
+ *
+ * `/plugins` is the live case with the most teeth: the marketplace sits at the
+ * prefix and every per-plugin editor (`/plugins/website`, `/plugins/finance`, …)
+ * nests under it. It carries `exact` for that reason — but the plugin rows
+ * themselves arrive at runtime and are NOT in `NAV_HREFS` (see its note), so the
+ * yielding rule cannot see them and `exact` is what is actually doing the work.
  *
  * ── SEGMENT-AWARE ────────────────────────────────────────────────────────────
  * `startsWith` alone also lights `/schedule` on a hypothetical `/schedules`.
@@ -213,7 +219,7 @@ function navItemIsActive(item: NavItem, pathname: string): boolean {
 // icon button in the utility row at the top, first of the three.
 const EXPLORE_PLUGINS_ITEM: NavItem = {
   id: 'explorePlugins',
-  href: '/settings/plugins',
+  href: '/plugins',
   labelKey: 'explorePlugins',
   icon: Puzzle,
   exact: true,
@@ -1329,7 +1335,7 @@ function PluginNavItem({
           <Tooltip>
             <TooltipTrigger
               onClick={() => {
-                router.push(`/settings/plugins?plugin=${nav.pluginId}` as Route)
+                router.push(`/plugins?plugin=${nav.pluginId}` as Route)
                 onLinkClick?.()
               }}
               title={collapsed ? linkLabel : undefined}
@@ -1523,75 +1529,120 @@ type ResolvedNavEntry = {
  * is the only thing that says the slot can be filled again.
  */
 function HeadTiles({
-  tile,
+  tiles,
   choices,
-  onSet,
-  onClear,
+  onAdd,
+  onSetAt,
   onLinkClick,
 }: {
-  /** The chosen destination, or undefined when cleared (or gated out of view). */
-  tile: ResolvedNavEntry | undefined
-  /** Everything the tile may be set to (the visible catalogue). */
+  /** The chosen destinations, in order. Empty when cleared (or gated out). */
+  tiles: ResolvedNavEntry[]
+  /** Everything a tile may be set to (the visible catalogue). */
   choices: ResolvedNavEntry[]
-  onSet: (id: string) => void
-  onClear: () => void
+  onAdd: (id: string) => void
+  onSetAt: (index: number, id: string | null) => void
   onLinkClick?: () => void
 }) {
   const t = useTranslations('Nav')
 
+  // Dashboard is fixed and occupies the first cell, so the grid holds
+  // HEAD_TILES_MAX - 1 of the studio's own.
+  const cells = 1 + tiles.length
+  const atCapacity = cells >= HEAD_TILES_MAX
+  // ── WHERE THE "ADD" CONTROL GOES, AND WHY IT CHANGES SHAPE ────────────────
+  // Two columns, so an odd number of cells leaves a hole on the current row and
+  // an even number does not. A dashed tile is the right thing in the hole — it
+  // costs nothing, it is where the eye already is, and it is how this worked
+  // when there was one slot.
+  //
+  // Opening a NEW ROW for it is a different proposition: a full-height dashed
+  // box under a complete grid is permanent furniture advertising a feature, and
+  // it pushes the whole nav down to do it (Franco, 2026-09-20). So on an even
+  // grid the control is a slim strip instead, revealed on hover or keyboard
+  // focus, occupying a few pixels rather than a row.
+  const addFillsHole = !atCapacity && cells % 2 === 1
+
   return (
-    <div className="grid grid-cols-2 gap-1.5">
-      <NavTile
-        href={DASHBOARD_ITEM.href}
-        label={t(DASHBOARD_ITEM.labelKey as Parameters<typeof t>[0])}
-        icon={DASHBOARD_ITEM.icon}
-        exact={DASHBOARD_ITEM.exact}
-        onClick={onLinkClick}
-      />
-      {tile ? (
+    <div className="group/tiles">
+      <div className="grid grid-cols-2 gap-1.5">
         <NavTile
-          href={tile.href}
-          label={tile.label}
-          icon={tile.icon}
-          exact={tile.exact}
+          href={DASHBOARD_ITEM.href}
+          label={t(DASHBOARD_ITEM.labelKey as Parameters<typeof t>[0])}
+          icon={DASHBOARD_ITEM.icon}
+          exact={DASHBOARD_ITEM.exact}
           onClick={onLinkClick}
-        >
+        />
+        {tiles.map((tile, i) => (
+          <NavTile
+            key={tile.id}
+            href={tile.href}
+            label={tile.label}
+            icon={tile.icon}
+            exact={tile.exact}
+            onClick={onLinkClick}
+          >
+            <HeadTilePicker
+              choices={choices}
+              currentId={tile.id}
+              onPick={(id) => onSetAt(i, id)}
+              onClear={() => onSetAt(i, null)}
+              trigger={
+                // Hover-revealed on a pointer device, always present for touch
+                // (where there is no hover and an invisible control is no
+                // control). Tiny and cornered so it never crowds the label.
+                <button
+                  type="button"
+                  aria-label={t('headTileChange')}
+                  className="absolute right-0.5 top-0.5 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/tile:opacity-100 max-md:opacity-60"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              }
+            />
+          </NavTile>
+        ))}
+        {addFillsHole && (
           <HeadTilePicker
             choices={choices}
-            currentId={tile.id}
-            onPick={onSet}
-            onClear={onClear}
+            currentId={null}
+            onPick={onAdd}
             trigger={
-              // Hover-revealed on a pointer device, always present for touch
-              // (where there is no hover and an invisible control is no
-              // control). Tiny and cornered so it never crowds the label.
               <button
                 type="button"
-                aria-label={t('headTileChange')}
-                className="absolute right-0.5 top-0.5 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/tile:opacity-100 max-md:opacity-60"
+                aria-label={t('headTileAdd')}
+                title={t('headTileAdd')}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-input px-2 py-3 text-center text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
               >
-                <ChevronDown className="h-3 w-3" />
+                <Plus className="h-5 w-5 shrink-0" />
+                <span className="w-full truncate leading-none">{t('headTileAddShort')}</span>
               </button>
             }
           />
-        </NavTile>
-      ) : (
-        <HeadTilePicker
-          choices={choices}
-          currentId={null}
-          onPick={onSet}
-          trigger={
-            <button
-              type="button"
-              aria-label={t('headTileAdd')}
-              title={t('headTileAdd')}
-              className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-input px-2 py-3 text-center text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
-            >
-              <Plus className="h-5 w-5 shrink-0" />
-              <span className="w-full truncate leading-none">{t('headTileAddShort')}</span>
-            </button>
-          }
-        />
+        )}
+      </div>
+      {!atCapacity && !addFillsHole && (
+        // The slim strip. `h-0` collapsed so a complete grid sits exactly as it
+        // did before any of this existed, and nothing moves until it is wanted;
+        // `focus-within` is what makes it reachable by keyboard, since a
+        // control revealed only by hover is not reachable at all.
+        <div className="h-0 overflow-hidden opacity-0 transition-all focus-within:h-6 focus-within:opacity-100 group-hover/tiles:h-6 group-hover/tiles:opacity-100 max-md:h-6 max-md:opacity-60">
+          <HeadTilePicker
+            choices={choices}
+            currentId={null}
+            onPick={onAdd}
+            trigger={
+              <button
+                type="button"
+                aria-label={t('headTileAdd')}
+                title={t('headTileAdd')}
+                className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-input py-0.5 text-[11px] leading-none text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+              >
+                <Plus className="h-3 w-3 shrink-0" />
+                {t('headTileAddShort')}
+              </button>
+            }
+          />
+        </div>
       )}
     </div>
   )
@@ -2711,7 +2762,8 @@ function SidebarContent({
   const { isAtLeast } = usePlan()
   // The owner-only settings destinations (see SettingsGate in lib/settings-nav).
   const canEditTeamSettings = useCapabilities().can('team.settings')
-  const { alwaysShownIds, recentIds, recordVisit, headTileId, setHeadTile } = useNavPins()
+  const { alwaysShownIds, recentIds, recordVisit, headTileIds, addHeadTile, setHeadTileAt } =
+    useNavPins()
   // ONE call for the whole sidebar. Resolved here rather than inside NavLink so
   // the row and the search catalogue below read the same string — a per-row hook
   // would also mean ~20 subscriptions to one cached query.
@@ -2810,7 +2862,13 @@ function SidebarContent({
   // its own (see NavPinsContext). Favourites are rendered whole; a destination
   // that is both a tile and a shortcut is a duplicate the studio asked for
   // twice.
-  const headTileEntry = headTileId ? catalogue.get(headTileId) : undefined
+  // Ids that no longer resolve (a gated-off plugin, a deleted destination) are
+  // dropped from the RENDER and left in storage — same rule as the recents
+  // half of Favourites. Re-installing the plugin brings the tile back rather
+  // than having silently forgotten it.
+  const headTileEntries = headTileIds
+    .map((id) => catalogue.get(id))
+    .filter((e): e is ResolvedNavEntry => !!e)
 
   // Favourites = always shown (permanent, stored order) + recently visited
   // (rolling history, newest first, minus anything already always shown).
@@ -3103,19 +3161,19 @@ function SidebarContent({
                 translated `label` (plugin rows resolve from the `Plugins`
                 namespace, not `Nav`), and collapsed it renders as a bare icon
                 link with the label as its tooltip. */}
-            {headTileEntry && (
-              <ShortcutRow entry={headTileEntry} collapsed onClick={onLinkClick} />
-            )}
+            {headTileEntries.map((entry) => (
+              <ShortcutRow key={entry.id} entry={entry} collapsed onClick={onLinkClick} />
+            ))}
           </>
         ) : (
           <HeadTiles
-            tile={headTileEntry}
+            tiles={headTileEntries}
             // ALPHABETICAL, and no leads: this is a flat searchable list of
             // every destination the nav can reach, in no meaningful order —
             // catalogue insertion order, which is a fact about the source file.
             choices={sortNavRows([...catalogue.values()], locale)}
-            onSet={(id) => setHeadTile(id)}
-            onClear={() => setHeadTile(null)}
+            onAdd={addHeadTile}
+            onSetAt={setHeadTileAt}
             onLinkClick={onLinkClick}
           />
         )}

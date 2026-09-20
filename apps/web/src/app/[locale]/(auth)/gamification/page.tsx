@@ -762,7 +762,7 @@ export default function GamificationPage() {
         <Trophy className="mx-auto h-10 w-10 text-muted-foreground/40" />
         <h1 className="text-xl font-semibold">{t('notInstalledTitle')}</h1>
         <p className="text-sm text-muted-foreground">{t('notInstalledBody')}</p>
-        <Link href="/settings/plugins" className={buttonVariants()}>{t('goToPlugins')}</Link>
+        <Link href="/plugins" className={buttonVariants()}>{t('goToPlugins')}</Link>
       </div>
     )
   }

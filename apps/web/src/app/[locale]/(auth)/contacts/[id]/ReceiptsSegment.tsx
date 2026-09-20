@@ -14,13 +14,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { useQuery } from '@tanstack/react-query'
-import { collectionGroup, getDocs, limit, query, where } from 'firebase/firestore'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import type { Contact } from '@linyup/shared'
 import {
-  COURSE_PURCHASES_SUBCOLLECTION,
   formatAhv,
   isValidAhv,
   resolveActivityDropIn,
@@ -29,7 +26,6 @@ import {
   type Tarif595PreviewResult,
   type Tarif595Source,
 } from '@linyup/shared'
-import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
 import { useBookingSettings } from '@/hooks/useBookingSettings'
@@ -40,6 +36,7 @@ import {
   callIssueTarif595Receipt,
   callPreviewTarif595Receipt,
   saveTarif595ContactData,
+  useContactCoursePurchases,
   useContactTarif595Receipts,
   useInvalidateTarif595,
   useTarif595ContactData,
@@ -80,32 +77,6 @@ function tsToIsoDate(ts: unknown): string | null {
 function currentYearRange(): { from: string; to: string } {
   const y = new Date().getFullYear()
   return { from: `${y}-01-01`, to: `${y}-12-31` }
-}
-
-// ─── this contact's course purchases (lifetime entitlements) ────────────────
-// No shared hook lists a CONTACT's purchases from the (auth) side — only the
-// public Space/Shop do, scoped to the signed-in visitor. Same collection-group
-// shape (`contactId` + `teamId`), read here for the studio's own contact page.
-
-// A person buys a handful of courses in a lifetime; the bound is a tripwire, not a page.
-const COURSE_PURCHASES_SCAN = 100
-
-function useContactCoursePurchases(teamId: string | null, contactId: string) {
-  return useQuery<string[]>({
-    queryKey: ['tarif595-course-purchases', teamId, contactId],
-    enabled: !!teamId,
-    queryFn: async () => {
-      const snap = await getDocs(
-        query(
-          collectionGroup(db, COURSE_PURCHASES_SUBCOLLECTION),
-          where('contactId', '==', contactId),
-          where('teamId', '==', teamId),
-          limit(COURSE_PURCHASES_SCAN)
-        )
-      )
-      return snap.docs.map((d) => (d.data().courseId as string | undefined) ?? d.id)
-    },
-  })
 }
 
 // ─── source picker ────────────────────────────────────────────────────────

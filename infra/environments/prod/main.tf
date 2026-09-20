@@ -114,6 +114,20 @@ module "storage" {
   project_id       = var.project_id
   storage_location = var.storage_location
 
+  # The identities that must READ objects back, not just write them. Project
+  # Editor does NOT cover that on a uniform-bucket-level-access bucket — see the
+  # long note on google_storage_bucket_iam_member in modules/storage/main.tf.
+  #
+  # BOTH runtime SAs, deliberately. The functions actually run as the default
+  # compute SA today (setGlobalOptions sets no serviceAccount), while modules/iam
+  # provisions `linyup-functions@…` and calls it "preferred over the default
+  # compute SA". Granting the preferred one now means switching to it later is a
+  # one-line deploy change and not a second IAM incident.
+  object_user_members = [
+    "serviceAccount:${local.project_number}-compute@developer.gserviceaccount.com",
+    "serviceAccount:${module.iam.functions_runtime_email}",
+  ]
+
   depends_on = [module.services]
 }
 

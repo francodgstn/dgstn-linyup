@@ -10,14 +10,14 @@
 // common with each other:
 //
 //   bio-link       → /team/bio-link
-//   website        → /plugins/website          (set up via /settings/plugins)
+//   website        → /plugins/website          (set up via /plugins)
 //   shop           → /manage/offer (what the shop sells)
 //   space          → /public-page/space
 //   booking        → /settings/booking
 //   └ appointments → /schedule/availability    (switched on in /settings/booking)
-//   kiosk          → /plugins/kiosk            (set up via /settings/plugins)
+//   kiosk          → /plugins/kiosk            (set up via /plugins)
 //   signup         → /offer/plans?tab=subscriptions
-//   forms          → /plugins/custom-forms     (set up via /settings/plugins)
+//   forms          → /plugins/custom-forms     (set up via /plugins)
 //   documents      → /documents
 //   events         → /events
 //
@@ -78,7 +78,7 @@ import { useCustomDomain } from '@/hooks/useCustomDomain'
 // Plugin a surface needs; clicking "Set up" deep-links the plugins page, whose
 // modal handles the included / add-on / upgrade flow for the current plan.
 function pluginSetupHref(pluginId: string): Route {
-  return `/settings/plugins?plugin=${pluginId}` as Route
+  return `/plugins?plugin=${pluginId}` as Route
 }
 
 function ManageLink({ href, label }: { href: Route; label: string }) {

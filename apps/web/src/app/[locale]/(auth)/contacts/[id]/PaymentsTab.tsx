@@ -11,7 +11,7 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CreditCard, FileText, Plus } from 'lucide-react'
+import { CreditCard, FileText, HeartPulse, Plus } from 'lucide-react'
 import type { Contact } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContactPayments } from '@/hooks/useConnect'
@@ -31,11 +31,13 @@ import { VoidPaymentDialog } from '@/components/payments/VoidPaymentDialog'
 import { RefundPaymentDialog } from '@/components/payments/RefundPaymentDialog'
 import { useFinanceJournal } from '@/plugins/finance/hooks'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
-import { PaymentsTable } from '@/components/payments/PaymentsTable'
+import { PaymentsTable, type PaymentRowAction } from '@/components/payments/PaymentsTable'
+import { useStripeReceiptAction } from '@/components/payments/useStripeReceiptAction'
 import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
 import { InvoiceActions, InvoiceStatusBadge } from '@/plugins/qr-invoices/InvoiceActions'
 import { useContactInvoices } from '@/plugins/qr-invoices/hooks'
-import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
+import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
+import { canReceiptPayment } from '@/plugins/tarif-595/hooks'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -50,7 +52,8 @@ export function PaymentsTab({
   teamId: string | null | undefined
 }) {
   const t = useTranslations('PaymentsDashboard')
-  const tInvoices = useTranslations('QrInvoices')
+  const tInvoices = useTranslations('QrInvoices')
+  const tT = useTranslations('Tarif595')
   const tid = teamId ?? null
   const { teamRole } = useAuth()
   const canManage = teamRole === 'owner' || teamRole === 'manager'
@@ -68,6 +71,27 @@ export function PaymentsTab({
   // way to a health-insurance receipt for money that has already moved.
   const receiptsInstalled = isInstalled('tarif-595')
   const [receiptTarget, setReceiptTarget] = useState<UnifiedPaymentRow | null>(null)
+  // THE DIALOG STAYS HERE, the menu item goes to the table — see the
+  // `extraActions` note in components/payments/PaymentsTable.tsx for why those
+  // two cannot live in the same place.
+  const stripeReceiptActions = useStripeReceiptAction(canManage ? tid : null)
+  const rowActions = useMemo<PaymentRowAction[]>(
+    () => [
+      ...stripeReceiptActions,
+      ...(tid && receiptsInstalled && canManage
+        ? [
+            {
+              key: 'tarif-595',
+              label: tT('fromPayment.action'),
+              icon: HeartPulse,
+              available: canReceiptPayment,
+              onSelect: setReceiptTarget,
+            },
+          ]
+        : []),
+    ],
+    [stripeReceiptActions, tid, receiptsInstalled, canManage, tT]
+  )
   const contactName = `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim() || contact.email
 
   const rows = useMemo(
@@ -140,7 +164,7 @@ export function PaymentsTab({
           onAssign={setAssignTarget}
           onRefund={setRefundTarget}
           onVoid={setVoidTarget}
-          onReceipt={tid && receiptsInstalled && canManage ? setReceiptTarget : undefined}
+          extraActions={rowActions}
         />
       )}
 

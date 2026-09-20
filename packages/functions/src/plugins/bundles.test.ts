@@ -126,7 +126,11 @@ describe('the catalogue census', () => {
   // Files that OFFER an install. Each must go through installableManifests(),
   // which is the only thing that hides a member.
   const CATALOGUE = [
-    'app/[locale]/(auth)/settings/plugins/page.tsx',
+    // /plugins since 2026-09-20 — the marketplace left the settings shell for a
+    // full page. It is a PATH IN A TEST and moving the route is exactly what
+    // makes it stale, which is how this one was found: the file simply stopped
+    // existing and the census asserted against nothing.
+    'app/[locale]/(auth)/plugins/page.tsx',
     'app/[locale]/(auth)/org/[orgId]/plugins/page.tsx',
     // components/dashboard/DiscoverPanel.tsx was the third. It was deleted with
     // the incumbent dashboard (the new page drops Discover by decision — a shelf
