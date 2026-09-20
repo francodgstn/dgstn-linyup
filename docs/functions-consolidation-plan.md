@@ -9,6 +9,86 @@ description: Reduce the deployed Cloud Functions by routing callables through do
 
 > Written 2026-09-19.
 
+## At a glance — before and after
+
+The whole initiative in one picture. Everything below this section is the reasoning, the
+evidence and the log.
+
+**Before.** One deployed function — one Cloud Run service — per callable. A client names the
+function it wants, and the platform routes to it.
+
+```text
+  web / admin / member app
+  ────────────────────────
+  httpsCallable('bookSession')   ─────────▶  [ bookSession    ]  Cloud Run service
+  httpsCallable('cancelBooking') ─────────▶  [ cancelBooking  ]  Cloud Run service
+  httpsCallable('createInvoice') ─────────▶  [ createInvoice  ]  Cloud Run service
+  httpsCallable('listTeamMembers') ───────▶  [ listTeamMembers]  Cloud Run service
+            …                                        …
+                                             one service per callable, a couple of hundred
+                                             of them — and every deploy touches every one
+
+  Firestore triggers · schedules · task queues · webhooks · api   (one each, by nature)
+```
+
+**After.** The callables are served by a few **domain routers**. A router is an ordinary HTTP
+function that hands the request to the SAME `onCall` value, so auth, App Check, CORS and error
+codes are still the SDK's own. The client asks `callFunction` for a name; the route table says
+which router serves it.
+
+```text
+  web / admin / member app
+  ────────────────────────
+  callFunction('bookSession')
+        │   CALLABLE_ROUTES  (packages/shared/src/functions/routes.ts)
+        │   bookSession → rpcMember
+        ▼
+  POST …/rpcMember/bookSession   ─────────▶  [ rpcMember  ] ──▶ bookSession     (same onCall value,
+  POST …/rpcMember/cancelBooking ─────────▶  [            ] ──▶ cancelBooking    same auth check,
+  POST …/rpcFinance/createInvoice ────────▶  [ rpcFinance ] ──▶ createInvoice    same errors)
+  POST …/rpcStudio/listTeamMembers ───────▶  [ rpcStudio  ] ──▶ listTeamMembers
+
+  the routers, by AUDIENCE and blast radius:
+    rpcMember    members and guests: booking, the Space, sign-in, the kiosk      (hot path)
+    rpcCheckout  where a member or a guest pays                                  (money path)
+    rpcStudio    everything staff do that is not money, billing or an org
+    rpcFinance   journal, invoices, Tarif 595, the staff side of payments
+    rpcBilling   what a studio or an organisation pays Linyup
+    rpcOrg       the organisation tier
+    rpcHeavy     the jobs that run for minutes or want a gigabyte
+    rpcOps       the operator console
+
+  Firestore triggers · schedules · task queues · webhooks · api   (unchanged: each is bound to
+                                                                   an event source or to a URL
+                                                                   somebody outside the repo holds)
+```
+
+**In between — why the count went UP first.** A client that cannot be updated keeps calling the
+old name: a store binary, a browser tab left open, a rollback. So every callable ALSO stays
+deployed under its own name — its **alias** — until that name is provably unused, and only then is
+removed. Routers were added first; aliases go in waves.
+
+```text
+  deployed functions
+    297  ████████████████████████████████  the start
+    305  █████████████████████████████████ + the routers, every alias still there   (the peak)
+    291  ███████████████████████████████   wave 1: callables nothing had ever called (2026-09-20)
+   ~107  ████████████                      web + admin aliases, once quiet in production
+    ~90  ██████████                        the member app's names, once old binaries are retired
+         └── the floor: triggers, schedules, task queues and webhooks cannot merge
+```
+
+**Where it stands (2026-09-20).**
+
+| | |
+|---|---|
+| Routers | live on staging, sandbox and **production** (`v0.32.0`); every callable is routed |
+| Web + admin | route, through `callFunction`; a lint rule refuses a bare `httpsCallable` |
+| Member app | routes in code, **not released** — see Phase 4 for why it waits |
+| Aliases | wave 1 removed; every other wave waits for a quiet window in production |
+| Proof | `scripts/router-spike.mjs` (each callable vs its router, on a deployed project), `apps/web/e2e/callable-routing.spec.ts` (from a browser), `pnpm functions:ready` (incl. the invoker check) |
+| Adding a callable | CLAUDE.md → "Callables are served by routers" — a new callable is NOT a new function |
+
 ## 1. Why
 
 `packages/functions` deploys one Cloud Function per callable, trigger, cron,
@@ -90,7 +170,9 @@ rg -c 'httpsCallable(FromURL)?\s*(<|\()' apps/web --glob '!**/node_modules/**'  
 
 ### 2.2 Snapshot (recipe output, 2026-09-19; stale the day after)
 
-Output of `pnpm functions:inventory --md`. It includes every router: all callables are now routed, and each ALSO still deploys under its own name until its alias is removed (Phase 5), which is why the total has gone UP, not down as `https` functions in the `routers` domain. Every endpoint is `gcfv2`, none
+Output of `pnpm functions:inventory --md`, after the first alias wave. Every callable is served by a
+router (the `https` functions in the `routers` domain), and most ALSO still deploy under their own
+name until that alias is removed (Phase 5). Every endpoint is `gcfv2`, none
 binds a secret and none sets a service account.
 
 **291 deployable functions** — `packages/functions/dist/index.js`, built 2026-09-20T00:07Z. Global options: region=europe-west6, maxInstances=20.
@@ -613,6 +695,13 @@ environment that turns the flag on.
   2026-09-20**, each deployed as written. The spike passes for every router there, run with
   the DEPLOYED commit's route table (`--routes-ref`, see Phase 3). The two differences left are
   the staging invoker defect above, where the routed side is the one that works.
+- **Adding a callable has ONE documented path now** (CLAUDE.md → "Callables are served by
+  routers"): router table, `CALLABLE_ROUTES`, `BORN_ROUTED` — and NOT `src/index.ts`. Before it was
+  written down, the coverage test's own message steered a new callable towards being routed AND
+  exported, one more function each time. `BORN_ROUTED` is the state that was missing: a callable
+  that never had a function of its own. And `apps/web/eslint.callables.mjs` fails lint on a bare
+  `httpsCallable` in web, admin and mobile, which still WORKS against an aliased name and is
+  therefore the mistake nobody would notice.
 - **Some callables have no client caller at all** — no literal, no variable, in web, admin or
   mobile. They were routed with their domain. `scripts/functions-inventory.mjs` lists
   callables; pair it with the client-names recipe in §2.1 to list these, and consider

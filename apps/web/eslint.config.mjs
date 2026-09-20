@@ -4,6 +4,7 @@
 import { createRequire } from 'node:module'
 import { FlatCompat } from '@eslint/eslintrc'
 import { firestorePathLiteralRule } from './eslint.firestorePaths.mjs'
+import { noDirectCallables } from './eslint.callables.mjs'
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -29,10 +30,20 @@ const noBareLocaleFormatting = {
     "Public routes format dates through usePublicFormat() (the studio's regional settings, the reader's language) — never a bare toLocale*String(). See docs/scalability-2026-09.md §7 item 13.",
 }
 
+// 3. Calling a Cloud Function by NAME instead of through callFunction — the rule and its
+//    reasoning live in eslint.callables.mjs, shared with apps/admin and apps/mobile.
+
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     ignores: ['.next/**', 'out/**', 'node_modules/**', 'next-env.d.ts'],
+  },
+  {
+    files: ['src/**/*.{ts,tsx}', 'e2e/**/*.ts'],
+    ignores: ['src/lib/callFunction.ts'],
+    rules: {
+      'no-restricted-imports': ['error', noDirectCallables],
+    },
   },
   {
     files: ['src/**/*.{ts,tsx}'],
