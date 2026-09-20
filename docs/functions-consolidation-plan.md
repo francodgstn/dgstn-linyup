@@ -629,6 +629,22 @@ environment that turns the flag on.
   nothing away from the hot path. App Check stays on each member that carries it (the checkouts,
   `previewPromoCode`, `checkGiftCard`, `submitForm`; the contact sign-in pair on the mobile
   flag) and is enforced inside the member's own handler.
+- **Proven from a BROWSER, 2026-09-20** (`apps/web/e2e/callable-routing.spec.ts`, against a
+  local emulator with the app built from this code). Signed in as staff, the screens call
+  `rpcStudio/listTeamMembers` and `rpcStudio/confirmEmailVerified` and get a 200 with a real ID
+  token; signed out, the public booking and appointment pages call
+  `rpcMember/listAvailability` and get a 200. No routed name was ALSO requested under its own
+  name, so the fallback never fired: CORS works, and the lazy `callFunction` works. It is the
+  first proof that does not run from Node. **Not reached in a browser: `rpcCheckout`** — the
+  spec that gets there needs a seed with a Stripe test account.
+- **STAGING IS NOT A BROWSER PROOF YET, whatever the deploys say.** The functions deploy on
+  every merge; the staging web and admin apps do not. Their App Hosting backends have automatic
+  rollouts off, and on 2026-09-20 both were still serving a build from 2026-09-17 — from before
+  any of this work. A click-through of staging therefore exercised the OLD direct names, and
+  the staging routers show almost no successful calls for exactly that reason. Roll both out at
+  the commit under test before reading anything into staging:
+  `npx firebase-tools apphosting:rollouts:create linyup-web-eu --project staging --git-branch main`
+  (and `linyup-admin-eu`).
 - **Staff onboarding went to `rpcStudio`**, not here: `createTeam` and the two team-invitation
   callables are called from public-looking paths (the signup page, the invitation link), but
   the person is joining as staff.
