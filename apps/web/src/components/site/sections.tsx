@@ -270,8 +270,14 @@ function activityBookHref(
  * without the visitor passing through a page and a form first. Everything else
  * (a page, the signup form, an external link) is a navigation and returns null.
  */
-export function ctaIntent(cta: Pick<SiteCta, 'action' | 'activityId'> | undefined): BookIntent | null {
+export function ctaIntent(
+  cta: Pick<SiteCta, 'action' | 'activityId' | 'activitySlug'> | undefined
+): BookIntent | null {
   if (!cta) return null
+  // A class CTA opens the funnel already on that class — the same intent an
+  // activity card carries, so both reach it identically.
+  if (cta.action === 'class')
+    return cta.activitySlug ? { kind: 'activity', activitySlug: cta.activitySlug } : { kind: 'root' }
   if (cta.action === 'appointment')
     return cta.activityId ? { kind: 'appointment', activityId: cta.activityId } : { kind: 'root' }
   return cta.action === 'booking' ? { kind: 'root' } : null

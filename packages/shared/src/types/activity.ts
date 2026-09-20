@@ -322,6 +322,23 @@ export interface Activity {
    *  Mirrored into the WORLD-READABLE public profile, so the editor says so.
    *  Normalise through `normalizeActivityTags` on every write. */
   tags?: string[]
+  /**
+   * WHERE THIS LIVES on the public booking page — one heading, in the studio's
+   * own words ("Kraulkurse", "Kinder", "Morgentraining"). The set is OPEN: no
+   * taxonomy ships with the product, the editor suggests the names the studio
+   * has already used, and a name nobody else uses is a group of one.
+   *
+   * EXACTLY ONE, and that is the point. Sections answer *where does this live*,
+   * which has one answer; a card rendered under two headings is the same class
+   * shown twice, and a visitor scanning cannot tell whether those are two
+   * different courses. The many-to-many question — *how do I find it* — belongs
+   * to `tags`, which is what a filter row would read.
+   *
+   * Absent ⇒ ungrouped: it renders after every group, with no heading, so a
+   * studio that never touches this sees exactly today's flat list.
+   * Never translated (the studio's own words, like a plan name).
+   */
+  bookingGroup?: string
   /** Session category — default 'class'. 'appointment' uses the availability model. */
   type?: ActivityType
   /** Assigned provider uid — populated when type === 'appointment'. */
@@ -511,6 +528,9 @@ export interface ActivityPublicProfile {
   /** Mirrored from `Activity.tags` — free-text display labels for the public
    *  booking cards. Present only when the activity has any. */
   tags?: string[]
+  /** Mirrored from `Activity.bookingGroup` — the heading this card sits under
+   *  on the public booking page. Absent ⇒ ungrouped (renders last). */
+  bookingGroup?: string
   /** Denormalised display-only prerequisites for the public booking pages. */
   prerequisites?: string
   /** Denormalised verbatim from the matching `Activity` fields — see there for
@@ -593,6 +613,65 @@ export function normalizeActivityTags(input: readonly unknown[] | null | undefin
     if (out.length >= MAX_ACTIVITY_TAGS) break
   }
   return out
+}
+
+/** A heading is a couple of words. Bounded so it cannot become a paragraph. */
+export const MAX_BOOKING_GROUP_LENGTH = 40
+
+/** One stored booking group, or undefined for "ungrouped". Trimmed, bounded;
+ *  blank reads as absent, so clearing the field ungroups the activity. */
+export function normalizeBookingGroup(input: unknown): string | undefined {
+  if (typeof input !== 'string') return undefined
+  const name = input.trim().slice(0, MAX_BOOKING_GROUP_LENGTH).trim()
+  return name || undefined
+}
+
+/**
+ * THE ONE GROUPER — the public booking page, the manager preview and anything
+ * else that sections a list of activities must read it through this, or two
+ * surfaces will disagree about which heading a class sits under and in what
+ * order the headings run.
+ *
+ * Grouping is CASE-INSENSITIVE ("Kinder" and "kinder" are one section, labelled
+ * the way the first activity spells it) because the set is open and typed by
+ * hand, and two headings differing only in case is a studio's typo made public.
+ *
+ * ORDER COMES FROM THE ACTIVITIES, never from a second list to maintain: within
+ * a group, `compareActivities` (the studio's own `order`, then name); between
+ * groups, the position of each group's FIRST activity. So reordering an
+ * activity in the manager moves its group, and there is nothing else to keep in
+ * step. Ungrouped activities come last, in one unnamed bucket.
+ */
+export function groupActivitiesForBooking<T extends { bookingGroup?: string | null; order?: number | null; name?: string }>(
+  activities: readonly T[]
+): { group?: string; activities: T[] }[] {
+  const sorted = [...activities].sort(compareActivities)
+  const byKey = new Map<string, { group?: string; activities: T[] }>()
+  const ungrouped: T[] = []
+  for (const a of sorted) {
+    const group = normalizeBookingGroup(a.bookingGroup)
+    if (!group) {
+      ungrouped.push(a)
+      continue
+    }
+    const key = group.toLowerCase()
+    const bucket = byKey.get(key)
+    if (bucket) bucket.activities.push(a)
+    else byKey.set(key, { group, activities: [a] })
+  }
+  const out = [...byKey.values()]
+  if (ungrouped.length) out.push({ activities: ungrouped })
+  return out
+}
+
+/** Every group a team has already used, for the editor's suggestions. Sorted
+ *  the way the sections render, so the list reads like the booking page. */
+export function bookingGroupsInUse<T extends { bookingGroup?: string | null; order?: number | null; name?: string }>(
+  activities: readonly T[]
+): string[] {
+  return groupActivitiesForBooking(activities)
+    .map((s) => s.group)
+    .filter((g): g is string => !!g)
 }
 
 /** Longest answer we'll persist per question. Generous for a free-text note,

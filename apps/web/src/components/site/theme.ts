@@ -1,7 +1,7 @@
 import { resolveSurfacePalette, resolveThemePreset } from '@linyup/shared'
 import type { SiteMeta, SiteCta, SurfaceThemePresetId } from '@linyup/shared'
 import { DEFAULT_ACCENT } from '@/lib/colors'
-import { publicHrefLocalized } from '@/lib/publicRoutes'
+import { publicHrefLocalized, publicSubHrefLocalized } from '@/lib/publicRoutes'
 
 // Shared theming for the Website plugin renderer (public site + builder preview).
 // Font stacks live in ./siteFonts, beside the font loaders they point at.
@@ -154,7 +154,7 @@ export function buildPalette(
  * the visitor is standing on, rather than the team's default landing surface.
  */
 export function ctaHref(
-  cta: Pick<SiteCta, 'action' | 'url' | 'pageId' | 'activityId'> | undefined,
+  cta: Pick<SiteCta, 'action' | 'url' | 'pageId' | 'activityId' | 'activitySlug'> | undefined,
   slug: string,
   locale: string,
   /** Resolves a page of this site to its URL — see RenderCtx.pageHref. */
@@ -169,6 +169,13 @@ export function ctaHref(
   if (cta.action === 'appointment')
     return cta.activityId
       ? publicHrefLocalized(locale, slug, 'appointments', { activity: cta.activityId, from: 'site' })
+      : publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
+  // A class CTA opens that class's own dates (/booking/{slug}?activity={id});
+  // like the appointment one it keeps a real address, and without an activity
+  // it is the booking root.
+  if (cta.action === 'class')
+    return cta.activitySlug
+      ? publicSubHrefLocalized(locale, slug, 'booking', cta.activitySlug, { from: 'site' })
       : publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
   // 'signup' is current; 'membership' is the legacy stored alias.
   if (cta.action === 'signup' || (cta.action as string) === 'membership')

@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Réserver ce cours aux personnes inscrites chez vous",
     "accessSignupOnly": "Seulement les personnes inscrites chez vous",
     "accessSignupOnlyHint": "Les visiteurs ne peuvent pas réserver, même en payant. Un cours d'essai reste possible.",
-    "waitlistExperimental": "Expérimental"
+    "waitlistExperimental": "Expérimental",
+    "fieldBookingGroup": "Groupe sur la page de réservation",
+    "fieldBookingGroupPlaceholder": "p. ex. Cours",
+    "fieldBookingGroupHint": "Regroupe la page de réservation sous un titre. Laissez vide pour l'afficher seul."
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
@@ -3988,7 +3991,12 @@
     "autosaveSaving": "Enregistrement…",
     "autosaveSaved": "Brouillon enregistré",
     "autosaveFailed": "Non enregistré",
-    "autosaveRetry": "Réessayer"
+    "autosaveRetry": "Réessayer",
+    "editorCtaActionClass": "Réserver un cours",
+    "editorCtaClass": "Cours",
+    "editorCtaClassPlaceholder": "Choisir un cours",
+    "editorCtaClassEmptyHint": "Aucun cours pour l'instant — ajoutez-en un sous Offre.",
+    "editorCtaClassFallbackHint": "Sans cours, ce bouton ouvre la page de réservation."
   },
   "Kiosk": {
     "title": "Kiosque",
