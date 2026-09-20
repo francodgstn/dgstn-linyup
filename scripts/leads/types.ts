@@ -389,6 +389,17 @@ export interface LeadContactDef {
   assignedToStaffKey?: string
   /** Contact Groups plugin membership (LeadContactGroupDef.keys) → group_ids. */
   groupKeys?: string[]
+  /**
+   * Days since this person last trained — what every engagement band, the
+   * "Needs attention" list and the dashboard trends are derived from, and which
+   * past sessions they appear in.
+   *
+   * Absent ⇒ a weighted spread by status (see `lastSeenDaysAgo` in
+   * seed-lead.ts): most people recent, a tail drifting, a few gone quiet, a
+   * lapsed member months out. Set it when the demo needs a NAMED person to be
+   * the one who stopped coming — the contact a studio clicks on first.
+   */
+  lastSeenDaysAgo?: number
   /** Acquisition source override (default: seeded-random). */
   source?: 'website' | 'referral' | 'social' | 'event' | 'other'
   /** Free-text detail shown with the source (e.g. 'QR poster', 'Meta ads'). */

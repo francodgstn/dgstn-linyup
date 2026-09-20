@@ -1750,6 +1750,41 @@ async function seedLeadTenant(profile: LeadProfile) {
   // ── contacts ───────────────────────────────────────────────────────────────
   const pool = profile.contacts
   const contactIds: string[] = []
+
+  /**
+   * HOW LONG SINCE EACH PERSON LAST TRAINED — the number every engagement band,
+   * "Needs attention" row and dashboard trend is derived from.
+   *
+   * It used to be `rand * 14` for everyone with a session to their name, which
+   * made every seeded roster uniformly ACTIVE: no at-risk members, no quiet
+   * ones, nothing for the win-back automation to have noticed, and a dashboard
+   * whose whole point is spotting who is slipping showed one flat colour.
+   *
+   * So the default now SPREADS, weighted the way a real roster sits — most
+   * people recent, a tail that is drifting, a few gone quiet — and a lapsed
+   * member is months out rather than days. A profile can pin any individual
+   * with `lastSeenDaysAgo` when the story needs a specific person to be the one
+   * who stopped coming.
+   *
+   * It is ONE number used TWICE: the contact's `last_session_at` and which past
+   * sessions they appear in below. Deriving those separately is how a roster
+   * ends up with someone "last seen 60 days ago" sitting in last week's
+   * attendance list.
+   */
+  const lastSeenDaysAgo: (number | null)[] = pool.map((c, i) => {
+    if (c.totalSessions <= 0) return null
+    if (typeof c.lastSeenDaysAgo === 'number') return Math.max(0, Math.round(c.lastSeenDaysAgo))
+    const r = seededRand(`${teamId}-${i}-lastseen`)
+    // A lapsed member left months ago — that is what "expired" means, and it is
+    // what makes the win-back rule and the churn numbers mean anything.
+    if (c.status === 'expired') return 70 + Math.floor(r * 110)
+    // A trial came in recently, or they would not be a trial.
+    if (c.type === 'trial') return 1 + Math.floor(r * 20)
+    if (r < 0.6) return Math.floor(r * 16) // the regulars
+    if (r < 0.85) return 12 + Math.floor(r * 20) // quieter, still around
+    if (r < 0.95) return 35 + Math.floor(r * 28) // drifting — "needs attention"
+    return 65 + Math.floor(r * 40) // gone quiet without formally lapsing
+  })
   for (let i = 0; i < pool.length; i++) {
     const c = pool[i]
     const id = `${teamId}-contact-${i.toString().padStart(3, '0')}`
@@ -1814,8 +1849,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         birthplace: c.birthplace,
         birthdate: birthdate ? ts(birthdate) : null,
         total_sessions: c.totalSessions,
-        last_session_at:
-          c.totalSessions > 0 ? ts(daysFromNow(-Math.floor(seededRand(seed + 'ls') * 14))) : null,
+        last_session_at: lastSeenDaysAgo[i] === null ? null : ts(daysFromNow(-lastSeenDaysAgo[i]!)),
         notes: c.kid
           ? c.kid.note
           : c.type === 'student' && c.totalSessions > 20
@@ -2137,7 +2171,18 @@ async function seedLeadTenant(profile: LeadProfile) {
     const def = pastDefs[i]
     const capacity = profile.activities[def.actIdx].capacity ?? 12
     // Kids attend the kids classes; adults everything else.
-    const eligible = kidActivityIdxs.has(def.actIdx) ? kidIdxs : studentIdxs
+    const allEligible = kidActivityIdxs.has(def.actIdx) ? kidIdxs : studentIdxs
+    // NOBODY ATTENDS AFTER THEIR LAST VISIT. `lastSeenDaysAgo` is the one
+    // number deciding both the contact's `last_session_at` and this list, so a
+    // member who went quiet two months ago is absent from every session since —
+    // which is what makes the engagement bands and "Needs attention" true of
+    // the attendance a studio can click into, rather than a label beside a
+    // roster that contradicts it.
+    const sessionAgeDays = Math.round((nowDate.getTime() - def.date.getTime()) / 86_400_000)
+    const eligible = allEligible.filter((idx) => {
+      const seen = lastSeenDaysAgo[idx]
+      return seen !== null && sessionAgeDays >= seen
+    })
     if (eligible.length === 0) continue
     const target = Math.min(capacity, Math.max(2, 4 + ((i * 3) % 6)), eligible.length)
     const attending = eligible.filter((_, k) => (k + i) % eligible.length < target).slice(0, target)
