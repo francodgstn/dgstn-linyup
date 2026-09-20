@@ -1,5 +1,5 @@
 {
-  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next). Do not edit by hand — change the board and re-export.",
+  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest 4 Done). Do not edit by hand — change the board and re-export.",
   "sections": {
     "inProgress": [
       {
@@ -232,6 +232,29 @@
           "body": "Gestisci più studi in un'unica organizzazione, con un sito web e contenuti condivisi.",
           "srcHash": "99c21dc1596f"
         }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJ3aI",
+        "area": null,
+        "en": {
+          "title": "Faster, steadier behind the scenes",
+          "body": "Ongoing work under the hood so Linyup stays quick and dependable as more studios come on board. Nothing changes in how you use it."
+        },
+        "de": {
+          "title": "Schneller und stabiler im Hintergrund",
+          "body": "Laufende Arbeit unter der Haube, damit Linyup schnell und verlässlich bleibt, während mehr Studios dazukommen. An der Bedienung ändert sich nichts.",
+          "srcHash": "ac84d0c52482"
+        },
+        "fr": {
+          "title": "Plus rapide et plus stable en coulisses",
+          "body": "Un travail continu sous le capot pour que Linyup reste rapide et fiable à mesure que de nouveaux studios arrivent. Rien ne change dans votre utilisation.",
+          "srcHash": "ac84d0c52482"
+        },
+        "it": {
+          "title": "Più veloce e stabile dietro le quinte",
+          "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
+          "srcHash": "ac84d0c52482"
+        }
       }
     ],
     "next": [
@@ -285,6 +308,109 @@
           "title": "Ricette di prezzo per partire in fretta",
           "body": "Parti da configurazioni pronte per corsi e piani, come un abbonamento con lezione di prova o un pacchetto di lezioni con ingressi singoli, e adattale al tuo studio.",
           "srcHash": "8badc50cdbe0"
+        }
+      }
+    ],
+    "landed": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
+        "area": null,
+        "en": {
+          "title": "Public help centre",
+          "body": "Step-by-step guides for setting up and running your studio, at help.linyup.com."
+        },
+        "de": {
+          "title": "Öffentliches Hilfe-Center",
+          "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios, auf help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        },
+        "fr": {
+          "title": "Centre d'aide public",
+          "body": "Des guides pas à pas pour configurer et gérer votre studio, sur help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        },
+        "it": {
+          "title": "Centro assistenza pubblico",
+          "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "Events and camps with a programme",
+          "body": "Run camps, seminars and gradings with a multi-day programme, and start from a ready-made template."
+        },
+        "de": {
+          "title": "Camps und Events mit Programm",
+          "body": "Führe Camps, Seminare und Prüfungen mit einem mehrtägigen Programm durch — und starte von einer fertigen Vorlage.",
+          "srcHash": "066385b82d9b"
+        },
+        "fr": {
+          "title": "Camps et événements avec programme",
+          "body": "Organisez camps, séminaires et passages de grade avec un programme sur plusieurs jours, à partir d'un modèle prêt à l'emploi.",
+          "srcHash": "066385b82d9b"
+        },
+        "it": {
+          "title": "Camp ed eventi con programma",
+          "body": "Organizza camp, seminari ed esami con un programma di più giorni, partendo da un modello già pronto.",
+          "srcHash": "066385b82d9b"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQKU",
+        "area": {
+          "key": "your-website",
+          "label": "Your website"
+        },
+        "en": {
+          "title": "Your studio website",
+          "body": "Build a multi-page site with booking built in, translated automatically into English, German, French and Italian."
+        },
+        "de": {
+          "title": "Deine Studio-Website",
+          "body": "Baue eine mehrseitige Website mit integrierter Buchung — automatisch übersetzt auf Deutsch, Englisch, Französisch und Italienisch.",
+          "srcHash": "d51db887f4db"
+        },
+        "fr": {
+          "title": "Le site de votre studio",
+          "body": "Créez un site multipage avec la réservation intégrée, traduit automatiquement en français, anglais, allemand et italien.",
+          "srcHash": "d51db887f4db"
+        },
+        "it": {
+          "title": "Il sito del tuo studio",
+          "body": "Crea un sito multipagina con la prenotazione integrata, tradotto automaticamente in italiano, inglese, tedesco e francese.",
+          "srcHash": "d51db887f4db"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQKY",
+        "area": {
+          "key": "your-website",
+          "label": "Your website"
+        },
+        "en": {
+          "title": "Booking on your own website",
+          "body": "Put the booking pop-up on the site you already have, with two lines of code."
+        },
+        "de": {
+          "title": "Buchung auf deiner eigenen Website",
+          "body": "Setze das Buchungsfenster mit zwei Zeilen Code auf deine bestehende Website.",
+          "srcHash": "6350b0eb3403"
+        },
+        "fr": {
+          "title": "Réservation sur votre propre site",
+          "body": "Ajoutez la fenêtre de réservation au site que vous avez déjà, avec deux lignes de code.",
+          "srcHash": "6350b0eb3403"
+        },
+        "it": {
+          "title": "Prenotazioni sul tuo sito",
+          "body": "Aggiungi la finestra di prenotazione al sito che hai già, con due righe di codice.",
+          "srcHash": "6350b0eb3403"
         }
       }
     ]

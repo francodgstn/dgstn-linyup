@@ -3,11 +3,14 @@
  * Exports the PUBLIC slice of the roadmap board into the landing site.
  *
  *   board (GitHub project francodgstn #2, private)
- *     └─ In progress + Next cards ──▶ apps/landing/src/data/roadmap.json ──▶ /roadmap page
+ *     └─ In progress + Next + the newest few Done ──▶ apps/landing/src/data/roadmap.json ──▶ /roadmap page
  *
  * The board stays private; this file is the only thing that leaves it, and it
  * only ever leaves through a reviewed PR. Backlog and "In review" (undecided)
- * never leave, and neither does Done (that is what the feature pages are for).
+ * never leave. Done DOES, but only the first LANDED_MAX cards of that column
+ * ("Landed recently"): the column is kept short by archiving what shipped long
+ * ago, and the newest sits first — board order is what the page prints, and the
+ * board carries no dates to sort by (Franco, 2026-09-20).
  *
  * WHY THE OUTPUT IS DETERMINISTIC. The weekly routine opens a PR only when
  * `git diff` on this file is non-empty, so an unchanged board MUST reproduce the
@@ -45,9 +48,12 @@ const OWNER = 'francodgstn'
 const PROJECT = '2'
 const LOCALES = ['de', 'fr', 'it']
 // Board status → page section. Order here is the order on the page.
+// The third entry caps how many of that column's cards are published.
+const LANDED_MAX = 4
 const SECTIONS = [
   ['In progress', 'inProgress'],
   ['Next', 'next'],
+  ['Done', 'landed', LANDED_MAX],
 ]
 
 const args = process.argv.slice(2)
@@ -95,9 +101,9 @@ function readExisting() {
 function build(board, existing, incoming) {
   const missing = []
   const sections = {}
-  for (const [status, key] of SECTIONS) {
-    sections[key] = board
-      .filter((i) => i.status === status && i.content?.type === 'DraftIssue')
+  for (const [status, key, limit] of SECTIONS) {
+    const rows = board.filter((i) => i.status === status && i.content?.type === 'DraftIssue')
+    sections[key] = (limit ? rows.slice(0, limit) : rows)
       .map((i) => {
         const id = i.content.id
         const title = i.content.title.trim()
@@ -133,7 +139,7 @@ const { sections, missing } = build(board, readExisting(), incoming)
 
 const file = {
   _generated:
-    'By scripts/roadmap-export.mjs from the roadmap board (In progress + Next). Do not edit by hand — change the board and re-export.',
+    `By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest ${LANDED_MAX} Done). Do not edit by hand — change the board and re-export.`,
   sections,
 }
 writeFileSync(OUT, JSON.stringify(file, null, 2) + '\n')

@@ -1,5 +1,6 @@
 ---
-// The public roadmap: the board's "In progress" and "Next" columns, exported
+// The public roadmap: the board's "In progress" and "Next" columns and the
+// newest few "Done" cards ("Landed recently"), exported
 // into src/data/roadmap.json by scripts/roadmap-export.mjs and published only
 // through a reviewed PR. Never read the board from here — the board is private
 // and the JSON is the only thing that leaves it.
@@ -31,6 +32,8 @@ const areaLabel = (a: NonNullable<Card['area']>) => {
 const sections = [
   { key: 'inProgress', icon: 'hammer', cards: roadmap.sections.inProgress as Card[] },
   { key: 'next', icon: 'compass', cards: roadmap.sections.next as Card[] },
+  // What shipped lately. Capped by the export, newest first in board order.
+  { key: 'landed', icon: 'check-circle', cards: (roadmap.sections.landed ?? []) as Card[] },
 ].filter((s) => s.cards.length > 0);
 ---
 
