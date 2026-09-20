@@ -9,7 +9,7 @@
  * you something is missing and leaves you to find the marketplace yourself is
  * the version of this that gets reported as a bug.
  *
- * The CTA deep-links to `/settings/plugins?plugin={id}`, which opens that
+ * The CTA deep-links to `/plugins?plugin={id}`, which opens that
  * plugin's detail card directly — the same prompt the sidebar's recommended
  * rows open, so discovering a plugin looks the same wherever you meet it.
  * `installableManifests()` is what that deep link resolves against, so a bundle
@@ -50,7 +50,7 @@ export function PluginNotInstalled({
           with no `asChild`, so `buttonVariants` is how the codebase dresses a
           navigation as a button. */}
       <Link
-        href={`/settings/plugins?plugin=${pluginId}` as Route}
+        href={`/plugins?plugin=${pluginId}` as Route}
         className={cn(buttonVariants({ size: 'sm' }), 'mt-4')}
       >
         {t('install')}

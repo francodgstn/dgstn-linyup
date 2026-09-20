@@ -48,7 +48,7 @@ interface Props {
   /** Whether the custom-fields plugin is installed.
    *
    *  DEFAULTS TO FALSE, i.e. to the upsell footer, because that branch is the
-   *  safe one in both states: `/settings/plugins` is always there, while the
+   *  safe one in both states: `/plugins` is always there, while the
    *  installed branch points at `/settings/team?tab=custom-fields`, a tab that
    *  only exists once the plugin is on and that otherwise falls back to General
    *  without saying why — a dead link exactly for the studio that has the least
@@ -174,7 +174,7 @@ export function BookingContactFieldsEditor({
           {customFieldsInstalled ? t('addFieldsPrompt') : t('addFieldsPluginPrompt')}
         </p>
         <Link
-          href={customFieldsInstalled ? CUSTOM_FIELDS_SETTINGS_ROUTE : ('/settings/plugins' as Route)}
+          href={customFieldsInstalled ? CUSTOM_FIELDS_SETTINGS_ROUTE : ('/plugins' as Route)}
           className="text-xs text-primary hover:underline underline-offset-2"
         >
           {customFieldsInstalled ? t('addFieldsLink') : t('addFieldsPluginLink')}

@@ -481,7 +481,7 @@ export default function ContactGroupsPage() {
         <FolderTree className="h-10 w-10 mx-auto text-muted-foreground/40" />
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('notInstalled')}</p>
-        <button type="button" onClick={() => router.push('/settings/plugins' as Route)}
+        <button type="button" onClick={() => router.push('/plugins' as Route)}
           className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
           {t('goToPlugins')}
         </button>

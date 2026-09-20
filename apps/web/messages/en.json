@@ -4642,7 +4642,15 @@
     "customVariablesSaveButton": "Save",
     "customVariablesSaving": "Saving…",
     "customVariablesSaved": "✓ Saved",
-    "customVariablesInvalidKeys": "Invalid key names: {keys}. Use letters, numbers and underscores only."
+    "customVariablesInvalidKeys": "Invalid key names: {keys}. Use letters, numbers and underscores only.",
+    "studioLinksTitle": "Studio links",
+    "studioLinksDescription": "Two links only you can supply. Until they are filled in, any template, automation or WhatsApp message that uses them sends an empty link.",
+    "studioLinksWebsiteLabel": "Website",
+    "studioLinksWebsiteHint": "Your own website, linked from emails and your bio link.",
+    "studioLinksReviewLabel": "Review page",
+    "studioLinksReviewHint": "Where members leave a review — your Google Business profile, for example.",
+    "studioLinksInvalidUrl": "Enter a full address starting with https://",
+    "studioLinksAlsoOnBioLink": "The same two links appear on your bio link page."
   },
   "ConnectPayments": {
     "title": "Accept payments with Linyup",
@@ -6838,7 +6846,9 @@
         "date": "Today",
         "date+7": "+7 days (any N)",
         "date-7": "-7 days (any N)"
-      }
+      },
+      "studioLinkUnset": "Not set — sends an empty link",
+      "manageOnThisPage": "Add your own under Custom variables, on this page."
     },
     "validation": {
       "nameRequired": "Name is required",

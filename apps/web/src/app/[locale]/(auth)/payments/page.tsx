@@ -532,7 +532,7 @@ export default function PaymentsDashboardPage() {
             // installed, so the way in survives.
             href: (isInstalled('finance')
               ? '/plugins/finance'
-              : '/settings/plugins?plugin=finance') as Route,
+              : '/plugins?plugin=finance') as Route,
             label: tPlugins('financeNavLabel'),
           },
           // What is being charged FOR, and where the charging is configured —

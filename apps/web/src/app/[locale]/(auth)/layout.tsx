@@ -188,7 +188,13 @@ const SCHEDULE_ITEM: NavItem = {
  * So a prefix match yields to a MORE SPECIFIC row that also matches. That fixes
  * the whole class rather than the one pair that was noticed —
  * `/public-page` under `/public-page/space` and `/settings` under
- * `/settings/plugins` had it too.
+ * `/settings/team` had it too.
+ *
+ * `/plugins` is the live case with the most teeth: the marketplace sits at the
+ * prefix and every per-plugin editor (`/plugins/website`, `/plugins/finance`, …)
+ * nests under it. It carries `exact` for that reason — but the plugin rows
+ * themselves arrive at runtime and are NOT in `NAV_HREFS` (see its note), so the
+ * yielding rule cannot see them and `exact` is what is actually doing the work.
  *
  * ── SEGMENT-AWARE ────────────────────────────────────────────────────────────
  * `startsWith` alone also lights `/schedule` on a hypothetical `/schedules`.
@@ -213,7 +219,7 @@ function navItemIsActive(item: NavItem, pathname: string): boolean {
 // icon button in the utility row at the top, first of the three.
 const EXPLORE_PLUGINS_ITEM: NavItem = {
   id: 'explorePlugins',
-  href: '/settings/plugins',
+  href: '/plugins',
   labelKey: 'explorePlugins',
   icon: Puzzle,
   exact: true,
@@ -1329,7 +1335,7 @@ function PluginNavItem({
           <Tooltip>
             <TooltipTrigger
               onClick={() => {
-                router.push(`/settings/plugins?plugin=${nav.pluginId}` as Route)
+                router.push(`/plugins?plugin=${nav.pluginId}` as Route)
                 onLinkClick?.()
               }}
               title={collapsed ? linkLabel : undefined}

@@ -54,7 +54,7 @@ ctrlKey + altKey on the layouts this product is built for.
   icon rail said nothing about scope at all. That was a gap, not a decision.
 - **The whole sidebar follows the scope, not just the middle.** Three things sat
   outside the gated block and stayed studio-scoped: the "⋯" menu's destinations
-  (`/settings` and `/settings/plugins` — so from an org, both landed in the
+  (`/settings` and the plugin marketplace — so from an org, both landed in the
   studio's), the pinned head-pair tiles (two studio destinations ABOVE the org's
   own rows), and the quick-search catalogue, which indexed destinations whose
   rows were not even on screen.

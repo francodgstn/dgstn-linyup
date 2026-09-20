@@ -4642,7 +4642,15 @@
     "customVariablesSaveButton": "Speichern",
     "customVariablesSaving": "Wird gespeichert…",
     "customVariablesSaved": "✓ Gespeichert",
-    "customVariablesInvalidKeys": "Ungültige Schlüsselnamen: {keys}. Nur Buchstaben, Zahlen und Unterstriche verwenden."
+    "customVariablesInvalidKeys": "Ungültige Schlüsselnamen: {keys}. Nur Buchstaben, Zahlen und Unterstriche verwenden.",
+    "studioLinksTitle": "Studio-Links",
+    "studioLinksDescription": "Zwei Links, die nur ihr angeben könnt. Solange sie leer sind, verschickt jede Vorlage, Automatisierung oder WhatsApp-Nachricht, die sie verwendet, einen leeren Link.",
+    "studioLinksWebsiteLabel": "Website",
+    "studioLinksWebsiteHint": "Eure eigene Website – verlinkt in E-Mails und auf eurer Bio-Link-Seite.",
+    "studioLinksReviewLabel": "Bewertungsseite",
+    "studioLinksReviewHint": "Wo Mitglieder eine Bewertung hinterlassen – zum Beispiel euer Google-Unternehmensprofil.",
+    "studioLinksInvalidUrl": "Gib eine vollständige Adresse ein, die mit https:// beginnt.",
+    "studioLinksAlsoOnBioLink": "Dieselben zwei Links erscheinen auf eurer Bio-Link-Seite."
   },
   "ConnectPayments": {
     "title": "Zahlungen mit Linyup annehmen",
@@ -6838,7 +6846,9 @@
         "date": "Heute",
         "date+7": "+7 Tage (beliebiges N)",
         "date-7": "-7 Tage (beliebiges N)"
-      }
+      },
+      "studioLinkUnset": "Nicht gesetzt – sendet einen leeren Link",
+      "manageOnThisPage": "Eigene Variablen fügt ihr auf dieser Seite unter „Benutzerdefinierte Variablen\" hinzu."
     },
     "validation": {
       "nameRequired": "Name ist erforderlich",

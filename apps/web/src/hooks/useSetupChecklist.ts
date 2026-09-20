@@ -137,8 +137,8 @@ export const setupChecklistKey = (teamId: string | null) =>
  * A PAGE THAT REFRESHES ITSELF IS NOT EVIDENCE THIS IS UNNECESSARY. Where the
  * page already invalidates its own list, add this beside it; where the page's
  * list is a live `onSnapshot` and there is nothing of its own to invalidate
- * (`settings/plugins`), this is the only call there is. Being CACHED is what
- * makes the checklist need telling, and it always is.
+ * (the marketplace at `/plugins`), this is the only call there is. Being CACHED
+ * is what makes the checklist need telling, and it always is.
  *
  * PREFIX MATCH, on purpose: the caller does not have to know the teamId, and the
  * dashboard's observers of the same key refresh with the guide's —
@@ -559,7 +559,7 @@ export function useSetupChecklist(teamId: string | null, team?: Team | null, pla
       // (nothing in `onTeamCreated` seeds it), so the derived half can be false.
       key: 'plugins',
       section: 'extra',
-      href: '/settings/plugins',
+      href: '/plugins',
       ack: 'review',
       done: !!d?.hasPlugins,
     },

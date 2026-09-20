@@ -24,6 +24,7 @@ import { templateDefault } from './templateDefaults'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Tip } from '@/components/ui/tip'
 import { CustomVariablesCard } from './CustomVariablesCard'
+import { StudioLinksCard } from './StudioLinksCard'
 
 export default function SettingsEmailTemplatesPage() {
   // Styled confirmation, replacing a browser `confirm()` (see confirm-dialog).
@@ -209,6 +210,13 @@ export default function SettingsEmailTemplatesPage() {
           can be written with, so they read as the vocabulary above the list of
           things written in it. */}
       {currentTeamId && team && <CustomVariablesCard teamId={currentTeamId} team={team} />}
+
+      {/* …and the two BUILT-IN placeholders that a template cannot resolve on its
+          own, because they point outside Linyup. Same block as the custom ones —
+          "what you can write" — and directly under them, since the reader has just
+          been told what a placeholder is. See StudioLinksCard's header for why
+          the bio-link page was not a findable home for them. */}
+      {currentTeamId && team && <StudioLinksCard teamId={currentTeamId} team={team} />}
 
       <Card>
         <CardContent className="pt-6 space-y-5">

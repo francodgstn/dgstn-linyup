@@ -4642,7 +4642,15 @@
     "customVariablesSaveButton": "Salva",
     "customVariablesSaving": "Salvataggio…",
     "customVariablesSaved": "✓ Salvato",
-    "customVariablesInvalidKeys": "Nomi chiave non validi: {keys}. Usa solo lettere, numeri e trattini bassi."
+    "customVariablesInvalidKeys": "Nomi chiave non validi: {keys}. Usa solo lettere, numeri e trattini bassi.",
+    "studioLinksTitle": "Link dello studio",
+    "studioLinksDescription": "Due link che solo tu puoi fornire. Finché restano vuoti, ogni modello, automazione o messaggio WhatsApp che li usa invia un link vuoto.",
+    "studioLinksWebsiteLabel": "Sito web",
+    "studioLinksWebsiteHint": "Il tuo sito web, collegato nelle email e nella pagina bio link.",
+    "studioLinksReviewLabel": "Pagina recensioni",
+    "studioLinksReviewHint": "Dove i membri lasciano una recensione — il tuo profilo Google Business, per esempio.",
+    "studioLinksInvalidUrl": "Inserisci un indirizzo completo che inizi con https://",
+    "studioLinksAlsoOnBioLink": "Gli stessi due link compaiono nella tua pagina bio link."
   },
   "ConnectPayments": {
     "title": "Accetta pagamenti con Linyup",
@@ -6838,7 +6846,9 @@
         "date": "Oggi",
         "date+7": "+7 giorni (N a scelta)",
         "date-7": "-7 giorni (N a scelta)"
-      }
+      },
+      "studioLinkUnset": "Non impostato — invia un link vuoto",
+      "manageOnThisPage": "Aggiungi le tue sotto «Variabili personalizzate», in questa pagina."
     },
     "validation": {
       "nameRequired": "Il nome è obbligatorio",

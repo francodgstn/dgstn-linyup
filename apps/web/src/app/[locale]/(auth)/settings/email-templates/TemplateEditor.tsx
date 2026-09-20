@@ -31,7 +31,6 @@ import {
 import { marked } from 'marked'
 import { db } from '@/lib/firebase'
 import {  TEAMS_COLLECTION, wrapInLayout, buildTeamFooter, OUTREACH_TEMPLATES_SUBCOLLECTION } from '@linyup/shared'
-import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -121,9 +120,34 @@ const PLACEHOLDER_GROUPS = [
   },
 ] as const
 
-function PlaceholderPanel({ customPlaceholders }: { customPlaceholders: Record<string, string> }) {
+/** The two team tokens that resolve to a studio-supplied URL rather than to
+ *  something Linyup already knows — see StudioLinksCard. Everything else in the
+ *  panel always has a value, so only these can silently render empty. */
+const STUDIO_LINK_TOKENS: Record<string, 'website' | 'review'> = {
+  websiteUrl: 'website',
+  reviewUrl: 'review',
+}
+
+function PlaceholderPanel({
+  customPlaceholders,
+  socialLinks,
+}: {
+  customPlaceholders: Record<string, string>
+  /** `Team.socialLinks` — where {{websiteUrl}} and {{reviewUrl}} come from. */
+  socialLinks: { platform: string; url: string }[]
+}) {
   const t = useTranslations('Automations')
   const [copied, setCopied] = useState<string>('')
+
+  // Show what a studio-link token will actually render. An unset one produces an
+  // empty string at send time (`substituteVariables`), so a template can ship a
+  // dead link and look perfectly fine in this panel — which is exactly what the
+  // stock "ask for a review" automations did.
+  const studioLinkValue = (key: string): string | null => {
+    const platform = STUDIO_LINK_TOKENS[key]
+    if (!platform) return null
+    return socialLinks.find((l) => l.platform === platform)?.url || ''
+  }
 
   const copyToken = (key: string) => {
     const token = `{{${key}}}`
@@ -142,21 +166,36 @@ function PlaceholderPanel({ customPlaceholders }: { customPlaceholders: Record<s
             {t(`placeholders.groups.${group.groupKey}` as Parameters<typeof t>[0])}
           </p>
           <div className="space-y-0.5">
-            {group.items.map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => copyToken(key)}
-                className="w-full text-left px-2 py-1 rounded hover:bg-accent transition-colors group"
-              >
-                <span className="font-mono text-xs text-primary group-hover:underline">
-                  {copied === key ? t('placeholders.copied') : `{{${key}}}`}
-                </span>
-                <span className="block text-xs text-muted-foreground leading-tight">
-                  {t(`placeholders.hints.${key}` as Parameters<typeof t>[0])}
-                </span>
-              </button>
-            ))}
+            {group.items.map((key) => {
+              const linkValue = studioLinkValue(key)
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => copyToken(key)}
+                  className="w-full text-left px-2 py-1 rounded hover:bg-accent transition-colors group"
+                >
+                  <span className="font-mono text-xs text-primary group-hover:underline">
+                    {copied === key ? t('placeholders.copied') : `{{${key}}}`}
+                  </span>
+                  <span className="block text-xs text-muted-foreground leading-tight">
+                    {t(`placeholders.hints.${key}` as Parameters<typeof t>[0])}
+                  </span>
+                  {/* What this token will REALLY render. Unset reads as a warning,
+                      not as a shrug: the email goes out either way. */}
+                  {linkValue !== null &&
+                    (linkValue ? (
+                      <span className="block truncate text-xs leading-tight text-muted-foreground/80">
+                        {linkValue}
+                      </span>
+                    ) : (
+                      <span className="block text-xs leading-tight text-amber-600 dark:text-amber-500">
+                        {t('placeholders.studioLinkUnset')}
+                      </span>
+                    ))}
+                </button>
+              )
+            })}
           </div>
         </div>
       ))}
@@ -167,9 +206,15 @@ function PlaceholderPanel({ customPlaceholders }: { customPlaceholders: Record<s
         {Object.keys(customPlaceholders).length === 0 ? (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground italic">{t('placeholders.noCustomVars')}</p>
-            <Link href="/settings/team" className="text-xs text-primary hover:underline">
-              {t('placeholders.manageInSettings')}
-            </Link>
+            {/* NOT A LINK, and not to /settings/team. This panel lives in a dialog
+                on the Email templates page, and the "Custom variables" card is on
+                that very page, behind it — so the old link both named a page the
+                editor moved away from (2026-09-08) and would have thrown away an
+                unsaved draft to get there. Saying where it is costs nothing and
+                is true. */}
+            <p className="text-xs text-muted-foreground">
+              {t('placeholders.manageOnThisPage')}
+            </p>
           </div>
         ) : (
           <div className="space-y-0.5">
@@ -188,12 +233,11 @@ function PlaceholderPanel({ customPlaceholders }: { customPlaceholders: Record<s
                 </span>
               </button>
             ))}
-            <Link
-              href="/settings/team"
-              className="block text-xs text-muted-foreground hover:underline mt-1 px-2"
-            >
-              {t('placeholders.manageInSettings')}
-            </Link>
+            {/* See the note on the empty-state copy above for why this stopped
+                being a link. */}
+            <p className="mt-1 block px-2 text-xs text-muted-foreground">
+              {t('placeholders.manageOnThisPage')}
+            </p>
           </div>
         )}
       </div>
@@ -250,6 +294,7 @@ export function TemplateEditor({
     },
   })
   const customPlaceholders = (teamDoc?.outreach_placeholders as Record<string, string>) ?? {}
+  const socialLinks = (teamDoc?.socialLinks as { platform: string; url: string }[]) ?? []
   const teamName = (teamDoc?.name as string) || 'Linyup'
 
   const tmplSchema = useMemo(() => createTmplSchema(t), [t])
@@ -449,7 +494,7 @@ export function TemplateEditor({
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto px-3 py-3">
-                <PlaceholderPanel customPlaceholders={customPlaceholders} />
+                <PlaceholderPanel customPlaceholders={customPlaceholders} socialLinks={socialLinks} />
               </div>
             )}
           </div>

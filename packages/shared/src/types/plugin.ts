@@ -131,7 +131,7 @@ export interface PluginAudience {
  * THE CENSUS — every surface that shows a tenant a plugin it has NOT installed,
  * and therefore every place this is called. Add to this list; do not copy it.
  *
- *  - `settings/plugins` — the marketplace grid, AND its `?plugin=<id>` deep
+ *  - `/plugins` — the marketplace grid, AND its `?plugin=<id>` deep
  *    link, which opens a detail modal naming and describing the plugin.
  *  - `settings/event-types` — the "From plugins" section, which prints
  *    "Provided by {pluginId}" for every plugin event type in the registry.
