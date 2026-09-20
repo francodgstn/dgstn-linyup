@@ -285,6 +285,20 @@ export function HeroFields({
               </SelectContent>
             </Select>
           </Field>
+          <Field label={t('editorHeroMotion')}>
+            <Select
+              value={s.bgMotion ?? 'none'}
+              onValueChange={(v) =>
+                onChange({ bgMotion: v === 'none' ? undefined : (v as HeroSection['bgMotion']) })
+              }
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t('editorHeroMotionNone')}</SelectItem>
+                <SelectItem value="kenburns">{t('editorHeroMotionKenBurns')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label={t('editorHeroOverlayTone')}>
             <Select
               value={s.overlayTone ?? 'dark'}
@@ -555,6 +569,14 @@ export function FeaturesFields({
           </Select>
         </Field>
       </div>
+      {/* The figures tally themselves when they scroll in. Stats only — there is
+          no number to count in a card or a tick. */}
+      {style === 'stats' && (
+        <label className="flex items-center justify-between rounded-lg border p-3">
+          <span className="text-sm">{t('editorFeaturesCountUp')}</span>
+          <Switch checked={s.countUp ?? false} onCheckedChange={(v) => onChange({ countUp: v || undefined })} />
+        </label>
+      )}
       <div className="space-y-3">
         {items.map((item, i) => (
           <div key={i} className="space-y-2 rounded-lg border p-3">
@@ -688,6 +710,37 @@ export function TeamFields({
             <SelectContent>
               <SelectItem value="grid">{t('editorTeamLayoutGrid')}</SelectItem>
               <SelectItem value="contact">{t('editorTeamLayoutContact')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        {layout === 'grid' && (
+          <Field label={t('editorTeamCaption')}>
+            <Select
+              value={s.captionStyle ?? 'below'}
+              onValueChange={(v) =>
+                onChange({ captionStyle: v === 'below' ? undefined : (v as TeamSection['captionStyle']) })
+              }
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="below">{t('editorTeamCaptionBelow')}</SelectItem>
+                <SelectItem value="overlay-dark">{t('editorTeamCaptionOverlayDark')}</SelectItem>
+                <SelectItem value="overlay-light">{t('editorTeamCaptionOverlayLight')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+        <Field label={t('editorTeamBioDisplay')}>
+          <Select
+            value={s.bioDisplay ?? 'inline'}
+            onValueChange={(v) =>
+              onChange({ bioDisplay: v === 'inline' ? undefined : (v as TeamSection['bioDisplay']) })
+            }
+          >
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="inline">{t('editorTeamBioInline')}</SelectItem>
+              <SelectItem value="modal">{t('editorTeamBioModal')}</SelectItem>
             </SelectContent>
           </Select>
         </Field>

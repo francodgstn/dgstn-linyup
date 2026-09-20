@@ -604,3 +604,19 @@
    notice, the one that names the real studio. CSS rather than state, so the
    server-rendered page never shows both, not even for a frame. */
 body:has([data-lead-demo-banner]) [data-linyup-demo-strip] { display: none; }
+
+/* Hero "Ken Burns": a slow zoom with a drift, so a still photograph does not
+   read as a dead rectangle. Scaled past 100% first so the pan never exposes an
+   edge. The renderer already withholds the class for a visitor who prefers
+   reduced motion; the media query is the belt to that braces. */
+@keyframes site-kenburns {
+  from { transform: scale(1.08) translate3d(0, 0, 0); }
+  to   { transform: scale(1.18) translate3d(-2%, -2%, 0); }
+}
+.site-kenburns {
+  will-change: transform;
+  animation: site-kenburns 28s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-kenburns { animation: none; transform: none; }
+}

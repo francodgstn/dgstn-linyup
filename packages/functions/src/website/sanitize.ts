@@ -190,6 +190,7 @@ export function sanitizeHeroSection(d: Dict, id: string): HeroSection | null {
     bgVideoUrl: safeVideoFileUrl(d.bgVideoUrl),
     overlayStyle: optOneOf(d.overlayStyle, ['solid', 'gradient-left', 'gradient-bottom', 'gradient-left-bottom'] as const),
     overlayTone: optOneOf(d.overlayTone, ['dark', 'light'] as const),
+    bgMotion: optOneOf(d.bgMotion, ['none', 'kenburns'] as const),
   }) as unknown as HeroSection
 }
 
@@ -290,6 +291,8 @@ export function sanitizeFeaturesSection(d: Dict, id: string): FeaturesSection | 
     columns: columnsOf(d.columns),
     items,
     style: optOneOf(d.style, ['cards', 'stats', 'checklist', 'panels'] as const),
+    // Stats only; the renderer ignores it elsewhere.
+    countUp: d.countUp === true ? true : undefined,
   }) as unknown as FeaturesSection
 }
 
@@ -421,6 +424,8 @@ export function sanitizeTeamSection(d: Dict, id: string): TeamSection | null {
     subheading: optStr(d.subheading, 400),
     columns: columnsOf(d.columns),
     layout: optOneOf(d.layout, ['grid', 'contact'] as const),
+    captionStyle: optOneOf(d.captionStyle, ['below', 'overlay-dark', 'overlay-light'] as const),
+    bioDisplay: optOneOf(d.bioDisplay, ['inline', 'modal'] as const),
     items,
   }) as unknown as TeamSection
 }
