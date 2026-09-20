@@ -52,6 +52,7 @@ import {
   type Tarif595VoidRequest,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
+import type { UnifiedPaymentRow } from '@/lib/payments'
 import { callFunction } from '@/lib/callFunction'
 import { usePagedQuery } from '@/hooks/usePagedQuery'
 
@@ -285,4 +286,33 @@ export function saveDownloadedFile(result: Tarif595DownloadResult): void {
 export async function downloadTarif595Receipt(teamId: string, receiptId: string, kind: 'pdf' | 'xml'): Promise<void> {
   const { data } = await callDownloadTarif595Receipt({ teamId, receiptId, kind })
   saveDownloadedFile(data)
+}
+
+// ─── Can this payment row become a receipt? ──────────────────────────────────
+
+/**
+ * A live row a Tarif 595 receipt can actually be built FROM — never a product,
+ * never a gift card, and never a voided record.
+ *
+ * ── SUBSCRIPTION AND COURSE ONLY, AND THE OTHER TWO ARE NOT AN OVERSIGHT ─────
+ * This used to admit `drop_in` and `appointment` as well, on the reasoning that
+ * the dialog would "decide the rest". The dialog's decision was to refuse, every
+ * single time, and it cannot be otherwise: a `Tarif595Source` of kind
+ * `attendance` needs an `activityId`, and `PaymentLineItem` records no activity
+ * and no session. The row genuinely cannot name the class it paid for, so the
+ * action was offered on rows guaranteed to dead-end in a paragraph.
+ *
+ * An attendance receipt is still issuable from the contact's Receipts segment,
+ * where the activity is picked by hand. It is just not derivable FROM A
+ * PAYMENT, which is what this predicate is about.
+ *
+ * It lives HERE, with the plugin whose rule it is. It was a private function
+ * inside components/payments/PaymentsTable.tsx — a core component carrying one
+ * plugin's domain logic, and the reason the table had to know the word
+ * "receipt" at all.
+ */
+export function canReceiptPayment(row: UnifiedPaymentRow): boolean {
+  if (row.voided || !row.contactId) return false
+  const kind = row.lineItem?.kind ?? (row.planTypeId ? 'subscription' : null)
+  return kind === 'subscription' || kind === 'course'
 }

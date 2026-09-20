@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, FileText, Loader2, Plus, Copy, Check, Search } from 'lucide-react'
+import { ChevronDown, FileText, HeartPulse, Loader2, Plus, Copy, Check, Search } from 'lucide-react'
 import type { Route } from 'next'
 import { Link } from '@/i18n/navigation'
 import { toast } from 'sonner'
@@ -65,7 +65,7 @@ function SubscriptionPayments({
   onAssign,
   onRefund,
   onVoid,
-  onReceipt,
+  extraActions,
   t,
 }: {
   teamId: string
@@ -75,7 +75,7 @@ function SubscriptionPayments({
   onAssign: (target: AssignPaymentTarget) => void
   onRefund: (row: UnifiedPaymentRow) => void
   onVoid: (row: UnifiedPaymentRow) => void
-  onReceipt?: (row: UnifiedPaymentRow) => void
+  extraActions?: PaymentRowAction[]
   t: ReturnType<typeof useTranslations<'PaymentsDashboard'>>
 }) {
   const { data, isLoading } = useContactPayments(teamId, contactId)
@@ -102,7 +102,7 @@ function SubscriptionPayments({
       onAssign={onAssign}
       onRefund={onRefund}
       onVoid={onVoid}
-      onReceipt={onReceipt}
+      extraActions={extraActions}
     />
   )
 }
@@ -174,10 +174,11 @@ import { RecordPaymentDialog } from '@/components/payments/RecordPaymentDialog'
 import { RefundPaymentDialog } from '@/components/payments/RefundPaymentDialog'
 import { VoidPaymentDialog } from '@/components/payments/VoidPaymentDialog'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
-import { PaymentsTable } from '@/components/payments/PaymentsTable'
+import { PaymentsTable, type PaymentRowAction } from '@/components/payments/PaymentsTable'
 import { GiftCardsSection } from '@/components/payments/GiftCardsSection'
 import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
 import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
+import { canReceiptPayment } from '@/plugins/tarif-595/hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
@@ -264,6 +265,7 @@ export default function PaymentsDashboardPage() {
   // Contacts namespace, and read from there rather than copied into a second
   // one — four locales of the same six words is four ways for them to drift.
   const tRecurrence = useTranslations('Contacts')
+  const tT = useTranslations('Tarif595')
   const tNav = useTranslations('Nav')
   const tPlugins = useTranslations('Plugins')
   const tInvoices = useTranslations('QrInvoices')
@@ -342,6 +344,23 @@ export default function PaymentsDashboardPage() {
   // table and in the per-member sub-tables alike — one dialog for both.
   const receiptsInstalled = isInstalled('tarif-595')
   const [receiptTarget, setReceiptTarget] = useState<UnifiedPaymentRow | null>(null)
+  // The menu ITEM goes to the table, the DIALOG stays here — see the
+  // `extraActions` note in components/payments/PaymentsTable.tsx.
+  const rowActions = useMemo<PaymentRowAction[]>(
+    () =>
+      receiptsInstalled && canManage
+        ? [
+            {
+              key: 'tarif-595',
+              label: tT('fromPayment.action'),
+              icon: HeartPulse,
+              available: canReceiptPayment,
+              onSelect: setReceiptTarget,
+            },
+          ]
+        : [],
+    [receiptsInstalled, canManage, tT]
+  )
   const [filter, setFilter] = useState<'all' | 'unassigned'>('all')
   const [search, setSearch] = useState('')
 
@@ -719,7 +738,7 @@ export default function PaymentsDashboardPage() {
                   onAssign={setAssignTarget}
                   onRefund={setRefundTarget}
                   onVoid={setVoidTarget}
-                  onReceipt={receiptsInstalled && canManage ? setReceiptTarget : undefined}
+                  extraActions={rowActions}
                 />
 
                 {hasMore && (
@@ -957,7 +976,7 @@ export default function PaymentsDashboardPage() {
                                 onAssign={setAssignTarget}
                                 onRefund={setRefundTarget}
                                 onVoid={setVoidTarget}
-                                onReceipt={receiptsInstalled && canManage ? setReceiptTarget : undefined}
+                                extraActions={rowActions}
                                 t={t}
                               />
                             </TableCell>

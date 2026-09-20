@@ -4949,7 +4949,8 @@
     "journalNetAfterRefund": "You keep",
     "journalStripeFeeKept": "Stripe keeps its processing fee on a refund.",
     "journalNetAfterRefundCost": "This cost you",
-    "receipt": "Receipt"
+    "receipt": "Receipt",
+    "rowMenuLabel": "More actions"
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",
@@ -8574,7 +8575,8 @@
       "openSegment": "Open the member's receipts",
       "pickSource": "Choose what this paid for",
       "guessedSource": "The payment doesn't record which one — this is our best match on the date. Check it before issuing.",
-      "noCourses": "This member owns no courses on record, so there is nothing for a receipt to attest. Pick a source by hand on their Receipts segment."
+      "noCourses": "This member owns no courses on record, so there is nothing for a receipt to attest. Pick a source by hand on their Receipts segment.",
+      "action": "Tarif 595 receipt"
     },
     "checklistExpiring": "{count} mapped positions stop being valid after {date}",
     "checklistReview": "Review"

@@ -4949,7 +4949,8 @@
     "journalNetAfterRefund": "Ti resta",
     "journalStripeFeeKept": "Stripe trattiene la sua commissione di elaborazione in caso di rimborso.",
     "journalNetAfterRefundCost": "Ti è costato",
-    "receipt": "Giustificativo"
+    "receipt": "Giustificativo",
+    "rowMenuLabel": "Altre azioni"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
@@ -8574,7 +8575,8 @@
       "openSegment": "Apri i giustificativi del membro",
       "pickSource": "Scegli per cosa è stato pagato",
       "guessedSource": "Il pagamento non indica quale — questa è la corrispondenza migliore per data. Controlla prima di emettere.",
-      "noCourses": "Per questo membro non risultano corsi acquistati, quindi una ricevuta non avrebbe nulla da attestare. Scegli la fonte a mano nella sezione Ricevute."
+      "noCourses": "Per questo membro non risultano corsi acquistati, quindi una ricevuta non avrebbe nulla da attestare. Scegli la fonte a mano nella sezione Ricevute.",
+      "action": "Ricevuta Tarif 595"
     },
     "checklistExpiring": "{count} posizioni associate non sono più valide dopo il {date}",
     "checklistReview": "Verifica"

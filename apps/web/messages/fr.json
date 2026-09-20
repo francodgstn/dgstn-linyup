@@ -4949,7 +4949,8 @@
     "journalNetAfterRefund": "Il vous reste",
     "journalStripeFeeKept": "Stripe conserve ses frais de traitement en cas de remboursement.",
     "journalNetAfterRefundCost": "Cela vous coûte",
-    "receipt": "Justificatif"
+    "receipt": "Justificatif",
+    "rowMenuLabel": "Plus d'actions"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
@@ -8574,7 +8575,8 @@
       "openSegment": "Ouvrir les justificatifs du membre",
       "pickSource": "Choisissez ce qui a été payé",
       "guessedSource": "Le paiement n'indique pas lequel — voici notre meilleure correspondance par date. Vérifiez avant d'émettre.",
-      "noCourses": "Aucun cours acheté n'est enregistré pour ce membre : un justificatif n'aurait rien à attester. Choisissez la source à la main dans la section Justificatifs."
+      "noCourses": "Aucun cours acheté n'est enregistré pour ce membre : un justificatif n'aurait rien à attester. Choisissez la source à la main dans la section Justificatifs.",
+      "action": "Justificatif Tarif 595"
     },
     "checklistExpiring": "{count} positions associées ne sont plus valables après le {date}",
     "checklistReview": "Vérifier"
