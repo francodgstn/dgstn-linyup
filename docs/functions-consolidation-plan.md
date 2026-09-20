@@ -637,14 +637,27 @@ environment that turns the flag on.
   name, so the fallback never fired: CORS works, and the lazy `callFunction` works. It is the
   first proof that does not run from Node. **Not reached in a browser: `rpcCheckout`** — the
   spec that gets there needs a seed with a Stripe test account.
-- **STAGING IS NOT A BROWSER PROOF YET, whatever the deploys say.** The functions deploy on
-  every merge; the staging web and admin apps do not. Their App Hosting backends have automatic
-  rollouts off, and on 2026-09-20 both were still serving a build from 2026-09-17 — from before
-  any of this work. A click-through of staging therefore exercised the OLD direct names, and
-  the staging routers show almost no successful calls for exactly that reason. Roll both out at
-  the commit under test before reading anything into staging:
-  `npx firebase-tools apphosting:rollouts:create linyup-web-eu --project staging --git-branch main`
-  (and `linyup-admin-eu`).
+- **Proven from a browser on STAGING too, 2026-09-20:** signed out, the deployed web app calls
+  `rpcMember/listAvailability` and gets a 200, with no fallback. The signed-in half needs a
+  login and is run by hand: `PLAYWRIGHT_BASE_URL=https://app-stg.linyup.com` with
+  `E2E_LOGIN_EMAIL` / `E2E_LOGIN_PASSWORD` set in the shell, never in a file.
+- **CORRECTION — an earlier version of this section said the staging web and admin apps do not
+  roll out on merge. That was wrong.** Both App Hosting backends roll out automatically from
+  `main` (`rolloutPolicy.codebaseBranch`), and staging was serving routing builds throughout. The
+  mistake was reading ONE page of the rollouts API, which returns the oldest first: with several
+  hundred rollouts, the newest on that page was weeks old, and a "Disabled" column in the CLI
+  table was taken as confirmation. To see what a backend serves, read its `traffic` resource
+  (`…/backends/{id}/traffic` → `current.splits`), not the head of a list.
+- **The spec was blind on a deployed project at first.** It recognised a functions call by the
+  EMULATOR's URL shape, region in the path; on a deployed project the region is in the HOST
+  (`europe-west6-{project}.cloudfunctions.net`), so it recorded nothing and failed with "no routed
+  callable was requested at all" — which reads like a routing defect and was a watcher that could
+  not see. It knows both shapes now, and a test pins them.
+- **The ordering window on staging is real, because rollouts ARE automatic:** the web rollout and
+  the functions deploy start together on a merge and neither waits for the other. In a browser
+  the fallback does not cover a missing function (see Phase 4), so a routed call can fail for the
+  minutes between a web build going live and a NEW router finishing its deploy. It only bites a
+  merge that adds a router; production is ordered, functions first.
 - **Staff onboarding went to `rpcStudio`**, not here: `createTeam` and the two team-invitation
   callables are called from public-looking paths (the signup page, the invitation link), but
   the person is joining as staff.

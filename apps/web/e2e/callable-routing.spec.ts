@@ -30,33 +30,50 @@ const SETTLE_MS = 6_000
 
 type Seen = { name: string; router: string | null; status: number; url: string }
 
+/**
+ * The `{router?}/{name}` segments of a functions URL, or null when the URL is not
+ * one. TWO SHAPES, and missing the second made this spec see nothing on a deployed
+ * project while passing locally:
+ *   emulator  http://host:port/{project}/europe-west6/{router?}/{name}  — region in the PATH
+ *   deployed  https://europe-west6-{project}.cloudfunctions.net/{router?}/{name} — in the HOST
+ */
+function callableSegments(rawUrl: string): string[] | null {
+  const url = new URL(rawUrl)
+  if (url.hostname.endsWith('.cloudfunctions.net')) {
+    return url.pathname.split('/').filter(Boolean)
+  }
+  if (url.pathname.includes(REGION_PATH)) {
+    return (url.pathname.split(REGION_PATH)[1] ?? '').split('/').filter(Boolean)
+  }
+  return null
+}
+
 /** Every POST to the functions host, as `{router?}/{name}` + the status it got. */
 function watchCallables(page: Page): Seen[] {
   const seen: Seen[] = []
-  const pending = new Map<Request, true>()
-  page.on('request', (req) => {
-    if (req.method() === 'POST' && req.url().includes(REGION_PATH)) pending.set(req, true)
-  })
-  page.on('requestfinished', async (req) => {
-    if (!pending.delete(req)) return
-    const path = new URL(req.url()).pathname.split(REGION_PATH)[1] ?? ''
-    const segments = path.split('/').filter(Boolean)
-    const name = segments[segments.length - 1] ?? ''
-    const router = segments.length > 1 ? segments[0] : null
-    const res = await req.response()
-    seen.push({ name, router, status: res?.status() ?? 0, url: req.url() })
-  })
-  page.on('requestfailed', (req) => {
-    if (!pending.delete(req)) return
-    const path = new URL(req.url()).pathname.split(REGION_PATH)[1] ?? ''
-    const segments = path.split('/').filter(Boolean)
+  const pending = new Map<Request, string[]>()
+  const record = (req: Request, status: number) => {
+    const segments = pending.get(req)
+    if (!segments || !pending.delete(req)) return
     seen.push({
       name: segments[segments.length - 1] ?? '',
       router: segments.length > 1 ? segments[0] : null,
-      status: -1, // never got a response: CORS, connection refused
+      status,
       url: req.url(),
     })
+  }
+  page.on('request', (req) => {
+    if (req.method() !== 'POST') return
+    const segments = callableSegments(req.url())
+    if (segments && segments.length > 0) pending.set(req, segments)
   })
+  page.on('requestfinished', async (req) => {
+    if (!pending.has(req)) return
+    const res = await req.response()
+    record(req, res?.status() ?? 0)
+  })
+  // -1 = never got a response: CORS, connection refused
+  page.on('requestfailed', (req) => record(req, -1))
   return seen
 }
 
@@ -95,6 +112,26 @@ function assertRouted(seen: Seen[], surface: string) {
   }
   return routed
 }
+
+test('the watcher recognises BOTH shapes of a functions URL', () => {
+  // The first version only knew the emulator's shape, so against a deployed project
+  // it recorded nothing and failed with "no routed callable was requested at all" —
+  // a failure that read like a routing defect and was a blind watcher.
+  const emu = 'http://localhost:15001/demo-linyup/europe-west6'
+  const live = 'https://europe-west6-linyup-staging.cloudfunctions.net'
+  expect(callableSegments(emu + '/rpcMember/listAvailability')).toEqual([
+    'rpcMember',
+    'listAvailability',
+  ])
+  expect(callableSegments(live + '/rpcMember/listAvailability')).toEqual([
+    'rpcMember',
+    'listAvailability',
+  ])
+  expect(callableSegments(emu + '/listAvailability')).toEqual(['listAvailability'])
+  expect(callableSegments(live + '/listAvailability')).toEqual(['listAvailability'])
+  expect(callableSegments('https://app-stg.linyup.com/public/iron-circle-gym/booking')).toBeNull()
+  expect(callableSegments('https://firestore.googleapis.com/v1/projects/x')).toBeNull()
+})
 
 test('staff screens: callables go through their routers', async ({ page }) => {
   test.setTimeout(WALK_TIMEOUT_MS)
