@@ -108,16 +108,17 @@ export function SettingsRail() {
               {/* A star, matching the "always show in Favourites" toggle in the
                   main sidebar (ShortcutButton, app/[locale]/(auth)/layout.tsx) —
                   the two must never drift, since both read/write the same
-                  `useNavPins` state. NOTE: on /settings/plugins this row (for the
-                  "Plugins" settings destination itself) sits on the same screen as
-                  the marketplace GRID's own amber "recommended" star badge on each
-                  plugin card — that one is a different object (a manifest flag,
-                  not a personal choice) and was out of scope for the 2026-08-29
-                  rename (UX-84), which only moved the SIDEBAR's collision (nav
-                  favourite vs. nav plugin-suggestion, both then a star) onto a
-                  puzzle piece. If the two stars on /settings/plugins read as
-                  confusing in practice, the marketplace grid is the one left to
-                  move. */}
+                  `useNavPins` state.
+
+                  THE LAST STAR COLLISION IS GONE (2026-09-20). This rail used to
+                  be drawn beside the marketplace, whose cards carry their OWN
+                  amber "recommended" star — a different object (a manifest flag
+                  we set, not a personal choice) wearing the same glyph on one
+                  screen. It was out of scope for the 2026-08-29 rename (UX-84),
+                  which only moved the SIDEBAR's version of that clash (nav
+                  favourite vs. nav plugin-suggestion) onto a puzzle piece. The
+                  marketplace is now a full page at /plugins with no rail on it,
+                  so the two never share a screen and neither had to move. */}
               <Star className={`h-3.5 w-3.5 ${shown ? 'fill-current' : ''}`} />
             </button>
           </Tip>

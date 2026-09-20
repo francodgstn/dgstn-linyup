@@ -50,7 +50,7 @@ export interface SettingsNavItem {
   labelKey: string // key in the `Nav` i18n namespace
   icon: LucideIcon
   group: SettingsGroupKey
-  exact?: boolean // active only on exact path match (hub routes like /settings/plugins)
+  exact?: boolean // active only on exact path match (hub routes like /public-page)
   gate?: SettingsGate // hidden unless the runtime condition holds
   /** Pin to the head of its group, ahead of the alphabetical run. Read
    *  `lib/navSort.ts` before adding one. */
@@ -101,9 +101,23 @@ export const SETTINGS_ITEMS: SettingsNavItem[] = [
   // Affiliations moved to the main nav's "Offer" section (/offer/affiliations).
   { id: 'teamCustomFields', href: '/settings/team?tab=custom-fields', labelKey: 'teamCustomFields', icon: ListChecks, group: 'studio', gate: 'customFields' },
   { id: 'teamCoaching', href: '/settings/coaching', labelKey: 'teamCoaching', icon: Target, group: 'studio' },
-  // The plugins marketplace renders in the detail pane; its per-plugin editor
-  // sub-routes open full-screen at /plugins/*.
-  { id: 'plugins', href: '/settings/plugins', labelKey: 'plugins', icon: Puzzle, group: 'studio', exact: true },
+  // THE ONE ROW THAT DELIBERATELY LEAVES THE SHELL (2026-09-20). The marketplace
+  // moved out of the detail pane to a full page at /plugins, where its per-plugin
+  // editors already lived (/plugins/website, /plugins/finance, …), so the
+  // catalogue and the things it installs share a prefix at last.
+  //
+  // The Places note further down says a rail row pointing outside /settings
+  // "throws the reader out of settings mid-task", and that rule still holds for
+  // every other row. It does not bite here, because browsing plugins IS the task
+  // rather than a step inside another one — nobody is halfway through configuring
+  // the booking page when they open the catalogue. And the shell was costing the
+  // one screen in the app that is nothing but a card grid a rail's width of grid.
+  //
+  // The row stays because this is a destination a studio looks for under
+  // Settings, and because it is what puts "plugins / extensions / add-ons /
+  // marketplace" in the global search index (the sidebar's own Explore-plugins
+  // button is NOT indexed — see the searchEntries note in (auth)/layout.tsx).
+  { id: 'plugins', href: '/plugins', labelKey: 'plugins', icon: Puzzle, group: 'studio', exact: true },
   // API keys for the public API and MCP server (docs/public-api.md). Owner-only:
   // the key records are owner-READ in firestore.rules, so anyone else would
   // arrive at a page that can only explain why it is empty. Shown whether or not
@@ -145,9 +159,9 @@ export const SETTINGS_ITEMS: SettingsNavItem[] = [
   // that reads it, and is listed in the main nav's Run section (UX-67). It is not
   // kept as a rail row pointing there, deliberately — a rail row whose page lives
   // outside the /settings shell throws the reader out of settings mid-task, which
-  // is exactly what UX-61 objected to. Every row in this list now renders inside
-  // the shell; `publicPages` below is the one that reaches it via a route group
-  // rather than a /settings/* path.
+  // is exactly what UX-61 objected to. `publicPages` below reaches the shell via
+  // a route group rather than a /settings/* path; `plugins` above is the one row
+  // that leaves it on purpose, and says there why the rule does not bite.
   { id: 'bookingPage', href: '/settings/booking', labelKey: 'bookingPage', icon: CalendarCheck, group: 'scheduling' },
 
   // ── Communication — what the studio sends, and how it reads.
@@ -224,11 +238,16 @@ export const SETTINGS_GROUPS: { key: SettingsGroupKey; labelKey: string }[] = [
 export const DEFAULT_SHORTCUT_IDS: string[] = []
 
 /**
- * The destination in the head tile beside Dashboard before the studio picks one.
+ * The head tiles beside Dashboard before the studio picks its own.
  *
- * Schedule: it is the surface a studio opens every session, and the tile exists
- * to put exactly that one click from anywhere. Census item 5 in
- * contexts/NavPinsContext.tsx owns the storage and the absent-vs-cleared rule —
- * this constant is only the fallback for "never chosen".
+ * Schedule, and ONLY Schedule: it is the surface a studio opens every session,
+ * and the tiles exist to put exactly that one click from anywhere. The grid
+ * holds more now (census item 5, HEAD_TILES_MAX) but a default is a guess at
+ * what somebody needs, and one guess is the most a new studio should have to
+ * undo — the same reasoning that left DEFAULT_SHORTCUT_IDS empty above.
+ *
+ * Census item 5 in contexts/NavPinsContext.tsx owns the storage and the
+ * absent-vs-cleared rule; this constant is only the fallback for "never
+ * chosen".
  */
-export const DEFAULT_HEAD_TILE_ID = 'calendar'
+export const DEFAULT_HEAD_TILE_IDS: string[] = ['calendar']

@@ -1276,6 +1276,8 @@ async function seedLeadTenant(profile: LeadProfile) {
         slug: a.slug,
         color: a.color,
         tags: activityTags,
+        // The booking page's section heading — see LeadActivityDef.bookingGroup.
+        ...(a.bookingGroup ? { bookingGroup: a.bookingGroup } : {}),
         description: a.description,
         ...(a.prerequisites ? { prerequisites: a.prerequisites } : {}),
         // EXTENDS the team-wide list — never restates it. Mirrored the same way
@@ -1339,6 +1341,8 @@ async function seedLeadTenant(profile: LeadProfile) {
         ...(a.trialPrice != null ? { trialPriceAmount: a.trialPrice } : {}),
         // Tags mirrored ONLY when present, exactly as syncActivityPublicProfile does.
         ...(activityTags.length ? { tags: normalizeActivityTags(activityTags) } : {}),
+        // …and the booking page's section heading, the same way.
+        ...(a.bookingGroup ? { bookingGroup: a.bookingGroup } : {}),
       })
   }
 

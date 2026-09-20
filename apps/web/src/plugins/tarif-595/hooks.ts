@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -25,6 +26,7 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import {
+  COURSE_PURCHASES_SUBCOLLECTION,
   TARIF595_CONTACTS_SUBCOLLECTION,
   TARIF595_JOBS_SUBCOLLECTION,
   TARIF595_RECEIPTS_SUBCOLLECTION,
@@ -50,6 +52,7 @@ import {
   type Tarif595VoidRequest,
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
+import type { UnifiedPaymentRow } from '@/lib/payments'
 import { callFunction } from '@/lib/callFunction'
 import { usePagedQuery } from '@/hooks/usePagedQuery'
 
@@ -161,6 +164,39 @@ export function useContactTarif595Receipts(teamId: string | null, contactId: str
   })
 }
 
+// ─── This contact's course purchases (lifetime entitlements) ─────────────────
+//
+// No shared hook lists a CONTACT's purchases from the (auth) side — only the
+// public Space/Shop do, scoped to the signed-in visitor. Same collection-group
+// shape (`contactId` + `teamId`), read here for the studio's own surfaces.
+//
+// It lives in the PLUGIN, not in a core page. It was declared inside
+// contacts/[id]/ReceiptsSegment.tsx until 2026-09-20, which was fine while the
+// segment was its only reader; the payment-row dialog is the second, and a
+// plugin concern copied into two core files is how the two drift.
+
+/** A person buys a handful of courses in a lifetime; the bound is a tripwire, not a page. */
+const COURSE_PURCHASES_SCAN = 100
+
+/** The course ids this contact owns outright. */
+export function useContactCoursePurchases(teamId: string | null, contactId: string | null) {
+  return useQuery<string[]>({
+    queryKey: ['tarif595-course-purchases', teamId, contactId],
+    enabled: !!teamId && !!contactId,
+    queryFn: async () => {
+      const snap = await getDocs(
+        query(
+          collectionGroup(db, COURSE_PURCHASES_SUBCOLLECTION),
+          where('contactId', '==', contactId),
+          where('teamId', '==', teamId),
+          limit(COURSE_PURCHASES_SCAN)
+        )
+      )
+      return snap.docs.map((d) => (d.data().courseId as string | undefined) ?? d.id)
+    },
+  })
+}
+
 // ─── Bulk jobs (read-only from the client; the worker writes) ─────────────────
 
 export type Tarif595JobRow = Tarif595BulkJob & { id: string }
@@ -250,4 +286,33 @@ export function saveDownloadedFile(result: Tarif595DownloadResult): void {
 export async function downloadTarif595Receipt(teamId: string, receiptId: string, kind: 'pdf' | 'xml'): Promise<void> {
   const { data } = await callDownloadTarif595Receipt({ teamId, receiptId, kind })
   saveDownloadedFile(data)
+}
+
+// ─── Can this payment row become a receipt? ──────────────────────────────────
+
+/**
+ * A live row a Tarif 595 receipt can actually be built FROM — never a product,
+ * never a gift card, and never a voided record.
+ *
+ * ── SUBSCRIPTION AND COURSE ONLY, AND THE OTHER TWO ARE NOT AN OVERSIGHT ─────
+ * This used to admit `drop_in` and `appointment` as well, on the reasoning that
+ * the dialog would "decide the rest". The dialog's decision was to refuse, every
+ * single time, and it cannot be otherwise: a `Tarif595Source` of kind
+ * `attendance` needs an `activityId`, and `PaymentLineItem` records no activity
+ * and no session. The row genuinely cannot name the class it paid for, so the
+ * action was offered on rows guaranteed to dead-end in a paragraph.
+ *
+ * An attendance receipt is still issuable from the contact's Receipts segment,
+ * where the activity is picked by hand. It is just not derivable FROM A
+ * PAYMENT, which is what this predicate is about.
+ *
+ * It lives HERE, with the plugin whose rule it is. It was a private function
+ * inside components/payments/PaymentsTable.tsx — a core component carrying one
+ * plugin's domain logic, and the reason the table had to know the word
+ * "receipt" at all.
+ */
+export function canReceiptPayment(row: UnifiedPaymentRow): boolean {
+  if (row.voided || !row.contactId) return false
+  const kind = row.lineItem?.kind ?? (row.planTypeId ? 'subscription' : null)
+  return kind === 'subscription' || kind === 'course'
 }

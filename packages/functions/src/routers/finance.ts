@@ -54,6 +54,7 @@ import {
   setPromoCodeStatus,
   updatePromoCode,
 } from '../connect/promoCodes'
+import { getPaymentReceiptUrl } from '../connect/receiptUrl'
 import { refundMemberPayment } from '../connect/refunds'
 import { updatePaymentRecord } from '../connect/updatePayment'
 import { recordManualPayment } from '../payments/recordManualPayment'
@@ -100,6 +101,7 @@ export const rpcFinance = callableRouter(
     issueGiftCard,
     pauseMemberSubscription,
     refundMemberPayment,
+    getPaymentReceiptUrl,
     releasePromoReservations,
     resumeMemberSubscription,
     setPromoCodeStatus,

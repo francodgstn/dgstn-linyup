@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Réserver ce cours aux personnes inscrites chez vous",
     "accessSignupOnly": "Seulement les personnes inscrites chez vous",
     "accessSignupOnlyHint": "Les visiteurs ne peuvent pas réserver, même en payant. Un cours d'essai reste possible.",
-    "waitlistExperimental": "Expérimental"
+    "waitlistExperimental": "Expérimental",
+    "fieldBookingGroup": "Groupe sur la page de réservation",
+    "fieldBookingGroupPlaceholder": "p. ex. Cours",
+    "fieldBookingGroupHint": "Regroupe la page de réservation sous un titre. Laissez vide pour l'afficher seul."
   },
   "Benefit": {
     "fieldLabel": "Avantage membre",
@@ -3999,7 +4002,12 @@
     "editorTeamCaptionOverlayLight": "Sur la photo, clair",
     "editorTeamBioDisplay": "Texte du profil",
     "editorTeamBioInline": "Sur la carte",
-    "editorTeamBioModal": "S'ouvre dans une fenêtre"
+    "editorTeamBioModal": "S'ouvre dans une fenêtre",
+    "editorCtaActionClass": "Réserver un cours",
+    "editorCtaClass": "Cours",
+    "editorCtaClassPlaceholder": "Choisir un cours",
+    "editorCtaClassEmptyHint": "Aucun cours pour l'instant — ajoutez-en un sous Offre.",
+    "editorCtaClassFallbackHint": "Sans cours, ce bouton ouvre la page de réservation."
   },
   "Kiosk": {
     "title": "Kiosque",
@@ -4653,7 +4661,15 @@
     "customVariablesSaveButton": "Enregistrer",
     "customVariablesSaving": "Enregistrement…",
     "customVariablesSaved": "✓ Enregistré",
-    "customVariablesInvalidKeys": "Noms de clé invalides : {keys}. Utilisez uniquement des lettres, des chiffres et des tirets bas."
+    "customVariablesInvalidKeys": "Noms de clé invalides : {keys}. Utilisez uniquement des lettres, des chiffres et des tirets bas.",
+    "studioLinksTitle": "Liens du studio",
+    "studioLinksDescription": "Deux liens que vous seuls pouvez fournir. Tant qu'ils sont vides, chaque modèle, automatisation ou message WhatsApp qui les utilise envoie un lien vide.",
+    "studioLinksWebsiteLabel": "Site web",
+    "studioLinksWebsiteHint": "Votre propre site web, référencé dans les e-mails et sur votre page bio link.",
+    "studioLinksReviewLabel": "Page d'avis",
+    "studioLinksReviewHint": "Là où les membres laissent un avis — votre fiche d'établissement Google, par exemple.",
+    "studioLinksInvalidUrl": "Saisissez une adresse complète commençant par https://",
+    "studioLinksAlsoOnBioLink": "Ces deux mêmes liens apparaissent sur votre page bio link."
   },
   "ConnectPayments": {
     "title": "Accepter les paiements avec Linyup",
@@ -4952,7 +4968,11 @@
     "journalNetAfterRefund": "Il vous reste",
     "journalStripeFeeKept": "Stripe conserve ses frais de traitement en cas de remboursement.",
     "journalNetAfterRefundCost": "Cela vous coûte",
-    "receipt": "Justificatif"
+    "receipt": "Justificatif",
+    "rowMenuLabel": "Plus d'actions",
+    "openStripeReceipt": "Ouvrir le reçu Stripe",
+    "stripeReceiptNone": "Stripe n'a pas de reçu pour ce paiement.",
+    "stripeReceiptError": "Impossible de récupérer le reçu Stripe."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
@@ -6849,7 +6869,9 @@
         "date": "Aujourd'hui",
         "date+7": "+7 jours (N au choix)",
         "date-7": "-7 jours (N au choix)"
-      }
+      },
+      "studioLinkUnset": "Non défini — envoie un lien vide",
+      "manageOnThisPage": "Ajoutez les vôtres sous « Variables personnalisées », sur cette page."
     },
     "validation": {
       "nameRequired": "Le nom est requis",
@@ -8570,9 +8592,13 @@
       "preview": "Aperçu",
       "issue": "Émettre le justificatif",
       "cancel": "Annuler",
-      "noHistory": "Ce paiement mentionne un abonnement, mais aucun abonnement de ce plan n'est enregistré pour ce membre. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
-      "unsupported": "Impossible de dériver un justificatif de ce paiement : un paiement à la séance ou de rendez-vous n'indique ni le cours ni la date couverte, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source manuellement dans la section « Justificatifs » du membre.",
-      "openSegment": "Ouvrir les justificatifs du membre"
+      "noHistory": "Aucune période d'abonnement n'est enregistrée pour ce membre : un justificatif n'aurait rien à attester. Choisissez la source à la main dans la section Justificatifs.",
+      "unsupported": "Aucun justificatif ne peut être établi à partir de ce paiement. Une entrée à l'unité ou un rendez-vous n'indique pas quel cours il couvrait, et les produits ne relèvent pas de la promotion de la santé. Choisissez la source à la main dans la section Justificatifs.",
+      "openSegment": "Ouvrir les justificatifs du membre",
+      "pickSource": "Choisissez ce qui a été payé",
+      "guessedSource": "Le paiement n'indique pas lequel — voici notre meilleure correspondance par date. Vérifiez avant d'émettre.",
+      "noCourses": "Aucun cours acheté n'est enregistré pour ce membre : un justificatif n'aurait rien à attester. Choisissez la source à la main dans la section Justificatifs.",
+      "action": "Justificatif Tarif 595"
     },
     "checklistExpiring": "{count} positions associées ne sont plus valables après le {date}",
     "checklistReview": "Vérifier"

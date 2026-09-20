@@ -739,7 +739,7 @@ function HealthSection({ warnings }: { warnings: PricingWarning[] }) {
 // section of the surface that owns the subject, not a page of its own) with the
 // discovery half the pattern was missing: when the plugin is NOT installed the
 // section still renders, one line, deep-linking to the plugin's own marketplace
-// card (`/settings/plugins?plugin=…` — the exact link the sidebar's plugin
+// card (`/plugins?plugin=…` — the exact link the sidebar's plugin
 // suggestions use). It never repeats the marketplace's job of explaining plan
 // access or price; the card does that, once.
 //
@@ -781,7 +781,7 @@ function DiscountsSection({ teamId, currency }: { teamId: string | null; currenc
             <BadgePercent className="h-4 w-4 shrink-0" />
             <span className="flex-1 min-w-[12rem]">{t('discountsNotInstalled')}</span>
             <Link
-              href={'/settings/plugins?plugin=promo-codes' as Route}
+              href={'/plugins?plugin=promo-codes' as Route}
               className="text-xs font-medium text-primary hover:underline shrink-0"
             >
               {t('discountsSetUpLink')}

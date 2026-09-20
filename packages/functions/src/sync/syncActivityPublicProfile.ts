@@ -2,6 +2,7 @@
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 import {
   normalizeActivityTags,
+  normalizeBookingGroup,
   resolveActivityAccessRule,
   resolveActivityDropIn,
   resolveDurationSale,
@@ -74,6 +75,12 @@ export function buildActivityPublicProfile(
     // written by anything other than that form still has to arrive tidy.
     ...(Array.isArray(data.tags) && data.tags.length
       ? { tags: normalizeActivityTags(data.tags) }
+      : {}),
+    // The heading this card sits under on the public booking page — the
+    // studio's own word, normalised here for the same reason as the tags
+    // above. Absent ⇒ ungrouped, which is what every existing activity is.
+    ...(normalizeBookingGroup(data.bookingGroup)
+      ? { bookingGroup: normalizeBookingGroup(data.bookingGroup) }
       : {}),
     // Denormalised access gate so the public booking UI can render lock badges.
     // CLASS-ONLY: appointments have no access gate (the price is the gate) —

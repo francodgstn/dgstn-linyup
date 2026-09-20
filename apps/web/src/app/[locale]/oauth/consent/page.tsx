@@ -226,7 +226,7 @@ export default function OAuthConsentPage() {
             <div className="space-y-2 rounded-lg bg-muted/40 p-3 text-sm">
               <p>{t('notInstalled')}</p>
               {team.role === 'owner' && (
-                <Link href={'/settings/plugins?plugin=api-connectors' as Route} className="text-primary underline underline-offset-2">
+                <Link href={'/plugins?plugin=api-connectors' as Route} className="text-primary underline underline-offset-2">
                   {t('installLink')}
                 </Link>
               )}

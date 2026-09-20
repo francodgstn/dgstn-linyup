@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Limitare questa lezione a chi si è registrato da te",
     "accessSignupOnly": "Solo chi si è registrato da te",
     "accessSignupOnlyHint": "I visitatori non possono prenotare, nemmeno pagando. La lezione di prova resta possibile.",
-    "waitlistExperimental": "Sperimentale"
+    "waitlistExperimental": "Sperimentale",
+    "fieldBookingGroup": "Gruppo nella pagina di prenotazione",
+    "fieldBookingGroupPlaceholder": "es. Corsi",
+    "fieldBookingGroupHint": "Raggruppa la pagina di prenotazione sotto un titolo. Lascia vuoto per mostrarlo da solo."
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",
@@ -3999,7 +4002,12 @@
     "editorTeamCaptionOverlayLight": "Sulla foto, chiaro",
     "editorTeamBioDisplay": "Testo del profilo",
     "editorTeamBioInline": "Sulla scheda",
-    "editorTeamBioModal": "Si apre in una finestra"
+    "editorTeamBioModal": "Si apre in una finestra",
+    "editorCtaActionClass": "Prenota un corso",
+    "editorCtaClass": "Corso",
+    "editorCtaClassPlaceholder": "Scegli un corso",
+    "editorCtaClassEmptyHint": "Nessun corso ancora — aggiungine uno in Offerta.",
+    "editorCtaClassFallbackHint": "Senza corso questo pulsante apre la pagina di prenotazione."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -4653,7 +4661,15 @@
     "customVariablesSaveButton": "Salva",
     "customVariablesSaving": "Salvataggio…",
     "customVariablesSaved": "✓ Salvato",
-    "customVariablesInvalidKeys": "Nomi chiave non validi: {keys}. Usa solo lettere, numeri e trattini bassi."
+    "customVariablesInvalidKeys": "Nomi chiave non validi: {keys}. Usa solo lettere, numeri e trattini bassi.",
+    "studioLinksTitle": "Link dello studio",
+    "studioLinksDescription": "Due link che solo tu puoi fornire. Finché restano vuoti, ogni modello, automazione o messaggio WhatsApp che li usa invia un link vuoto.",
+    "studioLinksWebsiteLabel": "Sito web",
+    "studioLinksWebsiteHint": "Il tuo sito web, collegato nelle email e nella pagina bio link.",
+    "studioLinksReviewLabel": "Pagina recensioni",
+    "studioLinksReviewHint": "Dove i membri lasciano una recensione — il tuo profilo Google Business, per esempio.",
+    "studioLinksInvalidUrl": "Inserisci un indirizzo completo che inizi con https://",
+    "studioLinksAlsoOnBioLink": "Gli stessi due link compaiono nella tua pagina bio link."
   },
   "ConnectPayments": {
     "title": "Accetta pagamenti con Linyup",
@@ -4952,7 +4968,11 @@
     "journalNetAfterRefund": "Ti resta",
     "journalStripeFeeKept": "Stripe trattiene la sua commissione di elaborazione in caso di rimborso.",
     "journalNetAfterRefundCost": "Ti è costato",
-    "receipt": "Giustificativo"
+    "receipt": "Giustificativo",
+    "rowMenuLabel": "Altre azioni",
+    "openStripeReceipt": "Apri la ricevuta Stripe",
+    "stripeReceiptNone": "Stripe non ha una ricevuta per questo pagamento.",
+    "stripeReceiptError": "Impossibile recuperare la ricevuta Stripe."
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
@@ -6849,7 +6869,9 @@
         "date": "Oggi",
         "date+7": "+7 giorni (N a scelta)",
         "date-7": "-7 giorni (N a scelta)"
-      }
+      },
+      "studioLinkUnset": "Non impostato — invia un link vuoto",
+      "manageOnThisPage": "Aggiungi le tue sotto «Variabili personalizzate», in questa pagina."
     },
     "validation": {
       "nameRequired": "Il nome è obbligatorio",
@@ -8570,9 +8592,13 @@
       "preview": "Anteprima",
       "issue": "Emetti giustificativo",
       "cancel": "Annulla",
-      "noHistory": "Questo pagamento indica un abbonamento, ma per il membro non risulta alcun abbonamento di quel piano da attestare. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
-      "unsupported": "Da questo pagamento non si può derivare un giustificativo: un pagamento a lezione singola o per appuntamento non indica quale corso o data copre, e i prodotti non sono promozione della salute. Scelga la fonte manualmente nella sezione «Giustificativi» del membro.",
-      "openSegment": "Apri i giustificativi del membro"
+      "noHistory": "Per questo membro non risultano periodi di abbonamento, quindi una ricevuta non avrebbe nulla da attestare. Scegli la fonte a mano nella sezione Ricevute.",
+      "unsupported": "Da questo pagamento non si può creare una ricevuta. Un ingresso singolo o un appuntamento non registra quale lezione copriva, e i prodotti non sono promozione della salute. Scegli la fonte a mano nella sezione Ricevute.",
+      "openSegment": "Apri i giustificativi del membro",
+      "pickSource": "Scegli per cosa è stato pagato",
+      "guessedSource": "Il pagamento non indica quale — questa è la corrispondenza migliore per data. Controlla prima di emettere.",
+      "noCourses": "Per questo membro non risultano corsi acquistati, quindi una ricevuta non avrebbe nulla da attestare. Scegli la fonte a mano nella sezione Ricevute.",
+      "action": "Ricevuta Tarif 595"
     },
     "checklistExpiring": "{count} posizioni associate non sono più valide dopo il {date}",
     "checklistReview": "Verifica"

@@ -16,9 +16,9 @@ import type { PluginManifest } from '@linyup/shared'
  * place on both the discovery and the install side.
  *
  * `canDiscover` is about FINDING a plugin, never about running one. Call sites
- * that show an INSTALLED plugin must OR this with their install check (see
- * settings/plugins), so a tenant dropped from an allow-list keeps the card for
- * the thing it is still running.
+ * that show an INSTALLED plugin must OR this with their install check (see the
+ * marketplace at `/plugins`), so a tenant dropped from an allow-list keeps the
+ * card for the thing it is still running.
  */
 export function usePluginDiscovery(): {
   canDiscover: (manifest: Pick<PluginManifest, 'audience'>) => boolean

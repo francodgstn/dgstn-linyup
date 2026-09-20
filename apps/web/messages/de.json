@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Diese Stunde auf angemeldete Personen beschränken",
     "accessSignupOnly": "Nur Personen, die sich bei dir angemeldet haben",
     "accessSignupOnlyHint": "Gäste können nicht buchen, auch nicht zahlend. Eine Probestunde bleibt möglich.",
-    "waitlistExperimental": "Experimentell"
+    "waitlistExperimental": "Experimentell",
+    "fieldBookingGroup": "Gruppe auf der Buchungsseite",
+    "fieldBookingGroupPlaceholder": "z. B. Kurse",
+    "fieldBookingGroupHint": "Fasst die Buchungsseite unter einer Überschrift zusammen. Leer lassen, um einzeln zu erscheinen."
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",
@@ -3999,7 +4002,12 @@
     "editorTeamCaptionOverlayLight": "Auf dem Foto, hell",
     "editorTeamBioDisplay": "Profiltext",
     "editorTeamBioInline": "Auf der Karte",
-    "editorTeamBioModal": "Öffnet sich in einem Dialog"
+    "editorTeamBioModal": "Öffnet sich in einem Dialog",
+    "editorCtaActionClass": "Kurs buchen",
+    "editorCtaClass": "Kurs",
+    "editorCtaClassPlaceholder": "Kurs wählen",
+    "editorCtaClassEmptyHint": "Noch keine Kurse — lege unter Angebot einen an.",
+    "editorCtaClassFallbackHint": "Ohne Kurs öffnet diese Schaltfläche die Buchungsseite."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -4653,7 +4661,15 @@
     "customVariablesSaveButton": "Speichern",
     "customVariablesSaving": "Wird gespeichert…",
     "customVariablesSaved": "✓ Gespeichert",
-    "customVariablesInvalidKeys": "Ungültige Schlüsselnamen: {keys}. Nur Buchstaben, Zahlen und Unterstriche verwenden."
+    "customVariablesInvalidKeys": "Ungültige Schlüsselnamen: {keys}. Nur Buchstaben, Zahlen und Unterstriche verwenden.",
+    "studioLinksTitle": "Studio-Links",
+    "studioLinksDescription": "Zwei Links, die nur ihr angeben könnt. Solange sie leer sind, verschickt jede Vorlage, Automatisierung oder WhatsApp-Nachricht, die sie verwendet, einen leeren Link.",
+    "studioLinksWebsiteLabel": "Website",
+    "studioLinksWebsiteHint": "Eure eigene Website – verlinkt in E-Mails und auf eurer Bio-Link-Seite.",
+    "studioLinksReviewLabel": "Bewertungsseite",
+    "studioLinksReviewHint": "Wo Mitglieder eine Bewertung hinterlassen – zum Beispiel euer Google-Unternehmensprofil.",
+    "studioLinksInvalidUrl": "Gib eine vollständige Adresse ein, die mit https:// beginnt.",
+    "studioLinksAlsoOnBioLink": "Dieselben zwei Links erscheinen auf eurer Bio-Link-Seite."
   },
   "ConnectPayments": {
     "title": "Zahlungen mit Linyup annehmen",
@@ -4952,7 +4968,11 @@
     "journalNetAfterRefund": "Dir bleibt",
     "journalStripeFeeKept": "Stripe behält bei einer Erstattung seine Bearbeitungsgebühr.",
     "journalNetAfterRefundCost": "Das kostet dich",
-    "receipt": "Beleg"
+    "receipt": "Beleg",
+    "rowMenuLabel": "Weitere Aktionen",
+    "openStripeReceipt": "Stripe-Beleg öffnen",
+    "stripeReceiptNone": "Stripe hat für diese Zahlung keinen Beleg.",
+    "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden."
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",
@@ -6849,7 +6869,9 @@
         "date": "Heute",
         "date+7": "+7 Tage (beliebiges N)",
         "date-7": "-7 Tage (beliebiges N)"
-      }
+      },
+      "studioLinkUnset": "Nicht gesetzt – sendet einen leeren Link",
+      "manageOnThisPage": "Eigene Variablen fügt ihr auf dieser Seite unter „Benutzerdefinierte Variablen\" hinzu."
     },
     "validation": {
       "nameRequired": "Name ist erforderlich",
@@ -8570,9 +8592,13 @@
       "preview": "Vorschau",
       "issue": "Beleg ausstellen",
       "cancel": "Abbrechen",
-      "noHistory": "Diese Zahlung nennt ein Abo, aber für das Mitglied ist kein Abo dieses Plans erfasst, das bescheinigt werden könnte. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
-      "unsupported": "Aus dieser Zahlung lässt sich kein Beleg ableiten: Eine Einzeleintritts- oder Terminzahlung sagt nicht, welchen Kurs oder welches Datum sie abdeckt, und Produkte sind keine Gesundheitsförderung. Wählen Sie die Quelle manuell im Bereich «Belege» des Mitglieds.",
-      "openSegment": "Belege des Mitglieds öffnen"
+      "noHistory": "Für dieses Mitglied sind keine Abo-Zeiträume erfasst, also gibt es nichts, was ein Beleg bestätigen könnte. Wähle die Quelle von Hand im Bereich „Belege“.",
+      "unsupported": "Aus dieser Zahlung lässt sich kein Beleg erstellen. Ein Einzeleintritt oder Termin hält nicht fest, welche Lektion er abdeckte, und Produkte sind keine Gesundheitsförderung. Wähle die Quelle von Hand im Bereich „Belege“.",
+      "openSegment": "Belege des Mitglieds öffnen",
+      "pickSource": "Wähle, wofür bezahlt wurde",
+      "guessedSource": "Die Zahlung hält nicht fest, welches — das ist unsere beste Übereinstimmung nach Datum. Prüfe es vor dem Ausstellen.",
+      "noCourses": "Für dieses Mitglied sind keine gekauften Kurse erfasst, also gibt es nichts, was ein Beleg bestätigen könnte. Wähle die Quelle von Hand im Bereich „Belege“.",
+      "action": "Tarif-595-Beleg"
     },
     "checklistExpiring": "{count} zugeordnete Positionen sind nach dem {date} nicht mehr gültig",
     "checklistReview": "Prüfen"

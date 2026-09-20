@@ -137,10 +137,22 @@
  *    VOCABULARY: in code it is `recentContact*`, never `recent*` bare — that
  *    word is spent on the recents half of Favourites above (item 1).
  *
- * 5. THE HEAD TILE — this file too, but its OWN single-value key
- *    (`linyup_nav_head_tile`). The one adjustable tile beside Dashboard at the
- *    top of the nav, rendered by `HeadTiles` in
+ * 5. THE HEAD TILES — this file too, but their OWN key
+ *    (`linyup_nav_head_tile`, still singular: a stored name is a machine
+ *    identifier, see STORED NAMES KEEP THE OLD WORD below). The adjustable
+ *    tiles beside Dashboard at the top of the nav, rendered by `HeadTiles` in
  *    `app/[locale]/(auth)/layout.tsx`.
+ *
+ *    A LIST SINCE 2026-09-20, capped at HEAD_TILES_MAX cells INCLUDING the
+ *    fixed Dashboard — so five of the studio's own, in a two-column grid, three
+ *    rows at the very most.
+ *
+ *    THERE IS NO SETTING FOR HOW MANY (Franco, 2026-09-20). A 2/4/6 control was
+ *    considered and dropped: the grid already grows a cell at a time as tiles
+ *    are added, so a number to choose up front is a second way to say the same
+ *    thing and one more row of settings to scroll past. What the absence costs
+ *    is the ability to cap it BELOW six while still adding tiles, which nobody
+ *    has asked for.
  *
  *    IT WAS BUILT AS THE TOP OF ITEM 1 AND THAT WAS WRONG (2026-08-20). Deriving
  *    the tile from the first always-shown shortcut stored nothing new, which is
@@ -155,8 +167,8 @@
  *    `alwaysShownIds`. A destination may be both a head tile and a shortcut;
  *    that is a duplicate the user asked for twice, not a bug. Precedence matches
  *    item 1: NO ENTRY FOR THIS STUDIO means "not chosen yet" and falls back to
- *    DEFAULT_HEAD_TILE_ID (Schedule); an entry of `null` means "I cleared it"
- *    and renders the dashed placeholder, which is the affordance for setting it
+ *    DEFAULT_HEAD_TILE_IDS (Schedule); an EMPTY LIST means "I cleared them" and
+ *    renders the dashed placeholder, which is the affordance for setting one
  *    again. No verb: the control is a chooser on the tile itself.
  *
  * STORED NAMES KEEP THE OLD WORD, deliberately — same policy as plan IDs vs
@@ -191,7 +203,7 @@
  */
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { DEFAULT_SHORTCUT_IDS, DEFAULT_HEAD_TILE_ID } from '@/lib/settings-nav'
+import { DEFAULT_SHORTCUT_IDS, DEFAULT_HEAD_TILE_IDS } from '@/lib/settings-nav'
 import { useAuth } from '@/contexts/AuthContext'
 import type { TeamNavDefaults } from '@linyup/shared'
 
@@ -221,14 +233,21 @@ const STORAGE_KEY = 'linyup_nav_pins'
 const LEGACY_KEY = 'linyup_settings_pins'
 const RECENTS_KEY = 'linyup_nav_recents'
 const RECENTS_MAX = 10
-/** Census item 5. One value per team, not a list — see the header. */
+/** Census item 5. A LIST per team since 2026-09-20 — see the header. The key
+ *  keeps its singular name on the policy stated there: stored names are machine
+ *  identifiers and renaming one buys nothing a user can see. */
 const HEAD_TILE_KEY = 'linyup_nav_head_tile'
+
+/** Cells in the head grid, Dashboard included — so at most HEAD_TILES_MAX - 1
+ *  are the studio's own. Two columns, so six is three rows and the last one a
+ *  reader can still take in at a glance. */
+export const HEAD_TILES_MAX = 6
 
 /** Stable identity, so a studio with no history does not re-render the sidebar. */
 const NO_IDS: string[] = []
 
 type ListStore = Record<string, string[]>
-type TileStore = Record<string, string | null>
+type TileStore = Record<string, string[]>
 
 function asIds(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null
@@ -263,31 +282,37 @@ function readListStore(key: string): { store: ListStore; flat: string[] | null }
 
 /**
  * The head tile's THREE states per studio are why this is not just a string:
- *   · no entry for the team → not chosen yet, fall back to DEFAULT_HEAD_TILE_ID
- *   · entry is `null`       → deliberately cleared, render the placeholder
- *   · entry is an id        → that destination
+ *   · no entry for the team → not chosen yet, fall back to DEFAULT_HEAD_TILE_IDS
+ *   · entry is `[]`         → deliberately cleared, render the placeholder
+ *   · entry is a list       → those destinations, in that order
  * Storing `null` rather than dropping the entry is what stops the default
  * flowing back in and making the clear button look broken — the same
  * distinction item 1 draws between a stored `[]` and no entry at all.
  *
- * `flat` carries the pre-team-scoping single value, which is a `string | null`
- * — so `hasFlat` is what says whether there was one, since `null` is itself a
+ * `flat` carries the pre-team-scoping single value, normalised to a list — so
+ * `hasFlat` is what says whether there was one, since an empty list is itself a
  * meaningful stored value here.
  */
-function readTileStore(): { store: TileStore; flat: string | null; hasFlat: boolean } {
+function readTileStore(): { store: TileStore; flat: string[] | null; hasFlat: boolean } {
   try {
     const raw = localStorage.getItem(HEAD_TILE_KEY)
     if (!raw) return { store: {}, flat: null, hasFlat: false }
     const parsed = JSON.parse(raw) as unknown
-    if (parsed === null || typeof parsed === 'string') {
-      return { store: {}, flat: parsed, hasFlat: true }
-    }
+    // PRE-LIST FLAT VALUES, from before the tile was team-scoped: a bare string
+    // is the one chosen tile, a bare null is "I cleared it".
+    if (parsed === null) return { store: {}, flat: [], hasFlat: true }
+    if (typeof parsed === 'string') return { store: {}, flat: [parsed], hasFlat: true }
     if (typeof parsed !== 'object' || Array.isArray(parsed)) {
       return { store: {}, flat: null, hasFlat: false }
     }
     const store: TileStore = {}
     for (const [teamId, id] of Object.entries(parsed as Record<string, unknown>)) {
-      if (id === null || typeof id === 'string') store[teamId] = id
+      // A team's value was `string | null` until 2026-09-20 and is a list now.
+      // Both shapes are in browsers in the wild, so both are read; only the list
+      // is ever written back.
+      if (id === null) store[teamId] = []
+      else if (typeof id === 'string') store[teamId] = [id]
+      else if (Array.isArray(id)) store[teamId] = asIds(id) ?? []
     }
     return { store, flat: null, hasFlat: false }
   } catch {
@@ -319,8 +344,15 @@ interface NavPinsValue {
   clearShortcuts: () => void
   /** Census item 5 — the single adjustable tile beside Dashboard. `null` = the
    *  studio cleared it and wants the placeholder. Never overlaps alwaysShownIds. */
-  headTileId: string | null
-  setHeadTile: (id: string | null) => void
+  /** The studio's chosen head tiles, in order. Never includes Dashboard, which
+   *  is fixed and occupies the first cell. At most HEAD_TILES_MAX - 1 long. */
+  headTileIds: string[]
+  /** Append a tile. Ignored at capacity, and a duplicate is ignored too — the
+   *  grid is a set of destinations, and two cells to one page is not a choice
+   *  anybody makes on purpose. */
+  addHeadTile: (id: string) => void
+  /** Replace the tile at `index`; a null id removes it. */
+  setHeadTileAt: (index: number, id: string | null) => void
 }
 
 const NavPinsContext = createContext<NavPinsValue | null>(null)
@@ -373,7 +405,9 @@ export function NavPinsProvider({ children }: { children: React.ReactNode }) {
         persist(RECENTS_KEY, nextRecents)
       }
       if (tile.hasFlat) {
-        nextTile = { ...nextTile, [currentTeamId]: tile.flat }
+        // `hasFlat` is the test, not truthiness: `[]` is the pre-list "I
+        // cleared it" and must be adopted as a cleared list, not skipped.
+        nextTile = { ...nextTile, [currentTeamId]: tile.flat ?? [] }
         persist(HEAD_TILE_KEY, nextTile)
       }
     }
@@ -407,8 +441,14 @@ export function NavPinsProvider({ children }: { children: React.ReactNode }) {
     [currentTeamId, recentsStore]
   )
 
-  const headTileId =
-    currentTeamId && currentTeamId in tileStore ? tileStore[currentTeamId] : DEFAULT_HEAD_TILE_ID
+  // Same three-state precedence census item 5 has always had, now over a list:
+  //   no entry for the team → not chosen yet, fall back to the default one
+  //   []                    → deliberately cleared, render the placeholder
+  //   [ids]                 → those destinations, in that order
+  const headTileIds =
+    currentTeamId && currentTeamId in tileStore
+      ? tileStore[currentTeamId]
+      : DEFAULT_HEAD_TILE_IDS
 
   /**
    * EVERY WRITE STARTS FROM THE WHOLE MAP, INCLUDING THE STUDIOS NOT ON SCREEN.
@@ -516,18 +556,37 @@ export function NavPinsProvider({ children }: { children: React.ReactNode }) {
 
   const isAlwaysShown = useCallback((id: string) => alwaysShownIds.includes(id), [alwaysShownIds])
 
-  const setHeadTile = useCallback(
-    (id: string | null) => {
+  /** The one writer. Both mutators go through it so the read-through, the cap
+   *  and the persist are stated once. */
+  const writeTiles = useCallback(
+    (update: (current: string[]) => string[]) => {
       if (!currentTeamId) return
       setTileStore((prev) => {
         // Same read-through as `listBase`, for the map this one writes.
         const base = hydrated.current ? prev : { ...readTileStore().store, ...prev }
-        const next = { ...base, [currentTeamId]: id }
+        const current = currentTeamId in base ? base[currentTeamId] : DEFAULT_HEAD_TILE_IDS
+        const next = { ...base, [currentTeamId]: update(current).slice(0, HEAD_TILES_MAX - 1) }
         persist(HEAD_TILE_KEY, next)
         return next
       })
     },
     [currentTeamId]
+  )
+
+  const addHeadTile = useCallback(
+    (id: string) => writeTiles((cur) => (cur.includes(id) ? cur : [...cur, id])),
+    [writeTiles]
+  )
+
+  const setHeadTileAt = useCallback(
+    (index: number, id: string | null) =>
+      writeTiles((cur) => {
+        if (id === null) return cur.filter((_, i) => i !== index)
+        // Moving a tile onto a destination already on the grid would leave two
+        // cells pointing at one page; drop the other rather than refuse.
+        return cur.map((v, i) => (i === index ? id : v)).filter((v, i) => i === index || v !== id)
+      }),
+    [writeTiles]
   )
 
   const value = useMemo(
@@ -540,8 +599,9 @@ export function NavPinsProvider({ children }: { children: React.ReactNode }) {
       recordVisit: pushRecent,
       removeShortcut,
       clearShortcuts,
-      headTileId,
-      setHeadTile,
+      headTileIds,
+      addHeadTile,
+      setHeadTileAt,
     }),
     [
       alwaysShownIds,
@@ -552,8 +612,9 @@ export function NavPinsProvider({ children }: { children: React.ReactNode }) {
       pushRecent,
       removeShortcut,
       clearShortcuts,
-      headTileId,
-      setHeadTile,
+      headTileIds,
+      addHeadTile,
+      setHeadTileAt,
     ]
   )
 

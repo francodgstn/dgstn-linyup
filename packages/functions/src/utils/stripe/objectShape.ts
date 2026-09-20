@@ -469,6 +469,21 @@ export function readChargeBillingEmail(charge: unknown): string | null {
   return typeof email === 'string' && email ? email : null
 }
 
+/**
+ * The hosted receipt link on a Charge — unmoved, and NULLABLE BY DESIGN rather
+ * than by accident: Stripe documents `receipt_url` as nullable, and a charge
+ * that never produced a receipt simply has none. A caller must render that as
+ * "no receipt", never as a failure.
+ *
+ * It goes through this module like every other Charge field so there is one
+ * place to change if it ever moves, not so it can be defaulted — there is no
+ * sensible fallback for a URL.
+ */
+export function readChargeReceiptUrl(charge: unknown): string | null {
+  const url = asObj(charge).receipt_url
+  return typeof url === 'string' && url ? url : null
+}
+
 // ─── the loud guard ─────────────────────────────────────────────────────────────
 
 /** Greppable in Cloud Logging: every shape surprise carries this prefix. */

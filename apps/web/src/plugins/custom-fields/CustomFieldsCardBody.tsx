@@ -38,7 +38,7 @@ export function CustomFieldsCardBody({
         <ListPlus className="h-6 w-6 text-muted-foreground/50" />
         <p className="text-sm text-muted-foreground">{t('customFieldsActivatePrompt')}</p>
         <Link
-          href="/settings/plugins"
+          href="/plugins"
           className="text-sm text-primary hover:underline underline-offset-2"
         >
           {t('customFieldsActivateLink')}

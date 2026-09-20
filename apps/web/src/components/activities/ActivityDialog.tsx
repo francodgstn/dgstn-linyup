@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useActivities } from '@/hooks/useActivities'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -31,7 +32,14 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { ACTIVITIES_COLLECTION, resolveAutoConfirm } from '@linyup/shared'
 import { resolveBookingContactFields } from '@linyup/shared'
 import { benefitOpensDoorAt } from '@linyup/shared'
-import { MAX_ACTIVITY_TAGS, normalizeActivityTags, normalizeBookingQuestions } from '@linyup/shared'
+import {
+  MAX_ACTIVITY_TAGS,
+  MAX_BOOKING_GROUP_LENGTH,
+  bookingGroupsInUse,
+  normalizeActivityTags,
+  normalizeBookingGroup,
+  normalizeBookingQuestions,
+} from '@linyup/shared'
 import type { Activity, ActivityType, SaasPlan, FormField, BookingContactField } from '@linyup/shared'
 
 // Session lengths and their prices are ONE control and they live on Access &
@@ -122,6 +130,9 @@ function createActivitySchema(t: ReturnType<typeof useTranslations>, creating: b
     // four-value `level` enum that no public surface ever rendered — a studio
     // grades its classes in its own words, or not at all.
     tags: z.array(z.string()).max(MAX_ACTIVITY_TAGS),
+    // The heading this activity sits under on the public booking page. Open
+    // set, the studio's own words; blank = ungrouped (renders last).
+    bookingGroup: z.string().max(MAX_BOOKING_GROUP_LENGTH).optional(),
     color: z.string().optional(),
     // CLASS-ONLY paid-access gate (supersedes the legacy isFreeTrial toggle;
     // 'open' === free trial). Appointments dropped this entirely — the price is
@@ -252,6 +263,12 @@ export function ActivityDialog({
   const tCommon = useTranslations('Common')
   const tCat = useTranslations('OfferCatalogue')
   const qc = useQueryClient()
+  // Booking-group suggestions: the headings THIS team already uses, read from
+  // the same activities query the rest of the offer screen does (cached, so no
+  // extra round trip) and through THE ONE GROUPER, so the datalist lists them
+  // in the order the public page renders them.
+  const { data: teamActivities } = useActivities(teamId)
+  const groupSuggestions = useMemo(() => bookingGroupsInUse(teamActivities ?? []), [teamActivities])
   // A saved activity can move TWO derived setup steps: "add an activity" on its
   // existence, and "set a price" on `dropIn.enabled`. Beside the list
   // invalidation, never instead of it — they are different queries.
@@ -354,6 +371,7 @@ export function ActivityDialog({
           // Save silently does nothing, with the offending field nowhere on
           // screen, is a dead form with no way to diagnose it.
           tags: normalizeActivityTags(seed.tags ?? []),
+          bookingGroup: normalizeBookingGroup(seed.bookingGroup) ?? '',
           color: seed.color ?? '',
           waitlistEnabled: seed.waitlistEnabled ?? false,
           durations: toDurationFormValues(seed.durations),
@@ -364,7 +382,7 @@ export function ActivityDialog({
           meetingPoint: '', whatsIncluded: '', whatsNotIncluded: '', faq: '', cancellationPolicy: '',
           bookingQuestions: [],
           contactFields: [],
-          type: 'class' as ActivityType, tags: [],
+          type: 'class' as ActivityType, tags: [], bookingGroup: '',
           // Defaults for a NEW activity. 'members' rather than 'open': a studio
           // sells memberships, so a class its members can book is the ordinary
           // case, and 'open' means free for anyone (resolvePaymentOptions
@@ -451,6 +469,9 @@ export function ActivityDialog({
       ),
       type: data.type,
       tags: normalizeActivityTags(data.tags),
+      // '' when the studio clears it — an empty string reads as ungrouped
+      // everywhere (normalizeBookingGroup), so no delete-field dance is owed.
+      bookingGroup: normalizeBookingGroup(data.bookingGroup) ?? '',
       color: data.color ?? '',
       autoConfirm: data.autoConfirm,
     }
@@ -804,6 +825,33 @@ export function ActivityDialog({
                 }
               />
             </SettingRows>
+            {/* WHERE THIS LIVES on the public booking page. An OPEN set: the
+                datalist only suggests what this team already uses, so a studio
+                can type a new heading and nothing ships a taxonomy. Blank =
+                ungrouped, which is every activity until someone types one. */}
+            <div className="space-y-1.5">
+              <Label htmlFor="activity-booking-group">{t('fieldBookingGroup')}</Label>
+              <Controller
+                name="bookingGroup"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="activity-booking-group"
+                    list="activity-booking-groups"
+                    maxLength={MAX_BOOKING_GROUP_LENGTH}
+                    placeholder={t('fieldBookingGroupPlaceholder')}
+                    value={(field.value ?? '') as string}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <datalist id="activity-booking-groups">
+                {groupSuggestions.map((g) => (
+                  <option key={g} value={g} />
+                ))}
+              </datalist>
+              <p className="text-muted-foreground text-xs">{t('fieldBookingGroupHint')}</p>
+            </div>
             {/* Display-only, like `prerequisites` on the Booking tab. */}
               <Controller
                 name="tags"
