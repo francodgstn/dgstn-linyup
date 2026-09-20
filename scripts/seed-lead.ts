@@ -116,6 +116,8 @@ import {
 } from './lib/fixtures/engagement'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
+import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
+import { splitSwissAddress, type SeedTarif595Mapping } from './lib/tarif595'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import {
@@ -2254,6 +2256,37 @@ async function seedLeadTenant(profile: LeadProfile) {
   // and the ids have to be the roster's own — a log full of ids that resolve to
   // nothing is the state RunHistoryDialog renders as "recipient deleted since".
   await seedAutomations(profile, teamId, profile.language, contactIds)
+
+  // ── Tarif 595 (health-insurance receipts) ─────────────────────────────────
+  // Swiss studios with a Qualitop/Qualicert label can hand members a receipt
+  // their supplementary insurance reimburses, and the plugin's pitch is that it
+  // is one button. A tenant seeded without identifiers, position mappings and
+  // member insurance data opens that page on a wall of "incomplete" instead —
+  // so every lead gets a working PLACEHOLDER setup (modus: test, computed GLN /
+  // ZSR / AHVN13, see scripts/lib/tarif595.ts). Receipts themselves are not
+  // seeded: they are issued by the callable, in the demo.
+  //
+  // The POSITION a profile's offering maps to is the lead's own answer — a
+  // seeder guessing a billing code would be fake precision — so a profile may
+  // name them (`tarif595Positions`), and anything it does not name falls back
+  // to the free-text position 9999 with the offering's own title, which is what
+  // the tariff list is for when nothing fits.
+  await seedTeamLegalProfile({
+    teamId,
+    uid,
+    legalName: profile.teamName,
+    postal: splitSwissAddress(profile.location.address),
+    canton: profile.tarif595Canton ?? 'ZH',
+    phone: profile.contactPhone,
+    email: profile.contactEmail,
+  })
+  await seedTeamTarif595({
+    teamId,
+    uid,
+    prefix: profile.tarif595Prefix ?? 'RB',
+    overrides: profile.tarif595Positions,
+    language: profile.language === 'en' ? 'de' : profile.language,
+  })
 
   // ── events ─────────────────────────────────────────────────────────────────
   for (let ei = 0; ei < profile.events.length; ei++) {
