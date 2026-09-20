@@ -673,6 +673,22 @@ Demo logins (all `linyup123`, plan `studio`/`active`): `grappling@`, `crossfit@`
 - Firestore **location is immutable** — `europe-west6` is locked on first apply
   (`prevent_destroy` + `deletion_policy = ABANDON`). Choose deliberately.
 - Storage **bucket location is immutable** — same `europe-west6` lock + `prevent_destroy`.
+- **`roles/editor` is not data-plane access. Assume a runtime identity needs an
+  explicit grant, and check.** This has now bitten twice, in the same shape:
+  - *Secret Manager* — Editor cannot read secret PAYLOADS, hence
+    `extra_accessor_members` in each environment's `module "secrets"`.
+  - *Cloud Storage* — on a `uniform_bucket_level_access` bucket, object ACLs are
+    ignored, and the bucket-level binding a new bucket is born with
+    (`projectEditor → roles/storage.legacyBucketOwner`) grants
+    `storage.objects.create/.delete/.list` but **not `storage.objects.get`**.
+    So the functions could write a PDF and never read it back: every
+    `readVerified` caller (Tarif 595 receipt download/email, QR-bill invoice
+    download/email) 403'd from the day each bucket was created, in all three
+    environments. Fixed by `object_user_members` in `module "storage"`.
+
+  Neither was catchable by any test in this repo — the emulators have no IAM —
+  and neither showed up until a real user pressed the button. When a new API
+  starts reading tenant data server-side, plan a grant.
 - If the default Storage bucket already exists (created manually via Console or
   the REST API), **import** it before applying:
   `terraform import module.storage.google_storage_bucket.default <project_id>.firebasestorage.app`
