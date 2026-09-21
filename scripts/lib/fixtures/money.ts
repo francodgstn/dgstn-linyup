@@ -40,7 +40,7 @@ import {
   buildConnectRefundTxn,
   rollupMemberSubscriptions,
 } from '@linyup/shared'
-import type { SubscriptionCancellationDetails } from '@linyup/shared'
+import type { PaymentLineItem, SubscriptionCancellationDetails } from '@linyup/shared'
 
 // ── Firestore path constants (mirror @linyup/shared/paths) ────────────────────
 const TEAMS_COLLECTION = 'teams'
@@ -204,7 +204,7 @@ export async function seedMemberSubscription(
       lineItem: {
         kind: 'subscription',
         label: spec.subscriptionTypeName,
-        subscription_type_id: spec.subscriptionTypeId,
+        subscriptionTypeId: spec.subscriptionTypeId,
       },
     })
   }
@@ -230,7 +230,16 @@ export interface SeedMemberPaymentSpec {
   productName?: string | null
   courseName?: string | null
   subscriptionTypeName?: string | null
-  lineItem?: Record<string, unknown> | null
+  /** TYPED, and that is the point. It was `Record<string, unknown>`, which let
+   *  every call site below write the field names Firestore uses at the TOP level
+   *  of a payment (`subscription_type_id`, `course_id`, `product_id`) instead of
+   *  the ones `PaymentLineItem` declares inside `line_item`
+   *  (`subscriptionTypeId`, `courseId`, `productId`). Nothing reads a snake_case
+   *  key there, so every seeded row carried a line item that named nothing —
+   *  `planTypeId` null, `planAttribution: 'none'`, and a contact ledger that
+   *  could not say which plan a payment bought. Typecheck could not see it
+   *  through an index signature; it can now. */
+  lineItem?: PaymentLineItem | null
   comment?: string | null
 }
 
@@ -608,7 +617,7 @@ export async function seedTeamSales(opts: {
         idSuffix: `dropin${dropIns}`,
         sessionId: session.id,
         comment: 'Drop-in class',
-        lineItem: { kind: 'drop_in', label: 'Drop-in class', session_id: session.id },
+        lineItem: { kind: 'drop_in', label: 'Drop-in class' },
         paymentIntentId,
       })
       // The booking's half of the pair — the same fields the webhook stamps.
@@ -639,7 +648,7 @@ export async function seedTeamSales(opts: {
         idSuffix: `course_${c.id}`,
         courseName: (c.data().title as string | undefined) ?? null,
         comment: 'Online course',
-        lineItem: { kind: 'course', label: (c.data().title as string) ?? 'Course', course_id: c.id },
+        lineItem: { kind: 'course', label: (c.data().title as string) ?? 'Course', courseId: c.id },
         paymentIntentId,
       })
       courses += 1
@@ -672,7 +681,7 @@ export async function seedTeamSales(opts: {
       idSuffix: `product_${prod.id}`,
       productName: (prod.data().name as string | undefined) ?? null,
       comment: 'Shop order',
-      lineItem: { kind: 'product', label: (prod.data().name as string) ?? 'Product', product_id: prod.id },
+      lineItem: { kind: 'product', label: (prod.data().name as string) ?? 'Product', productId: prod.id },
     })
     products += 1
   }
