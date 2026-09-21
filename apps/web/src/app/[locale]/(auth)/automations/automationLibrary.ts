@@ -414,6 +414,116 @@ Il team {{teamName}}`,
   },
 
   {
+    // THE HOUR AFTER, not the morning after. Every other trial follow-up here
+    // hangs off `schedule_daily`, which runs once at 02:00 UTC — so a Tuesday
+    // 19:00 trial is answered in the middle of Tuesday night, when the person
+    // has stopped thinking about it. `session_ended` is anchored to the
+    // session's OWN end time and carries a delay, so this one arrives while
+    // they are still drying their hair.
+    //
+    // "AND THE TRIAL PARTICIPATED" NEEDS NO CONDITION. A `session_ended` rule
+    // resolves its recipients from the session's `participants` rows at FIRE
+    // time, and a participant row is written at check-in — so somebody who
+    // booked and did not turn up, or cancelled, is never in the list. A
+    // condition testing attendance would be a second, weaker answer to a
+    // question the trigger has already answered exactly.
+    //
+    // The conditions therefore only narrow WHICH attendee: a trial lead
+    // (`trial_attended` is stamped at check-in, before this fires), at the very
+    // start of their journey, who has not joined yet.
+    library_key: 'lib_trial_post_session',
+    category: 'trial',
+    name: 'Trial attended — 1-hour follow-up',
+    description:
+      'Thanks a trial contact one hour after their first session ends, while it is still fresh.',
+    tags: ['trial', 'follow-up', 'conversion', 'first session', 'same day'],
+    requires_plan: 'studio',
+    template: {
+      name: 'How was your first session?',
+      body_mode: 'markdown',
+      translations: {
+        en: {
+          subject: 'How was it, {{firstname}}?',
+          body: `Hi {{firstname}},
+
+Thanks for training with us today — we hope you enjoyed it.
+
+If anything is still on your mind, just reply to this email: how it felt, what you would like to work on next, or anything that was not clear.
+
+Ready for the next one?
+
+**[Book your next session ↗]({{bookingUrl}})**
+**[See our memberships ↗]({{membershipUrl}})**
+
+See you soon,
+
+The {{teamName}} team`,
+        },
+        de: {
+          subject: 'Wie war es, {{firstname}}?',
+          body: `Hallo {{firstname}},
+
+danke, dass du heute bei uns trainiert hast — wir hoffen, es hat dir gefallen.
+
+Wenn dir noch etwas im Kopf herumgeht, antworte einfach auf diese E-Mail: wie es sich angefühlt hat, woran du als Nächstes arbeiten möchtest, oder was unklar geblieben ist.
+
+Bereit für das nächste Mal?
+
+**[Nächsten Termin buchen ↗]({{bookingUrl}})**
+**[Unsere Abos ansehen ↗]({{membershipUrl}})**
+
+Bis bald,
+
+Das {{teamName}}-Team`,
+        },
+        fr: {
+          subject: 'Alors, {{firstname}} ?',
+          body: `Bonjour {{firstname}},
+
+Merci d'être venu vous entraîner avec nous aujourd'hui — nous espérons que cela vous a plu.
+
+Si quelque chose vous trotte encore dans la tête, répondez simplement à cet e-mail : vos impressions, ce que vous aimeriez travailler ensuite, ou ce qui est resté flou.
+
+Prêt pour la prochaine séance ?
+
+**[Réserver votre prochaine séance ↗]({{bookingUrl}})**
+**[Voir nos abonnements ↗]({{membershipUrl}})**
+
+À très bientôt,
+
+L'équipe {{teamName}}`,
+        },
+        it: {
+          subject: "Com'è andata, {{firstname}}?",
+          body: `Ciao {{firstname}},
+
+Grazie per esserti allenato con noi oggi — speriamo ti sia piaciuto.
+
+Se hai ancora qualche dubbio, rispondi semplicemente a questa email: come ti è sembrato, su cosa vorresti lavorare la prossima volta, o cosa non ti è stato chiaro.
+
+Pronto per la prossima?
+
+**[Prenota la prossima sessione ↗]({{bookingUrl}})**
+**[Scopri i nostri abbonamenti ↗]({{membershipUrl}})**
+
+A presto,
+
+Il team {{teamName}}`,
+        },
+      },
+    },
+    rule: {
+      trigger: { type: 'session_ended', delayMinutes: 60 },
+      conditions: [
+        { type: 'acquisition_stage', value: 'trial_attended' },
+        { type: 'sessions_attended_max', value: 1 },
+        { type: 'subscription', value: 'none' },
+      ],
+      actions: [{ type: 'send_email', template_key: 'lib_trial_post_session' }],
+    },
+  },
+
+  {
     library_key: 'sys_rule_trial_day1',
     category: 'trial',
     name: 'Trial attended — day-1 follow-up',
