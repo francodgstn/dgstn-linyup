@@ -236,23 +236,23 @@
         "id": "DI_lAHOADowus4Bj7lNzgLKHTo",
         "area": null,
         "en": {
-          "title": "Backend UI/UX review",
-          "body": "Declutter UI and review UX for major usage paths"
+          "title": "A calmer, clearer app",
+          "body": "Less clutter on the screens you use most, and fewer steps on the paths you take every day."
         },
         "de": {
-          "title": "Überarbeitete Oberfläche",
-          "body": "Aufgeräumtere Ansichten und überarbeitete Abläufe auf den Wegen, die du am häufigsten gehst.",
-          "srcHash": "811546ead1dc"
+          "title": "Eine ruhigere, klarere App",
+          "body": "Weniger Unruhe auf den Ansichten, die du am häufigsten nutzt, und weniger Schritte auf deinen täglichen Wegen.",
+          "srcHash": "4d04276b9df0"
         },
         "fr": {
-          "title": "Interface revisitée",
-          "body": "Des écrans plus épurés et des parcours revus là où vous passez le plus souvent.",
-          "srcHash": "811546ead1dc"
+          "title": "Une app plus claire et plus calme",
+          "body": "Moins d'encombrement sur les écrans que vous utilisez le plus, et moins d'étapes sur vos parcours quotidiens.",
+          "srcHash": "4d04276b9df0"
         },
         "it": {
-          "title": "Interfaccia rivista",
-          "body": "Schermate più pulite e percorsi rivisti dove passi più spesso.",
-          "srcHash": "811546ead1dc"
+          "title": "Un'app più chiara e ordinata",
+          "body": "Meno confusione nelle schermate che usi di più e meno passaggi nei percorsi di ogni giorno.",
+          "srcHash": "4d04276b9df0"
         }
       }
     ],
