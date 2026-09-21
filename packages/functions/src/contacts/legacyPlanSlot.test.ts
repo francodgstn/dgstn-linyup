@@ -260,9 +260,15 @@ const CENSUS: Record<string, CensusEntry> = {
 
   // ── scripts ───────────────────────────────────────────────────────────────
   'scripts/lib/fixtures/money.ts': {
-    sites: 3,
+    sites: 2,
     writers: [],
-    note: 'a payment line item, a type, a read',
+    note: 'a type, a read',
+    // WAS 3. The third was a seeded `line_item`, which spelled its ids the way
+    // Firestore spells them at the TOP level of a payment — so a key that only
+    // ever named a PaymentLineItem field was counted here as if it named the
+    // contact's plan slot. `PaymentLineItem.subscriptionTypeId` is camelCase and
+    // always was; the seed was simply wrong, and nothing read what it wrote.
+    // Neither remaining site is a writer: the slot is read here, never set.
   },
   'scripts/lib/fixtures/subscriptionHistory.ts': {
     sites: 6,
