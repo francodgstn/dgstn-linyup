@@ -21,6 +21,8 @@ import {
   type ContactLivenessFields,
 } from '@linyup/shared'
 import { withLedgerExpiry } from '../utils/ledgerRetention'
+import { createTeamNotification } from '../utils/teamNotifications'
+import { bookingCallsForApproval } from './bookingApproval'
 import { dispatchTenantJob } from '../utils/tenantFanOut'
 import { advancesLastSession } from './lastSession'
 import { withDefinedParameters } from './activityParameters'
@@ -179,8 +181,39 @@ export const trackBookings = onDocumentWritten(
       },
       refs: { contact: bookingData.contact || event.params.bookingId, session: sessionId },
     })
+
+    // ── The studio's inbox ────────────────────────────────────────────────────
+    // A seat that needs a HUMAN to approve it, and only that — the reasoning
+    // for the narrowness lives on `TeamNotificationType` in
+    // @linyup/shared/types/teamNotification.ts and is not repeated here.
+    //
+    // It rides in this trigger rather than in a second one on the same path:
+    // every gen2 trigger is its own Cloud Run service, and this one has already
+    // resolved the team, the member's name and the class date. A new
+    // `onDocumentCreated` beside it would re-read the session to learn the same
+    // three things.
+    if (activityEvent === 'booking_created' && bookingCallsForApproval(bookingData)) {
+      const [notifyErr] = await to(
+        createTeamNotification(teamId, {
+          type: 'booking_pending',
+          // English, like every other writer here: the studio's inbox has no
+          // locale to write in — a team has a language, the manager reading it
+          // may not share it, and inventing a second translation rail for three
+          // notification types is not the trade. Matches `submitForm`'s shape.
+          title: 'Booking to confirm',
+          body: descMap.booking_created,
+          link: `/sessions/${sessionId}`,
+          contact_id: (bookingData.contact as string) ?? null,
+          contact_name: contactFullname,
+          session_id: sessionId,
+          booking_id: event.params.bookingId,
+        })
+      )
+      if (notifyErr) console.error('trackBookings notification error:', notifyErr)
+    }
   }
 )
+
 
 // ─── trackSessions ────────────────────────────────────────────────────────────
 

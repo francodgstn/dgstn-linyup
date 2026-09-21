@@ -419,6 +419,14 @@ export const MEMBER_SUBSCRIPTIONS_SUBCOLLECTION = 'member_subscriptions'
 // Written only by Cloud Functions (Admin SDK); clients read and mark-read.
 export const NOTIFICATIONS_SUBCOLLECTION = 'notifications'
 
+// What the dashboard's "Waiting on you" card has already been SHOWN — one doc,
+// team-wide, holding the keys of the items each tab was last acknowledged with
+// (types/dashboardQueue.ts owns the shape and why it is keys and not a date).
+// Read by any team member, written by manager/owner: the same audience that
+// may clear a notification, for the same reason.
+export const QUEUE_SEEN_SUBCOLLECTION = 'queue_seen'
+export const QUEUE_SEEN_DOC_ID = 'current'
+
 // BYO gateway ledger (Payrexx / Stripe-BYO). teams/{teamId}/payment_events/{id},
 // doc id = `${gateway}:${gatewayRef}` for idempotency. Written only by the team
 // webhook handlers + the updatePaymentRecord callable (Admin SDK); managers/owners

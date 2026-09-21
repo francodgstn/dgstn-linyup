@@ -7733,7 +7733,17 @@
     "sentimentRunInProgress": "È già in corso una lettura.",
     "sentimentContactSummaryOff": "Attiva prima i riepiloghi dei contatti in AI insights — la lettura si basa su di essi.",
     "sentimentNotEnoughMembers": "Una lettura del team richiede almeno {needed} membri attivi — visti negli ultimi {days} giorni.",
-    "sentimentBasedOnActive": "Solo membri attivi, visti negli ultimi {days} giorni · basata su {count, plural, one {# riepilogo} other {# riepiloghi}}"
+    "sentimentBasedOnActive": "Solo membri attivi, visti negli ultimi {days} giorni · basata su {count, plural, one {# riepilogo} other {# riepiloghi}}",
+    "queueTabBookings": "Prenotazioni",
+    "queueTabContacts": "Contatti",
+    "queueTabOther": "Altro",
+    "queueTabEmpty": "Qui non c'è nulla al momento.",
+    "queueNew": "Nuovo dall'ultima volta che hai guardato",
+    "queueMarkSeen": "Segna come visto",
+    "queueBookingToConfirm": "Da confermare",
+    "queueBookingNew": "Nuovo",
+    "queueOpenBookings": "Prenotazioni",
+    "queueMoreBookings": "{count, plural, one {# prenotazione in più} other {# prenotazioni in più}}"
   },
   "BookingContactFields": {
     "title": "Dati di contatto da raccogliere",

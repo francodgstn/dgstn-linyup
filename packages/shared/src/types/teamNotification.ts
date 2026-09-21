@@ -39,6 +39,21 @@ export type TeamNotificationType =
   | 'org_access_request'
   | 'contact_request'
   | 'form_submission'
+  | 'booking_pending'
+
+// ─── WHY ONLY *PENDING* BOOKINGS RING THE BELL ───────────────────────────────
+//
+// A busy studio takes dozens of bookings a day, and the bell reads one capped
+// page of unread rows — so notifying on every arrival would bury the org access
+// request and the contact update behind a week of routine seats, which is the
+// inbox failing at the one job it has.
+//
+// 'booking_pending' is therefore written only when a booking needs a HUMAN: a
+// class with auto-confirm off, where somebody must approve the seat. An
+// auto-confirmed booking is news, not work, and the dashboard queue's Bookings
+// tab is where it shows — with its own dot, which costs the inbox nothing.
+// Staff-entered bookings never notify at all: the person who would read it is
+// the person who just made it.
 
 export interface TeamNotification {
   id: string
@@ -73,4 +88,6 @@ export interface TeamNotification {
   request_id?: string | null
   form_id?: string | null
   submission_id?: string | null
+  session_id?: string | null
+  booking_id?: string | null
 }
