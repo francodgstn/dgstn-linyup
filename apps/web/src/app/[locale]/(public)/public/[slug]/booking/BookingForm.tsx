@@ -19,6 +19,7 @@ import {
   compareActivities,
   classAccessFacts,
   planGiftCardRedemption,
+  groupActivitiesForBooking,
   resolvePaymentOptions,
   resolveBookingContactFields,
   type BookingContactField,
@@ -2011,8 +2012,21 @@ export default function BookingForm({
           </div>
         )}
 
-        <div className="space-y-3">
-          {activities.map((a) => {
+        {/* Sections, in the studio's own words — one heading per activity
+            group, ungrouped last and unlabelled. THE ONE GROUPER
+            (groupActivitiesForBooking) decides both the buckets and their
+            order, so this list and any other surface that sections activities
+            cannot disagree. A studio that never set a group sees exactly the
+            flat list it saw before. */}
+        <div className="space-y-8">
+          {groupActivitiesForBooking(activities).map((section) => (
+            <div key={section.group ?? '__ungrouped'} className="space-y-3">
+          {section.group ? (
+            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+              {section.group}
+            </h2>
+          ) : null}
+          {section.activities.map((a) => {
             // Appointment activities book through their own flow (per-coach slot
             // picker on /appointments) — the card stays enabled and hands over.
             const isAppointment = a.activityType === 'appointment'
@@ -2230,6 +2244,8 @@ export default function BookingForm({
               </button>
             )
           })}
+            </div>
+          ))}
         </div>
       </FlowShell>
     )

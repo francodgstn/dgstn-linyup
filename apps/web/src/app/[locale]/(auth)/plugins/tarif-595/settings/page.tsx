@@ -478,11 +478,14 @@ export default function Tarif595SettingsPage() {
 
   const legalComplete = legalProfileIsComplete(legalProfile)
 
-  // Wide on purpose: the offerings table below carries two position pickers,
-  // a unit, a count and a text per row, and at 3xl it wrapped into a column of
-  // stacked cells. The identifier sections above are narrow anyway.
+  // FULL WIDTH, and no card around the form. The offerings table carries two
+  // position pickers, a unit, a count and a text per row: capped at 6xl it
+  // still overflowed, and the only way to reach its horizontal scrollbar was
+  // to scroll to the bottom of a long page first. A card's padding and border
+  // only narrowed it further, so the page IS the container — the identifier
+  // sections above set their own widths.
   return (
-    <div className="max-w-6xl space-y-6 p-4 sm:p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <div className="flex items-center gap-2">
         <Link
           href={'/plugins/tarif-595' as Route}
@@ -499,7 +502,7 @@ export default function Tarif595SettingsPage() {
       {dataLoading ? (
         <Skeleton className="h-64 rounded-lg" />
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-xl border bg-card p-4 sm:p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* (a) Legal profile status */}
           <FormSection title={t('legalProfileSectionTitle')}>
             <div className="flex items-center gap-2">

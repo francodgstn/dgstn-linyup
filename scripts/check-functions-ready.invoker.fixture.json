@@ -1,0 +1,150 @@
+{
+  "//": "Real payloads from linyup-staging, captured 2026-09-20 AFTER the invoker defect was fixed, trimmed to the fields check 5 reads. `healthyPolicy` is inviteorgmember:getIamPolicy as it is now; the defect (the same call returning a policy with no bindings) is DERIVED from it in the test.",
+  "functions": [
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/inviteOrgMember",
+      "state": "ACTIVE",
+      "labels": {
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/inviteorgmember"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/getOrgMemberInvitation",
+      "state": "ACTIVE",
+      "labels": {
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/getorgmemberinvitation"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/bookSession",
+      "state": "ACTIVE",
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/booksession"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/rpcMember",
+      "state": "ACTIVE",
+      "labels": {
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de",
+        "deployment-tool": "cli-firebase"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/rpcmember"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/handleStripeWebhook",
+      "state": "ACTIVE",
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/handlestripewebhook"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/api",
+      "state": "ACTIVE",
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/api"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/remindersForTeam",
+      "state": "ACTIVE",
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-taskqueue": "true",
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/remindersforteam"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/dailyTasks",
+      "state": "ACTIVE",
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-scheduled": "true",
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/dailytasks"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/beforeSignup",
+      "state": "ACTIVE",
+      "labels": {
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de",
+        "deployment-tool": "cli-firebase",
+        "deployment-blocking": "before-create"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/beforesignup"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/onContactWrite",
+      "state": "ACTIVE",
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de"
+      },
+      "eventTrigger": {
+        "eventType": "google.cloud.firestore.document.v1.written"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/oncontactwrite"
+      }
+    },
+    {
+      "name": "projects/linyup-staging/locations/europe-west6/functions/handleBudgetNotification",
+      "state": "ACTIVE",
+      "labels": {
+        "firebase-functions-hash": "cf032467aece0fe93c251f18f44c503d972776de",
+        "deployment-tool": "cli-firebase"
+      },
+      "eventTrigger": {
+        "eventType": "google.cloud.pubsub.topic.v1.messagePublished"
+      },
+      "serviceConfig": {
+        "service": "projects/linyup-staging/locations/europe-west6/services/handlebudgetnotification"
+      }
+    }
+  ],
+  "healthyPolicy": {
+    "version": 1,
+    "etag": "BwZb5mIPHQU=",
+    "bindings": [
+      {
+        "role": "roles/run.invoker",
+        "members": [
+          "allUsers"
+        ]
+      }
+    ]
+  }
+}

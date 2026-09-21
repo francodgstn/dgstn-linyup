@@ -270,8 +270,14 @@ function activityBookHref(
  * without the visitor passing through a page and a form first. Everything else
  * (a page, the signup form, an external link) is a navigation and returns null.
  */
-export function ctaIntent(cta: Pick<SiteCta, 'action' | 'activityId'> | undefined): BookIntent | null {
+export function ctaIntent(
+  cta: Pick<SiteCta, 'action' | 'activityId' | 'activitySlug'> | undefined
+): BookIntent | null {
   if (!cta) return null
+  // A class CTA opens the funnel already on that class — the same intent an
+  // activity card carries, so both reach it identically.
+  if (cta.action === 'class')
+    return cta.activitySlug ? { kind: 'activity', activitySlug: cta.activitySlug } : { kind: 'root' }
   if (cta.action === 'appointment')
     return cta.activityId ? { kind: 'appointment', activityId: cta.activityId } : { kind: 'root' }
   return cta.action === 'booking' ? { kind: 'root' } : null
@@ -403,6 +409,71 @@ function LoopVideo({ src, poster }: { src: string; poster?: string }) {
 
 /** The hero's shading layers — an even wash, or white/black gradients that
  *  cover the side the copy sits on and leave the rest of the photo clear. */
+/**
+ * A stats figure that tallies itself when it scrolls into view ("350 km+"
+ * counting up to 350 and keeping its unit).
+ *
+ * THE TEXT IS NEVER REPLACED, only its number: whatever the studio typed is
+ * split into prefix + number + suffix, and the animation walks the number. A
+ * figure with no number in it renders as written, so this can be switched on
+ * for a row without auditing every label in it.
+ *
+ * It renders the FINAL text on the server and for anyone who prefers reduced
+ * motion, so the page never says "0" to a visitor who will not see it move —
+ * and a crawler reads the real figure.
+ */
+function CountUpFigure({ text }: { text: string }) {
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const ref = useRef<HTMLSpanElement | null>(null)
+  // No `s` flag (the app targets an older lib): `[^]` matches a newline too.
+  const match = useMemo(() => /^(\D*?)(\d[\d'’.,\s]*)([^]*)$/.exec(text), [text])
+  const target = useMemo(() => {
+    if (!match) return null
+    const digits = match[2].replace(/[^\d]/g, '')
+    return digits ? Number(digits) : null
+  }, [match])
+  const [shown, setShown] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (target === null || reducedMotion) return
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    let raf = 0
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return
+        io.disconnect()
+        const started = performance.now()
+        const DURATION = 1400
+        const step = (now: number) => {
+          const p = Math.min(1, (now - started) / DURATION)
+          // Ease out: fast first, settling on the figure rather than stopping.
+          const eased = 1 - Math.pow(1 - p, 3)
+          setShown(Math.round(target * eased))
+          if (p < 1) raf = requestAnimationFrame(step)
+          else setShown(null) // hand the exact text back
+        }
+        raf = requestAnimationFrame(step)
+      },
+      { threshold: 0.4 }
+    )
+    io.observe(el)
+    return () => {
+      io.disconnect()
+      cancelAnimationFrame(raf)
+    }
+  }, [target, reducedMotion])
+
+  if (!match || target === null) return <span ref={ref}>{text}</span>
+  return (
+    <span ref={ref}>
+      {match[1]}
+      {shown === null ? match[2] : shown.toLocaleString()}
+      {match[3]}
+    </span>
+  )
+}
+
 function HeroShade({ style, tone, strength }: { style: NonNullable<HeroSection['overlayStyle']>; tone: 'dark' | 'light'; strength: number }) {
   const rgb = tone === 'light' ? '255,255,255' : '0,0,0'
   const fade = (deg: number) =>
@@ -433,6 +504,10 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   // (its poster) stands in, which is why the image is still worth setting.
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const showVideo = !!section.bgVideoUrl && !reducedMotion
+  // Slow zoom + pan on the still. Never while a loop plays (the video IS the
+  // motion) and never for a visitor who asked for less of it — the same rule
+  // the loop itself follows.
+  const kenBurns = section.bgMotion === 'kenburns' && hasImage && !showVideo && !reducedMotion
   // A solid background colour, only when there is no image — an image is its own
   // background. Absent ⇒ the bold accent gradient, today's look.
   const solid = !hasImage && section.bgColor ? section.bgColor : null
@@ -517,7 +592,7 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
             <img
               src={section.bgImageUrl}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full object-cover${kenBurns ? ' site-kenburns' : ''}`}
             />
           )}
           {showVideo && <LoopVideo src={section.bgVideoUrl!} poster={section.bgImageUrl} />}
@@ -2768,28 +2843,181 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
         {header}
         <div className={`${section.heading || section.subheading ? 'mt-10' : ''} grid grid-cols-1 gap-5 ${cols}`}>
           {items.map((item, i) => (
-            <div
-              key={i}
-              className="site-card flex flex-col overflow-hidden rounded-2xl border"
-              style={{ borderColor: palette.border, background: palette.surface }}
-            >
-              {avatar(item, 'relative aspect-[4/5] w-full')}
-              <div className="p-4 text-left">
-                <h3 className="text-base font-semibold" style={{ color: palette.text }}>
-                  {item.name}
-                </h3>
-                {item.role && (
-                  <p className="text-sm" style={{ color: palette.muted }}>
-                    {item.role}
-                  </p>
-                )}
-                {badge(item)}
-              </div>
-            </div>
+            <TeamCard key={i} item={item} section={section} palette={palette} badge={badge} avatar={avatar} />
           ))}
         </div>
       </div>
     </section>
+  )
+}
+
+/**
+ * One person in the grid layout, in the caption style the section chose, and —
+ * when the section says so and the person has a bio — openable.
+ *
+ * THE CAPTION STYLE IS A LOOK, NOT A DIFFERENT CARD: the same name, role and
+ * badge, either under the portrait ('below', today) or laid over its foot on a
+ * gradient with a blur behind the text. The overlay reads on any photograph
+ * because the gradient is drawn from the card's own ink or surface colour, not
+ * from black — a light theme keeps a light caption.
+ *
+ * 'modal' makes the whole card a button. A person with no bio is never one, so
+ * a grid where only some coaches wrote something has no dead clicks.
+ */
+function TeamCard({
+  item,
+  section,
+  palette,
+  badge,
+  avatar,
+}: {
+  item: TeamSection['items'][number]
+  section: TeamSection
+  palette: SitePalette
+  badge: (item: TeamSection['items'][number]) => React.ReactNode
+  avatar: (item: TeamSection['items'][number], className: string) => React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const caption = section.captionStyle ?? 'below'
+  const overlaid = caption !== 'below'
+  const dark = caption === 'overlay-dark'
+  const opens = section.bioDisplay === 'modal' && !!item.bio
+
+  const captionBlock = (
+    <>
+      <h3 className="text-base font-semibold" style={{ color: overlaid ? (dark ? '#ffffff' : '#0f172a') : palette.text }}>
+        {item.name}
+      </h3>
+      {item.role && (
+        <p
+          className="text-sm"
+          style={{ color: overlaid ? (dark ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.78)') : palette.muted }}
+        >
+          {item.role}
+        </p>
+      )}
+      {badge(item)}
+    </>
+  )
+
+  const card = (
+    <div
+      className={`site-card flex h-full flex-col overflow-hidden rounded-2xl border text-left transition-transform ${opens ? 'hover:-translate-y-0.5' : ''}`}
+      style={{ borderColor: palette.border, background: palette.surface }}
+    >
+      <div className="relative">
+        {avatar(item, `relative w-full ${overlaid ? 'aspect-[3/4]' : 'aspect-[4/5]'}`)}
+        {overlaid && (
+          <div
+            className="absolute inset-x-0 bottom-0 p-4 backdrop-blur-sm"
+            style={{
+              background: dark
+                ? 'linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0.35) 55%, rgba(0,0,0,0))'
+                : 'linear-gradient(to top, rgba(255,255,255,0.85), rgba(255,255,255,0.45) 55%, rgba(255,255,255,0))',
+            }}
+          >
+            {captionBlock}
+          </div>
+        )}
+      </div>
+      {!overlaid && <div className="p-4 text-left">{captionBlock}</div>}
+      {/* Inline is the default reading place; 'modal' keeps the grid a grid. */}
+      {item.bio && section.bioDisplay !== 'modal' && (
+        <p className="px-4 pb-4 text-sm" style={{ color: palette.muted }}>
+          {item.bio}
+        </p>
+      )}
+    </div>
+  )
+
+  if (!opens) return card
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="text-left" aria-haspopup="dialog">
+        {card}
+      </button>
+      {open && (
+        <TeamBioDialog item={item} palette={palette} avatar={avatar} onClose={() => setOpen(false)} />
+      )}
+    </>
+  )
+}
+
+/** The coach's own page, as a dialog: portrait, name, role, the full bio.
+ *  Escape and the backdrop close it, and the scroll behind is locked while it
+ *  is open — the same manners the booking overlay has. */
+function TeamBioDialog({
+  item,
+  palette,
+  avatar,
+  onClose,
+}: {
+  item: TeamSection['items'][number]
+  palette: SitePalette
+  avatar: (item: TeamSection['items'][number], className: string) => React.ReactNode
+  onClose: () => void
+}) {
+  const closeRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeRef.current?.focus()
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previous
+    }
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.55)' }}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={item.name}
+        className="site-card max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-xl"
+        style={{ borderColor: palette.border, background: palette.surface }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-4">
+          {avatar(item, 'h-20 w-20 shrink-0 overflow-hidden rounded-full')}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold" style={{ color: palette.text }}>
+              {item.name}
+            </h3>
+            {item.role && (
+              <p className="text-sm" style={{ color: palette.muted }}>
+                {item.role}
+              </p>
+            )}
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-1 transition-opacity hover:opacity-70"
+            style={{ color: palette.muted }}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {item.bio && (
+          <p className="mt-4 whitespace-pre-line text-sm leading-relaxed" style={{ color: palette.text }}>
+            {item.bio}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -3289,7 +3517,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
             {items.map((item, i) => (
               <div key={i} className="text-center">
                 <p className="text-4xl font-bold tracking-tight @2xl:text-5xl" style={{ color: palette.text }}>
-                  {item.title}
+                  {section.countUp ? <CountUpFigure text={item.title} /> : item.title}
                 </p>
                 {item.text && (
                   <p className="mt-2 text-sm" style={{ color: palette.muted }}>

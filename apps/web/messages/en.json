@@ -1950,7 +1950,10 @@
     "accessMoreOptionsHint": "Limit this class to people who signed up with you",
     "accessSignupOnly": "Only people who signed up with you",
     "accessSignupOnlyHint": "Visitors can't book, even paying. Newcomers can still take a trial class.",
-    "waitlistExperimental": "Experimental"
+    "waitlistExperimental": "Experimental",
+    "fieldBookingGroup": "Booking page group",
+    "fieldBookingGroupPlaceholder": "e.g. Courses",
+    "fieldBookingGroupHint": "Groups the booking page under a heading. Leave empty to list it on its own."
   },
   "Benefit": {
     "fieldLabel": "Member benefit",
@@ -3988,7 +3991,23 @@
     "autosaveSaving": "Saving…",
     "autosaveSaved": "Draft saved",
     "autosaveFailed": "Not saved",
-    "autosaveRetry": "Try again"
+    "autosaveRetry": "Try again",
+    "editorHeroMotion": "Image motion",
+    "editorHeroMotionNone": "Still",
+    "editorHeroMotionKenBurns": "Slow zoom & pan",
+    "editorFeaturesCountUp": "Count the figures up",
+    "editorTeamCaption": "Name and role",
+    "editorTeamCaptionBelow": "Below the photo",
+    "editorTeamCaptionOverlayDark": "On the photo, dark",
+    "editorTeamCaptionOverlayLight": "On the photo, light",
+    "editorTeamBioDisplay": "Profile text",
+    "editorTeamBioInline": "On the card",
+    "editorTeamBioModal": "Opens in a dialog",
+    "editorCtaActionClass": "Book a class",
+    "editorCtaClass": "Class",
+    "editorCtaClassPlaceholder": "Choose a class",
+    "editorCtaClassEmptyHint": "No classes yet — add one under Offer.",
+    "editorCtaClassFallbackHint": "Without a class this button opens the booking page."
   },
   "Kiosk": {
     "title": "Kiosk",
@@ -4642,7 +4661,15 @@
     "customVariablesSaveButton": "Save",
     "customVariablesSaving": "Saving…",
     "customVariablesSaved": "✓ Saved",
-    "customVariablesInvalidKeys": "Invalid key names: {keys}. Use letters, numbers and underscores only."
+    "customVariablesInvalidKeys": "Invalid key names: {keys}. Use letters, numbers and underscores only.",
+    "studioLinksTitle": "Studio links",
+    "studioLinksDescription": "Two links only you can supply. Until they are filled in, any template, automation or WhatsApp message that uses them sends an empty link.",
+    "studioLinksWebsiteLabel": "Website",
+    "studioLinksWebsiteHint": "Your own website, linked from emails and your bio link.",
+    "studioLinksReviewLabel": "Review page",
+    "studioLinksReviewHint": "Where members leave a review — your Google Business profile, for example.",
+    "studioLinksInvalidUrl": "Enter a full address starting with https://",
+    "studioLinksAlsoOnBioLink": "The same two links appear on your bio link page."
   },
   "ConnectPayments": {
     "title": "Accept payments with Linyup",
@@ -4941,7 +4968,11 @@
     "journalNetAfterRefund": "You keep",
     "journalStripeFeeKept": "Stripe keeps its processing fee on a refund.",
     "journalNetAfterRefundCost": "This cost you",
-    "receipt": "Receipt"
+    "receipt": "Receipt",
+    "rowMenuLabel": "More actions",
+    "openStripeReceipt": "Open Stripe receipt",
+    "stripeReceiptNone": "Stripe has no receipt for this payment.",
+    "stripeReceiptError": "Could not fetch the Stripe receipt."
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",
@@ -6838,7 +6869,9 @@
         "date": "Today",
         "date+7": "+7 days (any N)",
         "date-7": "-7 days (any N)"
-      }
+      },
+      "studioLinkUnset": "Not set — sends an empty link",
+      "manageOnThisPage": "Add your own under Custom variables, on this page."
     },
     "validation": {
       "nameRequired": "Name is required",
@@ -8559,9 +8592,13 @@
       "preview": "Preview",
       "issue": "Issue receipt",
       "cancel": "Cancel",
-      "noHistory": "This payment names a plan, but the member has no subscription of that plan on record to attest. Pick the source by hand on the member's Receipts segment.",
-      "unsupported": "A receipt can't be derived from this payment: a drop-in or appointment payment doesn't say which class or date it covered, and products aren't health promotion. Pick the source by hand on the member's Receipts segment.",
-      "openSegment": "Open the member's receipts"
+      "noHistory": "This member has no plan periods on record, so there is nothing for a receipt to attest. Pick a source by hand on their Receipts segment.",
+      "unsupported": "A receipt can't be built from this payment. A drop-in or appointment doesn't record which class it covered, and products aren't health promotion. Pick a source by hand on the member's Receipts segment.",
+      "openSegment": "Open the member's receipts",
+      "pickSource": "Choose what this paid for",
+      "guessedSource": "The payment doesn't record which one — this is our best match on the date. Check it before issuing.",
+      "noCourses": "This member owns no courses on record, so there is nothing for a receipt to attest. Pick a source by hand on their Receipts segment.",
+      "action": "Tarif 595 receipt"
     },
     "checklistExpiring": "{count} mapped positions stop being valid after {date}",
     "checklistReview": "Review"

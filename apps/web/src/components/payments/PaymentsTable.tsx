@@ -4,16 +4,36 @@
 // /payments page AND the contact detail Payments tab — one component so the two
 // views never drift. Columns: date, "what was paid" (line item / comment), an
 // optional contact column (hidden on contact-scoped views), source gateway
-// (+ manual payment mode), status, amount, and per-row actions (assign/edit +
-// an optional refund for Connect rows, an optional void for manual ones).
+// (+ manual payment mode), status, amount, and per-row actions.
+//
+// ── ONE INLINE VERB, EVERYTHING ELSE IN THE KEBAB (Franco, 2026-09-20) ───────
+// Assign/Edit stays a button: it is the row's identity work, the thing a manager
+// does most, and on an unassigned row it is the only thing worth doing. Refund,
+// Void and every contributed action live behind the "⋯" menu.
+//
+// Four inline buttons was already the ceiling and the list only grows — the
+// Tarif 595 receipt was the fourth, and resending a gateway receipt, issuing a
+// QR-bill invoice and whatever the next plugin wants are all queued behind it.
+// Refund and Void behind a menu are also a misclick harder to reach, which for
+// two irreversible verbs is a feature.
+//
+// ── THE HOOK FOR EVERYTHING ELSE: `extraActions` ─────────────────────────────
+// Contributed actions are passed IN by the mount site rather than discovered
+// from the plugin registry here, and that is deliberate. A menu item that opens
+// a dialog cannot own that dialog from inside `DropdownMenuContent` — choosing
+// the item closes the menu, which unmounts the subtree and the dialog with it.
+// The working shape is the one `plugins/tarif-595/ReceiptActions.tsx` and
+// `plugins/qr-invoices/InvoiceActions.tsx` already use: the dialog is a SIBLING
+// of the menu, its state held above both. The pages already hold exactly that
+// state, so they hand the table a description of the item and keep the dialog.
 //
 // A VOIDED ROW IS INERT: struck through, counted nowhere, and offering no
-// actions at all. Not hidden — it is the audit record of the mistake — and not
-// editable either: `updatePaymentRecord` refuses a voided row server-side, so
-// leaving the Edit button up would only produce a refusal.
+// actions at all — no button and no menu. Not hidden (it is the audit record of
+// the mistake) and not editable either: `updatePaymentRecord` refuses a voided
+// row server-side, so leaving the Edit button up would only produce a refusal.
 
 import { useTranslations } from 'next-intl'
-import { HeartPulse, Pencil, UserPlus } from 'lucide-react'
+import { MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
 import type { Route } from 'next'
 import { financeSourceRefForPayment } from '@linyup/shared'
 import type { PaymentJournal } from '@/plugins/finance/hooks'
@@ -29,6 +49,12 @@ import type { AssignPaymentTarget } from '@/components/payments/AssignPaymentDia
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   HoverCard,
   HoverCardTrigger,
@@ -74,12 +100,75 @@ const PAYMENT_STATUS_STYLES: Record<string, string> = {
  * reconciliation that silently disagrees with a bank statement by a few francs
  * is worse than one that said it was an estimate.
  */
-/** A live row for something health promotion can attest — never a product or
- *  a gift card, and never a voided record. The dialog decides the rest. */
-function receiptable(row: UnifiedPaymentRow): boolean {
-  if (row.voided) return false
-  const kind = row.lineItem?.kind ?? (row.planTypeId ? 'subscription' : null)
-  return kind === 'subscription' || kind === 'course' || kind === 'drop_in' || kind === 'appointment'
+/**
+ * ONE CONTRIBUTED ROW ACTION — a menu item the mount site adds to every row's
+ * kebab. See "THE HOOK FOR EVERYTHING ELSE" at the top of this file for why the
+ * page supplies these rather than the table discovering them.
+ */
+export interface PaymentRowAction {
+  /** Stable React key, and the id a caller uses to talk about this action. */
+  key: string
+  label: string
+  icon?: React.ElementType
+  /** Rows this applies to. A row it does not apply to shows no item at all —
+   *  never a disabled one, and never one that opens something only to refuse. */
+  available: (row: UnifiedPaymentRow) => boolean
+  onSelect: (row: UnifiedPaymentRow) => void
+}
+
+/**
+ * The row's "⋯" menu. Renders NOTHING when the row has no action behind it —
+ * an empty menu is a control that teaches the reader it does nothing, and on a
+ * BYO row that is neither refundable nor voidable, with no plugin installed,
+ * that is exactly what it would be.
+ */
+function RowMenu({
+  row,
+  onRefund,
+  onVoid,
+  extraActions,
+  t,
+}: {
+  row: UnifiedPaymentRow
+  onRefund?: (row: UnifiedPaymentRow) => void
+  onVoid?: (row: UnifiedPaymentRow) => void
+  extraActions?: PaymentRowAction[]
+  t: ReturnType<typeof useTranslations<'PaymentsDashboard'>>
+}) {
+  const canRefund = !!onRefund && row.refundable
+  const canVoid = !!onVoid && row.voidable
+  const extras = (extraActions ?? []).filter((a) => a.available(row))
+  if (!canRefund && !canVoid && extras.length === 0) return null
+
+  return (
+    <DropdownMenu>
+      {/* ALWAYS VISIBLE, not hover-revealed. Elsewhere (BookingRow) the kebab
+          fades in on hover because the row has other affordances; here it is
+          the only way to reach Refund and Void, and a control you have to
+          discover by hovering is one a touch user never finds. */}
+      <DropdownMenuTrigger
+        aria-label={t('rowMenuLabel')}
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {canRefund && (
+          <DropdownMenuItem onClick={() => onRefund!(row)}>{t('refund')}</DropdownMenuItem>
+        )}
+        {canVoid && <DropdownMenuItem onClick={() => onVoid!(row)}>{t('void')}</DropdownMenuItem>}
+        {extras.map((a) => {
+          const Icon = a.icon
+          return (
+            <DropdownMenuItem key={a.key} onClick={() => a.onSelect(row)} className="gap-2">
+              {Icon && <Icon className="h-3.5 w-3.5" />}
+              {a.label}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 function JournalDetails({
@@ -178,7 +267,7 @@ export function PaymentsTable({
   onAssign,
   onRefund,
   onVoid,
-  onReceipt,
+  extraActions,
   journal,
 }: {
   rows: UnifiedPaymentRow[]
@@ -191,11 +280,10 @@ export function PaymentsTable({
   onRefund?: (row: UnifiedPaymentRow) => void
   /** When provided, live MANUAL rows get a Void action ("this record is wrong"). */
   onVoid?: (row: UnifiedPaymentRow) => void
-  /** When provided (the Tarif 595 plugin is installed and the viewer manages
-   *  the team), an assigned live row for a plan, course, class or appointment
-   *  gets a Receipt action — the quick way to a health-insurance receipt for
-   *  money that has already moved. */
-  onReceipt?: (row: UnifiedPaymentRow) => void
+  /** Contributed menu items, appended to every row's kebab after Refund and
+   *  Void. Each decides for itself which rows it applies to. The mount site
+   *  keeps the dialog — see the file header. */
+  extraActions?: PaymentRowAction[]
   /**
    * The money JOURNAL for these rows, keyed by `source_ref` — what each payment
    * actually booked. Absent unless the finance plugin is installed, and every
@@ -436,22 +524,13 @@ export function PaymentsTable({
                           </>
                         )}
                       </Button>
-                      {onRefund && row.refundable && (
-                        <Button size="sm" variant="outline" onClick={() => onRefund(row)}>
-                          {t('refund')}
-                        </Button>
-                      )}
-                      {onVoid && row.voidable && (
-                        <Button size="sm" variant="outline" onClick={() => onVoid(row)}>
-                          {t('void')}
-                        </Button>
-                      )}
-                      {onReceipt && row.contactId && receiptable(row) && (
-                        <Button size="sm" variant="outline" onClick={() => onReceipt(row)} title={t('receipt')}>
-                          <HeartPulse className="h-3.5 w-3.5 mr-1" />
-                          {t('receipt')}
-                        </Button>
-                      )}
+                      <RowMenu
+                        row={row}
+                        onRefund={onRefund}
+                        onVoid={onVoid}
+                        extraActions={extraActions}
+                        t={t}
+                      />
                     </div>
                   )}
                 </TableCell>

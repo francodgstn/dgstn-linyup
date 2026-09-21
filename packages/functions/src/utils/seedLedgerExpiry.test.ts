@@ -16,7 +16,7 @@
 // `expires_at` — rather than sampling an outcome (CLAUDE.md, "A guard that
 // SAMPLES a race is not a guard").
 import * as assert from 'node:assert'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..')
@@ -33,6 +33,22 @@ const SEED_LEDGER_WRITERS: { file: string; collection: string }[] = [
 ]
 
 const read = (rel: string) => readFileSync(join(REPO_ROOT, rel), 'utf8')
+
+const LEDGERS = ['activity_log', 'automation_logs', 'mail_sends', 'notifications', 'api_usage']
+/** A file that WRITES a row: a `.collection('<ledger>')` or a subcollection
+ *  constant assignment. Nothing in it can span a line, so testing a whole file
+ *  answers what grep's per-line test did. */
+const LEDGER_WRITE = new RegExp(
+  `collection\\((['"])(${LEDGERS.join('|')})\\1\\)|_SUBCOLLECTION = '(${LEDGERS.join('|')})'`,
+)
+
+/** Every `.ts` under scripts/, repo-relative with forward slashes. */
+const listScriptSources = (dir = 'scripts'): string[] =>
+  readdirSync(join(REPO_ROOT, dir), { withFileTypes: true }).flatMap((e) => {
+    const rel = `${dir}/${e.name}`
+    if (e.isDirectory()) return listScriptSources(rel)
+    return e.isFile() && e.name.endsWith('.ts') ? [rel] : []
+  })
 
 describe('ledger rows written by scripts carry a TTL stamp', () => {
   it('every known writer stamps expires_at through the shared helper', () => {
@@ -121,22 +137,24 @@ describe('ledger rows written by scripts carry a TTL stamp', () => {
     )
   })
 
+  it('the ledger-write pattern matches a write and nothing else', () => {
+    // The pin below has no failing state of its own to have been seen, so its
+    // pattern is proven against the defect it describes here (CLAUDE.md).
+    assert.match("db.collection('activity_log').add(row)", LEDGER_WRITE)
+    assert.match('ref.collection("mail_sends").doc(id)', LEDGER_WRITE)
+    assert.match("export const LOG_SUBCOLLECTION = 'automation_logs'", LEDGER_WRITE)
+    assert.doesNotMatch("db.collection('activity_log\")", LEDGER_WRITE)
+    assert.doesNotMatch("db.collection('contacts')", LEDGER_WRITE)
+  })
+
   // THE ONE THAT CATCHES A NEW SEEDER. The list above is maintained by hand, so
   // this re-derives the writer set from the source and fails when a file writes
   // a ledger collection without being listed — the way the list goes stale.
   it('no unlisted script writes a ledger collection', () => {
-    const { execSync } = require('node:child_process') as typeof import('node:child_process')
-    const ledgers = ['activity_log', 'automation_logs', 'mail_sends', 'notifications', 'api_usage']
-    // Files that WRITE a row: a `.collection('<ledger>')` or a subcollection
-    // constant assignment, excluding the teardown lists and the backfill itself.
-    const out = execSync(
-      `grep -rlE "collection\\\\((['\\"])(${ledgers.join('|')})\\\\1\\\\)|_SUBCOLLECTION = '(${ledgers.join('|')})'" scripts/ --include=*.ts || true`,
-      { cwd: REPO_ROOT, encoding: 'utf8' },
-    )
-    const found = out
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
+    // An in-process scan rather than a grep shell-out: on Windows execSync runs
+    // cmd.exe, which reads the pattern's `|` alternations as pipes.
+    const found = listScriptSources()
+      .filter((f) => LEDGER_WRITE.test(read(f).replace(/\r\n/g, '\n')))
       // The backfill is the repair pass, not a writer of new rows; the teardown
       // script names the collections only to delete them.
       .filter((f) => f !== 'scripts/backfill-ledger-ttl.ts' && f !== 'scripts/reset-sandbox-db.ts')

@@ -506,9 +506,14 @@ export default function WebsiteRenderer({
                       />
                     </button>
                   )}
+                  {/* SOLID, not `headerBg`. That colour is the bar's own
+                      translucent one, and the panel hangs inside a bar that is
+                      already blurred — so the two transparencies stacked and
+                      the page showed through the menu. A dropdown is a surface
+                      you read, not a wash. */}
                   <div
                     className="invisible absolute left-0 top-full z-30 min-w-48 rounded-xl border p-2 opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
-                    style={{ background: palette.headerBg, borderColor: palette.border }}
+                    style={{ background: palette.surface, borderColor: palette.border }}
                   >
                     {renderBranch(top.children, 0)}
                   </div>

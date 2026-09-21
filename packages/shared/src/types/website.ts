@@ -38,12 +38,13 @@ export type SiteBrandFont = (typeof SITE_BRAND_FONTS)[number]
 export const SITE_FONTS = ['sans', 'serif', 'rounded', ...SITE_BRAND_FONTS] as const
 export type SiteFont = (typeof SITE_FONTS)[number]
 export type SectionAlign = 'left' | 'center'
-export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment'
+export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment' | 'class'
 
 /** A call-to-action button. `booking`/`signup` resolve to the team's bio-link
  *  flows; `appointment` opens the booking panel straight on ONE appointment
- *  activity (a free intro, a trial call) instead of sending the visitor to a
- *  page first; `url` opens an external link. ('membership' is a legacy alias
+ *  activity (a free intro, a trial call) and `class` does the same for ONE
+ *  class — both save the visitor a hunt through the catalogue for the thing
+ *  the page they are reading is about; `url` opens an external link. ('membership' is a legacy alias
  *  for 'signup', still accepted on read/publish for older stored sites.) */
 export interface SiteCta {
   label: string
@@ -51,8 +52,15 @@ export interface SiteCta {
   url?: string
   /** For `action: 'page'` — the page to open (a SitePageRef id). */
   pageId?: string
-  /** For `action: 'appointment'` — the appointment activity to open. */
+  /** For `action: 'appointment'` — the appointment activity to open (by id,
+   *  which is what the slot picker takes). Degrades to the booking list when
+   *  absent, rather than dropping the studio's button off its page. */
   activityId?: string
+  /** For `action: 'class'` — the class whose dates to open, BY SLUG: that is
+   *  the class funnel's own address (`/booking/{activitySlug}`, what an
+   *  activity card links to), so the CTA, the card and the overlay all reach it
+   *  the same way. Degrades to the booking list when absent. */
+  activitySlug?: string
 }
 
 export interface SiteImage {
@@ -124,6 +132,16 @@ export interface HeroSection extends SectionBase {
    * 'light': white, dark text, for a bright, airy hero.
    */
   overlayTone?: 'dark' | 'light'
+  /**
+   * Slow movement on the background IMAGE — the "Ken Burns" drift: a gentle
+   * zoom with a pan, so a still photograph does not read as a dead rectangle.
+   *
+   * 'none' (default) is today's look, and a visitor who asked their system for
+   * less motion gets 'none' whatever this says — the renderer checks
+   * prefers-reduced-motion, as it already does for `bgVideoUrl`. Ignored when
+   * there is no image, and ignored while a loop plays (the video IS the motion).
+   */
+  bgMotion?: 'none' | 'kenburns'
 }
 
 /** A row of highlight items. For "why us" callouts, offer cards, a stats row or
@@ -146,6 +164,16 @@ export interface FeaturesSection extends SectionBase {
    * Absent ⇒ 'cards', so existing sections are unaffected.
    */
   style?: 'cards' | 'stats' | 'checklist' | 'panels'
+  /**
+   * STATS ONLY: count each figure up from zero when it scrolls into view — the
+   * "15+ years, 4 coaches, 350 km" row that tallies itself.
+   *
+   * Animates the NUMBER it finds in `title` and leaves everything around it
+   * alone, so "350 km+" counts to 350 and keeps its unit, and a figure with no
+   * number in it ("Since 2015" → counts; "Daily" → does not) simply renders.
+   * Off by default, and off for every visitor who prefers reduced motion.
+   */
+  countUp?: boolean
 }
 
 export interface FeatureItem {
@@ -406,6 +434,24 @@ export interface TeamSection extends SectionBase {
    *   buttons — "your contact person" on an offer page.
    */
   layout?: 'grid' | 'contact'
+  /**
+   * How a GRID card carries its name and role:
+   *  - 'below' (default): the caption sits under the photo — today's look.
+   *  - 'overlay-dark': the caption lies ON the photo, over a dark gradient that
+   *    fades up from the bottom edge, with a blur behind the text.
+   *  - 'overlay-light': the same, in the light direction, for dark portraits.
+   * Ignored by the 'contact' layout, which is a wide card and has no photo to
+   * lay anything over.
+   */
+  captionStyle?: 'below' | 'overlay-dark' | 'overlay-light'
+  /**
+   * Where a person's `bio` is read:
+   *  - 'inline' (default): under the caption, as it is today.
+   *  - 'modal': the card opens a dialog with the portrait and the full text, so
+   *    a grid of twelve coaches stays a grid instead of a wall of paragraphs.
+   * A person with no bio is never clickable under either.
+   */
+  bioDisplay?: 'inline' | 'modal'
   items: TeamMemberItem[]
 }
 

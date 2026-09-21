@@ -133,6 +133,7 @@ import {
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { seedTeamFinance } from './lib/fixtures/finance'
+import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { partnerAppNames } from './lib/partnerApps'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
@@ -2233,6 +2234,25 @@ async function seedTeam(opts: {
   // feature. Every team this function seeds is Coach or above by its own `plan`
   // type, so there is no tier left to guard against.
   await seedTeamAssetRegister({ teamId, uid })
+
+  // ── Tarif 595 (health-insurance receipts) ───────────────────────────────────
+  // Unconditional for the same reason as the register: the plugin's pitch is
+  // that issuing a member's insurance receipt is one button, and a tenant with
+  // no identifiers, no position mappings and no member insurance data opens
+  // that page on a wall of "incomplete". Placeholder identity, modus 'test',
+  // every identifier computed so the issue call cannot reject it
+  // (scripts/lib/tarif595.ts). The fixture reads this team's own activities and
+  // plans; each maps to the free-text position 9999 carrying its own name,
+  // because assigning real tariff codes to invented offerings would be
+  // inventing billing advice. Receipts are issued in the app, never seeded.
+  await seedTeamLegalProfile({
+    teamId,
+    uid,
+    legalName: teamName,
+    postal: { street_name: 'Bahnhofstrasse', house_no: '1', zip: '8001', city: 'Zürich' },
+    canton: 'ZH',
+  })
+  await seedTeamTarif595({ teamId, uid, prefix: 'RB' })
 
   // ── documents (a default feature on every plan, not a plugin) ────────────────
   await seedDocuments(teamId, teamSlug, teamName, uid)

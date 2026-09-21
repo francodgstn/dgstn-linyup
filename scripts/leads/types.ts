@@ -107,6 +107,11 @@ export interface LeadActivityDef {
   isFreeTrial?: boolean
   base_score: number
   description: string
+  /** The heading this activity sits under on the public booking page
+   *  (Activity.bookingGroup) — the studio's own words, open set, absent ⇒
+   *  ungrouped (renders last). A long catalogue reads as a few sections
+   *  instead of one flat list. */
+  bookingGroup?: string
   /** Group-class capacity shown/enforced on the public booking surface. */
   capacity: number | null
   /** Assets-folder base name for the cover image (e.g. 'activity-squad-technique'). */
@@ -384,6 +389,17 @@ export interface LeadContactDef {
   assignedToStaffKey?: string
   /** Contact Groups plugin membership (LeadContactGroupDef.keys) → group_ids. */
   groupKeys?: string[]
+  /**
+   * Days since this person last trained — what every engagement band, the
+   * "Needs attention" list and the dashboard trends are derived from, and which
+   * past sessions they appear in.
+   *
+   * Absent ⇒ a weighted spread by status (see `lastSeenDaysAgo` in
+   * seed-lead.ts): most people recent, a tail drifting, a few gone quiet, a
+   * lapsed member months out. Set it when the demo needs a NAMED person to be
+   * the one who stopped coming — the contact a studio clicks on first.
+   */
+  lastSeenDaysAgo?: number
   /** Acquisition source override (default: seeded-random). */
   source?: 'website' | 'referral' | 'social' | 'event' | 'other'
   /** Free-text detail shown with the source (e.g. 'QR poster', 'Meta ads'). */
@@ -811,6 +827,33 @@ export interface LeadProfile {
    * Precedence: `--password` > this > a fresh random one.
    */
   demoPassword?: string
+
+  /**
+   * Tarif 595 (health-insurance receipts) — the tariff POSITION each offering
+   * maps to, keyed `activity:{slug}` or `subscription:{key}`. Anything not
+   * named here falls back to the free-text position 9999 carrying the
+   * offering's own title, so the plugin always demos; naming the real ones is
+   * what makes the demo the lead's own business.
+   *
+   * The list is `packages/shared/src/data/tarif595/positions.ts`. Mind the
+   * VALIDITY dates: a position of the 2027 edition cannot carry a line dated
+   * today, and one expiring on 2026-12-31 wants a `successor` so January's
+   * receipts for December's lessons still resolve (`tarif595MappingOn`).
+   */
+  tarif595Positions?: Record<
+    string,
+    {
+      position: string
+      unit: 'month' | 'year' | 'lesson' | 'entry' | 'flat'
+      customName?: string | null
+      entries?: number | null
+      successor?: { from: string; position: string; ptPosition?: string | null } | null
+    }
+  >
+  /** Two-letter canton for the studio's legal profile. Default 'ZH'. */
+  tarif595Canton?: string
+  /** Receipt numbering prefix (`{prefix}-{year}-00001`). Default 'RB'. */
+  tarif595Prefix?: string
 
   /** Caveats printed after seeding (e.g. which prices are assumptions). */
   notes?: string[]

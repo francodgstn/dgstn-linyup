@@ -986,6 +986,14 @@ function getDefaults(team: Team | null): FormData {
   return {
     themePreset: team?.bioLinkThemePreset ?? '',
     accentColor: typeof team?.bioLinkAccentColor === 'string' ? team.bioLinkAccentColor : DEFAULT_ACCENT,
+    // EVERY PLATFORM IN `SOCIAL_PLATFORMS` NEEDS A LINE HERE. `instagram` was
+    // missing — the one platform with no default — and the effect was not a blank
+    // field but a DELETION: `onSubmit` rebuilds `socialLinks` from the form
+    // values, so an unseeded key means a studio's stored Instagram URL is dropped
+    // the next time anything at all on this page is saved, and a URL typed into
+    // the field never lands. Verified 2026-09-20 against the seeded studio: with
+    // the key absent, Facebook saved and Instagram did not.
+    instagram: getSocial('instagram'),
     facebook: getSocial('facebook'),
     youtube: getSocial('youtube'),
     tiktok: getSocial('tiktok'),

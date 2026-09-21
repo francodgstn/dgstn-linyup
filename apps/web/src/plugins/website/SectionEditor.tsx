@@ -62,6 +62,9 @@ function CtaEditor({
   const { data: activities = [] } = useActivities(teamId)
   // Appointment activities only — a class has no availability picker to open.
   const appointmentActivities = activities.filter((a) => a.type === 'appointment')
+  // …and the classes, for the CTA that opens ONE class's dates. Slug-targeted,
+  // because `/booking/{activitySlug}` is the class funnel's own address.
+  const classActivities = activities.filter((a) => a.type !== 'appointment' && a.slug)
   const value = cta ?? { label: '', action: 'booking' as const }
   const set = (patch: Partial<SiteCta>) => {
     const next = { ...value, ...patch }
@@ -78,6 +81,7 @@ function CtaEditor({
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="booking">{t('editorCtaActionBooking')}</SelectItem>
+            <SelectItem value="class">{t('editorCtaActionClass')}</SelectItem>
             <SelectItem value="appointment">{t('editorCtaActionAppointment')}</SelectItem>
             <SelectItem value="signup">{t('editorCtaActionSignup')}</SelectItem>
             <SelectItem value="page">{t('editorCtaActionPage')}</SelectItem>
@@ -95,6 +99,33 @@ function CtaEditor({
               ))}
             </SelectContent>
           </Select>
+        </Field>
+      )}
+      {value.action === 'class' && (
+        <Field label={t('editorCtaClass')}>
+          {classActivities.length === 0 ? (
+            <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+              {t('editorCtaClassEmptyHint')}
+            </p>
+          ) : (
+            <>
+              <Select
+                value={value.activitySlug ?? ''}
+                onValueChange={(v) => set({ activitySlug: v || undefined })}
+              >
+                <SelectTrigger className="h-9"><SelectValue placeholder={t('editorCtaClassPlaceholder')} /></SelectTrigger>
+                <SelectContent>
+                  {classActivities.map((a) => (
+                    <SelectItem key={a.id} value={a.slug!}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* Publish turns a class-less CTA into a plain booking button. */}
+              {!value.activitySlug && (
+                <p className="mt-1 text-xs text-muted-foreground">{t('editorCtaClassFallbackHint')}</p>
+              )}
+            </>
+          )}
         </Field>
       )}
       {value.action === 'appointment' && (

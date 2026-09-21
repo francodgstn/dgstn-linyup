@@ -391,7 +391,7 @@ export default function AssetRegisterPage() {
               {
                 href: (isInstalled('finance')
                   ? '/plugins/finance'
-                  : '/settings/plugins?plugin=finance') as Route,
+                  : '/plugins?plugin=finance') as Route,
                 label: tPlugins('financeNavLabel'),
               },
             ]}

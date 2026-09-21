@@ -116,6 +116,8 @@ import {
 } from './lib/fixtures/engagement'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
+import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
+import { splitSwissAddress, type SeedTarif595Mapping } from './lib/tarif595'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import {
@@ -1276,6 +1278,8 @@ async function seedLeadTenant(profile: LeadProfile) {
         slug: a.slug,
         color: a.color,
         tags: activityTags,
+        // The booking page's section heading — see LeadActivityDef.bookingGroup.
+        ...(a.bookingGroup ? { bookingGroup: a.bookingGroup } : {}),
         description: a.description,
         ...(a.prerequisites ? { prerequisites: a.prerequisites } : {}),
         // EXTENDS the team-wide list — never restates it. Mirrored the same way
@@ -1339,6 +1343,8 @@ async function seedLeadTenant(profile: LeadProfile) {
         ...(a.trialPrice != null ? { trialPriceAmount: a.trialPrice } : {}),
         // Tags mirrored ONLY when present, exactly as syncActivityPublicProfile does.
         ...(activityTags.length ? { tags: normalizeActivityTags(activityTags) } : {}),
+        // …and the booking page's section heading, the same way.
+        ...(a.bookingGroup ? { bookingGroup: a.bookingGroup } : {}),
       })
   }
 
@@ -1744,6 +1750,41 @@ async function seedLeadTenant(profile: LeadProfile) {
   // ── contacts ───────────────────────────────────────────────────────────────
   const pool = profile.contacts
   const contactIds: string[] = []
+
+  /**
+   * HOW LONG SINCE EACH PERSON LAST TRAINED — the number every engagement band,
+   * "Needs attention" row and dashboard trend is derived from.
+   *
+   * It used to be `rand * 14` for everyone with a session to their name, which
+   * made every seeded roster uniformly ACTIVE: no at-risk members, no quiet
+   * ones, nothing for the win-back automation to have noticed, and a dashboard
+   * whose whole point is spotting who is slipping showed one flat colour.
+   *
+   * So the default now SPREADS, weighted the way a real roster sits — most
+   * people recent, a tail that is drifting, a few gone quiet — and a lapsed
+   * member is months out rather than days. A profile can pin any individual
+   * with `lastSeenDaysAgo` when the story needs a specific person to be the one
+   * who stopped coming.
+   *
+   * It is ONE number used TWICE: the contact's `last_session_at` and which past
+   * sessions they appear in below. Deriving those separately is how a roster
+   * ends up with someone "last seen 60 days ago" sitting in last week's
+   * attendance list.
+   */
+  const lastSeenDaysAgo: (number | null)[] = pool.map((c, i) => {
+    if (c.totalSessions <= 0) return null
+    if (typeof c.lastSeenDaysAgo === 'number') return Math.max(0, Math.round(c.lastSeenDaysAgo))
+    const r = seededRand(`${teamId}-${i}-lastseen`)
+    // A lapsed member left months ago — that is what "expired" means, and it is
+    // what makes the win-back rule and the churn numbers mean anything.
+    if (c.status === 'expired') return 70 + Math.floor(r * 110)
+    // A trial came in recently, or they would not be a trial.
+    if (c.type === 'trial') return 1 + Math.floor(r * 20)
+    if (r < 0.6) return Math.floor(r * 16) // the regulars
+    if (r < 0.85) return 12 + Math.floor(r * 20) // quieter, still around
+    if (r < 0.95) return 35 + Math.floor(r * 28) // drifting — "needs attention"
+    return 65 + Math.floor(r * 40) // gone quiet without formally lapsing
+  })
   for (let i = 0; i < pool.length; i++) {
     const c = pool[i]
     const id = `${teamId}-contact-${i.toString().padStart(3, '0')}`
@@ -1808,8 +1849,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         birthplace: c.birthplace,
         birthdate: birthdate ? ts(birthdate) : null,
         total_sessions: c.totalSessions,
-        last_session_at:
-          c.totalSessions > 0 ? ts(daysFromNow(-Math.floor(seededRand(seed + 'ls') * 14))) : null,
+        last_session_at: lastSeenDaysAgo[i] === null ? null : ts(daysFromNow(-lastSeenDaysAgo[i]!)),
         notes: c.kid
           ? c.kid.note
           : c.type === 'student' && c.totalSessions > 20
@@ -2131,7 +2171,18 @@ async function seedLeadTenant(profile: LeadProfile) {
     const def = pastDefs[i]
     const capacity = profile.activities[def.actIdx].capacity ?? 12
     // Kids attend the kids classes; adults everything else.
-    const eligible = kidActivityIdxs.has(def.actIdx) ? kidIdxs : studentIdxs
+    const allEligible = kidActivityIdxs.has(def.actIdx) ? kidIdxs : studentIdxs
+    // NOBODY ATTENDS AFTER THEIR LAST VISIT. `lastSeenDaysAgo` is the one
+    // number deciding both the contact's `last_session_at` and this list, so a
+    // member who went quiet two months ago is absent from every session since —
+    // which is what makes the engagement bands and "Needs attention" true of
+    // the attendance a studio can click into, rather than a label beside a
+    // roster that contradicts it.
+    const sessionAgeDays = Math.round((nowDate.getTime() - def.date.getTime()) / 86_400_000)
+    const eligible = allEligible.filter((idx) => {
+      const seen = lastSeenDaysAgo[idx]
+      return seen !== null && sessionAgeDays >= seen
+    })
     if (eligible.length === 0) continue
     const target = Math.min(capacity, Math.max(2, 4 + ((i * 3) % 6)), eligible.length)
     const attending = eligible.filter((_, k) => (k + i) % eligible.length < target).slice(0, target)
@@ -2250,6 +2301,37 @@ async function seedLeadTenant(profile: LeadProfile) {
   // and the ids have to be the roster's own — a log full of ids that resolve to
   // nothing is the state RunHistoryDialog renders as "recipient deleted since".
   await seedAutomations(profile, teamId, profile.language, contactIds)
+
+  // ── Tarif 595 (health-insurance receipts) ─────────────────────────────────
+  // Swiss studios with a Qualitop/Qualicert label can hand members a receipt
+  // their supplementary insurance reimburses, and the plugin's pitch is that it
+  // is one button. A tenant seeded without identifiers, position mappings and
+  // member insurance data opens that page on a wall of "incomplete" instead —
+  // so every lead gets a working PLACEHOLDER setup (modus: test, computed GLN /
+  // ZSR / AHVN13, see scripts/lib/tarif595.ts). Receipts themselves are not
+  // seeded: they are issued by the callable, in the demo.
+  //
+  // The POSITION a profile's offering maps to is the lead's own answer — a
+  // seeder guessing a billing code would be fake precision — so a profile may
+  // name them (`tarif595Positions`), and anything it does not name falls back
+  // to the free-text position 9999 with the offering's own title, which is what
+  // the tariff list is for when nothing fits.
+  await seedTeamLegalProfile({
+    teamId,
+    uid,
+    legalName: profile.teamName,
+    postal: splitSwissAddress(profile.location.address),
+    canton: profile.tarif595Canton ?? 'ZH',
+    phone: profile.contactPhone,
+    email: profile.contactEmail,
+  })
+  await seedTeamTarif595({
+    teamId,
+    uid,
+    prefix: profile.tarif595Prefix ?? 'RB',
+    overrides: profile.tarif595Positions,
+    language: profile.language === 'en' ? 'de' : profile.language,
+  })
 
   // ── events ─────────────────────────────────────────────────────────────────
   for (let ei = 0; ei < profile.events.length; ei++) {
