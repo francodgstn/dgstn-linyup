@@ -134,6 +134,7 @@ import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
+import { seedContactAddress } from './lib/address'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { partnerAppNames } from './lib/partnerApps'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
@@ -265,6 +266,13 @@ const TEAM_ORG: Record<string, string> = {
 }
 
 // ── per-team seed ─────────────────────────────────────────────────────────────
+
+/**
+ * Where a seeded studio and everyone on its roster live. ONE pair, because a
+ * Swiss postal code names exactly one locality: the legal profile below and
+ * every contact's address read it from here, so the two can never disagree.
+ */
+const STUDIO_AREA = { zip: '8001', city: 'Zürich' }
 
 async function seedTeam(opts: {
   uid: string
@@ -1461,6 +1469,7 @@ async function seedTeam(opts: {
         teamId,
         ...contactFields,
         birthdate: c.birthdate ? ts(c.birthdate) : null,
+        address: seedContactAddress(id, STUDIO_AREA),
         total_sessions: c.totalSessions,
         last_session_at:
           c.totalSessions > 0 ? ts(daysFromNow(-Math.floor(Math.random() * 14))) : null,
@@ -2249,7 +2258,7 @@ async function seedTeam(opts: {
     teamId,
     uid,
     legalName: teamName,
-    postal: { street_name: 'Bahnhofstrasse', house_no: '1', zip: '8001', city: 'Zürich' },
+    postal: { street_name: 'Bahnhofstrasse', house_no: '1', ...STUDIO_AREA },
     canton: 'ZH',
   })
   await seedTeamTarif595({ teamId, uid, prefix: 'RB' })

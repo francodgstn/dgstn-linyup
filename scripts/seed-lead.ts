@@ -118,6 +118,7 @@ import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
 import { splitSwissAddress, type SeedTarif595Mapping } from './lib/tarif595'
+import { seedContactAddress } from './lib/address'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import {
@@ -1785,6 +1786,11 @@ async function seedLeadTenant(profile: LeadProfile) {
     if (r < 0.95) return 35 + Math.floor(r * 28) // drifting — "needs attention"
     return 65 + Math.floor(r * 40) // gone quiet without formally lapsing
   })
+  // Everyone on the roster lives in the studio's own locality — the pair the
+  // legal profile below is built from too, because a Swiss postal code names
+  // exactly one town (scripts/lib/address.ts).
+  const studioPostal = splitSwissAddress(profile.location.address)
+  const studioArea = { zip: studioPostal.zip, city: studioPostal.city }
   for (let i = 0; i < pool.length; i++) {
     const c = pool[i]
     const id = `${teamId}-contact-${i.toString().padStart(3, '0')}`
@@ -1848,6 +1854,7 @@ async function seedLeadTenant(profile: LeadProfile) {
         gender: c.gender,
         birthplace: c.birthplace,
         birthdate: birthdate ? ts(birthdate) : null,
+        address: seedContactAddress(id, studioArea),
         total_sessions: c.totalSessions,
         last_session_at: lastSeenDaysAgo[i] === null ? null : ts(daysFromNow(-lastSeenDaysAgo[i]!)),
         notes: c.kid

@@ -110,6 +110,7 @@ import {
   seedMonthlyScores,
 } from './lib/fixtures/automations'
 import { seedSessionSeries, seedTeamGiftCards, seedTeamPlaces } from './lib/fixtures/studio'
+import { seedContactAddress } from './lib/address'
 import {
   seedContactNotes,
   seedCoursePurchase,
@@ -627,6 +628,13 @@ interface TeamSeed {
   orgId?: string // set when the team is an org member team
   extraStaff?: { uid: string; displayName: string; email: string; role: 'manager' | 'coach' }[]
 }
+
+/**
+ * Where a seeded studio and everyone on its roster live. ONE pair, because a
+ * Swiss postal code names exactly one locality: the legal profile below and
+ * every contact's address read it from here, so the two can never disagree.
+ */
+const STUDIO_AREA = { zip: '8001', city: 'Zürich' }
 
 async function seedTeam(opts: TeamSeed) {
   const {
@@ -1488,6 +1496,7 @@ async function seedTeam(opts: TeamSeed) {
         gender: c.gender,
         birthplace: c.birthplace,
         birthdate: birthdate ? ts(birthdate) : null,
+        address: seedContactAddress(id, STUDIO_AREA),
         total_sessions: c.totalSessions,
         last_session_at:
           c.totalSessions > 0 ? ts(daysFromNow(-Math.floor(seededRand(seed + 'ls') * 14))) : null,
