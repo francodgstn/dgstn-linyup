@@ -1,33 +1,7 @@
 {
-  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next). Do not edit by hand — change the board and re-export.",
+  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest 4 Done). Do not edit by hand — change the board and re-export.",
   "sections": {
     "inProgress": [
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
-        "area": {
-          "key": "member-app",
-          "label": "Member app"
-        },
-        "en": {
-          "title": "Member app for iPhone and Android",
-          "body": "Members book, cancel and follow their progress from their phone. Rolling out to the app stores."
-        },
-        "de": {
-          "title": "Mitglieder-App für iPhone und Android",
-          "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Die App kommt gerade in die App Stores.",
-          "srcHash": "19444eb3d3d4"
-        },
-        "fr": {
-          "title": "Application membres pour iPhone et Android",
-          "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. L'app arrive dans les stores.",
-          "srcHash": "19444eb3d3d4"
-        },
-        "it": {
-          "title": "App per i membri su iPhone e Android",
-          "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
-          "srcHash": "19444eb3d3d4"
-        }
-      },
       {
         "id": "DI_lAHOADowus4Bj7lNzgLJQK4",
         "area": {
@@ -61,49 +35,23 @@
           "label": "Members"
         },
         "en": {
-          "title": "WhatsApp messages",
+          "title": "WhatsApp for business",
           "body": "Reach members on WhatsApp for reminders and updates, with their consent."
         },
         "de": {
-          "title": "WhatsApp-Nachrichten",
-          "body": "Erreiche deine Mitglieder auf WhatsApp mit Erinnerungen und Neuigkeiten – mit ihrer Zustimmung.",
-          "srcHash": "6b0dc61e5daf"
+          "title": "WhatsApp fürs Studio",
+          "body": "Erreiche deine Mitglieder mit Erinnerungen und Neuigkeiten auf WhatsApp — mit ihrer Einwilligung.",
+          "srcHash": "ac79dfebcbc3"
         },
         "fr": {
-          "title": "Messages WhatsApp",
-          "body": "Touchez vos membres sur WhatsApp pour les rappels et les nouvelles, avec leur accord.",
-          "srcHash": "6b0dc61e5daf"
+          "title": "WhatsApp pour votre studio",
+          "body": "Touchez vos membres sur WhatsApp pour les rappels et les nouvelles, avec leur consentement.",
+          "srcHash": "ac79dfebcbc3"
         },
         "it": {
-          "title": "Messaggi WhatsApp",
-          "body": "Raggiungi i tuoi membri su WhatsApp con promemoria e novità, con il loro consenso.",
-          "srcHash": "6b0dc61e5daf"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLE",
-        "area": {
-          "key": "your-website",
-          "label": "Your website"
-        },
-        "en": {
-          "title": "Your own web address",
-          "body": "Serve your booking pages and website on your own domain."
-        },
-        "de": {
-          "title": "Deine eigene Webadresse",
-          "body": "Deine Buchungsseiten und deine Website laufen unter deiner eigenen Domain.",
-          "srcHash": "da83530bb7c4"
-        },
-        "fr": {
-          "title": "Votre propre adresse web",
-          "body": "Vos pages de réservation et votre site web sur votre propre nom de domaine.",
-          "srcHash": "da83530bb7c4"
-        },
-        "it": {
-          "title": "Il tuo indirizzo web",
-          "body": "Le tue pagine di prenotazione e il tuo sito sul tuo dominio.",
-          "srcHash": "da83530bb7c4"
+          "title": "WhatsApp per il tuo studio",
+          "body": "Raggiungi i tuoi membri su WhatsApp con promemoria e aggiornamenti, con il loro consenso.",
+          "srcHash": "ac79dfebcbc3"
         }
       },
       {
@@ -130,32 +78,6 @@
           "title": "Ricevute per la cassa malati (Svizzera)",
           "body": "Emetti le ricevute che servono ai membri per chiedere il rimborso dei costi di fitness alla loro cassa malati.",
           "srcHash": "bd3da0e259d1"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
-        "area": {
-          "key": "members",
-          "label": "Members"
-        },
-        "en": {
-          "title": "AI summaries of your members",
-          "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
-        },
-        "de": {
-          "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
-          "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
-          "srcHash": "5d1578dd63ee"
-        },
-        "fr": {
-          "title": "Résumés IA de vos membres",
-          "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
-          "srcHash": "5d1578dd63ee"
-        },
-        "it": {
-          "title": "Riepiloghi IA dei tuoi membri",
-          "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
-          "srcHash": "5d1578dd63ee"
         }
       },
       {
@@ -232,6 +154,29 @@
           "body": "Gestisci più studi in un'unica organizzazione, con un sito web e contenuti condivisi.",
           "srcHash": "99c21dc1596f"
         }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJ3aI",
+        "area": null,
+        "en": {
+          "title": "Faster, steadier behind the scenes",
+          "body": "Ongoing work under the hood so Linyup stays quick and dependable as more studios come on board. Nothing changes in how you use it."
+        },
+        "de": {
+          "title": "Schneller und stabiler im Hintergrund",
+          "body": "Laufende Arbeit unter der Haube, damit Linyup schnell und verlässlich bleibt, während mehr Studios dazukommen. An der Bedienung ändert sich nichts.",
+          "srcHash": "ac84d0c52482"
+        },
+        "fr": {
+          "title": "Plus rapide et plus stable en coulisses",
+          "body": "Un travail continu sous le capot pour que Linyup reste rapide et fiable à mesure que de nouveaux studios arrivent. Rien ne change dans votre utilisation.",
+          "srcHash": "ac84d0c52482"
+        },
+        "it": {
+          "title": "Più veloce e stabile dietro le quinte",
+          "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
+          "srcHash": "ac84d0c52482"
+        }
       }
     ],
     "next": [
@@ -285,6 +230,132 @@
           "title": "Ricette di prezzo per partire in fretta",
           "body": "Parti da configurazioni pronte per corsi e piani, come un abbonamento con lezione di prova o un pacchetto di lezioni con ingressi singoli, e adattale al tuo studio.",
           "srcHash": "8badc50cdbe0"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLKHTo",
+        "area": null,
+        "en": {
+          "title": "A calmer, clearer app",
+          "body": "Less clutter on the screens you use most, and fewer steps on the paths you take every day."
+        },
+        "de": {
+          "title": "Eine ruhigere, klarere App",
+          "body": "Weniger Unruhe auf den Ansichten, die du am häufigsten nutzt, und weniger Schritte auf deinen täglichen Wegen.",
+          "srcHash": "4d04276b9df0"
+        },
+        "fr": {
+          "title": "Une app plus claire et plus calme",
+          "body": "Moins d'encombrement sur les écrans que vous utilisez le plus, et moins d'étapes sur vos parcours quotidiens.",
+          "srcHash": "4d04276b9df0"
+        },
+        "it": {
+          "title": "Un'app più chiara e ordinata",
+          "body": "Meno confusione nelle schermate che usi di più e meno passaggi nei percorsi di ogni giorno.",
+          "srcHash": "4d04276b9df0"
+        }
+      }
+    ],
+    "landed": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
+        "area": {
+          "key": "member-app",
+          "label": "Member app"
+        },
+        "en": {
+          "title": "Member app for iPhone and Android",
+          "body": "Members book, cancel and follow their progress from their phone. Rolling out to the app stores."
+        },
+        "de": {
+          "title": "Mitglieder-App für iPhone und Android",
+          "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Die App kommt gerade in die App Stores.",
+          "srcHash": "19444eb3d3d4"
+        },
+        "fr": {
+          "title": "Application membres pour iPhone et Android",
+          "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. L'app arrive dans les stores.",
+          "srcHash": "19444eb3d3d4"
+        },
+        "it": {
+          "title": "App per i membri su iPhone e Android",
+          "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
+          "srcHash": "19444eb3d3d4"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
+        "area": null,
+        "en": {
+          "title": "Public help centre",
+          "body": "Step-by-step guides for setting up and running your studio, at help.linyup.com."
+        },
+        "de": {
+          "title": "Öffentliches Hilfe-Center",
+          "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios, auf help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        },
+        "fr": {
+          "title": "Centre d'aide public",
+          "body": "Des guides pas à pas pour configurer et gérer votre studio, sur help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        },
+        "it": {
+          "title": "Centro assistenza pubblico",
+          "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
+          "srcHash": "7187608a91a9"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "Events programme",
+          "body": "Create multi-day programme for your events. Save and reuse them as templates."
+        },
+        "de": {
+          "title": "Programm für Events",
+          "body": "Erstelle ein mehrtägiges Programm für deine Events. Speichere es als Vorlage und verwende es wieder.",
+          "srcHash": "93b8c404475d"
+        },
+        "fr": {
+          "title": "Programme d'événement",
+          "body": "Créez un programme sur plusieurs jours pour vos événements. Enregistrez-le comme modèle et réutilisez-le.",
+          "srcHash": "93b8c404475d"
+        },
+        "it": {
+          "title": "Programma degli eventi",
+          "body": "Crea un programma di più giorni per i tuoi eventi. Salvalo come modello e riutilizzalo.",
+          "srcHash": "93b8c404475d"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
+        "area": {
+          "key": "members",
+          "label": "Members"
+        },
+        "en": {
+          "title": "AI summaries of your members",
+          "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
+        },
+        "de": {
+          "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
+          "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
+          "srcHash": "5d1578dd63ee"
+        },
+        "fr": {
+          "title": "Résumés IA de vos membres",
+          "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
+          "srcHash": "5d1578dd63ee"
+        },
+        "it": {
+          "title": "Riepiloghi IA dei tuoi membri",
+          "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
+          "srcHash": "5d1578dd63ee"
         }
       }
     ]
