@@ -105,6 +105,7 @@ import { seedPerformanceCheckins } from './lib/fixtures/coaching'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
+import { seedContactAddress } from './lib/address'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
@@ -1491,6 +1492,13 @@ const SECTOR_PROFILES: SectorProfile[] = [
 
 // ── per-team seed ───────────────────────────────────────────────────────────
 
+/**
+ * Where a seeded studio and everyone on its roster live. ONE pair, because a
+ * Swiss postal code names exactly one locality: the legal profile below and
+ * every contact's address read it from here, so the two can never disagree.
+ */
+const STUDIO_AREA = { zip: '8001', city: 'Zürich' }
+
 async function seedDemoTeam(profile: SectorProfile) {
   const {
     key,
@@ -2204,6 +2212,7 @@ async function seedDemoTeam(profile: SectorProfile) {
         gender: c.gender,
         birthplace: c.birthplace,
         birthdate: birthdate ? ts(birthdate) : null,
+        address: seedContactAddress(id, STUDIO_AREA),
         total_sessions: c.totalSessions,
         last_session_at:
           c.totalSessions > 0 ? ts(daysFromNow(-Math.floor(seededRand(seed + 'ls') * 14))) : null,
@@ -3046,7 +3055,7 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
     teamId,
     uid,
     legalName: teamName,
-    postal: { street_name: 'Studio Lane', house_no: '12', zip: '8001', city: 'Zürich' },
+    postal: { street_name: 'Studio Lane', house_no: '12', ...STUDIO_AREA },
     canton: 'ZH',
   })
   await seedTeamTarif595({ teamId, uid, prefix: 'RB' })

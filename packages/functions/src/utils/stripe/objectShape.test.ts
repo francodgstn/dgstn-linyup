@@ -6,6 +6,7 @@ import {
   STRIPE_WIRE_API_VERSION,
   invoiceBillsSubscription,
   readChargeBillingEmail,
+  readChargeReceiptUrl,
   readInvoicePaymentIntentId,
   readInvoiceSubscriptionId,
   readInvoiceSubscriptionMetadata,
@@ -261,6 +262,28 @@ describe('the payer email', () => {
     })
     assert.equal(legacy.source, 'legacy')
     assert.equal(legacy.value, 'a@b.test')
+  })
+})
+
+describe('the hosted receipt link', () => {
+  it('is still ON THE CHARGE at the version we bundle', () => {
+    // `getPaymentReceiptUrl` retrieves a charge and hands this straight to the
+    // browser, and there is no second location to fail over to — so what is
+    // worth pinning is that the key is where the reader looks, on a REAL
+    // captured Dahlia charge rather than on a shape we wrote ourselves. The
+    // captured VALUE is redacted (a receipt link is durable and belongs to a
+    // real payment), which is why the assertion is about the key.
+    const charge = p.charge_succeeded_event_object
+    assert.equal(typeof charge.receipt_url, 'string')
+    assert.equal(readChargeReceiptUrl(charge), charge.receipt_url)
+  })
+
+  it('reads null rather than throwing when the charge never produced one', () => {
+    // Nullable by design: a caller renders "no receipt", never a failure.
+    assert.equal(readChargeReceiptUrl({ receipt_url: null }), null)
+    assert.equal(readChargeReceiptUrl({}), null)
+    assert.equal(readChargeReceiptUrl(null), null)
+    assert.equal(readChargeReceiptUrl({ receipt_url: '' }), null)
   })
 })
 

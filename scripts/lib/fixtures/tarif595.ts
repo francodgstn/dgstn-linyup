@@ -15,6 +15,14 @@
  * and e-mail paths cannot act on. The seed sets the table; the demo presses the
  * button.
  *
+ * WHAT THIS FIXTURE DOES NOT OWN: the CONTACT side of the same last click.
+ * `buildReceiptDraft` refuses unless the member carries a birthdate, a gender
+ * and a postal address, and none of those belong to this plugin — they are the
+ * roster's, written by whichever seeder built it. The address was the one that
+ * was missing everywhere, so a seeded receipt previewed and then died on
+ * `contact_address_incomplete`; scripts/lib/address.ts is where it comes from
+ * now, and its header owns why the locality is the studio's own.
+ *
  * Every identifier is COMPUTED (scripts/lib/tarif595.ts) — a GLN or an AHVN13
  * with a wrong check digit fails at the issue call, which is the one moment a
  * demo must not break. `modus` stays 'test' so nothing here resembles a real
