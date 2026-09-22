@@ -26,6 +26,7 @@ import {
   AUTOMATION_LIBRARY, CATEGORY_META, libraryItemUnlocked, starterBundleItemsForPlan,
   type LibraryCategory, type LibraryItem, type LibraryAction, type SupportedLanguage,
 } from './automationLibrary'
+import { SYSTEM_TEMPLATES } from './systemDefaults'
 
 // ─── Types (local to this file) ───────────────────────────────────────────────
 
@@ -159,6 +160,61 @@ async function installItems(
   // Resolve template_key → installed templateId (team-language variant)
   const teamLangTemplateId: Record<string, string> = {}
 
+  // Templates created by THIS call, keyed by the system_key they were written
+  // with. `allTemplates` is a snapshot taken before the install, so without
+  // this ledger a second item referencing a template the first item just
+  // created would not find it and would fall through to ''.
+  const createdTemplateId: Record<string, string> = {}
+
+  /** Resolve a `send_email` action's template_key to a real templateId,
+   *  CREATING the referenced starter-kit template when the team has none.
+   *
+   *  The library's migrated `sys_rule_*` items carry no `template` block of
+   *  their own — they reference a shared starter-kit template by key
+   *  (sys_trial_followup, sys_rebook_nudge, sys_winback, sys_milestone_10).
+   *  Nothing else in the app ever creates those: SYSTEM_TEMPLATES is read only
+   *  by the email-templates "reset to default" helper, so on a team that was
+   *  not migrated from hmd-lineup the lookup found nothing and the rule was
+   *  written with `templateId: ''`. That is not merely a dead rule — the
+   *  engine reads `.doc(action.templateId)`, and the Admin SDK THROWS
+   *  synchronously on an empty path, escaping the `to()` guard that would
+   *  otherwise have logged "Template not found or inactive". Eight of the nine
+   *  STARTER_BUNDLE_KEYS reference such a template, so this was the ordinary
+   *  path rather than an edge case.
+   *
+   *  A key in neither place is a library authoring error: refuse the install
+   *  rather than write a rule that cannot send. */
+  async function resolveEmailTemplateId(tmplKey: string): Promise<string> {
+    const fromItem = teamLangTemplateId[tmplKey]
+    if (fromItem) return fromItem
+
+    const existing = allTemplates.find((t) => t.system_key === tmplKey)?.id
+    if (existing) return existing
+
+    const created = createdTemplateId[tmplKey]
+    if (created) return created
+
+    const sys = SYSTEM_TEMPLATES.find((s) => s.system_key === tmplKey)
+    if (!sys) {
+      throw new Error(
+        `Automation library: no template for key "${tmplKey}" — the item references neither its own template nor a known starter-kit template.`
+      )
+    }
+
+    const ref = await addDoc(templatesRef, {
+      name: sys.name,
+      subject: sys.subject,
+      body: sys.body,
+      body_mode: sys.body_mode,
+      language: sys.language,
+      active: true,
+      system_key: sys.system_key,
+      created_at: serverTimestamp(),
+    })
+    createdTemplateId[tmplKey] = ref.id
+    return ref.id
+  }
+
   for (const item of items) {
     if (item.template) {
       const langs = Object.keys(item.template.translations) as SupportedLanguage[]
@@ -184,34 +240,49 @@ async function installItems(
             system_key: systemKey,
             created_at: serverTimestamp(),
           })
+          createdTemplateId[systemKey] = ref.id
           if (lang === teamLang) teamLangTemplateId[item.library_key] = ref.id
         }
       }
-      // Fallback to 'en' if team language variant not available
+      // Fallback to 'en' if the team-language variant is not available. The
+      // `createdTemplateId` arms matter because `allTemplates` predates this
+      // call: an item whose translations omit the team's language has just
+      // created its 'en' variant a few lines above, and only this ledger can
+      // see it. Every shipped item carries all four languages, so this is a
+      // latent path — but its old tail was the same `''` that the engine
+      // cannot read.
       if (!teamLangTemplateId[item.library_key]) {
-        teamLangTemplateId[item.library_key] =
-          allTemplates.find(t => t.system_key === `${item.library_key}:en`)?.id ??
+        const enKey = `${item.library_key}:en`
+        const fallback =
+          allTemplates.find(t => t.system_key === enKey)?.id ??
           allTemplates.find(t => t.system_key === item.library_key)?.id ??
-          ''
+          createdTemplateId[enKey] ??
+          createdTemplateId[item.library_key]
+        if (!fallback) {
+          throw new Error(
+            `Automation library: item "${item.library_key}" owns a template but no installable variant was resolved.`
+          )
+        }
+        teamLangTemplateId[item.library_key] = fallback
       }
     }
 
     // Skip rule if already installed
     if (installedRuleKeys.has(item.library_key)) continue
 
-    // Resolve actions — send_email needs the templateId; others pass through
-    const actions = item.rule.actions.map((a) => {
+    // Resolve actions — send_email needs the templateId; others pass through.
+    // Sequential on purpose: `resolveEmailTemplateId` creates a missing
+    // starter-kit template and memoises it, so two actions naming the same key
+    // must not race to create two copies of it.
+    const actions: Record<string, unknown>[] = []
+    for (const a of item.rule.actions) {
       if (a.type === 'send_email') {
-        // Look up by the action's template_key (may reference an existing sys_* template)
-        const tmplKey = a.template_key
-        const id =
-          teamLangTemplateId[tmplKey] ??
-          allTemplates.find(t => t.system_key === tmplKey)?.id ??
-          ''
-        return { type: 'send_email', templateId: id }
+        // Look up by the action's template_key (may reference a shared sys_* template)
+        actions.push({ type: 'send_email', templateId: await resolveEmailTemplateId(a.template_key) })
+      } else {
+        actions.push(a as Record<string, unknown>)
       }
-      return a as Record<string, unknown>
-    })
+    }
 
     await addDoc(rulesRef, {
       name: item.name,
