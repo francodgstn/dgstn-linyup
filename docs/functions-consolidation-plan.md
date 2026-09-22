@@ -78,6 +78,37 @@ removed. Routers were added first; aliases go in waves.
          └── the floor: triggers, schedules, task queues and webhooks cannot merge
 ```
 
+**Browser proof on staging, signed in (2026-09-23).** Every other proof runs from Node or
+signed out; this is the app itself, with a real staff token, watched at the network layer.
+
+| Router | Reached by | Result |
+|---|---|---|
+| `rpcStudio` | any staff screen on load | `listTeamMembers` → 200 |
+| `rpcFinance` | Settings → Payments | `getConnectStatus` → 200 |
+| `rpcHeavy` | org website → Publish | `publishOrgWebsite` → 200 |
+| `rpcOps` | operator console → Notices → Preview audience | `previewPlatformNotice` → 200 |
+| `rpcMember` | public booking page, signed OUT | `listAvailability` → 200 |
+
+**Two routers cannot be reached from a browser on staging, and neither is a fault.** Both
+screens correctly call nothing, which is why this is worth writing down rather than retrying:
+
+- `rpcBilling` — no billed tenant exists there. The HMD organisation is a founding org billed
+  nothing, and its member studios' billing is managed by the org, so no invoice query runs.
+- `rpcCheckout` — no staging tenant has `payments_enabled` (staging is deliberately not wired
+  for Connect), so every paid door is hidden by design and the promo field never renders.
+
+Both are covered by `scripts/router-spike.mjs` on all three projects, production included.
+
+**`rpcOrg` is reachable only by a write that emails somebody** (inviting an org member): its
+pages read Firestore directly. Left unproven rather than sending mail from staging.
+
+**BEFORE booking or inviting anybody on staging, read the messaging policy.** Staging's default
+is `live` and the `hmd` tenant is explicitly `live`, so a booking confirmation for a migrated
+HMD contact reaches a real person at their real address. Seeded tenants are safe by
+construction — their contacts are `@example.com`, dropped by the synthetic-recipient guard in
+every environment (`packages/functions/src/mail/messagingPolicy.ts`) — and `linyup-demo` is
+`silent`. The policy lives in `messaging_policies/{tenantId}`.
+
 **Where it stands (2026-09-20).**
 
 | | |
