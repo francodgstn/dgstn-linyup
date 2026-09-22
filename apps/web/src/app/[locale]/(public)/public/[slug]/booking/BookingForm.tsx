@@ -24,6 +24,7 @@ import {
   resolveBookingContactFields,
   type BookingContactField,
   type ActivityAccessRule,
+  type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
   type PublicFrom,
@@ -98,6 +99,9 @@ interface ActivityProfile {
   /** Free-text display labels the studio put on the activity — shown as chips
    *  beside the type chip. Display-only; nothing here is a filter or a gate. */
   tags?: string[]
+  /** The heading this activity sits under on this page. Read ONLY through
+   *  `groupActivitiesForBooking`; the mirror stores the studio's own spelling. */
+  bookingGroup?: string
   isFreeTrial?: boolean
   order?: number
   accessRule?: ActivityAccessRule
@@ -118,6 +122,12 @@ interface ActivityProfile {
    *  priced duration) and classes (the drop-in price). Accepts the legacy
    *  appointment shape or the generalized `Benefit`. */
   memberBenefit?: ActivityMemberBenefit | Benefit
+  /** APPOINTMENT-ONLY per-length rules. Carried BECAUSE `memberBenefit` is:
+   *  `resolveDurationBenefit` reads the PRESENCE of this list to decide whether
+   *  the activity-wide rule still applies, so a card holding one half quotes
+   *  from a rule the server has already stopped honouring. Both halves or
+   *  neither — the same contract the mirror writes them under. */
+  durationBenefits?: ActivityDurationBenefit[]
   prerequisites?: string
   meetingPoint?: string
   whatsIncluded?: string
@@ -663,6 +673,7 @@ export default function BookingForm({
               image: data.image_url ?? null,
               color: data.color ?? undefined,
               tags: Array.isArray(data.tags) ? (data.tags as string[]) : undefined,
+              bookingGroup: typeof data.bookingGroup === 'string' ? data.bookingGroup : undefined,
               isFreeTrial: data.isFreeTrial ?? false,
               order: typeof data.order === 'number' ? data.order : undefined,
               accessRule: data.accessRule ?? undefined,
@@ -672,6 +683,9 @@ export default function BookingForm({
               waitlistEnabled: data.waitlistEnabled === true,
               durations: Array.isArray(data.durations) ? data.durations : undefined,
               memberBenefit: data.memberBenefit ?? undefined,
+              durationBenefits: Array.isArray(data.durationBenefits)
+                ? (data.durationBenefits as ActivityDurationBenefit[])
+                : undefined,
               prerequisites: data.prerequisites ?? undefined,
               meetingPoint: data.meetingPoint ?? undefined,
               whatsIncluded: data.whatsIncluded ?? undefined,
