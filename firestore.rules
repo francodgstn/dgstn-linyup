@@ -839,6 +839,19 @@ service cloud.firestore {
         allow write: if hasTeamRole(teamId, 'owner');
       }
 
+      // What the dashboard's "Waiting on you" card has already been shown —
+      // one doc, team-wide (packages/shared/src/types/dashboardQueue.ts).
+      //
+      // NOT under settings/ above, and the difference is the writer: that block
+      // is OWNER-write studio configuration, while acknowledging a queue is
+      // day-to-day work a MANAGER does — the same audience that may clear a
+      // notification, granted for the same reason. A coach reads it (so their
+      // card agrees with everyone else's) and cannot write it.
+      match /queue_seen/{docId} {
+        allow read:  if isTeamMember(teamId);
+        allow write: if hasTeamRole(teamId, 'manager') || hasTeamRole(teamId, 'owner');
+      }
+
       // Installed plugins — teams enable/configure plugins here.
       // All members can read (needed by automation UI and nav display).
       //

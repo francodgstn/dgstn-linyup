@@ -7733,7 +7733,17 @@
     "sentimentRunInProgress": "Es wird bereits eine Einschätzung erstellt.",
     "sentimentContactSummaryOff": "Schalte zuerst die Kontakt-Briefings in den KI-Einblicken ein – die Einschätzung entsteht aus ihnen.",
     "sentimentNotEnoughMembers": "Eine Team-Einschätzung braucht mindestens {needed} aktive Mitglieder – in den letzten {days} Tagen gesehen.",
-    "sentimentBasedOnActive": "Nur aktive Mitglieder, in den letzten {days} Tagen gesehen · aus {count, plural, one {# Briefing} other {# Briefings}}"
+    "sentimentBasedOnActive": "Nur aktive Mitglieder, in den letzten {days} Tagen gesehen · aus {count, plural, one {# Briefing} other {# Briefings}}",
+    "queueTabBookings": "Buchungen",
+    "queueTabContacts": "Kontakte",
+    "queueTabOther": "Sonstiges",
+    "queueTabEmpty": "Hier ist gerade nichts.",
+    "queueNew": "Neu seit Ihrem letzten Blick",
+    "queueMarkSeen": "Als gesehen markieren",
+    "queueBookingToConfirm": "Zu bestätigen",
+    "queueBookingNew": "Neu",
+    "queueOpenBookings": "Buchungen",
+    "queueMoreBookings": "{count, plural, one {# weitere Buchung} other {# weitere Buchungen}}"
   },
   "BookingContactFields": {
     "title": "Zu erfassende Kontaktdaten",

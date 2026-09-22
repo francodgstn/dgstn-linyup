@@ -7733,7 +7733,17 @@
     "sentimentRunInProgress": "A reading is already being made.",
     "sentimentContactSummaryOff": "Switch on contact briefings in AI insights first — the reading is made from them.",
     "sentimentNotEnoughMembers": "A team reading needs at least {needed} active members — seen in the last {days} days.",
-    "sentimentBasedOnActive": "Active members only, seen in the last {days} days · based on {count, plural, one {# briefing} other {# briefings}}"
+    "sentimentBasedOnActive": "Active members only, seen in the last {days} days · based on {count, plural, one {# briefing} other {# briefings}}",
+    "queueTabBookings": "Bookings",
+    "queueTabContacts": "Contacts",
+    "queueTabOther": "Other",
+    "queueTabEmpty": "Nothing here right now.",
+    "queueNew": "New since you last looked",
+    "queueMarkSeen": "Mark seen",
+    "queueBookingToConfirm": "To confirm",
+    "queueBookingNew": "New",
+    "queueOpenBookings": "Bookings",
+    "queueMoreBookings": "{count, plural, one {# more booking} other {# more bookings}}"
   },
   "BookingContactFields": {
     "title": "Contact details to collect",

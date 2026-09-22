@@ -7733,7 +7733,17 @@
     "sentimentRunInProgress": "Une lecture est déjà en cours.",
     "sentimentContactSummaryOff": "Activez d'abord les synthèses de contacts dans AI insights — la lecture est faite à partir d'elles.",
     "sentimentNotEnoughMembers": "Une lecture d'équipe nécessite au moins {needed} membres actifs — vus ces {days} derniers jours.",
-    "sentimentBasedOnActive": "Membres actifs uniquement, vus ces {days} derniers jours · à partir de {count, plural, one {# synthèse} other {# synthèses}}"
+    "sentimentBasedOnActive": "Membres actifs uniquement, vus ces {days} derniers jours · à partir de {count, plural, one {# synthèse} other {# synthèses}}",
+    "queueTabBookings": "Réservations",
+    "queueTabContacts": "Contacts",
+    "queueTabOther": "Autres",
+    "queueTabEmpty": "Rien ici pour le moment.",
+    "queueNew": "Nouveau depuis votre dernière visite",
+    "queueMarkSeen": "Marquer comme vu",
+    "queueBookingToConfirm": "À confirmer",
+    "queueBookingNew": "Nouveau",
+    "queueOpenBookings": "Réservations",
+    "queueMoreBookings": "{count, plural, one {# réservation de plus} other {# réservations de plus}}"
   },
   "BookingContactFields": {
     "title": "Coordonnées à collecter",
