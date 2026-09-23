@@ -85,7 +85,14 @@ const ALIAS_REMOVED = new Set<string>([
  *  It is a list, not an inference, for the same reason ALIAS_REMOVED is: a name
  *  that is merely absent from index.ts looks the same as one dropped by mistake,
  *  and the deploy runs with --force. */
-const BORN_ROUTED = new Set<string>(['getPaymentReceiptUrl'])
+const BORN_ROUTED = new Set<string>([
+  'getPaymentReceiptUrl',
+  // Course blocks — routed from the day they existed, so no alias to retire.
+  'createCourseBlock',
+  'updateCourseBlock',
+  'setCourseBlockStatus',
+  'deleteCourseBlock',
+])
 
 /** Every callable the router is the ONLY way into, however it got there. */
 const ROUTER_ONLY = new Set<string>([...ALIAS_REMOVED, ...BORN_ROUTED])

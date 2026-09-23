@@ -45,7 +45,7 @@ export const MAX_SESSIONS_PER_RUN = 2000
  *  frequency daily, six-month horizon ≈ 183) cannot consume the whole budget. */
 export const MAX_SESSIONS_PER_SERIES = 250
 
-export type SeriesRollReason = 'inactive' | 'invalid' | 'covered' | 'extend'
+export type SeriesRollReason = 'inactive' | 'invalid' | 'covered' | 'extend' | 'fixed'
 
 export interface SeriesRollPlan {
   roll: boolean
@@ -65,6 +65,12 @@ export interface SeriesRollPlan {
  *
  * - Only `status === 'active'` rolls. Paused, ended and soft-deleted series are
  *   left exactly as they are (matching hmd-lineup's original query).
+ * - A COURSE'S SERIES NEVER ROLLS. Its meetings are a list, materialised in full
+ *   at creation, so there is nothing to extend — and extending one would invent
+ *   lessons nobody bought. The query's `status == 'active'` filter already keeps
+ *   it out (a course series is `fixed`), which is what makes this free; the
+ *   check below is the structural half, so the guarantee survives somebody
+ *   flipping a status back by hand.
  * - A series whose coverage already reaches past `refreshBeforeMs` is skipped.
  * - THE COUNT CORRECTION: `calculateOccurrences` counts occurrences *within the
  *   window it is given*, so asking it for "the next six months" of an
@@ -83,11 +89,14 @@ export function planSeriesRoll(input: {
   horizonMs: number
   refreshBeforeMs: number
   recurrenceValid?: boolean
+  /** True for a series whose occurrences are a fixed list — a course's. */
+  fixedOccurrences?: boolean
 }): SeriesRollPlan {
   const keepFromMs = Math.max(input.lastGeneratedUntilMs ?? input.nowMs, input.nowMs)
   const calcFromMs = input.endCondition === 'count' ? input.recurrenceStartMs : keepFromMs
   const base = { calcFromMs, keepFromMs, toMs: input.horizonMs }
 
+  if (input.fixedOccurrences) return { roll: false, reason: 'fixed', ...base }
   if (input.status !== 'active') return { roll: false, reason: 'inactive', ...base }
   if (input.recurrenceValid === false) return { roll: false, reason: 'invalid', ...base }
   if (input.lastGeneratedUntilMs !== null && input.lastGeneratedUntilMs >= input.refreshBeforeMs) {
@@ -163,6 +172,7 @@ export async function rollSessionSeries(
         horizonMs: horizon.getTime(),
         refreshBeforeMs: refreshBefore.getTime(),
         recurrenceValid: validation.valid,
+        fixedOccurrences: !!data.course_block_id,
       })
 
       if (!plan.roll) {

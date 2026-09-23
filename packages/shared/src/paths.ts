@@ -269,6 +269,17 @@ export const SESSION_SERIES_COLLECTION = 'session_series'
 // types/sessionSeriesJob.ts.
 export const SESSION_SERIES_JOBS_COLLECTION = 'session_series_jobs'
 
+// Course blocks — a bounded, sellable set of lessons ("13 Wednesdays, 9 places,
+// one price"). The course OWNS a `session_series`, whose sessions are its
+// lessons; see types/courseBlock.ts. Written only by Cloud Functions, because it
+// carries capacity and (from the sale stage) a price.
+export const COURSE_BLOCKS_COLLECTION = 'course_blocks'
+// course_blocks/{blockId}/enrolments/{contactId} — the doc id is the contactId,
+// exactly like `bookings` and `waitlist`, so a second enrol is an idempotent
+// write rather than a duplicate row. Deliberately NOT registered in
+// tenantData.ts: tenant teardown uses recursiveDelete on the parent course.
+export const COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION = 'enrolments'
+
 export const REFERRALS_COLLECTION = 'referrals'
 export const REFERRAL_CODES_COLLECTION = 'referral_codes'
 

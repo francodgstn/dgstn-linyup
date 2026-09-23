@@ -492,6 +492,11 @@ export interface Session {
   createdBy?: string
   // ── Recurring session fields ──
   seriesId?: string
+  /** Present ⇒ this session is a lesson of a COURSE (`course_blocks/{id}`).
+   *  Stamped by the ONE materialisation path from the series, so it cannot be
+   *  edited off a lesson. It is why the recurrence-edit and series-wide-cancel
+   *  callables refuse: they delete future sessions, and these are paid for. */
+  course_block_id?: string
   isException?: boolean
   exceptionType?: 'modified' | 'cancelled' | null
   /** UID of the person who runs this session — class instructor or appointment
@@ -616,6 +621,10 @@ export interface SessionPublicProfile {
   bookingMandatory?: boolean
   /** Mirrored from `Session.headline` ONLY when `headlinePublic === true`. */
   headline?: string
+  /** Present ⇒ a lesson of a course. VISIBLE BUT NOT BOOKABLE: it is published
+   *  so a public calendar can show the hall is busy, with `allowBooking: false`,
+   *  and a click on it belongs to the course rather than to a booking form. */
+  course_block_id?: string
   /** WHERE, as an id — the venue itself, which a public surface can resolve.
    *  `location` beside it is the studio's free-text note, and is all these
    *  mirrors carried until now: two sessions at two venues were the same to a

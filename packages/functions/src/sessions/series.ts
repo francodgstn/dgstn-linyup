@@ -70,6 +70,10 @@ export function buildSeriesSessionDoc(
 
   return {
     seriesId,
+    // A COURSE'S LESSONS CARRY THE COURSE. Read from the SERIES, not the
+    // template: it is a fact about which series this is, and putting it in the
+    // template would let a studio edit a lesson out of its own course.
+    ...(seriesData.course_block_id ? { course_block_id: seriesData.course_block_id } : {}),
     instanceDate: Timestamp.fromDate(occurrence.start),
     start: Timestamp.fromDate(occurrence.start),
     end: Timestamp.fromDate(occurrence.end),

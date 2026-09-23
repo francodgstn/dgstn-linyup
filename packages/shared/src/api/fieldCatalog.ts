@@ -157,6 +157,9 @@ export const SESSION_FIELD_CATALOG: FieldCatalog<Session> = {
   created_at: 'excluded',
   createdBy: 'excluded', // read for the coach's own-scope, never returned
   seriesId: 'exposed',
+  // Which course this lesson belongs to. An id an integrator needs in order to
+  // group a term's lessons, and nothing about a person.
+  course_block_id: 'exposed',
   isException: 'excluded',
   exceptionType: 'exposed', // leaves as `status`
   providerId: 'exposed',

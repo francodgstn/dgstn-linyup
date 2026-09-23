@@ -1891,6 +1891,34 @@ service cloud.firestore {
       allow delete: if belongsToUserTeam(resource) || hasRole('admin');
     }
 
+    // Course blocks — a bounded, sellable set of lessons ("13 Wednesdays, 9
+    // places, one price"). See types/courseBlock.ts.
+    //
+    // EVERY CLIENT WRITE IS DENIED, unlike the session series above. A course
+    // carries capacity — `places_taken` is an ABSOLUTE counter written only from
+    // a transaction that read the enrolments beside it — and, from the sale
+    // stage, a price. A client that could edit either could sell a place that
+    // does not exist or buy one at a number it chose. The studio's own edits go
+    // through `createCourseBlock` / `updateCourseBlock` / `setCourseBlockStatus`
+    // / `deleteCourseBlock`, which check `schedule.manage`.
+    //
+    // Enrolments are the same, and for the same reason: an enrolment IS the
+    // place. The public sees a course through its `public_profile` mirror, which
+    // the global rule at the foot of this file already makes world-readable and
+    // write-denied.
+    match /course_blocks/{blockId} {
+      allow read: if belongsToUserTeam(resource) || hasRole('admin');
+      allow write: if false;
+
+      // An enrolment carries its own `teamId`, so the tenant check reads the
+      // document in hand rather than fetching the parent course — one less read
+      // on every evaluation, and no cross-document dependency to go stale.
+      match /enrolments/{contactId} {
+        allow read: if belongsToUserTeam(resource) || hasRole('admin');
+        allow write: if false;
+      }
+    }
+
     // Series teardown jobs — the progress record for a background "delete this
     // and all following". The studio READS its own to follow a run (the client
     // holds the jobId the callable returned, so this is a get, never a list).

@@ -179,6 +179,24 @@ export const cancelSession = onCall(async (request) => {
 
   // ── The background path ────────────────────────────────────────────────────
   if (isSeriesWide) {
+    // SERIES-WIDE ON A COURSE IS CANCELLING THE COURSE, and that is the course's
+    // own callable: it closes the course first, so nothing can be sold while the
+    // lessons are coming down, and it hands back the payments to refund. Reached
+    // from here it would strip the lessons and leave a course that still says
+    // "13 lessons, 4 places left".
+    //
+    // CANCELLING ONE LESSON IS FINE and deliberately not refused: seats return,
+    // the roster is mailed, and the course itself is untouched — which is what
+    // "no lesson on 8.10, we'll add a make-up" means.
+    const [courseErr, courseSeries] = await to(
+      db.collection(SESSION_SERIES_COLLECTION).doc(seriesId!).get()
+    )
+    if (courseErr) throw new HttpsError('internal', 'Failed to read the series')
+    const courseBlockId = courseSeries?.data()?.course_block_id as string | undefined
+    if (courseBlockId) {
+      throw new HttpsError('failed-precondition', 'belongs-to-course', { courseBlockId })
+    }
+
     const cutoff = session.start as Timestamp
 
     // A series already being torn down must not acquire a second job: two
@@ -365,6 +383,17 @@ export const updateRecurringSession = onCall(async (request) => {
     throw new HttpsError('not-found', 'Recurrence series not found')
   if (seriesDoc.data()?.teardown_job_id) {
     throw new HttpsError('failed-precondition', 'teardown-in-progress')
+  }
+  // A COURSE'S LESSONS ARE NOT EDITED FROM HERE. The 'future' scope's
+  // regeneration branch DELETES future sessions whose weekday no longer matches,
+  // with no bookings check — and on a course those are lessons people have paid
+  // to attend. The course's own callables rewrite the meeting list and add what
+  // is missing; removing a lesson goes through `cancelSession` on that lesson,
+  // which returns the seats and tells the roster.
+  if (seriesDoc.data()?.course_block_id) {
+    throw new HttpsError('failed-precondition', 'belongs-to-course', {
+      courseBlockId: seriesDoc.data()?.course_block_id,
+    })
   }
 
   // Whitelist allowed update fields — prevents overwriting privileged fields
