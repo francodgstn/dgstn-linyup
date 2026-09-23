@@ -119,6 +119,7 @@ import { useActivities } from '@/hooks/useActivities'
 import { useCourseBlocks } from '@/hooks/useCourseBlocks'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { CourseBlockDialog, courseBlockSummary } from '@/components/offer/CourseBlockDialog'
+import { CourseRosterPanel } from '@/components/offer/CourseRosterPanel'
 import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { useCapabilities } from '@/hooks/useCapabilities'
@@ -1835,7 +1836,15 @@ export default function CataloguePage() {
                 note: tCourses('paneNoPriceYet'),
               }}
               actions={paneActionsFor('courseBlock', selectedCourseBlock.id)}
-            />
+            >
+              {currentTeamId && (
+                <CourseRosterPanel
+                  block={selectedCourseBlock}
+                  teamId={currentTeamId}
+                  canEdit={canEdit}
+                />
+              )}
+            </PaneBody>
           )}
 
           {selectedProduct && (

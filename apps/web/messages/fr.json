@@ -8971,6 +8971,22 @@
     "statusDraft": "Brouillon",
     "statusPublished": "Publié",
     "statusCancelled": "Annulé",
-    "paneNoPriceYet": "Un cours n'a pas encore de prix, donc aucun abonnement ne peut l'inclure ni le réduire."
+    "paneNoPriceYet": "Un cours n'a pas encore de prix, donc aucun abonnement ne peut l'inclure ni le réduire.",
+    "rosterHeading": "Qui y participe",
+    "rosterPlaces": "{taken} places sur {places} prises",
+    "rosterUncapped": "{count, plural, =0 {Personne} one {# personne} other {# personnes}} · sans limite",
+    "rosterLoading": "Chargement…",
+    "rosterEmpty": "Personne n'est encore inscrit à ce cours.",
+    "rosterHold": "Paiement en cours",
+    "rosterFull": "Le cours est complet.",
+    "rosterConflicts": "{count, plural, one {# séance est} other {# séances sont}} au-delà de la capacité — quelqu'un l'a réservée séparément.",
+    "enrol": "Ajouter au cours",
+    "enrolling": "Ajout…",
+    "enrolled": "Ajouté et inscrit à {count, plural, one {# séance} other {# séances}}",
+    "enrolConflicts": "{count, plural, one {# séance était} other {# séances étaient}} déjà complètes — la place au cours est acquise.",
+    "enrolFailed": "Impossible de l'ajouter",
+    "withdraw": "Retirer du cours",
+    "withdrawn": "Retiré du cours. Les séances passées restent sur la liste de présence.",
+    "withdrawFailed": "Impossible de le retirer"
   }
 }

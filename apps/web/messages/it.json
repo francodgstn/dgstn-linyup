@@ -8971,6 +8971,22 @@
     "statusDraft": "Bozza",
     "statusPublished": "Pubblicato",
     "statusCancelled": "Annullato",
-    "paneNoPriceYet": "Un corso non ha ancora un prezzo, quindi nessun abbonamento può includerlo o scontarlo."
+    "paneNoPriceYet": "Un corso non ha ancora un prezzo, quindi nessun abbonamento può includerlo o scontarlo.",
+    "rosterHeading": "Chi partecipa",
+    "rosterPlaces": "{taken} posti su {places} occupati",
+    "rosterUncapped": "{count, plural, =0 {Ancora nessuno} one {# persona} other {# persone}} · illimitati",
+    "rosterLoading": "Caricamento…",
+    "rosterEmpty": "Nessuno è ancora iscritto a questo corso.",
+    "rosterHold": "In pagamento",
+    "rosterFull": "Il corso è al completo.",
+    "rosterConflicts": "{count, plural, one {# lezione supera} other {# lezioni superano}} la capienza — qualcuno l'ha prenotata separatamente.",
+    "enrol": "Aggiungi al corso",
+    "enrolling": "Aggiunta…",
+    "enrolled": "Aggiunto e iscritto a {count, plural, one {# lezione} other {# lezioni}}",
+    "enrolConflicts": "{count, plural, one {# lezione era} other {# lezioni erano}} già al completo — il posto al corso è assegnato.",
+    "enrolFailed": "Impossibile aggiungerlo",
+    "withdraw": "Togli dal corso",
+    "withdrawn": "Tolto dal corso. Le lezioni passate restano nel registro presenze.",
+    "withdrawFailed": "Impossibile toglierlo"
   }
 }

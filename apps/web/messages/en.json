@@ -8971,6 +8971,22 @@
     "statusDraft": "Draft",
     "statusPublished": "Published",
     "statusCancelled": "Cancelled",
-    "paneNoPriceYet": "A course has no price yet, so no plan can include or discount one."
+    "paneNoPriceYet": "A course has no price yet, so no plan can include or discount one.",
+    "rosterHeading": "Who is on it",
+    "rosterPlaces": "{taken} of {places} places taken",
+    "rosterUncapped": "{count, plural, =0 {Nobody yet} one {# person} other {# people}} · no limit",
+    "rosterLoading": "Loading…",
+    "rosterEmpty": "Nobody is on this course yet.",
+    "rosterHold": "Paying",
+    "rosterFull": "The course is full.",
+    "rosterConflicts": "{count, plural, one {# lesson is} other {# lessons are}} over capacity — someone booked it separately.",
+    "enrol": "Add to course",
+    "enrolling": "Adding…",
+    "enrolled": "Added, and put on {count, plural, one {# lesson} other {# lessons}}",
+    "enrolConflicts": "{count, plural, one {# lesson was} other {# lessons were}} already full — the place on the course is theirs.",
+    "enrolFailed": "They could not be added",
+    "withdraw": "Take off the course",
+    "withdrawn": "Taken off the course. Their past lessons stay on the register.",
+    "withdrawFailed": "They could not be taken off"
   }
 }

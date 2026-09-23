@@ -8971,6 +8971,22 @@
     "statusDraft": "Entwurf",
     "statusPublished": "Veröffentlicht",
     "statusCancelled": "Abgesagt",
-    "paneNoPriceYet": "Ein Kurs hat noch keinen Preis, daher kann ihn kein Abo enthalten oder vergünstigen."
+    "paneNoPriceYet": "Ein Kurs hat noch keinen Preis, daher kann ihn kein Abo enthalten oder vergünstigen.",
+    "rosterHeading": "Wer dabei ist",
+    "rosterPlaces": "{taken} von {places} Plätzen belegt",
+    "rosterUncapped": "{count, plural, =0 {Noch niemand} one {# Person} other {# Personen}} · unbegrenzt",
+    "rosterLoading": "Wird geladen…",
+    "rosterEmpty": "Noch niemand in diesem Kurs.",
+    "rosterHold": "Zahlt gerade",
+    "rosterFull": "Der Kurs ist voll.",
+    "rosterConflicts": "{count, plural, one {# Lektion ist} other {# Lektionen sind}} überbucht — jemand hat sie einzeln gebucht.",
+    "enrol": "Zum Kurs hinzufügen",
+    "enrolling": "Wird hinzugefügt…",
+    "enrolled": "Hinzugefügt und für {count, plural, one {# Lektion} other {# Lektionen}} eingetragen",
+    "enrolConflicts": "{count, plural, one {# Lektion war} other {# Lektionen waren}} bereits voll — der Kursplatz ist gesichert.",
+    "enrolFailed": "Konnte nicht hinzugefügt werden",
+    "withdraw": "Vom Kurs abmelden",
+    "withdrawn": "Vom Kurs abgemeldet. Vergangene Lektionen bleiben in der Anwesenheitsliste.",
+    "withdrawFailed": "Konnte nicht abgemeldet werden"
   }
 }
