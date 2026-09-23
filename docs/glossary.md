@@ -49,8 +49,12 @@ Short definitions, each with the page that owns the details.
 - **Trial**: a newcomer's first class. It can be free or priced, and it is used
   once per person. It is never a subscription.
 - **Offerings**: the dashboard area where activities and plans are managed.
-- **Course**: online content in the courses plugin: free, sign-in, subscription
-  or sold one-off.
+- **Course**: a bounded set of lessons sold as one thing — "13 Wednesdays, 9
+  places, one price". It owns a session series, so its lessons are ordinary
+  sessions. See [Courses](./courses.md).
+- **Online course**: on-demand video content in the online-courses plugin: free,
+  sign-in, subscription or sold one-off. A different thing from a *Course*, and
+  the screens never use one word for both.
 
 ## Money
 

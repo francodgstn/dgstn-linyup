@@ -549,6 +549,40 @@ appointment pair share one seam, `resolveOrCreateAppointmentContact`).
 asks and discards is worse than one that never asked; the fields are collected
 on the claim, which goes through the paid or free rail like any other booking.
 
+### Courses — a bounded set of lessons, sold once
+
+A **course** (`course_blocks/{id}`) is "13 Wednesdays, 9 places, one price". In
+the UI it is *Course*; the online-courses plugin (`courses/{id}`, on-demand
+video) is *Online course*. Full docs: `docs/courses.md`.
+
+Four invariants, each a bug before it was a rule:
+
+- **A course's meetings are a LIST, never a rule.** `RecurrencePattern` has one
+  `startDate` (which is its time of day) and one `duration`, so it cannot say
+  "Saturday 10:00–16:15 AND Sunday 09:00–15:00". A repeating pattern is an
+  authoring input resolved by `resolveCourseSchedule` and kept beside the list.
+- **A course OWNS a `session_series`** whose sessions are its lessons — which is
+  what gets it roster, attendance, reminders and teardown for free. The series
+  is `status: 'fixed'` (nothing to roll) and carries `course_block_id`, and
+  `updateRecurringSession` + the series-wide `cancelSession` **refuse** it: the
+  first deletes future sessions with no bookings check, and those are lessons
+  people paid for. Cancelling ONE lesson stays allowed.
+- **ONE PLACE WRITER.** `places_taken` is only ever an ABSOLUTE value, from
+  `trackCourseBlockEnrolments`' recount or a transaction that read the
+  `enrolments` subcollection — no `FieldValue.increment` on it anywhere. The
+  seat rule, one level up, with sibling predicates
+  (`courseBlockEnrolmentHoldsPlace`, `countHoldingPlaces`, `placesFree`,
+  `placeFreedEdge`).
+- **The enrolment is the truth; the bookings are a projection.**
+  `syncCourseBlockRoster` **only ever creates a booking that is missing** — that
+  one rule is what makes it re-runnable and what makes "the member cancelled
+  lesson six" stick. A hold writes no bookings at all.
+
+`RecurrencePattern.excludeDates` ("no class on 24.12") lives on the PATTERN, not
+at generation: a rolling series regenerates from it and a `count` series
+recomputes its total from the start on every roll. **A skipped day spends no
+count**, and the day is compared in the STUDIO's timezone, not the process's.
+
 ### Waitlist — class-only, one deadline, one seat writer
 
 A queue for a seat in a full **class** — entries at
