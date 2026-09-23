@@ -616,6 +616,12 @@ export interface SessionPublicProfile {
   bookingMandatory?: boolean
   /** Mirrored from `Session.headline` ONLY when `headlinePublic === true`. */
   headline?: string
+  /** WHERE, as an id — the venue itself, which a public surface can resolve.
+   *  `location` beside it is the studio's free-text note, and is all these
+   *  mirrors carried until now: two sessions at two venues were the same to a
+   *  public page whenever the note was blank or identical. */
+  placeId?: string
+  roomId?: string
   location?: string
   onlineUrl?: string
   /** UID + display name of the provider (class instructor or appointment provider). */

@@ -48,6 +48,12 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
       start: data.start as Timestamp,
       end: data.end as Timestamp,
       duration_minutes: data.duration_minutes || null,
+      // WHERE, as an id. `location` is the studio's free-text note, which is
+      // all the public surfaces have ever had — so two sessions at two venues
+      // are indistinguishable to them whenever the note is blank or the same.
+      // The id is what lets a public page resolve the venue itself.
+      placeId: data.placeId || null,
+      roomId: data.roomId || null,
       location: data.location || null,
       onlineUrl: data.onlineUrl || null,
       max_participants: data.max_participants || null,
@@ -72,6 +78,9 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
       activityColor: data.activityColor || null,
       start: data.start as Timestamp,
       end: data.end as Timestamp,
+      // WHERE, as an id — see the appointment branch above.
+      placeId: data.placeId || null,
+      roomId: data.roomId || null,
       location: data.location || null,
       capacity: data.capacity || null,
       participants_count: data.participants_count || 0,
