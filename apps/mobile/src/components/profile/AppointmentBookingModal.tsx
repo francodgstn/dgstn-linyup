@@ -307,7 +307,13 @@ export const AppointmentBookingModal: React.FC<Props> = ({ visible, teamId, cont
                               {durationLabel}
                             </Text>
                           </View>
-                          {activity.location ? (
+                          {/* The PLACE is the where, and it is what tells two
+                              cards for the same offer apart — `listAvailability`
+                              returns one entry per (provider, activity, place).
+                              `location` is the studio's free-text note on top of
+                              it, and is all a schedule naming no tracked place
+                              has. */}
+                          {activity.placeName || activity.location ? (
                             <View style={styles.metaItem}>
                               <Icon source="map-marker-outline" size={12} color={theme.colors.onSurfaceVariant} />
                               <Text
@@ -315,7 +321,7 @@ export const AppointmentBookingModal: React.FC<Props> = ({ visible, teamId, cont
                                 style={{ color: theme.colors.onSurfaceVariant }}
                                 numberOfLines={1}
                               >
-                                {activity.location}
+                                {[activity.placeName, activity.location].filter(Boolean).join(' · ')}
                               </Text>
                             </View>
                           ) : null}
@@ -494,13 +500,13 @@ export const AppointmentBookingModal: React.FC<Props> = ({ visible, teamId, cont
                       {`${fmtTime(pendingSlot.startMs)} – ${fmtTime(pendingSlot.startMs + pendingSlot.durationMinutes * 60_000)} · ${fmtDuration(t, pendingSlot.durationMinutes)}`}
                     </Text>
                   </View>
-                  {selectedActivity?.location ? (
+                  {selectedActivity?.placeName || selectedActivity?.location ? (
                     <View
                       style={[styles.detailRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.outlineVariant }]}
                     >
                       <Icon source="map-marker-outline" size={16} color={theme.colors.primary} />
                       <Text variant="bodySmall" style={[styles.detailText, { color: theme.colors.onSurface }]}>
-                        {selectedActivity.location}
+                        {[selectedActivity.placeName, selectedActivity.location].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
                   ) : null}

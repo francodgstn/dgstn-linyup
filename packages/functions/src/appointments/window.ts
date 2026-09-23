@@ -26,6 +26,9 @@ import {
   AVAILABILITY_COLLECTION,
   AVAILABILITY_EXCEPTIONS_COLLECTION,
   ACTIVITIES_COLLECTION,
+  ORGANIZATIONS_COLLECTION,
+  ORG_PLACES_SUBCOLLECTION,
+  TEAM_PLACES_SUBCOLLECTION,
   TEAMS_COLLECTION,
   GUEST_SNAPSHOT,
   appointmentSlotBlocked,
@@ -193,6 +196,95 @@ function accumulateCandidates(
 
 // ─── listAvailability (public) ─────────────────────────────────────────────────
 
+/**
+ * WHERE ONE SCHEDULE'S OFFERS LAND — the (activity, place) bucket key, and the
+ * one place the place-vs-location precedence is decided.
+ *
+ * `listAvailability` returns one entry per (provider, activity, PLACE), and
+ * this is the "place" half. Grouping on (provider, activity) alone merged a
+ * coach's schedules at DIFFERENT pools into one calendar labelled with
+ * whichever schedule was read first — so a visitor picked a Tuesday believing
+ * it was one pool and `bookAppointment` put them in another, because booking
+ * resolves the place from the availability that covers the start, not from
+ * anything the visitor was shown. That was wrong output, not a missing feature.
+ *
+ * The key falls back to the free-text `location`, then `onlineUrl`, then the
+ * empty string, so a legacy schedule carrying no `placeId` buckets exactly as
+ * it did before — one entry, unchanged.
+ */
+export function availabilityPlaceKey(tpl: AvailabilityWhere): string {
+  return tpl.placeId ?? tpl.location ?? tpl.onlineUrl ?? ''
+}
+
+/** The three fields that say where a schedule happens.
+ *
+ *  Nullable, unlike `Availability`'s own optional spelling, because the editor
+ *  writes `placeId: data.placeId || null` — a cleared field is stored as null,
+ *  not removed. Both read the same through `??`; the type is widened so a
+ *  fixture can be honest about what is on disk. */
+type AvailabilityWhere = {
+  [K in 'placeId' | 'location' | 'onlineUrl']?: Availability[K] | null
+}
+
+/** The bucket key itself. Separate from `availabilityPlaceKey` only so the
+ *  activity half cannot be spelled two ways at two call sites. */
+export function availabilityBucketKey(activityId: string, tpl: AvailabilityWhere): string {
+  return `${activityId}::${availabilityPlaceKey(tpl)}`
+}
+
+/**
+ * Place id → the place's own name, for the ids a set of schedules actually
+ * references.
+ *
+ * Read by id rather than mirrored: a place has no public document of its own,
+ * the set on screen is tiny (MAX_PLACES caps a team at 25 and a coach's
+ * schedules reference a handful), and an id-keyed read is the one shape that
+ * needs nothing kept in step. A session's place may also be an ORG place, which
+ * a team-scoped query would never find — hence the second lookup, tried only for
+ * the ids the first did not answer.
+ *
+ * A missing place yields no entry, and the caller renders the schedule's own
+ * free-text `location` exactly as it did before. Never throws: a label is not
+ * worth failing a calendar over.
+ */
+async function resolvePlaceNames(
+  db: FirebaseFirestore.Firestore,
+  teamId: string,
+  orgIds: readonly string[],
+  placeIds: ReadonlySet<string>
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>()
+  if (placeIds.size === 0) return names
+
+  const teamPlaces = db.collection(TEAMS_COLLECTION).doc(teamId).collection(TEAM_PLACES_SUBCOLLECTION)
+  const [teamErr, teamDocs] = await to(Promise.all([...placeIds].map((id) => teamPlaces.doc(id).get())))
+  if (teamErr) console.warn('[listAvailability] could not read team places:', teamErr)
+  for (const doc of teamDocs ?? []) {
+    const name = doc.exists ? (doc.data()?.name as string | undefined) : undefined
+    if (name) names.set(doc.id, name)
+  }
+
+  const unresolved = [...placeIds].filter((id) => !names.has(id))
+  for (const orgId of orgIds) {
+    if (unresolved.length === 0) break
+    const orgPlaces = db.collection(ORGANIZATIONS_COLLECTION).doc(orgId).collection(ORG_PLACES_SUBCOLLECTION)
+    const [orgErr, orgDocs] = await to(Promise.all(unresolved.map((id) => orgPlaces.doc(id).get())))
+    if (orgErr) {
+      console.warn('[listAvailability] could not read org places:', orgErr)
+      break
+    }
+    for (const doc of orgDocs ?? []) {
+      const name = doc.exists ? (doc.data()?.name as string | undefined) : undefined
+      if (name) names.set(doc.id, name)
+    }
+    for (let i = unresolved.length - 1; i >= 0; i--) {
+      if (names.has(unresolved[i])) unresolved.splice(i, 1)
+    }
+  }
+
+  return names
+}
+
 export const listAvailability = onCall(async (request): Promise<ListAvailabilityResult> => {
   await checkoutRateLimit(request.rawRequest?.ip, 'availability', AVAILABILITY_RATE_LIMIT_PER_HOUR)
   const data = request.data as {
@@ -295,9 +387,20 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
   }
   if (byProvider.size === 0) return { coaches: [], settleAtStudio }
 
+  // One bounded read for the whole answer, before the per-provider loop: the
+  // label belongs to the place, so resolving it inside the loop would re-read
+  // the same document once per coach who teaches there.
+  const referencedPlaceIds = new Set<string>()
+  for (const list of byProvider.values()) for (const t of list) if (t.placeId) referencedPlaceIds.add(t.placeId)
+  const team = teamSnap.data() as { org_id?: string; organization_ids?: string[] } | undefined
+  const orgIds = [...new Set([team?.org_id, ...(team?.organization_ids ?? [])].filter((id): id is string => !!id))]
+  const placeNames = await resolvePlaceNames(db, data.teamId, orgIds, referencedPlaceIds)
+
   interface ActivityAccumulator {
     activityId: string
     activityName: string
+    placeId: string | null
+    placeName: string | null
     durations: ActivityDuration[]
     memberBenefit?: ActivityMemberBenefit | Benefit
     durationBenefits?: ActivityDurationBenefit[]
@@ -341,22 +444,23 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
       if (en > nowMs && s < toMs) busy.push({ start: s, end: en })
     }
 
-    // GROUP BY (provider, activity) — merge days across a provider's several
-    // availabilities that offer the same activity (e.g. "Saturday mornings" AND
-    // "Weekday evenings" both offering the same 60' session).
+    // GROUP BY (provider, activity, PLACE) — merge days across a provider's
+    // several availabilities that offer the same activity AT THE SAME PLACE
+    // (e.g. "Saturday mornings" AND "Weekday evenings", both at the Hallenbad).
+    // The key, and why the place is in it, is `availabilityBucketKey` above.
     const activityAcc = new Map<string, ActivityAccumulator>()
     for (const tpl of providerTemplates) {
       const offered = (tpl.activityIds ?? []).filter((id) => activityMap.has(id))
       for (const activityId of offered) {
         const info = activityMap.get(activityId)!
-        let acc = activityAcc.get(activityId)
+        const accKey = availabilityBucketKey(activityId, tpl)
+        let acc = activityAcc.get(accKey)
         if (!acc) {
-          // Location/onlineUrl: take them from the first contributing availability.
-          // Edge case: differing locations across schedules show the first —
-          // booking always resolves the real one from the matched availability.
           acc = {
             activityId,
             activityName: info.name,
+            placeId: tpl.placeId ?? null,
+            placeName: tpl.placeId ? (placeNames.get(tpl.placeId) ?? null) : null,
             durations: info.durations,
             memberBenefit: info.memberBenefit,
             durationBenefits: info.durationBenefits,
@@ -366,7 +470,7 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
             onlineUrl: tpl.onlineUrl ?? null,
             daysMap: new Map(),
           }
-          activityAcc.set(activityId, acc)
+          activityAcc.set(accKey, acc)
         }
         accumulateCandidates(tpl, info.durations.map((d) => d.minutes), busy, nowMs, toMs, acc.daysMap)
       }
@@ -407,6 +511,8 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
           cancellationPolicy: acc.cancellationPolicy,
           // Extends the team-wide contact-field list on the guest step.
           contactFields: acc.contactFields,
+          placeId: acc.placeId,
+          placeName: acc.placeName,
           location: acc.location,
           onlineUrl: acc.onlineUrl,
           days,

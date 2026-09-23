@@ -46,6 +46,15 @@ export interface ListAvailabilityActivity {
   /** The activity's own CONTACT fields, extending the team-wide list — the
    *  same resolver runs server-side at booking, so this is not display-only. */
   contactFields: BookingContactField[] | null
+  /** WHERE. One entry per (provider, activity, PLACE) — see the grouping note
+   *  in `appointments/window.ts`. Null for a schedule that names no tracked
+   *  place (legacy docs carry only the free-text `location`). */
+  placeId: string | null
+  /** The place's own name, resolved server-side so every client labels the
+   *  same calendar the same way. Null when `placeId` is. */
+  placeName: string | null
+  /** The free-text note the studio typed ON TOP of the place ("Meet at the 50m
+   *  hall"), never the place's name. */
   location: string | null
   onlineUrl: string | null
   days: ListAvailabilityDay[]

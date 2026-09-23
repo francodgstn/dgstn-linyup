@@ -1967,6 +1967,8 @@ interface AvailCoachLite {
     activityId: string
     activityName: string
     durations: { minutes: number }[]
+    placeId: string | null
+    placeName: string | null
     location: string | null
     days: { dayMs: number; slotsByDuration: Record<string, number[]> }[]
   }[]
@@ -2150,12 +2152,18 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
           for (const w of mergeAvailabilitySlots(starts, minutes)) {
             if (w.startMs > windowEnd) continue
             entries.push({
-              id: `avail-${coach.providerId}-${activity.activityId}-${w.startMs}`,
+              // THE PLACE IS IN THE KEY. `listAvailability` returns one entry
+              // per (provider, activity, place), so the same coach teaching the
+              // same thing at two pools now yields two entries — which collide
+              // on a key that names only the first two and the start.
+              id: `avail-${coach.providerId}-${activity.activityId}-${activity.placeId ?? ''}-${w.startMs}`,
               activityId: activity.activityId,
               providerId: coach.providerId,
               activityName: activity.activityName,
               providerName: coach.providerName ?? undefined,
-              location: activity.location ?? undefined,
+              // The place's own name is the WHERE; the schedule's free-text
+              // note is what the studio typed on top of it.
+              location: activity.placeName ?? activity.location ?? undefined,
               start: msTimestamp(w.startMs),
               end: msTimestamp(w.endMs),
               variant: 'availability',
