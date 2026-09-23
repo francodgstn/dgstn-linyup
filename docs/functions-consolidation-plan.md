@@ -73,9 +73,12 @@ removed. Routers were added first; aliases go in waves.
     297  ████████████████████████████████  the start
     305  █████████████████████████████████ + the routers, every alias still there   (the peak)
     291  ███████████████████████████████   wave 1: callables nothing had ever called (2026-09-20)
-   ~107  ████████████                      web + admin aliases, once quiet in production
+   ~107  ████████████                      web + admin aliases — BLOCKED, see below
     ~90  ██████████                        the member app's names, once old binaries are retired
          └── the floor: triggers, schedules, task queues and webhooks cannot merge
+
+  The last two bars are not a schedule. They are gated on somebody USING the product,
+  not on a date — measured 2026-09-23, production has no web callable traffic at all.
 ```
 
 **Browser proof on staging, signed in (2026-09-23).** Every other proof runs from Node or
@@ -102,12 +105,35 @@ Both are covered by `scripts/router-spike.mjs` on all three projects, production
 **`rpcOrg` is reachable only by a write that emails somebody** (inviting an org member): its
 pages read Firestore directly. Left unproven rather than sending mail from staging.
 
-**BEFORE booking or inviting anybody on staging, read the messaging policy.** Staging's default
-is `live` and the `hmd` tenant is explicitly `live`, so a booking confirmation for a migrated
-HMD contact reaches a real person at their real address. Seeded tenants are safe by
-construction — their contacts are `@example.com`, dropped by the synthetic-recipient guard in
-every environment (`packages/functions/src/mail/messagingPolicy.ts`) — and `linyup-demo` is
-`silent`. The policy lives in `messaging_policies/{tenantId}`.
+**Who a test on staging can email — and the layer that decides is NOT the one you would read
+first.** An earlier version of this section said staging's `live` policy meant a booking
+confirmation would reach a real HMD member. That was wrong, and it was wrong in the cautious
+direction: it read `messaging_policies` and `MESSAGING_DEFAULT_MODE` and stopped there.
+
+`packages/functions/src/mail/mailService.ts` checks **TEST MODE first**, and its redirect branch
+deliberately bypasses everything below it — both the per-tenant policy and the
+synthetic-recipient drop:
+
+| Environment | `TEST_MODE` | What actually happens |
+|---|---|---|
+| staging | `true`, `TEST_EMAIL` set | **every** recipient is replaced by `TEST_EMAIL`, whatever the tenant policy says |
+| production | `false` | the tenant policy decides; the default is `live`, so real people |
+| sandbox | `false` | policy decides; the default is `silent`, so nothing sends |
+
+So on staging a write that notifies **cannot reach a stranger** — but it does land in the
+`TEST_EMAIL` inbox, which is a real person's mailbox and the reason to still be deliberate.
+Two corollaries worth knowing before designing a test:
+
+- The `@example.com` synthetic drop is **not** what protects you on staging. It sits in the
+  `else` branch, so test mode preempts it: mail addressed to a seeded contact is redirected and
+  genuinely delivered, not dropped. It protects sandbox and production, where test mode is off.
+- The one exception is a tenant policy with `ignoreTestMode: true`, which hands the decision back
+  to that tenant's own mode. No tenant on staging or production sets it today
+  (`messaging_policies/{tenantId}`).
+
+Proven rather than reasoned, 2026-09-23: inviting `router-check@example.com` to a seeded
+organisation on staging logged `[mail] TEST MODE → redirecting router-check@example.com to
+<TEST_EMAIL>` and wrote a `mail_sends` row with `status: sent` and a real provider message id.
 
 **Where it stands (2026-09-20).**
 
@@ -534,7 +560,7 @@ monolithic deploy stops hurting.
 
 | Caller set | Condition |
 |---|---|
-| web-only / admin-only names | Web or admin has shipped on `callFunction` for that router, **and** 14 consecutive days show zero requests on the alias service. The tail is stale browser tabs. |
+| web-only / admin-only names | Web or admin has shipped on `callFunction` for that router, **and** 14 consecutive days show zero requests on the alias service, **and the ROUTER that replaced it was busy in that window**. Without the third clause the test passes on a project nobody uses — see "What production actually shows" below. The tail is stale browser tabs. |
 | names mobile calls | A store build calling via `callFunction` is live, **and** `app_settings/mobile.min_supported_version` has been raised to or past that build (`.claude/skills/mobile-release/SKILL.md` → "Backend compatibility"), **and** 30 consecutive days show zero requests. |
 
   Reason for the stricter mobile rule: an OTA only reaches binaries whose native
@@ -869,9 +895,35 @@ environment that turns the flag on.
   - record each name, with its evidence, on `ALIAS_REMOVED` in
     `packages/functions/src/utils/routerCoverage.test.ts`
   - deploy
-- **This is where the deployable count actually drops.** Web and admin waves can
-  start about 14 days after their phase ships TO PRODUCTION. The mobile wave waits on
-  `min_supported_version`.
+- **This is where the deployable count actually drops — and it is BLOCKED on production
+  having users, not on a date.**
+
+  **What production actually shows (measured 2026-09-23, `pnpm functions:alias-usage` plus the
+  routers' own log lines).** Of 216 routed callables, **8 aliases see a successful call, and all
+  8 are member-app names** — `sendContactVerificationCode` 208, `getMyBookings` 63,
+  `getMyAttendance` 37, `loginContactWithCode` 10, `listAvailability` 4, `bookSession` 3,
+  `cancelBooking` 1, `getContactQR` 1 over seven days. There is **no staff or web callable
+  traffic on production at all**, and the only successful ROUTER calls ever recorded there are
+  this repo's own spike runs (`listAvailability`, 2026-09-20 and 2026-09-23, with their
+  preflights).
+
+  Two consequences, and they are the opposite of what an alias report looks like at a glance:
+
+  - The ~200 staff and web aliases will read quiet in any window, because **nobody uses the web
+    app on production** — not because routing replaced them. Removing them on that reading would
+    be removing them on no evidence. The first wave was safe for a different reason that does not
+    transfer: those callables had never had a client at all.
+  - The 8 aliases that ARE used belong to the member app, which does not route yet and waits on
+    `min_supported_version` regardless.
+
+  So the honest position is that **production cannot produce this evidence today**. What unblocks
+  it, in order of preference: real studios using the web app on production (the HMD cutover, or
+  the first customers); then the mobile release, after which those 8 names become measurable.
+  Removing the web and admin aliases on CODE evidence instead — every web call site goes through
+  `callFunction`, lint forbids the alternative, and the coverage test enforces it — is a
+  defensible separate decision, but it is a decision, not something a report licenses. Its
+  residual risk is a browser tab holding old JS, which the fallback cannot catch (a missing
+  function's 404 carries no CORS headers, see Phase 4).
 - **Measure with `node scripts/alias-usage.mjs --project <id>`** (`pnpm functions:alias-usage`).
   An alias is its own Cloud Run service, so the platform already counts who calls it.
   **A raw request count never reaches zero:** every function — callables no client has ever
