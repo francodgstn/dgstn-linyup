@@ -49,11 +49,15 @@ import {
   SESSION_BOOKINGS_SUBCOLLECTION,
   countHoldingPlaces,
   countHoldingSeats,
+  courseBlockSalesOpen,
   placesFree,
+  resolvePaymentOptions,
   seatsFree,
   type CourseBlock,
   type CourseBlockEnrolment,
+  type CourseBlockTarget,
 } from '@linyup/shared'
+import { loadContactPaymentSnapshot } from '../booking/access'
 import { to } from '../utils/async'
 import { requireCapability } from '../utils/teams'
 import { generateSecureToken } from '../utils/crypto'
@@ -73,6 +77,31 @@ export interface CourseEnrolmentResult {
   bookingsWritten: number
   /** Lessons whose session had no room, surfaced, never fatal. */
   conflicts: string[]
+}
+
+/**
+ * A course, as the ONE resolver sees it.
+ *
+ * Every rail that asks what a course costs, the free join, the checkout, the
+ * public card, builds its target here, so none of them can quietly read one
+ * facet of the plan edge and miss the other, or forget the sign-up wall. It is
+ * the same reason `classAccessFacts` exists on the class side.
+ */
+export function courseBlockTarget(
+  block: Pick<
+    CourseBlock,
+    'priceAmount' | 'includedSubscriptionTypeIds' | 'benefit' | 'audience'
+  >,
+  opts: { enrolled: boolean }
+): CourseBlockTarget {
+  return {
+    kind: 'course_block',
+    priceAmount: block.priceAmount ?? null,
+    includedSubscriptionTypeIds: block.includedSubscriptionTypeIds ?? [],
+    benefit: block.benefit ?? null,
+    audience: block.audience ?? 'anyone',
+    enrolled: opts.enrolled,
+  }
 }
 
 // ─── the gate ────────────────────────────────────────────────────────────────
@@ -441,6 +470,96 @@ export const enrolCourseBlockContact = onCall(async (request) => {
     throw new HttpsError('permission-denied', 'That course belongs to another studio.')
   }
 
+  const roster = await syncCourseBlockRoster(db, blockId)
+  return {
+    blockId,
+    contactId,
+    placesTaken,
+    bookingsWritten: roster.written,
+    conflicts: roster.conflicts,
+  } satisfies CourseEnrolmentResult
+})
+
+/**
+ * The FREE rail: a member or a guest takes a place that costs them nothing,
+ * because the course is free or because a plan they hold includes it.
+ *
+ * It refuses a PAYABLE caller with `payment_required`, exactly as
+ * `bookAppointment` does, and for the same reason: if this decided on its own
+ * what was free it would be a second pricing path, and the two would disagree
+ * the first time a promo, a plan edge or a sales deadline changed. The price
+ * comes from `resolvePaymentOptions`, and a payable answer sends the caller to
+ * the checkout instead.
+ */
+export const joinCourseBlock = onCall(async (request) => {
+  const { teamId, blockId, contactId } = request.data as {
+    teamId?: string
+    blockId?: string
+    contactId?: string
+  }
+  if (!teamId || !blockId || !contactId) {
+    throw new HttpsError('invalid-argument', 'teamId, blockId and contactId are required')
+  }
+
+  const db = admin.firestore()
+  const blockDoc = await db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId).get()
+  if (!blockDoc.exists) throw new HttpsError('not-found', 'That course no longer exists.')
+  const block = { ...(blockDoc.data() as CourseBlock), id: blockDoc.id }
+  if (block.teamId !== teamId) {
+    throw new HttpsError('permission-denied', 'That course belongs to another studio.')
+  }
+  // The sales window, read through the ONE predicate the public card reads, so
+  // a visitor is never shown a button this refuses.
+  if (!courseBlockSalesOpen(block)) {
+    throw new HttpsError('failed-precondition', 'That course is not open for booking.', {
+      reason: 'sales_closed',
+    })
+  }
+
+  const contactDoc = await db.collection(CONTACTS_COLLECTION).doc(contactId).get()
+  if (!contactDoc.exists) throw new HttpsError('not-found', 'That contact no longer exists.')
+  const contact = contactDoc.data() as {
+    teamId?: string
+    firstname?: string
+    lastname?: string
+    email?: string
+  }
+  if (contact.teamId !== teamId) {
+    throw new HttpsError('permission-denied', 'That contact belongs to another studio.')
+  }
+
+  const snapshot = await loadContactPaymentSnapshot({
+    teamId,
+    contact: { ...contact, id: contactId },
+    relevantTypeIds: block.includedSubscriptionTypeIds ?? [],
+  })
+  const priced = resolvePaymentOptions(snapshot, courseBlockTarget(block, { enrolled: false }))
+  const option = priced.options[0]
+
+  // THE REFUSAL BRANCH MUST COME BEFORE THE FREE ONE. Without it an empty
+  // options array falls through to "enrols without paying", which is the free
+  // course this rail exists to prevent. The appointment rail learned this.
+  if (!option) {
+    throw new HttpsError('failed-precondition', 'You cannot book this course.', {
+      reason: priced.denial ?? 'no_subscription',
+    })
+  }
+  if (option.type === 'pay') {
+    throw new HttpsError('failed-precondition', 'This course has to be paid for.', {
+      reason: 'payment_required',
+      priceAmount: option.amount,
+    })
+  }
+
+  const { placesTaken } = await takeCourseBlockPlace(db, {
+    blockId,
+    contactId,
+    firstname: contact.firstname ?? null,
+    lastname: contact.lastname ?? null,
+    email: contact.email ?? null,
+    status: 'enrolled',
+    payment_status: 'not_required',
+  })
   const roster = await syncCourseBlockRoster(db, blockId)
   return {
     blockId,

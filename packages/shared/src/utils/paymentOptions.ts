@@ -137,11 +137,36 @@ export interface ProductTarget {
   benefit?: AnyBenefit | null
 }
 
+export interface CourseBlockTarget {
+  /** A COURSE: a bounded set of lessons sold once (types/courseBlock.ts). Not
+   *  `course`, which is the online-courses plugin's on-demand video and carries
+   *  a `CourseAccessRule` plus `snapshot.ownsCourse`. Overloading that arm would
+   *  make one `accessRule.type` mean two things and would hand a scheduled
+   *  course the LMS's `purchases` subcollection as its entitlement. */
+  kind: 'course_block'
+  /** Major units, team currency. Null means free: an enrolment costs nothing,
+   *  which is a real offer (a free open-water meet-up, a taster week). */
+  priceAmount: number | null
+  /** The plans that get this course free. Read ADDITIVELY with `benefit`, and
+   *  FREE WINS, exactly as the course arm does below, and for the same reason:
+   *  reading only one of them was a bug there rather than a design. */
+  includedSubscriptionTypeIds?: string[] | null
+  /** The plans that merely get it cheaper. */
+  benefit?: AnyBenefit | null
+  /** The "only people who signed up with you" wall, the same one a class has.
+   *  Absent reads as 'anyone'. */
+  audience?: 'anyone' | 'members'
+  /** Already holding a place. Short-circuits to covered, so the surfaces do not
+   *  offer to sell somebody a place they have. */
+  enrolled?: boolean
+}
+
 export type PaymentTarget =
   | ClassBookingTarget
   | DropInTarget
   | AppointmentTarget
   | CourseTarget
+  | CourseBlockTarget
   | ProductTarget
 
 // ─── Result ─────────────────────────────────────────────────────────────────────
@@ -776,6 +801,16 @@ export const COURSE_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
   'percent_off',
   'fixed_price',
 ])
+// A scheduled COURSE, same reasoning as the LMS course above: a plan can include
+// it or discount it, and `spend_credits` is excluded because the webhook has no
+// grant+spend story for one. "Thirteen credits for thirteen lessons" is a real
+// ask and a real feature, needing a debit inside the enrolment transaction and a
+// refund path on withdrawal; it is not this.
+export const COURSE_BLOCK_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
+  'included',
+  'percent_off',
+  'fixed_price',
+])
 // Products: merchandise is never covered and never denied — excluding the two
 // coverage effects is what makes that structural rather than a rule to
 // remember. `Product` carries no benefit today, so this set is forward-looking.
@@ -792,6 +827,7 @@ const PROMO_TARGETS: ReadonlySet<PaymentTarget['kind']> = new Set([
   'drop_in',
   'appointment',
   'course',
+  'course_block',
   'product',
 ])
 
@@ -1028,6 +1064,56 @@ function resolveTarget(
         options: [],
         denial: snapshot.authenticated ? 'no_subscription' : 'sign_in_required',
       }
+    }
+
+    case 'course_block': {
+      // ALREADY ON IT. Checked before anything else: a surface that offered to
+      // sell somebody a place they hold would take the money and then refuse
+      // them at the gate, which is the one outcome worth structurally
+      // preventing here.
+      if (target.enrolled) {
+        return { options: [{ type: 'covered', via: { reason: 'owned' } }], denial: null }
+      }
+
+      // THE WALL, the same one a class has: "only people who signed up with
+      // you". It gates before price, because a studio that set it does not want
+      // a stranger buying a place whatever they are willing to pay.
+      if (target.audience === 'members' && !snapshot.authenticated) {
+        return { options: [], denial: 'sign_in_required' }
+      }
+
+      // THE GATE AND THE BENEFIT ARE ADDITIVE, AND FREE WINS. The same shape as
+      // the LMS course arm above, and here for the same reason: a plan that
+      // includes a course and a plan that discounts it are two lists, and
+      // reading only one of them quotes a holder full price for something they
+      // already have.
+      const listed = target.includedSubscriptionTypeIds ?? []
+      const included =
+        bestUnmeteredPlan(snapshot, listed) ?? listed.find((id) => attachedToCreditType(snapshot, id))
+      if (included) {
+        return {
+          options: [
+            { type: 'covered', via: { reason: 'subscription', subscriptionTypeId: included } },
+          ],
+          denial: null,
+        }
+      }
+
+      // FREE FOR EVERYONE. A course with no price is an offer, not a misconfig:
+      // a free taster week and an open-water meet-up are both ordinary things a
+      // studio runs, and they still want the register.
+      if (target.priceAmount === null || target.priceAmount === undefined) {
+        return { options: [{ type: 'covered', via: { reason: 'open' } }], denial: null }
+      }
+
+      return applyModifiers(
+        snapshot,
+        target.benefit,
+        target.priceAmount,
+        'course_price',
+        COURSE_BLOCK_EFFECTS,
+        promo
+      )
     }
 
     case 'product': {

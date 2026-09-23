@@ -1,8 +1,10 @@
 // ─── COURSE BLOCKS: the scheduling half ─────────────────────────────────────
 //
 // A course is a bounded set of lessons sold as one thing. This file creates,
-// reschedules and deletes one; enrolment, capacity and the sale arrive in their
-// own stages, and nothing here writes a price.
+// reschedules and deletes one, and records what it costs. It never CHARGES:
+// taking the money is `createCourseBlockCheckout`, and what somebody actually
+// pays is `resolvePaymentOptions`, which reads the price here together with the
+// plans they hold and any promo code.
 //
 // ── THE OWNED SERIES ────────────────────────────────────────────────────────
 //
@@ -31,12 +33,13 @@
 // edit branch DELETES future sessions outright, with no bookings check, and a
 // deleted lesson may be one nine people have paid for.
 import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import {
   ACTIVITIES_COLLECTION,
   COURSE_BLOCKS_COLLECTION,
   MAX_COURSE_BLOCK_NAME_LENGTH,
+  MIN_CHARGE_MAJOR,
   SESSION_SERIES_COLLECTION,
   type Activity,
   type CourseBlock,
@@ -61,7 +64,53 @@ interface CourseBlockWrite {
   providerId?: unknown
   providerName?: unknown
   places?: unknown
+  priceAmount?: unknown
+  audience?: unknown
+  closeDaysBefore?: unknown
   schedule?: CourseScheduleInput
+}
+
+/** The price, in major units. Absent, null or empty all mean FREE, which is an
+ *  offer rather than a gap: a taster week is a real thing to run. */
+function cleanPrice(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0) {
+    throw new HttpsError('invalid-argument', 'The price has to be a number.')
+  }
+  // Below the floor a card cannot be charged at all, so a price under it would
+  // be a course nobody could buy. `MIN_CHARGE_MAJOR` is the resolver's own floor.
+  if (n > 0 && n < MIN_CHARGE_MAJOR) {
+    throw new HttpsError(
+      'invalid-argument',
+      `A price has to be at least ${MIN_CHARGE_MAJOR}, or nothing at all.`
+    )
+  }
+  return n > 0 ? n : null
+}
+
+/** How many days before the first lesson sales close. Absent means they never
+ *  do, which is what a studio that did not set one means. */
+function cleanCloseDays(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0 || n > 365) {
+    throw new HttpsError('invalid-argument', 'Closing has to be between 0 and 365 days before.')
+  }
+  return Math.floor(n)
+}
+
+/** The absolute instant sales close, derived from the first lesson so that
+ *  moving the schedule moves the deadline with it. Stored absolute as well, so
+ *  the public list can filter on one field and the mirror can carry it. */
+function closesAt(
+  meetings: CourseMeeting[],
+  closeDaysBefore: number | null
+): FirebaseFirestore.Timestamp | null {
+  if (closeDaysBefore === null) return null
+  const first = meetings[0]
+  if (!first) return null
+  return Timestamp.fromMillis(first.start.toMillis() - closeDaysBefore * 24 * 60 * 60_000)
 }
 
 function requireTeamId(data: unknown): string {
@@ -200,6 +249,15 @@ export const createCourseBlock = onCall(async (request) => {
     providerId: optionalString(data.providerId, 200),
     providerName: optionalString(data.providerName, 120),
     places: cleanPlaces(data.places),
+    priceAmount: cleanPrice(data.priceAmount),
+    // The plan edge starts empty and is drawn where every other offering's is,
+    // in the Offerings pane, so a course is linked to a plan the same way a
+    // class is rather than through a second editor that learns the same rules.
+    includedSubscriptionTypeIds: [],
+    benefit: null,
+    audience: data.audience === 'members' ? ('members' as const) : ('anyone' as const),
+    close_days_before: cleanCloseDays(data.closeDaysBefore),
+    booking_closes_at: closesAt(schedule.meetings, cleanCloseDays(data.closeDaysBefore)),
     meetings: schedule.meetings,
     pattern: schedule.recurrence ? { recurrence: schedule.recurrence } : null,
     // A course lands in draft: its lessons exist on the calendar so the studio
@@ -297,6 +355,9 @@ export const updateCourseBlock = onCall(async (request) => {
   if (data.name !== undefined) patch.name = cleanName(data.name)
   if (data.description !== undefined) patch.description = optionalString(data.description, 2000)
   if (data.places !== undefined) patch.places = cleanPlaces(data.places)
+  if (data.priceAmount !== undefined) patch.priceAmount = cleanPrice(data.priceAmount)
+  if (data.audience !== undefined) patch.audience = data.audience === 'members' ? 'members' : 'anyone'
+  if (data.closeDaysBefore !== undefined) patch.close_days_before = cleanCloseDays(data.closeDaysBefore)
   if (data.placeId !== undefined) patch.placeId = optionalString(data.placeId, 200)
   if (data.roomId !== undefined) patch.roomId = optionalString(data.roomId, 200)
   if (data.location !== undefined) patch.location = optionalString(data.location, 120)
@@ -342,6 +403,17 @@ export const updateCourseBlock = onCall(async (request) => {
     created = count
     await seriesRef.update({ totalOccurrences: FieldValue.increment(created) })
   }
+
+  // THE DEADLINE IS DERIVED, so it is re-derived whenever either input moves.
+  // "Closes three days before it starts" has to keep meaning that after the
+  // studio pushes the start back a week; a stored absolute that nobody
+  // recomputes would quietly close sales on the old date.
+  const nextDays =
+    patch.close_days_before !== undefined
+      ? (patch.close_days_before as number | null)
+      : (existing.close_days_before ?? null)
+  const nextMeetings = (patch.meetings as CourseMeeting[] | undefined) ?? existing.meetings ?? []
+  patch.booking_closes_at = closesAt(nextMeetings, nextDays)
 
   await blockRef.update(patch)
   return { id: blockId, created }

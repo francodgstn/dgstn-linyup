@@ -1,3 +1,4 @@
+import type { Benefit } from './benefit'
 import type { Timestamp } from './common'
 import type { RecurrencePattern } from './session'
 
@@ -121,6 +122,38 @@ export interface CourseBlock {
    * conflict on one document.
    */
   places_taken?: number
+
+  /**
+   * WHAT IT COSTS, in major units of the team currency. Null or absent means
+   * free for everyone, which is an offer rather than a misconfiguration: a
+   * taster week and an open-water meet-up are both ordinary things a studio
+   * runs, and it still wants the register.
+   *
+   * Read through `resolvePaymentOptions` with a `course_block` target, never
+   * directly: what somebody actually pays depends on the plans they hold and
+   * any promo code, and this is only the base.
+   */
+  priceAmount?: number | null
+
+  /**
+   * THE PLAN EDGE, in the two facets every other offering has: the plans that
+   * get this course FREE, and the one rule that prices it for the plans that
+   * merely get it CHEAPER. They are read additively and free wins, which is the
+   * shape the LMS course arm had to be corrected into after a holder was quoted
+   * full price for something the rules already let them have.
+   */
+  includedSubscriptionTypeIds?: string[] | null
+  benefit?: Benefit | null
+
+  /** The "only people who signed up with you" wall, the same one a class has.
+   *  Absent reads as 'anyone'. */
+  audience?: 'anyone' | 'members'
+
+  /** When it stops being sellable. Stored absolute so a public list can filter
+   *  on it and the mirror can carry it; `close_days_before` is kept beside it so
+   *  the absolute is re-derived when the first lesson moves. */
+  booking_closes_at?: Timestamp | null
+  close_days_before?: number | null
 
   status?: CourseBlockStatus
 
@@ -316,6 +349,32 @@ export function placeFreedEdge(
     placesFree(before.places, before.places_taken ?? 0) <= 0 &&
     placesFree(after.places, after.places_taken ?? 0) > 0
   )
+}
+
+/**
+ * Can this course be bought RIGHT NOW?
+ *
+ * One predicate, read by the public card (to hide the button), by the checkout
+ * callable and by the free-enrolment callable (to refuse), so a visitor is never
+ * shown a button that the server will turn down. The same contract
+ * `isPastBookingCutoff` has for a session, and deliberately NOT that function:
+ * this asks about a course's sales window, not about minutes before one lesson.
+ *
+ * A draft is not sellable, a cancelled course is not sellable, and a course
+ * whose closing date has passed is not sellable. A course with no closing date
+ * stays open, which is what a studio that never set one means.
+ *
+ * It does NOT consider capacity. A full course is a different answer with a
+ * different remedy (the waiting list), and fusing the two would make "sold out"
+ * and "closed" the same word on the card.
+ */
+export function courseBlockSalesOpen(
+  block: Pick<CourseBlock, 'status' | 'booking_closes_at'>,
+  nowMs: number = Date.now()
+): boolean {
+  if (block.status !== 'published') return false
+  if (block.booking_closes_at && block.booking_closes_at.toMillis() <= nowMs) return false
+  return true
 }
 
 /** Longest a course name may be. Bounded like an activity's. */

@@ -22,6 +22,8 @@ import {
   CONNECT_WEBHOOK_EVENTS_COLLECTION,
   CONTACTS_COLLECTION,
   CONTACT_CREDIT_GRANTS_SUBCOLLECTION,
+  COURSE_BLOCKS_COLLECTION,
+  COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION,
   MEMBER_PAYMENTS_SUBCOLLECTION,
   MEMBER_SUBSCRIPTIONS_SUBCOLLECTION,
   TEAMS_COLLECTION,
@@ -43,6 +45,8 @@ import {
   localizedPublicUrl,
 } from '@linyup/shared'
 import { releaseWaitlistOffer } from '../booking/waitlist/release'
+import { syncCourseBlockRoster, takeCourseBlockPlace } from '../courseBlocks/enrolment'
+import { to } from '../utils/async'
 // The paid CLASS booking's receipt — always on, deliberately outside the
 // `booking_confirmation` toggle. See that module's header.
 import { sendPaidBookingConfirmation } from '../booking/paidConfirmation'
@@ -558,6 +562,9 @@ function baseLineItemFromMetadata(md: Record<string, string>): Record<string, un
   if (md.kind === 'course' && md.courseId) {
     return { kind: 'course', courseId: md.courseId, label: md.courseTitle ?? null }
   }
+  if (md.kind === 'course_block' && md.blockId) {
+    return { kind: 'course_block', courseBlockId: md.blockId, label: md.courseName ?? null }
+  }
   if (md.kind === 'drop_in') {
     // A PAID TRIAL is a drop-in charge whose metadata says it was somebody's
     // first class (`createDropInCheckout({ trial: true })`). Stamped here, on the
@@ -623,6 +630,7 @@ function financeDescription(md: Record<string, string>): string | null {
       : (md.productName ?? null)
   }
   if (md.kind === 'course') return md.courseTitle ?? null
+  if (md.kind === 'course_block') return md.courseName ?? null
   if (md.kind === 'membership') return md.subscriptionTypeName ?? null
   if (md.kind === 'drop_in') return md.activityName ?? 'Drop-in'
   if (md.kind === 'appointment') return md.activityName ?? 'Appointment'
@@ -1351,6 +1359,10 @@ async function handleCheckoutCompleted(
     await handleCourseCheckout(team, session, md)
     return
   }
+  if (md.kind === 'course_block') {
+    await handleCourseBlockCheckout(team, session, accountId, md)
+    return
+  }
   if (md.kind === 'drop_in') {
     await handleDropInCheckout(team, session, accountId, md)
     return
@@ -1808,6 +1820,108 @@ async function handleProductCheckout(
  * (courses/{courseId}/purchases/{contactId} — what the security rules check to unlock
  * the course in the Space), stamp contactId onto the payment, and log the purchase.
  */
+/**
+ * A COURSE, paid for. Settles the place the checkout held.
+ *
+ * The beats that matter, in order:
+ *
+ * 1. IDEMPOTENT ON REDELIVERY. Confirming an already-confirmed enrolment is a
+ *    no-op rather than a second place, because the enrolment's doc id is the
+ *    contact id and this only ever moves it from `hold` to `enrolled`.
+ * 2. RE-CHECK THE PLACE. The hold may have lapsed while the buyer was paying
+ *    (a slow card, a closed tab reopened), and a lapsed hold frees its place
+ *    immediately by design. `takeCourseBlockPlace` is the gate, and it excludes
+ *    this contact's own row, so re-confirming a live hold is free while a
+ *    genuinely sold-out course refuses.
+ * 3. REFUND WHEN THERE IS NO PLACE. The honest answer to "somebody else took
+ *    the last place while you were paying" is the money back, not a place that
+ *    does not exist.
+ * 4. THE ROSTER CONVERGES AFTER THE MONEY, never before: a hold writes no
+ *    bookings, so this is where the thirteen appear.
+ */
+async function handleCourseBlockCheckout(
+  team: TeamRef,
+  session: StripeWebhookPayload<StripeCheckoutSessionObject>,
+  accountId: string | undefined,
+  md: Record<string, string>
+): Promise<void> {
+  const { blockId, contactId } = md
+  if (!blockId || !contactId) return
+
+  const db = admin.firestore()
+  const enrolmentRef = db
+    .collection(COURSE_BLOCKS_COLLECTION)
+    .doc(blockId)
+    .collection(COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION)
+    .doc(contactId)
+
+  const existing = await enrolmentRef.get()
+  // Already settled: a redelivery, or the studio enrolled them by hand while the
+  // payment was in flight. Either way the place is theirs and nothing here
+  // should take a second one.
+  if (existing.exists && existing.get('payment_status') === 'paid') return
+
+  const piId =
+    typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+
+  const [takeErr] = await to(
+    takeCourseBlockPlace(db, {
+      blockId,
+      contactId,
+      status: 'enrolled',
+      payment_status: 'paid',
+      expiresAt: null,
+    })
+  )
+  if (takeErr) {
+    // No place. Refund rather than leave them paid and unenrolled: the course
+    // sold out while they were at the card form, which is nobody's mistake.
+    console.warn('[courseBlocks] no place at confirm, refunding', blockId, contactId, takeErr)
+    if (piId && accountId) {
+      const [refundErr] = await to(
+        refundDirectCharge({
+          accountId,
+          paymentIntentId: piId,
+          reason: 'requested_by_customer',
+          idempotencyKey: `course-full:${piId}`,
+        })
+      )
+      if (refundErr) console.error('[courseBlocks] refund failed for', piId, refundErr)
+      else {
+        await memberPaymentRef(team.teamId, piId).set(
+          { contactId, status: 'refunded', updated_at: FieldValue.serverTimestamp() },
+          { merge: true }
+        )
+      }
+    }
+    return
+  }
+
+  if (piId) {
+    await enrolmentRef.set({ payment_intent_id: piId }, { merge: true })
+    await memberPaymentRef(team.teamId, piId).set({ contactId }, { merge: true })
+    await stampFinanceContact(team.teamId, piId, contactId)
+  }
+  await confirmProvisionalContact(contactId)
+
+  // PAST THE REFUND BRANCH: a use is consumed by a completed sale, never by an
+  // attempt.
+  await commitPromoFromMetadata({
+    teamId: team.teamId,
+    md,
+    targetKind: 'course_block',
+    checkoutSessionId: session?.id ?? null,
+  })
+
+  // The thirteen bookings, now that the money is in. Best effort here because
+  // the nightly reconciliation re-derives it: a converge that fails must not
+  // un-sell a paid place.
+  const [rosterErr] = await to(syncCourseBlockRoster(db, blockId))
+  if (rosterErr) {
+    console.error('[courseBlocks] roster converge failed after payment for', blockId, rosterErr)
+  }
+}
+
 async function handleCourseCheckout(
   team: TeamRef,
   session: StripeWebhookPayload<StripeCheckoutSessionObject>,

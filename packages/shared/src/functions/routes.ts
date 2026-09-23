@@ -232,6 +232,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
 
   // Where a member or a guest PAYS. Its own router for blast radius.
   createAppointmentCheckout: 'rpcCheckout',
+  createCourseBlockCheckout: 'rpcCheckout',
   createDropInCheckout: 'rpcCheckout',
   createCourseCheckout: 'rpcCheckout',
   createGiftCardCheckout: 'rpcCheckout',
@@ -245,6 +246,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   // Everything else a member or a guest does: booking, the Space, contact sign-in,
   // the kiosk. The member app calls some of these by their OWN name and keeps
   // doing so until it routes (Phase 4) — listing them here moves only callFunction callers.
+  joinCourseBlock: 'rpcMember',
   listAvailability: 'rpcMember',
   getMyBookings: 'rpcMember',
   bookAppointment: 'rpcMember',
