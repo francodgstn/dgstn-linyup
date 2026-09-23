@@ -1335,7 +1335,11 @@
     "seriesCreatingToast": "Serie erstellt. Die Kurse werden deinem Kalender hinzugefügt.",
     "seriesGenerateFailed": "Die Serie wurde erstellt, aber ihre Kurse konnten noch nicht hinzugefügt werden: {message}",
     "seriesFillingIn": "Eine Serie wird noch in deinen Kalender eingetragen…",
-    "seriesFillingInNamed": "{name} wird noch in deinen Kalender eingetragen…"
+    "seriesFillingInNamed": "{name} wird noch in deinen Kalender eingetragen…",
+    "skipDates": "Diese Daten auslassen",
+    "skipDatesAdd": "Datum auslassen",
+    "skipDatesHint": "Schulferien, geschlossene Halle. Bereits eingeplante Termine bleiben bestehen — diese im Kalender absagen.",
+    "skipDatesRemove": "{date} nicht mehr auslassen"
   },
   "Calendar": {
     "title": "Zeitplan",

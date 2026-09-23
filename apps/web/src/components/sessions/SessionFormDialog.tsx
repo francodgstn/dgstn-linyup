@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { toDateInputValue } from '@/lib/format'
+import { X } from 'lucide-react'
 import { SeriesSummary } from '@/components/sessions/SeriesSummary'
 import { PastItemNotice } from '@/components/sessions/PastItemNotice'
 import { useQueryClient } from '@tanstack/react-query'
@@ -173,6 +174,9 @@ interface RecurrencePattern {
   endCondition:   EndCondition
   endDate:        Date | null
   maxOccurrences: number
+  /** Days this pattern skips — school holidays, a closed hall. A rule about
+   *  what gets CREATED: it never removes a session already on the calendar. */
+  excludeDates:   Date[]
 }
 
 // How far ahead the backend actually materialises a series — SERIES_HORIZON_MONTHS
@@ -189,20 +193,33 @@ function defaultRecurrence(from: Date = new Date()): RecurrencePattern {
     frequency: 'weekly', interval: 1, daysOfWeek: [],
     endCondition: 'date', endDate: addMonths(from, RECURRENCE_HORIZON_MONTHS),
     maxOccurrences: 10,
+    excludeDates: [],
   }
 }
+
+/** The local calendar day, as the key both the chips and the preview compare on
+ *  — the same spelling the date input round-trips through. */
+const dayKey = (d: Date) => toDateInputValue(d)
 
 function getPreviewDates(pattern: RecurrencePattern, startDate: Date, count = 5): Date[] {
   const dates: Date[] = []
   const cursor = new Date(startDate)
   const max = count * 400
+  // Mirrors the server (`calculateOccurrences`): a skipped day yields nothing
+  // AND spends no count, so the preview of "10 sessions, skipping two weeks"
+  // shows ten dates — the same ten the studio will get.
+  const skipped = new Set(pattern.excludeDates.map(dayKey))
   for (let i = 0; i < max && dates.length < count; i++) {
     const dow = cursor.getDay()
     const include =
       pattern.frequency === 'daily'   ? true :
       pattern.frequency === 'weekly'  ? pattern.daysOfWeek.includes(dow) :
       cursor.getDate() === startDate.getDate()
-    if (include && (dates.length === 0 || cursor.getTime() !== startDate.getTime())) {
+    // Tested at the PUSH, not folded into `include`: `include` also decides how
+    // far the cursor advances below, so a skipped day must still count as a hit
+    // of the pattern or a daily interval > 1 would drift.
+    const takes = include && !skipped.has(dayKey(cursor))
+    if (takes && (dates.length === 0 || cursor.getTime() !== startDate.getTime())) {
       dates.push(new Date(cursor))
       if (pattern.endCondition === 'count' && dates.length >= pattern.maxOccurrences) break
       if (pattern.endCondition === 'date'  && pattern.endDate && cursor >= pattern.endDate) break
@@ -271,6 +288,7 @@ function RecurrencePanel({ value, onChange, startDate }: {
   // and nothing else (see the `zone` option in hooks/useTeamFormat.ts).
   const fmt = useTeamFormat({ zone: 'device' })
   const daysOfWeek = weekdayOrder(fmt.weekStartsOn)
+  const [addingSkip, setAddingSkip] = useState(false)
 
   function set<K extends keyof RecurrencePattern>(key: K, val: RecurrencePattern[K]) {
     onChange({ ...value, [key]: val })
@@ -363,6 +381,66 @@ function RecurrencePanel({ value, onChange, startDate }: {
             </label>
           ))}
         </div>
+      </div>
+      {/* SKIP DATES — school holidays, a closed hall, the week the studio is
+          away. Hidden behind its own toggle: most timetables never skip a day,
+          and a date picker sitting open on every recurring class is a question
+          nobody asked. It removes nothing already on the calendar — a session
+          that exists is cancelled from the calendar, because people may already
+          hold bookings on it. */}
+      <div className="space-y-2">
+        {value.excludeDates.length === 0 && !addingSkip ? (
+          <button
+            type="button"
+            onClick={() => setAddingSkip(true)}
+            className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            {t('skipDatesAdd')}
+          </button>
+        ) : (
+          <>
+            <span className="text-sm text-muted-foreground">{t('skipDates')}</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[...value.excludeDates]
+                .sort((a, b) => a.getTime() - b.getTime())
+                .map((d) => (
+                  <span
+                    key={dayKey(d)}
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
+                  >
+                    {fmt.dateMedium(d)}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        set('excludeDates', value.excludeDates.filter((x) => dayKey(x) !== dayKey(d)))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label={t('skipDatesRemove', { date: fmt.dateMedium(d) })}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              <input
+                type="date"
+                value=""
+                min={toDateInputValue(startDate)}
+                onChange={(e) => {
+                  if (!e.target.value) return
+                  const picked = new Date(e.target.value)
+                  if (isNaN(picked.getTime())) return
+                  // One entry per day — picking the same date twice is a no-op,
+                  // not a second chip.
+                  if (value.excludeDates.some((x) => dayKey(x) === dayKey(picked))) return
+                  set('excludeDates', [...value.excludeDates, picked])
+                }}
+                className="rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label={t('skipDatesAdd')}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{t('skipDatesHint')}</p>
+          </>
+        )}
       </div>
       {previewDates.length > 0 && (
         <div className="rounded-lg bg-background border p-3 space-y-1">
@@ -696,6 +774,11 @@ export function SessionFormDialog({
             endCondition:   recurrence.endCondition,
             endDate:        recurrence.endDate ? Timestamp.fromDate(recurrence.endDate) : null,
             maxOccurrences: recurrence.endCondition === 'count' ? recurrence.maxOccurrences : null,
+            // Stored on the PATTERN, because a rolling series is regenerated
+            // from it every quarter and a `count` series recomputes its total
+            // from the start each time — an exclusion held anywhere else would
+            // be forgotten on the next roll.
+            excludeDates: recurrence.excludeDates.map((d) => Timestamp.fromDate(d)),
             duration:       values.duration,
             startDate:      Timestamp.fromDate(startDate),
           },

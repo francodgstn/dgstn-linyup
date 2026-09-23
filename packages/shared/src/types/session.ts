@@ -825,4 +825,25 @@ export interface RecurrencePattern {
   endCondition: 'date' | 'count' | 'never'
   endDate?: Timestamp
   maxOccurrences?: number
+  /**
+   * Dates this pattern skips — school holidays, a closed hall, the week the
+   * studio is away. Any instant on the date works; only the calendar day is
+   * read, in the studio's timezone.
+   *
+   * A RULE ABOUT WHAT WILL BE CREATED, never about what exists. The generator
+   * never writes an excluded day, so adding one to a pattern whose sessions are
+   * already on the calendar removes nothing — that is `cancelSession`'s job,
+   * because people may already hold bookings on the lesson. Removing one puts
+   * the day back on the next generation.
+   *
+   * It lives on the PATTERN rather than being applied at generation, because a
+   * rolling series is regenerated from this pattern every quarter and a
+   * `count` series recomputes its total from the start each time. An exclusion
+   * held anywhere else would be forgotten on the next roll, and the count would
+   * be wrong on every one.
+   *
+   * An excluded date does NOT consume a `maxOccurrences` count: "20 lessons,
+   * skipping the holidays" means twenty lessons.
+   */
+  excludeDates?: Timestamp[]
 }

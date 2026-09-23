@@ -1335,7 +1335,11 @@
     "seriesCreatingToast": "Série créée. Les cours sont en cours d'ajout à votre agenda.",
     "seriesGenerateFailed": "La série a été créée, mais ses cours n'ont pas encore pu être ajoutés : {message}",
     "seriesFillingIn": "Une série récurrente est encore en cours d'ajout à votre agenda…",
-    "seriesFillingInNamed": "{name} est encore en cours d'ajout à votre agenda…"
+    "seriesFillingInNamed": "{name} est encore en cours d'ajout à votre agenda…",
+    "skipDates": "Ignorer ces dates",
+    "skipDatesAdd": "Ignorer une date",
+    "skipDatesHint": "Vacances scolaires, salle fermée. Les séances déjà au calendrier restent — annulez-les depuis le calendrier.",
+    "skipDatesRemove": "Ne plus ignorer le {date}"
   },
   "Calendar": {
     "title": "Planning",

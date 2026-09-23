@@ -1335,7 +1335,11 @@
     "seriesCreatingToast": "Series created. The classes are being added to your schedule.",
     "seriesGenerateFailed": "The series was created, but its classes could not be added yet: {message}",
     "seriesFillingIn": "A recurring series is still being added to your schedule…",
-    "seriesFillingInNamed": "{name} is still being added to your schedule…"
+    "seriesFillingInNamed": "{name} is still being added to your schedule…",
+    "skipDates": "Skip these dates",
+    "skipDatesAdd": "Skip a date",
+    "skipDatesHint": "School holidays, a closed hall. Sessions already on the calendar stay — cancel those from the calendar.",
+    "skipDatesRemove": "Stop skipping {date}"
   },
   "Calendar": {
     "title": "Schedule",

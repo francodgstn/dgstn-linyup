@@ -1335,7 +1335,11 @@
     "seriesCreatingToast": "Serie creata. I corsi vengono aggiunti al tuo calendario.",
     "seriesGenerateFailed": "La serie è stata creata, ma i suoi corsi non sono ancora stati aggiunti: {message}",
     "seriesFillingIn": "Una serie ricorrente è ancora in fase di aggiunta al calendario…",
-    "seriesFillingInNamed": "{name} è ancora in fase di aggiunta al calendario…"
+    "seriesFillingInNamed": "{name} è ancora in fase di aggiunta al calendario…",
+    "skipDates": "Salta queste date",
+    "skipDatesAdd": "Salta una data",
+    "skipDatesHint": "Vacanze scolastiche, palestra chiusa. Le sessioni già in calendario restano — annullale dal calendario.",
+    "skipDatesRemove": "Non saltare più il {date}"
   },
   "Calendar": {
     "title": "Programma",
