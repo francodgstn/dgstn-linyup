@@ -63,8 +63,15 @@ export function resolveCourseSchedule(input: CourseScheduleInput): ResolvedSched
     throw new HttpsError('invalid-argument', 'A course needs a schedule.')
   }
 
+  // NORMALISE THE WIRE SHAPES ONCE, here, so nothing downstream has to know
+  // that a callable's payload is JSON: the generator reads real Dates, and what
+  // gets STORED as the pattern is real Timestamps rather than the plain maps a
+  // client Timestamp serialises into.
+  const recurrence =
+    input.kind === 'repeating' ? normaliseRecurrence(input.recurrence) : null
+
   const meetings =
-    input.kind === 'repeating' ? fromRecurrence(input.recurrence) : fromDates(input.meetings)
+    recurrence ? fromRecurrence(recurrence) : fromDates((input as { meetings: DateInput[] }).meetings)
 
   if (meetings.length === 0) {
     throw new HttpsError(
@@ -79,9 +86,35 @@ export function resolveCourseSchedule(input: CourseScheduleInput): ResolvedSched
     )
   }
 
+  return { meetings, recurrence }
+}
+
+/** One meeting as the client sends it. */
+type DateInput = { startMs: number; durationMinutes: number }
+
+/**
+ * The recurrence, with every date turned into a real Timestamp.
+ *
+ * The payload arrives as JSON, so `startDate`, `endDate` and each entry of
+ * `excludeDates` are plain maps by the time they reach here. Coercing them in
+ * one place means the generator, the validator and the stored pattern all see
+ * the same thing.
+ */
+function normaliseRecurrence(recurrence: RecurrencePattern): RecurrencePattern {
+  const startDate = toTimestamp(recurrence.startDate)
+  if (!startDate) throw new HttpsError('invalid-argument', 'The course needs a first lesson date.')
+  const endDate = toTimestamp(recurrence.endDate)
+  const excludeDates = (recurrence.excludeDates ?? [])
+    .map((d) => toTimestamp(d))
+    .filter((d): d is Timestamp => d !== null)
+
   return {
-    meetings,
-    recurrence: input.kind === 'repeating' ? input.recurrence : null,
+    ...recurrence,
+    startDate: startDate as unknown as RecurrencePattern['startDate'],
+    ...(endDate ? { endDate: endDate as unknown as RecurrencePattern['endDate'] } : {}),
+    ...(excludeDates.length
+      ? { excludeDates: excludeDates as unknown as RecurrencePattern['excludeDates'] }
+      : {}),
   }
 }
 
@@ -149,16 +182,52 @@ function fromDates(entries: Array<{ startMs: number; durationMinutes: number }>)
   return meetings.sort((a, b) => a.start.toMillis() - b.start.toMillis())
 }
 
+/**
+ * An instant, from any of the shapes one arrives in here.
+ *
+ * A CALLABLE'S PAYLOAD IS JSON. The web form builds a client `Timestamp` and
+ * hands it to `callFunction`, but the callable protocol serialises it, so what
+ * reaches this file is a PLAIN OBJECT with no `toDate` on it: `{seconds,
+ * nanoseconds}` from the client SDK, or `{_seconds, _nanoseconds}` from the
+ * admin one. Reading only `toDate` returned null for every date the form sent,
+ * and the course refused to save with "needs a first lesson date" while the
+ * studio was looking at one.
+ *
+ * So every shape is accepted, and `resolveCourseSchedule` normalises the whole
+ * recurrence through here before anything reads it, which is also what makes
+ * the stored pattern real Timestamps rather than the wire's plain maps.
+ */
 function toDate(value: unknown): Date | null {
   if (!value) return null
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
   if (typeof value === 'number') return new Date(value)
-  const asTimestamp = value as { toDate?: () => Date }
-  if (typeof asTimestamp.toDate === 'function') {
-    const d = asTimestamp.toDate()
+  if (typeof value === 'string') {
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+  const obj = value as {
+    toDate?: () => Date
+    seconds?: number
+    nanoseconds?: number
+    _seconds?: number
+    _nanoseconds?: number
+  }
+  if (typeof obj.toDate === 'function') {
+    const d = obj.toDate()
     return Number.isNaN(d.getTime()) ? null : d
   }
+  const seconds = typeof obj.seconds === 'number' ? obj.seconds : obj._seconds
+  const nanos = typeof obj.nanoseconds === 'number' ? obj.nanoseconds : (obj._nanoseconds ?? 0)
+  if (typeof seconds === 'number' && Number.isFinite(seconds)) {
+    return new Date(seconds * 1000 + Math.floor((nanos ?? 0) / 1e6))
+  }
   return null
+}
+
+/** The same coercion, as a Firestore Timestamp. */
+function toTimestamp(value: unknown): Timestamp | null {
+  const d = toDate(value)
+  return d ? Timestamp.fromDate(d) : null
 }
 
 function addDays(date: Date, days: number): Date {

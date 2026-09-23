@@ -61,6 +61,8 @@ import {
   ChevronLeft,
   Copy,
   DoorOpen,
+  Eye,
+  EyeOff,
   ExternalLink,
   GraduationCap,
   GripVertical,
@@ -102,6 +104,7 @@ import {
 import { db } from '@/lib/firebase'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { callFunction } from '@/lib/callFunction'
+import { toast } from 'sonner'
 import { deleteProduct } from '@/plugins/products/hooks'
 import {
   AlertDialog,
@@ -759,6 +762,16 @@ export default function CataloguePage() {
   /** A course's facts: how full it is, and whether it is live. The lesson count
    *  and dates are already the summary line above, so they are not repeated. */
   const courseBlockChips = (c: CourseBlock): OfferChip[] => [
+    // THE PRICE FIRST, because it is the fact a studio scans this list for. Free
+    // says so rather than showing nothing: a blank reads as unfinished, and a
+    // free course is a decision.
+    {
+      label:
+        typeof c.priceAmount === 'number'
+          ? formatCurrency(c.priceAmount, currency)
+          : tCourses('freeChip'),
+      tone: 'accent' as const,
+    },
     ...(typeof c.places === 'number' && c.places > 0
       ? [
           {
@@ -874,7 +887,26 @@ export default function CataloguePage() {
       // Destroy is DELETE, not archive, and the callable refuses once anyone is
       // enrolled: a course with people on it is CANCELLED, which owes them a
       // mail and hands the payments back. That callable arrives with enrolment.
-      return [edit({ run: () => setCourseEditing(c) }), destroy(c.name, 'delete')]
+      //
+      // PUBLISH COMES FIRST because it is the one a studio is looking for: a
+      // course lands as a draft on purpose, so its lessons can be checked on the
+      // calendar before anybody can buy it, and nothing is sellable until this
+      // is pressed.
+      return [
+        ...(c.status !== 'cancelled'
+          ? [
+              {
+                key: 'publish',
+                icon: c.status === 'published' ? EyeOff : Eye,
+                label:
+                  c.status === 'published' ? tCourses('unpublish') : tCourses('publish'),
+                run: () => void setCourseStatus(c, c.status === 'published' ? 'draft' : 'published'),
+              } satisfies PaneAction,
+            ]
+          : []),
+        edit({ run: () => setCourseEditing(c) }),
+        destroy(c.name, 'delete'),
+      ]
     }
     if (kind === 'course') {
       const c = courses.find((x) => x.id === id)
@@ -893,6 +925,21 @@ export default function CataloguePage() {
       edit({ href: `/manage/products?edit=${id}` as Route }),
       destroy(pr.name, 'delete'),
     ]
+  }
+
+  /** Publish a draft, or take a published course back to a draft. Through the
+   *  callable, because the course document is function-write-only: it carries a
+   *  capacity counter and a price, and neither can live on something a client
+   *  may edit. */
+  async function setCourseStatus(c: CourseBlock, status: 'draft' | 'published') {
+    if (!currentTeamId) return
+    try {
+      await callFunction('setCourseBlockStatus')({ teamId: currentTeamId, blockId: c.id, status })
+      await qc.invalidateQueries({ queryKey: ['course-blocks', currentTeamId] })
+    } catch (err) {
+      console.error('[course status] failed:', err)
+      toast.error(err instanceof Error ? err.message : tCourses('saveFailed'))
+    }
   }
 
   /** A ROW shows one pencil, not the bar — the bar belongs to the thing you have
@@ -1894,6 +1941,7 @@ export default function CataloguePage() {
         open={courseEditing !== null}
         onOpenChange={(v) => !v && setCourseEditing(null)}
         editing={courseEditing === 'new' ? null : courseEditing}
+        currency={currency}
         onSaved={(id) => select({ kind: 'courseBlock', id })}
       />
 

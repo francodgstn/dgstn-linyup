@@ -7311,7 +7311,8 @@
     "clearedToast": "C’est fait — cette personne peut réutiliser le code.",
     "empty": "Aucun code promo pour l’instant. Créez-en un pour lancer une campagne.",
     "percentOff": "{percent}% de réduction",
-    "fixedPriceAt": "Coûte {price}"
+    "fixedPriceAt": "Coûte {price}",
+    "scopeCourseBlock": "Cours"
   },
   "Waiver": {
     "whatIsRecorded": "Nous enregistrons que vous avez accepté ce texte exact, avec la date, l'heure et votre adresse IP.",
@@ -8971,7 +8972,7 @@
     "statusDraft": "Brouillon",
     "statusPublished": "Publié",
     "statusCancelled": "Annulé",
-    "paneNoPriceYet": "Un cours n'a pas encore de prix, donc aucun abonnement ne peut l'inclure ni le réduire.",
+    "paneNoPriceYet": "Lier un abonnement à un cours n'est pas encore disponible. Le prix se règle sur le cours lui-même.",
     "rosterHeading": "Qui y participe",
     "rosterPlaces": "{taken} places sur {places} prises",
     "rosterUncapped": "{count, plural, =0 {Personne} one {# personne} other {# personnes}}, sans limite",
@@ -8987,6 +8988,19 @@
     "enrolFailed": "Impossible de l'ajouter",
     "withdraw": "Retirer du cours",
     "withdrawn": "Retiré du cours. Les séances passées restent sur la liste de présence.",
-    "withdrawFailed": "Impossible de le retirer"
+    "withdrawFailed": "Impossible de le retirer",
+    "priceLabel": "Prix ({currency})",
+    "pricePlaceholder": "Gratuit",
+    "priceHint": "Pour tout le cours. Laissez vide et il est gratuit pour tous.",
+    "moreOptions": "Plus d'options",
+    "membersOnlyLabel": "Uniquement les personnes inscrites chez vous",
+    "membersOnlyHint": "Une personne inconnue ne peut pas acheter de place, quel qu'en soit le prix.",
+    "closeLabel": "Arrêter les inscriptions",
+    "closePlaceholder": "Jamais",
+    "closeHint": "Jours avant la première séance. Vide : les inscriptions restent ouvertes jusqu'au début.",
+    "publish": "Publier",
+    "unpublish": "Remettre en brouillon",
+    "priceChip": "{price}",
+    "freeChip": "Gratuit"
   }
 }

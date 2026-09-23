@@ -52,6 +52,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { MoreOptions } from '@/components/forms/MoreOptions'
 
 type ScheduleMode = 'repeating' | 'days'
 
@@ -80,10 +81,12 @@ export function CourseBlockDialog({
   open,
   onOpenChange,
   editing,
+  currency,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  currency: string
   /** The live document when editing; absent when creating. */
   editing?: CourseBlock | null
   onSaved?: (id: string) => void
@@ -111,6 +114,9 @@ export function CourseBlockDialog({
   const [placeId, setPlaceId] = useState(NONE)
   const [providerId, setProviderId] = useState(NONE)
   const [places_, setPlaces] = useState('')
+  const [price, setPrice] = useState('')
+  const [membersOnly, setMembersOnly] = useState(false)
+  const [closeDays, setCloseDays] = useState('')
   const [mode, setMode] = useState<ScheduleMode>('repeating')
 
   // Repeating
@@ -135,6 +141,11 @@ export function CourseBlockDialog({
       setPlaceId(editing.placeId ?? NONE)
       setProviderId(editing.providerId ?? NONE)
       setPlaces(editing.places ? String(editing.places) : '')
+      setPrice(typeof editing.priceAmount === 'number' ? String(editing.priceAmount) : '')
+      setMembersOnly(editing.audience === 'members')
+      setCloseDays(
+        typeof editing.close_days_before === 'number' ? String(editing.close_days_before) : ''
+      )
       // An existing course is re-opened on the shape it was authored in, so the
       // studio edits what it typed rather than a list of thirteen dates.
       const rule = editing.pattern?.recurrence
@@ -172,6 +183,9 @@ export function CourseBlockDialog({
     setPlaceId(NONE)
     setProviderId(NONE)
     setPlaces('')
+    setPrice('')
+    setMembersOnly(false)
+    setCloseDays('')
     setMode('repeating')
     setStartDate('')
     setStartTime('15:45')
@@ -255,6 +269,9 @@ export function CourseBlockDialog({
           return picked ? coachLabel(picked) : ''
         })(),
         places: places_,
+        priceAmount: price,
+        audience: membersOnly ? 'members' : 'anyone',
+        closeDaysBefore: closeDays,
         schedule,
       }
 
@@ -323,6 +340,21 @@ export function CourseBlockDialog({
                 placeholder={t('placesPlaceholder')}
               />
               <p className="text-xs text-muted-foreground">{t('placesHint')}</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="course-price">{t('priceLabel', { currency })}</Label>
+              <Input
+                id="course-price"
+                type="number"
+                min={0}
+                step="0.05"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder={t('pricePlaceholder')}
+              />
+              {/* Empty is FREE, and says so, because a blank price field reads
+                  as unfinished rather than as a decision. */}
+              <p className="text-xs text-muted-foreground">{t('priceHint')}</p>
             </div>
             <div className="space-y-1.5">
               <Label>{t('placeLabel')}</Label>
@@ -533,6 +565,43 @@ export function CourseBlockDialog({
               )}
             </div>
           </div>
+
+          {/* THE TWO RARE ANSWERS, behind a disclosure. Most courses are open to
+              anyone and take bookings until they start, so asking both questions
+              on every course would be two controls nobody touches sitting above
+              the one they came for. */}
+          <MoreOptions defaultOpen={membersOnly || closeDays !== ''} label={t('moreOptions')}>
+            <div className="space-y-4 pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={membersOnly}
+                  onChange={(e) => setMembersOnly(e.target.checked)}
+                  className="mt-0.5 accent-primary"
+                />
+                <span className="min-w-0">
+                  <span className="text-sm font-medium">{t('membersOnlyLabel')}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t('membersOnlyHint')}
+                  </span>
+                </span>
+              </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="course-close">{t('closeLabel')}</Label>
+                <Input
+                  id="course-close"
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={closeDays}
+                  onChange={(e) => setCloseDays(e.target.value)}
+                  placeholder={t('closePlaceholder')}
+                  className="w-28"
+                />
+                <p className="text-xs text-muted-foreground">{t('closeHint')}</p>
+              </div>
+            </div>
+          </MoreOptions>
 
           {editing && (
             <p className="text-xs text-muted-foreground">{t('editScheduleNote')}</p>

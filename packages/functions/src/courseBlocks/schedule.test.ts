@@ -114,6 +114,57 @@ describe('a course schedule', () => {
     assert.ok(meetings[0].start.toMillis() < meetings[1].start.toMillis())
   })
 
+  it('accepts the dates in the shape a CALLABLE actually delivers them', () => {
+    // THE BUG THIS PINS. A callable's payload is JSON, so the client `Timestamp`
+    // the web form builds arrives as a plain `{seconds, nanoseconds}` map with no
+    // `toDate` on it. Reading only `toDate` returned null for every date the form
+    // sent, and the course refused to save with "needs a first lesson date" while
+    // the studio was looking at one. Only running it showed this.
+    const wire = (d: Date) => ({
+      seconds: Math.floor(d.getTime() / 1000),
+      nanoseconds: (d.getTime() % 1000) * 1e6,
+    })
+
+    const { meetings } = resolveCourseSchedule({
+      kind: 'repeating',
+      recurrence: {
+        frequency: 'weekly',
+        interval: 1,
+        daysOfWeek: [3],
+        duration: 30,
+        startDate: wire(zurich(2025, 8, 20, 15, 45)) as unknown as RecurrencePattern['startDate'],
+        endCondition: 'date',
+        endDate: wire(zurich(2025, 11, 26, 16, 15)) as unknown as RecurrencePattern['endDate'],
+        excludeDates: [
+          wire(zurich(2025, 10, 8, 15, 45)),
+          wire(zurich(2025, 10, 15, 15, 45)),
+        ] as unknown as RecurrencePattern['excludeDates'],
+      },
+    })
+    assert.equal(meetings.length, 13, 'the wire shape must resolve exactly like a Timestamp does')
+    assert.ok(!meetings.map(dayOf).includes('2025-10-08'))
+  })
+
+  it('normalises the stored pattern, so what is saved is Timestamps and not wire maps', () => {
+    const wire = (d: Date) => ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0 })
+    const { recurrence } = resolveCourseSchedule({
+      kind: 'repeating',
+      recurrence: {
+        frequency: 'weekly',
+        interval: 1,
+        daysOfWeek: [3],
+        duration: 30,
+        startDate: wire(zurich(2025, 8, 20, 15, 45)) as unknown as RecurrencePattern['startDate'],
+        endCondition: 'date',
+        endDate: wire(zurich(2025, 9, 3, 16, 15)) as unknown as RecurrencePattern['endDate'],
+      },
+    })
+    // Re-reading a saved course depends on this: the dialog calls `.toDate()` on
+    // the stored pattern to put the studio back on the shape it typed.
+    assert.equal(typeof (recurrence?.startDate as unknown as Timestamp)?.toDate, 'function')
+    assert.equal(typeof (recurrence?.endDate as unknown as Timestamp)?.toDate, 'function')
+  })
+
   it('refuses a course that never ends', () => {
     // A course is bounded by definition, "13 lessons", "until November". An
     // open-ended rule is a timetable, which a plain session series already is.

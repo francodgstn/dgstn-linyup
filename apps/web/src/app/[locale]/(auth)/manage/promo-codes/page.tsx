@@ -882,7 +882,9 @@ function EntityPicker({
   )
 }
 
-function scopeKey(kind: PromoScopeKind): 'scopeDropIn' | 'scopeAppointment' | 'scopeCourse' | 'scopeProduct' {
+function scopeKey(
+  kind: PromoScopeKind
+): 'scopeDropIn' | 'scopeAppointment' | 'scopeCourse' | 'scopeCourseBlock' | 'scopeProduct' {
   switch (kind) {
     case 'drop_in':
       return 'scopeDropIn'
@@ -890,6 +892,10 @@ function scopeKey(kind: PromoScopeKind): 'scopeDropIn' | 'scopeAppointment' | 's
       return 'scopeAppointment'
     case 'course':
       return 'scopeCourse'
+    // A scheduled COURSE, and its own label: the studio has to be able to aim a
+    // campaign at a term of lessons without also discounting the video plugin.
+    case 'course_block':
+      return 'scopeCourseBlock'
     case 'product':
       return 'scopeProduct'
   }

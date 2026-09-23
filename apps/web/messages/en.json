@@ -7311,7 +7311,8 @@
     "clearedToast": "Done — they can use the code again.",
     "empty": "No promo codes yet. Create one to run a campaign.",
     "percentOff": "{percent}% off",
-    "fixedPriceAt": "Costs {price}"
+    "fixedPriceAt": "Costs {price}",
+    "scopeCourseBlock": "Courses"
   },
   "Waiver": {
     "whatIsRecorded": "We record that you accepted this exact text, together with the date, time and your IP address.",
@@ -8971,7 +8972,7 @@
     "statusDraft": "Draft",
     "statusPublished": "Published",
     "statusCancelled": "Cancelled",
-    "paneNoPriceYet": "A course has no price yet, so no plan can include or discount one.",
+    "paneNoPriceYet": "Linking a plan to a course is not built yet. Set the price on the course itself.",
     "rosterHeading": "Who is on it",
     "rosterPlaces": "{taken} of {places} places taken",
     "rosterUncapped": "{count, plural, =0 {Nobody yet} one {# person} other {# people}}, no limit",
@@ -8987,6 +8988,19 @@
     "enrolFailed": "They could not be added",
     "withdraw": "Take off the course",
     "withdrawn": "Taken off the course. Their past lessons stay on the register.",
-    "withdrawFailed": "They could not be taken off"
+    "withdrawFailed": "They could not be taken off",
+    "priceLabel": "Price ({currency})",
+    "pricePlaceholder": "Free",
+    "priceHint": "For the whole course. Leave empty and it is free for everyone.",
+    "moreOptions": "More options",
+    "membersOnlyLabel": "Only people who signed up with you",
+    "membersOnlyHint": "A stranger cannot buy a place, whatever they are willing to pay.",
+    "closeLabel": "Stop taking bookings",
+    "closePlaceholder": "Never",
+    "closeHint": "Days before the first lesson. Empty means bookings stay open until it starts.",
+    "publish": "Publish",
+    "unpublish": "Back to draft",
+    "priceChip": "{price}",
+    "freeChip": "Free"
   }
 }

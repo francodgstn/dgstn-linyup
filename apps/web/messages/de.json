@@ -7311,7 +7311,8 @@
     "clearedToast": "Erledigt – die Person kann den Code erneut verwenden.",
     "empty": "Noch keine Aktionscodes. Erstelle einen für deine Kampagne.",
     "percentOff": "{percent}% Rabatt",
-    "fixedPriceAt": "Kostet {price}"
+    "fixedPriceAt": "Kostet {price}",
+    "scopeCourseBlock": "Kurse"
   },
   "Waiver": {
     "whatIsRecorded": "Wir halten fest, dass Sie genau diesen Text akzeptiert haben — mit Datum, Uhrzeit und Ihrer IP-Adresse.",
@@ -8971,7 +8972,7 @@
     "statusDraft": "Entwurf",
     "statusPublished": "Veröffentlicht",
     "statusCancelled": "Abgesagt",
-    "paneNoPriceYet": "Ein Kurs hat noch keinen Preis, daher kann ihn kein Abo enthalten oder vergünstigen.",
+    "paneNoPriceYet": "Ein Abo mit einem Kurs zu verknüpfen ist noch nicht gebaut. Den Preis stellst du am Kurs selbst ein.",
     "rosterHeading": "Wer dabei ist",
     "rosterPlaces": "{taken} von {places} Plätzen belegt",
     "rosterUncapped": "{count, plural, =0 {Noch niemand} one {# Person} other {# Personen}}, unbegrenzt",
@@ -8987,6 +8988,19 @@
     "enrolFailed": "Konnte nicht hinzugefügt werden",
     "withdraw": "Vom Kurs abmelden",
     "withdrawn": "Vom Kurs abgemeldet. Vergangene Lektionen bleiben in der Anwesenheitsliste.",
-    "withdrawFailed": "Konnte nicht abgemeldet werden"
+    "withdrawFailed": "Konnte nicht abgemeldet werden",
+    "priceLabel": "Preis ({currency})",
+    "pricePlaceholder": "Gratis",
+    "priceHint": "Für den ganzen Kurs. Leer lassen heisst gratis für alle.",
+    "moreOptions": "Weitere Optionen",
+    "membersOnlyLabel": "Nur Personen, die sich bei dir registriert haben",
+    "membersOnlyHint": "Fremde können keinen Platz kaufen, egal zu welchem Preis.",
+    "closeLabel": "Buchungen schliessen",
+    "closePlaceholder": "Nie",
+    "closeHint": "Tage vor der ersten Lektion. Leer heisst, Buchungen bleiben bis zum Start offen.",
+    "publish": "Veröffentlichen",
+    "unpublish": "Zurück zum Entwurf",
+    "priceChip": "{price}",
+    "freeChip": "Gratis"
   }
 }

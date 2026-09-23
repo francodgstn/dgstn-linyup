@@ -7311,7 +7311,8 @@
     "clearedToast": "Fatto — la persona può usare di nuovo il codice.",
     "empty": "Ancora nessun codice promo. Creane uno per lanciare una campagna.",
     "percentOff": "{percent}% di sconto",
-    "fixedPriceAt": "Costa {price}"
+    "fixedPriceAt": "Costa {price}",
+    "scopeCourseBlock": "Corsi"
   },
   "Waiver": {
     "whatIsRecorded": "Registriamo che hai accettato esattamente questo testo, con data, ora e il tuo indirizzo IP.",
@@ -8971,7 +8972,7 @@
     "statusDraft": "Bozza",
     "statusPublished": "Pubblicato",
     "statusCancelled": "Annullato",
-    "paneNoPriceYet": "Un corso non ha ancora un prezzo, quindi nessun abbonamento può includerlo o scontarlo.",
+    "paneNoPriceYet": "Collegare un abbonamento a un corso non è ancora disponibile. Il prezzo si imposta sul corso stesso.",
     "rosterHeading": "Chi partecipa",
     "rosterPlaces": "{taken} posti su {places} occupati",
     "rosterUncapped": "{count, plural, =0 {Ancora nessuno} one {# persona} other {# persone}}, illimitati",
@@ -8987,6 +8988,19 @@
     "enrolFailed": "Impossibile aggiungerlo",
     "withdraw": "Togli dal corso",
     "withdrawn": "Tolto dal corso. Le lezioni passate restano nel registro presenze.",
-    "withdrawFailed": "Impossibile toglierlo"
+    "withdrawFailed": "Impossibile toglierlo",
+    "priceLabel": "Prezzo ({currency})",
+    "pricePlaceholder": "Gratis",
+    "priceHint": "Per tutto il corso. Lascia vuoto ed è gratis per tutti.",
+    "moreOptions": "Altre opzioni",
+    "membersOnlyLabel": "Solo le persone registrate da te",
+    "membersOnlyHint": "Uno sconosciuto non può comprare un posto, a qualunque prezzo.",
+    "closeLabel": "Chiudi le iscrizioni",
+    "closePlaceholder": "Mai",
+    "closeHint": "Giorni prima della prima lezione. Vuoto: le iscrizioni restano aperte fino all'inizio.",
+    "publish": "Pubblica",
+    "unpublish": "Torna in bozza",
+    "priceChip": "{price}",
+    "freeChip": "Gratis"
   }
 }
