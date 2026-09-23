@@ -57,7 +57,12 @@ export function SessionDeleteDialog({
   onDeleted: () => void
 }) {
   const t = useTranslations('Sessions')
-  const isSeries = !!session?.seriesId
+  // A COURSE'S LESSON OFFERS ONLY "this one". "This and all following" would be
+  // cancelling the course, which owes its participants a mail and hands the
+  // payments back — the course's own action, and the server refuses it from
+  // here. Offering a radio the server will reject is worse than not offering it.
+  const isCourseLesson = !!session?.course_block_id
+  const isSeries = !!session?.seriesId && !isCourseLesson
 
   const [scope, setScope] = useState<'single' | 'future'>('single')
   const [busy, setBusy] = useState(false)
@@ -222,7 +227,12 @@ export function SessionDeleteDialog({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground pt-1">{t('deleteConfirm', { label })}</p>
+              <div className="space-y-2 pt-1">
+                <p className="text-sm text-muted-foreground">{t('deleteConfirm', { label })}</p>
+                {isCourseLesson && (
+                  <p className="text-sm text-muted-foreground">{t('deleteCourseLessonNote')}</p>
+                )}
+              </div>
             )}
 
             <div className="flex justify-end gap-2 pt-2">

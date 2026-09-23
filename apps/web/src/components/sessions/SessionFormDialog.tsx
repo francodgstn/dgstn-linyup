@@ -530,7 +530,13 @@ export function SessionFormDialog({
   const invalidateChecklist = useInvalidateSetupChecklist()
 
   const seed = editing ?? duplicating ?? null
-  const isSeries = !!editing?.seriesId
+  // A COURSE'S LESSON IS EDITED ONE LESSON AT A TIME. The "this and all
+  // following" scope reaches `updateRecurringSession`, whose regeneration branch
+  // deletes future sessions outright — and on a course those are lessons people
+  // have paid for, so the server refuses it. The scope step is therefore not
+  // offered here, and the notice points at the course instead.
+  const isCourseLesson = !!editing?.course_block_id
+  const isSeries = !!editing?.seriesId && !isCourseLesson
 
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurrence, setRecurrence] = useState<RecurrencePattern>(() => defaultRecurrence())
@@ -1007,6 +1013,13 @@ export function SessionFormDialog({
                 edit — `duplicating` seeds a NEW session from an old one, which
                 is exactly how a finished class gets repeated and is not history. */}
             {editing && isPastSession(editing) && <PastItemNotice />}
+
+            {isCourseLesson && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
+                <Repeat2 className="h-3.5 w-3.5 shrink-0" />
+                <span>{t('partOfCourse')}</span>
+              </div>
+            )}
 
             {isSeries && (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary">

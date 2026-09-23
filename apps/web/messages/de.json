@@ -1339,7 +1339,9 @@
     "skipDates": "Diese Daten auslassen",
     "skipDatesAdd": "Datum auslassen",
     "skipDatesHint": "Schulferien, geschlossene Halle. Bereits eingeplante Termine bleiben bestehen — diese im Kalender absagen.",
-    "skipDatesRemove": "{date} nicht mehr auslassen"
+    "skipDatesRemove": "{date} nicht mehr auslassen",
+    "partOfCourse": "Teil eines Kurses — die Daten werden im Kurs geändert.",
+    "deleteCourseLessonNote": "Der Kurs behält seine Plätze, und alle Teilnehmenden werden informiert. Den ganzen Kurs sagst du im Angebot ab."
   },
   "Calendar": {
     "title": "Zeitplan",
@@ -7938,7 +7940,10 @@
     "lengthGroup": "{minutes} Min.",
     "lengthRow": "{name} · {minutes} Min.",
     "durationRulesHint": "Jede Dauer wird einzeln bepreist, also beantwortet jedes Abo sie auch einzeln.",
-    "filterAll": "Alle"
+    "filterAll": "Alle",
+    "railCourseBlocks": "Kurse",
+    "railOnlineCourses": "Online-Kurse",
+    "hintCourseBlocks": "Eine Reihe von Lektionen, die zusammen verkauft werden — ein Semester, ein Wochenende, ein Abend."
   },
   "VerifyEmail": {
     "title": "Bestätige {email}",
@@ -8924,5 +8929,48 @@
   "LeadDemo": {
     "notOfficial": "Demo von Linyup — dies ist nicht die offizielle Website von {name}.",
     "officialSite": "Offizielle Website: {site}"
+  },
+  "CourseBlocks": {
+    "newTitle": "Neuer Kurs",
+    "editTitle": "Kurs bearbeiten",
+    "nameLabel": "Kursname",
+    "namePlaceholder": "Anfänger, Herbstsemester",
+    "activityLabel": "Kursart",
+    "activityNone": "Keine Kursart",
+    "activityHint": "Die Lektionen übernehmen Bild, Treffpunkt und Bedingungen.",
+    "placesLabel": "Plätze",
+    "placesPlaceholder": "Unbegrenzt",
+    "placesHint": "Für den ganzen Kurs. Eine verpasste Lektion gibt keinen Platz frei.",
+    "placeLabel": "Ort",
+    "placeNone": "Kein Ort",
+    "coachLabel": "Trainer:in",
+    "coachNone": "Kein:e Trainer:in",
+    "whenLabel": "Wann er stattfindet",
+    "modeRepeating": "Wöchentlich",
+    "modeDays": "Einzelne Daten",
+    "firstLesson": "Erste Lektion",
+    "lastLesson": "Letzte Lektion",
+    "timeLabel": "Uhrzeit",
+    "minutesLabel": "Minuten",
+    "addDay": "Datum hinzufügen",
+    "removeDay": "Dieses Datum entfernen",
+    "daysHint": "Jedes Datum kann eigene Uhrzeit und Dauer haben — bei Wochenendkursen ist das üblich.",
+    "previewCount": "{count, plural, =0 {Keine Lektionen} one {# Lektion} other {# Lektionen}}",
+    "previewEmpty": "Noch keine Lektionen — Daten oben wählen.",
+    "editScheduleNote": "Beim Speichern kommen neue Lektionen dazu. Zum Entfernen die Lektion im Kalender absagen — jemand könnte einen Platz darauf haben.",
+    "created": "Kurs mit {count, plural, one {# Lektion} other {# Lektionen}} erstellt",
+    "saved": "Kurs gespeichert",
+    "saveFailed": "Der Kurs konnte nicht gespeichert werden",
+    "create": "Kurs erstellen",
+    "save": "Speichern",
+    "saving": "Wird gespeichert…",
+    "cancel": "Abbrechen",
+    "railCourses": "Kurse",
+    "newCourse": "Neuer Kurs",
+    "emptyRail": "Noch keine Kurse. Ein Kurs ist eine Reihe von Lektionen, die zusammen verkauft werden — ein Semester, ein Wochenende, ein Abend.",
+    "statusDraft": "Entwurf",
+    "statusPublished": "Veröffentlicht",
+    "statusCancelled": "Abgesagt",
+    "paneNoPriceYet": "Ein Kurs hat noch keinen Preis, daher kann ihn kein Abo enthalten oder vergünstigen."
   }
 }

@@ -1339,7 +1339,9 @@
     "skipDates": "Skip these dates",
     "skipDatesAdd": "Skip a date",
     "skipDatesHint": "School holidays, a closed hall. Sessions already on the calendar stay — cancel those from the calendar.",
-    "skipDatesRemove": "Stop skipping {date}"
+    "skipDatesRemove": "Stop skipping {date}",
+    "partOfCourse": "Part of a course — edit the course to change its dates.",
+    "deleteCourseLessonNote": "The course keeps its places, and everyone on it is told. To call off the whole course, cancel it from Offerings."
   },
   "Calendar": {
     "title": "Schedule",
@@ -7938,7 +7940,10 @@
     "lengthGroup": "{minutes} min",
     "lengthRow": "{name} · {minutes} min",
     "durationRulesHint": "Each length is priced on its own, so each one gets its own answer from every plan.",
-    "filterAll": "All"
+    "filterAll": "All",
+    "railCourseBlocks": "Courses",
+    "railOnlineCourses": "Online courses",
+    "hintCourseBlocks": "A set of lessons sold as one — a term, a weekend, an evening."
   },
   "VerifyEmail": {
     "title": "Confirm {email}",
@@ -8924,5 +8929,48 @@
   "LeadDemo": {
     "notOfficial": "Demo by Linyup — this is not the official website of {name}.",
     "officialSite": "Official website: {site}"
+  },
+  "CourseBlocks": {
+    "newTitle": "New course",
+    "editTitle": "Edit course",
+    "nameLabel": "Course name",
+    "namePlaceholder": "Beginners, autumn term",
+    "activityLabel": "Class",
+    "activityNone": "No class",
+    "activityHint": "The lessons use its picture, meeting point and terms.",
+    "placesLabel": "Places",
+    "placesPlaceholder": "No limit",
+    "placesHint": "For the whole course. A missed lesson does not free one.",
+    "placeLabel": "Location",
+    "placeNone": "No location",
+    "coachLabel": "Coach",
+    "coachNone": "No coach",
+    "whenLabel": "When it runs",
+    "modeRepeating": "Every week",
+    "modeDays": "Set dates",
+    "firstLesson": "First lesson",
+    "lastLesson": "Last lesson",
+    "timeLabel": "Time",
+    "minutesLabel": "Minutes",
+    "addDay": "Add a date",
+    "removeDay": "Remove this date",
+    "daysHint": "Each date can have its own time and length — a weekend course often does.",
+    "previewCount": "{count, plural, =0 {No lessons} one {# lesson} other {# lessons}}",
+    "previewEmpty": "No lessons yet — pick the dates above.",
+    "editScheduleNote": "Saving adds any new lessons. To drop one, cancel it in the calendar — people may hold a place on it.",
+    "created": "Course created with {count, plural, one {# lesson} other {# lessons}}",
+    "saved": "Course saved",
+    "saveFailed": "The course could not be saved",
+    "create": "Create course",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "railCourses": "Courses",
+    "newCourse": "New course",
+    "emptyRail": "No courses yet. A course is a set of lessons sold as one — a term, a weekend, an evening.",
+    "statusDraft": "Draft",
+    "statusPublished": "Published",
+    "statusCancelled": "Cancelled",
+    "paneNoPriceYet": "A course has no price yet, so no plan can include or discount one."
   }
 }

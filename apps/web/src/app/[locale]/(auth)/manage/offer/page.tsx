@@ -57,6 +57,7 @@ import {
   Archive,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   ChevronLeft,
   Copy,
   DoorOpen,
@@ -81,6 +82,7 @@ import {
   COURSES_COLLECTION,
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
   TEAMS_COLLECTION,
+  courseBlockIsFull,
   courseGatedPlanIds,
   courseRatedPlanIds,
   gatedPlanIds,
@@ -91,6 +93,7 @@ import {
   classAccessFacts,
   type Activity,
   type Course,
+  type CourseBlock,
   type Product,
   type SubscriptionType,
   resolveActivityDropIn,
@@ -98,6 +101,7 @@ import {
 } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { refreshQueries } from '@/lib/queryRefresh'
+import { callFunction } from '@/lib/callFunction'
 import { deleteProduct } from '@/plugins/products/hooks'
 import {
   AlertDialog,
@@ -112,6 +116,9 @@ import {
 import { ActivityScheduleSheet } from '@/components/activities/ActivityScheduleSheet'
 import { useAuth } from '@/contexts/AuthContext'
 import { useActivities } from '@/hooks/useActivities'
+import { useCourseBlocks } from '@/hooks/useCourseBlocks'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
+import { CourseBlockDialog, courseBlockSummary } from '@/components/offer/CourseBlockDialog'
 import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { useCapabilities } from '@/hooks/useCapabilities'
@@ -162,7 +169,7 @@ const DEAD_END_CODES = new Set<PricingWarning['code']>([
   'appointment_no_way_in',
 ])
 
-type Selection = { kind: 'activity' | 'course' | 'plan' | 'product'; id: string } | null
+type Selection = { kind: 'activity' | 'courseBlock' | 'course' | 'plan' | 'product'; id: string } | null
 
 /**
  * HOW A THING IS EDITED FROM THIS PAGE: open a dialog here, or go to the page
@@ -285,13 +292,17 @@ function CreateAction({
   )
 }
 
-/** The rail's tabs. `activities` holds classes AND appointments — see the header. */
-type TabKey = 'activities' | 'plans' | 'courses' | 'products'
+/** The rail's tabs. `activities` holds classes AND appointments — see the header.
+ *  `course-blocks` is the SCHEDULED course (a term, a weekend); `courses` is the
+ *  online-courses plugin, displayed as *Online courses*. Two different things
+ *  that a studio owner would call the same word, so the screen never does. */
+type TabKey = 'activities' | 'plans' | 'course-blocks' | 'courses' | 'products'
 
 /** Which tab a selection belongs to, so a deep link opens the tab holding it. */
 const TAB_FOR_KIND: Record<NonNullable<Selection>['kind'], TabKey> = {
   activity: 'activities',
   plan: 'plans',
+  courseBlock: 'course-blocks',
   course: 'courses',
   product: 'products',
 }
@@ -304,7 +315,13 @@ function parseSelection(raw: string | null): Selection {
   const [kind, ...rest] = raw.split(':')
   const id = rest.join(':')
   if (!id) return null
-  if (kind === 'activity' || kind === 'course' || kind === 'plan' || kind === 'product')
+  if (
+    kind === 'activity' ||
+    kind === 'courseBlock' ||
+    kind === 'course' ||
+    kind === 'plan' ||
+    kind === 'product'
+  )
     return { kind, id }
   return null
 }
@@ -334,6 +351,9 @@ export default function CataloguePage() {
   // The quick links borrow the SIDEBAR's labels, so a shortcut and the row it
   // leads to can never end up calling the same page two things.
   const tNav = useTranslations('Nav')
+  // The scheduled course's own namespace — the online-courses plugin owns
+  // `Courses`, and the two are displayed as *Course* and *Online course*.
+  const tCourses = useTranslations('CourseBlocks')
   const tCommon = useTranslations('Common')
   const tSet = useTranslations('TeamSettings')
   const tTpl = useTranslations('PlanTemplates')
@@ -425,6 +445,9 @@ export default function CataloguePage() {
   /** Which kind is being CREATED, if any. Separate from the edit and duplicate
    *  targets because all three drive the same dialog and only one can be true. */
   const [creating, setCreating] = useState<'activity' | 'plan' | null>(null)
+  /** The course dialog: null = closed, 'new' = creating, otherwise the course
+   *  being edited. One piece of state, so it cannot be open twice. */
+  const [courseEditing, setCourseEditing] = useState<'new' | CourseBlock | null>(null)
   const [schedulePreview, setSchedulePreview] = useState<Activity | null>(null)
   const [confirming, setConfirming] = useState<Confirming>(null)
   // THE `ai-offer-drafting` MODULE of the AI insights plugin (an experiment
@@ -442,6 +465,11 @@ export default function CataloguePage() {
   const { data: bookingSettings } = useBookingSettings(currentTeamId)
   const studioDropIn = studioDropInOf(bookingSettings)
   const { data: plans = [], isLoading: loadingPlans } = useSubscriptionTypes(currentTeamId)
+  // Courses (the scheduled kind — a term, a weekend). NOT plugin-gated: a block
+  // of lessons sold as one is the most ordinary thing a European studio sells,
+  // and putting it behind an install would make the default path longer.
+  const { data: courseBlocks = [], isLoading: loadingCourseBlocks } = useCourseBlocks(currentTeamId)
+  const fmt = useTeamFormat()
   const { data: gatewayCurrency } = useGatewayCurrency(currentTeamId)
   // Courses only exist for a studio that installed the plugin, so the group is
   // absent rather than empty when it is not — an empty "Courses" heading would
@@ -457,6 +485,7 @@ export default function CataloguePage() {
     productsInstalled ? currentTeamId : null
   )
   const loading =
+    loadingCourseBlocks ||
     loadingActivities ||
     loadingPlans ||
     (coursesInstalled && loadingCourses) ||
@@ -535,17 +564,27 @@ export default function CataloguePage() {
   const tabHint: Record<TabKey, string> = {
     activities: t('hintActivities'),
     plans: t('hintPlans'),
+    'course-blocks': t('hintCourseBlocks'),
     courses: t('hintCourses'),
     products: t('hintProducts'),
   }
   const tabs: { key: TabKey; label: string; icon: React.ElementType; count: number }[] = [
     { key: 'activities', label: t('tabActivities'), icon: Zap, count: activities.length },
     { key: 'plans', label: t('railPlans'), icon: IdCard, count: plans.length },
+    {
+      key: 'course-blocks' as const,
+      label: t('railCourseBlocks'),
+      icon: CalendarRange,
+      count: courseBlocks.length,
+    },
     ...(coursesInstalled
       ? [
           {
             key: 'courses' as const,
-            label: t('railCourses'),
+            // *Online courses* — the plugin's video lessons. The scheduled
+            // kind above has the plain word, because that is what a studio
+            // owner means by it.
+            label: t('railOnlineCourses'),
             icon: GraduationCap,
             count: courses.length,
           },
@@ -716,6 +755,28 @@ export default function CataloguePage() {
       : []),
   ]
 
+  /** A course's facts: how full it is, and whether it is live. The lesson count
+   *  and dates are already the summary line above, so they are not repeated. */
+  const courseBlockChips = (c: CourseBlock): OfferChip[] => [
+    ...(typeof c.places === 'number' && c.places > 0
+      ? [
+          {
+            label: `${c.places_taken ?? 0}/${c.places}`,
+            tone: courseBlockIsFull(c) ? ('warn' as const) : undefined,
+          },
+        ]
+      : []),
+    {
+      label:
+        c.status === 'published'
+          ? tCourses('statusPublished')
+          : c.status === 'cancelled'
+            ? tCourses('statusCancelled')
+            : tCourses('statusDraft'),
+      tone: c.status === 'cancelled' ? ('warn' as const) : undefined,
+    },
+  ]
+
   function select(next: Selection) {
     const sel = next ? `${next.kind}:${next.id}` : null
     router.replace((sel ? `/manage/offer?sel=${sel}` : '/manage/offer') as Route, {
@@ -806,6 +867,14 @@ export default function CataloguePage() {
         destroy(pl.name, 'delete'),
       ]
     }
+    if (kind === 'courseBlock') {
+      const c = courseBlocks.find((x) => x.id === id)
+      if (!c) return []
+      // Destroy is DELETE, not archive, and the callable refuses once anyone is
+      // enrolled: a course with people on it is CANCELLED, which owes them a
+      // mail and hands the payments back. That callable arrives with enrolment.
+      return [edit({ run: () => setCourseEditing(c) }), destroy(c.name, 'delete')]
+    }
     if (kind === 'course') {
       const c = courses.find((x) => x.id === id)
       if (!c) return []
@@ -840,6 +909,14 @@ export default function CataloguePage() {
     } else if (kind === 'plan') {
       await deleteDoc(doc(db, TEAMS_COLLECTION, currentTeamId, SUBSCRIPTION_TYPES_SUBCOLLECTION, id))
       await qc.invalidateQueries({ queryKey: ['subscription-types', currentTeamId] })
+    } else if (kind === 'courseBlock') {
+      // Through the callable, not a client delete: it takes the lessons off the
+      // calendar with the course, and it REFUSES once anyone is enrolled —
+      // deleting a course people are on is not a delete, it is a cancellation
+      // that owes them a mail.
+      await callFunction('deleteCourseBlock')({ teamId: currentTeamId, blockId: id })
+      await qc.invalidateQueries({ queryKey: ['course-blocks', currentTeamId] })
+      await qc.invalidateQueries({ queryKey: ['sessions'] })
     } else if (kind === 'course') {
       await updateDoc(doc(db, COURSES_COLLECTION, id), { status: 'archived' })
       await qc.invalidateQueries({ queryKey: ['courses', currentTeamId] })
@@ -912,6 +989,8 @@ export default function CataloguePage() {
     !!selectedActivity &&
     !isAppointmentActivity(selectedActivity) &&
     !activityPlanFacets(selectedActivity).access
+  const selectedCourseBlock =
+    selection?.kind === 'courseBlock' ? courseBlocks.find((c) => c.id === selection.id) : undefined
   const selectedCourse =
     selection?.kind === 'course' ? courses.find((c) => c.id === selection.id) : undefined
   const selectedPlan =
@@ -1252,6 +1331,16 @@ export default function CataloguePage() {
               the page from the list it adds to, and a studio looking at its
               classes looks for "add one" among them. One quiet row at the head
               of each tab's list, doing exactly what that tab's Create item does. */}
+          {canEdit && activeTab === 'course-blocks' && (
+            <button
+              type="button"
+              onClick={() => setCourseEditing('new')}
+              className="mx-2 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-muted hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0 flex-1">{tCourses('newCourse')}</span>
+            </button>
+          )}
           {canEdit && (activeTab === 'activities' || activeTab === 'plans') && (
             <button
               type="button"
@@ -1431,6 +1520,29 @@ export default function CataloguePage() {
                   <Sparkles className="mr-1.5 inline h-3.5 w-3.5 align-text-bottom" />
                   {tTpl('railLink')}
                 </button>
+              )}
+            </div>
+          )}
+
+          {!loading && activeTab === 'course-blocks' && (
+            <div className="space-y-2.5 p-1">
+              {/* NEVER filtered by the dead-end banner: the health codes are
+                  about a class's access rule, and a course has none yet — so
+                  filtering here would empty the tab and imply the opposite. */}
+              {courseBlocks.length === 0 ? (
+                <RailEmpty text={tCourses('emptyRail')} />
+              ) : (
+                courseBlocks.map((c) => (
+                  <RailRow
+                    key={c.id}
+                    name={c.name}
+                    detail={courseBlockSummary(c, fmt, (k, v) => tCourses(k, v as never))}
+                    selected={selection?.kind === 'courseBlock' && selection.id === c.id}
+                    onClick={() => toggle('courseBlock', c.id)}
+                    edit={editOf('courseBlock', c.id)}
+                    editLabel={t('editAll')}
+                  />
+                ))
               )}
             </div>
           )}
@@ -1705,6 +1817,27 @@ export default function CataloguePage() {
             </PaneBody>
           )}
 
+          {selectedCourseBlock && (
+            <PaneBody
+              key={selectedCourseBlock.id}
+              title={selectedCourseBlock.name}
+              badge={tCourses('railCourses')}
+              summary={courseBlockSummary(selectedCourseBlock, fmt, (k, v) =>
+                tCourses(k, v as never)
+              )}
+              facts={{
+                chips: courseBlockChips(selectedCourseBlock),
+                description: selectedCourseBlock.description,
+                // WHERE THE PLAN EDGE WILL BE. A course carries no price yet, so
+                // no plan can include or discount one — a fact about how far this
+                // is built, said out loud rather than left as an empty space that
+                // reads like a broken screen.
+                note: tCourses('paneNoPriceYet'),
+              }}
+              actions={paneActionsFor('courseBlock', selectedCourseBlock.id)}
+            />
+          )}
+
           {selectedProduct && (
             <PaneBody
               key={selectedProduct.id}
@@ -1730,6 +1863,7 @@ export default function CataloguePage() {
               another tab. Saying so beats an empty pane that looks like a bug. */}
           {selection &&
             !selectedActivity &&
+            !selectedCourseBlock &&
             !selectedCourse &&
             !selectedPlan &&
             !selectedProduct &&
@@ -1744,6 +1878,15 @@ export default function CataloguePage() {
         </div>
         )}
       </div>
+
+      {/* ONE MOUNT for create and edit: `courseEditing` is either 'new' or the
+          course being edited, so the dialog cannot be open twice. */}
+      <CourseBlockDialog
+        open={courseEditing !== null}
+        onOpenChange={(v) => !v && setCourseEditing(null)}
+        editing={courseEditing === 'new' ? null : courseEditing}
+        onSaved={(id) => select({ kind: 'courseBlock', id })}
+      />
 
       {aiDrafting && currentTeamId && (
         <AiDraftDialog

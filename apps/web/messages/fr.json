@@ -1339,7 +1339,9 @@
     "skipDates": "Ignorer ces dates",
     "skipDatesAdd": "Ignorer une date",
     "skipDatesHint": "Vacances scolaires, salle fermée. Les séances déjà au calendrier restent — annulez-les depuis le calendrier.",
-    "skipDatesRemove": "Ne plus ignorer le {date}"
+    "skipDatesRemove": "Ne plus ignorer le {date}",
+    "partOfCourse": "Fait partie d'un cours — modifiez le cours pour changer ses dates.",
+    "deleteCourseLessonNote": "Le cours garde ses places et tous les participants sont prévenus. Pour annuler tout le cours, faites-le depuis les offres."
   },
   "Calendar": {
     "title": "Planning",
@@ -7938,7 +7940,10 @@
     "lengthGroup": "{minutes} min",
     "lengthRow": "{name} · {minutes} min",
     "durationRulesHint": "Chaque durée a son propre tarif, donc chaque abonnement y répond séparément.",
-    "filterAll": "Tous"
+    "filterAll": "Tous",
+    "railCourseBlocks": "Cours",
+    "railOnlineCourses": "Cours en ligne",
+    "hintCourseBlocks": "Un ensemble de séances vendues ensemble — un trimestre, un week-end, une soirée."
   },
   "VerifyEmail": {
     "title": "Confirmez {email}",
@@ -8924,5 +8929,48 @@
   "LeadDemo": {
     "notOfficial": "Démo de Linyup — ceci n’est pas le site officiel de {name}.",
     "officialSite": "Site officiel : {site}"
+  },
+  "CourseBlocks": {
+    "newTitle": "Nouveau cours",
+    "editTitle": "Modifier le cours",
+    "nameLabel": "Nom du cours",
+    "namePlaceholder": "Débutants, trimestre d'automne",
+    "activityLabel": "Type de cours",
+    "activityNone": "Aucun type",
+    "activityHint": "Les séances reprennent son image, son point de rencontre et ses conditions.",
+    "placesLabel": "Places",
+    "placesPlaceholder": "Sans limite",
+    "placesHint": "Pour tout le cours. Une séance manquée n'en libère pas une.",
+    "placeLabel": "Lieu",
+    "placeNone": "Aucun lieu",
+    "coachLabel": "Coach",
+    "coachNone": "Aucun coach",
+    "whenLabel": "Quand il a lieu",
+    "modeRepeating": "Chaque semaine",
+    "modeDays": "Dates précises",
+    "firstLesson": "Première séance",
+    "lastLesson": "Dernière séance",
+    "timeLabel": "Heure",
+    "minutesLabel": "Minutes",
+    "addDay": "Ajouter une date",
+    "removeDay": "Retirer cette date",
+    "daysHint": "Chaque date peut avoir son heure et sa durée — c'est courant pour un cours de week-end.",
+    "previewCount": "{count, plural, =0 {Aucune séance} one {# séance} other {# séances}}",
+    "previewEmpty": "Aucune séance — choisissez les dates ci-dessus.",
+    "editScheduleNote": "L'enregistrement ajoute les nouvelles séances. Pour en retirer une, annulez-la dans le calendrier — quelqu'un y a peut-être une place.",
+    "created": "Cours créé avec {count, plural, one {# séance} other {# séances}}",
+    "saved": "Cours enregistré",
+    "saveFailed": "Le cours n'a pas pu être enregistré",
+    "create": "Créer le cours",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "railCourses": "Cours",
+    "newCourse": "Nouveau cours",
+    "emptyRail": "Aucun cours. Un cours est un ensemble de séances vendues ensemble — un trimestre, un week-end, une soirée.",
+    "statusDraft": "Brouillon",
+    "statusPublished": "Publié",
+    "statusCancelled": "Annulé",
+    "paneNoPriceYet": "Un cours n'a pas encore de prix, donc aucun abonnement ne peut l'inclure ni le réduire."
   }
 }
