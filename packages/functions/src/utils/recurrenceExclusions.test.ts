@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { calculateOccurrences, validateRecurrence } from './recurrence'
 import type { RecurrencePattern } from '@linyup/shared'
 
-// SKIP DATES — "every Wednesday from August to November, no lesson on 8.10 and
+// SKIP DATES, "every Wednesday from August to November, no lesson on 8.10 and
 // 15.10, which is thirteen lessons".
 //
 // Three things are easy to get wrong here, and each is silent:
@@ -12,7 +12,7 @@ import type { RecurrencePattern } from '@linyup/shared'
 //     week nineteen.
 //  2. Comparing the day in the PROCESS timezone. Cloud Run is UTC and the
 //     studio is in Zurich, so a class in the small hours falls on the previous
-//     UTC day — and excluding "24 December" skips the 23rd instead. The rest of
+//     UTC day, and excluding "24 December" skips the 23rd instead. The rest of
 //     recurrence.ts is scrupulously Zurich-aware; `startOfDay` is not, and this
 //     is the first feature that reads a calendar day a human typed.
 //  3. Treating exclusions as a rule about what EXISTS. They are a rule about
@@ -74,7 +74,7 @@ describe('recurrence skip dates', () => {
   const from = new Date(Date.UTC(2025, 7, 1))
   const to = new Date(Date.UTC(2025, 11, 1))
 
-  it('drops exactly the skipped days — the Swimatic kids course is 13 lessons', () => {
+  it('drops exactly the skipped days, the Swimatic kids course is 13 lessons', () => {
     const all = run(WEEKLY, from, to)
     assert.equal(all.length, 15, 'without skips, 20.08–26.11 weekly is 15 Wednesdays')
 
@@ -112,7 +112,7 @@ describe('recurrence skip dates', () => {
 
   it('compares the day in the STUDIO timezone, not the process one', () => {
     // A 00:30 Zurich class on 25 December is 23:30 UTC on the 24th. Excluding
-    // the 25th must drop the 25th — under a UTC day boundary it would leave the
+    // the 25th must drop the 25th, under a UTC day boundary it would leave the
     // 25th standing and drop the 24th's (nonexistent) lesson instead.
     const lateNight: RecurrencePattern = {
       frequency: 'daily',
@@ -152,7 +152,7 @@ describe('recurrence skip dates', () => {
     const noMatch = run(
       {
         ...WEEKLY,
-        // A Thursday, and a date years away — neither is an error.
+        // A Thursday, and a date years away, neither is an error.
         excludeDates: [
           zurich(2025, 10, 9, 15, 45),
           zurich(2030, 1, 1, 12, 0),

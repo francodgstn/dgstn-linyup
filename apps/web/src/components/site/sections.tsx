@@ -2154,7 +2154,7 @@ function ScheduleBlock({ section, ctx }: { section: ScheduleSection; ctx: Render
             entries.push({
               // THE PLACE IS IN THE KEY. `listAvailability` returns one entry
               // per (provider, activity, place), so the same coach teaching the
-              // same thing at two pools now yields two entries — which collide
+              // same thing at two pools now yields two entries, which collide
               // on a key that names only the first two and the start.
               id: `avail-${coach.providerId}-${activity.activityId}-${activity.placeId ?? ''}-${w.startMs}`,
               activityId: activity.activityId,

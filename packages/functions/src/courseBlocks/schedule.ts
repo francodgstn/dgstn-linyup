@@ -1,17 +1,17 @@
-// ─── THE MEETING LIST — one resolver, three ways of asking for it ────────────
+// ─── THE MEETING LIST: one resolver, three ways of asking for it ────────────
 //
 // A course's meetings are a LIST, and this is the only place one is built. The
 // studio authors in whichever of three shapes fits what it is selling; all three
-// arrive here and leave as `CourseMeeting[]`, so everything downstream — the
-// preview, the sessions, the "13 lessons" on the card, the confirmation email —
+// arrive here and leave as `CourseMeeting[]`, so everything downstream, the
+// preview, the sessions, the "13 lessons" on the card, the confirmation email , 
 // reads one thing.
 //
 //   Repeating   a weekly rule + its skip dates    "every Wed, 20.08–26.11, not 8.10/15.10"
 //   Days        explicit day+time pairs            "Sat 10:00–16:15 and Sun 09:00–15:00"
 //   Single      one of the above with one entry    "Sunday 14.10, 15:00–17:45"
 //
-// WHY A LIST AND NOT A PATTERN. `RecurrencePattern` carries ONE `startDate` —
-// which is also its time of day — and ONE `duration`. So it cannot say "Saturday
+// WHY A LIST AND NOT A PATTERN. `RecurrencePattern` carries ONE `startDate` , 
+// which is also its time of day, and ONE `duration`. So it cannot say "Saturday
 // ten to quarter past four AND Sunday nine to three", and that weekend crawl
 // course is an ordinary product rather than an edge case. The repeating shape is
 // therefore an INPUT that resolves to the list, kept beside it so the studio can
@@ -46,7 +46,7 @@ export type CourseScheduleInput =
 
 export interface ResolvedSchedule {
   meetings: CourseMeeting[]
-  /** The rule, when there was one — stored beside the list for re-editing. */
+  /** The rule, when there was one, stored beside the list for re-editing. */
   recurrence: RecurrencePattern | null
 }
 
@@ -89,7 +89,7 @@ function fromRecurrence(recurrence: RecurrencePattern): CourseMeeting[] {
   const check = validateRecurrence(recurrence)
   if (!check.valid) throw new HttpsError('invalid-argument', check.errors.join('; '))
   if (!BOUNDED_END_CONDITIONS.has(recurrence.endCondition)) {
-    // A course is a bounded thing — "13 lessons", "until the end of November".
+    // A course is a bounded thing, "13 lessons", "until the end of November".
     // An open-ended rule is a timetable, which is what a plain session series
     // already is.
     throw new HttpsError(
@@ -135,7 +135,7 @@ function fromDates(entries: Array<{ startMs: number; durationMinutes: number }>)
         `A lesson has to run between 1 and ${MAX_MEETING_MINUTES} minutes.`
       )
     }
-    // Two lessons at the same instant is a double entry, not a schedule — and
+    // Two lessons at the same instant is a double entry, not a schedule, and
     // it would give the series two occurrences deduped to one, so the course's
     // own count and its sessions would disagree for ever.
     if (seen.has(startMs)) continue

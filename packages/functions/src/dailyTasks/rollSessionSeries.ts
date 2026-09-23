@@ -66,7 +66,7 @@ export interface SeriesRollPlan {
  * - Only `status === 'active'` rolls. Paused, ended and soft-deleted series are
  *   left exactly as they are (matching hmd-lineup's original query).
  * - A COURSE'S SERIES NEVER ROLLS. Its meetings are a list, materialised in full
- *   at creation, so there is nothing to extend — and extending one would invent
+ *   at creation, so there is nothing to extend, and extending one would invent
  *   lessons nobody bought. The query's `status == 'active'` filter already keeps
  *   it out (a course series is `fixed`), which is what makes this free; the
  *   check below is the structural half, so the guarantee survives somebody
@@ -89,7 +89,7 @@ export function planSeriesRoll(input: {
   horizonMs: number
   refreshBeforeMs: number
   recurrenceValid?: boolean
-  /** True for a series whose occurrences are a fixed list — a course's. */
+  /** True for a series whose occurrences are a fixed list, a course's. */
   fixedOccurrences?: boolean
 }): SeriesRollPlan {
   const keepFromMs = Math.max(input.lastGeneratedUntilMs ?? input.nowMs, input.nowMs)

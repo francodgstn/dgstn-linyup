@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { availabilityBucketKey, availabilityPlaceKey } from './window'
 
-// ONE CALENDAR PER PLACE — the bucket `listAvailability` groups a coach's
+// ONE CALENDAR PER PLACE, the bucket `listAvailability` groups a coach's
 // schedules into.
 //
 // The defect this pins produced WRONG OUTPUT, not a missing feature. Grouping
@@ -24,7 +24,7 @@ const sched = (over: Partial<{ placeId: string; location: string; onlineUrl: str
   onlineUrl: over.onlineUrl ?? null,
 })
 
-describe('availability buckets — one per (activity, place)', () => {
+describe('availability buckets: one per (activity, place)', () => {
   it('splits one offer taught at two pools into two buckets', () => {
     const leimbach = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-leimbach' }))
     const letzigraben = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-letzigraben' }))
@@ -51,7 +51,7 @@ describe('availability buckets — one per (activity, place)', () => {
 
   it('buckets a legacy schedule by its free-text location, exactly as before', () => {
     // No tracked place was ever set on these, so `location` is the only thing
-    // that distinguishes two of them — and two schedules carrying the same note
+    // that distinguishes two of them, and two schedules carrying the same note
     // are the same calendar, which is what the old grouping did for ALL of them.
     const a = availabilityBucketKey('private-lesson', sched({ location: 'Hallenbad Leimbach' }))
     const b = availabilityBucketKey('private-lesson', sched({ location: 'Hallenbad Leimbach' }))

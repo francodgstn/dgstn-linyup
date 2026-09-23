@@ -3,12 +3,12 @@ import { resolveCourseSchedule } from './schedule'
 import { MAX_COURSE_MEETINGS, type RecurrencePattern } from '@linyup/shared'
 import { Timestamp } from 'firebase-admin/firestore'
 
-// A COURSE'S MEETINGS ARE A LIST — the three ways a studio says when it runs,
+// A COURSE'S MEETINGS ARE A LIST, the three ways a studio says when it runs,
 // and the one shape they all become.
 //
 // The decisive fixture is the weekend course. `RecurrencePattern` carries ONE
 // `startDate` (which is also its time of day) and ONE `duration`, so it cannot
-// say "Saturday 10:00–16:15 AND Sunday 09:00–15:00" — and that crawl weekend is
+// say "Saturday 10:00–16:15 AND Sunday 09:00–15:00", and that crawl weekend is
 // an ordinary product, not an edge case. It is why a course stores a list and
 // treats a repeating rule as an authoring input.
 //
@@ -69,7 +69,7 @@ describe('a course schedule', () => {
     assert.ok(recurrence)
   })
 
-  it('resolves the weekend course — two days, two different lengths', () => {
+  it('resolves the weekend course, two days, two different lengths', () => {
     // THE FIXTURE THAT DECIDED THE SHAPE. No RecurrencePattern can express this.
     const sat = zurich(2025, 9, 13, 10, 0)
     const sun = zurich(2025, 9, 14, 9, 0)
@@ -105,7 +105,7 @@ describe('a course schedule', () => {
         { startMs: a, durationMinutes: 60 },
         { startMs: b, durationMinutes: 60 },
         // The same instant twice would give the series two occurrences that its
-        // (seriesId, instanceDate) dedupe collapses into one — leaving the
+        // (seriesId, instanceDate) dedupe collapses into one, leaving the
         // course's own count disagreeing with its sessions for ever.
         { startMs: a, durationMinutes: 60 },
       ],
@@ -115,7 +115,7 @@ describe('a course schedule', () => {
   })
 
   it('refuses a course that never ends', () => {
-    // A course is bounded by definition — "13 lessons", "until November". An
+    // A course is bounded by definition, "13 lessons", "until November". An
     // open-ended rule is a timetable, which a plain session series already is.
     assert.throws(
       () =>

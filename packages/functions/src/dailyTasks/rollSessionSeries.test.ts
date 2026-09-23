@@ -298,7 +298,7 @@ describe('rollSessionSeries — end conditions', () => {
   it('a skipped date stays skipped across rolls, and does not spend a count', async () => {
     // THE REASON SKIP DATES LIVE ON THE PATTERN. A `count` series recomputes its
     // total from its own start on every roll, so an exclusion held anywhere but
-    // the pattern would be forgotten here — the skipped Tuesdays would come back
+    // the pattern would be forgotten here, the skipped Tuesdays would come back
     // on the second roll, and the count would be wrong on every one.
     const skipped = [new Date('2026-09-01T09:00:00Z'), new Date('2026-09-08T09:00:00Z')]
     const db = makeDb({

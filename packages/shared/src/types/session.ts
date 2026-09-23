@@ -625,7 +625,7 @@ export interface SessionPublicProfile {
    *  so a public calendar can show the hall is busy, with `allowBooking: false`,
    *  and a click on it belongs to the course rather than to a booking form. */
   course_block_id?: string
-  /** WHERE, as an id — the venue itself, which a public surface can resolve.
+  /** WHERE, as an id, the venue itself, which a public surface can resolve.
    *  `location` beside it is the studio's free-text note, and is all these
    *  mirrors carried until now: two sessions at two venues were the same to a
    *  public page whenever the note was blank or identical. */
@@ -835,13 +835,13 @@ export interface RecurrencePattern {
   endDate?: Timestamp
   maxOccurrences?: number
   /**
-   * Dates this pattern skips — school holidays, a closed hall, the week the
+   * Dates this pattern skips, school holidays, a closed hall, the week the
    * studio is away. Any instant on the date works; only the calendar day is
    * read, in the studio's timezone.
    *
    * A RULE ABOUT WHAT WILL BE CREATED, never about what exists. The generator
    * never writes an excluded day, so adding one to a pattern whose sessions are
-   * already on the calendar removes nothing — that is `cancelSession`'s job,
+   * already on the calendar removes nothing, that is `cancelSession`'s job,
    * because people may already hold bookings on the lesson. Removing one puts
    * the day back on the next generation.
    *

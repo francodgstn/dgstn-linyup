@@ -1,6 +1,6 @@
 'use client'
 
-// ─── A COURSE — name it, say when it runs, say how many fit ──────────────────
+// ─── A COURSE: name it, say when it runs, say how many fit ──────────────────
 //
 // A course is a bounded set of lessons sold as one thing. The hard part of
 // authoring one is WHEN, and the lean answer is to ask the question the studio
@@ -13,7 +13,7 @@
 // All three resolve to the same list of lessons, server-side
 // (`courseBlocks/schedule.ts`), and this dialog previews the count before Save
 // because "13 lessons" is what the studio will put on the card and what the
-// parent will pay for — a schedule that quietly produces 12 is the mistake this
+// parent will pay for, a schedule that quietly produces 12 is the mistake this
 // preview exists to catch.
 //
 // The lessons appear on the calendar as ordinary sessions. Removing one is
@@ -66,7 +66,7 @@ interface DayRow {
 
 const NONE = '__none'
 
-/** A local date+time pair → the instant, through the browser's own timezone —
+/** A local date+time pair → the instant, through the browser's own timezone , 
  *  which is the studio's. The same spelling `SessionFormDialog` uses. */
 function localInstant(date: string, time: string): number | null {
   if (!date || !time) return null
@@ -97,13 +97,13 @@ export function CourseBlockDialog({
   const qc = useQueryClient()
   const fmt = useTeamFormat()
   const { data: activities = [] } = useActivities(currentTeamId)
-  // `pickable` is the roster this form may assign — the hook's own answer to
+  // `pickable` is the roster this form may assign, the hook's own answer to
   // who can lead a session, so this dialog does not re-derive it.
   const { pickable: coaches } = useCoaches(currentTeamId)
   const { data: places = [] } = usePlaces(currentTeamId)
 
   // A course runs on a CLASS. An appointment has no calendar until somebody
-  // books it, so a set of them is not a course — the server refuses one too.
+  // books it, so a set of them is not a course, the server refuses one too.
   const classes = useMemo(() => activities.filter((a: Activity) => !isAppointmentActivity(a)), [activities])
 
   const [name, setName] = useState('')
@@ -184,7 +184,7 @@ export function CourseBlockDialog({
 
   // ── The preview: the same arithmetic the server will do ──────────────────
   //
-  // Not a call — the studio is typing, and a round trip per keystroke to be told
+  // Not a call, the studio is typing, and a round trip per keystroke to be told
   // "13" is a worse answer than counting here. The server resolves it again on
   // save and is the authority; a disagreement would show up as a different count
   // on the saved course, which is exactly where it should show up.

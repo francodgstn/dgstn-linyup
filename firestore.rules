@@ -1891,12 +1891,12 @@ service cloud.firestore {
       allow delete: if belongsToUserTeam(resource) || hasRole('admin');
     }
 
-    // Course blocks — a bounded, sellable set of lessons ("13 Wednesdays, 9
+    // Course blocks, a bounded, sellable set of lessons ("13 Wednesdays, 9
     // places, one price"). See types/courseBlock.ts.
     //
     // EVERY CLIENT WRITE IS DENIED, unlike the session series above. A course
-    // carries capacity — `places_taken` is an ABSOLUTE counter written only from
-    // a transaction that read the enrolments beside it — and, from the sale
+    // carries capacity, `places_taken` is an ABSOLUTE counter written only from
+    // a transaction that read the enrolments beside it, and, from the sale
     // stage, a price. A client that could edit either could sell a place that
     // does not exist or buy one at a number it chose. The studio's own edits go
     // through `createCourseBlock` / `updateCourseBlock` / `setCourseBlockStatus`
@@ -1911,7 +1911,7 @@ service cloud.firestore {
       allow write: if false;
 
       // An enrolment carries its own `teamId`, so the tenant check reads the
-      // document in hand rather than fetching the parent course — one less read
+      // document in hand rather than fetching the parent course, one less read
       // on every evaluation, and no cross-document dependency to go stale.
       match /enrolments/{contactId} {
         allow read: if belongsToUserTeam(resource) || hasRole('admin');

@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase'
 import { COURSE_BLOCKS_COLLECTION, firstMeeting, type CourseBlock } from '@linyup/shared'
 
 /**
- * A team's courses — a bounded set of lessons sold as one thing
+ * A team's courses, a bounded set of lessons sold as one thing
  * ("13 Wednesdays, 9 places, one price"). See `types/courseBlock.ts`.
  *
  * Not the online-courses plugin, which is on-demand video and lives in

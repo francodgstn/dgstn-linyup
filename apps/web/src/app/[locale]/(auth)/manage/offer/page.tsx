@@ -293,7 +293,7 @@ function CreateAction({
   )
 }
 
-/** The rail's tabs. `activities` holds classes AND appointments — see the header.
+/** The rail's tabs. `activities` holds classes AND appointments, see the header.
  *  `course-blocks` is the SCHEDULED course (a term, a weekend); `courses` is the
  *  online-courses plugin, displayed as *Online courses*. Two different things
  *  that a studio owner would call the same word, so the screen never does. */
@@ -352,7 +352,7 @@ export default function CataloguePage() {
   // The quick links borrow the SIDEBAR's labels, so a shortcut and the row it
   // leads to can never end up calling the same page two things.
   const tNav = useTranslations('Nav')
-  // The scheduled course's own namespace — the online-courses plugin owns
+  // The scheduled course's own namespace, the online-courses plugin owns
   // `Courses`, and the two are displayed as *Course* and *Online course*.
   const tCourses = useTranslations('CourseBlocks')
   const tCommon = useTranslations('Common')
@@ -466,7 +466,7 @@ export default function CataloguePage() {
   const { data: bookingSettings } = useBookingSettings(currentTeamId)
   const studioDropIn = studioDropInOf(bookingSettings)
   const { data: plans = [], isLoading: loadingPlans } = useSubscriptionTypes(currentTeamId)
-  // Courses (the scheduled kind — a term, a weekend). NOT plugin-gated: a block
+  // Courses (the scheduled kind: a term, a weekend). NOT plugin-gated: a block
   // of lessons sold as one is the most ordinary thing a European studio sells,
   // and putting it behind an install would make the default path longer.
   const { data: courseBlocks = [], isLoading: loadingCourseBlocks } = useCourseBlocks(currentTeamId)
@@ -582,7 +582,7 @@ export default function CataloguePage() {
       ? [
           {
             key: 'courses' as const,
-            // *Online courses* — the plugin's video lessons. The scheduled
+            // *Online courses*, the plugin's video lessons. The scheduled
             // kind above has the plain word, because that is what a studio
             // owner means by it.
             label: t('railOnlineCourses'),
@@ -912,7 +912,7 @@ export default function CataloguePage() {
       await qc.invalidateQueries({ queryKey: ['subscription-types', currentTeamId] })
     } else if (kind === 'courseBlock') {
       // Through the callable, not a client delete: it takes the lessons off the
-      // calendar with the course, and it REFUSES once anyone is enrolled —
+      // calendar with the course, and it REFUSES once anyone is enrolled , 
       // deleting a course people are on is not a delete, it is a cancellation
       // that owes them a mail.
       await callFunction('deleteCourseBlock')({ teamId: currentTeamId, blockId: id })
@@ -1528,7 +1528,7 @@ export default function CataloguePage() {
           {!loading && activeTab === 'course-blocks' && (
             <div className="space-y-2.5 p-1">
               {/* NEVER filtered by the dead-end banner: the health codes are
-                  about a class's access rule, and a course has none yet — so
+                  about a class's access rule, and a course has none yet, so
                   filtering here would empty the tab and imply the opposite. */}
               {courseBlocks.length === 0 ? (
                 <RailEmpty text={tCourses('emptyRail')} />
@@ -1830,7 +1830,7 @@ export default function CataloguePage() {
                 chips: courseBlockChips(selectedCourseBlock),
                 description: selectedCourseBlock.description,
                 // WHERE THE PLAN EDGE WILL BE. A course carries no price yet, so
-                // no plan can include or discount one — a fact about how far this
+                // no plan can include or discount one, a fact about how far this
                 // is built, said out loud rather than left as an empty space that
                 // reads like a broken screen.
                 note: tCourses('paneNoPriceYet'),

@@ -1,7 +1,7 @@
 import type { Timestamp } from './common'
 import type { RecurrencePattern } from './session'
 
-// ─── COURSE BLOCKS — a bounded, sellable set of lessons ──────────────────────
+// ─── COURSE BLOCKS: a bounded, sellable set of lessons ──────────────────────
 //
 // "Every Wednesday 15:45–16:15, 20.08 to 26.11, no lesson on 8.10 and 15.10 →
 // 13 lessons, 9 places, CHF 364, one booking, the child enrolled in every one."
@@ -9,12 +9,12 @@ import type { RecurrencePattern } from './session'
 // A class is a seat in a session. A COURSE is the whole set, sold once, and the
 // set is what the studio and the parent both talk about: "levels 1 to 5 start in
 // August", "13 lessons", "9 places", "sold out". None of that is expressible as
-// thirteen independent sessions — thirteen sessions at 9/9 are thirteen answers
+// thirteen independent sessions, thirteen sessions at 9/9 are thirteen answers
 // to one question, and a child who misses lesson four must not free a place on
 // the course.
 //
 // UI NAME: **Course**. The online-courses plugin (`courses/{id}`,
-// `types/course.ts`) is displayed as *Online course* — it is on-demand video,
+// `types/course.ts`) is displayed as *Online course*, it is on-demand video,
 // not a timetable. The stored names differ so the two can never be confused in
 // code, and neither stored name ever changes.
 //
@@ -22,7 +22,7 @@ import type { RecurrencePattern } from './session'
 //
 // A course's meetings are a LIST (`meetings[]`), never a rule. `RecurrencePattern`
 // has ONE `startDate` (which carries the time of day) and ONE `duration`, so it
-// cannot say "Saturday 10:00–16:15 AND Sunday 09:00–15:00" — and that weekend
+// cannot say "Saturday 10:00–16:15 AND Sunday 09:00–15:00", and that weekend
 // crawl course is an ordinary product, not an edge case. A repeating pattern is
 // therefore an AUTHORING INPUT that resolves to the list, kept beside it
 // (`recurrence`) so the studio can see and re-edit what it typed.
@@ -39,8 +39,8 @@ import type { RecurrencePattern } from './session'
 // what makes its lessons ORDINARY sessions: roster, attendance, check-in,
 // reminders, cancellation and the trainer's busy set all work with no new code,
 // and the series teardown job cancels the whole course. The series carries
-// `course_block_id` and `status: 'fixed'` — materialised in full, nothing to
-// roll — so the daily roller never reads it.
+// `course_block_id` and `status: 'fixed'`, materialised in full, nothing to
+// roll, so the daily roller never reads it.
 //
 // The editing callables (`updateRecurringSession`, `cancelSession`) REFUSE a
 // series carrying `course_block_id` and point at the course instead. That
@@ -56,7 +56,7 @@ export interface CourseMeeting {
 }
 
 /**
- * How the studio authored the meeting list. Display and re-editing only — the
+ * How the studio authored the meeting list. Display and re-editing only, the
  * list is the truth, and a course whose dates were typed one by one has no
  * pattern at all.
  */
@@ -69,7 +69,7 @@ export type CourseBlockStatus =
   /** Being set up. Not sellable, not public. Where a duplicate lands. */
   | 'draft'
   /** Published. Whether it can be bought right now is `courseBlockSalesOpen`,
-   *  which reads the dates — a status is not a clock. */
+   *  which reads the dates, a status is not a clock. */
   | 'published'
   /** Called off. The series teardown has run (or is running); enrolments stand
    *  as a record of who was in it, and refunds are the studio's own act. */
@@ -84,8 +84,8 @@ export interface CourseBlock {
   description?: string
 
   /** The class type behind it. The lessons are sessions of this activity, so
-   *  everything an activity already says — colour, image, meeting point, what
-   *  to bring, cancellation terms, booking questions — is said once. */
+   *  everything an activity already says, colour, image, meeting point, what
+   *  to bring, cancellation terms, booking questions, is said once. */
   activityId?: string | null
   activityName?: string | null
 
@@ -97,7 +97,7 @@ export interface CourseBlock {
   /** WHEN, as typed. Absent for a course whose dates were entered one by one. */
   pattern?: CourseSchedulePattern | null
 
-  /** WHERE and WHO — copied onto every lesson through the series template. */
+  /** WHERE and WHO, copied onto every lesson through the series template. */
   placeId?: string | null
   roomId?: string | null
   location?: string | null
@@ -124,14 +124,14 @@ export interface CourseBlock {
 
   status?: CourseBlockStatus
 
-  /** Sessions this course's own callables could not create — a lesson whose
+  /** Sessions this course's own callables could not create, a lesson whose
    *  session is already at capacity from an ordinary booking. Surfaced on the
    *  roster; never a reason to fail an enrolment. */
   fanout_conflicts?: string[] | null
 
   /** Bumped whenever the enrolment set or the meeting list changes, so the
    *  roster converger can skip work it has already done. A hint, never the
-   *  guarantee — the converger re-derives rather than trusting a marker. */
+   *  guarantee, the converger re-derives rather than trusting a marker. */
   roster_version?: number
 
   created_at?: Timestamp
@@ -156,7 +156,7 @@ export function lastMeeting(block: Pick<CourseBlock, 'meetings'>): CourseMeeting
   return all[all.length - 1] ?? null
 }
 
-/** How many lessons the course runs — the number on every card and every
+/** How many lessons the course runs, the number on every card and every
  *  confirmation ("13 lessons"). */
 export function meetingCount(block: Pick<CourseBlock, 'meetings'>): number {
   return block.meetings?.length ?? 0
@@ -179,9 +179,9 @@ export function courseBlockIsFull(block: Pick<CourseBlock, 'places' | 'places_ta
   return placesFree(block.places, block.places_taken) <= 0
 }
 
-// ─── ENROLMENTS — one purchase, one place, N lessons ─────────────────────────
+// ─── ENROLMENTS: one purchase, one place, N lessons ─────────────────────────
 //
-// `course_blocks/{blockId}/enrolments/{contactId}` — the doc id IS the contact
+// `course_blocks/{blockId}/enrolments/{contactId}`, the doc id IS the contact
 // id, exactly like `bookings`, `waitlist` and `participants`, so a second enrol
 // is an idempotent write rather than a duplicate row.
 //
@@ -189,14 +189,14 @@ export function courseBlockIsFull(block: Pick<CourseBlock, 'places' | 'places_ta
 // Nothing writes thirteen bookings inside one transaction: the enrolment commits
 // alone, against the course's own counter, and a converger then ensures each
 // future lesson has a booking for this contact. That is what keeps this inside
-// Firestore's transaction limits AND inside the existing seat rule — each
+// Firestore's transaction limits AND inside the existing seat rule, each
 // booking is written by an ordinary per-session transaction, absolutely, the way
 // every other booking in the system is.
 
 export type CourseEnrolmentStatus =
   /** Paid for, or given a place by the studio. Holds a place. */
   | 'enrolled'
-  /** A checkout is open. Holds a place until `expires_at` lapses — lazy expiry,
+  /** A checkout is open. Holds a place until `expires_at` lapses, lazy expiry,
    *  the same shape as an appointment hold, so the gate and the recount can
    *  never disagree and nothing waits for a sweep. */
   | 'hold'
@@ -204,7 +204,7 @@ export type CourseEnrolmentStatus =
   | 'withdrawn'
 
 export interface CourseBlockEnrolment {
-  /** The contact id — and this document's own id. */
+  /** The contact id, and this document's own id. */
   contactId: string
   teamId: string
   status?: CourseEnrolmentStatus
@@ -218,19 +218,19 @@ export interface CourseBlockEnrolment {
   payment_intent_id?: string | null
   /** When a hold lapses. Absent on a settled enrolment. */
   expires_at?: Timestamp | null
-  /** An offered place from the waiting list — an ORDINARY enrolment carrying
+  /** An offered place from the waiting list, an ORDINARY enrolment carrying
    *  this flag, so every capacity gate already stops selling it. */
   waitlist_claim?: boolean
   claim_expires_at?: Timestamp | null
   enrolled_at?: Timestamp
   withdrawn_at?: Timestamp | null
   /** Bumped to the course's `roster_version` when this enrolment's bookings were
-   *  last written. A cheap skip for the converger, never its guarantee — it
+   *  last written. A cheap skip for the converger, never its guarantee, it
    *  re-derives rather than trusting a marker. */
   roster_version_applied?: number
 }
 
-/** The two fields the place predicate reads, and nothing else — narrowed the
+/** The two fields the place predicate reads, and nothing else, narrowed the
  *  way `SeatHold` is, so a raw Firestore document, a plain object and a test
  *  fixture all satisfy it without a cast. */
 export interface PlaceHold {
@@ -239,7 +239,7 @@ export interface PlaceHold {
 }
 
 /**
- * Does this enrolment occupy a place RIGHT NOW? — the sibling of
+ * Does this enrolment occupy a place RIGHT NOW? The sibling of
  * `bookingHoldsSeat`, and the single source of truth for the question.
  *
  * A lapsed hold frees its place IMMEDIATELY rather than at the next sweep, for
@@ -259,7 +259,7 @@ export function courseBlockEnrolmentHoldsPlace(
 }
 
 /**
- * Live place count over a course's `enrolments` subcollection — the ONE way a
+ * Live place count over a course's `enrolments` subcollection, the ONE way a
  * capacity gate turns documents into a number, and the sibling of
  * `countHoldingSeats`.
  *
@@ -269,7 +269,7 @@ export function courseBlockEnrolmentHoldsPlace(
  * bottom.
  *
  * `excludeId` drops the caller's own enrolment, whose document the gate is about
- * to replace — a buyer re-opening an abandoned checkout, a webhook confirming
+ * to replace, a buyer re-opening an abandoned checkout, a webhook confirming
  * the hold it created. Counting it would refuse them the place they hold.
  */
 export function countHoldingPlaces(
@@ -295,12 +295,12 @@ export interface PlaceCounts {
 }
 
 /**
- * Did this write FREE A PLACE? — the sibling of `seatFreedEdge`, and what a
+ * Did this write FREE A PLACE? The sibling of `seatFreedEdge`, and what a
  * course's waiting list hangs on.
  *
  * THE SAME BINDING COROLLARY: a handler on this edge must NOT write the course
  * document on any path where it decides not to promote, or a "harmless" touch
- * re-enters it for ever. Being an edge is what makes a promoter loop-safe — its
+ * re-enters it for ever. Being an edge is what makes a promoter loop-safe, its
  * own write re-fires the trigger, and on that pass the course is full again.
  *
  * An uncapped course never produces it (it was never full), and neither does a

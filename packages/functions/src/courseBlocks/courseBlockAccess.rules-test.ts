@@ -10,8 +10,8 @@ import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 
 // Security rules for course blocks (types/courseBlock.ts).
 //
-// A course carries CAPACITY — `places_taken` is an absolute counter written only
-// from a transaction that read the enrolments beside it — and, from the sale
+// A course carries CAPACITY, `places_taken` is an absolute counter written only
+// from a transaction that read the enrolments beside it, and, from the sale
 // stage, a price. So unlike the session series it owns, which any team member
 // may write directly, every client write here is denied and the studio's own
 // edits go through callables that check `schedule.manage`.
@@ -53,7 +53,7 @@ const BLOCK_DOC = {
   meetings: [],
 }
 
-describe('firestore.rules — course blocks', function () {
+describe('firestore.rules, course blocks', function () {
   this.timeout(30_000)
 
   before(async () => {
@@ -128,7 +128,7 @@ describe('firestore.rules — course blocks', function () {
   })
 
   it('the series a course owns stays client-writable, which is why the course is not', async () => {
-    // Stated here on purpose. `session_series` is writable by any team member —
+    // Stated here on purpose. `session_series` is writable by any team member , 
     // `SessionFormDialog` writes one directly, and the series doc IS the commit
     // for a hand-made recurring class. That is exactly why a course could not
     // just be a flag on a series: a price and a capacity cannot live on a

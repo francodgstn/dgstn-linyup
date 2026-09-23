@@ -1,6 +1,6 @@
 // Keeps sessions/{sessionId}/public_profile/{sessionId} in sync.
 // Regular sessions: synced when allowBooking === true, OR when the session is a
-// lesson of a COURSE — see the visibility note below.
+// lesson of a COURSE, see the visibility note below.
 // Appointment sessions (activityType === 'appointment'): synced when
 // status !== 'cancelled' AND status !== 'pending_payment' — a paid-booking hold
 // (awaiting Stripe checkout) is never published.
@@ -27,7 +27,7 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
   //   on public feeds.
   //
   // VISIBLE IS NOT BOOKABLE. A course's lessons are sold as the course, so each
-  // one carries `allowBooking: false` and has no booking form of its own — but a
+  // one carries `allowBooking: false` and has no booking form of its own, but a
   // visitor still has to be able to SEE that the hall is busy on Wednesdays at
   // 15:45, and the studio's public calendar would otherwise have a course-shaped
   // hole in it. So a course lesson is published, with `allowBooking: false` and
@@ -58,7 +58,7 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
       end: data.end as Timestamp,
       duration_minutes: data.duration_minutes || null,
       // WHERE, as an id. `location` is the studio's free-text note, which is
-      // all the public surfaces have ever had — so two sessions at two venues
+      // all the public surfaces have ever had, so two sessions at two venues
       // are indistinguishable to them whenever the note is blank or the same.
       // The id is what lets a public page resolve the venue itself.
       placeId: data.placeId || null,
@@ -90,7 +90,7 @@ export const syncSessionPublicProfile = onDocumentWritten('sessions/{sessionId}'
       activityColor: data.activityColor || null,
       start: data.start as Timestamp,
       end: data.end as Timestamp,
-      // WHERE, as an id — see the appointment branch above.
+      // WHERE, as an id, see the appointment branch above.
       placeId: data.placeId || null,
       roomId: data.roomId || null,
       location: data.location || null,

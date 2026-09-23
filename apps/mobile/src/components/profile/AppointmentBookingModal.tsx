@@ -308,7 +308,7 @@ export const AppointmentBookingModal: React.FC<Props> = ({ visible, teamId, cont
                             </Text>
                           </View>
                           {/* The PLACE is the where, and it is what tells two
-                              cards for the same offer apart — `listAvailability`
+                              cards for the same offer apart, `listAvailability`
                               returns one entry per (provider, activity, place).
                               `location` is the studio's free-text note on top of
                               it, and is all a schedule naming no tracked place

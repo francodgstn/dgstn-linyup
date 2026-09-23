@@ -197,20 +197,20 @@ function accumulateCandidates(
 // ─── listAvailability (public) ─────────────────────────────────────────────────
 
 /**
- * WHERE ONE SCHEDULE'S OFFERS LAND — the (activity, place) bucket key, and the
+ * WHERE ONE SCHEDULE'S OFFERS LAND, the (activity, place) bucket key, and the
  * one place the place-vs-location precedence is decided.
  *
  * `listAvailability` returns one entry per (provider, activity, PLACE), and
  * this is the "place" half. Grouping on (provider, activity) alone merged a
  * coach's schedules at DIFFERENT pools into one calendar labelled with
- * whichever schedule was read first — so a visitor picked a Tuesday believing
+ * whichever schedule was read first, so a visitor picked a Tuesday believing
  * it was one pool and `bookAppointment` put them in another, because booking
  * resolves the place from the availability that covers the start, not from
  * anything the visitor was shown. That was wrong output, not a missing feature.
  *
  * The key falls back to the free-text `location`, then `onlineUrl`, then the
  * empty string, so a legacy schedule carrying no `placeId` buckets exactly as
- * it did before — one entry, unchanged.
+ * it did before, one entry, unchanged.
  */
 export function availabilityPlaceKey(tpl: AvailabilityWhere): string {
   return tpl.placeId ?? tpl.location ?? tpl.onlineUrl ?? ''
@@ -219,7 +219,7 @@ export function availabilityPlaceKey(tpl: AvailabilityWhere): string {
 /** The three fields that say where a schedule happens.
  *
  *  Nullable, unlike `Availability`'s own optional spelling, because the editor
- *  writes `placeId: data.placeId || null` — a cleared field is stored as null,
+ *  writes `placeId: data.placeId || null`, a cleared field is stored as null,
  *  not removed. Both read the same through `??`; the type is widened so a
  *  fixture can be honest about what is on disk. */
 type AvailabilityWhere = {
@@ -240,7 +240,7 @@ export function availabilityBucketKey(activityId: string, tpl: AvailabilityWhere
  * the set on screen is tiny (MAX_PLACES caps a team at 25 and a coach's
  * schedules reference a handful), and an id-keyed read is the one shape that
  * needs nothing kept in step. A session's place may also be an ORG place, which
- * a team-scoped query would never find — hence the second lookup, tried only for
+ * a team-scoped query would never find, hence the second lookup, tried only for
  * the ids the first did not answer.
  *
  * A missing place yields no entry, and the caller renders the schedule's own
@@ -444,7 +444,7 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
       if (en > nowMs && s < toMs) busy.push({ start: s, end: en })
     }
 
-    // GROUP BY (provider, activity, PLACE) — merge days across a provider's
+    // GROUP BY (provider, activity, PLACE), merge days across a provider's
     // several availabilities that offer the same activity AT THE SAME PLACE
     // (e.g. "Saturday mornings" AND "Weekday evenings", both at the Hallenbad).
     // The key, and why the place is in it, is `availabilityBucketKey` above.

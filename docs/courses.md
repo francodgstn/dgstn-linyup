@@ -1,6 +1,6 @@
 ---
 title: Courses
-description: Courses — a bounded, sellable set of lessons
+description: Courses, a bounded and sellable set of lessons
 status: living
 area: booking
 order: 6
@@ -9,26 +9,27 @@ order: 6
 
 A **course** is a bounded set of lessons sold as one thing:
 
-> Every Wednesday 15:45–16:15, 20.08 to 26.11, no lesson on 8.10 and 15.10 —
-> 13 lessons, 9 places, CHF 364, one booking, the child enrolled in every one.
+> Every Wednesday 15:45 to 16:15, from 20.08 to 26.11, with no lesson on 8.10
+> or 15.10. Thirteen lessons, nine places, CHF 364, one booking, and the child
+> enrolled in every one.
 
 A class is a seat in a session. A course is the whole set, and the set is what
 the studio and the parent both talk about: "levels 1 to 5 start in August",
 "13 lessons", "9 places", "sold out". None of that is expressible as thirteen
-independent sessions — thirteen sessions at 9/9 are thirteen answers to one
+independent sessions. Thirteen sessions at 9/9 are thirteen answers to one
 question, and a child who misses lesson four must not free a place.
 
 **Two words, two things.** In the UI, *Course* is this; the online-courses
 plugin (`courses/{id}`, on-demand video) is *Online course*. In code they are
 `course_blocks/{id}` and `courses/{id}`, and they never share a message
-namespace — `CourseBlocks` and `Courses` — so they cannot drift into sharing a
+namespace (`CourseBlocks` and `Courses`), so they cannot drift into sharing a
 word by accident. Stored values never change; the display rename is display-only.
 
 ---
 
 ## The shape: meetings are a LIST
 
-`RecurrencePattern` carries one `startDate` — which is also its time of day —
+`RecurrencePattern` carries one `startDate` (which is also its time of day)
 and one `duration`. So it cannot say *"Saturday 10:00–16:15 AND Sunday
 09:00–15:00"*, and that weekend crawl course is an ordinary product, not an
 edge case. **A course stores `meetings[]`.**
@@ -45,7 +46,7 @@ asking, one thing stored:
 
 `resolveCourseSchedule` (`functions/src/courseBlocks/schedule.ts`) is the one
 place the three become one, and it reuses `calculateOccurrences` rather than
-reimplementing a calendar — skip dates, the DST-safe advance and the
+reimplementing a calendar: skip dates, the DST-safe advance and the
 Europe/Zurich civil day are decided there already.
 
 A course must END. An open-ended rule is refused: that is a timetable, which a
@@ -72,7 +73,7 @@ one materialisation path with its one `(seriesId, instanceDate)` dedupe rule.
 
 The series document is **not** an indirection to skip. `freezeSeriesForTeardown`
 and `endSeriesAfterTeardown` call `update()` on it, and an `update()` on a
-missing document throws — a course with no series doc would break "cancel the
+missing document throws. A course with no series doc would break "cancel the
 whole course" silently.
 
 `status: 'fixed'` means *materialised in full, nothing to roll*. The daily
@@ -83,8 +84,8 @@ roller queries `status == 'active'`, so a course's series is never even read.
 Reuse cuts both ways, so three guards:
 
 - **Every lesson carries `course_block_id`**, stamped by `buildSeriesSessionDoc`
-  from the **series**, not the template — a fact about which series this is, not
-  a field a studio can edit off a lesson.
+  from the **series** rather than the template. It is a fact about which series
+  this is, not a field a studio can edit off a lesson.
 - **`updateRecurringSession` and the series-wide `cancelSession` refuse** a
   series carrying `course_block_id`, in the shape the `teardown_job_id` refusal
   beside them already uses. The first one's regeneration branch deletes future
@@ -96,7 +97,7 @@ Reuse cuts both ways, so three guards:
 
 ---
 
-## The place — ONE PLACE WRITER
+## The place: ONE PLACE WRITER
 
 A course's "9 places" is a second capacity axis. The course document is the
 serialization point, exactly as the session document is for a seat, and the
@@ -142,8 +143,8 @@ rule:
 > **It only ever CREATES a booking that is missing.** It never rewrites one that
 > exists.
 
-That is what makes it safe to run arbitrarily often — inline after an enrolment,
-from a Cloud Task, from a nightly reconciliation — and it is also what makes
+That is what makes it safe to run arbitrarily often (inline after an enrolment,
+from a Cloud Task, from a nightly reconciliation), and it is also what makes
 *"the member cancelled lesson six"* stick: a cancelled booking still exists, so
 the converger leaves it where it is instead of resurrecting it next pass.
 
@@ -156,7 +157,7 @@ unpaid person on thirteen registers and taking them off again when the checkout
 lapses is worse than waiting for the money.
 
 **`pending_bookings_count` moves at creation**, with `increment`, because that is
-what every existing disposal path expects — it is per-contact, spans every
+what every existing disposal path expects. It is per-contact, spans every
 session and nothing recounts it, so a booking that was never counted would drive
 a real person's counter negative the first time they cancelled one lesson.
 
@@ -180,13 +181,13 @@ to the course, not to a booking form.
 
 ## Cancellation is a record, not a refund
 
-Following `cancelBooking` — *"NOT money — this callable issues no refund of any
-kind"* — and `cancelSingleSession`, which mails a paying attendee and moves no
+Following `cancelBooking` (*"NOT money. This callable issues no refund of any
+kind"*) and `cancelSingleSession`, which mails a paying attendee and moves no
 money:
 
 | What happened | What moves |
 |---|---|
-| The studio cancels **one lesson** | Seats return, the roster is mailed, the course is untouched — no place moves, no money moves |
+| The studio cancels **one lesson** | Seats return, the roster is mailed, and the course is untouched. No place moves and no money moves |
 | A participant **withdraws** | The enrolment goes `withdrawn`, the place returns, their **future** bookings are cancelled through the ordinary path. Past bookings stay: they are attendance history. No automatic refund |
 | A member cancels **one lesson** themselves | Allowed, deliberately. They keep their place, and the converger never resurrects the booking |
 

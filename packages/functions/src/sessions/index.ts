@@ -186,7 +186,7 @@ export const cancelSession = onCall(async (request) => {
     // "13 lessons, 4 places left".
     //
     // CANCELLING ONE LESSON IS FINE and deliberately not refused: seats return,
-    // the roster is mailed, and the course itself is untouched — which is what
+    // the roster is mailed, and the course itself is untouched, which is what
     // "no lesson on 8.10, we'll add a make-up" means.
     const [courseErr, courseSeries] = await to(
       db.collection(SESSION_SERIES_COLLECTION).doc(seriesId!).get()
@@ -386,7 +386,7 @@ export const updateRecurringSession = onCall(async (request) => {
   }
   // A COURSE'S LESSONS ARE NOT EDITED FROM HERE. The 'future' scope's
   // regeneration branch DELETES future sessions whose weekday no longer matches,
-  // with no bookings check — and on a course those are lessons people have paid
+  // with no bookings check, and on a course those are lessons people have paid
   // to attend. The course's own callables rewrite the meeting list and add what
   // is missing; removing a lesson goes through `cancelSession` on that lesson,
   // which returns the seats and tells the roster.

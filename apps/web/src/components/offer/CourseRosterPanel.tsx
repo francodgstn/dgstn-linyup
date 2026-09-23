@@ -5,13 +5,13 @@
 // The register for a course, and the two things a studio does to it: put
 // somebody on, and take somebody off.
 //
-// Enrolling writes ONE document — the place — and a converger then puts that
+// Enrolling writes ONE document, the place, and a converger then puts that
 // person on every future lesson. So the number that matters here is the COURSE's
 // (4 of 9), not any lesson's, and the panel says how many lessons the enrolment
 // reached so a partial converge is visible rather than silent.
 //
 // Withdrawing cancels their FUTURE lessons and leaves the past alone: that is
-// attendance history, not a mistake. No money moves either way — a refund is
+// attendance history, not a mistake. No money moves either way, a refund is
 // handed back from the payments page, deliberately and by hand.
 
 import { useState } from 'react'
@@ -33,8 +33,8 @@ import { callFunction } from '@/lib/callFunction'
 import { ContactPicker } from '@/components/payments/ContactPicker'
 import { Button } from '@/components/ui/button'
 
-/** A course's enrolments. Small by nature — a course holds a handful of people
- *  — so the whole subcollection is read and filtered in memory. */
+/** A course's enrolments. A course holds a handful of people, so the whole
+ *  subcollection is read and filtered in memory. */
 function useCourseEnrolments(blockId: string | null) {
   return useQuery<Array<CourseBlockEnrolment & { id: string }>>({
     queryKey: ['course-enrolments', blockId],
@@ -88,7 +88,7 @@ export function CourseRosterPanel({
       await refresh()
       toast.success(t('enrolled', { count: res.data.bookingsWritten }))
       if (res.data.conflicts.length > 0) {
-        // Surfaced, never fatal — see the converger. The place is theirs; one
+        // Surfaced, never fatal, see the converger. The place is theirs; one
         // lesson was already full from an ordinary booking.
         toast.warning(t('enrolConflicts', { count: res.data.conflicts.length }))
       }

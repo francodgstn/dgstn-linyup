@@ -126,7 +126,7 @@ interface ActivityProfile {
    *  `resolveDurationBenefit` reads the PRESENCE of this list to decide whether
    *  the activity-wide rule still applies, so a card holding one half quotes
    *  from a rule the server has already stopped honouring. Both halves or
-   *  neither — the same contract the mirror writes them under. */
+   *  neither: the same contract the mirror writes them under. */
   durationBenefits?: ActivityDurationBenefit[]
   prerequisites?: string
   meetingPoint?: string

@@ -97,7 +97,7 @@ interface AvailActivity {
   contactFields: BookingContactField[] | null
   /** WHERE. `listAvailability` returns one entry per (provider, activity,
    *  PLACE), so a coach teaching the same thing at two pools arrives as two
-   *  entries sharing an `activityId` — the place is what tells them apart, on
+   *  entries sharing an `activityId`, the place is what tells them apart, on
    *  the card and in the URL. Null for a schedule naming no tracked place. */
   placeId: string | null
   placeName: string | null
@@ -1589,8 +1589,8 @@ function ActivityCard({
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{durationLabel}</span>
-            {/* The place first — it is what distinguishes two cards for the
-                same offer — then the studio's own note on top of it. */}
+            {/* The place first, it is what distinguishes two cards for the
+                same offer, then the studio's own note on top of it. */}
             {activity.placeName && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{activity.placeName}</span>}
             {activity.location && <span className="flex items-center gap-1">{activity.placeName ? null : <MapPin className="h-3 w-3" />}{activity.location}</span>}
             {activity.onlineUrl && <span className="flex items-center gap-1"><Video className="h-3 w-3" />{t('onlineSession')}</span>}
@@ -1870,13 +1870,13 @@ export default function AppointmentPicker({
   // The coach step was never shown when the visitor arrived naming a coach,
   // or when there is only one to choose from.
   const skippedCoachStep = !!presetActivityId && (!!presetProviderId || coaches.length === 1)
-  // WAS THE ACTIVITY STEP SHOWN? Derived, never stored — a remembered "I skipped
+  // WAS THE ACTIVITY STEP SHOWN? Derived, never stored, a remembered "I skipped
   // it" survives a history restore with a stale value and mislabels Back, which
   // is a bug this file has already had once.
   //
   // In preset mode the step is skipped only when there is nothing to choose, and
   // an offer taught at several places is several entries sharing one activity
-  // id — so it IS shown there, and Back has somewhere to go.
+  // id, so it IS shown there, and Back has somewhere to go.
   const activityStepShown = !presetActivityId || (selectedCoach?.activities.length ?? 0) > 1
 
   // The activity's first duration is the default until the visitor picks one.
@@ -1914,7 +1914,7 @@ export default function AppointmentPicker({
           setStep('time')
           return
         }
-        // Several entries for the preset offer — one per place. Re-enter at the
+        // Several entries for the preset offer: one per place. Re-enter at the
         // step that asks, rather than picking a pool for the visitor.
         if (only && only.activities.length > 1) {
           setSelectedCoach(only)
@@ -1929,7 +1929,7 @@ export default function AppointmentPicker({
       }
       setSelectedCoach(coach)
 
-      // ONE ACTIVITY ID CAN NAME SEVERAL ENTRIES — one per place. `place`
+      // ONE ACTIVITY ID CAN NAME SEVERAL ENTRIES: one per place. `place`
       // picks between them; without it (an old link, or an offer taught at one
       // place) the first entry for that activity is the right answer, which is
       // exactly what this resolved to before places were a dimension.
@@ -2045,7 +2045,7 @@ export default function AppointmentPicker({
         if (presetActivityId && presetCoach) {
           // ONE ENTRY, OR ASK. An offer taught at several places arrives as
           // several entries sharing this id, and skipping the step would pick a
-          // pool on the visitor's behalf and never say which — so the step is
+          // pool on the visitor's behalf and never say which, so the step is
           // skipped only when there is nothing to choose.
           const matching = presetCoach.activities.filter((a) => a.activityId === presetActivityId)
           const activity = matching.length === 1 ? matching[0] : null

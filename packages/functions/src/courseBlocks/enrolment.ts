@@ -1,4 +1,4 @@
-// ─── ENROLMENT — the place, and the bookings that follow from it ─────────────
+// ─── ENROLMENT: the place, and the bookings that follow from it ─────────────
 //
 // A course is sold once and attended thirteen times, so two things have to be
 // true at once: the PLACE has to be contended for exactly like a seat, and the
@@ -25,8 +25,8 @@
 //   IT ONLY EVER CREATES A BOOKING THAT IS MISSING. It never rewrites one that
 //   exists, and never deletes one.
 //
-// That single rule is what makes it safe to run arbitrarily often — after an
-// enrolment, from a Cloud Task, from the nightly reconciliation — and it is also
+// That single rule is what makes it safe to run arbitrarily often, after an
+// enrolment, from a Cloud Task, from the nightly reconciliation, and it is also
 // what makes "the member cancelled lesson six" stick: a cancelled booking still
 // exists, so the converger leaves it exactly where it is instead of resurrecting
 // it on the next pass.
@@ -35,7 +35,7 @@
 // uses: read the session's `bookings`, count with `countHoldingSeats`, write
 // `bookings_count` absolutely. The contact's `pending_bookings_count` is moved
 // at CREATION, with `increment(1)`, because that is the shape every existing
-// disposal path already expects — `cancelBooking` decrements unconditionally,
+// disposal path already expects, `cancelBooking` decrements unconditionally,
 // and a booking that was never counted would drive a real person's counter
 // negative the first time they cancelled one lesson.
 import * as admin from 'firebase-admin'
@@ -71,7 +71,7 @@ export interface CourseEnrolmentResult {
   placesTaken: number
   /** Bookings written by the converge that ran with this call. */
   bookingsWritten: number
-  /** Lessons whose session had no room — surfaced, never fatal. */
+  /** Lessons whose session had no room, surfaced, never fatal. */
   conflicts: string[]
 }
 
@@ -142,7 +142,7 @@ export async function takeCourseBlockPlace(
     }
 
     tx.set(enrolmentsRef.doc(input.contactId), enrolment, { merge: true })
-    // ABSOLUTE, from the read set above — never `increment`. `holding` excluded
+    // ABSOLUTE, from the read set above, never `increment`. `holding` excluded
     // this contact, so +1 is them.
     const placesTaken = holding + 1
     tx.update(blockRef, {
@@ -255,7 +255,7 @@ export async function syncCourseBlockRoster(
       )
       if (err) {
         // A lesson already at capacity from an ordinary booking. Recorded and
-        // shown on the roster — NEVER a reason to fail an enrolment, because
+        // shown on the roster, NEVER a reason to fail an enrolment, because
         // refunding a whole course over one full lesson is the wrong answer.
         conflicts.push(session.id)
       } else {
@@ -291,7 +291,7 @@ export async function syncCourseBlockRoster(
   return { written, cancelled, conflicts: [...new Set(conflicts)], done: true }
 }
 
-/** One lesson, one person — the ordinary booking-commit shape. */
+/** One lesson, one person, the ordinary booking-commit shape. */
 async function ensureBooking(
   db: FirebaseFirestore.Firestore,
   sessionRef: FirebaseFirestore.DocumentReference,
@@ -334,11 +334,11 @@ async function ensureBooking(
       booking_token: generateSecureToken(),
       joinedAt: FieldValue.serverTimestamp(),
     })
-    // ABSOLUTE, from the read set — the seat rule, unchanged.
+    // ABSOLUTE, from the read set, the seat rule, unchanged.
     tx.update(sessionRef, { bookings_count: holding + 1 })
     // Per-CONTACT and increment-only by design: this function's read set cannot
     // produce the true total, and nothing recounts it. Moved once, here, at the
-    // creation — which is what keeps every existing disposal path correct with
+    // creation, which is what keeps every existing disposal path correct with
     // no change at all.
     tx.update(db.collection(CONTACTS_COLLECTION).doc(person.id), {
       pending_bookings_count: FieldValue.increment(1),
@@ -373,7 +373,7 @@ async function cancelBookingForWithdrawal(
 // ─── the recount ─────────────────────────────────────────────────────────────
 
 /**
- * `places_taken`, recounted from the enrolments on every write to one — the
+ * `places_taken`, recounted from the enrolments on every write to one, the
  * direct analogue of `trackBookings`, and what makes the counter self-healing.
  *
  * It writes the course document, which re-fires nothing here (this trigger
@@ -404,7 +404,7 @@ export const trackCourseBlockEnrolments = onDocumentWritten(
 // ─── the callables ───────────────────────────────────────────────────────────
 
 /**
- * The studio puts somebody on a course — at the desk, over the phone, or because
+ * The studio puts somebody on a course, at the desk, over the phone, or because
  * they paid by bank transfer. No money moves here; what they paid, if anything,
  * is recorded through the ordinary payments rail.
  */
@@ -452,7 +452,7 @@ export const enrolCourseBlockContact = onCall(async (request) => {
 })
 
 /** The studio takes somebody off a course. Their future lessons are cancelled
- *  through the ordinary path; the past stays as attendance history. No refund —
+ *  through the ordinary path; the past stays as attendance history. No refund , 
  *  money is handed back from the payments page, deliberately and by hand. */
 export const withdrawFromCourseBlock = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'User must be authenticated')

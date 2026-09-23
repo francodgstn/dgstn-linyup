@@ -53,7 +53,7 @@ function createOccurrence(startDate: Date, duration: number) {
  *
  * Deliberately not `startOfDay`, which this file otherwise uses: that is the
  * PROCESS timezone, and Cloud Run is UTC. A 21:00 Zurich class is 20:00 UTC in
- * summer, so a process-local day boundary still agrees — but a 00:30 class is
+ * summer, so a process-local day boundary still agrees, but a 00:30 class is
  * the previous day in UTC, and excluding "24 December" would skip the 23rd.
  * A skip date is a thing a human wrote on a calendar, so it is compared the way
  * they meant it.
@@ -162,7 +162,7 @@ export function validateRecurrence(recurrence: Partial<RecurrencePattern>): { va
   if (recurrence.endCondition === 'date' && !recurrence.endDate) errors.push('End date required when end condition is "date"')
   if (recurrence.endCondition === 'count' && (!recurrence.maxOccurrences || recurrence.maxOccurrences < 1)) errors.push('Max occurrences must be at least 1')
   // Skip dates are optional and unordered, and a date outside the pattern's own
-  // range is harmless — it simply never matches. The one thing worth refusing is
+  // range is harmless, it simply never matches. The one thing worth refusing is
   // a list that is not a list, which would otherwise be silently ignored.
   if (recurrence.excludeDates !== undefined && !Array.isArray(recurrence.excludeDates)) errors.push('Skip dates must be a list')
   return { valid: errors.length === 0, errors }

@@ -8,7 +8,7 @@ import {
   placesFree,
 } from '@linyup/shared'
 
-// ONE PLACE WRITER — the seat rule, one level up.
+// ONE PLACE WRITER, the seat rule, one level up.
 //
 // A course's "9 places" is a second capacity axis: a child who misses lesson
 // four must not free a place, and thirteen sessions each at 9/9 are thirteen
@@ -19,7 +19,7 @@ import {
 //   enrolments in the same read set. No `FieldValue.increment`, anywhere.
 //
 // These fixtures pin the predicates that turn documents into that number, and
-// the last one pins the rule itself against the source — because "we always
+// the last one pins the rule itself against the source, because "we always
 // write it absolutely" is a claim that rots the first time somebody reaches for
 // an increment, and nothing else would notice.
 //
@@ -115,7 +115,7 @@ describe('the place-freed edge', () => {
 describe('the ONE PLACE WRITER rule, asserted against the source', () => {
   // Structural, not a sample: the defect is a future `increment` on this field,
   // which no behaviour test would see until two people had bought one place.
-  // Matched on ANY receiver and any spelling of the field — a pin that requires
+  // Matched on ANY receiver and any spelling of the field, a pin that requires
   // one spelling passes against the very edit it exists to catch.
   const SRC = join(__dirname, '..')
   const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')

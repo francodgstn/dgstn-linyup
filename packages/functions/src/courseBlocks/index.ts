@@ -1,4 +1,4 @@
-// ─── COURSE BLOCKS — the scheduling half ─────────────────────────────────────
+// ─── COURSE BLOCKS: the scheduling half ─────────────────────────────────────
 //
 // A course is a bounded set of lessons sold as one thing. This file creates,
 // reschedules and deletes one; enrolment, capacity and the sale arrive in their
@@ -7,7 +7,7 @@
 // ── THE OWNED SERIES ────────────────────────────────────────────────────────
 //
 // A course OWNS one `session_series/{id}`, and its lessons are that series'
-// sessions. That is what makes them ORDINARY sessions — roster, attendance,
+// sessions. That is what makes them ORDINARY sessions, roster, attendance,
 // check-in, reminders, cancellation, the coach's busy set and the existing
 // teardown job all work with no new code, and `materializeOccurrences` stays
 // the ONE materialisation path with its one `(seriesId, instanceDate)` dedupe
@@ -20,7 +20,7 @@
 //
 // The series document is NOT skipped, tempting as it is: `freezeSeriesForTeardown`
 // and `endSeriesAfterTeardown` call `update()` on it, and an `update()` on a
-// missing document throws — so a course with no series doc would break "cancel
+// missing document throws, so a course with no series doc would break "cancel
 // the whole course" silently.
 //
 // ── THE REFUSALS ────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ function cleanPlaces(value: unknown): number | null {
 }
 
 /**
- * The series template — the field-for-field shape `buildSeriesSessionDoc` copies
+ * The series template, the field-for-field shape `buildSeriesSessionDoc` copies
  * onto every generated session, and the same one `SessionFormDialog` writes for
  * a hand-made series.
  *
@@ -137,7 +137,7 @@ function buildSeriesTemplate(
   }
 }
 
-/** `calculateOccurrences`' shape, from a stored meeting list — what
+/** `calculateOccurrences`' shape, from a stored meeting list, what
  *  `materializeOccurrences` takes. */
 function toOccurrences(meetings: CourseMeeting[]) {
   return meetings.map((m) => ({ start: m.start.toDate(), end: m.end.toDate() }))
@@ -229,7 +229,7 @@ export const createCourseBlock = onCall(async (request) => {
     // below, in full, and the meeting list is the only thing that changes it.
     status: FIXED_SERIES_STATUS,
     template: buildSeriesTemplate({ ...block, activityName }, nominalDuration(schedule.meetings)),
-    // A course is a list, not a rule — but the rule is kept when there was one,
+    // A course is a list, not a rule, but the rule is kept when there was one,
     // so a reschedule can re-read what the studio typed.
     recurrence: schedule.recurrence ?? null,
     lastGeneratedUntil: schedule.meetings.length
@@ -266,7 +266,7 @@ export const createCourseBlock = onCall(async (request) => {
  * Edits the details, and optionally the schedule.
  *
  * THE SCHEDULE IS ADDITIVE HERE. A new meeting list creates the sessions it adds
- * and leaves every existing one alone — `materializeOccurrences` writes and never
+ * and leaves every existing one alone, `materializeOccurrences` writes and never
  * deletes, and a lesson already on the calendar may be one people hold bookings
  * on. Removing a lesson is `cancelSession` on that lesson, which returns the
  * seats, closes its waitlist and mails the roster; the meeting list then drops
@@ -390,7 +390,7 @@ export const setCourseBlockStatus = onCall(async (request) => {
  * there is nothing to enrol, so this is the whole story.
  *
  * The lessons go through the existing teardown path rather than a delete loop
- * of its own — `cancelSession` is the ONE path that calls a session off, and it
+ * of its own, `cancelSession` is the ONE path that calls a session off, and it
  * is what closes waitlists and returns counters.
  */
 export const deleteCourseBlock = onCall(async (request) => {

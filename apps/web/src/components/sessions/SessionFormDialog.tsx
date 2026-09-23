@@ -174,7 +174,7 @@ interface RecurrencePattern {
   endCondition:   EndCondition
   endDate:        Date | null
   maxOccurrences: number
-  /** Days this pattern skips — school holidays, a closed hall. A rule about
+  /** Days this pattern skips, school holidays, a closed hall. A rule about
    *  what gets CREATED: it never removes a session already on the calendar. */
   excludeDates:   Date[]
 }
@@ -198,7 +198,7 @@ function defaultRecurrence(from: Date = new Date()): RecurrencePattern {
 }
 
 /** The local calendar day, as the key both the chips and the preview compare on
- *  — the same spelling the date input round-trips through. */
+ * : the same spelling the date input round-trips through. */
 const dayKey = (d: Date) => toDateInputValue(d)
 
 function getPreviewDates(pattern: RecurrencePattern, startDate: Date, count = 5): Date[] {
@@ -207,7 +207,7 @@ function getPreviewDates(pattern: RecurrencePattern, startDate: Date, count = 5)
   const max = count * 400
   // Mirrors the server (`calculateOccurrences`): a skipped day yields nothing
   // AND spends no count, so the preview of "10 sessions, skipping two weeks"
-  // shows ten dates — the same ten the studio will get.
+  // shows ten dates: the same ten the studio will get.
   const skipped = new Set(pattern.excludeDates.map(dayKey))
   for (let i = 0; i < max && dates.length < count; i++) {
     const dow = cursor.getDay()
@@ -382,10 +382,10 @@ function RecurrencePanel({ value, onChange, startDate }: {
           ))}
         </div>
       </div>
-      {/* SKIP DATES — school holidays, a closed hall, the week the studio is
+      {/* SKIP DATES, school holidays, a closed hall, the week the studio is
           away. Hidden behind its own toggle: most timetables never skip a day,
           and a date picker sitting open on every recurring class is a question
-          nobody asked. It removes nothing already on the calendar — a session
+          nobody asked. It removes nothing already on the calendar, a session
           that exists is cancelled from the calendar, because people may already
           hold bookings on it. */}
       <div className="space-y-2">
@@ -429,7 +429,7 @@ function RecurrencePanel({ value, onChange, startDate }: {
                   if (!e.target.value) return
                   const picked = new Date(e.target.value)
                   if (isNaN(picked.getTime())) return
-                  // One entry per day — picking the same date twice is a no-op,
+                  // One entry per day: picking the same date twice is a no-op,
                   // not a second chip.
                   if (value.excludeDates.some((x) => dayKey(x) === dayKey(picked))) return
                   set('excludeDates', [...value.excludeDates, picked])
@@ -532,7 +532,7 @@ export function SessionFormDialog({
   const seed = editing ?? duplicating ?? null
   // A COURSE'S LESSON IS EDITED ONE LESSON AT A TIME. The "this and all
   // following" scope reaches `updateRecurringSession`, whose regeneration branch
-  // deletes future sessions outright — and on a course those are lessons people
+  // deletes future sessions outright, and on a course those are lessons people
   // have paid for, so the server refuses it. The scope step is therefore not
   // offered here, and the notice points at the course instead.
   const isCourseLesson = !!editing?.course_block_id
@@ -782,7 +782,7 @@ export function SessionFormDialog({
             maxOccurrences: recurrence.endCondition === 'count' ? recurrence.maxOccurrences : null,
             // Stored on the PATTERN, because a rolling series is regenerated
             // from it every quarter and a `count` series recomputes its total
-            // from the start each time — an exclusion held anywhere else would
+            // from the start each time, an exclusion held anywhere else would
             // be forgotten on the next roll.
             excludeDates: recurrence.excludeDates.map((d) => Timestamp.fromDate(d)),
             duration:       values.duration,

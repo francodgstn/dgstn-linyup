@@ -10,17 +10,17 @@ import { buildActivityPublicProfile } from './syncActivityPublicProfile'
 // by field. Nothing connected the two, and twice the writer grew a field the
 // reader never picked up:
 //
-//   • `bookingGroup` — the public page's section headings. Written since the
+//   • `bookingGroup`, the public page's section headings. Written since the
 //     feature shipped, never mapped, so `groupActivitiesForBooking` saw
 //     `undefined` for every activity and the page rendered one unnamed section.
 //     The feature was dead from the day it landed and nothing failed.
-//   • `durationBenefits` — mapped now for the reason its own comment gives:
+//   • `durationBenefits`, mapped now for the reason its own comment gives:
 //     `resolveDurationBenefit` reads the PRESENCE of the list to decide whether
 //     the activity-wide `memberBenefit` still applies, so a reader holding one
 //     half quotes a rule the server has stopped honouring.
 //
 // Both are the same defect, and neither is visible in a type error, a lint run
-// or a rendering test — the reader compiles perfectly while silently dropping a
+// or a rendering test, the reader compiles perfectly while silently dropping a
 // field. So this test asserts the CAUSE structurally: every key the writer can
 // emit is named by the reader's mapping block. A new mirror field fails here
 // until somebody decides, in writing, whether the booking form wants it.
@@ -49,8 +49,8 @@ const BOOKING_FORM = 'apps/web/src/app/[locale]/(public)/public/[slug]/booking/B
  * the mapping block, or the field is being written into silence.
  */
 const NOT_THE_READER_S_BUSINESS: Record<string, string> = {
-  type: "the mirror's discriminator — spent in the query (where('type','==','activity')), never mapped",
-  teamId: 'the tenant filter — spent in the query, never mapped',
+  type: "the mirror's discriminator, spent in the query (where('type','==','activity')), never mapped",
+  teamId: 'the tenant filter, spent in the query, never mapped',
 }
 
 /** Every field the writer can emit, from two fixtures that between them turn on
@@ -105,7 +105,7 @@ function everyMirrorKey(): string[] {
   return [...new Set([...Object.keys(klass), ...Object.keys(appointment)])].sort()
 }
 
-/** The reader's mapping block — from the typed list it builds to the sort that
+/** The reader's mapping block, from the typed list it builds to the sort that
  *  closes it. Bounded on purpose: a `data.x` elsewhere in a 3000-line file
  *  (the single-session fallback read, for one) is not this map. */
 function activityMappingBlock(): string {
@@ -114,13 +114,13 @@ function activityMappingBlock(): string {
   assert.notEqual(
     from,
     -1,
-    `${BOOKING_FORM}: the activity mapping block moved — find it and update this test`
+    `${BOOKING_FORM}: the activity mapping block moved, find it and update this test`
   )
   const to = src.indexOf('.sort(compareActivities)', from)
   assert.notEqual(
     to,
     -1,
-    `${BOOKING_FORM}: the activity mapping block has no closing sort — find it and update this test`
+    `${BOOKING_FORM}: the activity mapping block has no closing sort, find it and update this test`
   )
   return src.slice(from, to)
 }
