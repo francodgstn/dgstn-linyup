@@ -179,6 +179,145 @@ export function courseBlockIsFull(block: Pick<CourseBlock, 'places' | 'places_ta
   return placesFree(block.places, block.places_taken) <= 0
 }
 
+// ─── ENROLMENTS — one purchase, one place, N lessons ─────────────────────────
+//
+// `course_blocks/{blockId}/enrolments/{contactId}` — the doc id IS the contact
+// id, exactly like `bookings`, `waitlist` and `participants`, so a second enrol
+// is an idempotent write rather than a duplicate row.
+//
+// THE ENROLMENT IS THE TRUTH; the per-session bookings are a PROJECTION of it.
+// Nothing writes thirteen bookings inside one transaction: the enrolment commits
+// alone, against the course's own counter, and a converger then ensures each
+// future lesson has a booking for this contact. That is what keeps this inside
+// Firestore's transaction limits AND inside the existing seat rule — each
+// booking is written by an ordinary per-session transaction, absolutely, the way
+// every other booking in the system is.
+
+export type CourseEnrolmentStatus =
+  /** Paid for, or given a place by the studio. Holds a place. */
+  | 'enrolled'
+  /** A checkout is open. Holds a place until `expires_at` lapses — lazy expiry,
+   *  the same shape as an appointment hold, so the gate and the recount can
+   *  never disagree and nothing waits for a sweep. */
+  | 'hold'
+  /** They left, or the studio took them off. Holds nothing. */
+  | 'withdrawn'
+
+export interface CourseBlockEnrolment {
+  /** The contact id — and this document's own id. */
+  contactId: string
+  teamId: string
+  status?: CourseEnrolmentStatus
+  /** Display only, so a roster renders without N contact reads. */
+  firstname?: string | null
+  lastname?: string | null
+  email?: string | null
+  /** 'required' while a checkout is open, 'paid' once it settled, and
+   *  'not_required' for a free course or a place the studio gave. */
+  payment_status?: 'not_required' | 'required' | 'paid'
+  payment_intent_id?: string | null
+  /** When a hold lapses. Absent on a settled enrolment. */
+  expires_at?: Timestamp | null
+  /** An offered place from the waiting list — an ORDINARY enrolment carrying
+   *  this flag, so every capacity gate already stops selling it. */
+  waitlist_claim?: boolean
+  claim_expires_at?: Timestamp | null
+  enrolled_at?: Timestamp
+  withdrawn_at?: Timestamp | null
+  /** Bumped to the course's `roster_version` when this enrolment's bookings were
+   *  last written. A cheap skip for the converger, never its guarantee — it
+   *  re-derives rather than trusting a marker. */
+  roster_version_applied?: number
+}
+
+/** The two fields the place predicate reads, and nothing else — narrowed the
+ *  way `SeatHold` is, so a raw Firestore document, a plain object and a test
+ *  fixture all satisfy it without a cast. */
+export interface PlaceHold {
+  status?: string
+  expires_at?: { toMillis(): number } | null
+}
+
+/**
+ * Does this enrolment occupy a place RIGHT NOW? — the sibling of
+ * `bookingHoldsSeat`, and the single source of truth for the question.
+ *
+ * A lapsed hold frees its place IMMEDIATELY rather than at the next sweep, for
+ * the reason the appointment rail learned the hard way: a course advertised full
+ * on the strength of an abandoned checkout is a place nobody can reach. Reading
+ * it here means the gate and the recount give the same answer.
+ *
+ * An ABSENT status is an enrolment, and holds.
+ */
+export function courseBlockEnrolmentHoldsPlace(
+  e: PlaceHold,
+  nowMs: number = Date.now()
+): boolean {
+  if (e.status === 'withdrawn') return false
+  if (e.status === 'hold' && !!e.expires_at && e.expires_at.toMillis() <= nowMs) return false
+  return true
+}
+
+/**
+ * Live place count over a course's `enrolments` subcollection — the ONE way a
+ * capacity gate turns documents into a number, and the sibling of
+ * `countHoldingSeats`.
+ *
+ * `nowMs` is sampled ONCE by the caller and threaded through: the number a gate
+ * refuses on is the same number it is about to persist, and re-reading the clock
+ * per document could count a hold live at the top of a pass and lapsed at the
+ * bottom.
+ *
+ * `excludeId` drops the caller's own enrolment, whose document the gate is about
+ * to replace — a buyer re-opening an abandoned checkout, a webhook confirming
+ * the hold it created. Counting it would refuse them the place they hold.
+ */
+export function countHoldingPlaces(
+  docs: Array<{ id: string; data(): unknown }>,
+  nowMs: number = Date.now(),
+  excludeId?: string
+): number {
+  return docs.reduce(
+    (n, d) =>
+      d.id !== excludeId &&
+      courseBlockEnrolmentHoldsPlace(d.data() as PlaceHold, nowMs)
+        ? n + 1
+        : n,
+    0
+  )
+}
+
+/** The course fields the place-freed edge reads. */
+export interface PlaceCounts {
+  places?: number | null
+  places_taken?: number
+  status?: string
+}
+
+/**
+ * Did this write FREE A PLACE? — the sibling of `seatFreedEdge`, and what a
+ * course's waiting list hangs on.
+ *
+ * THE SAME BINDING COROLLARY: a handler on this edge must NOT write the course
+ * document on any path where it decides not to promote, or a "harmless" touch
+ * re-enters it for ever. Being an edge is what makes a promoter loop-safe — its
+ * own write re-fires the trigger, and on that pass the course is full again.
+ *
+ * An uncapped course never produces it (it was never full), and neither does a
+ * cancelled one (there is no place to hand on).
+ */
+export function placeFreedEdge(
+  before: PlaceCounts | null | undefined,
+  after: PlaceCounts | null | undefined
+): boolean {
+  if (!before || !after) return false
+  if (after.status === 'cancelled') return false
+  return (
+    placesFree(before.places, before.places_taken ?? 0) <= 0 &&
+    placesFree(after.places, after.places_taken ?? 0) > 0
+  )
+}
+
 /** Longest a course name may be. Bounded like an activity's. */
 export const MAX_COURSE_BLOCK_NAME_LENGTH = 120
 

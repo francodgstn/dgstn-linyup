@@ -195,6 +195,8 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   updateCourseBlock: 'rpcStudio',
   setCourseBlockStatus: 'rpcStudio',
   deleteCourseBlock: 'rpcStudio',
+  enrolCourseBlockContact: 'rpcStudio',
+  withdrawFromCourseBlock: 'rpcStudio',
   generateRecurringSessions: 'rpcStudio',
   setSessionLocation: 'rpcStudio',
   setSessionTags: 'rpcStudio',

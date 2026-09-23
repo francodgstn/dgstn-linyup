@@ -92,6 +92,8 @@ const BORN_ROUTED = new Set<string>([
   'updateCourseBlock',
   'setCourseBlockStatus',
   'deleteCourseBlock',
+  'enrolCourseBlockContact',
+  'withdrawFromCourseBlock',
 ])
 
 /** Every callable the router is the ONLY way into, however it got there. */
