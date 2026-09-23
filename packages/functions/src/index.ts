@@ -61,6 +61,7 @@ export { syncSessionPublicProfile } from './sync/syncSessionPublicProfile'
 export { syncActivityPublicProfile } from './sync/syncActivityPublicProfile'
 export { syncStudioDropIn } from './sync/syncStudioDropIn'
 export { syncCoursePublicProfile } from './sync/syncCoursePublicProfile'
+export { syncCourseBlockPublicProfile } from './sync/syncCourseBlockPublicProfile'
 export { syncFormPublicProfile } from './sync/syncFormPublicProfile'
 export { syncDocumentPublicProfile } from './sync/syncDocumentPublicProfile'
 export {

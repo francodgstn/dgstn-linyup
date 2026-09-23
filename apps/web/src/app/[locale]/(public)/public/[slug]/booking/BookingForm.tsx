@@ -141,6 +141,24 @@ interface ActivityProfile {
   contactFields?: BookingContactField[]
 }
 
+/** A course's public mirror, as this page needs it. See
+ *  `syncCourseBlockPublicProfile`: aggregates and display facts only, never who
+ *  is on it. */
+interface CourseCard {
+  id: string
+  name: string
+  description?: string | null
+  first_meeting?: Timestamp | null
+  last_meeting?: Timestamp | null
+  meeting_count?: number
+  priceAmount?: number | null
+  places?: number | null
+  places_taken?: number
+  location?: string | null
+  providerName?: string | null
+  booking_closes_at?: Timestamp | null
+}
+
 interface SessionProfile {
   id: string
   teamId: string
@@ -518,6 +536,8 @@ export default function BookingForm({
 
   // Data loading
   const [activities, setActivities] = useState<ActivityProfile[]>([])
+  /** Published courses that have not finished, soonest first. */
+  const [courses, setCourses] = useState<CourseCard[]>([])
   const [sessions, setSessions] = useState<SessionProfile[]>([])
   const [loadingData, setLoadingData] = useState(true)
 
@@ -702,6 +722,28 @@ export default function BookingForm({
           })
           .sort(compareActivities)
         setActivities(actList)
+
+        // COURSES STARTING SOON. A separate, cheap read: the mirror is one
+        // document per course and a studio runs a handful, so this is a small
+        // query beside the two the page already makes. Published only, and only
+        // ones that have not finished, which the mirror decides by existing at
+        // all plus the date filter here.
+        const courseSnap = await getDocs(
+          query(
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
+            where('teamId', '==', teamId),
+            where('type', '==', 'course_block')
+          )
+        )
+        const nowMs = Date.now()
+        setCourses(
+          courseSnap.docs
+            .map((d) => ({ ...(d.data() as CourseCard), id: d.id }))
+            .filter((c) => (c.last_meeting?.toMillis() ?? 0) >= nowMs)
+            .sort(
+              (a, b) => (a.first_meeting?.toMillis() ?? 0) - (b.first_meeting?.toMillis() ?? 0)
+            )
+        )
 
         // Load sessions
         const windowEnd = new Date()
@@ -2020,9 +2062,70 @@ export default function BookingForm({
 
         {deepLinkBanner}
 
-        {activities.length === 0 && (
+        {activities.length === 0 && courses.length === 0 && (
           <div className="rounded-xl border bg-muted/30 p-8 text-center">
             <p className="text-muted-foreground text-sm">{t('noActivitiesAvailable')}</p>
+          </div>
+        )}
+
+        {/* COURSES STARTING SOON, above the weekly slots.
+            "When does the next beginners course start" is the question a visitor
+            brings to this page, and a course is not findable among single
+            sessions: it IS the set of them. Each card carries what somebody
+            chooses on, first date, weekday and time, how many lessons, price and
+            places left, so nobody has to open one to compare two. */}
+        {courses.length > 0 && (
+          <div className="mb-8 space-y-3">
+            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+              {t('coursesHeading')}
+            </h2>
+            {courses.map((c) => {
+              const first = c.first_meeting?.toDate()
+              const left =
+                typeof c.places === 'number' && c.places > 0
+                  ? Math.max(0, c.places - (c.places_taken ?? 0))
+                  : null
+              const closed =
+                !!c.booking_closes_at && c.booking_closes_at.toMillis() <= Date.now()
+              return (
+                <div key={c.id} className="rounded-xl border p-4">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <p className="font-semibold">{c.name}</p>
+                    <span className="text-primary text-sm font-semibold">
+                      {typeof c.priceAmount === 'number'
+                        ? formatCurrency(c.priceAmount, currency, locale)
+                        : t('coursesFree')}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {[
+                      first ? fmt.dateMedium(first) : null,
+                      first ? `${fmt.weekdayShort(first)} ${fmt.time(first)}` : null,
+                      c.meeting_count ? t('coursesLessons', { count: c.meeting_count }) : null,
+                      c.location,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                  {c.description && (
+                    <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
+                  )}
+                  {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
+                      remedies, so they are never the same sentence. */}
+                  <p className="mt-2 text-xs">
+                    {closed ? (
+                      <span className="text-muted-foreground">{t('coursesClosed')}</span>
+                    ) : left === 0 ? (
+                      <span className="text-muted-foreground">{t('coursesSoldOut')}</span>
+                    ) : left !== null ? (
+                      <span className="text-muted-foreground">
+                        {t('coursesPlacesLeft', { count: left })}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+              )
+            })}
           </div>
         )}
 
