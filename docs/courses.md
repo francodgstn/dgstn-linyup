@@ -224,3 +224,13 @@ rediscovered.
 The sale (a price, a checkout, the plan edge), the waiting list, duplicate for
 next term, and cancelling a whole course. Each is its own stage; nothing above
 writes a price.
+
+**One rename has to land WITH the sale, not after it.** The studio side already
+says *Online courses* everywhere (the nav did before this work, and the
+Offerings rail does now), but the member's Space still says "Courses", "My
+courses" and "Browse courses" for the video plugin. Today that is unambiguous,
+because a member cannot see a scheduled course at all. The moment the sale ships
+a public course surface, a member sees both under one word, so
+`Space.myCourses`, `Space.coursesSection`, `Space.browseCourses` and their
+siblings become *Online courses* in the same change that gives courses a public
+page.
