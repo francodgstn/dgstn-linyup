@@ -136,9 +136,20 @@ export function shiftPattern(
   const r = pattern.recurrence
   const startDate = r.startDate as Timestamp | undefined
   const endDate = r.endDate as Timestamp | undefined
+  // THE WEEKDAYS MOVE WITH THE DATES. A weekly rule carries `daysOfWeek`, and
+  // shifting only `startDate` left them naming the OLD term's days: duplicating
+  // a Wednesday course to start on a Monday generated nothing at all, and the
+  // callable failed with "That schedule produces no lessons" rather than
+  // producing wrong ones. Shifted by the same delta the dates were, so a course
+  // that ran Tuesday and Thursday still runs two days two apart.
+  const dayShift = ((days % 7) + 7) % 7
+  const daysOfWeek = Array.isArray(r.daysOfWeek)
+    ? r.daysOfWeek.map((d) => (d + dayShift) % 7)
+    : r.daysOfWeek
   return {
     recurrence: {
       ...r,
+      ...(daysOfWeek ? { daysOfWeek } : {}),
       ...(startDate
         ? { startDate: Timestamp.fromDate(shiftWallClockDays(startDate.toDate(), days)) }
         : {}),

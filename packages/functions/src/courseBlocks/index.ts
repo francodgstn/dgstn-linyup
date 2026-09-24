@@ -406,6 +406,40 @@ export const updateCourseBlock = onCall(async (request) => {
     await seriesRef.update({ totalOccurrences: FieldValue.increment(created) })
   }
 
+  // THE CAP LIVES IN TWO PLACES AND BOTH HAVE TO MOVE.
+  //
+  // `places` is the course's own counter; `max_participants` on each lesson is
+  // the session-level backstop copied down from the template. Raising the course
+  // from 9 to 12 updated the template only, so every existing lesson still
+  // refused the tenth: the enrolment succeeded, the converger hit
+  // `resource-exhausted` on every session, swallowed each as a "conflict", and
+  // the buyer was charged for a course with no bookings written at all. The
+  // conflict list is meant for one lesson a drop-in happened to fill, not for
+  // the whole term.
+  //
+  // FUTURE lessons only. A past one's capacity is a record of what ran.
+  if (patch.places !== undefined && existing.seriesId) {
+    const nextPlaces = patch.places as number | null
+    const [capErr, capSnap] = await to(
+      db
+        .collection(SESSIONS_COLLECTION)
+        .where('seriesId', '==', existing.seriesId)
+        .where('start', '>=', Timestamp.now())
+        .get()
+    )
+    if (capErr) {
+      console.error('[courseBlocks] could not re-cap the lessons of', blockId, capErr)
+    } else {
+      for (let i = 0; i < (capSnap?.docs.length ?? 0); i += 400) {
+        const batch = db.batch()
+        for (const d of capSnap!.docs.slice(i, i + 400)) {
+          batch.update(d.ref, { max_participants: nextPlaces })
+        }
+        await batch.commit()
+      }
+    }
+  }
+
   // THE DEADLINE IS DERIVED, so it is re-derived whenever either input moves.
   // "Closes three days before it starts" has to keep meaning that after the
   // studio pushes the start back a week; a stored absolute that nobody

@@ -60,6 +60,7 @@ import {
 import { loadContactPaymentSnapshot } from '../booking/access'
 import { to } from '../utils/async'
 import { requireCapability } from '../utils/teams'
+import { optionalContactSessionFromRequest } from '../utils/contactSession'
 import { generateSecureToken } from '../utils/crypto'
 import { SESSIONS_COLLECTION } from '../sessions/series'
 
@@ -457,7 +458,19 @@ export const enrolCourseBlockContact = onCall(async (request) => {
     throw new HttpsError('permission-denied', 'That contact belongs to another studio.')
   }
 
-  const { block, placesTaken } = await takeCourseBlockPlace(db, {
+  // BOTH TENANT CHECKS BEFORE THE WRITE. This one used to sit AFTER
+  // `takeCourseBlockPlace`, so a manager aiming at another studio's course
+  // committed the enrolment and consumed one of their places, and the refusal
+  // that followed rolled nothing back: a foreign name and email sat on their
+  // roster until somebody noticed. A permission check after the write is not a
+  // permission check.
+  const blockDoc = await db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId).get()
+  if (!blockDoc.exists) throw new HttpsError('not-found', 'That course no longer exists.')
+  if ((blockDoc.data() as CourseBlock).teamId !== teamId) {
+    throw new HttpsError('permission-denied', 'That course belongs to another studio.')
+  }
+
+  const { placesTaken } = await takeCourseBlockPlace(db, {
     blockId,
     contactId,
     firstname: contact.firstname ?? null,
@@ -466,9 +479,6 @@ export const enrolCourseBlockContact = onCall(async (request) => {
     status: 'enrolled',
     payment_status: 'not_required',
   })
-  if (block.teamId !== teamId) {
-    throw new HttpsError('permission-denied', 'That course belongs to another studio.')
-  }
 
   const roster = await syncCourseBlockRoster(db, blockId)
   return {
@@ -492,14 +502,30 @@ export const enrolCourseBlockContact = onCall(async (request) => {
  * the checkout instead.
  */
 export const joinCourseBlock = onCall(async (request) => {
-  const { teamId, blockId, contactId } = request.data as {
-    teamId?: string
-    blockId?: string
-    contactId?: string
+  const { teamId, blockId } = request.data as { teamId?: string; blockId?: string }
+  if (!teamId || !blockId) {
+    throw new HttpsError('invalid-argument', 'teamId and blockId are required')
   }
-  if (!teamId || !blockId || !contactId) {
-    throw new HttpsError('invalid-argument', 'teamId, blockId and contactId are required')
+
+  // TRUST ONLY THE VERIFIED CONTACT SESSION for who is joining, never a
+  // `contactId` from the request body. This callable is on the public member
+  // router, so a body id would let anyone enrol anyone on any free or
+  // plan-covered course of any studio, and probe which contact ids exist by
+  // watching which ones come back `not-found`. It read one for a while, which is
+  // exactly what `createDropInCheckout` says in as many words not to do.
+  //
+  // A guest cannot reach this rail at all, and that is correct rather than a
+  // gap: being covered means holding a plan, and holding a plan means being a
+  // contact. A course that is free FOR EVERYONE would be the one case for a
+  // guest, and the day it needs one it gets the same resolve-or-create the
+  // waiting-list join already has, not a body parameter.
+  const session = optionalContactSessionFromRequest(request)
+  if (!session || session.teamId !== teamId) {
+    throw new HttpsError('unauthenticated', 'Sign in to take a place on this course.', {
+      reason: 'sign_in_required',
+    })
   }
+  const contactId = session.contactId
 
   const db = admin.firestore()
   const blockDoc = await db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId).get()

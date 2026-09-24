@@ -46,6 +46,7 @@ import { loadContactPaymentSnapshot } from '../booking/access'
 import { courseBlockTarget, releaseCourseBlockPlace, takeCourseBlockPlace } from './enrolment'
 import { getHostingUrl } from '../utils/env'
 import { to } from '../utils/async'
+import { optionalContactSessionFromRequest } from '../utils/contactSession'
 
 /** How long a course place is held while somebody pays. The same 30 minutes an
  *  appointment slot gets: long enough to find a card, short enough that an
@@ -125,10 +126,23 @@ export const createCourseBlockCheckout = onCall(async (request) => {
      */
     waitlistToken?: string
   }
-  const { teamId, blockId, contactId } = data
-  if (!teamId || !blockId || !contactId) {
-    throw new HttpsError('invalid-argument', 'teamId, blockId and contactId are required')
+  const { teamId, blockId } = data
+  if (!teamId || !blockId) {
+    throw new HttpsError('invalid-argument', 'teamId and blockId are required')
   }
+
+  // TRUST ONLY THE VERIFIED CONTACT SESSION, never a `contactId` from the body:
+  // this is a public router, and a body id would let anyone start a checkout as
+  // any contact of any studio and enumerate ids by watching which come back
+  // `not-found`. The same rule `createDropInCheckout` states, and which this
+  // rail read a body parameter in spite of.
+  const session = optionalContactSessionFromRequest(request)
+  if (!session || session.teamId !== teamId) {
+    throw new HttpsError('unauthenticated', 'Sign in to book this course.', {
+      reason: 'sign_in_required',
+    })
+  }
+  const contactId = session.contactId
 
   const db = admin.firestore()
   const team = await loadEnabledTeam(teamId)
@@ -184,6 +198,29 @@ export const createCourseBlockCheckout = onCall(async (request) => {
 
   assertQuotedAmount(data.quotedAmount, payOption.amount, { promoAttempted: false })
   const amount = requireChargeableAmountFromMajor(payOption.amount)
+
+  // ALREADY ON THE COURSE: refuse rather than take a place again.
+  //
+  // `takeCourseBlockPlace` MERGES, so a second checkout rewrote a settled
+  // `enrolled` row to `hold` with an `expires_at`. Abandoning that checkout then
+  // lapsed a place the member had paid for, a Stripe failure marked them
+  // `withdrawn`, and either way the next roster converge read them as gone and
+  // cancelled every future lesson booking they had. One stray double-click on
+  // the Buy button was enough.
+  //
+  // A waiting-list claim is the deliberate exception: its enrolment IS a hold,
+  // and paying is how it settles.
+  const existing = await db
+    .collection(COURSE_BLOCKS_COLLECTION)
+    .doc(blockId)
+    .collection(COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION)
+    .doc(contactId)
+    .get()
+  if (!data.waitlistToken && existing.get('status') === 'enrolled') {
+    throw new HttpsError('failed-precondition', 'You are already on that course.', {
+      reason: 'already_enrolled',
+    })
+  }
 
   const nowMs = Date.now()
 

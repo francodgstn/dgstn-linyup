@@ -427,7 +427,14 @@ function RecurrencePanel({ value, onChange, startDate }: {
                 min={toDateInputValue(startDate)}
                 onChange={(e) => {
                   if (!e.target.value) return
-                  const picked = new Date(e.target.value)
+                  // NOON, not the bare value. `new Date('2026-10-21')` is
+                  // parsed as UTC midnight, while `dayKey` and the chip below
+                  // read LOCAL date parts, so west of Greenwich the studio
+                  // picked the 21st and got a chip and a skip for the 20th.
+                  // Midday is inside the same calendar day in every timezone
+                  // this runs in, which is the convention CourseBlockDialog
+                  // already uses for exactly this input.
+                  const picked = new Date(`${e.target.value}T12:00`)
                   if (isNaN(picked.getTime())) return
                   // One entry per day: picking the same date twice is a no-op,
                   // not a second chip.

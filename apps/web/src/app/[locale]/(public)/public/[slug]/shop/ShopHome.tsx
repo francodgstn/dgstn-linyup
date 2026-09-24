@@ -1043,6 +1043,29 @@ export default function ShopHome({
           window.location.href = res.data.url
         } else throw new Error('no-url')
       } else if (checkout.kind === 'course_block') {
+        // THE FREE RAIL FIRST, and the server decides which one this is.
+        //
+        // Whether a course costs THIS buyer anything depends on the plans they
+        // hold, which only `resolvePaymentOptions` knows, so the client must not
+        // guess: it asks to join, and a `payment_required` refusal is not an
+        // error but the other branch. Calling the checkout first was the bug:
+        // it refuses a covered or free course with `covered`, and since nothing
+        // called `joinCourseBlock` at all, a free course could never be taken.
+        //
+        // Same shape as the waiting-list claim page, and for the same reason.
+        try {
+          await callFunction<{ teamId: string; blockId: string }, unknown>('joinCourseBlock')({
+            teamId,
+            blockId: checkout.block.id,
+          })
+          setSubmitting(false)
+          setCheckout(null)
+          toast.success(t('courseBlockJoined'))
+          return
+        } catch (err) {
+          const reason = (err as { details?: { reason?: string } })?.details?.reason
+          if (reason !== 'payment_required') throw err
+        }
         // A course place is CONTENDED FOR, unlike a product or an online
         // course: the callable takes the place first, inside the capacity
         // transaction, so a sold-out course refuses here rather than after the
@@ -1052,7 +1075,6 @@ export default function ShopHome({
           {
             teamId: string
             blockId: string
-            contactId: string
             slug: string
             locale: string
             origin?: string
@@ -1062,7 +1084,6 @@ export default function ShopHome({
         const res = await fn({
           teamId,
           blockId: checkout.block.id,
-          contactId: contact!.id,
           slug,
           locale,
           origin: window.location.origin,

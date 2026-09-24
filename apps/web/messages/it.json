@@ -5088,7 +5088,8 @@
     "courseBlockPlacesLeft": "{count, plural, one {# posto rimasto} other {# posti rimasti}}",
     "courseBlockSoldOut": "Al completo",
     "courseBlockClosed": "Prenotazioni chiuse",
-    "courseBlockJoin": "Partecipa"
+    "courseBlockJoin": "Partecipa",
+    "courseBlockJoined": "Sei iscritto al corso"
   },
   "Products": {
     "title": "Prodotti",
