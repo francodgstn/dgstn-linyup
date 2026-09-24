@@ -2,8 +2,8 @@
 // @linyup/shared (beside `resolveDurationSale`, which decides what is sold at
 // all); this is the half that needs words.
 //
-// Same division as `activityTerms.ts` next door — "ONE place computes which
-// chips apply; each surface renders them" — because the words differ per
+// Same division as `activityTerms.ts` next door ("ONE place computes which
+// chips apply; each surface renders them"), because the words differ per
 // surface and the answer must not: an appointment picker's chip, a class
 // card's badge line, the website's pricing block, the shop's pay-per-visit
 // strip and the admin catalogue all quote the same activity, out of five i18n

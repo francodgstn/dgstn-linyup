@@ -11,7 +11,7 @@ import { activityGradient } from '@/components/booking/StickyBar'
 // were not variations on a theme: the class card carried the studio's picture,
 // its description, its tags, its prerequisites and its prices; the appointment
 // card carried a name, a price and a line of grey text. Same studio, same
-// visitor, two answers to "what is this?" — and the appointment was always the
+// visitor, two answers to "what is this?", and the appointment was always the
 // poorer of the two, for no reason anybody chose.
 //
 // So the CARD is here and the ANSWERS stay with the caller. Nothing in this
@@ -22,8 +22,8 @@ import { activityGradient } from '@/components/booking/StickyBar'
 // appointments and courses in one column (plan section 4).
 //
 // Two ways to say money, and they are not the same question:
-//   `priceChip`  — one short answer, worth reading at a glance ("from CHF 45")
-//   `priceLines` — several, behind a quiet trigger. A class can carry four or
+//   `priceChip`  one short answer, worth reading at a glance ("from CHF 45")
+//   `priceLines` several, behind a quiet trigger. A class can carry four or
 //                  five ("Included with X", "Y per class", a discount, a
 //                  range), and stacked under every card they turned the
 //                  selection screen into a price list.
@@ -41,7 +41,7 @@ export interface OfferChip {
 export interface OfferCardProps {
   name: string
   /** The studio's picture. Falls back to its colour, then to a deterministic
-   *  gradient from the name — an appointment has never had an image, so this
+   *  gradient from the name. An appointment has never had an image, so this
    *  fallback is what it will normally show. */
   image?: string | null
   color?: string | null
@@ -87,7 +87,7 @@ export function OfferCard({
       disabled={disabled}
       className="w-full text-left rounded-xl border bg-card hover:border-primary hover:bg-primary/5 transition-colors flex items-stretch overflow-hidden min-h-24 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {/* Thumbnail — square (1:1) for typical items via w-24 + item min-h-24 */}
+      {/* Thumbnail: square (1:1) for typical items via w-24 + item min-h-24 */}
       <div
         className="w-24 shrink-0 bg-muted"
         style={{
@@ -132,7 +132,7 @@ export function OfferCard({
         )}
         {/* Pricing last, and behind a trigger rather than printed. The trigger
             is a span (`render`) because this card is a <button> and a button
-            may not nest one. Hover/focus only, by the tooltip's nature — on a
+            may not nest one. Hover/focus only, by the tooltip's nature: on a
             phone the next step and the checkout still state the amount. */}
         {priceLines && priceLines.lines.length > 0 && (
           <Tooltip>

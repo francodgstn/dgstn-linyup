@@ -47,7 +47,7 @@ export interface ActivityTerm {
   min?: number
   /** price only (appointments) — highest priced duration. */
   max?: number
-  /** price only (appointments) — WHAT THAT SPREAD SAYS, which `min`/`max` alone
+  /** price only (appointments). WHAT THAT SPREAD SAYS, which `min`/`max` alone
    *  cannot express: a range excluding a length that is free or benefit-only
    *  states a floor that is not the floor. Render it through
    *  `priceRangeLabel`, never by comparing `min` and `max` again. */
@@ -110,7 +110,7 @@ export function resolveActivityTerms(a: ActivityTermsInput): ActivityTerm[] {
     // Through the shared reader: a length sold only through the member benefit
     // has NO price to advertise, and a stale `priceAmount` beside it must never
     // become a "from CHF …" on a public card (UX-70). `appointmentPriceRange`
-    // owns that reading, and also the distinction `min`/`max` cannot carry —
+    // owns that reading, and also the distinction `min`/`max` cannot carry:
     // whether the spread covers every length or only the sold ones.
     const priced = (a.durations ?? [])
       .map((d) => resolveDurationSale(d).priceAmount)
@@ -263,7 +263,7 @@ export interface ActivityPricingDisplay {
   /** Class drop-in price (major units), or null. */
   dropInAmount: number | null
   /** Appointment direct/base price spread (major units), or null. Rendered
-   *  through `priceRangeLabel` — the shape says which of "CHF 45", "CHF 45–85"
+   *  through `priceRangeLabel`. The shape says which of "CHF 45", "CHF 45–85"
    *  and "from CHF 45" is the true sentence, which a bare `{min,max}` could
    *  not. */
   appointmentPrice: PriceRange | null
