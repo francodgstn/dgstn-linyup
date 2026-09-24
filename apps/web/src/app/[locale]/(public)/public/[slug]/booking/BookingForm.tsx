@@ -53,6 +53,7 @@ import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { CourseWaitlistDialog } from '@/components/booking/CourseWaitlistDialog'
 import { usePublicContactRecord } from '../usePublicContactRecord'
+import { heldFrom } from '@/components/booking/identity/bookingCaller'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
 import {
   GuestDetailsForm,
@@ -459,18 +460,18 @@ export default function BookingForm({
   // enters it.
   const [queueingFor, setQueueingFor] = useState<{ id: string; name: string } | null>(null)
 
-  // WHAT THIS MEMBER HOLDS — every plan on the live record, not the single
+  // WHAT THIS MEMBER HOLDS: every plan on the live record, not the single
   // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
   // covered by a second plan was told she held none and routed to pay a drop-in
   // the server then refused to sell her. The frozen slot survives only as the
-  // floor for a FAILED read, as in AppointmentPicker. Display only: the
-  // callables re-resolve from their own snapshot.
+  // floor for a FAILED read, which is `heldFrom`'s rule, shared with the
+  // appointment funnel. Display only: the callables re-resolve from their own
+  // snapshot.
   const contactRecord = usePublicContactRecord()
-  const heldPlanIds = contactRecord.data
-    ? heldPlanIdsOf(contactRecord.data)
-    : contact?.subscription_type_id
-      ? [contact.subscription_type_id]
-      : []
+  const heldPlanIds = heldFrom(
+    contactRecord.data ? heldPlanIdsOf(contactRecord.data) : null,
+    contact
+  )
   const heldPlanKey = heldPlanIds.join(',')
   // 'page' unless an overlay host wraps this flow — see BookingChrome.
   const chrome = useBookingChrome()
