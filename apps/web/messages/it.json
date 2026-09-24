@@ -5783,7 +5783,8 @@
     "coursesFree": "Gratis",
     "coursesPlacesLeft": "{count, plural, one {# posto disponibile} other {# posti disponibili}}",
     "coursesSoldOut": "Al completo",
-    "coursesClosed": "Iscrizioni chiuse"
+    "coursesClosed": "Iscrizioni chiuse",
+    "coursesJoinWaitlist": "Avvisami se si libera un posto"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",
@@ -9050,6 +9051,24 @@
     "noToken": "A questo link manca il codice. Aprilo dall'e-mail che ti abbiamo inviato.",
     "invalidLink": "Questo link non è più valido. Potrebbe essere già stato usato, o l'offerta è scaduta.",
     "claimFailed": "Non ha funzionato. Riprova o scrivi allo studio.",
-    "windowTooShort": "Non resta abbastanza tempo su questa offerta per pagarla. Scrivi allo studio, può tenerti il posto."
+    "windowTooShort": "Non resta abbastanza tempo su questa offerta per pagarla. Scrivi allo studio, può tenerti il posto.",
+    "joinTitle": "Iscriviti alla lista d'attesa",
+    "joinBody": "{name} è al completo. Ti scriviamo appena si libera un posto, e te lo teniamo mentre decidi.",
+    "firstname": "Nome",
+    "lastname": "Cognome",
+    "email": "E-mail",
+    "emailWhy": "Un posto libero viene offerto via e-mail, quindi ce ne serve una che ti raggiunga.",
+    "joinAction": "Iscriviti alla lista",
+    "cancel": "Annulla",
+    "joinedTitle": "Sei in lista",
+    "joinedBody": "Sei in lista d'attesa per {name}.",
+    "joinedWithPosition": "Sei il numero {position} in lista d'attesa per {name}.",
+    "joinedMailNote": "Controlla la posta. Un posto libero ti viene tenuto per un tempo limitato, poi passa alla persona successiva.",
+    "joinHasPlaces": "Questo corso ha di nuovo posti. Chiudi e prenota.",
+    "joinAlreadyOn": "Sei già iscritto a questo corso.",
+    "joinQueueFull": "La lista d'attesa di questo corso è piena.",
+    "joinEmailRequired": "Ci serve un indirizzo e-mail per tenerti un posto.",
+    "joinFailed": "Non ha funzionato. Riprova o scrivi allo studio.",
+    "closeButton": "Chiudi"
   }
 }

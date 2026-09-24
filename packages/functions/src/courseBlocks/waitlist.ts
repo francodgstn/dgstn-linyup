@@ -57,6 +57,8 @@ import {
   type CourseBlockWaitlistEntry,
 } from '@linyup/shared'
 import { loadContactPaymentSnapshot } from '../booking/access'
+import { optionalContactSessionFromRequest } from '../utils/contactSession'
+import { requirePlan } from '../utils/plan'
 import { to } from '../utils/async'
 import { requireCapability } from '../utils/teams'
 import { generateSecureToken } from '../utils/crypto'
@@ -68,7 +70,10 @@ import {
   assertUnderCheckoutRateLimit,
   checkoutRateLimit,
 } from '../connect/checkout'
-import { WAITLIST_CLAIM_RATE_LIMIT_BUCKET } from '../booking/waitlist/constants'
+import {
+  WAITLIST_CLAIM_RATE_LIMIT_BUCKET,
+  WAITLIST_RATE_LIMIT_BUCKET,
+} from '../booking/waitlist/constants'
 import { courseBlockTarget, syncCourseBlockRoster } from './enrolment'
 
 /** One minted offer, returned so the caller can notify the person. The mail is
@@ -84,6 +89,13 @@ export interface CourseWaitlistOffer {
   offerExpiresAt: Timestamp
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** A queue-born contact is reaped if the queue never comes good. They were
+ *  never promised anything, and `purgeProvisionalContacts` re-checks the flag
+ *  at delete time, so a claim that confirms them makes them permanent. */
+const PROVISIONAL_DAYS_AFTER_COURSE = 30
+
 function blockRefOf(db: FirebaseFirestore.Firestore, blockId: string) {
   return db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId)
 }
@@ -93,22 +105,51 @@ function blockRefOf(db: FirebaseFirestore.Firestore, blockId: string) {
 /**
  * Take a place in the queue for a full course.
  *
- * Refuses a course that is NOT full, which is not pedantry: a queue on a course
- * with places left is a person who thinks they are waiting and could simply
- * have booked. The client is told `places_available` so it can send them to the
- * ordinary door.
+ * THE PUBLIC RAIL, so it resolves who is joining rather than being told. The
+ * identity rules are the class queue's (`booking/waitlist/join.ts`) and are not
+ * re-decided here:
+ *
+ *  - A verified CONTACT SESSION is the only identity trusted from the caller. A
+ *    `contactId` in the request body proves nothing and would let anyone
+ *    enumerate a studio's contacts by guessing ids.
+ *  - A guest gives email + name, and an EXACT match on all three is the same
+ *    person. Anything looser merges two people who share an address.
+ *  - A new joiner becomes a PROVISIONAL contact with an expiry, because a queue
+ *    that never comes good must not leave a permanent record of somebody who
+ *    was never promised anything. `purgeProvisionalContacts` re-checks the flag
+ *    at delete time, so a claim that confirms them makes them permanent.
+ *
+ * AN EMAIL ADDRESS IS NOT OPTIONAL, and that is a mechanical constraint rather
+ * than a preference: a place is only ever redeemed through the mailed claim
+ * link, and an entry is offered ONCE, ever. Somebody unreachable would take a
+ * place, be offered it, and be dropped having never been told.
+ *
+ * It refuses a course that is NOT full. A queue on a course with places left is
+ * a person who thinks they are waiting and could simply have booked, and the
+ * promoter would turn their entry straight into a hold and lock a real buyer
+ * out.
  */
 export const joinCourseBlockWaitlist = onCall(async (request) => {
-  const { teamId, blockId, contactId } = request.data as {
+  const data = request.data as {
     teamId?: string
     blockId?: string
-    contactId?: string
+    contactDetails?: { firstname?: string; lastname?: string; email?: string; phone?: string }
   }
-  if (!teamId || !blockId || !contactId) {
-    throw new HttpsError('invalid-argument', 'teamId, blockId and contactId are required')
+  const { teamId, blockId } = data
+  if (!teamId || !blockId) {
+    throw new HttpsError('invalid-argument', 'teamId and blockId are required')
   }
 
+  // Charged up front and on the JOIN bucket, never the claim one: joining is
+  // the one queue action an anonymous visitor can repeat, and every join can
+  // create a contact. Sharing the claim quota would mean a busy queue behind one
+  // studio's NAT made an offered place unreachable from that same NAT.
+  await checkoutRateLimit(request.rawRequest?.ip, WAITLIST_RATE_LIMIT_BUCKET)
+
   const db = admin.firestore()
+  // The waiting list is a Coach-tier feature, like the class queue it mirrors.
+  await requirePlan(teamId, 'coach')
+
   const ref = blockRefOf(db, blockId)
   const blockDoc = await ref.get()
   if (!blockDoc.exists) throw new HttpsError('not-found', 'That course no longer exists.')
@@ -116,37 +157,110 @@ export const joinCourseBlockWaitlist = onCall(async (request) => {
   if (block.teamId !== teamId) {
     throw new HttpsError('permission-denied', 'That course belongs to another studio.')
   }
-  // A cancelled or unpublished course has no queue, and a course whose sales
-  // have closed cannot hand a place on to anybody. Read through the ONE
-  // predicate the public card reads, so nobody is shown a button this refuses.
+  // A cancelled or unpublished course has no queue, and one whose sales have
+  // closed cannot hand a place to anybody. Read through the ONE predicate the
+  // public card reads, so nobody is shown a button this refuses.
   if (!courseBlockSalesOpen(block)) {
     throw new HttpsError('failed-precondition', 'That course is not taking bookings.', {
       reason: 'sales_closed',
     })
   }
+  const last = lastMeeting(block)
 
-  const contactDoc = await db.collection(CONTACTS_COLLECTION).doc(contactId).get()
-  if (!contactDoc.exists) throw new HttpsError('not-found', 'That contact no longer exists.')
-  const contact = contactDoc.data() as {
-    teamId?: string
-    firstname?: string
-    lastname?: string
-    email?: string
-    phone?: string
-  }
-  if (contact.teamId !== teamId) {
-    throw new HttpsError('permission-denied', 'That contact belongs to another studio.')
+  // ── Who is joining ────────────────────────────────────────────────────────
+  let contactId: string
+  let firstname: string
+  let lastname: string
+  let email: string
+  let phone: string | null = null
+
+  const session = optionalContactSessionFromRequest(request)
+  if (session && session.teamId === teamId) {
+    const snap = await db.collection(CONTACTS_COLLECTION).doc(session.contactId).get()
+    const c = snap.data()
+    if (!snap.exists || c?.teamId !== teamId) {
+      throw new HttpsError('not-found', 'That contact no longer exists.')
+    }
+    contactId = snap.id
+    firstname = (c!.firstname as string) || ''
+    lastname = (c!.lastname as string) || ''
+    email = ((c!.email as string) || '').toLowerCase().trim()
+    // The session's own login email is the fallback before refusing: a contact
+    // reached through the per-contact login-email allow-list (a parent on a
+    // child's profile) may carry an empty `Contact.email` while the address they
+    // proved control of sits in the verified token claims.
+    if (!email) {
+      email = ((request.auth?.token?.email as string | undefined) ?? '').toLowerCase().trim()
+    }
+    if (!EMAIL_RE.test(email)) {
+      throw new HttpsError(
+        'failed-precondition',
+        'An email address is needed to hold a place on the waiting list.',
+        { reason: 'email_required' }
+      )
+    }
+    phone = (c!.phone as string) || null
+  } else {
+    const cd = data.contactDetails
+    email = (cd?.email ?? '').toLowerCase().trim()
+    firstname = (cd?.firstname ?? '').trim()
+    lastname = (cd?.lastname ?? '').trim()
+    phone = cd?.phone?.trim() || null
+    if (!EMAIL_RE.test(email) || !firstname || !lastname) {
+      throw new HttpsError('invalid-argument', 'firstname, lastname and a valid email are required')
+    }
+    const existing = await db
+      .collection(CONTACTS_COLLECTION)
+      .where('teamId', '==', teamId)
+      .where('email', '==', email)
+      .get()
+    const match = existing.docs.find((d) => {
+      const c = d.data()
+      return (
+        c.firstname?.toLowerCase().trim() === firstname.toLowerCase() &&
+        c.lastname?.toLowerCase().trim() === lastname.toLowerCase()
+      )
+    })
+    if (match) {
+      contactId = match.id
+    } else {
+      const created = db.collection(CONTACTS_COLLECTION).doc()
+      await created.set({
+        firstname,
+        lastname,
+        email,
+        phone,
+        // NO acquisition_stage, deliberately, and for the class queue's reason:
+        // joining a queue is not a booking, and stamping a funnel entry on
+        // somebody who may never get a place would report something that never
+        // happened. It is stamped when they claim.
+        entry: 'course_waitlist',
+        provisional: true,
+        // Tied to the course's END rather than its start: a queue stays worth
+        // something until the last lesson, which is the whole reason the claim
+        // window clamps there too.
+        provisional_expires_at: Timestamp.fromMillis(
+          (last?.end.toMillis() ?? Date.now()) +
+            PROVISIONAL_DAYS_AFTER_COURSE * 24 * 60 * 60 * 1000
+        ),
+        teamId,
+        archived_at: null,
+        deleted_at: null,
+        created_at: FieldValue.serverTimestamp(),
+      })
+      contactId = created.id
+      console.log(`[courseWaitlist] new provisional contact ${contactId} queued for ${blockId}`)
+    }
   }
 
-  const first = firstMeeting(block)
   const queueRef = ref.collection(COURSE_BLOCK_WAITLIST_SUBCOLLECTION)
   const entryToken = generateSecureToken()
 
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     // The course document is in the read set, which is what serialises a join
-    // against a place being taken: joining a course that filled up a
-    // millisecond ago, or emptied a millisecond ago, resolves one way or the
-    // other rather than both.
+    // against a place being taken: joining a course that filled a millisecond
+    // ago, or emptied a millisecond ago, resolves one way or the other rather
+    // than both.
     const [courseDoc, enrolments, queue] = await Promise.all([
       tx.get(ref),
       tx.get(ref.collection(COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION)),
@@ -160,32 +274,44 @@ export const joinCourseBlockWaitlist = onCall(async (request) => {
         reason: 'places_available',
       })
     }
-
-    const mine = queue.docs.find((d) => d.id === contactId)
-    const mineStatus = mine?.get('status') as string | undefined
-    // Already waiting, or holding an offer: idempotent, and NOT a fresh
-    // `joined_at`. Re-joining must never let somebody jump their own queue
-    // position by clicking twice.
-    if (mineStatus === 'waiting' || mineStatus === 'offered') {
-      return { blockId, contactId, status: mineStatus, entryToken: mine!.get('entry_token') }
+    // Already ON it: not a queue candidate at all, and offering them a place
+    // later would replace a settled enrolment with a hold.
+    const mine = enrolments.docs.find((d) => d.id === contactId)
+    if (mine && mine.get('status') === 'enrolled') {
+      throw new HttpsError('failed-precondition', 'You are already on that course.', {
+        reason: 'already_enrolled',
+      })
     }
 
-    const waiting = queue.docs.filter((d) => d.get('status') === 'waiting').length
-    if (waiting >= courseWaitlistCap(live.places)) {
+    const existing = queue.docs.find((d) => d.id === contactId)
+    const status = existing?.get('status') as string | undefined
+    // Idempotent, and NOT a fresh `joined_at`: re-joining must never let
+    // somebody jump their own place in the line by clicking twice.
+    if (status === 'waiting' || status === 'offered') {
+      return {
+        status,
+        entryToken: existing!.get('entry_token') as string,
+        position: null as number | null,
+        created: false,
+      }
+    }
+
+    const waiting = queue.docs.filter((d) => d.get('status') === 'waiting')
+    if (waiting.length >= courseWaitlistCap(live.places)) {
       throw new HttpsError('resource-exhausted', 'That waiting list is full.', {
         reason: 'queue_full',
       })
     }
 
-    const entry = {
+    tx.set(queueRef.doc(contactId), {
       teamId,
       course: blockId,
       contact: contactId,
-      course_start: first?.start ?? null,
-      firstname: contact.firstname ?? '',
-      lastname: contact.lastname ?? '',
-      email: contact.email ?? '',
-      phone: contact.phone ?? null,
+      course_start: firstMeeting(live)?.start ?? null,
+      firstname,
+      lastname,
+      email,
+      phone,
       // A fresh join after a lapsed offer goes to the TAIL, which is the whole
       // re-queue policy: an entry is offered once, ever.
       joined_at: FieldValue.serverTimestamp(),
@@ -196,11 +322,78 @@ export const joinCourseBlockWaitlist = onCall(async (request) => {
       offer_expires_at: null,
       claimed_at: null,
       left_at: null,
+    })
+    return {
+      status: 'waiting' as const,
+      entryToken,
+      position: waiting.length + 1,
+      created: true,
     }
-    tx.set(queueRef.doc(contactId), entry)
-    return { blockId, contactId, status: 'waiting' as const, entryToken }
   })
+
+  // The confirmation carries the LONG-LIVED entry token, never a claim
+  // credential: it is a link to check your place and to leave, and it is
+  // forwardable by design. Outside the transaction, and never allowed to fail
+  // the join: they are in the queue whether or not the mail lands.
+  if (result.created) {
+    const [mailErr] = await to(
+      notifyCourseWaitlistJoined({
+        teamId,
+        firstname,
+        email,
+        courseName: block.name,
+        position: result.position,
+        entryToken: result.entryToken,
+      })
+    )
+    if (mailErr) console.error('[courseWaitlist] join confirmation failed for', email, mailErr)
+  }
+
+  return {
+    blockId,
+    contactId,
+    status: result.status,
+    position: result.position,
+    entryToken: result.entryToken,
+  }
 })
+
+/** The join confirmation: where you are in the line, and the link back to it. */
+async function notifyCourseWaitlistJoined(params: {
+  teamId: string
+  firstname: string
+  email: string
+  courseName: string
+  position: number | null
+  entryToken: string
+}): Promise<void> {
+  if (!params.email) return
+  const teamData = await getTeamData(admin.firestore(), params.teamId)
+  const url = `${getHostingUrl()}/public/${teamData.slug ?? ''}/course-waitlist?token=${params.entryToken}`
+  const place = params.position
+    ? `<p>You are number <strong>${params.position}</strong> in the line.</p>`
+    : ''
+  const { html } = buildEmailTemplate({
+    title: 'You are on the waiting list',
+    body:
+      `<p>Hi ${params.firstname},</p>` +
+      `<p><strong>${params.courseName}</strong> at ${teamData.name} is full, and you are on the ` +
+      `waiting list. We will write the moment a place comes free.</p>` +
+      place +
+      `<p style="text-align:center;margin-top:24px;">${ctaButton(url, 'Check your place')}</p>`,
+  })
+  await sendEmail({
+    to: params.email,
+    teamId: params.teamId,
+    subject: `You are on the waiting list: ${params.courseName}`,
+    html,
+    text:
+      `Hi ${params.firstname},\n\n${params.courseName} at ${teamData.name} is full, and you are on ` +
+      `the waiting list. We will write the moment a place comes free.\n` +
+      (params.position ? `You are number ${params.position} in the line.\n` : '') +
+      `\nCheck your place: ${url}`,
+  })
+}
 
 /** Leave the queue. Authenticated by the long-lived `entry_token`, which is
  *  deliberately not the claim credential. */

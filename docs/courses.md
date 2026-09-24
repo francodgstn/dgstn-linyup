@@ -394,16 +394,29 @@ Two rules the helper follows, each of which was a defect first:
   us than asked for. Wrong on exactly one day in seven, which is why
   `courseSchedule.ts` is a pure import-free leaf with fixtures over a whole week.
 
+### Joining from a sold-out card
+
+`joinCourseBlockWaitlist` is a PUBLIC rail, so it resolves who is joining rather
+than being told. The identity rules are the class queue's and are not re-decided:
+a verified contact session is the only identity trusted from the caller (a
+`contactId` in the body proves nothing and would let anyone enumerate a studio's
+contacts), a guest gives email plus name and an exact match on all three is the
+same person, and a new joiner becomes a PROVISIONAL contact whose expiry is tied
+to the course's LAST lesson rather than a session start.
+
+**An email address is not optional**, and that is mechanical rather than a
+preference: a place is only ever redeemed through the mailed claim link, and an
+entry is offered once, ever. Somebody unreachable would take a place, be offered
+it, and be dropped having never been told.
+
+The card's dialog is self-contained rather than a step in the booking flow. A
+class seat is chosen inside that machine; a course card sits above it, and
+pulling it through would mean teaching every step about an offer type it never
+otherwise sees.
+
 ## Not built yet
 
-**Joining the queue from a sold-out card.** The card on `/public/{slug}/booking`
-says "Sold out" and offers nothing. The callable exists but takes a `contactId`,
-and a public visitor has none, so it needs the contact resolution the class
-queue's `joinWaitlist` already does: contact session first (never a `contactId`
-from the body), then email plus name, then a provisional contact whose expiry is
-tied to the course's last lesson rather than a session start.
-
-Also open: linking a plan to a course (the pane says so), and a Courses tab in
+Open: linking a plan to a course (the pane says so), and a Courses tab in
 the Shop.
 
 **One rename has to land WITH the sale, not after it.** The studio side already

@@ -5783,7 +5783,8 @@
     "coursesFree": "Free",
     "coursesPlacesLeft": "{count, plural, one {# place left} other {# places left}}",
     "coursesSoldOut": "Sold out",
-    "coursesClosed": "Bookings are closed"
+    "coursesClosed": "Bookings are closed",
+    "coursesJoinWaitlist": "Tell me if a place comes free"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",
@@ -9050,6 +9051,24 @@
     "noToken": "This link is missing its code. Open it from the email we sent you.",
     "invalidLink": "This link is no longer valid. It may already have been used, or the offer may have run out.",
     "claimFailed": "That did not work. Try again, or write to the studio.",
-    "windowTooShort": "There is not enough time left on this offer to pay for it. Write to the studio and they can hold it for you."
+    "windowTooShort": "There is not enough time left on this offer to pay for it. Write to the studio and they can hold it for you.",
+    "joinTitle": "Join the waiting list",
+    "joinBody": "{name} is full. We will write the moment a place comes free, and it is held for you while you decide.",
+    "firstname": "First name",
+    "lastname": "Last name",
+    "email": "Email",
+    "emailWhy": "A free place is offered by email, so we need one that reaches you.",
+    "joinAction": "Join the list",
+    "cancel": "Cancel",
+    "joinedTitle": "You are on the list",
+    "joinedBody": "You are on the waiting list for {name}.",
+    "joinedWithPosition": "You are number {position} on the waiting list for {name}.",
+    "joinedMailNote": "Watch your email. A free place is held for you for a limited time, and then goes to the next person.",
+    "joinHasPlaces": "This course has places again. Close this and book it.",
+    "joinAlreadyOn": "You are already on this course.",
+    "joinQueueFull": "The waiting list for this course is full.",
+    "joinEmailRequired": "We need an email address to hold a place for you.",
+    "joinFailed": "That did not work. Try again, or write to the studio.",
+    "closeButton": "Close"
   }
 }

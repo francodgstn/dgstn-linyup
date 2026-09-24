@@ -5783,7 +5783,8 @@
     "coursesFree": "Gratuit",
     "coursesPlacesLeft": "{count, plural, one {# place restante} other {# places restantes}}",
     "coursesSoldOut": "Complet",
-    "coursesClosed": "Inscriptions fermées"
+    "coursesClosed": "Inscriptions fermées",
+    "coursesJoinWaitlist": "Me prévenir si une place se libère"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",
@@ -9050,6 +9051,24 @@
     "noToken": "Ce lien n'a pas de code. Ouvrez-le depuis l'e-mail que nous vous avons envoyé.",
     "invalidLink": "Ce lien n'est plus valable. Il a peut-être déjà été utilisé, ou l'offre a expiré.",
     "claimFailed": "Cela n'a pas fonctionné. Réessayez ou écrivez au studio.",
-    "windowTooShort": "Il ne reste pas assez de temps sur cette offre pour la payer. Écrivez au studio, il peut vous garder la place."
+    "windowTooShort": "Il ne reste pas assez de temps sur cette offre pour la payer. Écrivez au studio, il peut vous garder la place.",
+    "joinTitle": "Rejoindre la liste d'attente",
+    "joinBody": "{name} est complet. Nous vous écrirons dès qu'une place se libère, et elle vous est réservée le temps de décider.",
+    "firstname": "Prénom",
+    "lastname": "Nom",
+    "email": "E-mail",
+    "emailWhy": "Une place libre est proposée par e-mail, il nous en faut donc une qui vous parvienne.",
+    "joinAction": "Rejoindre la liste",
+    "cancel": "Annuler",
+    "joinedTitle": "Vous êtes sur la liste",
+    "joinedBody": "Vous êtes sur la liste d'attente pour {name}.",
+    "joinedWithPosition": "Vous êtes numéro {position} sur la liste d'attente pour {name}.",
+    "joinedMailNote": "Surveillez vos e-mails. Une place libre vous est réservée un temps limité, puis passe à la personne suivante.",
+    "joinHasPlaces": "Ce cours a de nouveau des places. Fermez ceci et réservez.",
+    "joinAlreadyOn": "Vous êtes déjà inscrit à ce cours.",
+    "joinQueueFull": "La liste d'attente de ce cours est complète.",
+    "joinEmailRequired": "Il nous faut une adresse e-mail pour vous réserver une place.",
+    "joinFailed": "Cela n'a pas fonctionné. Réessayez ou écrivez au studio.",
+    "closeButton": "Fermer"
   }
 }

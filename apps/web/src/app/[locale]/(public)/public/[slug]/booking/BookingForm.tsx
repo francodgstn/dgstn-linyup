@@ -50,6 +50,7 @@ import { FlowShell } from '@/components/booking/FlowShell'
 import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
+import { CourseWaitlistDialog } from '@/components/booking/CourseWaitlistDialog'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -447,6 +448,10 @@ export default function BookingForm({
   // member rate here; checkout/booking always re-resolve authoritatively
   // server-side (the callable trusts its own session token, not this).
   const { contact, isAuthenticated } = usePublicContactAuth()
+  // Which full course the visitor asked to be told about, if any. Its own state
+  // rather than a step: a course card sits above the booking flow and never
+  // enters it.
+  const [queueingFor, setQueueingFor] = useState<{ id: string; name: string } | null>(null)
 
   // WHAT THIS MEMBER HOLDS — every plan on the live record, not the single
   // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
@@ -2062,6 +2067,18 @@ export default function BookingForm({
 
         {deepLinkBanner}
 
+        {/* Mounted on the activities step, where the course cards are. Signed in,
+            it asks nothing: the server reads the caller from the session. */}
+        {queueingFor && teamId && (
+          <CourseWaitlistDialog
+            teamId={teamId}
+            blockId={queueingFor.id}
+            courseName={queueingFor.name}
+            signedIn={isAuthenticated}
+            onClose={() => setQueueingFor(null)}
+          />
+        )}
+
         {activities.length === 0 && courses.length === 0 && (
           <div className="rounded-xl border bg-muted/30 p-8 text-center">
             <p className="text-muted-foreground text-sm">{t('noActivitiesAvailable')}</p>
@@ -2111,7 +2128,11 @@ export default function BookingForm({
                     <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
                   )}
                   {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
-                      remedies, so they are never the same sentence. */}
+                      remedies, so they are never the same sentence, and only one
+                      of them has a remedy at all. A closed course cannot hand a
+                      place to anybody, so it is told and left alone; a full one
+                      takes a queue, because the place that frees in week four is
+                      the whole reason the queue exists. */}
                   <p className="mt-2 text-xs">
                     {closed ? (
                       <span className="text-muted-foreground">{t('coursesClosed')}</span>
@@ -2123,6 +2144,15 @@ export default function BookingForm({
                       </span>
                     ) : null}
                   </p>
+                  {!closed && left === 0 && teamId && (
+                    <button
+                      type="button"
+                      onClick={() => setQueueingFor({ id: c.id, name: c.name })}
+                      className="mt-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                    >
+                      {t('coursesJoinWaitlist')}
+                    </button>
+                  )}
                 </div>
               )
             })}

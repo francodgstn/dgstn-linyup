@@ -5783,7 +5783,8 @@
     "coursesFree": "Gratis",
     "coursesPlacesLeft": "{count, plural, one {noch # Platz} other {noch # Plätze}}",
     "coursesSoldOut": "Ausgebucht",
-    "coursesClosed": "Anmeldung geschlossen"
+    "coursesClosed": "Anmeldung geschlossen",
+    "coursesJoinWaitlist": "Benachrichtigen, wenn ein Platz frei wird"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Probetraining buchen",
@@ -9050,6 +9051,24 @@
     "noToken": "Diesem Link fehlt der Code. Öffnen Sie ihn aus der E-Mail, die wir Ihnen geschickt haben.",
     "invalidLink": "Dieser Link ist nicht mehr gültig. Er wurde vielleicht schon benutzt, oder das Angebot ist abgelaufen.",
     "claimFailed": "Das hat nicht geklappt. Versuchen Sie es erneut oder schreiben Sie dem Studio.",
-    "windowTooShort": "Für dieses Angebot bleibt nicht genug Zeit zum Bezahlen. Schreiben Sie dem Studio, es kann den Platz für Sie halten."
+    "windowTooShort": "Für dieses Angebot bleibt nicht genug Zeit zum Bezahlen. Schreiben Sie dem Studio, es kann den Platz für Sie halten.",
+    "joinTitle": "Auf die Warteliste",
+    "joinBody": "{name} ist ausgebucht. Wir melden uns, sobald ein Platz frei wird, und halten ihn für Sie, während Sie überlegen.",
+    "firstname": "Vorname",
+    "lastname": "Nachname",
+    "email": "E-Mail",
+    "emailWhy": "Ein frei gewordener Platz wird per E-Mail angeboten, wir brauchen also eine Adresse, die Sie erreicht.",
+    "joinAction": "Auf die Liste",
+    "cancel": "Abbrechen",
+    "joinedTitle": "Sie stehen auf der Liste",
+    "joinedBody": "Sie stehen auf der Warteliste für {name}.",
+    "joinedWithPosition": "Sie sind Nummer {position} auf der Warteliste für {name}.",
+    "joinedMailNote": "Achten Sie auf Ihre E-Mails. Ein frei gewordener Platz wird begrenzte Zeit für Sie gehalten und geht dann an die nächste Person.",
+    "joinHasPlaces": "Dieser Kurs hat wieder Plätze. Schliessen Sie dies und buchen Sie.",
+    "joinAlreadyOn": "Sie sind bereits in diesem Kurs.",
+    "joinQueueFull": "Die Warteliste für diesen Kurs ist voll.",
+    "joinEmailRequired": "Wir brauchen eine E-Mail-Adresse, um einen Platz für Sie zu halten.",
+    "joinFailed": "Das hat nicht geklappt. Versuchen Sie es erneut oder schreiben Sie dem Studio.",
+    "closeButton": "Schliessen"
   }
 }
