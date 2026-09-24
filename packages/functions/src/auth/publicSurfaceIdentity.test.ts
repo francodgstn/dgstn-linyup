@@ -264,12 +264,31 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
       /if \(caller\.kind !== 'guest'\)/,
       'the member screen must be selected by the derived caller'
     )
-    assert.equal(
-      src.includes('const caller: Caller = sessionCaller ?? verified ?? GUEST'),
-      true,
-      'the caller must be DERIVED each render, session first — the same precedence ' +
-        'resolveAppointmentCaller uses. A stored flag reads one render stale, which on a ' +
-        'ref-driven sticky bar is long enough to submit.'
+    assert.match(
+      src,
+      /const caller = resolveBookingCaller\(\{/,
+      'the caller must be DERIVED each render. A stored flag reads one render stale, ' +
+        'which on a ref-driven sticky bar is long enough to submit.'
+    )
+    // The precedence itself moved into the shared model when the class funnel
+    // started sharing it, so it is asserted THERE. Splitting the guarantee
+    // without following it is how a census stops guaranteeing anything.
+    const model = stripComments(
+      readFileSync(
+        join(WEB, 'components', 'booking', 'identity', 'bookingCaller.ts'),
+        'utf8'
+      )
+    )
+    assert.match(
+      model,
+      /if \(isAuthenticated && sessionContact\) \{[\s\S]*?return \{\s*kind: 'session'/,
+      'session FIRST, the same precedence resolveAppointmentCaller uses: it returns ' +
+        'from the session branch before it reads authenticatedContactId or contactDetails'
+    )
+    assert.match(
+      model,
+      /return verified \?\? GUEST/,
+      'an OTP result outranks a guest and nothing outranks a session'
     )
   })
 
