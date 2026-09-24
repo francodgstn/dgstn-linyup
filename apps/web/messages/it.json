@@ -1738,7 +1738,7 @@
   },
   "Roles": {
     "title": "Ruoli e autorizzazioni",
-    "coachSubtitle": "Scegli cosa può fare un coach. Tutto ciò che non è elencato qui non viene mai concesso al ruolo.",
+    "coachSubtitle": "Scegli cosa può fare un coach. Le righe bloccate non possono mai essere concesse al ruolo.",
     "coachAssignHint": "Chi conta come coach si imposta per persona in Impostazioni → Membri, ed è indipendente da questo ruolo.",
     "coachEligibleTitle": "Chi può essere coach",
     "coachEligibleHint": "Questi ruoli possono essere assegnati come coach di un contatto.",
@@ -1758,7 +1758,15 @@
     "badgeCustomizable": "Lo imposti tu",
     "badgeFixed": "Predefinito",
     "fixedRoleNote": "Predefinito in Linyup e uguale per ogni studio, quindi non modificabile. Anche ciò che questo ruolo non può fare è in elenco, disattivato.",
-    "allScopeNote": "Tutto lo studio"
+    "allScopeNote": "Tutto lo studio",
+    "group_contacts": "Contatti",
+    "group_schedule": "Programma",
+    "group_studio": "Studio",
+    "group_administration": "Amministrazione",
+    "lock_owners_only": "Solo proprietari",
+    "lock_owners_and_managers": "Proprietari e manager",
+    "apiOnlyTag": "Solo API",
+    "apiOnlyTitle": "Limita solo ciò che una chiave API Linyup può leggere. Non cambia ciò che questo ruolo vede nell'app."
   },
   "Capabilities": {
     "contacts_view": "Vedi contatti",
