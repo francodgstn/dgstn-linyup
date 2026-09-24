@@ -33,7 +33,7 @@ Two components in `src/components/diagrams/`, used from `.mdx` pages. Rename a p
 
 - `ConceptDiagram`: an interactive map. Boxes joined by labelled arrows; selecting a box explains
   it in a panel underneath and lights up the arrows that touch it. For the ideas a studio owner
-  has to understand before anything else makes sense: core concepts, how pricing fits together.
+  has to understand before anything else makes sense: core concepts, offerings.
 - `Flow`: a simple flat diagram. Steps joined by arrows, side by side on a wide screen and stacked
   on a phone. For flows that need no interaction: the contact funnel, where the money goes.
 

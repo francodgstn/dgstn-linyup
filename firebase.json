@@ -42,6 +42,13 @@
     {
       "target": "help",
       "public": "apps/help/dist",
+      "redirects": [
+        {
+          "source": "/studio/pricing{,/**}",
+          "destination": "/studio/offerings/",
+          "type": 301
+        }
+      ],
       "ignore": [
         "firebase.json",
         "**/.*",

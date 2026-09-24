@@ -16,7 +16,7 @@ Some steps have a way to close them without doing them, such as **We only take c
 ## What you sell
 
 1. **Add your activities.** An activity is what you offer: a class like _Beginners' Judo_, or an appointment like _Personal training_. See [Schedule & classes](/studio/schedule/).
-2. **Set your prices.** Create the plans people buy, such as memberships or class packs. See [How pricing fits together](/studio/pricing/). If you don't sell anything online yet, choose **No prices for now**.
+2. **Set your prices.** Create the plans people buy, such as memberships or class packs. See [Offerings](/studio/offerings/). If you don't sell anything online yet, choose **No prices for now**.
 3. **Set up payments.** Connect Stripe so people can pay online, straight into your account. If you only take cash, choose **We only take cash**.
 
 ## Open the doors

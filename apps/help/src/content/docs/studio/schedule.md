@@ -2,7 +2,7 @@
 title: Schedule & classes
 description: Creating activities, putting classes on the calendar, recurring series, changing or deleting one session, and events.
 sidebar:
-  order: 2
+  order: 3
   label: Schedule & classes
 ---
 
@@ -16,7 +16,7 @@ Go to **Activities** and choose **New activity**.
 - **Offer as** decides how it is booked:
   - **Class**: you put it on the calendar, and people book a seat.
   - **Appointment**: people pick a time from a coach's availability. See [Appointments & availability](/coaches/appointments/).
-- **Who can book** and the prices come from your plans and your drop-in and trial settings. See [How pricing fits together](/studio/pricing/).
+- **Who can book** and the prices come from your plans and your drop-in and trial settings. See [Offerings](/studio/offerings/).
 - **Confirm bookings automatically** accepts bookings straight away. Switch it off to review each one.
 - **What a visitor sees** adds the details people read before they book: prerequisites, meeting point, what's included, a cancellation policy and an FAQ.
 - **Booking questions** ask something about each booking, such as "Any injuries today?".
