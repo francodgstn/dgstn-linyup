@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { EVENTS_COLLECTION } from '@linyup/shared'
 import type { Event } from '@linyup/shared'
-import { publicSubHref } from '@/lib/publicRoutes'
 
 // Events are PRIVATE by default. Publishing is a deliberate act — this toggle
 // writes Event.publicVisibility, which gates syncEventPublicProfile; flipping it
@@ -18,12 +17,13 @@ import { publicSubHref } from '@/lib/publicRoutes'
 
 export function EventPublishCard({
   event,
-  publicSlug,
+  publicUrl,
   canEdit,
 }: {
   event: Event
-  /** The tenant slug for the public URL. Omitted while unknown. */
-  publicSlug?: string | null
+  /** Where the published event is shown. The caller knows its own public
+   *  surface (a studio's slug, or an organisation's). Null while unknown. */
+  publicUrl?: string | null
   canEdit: boolean
 }) {
   const t = useTranslations('EventProgram')
@@ -31,10 +31,7 @@ export function EventPublishCard({
   const [saving, setSaving] = useState(false)
 
   const isPublic = event.publicVisibility === 'public'
-  const url =
-    publicSlug && event.scope !== 'org'
-      ? publicSubHref(publicSlug, 'events', event.id)
-      : null
+  const url = publicUrl ?? null
 
   async function toggle(next: boolean) {
     setSaving(true)

@@ -606,6 +606,8 @@ interface SessionsCalendarProps {
   onDelete: (s: Session) => void
   onEventEdit?: (e: Event) => void
   onEventDelete?: (e: Event) => void
+  /** Where the event peek sheet's "Open full" goes — see EventPeekSheet. */
+  eventHref?: (e: Event) => string
   viewYear?: number
   viewMonth?: number
   onNavigate?: (year: number, month: number) => void
@@ -628,6 +630,7 @@ export default function SessionsCalendar({
   onDelete,
   onEventEdit,
   onEventDelete,
+  eventHref,
   viewYear: externalYear,
   viewMonth: externalMonth,
   onNavigate,
@@ -1294,6 +1297,7 @@ export default function SessionsCalendar({
       <EventPeekSheet
         eventId={peekEventId}
         onClose={() => setPeekEventId(null)}
+        eventHref={eventHref}
         onEdit={(e) => {
           setPeekEventId(null)
           onEventEdit?.(e)

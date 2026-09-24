@@ -1648,7 +1648,15 @@
     "templateNoDays": "Noch keine Tage",
     "templateNoDaysHint": "Fügen Sie die Tage hinzu, über die dieses Programm läuft, und füllen Sie sie dann. Die Tage sind relativ — Tag 1, Tag 2 — damit dieselbe Vorlage zu jedem künftigen Event passt.",
     "templateEditTitle": "Vorlage bearbeiten",
-    "templateEditSubtitle": "Zeiten sind Ortszeit am Veranstaltungsort. Die Tage sind relativ, die Vorlage passt also zu jedem künftigen Event."
+    "templateEditSubtitle": "Zeiten sind Ortszeit am Veranstaltungsort. Die Tage sind relativ, die Vorlage passt also zu jedem künftigen Event.",
+    "printOrPdf": "Drucken / PDF",
+    "printPdfHint": "Für ein PDF wähle im Druckdialog „Als PDF speichern“ als Drucker.",
+    "backToEvent": "Zurück zum Event",
+    "printIncludeNotes": "Interne Notizen einschliessen",
+    "sheetTime": "Zeit",
+    "sheetUntil": "bis {time}",
+    "sheetAllTracks": "Alle",
+    "sheetInternalNote": "Notiz: {note}"
   },
   "TeamMembers": {
     "title": "Team",
@@ -6398,7 +6406,8 @@
     "emptyCheckins": "Noch keine Check-ins.",
     "eventDetail_rsvpsHint": "Wer zugesagt hat, über alle Mitgliedsschulen hinweg. Namen sind keine Links — die Kontakte einer Schule gehören ihr allein.",
     "eventDetail_invitationsHint": "Alle zu dieser Veranstaltung eingeladenen Personen. Beim erneuten Senden werden bereits eingeladene Personen übersprungen, sofern du nicht erneut senden wählst.",
-    "type_other": "Sonstiges"
+    "type_other": "Sonstiges",
+    "eventDetail_invitationsHintOrg": "Einladungen, die die Mitgliedsstudios verschickt haben. Ein Studio lädt seine eigenen Mitglieder über diesen Event in seinem eigenen Kalender ein."
   },
   "OrgRanking": {
     "title": "Rangsysteme",

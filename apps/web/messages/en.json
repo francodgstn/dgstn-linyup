@@ -1648,7 +1648,15 @@
     "templateNoDays": "No days yet",
     "templateNoDaysHint": "Add the days this programme runs over, then fill each one in. Days are relative — day 1, day 2 — so the same template fits any future event.",
     "templateEditTitle": "Edit template",
-    "templateEditSubtitle": "Times are wall-clock at the venue. Days are relative, so this fits any future event."
+    "templateEditSubtitle": "Times are wall-clock at the venue. Days are relative, so this fits any future event.",
+    "printOrPdf": "Print / PDF",
+    "printPdfHint": "To download a PDF, choose “Save as PDF” as the printer in the print dialog.",
+    "backToEvent": "Back to event",
+    "printIncludeNotes": "Include internal notes",
+    "sheetTime": "Time",
+    "sheetUntil": "until {time}",
+    "sheetAllTracks": "Everyone",
+    "sheetInternalNote": "Note: {note}"
   },
   "TeamMembers": {
     "title": "Team",
@@ -6398,7 +6406,8 @@
     "emptyCheckins": "No check-ins yet.",
     "eventDetail_rsvpsHint": "Who accepted, across every member studio. Names are not links — a studio's contacts are its own.",
     "eventDetail_invitationsHint": "Everyone invited to this event. Sending again skips people who already have an invitation unless you choose to resend.",
-    "type_other": "Other"
+    "type_other": "Other",
+    "eventDetail_invitationsHintOrg": "Invitations every member studio has sent. A studio invites its own members from this event in its own calendar."
   },
   "OrgRanking": {
     "title": "Ranking systems",

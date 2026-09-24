@@ -80,7 +80,7 @@ export function PublicContactBar() {
 
   return (
     <>
-      <div className="fixed right-3 top-3 z-40">
+      <div className="fixed right-3 top-3 z-40 print:hidden">
         {isAuthenticated && contact ? (
           <div
             className="flex items-center gap-1.5 rounded-full py-1 pl-3 pr-1 text-xs font-medium shadow-sm"

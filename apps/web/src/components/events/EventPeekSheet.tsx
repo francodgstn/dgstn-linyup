@@ -50,9 +50,16 @@ interface EventPeekSheetProps {
   onClose: () => void
   onEdit: (e: Event) => void
   onDelete: (e: Event) => void
+  /**
+   * Where "Open full" goes. Defaults to the studio's event page. The org events
+   * page MUST pass its own: an org event opened on the studio page is shown
+   * with the studio's actions (invitations to the studio's roster, the studio's
+   * public link), which is not what an org admin on the org page asked for.
+   */
+  eventHref?: (e: Event) => string
 }
 
-export function EventPeekSheet({ eventId, onClose, onEdit, onDelete }: EventPeekSheetProps) {
+export function EventPeekSheet({ eventId, onClose, onEdit, onDelete, eventHref }: EventPeekSheetProps) {
   const t = useTranslations('Calendar')
   const tE = useTranslations('Events')
   const open = !!eventId
@@ -220,14 +227,14 @@ export function EventPeekSheet({ eventId, onClose, onEdit, onDelete }: EventPeek
 
             <SheetFooter className="flex-row items-center gap-2 border-t">
               <Link
-                href={`/events/${event.id}` as Route}
+                href={(eventHref ? eventHref(event) : `/events/${event.id}`) as Route}
                 className={cn(buttonVariants({ variant: 'default' }), 'flex-1')}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 {t('peekOpenFull')}
               </Link>
               <Link
-                href={`/events/${event.id}` as Route}
+                href={(eventHref ? eventHref(event) : `/events/${event.id}`) as Route}
                 className={cn(buttonVariants({ variant: 'outline' }))}
                 title="Add check-in"
               >

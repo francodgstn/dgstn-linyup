@@ -37,7 +37,7 @@ export function PublicBackBar({
   )
   if (plain) {
     return (
-      <div className="border-b bg-card px-5 py-3">
+      <div className="border-b bg-card px-5 py-3 print:hidden">
         <a href={href} className={className}>
           {content}
         </a>
@@ -45,7 +45,7 @@ export function PublicBackBar({
     )
   }
   return (
-    <div className="border-b bg-card px-5 py-3">
+    <div className="border-b bg-card px-5 py-3 print:hidden">
       {/* next-intl Link, not a raw <a>: an unprefixed href falls back to
           cookie/Accept-Language detection, and public surfaces never persist
           the locale — so an emailed /fr/… link would flip to English here. */}

@@ -242,6 +242,14 @@ service cloud.firestore {
     // ORG-SCOPED event. Event subcollections (categories/attendees) previously
     // gated only on belongsToUserTeam(parent), which can never pass for an org
     // event because its teamId is null — this restores access for org admins.
+    // A team event's invitations: its own studio, holding events.manage.
+    function canManageTeamEventInvitations(eventId) {
+      let e = get(/databases/$(database)/documents/events/$(eventId)).data;
+      let teamId = e.get('teamId', null);
+      return teamId != null && teamId == getUserCurrentTeam()
+             && hasTeamCapability(teamId, 'events.manage');
+    }
+
     function isOrgAdminOfEvent(eventId) {
       let e = get(/databases/$(database)/documents/events/$(eventId)).data;
       let orgId = e.get('orgId', null);
@@ -1766,10 +1774,26 @@ service cloud.firestore {
                               || (itemOrg() != null && hasOrgRole(itemOrg(), 'org_admin'))));
       }
 
-      // Invitations — written and read exclusively by Cloud Functions (admin SDK).
-      // The bio-link uses getEventInvitationDetails() callable, not direct client reads.
+      // Invitations — WRITTEN only by Cloud Functions (sendEventInvitations and
+      // the RSVP callables). The invitee's page reads through
+      // getEventInvitationDetails(), never directly.
+      //
+      // Staff READ them for the Invitations tab. This was `if false`, which left
+      // that tab failing for everyone. A row carries its invitee's token, so read
+      // is held to events.manage, like the event itself:
+      //   - a team event: the event's studio;
+      //   - an org event: the org's admins see every studio's rows, and a member
+      //     studio sees ONLY the rows stamped with its own teamId (its list query
+      //     filters on it) — never another studio's members.
+      // Rows written before the stamp carry no teamId and match the team-event
+      // arm, which reads the parent instead.
       match /invitations/{invitation} {
-        allow read:  if false;
+        allow read:  if isAuthed() && (
+                        canManageTeamEventInvitations(event)
+                     || isOrgAdminOfEvent(event)
+                     || (resource.data.teamId == getUserCurrentTeam()
+                         && hasTeamCapability(resource.data.teamId, 'events.manage'))
+                     || hasRole('admin'));
         allow write: if false;
       }
     }

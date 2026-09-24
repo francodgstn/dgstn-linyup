@@ -1648,7 +1648,15 @@
     "templateNoDays": "Ancora nessun giorno",
     "templateNoDaysHint": "Aggiungi i giorni su cui si svolge questo programma, poi riempili. I giorni sono relativi — giorno 1, giorno 2 — così lo stesso modello va bene per qualsiasi evento futuro.",
     "templateEditTitle": "Modifica modello",
-    "templateEditSubtitle": "Gli orari sono quelli della sede. I giorni sono relativi, quindi il modello vale per qualsiasi evento futuro."
+    "templateEditSubtitle": "Gli orari sono quelli della sede. I giorni sono relativi, quindi il modello vale per qualsiasi evento futuro.",
+    "printOrPdf": "Stampa / PDF",
+    "printPdfHint": "Per scaricare un PDF, scegli «Salva come PDF» come stampante nella finestra di stampa.",
+    "backToEvent": "Torna all’evento",
+    "printIncludeNotes": "Includi le note interne",
+    "sheetTime": "Ora",
+    "sheetUntil": "fino alle {time}",
+    "sheetAllTracks": "Tutti",
+    "sheetInternalNote": "Nota: {note}"
   },
   "TeamMembers": {
     "title": "Team",
@@ -6398,7 +6406,8 @@
     "emptyCheckins": "Ancora nessun check-in.",
     "eventDetail_rsvpsHint": "Chi ha accettato, in tutti i club membri. I nomi non sono link — i contatti di un club appartengono al club.",
     "eventDetail_invitationsHint": "Tutte le persone invitate a questo evento. Un nuovo invio salta chi ha già un invito, a meno che tu non scelga di reinviare.",
-    "type_other": "Altro"
+    "type_other": "Altro",
+    "eventDetail_invitationsHintOrg": "Gli inviti inviati dagli studi membri. Uno studio invita i propri membri da questo evento, nel proprio calendario."
   },
   "OrgRanking": {
     "title": "Sistemi di graduazione",

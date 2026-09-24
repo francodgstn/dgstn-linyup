@@ -511,6 +511,19 @@
   .program-print * {
     box-shadow: none !important;
   }
+
+  /* ProgramSheet: the page margins are the sheet's margins, and a multi-track
+     day always prints as the column table — never the stacked phone layout,
+     whatever width the print engine reports. */
+  .program-print .program-sheet {
+    padding: 0 !important;
+  }
+  .program-print .sheet-stacked {
+    display: none !important;
+  }
+  .program-print .sheet-grid {
+    display: table !important;
+  }
 }
 
 /* ── Print: the season calendar ──────────────────────────────────────────────
