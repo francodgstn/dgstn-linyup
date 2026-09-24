@@ -70,7 +70,7 @@ export type PromoCodeStatus = 'active' | 'disabled'
  * we compute, and shipping only the one-off half would make the shop's
  * Subscriptions tab accept a code on some rows and not others.
  */
-export type PromoScopeKind = 'drop_in' | 'appointment' | 'course' | 'product'
+export type PromoScopeKind = 'drop_in' | 'appointment' | 'course' | 'course_block' | 'product'
 
 /**
  * WHO a code is for.
@@ -234,6 +234,10 @@ export interface PromoCode {
    *  activities). */
   activity_ids?: string[] | null
   course_ids?: string[] | null
+  /** Scheduled COURSES this code is narrowed to. Separate from `course_ids`,
+   *  which is the online-courses plugin: the two are different products, and a
+   *  campaign aimed at one must not silently discount the other. */
+  course_block_ids?: string[] | null
   product_ids?: string[] | null
 
   // ── Redemption lifecycle state ──
@@ -308,6 +312,8 @@ export interface PromoTargetScope {
   /** Class drop-ins and appointments — both are activities. */
   activityId?: string | null
   courseId?: string | null
+  /** A scheduled COURSE, whose allow-list is `course_block_ids`. */
+  courseBlockId?: string | null
   productId?: string | null
   /** True for the paid-trial door. A trial NEVER takes a promo: it is already
    *  an acquisition price, enforced once per person via trial_used_at, and
@@ -542,7 +548,10 @@ export function promoUsesLeft(
  * says so.
  */
 export function promoAppliesTo(
-  p: Pick<PromoCode, 'applies_to' | 'activity_ids' | 'course_ids' | 'product_ids'>,
+  p: Pick<
+    PromoCode,
+    'applies_to' | 'activity_ids' | 'course_ids' | 'course_block_ids' | 'product_ids'
+  >,
   scope: PromoTargetScope
 ): boolean {
   // The paid-trial door, on every rail that has one. Structural, not a check to
@@ -556,6 +565,8 @@ export function promoAppliesTo(
       return allowed(p.activity_ids, scope.activityId)
     case 'course':
       return allowed(p.course_ids, scope.courseId)
+    case 'course_block':
+      return allowed(p.course_block_ids, scope.courseBlockId)
     case 'product':
       return allowed(p.product_ids, scope.productId)
   }

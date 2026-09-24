@@ -87,6 +87,10 @@ export const runSeriesTeardown = onTaskDispatched<SeriesTeardownPayload>(
       cutoff: job.cutoff as unknown as Timestamp,
       teamData,
       failedIds: job.failed_ids ?? [],
+      // Pinned at enqueue, read here: whether the news is this job's to deliver.
+      // Absent on every job written before the field existed, and those are all
+      // "delete this and all following", which notifies.
+      notify: job.notify ?? true,
     })
 
     const failedIds = [...(job.failed_ids ?? []), ...batch.newFailedIds]

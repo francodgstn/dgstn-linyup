@@ -89,6 +89,20 @@ import { useCourses } from '@/plugins/online-courses/hooks'
 import { useProducts } from '@/plugins/products/hooks'
 
 const MIN_PLAN = 'studio' as const
+/**
+ * The scopes a studio may AIM A CODE AT, which is deliberately narrower than
+ * `PromoScopeKind`.
+ *
+ * A scope belongs here only once a rail actually accepts a code for it. The
+ * type and `PROMO_TARGETS` both carry `course_block` (a scheduled course), but
+ * `createCourseBlockCheckout` has no `promoCode` parameter, so the resolver is
+ * never given a promo context on that rail. Listing it would let a studio print
+ * a code that silently discounts nothing, which is the worst kind of campaign
+ * bug: it looks like it worked until somebody counts the redemptions.
+ *
+ * ADD IT HERE IN THE SAME CHANGE THAT WIRES THE RAIL, not before.
+ * `promoCodeScopes.test.ts` fails if the two drift apart in either direction.
+ */
 const SCOPES: PromoScopeKind[] = ['drop_in', 'appointment', 'course', 'product']
 
 interface Draft {
@@ -882,7 +896,9 @@ function EntityPicker({
   )
 }
 
-function scopeKey(kind: PromoScopeKind): 'scopeDropIn' | 'scopeAppointment' | 'scopeCourse' | 'scopeProduct' {
+function scopeKey(
+  kind: PromoScopeKind
+): 'scopeDropIn' | 'scopeAppointment' | 'scopeCourse' | 'scopeCourseBlock' | 'scopeProduct' {
   switch (kind) {
     case 'drop_in':
       return 'scopeDropIn'
@@ -890,6 +906,10 @@ function scopeKey(kind: PromoScopeKind): 'scopeDropIn' | 'scopeAppointment' | 's
       return 'scopeAppointment'
     case 'course':
       return 'scopeCourse'
+    // A scheduled COURSE, and its own label: the studio has to be able to aim a
+    // campaign at a term of lessons without also discounting the video plugin.
+    case 'course_block':
+      return 'scopeCourseBlock'
     case 'product':
       return 'scopeProduct'
   }

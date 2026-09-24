@@ -123,7 +123,20 @@ export async function cancelSingleSession(
    * transactionally). Skips the redundant marker write — the ORDERING it exists
    * to guarantee has already happened, earlier and more strongly.
    */
-  preMarked = false
+  preMarked = false,
+  /**
+   * Whether this session mails its own roster. TRUE for every caller but one.
+   *
+   * It suppresses the MESSAGE and nothing else: the waitlist still closes, every
+   * `pending_bookings_count` still moves, the bookings and the session are still
+   * deleted. Those are facts about the booking; the mail is news about it, and
+   * only the news is ever somebody else's to deliver.
+   *
+   * The one caller that says false is a whole-course cancellation, which sends
+   * one mail for the course instead of one per lesson. See
+   * `SeriesTeardownJob.notify`, which owns the reasoning.
+   */
+  notify = true
 ): Promise<{ sent: number; failed: number }> {
   let sent = 0
   let failed = 0
@@ -224,7 +237,12 @@ export async function cancelSingleSession(
     }
   }
 
-  let bookingsToNotify = bookings
+  // THE SUPPRESSION SITS HERE, below every counter write and above every mail,
+  // which is the line it is allowed to cross. Emptying the list rather than
+  // skipping past the block also takes the PAID exception with it: a course's
+  // buyers are precisely the paid seats, and they are the people the course's
+  // own single mail is addressed to.
+  let bookingsToNotify = notify ? bookings : []
 
   // Member cancellation notices are per-team toggleable (Automations → System
   // emails) — EXCEPT for someone who paid.
@@ -239,7 +257,7 @@ export async function cancelSingleSession(
   // keeps its meaning for everybody else.
   const cancellationTeamId = (sessionData.teamId || sessionData.teacher) as string | undefined
   const cancellationEmailsEnabled =
-    bookingsToNotify.length > 0 || offerHolders.length > 0
+    notify && (bookingsToNotify.length > 0 || offerHolders.length > 0)
       ? !!cancellationTeamId &&
         (await systemEmailEnabledFor(cancellationTeamId, 'session_cancellation'))
       : false
@@ -514,6 +532,9 @@ export async function runSeriesTeardownBatch(params: {
   teamData: TeamData
   failedIds: string[]
   nowMs?: number
+  /** Passed straight to each session's teardown; absent reads as true. See
+   *  `SeriesTeardownJob.notify`. */
+  notify?: boolean
   /**
    * Seam for tests ONLY — production always uses `cancelSingleSession`. The
    * policy this loop encodes (gone = progress, claimed-elsewhere = skip, throw =
@@ -566,7 +587,8 @@ export async function runSeriesTeardownBatch(params: {
         claim.data ?? doc.data(),
         teamData,
         false, // a series teardown always DELETES; the exception marker is the single-occurrence path
-        true // the claim already wrote allowBooking: false
+        true, // the claim already wrote allowBooking: false
+        params.notify ?? true
       )
       result.processed++
       result.sent += sent
@@ -596,6 +618,9 @@ export async function createTeardownJob(params: {
   cutoff: Timestamp
   total: number
   createdBy: string
+  /** Whether each session mails its own roster. Absent reads as true; the
+   *  whole-course cancellation is the one caller that sets it false. */
+  notify?: boolean
 }): Promise<string> {
   const ref = params.db.collection(SESSION_SERIES_JOBS_COLLECTION).doc()
   await ref.set({
@@ -610,6 +635,7 @@ export async function createTeardownJob(params: {
     notify_failed: 0,
     failed_ids: [],
     rounds: 0,
+    notify: params.notify ?? true,
     createdBy: params.createdBy,
     error: null,
     finished_at: null,

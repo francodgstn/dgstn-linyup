@@ -1915,6 +1915,67 @@ service cloud.firestore {
       allow delete: if belongsToUserTeam(resource) || hasRole('admin');
     }
 
+    // Course blocks, a bounded, sellable set of lessons ("13 Wednesdays, 9
+    // places, one price"). See types/courseBlock.ts.
+    //
+    // EVERY CLIENT WRITE IS DENIED, unlike the session series above. A course
+    // carries capacity, `places_taken` is an ABSOLUTE counter written only from
+    // a transaction that read the enrolments beside it, and, from the sale
+    // stage, a price. A client that could edit either could sell a place that
+    // does not exist or buy one at a number it chose. The studio's own edits go
+    // through `createCourseBlock` / `updateCourseBlock` / `setCourseBlockStatus`
+    // / `deleteCourseBlock`, which check `schedule.manage`.
+    //
+    // Enrolments are the same, and for the same reason: an enrolment IS the
+    // place. The public sees a course through its `public_profile` mirror, which
+    // the global rule at the foot of this file already makes world-readable and
+    // write-denied.
+    match /course_blocks/{blockId} {
+      allow read: if belongsToUserTeam(resource) || hasRole('admin');
+      allow write: if false;
+
+      // BOTH SUBCOLLECTIONS AUTHORISE FROM THE PARENT COURSE, never from
+      // `resource`, and that is the difference between a rule that works and
+      // one that only looks like it does.
+      //
+      // `belongsToUserTeam(resource)` reads `resource.data.teamId`. On a GET
+      // that is the document in hand and it is fine. On a LIST there is no
+      // document in hand: the rule is evaluated against an empty `resource`,
+      // the property access raises "Property teamId is undefined on object",
+      // and the whole query is denied, on an empty subcollection as readily as
+      // on a full one. It shipped that way, and nothing said so: the roster
+      // panel renders a denied list as "nobody is on this course yet", which is
+      // also what an empty course looks like, and a rules denial reaches no
+      // log this side of the browser console.
+      //
+      // So the check is the one the session subcollections already use: read
+      // the PARENT and ask whether it is yours. It costs one `get()` per
+      // evaluation, which is the price of a rule that can answer a list.
+      match /enrolments/{contactId} {
+        allow read: if belongsToUserTeam(
+                         get(/databases/$(database)/documents/course_blocks/$(blockId))
+                       ) || hasRole('admin');
+        allow write: if false;
+      }
+
+      // The waiting list for a full course. Same authorisation, same reason,
+      // and one of its own: an OFFERED entry carries the credential that takes
+      // a place, so a client that could write one could take a place it was
+      // never offered. Every write goes through a callable.
+      //
+      // Named `course_waitlist`, not `waitlist`: the class queue's hourly sweep
+      // reads `collectionGroup('waitlist')` and walks each hit as a session
+      // booking, so sharing the name would have it dereference a course entry
+      // through a `session` field that does not exist. See
+      // COURSE_BLOCK_WAITLIST_SUBCOLLECTION.
+      match /course_waitlist/{contactId} {
+        allow read: if belongsToUserTeam(
+                         get(/databases/$(database)/documents/course_blocks/$(blockId))
+                       ) || hasRole('admin');
+        allow write: if false;
+      }
+    }
+
     // Series teardown jobs — the progress record for a background "delete this
     // and all following". The studio READS its own to follow a run (the client
     // holds the jobId the callable returned, so this is a get, never a list).

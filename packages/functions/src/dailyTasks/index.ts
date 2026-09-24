@@ -19,6 +19,7 @@ import { assertZoneRecordsUnproxied } from './assertZoneRecordsUnproxied'
 import { rollSessionSeries } from './rollSessionSeries'
 import { stampOverdueGoals } from './stampOverdueGoals'
 import { sweepWaitlistOffers } from '../booking/waitlist/sweep'
+import { sweepCourseWaitlistOffers } from '../courseBlocks/waitlist'
 import { publishMessagingEnv } from '../mail/messagingEnvStatus'
 import { resyncExpiredFeeRates } from '../connect/feeRateSync'
 
@@ -41,6 +42,16 @@ export const bookingRemindersHourly = onSchedule(
       await sweepWaitlistOffers()
     } catch (err) {
       console.error('sweepWaitlistOffers failed:', err) // eslint-disable-line no-console
+    }
+    // The COURSE queue rides the same schedule, in its own try for the same
+    // reason: two queues over two different capacities, and neither one's
+    // failure may take the other down. A course claim window is measured in
+    // days rather than hours, so hourly is generous here, but a place freed by
+    // a lapsed offer should still roll on the same morning.
+    try {
+      await sweepCourseWaitlistOffers()
+    } catch (err) {
+      console.error('sweepCourseWaitlistOffers failed:', err) // eslint-disable-line no-console
     }
   },
 )

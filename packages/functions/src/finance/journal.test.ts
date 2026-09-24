@@ -59,6 +59,12 @@ describe('mapCategory', () => {
     assert.equal(mapCategory('subscription'), 'membership') // BYO spelling
     assert.equal(mapCategory('drop_in'), 'drop_in')
     assert.equal(mapCategory('course'), 'course')
+    // A SCHEDULED course books to the same line as an on-demand one. It shipped
+    // without this case, and because `mapCategory` is fed the payment's
+    // TOP-LEVEL `kind`, every course sale landed in `other`: the studio's course
+    // income was not course income, on the journal, in the CSV and on the
+    // charts, and nothing anywhere was empty enough to notice.
+    assert.equal(mapCategory('course_block'), 'course')
     assert.equal(mapCategory('product'), 'product')
     // Both rails spell a gift-card sale 'gift_card': MemberPayment.kind on the
     // Connect checkout, PaymentLineItem.kind on a manager-issued card.

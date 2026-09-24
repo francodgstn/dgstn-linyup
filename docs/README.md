@@ -36,6 +36,7 @@ you may act on it:
 - [**Class access**](./class-access-derived.md) — how it works now
 - [**Appointments**](./appointments.md) — how it works now
 - [**Waitlist**](./waitlist.md) — how it works now
+- [**Courses**](./courses.md) — how it works now
 - [**Waivers**](./waivers.md) — how it works now
 - [**Event programmes**](./event-program.md) — how it works now
 

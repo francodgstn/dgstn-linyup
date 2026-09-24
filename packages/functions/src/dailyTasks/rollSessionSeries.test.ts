@@ -295,6 +295,38 @@ describe('rollSessionSeries — end conditions', () => {
     assert.equal(db.docs('sessions').length, 40)
   })
 
+  it('a skipped date stays skipped across rolls, and does not spend a count', async () => {
+    // THE REASON SKIP DATES LIVE ON THE PATTERN. A `count` series recomputes its
+    // total from its own start on every roll, so an exclusion held anywhere but
+    // the pattern would be forgotten here, the skipped Tuesdays would come back
+    // on the second roll, and the count would be wrong on every one.
+    const skipped = [new Date('2026-09-01T09:00:00Z'), new Date('2026-09-08T09:00:00Z')]
+    const db = makeDb({
+      s1: weeklySeries({
+        recurrence: {
+          ...weeklySeries().recurrence,
+          endCondition: 'count',
+          maxOccurrences: 12,
+          excludeDates: skipped.map((d) => Timestamp.fromDate(d)),
+        },
+      }),
+    })
+
+    await rollSessionSeries(asFirestore(db), NOW)
+    await rollSessionSeries(asFirestore(db), addMonths(NOW, 4))
+    await rollSessionSeries(asFirestore(db), addMonths(NOW, 8))
+
+    const starts = db.docs('sessions').map((d) => (d.data.start as Timestamp).toMillis())
+    // Twelve lessons, not ten: the skipped weeks are skipped, not deducted.
+    assert.equal(starts.length, 12)
+    for (const gone of skipped) {
+      assert.ok(
+        !starts.includes(gone.getTime()),
+        `${gone.toISOString()} was generated despite being a skip date`
+      )
+    }
+  })
+
   it('skips paused, ended and deleted series', async () => {
     const db = makeDb({
       paused: weeklySeries({ status: 'paused' }),

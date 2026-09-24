@@ -25,6 +25,13 @@
 import { callableRouter } from '../utils/callableRouter'
 import { getMyBookings } from '../booking/myBookings'
 import { bookAppointment, listAvailability } from '../appointments/window'
+import { joinCourseBlock } from '../courseBlocks/enrolment'
+import {
+  claimCourseBlockPlace,
+  getCourseWaitlistEntry,
+  joinCourseBlockWaitlist,
+  leaveCourseBlockWaitlist,
+} from '../courseBlocks/waitlist'
 import { completeSignup, verifyContactCode } from '../auth/completeSignup'
 import { loginContactWithCode } from '../auth/loginContactWithCode'
 import { sendContactVerificationCode } from '../auth/sendContactVerificationCode'
@@ -74,6 +81,11 @@ export const rpcMember = callableRouter(
     listAvailability,
     getMyBookings,
     bookAppointment,
+    joinCourseBlock,
+    joinCourseBlockWaitlist,
+    leaveCourseBlockWaitlist,
+    claimCourseBlockPlace,
+    getCourseWaitlistEntry,
     completeSignup,
     loginContactWithCode,
     sendContactVerificationCode,

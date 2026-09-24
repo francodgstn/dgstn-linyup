@@ -492,6 +492,11 @@ export interface Session {
   createdBy?: string
   // ── Recurring session fields ──
   seriesId?: string
+  /** Present ⇒ this session is a lesson of a COURSE (`course_blocks/{id}`).
+   *  Stamped by the ONE materialisation path from the series, so it cannot be
+   *  edited off a lesson. It is why the recurrence-edit and series-wide-cancel
+   *  callables refuse: they delete future sessions, and these are paid for. */
+  course_block_id?: string
   isException?: boolean
   exceptionType?: 'modified' | 'cancelled' | null
   /** UID of the person who runs this session — class instructor or appointment
@@ -616,6 +621,16 @@ export interface SessionPublicProfile {
   bookingMandatory?: boolean
   /** Mirrored from `Session.headline` ONLY when `headlinePublic === true`. */
   headline?: string
+  /** Present ⇒ a lesson of a course. VISIBLE BUT NOT BOOKABLE: it is published
+   *  so a public calendar can show the hall is busy, with `allowBooking: false`,
+   *  and a click on it belongs to the course rather than to a booking form. */
+  course_block_id?: string
+  /** WHERE, as an id, the venue itself, which a public surface can resolve.
+   *  `location` beside it is the studio's free-text note, and is all these
+   *  mirrors carried until now: two sessions at two venues were the same to a
+   *  public page whenever the note was blank or identical. */
+  placeId?: string
+  roomId?: string
   location?: string
   onlineUrl?: string
   /** UID + display name of the provider (class instructor or appointment provider). */
@@ -819,4 +834,25 @@ export interface RecurrencePattern {
   endCondition: 'date' | 'count' | 'never'
   endDate?: Timestamp
   maxOccurrences?: number
+  /**
+   * Dates this pattern skips, school holidays, a closed hall, the week the
+   * studio is away. Any instant on the date works; only the calendar day is
+   * read, in the studio's timezone.
+   *
+   * A RULE ABOUT WHAT WILL BE CREATED, never about what exists. The generator
+   * never writes an excluded day, so adding one to a pattern whose sessions are
+   * already on the calendar removes nothing, that is `cancelSession`'s job,
+   * because people may already hold bookings on the lesson. Removing one puts
+   * the day back on the next generation.
+   *
+   * It lives on the PATTERN rather than being applied at generation, because a
+   * rolling series is regenerated from this pattern every quarter and a
+   * `count` series recomputes its total from the start each time. An exclusion
+   * held anywhere else would be forgotten on the next roll, and the count would
+   * be wrong on every one.
+   *
+   * An excluded date does NOT consume a `maxOccurrences` count: "20 lessons,
+   * skipping the holidays" means twenty lessons.
+   */
+  excludeDates?: Timestamp[]
 }

@@ -47,6 +47,88 @@ function createOccurrence(startDate: Date, duration: number) {
   return { start: new Date(startDate), end: addMinutes(startDate, duration) }
 }
 
+/**
+ * The calendar day an instant falls on IN THE STUDIO'S TIMEZONE, as
+ * `YYYY-MM-DD`.
+ *
+ * Deliberately not `startOfDay`, which this file otherwise uses: that is the
+ * PROCESS timezone, and Cloud Run is UTC. A 21:00 Zurich class is 20:00 UTC in
+ * summer, so a process-local day boundary still agrees, but a 00:30 class is
+ * the previous day in UTC, and excluding "24 December" would skip the 23rd.
+ * A skip date is a thing a human wrote on a calendar, so it is compared the way
+ * they meant it.
+ */
+function civilDateKey(date: Date, timezone: string): string {
+  const p = getDatePartsInTimezone(date, timezone)
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`
+}
+
+/** The pattern's skip dates as civil-date keys. Accepts a Timestamp, a Date or
+ *  epoch millis, because this is read from Firestore, from a form and from a
+ *  fixture. */
+function excludedDayKeys(
+  excludeDates: RecurrencePattern['excludeDates'],
+  timezone: string
+): Set<string> {
+  const keys = new Set<string>()
+  for (const entry of excludeDates ?? []) {
+    const date =
+      entry instanceof Date
+        ? entry
+        : typeof entry === 'number'
+          ? new Date(entry)
+          : typeof (entry as Timestamp)?.toDate === 'function'
+            ? (entry as Timestamp).toDate()
+            : null
+    if (date && !Number.isNaN(date.getTime())) keys.add(civilDateKey(date, timezone))
+  }
+  return keys
+}
+
+/**
+ * The same instant, N calendar days later, AT THE SAME WALL-CLOCK TIME in the
+ * studio's timezone.
+ *
+ * Adding `n * 86_400_000` is the tempting version and it is wrong across a DST
+ * boundary: a 15:45 lesson in August becomes 14:45 in November, and a term
+ * course duplicated for the next term crosses one by construction. So the civil
+ * date is advanced and the wall clock is carried over untouched, which is what
+ * "same time next term" means to the person typing it.
+ *
+ * Exported for `duplicateCourseBlock`, which shifts a whole meeting list, and
+ * kept here beside `normalizeToDstSafeDate` so the two DST rules live together
+ * rather than being rediscovered.
+ */
+export function shiftWallClockDays(date: Date, days: number, timezone = TIMEZONE): Date {
+  const p = getDatePartsInTimezone(date, timezone)
+  // Day arithmetic done in UTC, where every day is 24 hours, then handed back to
+  // the timezone as a civil date. The hour/minute/second never take part.
+  const civil = new Date(Date.UTC(p.year, p.month - 1, p.day))
+  civil.setUTCDate(civil.getUTCDate() + days)
+  return localTimeToUtc(
+    civil.getUTCFullYear(),
+    civil.getUTCMonth() + 1,
+    civil.getUTCDate(),
+    p.hour,
+    p.minute,
+    p.second,
+    timezone
+  )
+}
+
+/**
+ * Whole calendar days from `from` to `to` as the STUDIO counts them, which is
+ * the delta a duplicate shifts by. Compared as civil dates rather than as
+ * instants, so an autumn-to-spring move is not one hour short of a whole number.
+ */
+export function civilDaysBetween(from: Date, to: Date, timezone = TIMEZONE): number {
+  const a = getDatePartsInTimezone(from, timezone)
+  const b = getDatePartsInTimezone(to, timezone)
+  const aUtc = Date.UTC(a.year, a.month - 1, a.day)
+  const bUtc = Date.UTC(b.year, b.month - 1, b.day)
+  return Math.round((bUtc - aUtc) / 86_400_000)
+}
+
 export function calculateOccurrences(
   recurrence: RecurrencePattern & { startDate: Date | Timestamp; endDate?: Date | Timestamp },
   fromDate: Date,
@@ -58,6 +140,8 @@ export function calculateOccurrences(
   const endDate = recurrence.endDate
     ? (recurrence.endDate as Timestamp).toDate?.() ?? new Date(recurrence.endDate as Date)
     : null
+
+  const excluded = excludedDayKeys(recurrence.excludeDates, TIMEZONE)
 
   let currentDate = new Date(startDate)
   const from = startOfDay(new Date(fromDate))
@@ -73,15 +157,22 @@ export function calculateOccurrences(
     if (recurrence.endCondition === 'count' && recurrence.maxOccurrences && occurrenceCount >= recurrence.maxOccurrences) break
 
     if (!isBefore(startOfDay(currentDate), from) && !isAfter(startOfDay(currentDate), to) && !isBefore(startOfDay(currentDate), startOfDay(startDate))) {
-      if (recurrence.frequency === 'weekly') {
-        const dayOfWeek = getDay(currentDate)
-        if (recurrence.daysOfWeek?.includes(dayOfWeek)) {
+      // BEFORE occurrenceCount++, in both arms: a skipped day must not spend
+      // one of a `count` series' occurrences. "20 lessons, skipping the
+      // holidays" means twenty lessons, and counting the skips would quietly
+      // make it eighteen.
+      const skipped = excluded.size > 0 && excluded.has(civilDateKey(currentDate, TIMEZONE))
+      if (!skipped) {
+        if (recurrence.frequency === 'weekly') {
+          const dayOfWeek = getDay(currentDate)
+          if (recurrence.daysOfWeek?.includes(dayOfWeek)) {
+            occurrences.push(createOccurrence(currentDate, recurrence.duration))
+            occurrenceCount++
+          }
+        } else {
           occurrences.push(createOccurrence(currentDate, recurrence.duration))
           occurrenceCount++
         }
-      } else {
-        occurrences.push(createOccurrence(currentDate, recurrence.duration))
-        occurrenceCount++
       }
     }
 
@@ -114,5 +205,9 @@ export function validateRecurrence(recurrence: Partial<RecurrencePattern>): { va
   if (recurrence.frequency === 'weekly' && (!recurrence.daysOfWeek || recurrence.daysOfWeek.length === 0)) errors.push('Days of week required for weekly recurrence')
   if (recurrence.endCondition === 'date' && !recurrence.endDate) errors.push('End date required when end condition is "date"')
   if (recurrence.endCondition === 'count' && (!recurrence.maxOccurrences || recurrence.maxOccurrences < 1)) errors.push('Max occurrences must be at least 1')
+  // Skip dates are optional and unordered, and a date outside the pattern's own
+  // range is harmless, it simply never matches. The one thing worth refusing is
+  // a list that is not a list, which would otherwise be silently ignored.
+  if (recurrence.excludeDates !== undefined && !Array.isArray(recurrence.excludeDates)) errors.push('Skip dates must be a list')
   return { valid: errors.length === 0, errors }
 }

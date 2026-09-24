@@ -24,6 +24,7 @@
 import { callableRouter } from '../utils/callableRouter'
 import { createAppointmentCheckout } from '../appointments/checkout'
 import { createDropInCheckout } from '../booking/dropIn'
+import { createCourseBlockCheckout } from '../courseBlocks/checkout'
 import { claimCheckoutSession } from '../connect/claimCheckoutSession'
 import { createGiftCardCheckout, checkGiftCard } from '../connect/giftCards'
 import {
@@ -48,6 +49,7 @@ export const rpcCheckout = callableRouter(
   {
     createAppointmentCheckout,
     createDropInCheckout,
+    createCourseBlockCheckout,
     createCourseCheckout,
     createGiftCardCheckout,
     createMembershipCheckout,

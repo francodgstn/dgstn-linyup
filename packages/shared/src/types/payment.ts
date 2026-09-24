@@ -37,6 +37,10 @@ export type PaymentAssignmentStatus = 'assigned' | 'unassigned'
 export type PaymentLineItemKind =
   | 'subscription'
   | 'course'
+  /** A scheduled COURSE, a bounded set of lessons sold once. Its own kind
+   *  rather than 'course': that one is the online-courses plugin, and the two
+   *  are different products with different entitlements. */
+  | 'course_block'
   | 'product'
   | 'drop_in'
   | 'appointment'
@@ -47,6 +51,8 @@ export interface PaymentLineItem {
   kind: PaymentLineItemKind
   /** Subscription-type link (kind === 'subscription'). priceId selects credits/recurrence. */
   subscriptionTypeId?: string | null
+  /** Which course was bought (kind === 'course_block'). */
+  courseBlockId?: string | null
   priceId?: string | null
   /** Course link (kind === 'course') — grants the lifetime entitlement on apply. */
   courseId?: string | null

@@ -2,10 +2,12 @@
 //
 // Everything that turns a `session_series` doc into `sessions/*` docs goes
 // through here: the `generateRecurringSessions` callable (at creation), the
-// `rollSessionSeries` daily task (the rolling horizon), and
-// `updateRecurringSession`'s regeneration branch (after a recurrence edit).
+// `rollSessionSeries` daily task (the rolling horizon),
+// `updateRecurringSession`'s regeneration branch (after a recurrence edit), and
+// `createCourseBlock` / `updateCourseBlock` (a course's lessons, materialised in
+// full from its meeting list rather than rolled).
 //
-// Two properties this module owns, both of which were previously duplicated —
+// Two properties this module owns, both of which were previously duplicated,
 // and, being duplicated, had already drifted:
 //
 // 1. THE GENERATED SESSION SHAPE. `buildSeriesSessionDoc` is the only writer of
@@ -70,6 +72,10 @@ export function buildSeriesSessionDoc(
 
   return {
     seriesId,
+    // A COURSE'S LESSONS CARRY THE COURSE. Read from the SERIES, not the
+    // template: it is a fact about which series this is, and putting it in the
+    // template would let a studio edit a lesson out of its own course.
+    ...(seriesData.course_block_id ? { course_block_id: seriesData.course_block_id } : {}),
     instanceDate: Timestamp.fromDate(occurrence.start),
     start: Timestamp.fromDate(occurrence.start),
     end: Timestamp.fromDate(occurrence.end),

@@ -50,12 +50,19 @@ export { onSignupInviteCreated } from './auth/onSignupInviteCreated'
 // Affiliations
 export { upsertAffiliation, removeAffiliation, approveAffiliation, renewAffiliation } from './affiliations'
 
+// Course places, recounted from the enrolments on every write to one, the
+// direct analogue of `trackBookings`. A TRIGGER, so it is bound to an event
+// source and is not routed.
+export { trackCourseBlockEnrolments } from './courseBlocks/enrolment'
+export { promoteCourseWaitlistOnPlaceFreed } from './courseBlocks/waitlist'
+
 // Sync triggers
 export { syncTeamPublicProfile } from './sync/syncTeamPublicProfile'
 export { syncSessionPublicProfile } from './sync/syncSessionPublicProfile'
 export { syncActivityPublicProfile } from './sync/syncActivityPublicProfile'
 export { syncStudioDropIn } from './sync/syncStudioDropIn'
 export { syncCoursePublicProfile } from './sync/syncCoursePublicProfile'
+export { syncCourseBlockPublicProfile } from './sync/syncCourseBlockPublicProfile'
 export { syncFormPublicProfile } from './sync/syncFormPublicProfile'
 export { syncDocumentPublicProfile } from './sync/syncDocumentPublicProfile'
 export {

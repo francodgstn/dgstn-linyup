@@ -160,6 +160,12 @@ const REASONS: Record<string, string> = {
     'A redirect shim: the route forwards to `/booking` with its query intact. It renders ' +
     'no UI of its own. (`TrialBookingForm.tsx` still sits in this directory and is ' +
     'reachable from no route — see the note in docs/open-defects.md.)',
+  'course-waitlist':
+    'The same answer as its class sibling below, for the same reason: the offer/entry ' +
+    'token in the course queue mail is the identity, and which token matched is what ' +
+    'decides whether the holder may take the place or only look at the line. A ' +
+    'contact session would be a second, weaker answer to a question the token ' +
+    'already answers exactly, and somebody who queued from the public shop has none.',
   waitlist:
     'The offer/entry token in the queue mail is the identity — see the file header: ' +
     '"The token in their mail is their whole identity here." A session cannot widen it ' +

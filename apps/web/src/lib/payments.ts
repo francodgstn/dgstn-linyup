@@ -143,6 +143,10 @@ function connectDefaultLabel(p: MemberPayment): string {
       : (p.productName ?? 'Product')
   }
   if (p.kind === 'course') return p.courseName ?? 'Course'
+  // A SCHEDULED course. Without this the row fell through to `p.purpose`, which
+  // the checkout sets to the literal `course_block`, so the payments list showed
+  // a machine name to a studio looking for "Level 2 Seepferd".
+  if (p.kind === 'course_block') return p.courseName ?? 'Course'
   if (p.kind === 'membership') return p.subscriptionTypeName ?? 'Membership'
   return p.purpose || 'Payment'
 }
@@ -157,6 +161,13 @@ function connectLineItem(p: MemberPayment): PaymentLineItem | null {
   }
   if (p.kind === 'product') return { kind: 'product', label: connectDefaultLabel(p) }
   if (p.kind === 'course') return { kind: 'course', label: p.courseName ?? 'Course' }
+  if (p.kind === 'course_block') {
+    return {
+      kind: 'course_block',
+      courseBlockId: (p as { courseBlockId?: string | null }).courseBlockId ?? null,
+      label: p.courseName ?? 'Course',
+    }
+  }
   if (p.kind === 'drop_in') return { kind: 'drop_in', label: connectDefaultLabel(p) }
   return null
 }

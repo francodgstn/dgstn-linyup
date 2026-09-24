@@ -24,6 +24,7 @@ import {
   resolveBookingContactFields,
   type BookingContactField,
   type ActivityAccessRule,
+  type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
   type PublicFrom,
@@ -49,6 +50,7 @@ import { FlowShell } from '@/components/booking/FlowShell'
 import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
+import { CourseWaitlistDialog } from '@/components/booking/CourseWaitlistDialog'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -98,6 +100,9 @@ interface ActivityProfile {
   /** Free-text display labels the studio put on the activity — shown as chips
    *  beside the type chip. Display-only; nothing here is a filter or a gate. */
   tags?: string[]
+  /** The heading this activity sits under on this page. Read ONLY through
+   *  `groupActivitiesForBooking`; the mirror stores the studio's own spelling. */
+  bookingGroup?: string
   isFreeTrial?: boolean
   order?: number
   accessRule?: ActivityAccessRule
@@ -118,6 +123,12 @@ interface ActivityProfile {
    *  priced duration) and classes (the drop-in price). Accepts the legacy
    *  appointment shape or the generalized `Benefit`. */
   memberBenefit?: ActivityMemberBenefit | Benefit
+  /** APPOINTMENT-ONLY per-length rules. Carried BECAUSE `memberBenefit` is:
+   *  `resolveDurationBenefit` reads the PRESENCE of this list to decide whether
+   *  the activity-wide rule still applies, so a card holding one half quotes
+   *  from a rule the server has already stopped honouring. Both halves or
+   *  neither: the same contract the mirror writes them under. */
+  durationBenefits?: ActivityDurationBenefit[]
   prerequisites?: string
   meetingPoint?: string
   whatsIncluded?: string
@@ -129,6 +140,24 @@ interface ActivityProfile {
   /** Per-activity CONTACT fields, which EXTEND the team-wide list. Questions
    *  are about the booking; these are about the person. */
   contactFields?: BookingContactField[]
+}
+
+/** A course's public mirror, as this page needs it. See
+ *  `syncCourseBlockPublicProfile`: aggregates and display facts only, never who
+ *  is on it. */
+interface CourseCard {
+  id: string
+  name: string
+  description?: string | null
+  first_meeting?: Timestamp | null
+  last_meeting?: Timestamp | null
+  meeting_count?: number
+  priceAmount?: number | null
+  places?: number | null
+  places_taken?: number
+  location?: string | null
+  providerName?: string | null
+  booking_closes_at?: Timestamp | null
 }
 
 interface SessionProfile {
@@ -419,6 +448,10 @@ export default function BookingForm({
   // member rate here; checkout/booking always re-resolve authoritatively
   // server-side (the callable trusts its own session token, not this).
   const { contact, isAuthenticated } = usePublicContactAuth()
+  // Which full course the visitor asked to be told about, if any. Its own state
+  // rather than a step: a course card sits above the booking flow and never
+  // enters it.
+  const [queueingFor, setQueueingFor] = useState<{ id: string; name: string } | null>(null)
 
   // WHAT THIS MEMBER HOLDS — every plan on the live record, not the single
   // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
@@ -508,6 +541,8 @@ export default function BookingForm({
 
   // Data loading
   const [activities, setActivities] = useState<ActivityProfile[]>([])
+  /** Published courses that have not finished, soonest first. */
+  const [courses, setCourses] = useState<CourseCard[]>([])
   const [sessions, setSessions] = useState<SessionProfile[]>([])
   const [loadingData, setLoadingData] = useState(true)
 
@@ -663,6 +698,7 @@ export default function BookingForm({
               image: data.image_url ?? null,
               color: data.color ?? undefined,
               tags: Array.isArray(data.tags) ? (data.tags as string[]) : undefined,
+              bookingGroup: typeof data.bookingGroup === 'string' ? data.bookingGroup : undefined,
               isFreeTrial: data.isFreeTrial ?? false,
               order: typeof data.order === 'number' ? data.order : undefined,
               accessRule: data.accessRule ?? undefined,
@@ -672,6 +708,9 @@ export default function BookingForm({
               waitlistEnabled: data.waitlistEnabled === true,
               durations: Array.isArray(data.durations) ? data.durations : undefined,
               memberBenefit: data.memberBenefit ?? undefined,
+              durationBenefits: Array.isArray(data.durationBenefits)
+                ? (data.durationBenefits as ActivityDurationBenefit[])
+                : undefined,
               prerequisites: data.prerequisites ?? undefined,
               meetingPoint: data.meetingPoint ?? undefined,
               whatsIncluded: data.whatsIncluded ?? undefined,
@@ -688,6 +727,28 @@ export default function BookingForm({
           })
           .sort(compareActivities)
         setActivities(actList)
+
+        // COURSES STARTING SOON. A separate, cheap read: the mirror is one
+        // document per course and a studio runs a handful, so this is a small
+        // query beside the two the page already makes. Published only, and only
+        // ones that have not finished, which the mirror decides by existing at
+        // all plus the date filter here.
+        const courseSnap = await getDocs(
+          query(
+            collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
+            where('teamId', '==', teamId),
+            where('type', '==', 'course_block')
+          )
+        )
+        const nowMs = Date.now()
+        setCourses(
+          courseSnap.docs
+            .map((d) => ({ ...(d.data() as CourseCard), id: d.id }))
+            .filter((c) => (c.last_meeting?.toMillis() ?? 0) >= nowMs)
+            .sort(
+              (a, b) => (a.first_meeting?.toMillis() ?? 0) - (b.first_meeting?.toMillis() ?? 0)
+            )
+        )
 
         // Load sessions
         const windowEnd = new Date()
@@ -2006,9 +2067,95 @@ export default function BookingForm({
 
         {deepLinkBanner}
 
-        {activities.length === 0 && (
+        {/* Mounted on the activities step, where the course cards are. Signed in,
+            it asks nothing: the server reads the caller from the session. */}
+        {queueingFor && teamId && (
+          <CourseWaitlistDialog
+            teamId={teamId}
+            blockId={queueingFor.id}
+            courseName={queueingFor.name}
+            signedIn={isAuthenticated}
+            onClose={() => setQueueingFor(null)}
+          />
+        )}
+
+        {activities.length === 0 && courses.length === 0 && (
           <div className="rounded-xl border bg-muted/30 p-8 text-center">
             <p className="text-muted-foreground text-sm">{t('noActivitiesAvailable')}</p>
+          </div>
+        )}
+
+        {/* COURSES STARTING SOON, above the weekly slots.
+            "When does the next beginners course start" is the question a visitor
+            brings to this page, and a course is not findable among single
+            sessions: it IS the set of them. Each card carries what somebody
+            chooses on, first date, weekday and time, how many lessons, price and
+            places left, so nobody has to open one to compare two. */}
+        {courses.length > 0 && (
+          <div className="mb-8 space-y-3">
+            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+              {t('coursesHeading')}
+            </h2>
+            {courses.map((c) => {
+              const first = c.first_meeting?.toDate()
+              const left =
+                typeof c.places === 'number' && c.places > 0
+                  ? Math.max(0, c.places - (c.places_taken ?? 0))
+                  : null
+              const closed =
+                !!c.booking_closes_at && c.booking_closes_at.toMillis() <= Date.now()
+              return (
+                <div key={c.id} className="rounded-xl border p-4">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <p className="font-semibold">{c.name}</p>
+                    <span className="text-primary text-sm font-semibold">
+                      {typeof c.priceAmount === 'number'
+                        ? formatCurrency(c.priceAmount, currency, locale)
+                        : t('coursesFree')}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {[
+                      first ? fmt.dateMedium(first) : null,
+                      first ? `${fmt.weekdayShort(first)} ${fmt.time(first)}` : null,
+                      c.meeting_count ? t('coursesLessons', { count: c.meeting_count }) : null,
+                      c.location,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                  {c.description && (
+                    <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
+                  )}
+                  {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
+                      remedies, so they are never the same sentence, and only one
+                      of them has a remedy at all. A closed course cannot hand a
+                      place to anybody, so it is told and left alone; a full one
+                      takes a queue, because the place that frees in week four is
+                      the whole reason the queue exists. */}
+                  <p className="mt-2 text-xs">
+                    {closed ? (
+                      <span className="text-muted-foreground">{t('coursesClosed')}</span>
+                    ) : left === 0 ? (
+                      <span className="text-muted-foreground">{t('coursesSoldOut')}</span>
+                    ) : left !== null ? (
+                      <span className="text-muted-foreground">
+                        {t('coursesPlacesLeft', { count: left })}
+                      </span>
+                    ) : null}
+                  </p>
+                  {!closed && left === 0 && teamId && (
+                    <button
+                      type="button"
+                      onClick={() => setQueueingFor({ id: c.id, name: c.name })}
+                      className="mt-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                    >
+                      {t('coursesJoinWaitlist')}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 

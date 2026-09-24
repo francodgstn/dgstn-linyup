@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { toDateInputValue } from '@/lib/format'
+import { X } from 'lucide-react'
 import { SeriesSummary } from '@/components/sessions/SeriesSummary'
 import { PastItemNotice } from '@/components/sessions/PastItemNotice'
 import { useQueryClient } from '@tanstack/react-query'
@@ -173,6 +174,9 @@ interface RecurrencePattern {
   endCondition:   EndCondition
   endDate:        Date | null
   maxOccurrences: number
+  /** Days this pattern skips, school holidays, a closed hall. A rule about
+   *  what gets CREATED: it never removes a session already on the calendar. */
+  excludeDates:   Date[]
 }
 
 // How far ahead the backend actually materialises a series — SERIES_HORIZON_MONTHS
@@ -189,20 +193,33 @@ function defaultRecurrence(from: Date = new Date()): RecurrencePattern {
     frequency: 'weekly', interval: 1, daysOfWeek: [],
     endCondition: 'date', endDate: addMonths(from, RECURRENCE_HORIZON_MONTHS),
     maxOccurrences: 10,
+    excludeDates: [],
   }
 }
+
+/** The local calendar day, as the key both the chips and the preview compare on
+ * : the same spelling the date input round-trips through. */
+const dayKey = (d: Date) => toDateInputValue(d)
 
 function getPreviewDates(pattern: RecurrencePattern, startDate: Date, count = 5): Date[] {
   const dates: Date[] = []
   const cursor = new Date(startDate)
   const max = count * 400
+  // Mirrors the server (`calculateOccurrences`): a skipped day yields nothing
+  // AND spends no count, so the preview of "10 sessions, skipping two weeks"
+  // shows ten dates: the same ten the studio will get.
+  const skipped = new Set(pattern.excludeDates.map(dayKey))
   for (let i = 0; i < max && dates.length < count; i++) {
     const dow = cursor.getDay()
     const include =
       pattern.frequency === 'daily'   ? true :
       pattern.frequency === 'weekly'  ? pattern.daysOfWeek.includes(dow) :
       cursor.getDate() === startDate.getDate()
-    if (include && (dates.length === 0 || cursor.getTime() !== startDate.getTime())) {
+    // Tested at the PUSH, not folded into `include`: `include` also decides how
+    // far the cursor advances below, so a skipped day must still count as a hit
+    // of the pattern or a daily interval > 1 would drift.
+    const takes = include && !skipped.has(dayKey(cursor))
+    if (takes && (dates.length === 0 || cursor.getTime() !== startDate.getTime())) {
       dates.push(new Date(cursor))
       if (pattern.endCondition === 'count' && dates.length >= pattern.maxOccurrences) break
       if (pattern.endCondition === 'date'  && pattern.endDate && cursor >= pattern.endDate) break
@@ -271,6 +288,7 @@ function RecurrencePanel({ value, onChange, startDate }: {
   // and nothing else (see the `zone` option in hooks/useTeamFormat.ts).
   const fmt = useTeamFormat({ zone: 'device' })
   const daysOfWeek = weekdayOrder(fmt.weekStartsOn)
+  const [addingSkip, setAddingSkip] = useState(false)
 
   function set<K extends keyof RecurrencePattern>(key: K, val: RecurrencePattern[K]) {
     onChange({ ...value, [key]: val })
@@ -364,6 +382,73 @@ function RecurrencePanel({ value, onChange, startDate }: {
           ))}
         </div>
       </div>
+      {/* SKIP DATES, school holidays, a closed hall, the week the studio is
+          away. Hidden behind its own toggle: most timetables never skip a day,
+          and a date picker sitting open on every recurring class is a question
+          nobody asked. It removes nothing already on the calendar, a session
+          that exists is cancelled from the calendar, because people may already
+          hold bookings on it. */}
+      <div className="space-y-2">
+        {value.excludeDates.length === 0 && !addingSkip ? (
+          <button
+            type="button"
+            onClick={() => setAddingSkip(true)}
+            className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            {t('skipDatesAdd')}
+          </button>
+        ) : (
+          <>
+            <span className="text-sm text-muted-foreground">{t('skipDates')}</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[...value.excludeDates]
+                .sort((a, b) => a.getTime() - b.getTime())
+                .map((d) => (
+                  <span
+                    key={dayKey(d)}
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
+                  >
+                    {fmt.dateMedium(d)}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        set('excludeDates', value.excludeDates.filter((x) => dayKey(x) !== dayKey(d)))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label={t('skipDatesRemove', { date: fmt.dateMedium(d) })}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              <input
+                type="date"
+                value=""
+                min={toDateInputValue(startDate)}
+                onChange={(e) => {
+                  if (!e.target.value) return
+                  // NOON, not the bare value. `new Date('2026-10-21')` is
+                  // parsed as UTC midnight, while `dayKey` and the chip below
+                  // read LOCAL date parts, so west of Greenwich the studio
+                  // picked the 21st and got a chip and a skip for the 20th.
+                  // Midday is inside the same calendar day in every timezone
+                  // this runs in, which is the convention CourseBlockDialog
+                  // already uses for exactly this input.
+                  const picked = new Date(`${e.target.value}T12:00`)
+                  if (isNaN(picked.getTime())) return
+                  // One entry per day: picking the same date twice is a no-op,
+                  // not a second chip.
+                  if (value.excludeDates.some((x) => dayKey(x) === dayKey(picked))) return
+                  set('excludeDates', [...value.excludeDates, picked])
+                }}
+                className="rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label={t('skipDatesAdd')}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{t('skipDatesHint')}</p>
+          </>
+        )}
+      </div>
       {previewDates.length > 0 && (
         <div className="rounded-lg bg-background border p-3 space-y-1">
           <p className="text-xs font-medium text-muted-foreground mb-2">{t('repeatPreview')}</p>
@@ -452,7 +537,13 @@ export function SessionFormDialog({
   const invalidateChecklist = useInvalidateSetupChecklist()
 
   const seed = editing ?? duplicating ?? null
-  const isSeries = !!editing?.seriesId
+  // A COURSE'S LESSON IS EDITED ONE LESSON AT A TIME. The "this and all
+  // following" scope reaches `updateRecurringSession`, whose regeneration branch
+  // deletes future sessions outright, and on a course those are lessons people
+  // have paid for, so the server refuses it. The scope step is therefore not
+  // offered here, and the notice points at the course instead.
+  const isCourseLesson = !!editing?.course_block_id
+  const isSeries = !!editing?.seriesId && !isCourseLesson
 
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurrence, setRecurrence] = useState<RecurrencePattern>(() => defaultRecurrence())
@@ -696,6 +787,11 @@ export function SessionFormDialog({
             endCondition:   recurrence.endCondition,
             endDate:        recurrence.endDate ? Timestamp.fromDate(recurrence.endDate) : null,
             maxOccurrences: recurrence.endCondition === 'count' ? recurrence.maxOccurrences : null,
+            // Stored on the PATTERN, because a rolling series is regenerated
+            // from it every quarter and a `count` series recomputes its total
+            // from the start each time, an exclusion held anywhere else would
+            // be forgotten on the next roll.
+            excludeDates: recurrence.excludeDates.map((d) => Timestamp.fromDate(d)),
             duration:       values.duration,
             startDate:      Timestamp.fromDate(startDate),
           },
@@ -924,6 +1020,13 @@ export function SessionFormDialog({
                 edit — `duplicating` seeds a NEW session from an old one, which
                 is exactly how a finished class gets repeated and is not history. */}
             {editing && isPastSession(editing) && <PastItemNotice />}
+
+            {isCourseLesson && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
+                <Repeat2 className="h-3.5 w-3.5 shrink-0" />
+                <span>{t('partOfCourse')}</span>
+              </div>
+            )}
 
             {isSeries && (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary">

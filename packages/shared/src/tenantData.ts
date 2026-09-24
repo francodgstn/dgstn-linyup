@@ -18,6 +18,7 @@ import {
   CHECKINS_COLLECTION,
   SESSION_SERIES_COLLECTION,
   SESSION_SERIES_JOBS_COLLECTION,
+  COURSE_BLOCKS_COLLECTION,
   COURSES_COLLECTION,
   FORMS_COLLECTION,
   DOCUMENTS_COLLECTION,
@@ -114,6 +115,9 @@ export const TENANT_DATA_COLLECTIONS: TenantCollection[] = [
   // Progress records for background series teardown. Short-lived, but they carry
   // the teamId and outlive the run, so they go with the tenant.
   { collection: SESSION_SERIES_JOBS_COLLECTION, match: { by: 'field', field: 'teamId' } },
+  // Course blocks and, through recursiveDelete, their `enrolments`. The lessons
+  // themselves are sessions and go with `sessions` above.
+  { collection: COURSE_BLOCKS_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: COURSES_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: FORMS_COLLECTION, match: { by: 'field', field: 'teamId' } },
   { collection: DOCUMENTS_COLLECTION, match: { by: 'field', field: 'teamId' } },

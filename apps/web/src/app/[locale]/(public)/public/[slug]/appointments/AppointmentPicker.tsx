@@ -95,6 +95,13 @@ interface AvailActivity {
    *  Unlike the policy above this is not display-only — the same resolver runs
    *  on the server, so the guest step asks for exactly what will be accepted. */
   contactFields: BookingContactField[] | null
+  /** WHERE. `listAvailability` returns one entry per (provider, activity,
+   *  PLACE), so a coach teaching the same thing at two places arrives as two
+   *  entries sharing an `activityId`, the place is what tells them apart, on
+   *  the card and in the URL. Null for a schedule naming no tracked place. */
+  placeId: string | null
+  placeName: string | null
+  /** The free-text note the studio typed on top of the place, never its name. */
   location: string | null
   onlineUrl: string | null
   days: { dayMs: number; slotsByDuration: Record<string, number[]> }[]
@@ -116,6 +123,7 @@ interface WindowBooking {
   activityName: string
   startMs: number
   durationMinutes: number
+  placeName: string | null
   location: string | null
   onlineUrl: string | null
   priceAmount: number | null
@@ -1581,7 +1589,10 @@ function ActivityCard({
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{durationLabel}</span>
-            {activity.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{activity.location}</span>}
+            {/* The place first, it is what distinguishes two cards for the
+                same offer, then the studio's own note on top of it. */}
+            {activity.placeName && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{activity.placeName}</span>}
+            {activity.location && <span className="flex items-center gap-1">{activity.placeName ? null : <MapPin className="h-3 w-3" />}{activity.location}</span>}
             {activity.onlineUrl && <span className="flex items-center gap-1"><Video className="h-3 w-3" />{t('onlineSession')}</span>}
           </div>
         </div>
@@ -1615,6 +1626,7 @@ function buildWindowBooking(
     activityName: activity.activityName,
     startMs,
     durationMinutes: chosen?.minutes ?? durationMinutes,
+    placeName: activity.placeName,
     location: activity.location,
     onlineUrl: activity.onlineUrl,
     priceAmount: chosen?.priceAmount ?? null,
@@ -1858,6 +1870,14 @@ export default function AppointmentPicker({
   // The coach step was never shown when the visitor arrived naming a coach,
   // or when there is only one to choose from.
   const skippedCoachStep = !!presetActivityId && (!!presetProviderId || coaches.length === 1)
+  // WAS THE ACTIVITY STEP SHOWN? Derived, never stored, a remembered "I skipped
+  // it" survives a history restore with a stale value and mislabels Back, which
+  // is a bug this file has already had once.
+  //
+  // In preset mode the step is skipped only when there is nothing to choose, and
+  // an offer taught at several places is several entries sharing one activity
+  // id, so it IS shown there, and Back has somewhere to go.
+  const activityStepShown = !presetActivityId || (selectedCoach?.activities.length ?? 0) > 1
 
   // The activity's first duration is the default until the visitor picks one.
   // Derived rather than seeded into state, so switching activity can't leave a
@@ -1888,10 +1908,18 @@ export default function AppointmentPicker({
         // exactly as a fresh load would, rather than on a step the visitor has
         // never seen.
         const only = skippedCoachStep ? coaches[0] : null
-        if (only?.activities[0]) {
+        if (only && only.activities.length === 1) {
           setSelectedCoach(only)
           setSelectedActivity(only.activities[0])
           setStep('time')
+          return
+        }
+        // Several entries for the preset offer: one per place. Re-enter at the
+        // step that asks, rather than picking a place for the visitor.
+        if (only && only.activities.length > 1) {
+          setSelectedCoach(only)
+          setSelectedActivity(null)
+          setStep('activity')
           return
         }
         setSelectedCoach(null)
@@ -1901,10 +1929,17 @@ export default function AppointmentPicker({
       }
       setSelectedCoach(coach)
 
+      // ONE ACTIVITY ID CAN NAME SEVERAL ENTRIES: one per place. `place`
+      // picks between them; without it (an old link, or an offer taught at one
+      // place) the first entry for that activity is the right answer, which is
+      // exactly what this resolved to before places were a dimension.
       const activityId = parseDocId(params.get('activity'))
-      const activity = activityId
-        ? coach.activities.find((a) => a.activityId === activityId)
-        : undefined
+      const placeId = parseDocId(params.get('place'))
+      const forActivity = activityId
+        ? coach.activities.filter((a) => a.activityId === activityId)
+        : []
+      const activity =
+        (placeId ? forActivity.find((a) => a.placeId === placeId) : undefined) ?? forActivity[0]
       if (!activity) {
         setSelectedActivity(null)
         setWindowBooking(null)
@@ -1945,6 +1980,7 @@ export default function AppointmentPicker({
         : {
             provider: selectedCoach?.providerId,
             activity: selectedActivity?.activityId,
+            place: selectedActivity?.placeId ?? undefined,
             duration: effectiveDuration,
             date: selectedDateKey ?? undefined,
             ...(step === 'book' && windowBooking ? { start: windowBooking.startMs } : {}),
@@ -2007,14 +2043,20 @@ export default function AppointmentPicker({
             ? list[0]
             : null
         if (presetActivityId && presetCoach) {
-          const activity =
-            presetCoach.activities.find((a) => a.activityId === presetActivityId) ??
-            presetCoach.activities[0]
+          // ONE ENTRY, OR ASK. An offer taught at several places arrives as
+          // several entries sharing this id, and skipping the step would pick a
+          // place on the visitor's behalf and never say which, so the step is
+          // skipped only when there is nothing to choose.
+          const matching = presetCoach.activities.filter((a) => a.activityId === presetActivityId)
+          const activity = matching.length === 1 ? matching[0] : null
           if (activity) {
             setSelectedCoach(presetCoach)
             setSelectedActivity(activity)
             if (presetDate) setSelectedDateKey(presetDate)
             setStep('time')
+          } else if (matching.length > 1) {
+            setSelectedCoach(presetCoach)
+            setStep('activity')
           }
         }
       } catch (err) {
@@ -2086,11 +2128,15 @@ export default function AppointmentPicker({
     setStep('activity')
     setSelectedActivity(null)
   }
-  // Back from the time step: exits to the team's public root when the coach step
-  // was never shown (single-coach deep link), otherwise back to whichever step
-  // WAS shown (coach step in preset mode — activity step is always skipped
-  // there; activity step in the normal funnel).
+  // Back from the time step goes to whichever step WAS shown, in order: the
+  // activity step when there was a choice to make (the normal funnel, or a
+  // preset offer taught at several places), then the coach step, and out of the
+  // flow entirely when neither was ever on screen (a single-coach deep link).
   function backFromTime() {
+    if (activityStepShown) {
+      backToActivities()
+      return
+    }
     if (skippedCoachStep) {
       // No step to go back to — leave the flow, to wherever the visitor came
       // from rather than the team root's default surface. In a panel that means
@@ -2099,22 +2145,18 @@ export default function AppointmentPicker({
       exitFlow(backTo.href)
       return
     }
-    if (presetActivityId) {
-      backToCoaches()
-      return
-    }
-    backToActivities()
+    backToCoaches()
   }
   // Back from the booking step returns to the time picker to re-pick a slot.
   function backFromBook() {
     setStep('time')
     setBookScreen('guest')
   }
-  const timeBackLabel = skippedCoachStep
-    ? t('back')
-    : presetActivityId
-      ? t('backToCoaches')
-      : t('backToActivities')
+  const timeBackLabel = activityStepShown
+    ? t('backToActivities')
+    : skippedCoachStep
+      ? t('back')
+      : t('backToCoaches')
 
   const hasCoaches = coaches.length > 0
   // The bottom summary bar rides along once an activity is chosen — on the time
@@ -2147,7 +2189,13 @@ export default function AppointmentPicker({
                   ? `${fmtDateFull(fmt, windowBooking.startMs)} · ${fmtTime(fmt, windowBooking.startMs)}–${fmtTime(fmt, windowBooking.startMs + windowBooking.durationMinutes * 60_000)}`
                   : null
               }
-              location={step === 'book' ? (windowBooking?.location ?? null) : null}
+              location={
+                step === 'book'
+                  ? ([windowBooking?.placeName, windowBooking?.location]
+                      .filter(Boolean)
+                      .join(' · ') || null)
+                  : null
+              }
               accentColor={accentColor}
               position={chrome.kind === 'overlay' ? 'container' : 'viewport'}
               showConfirm={step === 'book' && bookScreen === 'guest'}

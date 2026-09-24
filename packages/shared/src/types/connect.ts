@@ -348,10 +348,25 @@ export interface MemberPayment {
    *  `'appointment'`, `'gift_card'` and `'policy_fee'` were being written into a
    *  type that said they could not exist. If you add a `kind` branch there, add
    *  it here in the same edit — and check the writer, not this comment. */
-  kind?: 'product' | 'course' | 'drop_in' | 'membership' | 'appointment' | 'gift_card' | 'policy_fee'
+  kind?:
+    | 'product'
+    | 'course'
+    | 'course_block'
+    | 'drop_in'
+    | 'membership'
+    | 'appointment'
+    | 'gift_card'
+    | 'policy_fee'
   productName?: string | null
   variantLabel?: string | null
+  /** kind 'course' (the online-courses plugin) or 'course_block' (a scheduled
+   *  course): the name that goes on the payments row. One field for both,
+   *  because a row carries one or the other and both answer "what was bought". */
   courseName?: string | null
+  /** kind 'course_block': WHICH scheduled course. The top-level `kind` is what
+   *  puts the sale in the accounts (`mapCategory` reads it and nothing else),
+   *  and this is what links the row back to the course. */
+  courseBlockId?: string | null
   /** kind 'membership': the subscription type's display name (also stamped onto
    *  recurring invoice charges by the webhook, which carry no metadata of their own). */
   subscriptionTypeName?: string | null

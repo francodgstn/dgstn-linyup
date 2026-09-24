@@ -77,6 +77,17 @@ import { applyOfferingDraft, draftOfferings } from '../offer/draftOfferings'
 import { unlockPlugin } from '../plugins/unlockPlugin'
 import { confirmReferral, generateReferralCodes } from '../referrals'
 import { cancelSession, generateRecurringSessions, updateRecurringSession } from '../sessions'
+import {
+  createCourseBlock,
+  deleteCourseBlock,
+  setCourseBlockPlanLinks,
+  setCourseBlockStatus,
+  updateCourseBlock,
+} from '../courseBlocks'
+import { enrolCourseBlockContact, withdrawFromCourseBlock } from '../courseBlocks/enrolment'
+import { cancelCourseBlock } from '../courseBlocks/cancel'
+import { addCourseBlockMeeting, duplicateCourseBlock } from '../courseBlocks/duplicate'
+import { listCourseBlockWaitlist } from '../courseBlocks/waitlist'
 import { setSessionLocation } from '../sessions/setSessionLocation'
 import { setSessionTags } from '../sessions/setSessionTags'
 import { createStudioTeam } from '../teams/createStudioTeam'
@@ -181,6 +192,17 @@ export const rpcStudio = callableRouter(
     confirmReferral,
     generateReferralCodes,
     cancelSession,
+    createCourseBlock,
+    deleteCourseBlock,
+    cancelCourseBlock,
+    duplicateCourseBlock,
+    addCourseBlockMeeting,
+    listCourseBlockWaitlist,
+    enrolCourseBlockContact,
+    withdrawFromCourseBlock,
+    setCourseBlockStatus,
+    setCourseBlockPlanLinks,
+    updateCourseBlock,
     generateRecurringSessions,
     setSessionLocation,
     setSessionTags,

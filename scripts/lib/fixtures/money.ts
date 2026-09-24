@@ -215,7 +215,15 @@ export interface SeedMemberPaymentSpec {
   /** Free-form purpose tag. */
   purpose: string
   /** Sale kind for display. The union is owned by `handlePaymentIntent`. */
-  kind?: 'product' | 'course' | 'drop_in' | 'membership' | 'appointment' | 'gift_card' | 'policy_fee'
+  kind?:
+    | 'product'
+    | 'course'
+    | 'course_block'
+    | 'drop_in'
+    | 'membership'
+    | 'appointment'
+    | 'gift_card'
+    | 'policy_fee'
   /** Major units. */
   amount: number
   currency?: string

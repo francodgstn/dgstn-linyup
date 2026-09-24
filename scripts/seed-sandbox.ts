@@ -70,6 +70,7 @@ import {
   seedStorePromoCode,
   seedStoreCourses,
 } from './lib/storefront'
+import { seedCourseBlock } from './lib/courseBlocks'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { ledgerExpiry } from './lib/ledgerExpiry'
 import { writeTeamContactCounter } from './lib/contactCounter'
@@ -584,6 +585,16 @@ interface SectorProfile {
   portalGradient: string // BIO_LINK_GRADIENTS key (apps/web/src/lib/bioLink.ts)
   instructors: string[] // [owner, assistant]
   activities: ActivityDef[] // 4–5 group classes
+  /**
+   * A TERM COURSE: a bounded set of lessons sold once ("8 Tuesdays, 9 places,
+   * one price"). Every sector here has one in real life, which is the point of
+   * having built it generic rather than for one swim school.
+   *
+   * `activityIndex` picks which of the classes above the lessons are sessions
+   * of, so the course borrows its picture, meeting point and terms rather than
+   * restating them. Optional: a sector without one simply has no course.
+   */
+  course?: { name: string; description: string; price: number; activityIndex?: number }
   appointmentName: string
   rankingSystem: { id: string; name: string; levels: RankLevel[] } | null
   subscriptions: SubDef[]
@@ -615,6 +626,12 @@ const SECTOR_PROFILES: SectorProfile[] = [
   // ── SPORT ──────────────────────────────────────────────────────────────────
   {
     key: 'grappling',
+    course: {
+      name: 'Beginners BJJ, 8-week course',
+      description:
+        'Eight Tuesdays from the ground up. No experience needed, and a gi is lent for the first month.',
+      price: 320,
+    },
     sector: 'sport',
     ownerName: 'Marco Silva',
     teamName: 'Ronin Grappling Academy',
@@ -763,6 +780,12 @@ const SECTOR_PROFILES: SectorProfile[] = [
   },
   {
     key: 'crossfit',
+    course: {
+      name: 'On-Ramp, 8-week course',
+      description:
+        'Eight sessions to learn the lifts properly before you join the regular classes.',
+      price: 280,
+    },
     sector: 'sport',
     ownerName: 'Anna Schmidt',
     teamName: 'Forge CrossFit',
@@ -913,6 +936,12 @@ const SECTOR_PROFILES: SectorProfile[] = [
   },
   {
     key: 'tennis',
+    course: {
+      name: 'Adult beginners, 8-week course',
+      description:
+        'Eight weeks of grip, footwork and rallying, in a group that starts where you do.',
+      price: 360,
+    },
     sector: 'sport',
     ownerName: 'Pierre Dubois',
     teamName: 'Baseline Tennis Academy',
@@ -1057,6 +1086,12 @@ const SECTOR_PROFILES: SectorProfile[] = [
   // ── WELLNESS ─────────────────────────────────────────────────────────────────
   {
     key: 'yoga',
+    course: {
+      name: 'Yoga foundations, 8-week course',
+      description:
+        'Eight weeks through the postures that everything else is built on. Mats provided.',
+      price: 240,
+    },
     sector: 'wellness',
     ownerName: 'Maya Iyer',
     teamName: 'Lotus Yoga Studio',
@@ -1198,6 +1233,12 @@ const SECTOR_PROFILES: SectorProfile[] = [
   },
   {
     key: 'pilates',
+    course: {
+      name: 'Reformer basics, 8-week course',
+      description:
+        'Eight weeks on the reformer in a small group, from the setup to a full flow.',
+      price: 400,
+    },
     sector: 'wellness',
     ownerName: 'Sophie Laurent',
     teamName: 'Core Pilates Studio',
@@ -1347,6 +1388,12 @@ const SECTOR_PROFILES: SectorProfile[] = [
   },
   {
     key: 'dance',
+    course: {
+      name: 'Salsa from scratch, 8-week course',
+      description:
+        'Eight weeks and eight partners. Come alone, leave dancing.',
+      price: 260,
+    },
     sector: 'wellness',
     ownerName: 'Isabella Rossi',
     teamName: 'Rhythm Dance Studio',
@@ -3031,6 +3078,40 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
   await seedEventProgram(teamId, uid)
   await seedSessionWaitlist({ teamId })
   await seedCoursePurchase(teamId)
+
+  // ── a term course, mid-run ─────────────────────────────────────────────────
+  // Before the sales + journal below on purpose: `seedTeamFinance` replays every
+  // `member_payments` row into the journal, so a course sale seeded after it
+  // would be money the accounts never saw.
+  if (profile.course) {
+    const courseActIndex = profile.course.activityIndex ?? 0
+    await seedCourseBlock({
+      teamId,
+      uid,
+      blockId: `${teamId}-course`,
+      name: profile.course.name,
+      description: profile.course.description,
+      // Ids are positional here (`${teamId}-act-${i}`), rebuilt rather than
+      // borrowed: the array that builds them is a local of another function.
+      activityId: `${teamId}-act-${courseActIndex}`,
+      activityName: activities[courseActIndex].name,
+      location: locations[0] ?? null,
+      providerName: instructors[0] ?? null,
+      places: 9,
+      priceAmount: profile.course.price,
+      dayOfWeek: 2,
+      time: '18:00',
+      durationMinutes: 90,
+      lessons: 8,
+      lessonsElapsed: 3,
+      enrolled: [0, 1, 2, 4, 6].map((i) => ({
+        id: `${teamId}-contact-${i.toString().padStart(3, '0')}`,
+        firstname: CONTACT_POOL[i].firstname,
+        lastname: CONTACT_POOL[i].lastname,
+        email: `${slugEmail(CONTACT_POOL[i])}.${teamId}@example.com`,
+      })),
+    })
+  }
 
   // ── one-off sales, then the journal ────────────────────────────────────────
   // ORDER MATTERS. Sales read back the bookings and course entitlements the

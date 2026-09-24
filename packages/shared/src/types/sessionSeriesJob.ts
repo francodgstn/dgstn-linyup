@@ -136,6 +136,23 @@ export interface SeriesTeardownJob {
   createdBy: string
   /** Why a `failed` job stopped. Null on every other status. */
   error?: string | null
+  /**
+   * Whether each torn-down session mails its own roster. Absent reads as TRUE,
+   * which is what every teardown started by "delete this and all following"
+   * wants: those sessions have nothing in common but a recurrence rule, so one
+   * notice each is one notice per thing the member lost.
+   *
+   * A COURSE is the case that needs it false. Its lessons are not thirteen
+   * things somebody booked, they are one thing somebody bought, so cancelling it
+   * is ONE message: nine enrolled people would otherwise receive a hundred and
+   * seventeen mails, each correct and none of them the news. `cancelCourseBlock`
+   * sends that message itself and sets this, which is why the flag lives on the
+   * job rather than being inferred from the series: it describes the OPERATION,
+   * not the documents. Cancelling ONE lesson of a course still mails the roster,
+   * through the very same function, because there "no class this Wednesday" is
+   * exactly the news.
+   */
+  notify?: boolean
 }
 
 /** Progress as a 0–1 fraction, safe on a zero-size scope. */

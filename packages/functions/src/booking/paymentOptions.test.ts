@@ -1565,3 +1565,110 @@ describe('resolvePaymentOptions — best plan, not first plan (D3)', () => {
     },
   ])
 })
+
+describe('resolvePaymentOptions: course_block (a bounded set of lessons, sold once)', () => {
+  const t = (
+    over: Partial<Extract<PaymentTarget, { kind: 'course_block' }>> = {}
+  ): PaymentTarget => ({ kind: 'course_block', priceAmount: 364, ...over })
+
+  runRows([
+    {
+      name: 'plain price: a guest pays it, so a course is sellable to a stranger by default',
+      snapshot: GUEST_SNAPSHOT,
+      target: t(),
+      expected: {
+        options: [{ type: 'pay', amount: 364, source: 'course_price' }],
+        denial: null,
+      },
+    },
+    {
+      name: 'no price at all is FREE FOR EVERYONE, not a misconfiguration',
+      // A free taster week and an open-water meet-up are ordinary things a
+      // studio runs, and it still wants the register.
+      snapshot: GUEST_SNAPSHOT,
+      target: t({ priceAmount: null }),
+      expected: covered({ reason: 'open' }),
+    },
+    {
+      name: 'an included plan covers it',
+      snapshot: contact({ heldUnmeteredTypeIds: ['gold'] }),
+      target: t({ includedSubscriptionTypeIds: ['gold'] }),
+      expected: covered({ reason: 'subscription', subscriptionTypeId: 'gold' }),
+    },
+    {
+      name: 'the gate and the benefit are ADDITIVE, and free wins',
+      // The bug the LMS course arm already had: a holder reads the thing and is
+      // quoted full price for it, because only one of the two lists was read.
+      snapshot: contact({ heldUnmeteredTypeIds: ['gold'] }),
+      target: t({
+        includedSubscriptionTypeIds: ['gold'],
+        benefit: { subscriptionTypeIds: ['gold'], effect: 'percent_off', percent: 10 },
+      }),
+      expected: covered({ reason: 'subscription', subscriptionTypeId: 'gold' }),
+    },
+    {
+      name: 'a member price discounts it without covering it',
+      snapshot: contact({ heldUnmeteredTypeIds: ['gold'] }),
+      target: t({
+        benefit: { subscriptionTypeIds: ['gold'], effect: 'percent_off', percent: 25 },
+      }),
+      expected: {
+        options: [
+          {
+            type: 'pay',
+            amount: 273,
+            source: 'course_price',
+            appliedBenefit: { subscriptionTypeId: 'gold', effect: 'percent_off', baseAmount: 364 },
+          },
+        ],
+        denial: null,
+      },
+    },
+    {
+      name: 'a plan somebody does not hold changes nothing',
+      snapshot: contact({ heldUnmeteredTypeIds: ['silver'] }),
+      target: t({ includedSubscriptionTypeIds: ['gold'] }),
+      expected: {
+        options: [{ type: 'pay', amount: 364, source: 'course_price' }],
+        denial: null,
+      },
+    },
+    {
+      name: 'the sign-up wall refuses a guest before price is considered',
+      // A studio that set the wall does not want a stranger buying a place,
+      // whatever they are willing to pay.
+      snapshot: GUEST_SNAPSHOT,
+      target: t({ audience: 'members' }),
+      expected: denied('sign_in_required'),
+    },
+    {
+      name: 'the wall lets a signed-in contact through to the price',
+      snapshot: contact({ joined: false }),
+      target: t({ audience: 'members' }),
+      expected: {
+        options: [{ type: 'pay', amount: 364, source: 'course_price' }],
+        denial: null,
+      },
+    },
+    {
+      name: 'already enrolled: covered, so nothing offers to sell the place twice',
+      snapshot: contact(),
+      target: t({ enrolled: true }),
+      expected: covered({ reason: 'owned' }),
+    },
+    {
+      name: 'enrolled beats the wall, so somebody who joined and then lapsed keeps their place',
+      snapshot: GUEST_SNAPSHOT,
+      target: t({ enrolled: true, audience: 'members' }),
+      expected: covered({ reason: 'owned' }),
+    },
+    {
+      name: 'credits never spend on a course: an attached pack covers it, it does not debit',
+      // COURSE_BLOCK_EFFECTS excludes spend_credits. "Thirteen credits for
+      // thirteen lessons" is a real feature, and it is not this one.
+      snapshot: contact({ heldCreditTypes: [{ subscriptionTypeId: 'pack10', remaining: 4 }] }),
+      target: t({ includedSubscriptionTypeIds: ['pack10'] }),
+      expected: covered({ reason: 'subscription', subscriptionTypeId: 'pack10' }),
+    },
+  ])
+})
