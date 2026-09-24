@@ -207,12 +207,33 @@ function hasMoneyStory(a: PayPerVisitEntry): boolean {
   return a.dropIn?.enabled === true && typeof a.dropIn.priceAmount === 'number'
 }
 
-type Tab = 'subscriptions' | 'products' | 'courses' | 'giftcards'
+// `courses` is the online-courses plugin; `course_blocks` is a SCHEDULED
+// course, "13 Wednesdays, 9 places, one price". Displayed as *Online courses*
+// and *Courses* respectively, which is the way round the studio side already
+// says it.
+type Tab = 'subscriptions' | 'products' | 'courses' | 'course_blocks' | 'giftcards'
+
+/** A scheduled course, as the shop card needs it. Straight off the world-
+ *  readable mirror, which carries aggregates and never a roster. */
+interface CourseBlockEntry {
+  id: string
+  name: string
+  description?: string
+  firstMeeting: Date | null
+  lastMeeting: Date | null
+  lessons: number
+  location?: string
+  priceAmount: number | null
+  places: number | null
+  placesTaken: number
+  closesAt: Date | null
+}
 
 type Checkout =
   | { kind: 'membership'; typeId: string; typeName: string; price: PlanPrice; mode: CheckoutContactMode }
   | { kind: 'product'; product: ProductEntry; variantId: string | null }
   | { kind: 'course'; course: CourseEntry }
+  | { kind: 'course_block'; block: CourseBlockEntry }
   | { kind: 'giftcard'; amount: number }
 
 export default function ShopHome({
@@ -252,6 +273,13 @@ export default function ShopHome({
   const [pendingCheckout, setPendingCheckout] = useState<Checkout | null>(null)
   const [products, setProducts] = useState<ProductEntry[]>([])
   const [courses, setCourses] = useState<CourseEntry[]>([])
+  const [courseBlocks, setCourseBlocks] = useState<CourseBlockEntry[]>([])
+  // The card's dates, in the visitor's own locale. The shop formats money
+  // through `formatCurrency` and has needed no date until now.
+  const fmtDate = useMemo(() => {
+    const f = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+    return (d: Date) => f.format(d)
+  }, [locale])
   const [payPerVisitActivities, setPayPerVisitActivities] = useState<PayPerVisitEntry[]>([])
   const [purchasedCourseIds, setPurchasedCourseIds] = useState<Set<string>>(new Set())
   const [currency, setCurrency] = useState('CHF')
@@ -335,6 +363,17 @@ export default function ShopHome({
         where('teamId', '==', teamId)
       )
     )
+    // Scheduled courses, from the same kind of world-readable mirror. A
+    // PUBLISHED one has a mirror and a draft does not, so the query is the whole
+    // visibility rule: `syncCourseBlockPublicProfile` deletes it for a draft and
+    // for a cancelled course.
+    const courseBlocksP = getDocs(
+      query(
+        collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
+        where('type', '==', 'course_block'),
+        where('teamId', '==', teamId)
+      )
+    )
     // Same public activity mirrors BookingForm / the website Activities block
     // read — filtered down (below) to the ones with an actual money story.
     const activitiesP = getDocs(
@@ -344,8 +383,8 @@ export default function ShopHome({
         where('teamId', '==', teamId)
       )
     )
-    Promise.all([profileP, coursesP, activitiesP])
-      .then(([snap, courseSnap, activitiesSnap]) => {
+    Promise.all([profileP, coursesP, courseBlocksP, activitiesP])
+      .then(([snap, courseSnap, courseBlockSnap, activitiesSnap]) => {
         if (cancelled) return
         const planList = (snap.data()?.aggregator_subscription_types ?? []) as PlanEntry[]
         const productList = (snap.data()?.products ?? []) as ProductEntry[]
@@ -372,6 +411,36 @@ export default function ShopHome({
             benefit: data.benefit ?? null,
           }))
         setCourses(courseList)
+        const toDate = (v: unknown): Date | null => {
+          const ts = v as { toDate?: () => Date } | undefined
+          return typeof ts?.toDate === 'function' ? ts.toDate() : null
+        }
+        setCourseBlocks(
+          courseBlockSnap.docs
+            .map((d) => {
+              const data = d.data()
+              return {
+                id: d.ref.parent.parent?.id ?? d.id,
+                name: (data.name as string) || '',
+                description: (data.description as string) || undefined,
+                firstMeeting: toDate(data.first_meeting),
+                lastMeeting: toDate(data.last_meeting),
+                lessons: typeof data.meeting_count === 'number' ? data.meeting_count : 0,
+                location: (data.location as string) || undefined,
+                priceAmount: typeof data.priceAmount === 'number' ? data.priceAmount : null,
+                places: typeof data.places === 'number' ? data.places : null,
+                placesTaken: typeof data.places_taken === 'number' ? data.places_taken : 0,
+                closesAt: toDate(data.booking_closes_at),
+              }
+            })
+            .filter((c) => c.name)
+            // SOONEST FIRST, which is the question a visitor brings: what
+            // starts next. A course with no dates yet sorts last.
+            .sort(
+              (a, b) =>
+                (a.firstMeeting?.getTime() ?? Infinity) - (b.firstMeeting?.getTime() ?? Infinity)
+            )
+        )
         const activityList: PayPerVisitEntry[] = activitiesSnap.docs
           .map((d) => {
             const data = d.data()
@@ -490,6 +559,7 @@ export default function ShopHome({
   const hasSubscriptions = plans.length > 0
   const hasProducts = products.length > 0
   const hasCourses = courses.length > 0
+  const hasCourseBlocks = courseBlocks.length > 0
   // GIFT CARDS ARE THE ONE SHELF WITH NOTHING TO BROWSE. A membership, a product
   // and a course all exist off Stripe — the studio can sell them at the desk and
   // the price list tells the visitor what they cost. A gift card IS the payment:
@@ -497,7 +567,8 @@ export default function ShopHome({
   // gift card" card with no way to buy one states a price for a thing that
   // cannot exist. So the tab is not offered at all without a till.
   const hasGiftCards = giftCardAmounts.length > 0 && paymentsEnabled
-  const catalogueIsEmpty = !hasSubscriptions && !hasProducts && !hasCourses && !hasGiftCards
+  const catalogueIsEmpty =
+    !hasSubscriptions && !hasProducts && !hasCourses && !hasCourseBlocks && !hasGiftCards
   // The full-page error is reserved for the case where the CATALOGUE query is the
   // thing that failed — which, here, always means NOTHING loaded: the three reads
   // are one `Promise.all`, so a single rejection skips the whole `then`, and the
@@ -516,10 +587,13 @@ export default function ShopHome({
     const out: Tab[] = []
     if (hasSubscriptions) out.push('subscriptions')
     if (hasProducts) out.push('products')
+    // A SCHEDULED course before an online one: it is the thing with a date on
+    // it, and a visitor comparing the two is almost always after the term.
+    if (hasCourseBlocks) out.push('course_blocks')
     if (hasCourses) out.push('courses')
     if (hasGiftCards) out.push('giftcards')
     return out
-  }, [hasSubscriptions, hasProducts, hasCourses, hasGiftCards])
+  }, [hasSubscriptions, hasProducts, hasCourseBlocks, hasCourses, hasGiftCards])
   const showTabs = availableTabs.length > 1
 
   // Default the active tab to whichever surface has items, unless the user (or the
@@ -801,6 +875,7 @@ export default function ShopHome({
     if (checkout.kind === 'giftcard') return checkout.amount
     const pay = checkoutQuote?.options[0]
     if (pay?.type === 'pay') return pay.amount
+    if (checkout.kind === 'course_block') return checkout.block.priceAmount ?? 0
     return checkout.kind === 'course'
       ? (checkout.course.priceAmount ?? 0)
       : resolveProductPrice(checkout.product, checkout.variantId)
@@ -824,8 +899,10 @@ export default function ShopHome({
     ? null
     : checkout.kind === 'product'
       ? `product:${checkout.product.id}`
-      : checkout.kind === 'course'
-        ? `course:${checkout.course.id}`
+      : checkout.kind === 'course_block'
+        ? `course_block:${checkout.block.id}`
+        : checkout.kind === 'course'
+          ? `course:${checkout.course.id}`
         : checkout.kind === 'membership'
           ? `membership:${checkout.typeId}:${checkout.price.id ?? ''}`
           : `giftcard:${checkout.amount}`
@@ -965,6 +1042,33 @@ export default function ShopHome({
         } else if (res.data?.url) {
           window.location.href = res.data.url
         } else throw new Error('no-url')
+      } else if (checkout.kind === 'course_block') {
+        // A course place is CONTENDED FOR, unlike a product or an online
+        // course: the callable takes the place first, inside the capacity
+        // transaction, so a sold-out course refuses here rather than after the
+        // card has been charged. No promo and no gift card yet, which is why
+        // `promoEligible` / `giftCardEligible` do not name this kind.
+        const fn = callFunction<
+          {
+            teamId: string
+            blockId: string
+            contactId: string
+            slug: string
+            locale: string
+            origin?: string
+          },
+          { url: string | null }
+        >('createCourseBlockCheckout')
+        const res = await fn({
+          teamId,
+          blockId: checkout.block.id,
+          contactId: contact!.id,
+          slug,
+          locale,
+          origin: window.location.origin,
+        })
+        if (res.data?.url) window.location.href = res.data.url
+        else throw new Error('no-url')
       } else if (checkout.kind === 'course') {
         const fn = callFunction<
           {
@@ -1174,6 +1278,8 @@ export default function ShopHome({
                   ? t('tabSubscriptions')
                   : key === 'products'
                     ? t('tabProducts')
+                    : key === 'course_blocks'
+                    ? t('tabCourseBlocks')
                     : key === 'courses'
                       ? t('tabCourses')
                       : t('tabGiftCards')
@@ -1482,6 +1588,76 @@ export default function ShopHome({
                       </button>
                     )}
                   </div>
+                </div>
+              )
+            })}
+          </section>
+        ) : tab === 'course_blocks' ? (
+          <section className="mt-6 grid gap-4">
+            {!showTabs && (
+              <h2
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: textMuted }}
+              >
+                {t('courseBlocksSection')}
+              </h2>
+            )}
+            {courseBlocks.map((c) => {
+              const left = c.places != null && c.places > 0 ? Math.max(0, c.places - c.placesTaken) : null
+              const closed = c.closesAt != null && c.closesAt.getTime() <= Date.now()
+              const soldOut = left === 0
+              const dates = c.firstMeeting
+                ? c.lastMeeting
+                  ? `${fmtDate(c.firstMeeting)} – ${fmtDate(c.lastMeeting)}`
+                  : fmtDate(c.firstMeeting)
+                : ''
+              return (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border p-4 flex flex-col gap-1"
+                  style={{ background: cardBg, borderColor: cardBorder }}
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <p className="text-sm font-semibold">{c.name}</p>
+                    <p className="text-sm font-semibold" style={{ color: accent }}>
+                      {c.priceAmount != null
+                        ? formatCurrency(c.priceAmount, currency, locale)
+                        : t('accessFree')}
+                    </p>
+                  </div>
+                  <p className="text-xs" style={{ color: textMuted }}>
+                    {[dates, t('courseBlockLessons', { count: c.lessons }), c.location]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                  {c.description && (
+                    <p className="text-xs line-clamp-2" style={{ color: textMuted }}>
+                      {c.description}
+                    </p>
+                  )}
+                  {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
+                      remedies, so they are never the same sentence, and neither
+                      is hidden: a card that vanished when full would read as a
+                      studio that stopped running the course. */}
+                  <p className="mt-1 text-xs" style={{ color: textMuted }}>
+                    {closed
+                      ? t('courseBlockClosed')
+                      : soldOut
+                        ? t('courseBlockSoldOut')
+                        : left != null
+                          ? t('courseBlockPlacesLeft', { count: left })
+                          : ''}
+                  </p>
+                  {!closed && !soldOut && (
+                    <button
+                      type="button"
+                      onClick={() => startCheckout({ kind: 'course_block', block: c })}
+                      className="mt-2 w-full rounded-full px-4 py-2 text-sm font-semibold"
+                      style={{ background: accent, color: '#ffffff' }}
+                    >
+                      {c.priceAmount != null ? t('buy') : t('courseBlockJoin')}
+                    </button>
+                  )}
                 </div>
               )
             })}

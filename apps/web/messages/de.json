@@ -5081,7 +5081,14 @@
     "contactPhone": "Anrufen",
     "contactWhatsApp": "WhatsApp",
     "contactDirections": "Anfahrt",
-    "saveBadge": "{percent}% sparen"
+    "saveBadge": "{percent}% sparen",
+    "tabCourseBlocks": "Kurse",
+    "courseBlocksSection": "Kurse",
+    "courseBlockLessons": "{count, plural, one {# Lektion} other {# Lektionen}}",
+    "courseBlockPlacesLeft": "{count, plural, one {noch # Platz} other {noch # Plätze}}",
+    "courseBlockSoldOut": "Ausgebucht",
+    "courseBlockClosed": "Buchungen geschlossen",
+    "courseBlockJoin": "Teilnehmen"
   },
   "Products": {
     "title": "Produkte",

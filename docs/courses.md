@@ -440,10 +440,29 @@ as the online course does. Nothing writes that state today, but the resolver
 honours it, so reading it as the rate would show a plan in neither column while
 it was live in pricing.
 
+### In the Shop
+
+A **Courses** tab beside Products, Subscriptions and Online courses, listed
+soonest-first because "what starts next" is the question a visitor brings. Sold
+out and closed are different answers with different remedies, so they are never
+the same sentence, and neither card is hidden: one that vanished when full would
+read as a studio that stopped running the course.
+
+**No promo code and no gift card on this rail yet**, which is why
+`promoEligible` and `giftCardEligible` do not name the kind:
+`createCourseBlockCheckout` takes neither, so offering the fields would be a
+control that writes nowhere. See "Not built yet" below, because `PROMO_TARGETS`
+already carries `course_block` and the two disagree.
+
 ## Not built yet
 
-A Courses tab in the Shop: a course is buyable from the booking page today, but
-the shop lists products, subscriptions and online courses without it.
+**A promo code scoped to a course can never apply.** `course_block` is in
+`PROMO_TARGETS` and the promo-code editor offers the scope, but no rail accepts
+a code for one: `createCourseBlockCheckout` has no `promoCode` parameter, so the
+resolver is never given a promo context. A studio can therefore create a code
+that silently does nothing. Either wire the rail (the reserve/commit ticket and
+the gift-card hold, alongside the other one-off purchases) or take the scope out
+of the editor until it is. `docs/promo-codes.md` owns which rails take a code.
 
 **One rename has to land WITH the sale, not after it.** The studio side already
 says *Online courses* everywhere (the nav did before this work, and the
