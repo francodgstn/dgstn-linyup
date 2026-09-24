@@ -5,9 +5,9 @@ import { availabilityBucketKey, availabilityPlaceKey } from './window'
 // schedules into.
 //
 // The defect this pins produced WRONG OUTPUT, not a missing feature. Grouping
-// on (provider, activity) merged a coach's schedules at different pools into a
+// on (provider, activity) merged a coach's schedules at different places into a
 // single calendar and labelled it with whichever schedule happened to be read
-// first. A visitor picked a Tuesday believing it was one pool; `bookAppointment`
+// first. A visitor picked a Tuesday believing it was one place; `bookAppointment`
 // then resolved the place from the availability that actually covered that
 // start, and put them in another. Nothing failed anywhere.
 //
@@ -25,27 +25,27 @@ const sched = (over: Partial<{ placeId: string; location: string; onlineUrl: str
 })
 
 describe('availability buckets: one per (activity, place)', () => {
-  it('splits one offer taught at two pools into two buckets', () => {
-    const leimbach = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-leimbach' }))
-    const letzigraben = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-letzigraben' }))
+  it('splits one offer taught at two places into two buckets', () => {
+    const riverside = availabilityBucketKey('private-lesson', sched({ placeId: 'place-riverside' }))
+    const northgate = availabilityBucketKey('private-lesson', sched({ placeId: 'place-northgate' }))
     assert.notEqual(
-      leimbach,
-      letzigraben,
-      'the same offer at two pools must not merge into one calendar'
+      riverside,
+      northgate,
+      'the same offer at two places must not merge into one calendar'
     )
   })
 
-  it('merges two schedules for the same offer at the SAME pool', () => {
+  it('merges two schedules for the same offer at the SAME place', () => {
     // "Saturday mornings" and "Weekday evenings", both at the Hallenbad: one
     // calendar is right here, and is the behaviour the grouping exists for.
-    const saturdays = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-leimbach' }))
-    const evenings = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-leimbach' }))
+    const saturdays = availabilityBucketKey('private-lesson', sched({ placeId: 'place-riverside' }))
+    const evenings = availabilityBucketKey('private-lesson', sched({ placeId: 'place-riverside' }))
     assert.equal(saturdays, evenings)
   })
 
-  it('keeps two different offers at one pool apart', () => {
-    const lesson = availabilityBucketKey('private-lesson', sched({ placeId: 'pool-leimbach' }))
-    const analysis = availabilityBucketKey('technique-analysis', sched({ placeId: 'pool-leimbach' }))
+  it('keeps two different offers at one place apart', () => {
+    const lesson = availabilityBucketKey('private-lesson', sched({ placeId: 'place-riverside' }))
+    const analysis = availabilityBucketKey('technique-analysis', sched({ placeId: 'place-riverside' }))
     assert.notEqual(lesson, analysis)
   })
 
@@ -61,15 +61,15 @@ describe('availability buckets: one per (activity, place)', () => {
   })
 
   it('prefers the tracked place over the note written on top of it', () => {
-    // Two schedules at the same pool, each with its own free-text note, are ONE
+    // Two schedules at the same place, each with its own free-text note, are ONE
     // calendar: the note is an instruction, not a second venue.
     const withNote = availabilityBucketKey(
       'private-lesson',
-      sched({ placeId: 'pool-leimbach', location: 'Meet on the pool deck' })
+      sched({ placeId: 'place-riverside', location: 'Meet by the main entrance' })
     )
     const otherNote = availabilityBucketKey(
       'private-lesson',
-      sched({ placeId: 'pool-leimbach', location: 'Meet in the entry hall' })
+      sched({ placeId: 'place-riverside', location: 'Meet in the changing rooms' })
     )
     assert.equal(withNote, otherNote)
   })

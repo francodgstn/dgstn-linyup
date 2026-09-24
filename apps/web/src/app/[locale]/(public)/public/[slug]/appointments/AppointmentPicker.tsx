@@ -96,7 +96,7 @@ interface AvailActivity {
    *  on the server, so the guest step asks for exactly what will be accepted. */
   contactFields: BookingContactField[] | null
   /** WHERE. `listAvailability` returns one entry per (provider, activity,
-   *  PLACE), so a coach teaching the same thing at two pools arrives as two
+   *  PLACE), so a coach teaching the same thing at two places arrives as two
    *  entries sharing an `activityId`, the place is what tells them apart, on
    *  the card and in the URL. Null for a schedule naming no tracked place. */
   placeId: string | null
@@ -1915,7 +1915,7 @@ export default function AppointmentPicker({
           return
         }
         // Several entries for the preset offer: one per place. Re-enter at the
-        // step that asks, rather than picking a pool for the visitor.
+        // step that asks, rather than picking a place for the visitor.
         if (only && only.activities.length > 1) {
           setSelectedCoach(only)
           setSelectedActivity(null)
@@ -2045,7 +2045,7 @@ export default function AppointmentPicker({
         if (presetActivityId && presetCoach) {
           // ONE ENTRY, OR ASK. An offer taught at several places arrives as
           // several entries sharing this id, and skipping the step would pick a
-          // pool on the visitor's behalf and never say which, so the step is
+          // place on the visitor's behalf and never say which, so the step is
           // skipped only when there is nothing to choose.
           const matching = presetCoach.activities.filter((a) => a.activityId === presetActivityId)
           const activity = matching.length === 1 ? matching[0] : null

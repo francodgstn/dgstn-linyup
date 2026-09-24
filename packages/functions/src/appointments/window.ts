@@ -202,9 +202,9 @@ function accumulateCandidates(
  *
  * `listAvailability` returns one entry per (provider, activity, PLACE), and
  * this is the "place" half. Grouping on (provider, activity) alone merged a
- * coach's schedules at DIFFERENT pools into one calendar labelled with
+ * coach's schedules at DIFFERENT places into one calendar labelled with
  * whichever schedule was read first, so a visitor picked a Tuesday believing
- * it was one pool and `bookAppointment` put them in another, because booking
+ * it was one place and `bookAppointment` put them in another, because booking
  * resolves the place from the availability that covers the start, not from
  * anything the visitor was shown. That was wrong output, not a missing feature.
  *
