@@ -1,0 +1,134 @@
+---
+title: Offerings
+description: Everything you can put on sale, every way people can pay for it, and what changes a price.
+sidebar:
+  order: 2
+  label: Offerings
+---
+
+import Shelves from '../../../components/diagrams/Shelves.astro'
+import PayMatrix from '../../../components/diagrams/PayMatrix.astro'
+
+Your offerings are everything people can book or buy from you. You manage them all in one place, **Manage → Offerings**, with a tab for each kind. They fall onto three shelves.
+
+<Shelves
+  label="Offerings on three shelves: come at a time, take away, belong"
+  shelves={[
+    { title: 'Come at a time', tagline: 'Booked for a date and a time',
+      items: [
+        { label: 'Classes', href: '#come-at-a-time' },
+        { label: 'Appointments', href: '#come-at-a-time' },
+        { label: 'Courses', href: '#come-at-a-time' },
+      ] },
+    { title: 'Take away', tagline: 'Bought any time, kept',
+      items: [
+        { label: 'Online courses', href: '#take-away' },
+        { label: 'Shop items', href: '#take-away' },
+        { label: 'Gift cards', href: '#take-away' },
+      ] },
+    { title: 'Belong', tagline: 'Held, and opens the other shelves',
+      items: [
+        { label: 'Memberships', href: '#belong' },
+        { label: 'Class packs', href: '#belong' },
+      ] },
+  ]}
+  footer="What can change a price: member benefits, trials and promo codes."
+/>
+
+## Come at a time
+
+Things people book for a date and a time.
+
+- **Classes**: a seat in a session on your calendar. The class exists before anyone books it, and several people share it. See [Schedule & classes](/studio/schedule/).
+- **Appointments**: a coach's time, one person at a time. Nothing is on the calendar until someone picks a slot from the coach's availability. See [Appointments](/coaches/appointments/).
+- **Courses**: a set of lessons sold as one thing, such as "13 Wednesdays, 9 places, one price". Someone enrols once and has a place in every lesson, and a missed lesson doesn't free that place. A course can also be a weekend or a single afternoon.
+
+:::note[Events]
+Camps, workshops and gradings are [events](/studio/events/). They take registrations rather than payments, so they aren't on these shelves.
+:::
+
+## Take away
+
+Things people buy whenever they like and keep.
+
+- **Online courses**: lessons people watch on their own time, in their member space. Needs the Online courses plugin. Not the same thing as a course above.
+- **Shop items**: products such as a T-shirt or a drinks bottle, sold in your [shop](/public/shop/). Needs the Products plugin.
+- **Gift cards**: a prepaid amount that someone buys and anyone can spend at checkout. Needs the Gift cards plugin.
+
+## Belong
+
+Plans people hold. Holding one is what opens the other two shelves, for free or at a member price.
+
+- **Memberships**: plans that renew, weekly to yearly. They can include classes, optionally capped at a number per week.
+- **Class packs**: a set of credits paid for once, such as 10 classes. Each booking spends one credit, and a cancelled booking gives it back.
+
+## Ways to pay
+
+The same thing can often be paid for in more than one way. The grid shows every combination. Select a dot for an example, or a dash to see why it isn't possible.
+
+<PayMatrix
+  label="Ways to pay for each offering"
+  columns={['In a plan', 'Member price', 'Pay each time', 'Free', 'Trial']}
+  initial={[0, 0]}
+  rows={[
+    { label: 'Class', href: '#come-at-a-time', cells: [
+      { yes: true, example: 'Your Unlimited membership includes Tuesday yoga, so its members book it at no cost. A class pack spends one credit instead.' },
+      { yes: true, example: 'The drop-in is CHF 25, and members of your Basic plan pay CHF 18 for it. Useful for plans that don\'t include the class.' },
+      { yes: true, example: 'A drop-in: anyone can book one Tuesday yoga class for CHF 25, without a plan.' },
+      { yes: true, example: 'No plan includes it and it has no drop-in price, so anyone books it for free, like a community run.' },
+      { yes: true, example: 'A newcomer\'s first class, free or at a trial price such as CHF 15. Each person gets one trial, ever.' },
+    ] },
+    { label: 'Appointment', href: '#come-at-a-time', cells: [
+      { yes: true, example: 'Holders of your Premium plan book a 30-minute session at no cost, or you can have it spend one credit of a pack.' },
+      { yes: true, example: 'A 60-minute session is CHF 120, and members pay 20% less, or a fixed member price you set.' },
+      { yes: true, example: 'Each length has its own price: 30 minutes for CHF 70, 60 minutes for CHF 120.' },
+      { yes: true, example: 'Leave a length without a price and anyone books it for free, like a 15-minute intro call.' },
+      { yes: false, example: 'Appointments have no trial. A free length, such as an intro call, does that job.' },
+    ] },
+    { label: 'Course', href: '#come-at-a-time', cells: [
+      { yes: true, example: 'Your Kids membership includes the autumn swimming course, so its members enrol at no cost.' },
+      { yes: true, example: 'The course is CHF 364, and members of your chosen plans pay CHF 300.' },
+      { yes: true, example: 'One price for the whole course: CHF 364 for 13 lessons, paid once at enrolment.' },
+      { yes: true, example: 'Leave the price empty for a free course, like a taster week. Places are still counted.' },
+      { yes: false, example: 'A course is sold as a whole, so there is no single first lesson to try.' },
+    ] },
+    { label: 'Online course', href: '#take-away', cells: [
+      { yes: true, example: 'Holders of the plans you choose watch it at no extra cost.' },
+      { yes: true, example: 'It sells for CHF 49, and members of your chosen plans pay CHF 29.' },
+      { yes: true, example: 'Sold once for CHF 49. The buyer keeps access for good.' },
+      { yes: true, example: 'Free for anyone, or free once someone signs in.' },
+      { yes: false, example: 'Online courses have no trial. A free online course can do that job.' },
+    ] },
+    { label: 'Shop item', href: '#take-away', cells: [
+      { yes: false, example: 'Shop items aren\'t linked to plans.' },
+      { yes: false, example: 'Shop items have one price for everyone.' },
+      { yes: true, example: 'A T-shirt for CHF 30, bought in your shop.' },
+      { yes: false, example: 'Shop items always have a price.' },
+      { yes: false, example: 'Shop items have no trial.' },
+    ] },
+  ]}
+/>
+
+Memberships and class packs are paid for too, of course: once, or on a schedule. They're the plans the first two columns refer to.
+
+## What changes a price
+
+Each thing on the shelves has a base price, or none. Three things can change what a particular person pays.
+
+- **Member benefits.** On any class, appointment, course or online course, choose which plans get it **included** (no cost) or at a **member price** (a percentage off, or a fixed price). With no benefit set, everyone pays the base price.
+- **Trials.** A class can let newcomers try it once, free or at a trial price, even when it's otherwise only for members.
+- **Promo codes.** A code lowers the price at checkout, for the things and the people you choose. See [Promo codes & gift cards](/studio/promo-codes/).
+
+A gift card isn't a discount: it's money someone already paid, spent at checkout like cash.
+
+## Check it before you switch it on
+
+**Manage → Pricing** shows what anyone would pay. Pick a guest, a member, or a specific plan, and every class, appointment, online course and shop item is priced exactly as checkout would price it.
+
+- One person at a time: a guest, a member, or a specific plan
+- Uses the same rules as checkout, so there are no surprises
+- Health checks flag pricing that doesn't add up, such as a class nobody can book
+
+:::tip[Next]
+See [Pricing recipes](/studio/pricing-recipes/) for step-by-step setups: trials, drop-ins, class packs, memberships, courses and more.
+:::

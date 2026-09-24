@@ -1,0 +1,228 @@
+---
+// A grid of "can this be paid this way?": one row per thing, one column per
+// way. Select a cell (click, tap, or Tab + Enter) and the panel under the grid
+// gives a one-line example, including why a gap is a gap. For the Offerings
+// page, where the point is every combination at once.
+//
+// A real <table> with a button in every cell, plus a few lines of script in the
+// style of ConceptDiagram. Headers wrap to fit a phone; below that the table
+// scrolls sideways rather than squeezing into unreadable columns.
+
+export interface MatrixCell {
+  /** Whether this row can be paid this way. */
+  yes: boolean
+  /** One or two sentences: an example when yes, the reason when not. */
+  example: string
+}
+
+export interface MatrixRow {
+  label: string
+  /** Usually a heading further down the page. */
+  href?: string
+  /** One per column, in column order. */
+  cells: MatrixCell[]
+}
+
+interface Props {
+  /** Accessible name for the grid. */
+  label: string
+  columns: string[]
+  rows: MatrixRow[]
+  /** Row and column shown first. Defaults to the top-left cell. */
+  initial?: [number, number]
+}
+
+const { label, columns, rows, initial = [0, 0] } = Astro.props
+const id = (r: number, c: number) => `${r}-${c}`
+const first = id(initial[0], initial[1])
+---
+
+<figure class="pm not-content" data-pay-matrix data-initial={first}>
+  <div class="pm-scroll">
+    <table aria-label={label}>
+      <thead>
+        <tr>
+          <td></td>
+          {columns.map((c) => <th scope="col">{c}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((r, ri) => (
+            <tr>
+              <th scope="row">{r.href ? <a href={r.href}>{r.label}</a> : r.label}</th>
+              {r.cells.map((cell, ci) => (
+                <td>
+                  <button
+                    type="button"
+                    class:list={['pm-cell', cell.yes ? 'pm-yes' : 'pm-no']}
+                    data-cell={id(ri, ci)}
+                    aria-pressed="false"
+                    aria-label={`${r.label}, ${columns[ci]}: ${cell.yes ? 'yes' : 'no'}`}
+                  >
+                    <span aria-hidden="true">{cell.yes ? '●' : '–'}</span>
+                  </button>
+                </td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <figcaption class="pm-hint">Select a dot or a dash for an example.</figcaption>
+
+  {
+    rows.flatMap((r, ri) =>
+      r.cells.map((cell, ci) => (
+        <div class="pm-panel" data-panel={id(ri, ci)} hidden={id(ri, ci) !== first} aria-live="polite">
+          <p class="pm-panel-title">
+            {r.label} · {columns[ci]}
+            <span class:list={['pm-tag', cell.yes ? 'pm-tag-yes' : 'pm-tag-no']}>{cell.yes ? 'Yes' : 'Not this way'}</span>
+          </p>
+          <p class="pm-panel-body">{cell.example}</p>
+        </div>
+      )),
+    )
+  }
+</figure>
+
+<script>
+  function wire(root: HTMLElement) {
+    const cells = [...root.querySelectorAll<HTMLButtonElement>('.pm-cell')]
+    const panels = [...root.querySelectorAll<HTMLElement>('.pm-panel')]
+
+    function select(id: string) {
+      for (const c of cells) {
+        const on = c.dataset.cell === id
+        c.classList.toggle('is-selected', on)
+        c.setAttribute('aria-pressed', String(on))
+      }
+      for (const p of panels) p.hidden = p.dataset.panel !== id
+    }
+
+    for (const c of cells) c.addEventListener('click', () => select(c.dataset.cell!))
+    select(root.dataset.initial ?? cells[0]?.dataset.cell ?? '')
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-pay-matrix]')) wire(root)
+</script>
+
+<style>
+  .pm {
+    margin: 1.5rem 0;
+  }
+  .pm-scroll {
+    overflow-x: auto;
+  }
+  .pm table {
+    width: 100%;
+    min-width: 20rem;
+    max-width: 44rem;
+    margin: 0 auto;
+    border-collapse: collapse;
+    display: table;
+    font-size: var(--sl-text-sm);
+  }
+  .pm th,
+  .pm td {
+    border: 0;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+    padding: 0.2rem 0.25rem;
+    text-align: center;
+    background: none;
+  }
+  .pm thead th {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    color: var(--sl-color-gray-3);
+    vertical-align: bottom;
+    padding-bottom: 0.4rem;
+  }
+  .pm tbody th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    padding-right: 0.5rem;
+  }
+  .pm tbody th a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .pm tbody th a:hover {
+    color: var(--sl-color-accent-high);
+    text-decoration: underline;
+  }
+  .pm-cell {
+    width: 100%;
+    min-height: 2.1rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+  .pm-yes {
+    color: var(--sl-color-accent);
+  }
+  .pm-no {
+    color: var(--sl-color-gray-4);
+  }
+  .pm-cell:hover,
+  .pm-cell:focus-visible {
+    border-color: var(--sl-color-accent);
+    outline: none;
+  }
+  .pm-cell.is-selected {
+    background: var(--sl-color-accent-low);
+    border-color: var(--sl-color-accent);
+  }
+  .pm-hint {
+    text-align: center;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    margin-top: 0.4rem;
+  }
+  .pm-panel {
+    margin: 0.75rem auto 0;
+    max-width: 44rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-left: 3px solid var(--sl-color-accent);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .pm-panel p {
+    margin: 0;
+  }
+  .pm-panel-title {
+    font-weight: 700;
+    color: var(--sl-color-white);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pm-tag {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    padding: 0.05rem 0.5rem;
+    border-radius: 9999px;
+  }
+  .pm-tag-yes {
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  .pm-tag-no {
+    background: var(--sl-color-gray-6);
+    color: var(--sl-color-gray-2);
+  }
+  .pm-panel-body {
+    margin-top: 0.35rem !important;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+</style>
