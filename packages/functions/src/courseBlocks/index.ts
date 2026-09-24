@@ -41,6 +41,8 @@ import {
   MAX_COURSE_BLOCK_NAME_LENGTH,
   MIN_CHARGE_MAJOR,
   SESSION_SERIES_COLLECTION,
+  foldOfferingPlanEdgeUpdates,
+  type ActivityRateChoice,
   type Activity,
   type CourseBlock,
   type CourseMeeting,
@@ -506,6 +508,76 @@ export const deleteCourseBlock = onCall(async (request) => {
 
   await blockRef.delete()
   return { id: blockId, deleted: true }
+})
+
+// ─── setCourseBlockPlanLinks ─────────────────────────────────────────────────
+
+/**
+ * Link plans to a course: which get it FREE, and which get it CHEAPER.
+ *
+ * A ROUTED write, and it has to be. Every other offering's plan edge is written
+ * straight from the edge editor in a client transaction, because an activity is
+ * client-writable. A course is not: it carries a capacity counter and a price,
+ * and `firestore.rules` denies every client write to it. Relaxing that for two
+ * fields would put a second rule shape in front of a document whose whole story
+ * is "everything goes through a callable".
+ *
+ * THE FOLD IS THE SHARED ONE. `foldOfferingPlanEdgeUpdates` is what stops the
+ * bug it exists for: several rows are several plans on the SAME document, and
+ * computing each update from one pre-transaction snapshot meant only the
+ * bottom-most survived. Running it here rather than re-deriving server-side
+ * keeps the edge rules in the one place they are tested.
+ */
+export const setCourseBlockPlanLinks = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'User must be authenticated')
+  const teamId = requireTeamId(request.data)
+  await requireCapability(request.auth.uid, teamId, 'schedule.manage')
+
+  const { blockId, edits } = request.data as {
+    blockId?: string
+    edits?: Array<{
+      subTypeId?: string
+      next?: { access?: boolean; rate?: boolean }
+      choice?: { effect?: string; percent?: number | null; amount?: number | null }
+    }>
+  }
+  if (!blockId) throw new HttpsError('invalid-argument', 'blockId is required')
+  if (!Array.isArray(edits) || edits.length === 0) {
+    throw new HttpsError('invalid-argument', 'edits are required')
+  }
+
+  const clean = edits
+    .filter((e) => typeof e?.subTypeId === 'string' && e.subTypeId)
+    .map((e) => ({
+      subTypeId: e.subTypeId as string,
+      next: { access: e.next?.access === true, rate: e.next?.rate === true },
+      choice: e.choice as ActivityRateChoice | undefined,
+    }))
+  if (clean.length === 0) throw new HttpsError('invalid-argument', 'edits are required')
+
+  const db = admin.firestore()
+  const blockRef = db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId)
+
+  const changed = await db.runTransaction(async (tx) => {
+    const doc = await tx.get(blockRef)
+    if (!doc.exists) throw new HttpsError('not-found', 'That course no longer exists.')
+    const block = doc.data() as CourseBlock
+    if (block.teamId !== teamId) {
+      throw new HttpsError('permission-denied', 'That course belongs to another studio.')
+    }
+    // Read INSIDE the transaction and folded from that read, so a second
+    // manager ticking a different plan on the same course merges rather than
+    // losing.
+    const update = foldOfferingPlanEdgeUpdates(
+      { kind: 'course_block', doc: block },
+      clean
+    )
+    if (!update) return false
+    tx.update(blockRef, { ...update, updated_at: FieldValue.serverTimestamp() })
+    return true
+  })
+
+  return { id: blockId, changed }
 })
 
 /** Exported for the tests, and for the sale stage which builds the same shape. */

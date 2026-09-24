@@ -80,6 +80,7 @@ import { cancelSession, generateRecurringSessions, updateRecurringSession } from
 import {
   createCourseBlock,
   deleteCourseBlock,
+  setCourseBlockPlanLinks,
   setCourseBlockStatus,
   updateCourseBlock,
 } from '../courseBlocks'
@@ -200,6 +201,7 @@ export const rpcStudio = callableRouter(
     enrolCourseBlockContact,
     withdrawFromCourseBlock,
     setCourseBlockStatus,
+    setCourseBlockPlanLinks,
     updateCourseBlock,
     generateRecurringSessions,
     setSessionLocation,

@@ -95,6 +95,7 @@ const BORN_ROUTED = new Set<string>([
   'cancelCourseBlock',
   'duplicateCourseBlock',
   'addCourseBlockMeeting',
+  'setCourseBlockPlanLinks',
   'listCourseBlockWaitlist',
   'joinCourseBlockWaitlist',
   'leaveCourseBlockWaitlist',

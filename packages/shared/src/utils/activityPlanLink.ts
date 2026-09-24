@@ -400,6 +400,7 @@ export function plansSharingRate(
 // home going forward and no backfill to deploy.
 
 import type { Course, CourseAccessRule } from '../types/course'
+import type { CourseBlock } from '../types/courseBlock'
 
 export type CourseEdgeFields = Pick<Course, 'accessRule' | 'benefit'>
 
@@ -560,7 +561,148 @@ export function plansSharingCourseRate(c: Pick<Course, 'benefit'>, subTypeId: st
   return courseRatedPlanIds(c).filter((id) => id !== subTypeId)
 }
 
-// ─── ONE ENTRY POINT FOR BOTH KINDS ──────────────────────────────────────────
+// ─── A SCHEDULED COURSE ──────────────────────────────────────────────────────
+//
+// `course_blocks/{id}`, "13 Wednesdays, 9 places, one price". The third kind,
+// and the simplest of them, because its two facets are two plain fields rather
+// than a tier that has to be interpreted:
+//
+//   ACCESS  `includedSubscriptionTypeIds`   plans that get it free
+//   RATE    `benefit`                       ONE rule, shared by every plan
+//
+// The rate rule being shared is the same hazard a class has, and the editor's
+// warning covers it here for the same reason: "20% off" set from Premium
+// reprices Basic and Gold too.
+//
+// A benefit meaning "free" is read as the GATE and absorbed on write, exactly
+// as the online course does. Nothing writes that state today, but the resolver
+// HONOURS it (`COURSE_BLOCK_EFFECTS` carries `included`), so reading it as the
+// rate instead would show a plan in neither column while it was live in
+// pricing: invisible and wrong, which is worse than a dead branch.
+
+export type CourseBlockEdgeFields = Pick<
+  CourseBlock,
+  'includedSubscriptionTypeIds' | 'benefit' | 'priceAmount'
+>
+
+/**
+ * Can a plan open or discount this course at all?
+ *
+ * Only a PRICED one. A free course is already open to everybody, so "included
+ * with Premium" says nothing and a discount reduces nothing, the same answer
+ * the online course gives for a tier that bears no plans.
+ */
+export function courseBlockPlanFacets(c: Pick<CourseBlock, 'priceAmount'>): OfferingFacets {
+  const priced = typeof c.priceAmount === 'number' && c.priceAmount > 0
+  return { access: priced, rate: priced }
+}
+
+/** The ids on a `benefit` that mean "free" rather than "cheaper". The legacy
+ *  spelling of the gate, kept for the reason in the header above. */
+function courseBlockLegacyIncludedIds(c: Pick<CourseBlock, 'benefit'>): string[] {
+  const n = normalizeBenefit(c.benefit)
+  if (!n) return []
+  return n.effect === 'included' || n.effect === 'spend_credits' ? n.subscriptionTypeIds : []
+}
+
+/** Plans that get the course FREE: the gate, plus its legacy spelling. */
+export function courseBlockGatedPlanIds(c: CourseBlockEdgeFields): string[] {
+  if (!courseBlockPlanFacets(c).access) return []
+  const gate = c.includedSubscriptionTypeIds ?? []
+  const legacy = courseBlockLegacyIncludedIds(c)
+  return legacy.length ? [...new Set([...gate, ...legacy])] : gate
+}
+
+/** Plans that get it CHEAPER. A benefit meaning "free" is the gate, so it is
+ *  deliberately not counted here, or it would show as both. */
+export function courseBlockRatedPlanIds(c: Pick<CourseBlock, 'benefit'>): string[] {
+  const n = normalizeBenefit(c.benefit)
+  if (!n || n.effect === 'included' || n.effect === 'spend_credits') return []
+  return n.subscriptionTypeIds
+}
+
+export function courseBlockPlanEdge(
+  c: CourseBlockEdgeFields,
+  subTypeId: string
+): ActivityPlanEdge {
+  return {
+    access: courseBlockGatedPlanIds(c).includes(subTypeId),
+    rate: courseBlockRatedPlanIds(c).includes(subTypeId),
+  }
+}
+
+/** `percent_off` for a fresh one, NOT `included`: on a course "included" is
+ *  what the gate column says, and offering it in both places is two controls
+ *  for one fact. */
+export function courseBlockRateChoiceOf(c: Pick<CourseBlock, 'benefit'>): ActivityRateChoice {
+  const n = normalizeBenefit(c.benefit)
+  if (!n || n.effect === 'included' || n.effect === 'spend_credits') {
+    return { effect: 'percent_off' }
+  }
+  return { effect: n.effect, percent: n.percent ?? null, amount: n.amount ?? null }
+}
+
+/**
+ * The scheduled-course half of the ONE edge write. Same contract as the other
+ * two: the fresh document read inside the transaction, and null when nothing
+ * would change.
+ *
+ * Unlike the online course this never touches a tier. A course's gate IS the
+ * id list, so emptying it leaves a priced course that no plan includes, which
+ * is a perfectly ordinary thing to sell.
+ */
+export function courseBlockPlanEdgeUpdate(
+  fresh: CourseBlockEdgeFields,
+  subTypeId: string,
+  next: ActivityPlanEdge,
+  choice?: ActivityRateChoice
+): Record<string, unknown> | null {
+  if (!courseBlockPlanFacets(fresh).access) return null
+  const update: Record<string, unknown> = {}
+
+  const gateIds = courseBlockGatedPlanIds(fresh)
+  const rateIds = courseBlockRatedPlanIds(fresh)
+
+  const nextGateIds = next.access
+    ? gateIds.includes(subTypeId)
+      ? gateIds
+      : [...gateIds, subTypeId]
+    : gateIds.filter((id) => id !== subTypeId)
+  const nextRateIds = next.rate
+    ? rateIds.includes(subTypeId)
+      ? rateIds
+      : [...rateIds, subTypeId]
+    : rateIds.filter((id) => id !== subTypeId)
+
+  const nextRate = buildRate(
+    nextRateIds,
+    next.rate ? (choice ?? courseBlockRateChoiceOf(fresh)) : courseBlockRateChoiceOf(fresh)
+  )
+  // A legacy `included` benefit has just been read as part of the GATE, so
+  // leaving it would count its plans twice. Writing the price-only rate clears
+  // it, which is the whole absorption.
+  const legacyAbsorbed = courseBlockLegacyIncludedIds(fresh).length > 0
+  if (legacyAbsorbed || !sameRate(normalizeBenefit(fresh.benefit), nextRate)) {
+    update.benefit = nextRate
+  }
+  // Compared against what is STORED, not against the union read above, so
+  // absorbing the legacy list registers as a change and gets written.
+  if (!sameIds(nextGateIds, fresh.includedSubscriptionTypeIds ?? [])) {
+    update.includedSubscriptionTypeIds = nextGateIds
+  }
+
+  return Object.keys(update).length ? update : null
+}
+
+/** Every plan sharing this course's rate rule, minus the one being edited. */
+export function plansSharingCourseBlockRate(
+  c: Pick<CourseBlock, 'benefit'>,
+  subTypeId: string
+): string[] {
+  return courseBlockRatedPlanIds(c).filter((id) => id !== subTypeId)
+}
+
+// ─── ONE ENTRY POINT FOR EVERY KIND ──────────────────────────────────────────
 //
 // The catalogue lists activities and courses side by side, and every row does
 // the same thing to a different document. Dispatching here rather than in the
@@ -591,21 +733,26 @@ export type PlanLinkTarget =
       studioDropIn?: DropInPrice | null
     }
   | { kind: 'course'; doc: CourseEdgeFields }
+  /** A SCHEDULED course (`course_blocks`), displayed as *Course*. The one
+   *  above is the online-courses plugin. */
+  | { kind: 'course_block'; doc: CourseBlockEdgeFields }
 
 export function offeringFacets(t: PlanLinkTarget): OfferingFacets {
-  return t.kind === 'activity' ? activityPlanFacets(t.doc) : coursePlanFacets(t.doc)
+  if (t.kind === 'activity') return activityPlanFacets(t.doc)
+  if (t.kind === 'course_block') return courseBlockPlanFacets(t.doc)
+  return coursePlanFacets(t.doc)
 }
 
 export function offeringPlanEdge(t: PlanLinkTarget, subTypeId: string): ActivityPlanEdge {
-  return t.kind === 'activity'
-    ? activityPlanEdge(t.doc, subTypeId, t.minutes)
-    : coursePlanEdge(t.doc, subTypeId)
+  if (t.kind === 'activity') return activityPlanEdge(t.doc, subTypeId, t.minutes)
+  if (t.kind === 'course_block') return courseBlockPlanEdge(t.doc, subTypeId)
+  return coursePlanEdge(t.doc, subTypeId)
 }
 
 export function offeringRateChoiceOf(t: PlanLinkTarget): ActivityRateChoice {
-  return t.kind === 'activity'
-    ? activityRateChoiceOf(t.doc, t.minutes)
-    : courseRateChoiceOf(t.doc)
+  if (t.kind === 'activity') return activityRateChoiceOf(t.doc, t.minutes)
+  if (t.kind === 'course_block') return courseBlockRateChoiceOf(t.doc)
+  return courseRateChoiceOf(t.doc)
 }
 
 /**
@@ -644,6 +791,11 @@ export function offeringRateChoiceOf(t: PlanLinkTarget): ActivityRateChoice {
  * see that the option exists and why it cannot bite yet.
  */
 export function rateHasAPriceToApplyTo(t: PlanLinkTarget): boolean {
+  // A scheduled course's price IS its sale, so a free one has nothing to
+  // reduce. Same inert-until-priced state, shown the same way.
+  if (t.kind === 'course_block') {
+    return typeof t.doc.priceAmount === 'number' && t.doc.priceAmount > 0
+  }
   // A course's price IS its sale, so an unsold course has nothing to reduce —
   // the same inert-until-priced state a class with no drop-in is in, and shown
   // the same way (dimmed, with a reason) rather than withheld.
@@ -671,9 +823,15 @@ export function offeringRateEffects(t: PlanLinkTarget): OfferableRateEffect[] {
   const allowed =
     t.kind === 'course'
       ? COURSE_EFFECTS
-      : isAppointmentActivity(t.doc as Pick<Activity, 'type'>)
-        ? APPOINTMENT_EFFECTS
-        : DROP_IN_EFFECTS
+      : t.kind === 'course_block'
+        ? // NOT `COURSE_BLOCK_EFFECTS`, which carries `included` because the
+          // RESOLVER honours it. The editor must not OFFER it: the access
+          // column already says free, and two controls for one fact is what the
+          // online course's overlapping tiers used to be.
+          DROP_IN_EFFECTS
+        : isAppointmentActivity(t.doc as Pick<Activity, 'type'>)
+          ? APPOINTMENT_EFFECTS
+          : DROP_IN_EFFECTS
   // A fixed order, so the chips do not reshuffle between offerings.
   return (['included', 'percent_off', 'fixed_price'] as const).filter((e) => allowed.has(e))
 }
@@ -693,9 +851,9 @@ export function offeringRateLengths(t: PlanLinkTarget): number[] {
 }
 
 export function plansSharingOfferingRate(t: PlanLinkTarget, subTypeId: string): string[] {
-  return t.kind === 'activity'
-    ? plansSharingRate(t.doc, subTypeId, t.minutes)
-    : plansSharingCourseRate(t.doc, subTypeId)
+  if (t.kind === 'activity') return plansSharingRate(t.doc, subTypeId, t.minutes)
+  if (t.kind === 'course_block') return plansSharingCourseBlockRate(t.doc, subTypeId)
+  return plansSharingCourseRate(t.doc, subTypeId)
 }
 
 /**
@@ -763,7 +921,11 @@ export function offeringPlanEdgeUpdate(
   next: ActivityPlanEdge,
   choice?: ActivityRateChoice
 ): Record<string, unknown> | null {
-  return t.kind === 'activity'
-    ? activityPlanEdgeUpdate(t.doc, subTypeId, next, choice, t.minutes, t.studioDropIn)
-    : coursePlanEdgeUpdate(t.doc, subTypeId, next, choice)
+  if (t.kind === 'activity') {
+    return activityPlanEdgeUpdate(t.doc, subTypeId, next, choice, t.minutes, t.studioDropIn)
+  }
+  if (t.kind === 'course_block') {
+    return courseBlockPlanEdgeUpdate(t.doc, subTypeId, next, choice)
+  }
+  return coursePlanEdgeUpdate(t.doc, subTypeId, next, choice)
 }

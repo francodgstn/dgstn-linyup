@@ -123,6 +123,7 @@ import { useActivities } from '@/hooks/useActivities'
 import { useCourseBlocks } from '@/hooks/useCourseBlocks'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { CourseBlockDialog, courseBlockSummary } from '@/components/offer/CourseBlockDialog'
+import { COURSE_BLOCKS_COLLECTION } from '@linyup/shared'
 import {
   CourseCancelDialog,
   CourseDuplicateDialog,
@@ -552,9 +553,38 @@ export default function CataloguePage() {
     badge: t('courseBadge'),
     target: { kind: 'course', doc: c },
   })
+  /**
+   * A SCHEDULED course as a row in the edge editor.
+   *
+   * `writeEdits` rather than a collection the editor writes itself: the course
+   * document denies every client write, so the edits go to a callable that runs
+   * the SAME shared fold against a document it reads inside its own
+   * transaction. `collection` is still given because the editor keys its groups
+   * by it, and it never reads the document through it on this path.
+   */
+  const toCourseBlockOffering = (c: CourseBlock): Offering => ({
+    id: c.id,
+    name: c.name,
+    collection: COURSE_BLOCKS_COLLECTION,
+    badge: tCourses('railCourses'),
+    target: { kind: 'course_block', doc: c },
+    writeEdits: async (edits) => {
+      if (!currentTeamId) return
+      await callFunction('setCourseBlockPlanLinks')({
+        teamId: currentTeamId,
+        blockId: c.id,
+        edits: edits.map((e) => ({
+          subTypeId: e.subTypeId,
+          next: e.next,
+          ...(e.choice ? { choice: e.choice } : {}),
+        })),
+      })
+    },
+  })
   const allOfferings: Offering[] = [
     ...activities.flatMap(toActivityOfferings),
     ...courses.map(toCourseOffering),
+    ...courseBlocks.map(toCourseBlockOffering),
   ]
 
   const classes = activities.filter((a) => !isAppointmentActivity(a))
@@ -1910,14 +1940,27 @@ export default function CataloguePage() {
               facts={{
                 chips: courseBlockChips(selectedCourseBlock),
                 description: selectedCourseBlock.description,
-                // WHERE THE PLAN EDGE WILL BE. A course carries no price yet, so
-                // no plan can include or discount one, a fact about how far this
-                // is built, said out loud rather than left as an empty space that
-                // reads like a broken screen.
-                note: tCourses('paneNoPriceYet'),
+                // The plan edge below answers "which plans include it" and
+                // "which get it cheaper". A FREE course has neither question to
+                // answer, and the editor says so itself, so the note is only
+                // for the state where there is nothing to link.
+                ...(selectedCourseBlock.priceAmount ? {} : { note: tCourses('paneFreeNoPlans') }),
               }}
               actions={paneActionsFor('courseBlock', selectedCourseBlock.id)}
             >
+              {/* Same editor as every other offering, and the same shared fold
+                  behind it. Only the WRITE is routed, because the course
+                  document is function-write-only. */}
+              {selectedCourseBlock.priceAmount ? (
+                <ActivityPlanLinks
+                  direction="from-offering"
+                  offering={toCourseBlockOffering(selectedCourseBlock)}
+                  offerings={allOfferings}
+                  plans={plans}
+                  currency={currency}
+                  canEdit={canEdit}
+                />
+              ) : null}
               {currentTeamId && (
                 <CourseRosterPanel
                   block={selectedCourseBlock}

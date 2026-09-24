@@ -414,10 +414,36 @@ class seat is chosen inside that machine; a course card sits above it, and
 pulling it through would mean teaching every step about an offer type it never
 otherwise sees.
 
+### Linking a plan to it
+
+The SAME editor every other offering uses (`components/offer/ActivityPlanLinks`,
+"THE ONE EDGE EDITOR"), with a scheduled course added as its third target kind
+in `utils/activityPlanLink.ts` rather than as a switch inside JSX. Two facets,
+two plain fields: `includedSubscriptionTypeIds` says who gets it FREE and
+`benefit` says who gets it CHEAPER, and they are independent, which is what a
+limited plan needs ("included while the allowance lasts, the member rate after").
+
+Only a PRICED course bears plans. A free one is already open to everybody, so
+there is nothing to include or discount, and the pane says that instead of
+showing controls that write nowhere.
+
+**The WRITE is routed, and only the write.** Every other kind is written straight
+from the editor in a client transaction; a course document denies every client
+write, so its edits go to `setCourseBlockPlanLinks`, which runs the SAME shared
+`foldOfferingPlanEdgeUpdates` against a document it reads inside its own
+transaction. Folding is what stops several plans on one document overwriting
+each other, and the course pane meets that case head-on: every plan is a row
+against one course, so "set all" is the ordinary use rather than the edge one.
+
+A `benefit` meaning "free" is read as the GATE and absorbed on the next write,
+as the online course does. Nothing writes that state today, but the resolver
+honours it, so reading it as the rate would show a plan in neither column while
+it was live in pricing.
+
 ## Not built yet
 
-Open: linking a plan to a course (the pane says so), and a Courses tab in
-the Shop.
+A Courses tab in the Shop: a course is buyable from the booking page today, but
+the shop lists products, subscriptions and online courses without it.
 
 **One rename has to land WITH the sale, not after it.** The studio side already
 says *Online courses* everywhere (the nav did before this work, and the

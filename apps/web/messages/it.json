@@ -9030,7 +9030,8 @@
     "cancelRefundsIntro": "{count, plural, one {Un pagamento potrebbe essere da rimborsare} other {# pagamenti potrebbero essere da rimborsare}}:",
     "cancelRefundsHint": "Rimborsali dalla pagina dei pagamenti, uno per uno, così mantieni il controllo.",
     "closeButton": "Chiudi",
-    "duplicateLabel": "Riproponi"
+    "duplicateLabel": "Riproponi",
+    "paneFreeNoPlans": "Questo corso è gratuito, quindi un abbonamento non può includerlo né scontarlo. Dagli un prezzo per collegare gli abbonamenti."
   },
   "CourseWaitlist": {
     "offerTitle": "Si è liberato un posto",

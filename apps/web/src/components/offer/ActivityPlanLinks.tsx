@@ -234,6 +234,24 @@ export interface Offering {
   color?: string
   /** A short word for what kind it is, shown on the row in the plan direction. */
   badge?: string
+  /**
+   * WRITE THROUGH A CALLABLE instead of the client transaction below.
+   *
+   * For a document whose collection denies client writes. A scheduled course is
+   * the one today: it carries a capacity counter and a price, so
+   * `firestore.rules` refuses every client write to it, and relaxing that for
+   * two fields would put a second rule shape in front of a document whose whole
+   * story is "everything goes through a callable".
+   *
+   * It receives the same EDITS this editor would have folded, and the callable
+   * runs `foldOfferingPlanEdgeUpdates` server-side against a document it read
+   * inside its own transaction. The fold stays shared, which is the part that
+   * matters: it is what stops several plans on one document overwriting each
+   * other, and a second implementation would lose that the first time it drifted.
+   */
+  writeEdits?: (
+    edits: Parameters<typeof foldOfferingPlanEdgeUpdates>[1]
+  ) => Promise<void>
 }
 
 export function ActivityPlanLinks({
@@ -452,48 +470,58 @@ export function ActivityPlanLinks({
       // and only the last survived — "set all" saved one row (Franco,
       // 2026-09-02). `foldOfferingPlanEdgeUpdates` applies each edit to the
       // result of the previous and yields one payload.
-      await runTransaction(db, async (tx) => {
-        const byDoc = new Map<
-          string,
-          { off: (typeof rows)[number]['off']; edits: Parameters<typeof foldOfferingPlanEdgeUpdates>[1] }
-        >()
-        for (const r of rows) {
-          const d = drafts[r.key]
-          if (!d) continue
-          const key = `${r.off.collection}/${r.off.id}`
-          const entry = byDoc.get(key) ?? { off: r.off, edits: [] }
-          entry.edits.push({
-            subTypeId: r.plan.id,
-            next: d.edge,
-            choice: d.edge.rate ? toChoice(d.rate) : undefined,
-            // WHICH LENGTH this edit is about. It travels with the EDIT, not
-            // with the group's target, because one fold covers every length of
-            // one document — see `foldOfferingPlanEdgeUpdates`.
-            minutes: r.off.target.kind === 'activity' ? r.off.target.minutes : undefined,
-          })
-          byDoc.set(key, entry)
-        }
-        const groups = [...byDoc.values()]
-        const snaps = await Promise.all(
-          groups.map((g) => tx.get(doc(db, g.off.collection, g.off.id)))
-        )
-        snaps.forEach((snap, i) => {
-          if (!snap.exists()) return
-          const g = groups[i]
-          const update = foldOfferingPlanEdgeUpdates(
-            { kind: g.off.target.kind, doc: snap.data(), studioDropIn: studioDropInAtSave } as PlanLinkTarget,
-            g.edits
-          )
-          if (update) tx.update(snap.ref, update)
+      const byDoc = new Map<
+        string,
+        { off: (typeof rows)[number]['off']; edits: Parameters<typeof foldOfferingPlanEdgeUpdates>[1] }
+      >()
+      for (const r of rows) {
+        const d = drafts[r.key]
+        if (!d) continue
+        const key = `${r.off.collection}/${r.off.id}`
+        const entry = byDoc.get(key) ?? { off: r.off, edits: [] }
+        entry.edits.push({
+          subTypeId: r.plan.id,
+          next: d.edge,
+          choice: d.edge.rate ? toChoice(d.rate) : undefined,
+          // WHICH LENGTH this edit is about. It travels with the EDIT, not
+          // with the group's target, because one fold covers every length of
+          // one document; see `foldOfferingPlanEdgeUpdates`.
+          minutes: r.off.target.kind === 'activity' ? r.off.target.minutes : undefined,
         })
-      })
+        byDoc.set(key, entry)
+      }
+      const groups = [...byDoc.values()]
+      // ROUTED first, and one call per document: a collection that denies
+      // client writes cannot take part in the transaction below, and the
+      // callable does its own read-fold-write. Awaited, so a refusal fails the
+      // save rather than being swallowed behind a green transaction.
+      for (const g of groups.filter((x) => x.off.writeEdits)) {
+        await g.off.writeEdits!(g.edits)
+      }
+      const direct = groups.filter((g) => !g.off.writeEdits)
+      if (direct.length) {
+        await runTransaction(db, async (tx) => {
+          const snaps = await Promise.all(
+            direct.map((g) => tx.get(doc(db, g.off.collection, g.off.id)))
+          )
+          snaps.forEach((snap, i) => {
+            if (!snap.exists()) return
+            const g = direct[i]
+            const update = foldOfferingPlanEdgeUpdates(
+              { kind: g.off.target.kind, doc: snap.data(), studioDropIn: studioDropInAtSave } as PlanLinkTarget,
+              g.edits
+            )
+            if (update) tx.update(snap.ref, update)
+          })
+        })
+      }
       setDrafts({})
       setShowErrors(false)
       // Marked stale, not awaited — see `refreshQueries`. The third key is
       // NOT redundant: 'course' does not prefix-match 'courses', and the course
       // settings page reads that single-course query, so without it the page
       // never saw the gate this editor had just written.
-      refreshQueries(qc, ['activities'], ['courses'], ['course'])
+      refreshQueries(qc, ['activities'], ['courses'], ['course'], ['course-blocks'])
     } finally {
       setSaving(false)
     }

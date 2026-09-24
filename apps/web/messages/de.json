@@ -9030,7 +9030,8 @@
     "cancelRefundsIntro": "{count, plural, one {Eine Zahlung könnte zurückzuerstatten sein} other {# Zahlungen könnten zurückzuerstatten sein}}:",
     "cancelRefundsHint": "Erstatten Sie diese einzeln über die Zahlungsseite, damit Sie die Kontrolle behalten.",
     "closeButton": "Schliessen",
-    "duplicateLabel": "Erneut durchführen"
+    "duplicateLabel": "Erneut durchführen",
+    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen."
   },
   "CourseWaitlist": {
     "offerTitle": "Ein Platz ist frei geworden",
