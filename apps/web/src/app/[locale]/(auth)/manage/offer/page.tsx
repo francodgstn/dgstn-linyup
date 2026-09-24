@@ -959,7 +959,7 @@ export default function CataloguePage() {
       await qc.invalidateQueries({ queryKey: ['subscription-types', currentTeamId] })
     } else if (kind === 'courseBlock') {
       // Through the callable, not a client delete: it takes the lessons off the
-      // calendar with the course, and it REFUSES once anyone is enrolled , 
+      // calendar with the course, and it REFUSES once anyone is enrolled:
       // deleting a course people are on is not a delete, it is a cancellation
       // that owes them a mail.
       await callFunction('deleteCourseBlock')({ teamId: currentTeamId, blockId: id })

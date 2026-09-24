@@ -571,7 +571,7 @@ export const joinCourseBlock = onCall(async (request) => {
 })
 
 /** The studio takes somebody off a course. Their future lessons are cancelled
- *  through the ordinary path; the past stays as attendance history. No refund , 
+ *  through the ordinary path; the past stays as attendance history. No refund:
  *  money is handed back from the payments page, deliberately and by hand. */
 export const withdrawFromCourseBlock = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'User must be authenticated')

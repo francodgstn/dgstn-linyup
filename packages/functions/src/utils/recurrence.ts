@@ -85,6 +85,50 @@ function excludedDayKeys(
   return keys
 }
 
+/**
+ * The same instant, N calendar days later, AT THE SAME WALL-CLOCK TIME in the
+ * studio's timezone.
+ *
+ * Adding `n * 86_400_000` is the tempting version and it is wrong across a DST
+ * boundary: a 15:45 lesson in August becomes 14:45 in November, and a term
+ * course duplicated for the next term crosses one by construction. So the civil
+ * date is advanced and the wall clock is carried over untouched, which is what
+ * "same time next term" means to the person typing it.
+ *
+ * Exported for `duplicateCourseBlock`, which shifts a whole meeting list, and
+ * kept here beside `normalizeToDstSafeDate` so the two DST rules live together
+ * rather than being rediscovered.
+ */
+export function shiftWallClockDays(date: Date, days: number, timezone = TIMEZONE): Date {
+  const p = getDatePartsInTimezone(date, timezone)
+  // Day arithmetic done in UTC, where every day is 24 hours, then handed back to
+  // the timezone as a civil date. The hour/minute/second never take part.
+  const civil = new Date(Date.UTC(p.year, p.month - 1, p.day))
+  civil.setUTCDate(civil.getUTCDate() + days)
+  return localTimeToUtc(
+    civil.getUTCFullYear(),
+    civil.getUTCMonth() + 1,
+    civil.getUTCDate(),
+    p.hour,
+    p.minute,
+    p.second,
+    timezone
+  )
+}
+
+/**
+ * Whole calendar days from `from` to `to` as the STUDIO counts them, which is
+ * the delta a duplicate shifts by. Compared as civil dates rather than as
+ * instants, so an autumn-to-spring move is not one hour short of a whole number.
+ */
+export function civilDaysBetween(from: Date, to: Date, timezone = TIMEZONE): number {
+  const a = getDatePartsInTimezone(from, timezone)
+  const b = getDatePartsInTimezone(to, timezone)
+  const aUtc = Date.UTC(a.year, a.month - 1, a.day)
+  const bUtc = Date.UTC(b.year, b.month - 1, b.day)
+  return Math.round((bUtc - aUtc) / 86_400_000)
+}
+
 export function calculateOccurrences(
   recurrence: RecurrencePattern & { startDate: Date | Timestamp; endDate?: Date | Timestamp },
   fromDate: Date,

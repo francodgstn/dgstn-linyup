@@ -84,6 +84,8 @@ import {
   updateCourseBlock,
 } from '../courseBlocks'
 import { enrolCourseBlockContact, withdrawFromCourseBlock } from '../courseBlocks/enrolment'
+import { cancelCourseBlock } from '../courseBlocks/cancel'
+import { addCourseBlockMeeting, duplicateCourseBlock } from '../courseBlocks/duplicate'
 import { setSessionLocation } from '../sessions/setSessionLocation'
 import { setSessionTags } from '../sessions/setSessionTags'
 import { createStudioTeam } from '../teams/createStudioTeam'
@@ -190,6 +192,9 @@ export const rpcStudio = callableRouter(
     cancelSession,
     createCourseBlock,
     deleteCourseBlock,
+    cancelCourseBlock,
+    duplicateCourseBlock,
+    addCourseBlockMeeting,
     enrolCourseBlockContact,
     withdrawFromCourseBlock,
     setCourseBlockStatus,

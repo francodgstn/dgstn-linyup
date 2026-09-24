@@ -3,14 +3,14 @@
 // A course's meetings are a LIST, and this is the only place one is built. The
 // studio authors in whichever of three shapes fits what it is selling; all three
 // arrive here and leave as `CourseMeeting[]`, so everything downstream, the
-// preview, the sessions, the "13 lessons" on the card, the confirmation email , 
-// reads one thing.
+// preview, the sessions, the "13 lessons" on the card, the confirmation email
+// all read one thing.
 //
 //   Repeating   a weekly rule + its skip dates    "every Wed, 20.08–26.11, not 8.10/15.10"
 //   Days        explicit day+time pairs            "Sat 10:00–16:15 and Sun 09:00–15:00"
 //   Single      one of the above with one entry    "Sunday 14.10, 15:00–17:45"
 //
-// WHY A LIST AND NOT A PATTERN. `RecurrencePattern` carries ONE `startDate` , 
+// WHY A LIST AND NOT A PATTERN. `RecurrencePattern` carries ONE `startDate`,
 // which is also its time of day, and ONE `duration`. So it cannot say "Saturday
 // ten to quarter past four AND Sunday nine to three", and that weekend crawl
 // course is an ordinary product rather than an edge case. The repeating shape is

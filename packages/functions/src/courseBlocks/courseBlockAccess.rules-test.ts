@@ -128,7 +128,7 @@ describe('firestore.rules, course blocks', function () {
   })
 
   it('the series a course owns stays client-writable, which is why the course is not', async () => {
-    // Stated here on purpose. `session_series` is writable by any team member , 
+    // Stated here on purpose. `session_series` is writable by any team member:
     // `SessionFormDialog` writes one directly, and the series doc IS the commit
     // for a hand-made recurring class. That is exactly why a course could not
     // just be a flag on a series: a price and a capacity cannot live on a

@@ -67,7 +67,7 @@ interface DayRow {
 
 const NONE = '__none'
 
-/** A local date+time pair → the instant, through the browser's own timezone , 
+/** A local date+time pair → the instant, through the browser's own timezone,
  *  which is the studio's. The same spelling `SessionFormDialog` uses. */
 function localInstant(date: string, time: string): number | null {
   if (!date || !time) return null

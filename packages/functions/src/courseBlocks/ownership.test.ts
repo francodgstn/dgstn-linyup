@@ -9,7 +9,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 //
 // The course's lessons are ordinary sessions of an ordinary series, which is
 // what gets them a roster, attendance, reminders and cancellation for free. The
-// price of that reuse is that the series' OWN editing callables can reach them , 
+// price of that reuse is that the series' OWN editing callables can reach them,
 // and one of them, `updateRecurringSession`'s regeneration branch, deletes
 // future sessions outright with no bookings check. On a course those are lessons
 // somebody paid for.
