@@ -30,10 +30,11 @@ const areaLabel = (a: NonNullable<Card['area']>) => {
 };
 
 const sections = [
+  // What shipped lately, FIRST: a visitor's first question is what they can
+  // use today (Franco, 2026-09-25). Capped by the export, newest first in board order.
+  { key: 'landed', icon: 'check-circle', cards: (roadmap.sections.landed ?? []) as Card[] },
   { key: 'inProgress', icon: 'hammer', cards: roadmap.sections.inProgress as Card[] },
   { key: 'next', icon: 'compass', cards: roadmap.sections.next as Card[] },
-  // What shipped lately. Capped by the export, newest first in board order.
-  { key: 'landed', icon: 'check-circle', cards: (roadmap.sections.landed ?? []) as Card[] },
 ].filter((s) => s.cards.length > 0);
 ---
 
