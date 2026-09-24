@@ -214,7 +214,7 @@ on staging and prod).
 
 | Env | Trigger | Backend | Web app | Approval |
 |---|---|---|---|---|
-| **staging** | push to `main` | `deploy.yml` | App Hosting auto-rollout, in parallel | none |
+| **staging** | push to `main` (or dispatch from any branch) | `deploy.yml` | App Hosting auto-rollout from `main`, in parallel; a dispatch with `rollout_web` rolls out web + admin at the run's commit, after the backend | none |
 | **sandbox** | push a `sandbox-*` tag | `deploy-sandbox.yml` | `apphosting:rollouts:create` in the same job, **after** the backend | required reviewer |
 | **prod** | push a `v*` tag | `deploy-prod.yml` | `apphosting:rollouts:create` in the same job, **after** the backend | required reviewer |
 
