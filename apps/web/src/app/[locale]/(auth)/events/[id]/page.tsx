@@ -43,6 +43,7 @@ import { ProgramTab } from '@/components/events/program/ProgramTab'
 import { EventRsvpList, EventInvitationList } from '@/components/events/EventPeopleLists'
 import { DuplicateEventDialog } from '@/components/events/DuplicateEventDialog'
 import { EventPublishCard } from '@/components/events/EventPublishCard'
+import { publicSubHref } from '@/lib/publicRoutes'
 import { useOrg } from '@/contexts/OrgContext'
 import { pluginSlot } from '@/plugins/slots'
 import type { Route } from 'next'
@@ -403,6 +404,7 @@ export default function EventDetailPage() {
 
 
   const event = eventQ.data
+  const isOrgEvent = event?.scope === 'org'
 
   // Register this event as an open tab once loaded (mirrors the header title).
   useRegisterTab({
@@ -424,10 +426,17 @@ export default function EventDetailPage() {
     setSending(true)
     setSendResult(null)
     try {
-      const fn = callFunction<{ eventId: string; resend: boolean }, { stats: { sent: number; skipped: number } }>(
-        'sendEventInvitations'
-      )
-      const result = await fn({ eventId: id, resend })
+      const fn = callFunction<
+        { eventId: string; resend: boolean; teamId?: string },
+        { stats: { sent: number; skipped: number } }
+      >('sendEventInvitations')
+      // An org event has no studio of its own: this studio invites its OWN
+      // members to it, so say which studio that is.
+      const result = await fn({
+        eventId: id,
+        resend,
+        ...(isOrgEvent && currentTeamId ? { teamId: currentTeamId } : {}),
+      })
       const { sent, skipped } = result.data.stats
       const parts = [t('detail_invitationsSent', { sent })]
       if (skipped > 0) parts.push(t('detail_invitationsSkipped', { skipped }))
@@ -663,8 +672,12 @@ export default function EventDetailPage() {
         <div className="space-y-6">
           <EventPublishCard
             event={event}
-            publicSlug={team?.slug ?? null}
-            canEdit={can('events.manage') || isOrgAdmin}
+            // The studio's own events page lists its org's events too, so the
+            // studio link works for either scope.
+            publicUrl={team?.slug ? publicSubHref(team.slug, 'events', event.id) : null}
+            // Publishing an org event is the ORGANISATION's call — the rules
+            // refuse a studio manager's write, so do not offer the switch.
+            canEdit={isOrgEvent ? isOrgAdmin : can('events.manage') || isOrgAdmin}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -709,6 +722,7 @@ export default function EventDetailPage() {
       {tab === 'program' && (
         <ProgramTab
           event={event}
+          printHref={`/events/${id}/print`}
           canEdit={can('events.manage') || isOrgAdmin}
           // Surfaces the parent org's shared programme templates in the picker.
           parentOrgId={(team as Team & { org_id?: string })?.org_id ?? null}
@@ -745,7 +759,13 @@ export default function EventDetailPage() {
            migration rather than a label. */}
       {tab === 'attendees' && canSeeAttendees && <EventRsvpList eventId={id} linkContacts />}
 
-      {tab === 'invitations' && <EventInvitationList eventId={id} linkContacts />}
+      {tab === 'invitations' && (
+        <EventInvitationList
+          eventId={id}
+          linkContacts
+          teamId={isOrgEvent ? currentTeamId : null}
+        />
+      )}
 
 
       {/* ── Dialogs ──────────────────────────────────────────────────────────── */}

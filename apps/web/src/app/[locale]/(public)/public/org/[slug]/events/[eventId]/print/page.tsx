@@ -2,31 +2,27 @@
 
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { usePublicTeam } from '../../../PublicTeamProvider'
 import { usePublicEvent } from '@/components/events/program/usePublicEvents'
+import { usePublicOrgBySlug } from '@/components/events/program/usePublicOrg'
 import { ProgramSheet } from '@/components/events/program/ProgramSheet'
 import { ProgramPrintFrame } from '@/components/events/program/ProgramPrintFrame'
-import { publicSubHref } from '@/lib/publicRoutes'
 
 export const dynamic = 'force-dynamic'
 
-// The printable handout. The same ProgramSheet the event page shows, laid out
-// for A4 by the @media print rules in globals.css (one page per day, no
-// chrome), so the browser's "Save as PDF" is the PDF. Deliberately not jsPDF:
-// hand-laying a multi-day multi-track grid there is far more work for a
-// worse-looking result.
-export default function PublicEventProgramPrintPage() {
+// The organisation's printable handout — the twin of the studio's
+// /public/{slug}/events/{eventId}/print, for an event read from the org's own
+// public page.
+export default function PublicOrgEventProgramPrintPage() {
   const t = useTranslations('EventProgram')
-  const { eventId } = useParams<{ eventId: string }>()
-  const { slug, teamId, team } = usePublicTeam()
+  const { slug, eventId } = useParams<{ slug: string; eventId: string }>()
+  const org = usePublicOrgBySlug(slug)
   const { loading, event } = usePublicEvent(eventId)
 
-  const belongsHere =
-    !!event &&
-    ((event.teamId && event.teamId === teamId) ||
-      (event.orgId && team.org_id && event.orgId === team.org_id))
+  // The mirror is world-readable by id, so confirm the event really belongs to
+  // THIS organisation before printing it under the org's name.
+  const belongsHere = !!event && !!org.orgId && event.orgId === org.orgId
 
-  if (loading) {
+  if (org.loading || loading) {
     return <div className="mx-auto max-w-3xl px-6 py-10"><div className="h-8 w-1/2 animate-pulse rounded bg-muted" /></div>
   }
 
@@ -41,11 +37,11 @@ export default function PublicEventProgramPrintPage() {
   return (
     <ProgramPrintFrame
       documentTitle={event.title}
-      backHref={publicSubHref(slug, 'events', event.id)}
+      backHref={`/public/org/${slug}/events/${event.id}`}
       backLabel={t('backToEvent')}
     >
       <ProgramSheet
-        ownerName={team.name}
+        ownerName={org.name}
         title={event.title}
         start={(event.start as unknown as { toDate?: () => Date } | null)?.toDate?.() ?? null}
         end={(event.end as unknown as { toDate?: () => Date } | null)?.toDate?.() ?? null}

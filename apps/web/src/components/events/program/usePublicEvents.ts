@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { collectionGroup, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
+import { collectionGroup, doc, getDoc, getDocs, orderBy, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { EVENTS_COLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import type { EventPublicProfile } from '@linyup/shared'
@@ -25,12 +25,23 @@ function startMs(e: PublicEventSummary): number {
   return d && !Number.isNaN(d.getTime()) ? d.getTime() : 0
 }
 
+// ORDERED BY `start` ON PURPOSE, although the list is re-sorted below. The
+// ordering is what makes the query match the composite indexes that exist for
+// it — `public_profile (type, teamId, start)` and `(type, orgId, start)`. Without
+// it, the orgId query is an equality-only collection-group query, which a
+// deployed project can serve only with a collection-group single-field index
+// on `orgId`, and there is none. It failed with FAILED_PRECONDITION, the catch
+// below turned that into "no events", and every published ORG event was
+// missing from every public page. The emulator does not enforce indexes, so it
+// never showed locally. Every mirror carries `start` (null when unset), so the
+// ordering drops nothing.
 async function queryEvents(field: 'teamId' | 'orgId', value: string): Promise<PublicEventSummary[]> {
   const snap = await getDocs(
     query(
       collectionGroup(db, PUBLIC_PROFILE_SUBCOLLECTION),
       where('type', '==', 'event'),
       where(field, '==', value),
+      orderBy('start', 'asc'),
     ),
   )
   return snap.docs.map((d) => ({ ...(d.data() as EventPublicProfile), id: d.id }))
@@ -81,7 +92,10 @@ export function usePublicEvents(
 
         events.sort((a, b) => startMs(a) - startMs(b))
         setState({ loading: false, events: limit ? events.slice(0, limit) : events })
-      } catch {
+      } catch (err) {
+        // Still rendered as "no events" to the visitor, but never silently
+        // again: a missing index looked exactly like an empty calendar.
+        console.error('[usePublicEvents] query failed', err)
         if (!cancelled) setState({ loading: false, events: [] })
       }
     })()

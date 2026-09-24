@@ -24,7 +24,7 @@
 import type { ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
+import { collection, getDocs, orderBy, query, where } from 'firebase/firestore'
 import type { Route } from 'next'
 import { db } from '@/lib/firebase'
 import { Link } from '@/i18n/navigation'
@@ -179,17 +179,28 @@ export function EventRsvpList({
 export function EventInvitationList({
   eventId,
   linkContacts = false,
+  teamId = null,
 }: {
   eventId: string
   linkContacts?: boolean
+  /**
+   * Only this studio's invitations. REQUIRED when a member studio views an
+   * ORG event: several studios invite into one subcollection, and the rules
+   * let a studio read only the rows stamped with its own id — an unfiltered
+   * query there is refused as a whole.
+   */
+  teamId?: string | null
 }) {
   const t = useTranslations('Events')
   const q = useQuery<EventInvitation[]>({
-    queryKey: ['event-invitations', eventId],
+    queryKey: ['event-invitations', eventId, teamId],
     enabled: !!eventId,
     queryFn: async () => {
+      const col = collection(db, EVENTS_COLLECTION, eventId, EVENT_INVITATIONS_SUBCOLLECTION)
       const snap = await getDocs(
-        query(collection(db, EVENTS_COLLECTION, eventId, EVENT_INVITATIONS_SUBCOLLECTION), orderBy('sentAt', 'desc'))
+        teamId
+          ? query(col, where('teamId', '==', teamId), orderBy('sentAt', 'desc'))
+          : query(col, orderBy('sentAt', 'desc'))
       )
       return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as EventInvitation)
     },

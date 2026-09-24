@@ -25,6 +25,7 @@ import { EventRsvpList, EventInvitationList } from '@/components/events/EventPeo
 import { PLUGIN_REGISTRY } from '@/plugins/registry'
 import { pluginSlot } from '@/plugins/slots'
 import { DuplicateEventDialog } from '@/components/events/DuplicateEventDialog'
+import { EventPublishCard } from '@/components/events/EventPublishCard'
 import { Tip } from '@/components/ui/tip'
 
 interface Team { id: string; name: string }
@@ -236,12 +237,20 @@ export default function OrgEventDetailPage() {
         </div>
       )}
 
-      {/* Overview — the counters the event doc already carries. No publish card:
-          publishing an org event is `Event.publicVisibility`, which the org
-          events LIST owns, and a second control for one flag is how the two
-          disagree. */}
+      {/* Overview — the publish switch, then the counters the event doc
+          already carries. The switch is HERE because nothing else sets an org
+          event's `publicVisibility`: the org events list has no control for it,
+          so an org admin could only publish by landing on the studio page,
+          which is the wrong page for an org event. Once published, the event
+          appears on the organisation's public events page AND on every member
+          studio's. */}
       {event && tab === 'overview' && (
         <div className="space-y-6">
+          <EventPublishCard
+            event={event}
+            publicUrl={org?.slug ? `/public/org/${org.slug}/events/${event.id}` : null}
+            canEdit={isAdmin}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <OrgStat label={t('checkinsTitle')} value={event.participants_count ?? 0} />
             <OrgStat label={tp('detail_statsRSVP')} value={event.attendees_count ?? 0} />
@@ -285,7 +294,7 @@ export default function OrgEventDetailPage() {
 
       {event && tab === 'invitations' && (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">{t('eventDetail_invitationsHint')}</p>
+          <p className="text-xs text-muted-foreground">{t('eventDetail_invitationsHintOrg')}</p>
           <EventInvitationList eventId={eventId} />
         </div>
       )}
@@ -293,7 +302,11 @@ export default function OrgEventDetailPage() {
       {/* Program tab — the same component the team event page mounts. It reads
           teamId/orgId/scope off the event doc, so org events need no variant. */}
       {event && tab === 'program' && (
-        <ProgramTab event={event} canEdit={isAdmin} />
+        <ProgramTab
+          event={event}
+          canEdit={isAdmin}
+          printHref={`/org/${orgId}/events/${eventId}/print`}
+        />
       )}
 
       {/* Checkins section */}

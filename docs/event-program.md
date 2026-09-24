@@ -178,9 +178,23 @@ hand-built, so `packages/functions` can emit the same links in email.
 | Route | Shows |
 |---|---|
 | `/public/{slug}/events` | A studio's published events **plus its parent org's** |
-| `/public/{slug}/events/{eventId}` | Event + programme |
+| `/public/{slug}/events/{eventId}` | Event + programme, as the handout |
 | `/public/{slug}/events/{eventId}/print` | The printable handout |
 | `/public/org/{slug}/events` | An organisation's own published events |
+| `/public/org/{slug}/events/{eventId}` | The same, under the organisation |
+| `/public/org/{slug}/events/{eventId}/print` | The organisation's printable handout |
+
+Staff print from the Programme tab (**Print / PDF**), at `/events/{id}/print` or
+`/org/{orgId}/events/{id}/print`. Those read the event's own documents rather
+than the mirror, so they work for an unpublished event, and can include the
+internal notes (off by default) for a coaches' copy.
+
+The public list queries order by `start`. That is what makes them match the
+`public_profile (type, teamId|orgId, start)` composite indexes; unordered, the
+`orgId` query needed a collection-group index that does not exist, failed in
+every deployed project, and was rendered as "no events" — so no published org
+event appeared anywhere. The emulator does not enforce indexes, so it never
+showed locally.
 
 An org event has no `teamId`, so a studio's page runs **two queries and merges**
 (own `teamId` + parent `orgId`) — mirroring what `useAllEvents` already does in the
@@ -189,9 +203,46 @@ public surface can tell which org a studio belongs to. For a federation this is 
 point: publish one event with one programme, and it appears on the federation's
 page *and* on every member club's page.
 
+### Two renderers: the working view and the handout
+
+`ProgramTimeline` is the **working** view — cards, coloured track bars, edit
+affordances — for the people building the agenda in the Programme tab.
+`ProgramSheet` is the **handout**: black on white, a time column and a rule
+under each day, parallel tracks as table columns (a plenary item runs across
+them), and nothing that needs a mouse. Every surface a member reads — the public
+event page, the print pages, the Space links into them — renders the handout,
+and so does the tab's Preview, so staff see what members will. It stays paper
+in dark mode on purpose: a handout that inverts stops looking like what the
+printer will produce. On a phone a multi-track day collapses to one agenda with
+the track named on each row; on paper it is always the column table.
+
 Printing is `@media print` CSS (`apps/web/src/app/globals.css`) plus
 `window.print()`, not jsPDF — hand-laying a multi-day multi-track grid in jsPDF is
-far more work for a worse result.
+far more work for a worse result. The **PDF is the browser's "Save as PDF"**
+destination; the button says "Print / PDF" and the page says how, and the tab
+title (the event name) becomes the file name.
+
+## Publishing an org event, and inviting to it
+
+An org event is published from **the org event page** (Overview → the public
+switch), which only org admins can flip — the rules refuse a studio manager's
+write, so the studio page shows the switch read-only for an org event. Once
+published it is on the organisation's public events page and on every member
+studio's.
+
+Invitations go out **per studio**: `sendEventInvitations` emails the roster of
+ONE studio, and a member studio invites its own members from the org event in
+its own calendar (the callable takes `teamId` only for an org event). Who may
+send is decided purely in `packages/functions/src/events/invitationAuthorization.ts`
+— the requested studio must be linked to the event's organisation, and the
+caller must hold `events.manage` in it. An org admin cannot email a member
+studio's contacts. Each invitation row is stamped with the studio it was sent
+for; the rules let a studio read only its own rows (its list filters on
+`teamId`), and the org's admins read them all.
+
+Opening an org event from the org's own calendar or timeline goes to the org
+event page (`EventPeekSheet`'s `eventHref`). It used to go to the studio page,
+where "Send invitations" failed with "Event has no team".
 
 ## Duplicating an event
 
@@ -213,6 +264,7 @@ draft event the moment it is created.
 ## Deliberately not done
 
 Per-item booking or capacity · FK links to Places/Activities/Coaches ·
+org-wide invitations from the org page (each studio invites its own) ·
 drag-and-drop reordering (times drive the order; `order` is only a tie-break) ·
 attendee-personalised programmes in Space (the `attendees` subcollection is not
 readable by a contact session, so it needs a callable) · bulk time-shift ·

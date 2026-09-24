@@ -2,14 +2,17 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CalendarRange, Eye, LayoutTemplate, Pencil, Plus, Save, Settings2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { CalendarRange, Eye, LayoutTemplate, Pencil, Plus, Printer, Save, Settings2 } from 'lucide-react'
+import type { Route } from 'next'
+import { Link } from '@/i18n/navigation'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { MAX_PROGRAM_ITEMS, nextItemOrder, sortedDays } from '@linyup/shared'
 import type { Event, EventProgramConfig, EventProgramItem } from '@linyup/shared'
 import { ProgramTimeline } from './ProgramTimeline'
+import { ProgramSheet } from './ProgramSheet'
 import { ProgramItemDialog } from './ProgramItemDialog'
 import { ProgramStructureDialog } from './ProgramStructureDialog'
 import { ApplyTemplateDialog } from './ApplyTemplateDialog'
@@ -41,9 +44,12 @@ export interface ProgramTabProps {
   /** The org this event's team belongs to, so inherited org templates appear in
    *  the picker. An org-scoped event derives it from the event itself. */
   parentOrgId?: string | null
+  /** The staff printout of this programme. Supplied by the page because the
+   *  route depends on which page (studio or org) the tab is mounted on. */
+  printHref?: string
 }
 
-export function ProgramTab({ event, canEdit = true, parentOrgId }: ProgramTabProps) {
+export function ProgramTab({ event, canEdit = true, parentOrgId, printHref }: ProgramTabProps) {
   const t = useTranslations('EventProgram')
   const eventId = event.id
   const config = event.program ?? EMPTY_CONFIG
@@ -187,6 +193,12 @@ export function ProgramTab({ event, canEdit = true, parentOrgId }: ProgramTabPro
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {printHref && items.length > 0 && (
+            <Link href={printHref as Route} className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+              <Printer className="mr-1.5 h-3.5 w-3.5" />
+              {t('printOrPdf')}
+            </Link>
+          )}
           <Button size="sm" variant="outline" onClick={() => setPreview((p) => !p)}>
             {preview ? <Pencil className="mr-1.5 h-3.5 w-3.5" /> : <Eye className="mr-1.5 h-3.5 w-3.5" />}
             {preview ? t('modeEdit') : t('modePreview')}
@@ -220,9 +232,21 @@ export function ProgramTab({ event, canEdit = true, parentOrgId }: ProgramTabPro
         </p>
       )}
 
-      {/* ── Preview: exactly what the public page and print sheet render ───── */}
+      {/* ── Preview: the handout members see and print (ProgramSheet), with
+          the internal notes shown because the reader here is staff. ──────── */}
       {preview ? (
-        <ProgramTimeline config={config} items={items} showInternalNotes />
+        <ProgramSheet
+          className="rounded-sm border border-neutral-200"
+          title={event.title}
+          start={(event.start as { toDate?: () => Date } | null | undefined)?.toDate?.() ?? null}
+          end={(event.end as { toDate?: () => Date } | null | undefined)?.toDate?.() ?? null}
+          location={event.location}
+          coachName={event.coachName}
+          description={event.description}
+          config={config}
+          items={items}
+          showInternalNotes
+        />
       ) : (
         <>
           {/* Day selector — horizontally scrollable so a two-week camp still

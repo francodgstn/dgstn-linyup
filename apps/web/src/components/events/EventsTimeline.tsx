@@ -195,10 +195,13 @@ export function EventsTimeline({
   events,
   onEdit,
   onDelete,
+  eventHref,
 }: {
   events: Event[]
   onEdit?: (event: Event) => void
   onDelete?: (event: Event) => void
+  /** Where the peek sheet's "Open full" goes — see EventPeekSheet. */
+  eventHref?: (event: Event) => string
 }) {
   const t = useTranslations('OrgEvents')
   const tE = useTranslations('Events')
@@ -1153,6 +1156,7 @@ export function EventsTimeline({
         <EventPeekSheet
           eventId={peekId}
           onClose={() => setPeekId(null)}
+          eventHref={eventHref}
           onEdit={(e) => {
             setPeekId(null)
             onEdit?.(e)

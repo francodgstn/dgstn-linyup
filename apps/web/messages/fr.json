@@ -1648,7 +1648,15 @@
     "templateNoDays": "Aucun jour pour l'instant",
     "templateNoDaysHint": "Ajoutez les jours sur lesquels ce programme se déroule, puis remplissez-les. Les jours sont relatifs — jour 1, jour 2 — pour que le même modèle convienne à tout futur événement.",
     "templateEditTitle": "Modifier le modèle",
-    "templateEditSubtitle": "Les horaires sont ceux du lieu. Les jours sont relatifs : le modèle convient à tout futur événement."
+    "templateEditSubtitle": "Les horaires sont ceux du lieu. Les jours sont relatifs : le modèle convient à tout futur événement.",
+    "printOrPdf": "Imprimer / PDF",
+    "printPdfHint": "Pour obtenir un PDF, choisissez « Enregistrer au format PDF » comme imprimante dans la fenêtre d’impression.",
+    "backToEvent": "Retour à l’événement",
+    "printIncludeNotes": "Inclure les notes internes",
+    "sheetTime": "Heure",
+    "sheetUntil": "jusqu’à {time}",
+    "sheetAllTracks": "Tout le monde",
+    "sheetInternalNote": "Note : {note}"
   },
   "TeamMembers": {
     "title": "Équipe",
@@ -6398,7 +6406,8 @@
     "emptyCheckins": "Aucun check-in pour l'instant.",
     "eventDetail_rsvpsHint": "Qui a accepté, dans tous les clubs membres. Les noms ne sont pas des liens — les contacts d'un club lui appartiennent.",
     "eventDetail_invitationsHint": "Toutes les personnes invitées à cet événement. Un nouvel envoi ignore celles qui ont déjà une invitation, sauf si vous choisissez de renvoyer.",
-    "type_other": "Autre"
+    "type_other": "Autre",
+    "eventDetail_invitationsHintOrg": "Les invitations envoyées par les studios membres. Un studio invite ses propres membres depuis cet événement, dans son propre calendrier."
   },
   "OrgRanking": {
     "title": "Systèmes de classement",

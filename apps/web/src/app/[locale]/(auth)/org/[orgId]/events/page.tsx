@@ -431,6 +431,7 @@ export default function OrgEventsPage() {
           onDelete={() => {}}
           onEventEdit={isAdmin ? (e) => { setEditing(e); setDialogOpen(true) } : undefined}
           onEventDelete={isAdmin ? (e) => setDeleting(e) : undefined}
+          eventHref={(e) => `/org/${orgId}/events/${e.id}`}
         />
       )}
 
@@ -442,6 +443,7 @@ export default function OrgEventsPage() {
           events={[...(upcoming.data ?? []), ...(past.data ?? [])]}
           onEdit={isAdmin ? (e) => { setEditing(e); setDialogOpen(true) } : undefined}
           onDelete={isAdmin ? (e) => setDeleting(e) : undefined}
+          eventHref={(e) => `/org/${orgId}/events/${e.id}`}
         />
       )}
 

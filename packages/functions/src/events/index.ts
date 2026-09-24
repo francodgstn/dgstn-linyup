@@ -8,6 +8,12 @@ import { sendEmail, buildEmailTemplate } from '../utils/email'
 import { detailsBox, ctaButton, factLines } from '../utils/emailLayout'
 import { escapeHtml } from '../utils/html'
 import { getHostingUrl } from '../utils/env'
+import { hasCapability } from '../utils/teams'
+import {
+  decideInvitationAuthorization,
+  isOrgScopedEvent,
+  resolveInvitationTeamId,
+} from './invitationAuthorization'
 
 const EVENTS_COLLECTION = 'events'
 const CONTACTS_COLLECTION = 'contacts'
@@ -106,7 +112,14 @@ function buildInvitationEmail(params: {
 export const sendEventInvitations = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'User must be authenticated')
 
-  const { eventId, resend } = request.data as { eventId?: string; resend?: boolean }
+  // `teamId` names the studio whose roster to invite. Only an ORG event reads
+  // it — an org event has no studio of its own, and each member studio invites
+  // its own people. A team event always invites its own team.
+  const { eventId, resend, teamId: requestedTeamId } = request.data as {
+    eventId?: string
+    resend?: boolean
+    teamId?: string
+  }
   if (!eventId) throw new HttpsError('invalid-argument', 'eventId is required')
 
   const db = admin.firestore()
@@ -116,8 +129,39 @@ export const sendEventInvitations = onCall(async (request) => {
     throw new HttpsError('not-found', 'Event not found')
 
   const event = eventDoc.data()!
-  const teamId = (event.teamId || event.teacher) as string | undefined
-  if (!teamId) throw new HttpsError('failed-precondition', 'Event has no team')
+
+  // This function READS; invitationAuthorization.ts DECIDES.
+  const eventFacts = {
+    exists: true,
+    scope: (event.scope as string | undefined) ?? null,
+    orgId: (event.orgId as string | undefined) ?? null,
+    teamId: (event.teamId as string | undefined) ?? null,
+    teacher: (event.teacher as string | undefined) ?? null,
+    deletedAt: event.deleted_at ?? null,
+  }
+  const candidateTeamId = resolveInvitationTeamId(eventFacts, requestedTeamId)
+  const [orgTeamLink, callerCanManageEvents] = await Promise.all([
+    isOrgScopedEvent(eventFacts) && candidateTeamId
+      ? db
+          .collection('organizations')
+          .doc(eventFacts.orgId as string)
+          .collection('org_teams')
+          .doc(candidateTeamId)
+          .get()
+          .then((d) => ({ exists: d.exists, status: (d.data()?.status as string | undefined) ?? null }))
+      : Promise.resolve(null),
+    candidateTeamId
+      ? hasCapability(request.auth.uid, candidateTeamId, 'events.manage')
+      : Promise.resolve(false),
+  ])
+  const decision = decideInvitationAuthorization({
+    event: eventFacts,
+    requestedTeamId,
+    orgTeamLink,
+    callerCanManageEvents,
+  })
+  if (!decision.ok) throw new HttpsError(decision.code, decision.message)
+  const teamId = decision.teamId
 
   const eventEnd = event.end as Timestamp | undefined
   if (eventEnd && eventEnd.toDate() < new Date()) {
@@ -247,6 +291,10 @@ export const sendEventInvitations = onCall(async (request) => {
           expiresAt,
           link,
           eventId,
+          // The studio this invitation was sent for. On an org event several
+          // studios invite into the same subcollection, and the rules let a
+          // studio read only the rows stamped with its own id.
+          teamId,
         }
         if (existingInv) {
           await invRef.doc(contactDoc.id).update(baseData)
