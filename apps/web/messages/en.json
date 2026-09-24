@@ -1967,7 +1967,8 @@
     "waitlistExperimental": "Experimental",
     "fieldBookingGroup": "Booking page group",
     "fieldBookingGroupPlaceholder": "e.g. Courses",
-    "fieldBookingGroupHint": "Groups the booking page under a heading. Leave empty to list it on its own."
+    "fieldBookingGroupHint": "Groups the booking page under a heading. Leave empty to list it on its own.",
+    "chipPriceFrom": "from {price}"
   },
   "Benefit": {
     "fieldLabel": "Member benefit",

@@ -57,6 +57,7 @@ import { Badge } from '@/components/ui/badge'
 import { loadFailureDetail, reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { publicHref, publicSubHref } from '@/lib/publicRoutes'
 import { resolveActivityTerms, type ActivityTerm } from '@/lib/activityTerms'
+import { priceRangeLabel } from '@/lib/priceRange'
 import { usePublicTeam } from '../PublicTeamProvider'
 import PriceListNotice from './PriceListNotice'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
@@ -712,12 +713,13 @@ export default function ShopHome({
         case 'dropIn':
           return t('payPerVisitDropIn', { price: formatCurrency(term.amount ?? 0, currency) })
         case 'price':
-          return term.min === term.max
-            ? t('payPerVisitFromPrice', { price: formatCurrency(term.min ?? 0, currency) })
-            : t('payPerVisitPriceRange', {
-                min: formatCurrency(term.min ?? 0, currency),
-                max: formatCurrency(term.max ?? 0, currency),
+          return term.range
+            ? priceRangeLabel(term.range, {
+                money: (amount) => formatCurrency(amount, currency),
+                from: (price) => t('payPerVisitFromPrice', { price }),
+                range: (min, max) => t('payPerVisitPriceRange', { min, max }),
               })
+            : null
         case 'benefitIncluded': {
           const name = nameFor(term.subscriptionTypeIds)
           return name ? t('payPerVisitIncludedNamed', { name }) : t('payPerVisitIncludedGeneric')
