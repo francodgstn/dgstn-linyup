@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore'
 
 // Security rules for course blocks (types/courseBlock.ts).
 //
@@ -19,6 +19,17 @@ import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 // The sibling series is deliberately covered too: it is the one thing in this
 // area a client CAN still write, and the test says so out loud rather than
 // leaving the asymmetry to be rediscovered.
+//
+// EVERY READ IS TESTED AS A LIST AS WELL AS A GET, and that is not belt and
+// braces. The first version of these rules authorised the subcollections with
+// `belongsToUserTeam(resource)`, which reads `resource.data.teamId`. On a get
+// that is the document in hand; on a LIST there is no document in hand, the
+// property access raises, and the whole query is denied, on an empty
+// subcollection as readily as on a full one. Every get in this file passed
+// throughout. The roster panel renders a denied list as "nobody is on this
+// course yet", which is also what an empty course looks like, and a rules
+// denial reaches no log this side of the browser console, so the studio's
+// roster was simply always empty and nothing anywhere said why.
 //
 //   pnpm --filter @linyup/functions test:rules
 
@@ -107,6 +118,29 @@ describe('firestore.rules, course blocks', function () {
     await assertFails(deleteDoc(doc(ownerDb(), 'course_blocks', BLOCK)))
   })
 
+  it('a team owner CAN LIST the enrolments, which is what the roster does', async () => {
+    // THE ONE THAT WAS BROKEN. A get is not evidence that a list is allowed:
+    // see the header. This is the assertion the roster panel's query actually
+    // makes.
+    await assertSucceeds(getDocs(collection(ownerDb(), 'course_blocks', BLOCK, 'enrolments')))
+  })
+
+  it('and CAN list them on a course nobody has joined yet', async () => {
+    // The empty case is the one a resource-reading rule fails most confusingly:
+    // there is no document to read a teamId off, so the rule raises rather than
+    // returning false, and an empty course looks exactly like a denied one.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'course_blocks', 'emptyCourseBlock'), BLOCK_DOC)
+    })
+    await assertSucceeds(
+      getDocs(collection(ownerDb(), 'course_blocks', 'emptyCourseBlock', 'enrolments'))
+    )
+  })
+
+  it('a non-member CANNOT list the enrolments', async () => {
+    await assertFails(getDocs(collection(outsiderDb(), 'course_blocks', BLOCK, 'enrolments')))
+  })
+
   it('a team owner CAN read an enrolment but CANNOT write one', async () => {
     // An enrolment IS the place. Writing one from a client is taking a place
     // without anything having counted it.
@@ -141,6 +175,8 @@ describe('firestore.rules, course blocks', function () {
       })
     })
     await assertSucceeds(getDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT)))
+    // And as a LIST, which is what the studio's queue view asks.
+    await assertSucceeds(getDocs(collection(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist')))
     await assertFails(
       updateDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT), {
         status: 'offered',
@@ -170,6 +206,7 @@ describe('firestore.rules, course blocks', function () {
     await assertFails(
       getDoc(doc(outsiderDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT))
     )
+    await assertFails(getDocs(collection(outsiderDb(), 'course_blocks', BLOCK, 'course_waitlist')))
   })
 
   it('the series a course owns stays client-writable, which is why the course is not', async () => {

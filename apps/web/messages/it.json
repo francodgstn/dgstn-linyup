@@ -9007,6 +9007,25 @@
     "publish": "Pubblica",
     "unpublish": "Torna in bozza",
     "priceChip": "{price}",
-    "freeChip": "Gratis"
+    "freeChip": "Gratis",
+    "duplicateTitle": "Riproporre questo corso",
+    "duplicateStartLabel": "Prima lezione del nuovo corso",
+    "duplicateShiftHint": "{count, plural, one {La lezione si sposta} other {Tutte le # lezioni si spostano insieme}}, mantenendo lo stesso giorno e la stessa ora. Le settimane saltate si svolgono di nuovo.",
+    "duplicateSkipWarning": "{count, plural, one {La data saltata non viene ripresa} other {Le # date saltate non vengono riprese}}. Le vacanze cambiano di anno in anno, inserisci quelle di questo semestre.",
+    "duplicateDraftHint": "La copia parte come bozza, così puoi controllarla prima della vendita.",
+    "duplicateAction": "Crea la copia",
+    "duplicated": "Corso copiato come bozza",
+    "cancelTitle": "Annullare {name}?",
+    "cancelBody": "Le lezioni rimanenti vengono tolte dal calendario e {count, plural, =0 {non c'è nessuno da avvisare} one {l'unica persona iscritta viene avvisata una volta} other {le # persone iscritte vengono avvisate una volta}}. Le lezioni già svolte restano.",
+    "cancelNoMoney": "Qui non viene rimborsato nulla. Riceverai l'elenco dei pagamenti e deciderai cosa restituire.",
+    "cancelKeep": "Mantieni il corso",
+    "cancelAction": "Annulla il corso",
+    "cancelled": "Corso annullato, {count} persone avvisate",
+    "cancelDoneTitle": "Corso annullato",
+    "cancelNoRefunds": "Nessuno ha pagato questo corso, quindi non c'è nulla da restituire.",
+    "cancelRefundsIntro": "{count, plural, one {Un pagamento potrebbe essere da rimborsare} other {# pagamenti potrebbero essere da rimborsare}}:",
+    "cancelRefundsHint": "Rimborsali dalla pagina dei pagamenti, uno per uno, così mantieni il controllo.",
+    "closeButton": "Chiudi",
+    "duplicateLabel": "Riproponi"
   }
 }

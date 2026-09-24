@@ -9007,6 +9007,25 @@
     "publish": "Publish",
     "unpublish": "Back to draft",
     "priceChip": "{price}",
-    "freeChip": "Free"
+    "freeChip": "Free",
+    "duplicateTitle": "Run this course again",
+    "duplicateStartLabel": "First lesson of the new course",
+    "duplicateShiftHint": "{count, plural, one {The lesson moves} other {All # lessons move together}}, keeping the same weekday and time. Skipped weeks run again.",
+    "duplicateSkipWarning": "{count, plural, one {The skipped date is not carried over} other {The # skipped dates are not carried over}}. Holidays differ from year to year, so add this term's own.",
+    "duplicateDraftHint": "The copy starts as a draft, so you can check it before it goes on sale.",
+    "duplicateAction": "Create the copy",
+    "duplicated": "Course copied as a draft",
+    "cancelTitle": "Cancel {name}?",
+    "cancelBody": "The remaining lessons come off the calendar and {count, plural, =0 {nobody has to be told} one {the one person on the course is told once} other {the # people on the course are told once}}. Lessons that have already run are kept.",
+    "cancelNoMoney": "No money is refunded here. You will get the list of payments and decide what to hand back.",
+    "cancelKeep": "Keep the course",
+    "cancelAction": "Cancel the course",
+    "cancelled": "Course cancelled, {count} people told",
+    "cancelDoneTitle": "Course cancelled",
+    "cancelNoRefunds": "Nobody paid for this course, so there is nothing to hand back.",
+    "cancelRefundsIntro": "{count, plural, one {One payment may be owed back} other {# payments may be owed back}}:",
+    "cancelRefundsHint": "Refund them from the payments page, one by one, so you stay in control of what goes back.",
+    "closeButton": "Close",
+    "duplicateLabel": "Run again"
   }
 }

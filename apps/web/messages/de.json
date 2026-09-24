@@ -9007,6 +9007,25 @@
     "publish": "Veröffentlichen",
     "unpublish": "Zurück zum Entwurf",
     "priceChip": "{price}",
-    "freeChip": "Gratis"
+    "freeChip": "Gratis",
+    "duplicateTitle": "Diesen Kurs erneut durchführen",
+    "duplicateStartLabel": "Erste Lektion des neuen Kurses",
+    "duplicateShiftHint": "{count, plural, one {Die Lektion verschiebt sich} other {Alle # Lektionen verschieben sich gemeinsam}}, mit gleichem Wochentag und gleicher Uhrzeit. Übersprungene Wochen finden wieder statt.",
+    "duplicateSkipWarning": "{count, plural, one {Das übersprungene Datum wird nicht übernommen} other {Die # übersprungenen Daten werden nicht übernommen}}. Ferien unterscheiden sich von Jahr zu Jahr, bitte die des neuen Semesters eintragen.",
+    "duplicateDraftHint": "Die Kopie startet als Entwurf, damit Sie sie vor dem Verkauf prüfen können.",
+    "duplicateAction": "Kopie erstellen",
+    "duplicated": "Kurs als Entwurf kopiert",
+    "cancelTitle": "{name} absagen?",
+    "cancelBody": "Die verbleibenden Lektionen werden aus dem Kalender entfernt und {count, plural, =0 {niemand muss benachrichtigt werden} one {die eine teilnehmende Person wird einmal benachrichtigt} other {die # Teilnehmenden werden einmal benachrichtigt}}. Bereits durchgeführte Lektionen bleiben bestehen.",
+    "cancelNoMoney": "Hier wird kein Geld zurückerstattet. Sie erhalten die Liste der Zahlungen und entscheiden selbst, was Sie zurückgeben.",
+    "cancelKeep": "Kurs behalten",
+    "cancelAction": "Kurs absagen",
+    "cancelled": "Kurs abgesagt, {count} Personen benachrichtigt",
+    "cancelDoneTitle": "Kurs abgesagt",
+    "cancelNoRefunds": "Für diesen Kurs hat niemand bezahlt, es gibt also nichts zurückzugeben.",
+    "cancelRefundsIntro": "{count, plural, one {Eine Zahlung könnte zurückzuerstatten sein} other {# Zahlungen könnten zurückzuerstatten sein}}:",
+    "cancelRefundsHint": "Erstatten Sie diese einzeln über die Zahlungsseite, damit Sie die Kontrolle behalten.",
+    "closeButton": "Schliessen",
+    "duplicateLabel": "Erneut durchführen"
   }
 }

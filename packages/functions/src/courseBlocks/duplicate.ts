@@ -16,12 +16,25 @@
 //     `n * 86_400_000` moves a 15:45 lesson to 14:45 across a DST boundary, and
 //     a term duplicated into the next term crosses one by construction. See
 //     `shiftWallClockDays`, which owns that.
-//  2. SKIP DATES ARE DROPPED. "No lesson on 8 October" is a fact about one
-//     autumn; carried into spring it silently removes a lesson nobody asked
-//     about, and the studio finds out in week seven. The copy therefore starts
-//     with every date present, which is the error anybody notices immediately.
-//     The pattern is kept otherwise, so the skip dates are re-typed rather than
-//     re-derived.
+//  2. SKIP DATES ARE DROPPED, AND THAT MEANS THE LESSON COMES BACK. "No lesson
+//     on 8 October" is a fact about one autumn; carried into spring it silently
+//     removes a lesson nobody asked about, and the studio finds out in week
+//     seven. The copy therefore starts with every date present, which is the
+//     error anybody notices immediately.
+//
+//     Which is why a course that HAS a rule is REGENERATED from the shifted
+//     rule rather than having its meeting list moved. Moving the list looks
+//     equivalent and is not: the list has a HOLE where the skipped week was, so
+//     shifting it carries the hole into the new term. Emptying `excludeDates`
+//     on a pattern nothing re-reads changes only what the studio sees when they
+//     next open the schedule editor, which is precisely the silent version of
+//     this bug. A course whose dates were typed one by one has no rule to
+//     re-run, and there its list IS the answer, holes and all, because a typed
+//     list has no notion of a skipped week.
+//
+//     A make-up lesson added to the source is dropped by the same mechanism,
+//     for the same reason: it belongs to the term where the lesson it replaced
+//     was called off.
 //
 // ── THE MAKE-UP LESSON ──────────────────────────────────────────────────────
 //
@@ -51,6 +64,7 @@ import { to } from '../utils/async'
 import { requireCapability } from '../utils/teams'
 import { civilDaysBetween, shiftWallClockDays } from '../utils/recurrence'
 import { materializeOccurrences, SESSIONS_COLLECTION } from '../sessions/series'
+import { resolveCourseSchedule } from './schedule'
 import { syncCourseBlockRoster } from './enrolment'
 import { FIXED_SERIES_STATUS, __courseBlockInternals } from './index'
 
@@ -111,8 +125,9 @@ export function shiftMeetings(meetings: CourseMeeting[], days: number): CourseMe
   }))
 }
 
-/** The stored pattern, moved with the list and stripped of its skip dates. See
- *  rule 2 in the header for why they go. */
+/** The stored pattern, moved to the new term and stripped of its skip dates.
+ *  See rule 2 in the header for why they go, and for why the meeting list is
+ *  then RE-RUN from this rather than shifted. */
 export function shiftPattern(
   pattern: CourseBlock['pattern'],
   days: number
@@ -190,7 +205,16 @@ export const duplicateCourseBlock = onCall(async (request) => {
     throw new HttpsError('failed-precondition', 'That course has no lessons to copy.')
   }
   const days = civilDaysBetween(first.start.toDate(), civilDateAtNoon(newStartDate))
-  const shifted = shiftMeetings(meetings, days)
+  const pattern = shiftPattern(block.pattern, days)
+
+  // RE-RUN THE RULE where there is one, so the weeks the old term skipped come
+  // back. Shifting the list instead would carry its holes; see rule 2.
+  // `resolveCourseSchedule` is the ONE meeting-list resolver, the same one
+  // create and reschedule go through, so a copy cannot produce a list the
+  // editor would not.
+  const shifted = pattern?.recurrence
+    ? resolveCourseSchedule({ kind: 'repeating', recurrence: pattern.recurrence }).meetings
+    : shiftMeetings(meetings, days)
 
   const copyName =
     typeof name === 'string' && name.trim()
@@ -204,7 +228,7 @@ export const duplicateCourseBlock = onCall(async (request) => {
     ...carriedCourseFields(raw),
     name: copyName,
     meetings: shifted,
-    pattern: shiftPattern(block.pattern, days),
+    pattern,
     seriesId: seriesRef.id,
     // The deadline is DERIVED, so it is re-derived from the copy's own first
     // lesson rather than shifted: "closes three days before it starts" has to go
@@ -260,9 +284,12 @@ export const duplicateCourseBlock = onCall(async (request) => {
     meetings: shifted.length,
     created,
     shiftedByDays: days,
-    // The copy starts with every date present. Said out loud so the pane can
-    // say it too: skip dates are the one thing a studio must re-enter.
+    // The copy starts with every date present, so it may hold MORE lessons than
+    // the course it came from. Reported rather than left to be noticed: the
+    // dialog warned about the skip dates, and this is the number that warning
+    // was about.
     skipDatesDropped: (block.pattern?.recurrence?.excludeDates ?? []).length,
+    lessonsAdded: shifted.length - meetings.length,
   }
 })
 

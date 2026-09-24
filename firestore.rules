@@ -1910,18 +1910,34 @@ service cloud.firestore {
       allow read: if belongsToUserTeam(resource) || hasRole('admin');
       allow write: if false;
 
-      // An enrolment carries its own `teamId`, so the tenant check reads the
-      // document in hand rather than fetching the parent course, one less read
-      // on every evaluation, and no cross-document dependency to go stale.
+      // BOTH SUBCOLLECTIONS AUTHORISE FROM THE PARENT COURSE, never from
+      // `resource`, and that is the difference between a rule that works and
+      // one that only looks like it does.
+      //
+      // `belongsToUserTeam(resource)` reads `resource.data.teamId`. On a GET
+      // that is the document in hand and it is fine. On a LIST there is no
+      // document in hand: the rule is evaluated against an empty `resource`,
+      // the property access raises "Property teamId is undefined on object",
+      // and the whole query is denied, on an empty subcollection as readily as
+      // on a full one. It shipped that way, and nothing said so: the roster
+      // panel renders a denied list as "nobody is on this course yet", which is
+      // also what an empty course looks like, and a rules denial reaches no
+      // log this side of the browser console.
+      //
+      // So the check is the one the session subcollections already use: read
+      // the PARENT and ask whether it is yours. It costs one `get()` per
+      // evaluation, which is the price of a rule that can answer a list.
       match /enrolments/{contactId} {
-        allow read: if belongsToUserTeam(resource) || hasRole('admin');
+        allow read: if belongsToUserTeam(
+                         get(/databases/$(database)/documents/course_blocks/$(blockId))
+                       ) || hasRole('admin');
         allow write: if false;
       }
 
-      // The waiting list for a full course. Same shape as the enrolments above
-      // and the same reasoning: an OFFERED entry carries the credential that
-      // takes a place, so a client that could write one could take a place it
-      // was never offered. Every write goes through a callable.
+      // The waiting list for a full course. Same authorisation, same reason,
+      // and one of its own: an OFFERED entry carries the credential that takes
+      // a place, so a client that could write one could take a place it was
+      // never offered. Every write goes through a callable.
       //
       // Named `course_waitlist`, not `waitlist`: the class queue's hourly sweep
       // reads `collectionGroup('waitlist')` and walks each hit as a session
@@ -1929,7 +1945,9 @@ service cloud.firestore {
       // through a `session` field that does not exist. See
       // COURSE_BLOCK_WAITLIST_SUBCOLLECTION.
       match /course_waitlist/{contactId} {
-        allow read: if belongsToUserTeam(resource) || hasRole('admin');
+        allow read: if belongsToUserTeam(
+                         get(/databases/$(database)/documents/course_blocks/$(blockId))
+                       ) || hasRole('admin');
         allow write: if false;
       }
     }

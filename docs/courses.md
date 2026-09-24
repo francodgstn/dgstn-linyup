@@ -299,6 +299,16 @@ document a client may edit. That asymmetry is asserted out loud in
 `courseBlocks/courseBlockAccess.rules-test.ts` rather than left to be
 rediscovered.
 
+**Both subcollections authorise from the PARENT course, never from
+`resource`.** `belongsToUserTeam(resource)` reads `resource.data.teamId`:
+fine on a **get**, where there is a document in hand, and fatal on a **list**,
+where there is not. The property access raises and the whole query is denied,
+on an empty subcollection as readily as on a full one. It shipped that way and
+nothing said so, because the roster panel renders a denied list as "nobody is
+on this course yet", which is also what an empty course looks like, and a rules
+denial reaches no log this side of the browser console. Every read in the rules
+test is now asserted as a list as well as a get.
+
 ---
 
 ## Files

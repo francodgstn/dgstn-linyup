@@ -9007,6 +9007,25 @@
     "publish": "Publier",
     "unpublish": "Remettre en brouillon",
     "priceChip": "{price}",
-    "freeChip": "Gratuit"
+    "freeChip": "Gratuit",
+    "duplicateTitle": "Relancer ce cours",
+    "duplicateStartLabel": "Première leçon du nouveau cours",
+    "duplicateShiftHint": "{count, plural, one {La leçon se décale} other {Les # leçons se décalent ensemble}}, en gardant le même jour et la même heure. Les semaines ignorées ont de nouveau lieu.",
+    "duplicateSkipWarning": "{count, plural, one {La date ignorée n'est pas reprise} other {Les # dates ignorées ne sont pas reprises}}. Les vacances changent d'une année à l'autre, ajoutez celles de ce semestre.",
+    "duplicateDraftHint": "La copie démarre en brouillon, pour que vous puissiez la vérifier avant la mise en vente.",
+    "duplicateAction": "Créer la copie",
+    "duplicated": "Cours copié en brouillon",
+    "cancelTitle": "Annuler {name} ?",
+    "cancelBody": "Les leçons restantes sont retirées du calendrier et {count, plural, =0 {personne n'a besoin d'être prévenu} one {la seule personne inscrite est prévenue une fois} other {les # personnes inscrites sont prévenues une seule fois}}. Les leçons déjà passées sont conservées.",
+    "cancelNoMoney": "Aucun remboursement n'est effectué ici. Vous recevrez la liste des paiements et déciderez quoi rendre.",
+    "cancelKeep": "Garder le cours",
+    "cancelAction": "Annuler le cours",
+    "cancelled": "Cours annulé, {count} personnes prévenues",
+    "cancelDoneTitle": "Cours annulé",
+    "cancelNoRefunds": "Personne n'a payé ce cours, il n'y a donc rien à rendre.",
+    "cancelRefundsIntro": "{count, plural, one {Un paiement est peut-être à rembourser} other {# paiements sont peut-être à rembourser}} :",
+    "cancelRefundsHint": "Remboursez-les depuis la page des paiements, un par un, pour garder la main.",
+    "closeButton": "Fermer",
+    "duplicateLabel": "Relancer"
   }
 }

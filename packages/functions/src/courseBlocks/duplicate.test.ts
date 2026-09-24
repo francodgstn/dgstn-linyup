@@ -7,6 +7,7 @@ import {
   shiftPattern,
 } from './duplicate'
 import { civilDaysBetween, shiftWallClockDays } from '../utils/recurrence'
+import { resolveCourseSchedule } from './schedule'
 
 // DUPLICATING A COURSE: "run Level 2 Seepferd again, from 4 March".
 //
@@ -144,6 +145,46 @@ describe('the pattern that comes with the copy', () => {
   it('has nothing to move for a course whose dates were typed one by one', () => {
     assert.equal(shiftPattern(null, 98), null)
     assert.equal(shiftPattern(undefined, 98), null)
+  })
+
+  it('makes the skipped week COME BACK, which shifting the list cannot do', () => {
+    // The bug this exists to stop, found by running it rather than by reading
+    // it: emptying `excludeDates` on the pattern while shifting the stored
+    // MEETING LIST looks equivalent and is not. The list has a HOLE where the
+    // skipped week was, so the copy kept the hole and the pattern said there
+    // was none. Ten lessons with an unexplained gap in March, and a schedule
+    // editor that disagreed with the calendar.
+    //
+    // Asserted end to end through the real resolver, because the defect lives
+    // exactly in the seam between the two representations.
+    const recurrence = {
+      frequency: 'weekly' as const,
+      interval: 1,
+      duration: 30,
+      endCondition: 'date' as const,
+      daysOfWeek: [3],
+      startDate: Timestamp.fromDate(new Date('2026-10-07T13:45:00Z')),
+      endDate: Timestamp.fromDate(new Date('2026-12-16T14:15:00Z')),
+      excludeDates: [Timestamp.fromDate(new Date('2026-10-21T13:45:00Z'))],
+    }
+    const source = resolveCourseSchedule({ kind: 'repeating', recurrence })
+    assert.equal(source.meetings.length, 10, 'the source skips one week')
+
+    const moved = shiftPattern({ recurrence }, 147)
+    const copy = resolveCourseSchedule({
+      kind: 'repeating',
+      recurrence: moved!.recurrence,
+    })
+    assert.equal(copy.meetings.length, 11, 'the copy runs every week')
+
+    // And no gap: consecutive lessons are exactly seven days apart.
+    for (let i = 1; i < copy.meetings.length; i++) {
+      assert.equal(
+        civilDaysBetween(copy.meetings[i - 1].start.toDate(), copy.meetings[i].start.toDate()),
+        7,
+        `lesson ${i + 1} must be a week after lesson ${i}`
+      )
+    }
   })
 })
 

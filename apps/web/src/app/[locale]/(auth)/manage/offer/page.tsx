@@ -59,6 +59,7 @@ import {
   CalendarDays,
   CalendarRange,
   ChevronLeft,
+  Ban,
   Copy,
   DoorOpen,
   Eye,
@@ -122,6 +123,10 @@ import { useActivities } from '@/hooks/useActivities'
 import { useCourseBlocks } from '@/hooks/useCourseBlocks'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { CourseBlockDialog, courseBlockSummary } from '@/components/offer/CourseBlockDialog'
+import {
+  CourseCancelDialog,
+  CourseDuplicateDialog,
+} from '@/components/offer/CourseLifecycleDialogs'
 import { CourseRosterPanel } from '@/components/offer/CourseRosterPanel'
 import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { useBookingSettings } from '@/hooks/useBookingSettings'
@@ -452,6 +457,11 @@ export default function CataloguePage() {
   /** The course dialog: null = closed, 'new' = creating, otherwise the course
    *  being edited. One piece of state, so it cannot be open twice. */
   const [courseEditing, setCourseEditing] = useState<'new' | CourseBlock | null>(null)
+  // Their own state rather than the shared confirm dialog: cancelling a course
+  // is not a delete with a different word on the button. It has something to
+  // say before (no money moves) and something to show after (who is owed it).
+  const [courseDuplicating, setCourseDuplicating] = useState<CourseBlock | null>(null)
+  const [courseCancelling, setCourseCancelling] = useState<CourseBlock | null>(null)
   const [schedulePreview, setSchedulePreview] = useState<Activity | null>(null)
   const [confirming, setConfirming] = useState<Confirming>(null)
   // THE `ai-offer-drafting` MODULE of the AI insights plugin (an experiment
@@ -892,6 +902,12 @@ export default function CataloguePage() {
       // course lands as a draft on purpose, so its lessons can be checked on the
       // calendar before anybody can buy it, and nothing is sellable until this
       // is pressed.
+      //
+      // CANCEL sits beside DELETE rather than replacing it, and which one a
+      // studio needs is decided by whether anybody is on the course, which is
+      // exactly what `places_taken` says. Delete is offered only while it would
+      // work; cancel only once there is somebody to tell.
+      const anyoneOn = (c.places_taken ?? 0) > 0
       return [
         ...(c.status !== 'cancelled'
           ? [
@@ -904,8 +920,26 @@ export default function CataloguePage() {
               } satisfies PaneAction,
             ]
           : []),
+        // "Run this again next term" is the commonest thing a studio wants from
+        // a finished course, so it is on the bar rather than inside the editor.
+        {
+          ...duplicate({ run: () => setCourseDuplicating(c) }),
+          label: tCourses('duplicateLabel'),
+        },
         edit({ run: () => setCourseEditing(c) }),
-        destroy(c.name, 'delete'),
+        ...(c.status === 'cancelled'
+          ? []
+          : anyoneOn
+            ? [
+                {
+                  key: 'cancel-course',
+                  icon: Ban,
+                  label: tCourses('cancelAction'),
+                  danger: true,
+                  run: () => setCourseCancelling(c),
+                } satisfies PaneAction,
+              ]
+            : [destroy(c.name, 'delete')]),
       ]
     }
     if (kind === 'course') {
@@ -2049,6 +2083,24 @@ export default function CataloguePage() {
 
       {/* NEVER STRAIGHT AWAY. One dialog for all four kinds, because the
           question is the same one and only the verb and the noun change. */}
+      {courseDuplicating && currentTeamId && (
+        <CourseDuplicateDialog
+          teamId={currentTeamId}
+          block={courseDuplicating}
+          onClose={() => setCourseDuplicating(null)}
+          // Open the copy straight away: the studio's next move is to check its
+          // dates, and a draft they have to go and find is a draft that ships
+          // with last term's half-term still in it.
+          onDuplicated={(id) => select({ kind: 'courseBlock', id })}
+        />
+      )}
+      {courseCancelling && currentTeamId && (
+        <CourseCancelDialog
+          teamId={currentTeamId}
+          block={courseCancelling}
+          onClose={() => setCourseCancelling(null)}
+        />
+      )}
       <AlertDialog open={!!confirming} onOpenChange={(v) => !v && setConfirming(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
