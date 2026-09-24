@@ -4832,13 +4832,13 @@
     "promoCode": "Code {code}",
     "lineKind_none": "Not linked",
     "lineKind_subscription": "Subscription",
-    "lineKind_course": "Course",
+    "lineKind_course": "Online course",
     "lineKind_product": "Product",
     "lineKind_drop_in": "Drop-in",
     "lineKind_appointment": "Appointment",
     "lineKind_gift_card": "Gift card",
     "lineKind_other": "Other",
-    "selectCourse": "Select course",
+    "selectCourse": "Which online course",
     "selectProduct": "Select product",
     "selectVariant": "Variant",
     "partnerVisitsHeading": "Partner visits",
@@ -4978,7 +4978,9 @@
     "rowMenuLabel": "More actions",
     "openStripeReceipt": "Open Stripe receipt",
     "stripeReceiptNone": "Stripe has no receipt for this payment.",
-    "stripeReceiptError": "Could not fetch the Stripe receipt."
+    "stripeReceiptError": "Could not fetch the Stripe receipt.",
+    "lineKind_course_block": "Course",
+    "selectCourseBlock": "Which course"
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",
@@ -6960,12 +6962,13 @@
     "paymentKinds": {
       "any": "Anything",
       "membership": "Membership",
-      "course": "Course",
+      "course": "Online course",
       "product": "Product",
       "drop_in": "Drop-in class",
       "appointment": "Appointment",
       "gift_card": "Gift card",
-      "policy_fee": "Policy fee"
+      "policy_fee": "Policy fee",
+      "course_block": "Course"
     }
   },
   "SettingsEmails": {

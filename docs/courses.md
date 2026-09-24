@@ -323,17 +323,55 @@ test is now asserted as a list as well as a get.
 | Cancelling the whole course | `packages/functions/src/courseBlocks/cancel.ts` |
 | Duplicate, and the make-up lesson | `packages/functions/src/courseBlocks/duplicate.ts` |
 | The waiting list | `packages/functions/src/courseBlocks/waitlist.ts` |
+| Seeding a term course | `scripts/lib/courseBlocks.ts` (+ `courseSchedule.ts`, pure) |
 | Rules | `firestore.rules` → `match /course_blocks/{blockId}` |
 | Admin | `apps/web/src/components/offer/CourseBlockDialog.tsx`, the Courses tab in `manage/offer` |
 
+## In the accounts
+
+**A course sale books to the `course` category, beside an online-course sale.**
+The two are different products and the distinction is kept on
+`PaymentLineItem.kind`, but a studio's accounts have one question here and it is
+"what did courses bring in".
+
+The mechanism is worth knowing because it was wrong first: **`mapCategory` is
+fed the payment's TOP-LEVEL `kind`, not its line item.** A row carrying only
+`line_item` is invisible to it, to the refund reversal and to the payments
+list's label, so every course sale landed in `other` and the studio's course
+income was not course income, on the journal, in the CSV and on the charts.
+`handlePaymentIntent` therefore stamps `kind: 'course_block'` and the course
+name, exactly as it does for a drop-in or an appointment.
+
+## Seeding one
+
+Every seeder writes a term course **mid-run**: a few lessons behind it, most
+ahead, places part-taken. A course that has not started shows an empty roster
+and nothing to attend, one that has finished cannot be enrolled on, and both
+read as a working seed until somebody opens them.
+
+Two rules the helper follows, each of which was a defect first:
+
+- **Money together or not at all.** One enrolment is paid and is written with
+  its `member_payments` row in the same call; the rest are studio-granted, which
+  is what `enrolCourseBlockContact` writes. Its PaymentIntent id carries a
+  `_course_block` suffix, because `pi_seed_{contact}_course` already belongs to
+  the online-courses fixture and the two collided on one document: a course sale
+  silently became an online-course sale, with the enrolment still pointing at it.
+- **The anchor is the most recent occurrence that has ALREADY HAPPENED.** On the
+  course's own weekday, before the lesson's time of day, "this week's
+  occurrence" is still ahead, so anchoring on it leaves one fewer lesson behind
+  us than asked for. Wrong on exactly one day in seven, which is why
+  `courseSchedule.ts` is a pure import-free leaf with fixtures over a whole week.
+
 ## Not built yet
 
-The studio's own screens for cancelling, duplicating and adding a make-up
-lesson, and the public surfaces for the waiting list (joining from a sold-out
-card, and the page an offer's claim link opens). The callables are wired and
-tested; nothing draws them yet.
+The public surfaces for the waiting list: joining from a sold-out card, and the
+page an offer's claim link opens. The callables are wired and tested, and the
+offer mail already points at a route nobody has built, so that link is the first
+thing owed here.
 
-Beyond that: the seeders, and the course line in the reporting surfaces.
+Also open: linking a plan to a course (the pane says so), and a Courses tab in
+the Shop.
 
 **One rename has to land WITH the sale, not after it.** The studio side already
 says *Online courses* everywhere (the nav did before this work, and the

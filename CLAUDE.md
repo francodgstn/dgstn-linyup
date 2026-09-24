@@ -592,6 +592,12 @@ Four invariants, each a bug before it was a rule:
   boundary by construction and a 15:45 lesson would silently become 14:45. It
   **drops `excludeDates`** rather than shifting them, because a holiday is a
   fact about one year.
+- **A course sale is put in the accounts by its TOP-LEVEL `kind`, not its line
+  item.** `mapCategory` reads `payment.kind` and nothing else, as do the refund
+  reversal and the payments list label, so a row carrying only `line_item`
+  booked to `other` and a studio's course income was not course income.
+  `handlePaymentIntent` stamps `kind: 'course_block'`; it maps to the `course`
+  category, beside an online-course sale.
 - **The course waiting list is `course_waitlist`, NOT `waitlist`.** A
   collection-group query is a global namespace, and the class sweep reads
   `collectionGroup('waitlist')` then walks each hit as a session booking. The

@@ -85,6 +85,7 @@ import {
   seedStoreWebsite,
   seedStoreCourses,
 } from './lib/storefront'
+import { seedCourseBlock } from './lib/courseBlocks'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { ledgerExpiry } from './lib/ledgerExpiry'
 import { writeTeamContactCounter } from './lib/contactCounter'
@@ -2025,6 +2026,36 @@ async function seedTeam(opts: TeamSeed) {
   await seedEventProgram(teamId, uid)
   await seedSessionWaitlist({ teamId })
   await seedCoursePurchase(teamId)
+
+  // ── a term course, mid-run ─────────────────────────────────────────────────
+  // A few lessons behind it, most ahead, places part-taken: the state a studio
+  // actually looks at, and the one where the roster, the day sheet and the
+  // public card all have something in them.
+  await seedCourseBlock({
+    teamId,
+    uid,
+    blockId: `${teamId}-course-bjj-beginners`,
+    name: 'Beginners BJJ, 8-week course',
+    description:
+      'Eight Tuesdays from the ground up. No experience needed, and a gi is lent for the first month.',
+    activityId: `${teamId}-act-bjj`,
+    activityName: 'Brazilian Jiu-Jitsu',
+    location: 'Dojo A',
+    providerName: 'Marco Silva',
+    places: 9,
+    priceAmount: 320,
+    dayOfWeek: 2,
+    time: '18:00',
+    durationMinutes: 90,
+    lessons: 8,
+    lessonsElapsed: 3,
+    enrolled: [0, 1, 2, 4, 6].map((i) => ({
+      id: `${teamId}-contact-${i.toString().padStart(3, '0')}`,
+      firstname: CONTACT_POOL[i].firstname,
+      lastname: CONTACT_POOL[i].lastname,
+      email: `${slugEmail(CONTACT_POOL[i])}.${teamId}@example.com`,
+    })),
+  })
 
   await seedDocuments(teamId, teamSlug, teamName, uid)
 

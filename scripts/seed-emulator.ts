@@ -101,6 +101,7 @@ import {
   seedStoreWebsite,
   seedStoreCourses,
 } from './lib/storefront'
+import { seedCourseBlock } from './lib/courseBlocks'
 import { memberCapsFor, COACH_DEFAULT_CAPABILITIES } from './lib/roles'
 import { ledgerExpiry } from './lib/ledgerExpiry'
 import { writeTeamContactCounter } from './lib/contactCounter'
@@ -131,6 +132,11 @@ import {
   seedSessionWaitlist,
 } from './lib/fixtures/engagement'
 import { seedTeamMoney, seedTeamSales } from './lib/fixtures/money'
+
+/** Which seeded contacts are on the term course. The FIRST is the one who paid,
+ *  and their `member_payments` row is written with their enrolment. */
+const COURSE_ROSTER_INDEXES = [0, 1, 2, 4, 6]
+
 import { seedTeamSubscriptionHistory } from './lib/fixtures/subscriptionHistory'
 import { seedTeamFinance } from './lib/fixtures/finance'
 import { seedTeamLegalProfile, seedTeamTarif595 } from './lib/fixtures/tarif595'
@@ -2225,6 +2231,35 @@ async function seedTeam(opts: {
   await seedSessionWaitlist({ teamId })
   await seedCoursePurchase(teamId)
 
+  // ── a term course, mid-run ─────────────────────────────────────────────────
+  // Before the finance branch below on purpose: `seedTeamFinance` replays every
+  // `member_payments` row into the journal, so a course sale seeded after it
+  // would be money the accounts never saw.
+  await seedCourseBlock({
+    teamId,
+    uid,
+    blockId: `${teamId}-course-bjj-beginners`,
+    name: 'Beginners BJJ, 8-week course',
+    description: 'Eight Tuesdays from the ground up. No experience needed, and a gi is lent for the first month.',
+    activityId: `${teamId}-act-bjj`,
+    activityName: 'Brazilian Jiu-Jitsu',
+    location: 'Dojo A',
+    providerName: 'Marco Silva',
+    places: 9,
+    priceAmount: 320,
+    dayOfWeek: 2,
+    time: '18:00',
+    durationMinutes: 90,
+    lessons: 8,
+    lessonsElapsed: 3,
+    enrolled: COURSE_ROSTER_INDEXES.map((i) => ({
+      id: `${teamId}-contact-${i.toString().padStart(3, '0')}`,
+      firstname: contactSeeds[i].firstname,
+      lastname: contactSeeds[i].lastname,
+      email: contactSeeds[i].email,
+    })),
+  })
+
   // ── one-off sales, then the journal (studio+ only) ─────────────────────────
   // Finance is a studio-tier plugin; seedTeamFinance installs it AND replays
   // every member_payments row into the journal, so it must run LAST (after
@@ -3381,6 +3416,10 @@ async function main() {
   console.log(
     '   Online Courses: 2 courses seeded for studio@linyup.com → /plugins/online-courses'
   )
+  console.log(
+    '   Courses: "Beginners BJJ, 8-week course" per team, 3 of 8 lessons run, 5/9 places'
+  )
+  console.log('            taken, CHF 320, one of them paid → /manage/offer (Courses tab)')
   console.log(
     '   Documents: 3 documents seeded per team (terms, privacy, house rules) → /plugins/documents\n'
   )

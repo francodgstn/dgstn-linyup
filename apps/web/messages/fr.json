@@ -4832,13 +4832,13 @@
     "promoCode": "Code {code}",
     "lineKind_none": "Non lié",
     "lineKind_subscription": "Abonnement",
-    "lineKind_course": "Cours",
+    "lineKind_course": "Cours en ligne",
     "lineKind_product": "Produit",
     "lineKind_drop_in": "Entrée à l'unité",
     "lineKind_appointment": "Rendez-vous",
     "lineKind_gift_card": "Carte cadeau",
     "lineKind_other": "Autre",
-    "selectCourse": "Choisir un cours",
+    "selectCourse": "Quel cours en ligne",
     "selectProduct": "Choisir un produit",
     "selectVariant": "Variante",
     "partnerVisitsHeading": "Visites partenaires",
@@ -4978,7 +4978,9 @@
     "rowMenuLabel": "Plus d'actions",
     "openStripeReceipt": "Ouvrir le reçu Stripe",
     "stripeReceiptNone": "Stripe n'a pas de reçu pour ce paiement.",
-    "stripeReceiptError": "Impossible de récupérer le reçu Stripe."
+    "stripeReceiptError": "Impossible de récupérer le reçu Stripe.",
+    "lineKind_course_block": "Cours",
+    "selectCourseBlock": "Quel cours"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configuration du compte de paiement n'est pas terminée, l'action n'a donc pas pu aboutir. Terminer la configuration dans Paramètres → Paiements.",
@@ -6965,7 +6967,8 @@
       "drop_in": "Cours à l'unité",
       "appointment": "Rendez-vous",
       "gift_card": "Carte cadeau",
-      "policy_fee": "Frais"
+      "policy_fee": "Frais",
+      "course_block": "Cours"
     }
   },
   "SettingsEmails": {

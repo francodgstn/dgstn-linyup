@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import type { PaymentLineItem, PaymentLineItemKind } from '@linyup/shared'
 import { useSubscriptionTypes } from '@/hooks/useSubscriptionTypes'
 import { useCourses } from '@/plugins/online-courses/hooks'
+import { useCourseBlocks } from '@/hooks/useCourseBlocks'
 import { useProducts } from '@/plugins/products/hooks'
 import { Label } from '@/components/ui/label'
 import {
@@ -22,7 +23,20 @@ import {
 // offered: each is minted by one specific flow (the appointment checkout, the
 // gift-card issue dialog), and hand-tagging an arbitrary payment with one would
 // book money into that category with no booking — or no card — behind it.
-const KINDS: PaymentLineItemKind[] = ['subscription', 'course', 'product', 'drop_in', 'other']
+// `course_block` IS offered, unlike appointment and gift_card, because a studio
+// really does take cash or a bank transfer for a course and then puts the person
+// on it by hand: `enrolCourseBlockContact` moves no money and says in as many
+// words that what they paid is recorded through the ordinary payments rail. This
+// is that rail. The two course kinds sit side by side on purpose, since a studio
+// running both needs to say which one it sold.
+const KINDS: PaymentLineItemKind[] = [
+  'subscription',
+  'course',
+  'course_block',
+  'product',
+  'drop_in',
+  'other',
+]
 
 export function PaymentLineItemPicker({
   teamId,
@@ -36,6 +50,7 @@ export function PaymentLineItemPicker({
   const t = useTranslations('PaymentsDashboard')
   const { data: types = [] } = useSubscriptionTypes(teamId)
   const { data: courses = [] } = useCourses(teamId)
+  const { data: courseBlocks = [] } = useCourseBlocks(teamId)
   const { data: products = [] } = useProducts(teamId)
 
   const kind = value?.kind ?? 'none'
@@ -134,6 +149,30 @@ export function PaymentLineItemPicker({
       )}
 
       {/* Course */}
+      {/* Scheduled course → which term. Listed soonest-first, the same order the
+          Offerings rail uses, because "the one starting next" is what a studio
+          taking money at the desk is almost always tagging. */}
+      {kind === 'course_block' && (
+        <Select
+          value={value?.courseBlockId ?? ''}
+          onValueChange={(id) => {
+            const c = courseBlocks.find((x) => x.id === id)
+            onChange({ kind: 'course_block', courseBlockId: id, label: c?.name ?? null })
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectCourseBlock')} />
+          </SelectTrigger>
+          <SelectContent>
+            {courseBlocks.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       {kind === 'course' && (
         <Select
           value={value?.courseId ?? ''}

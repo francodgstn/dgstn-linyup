@@ -4832,13 +4832,13 @@
     "promoCode": "Code {code}",
     "lineKind_none": "Nicht verknüpft",
     "lineKind_subscription": "Abo",
-    "lineKind_course": "Kurs",
+    "lineKind_course": "Onlinekurs",
     "lineKind_product": "Produkt",
     "lineKind_drop_in": "Einzeleintritt",
     "lineKind_appointment": "Termin",
     "lineKind_gift_card": "Geschenkkarte",
     "lineKind_other": "Sonstiges",
-    "selectCourse": "Kurs wählen",
+    "selectCourse": "Welcher Onlinekurs",
     "selectProduct": "Produkt wählen",
     "selectVariant": "Variante",
     "partnerVisitsHeading": "Partnerbesuche",
@@ -4978,7 +4978,9 @@
     "rowMenuLabel": "Weitere Aktionen",
     "openStripeReceipt": "Stripe-Beleg öffnen",
     "stripeReceiptNone": "Stripe hat für diese Zahlung keinen Beleg.",
-    "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden."
+    "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden.",
+    "lineKind_course_block": "Kurs",
+    "selectCourseBlock": "Welcher Kurs"
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",
@@ -6960,12 +6962,13 @@
     "paymentKinds": {
       "any": "Alles",
       "membership": "Mitgliedschaft",
-      "course": "Kurs",
+      "course": "Onlinekurs",
       "product": "Produkt",
       "drop_in": "Einzellektion",
       "appointment": "Termin",
       "gift_card": "Geschenkkarte",
-      "policy_fee": "Gebühr"
+      "policy_fee": "Gebühr",
+      "course_block": "Kurs"
     }
   },
   "SettingsEmails": {

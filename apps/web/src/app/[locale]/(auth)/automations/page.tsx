@@ -249,6 +249,7 @@ const SUBSCRIPTION_SCOPED_TRIGGERS: string[] = [
 const PAYMENT_KIND_ORDER: Record<NonNullable<MemberPayment['kind']>, true> = {
   membership: true,
   course: true,
+  course_block: true,
   product: true,
   drop_in: true,
   appointment: true,

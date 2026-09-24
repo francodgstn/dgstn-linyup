@@ -701,6 +701,23 @@ async function handlePaymentIntent(
             courseName: md.courseTitle ?? null,
           }
         : {}),
+      // A scheduled COURSE, which is a different product from the one above: that
+      // is the online-courses plugin, this is "13 Wednesdays, 9 places".
+      //
+      // STAMPING THE TOP-LEVEL `kind` IS WHAT PUTS IT IN THE ACCOUNTS. Every
+      // reader of a sale's category goes through `mapCategory(payment.kind)`:
+      // the journal writer here, the refund reversal, the payments list's label.
+      // A row carrying only `line_item` is invisible to all three: `kind` is
+      // undefined, so the sale landed in `other` and the studio's course income
+      // was not course income. Carrying the name too means the dashboard row
+      // reads "Level 2 Seepferd" rather than a bare amount.
+      ...(md.kind === 'course_block'
+        ? {
+            kind: 'course_block',
+            courseBlockId: md.blockId ?? null,
+            courseName: md.courseName ?? null,
+          }
+        : {}),
       // Membership purchases carry the subscription type name so the dashboard row
       // reads "Monthly Unlimited" instead of a bare "payment". (One-off membership
       // prices only — recurring invoice PIs carry no metadata; handleInvoice and the

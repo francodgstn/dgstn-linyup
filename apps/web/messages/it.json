@@ -4832,13 +4832,13 @@
     "promoCode": "Codice {code}",
     "lineKind_none": "Non collegato",
     "lineKind_subscription": "Abbonamento",
-    "lineKind_course": "Corso",
+    "lineKind_course": "Corso online",
     "lineKind_product": "Prodotto",
     "lineKind_drop_in": "Ingresso singolo",
     "lineKind_appointment": "Appuntamento",
     "lineKind_gift_card": "Buono regalo",
     "lineKind_other": "Altro",
-    "selectCourse": "Scegli corso",
+    "selectCourse": "Quale corso online",
     "selectProduct": "Scegli prodotto",
     "selectVariant": "Variante",
     "partnerVisitsHeading": "Visite partner",
@@ -4978,7 +4978,9 @@
     "rowMenuLabel": "Altre azioni",
     "openStripeReceipt": "Apri la ricevuta Stripe",
     "stripeReceiptNone": "Stripe non ha una ricevuta per questo pagamento.",
-    "stripeReceiptError": "Impossibile recuperare la ricevuta Stripe."
+    "stripeReceiptError": "Impossibile recuperare la ricevuta Stripe.",
+    "lineKind_course_block": "Corso",
+    "selectCourseBlock": "Quale corso"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
@@ -6960,12 +6962,13 @@
     "paymentKinds": {
       "any": "Tutto",
       "membership": "Abbonamento",
-      "course": "Corso",
+      "course": "Corso online",
       "product": "Prodotto",
       "drop_in": "Lezione singola",
       "appointment": "Appuntamento",
       "gift_card": "Carta regalo",
-      "policy_fee": "Penale"
+      "policy_fee": "Penale",
+      "course_block": "Corso"
     }
   },
   "SettingsEmails": {

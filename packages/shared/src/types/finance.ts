@@ -246,6 +246,14 @@ export function mapCategory(kind?: string | null): FinanceCategory {
     case 'drop_in':
       return 'drop_in'
     case 'course':
+    // A SCHEDULED course books to the same line as an on-demand one. The two
+    // are different products (a term of lessons, a set of videos) and the
+    // distinction is kept on `PaymentLineItem.kind` for anyone who needs it,
+    // but a studio's accounts have one question here and it is "what did
+    // courses bring in". Mapping it to a category of its own would widen a
+    // stored enum that every journal row, CSV column and chart already reads,
+    // to split a line nobody asked to have split.
+    case 'course_block':
       return 'course'
     case 'product':
       return 'product'
