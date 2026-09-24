@@ -40,7 +40,13 @@ import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { FlowShell } from '@/components/booking/FlowShell'
 import { OfferCard } from '@/components/booking/catalogue/OfferCard'
 import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
-import { MiniCalendar, toDateKey } from '@/components/booking/MiniCalendar'
+import { toDateKey } from '@/components/booking/MiniCalendar'
+import { AppointmentWhen } from '@/components/booking/when/AppointmentWhen'
+import type {
+  AvailActivity,
+  AvailCoach,
+  AvailDuration,
+} from '@/components/booking/when/availability'
 import {
   GuestDetailsForm,
   type GuestDetailsFormHandle,
@@ -77,57 +83,9 @@ import { usePublicFormat } from '../usePublicFormat'
 import { callFunction } from '@/lib/callFunction'
 
 // ─── types ────────────────────────────────────────────────────────────────────
-// Mirrors the listAvailability callable's contract: availability is the ONLY
-// source of bookable times (nothing is pre-generated any more — an appointment
-// Session exists only once booked). Duration/name/pricing come from the linked
-// Activity, not the availability window. THE PRICE IS THE GATE for appointments
-// — there is no access rule any more (see ActivityMemberBenefit's history note):
-// an unpriced duration is free for anyone, a priced one is payable by anyone,
-// and `memberBenefit` only ever lowers a signed-in member's price.
-
-interface AvailDuration {
-  minutes: number
-  priceAmount: number | null
-  /** NOT SOLD INDIVIDUALLY (UX-70) — bookable only through `memberBenefit`.
-   *  Distinct from `priceAmount: null`, which means free for anyone: the two
-   *  used to be the same value and the coach could express only one of them. */
-  benefitOnly?: boolean
-}
-
-interface AvailActivity {
-  activityId: string
-  activityName: string
-  durations: AvailDuration[]
-  /** The activity-wide rule — the LEGACY reading, and only correct while
-   *  `durationBenefits` is absent. Never read either directly: the pair goes
-   *  through `resolveDurationBenefit`, which is what makes a tenant mirrored
-   *  before per-length rules existed keep quoting the same price. */
-  memberBenefit: ActivityMemberBenefit | Benefit | null
-  durationBenefits: ActivityDurationBenefit[] | null
-  /** Per-activity override of the team's cancellation terms, from
-   *  `listAvailability`. Display-only; falls back to the team default. */
-  cancellationPolicy: string | null
-  /** The activity's own CONTACT fields, which EXTEND the team-wide list.
-   *  Unlike the policy above this is not display-only — the same resolver runs
-   *  on the server, so the guest step asks for exactly what will be accepted. */
-  contactFields: BookingContactField[] | null
-  /** WHERE. `listAvailability` returns one entry per (provider, activity,
-   *  PLACE), so a coach teaching the same thing at two places arrives as two
-   *  entries sharing an `activityId`, the place is what tells them apart, on
-   *  the card and in the URL. Null for a schedule naming no tracked place. */
-  placeId: string | null
-  placeName: string | null
-  /** The free-text note the studio typed on top of the place, never its name. */
-  location: string | null
-  onlineUrl: string | null
-  days: { dayMs: number; slotsByDuration: Record<string, number[]> }[]
-}
-
-interface AvailCoach {
-  providerId: string
-  providerName: string | null
-  activities: AvailActivity[]
-}
+// The listAvailability contract itself lives in components/booking/when/
+// availability, beside the step that renders it and shared with the merged
+// front door. What stays here is what this funnel makes of it.
 
 // What a picked time carries into the in-page booking step. Pricing here is
 // DISPLAY/ROUTING only — bookAppointment / createAppointmentCheckout always
@@ -1520,137 +1478,6 @@ function buildWindowBooking(
 // here, which meant leaving the `time` step destroyed them — so Back from the
 // booking step, or a history restore, silently reset the visitor's choices. They
 // are also two of the four fields that identify a booking, so the URL needs them.
-function TimePicker({
-  coach,
-  activity,
-  currency,
-  locale,
-  duration,
-  onDurationChange,
-  selectedDateKey,
-  onDateChange,
-  onPick,
-}: {
-  coach: AvailCoach
-  activity: AvailActivity
-  currency: string
-  locale: string
-  duration: number
-  onDurationChange: (minutes: number) => void
-  selectedDateKey: string | null
-  onDateChange: (dateKey: string | null) => void
-  onPick: (startMs: number, duration: AvailDuration) => void
-}) {
-  const fmt = usePublicFormat()
-  const t = useTranslations('AppointmentBooking')
-  const tPublic = useTranslations('PublicBooking')
-  const setDuration = onDurationChange
-  const setSelectedDateKey = onDateChange
-
-  // Only days with a free start for the CHOSEN duration are selectable — a
-  // window may offer several lengths and not every day has room for all of them.
-  const availableDates = useMemo(
-    () =>
-      activity.days
-        .filter((d) => (d.slotsByDuration[String(duration)] ?? []).length > 0)
-        .map((d) => toDateKey(new Date(d.dayMs))),
-    [activity, duration]
-  )
-  const maxDateKey = useMemo(() => {
-    const last = activity.days[activity.days.length - 1]
-    return last ? toDateKey(new Date(last.dayMs)) : toDateKey(new Date())
-  }, [activity])
-
-  // Re-validate the selected day whenever the duration (or activity) changes —
-  // the previously-selected day may not offer the new duration. Moved up here
-  // WITH the state: without it, a restored duration whose day has no slots
-  // silently renders an empty grid.
-  useEffect(() => {
-    if (selectedDateKey && availableDates.includes(selectedDateKey)) return
-    setSelectedDateKey(availableDates[0] ?? null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duration, activity.activityId, availableDates.join(',')])
-
-  const day = activity.days.find((d) => toDateKey(new Date(d.dayMs)) === selectedDateKey)
-  const times = day?.slotsByDuration[String(duration)] ?? []
-  const chosenDuration =
-    activity.durations.find((d) => d.minutes === duration) ??
-    activity.durations[0] ?? { minutes: duration, priceAmount: null, benefitOnly: false }
-
-  return (
-    <>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{activity.activityName}</h1>
-        {coach.providerName && (
-          <p className="text-sm text-muted-foreground mt-1">{tPublic('withInstructor', { name: coach.providerName })}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-start">
-        {/* Calendar */}
-        <div className="bg-card border rounded-xl p-4">
-          <MiniCalendar
-            availableDates={availableDates}
-            selectedDate={selectedDateKey}
-            onSelect={setSelectedDateKey}
-            maxDateKey={maxDateKey}
-          />
-        </div>
-
-        {/* Duration chips (above the time list) + times */}
-        <div>
-          {activity.durations.length > 1 && (
-            <div className="space-y-1.5 mb-4">
-              <p className="text-xs font-medium text-muted-foreground">{t('pickDuration')}</p>
-              <div className="flex gap-2 flex-wrap">
-                {activity.durations.map((d) => (
-                  <button
-                    key={d.minutes}
-                    type="button"
-                    onClick={() => setDuration(d.minutes)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      d.minutes === duration ? 'border-primary bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {fmtDuration(d.minutes)}
-                    {d.benefitOnly === true
-                      ? ` · ${t('durationBenefitOnly')}`
-                      : typeof d.priceAmount === 'number' &&
-                        ` · ${formatCurrency(d.priceAmount, currency, locale)}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {selectedDateKey && (
-            <p className="text-sm font-medium mb-3 text-muted-foreground">
-              {fmtDateFull(fmt, new Date(selectedDateKey + 'T12:00:00').getTime())}
-            </p>
-          )}
-
-          {times.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">{t('noTimesThisDay')}</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {times.map((startMs) => (
-                <button
-                  key={startMs}
-                  type="button"
-                  onClick={() => onPick(startMs, chosenDuration)}
-                  className="rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5"
-                >
-                  {fmtTime(fmt, startMs)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
-
 // ─── main component ───────────────────────────────────────────────────────────
 // Coach-first funnel: coach → activity → duration (only if >1) → day → time →
 // book. Wrapped in FlowShell so it wears the same team top bar, content width
@@ -2116,11 +1943,15 @@ export default function AppointmentPicker({
         {!loading && teamId && step === 'time' && selectedCoach && selectedActivity && (
           <section className="space-y-4">
             <BackButton label={timeBackLabel} onClick={backFromTime} />
-            <TimePicker
+            <AppointmentWhen
               coach={selectedCoach}
               activity={selectedActivity}
               currency={currency}
               locale={locale}
+              fmt={fmt}
+              t={t}
+              tPublic={tPublic}
+              formatDuration={fmtDuration}
               duration={effectiveDuration}
               onDurationChange={setDuration}
               selectedDateKey={selectedDateKey}
