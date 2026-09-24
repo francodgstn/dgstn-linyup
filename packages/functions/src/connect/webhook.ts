@@ -24,6 +24,7 @@ import {
   CONTACT_CREDIT_GRANTS_SUBCOLLECTION,
   COURSE_BLOCKS_COLLECTION,
   COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION,
+  COURSE_BLOCK_WAITLIST_SUBCOLLECTION,
   MEMBER_PAYMENTS_SUBCOLLECTION,
   MEMBER_SUBSCRIPTIONS_SUBCOLLECTION,
   TEAMS_COLLECTION,
@@ -1895,6 +1896,42 @@ async function handleCourseBlockCheckout(
       }
     }
     return
+  }
+
+  // A WAITING-LIST CLAIM, settled. Two writes, and both are owed whether or not
+  // the metadata carries the token, because the enrolment may have been minted
+  // as an offer either way.
+  //
+  // Clearing the claim fields is not tidying: `takeCourseBlockPlace` merges, so
+  // a settled enrolment would otherwise keep `waitlist_claim` and a
+  // `claim_expires_at` in the past. The class rail learned what that costs, a
+  // leftover claim marker hides the person from the reminder job, and here it
+  // would also make the sweep try to release a place they have paid for.
+  await enrolmentRef.set(
+    {
+      waitlist_claim: FieldValue.delete(),
+      claim_expires_at: FieldValue.delete(),
+    },
+    { merge: true }
+  )
+  const queueEntryRef = db
+    .collection(COURSE_BLOCKS_COLLECTION)
+    .doc(blockId)
+    .collection(COURSE_BLOCK_WAITLIST_SUBCOLLECTION)
+    .doc(contactId)
+  const [, queueEntry] = await to(queueEntryRef.get())
+  if (queueEntry?.exists && queueEntry.get('status') === 'offered') {
+    // The entry is a DERIVED VIEW of the enrolment, so it is set to what the
+    // enrolment now says. Left as 'offered' it would sit there for ever and the
+    // hourly sweep would try to hand the place on.
+    await to(
+      queueEntryRef.update({
+        status: 'claimed',
+        claimed_at: FieldValue.serverTimestamp(),
+        offer_token: null,
+        offer_expires_at: null,
+      })
+    )
   }
 
   if (piId) {

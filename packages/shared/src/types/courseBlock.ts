@@ -377,6 +377,197 @@ export function courseBlockSalesOpen(
   return true
 }
 
+// ─── THE WAITING LIST: a queue for a place, not for a seat ──────────────────
+//
+// A full course is the one case where "sold out" is not the end of the
+// conversation: a term course is bought months ahead, people drop out, and the
+// studio would rather fill the place than lose it. So the queue reuses the
+// SHAPE the class waitlist proved, and none of its storage.
+//
+// Three invariants are carried over verbatim, each of which was a bug there
+// first:
+//
+//  1. THE SINGLE-DEADLINE RULE. The offered enrolment's `expires_at`, its
+//     `claim_expires_at`, the entry's `offer_expires_at` and, for a paid claim,
+//     the Stripe session's own expiry are ONE instant, computed once by
+//     `resolveCourseClaimWindow` and copied. Let them diverge and a place gets
+//     sold twice.
+//  2. AN OFFERED PLACE IS AN ORDINARY ENROLMENT carrying `waitlist_claim`, held
+//     as `status: 'hold'`. That is what makes every capacity gate already stop
+//     selling it: `courseBlockEnrolmentHoldsPlace` counts it without knowing
+//     what a waiting list is, and lapses it lazily on the same read.
+//  3. AN ENTRY IS OFFERED ONCE, EVER. A lapsed offer is terminal, and the
+//     person re-joins if they still want the course, which writes a fresh
+//     `joined_at` and puts them at the tail for free. Hence no offer counter,
+//     no re-queue ordering key and no "max offers" setting.
+//
+// The one thing that is deliberately DIFFERENT is the length of the window. A
+// class seat is a "grab it now" decision and gets two hours; a course is a
+// family decision costing a few hundred francs, and two hours would hand the
+// place to whoever happens to be holding their phone. See
+// `COURSE_CLAIM_DEFAULT_HOURS`.
+
+/** How long a course place is held for the person it was offered to. Two DAYS,
+ *  not the class queue's two hours: this is a term's fees and a diary to check,
+ *  and an offer nobody can realistically answer is a place the studio loses
+ *  rather than fills. */
+export const COURSE_CLAIM_DEFAULT_HOURS = 48
+
+/** Below this an offer is not worth making: the place shows as free, and the
+ *  ordinary door can sell it, which is the right outcome for a place that frees
+ *  the evening before the course starts. */
+export const COURSE_CLAIM_MIN_WINDOW_MINUTES = 60
+
+/** How many places one promotion pass may offer. A studio raising the cap from
+ *  9 to 30 with a long queue would otherwise mint twenty-one holds and mail
+ *  twenty-one people inside one transaction. */
+export const COURSE_WAITLIST_MAX_OFFERS_PER_RUN = 5
+
+/** How many entries one promotion transaction reads. A runaway guard, not a
+ *  page: the join cap below bounds the waiting entries. */
+export const COURSE_WAITLIST_SCAN_LIMIT = 200
+
+/** How many people may wait for one course. Twice the places is past the point
+ *  where anyone at the back realistically gets on; the floor keeps a tiny
+ *  course from having a queue of two. Uncapped courses are never full, so they
+ *  never take a queue at all. */
+export function courseWaitlistCap(places: number | null | undefined): number {
+  const seats = typeof places === 'number' && places > 0 ? places : 0
+  return Math.min(Math.max(seats * 2, 10), COURSE_WAITLIST_SCAN_LIMIT)
+}
+
+/** One person's place in a course queue, at
+ *  `course_blocks/{blockId}/course_waitlist/{contactId}`. The doc id IS the
+ *  contact id, so a second join is an idempotent write.
+ *
+ *  Written only by Cloud Functions; every client write is denied by the rules. */
+export interface CourseBlockWaitlistEntry {
+  /** = contactId. */
+  id: string
+  teamId: string
+  /** blockId, denormalised so a collection-group sweep needs no parent walk. */
+  course: string
+  contact: string
+  /** The course's first lesson, denormalised: the only way a sweep finds
+   *  entries left on courses that have already started, without a join. */
+  course_start: Timestamp | null
+  firstname: string
+  lastname: string
+  email: string
+  phone?: string | null
+  /** THE ordering key. `joined_at ASC` is the queue, always, and there is no
+   *  stored position: a position is derived at read time, so somebody leaving
+   *  ahead of you never rewrites every entry behind you. */
+  joined_at: Timestamp
+  status: CourseWaitlistStatus
+  /** Long-lived: "where am I" / "take me off". Deliberately NOT the claim
+   *  credential, so a forwarded confirmation cannot take the place. */
+  entry_token: string
+  /** Minted per offer, SINGLE USE, cleared the moment the offer resolves in any
+   *  direction. This is the claim credential. */
+  offer_token?: string | null
+  offered_at?: Timestamp | null
+  /** THE SAME INSTANT as the offered enrolment's `expires_at`. */
+  offer_expires_at?: Timestamp | null
+  claimed_at?: Timestamp | null
+  left_at?: Timestamp | null
+}
+
+/** 'offered' is the only status that owns a place. The other three are
+ *  terminal, and the same vocabulary the class queue uses so a reader who knows
+ *  one knows the other. */
+export const COURSE_WAITLIST_STATUSES = [
+  'waiting',
+  'offered',
+  'claimed',
+  'expired',
+  'left',
+] as const
+export type CourseWaitlistStatus = (typeof COURSE_WAITLIST_STATUSES)[number]
+
+export interface CourseClaimWindow {
+  /** THE deadline, copied everywhere rather than recomputed. */
+  expiresAtMs: number
+  minutesLeft: number
+  /** Worth offering at all. */
+  offerable: boolean
+}
+
+/**
+ * How long an offered course place is held, clamped by everything that can
+ * close it.
+ *
+ * Both clamps are hard rather than advisory. An offer outliving
+ * `booking_closes_at` would hand somebody a claim the course's own callables
+ * then refuse, and one outliving the first lesson would sell a place on a
+ * course that has already started.
+ */
+export function resolveCourseClaimWindow(input: {
+  nowMs: number
+  /** The course's first lesson, or null for a course with no dates yet. */
+  firstMeetingMs?: number | null
+  /** `booking_closes_at`, or null when the studio set no deadline. */
+  closesAtMs?: number | null
+  /** Override, in hours. Absent uses `COURSE_CLAIM_DEFAULT_HOURS`. */
+  claimHours?: number | null
+}): CourseClaimWindow {
+  const hours =
+    typeof input.claimHours === 'number' && input.claimHours > 0
+      ? input.claimHours
+      : COURSE_CLAIM_DEFAULT_HOURS
+  const bounds = [input.nowMs + hours * 60 * 60_000]
+  if (typeof input.closesAtMs === 'number') bounds.push(input.closesAtMs)
+  if (typeof input.firstMeetingMs === 'number') bounds.push(input.firstMeetingMs)
+  const expiresAtMs = Math.min(...bounds)
+  const minutesLeft = (expiresAtMs - input.nowMs) / 60_000
+  return {
+    expiresAtMs,
+    minutesLeft,
+    offerable: minutesLeft >= COURSE_CLAIM_MIN_WINDOW_MINUTES,
+  }
+}
+
+/** Does this entry currently hold an OFFER? Separate from the place predicate
+ *  on purpose: the place is held by the ENROLMENT, and this only says whether
+ *  the queue believes it made an offer that is still open. */
+export function courseWaitlistOfferIsLive(
+  // Narrowed the way `PlaceHold` is, and for the same reason: a raw Firestore
+  // document, a plain object and a test fixture all satisfy it without a cast.
+  entry: { status?: string; offer_expires_at?: { toMillis(): number } | null },
+  nowMs: number = Date.now()
+): boolean {
+  if (entry.status !== 'offered') return false
+  return !!entry.offer_expires_at && entry.offer_expires_at.toMillis() > nowMs
+}
+
+/**
+ * Who a promotion pass offers to, in queue order. The sibling of
+ * `selectOfferHeads`, and the same ordering rule: the filter is applied BEFORE
+ * the head is taken.
+ *
+ * That order is the whole point. Filtering afterwards meant a single dead entry
+ * at the front wedged the class queue for the life of the session: with one
+ * place freeing, the pass selected the corpse, found nothing to offer and
+ * returned without a write, so every trigger re-picked the same entry forever.
+ * A contact really does disappear, `purgeProvisionalContacts` hard-deletes
+ * provisional ones, and somebody who queued for a course through the shop is
+ * exactly that.
+ */
+export function selectCourseOfferHeads<T extends { id: string }>(
+  candidates: readonly T[],
+  room: number,
+  hasContact: (candidate: T) => boolean = () => true
+): { heads: T[]; dropped: T[] } {
+  if (room <= 0) return { heads: [], dropped: [] }
+  const heads: T[] = []
+  const dropped: T[] = []
+  for (const candidate of candidates) {
+    if (hasContact(candidate)) heads.push(candidate)
+    else dropped.push(candidate)
+  }
+  return { heads: heads.slice(0, room), dropped }
+}
+
 /** Longest a course name may be. Bounded like an activity's. */
 export const MAX_COURSE_BLOCK_NAME_LENGTH = 120
 

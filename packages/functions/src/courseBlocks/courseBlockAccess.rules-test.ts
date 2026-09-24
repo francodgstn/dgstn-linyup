@@ -127,6 +127,51 @@ describe('firestore.rules, course blocks', function () {
     await assertFails(getDoc(doc(outsiderDb(), 'course_blocks', BLOCK, 'enrolments', CONTACT)))
   })
 
+  it('a team owner CAN read the waiting list but CANNOT write one', async () => {
+    // An OFFERED entry carries `offer_token`, the credential that takes a
+    // place. A client that could write one could hand itself a place it was
+    // never offered, so every write goes through a callable.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT), {
+        teamId: TEAM,
+        course: BLOCK,
+        contact: CONTACT,
+        status: 'waiting',
+        entry_token: 'tok',
+      })
+    })
+    await assertSucceeds(getDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT)))
+    await assertFails(
+      updateDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT), {
+        status: 'offered',
+        offer_token: 'forged',
+      })
+    )
+    await assertFails(
+      setDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist', 'someoneElse'), {
+        teamId: TEAM,
+        status: 'offered',
+        offer_token: 'forged',
+      })
+    )
+    await assertFails(
+      deleteDoc(doc(ownerDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT))
+    )
+  })
+
+  it('a non-member CANNOT read the waiting list', async () => {
+    // Who is waiting for a place, and their email, is the studio's business.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT), {
+        teamId: TEAM,
+        status: 'waiting',
+      })
+    })
+    await assertFails(
+      getDoc(doc(outsiderDb(), 'course_blocks', BLOCK, 'course_waitlist', CONTACT))
+    )
+  })
+
   it('the series a course owns stays client-writable, which is why the course is not', async () => {
     // Stated here on purpose. `session_series` is writable by any team member:
     // `SessionFormDialog` writes one directly, and the series doc IS the commit

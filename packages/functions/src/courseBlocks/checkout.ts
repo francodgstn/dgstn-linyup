@@ -24,6 +24,8 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import {
   CONTACTS_COLLECTION,
   COURSE_BLOCKS_COLLECTION,
+  COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION,
+  COURSE_BLOCK_WAITLIST_SUBCOLLECTION,
   courseBlockSalesOpen,
   firstMeeting,
   meetingCount,
@@ -39,6 +41,7 @@ import {
   resolveCheckoutHoldWindow,
   startOneOffCheckout,
 } from '../connect/checkout'
+import { resolveClaimCheckoutWindow } from '../booking/waitlist/constants'
 import { loadContactPaymentSnapshot } from '../booking/access'
 import { courseBlockTarget, releaseCourseBlockPlace, takeCourseBlockPlace } from './enrolment'
 import { getHostingUrl } from '../utils/env'
@@ -48,6 +51,51 @@ import { to } from '../utils/async'
  *  appointment slot gets: long enough to find a card, short enough that an
  *  abandoned checkout does not sit on the last place of a nine-place course. */
 const HOLD_MINUTES = 30
+
+/** Stripe refuses a Checkout Session shorter than 30 minutes; 31 for clock
+ *  skew. Below it a claim is refused rather than given a LONGER session, which
+ *  would still be payable after the place had rolled on. */
+const CHECKOUT_MIN_WINDOW_MINUTES = 31
+/** Stripe's own ceiling on a Checkout Session. A course claim window is longer
+ *  than this by design, so the session is clamped and the hold outlives it. */
+const CHECKOUT_MAX_WINDOW_HOURS = 24
+
+/**
+ * Is this a live offer, held by this person, with this token?
+ *
+ * Every check the free claim rail makes, made again here. A claim that skipped
+ * one of them would be a second way onto a course with weaker rules than the
+ * first, which is the shape this whole area exists to avoid.
+ */
+async function verifyCourseClaim(
+  db: FirebaseFirestore.Firestore,
+  blockId: string,
+  contactId: string,
+  token: string
+): Promise<{ expiresAtMs: number; placesTaken: number }> {
+  const ref = db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId)
+  const [entry, enrolment, block] = await Promise.all([
+    ref.collection(COURSE_BLOCK_WAITLIST_SUBCOLLECTION).doc(contactId).get(),
+    ref.collection(COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION).doc(contactId).get(),
+    ref.get(),
+  ])
+  if (!entry.exists || entry.get('offer_token') !== token) {
+    throw new HttpsError('permission-denied', 'That link has already been used.')
+  }
+  const expiresAt = entry.get('offer_expires_at') as Timestamp | undefined
+  if (!expiresAt || expiresAt.toMillis() <= Date.now()) {
+    throw new HttpsError('failed-precondition', 'That offer has expired.', { reason: 'expired' })
+  }
+  // The place must actually still be held for them. An offer whose hold was
+  // released underneath it is not a claim, it is a race that was lost.
+  if (!enrolment.exists || enrolment.get('waitlist_claim') !== true) {
+    throw new HttpsError('failed-precondition', 'That place is no longer being held.')
+  }
+  return {
+    expiresAtMs: expiresAt.toMillis(),
+    placesTaken: (block.get('places_taken') as number | undefined) ?? 0,
+  }
+}
 
 export const createCourseBlockCheckout = onCall(async (request) => {
   await checkoutRateLimit(request.rawRequest?.ip, 'course-block-checkout')
@@ -64,6 +112,18 @@ export const createCourseBlockCheckout = onCall(async (request) => {
      *  disagrees with what the resolver says, rather than silently charging a
      *  different figure. */
     quotedAmount?: number
+    /**
+     * The single-use credential from a waiting-list offer. Its presence changes
+     * three things and nothing else: the place is ALREADY HELD so none is taken,
+     * the Stripe session dies at the OFFER's deadline rather than thirty minutes
+     * from now, and a failure here does not release the place, because the offer
+     * stands until its own deadline whatever happens at the card form.
+     *
+     * There is deliberately no second pricing path: a claim is quoted by the
+     * same resolver as the ordinary door, so a plan edge or a promo code cannot
+     * mean one thing at the front and another in the queue.
+     */
+    waitlistToken?: string
   }
   const { teamId, blockId, contactId } = data
   if (!teamId || !blockId || !contactId) {
@@ -126,26 +186,65 @@ export const createCourseBlockCheckout = onCall(async (request) => {
   const amount = requireChargeableAmountFromMajor(payOption.amount)
 
   const nowMs = Date.now()
-  const holdWindow = resolveCheckoutHoldWindow({
-    nowMs,
-    carriesReservation: false,
-    alwaysBounded: true,
-  })
-  const expiresAt = Timestamp.fromMillis(nowMs + HOLD_MINUTES * 60_000)
 
-  // TAKE THE PLACE FIRST. The capacity gate lives in that transaction, so a
-  // sold-out course refuses here rather than after the buyer has paid, and two
-  // people racing for the last place conflict on the course document.
-  const { placesTaken } = await takeCourseBlockPlace(db, {
-    blockId,
-    contactId,
-    firstname: contact.firstname ?? null,
-    lastname: contact.lastname ?? null,
-    email: contact.email ?? null,
-    status: 'hold',
-    payment_status: 'required',
-    expiresAt,
-  })
+  // A WAITING-LIST CLAIM, or the ordinary door.
+  //
+  // THE SINGLE-DEADLINE RULE is what separates the two. A claim's place is held
+  // until the offer's own deadline, and every timer around it has to be that
+  // same instant, so the Stripe session is clamped to it rather than given a
+  // fresh thirty minutes. `resolveClaimCheckoutWindow` is the class queue's
+  // existing arithmetic, reused rather than re-derived: it clamps DOWN at
+  // Stripe's 24-hour ceiling, which is the safe direction. A checkout that dies
+  // before the hold costs one more click; one that outlives the hold sells a
+  // place that has already gone to the next person.
+  const claim = data.waitlistToken
+    ? await verifyCourseClaim(db, blockId, contactId, data.waitlistToken)
+    : null
+
+  let placesTaken: number
+  // Optional because the ordinary hold window may be unbounded; a claim's
+  // never is, since its whole point is a deadline.
+  let stripeExpiresAt: number | undefined
+  if (claim) {
+    const window = resolveClaimCheckoutWindow({
+      nowMs,
+      claimExpiresAtMs: claim.expiresAtMs,
+      minMinutes: CHECKOUT_MIN_WINDOW_MINUTES,
+      maxMinutes: CHECKOUT_MAX_WINDOW_HOURS * 60,
+    })
+    if (!window.payable) {
+      throw new HttpsError('failed-precondition', 'That offer is about to expire.', {
+        reason: 'claim_window_too_short',
+      })
+    }
+    stripeExpiresAt = window.expiresAtEpochSeconds
+    // NOT taken: the offer already holds it, and taking it again would rewrite
+    // the hold's deadline, which is exactly the divergence the rule forbids.
+    placesTaken = claim.placesTaken
+  } else {
+    const holdWindow = resolveCheckoutHoldWindow({
+      nowMs,
+      carriesReservation: false,
+      alwaysBounded: true,
+    })
+    stripeExpiresAt = holdWindow.expiresAtEpochSeconds
+    const expiresAt = Timestamp.fromMillis(nowMs + HOLD_MINUTES * 60_000)
+
+    // TAKE THE PLACE FIRST. The capacity gate lives in that transaction, so a
+    // sold-out course refuses here rather than after the buyer has paid, and two
+    // people racing for the last place conflict on the course document.
+    const taken = await takeCourseBlockPlace(db, {
+      blockId,
+      contactId,
+      firstname: contact.firstname ?? null,
+      lastname: contact.lastname ?? null,
+      email: contact.email ?? null,
+      status: 'hold',
+      payment_status: 'required',
+      expiresAt,
+    })
+    placesTaken = taken.placesTaken
+  }
 
   const base = data.origin || getHostingUrl()
   const slug = data.slug ?? ''
@@ -174,16 +273,25 @@ export const createCourseBlockCheckout = onCall(async (request) => {
         contactId,
         courseName: block.name,
         lessons: String(lessons),
+        // Carried so the confirm can close the queue entry out. Without it a
+        // paid claim would settle the enrolment and leave the entry saying
+        // 'offered' for ever, which the sweep would then try to release.
+        ...(data.waitlistToken ? { waitlistToken: data.waitlistToken } : {}),
         ...(first ? { firstMeetingMs: String(first.start.toMillis()) } : {}),
       },
       idempotencyKey:
         data.idempotencyKey ?? defaultIdempotencyKey('course', teamId, blockId, contactId),
-      expiresAtEpochSeconds: holdWindow.expiresAtEpochSeconds,
+      expiresAtEpochSeconds: stripeExpiresAt,
       label: 'createCourseBlockCheckout',
     })
 
     return { url: checkoutSession.url, amount: payOption.amount, placesTaken }
   } catch (err) {
+    // A CLAIM'S PLACE IS NOT OURS TO GIVE BACK. It was held by the offer before
+    // this call and it stands until the offer's own deadline, so a failed
+    // checkout leaves the claimant free to try again rather than handing their
+    // place to the next person over a Stripe hiccup.
+    if (claim) throw err
     // THE HOLD IS OURS TO GIVE BACK, because we took it two lines ago. Best
     // effort: a place that stays held until its deadline is a bounded cost, and
     // throwing a release failure over the original error would hide why the

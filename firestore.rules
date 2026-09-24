@@ -1917,6 +1917,21 @@ service cloud.firestore {
         allow read: if belongsToUserTeam(resource) || hasRole('admin');
         allow write: if false;
       }
+
+      // The waiting list for a full course. Same shape as the enrolments above
+      // and the same reasoning: an OFFERED entry carries the credential that
+      // takes a place, so a client that could write one could take a place it
+      // was never offered. Every write goes through a callable.
+      //
+      // Named `course_waitlist`, not `waitlist`: the class queue's hourly sweep
+      // reads `collectionGroup('waitlist')` and walks each hit as a session
+      // booking, so sharing the name would have it dereference a course entry
+      // through a `session` field that does not exist. See
+      // COURSE_BLOCK_WAITLIST_SUBCOLLECTION.
+      match /course_waitlist/{contactId} {
+        allow read: if belongsToUserTeam(resource) || hasRole('admin');
+        allow write: if false;
+      }
     }
 
     // Series teardown jobs — the progress record for a background "delete this

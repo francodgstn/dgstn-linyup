@@ -54,6 +54,7 @@ export { upsertAffiliation, removeAffiliation, approveAffiliation, renewAffiliat
 // direct analogue of `trackBookings`. A TRIGGER, so it is bound to an event
 // source and is not routed.
 export { trackCourseBlockEnrolments } from './courseBlocks/enrolment'
+export { promoteCourseWaitlistOnPlaceFreed } from './courseBlocks/waitlist'
 
 // Sync triggers
 export { syncTeamPublicProfile } from './sync/syncTeamPublicProfile'

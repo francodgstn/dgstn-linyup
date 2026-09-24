@@ -577,6 +577,28 @@ Four invariants, each a bug before it was a rule:
   `syncCourseBlockRoster` **only ever creates a booking that is missing**. That
   one rule is what makes it re-runnable, and what makes "the member cancelled
   lesson six" stick. A hold writes no bookings at all.
+- **Cancelling a whole course is ONE message, not one per lesson.** A series
+  teardown mails each session's roster, so nine people on a thirteen-week course
+  would get 117 mails. `cancelSingleSession` therefore takes a `notify`
+  argument, carried on the job for the background path
+  (`SeriesTeardownJob.notify`), and `cancelCourseBlock` sends the one mail
+  itself. It suppresses the MESSAGE only: counters, waitlist closes and deletes
+  all still happen. Cancelling ONE lesson still mails the roster, through the
+  same function, because there it is the news. The door shuts (status write)
+  BEFORE the teardown, and **no money moves**: the callable returns the
+  payments that may be owed back.
+- **A duplicate shifts in CIVIL DAYS at the studio's wall clock**
+  (`shiftWallClockDays`), never in milliseconds: next term crosses a DST
+  boundary by construction and a 15:45 lesson would silently become 14:45. It
+  **drops `excludeDates`** rather than shifting them, because a holiday is a
+  fact about one year.
+- **The course waiting list is `course_waitlist`, NOT `waitlist`.** A
+  collection-group query is a global namespace, and the class sweep reads
+  `collectionGroup('waitlist')` then walks each hit as a session booking. The
+  three carried invariants (single deadline from one `resolveCourseClaimWindow`
+  call, an offered place is an ordinary enrolment carrying `waitlist_claim`,
+  release before re-offering) are `docs/courses.md` → "The waiting list". The
+  window is **days**, not the class queue's hours.
 
 `RecurrencePattern.excludeDates` ("no class on 24.12") lives on the PATTERN, not
 at generation: a rolling series regenerates from it and a `count` series

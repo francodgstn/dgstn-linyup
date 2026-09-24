@@ -279,6 +279,20 @@ export const COURSE_BLOCKS_COLLECTION = 'course_blocks'
 // write rather than a duplicate row. Deliberately NOT registered in
 // tenantData.ts: tenant teardown uses recursiveDelete on the parent course.
 export const COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION = 'enrolments'
+/**
+ * course_blocks/{blockId}/course_waitlist/{contactId} — the queue for a full
+ * course.
+ *
+ * NOT called `waitlist`, and the name is load-bearing rather than a preference.
+ * A collection-group query is a GLOBAL namespace: the class waitlist's hourly
+ * sweep reads `collectionGroup('waitlist').where('status','==','offered')` and
+ * then walks each hit as a session booking. A course entry sharing that name
+ * would be picked up by it, dereferenced through a `session` field it does not
+ * have, and released as a seat that does not exist. The two queues answer
+ * different questions about different capacities, so they are kept apart at the
+ * one place a Firestore query cannot tell them apart.
+ */
+export const COURSE_BLOCK_WAITLIST_SUBCOLLECTION = 'course_waitlist'
 
 export const REFERRALS_COLLECTION = 'referrals'
 export const REFERRAL_CODES_COLLECTION = 'referral_codes'

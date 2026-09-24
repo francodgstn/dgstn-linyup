@@ -198,6 +198,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   cancelCourseBlock: 'rpcStudio',
   duplicateCourseBlock: 'rpcStudio',
   addCourseBlockMeeting: 'rpcStudio',
+  listCourseBlockWaitlist: 'rpcStudio',
   enrolCourseBlockContact: 'rpcStudio',
   withdrawFromCourseBlock: 'rpcStudio',
   generateRecurringSessions: 'rpcStudio',
@@ -250,6 +251,9 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   // the kiosk. The member app calls some of these by their OWN name and keeps
   // doing so until it routes (Phase 4) — listing them here moves only callFunction callers.
   joinCourseBlock: 'rpcMember',
+  joinCourseBlockWaitlist: 'rpcMember',
+  leaveCourseBlockWaitlist: 'rpcMember',
+  claimCourseBlockPlace: 'rpcMember',
   listAvailability: 'rpcMember',
   getMyBookings: 'rpcMember',
   bookAppointment: 'rpcMember',

@@ -190,9 +190,102 @@ money:
 | The studio cancels **one lesson** | Seats return, the roster is mailed, and the course is untouched. No place moves and no money moves |
 | A participant **withdraws** | The enrolment goes `withdrawn`, the place returns, their **future** bookings are cancelled through the ordinary path. Past bookings stay: they are attendance history. No automatic refund |
 | A member cancels **one lesson** themselves | Allowed, deliberately. They keep their place, and the converger never resurrects the booking |
+| The studio cancels **the whole course** | The door shuts first, everyone is told once, the remaining lessons go. No money moves: `cancelCourseBlock` RETURNS the payments that may be owed back |
 
 An enrolment is marked `withdrawn`, never deleted: who was on a course is the
 studio's record, and a deleted row would also lose the fact that they paid.
+Cancelling the whole course withdraws nobody, for the same reason.
+
+### Cancelling the whole course: one message, not one per lesson
+
+The order is the design, and each step closes something the next one depends on:
+
+1. **The door shuts first.** One synchronous `status: 'cancelled'` write. It
+   closes every way in at once: `courseBlockSalesOpen` goes false,
+   `takeCourseBlockPlace` refuses, and `syncCourseBlockPublicProfile` deletes
+   the public mirror. Same "freeze before you enqueue" rule the series teardown
+   already follows, and for the same reason: somebody buying a place into a
+   course whose lessons are being deleted is the one outcome nothing downstream
+   repairs.
+2. **The people are told, once.** Nine people on a thirteen-week course would
+   otherwise receive a hundred and seventeen mails, because a series teardown
+   mails each session's roster. So `cancelSingleSession` takes a `notify`
+   argument, carried on the teardown job for the background path
+   (`SeriesTeardownJob.notify`), and the course sends one mail per enrolled
+   person itself. **It suppresses the MESSAGE and nothing else**: every
+   `pending_bookings_count` still moves, the waitlists still close, the deletes
+   still happen. Cancelling ONE lesson of a course still mails the roster
+   through the very same function, because there it is the news.
+3. **The lessons go, from now forward.** Past lessons are attendance history.
+
+The mail **promises no refund**, deliberately. Whether money comes back, and in
+what shape (a credit, next term, a partial), is the studio's policy, and a mail
+that commits them on their behalf is a commitment this code cannot make.
+
+---
+
+## The waiting list
+
+A full course is the one case where "sold out" is not the end of the
+conversation: a term course is bought months ahead, and people drop out. The
+queue reuses the class waitlist's **shape** and none of its **storage**.
+
+Three invariants are carried over verbatim (`docs/waitlist.md` owns the
+originals):
+
+- **The single-deadline rule.** The offered enrolment's `expires_at`, its
+  `claim_expires_at`, the entry's `offer_expires_at` and, for a paid claim, the
+  Stripe session all come from ONE `resolveCourseClaimWindow` call and are
+  copied. Diverge and a place is sold twice. Stripe's 24-hour ceiling clamps its
+  own session DOWN, which is the safe direction: a checkout that dies before the
+  hold costs one more click, one that outlives it sells a place that has gone.
+- **An offered place is an ordinary enrolment** carrying `waitlist_claim`, held
+  as `status: 'hold'`. So `courseBlockEnrolmentHoldsPlace` already counts it and
+  already lapses it lazily, and nothing else had to learn what a queue is.
+- **Release before re-offering.** The sweep's pass 1 releases, pass 2 offers.
+
+Two things are deliberately **different** from the class queue:
+
+- **The window is DAYS, not hours** (`COURSE_CLAIM_DEFAULT_HOURS = 48`). A class
+  seat is a grab-it-now decision; a course is a term's fees and a diary to
+  check, and an offer nobody can realistically answer is a place the studio
+  loses rather than fills.
+- **The subcollection is `course_waitlist`, not `waitlist`,** and the name is
+  load-bearing. A collection-group query is a global namespace: the class
+  sweep reads `collectionGroup('waitlist')` and walks each hit as a session
+  booking, so a course entry under that name would be dereferenced through a
+  `session` field it does not have.
+
+The promoter hangs on ONE trigger, the course document's `placeFreedEdge`. Every
+way a place can free converges there, because `places_taken` has one writer and
+always writes an absolute value. The binding corollary of hanging on an edge:
+**on any path where the promoter decides not to promote, it must not write the
+course document at all**, or a harmless touch re-enters the edge for ever.
+
+---
+
+## Duplicating for next term
+
+The setup is carried, the people never are, and the copy lands in `draft`. Two
+rules are decisions rather than plumbing:
+
+- **The shift is in civil days at the studio's wall clock**
+  (`shiftWallClockDays`). Adding `n * 86_400_000` moves a 15:45 lesson to 14:45
+  across a DST boundary, and a term duplicated into the next term crosses one by
+  construction.
+- **Skip dates are dropped, not shifted.** "No lesson on 8 October" is a fact
+  about one autumn; carried into spring it removes a lesson nobody asked about,
+  and the studio finds out in week seven. Starting with every date present is
+  the error somebody notices the same day.
+
+The deny-list (`DROPPED_ON_DUPLICATE`) is stated as a deny-list so a field added
+to `CourseBlock` later is inherited by default, which is the safe direction for
+setup data. `seriesId` is on it for the worst reason available: a copy that kept
+it would write its lessons into LAST term's calendar.
+
+**The make-up lesson** is the other half of "one lesson was cancelled":
+`addCourseBlockMeeting` appends one meeting and converges, so everybody already
+enrolled gets a booking for it and nobody is sold anything.
 
 ---
 
@@ -216,14 +309,21 @@ rediscovered.
 | The meeting-list resolver | `packages/functions/src/courseBlocks/schedule.ts` |
 | Create / reschedule / publish / delete | `packages/functions/src/courseBlocks/index.ts` |
 | Enrolment, the converger, the recount | `packages/functions/src/courseBlocks/enrolment.ts` |
+| The sale, and the waiting-list claim arm | `packages/functions/src/courseBlocks/checkout.ts` |
+| Cancelling the whole course | `packages/functions/src/courseBlocks/cancel.ts` |
+| Duplicate, and the make-up lesson | `packages/functions/src/courseBlocks/duplicate.ts` |
+| The waiting list | `packages/functions/src/courseBlocks/waitlist.ts` |
 | Rules | `firestore.rules` → `match /course_blocks/{blockId}` |
 | Admin | `apps/web/src/components/offer/CourseBlockDialog.tsx`, the Courses tab in `manage/offer` |
 
 ## Not built yet
 
-The sale (a price, a checkout, the plan edge), the waiting list, duplicate for
-next term, and cancelling a whole course. Each is its own stage; nothing above
-writes a price.
+The studio's own screens for cancelling, duplicating and adding a make-up
+lesson, and the public surfaces for the waiting list (joining from a sold-out
+card, and the page an offer's claim link opens). The callables are wired and
+tested; nothing draws them yet.
+
+Beyond that: the seeders, and the course line in the reporting surfaces.
 
 **One rename has to land WITH the sale, not after it.** The studio side already
 says *Online courses* everywhere (the nav did before this work, and the
