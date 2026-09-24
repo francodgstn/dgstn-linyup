@@ -206,7 +206,7 @@ export type PriceRange =
   | { kind: 'from'; amount: number }
 
 /**
- * THE ONE READER of an appointment's price spread — which of the three answers
+ * THE ONE READER of an appointment's price spread: which of the three answers
  * above is true, or null when nothing is sold individually (no chip at all,
  * never "from CHF 0"). The words are the surface's own; see
  * `apps/web/src/lib/priceRange.ts`.

@@ -5,9 +5,9 @@ import { appointmentPriceRange } from '@linyup/shared'
 
 // WHAT A PUBLIC CARD SAYS AN APPOINTMENT COSTS.
 //
-// Five surfaces quote the same activity — the appointment picker's chip, the
+// Five surfaces quote the same activity, the appointment picker's chip, the
 // class booking card's badge line, the website's pricing block, the shop's
-// pay-per-visit strip and the admin catalogue — and each one wrote the
+// pay-per-visit strip and the admin catalogue, and each one wrote the
 // arithmetic out again. Four of them arrived at a range over the PRICED
 // lengths, which is a floor that is not the floor as soon as one length is
 // free or benefit-only.
@@ -78,7 +78,7 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8').replace(/\r\
 
 /** Every surface that quotes an appointment's price spread. Named rather than
  *  counted. Each renders it through `priceRangeLabel`, whose input can only be
- *  the resolved shape — so a surface cannot re-derive the answer without
+ *  the resolved shape, so a surface cannot re-derive the answer without
  *  re-introducing the comparison this file exists to remove. */
 const QUOTING_SURFACES = [
   'apps/web/src/app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker.tsx',
@@ -106,7 +106,7 @@ describe('no surface decides a price spread for itself', () => {
   }
 
   // A source-reading assertion is green on the day it is written whether or not
-  // it works, so the pattern is run against the code as it WAS — in BOTH
+  // it works, so the pattern is run against the code as it WAS, in BOTH
   // spellings, because the first draft of this pin named the receivers it had
   // seen (`term.` and `d.`) and could not match `d.appointmentPrice.max` at all.
   // It passed against four surfaces that still held the defect.
