@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { type FunctionsError } from 'firebase/functions'
 import {
   resolvePaymentOptions,
+  appointmentPriceRange,
   resolveBookingContactFields,
   resolveDurationBenefit,
   heldSubscriptionTypeIds,
@@ -32,6 +33,7 @@ import { publicHrefLocalized, returnHref } from '@/lib/publicRoutes'
 import { useStepUrl } from '@/hooks/useStepUrl'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { formatCurrency } from '@/lib/format'
+import { priceRangeLabel } from '@/lib/priceRange'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
@@ -322,28 +324,24 @@ function fmtDuration(mins: number): string {
   return m ? `${h}h ${m}m` : `${h}h`
 }
 
-// "CHF 45–85" when every duration is priced and prices differ, "from CHF 45" when
-// only some durations are priced (or several distinct prices exist but the range
-// doesn't cover every length), the plain price when there's only one, and null
-// when nothing is priced (no chip).
+// "CHF 45–85" when every duration is priced and prices differ, "from CHF 45"
+// when only some are, the plain price when they agree, and null when nothing is
+// priced (no chip). The three-way reading lived HERE alone until the shared
+// module took it over; every other surface rendered the middle case whether or
+// not it was true. See `lib/priceRange.ts`.
 function activityPriceRangeLabel(
   activity: AvailActivity,
   currency: string,
   locale: string,
   t: ReturnType<typeof useTranslations>
 ): string | null {
-  const priced = activity.durations.filter(
-    (d) => d.benefitOnly !== true && typeof d.priceAmount === 'number'
-  )
-  if (priced.length === 0) return null
-  const amounts = priced.map((d) => d.priceAmount as number)
-  const min = Math.min(...amounts)
-  const max = Math.max(...amounts)
-  if (min === max) return formatCurrency(min, currency, locale)
-  if (priced.length === activity.durations.length) {
-    return `${formatCurrency(min, currency, locale)}–${formatCurrency(max, currency, locale)}`
-  }
-  return t('priceFrom', { price: formatCurrency(min, currency, locale) })
+  const range = appointmentPriceRange(activity.durations)
+  if (!range) return null
+  return priceRangeLabel(range, {
+    money: (amount) => formatCurrency(amount, currency, locale),
+    from: (price) => t('priceFrom', { price }),
+    range: (min, max) => `${min}–${max}`,
+  })
 }
 
 // A duration is "for sale" when it has a base price AND is sold individually —

@@ -106,6 +106,7 @@ import {
   type ActivityTerm,
   type SubLookup,
 } from '@/lib/activityTerms'
+import { priceRangeLabel } from '@/lib/priceRange'
 import type { SitePalette } from './theme'
 import { ctaHref } from './theme'
 import { publicHrefLocalized, publicSubHrefLocalized } from '@/lib/publicRoutes'
@@ -858,9 +859,13 @@ function activityTermLabel(term: ActivityTerm, currency: string, t: SiteT): stri
     case 'dropIn':
       return t('termPerClass', { price: formatCurrency(term.amount ?? 0, currency) })
     case 'price':
-      return term.min === term.max
-        ? t('termFrom', { price: formatCurrency(term.min ?? 0, currency) })
-        : `${formatCurrency(term.min ?? 0, currency)}–${formatCurrency(term.max ?? 0, currency)}`
+      return term.range
+        ? priceRangeLabel(term.range, {
+            money: (amount) => formatCurrency(amount, currency),
+            from: (price) => t('termFrom', { price }),
+            range: (min, max) => `${min}–${max}`,
+          })
+        : null
     case 'benefitIncluded':
       return t('termIncludedWithSubscription')
     case 'benefitDiscount':
@@ -1214,9 +1219,11 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
                   money.push(t('termPerClass', { price: formatCurrency(d.dropInAmount, currency) }))
                 if (d.appointmentPrice)
                   money.push(
-                    d.appointmentPrice.min === d.appointmentPrice.max
-                      ? t('termFrom', { price: formatCurrency(d.appointmentPrice.min, currency) })
-                      : `${formatCurrency(d.appointmentPrice.min, currency)}–${formatCurrency(d.appointmentPrice.max, currency)}`
+                    priceRangeLabel(d.appointmentPrice, {
+                      money: (amount) => formatCurrency(amount, currency),
+                      from: (price) => t('termFrom', { price }),
+                      range: (min, max) => `${min}–${max}`,
+                    })
                   )
               }
               // A PAID trial badge quotes an amount, so it follows the switch; a

@@ -1967,7 +1967,8 @@
     "waitlistExperimental": "Experimentell",
     "fieldBookingGroup": "Gruppe auf der Buchungsseite",
     "fieldBookingGroupPlaceholder": "z. B. Kurse",
-    "fieldBookingGroupHint": "Fasst die Buchungsseite unter einer Überschrift zusammen. Leer lassen, um einzeln zu erscheinen."
+    "fieldBookingGroupHint": "Fasst die Buchungsseite unter einer Überschrift zusammen. Leer lassen, um einzeln zu erscheinen.",
+    "chipPriceFrom": "ab {price}"
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",

@@ -189,6 +189,51 @@ export function resolveDurationSale(d: ActivityDuration): {
     : { mode: 'free', priceAmount: null }
 }
 
+/** WHAT A SPREAD OF PRICES SAYS. An appointment is priced per LENGTH, so "what
+ *  does this cost" has three different true answers:
+ *
+ *    one    every length that is sold costs the same     → "CHF 45"
+ *    range  every length is sold, at differing prices    → "CHF 45–85"
+ *    from   some lengths are NOT sold individually       → "from CHF 45"
+ *
+ *  The third is the one that gets lost. A free 30-minute intro beside a CHF 45
+ *  hour and a CHF 80 double was advertised as "CHF 45–80" on the booking card,
+ *  the website's pricing block and the shop: a range whose floor is not the
+ *  floor, because the free length sits outside it. */
+export type PriceRange =
+  | { kind: 'one'; amount: number }
+  | { kind: 'range'; min: number; max: number }
+  | { kind: 'from'; amount: number }
+
+/**
+ * THE ONE READER of an appointment's price spread — which of the three answers
+ * above is true, or null when nothing is sold individually (no chip at all,
+ * never "from CHF 0"). The words are the surface's own; see
+ * `apps/web/src/lib/priceRange.ts`.
+ *
+ * What is sold at all is `resolveDurationSale`'s answer, never a local
+ * `typeof priceAmount === 'number'`: a `benefitOnly` length may carry a stale
+ * number that must never be quoted (UX-70).
+ *
+ * Equal prices win over completeness deliberately: when every SOLD length costs
+ * the same, "CHF 45" is exact whether or not a free length sits beside it, and
+ * "from CHF 45" would invent a spread that does not exist.
+ */
+export function appointmentPriceRange(
+  durations: readonly ActivityDuration[] | null | undefined
+): PriceRange | null {
+  const all = durations ?? []
+  const priced = all
+    .map((d) => resolveDurationSale(d).priceAmount)
+    .filter((p): p is number => typeof p === 'number')
+  if (priced.length === 0) return null
+
+  const min = Math.min(...priced)
+  const max = Math.max(...priced)
+  if (min === max) return { kind: 'one', amount: min }
+  return priced.length === all.length ? { kind: 'range', min, max } : { kind: 'from', amount: min }
+}
+
 /** An appointment activity's duration menu, defaulting to a single unpriced
  *  60-minute entry when unset — the one fallback rule, shared by the
  *  availability grid, the booking gate, and the UIs. */

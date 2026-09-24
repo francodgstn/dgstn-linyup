@@ -41,6 +41,7 @@ import { publicHref, publicHrefLocalized, returnHref } from '@/lib/publicRoutes'
 import { useStepUrl } from '@/hooks/useStepUrl'
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { resolveActivityPricingDisplay, type SubLookup } from '@/lib/activityTerms'
+import { priceRangeLabel } from '@/lib/priceRange'
 import { formatCurrency } from '@/lib/format'
 import { useLocale, useTranslations } from 'next-intl'
 import { ArrowUpRight, Info } from 'lucide-react'
@@ -2287,12 +2288,11 @@ export default function BookingForm({
                       )
                     if (d.appointmentPrice && paymentsEnabled)
                       lines.push(
-                        d.appointmentPrice.min === d.appointmentPrice.max
-                          ? t('badgeFromPrice', { price: formatCurrency(d.appointmentPrice.min, currency, locale) })
-                          : t('badgePriceRange', {
-                              min: formatCurrency(d.appointmentPrice.min, currency, locale),
-                              max: formatCurrency(d.appointmentPrice.max, currency, locale),
-                            })
+                        priceRangeLabel(d.appointmentPrice, {
+                          money: (amount) => formatCurrency(amount, currency, locale),
+                          from: (price) => t('badgeFromPrice', { price }),
+                          range: (min, max) => t('badgePriceRange', { min, max }),
+                        })
                       )
                     if (coveredByPlan) lines.splice(0, lines.length, t('memberCovered'))
                     return (

@@ -1967,7 +1967,8 @@
     "waitlistExperimental": "Sperimentale",
     "fieldBookingGroup": "Gruppo nella pagina di prenotazione",
     "fieldBookingGroupPlaceholder": "es. Corsi",
-    "fieldBookingGroupHint": "Raggruppa la pagina di prenotazione sotto un titolo. Lascia vuoto per mostrarlo da solo."
+    "fieldBookingGroupHint": "Raggruppa la pagina di prenotazione sotto un titolo. Lascia vuoto per mostrarlo da solo.",
+    "chipPriceFrom": "da {price}"
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",

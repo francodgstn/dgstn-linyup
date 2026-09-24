@@ -16,15 +16,18 @@
 // callers can pass either without adapting field names.
 
 import {
+  appointmentPriceRange,
   classAccessFacts,
   resolveDurationBenefit,
   resolveDurationSale,
   normalizeBenefit,
+  type PriceRange,
   type ActivityAccessRule,
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
 } from '@linyup/shared'
+import { priceRangeLabel } from './priceRange'
 
 export type ActivityTermKind =
   | 'trial'
@@ -44,6 +47,11 @@ export interface ActivityTerm {
   min?: number
   /** price only (appointments) — highest priced duration. */
   max?: number
+  /** price only (appointments) — WHAT THAT SPREAD SAYS, which `min`/`max` alone
+   *  cannot express: a range excluding a length that is free or benefit-only
+   *  states a floor that is not the floor. Render it through
+   *  `priceRangeLabel`, never by comparing `min` and `max` again. */
+  range?: PriceRange
   /** benefitDiscount only — 1-99. */
   percent?: number
   /** gate only — which access tier is gating the class. Both tiers resolve to
@@ -101,12 +109,15 @@ export function resolveActivityTerms(a: ActivityTermsInput): ActivityTerm[] {
   if (a.type === 'appointment') {
     // Through the shared reader: a length sold only through the member benefit
     // has NO price to advertise, and a stale `priceAmount` beside it must never
-    // become a "from CHF …" on a public card (UX-70).
+    // become a "from CHF …" on a public card (UX-70). `appointmentPriceRange`
+    // owns that reading, and also the distinction `min`/`max` cannot carry —
+    // whether the spread covers every length or only the sold ones.
     const priced = (a.durations ?? [])
       .map((d) => resolveDurationSale(d).priceAmount)
       .filter((p): p is number => typeof p === 'number')
-    if (priced.length > 0) {
-      terms.push({ kind: 'price', min: Math.min(...priced), max: Math.max(...priced) })
+    const range = appointmentPriceRange(a.durations)
+    if (range) {
+      terms.push({ kind: 'price', min: Math.min(...priced), max: Math.max(...priced), range })
     }
 
     // Display logic stays keyed on included/percent semantics — a fixed_price
@@ -251,8 +262,11 @@ export interface ActivityPricingDisplay {
   discountWith: Array<{ name: string; percent: number }>
   /** Class drop-in price (major units), or null. */
   dropInAmount: number | null
-  /** Appointment direct/base price range (major units), or null. */
-  appointmentPrice: { min: number; max: number } | null
+  /** Appointment direct/base price spread (major units), or null. Rendered
+   *  through `priceRangeLabel` — the shape says which of "CHF 45", "CHF 45–85"
+   *  and "from CHF 45" is the true sentence, which a bare `{min,max}` could
+   *  not. */
+  appointmentPrice: PriceRange | null
 }
 
 export function resolveActivityPricingDisplay(
@@ -271,13 +285,13 @@ export function resolveActivityPricingDisplay(
   let signedUpOnly = false
   let discount: { percent: number; ids: string[] } | null = null
   let dropInAmount: number | null = null
-  let appointmentPrice: { min: number; max: number } | null = null
+  let appointmentPrice: PriceRange | null = null
   let trial: { priceAmount: number | null } | null = null
 
   for (const term of terms) {
     if (term.kind === 'trial') trial = { priceAmount: term.amount ?? null }
     else if (term.kind === 'dropIn') dropInAmount = term.amount ?? null
-    else if (term.kind === 'price') appointmentPrice = { min: term.min ?? 0, max: term.max ?? 0 }
+    else if (term.kind === 'price') appointmentPrice = term.range ?? null
     else if (term.kind === 'gate' && term.tier === 'subscription') {
       subscriptionGated = true
       ;(term.subscriptionTypeIds ?? []).forEach((id) => {
@@ -362,9 +376,13 @@ export function activityMoneyChipLabels(
         case 'dropIn':
           return t('chipDropIn', { amount: formatMoney(term.amount ?? 0, currency) })
         case 'price':
-          return term.min === term.max
-            ? formatMoney(term.min ?? 0, currency)
-            : `${formatMoney(term.min ?? 0, currency)}–${formatMoney(term.max ?? 0, currency)}`
+          return term.range
+            ? priceRangeLabel(term.range, {
+                money: (amount) => formatMoney(amount, currency),
+                from: (price) => t('chipPriceFrom', { price }),
+                range: (min, max) => `${min}–${max}`,
+              })
+            : null
         case 'benefitIncluded': {
           const name = nameFor(term.subscriptionTypeIds)
           return name ? t('chipBenefitIncludedNamed', { name }) : t('chipBenefitIncluded')
