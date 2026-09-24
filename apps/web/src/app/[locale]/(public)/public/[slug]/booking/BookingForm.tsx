@@ -54,7 +54,7 @@ import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { CourseWaitlistDialog } from '@/components/booking/CourseWaitlistDialog'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { heldFrom } from '@/components/booking/identity/bookingCaller'
-import { MiniCalendar } from '@/components/booking/MiniCalendar'
+import { ClassWhen } from '@/components/booking/when/ClassWhen'
 import {
   GuestDetailsForm,
   type GuestDetailsFormHandle,
@@ -251,36 +251,26 @@ function toDateKey(ts: Timestamp): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** A day key as an instant for DISPLAY — noon, not midnight: the formatter
- *  renders in the studio's zone, and a device far east or west of it would
- *  otherwise see the neighbouring day. */
-function dateKeyToDate(key: string): Date {
-  return new Date(key + 'T12:00:00')
-}
-
 function formatDate(fmt: RegionalFormatter, ts: Timestamp): string {
   return fmt.custom(ts, { weekday: 'long', month: 'long', day: 'numeric' })
-}
-
-function formatDateFull(fmt: RegionalFormatter, d: Date): string {
-  return fmt.custom(d, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function formatTime(fmt: RegionalFormatter, ts: Timestamp): string {
   return fmt.time(ts)
 }
 
-function sessionDuration(
-  start: Timestamp,
-  end: Timestamp,
+function sessionDurationFromMs(
+  startMs: number,
+  endMs: number,
   t: ReturnType<typeof useTranslations>
 ): string {
-  const mins = Math.round((end.toDate().getTime() - start.toDate().getTime()) / 60000)
+  const mins = Math.round((endMs - startMs) / 60000)
   if (mins < 60) return t('durationMinutes', { mins })
   const h = Math.floor(mins / 60)
   const m = mins % 60
   return m ? t('durationHoursMinutes', { h, m }) : t('durationHours', { h })
 }
+
 
 // The activity card itself lives in components/booking/catalogue/OfferCard:
 // one card for one bookable thing, shared with the appointment picker.
@@ -425,8 +415,9 @@ interface Props {
   confirmedSessionId?: string
 }
 
-// MiniCalendar and StickyBar now live in components/booking/ (shared with the
-// appointment picker) — imported at the top of this file.
+// The when step, the offer card and the sticky bar live in components/booking/,
+// shared with the appointment picker. This file owns which sessions a visitor
+// may act on; `ClassWhen` renders that answer.
 
 // ─── component ───────────────────────────────────────────────────────────────
 
@@ -2391,132 +2382,63 @@ export default function BookingForm({
           )
         })()}
 
-        {availableDates.length === 0 ? (
-          <div className="rounded-xl border bg-muted/30 p-8 text-center">
-            <p className="text-muted-foreground text-sm">
-              {t('noSessionsAvailable')}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-start">
-            {/* Calendar */}
-            <div className="bg-card border rounded-xl p-4">
-              <MiniCalendar
-                availableDates={availableDates}
-                selectedDate={selectedDate}
-                onSelect={setSelectedDate}
-                maxDateKey={maxDateKey}
-              />
-            </div>
-
-            {/* Time slots */}
-            <div>
-              {selectedDate && (
-                <p className="text-sm font-medium mb-3 text-muted-foreground">
-                  {formatDateFull(fmt, dateKeyToDate(selectedDate))}
-                </p>
-              )}
-
-              {filteredSessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">{t('noSessionsOnDate')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {filteredSessions.map((s) => {
-                    // A full slot is still rendered (only 'closed' is filtered
-                    // out) — it is either the queue's front door or, without
-                    // one, an honest "no seats" row. What it must never be
-                    // again is a clickable row that dead-ends on a server throw.
-                    const rowActivity = selectedActivity ?? findActivityForSession(s)
-                    const blocked = sessionBlockReason(s, cutoffMinutes)
-                    const waitlistable = offersWaitlist(blocked, rowActivity)
-                    const isFull = blocked === 'full'
-                    return (
-                    <button
-                      key={s.id}
-                      disabled={isFull && !waitlistable}
-                      onClick={() => {
-                        // Date-first browses with no activity pinned, so the
-                        // clicked session is what names it. Everything
-                        // downstream (access gate, pricing, sticky bar) reads
-                        // `selectedActivity`, so resolve it here rather than
-                        // letting those fall back to null.
-                        const activity = rowActivity
-                        if (!selectedActivity && activity) setSelectedActivity(activity)
-                        setSelectedSession(s)
-                        setGuestPath(null)
-                        setGiftCardApplied(null)
-                        // A code is quoted against ONE purchase (the reservation
-                        // key embeds the session), so picking a different class
-                        // must not carry the previous quote across.
-                        setPromoApplied(null)
-                        setDeepLinkNotice(null)
-                        setBookingError(null)
-                        setStep(waitlistable ? 'waitlist' : nextStepAfterSession(activity, paymentsEnabled, isAuthenticated))
-                      }}
-                      className="w-full text-left rounded-xl border bg-card p-3.5 hover:border-primary hover:bg-primary/5 transition-colors flex items-stretch gap-3 group disabled:pointer-events-none disabled:opacity-60"
-                    >
-                      <div
-                        className="w-1 rounded-full shrink-0"
-                        style={{ background: s.activityColor || 'var(--primary)' }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        {!selectedActivity && s.activityName && (
-                          <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                            {s.activityName}
-                          </p>
-                        )}
-                        <p className="font-semibold text-sm">
-                          {formatTime(fmt, s.start)} – {formatTime(fmt, s.end)}
-                        </p>
-                        {s.headline && (
-                          <p className="text-xs text-amber-700 mt-0.5">{s.headline}</p>
-                        )}
-                        <div className="flex flex-wrap gap-x-3 mt-0.5">
-                          {s.providerName && (
-                            <p className="text-xs text-muted-foreground">{s.providerName}</p>
-                          )}
-                          {s.location && (
-                            <p className="text-xs text-muted-foreground">{s.location}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isFull && (
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground font-medium">
-                            {t('waitlistBadgeFull')}
-                          </span>
-                        )}
-                        {waitlistable && (
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 font-medium">
-                            {t('waitlistJoinCta')}
-                          </span>
-                        )}
-                        {s.bookingMandatory && !isFull && (
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-primary/10 text-primary font-medium">
-                            {t('bookingRequired')}
-                          </span>
-                        )}
-                        <span className="text-xs bg-muted rounded-full px-2 py-0.5 text-muted-foreground">
-                          {sessionDuration(s.start, s.end, t)}
-                        </span>
-                        <svg
-                          className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <ClassWhen
+          availableDates={availableDates}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          maxDateKey={maxDateKey}
+          showActivityNames={!selectedActivity}
+          fmt={fmt}
+          t={t}
+          formatDuration={(startMs, endMs) =>
+            sessionDurationFromMs(startMs, endMs, t)
+          }
+          rows={filteredSessions.map((s) => {
+            // A full slot is still rendered (only 'closed' is filtered out):
+            // it is either the queue's front door or, without one, an honest
+            // "no seats" row.
+            const rowActivity = selectedActivity ?? findActivityForSession(s)
+            const blocked = sessionBlockReason(s, cutoffMinutes)
+            return {
+              id: s.id,
+              startMs: s.start.toDate().getTime(),
+              endMs: s.end.toDate().getTime(),
+              activityName: s.activityName,
+              activityColor: s.activityColor,
+              providerName: s.providerName,
+              location: s.location,
+              headline: s.headline,
+              bookingMandatory: s.bookingMandatory,
+              full: blocked === 'full',
+              waitlistable: offersWaitlist(blocked, rowActivity),
+            }
+          })}
+          onPick={(id) => {
+            const s = filteredSessions.find((row) => row.id === id)
+            if (!s) return
+            // Date-first browses with no activity pinned, so the clicked
+            // session is what names it. Everything downstream (access gate,
+            // pricing, sticky bar) reads `selectedActivity`, so resolve it
+            // here rather than letting those fall back to null.
+            const activity = selectedActivity ?? findActivityForSession(s)
+            if (!selectedActivity && activity) setSelectedActivity(activity)
+            setSelectedSession(s)
+            setGuestPath(null)
+            setGiftCardApplied(null)
+            // A code is quoted against ONE purchase (the reservation key embeds
+            // the session), so picking a different class must not carry the
+            // previous quote across.
+            setPromoApplied(null)
+            setDeepLinkNotice(null)
+            setBookingError(null)
+            const waitlistable = offersWaitlist(sessionBlockReason(s, cutoffMinutes), activity)
+            setStep(
+              waitlistable
+                ? 'waitlist'
+                : nextStepAfterSession(activity, paymentsEnabled, isAuthenticated)
+            )
+          }}
+        />
       </>,
       true // wide layout
     )
