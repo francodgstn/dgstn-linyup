@@ -57,6 +57,19 @@ import {
   type WaiverAcceptancePayload,
   type WaiverCallerIdentity,
 } from '@/lib/waiver'
+import {
+  GUEST,
+  bodyIdentity,
+  callerKey,
+  emailOf,
+  heldFrom,
+  heldOf,
+  resolveBookingCaller,
+  waiverIdentity,
+  type BookingCallBody,
+  type BookingCaller,
+  type VerifiedCaller,
+} from '@/components/booking/identity/bookingCaller'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { CalendarClock, MapPin, Video, Clock, User, Check, ChevronRight, Tag } from 'lucide-react'
@@ -154,140 +167,13 @@ type PickerStep = 'coach' | 'activity' | 'time' | 'book'
 // three-per-hour re-request budget.
 type BookScreen = 'guest' | 'signIn' | 'member' | 'autobooking' | 'waiver'
 
-/**
- * The identity + consent a booking/checkout call carries in its BODY.
- *
- * All three identity fields are optional because there are three callers and one
- * of them — the contact session — proves itself with the ID token on the call
- * rather than with anything in the body. See `bodyIdentity`.
- */
-type BookArgs = {
-  contactDetails?: { firstname: string; lastname: string; email: string; phone?: string }
-  authenticatedContactId?: string
-  verificationCodeId?: string
-  /** The ticks from the consent screen, straight back as the server issued them.
-   *  Recorded before Stripe on the paid arm and not conditional on payment: they
-   *  read the text and ticked, and that is true whether or not the card clears. */
-  waiverAcceptances?: WaiverAcceptancePayload[]
-  /** Answers to the studio's book-form contact fields — about the PERSON, so
-   *  stored on the contact rather than the booking. */
-  contactFieldAnswers?: Record<string, unknown>
-}
-
 // ─── WHO IS BOOKING ──────────────────────────────────────────────────────────
-/**
- * The identity this rail quotes, gates and books for — DERIVED on every render
- * from the contact session and the OTP result, never stored as a "signed in"
- * flag.
- *
- * This surface used to derive nothing at all: it referenced
- * `usePublicContactAuth` zero times while `PublicContactAuthProvider` wrapped it
- * from the team-root layout and the session's ID token rode on every callable it
- * made. So the SERVER booked as the signed-in contact while the SCREEN asked
- * that same contact for their details, quoted them the guest price, and filed
- * whatever they typed under somebody else.
- *
- * THE ORDER BELOW IS THE SERVER'S ORDER. `resolveAppointmentCaller`
- * (packages/functions/src/appointments/booking.ts) checks the contact session
- * FIRST and returns from that branch before it looks at `authenticatedContactId`
- * or `contactDetails`. A session therefore outranks an OTP result here too — any
- * other precedence would put the screen back in disagreement with the call it is
- * about to make.
- */
-type Caller =
-  | { kind: 'guest' }
-  /** A contact-session sign-in from anywhere under `/public/{slug}/…` — the pill
-   *  in the corner, the Space, the shop. Nothing needs to travel in the body. */
-  | { kind: 'session'; contactId: string; name: string; email: string | null; held: string[] }
-  /** An OTP sign-in taken on this screen's own offer. The `verificationCodeId`
-   *  is single-use and is spent by `resolveAppointmentCaller` at its own entry,
-   *  before any gate — which is why every path that holds one is interrupted by
-   *  the consent screen BEFORE it calls. */
-  | {
-      kind: 'code'
-      contactId: string
-      verificationCodeId: string
-      name: string
-      email: string
-      held: string[]
-    }
-
-const GUEST: Caller = { kind: 'guest' }
-
-/**
- * The stable name of an identity — for everything whose truth ENDS when the
- * identity moves: the accepted price (`useAcceptedPrice`) and the server's
- * `payment_required` figure.
- *
- * The held types are part of it because they price the booking: a contact who
- * buys a subscription in another tab is, as far as this screen's figures go,
- * somebody else.
- */
-function callerKey(caller: Caller): string {
-  return caller.kind === 'guest'
-    ? 'guest'
-    : `${caller.kind}:${caller.contactId}:${[...caller.held].sort().join(',')}`
-}
-
-/** The subscription types this caller is quoted against — none, for a guest. */
-function heldOf(caller: Caller): string[] {
-  return caller.kind === 'guest' ? [] : caller.held
-}
-
-/** The address a confirmation will reach, when this rail knows one. */
-function emailOf(caller: Caller): string | null {
-  return caller.kind === 'guest' ? null : caller.email
-}
-
-/**
- * The identity a booking/checkout call carries IN ITS BODY.
- *
- * A contact session carries NONE, and that is not an omission: `httpsCallable`
- * attaches the session's ID token to every call, `resolveAppointmentCaller`
- * reads it before anything in the body, and body details are then discarded
- * silently. Sending them would be a lie about what is being booked — the one
- * this rail used to tell, when a signed-in parent typing their child's name got
- * the appointment filed under the parent, at the parent's price, spending the
- * parent's benefit.
- */
-function bodyIdentity(caller: Caller, guest?: GuestDetailsValues): BookArgs {
-  if (caller.kind === 'session') return {}
-  if (caller.kind === 'code') {
-    return {
-      authenticatedContactId: caller.contactId,
-      verificationCodeId: caller.verificationCodeId,
-    }
-  }
-  return {
-    contactDetails: {
-      firstname: guest?.firstname ?? '',
-      lastname: guest?.lastname ?? '',
-      email: guest?.email ?? '',
-      ...(guest?.phone ? { phone: guest.phone } : {}),
-    },
-    // The studio's own contact fields, answered on the guest step. Narrowed
-    // again server side against the resolved list — see booking/contactFields.ts.
-    ...(guest?.contactFieldAnswers ? { contactFieldAnswers: guest.contactFieldAnswers } : {}),
-  }
-}
-
-/** The identity the consent gate resolves its requirement for — the same proofs
- *  `resolveWaiverCaller` accepts, in the same order. A body `contactId` is not a
- *  proof there; it is sent because the server decides whether the session agrees
- *  with it, exactly as `SignupForm` does. */
-function waiverIdentity(caller: Caller, guest?: GuestDetailsValues): WaiverCallerIdentity {
-  if (caller.kind === 'session') {
-    return { contactId: caller.contactId, ...(caller.email ? { email: caller.email } : {}) }
-  }
-  if (caller.kind === 'code') {
-    return {
-      authenticatedContactId: caller.contactId,
-      verificationCodeId: caller.verificationCodeId,
-      email: caller.email,
-    }
-  }
-  return { email: guest?.email, firstname: guest?.firstname, lastname: guest?.lastname }
-}
+// The three kinds of caller, the server's own precedence between them, what a
+// member holds, and what each kind puts in a call body, all live in
+// components/booking/identity/bookingCaller and are shared with the class
+// funnel. `BookArgs` is that module's `BookingCallBody` under this file's
+// older name.
+type BookArgs = BookingCallBody
 
 /**
  * The scope of a sentence that belongs to the TRANSITION rather than to a
@@ -522,32 +408,14 @@ function SlotBookingForm({
 
   // The OTP result, once a guest has taken the sign-in offer on THIS screen.
   // Never set for someone who arrived with a session — they are not offered it.
-  const [verified, setVerified] = useState<Extract<Caller, { kind: 'code' }> | null>(null)
+  const [verified, setVerified] = useState<VerifiedCaller | null>(null)
   // Transient state while a covered member's free booking is in flight.
   const [autobooking, setAutobooking] = useState(false)
 
   // ── WHO IS BOOKING, derived ───────────────────────────────────────────────
-  // Session FIRST, because that is the order `resolveAppointmentCaller` uses:
-  // if a contact signs in through the corner pill while this form is open, the
-  // server will book as them from that instant, so the screen must too.
-  const sessionCaller: Caller | null =
-    isAuthenticated && sessionContact
-      ? {
-          kind: 'session',
-          contactId: sessionContact.id,
-          name: `${sessionContact.firstname ?? ''} ${sessionContact.lastname ?? ''}`.trim(),
-          email: sessionContact.email ?? null,
-          // The LIVE union first (see `liveHeld` above); the session's single
-          // frozen `subscription_type_id` only when the live read failed, which
-          // is today's behaviour kept as a floor rather than as the answer.
-          // Still display/routing only — `loadContactPaymentSnapshot` re-resolves
-          // server-side on every call and remains the authority.
-          held:
-            liveHeld ??
-            (sessionContact.subscription_type_id ? [sessionContact.subscription_type_id] : []),
-        }
-      : null
-  const caller: Caller = sessionCaller ?? verified ?? GUEST
+  // Session first, an OTP result second, a guest last: the shared resolver
+  // holds that order because it is the SERVER's order.
+  const caller = resolveBookingCaller({ sessionContact, isAuthenticated, liveHeld, verified })
   const identityKey = callerKey(caller)
   const error =
     errorState &&
@@ -605,7 +473,7 @@ function SlotBookingForm({
   const [pendingBook, setPendingBook] = useState<
     | ({ identity: string } & (
         | { kind: 'guest'; values: GuestDetailsValues }
-        | { kind: 'memberFree'; caller: Caller }
+        | { kind: 'memberFree'; caller: BookingCaller }
         | { kind: 'memberPay' }
       ))
     | null
@@ -713,7 +581,7 @@ function SlotBookingForm({
    * promise one figure while Stripe charged another — and quoting it for the
    * wrong caller is what showed a signed-in member the guest price.
    */
-  const quote = (c: Caller) =>
+  const quote = (c: BookingCaller) =>
     resolvePaymentOptions(
       clientPaymentSnapshot({
         authenticated: c.kind !== 'guest',
@@ -928,7 +796,7 @@ function SlotBookingForm({
     // of a rule the contact-session arm did not have, which is precisely how the
     // guest's "…the price without the code is CHF 40.00" survived onto a member
     // screen quoting 24.00.
-    const verifiedCaller: Caller = {
+    const verifiedCaller: BookingCaller = {
       kind: 'code',
       contactId,
       verificationCodeId,
@@ -971,7 +839,7 @@ function SlotBookingForm({
    * places that build a `bookAppointment` payload. It takes the caller rather
    * than a bag of ids so the SESSION arm sends no body identity at all.
    */
-  async function runMemberFreeBooking(c: Caller) {
+  async function runMemberFreeBooking(c: BookingCaller) {
     const waiverAcceptances = waiverGate.acceptances
     setAutobooking(true)
     try {
