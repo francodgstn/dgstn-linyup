@@ -28,6 +28,7 @@ import { bookAppointment, listAvailability } from '../appointments/window'
 import { joinCourseBlock } from '../courseBlocks/enrolment'
 import {
   claimCourseBlockPlace,
+  getCourseWaitlistEntry,
   joinCourseBlockWaitlist,
   leaveCourseBlockWaitlist,
 } from '../courseBlocks/waitlist'
@@ -84,6 +85,7 @@ export const rpcMember = callableRouter(
     joinCourseBlockWaitlist,
     leaveCourseBlockWaitlist,
     claimCourseBlockPlace,
+    getCourseWaitlistEntry,
     completeSignup,
     loginContactWithCode,
     sendContactVerificationCode,

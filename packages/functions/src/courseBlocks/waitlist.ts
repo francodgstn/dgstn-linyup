@@ -47,13 +47,16 @@ import {
   courseBlockSalesOpen,
   courseWaitlistCap,
   firstMeeting,
+  lastMeeting,
   placeFreedEdge,
   placesFree,
   resolveCourseClaimWindow,
+  resolvePaymentOptions,
   selectCourseOfferHeads,
   type CourseBlock,
   type CourseBlockWaitlistEntry,
 } from '@linyup/shared'
+import { loadContactPaymentSnapshot } from '../booking/access'
 import { to } from '../utils/async'
 import { requireCapability } from '../utils/teams'
 import { generateSecureToken } from '../utils/crypto'
@@ -61,7 +64,12 @@ import { sendEmail, buildEmailTemplate } from '../utils/email'
 import { ctaButton } from '../utils/emailLayout'
 import { getHostingUrl } from '../utils/env'
 import { getTeamData } from '../sessions/teardown'
-import { syncCourseBlockRoster } from './enrolment'
+import {
+  assertUnderCheckoutRateLimit,
+  checkoutRateLimit,
+} from '../connect/checkout'
+import { WAITLIST_CLAIM_RATE_LIMIT_BUCKET } from '../booking/waitlist/constants'
+import { courseBlockTarget, syncCourseBlockRoster } from './enrolment'
 
 /** One minted offer, returned so the caller can notify the person. The mail is
  *  sent AFTER the commit, never inside the transaction. */
@@ -309,10 +317,13 @@ export async function offerCoursePlaces(
     // touching it on a no-op path re-enters the edge for ever.
     if (!courseBlockSalesOpen(block, nowMs)) return []
 
-    const first = firstMeeting(block)
+    // THE COURSE'S END, not its start. A place that frees in week four is the
+    // reason this queue exists, and clamping to the first lesson closed the
+    // window before it opened on every course that had already begun.
+    const last = lastMeeting(block)
     const window = resolveCourseClaimWindow({
       nowMs,
-      firstMeetingMs: first?.start.toMillis() ?? null,
+      lastMeetingMs: last?.end.toMillis() ?? null,
       closesAtMs: block.booking_closes_at?.toMillis() ?? null,
     })
     // Too little of a window left to be worth offering. The place simply shows
@@ -456,7 +467,11 @@ async function notifyCourseOffer(
     hour: '2-digit',
     minute: '2-digit',
   })
-  const claimUrl = `${getHostingUrl()}/public/${teamData.slug ?? ''}/course-claim?block=${offer.blockId}&contact=${offer.contactId}&token=${offer.offerToken}`
+  // ONE PARAMETER, and it is the credential. Naming the block and the contact
+  // in the link would let the page assert whose offer it was; the token is what
+  // the server resolves, and which token matched is what decides whether this
+  // person may take the place or only look at the queue.
+  const claimUrl = `${getHostingUrl()}/public/${teamData.slug ?? ''}/course-waitlist?token=${offer.offerToken}`
   const { html } = buildEmailTemplate({
     title: 'A place has come free',
     body:
@@ -582,6 +597,60 @@ export const claimCourseBlockPlace = onCall(async (request) => {
   const ref = blockRefOf(db, blockId)
   const entryRef = ref.collection(COURSE_BLOCK_WAITLIST_SUBCOLLECTION).doc(contactId)
 
+  // ── THE PRICE IS CHECKED BEFORE ANYTHING IS SETTLED ───────────────────────
+  //
+  // An offer is a claim on a PLACE, never on the money. Without this the token
+  // was the whole gate: whoever held a valid one settled a course of any price
+  // for nothing, because the transaction below writes
+  // `payment_status: 'not_required'` unconditionally. The header above this
+  // function said the refusal was here for a while before it was.
+  //
+  // Priced through the ONE resolver, with `enrolled: false`, because they are holding
+  // a place, not standing on one, and the `enrolled` arm answers "you already
+  // own this", which would hand the course over free.
+  const blockDoc = await ref.get()
+  if (!blockDoc.exists) throw new HttpsError('not-found', 'That course no longer exists.')
+  const block = { ...(blockDoc.data() as CourseBlock), id: blockDoc.id }
+
+  const contactDoc = await db.collection(CONTACTS_COLLECTION).doc(contactId).get()
+  if (!contactDoc.exists) throw new HttpsError('not-found', 'That contact no longer exists.')
+  const contact = contactDoc.data() as {
+    teamId?: string
+    firstname?: string
+    lastname?: string
+    email?: string
+  }
+  if (contact.teamId !== block.teamId) {
+    throw new HttpsError('permission-denied', 'That contact belongs to another studio.')
+  }
+
+  const snapshot = await loadContactPaymentSnapshot({
+    teamId: block.teamId,
+    contact: { ...contact, id: contactId },
+    relevantTypeIds: block.includedSubscriptionTypeIds ?? [],
+  })
+  const priced = resolvePaymentOptions(snapshot, courseBlockTarget(block, { enrolled: false }))
+  const option = priced.options[0]
+
+  // THE REFUSAL BRANCH COMES FIRST. An empty options array falling through to
+  // the settle below is the free course this gate exists to prevent, which is
+  // the mistake the appointment rail made and the free join rail was corrected
+  // for.
+  if (!option) {
+    throw new HttpsError('failed-precondition', 'You cannot take this place.', {
+      reason: priced.denial ?? 'no_subscription',
+    })
+  }
+  if (option.type === 'pay') {
+    // The offer STANDS. Nothing here consumes the token or releases the place:
+    // they have until the offer's own deadline to come back through
+    // `createCourseBlockCheckout` with it, which settles the same enrolment.
+    throw new HttpsError('failed-precondition', 'This course has to be paid for.', {
+      reason: 'payment_required',
+      priceAmount: option.amount,
+    })
+  }
+
   const { settled } = await db.runTransaction(async (tx) => {
     const [entryDoc, enrolDoc] = await Promise.all([
       tx.get(entryRef),
@@ -631,6 +700,110 @@ export const claimCourseBlockPlace = onCall(async (request) => {
   // as they do for every other way onto a course.
   const roster = await syncCourseBlockRoster(db, blockId)
   return { blockId, contactId, settled, bookingsWritten: roster.written }
+})
+
+// ─── the token lookup ────────────────────────────────────────────────────────
+
+/**
+ * What the claim page renders from, and the only way a guest can see their own
+ * place in the queue.
+ *
+ * A CALLABLE RATHER THAN A CLIENT READ, and it has to be: the queue is readable
+ * only by team members, and somebody who joined from the public shop has no
+ * session at all. The token in their mail is their whole identity here.
+ *
+ * WHICH TOKEN MATCHED DECIDES WHAT THEY MAY DO, and the SERVER decides that,
+ * not the URL. The single-use `offer_token` is tried first and the long-lived
+ * `entry_token` second, so a forwarded join confirmation can only ever show a
+ * status view while the claim credential is the one thing that can take the
+ * place. Passing the mode in the query string would have made the difference a
+ * client's to assert.
+ */
+export const getCourseWaitlistEntry = onCall(async (request) => {
+  const token = typeof (request.data as { token?: string })?.token === 'string'
+    ? (request.data as { token: string }).token.trim()
+    : ''
+  if (!token) throw new HttpsError('invalid-argument', 'token is required')
+
+  // Peeked, not charged: this callable is how the claim page RENDERS, so
+  // charging every render would make an offered place unreachable from the same
+  // NAT the queue was joined from. Only a token that resolves to nothing costs
+  // quota, which is what bounds an enumerator.
+  await assertUnderCheckoutRateLimit(request.rawRequest?.ip, WAITLIST_CLAIM_RATE_LIMIT_BUCKET)
+
+  const db = admin.firestore()
+  const group = db.collectionGroup(COURSE_BLOCK_WAITLIST_SUBCOLLECTION)
+  const byOffer = await group.where('offer_token', '==', token).limit(1).get()
+  const snap = byOffer.empty
+    ? await group.where('entry_token', '==', token).limit(1).get()
+    : byOffer
+  if (snap.empty) {
+    await checkoutRateLimit(request.rawRequest?.ip, WAITLIST_CLAIM_RATE_LIMIT_BUCKET)
+    // INDISTINGUISHABLE BY CONSTRUCTION: the offer token is cleared when the
+    // offer resolves in any direction, so "expired" and "already taken" look
+    // identical from here, and must, or the credential would outlive its own
+    // offer. The long-lived entry link is where the person finds out which.
+    throw new HttpsError('not-found', 'This link is no longer valid')
+  }
+
+  const entry = snap.docs[0].data() as CourseBlockWaitlistEntry
+  const blockId = entry.course
+  const [blockSnap, teamSnap] = await Promise.all([
+    db.collection(COURSE_BLOCKS_COLLECTION).doc(blockId).get(),
+    db.collection('teams').doc(entry.teamId).get(),
+  ])
+  if (!blockSnap.exists) throw new HttpsError('not-found', 'That course no longer exists.')
+  const block = { ...(blockSnap.data() as CourseBlock), id: blockId }
+
+  // The QUEUE POSITION, derived at read time from `joined_at` and never stored:
+  // somebody leaving ahead of you must not rewrite every entry behind you.
+  let position: number | null = null
+  if (entry.status === 'waiting') {
+    const ahead = await db
+      .collection(COURSE_BLOCKS_COLLECTION)
+      .doc(blockId)
+      .collection(COURSE_BLOCK_WAITLIST_SUBCOLLECTION)
+      .where('status', '==', 'waiting')
+      .orderBy('joined_at', 'asc')
+      .limit(COURSE_WAITLIST_SCAN_LIMIT)
+      .get()
+    const idx = ahead.docs.findIndex((d) => d.id === entry.contact)
+    position = idx >= 0 ? idx + 1 : null
+  }
+
+  const first = firstMeeting(block)
+  const last = lastMeeting(block)
+  return {
+    mode: byOffer.empty ? ('status' as const) : ('claim' as const),
+    status: entry.status,
+    position,
+    /** Was a place ever actually held for them? `expired` is written both when
+     *  an offer lapsed and when the queue closed without reaching them, and the
+     *  two endings read completely differently to the person. */
+    wasOffered: !!entry.offered_at,
+    firstname: entry.firstname ?? '',
+    lastname: entry.lastname ?? '',
+    email: entry.email ?? null,
+    teamId: entry.teamId,
+    blockId,
+    contactId: entry.contact,
+    offerExpiresAt: entry.offer_expires_at?.toDate().toISOString() ?? null,
+    course: {
+      name: block.name,
+      description: block.description ?? null,
+      firstMeeting: first?.start.toDate().toISOString() ?? null,
+      lastMeeting: last?.end.toDate().toISOString() ?? null,
+      lessons: (block.meetings ?? []).length,
+      location: block.location ?? null,
+      providerName: block.providerName ?? null,
+      priceAmount: block.priceAmount ?? null,
+      cancelled: block.status === 'cancelled',
+    },
+    team: {
+      name: (teamSnap.data()?.name as string | undefined) ?? '',
+      slug: (teamSnap.data()?.slug as string | undefined) ?? null,
+    },
+  }
 })
 
 // ─── the studio's view ───────────────────────────────────────────────────────

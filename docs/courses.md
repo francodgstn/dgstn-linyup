@@ -262,6 +262,37 @@ always writes an absolute value. The binding corollary of hanging on an edge:
 **on any path where the promoter decides not to promote, it must not write the
 course document at all**, or a harmless touch re-enters the edge for ever.
 
+**The claim window is clamped to the course's END, not its start.** A waiting
+list exists for the place that frees in week four, so clamping to the first
+lesson closed the window before it opened on every course that had already
+begun: `offerable` came back false and the promoter returned silently having
+done nothing. Whether a place is still worth offering with two lessons left is
+the studio's question, and `booking_closes_at` is the control that answers it.
+
+**Every free way onto a course prices it first.** The claim rail settles an
+enrolment without a charge, so it runs `resolvePaymentOptions` and refuses a
+payable caller with `payment_required` before it writes anything, exactly as the
+free join rail does. It shipped without that check while the header above it
+said otherwise, which made an offer token the whole gate: whoever held a valid
+one settled a course of any price for nothing. `courseBlocks/claimGate.test.ts`
+pins the shape for both rails, and the refusal leaves the offer standing so the
+claimant can come back through checkout with the same token.
+
+### The claim page
+
+`/public/{slug}/course-waitlist?token=…`, the sibling of `/public/{slug}/waitlist`
+for a class seat. **Which token matched decides what the holder may do, and the
+SERVER decides that, not the URL**: `getCourseWaitlistEntry` tries the single-use
+`offer_token` first and the long-lived `entry_token` second, so a forwarded join
+confirmation can only ever show a status view. The link carries ONE parameter and
+it is the credential; naming the course and the contact in it would let the page
+assert whose offer it was.
+
+It is a callable rather than a client read because it has to be: the queue is
+readable only by team members, and somebody who queued from the public shop has
+no session at all. The token in their mail is their whole identity there, which
+is what `auth/publicSurfaceIdentity.test.ts` records for the route.
+
 ---
 
 ## Duplicating for next term
@@ -365,10 +396,12 @@ Two rules the helper follows, each of which was a defect first:
 
 ## Not built yet
 
-The public surfaces for the waiting list: joining from a sold-out card, and the
-page an offer's claim link opens. The callables are wired and tested, and the
-offer mail already points at a route nobody has built, so that link is the first
-thing owed here.
+**Joining the queue from a sold-out card.** The card on `/public/{slug}/booking`
+says "Sold out" and offers nothing. The callable exists but takes a `contactId`,
+and a public visitor has none, so it needs the contact resolution the class
+queue's `joinWaitlist` already does: contact session first (never a `contactId`
+from the body), then email plus name, then a provisional contact whose expiry is
+tied to the course's last lesson rather than a session start.
 
 Also open: linking a plan to a course (the pane says so), and a Courses tab in
 the Shop.

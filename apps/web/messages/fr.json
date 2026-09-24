@@ -9030,5 +9030,26 @@
     "cancelRefundsHint": "Remboursez-les depuis la page des paiements, un par un, pour garder la main.",
     "closeButton": "Fermer",
     "duplicateLabel": "Relancer"
+  },
+  "CourseWaitlist": {
+    "offerTitle": "Une place s'est libérée",
+    "offerBody": "Bonjour {name}, cette place vous est réservée.",
+    "statusTitle": "Votre place sur la liste",
+    "waiting": "Vous êtes sur la liste d'attente. Nous vous écrirons dès qu'une place se libère.",
+    "waitingWithPosition": "Vous êtes numéro {position} sur la liste d'attente. Nous vous écrirons dès qu'une place se libère.",
+    "alreadyOn": "Vous êtes inscrit à ce cours. À bientôt.",
+    "offerExpired": "Cette offre a expiré et la place est allée à la personne suivante. Demandez au studio de vous remettre sur la liste.",
+    "queueClosed": "Cette liste d'attente est close. Aucune place ne s'est libérée avant le début du cours.",
+    "heldUntil": "Réservée jusqu'au {when}. Ensuite elle passe à la personne suivante.",
+    "take": "Prendre la place",
+    "takeAndPay": "Prendre la place et payer",
+    "working": "Un instant…",
+    "claimedTitle": "Vous êtes inscrit au cours",
+    "claimedBody": "Votre place pour {name} est confirmée. Toutes les leçons sont dans vos réservations.",
+    "lessons": "{count, plural, one {# leçon} other {# leçons}}",
+    "noToken": "Ce lien n'a pas de code. Ouvrez-le depuis l'e-mail que nous vous avons envoyé.",
+    "invalidLink": "Ce lien n'est plus valable. Il a peut-être déjà été utilisé, ou l'offre a expiré.",
+    "claimFailed": "Cela n'a pas fonctionné. Réessayez ou écrivez au studio.",
+    "windowTooShort": "Il ne reste pas assez de temps sur cette offre pour la payer. Écrivez au studio, il peut vous garder la place."
   }
 }

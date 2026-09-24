@@ -99,6 +99,7 @@ const BORN_ROUTED = new Set<string>([
   'joinCourseBlockWaitlist',
   'leaveCourseBlockWaitlist',
   'claimCourseBlockPlace',
+  'getCourseWaitlistEntry',
   'enrolCourseBlockContact',
   'withdrawFromCourseBlock',
   'joinCourseBlock',

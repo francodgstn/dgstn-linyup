@@ -9030,5 +9030,26 @@
     "cancelRefundsHint": "Refund them from the payments page, one by one, so you stay in control of what goes back.",
     "closeButton": "Close",
     "duplicateLabel": "Run again"
+  },
+  "CourseWaitlist": {
+    "offerTitle": "A place has come free",
+    "offerBody": "Hi {name}, this place is being held for you.",
+    "statusTitle": "Your place in the line",
+    "waiting": "You are on the waiting list. We will write as soon as a place comes free.",
+    "waitingWithPosition": "You are number {position} on the waiting list. We will write as soon as a place comes free.",
+    "alreadyOn": "You are on this course. See you there.",
+    "offerExpired": "This offer has run out and the place has gone to the next person. Ask the studio to put you back on the list.",
+    "queueClosed": "This waiting list has closed. No place came free before the course started.",
+    "heldUntil": "Held for you until {when}. After that it goes to the next person on the list.",
+    "take": "Take the place",
+    "takeAndPay": "Take the place and pay",
+    "working": "One moment…",
+    "claimedTitle": "You are on the course",
+    "claimedBody": "Your place on {name} is confirmed. Every lesson is now in your bookings.",
+    "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+    "noToken": "This link is missing its code. Open it from the email we sent you.",
+    "invalidLink": "This link is no longer valid. It may already have been used, or the offer may have run out.",
+    "claimFailed": "That did not work. Try again, or write to the studio.",
+    "windowTooShort": "There is not enough time left on this offer to pay for it. Write to the studio and they can hold it for you."
   }
 }

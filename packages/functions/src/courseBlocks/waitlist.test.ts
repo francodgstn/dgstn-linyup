@@ -54,16 +54,26 @@ describe('how long a course place is held', () => {
     assert.equal(w.expiresAtMs, closes)
   })
 
-  it('is clamped by the first lesson, so no place is sold after it starts', () => {
-    const first = NOW + 3 * HOUR
-    const w = resolveCourseClaimWindow({ nowMs: NOW, firstMeetingMs: first, closesAtMs: NOW + 90 * HOUR })
-    assert.equal(w.expiresAtMs, first)
+  it('is clamped by the course END, so no place is sold after the last lesson', () => {
+    const last = NOW + 3 * HOUR
+    const w = resolveCourseClaimWindow({ nowMs: NOW, lastMeetingMs: last, closesAtMs: NOW + 90 * HOUR })
+    assert.equal(w.expiresAtMs, last)
+  })
+
+  it('STILL OFFERS on a course that has already started, which is the whole point', () => {
+    // The defect this replaced: clamping to the FIRST lesson meant a course
+    // three weeks in had a window that closed before it opened, so the promoter
+    // refused every offer and returned silently. A place freeing in week four
+    // is the case a waiting list exists for.
+    const w = resolveCourseClaimWindow({ nowMs: NOW, lastMeetingMs: NOW + 30 * 24 * HOUR })
+    assert.equal(w.offerable, true)
+    assert.equal(w.expiresAtMs, NOW + COURSE_CLAIM_DEFAULT_HOURS * HOUR)
   })
 
   it('takes the EARLIEST of everything that can close it', () => {
     const w = resolveCourseClaimWindow({
       nowMs: NOW,
-      firstMeetingMs: NOW + 10 * HOUR,
+      lastMeetingMs: NOW + 10 * HOUR,
       closesAtMs: NOW + 4 * HOUR,
       claimHours: 72,
     })
@@ -75,7 +85,7 @@ describe('how long a course place is held', () => {
     // which is the right outcome for a place that frees the evening before.
     const w = resolveCourseClaimWindow({
       nowMs: NOW,
-      firstMeetingMs: NOW + (COURSE_CLAIM_MIN_WINDOW_MINUTES - 1) * 60_000,
+      lastMeetingMs: NOW + (COURSE_CLAIM_MIN_WINDOW_MINUTES - 1) * 60_000,
     })
     assert.equal(w.offerable, false)
   })

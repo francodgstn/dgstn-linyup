@@ -497,15 +497,23 @@ export interface CourseClaimWindow {
  * How long an offered course place is held, clamped by everything that can
  * close it.
  *
- * Both clamps are hard rather than advisory. An offer outliving
- * `booking_closes_at` would hand somebody a claim the course's own callables
- * then refuse, and one outliving the first lesson would sell a place on a
- * course that has already started.
+ * THE CLAMP IS THE COURSE'S END, NOT ITS START, and that distinction is the
+ * whole feature. A waiting list exists for the place that frees in week four,
+ * so clamping to the first lesson refused every offer on a course that had
+ * already begun: the window closed before it opened, `offerable` came back
+ * false, and the promoter returned silently having done exactly nothing. It was
+ * the only case the queue was ever going to be used in.
+ *
+ * Whether a place should still be offered with two lessons left is the STUDIO's
+ * question, and `booking_closes_at` is the control that answers it. Both clamps
+ * are hard rather than advisory: an offer outliving either would hand somebody a
+ * claim the course's own callables then refuse.
  */
 export function resolveCourseClaimWindow(input: {
   nowMs: number
-  /** The course's first lesson, or null for a course with no dates yet. */
-  firstMeetingMs?: number | null
+  /** The end of the course's LAST lesson, or null for a course with no dates
+   *  yet. Not the first: see above. */
+  lastMeetingMs?: number | null
   /** `booking_closes_at`, or null when the studio set no deadline. */
   closesAtMs?: number | null
   /** Override, in hours. Absent uses `COURSE_CLAIM_DEFAULT_HOURS`. */
@@ -517,7 +525,7 @@ export function resolveCourseClaimWindow(input: {
       : COURSE_CLAIM_DEFAULT_HOURS
   const bounds = [input.nowMs + hours * 60 * 60_000]
   if (typeof input.closesAtMs === 'number') bounds.push(input.closesAtMs)
-  if (typeof input.firstMeetingMs === 'number') bounds.push(input.firstMeetingMs)
+  if (typeof input.lastMeetingMs === 'number') bounds.push(input.lastMeetingMs)
   const expiresAtMs = Math.min(...bounds)
   const minutesLeft = (expiresAtMs - input.nowMs) / 60_000
   return {

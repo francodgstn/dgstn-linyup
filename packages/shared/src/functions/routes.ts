@@ -254,6 +254,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   joinCourseBlockWaitlist: 'rpcMember',
   leaveCourseBlockWaitlist: 'rpcMember',
   claimCourseBlockPlace: 'rpcMember',
+  getCourseWaitlistEntry: 'rpcMember',
   listAvailability: 'rpcMember',
   getMyBookings: 'rpcMember',
   bookAppointment: 'rpcMember',
