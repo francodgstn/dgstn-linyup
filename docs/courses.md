@@ -451,18 +451,26 @@ read as a studio that stopped running the course.
 **No promo code and no gift card on this rail yet**, which is why
 `promoEligible` and `giftCardEligible` do not name the kind:
 `createCourseBlockCheckout` takes neither, so offering the fields would be a
-control that writes nowhere. See "Not built yet" below, because `PROMO_TARGETS`
-already carries `course_block` and the two disagree.
+control that writes nowhere. The promo editor withholds the scope for the same
+reason, and a test holds that line: see "Not built yet" below.
 
 ## Not built yet
 
-**A promo code scoped to a course can never apply.** `course_block` is in
-`PROMO_TARGETS` and the promo-code editor offers the scope, but no rail accepts
-a code for one: `createCourseBlockCheckout` has no `promoCode` parameter, so the
-resolver is never given a promo context. A studio can therefore create a code
-that silently does nothing. Either wire the rail (the reserve/commit ticket and
-the gift-card hold, alongside the other one-off purchases) or take the scope out
-of the editor until it is. `docs/promo-codes.md` owns which rails take a code.
+**A promo code on a course.** The resolver is ready for one (`course_block` is a
+`PROMO_TARGET`) and so is the type, but `createCourseBlockCheckout` has no
+`promoCode` parameter, so no promo context ever reaches the resolver on that
+rail. The promo editor's `SCOPES` therefore does NOT offer the scope, which is
+what keeps a studio from printing a code that discounts nothing.
+
+That line is held by an array, so it is pinned:
+`connect/promoCodeScopes.test.ts` reads the editor's list and each rail's
+callable from source and fails if a scope is ever offered whose rail takes no
+code. It also fails the other way, when the course checkout grows a
+`promoCode`, which is the prompt to add the scope in that same change.
+
+Wiring it is its own piece of work, next to the most careful money code in the
+repo: the reserve/commit ticket and the gift-card hold that the other one-off
+purchases carry. `docs/promo-codes.md` owns which rails take a code.
 
 **One rename has to land WITH the sale, not after it.** The studio side already
 says *Online courses* everywhere (the nav did before this work, and the
