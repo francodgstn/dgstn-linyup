@@ -38,7 +38,7 @@ import {
 } from '@linyup/shared'
 import { FieldInput, isFieldAnswered } from '@/components/forms/FieldInput'
 import { publicHref, publicHrefLocalized, returnHref } from '@/lib/publicRoutes'
-import { useStepUrl } from '@/hooks/useStepUrl'
+import { useBookingFlowUrl } from '@/components/booking/flow/useBookingFlowUrl'
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { resolveActivityPricingDisplay, type SubLookup } from '@/lib/activityTerms'
 import { priceRangeLabel } from '@/lib/priceRange'
@@ -231,6 +231,11 @@ type Step =
   | 'waitlist'
   | 'waitlisted'
 
+/** The screens that submitted something. Back must never re-enter one, so they
+ *  rewrite their history entry instead of pushing a new one; `onRestore` then
+ *  leaves the flow rather than restoring a step behind them. */
+const TERMINAL_STEPS = ['confirmed', 'waitlisted'] as const satisfies readonly Step[]
+
 /**
  * Why a `?session=` / `?date=` deep link couldn't be honoured. The visitor is
  * degraded to the nearest useful step and told why — never silently dumped on
@@ -276,7 +281,7 @@ function sessionDuration(
   return m ? t('durationHoursMinutes', { h, m }) : t('durationHours', { h })
 }
 
-// The activity card itself lives in components/booking/catalogue/OfferCard —
+// The activity card itself lives in components/booking/catalogue/OfferCard:
 // one card for one bookable thing, shared with the appointment picker.
 
 /** Drop-in (pay-per-class) price for a gated class, else null.
@@ -1690,7 +1695,30 @@ export default function BookingForm({
   // there are eight places the step changes, and a push forgotten at any one of
   // them silently breaks Back for that branch only.
 
-  const stepUrl = useStepUrl({
+  // The canonical query for the current step. All steps stay on ONE pathname:
+  // pushing `/booking/{activitySlug}` would turn popstate into a real route
+  // transition, remounting the wizard and refetching everything.
+  const stepQuery: Record<string, string | undefined> =
+    step === 'activities'
+      ? {}
+      : step === 'sessions'
+        ? { activity: selectedActivity?.id, date: selectedDate ?? undefined }
+        : step === 'confirmed'
+          ? { booked: confirmedSession?.id }
+          : step === 'waitlisted'
+            ? { waitlisted: selectedSession?.id }
+            : {
+                session: selectedSession?.id,
+                step: step === 'who' ? undefined : step,
+                path: step === 'details' ? (guestPath ?? undefined) : undefined,
+              }
+
+  // Nothing below sets the URL by hand: the step and its query decide it.
+  useBookingFlowUrl({
+    step,
+    query: stepQuery,
+    ready: !loadingData,
+    terminalSteps: TERMINAL_STEPS,
     disabled: disableStepUrl,
     sticky: { from, referral },
     onRestore: (params) => {
@@ -1780,53 +1808,6 @@ export default function BookingForm({
       }
     },
   })
-
-  // The canonical query for the current step. All steps stay on ONE pathname:
-  // pushing `/booking/{activitySlug}` would turn popstate into a real route
-  // transition, remounting the wizard and refetching everything.
-  const stepQuery: Record<string, string | undefined> =
-    step === 'activities'
-      ? {}
-      : step === 'sessions'
-        ? { activity: selectedActivity?.id, date: selectedDate ?? undefined }
-        : step === 'confirmed'
-          ? { booked: confirmedSession?.id }
-          : step === 'waitlisted'
-            ? { waitlisted: selectedSession?.id }
-            : {
-                session: selectedSession?.id,
-                step: step === 'who' ? undefined : step,
-                path: step === 'details' ? (guestPath ?? undefined) : undefined,
-              }
-
-  const syncedQueryRef = useRef<string | null>(null)
-  const prevStepRef = useRef<Step | null>(null)
-  const seenRestoreRef = useRef(0)
-  useEffect(() => {
-    if (loadingData) return
-    const key = JSON.stringify(stepQuery)
-    // This run is a restore's own re-render — the URL is already what popstate
-    // gave us. Record the state and write nothing.
-    if (stepUrl.restoreCount() !== seenRestoreRef.current) {
-      seenRestoreRef.current = stepUrl.restoreCount()
-      syncedQueryRef.current = key
-      prevStepRef.current = step
-      return
-    }
-    if (syncedQueryRef.current === key) return
-    const isFirst = syncedQueryRef.current === null
-    const stepChanged = prevStepRef.current !== step
-    syncedQueryRef.current = key
-    prevStepRef.current = step
-    // Push only on a real step transition. Refinements within a step (paging the
-    // calendar to another day) rewrite instead, or Back would walk day by day
-    // before it ever left the step. The two terminal steps also rewrite — see
-    // the guard above.
-    if (isFirst || !stepChanged || step === 'confirmed' || step === 'waitlisted')
-      stepUrl.replace(stepQuery)
-    else stepUrl.push(stepQuery)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, selectedActivity?.id, selectedSession?.id, selectedDate, guestPath, loadingData])
 
   function backFromSessions() {
     // `isDateFirst` has no activity step in front of it either — the day picker

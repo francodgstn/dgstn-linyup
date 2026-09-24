@@ -30,7 +30,7 @@ import {
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { useRouter } from '@/i18n/navigation'
 import { publicHrefLocalized, returnHref } from '@/lib/publicRoutes'
-import { useStepUrl } from '@/hooks/useStepUrl'
+import { useBookingFlowUrl } from '@/components/booking/flow/useBookingFlowUrl'
 import { usePublicTeam } from '../PublicTeamProvider'
 import { formatCurrency } from '@/lib/format'
 import { priceRangeLabel } from '@/lib/priceRange'
@@ -1892,12 +1892,30 @@ export default function AppointmentPicker({
       : (selectedActivity?.durations[0]?.minutes ?? 60)
 
   // ── Step ↔ URL ────────────────────────────────────────────────────────────
-  // Same contract as the class flow (see BookingForm): one effect owns the whole
-  // mapping, raw pushState so the loaded `coaches` array survives Back.
+  // The decision is `useBookingFlowUrl`'s, shared with the class flow.
   // `bookScreen` is deliberately NOT synced — it's an internal sub-state of the
   // `book` step with its own back affordance, and pushing it would make Back
-  // behave differently between the two flows.
-  const stepUrl = useStepUrl({
+  // behave differently between the two flows. This funnel names no terminal
+  // step: its confirmation is a screen inside `book`, not a step of its own.
+  const stepQuery: Record<string, string | number | undefined> =
+    step === 'coach'
+      ? {}
+      : step === 'activity'
+        ? { provider: selectedCoach?.providerId }
+        : {
+            provider: selectedCoach?.providerId,
+            activity: selectedActivity?.activityId,
+            place: selectedActivity?.placeId ?? undefined,
+            duration: effectiveDuration,
+            date: selectedDateKey ?? undefined,
+            ...(step === 'book' && windowBooking ? { start: windowBooking.startMs } : {}),
+          }
+
+  // Nothing below sets the URL by hand: the step and its query decide it.
+  useBookingFlowUrl({
+    step,
+    query: stepQuery,
+    ready: !loading,
     disabled: disableStepUrl,
     sticky: { from, activity: presetActivityId },
     onRestore: (params) => {
@@ -1976,45 +1994,6 @@ export default function AppointmentPicker({
     },
   })
 
-  const stepQuery: Record<string, string | number | undefined> =
-    step === 'coach'
-      ? {}
-      : step === 'activity'
-        ? { provider: selectedCoach?.providerId }
-        : {
-            provider: selectedCoach?.providerId,
-            activity: selectedActivity?.activityId,
-            place: selectedActivity?.placeId ?? undefined,
-            duration: effectiveDuration,
-            date: selectedDateKey ?? undefined,
-            ...(step === 'book' && windowBooking ? { start: windowBooking.startMs } : {}),
-          }
-
-  const syncedQueryRef = useRef<string | null>(null)
-  const prevStepRef = useRef<PickerStep | null>(null)
-  const seenRestoreRef = useRef(0)
-  useEffect(() => {
-    if (loading) return
-    const key = JSON.stringify(stepQuery)
-    // This run is a restore's own re-render — see BookingForm for why this is a
-    // counter rather than an "is restoring" flag.
-    if (stepUrl.restoreCount() !== seenRestoreRef.current) {
-      seenRestoreRef.current = stepUrl.restoreCount()
-      syncedQueryRef.current = key
-      prevStepRef.current = step
-      return
-    }
-    if (syncedQueryRef.current === key) return
-    const isFirst = syncedQueryRef.current === null
-    const stepChanged = prevStepRef.current !== step
-    syncedQueryRef.current = key
-    prevStepRef.current = step
-    // Push only on a real step transition; refinements inside `time` (duration
-    // chips, paging the calendar) rewrite, or Back would walk every fiddle.
-    if (isFirst || !stepChanged) stepUrl.replace(stepQuery)
-    else stepUrl.push(stepQuery)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, selectedCoach?.providerId, selectedActivity?.activityId, effectiveDuration, selectedDateKey, windowBooking?.startMs, loading])
 
   useEffect(() => {
     let alive = true
