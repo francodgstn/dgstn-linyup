@@ -44,7 +44,7 @@ import { resolveActivityPricingDisplay, type SubLookup } from '@/lib/activityTer
 import { priceRangeLabel } from '@/lib/priceRange'
 import { formatCurrency } from '@/lib/format'
 import { useLocale, useTranslations } from 'next-intl'
-import { ArrowUpRight, Info } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { Link, useRouter } from '@/i18n/navigation'
 import { BioLinkButton } from '../BioLinkShell'
 import { FlowShell } from '@/components/booking/FlowShell'
@@ -54,7 +54,6 @@ import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { CourseWaitlistDialog } from '@/components/booking/CourseWaitlistDialog'
 import { usePublicContactRecord } from '../usePublicContactRecord'
 import { MiniCalendar } from '@/components/booking/MiniCalendar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   GuestDetailsForm,
   type GuestDetailsFormHandle,
@@ -64,7 +63,8 @@ import {
   ReturningSignIn,
   type ContactData,
 } from '@/components/booking/ReturningSignIn'
-import { StickyBar, activityGradient } from '@/components/booking/StickyBar'
+import { StickyBar } from '@/components/booking/StickyBar'
+import { OfferCard, type OfferChip } from '@/components/booking/catalogue/OfferCard'
 import { BackButton } from '@/components/booking/BackButton'
 import { WaiverStep } from '@/components/booking/WaiverStep'
 import { BookingTerms, resolveCancellationPolicy } from '@/components/booking/BookingTerms'
@@ -276,8 +276,8 @@ function sessionDuration(
   return m ? t('durationHoursMinutes', { h, m }) : t('durationHours', { h })
 }
 
-// activityGradient now lives in components/booking/StickyBar (shared with the
-// appointment picker) — imported above and reused by the activity cards below.
+// The activity card itself lives in components/booking/catalogue/OfferCard —
+// one card for one bookable thing, shared with the appointment picker.
 
 /** Drop-in (pay-per-class) price for a gated class, else null.
  *
@@ -2181,16 +2181,128 @@ export default function BookingForm({
             const hasSessions =
               isAppointment ||
               sessions.some((s) => s.activityId === a.id || s.activitySlug === a.slug)
-            const bg = a.image
-              ? `url("${a.image}")`
-              : a.color
-                ? `linear-gradient(135deg, ${a.color}cc, ${a.color}88)`
-                : activityGradient(a.name)
+            // Structured commercial display (locked with the user): the ONLY
+            // things shown are two chips — Free trial + the type (Class /
+            // Appointment) — and NAMED pricing lines: "Included with {sub} —
+            // {price}" per granting subscription, "Discount with {sub} — {%}"
+            // per appointment-discount subscription, the drop-in price, and
+            // an appointment's direct price. No generic "Subscription
+            // required" gate badge and no generic "Included": where a plan
+            // is the key it is named, with its price. The 'members' tier
+            // below is the one line with no plan in it — because none is
+            // required there.
+            const d = resolveActivityPricingDisplay({ ...a, type: a.activityType }, subLookup)
+            const lines: string[] = []
+            // A SIGNED-IN MEMBER SEES HER OWN PRICE, not the list (UX-110).
+            // Asked through the same resolver the who's-booking step uses,
+            // so the card and the next screen cannot quote two numbers.
+            // A plan that covers the class replaces every line with one;
+            // a member rate replaces the drop-in figure. Display only.
+            let memberDropInAmount: number | null = null
+            let coveredByPlan = false
+            if (isAuthenticated && heldPlanIds.length > 0 && a.activityType !== 'appointment') {
+              const accessRule = resolveActivityAccessRule(a)
+              const snapshot = clientPaymentSnapshot({
+                authenticated: true,
+                heldSubscriptionTypeIds: heldPlanIds,
+              })
+              const booking = resolvePaymentOptions(snapshot, { kind: 'class_booking', accessRule })
+              const first = booking.options[0]
+              // 'subscription' only: 'open' / 'members' coverage is not a
+              // plan paying for it, and the lines above already say so.
+              if (first?.type === 'covered' && first.via.reason === 'subscription') {
+                coveredByPlan = true
+              }
+              if (d.dropInAmount != null && a.dropIn) {
+                const quote = resolvePaymentOptions(snapshot, {
+                  kind: 'drop_in',
+                  accessRule,
+                  dropIn: a.dropIn,
+                  benefit: a.memberBenefit,
+                }).options[0]
+                if (quote?.type === 'pay' && quote.appliedBenefit) memberDropInAmount = quote.amount
+              }
+            }
+            // 'members' tier — the DEFAULT for every new class — used to
+            // render NO access line at all. It gets one now, and it names
+            // the gate that is actually enforced: being signed up with
+            // this studio, which costs nothing. No plan, no price: the
+            // true answer to "what am I supposed to buy?" here is
+            // nothing, and a subscription price would send this visitor
+            // to the shop for something they don't need to book.
+            if (d.signedUpOnly) lines.push(t('signedUpOnlyLine'))
+            // 'subscription' tier whose plans this surface cannot name
+            // (not public, or the rule lists none). Naming nothing is
+            // what made the card look OPEN — the gate gets its own
+            // sentence, distinct from the free 'members' one above.
+            if (d.planRequired) lines.push(t('planRequiredLine'))
+            for (const s of d.includedWith)
+              lines.push(
+                s.priceLabel
+                  ? t('includedWithSubPriced', { name: s.name, price: s.priceLabel })
+                  : t('includedWithSub', { name: s.name })
+              )
+            for (const s of d.discountWith)
+              lines.push(t('discountWithSub', { name: s.name, percent: s.percent }))
+            // Priced doors are advertised only when one of them could
+            // actually be walked through (UX-33). The membership lines
+            // above stay: "included with X" states how access works,
+            // it is not a checkout this page can open.
+            if (d.dropInAmount != null && paymentsEnabled)
+              lines.push(
+                t('badgeDropInPrice', {
+                  price: formatCurrency(memberDropInAmount ?? d.dropInAmount, currency, locale),
+                })
+              )
+            if (d.appointmentPrice && paymentsEnabled)
+              lines.push(
+                priceRangeLabel(d.appointmentPrice, {
+                  money: (amount) => formatCurrency(amount, currency, locale),
+                  from: (price) => t('badgeFromPrice', { price }),
+                  range: (min, max) => t('badgePriceRange', { min, max }),
+                })
+              )
+            if (coveredByPlan) lines.splice(0, lines.length, t('memberCovered'))
+
+            // Every chip in one list, in the order the row reads: what kind of
+            // thing this is, then the one free signal, then why it cannot be
+            // booked, and LAST the studio's own words about it.
+            const chips: OfferChip[] = [
+              { label: d.type === 'appointment' ? t('badgeAppointment') : t('chipClass') },
+            ]
+            if (d.trial)
+              chips.push({
+                label:
+                  d.trial.priceAmount != null
+                    ? t('badgeTrialPriced', {
+                        price: formatCurrency(d.trial.priceAmount, currency, locale),
+                      })
+                    : t('badgeFreeTrial'),
+                tone: 'positive',
+              })
+            if (!hasSessions) chips.push({ label: t('badgeNoOpenSessions') })
+            for (const tag of a.tags ?? []) chips.push({ label: tag })
+
             return (
-              <button
+              <OfferCard
                 key={a.id}
-                onClick={() => {
-                  if (!hasSessions) return
+                name={a.name}
+                image={a.image}
+                color={a.color}
+                chips={chips}
+                description={showDesc ? a.description : null}
+                note={
+                  a.prerequisites
+                    ? { label: t('prerequisitesLabel'), text: a.prerequisites }
+                    : null
+                }
+                priceLines={
+                  showPricing && lines.length > 0
+                    ? { trigger: t('pricingDetailsTrigger'), lines }
+                    : null
+                }
+                disabled={!hasSessions}
+                onSelect={() => {
                   if (isAppointment) {
                     goToAppointments(a.id)
                     return
@@ -2198,197 +2310,7 @@ export default function BookingForm({
                   setSelectedActivity(a)
                   setStep('sessions')
                 }}
-                disabled={!hasSessions}
-                className="w-full text-left rounded-xl border bg-card hover:border-primary hover:bg-primary/5 transition-colors flex items-stretch overflow-hidden min-h-24 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {/* Thumbnail — square (1:1) for typical items via w-24 + item min-h-24 */}
-                <div
-                  className="w-24 shrink-0 bg-muted"
-                  style={{
-                    background: bg,
-                    backgroundSize: a.image ? 'cover' : '100% 100%',
-                    backgroundPosition: 'center',
-                  }}
-                />
-                {/* Content */}
-                <div className="flex-1 p-4 min-w-0">
-                  {(() => {
-                    // Structured commercial display (locked with the user): the ONLY
-                    // things shown are two chips — Free trial + the type (Class /
-                    // Appointment) — and NAMED pricing lines: "Included with {sub} —
-                    // {price}" per granting subscription, "Discount with {sub} — {%}"
-                    // per appointment-discount subscription, the drop-in price, and
-                    // an appointment's direct price. No generic "Subscription
-                    // required" gate badge and no generic "Included": where a plan
-                    // is the key it is named, with its price. The 'members' tier
-                    // below is the one line with no plan in it — because none is
-                    // required there.
-                    const d = resolveActivityPricingDisplay({ ...a, type: a.activityType }, subLookup)
-                    const lines: string[] = []
-                    // A SIGNED-IN MEMBER SEES HER OWN PRICE, not the list (UX-110).
-                    // Asked through the same resolver the who's-booking step uses,
-                    // so the card and the next screen cannot quote two numbers.
-                    // A plan that covers the class replaces every line with one;
-                    // a member rate replaces the drop-in figure. Display only.
-                    let memberDropInAmount: number | null = null
-                    let coveredByPlan = false
-                    if (isAuthenticated && heldPlanIds.length > 0 && a.activityType !== 'appointment') {
-                      const accessRule = resolveActivityAccessRule(a)
-                      const snapshot = clientPaymentSnapshot({
-                        authenticated: true,
-                        heldSubscriptionTypeIds: heldPlanIds,
-                      })
-                      const booking = resolvePaymentOptions(snapshot, { kind: 'class_booking', accessRule })
-                      const first = booking.options[0]
-                      // 'subscription' only: 'open' / 'members' coverage is not a
-                      // plan paying for it, and the lines above already say so.
-                      if (first?.type === 'covered' && first.via.reason === 'subscription') {
-                        coveredByPlan = true
-                      }
-                      if (d.dropInAmount != null && a.dropIn) {
-                        const quote = resolvePaymentOptions(snapshot, {
-                          kind: 'drop_in',
-                          accessRule,
-                          dropIn: a.dropIn,
-                          benefit: a.memberBenefit,
-                        }).options[0]
-                        if (quote?.type === 'pay' && quote.appliedBenefit) memberDropInAmount = quote.amount
-                      }
-                    }
-                    // 'members' tier — the DEFAULT for every new class — used to
-                    // render NO access line at all. It gets one now, and it names
-                    // the gate that is actually enforced: being signed up with
-                    // this studio, which costs nothing. No plan, no price: the
-                    // true answer to "what am I supposed to buy?" here is
-                    // nothing, and a subscription price would send this visitor
-                    // to the shop for something they don't need to book.
-                    if (d.signedUpOnly) lines.push(t('signedUpOnlyLine'))
-                    // 'subscription' tier whose plans this surface cannot name
-                    // (not public, or the rule lists none). Naming nothing is
-                    // what made the card look OPEN — the gate gets its own
-                    // sentence, distinct from the free 'members' one above.
-                    if (d.planRequired) lines.push(t('planRequiredLine'))
-                    for (const s of d.includedWith)
-                      lines.push(
-                        s.priceLabel
-                          ? t('includedWithSubPriced', { name: s.name, price: s.priceLabel })
-                          : t('includedWithSub', { name: s.name })
-                      )
-                    for (const s of d.discountWith)
-                      lines.push(t('discountWithSub', { name: s.name, percent: s.percent }))
-                    // Priced doors are advertised only when one of them could
-                    // actually be walked through (UX-33). The membership lines
-                    // above stay: "included with X" states how access works,
-                    // it is not a checkout this page can open.
-                    if (d.dropInAmount != null && paymentsEnabled)
-                      lines.push(
-                        t('badgeDropInPrice', {
-                          price: formatCurrency(memberDropInAmount ?? d.dropInAmount, currency, locale),
-                        })
-                      )
-                    if (d.appointmentPrice && paymentsEnabled)
-                      lines.push(
-                        priceRangeLabel(d.appointmentPrice, {
-                          money: (amount) => formatCurrency(amount, currency, locale),
-                          from: (price) => t('badgeFromPrice', { price }),
-                          range: (min, max) => t('badgePriceRange', { min, max }),
-                        })
-                      )
-                    if (coveredByPlan) lines.splice(0, lines.length, t('memberCovered'))
-                    return (
-                      <>
-                        <div className="flex items-start gap-1.5 flex-wrap">
-                          <p className="font-semibold text-sm leading-tight">{a.name}</p>
-                          {/* Type chip — Class or Appointment (always present) */}
-                          <span className="rounded-full bg-muted text-muted-foreground text-xs px-2 py-0.5 font-medium">
-                            {d.type === 'appointment' ? t('badgeAppointment') : t('chipClass')}
-                          </span>
-                          {/* Trial — free (the one positive/free signal) or priced */}
-                          {d.trial && (
-                            <span className="rounded-full bg-green-100 text-green-700 text-xs px-2 py-0.5 font-medium">
-                              {d.trial.priceAmount != null
-                                ? t('badgeTrialPriced', {
-                                    price: formatCurrency(d.trial.priceAmount, currency, locale),
-                                  })
-                                : t('badgeFreeTrial')}
-                            </span>
-                          )}
-                          {!hasSessions && (
-                            <span className="rounded-full bg-muted text-muted-foreground text-xs px-2 py-0.5">
-                              {t('badgeNoOpenSessions')}
-                            </span>
-                          )}
-                          {/* The studio's own words about the class ("Beginner
-                              friendly", "Gi") — LAST in the row, after every
-                              chip that says something about booking it. */}
-                          {a.tags?.map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-full bg-muted text-muted-foreground text-xs px-2 py-0.5"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                        {showDesc && a.description && (
-                          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">
-                            {a.description}
-                          </p>
-                        )}
-                        {a.prerequisites && (
-                          <p className="text-xs text-amber-700 mt-1.5">
-                            <span className="font-medium">{t('prerequisitesLabel')}</span>{' '}
-                            {a.prerequisites}
-                          </p>
-                        )}
-                        {/* Pricing last, and BEHIND a tooltip rather than printed:
-                            a class can carry four or five of these lines ("Included
-                            with X", "Y per class", a discount, an appointment
-                            range), and stacked under every card they made the
-                            selection screen a price list. One quiet trigger per
-                            card; the lines stay a list inside it. The trigger is a
-                            span (`render`) because the card itself is a <button>
-                            and a button may not nest one. Hover/focus only, by
-                            the tooltip's nature — on a phone the sessions step
-                            and the checkout still state the amount. */}
-                        {showPricing && lines.length > 0 && (
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={<span />}
-                              className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-2"
-                            >
-                              <Info aria-hidden className="h-3.5 w-3.5" />
-                              {t('pricingDetailsTrigger')}
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" align="start" className="max-w-xs px-3 py-2">
-                              <div className="divide-y divide-background/20">
-                                {lines.map((line, i) => (
-                                  <p key={i} className="py-1 text-xs">
-                                    {line}
-                                  </p>
-                                ))}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </>
-                    )
-                  })()}
-                </div>
-                {hasSessions && (
-                  <div className="flex items-center pr-4 text-muted-foreground">
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
+              />
             )
           })}
             </div>

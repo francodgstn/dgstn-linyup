@@ -38,6 +38,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { FlowShell } from '@/components/booking/FlowShell'
+import { OfferCard } from '@/components/booking/catalogue/OfferCard'
 import { useBookingChrome, useExitFlow } from '@/components/booking/BookingChrome'
 import { MiniCalendar, toDateKey } from '@/components/booking/MiniCalendar'
 import {
@@ -1568,35 +1569,40 @@ function ActivityCard({
     durations.length > 1
       ? `${fmtDuration(Math.min(...durations))} – ${fmtDuration(Math.max(...durations))}`
       : fmtDuration(durations[0] ?? 60)
-  const priceLabel = activityPriceRangeLabel(activity, currency, locale, t)
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="w-full rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
-    >
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-sm">{activity.activityName}</p>
-            {priceLabel && (
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                {priceLabel}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{durationLabel}</span>
-            {/* The place first, it is what distinguishes two cards for the
-                same offer, then the studio's own note on top of it. */}
-            {activity.placeName && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{activity.placeName}</span>}
-            {activity.location && <span className="flex items-center gap-1">{activity.placeName ? null : <MapPin className="h-3 w-3" />}{activity.location}</span>}
-            {activity.onlineUrl && <span className="flex items-center gap-1"><Video className="h-3 w-3" />{t('onlineSession')}</span>}
-          </div>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 self-center text-muted-foreground" />
-      </div>
-    </button>
+    <OfferCard
+      name={activity.activityName}
+      priceChip={activityPriceRangeLabel(activity, currency, locale, t)}
+      onSelect={onSelect}
+      meta={
+        <>
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {durationLabel}
+          </span>
+          {/* The place first, it is what distinguishes two cards for the same
+              offer, then the studio's own note on top of it. */}
+          {activity.placeName && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {activity.placeName}
+            </span>
+          )}
+          {activity.location && (
+            <span className="flex items-center gap-1">
+              {activity.placeName ? null : <MapPin className="h-3 w-3" />}
+              {activity.location}
+            </span>
+          )}
+          {activity.onlineUrl && (
+            <span className="flex items-center gap-1">
+              <Video className="h-3 w-3" />
+              {t('onlineSession')}
+            </span>
+          )}
+        </>
+      }
+    />
   )
 }
 
@@ -2245,7 +2251,11 @@ export default function AppointmentPicker({
             ) : (
               selectedCoach.activities.map((a) => (
                 <ActivityCard
-                  key={a.activityId}
+                  // ONE ACTIVITY ID NAMES SEVERAL ENTRIES, one per place, so
+                  // the id alone is not a key: two cards for the same offer at
+                  // two places shared it, and React reuses a node it believes
+                  // is the same one.
+                  key={`${a.activityId}:${a.placeId ?? ''}`}
                   activity={a}
                   currency={currency}
                   locale={locale}
