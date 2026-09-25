@@ -206,7 +206,9 @@ describe('EVERY SURFACE THAT SHOWS A SUBSCRIPTION ASKS THE PREDICATE', () => {
     // (once there, once on the Plans side of the same contact) and moved to the
     // one component both had been calling. The surface is the same surface — only
     // its address changed — so the entry follows it rather than being dropped.
-    'apps/web/src/components/contacts/MemberSubscriptionsSection.tsx',
+    // It moved again on 2026-09-25, into the per-plan cards (a plan and the
+    // billing that pays for it are one card, docs/multi-plan-holdings.md §5).
+    'apps/web/src/app/[locale]/(auth)/contacts/[id]/PlansList.tsx',
     // The operator console's account detail.
     'apps/admin/src/lib/queries/account.ts',
     // The member-facing mirror: Space reads `Contact.active_subscriptions`, so
