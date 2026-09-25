@@ -23,11 +23,11 @@ import {
   type Capability,
   type TeamRole,
 } from '@linyup/shared'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { SettingsSaveBar } from '@/components/settings/SettingsSaveBar'
+import { SaveBarProvider, useSaveBarSection } from '@/components/forms/SaveBar'
+import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 
 /**
  * ROLES & PERMISSIONS — every role, one at a time.
@@ -52,6 +52,12 @@ import { SettingsSaveBar } from '@/components/settings/SettingsSaveBar'
  * — the reader is left unable to tell "no" from "not listed here". Coach shows
  * the assignable subset instead, because there the list is a set of controls and
  * a switch that can never move is not one.
+ *
+ * ── ROWS, AND THE PAGE'S SAVE BAR ───────────────────────────────────────────
+ * The list is a settings section of switch rows (the Settings → General
+ * layout), not a Card, and the Coach role saves from the floating bar the
+ * other settings pages use. The draft lives on the page, so switching to
+ * another role to compare keeps the Coach edits and the bar stays up.
  */
 
 const ASSIGNABLE = new Set(COACH_ASSIGNABLE_CAPABILITIES)
@@ -63,9 +69,18 @@ const COACH_CATALOG = CAPABILITY_CATALOG.filter((c) => ASSIGNABLE.has(c.id))
 const ROLES: TeamRole[] = ['owner', 'manager', 'coach', 'viewer']
 
 export default function RolePermissionsPage() {
+  return (
+    <SaveBarProvider>
+      <RolePermissions />
+    </SaveBarProvider>
+  )
+}
+
+function RolePermissions() {
   const t = useTranslations('Roles')
   const tc = useTranslations('Capabilities')
   const tm = useTranslations('TeamMembers')
+  const tCommon = useTranslations('Common')
   const { currentTeamId, user } = useAuth()
   const { can } = useCapabilities()
   const { hasFeature, minimumPlanFor, isLoading: planLoading } = usePlan()
@@ -123,9 +138,11 @@ export default function RolePermissionsPage() {
   )
   const [draft, setDraft] = useState<Set<Capability> | null>(null)
   const coachSelected = draft ?? initial
-  const dirty = draft !== null
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  // Compared, not merely "touched": switching one off and on again is no edit,
+  // and should not leave the bar asking to save it.
+  const dirty =
+    draft !== null &&
+    (draft.size !== initial.size || [...draft].some((c) => !initial.has(c)))
 
   /** The rows to render for the selected role, and whether each is held. ONE
    *  source for both halves: the fixed sets come from `SYSTEM_ROLE_CAPABILITIES`
@@ -143,12 +160,10 @@ export default function RolePermissionsPage() {
     if (on) next.add(cap)
     else next.delete(cap)
     setDraft(next)
-    setSaved(false)
   }
 
-  async function save() {
-    if (!currentTeamId) return
-    setSaving(true)
+  async function save(): Promise<boolean> {
+    if (!currentTeamId) return false
     try {
       await setDoc(
         doc(db, TEAMS_COLLECTION, currentTeamId, ROLE_CONFIG_SUBCOLLECTION, 'coach'),
@@ -162,18 +177,29 @@ export default function RolePermissionsPage() {
       )
       await qc.invalidateQueries({ queryKey: ['role-config', currentTeamId, 'coach'] })
       setDraft(null)
-      setSaved(true)
-    } finally {
-      setSaving(false)
+      return true
+    } catch (err) {
+      console.error('[roles] save failed:', err)
+      toast.error(tCommon('saveFailed'))
+      return false
     }
   }
+
+  // Registered whatever role is on screen: the draft is the Coach role's, and
+  // it survives looking at the others.
+  useSaveBarSection('coach-capabilities', {
+    dirty: can('members.manage') && allowed && dirty,
+    valid: true,
+    save,
+    reset: () => setDraft(null),
+  })
 
   const roleLabel = (r: TeamRole) => tm(`role_${r}` as Parameters<typeof tm>[0])
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
+    <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">{t('title')}</h1>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
@@ -220,61 +246,56 @@ export default function RolePermissionsPage() {
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span className="flex items-center gap-2">
-              {roleLabel(role)}
-              <Badge variant={editableRole ? 'secondary' : 'outline'} className="text-xs">
-                {editableRole ? t('badgeCustomizable') : t('badgeFixed')}
-              </Badge>
-            </span>
-            <span className="text-xs font-normal text-muted-foreground">
-              {dataScopeForRole(role) === 'own' ? t('ownScopeNote') : t('allScopeNote')}
-            </span>
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {editableRole ? t('coachSubtitle') : t('fixedRoleNote')}
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {isLoading && editableRole ? (
-            <p className="text-sm text-muted-foreground">…</p>
-          ) : (
-            <div className="space-y-2.5">
-              {rows.map(({ meta, held }) => (
-                <div key={meta.id} className="flex items-start justify-between gap-4">
-                  <div className="space-y-0.5">
-                    <Label
-                      htmlFor={`${role}-${meta.id}`}
-                      className={`text-sm font-medium ${held ? '' : 'text-muted-foreground'}`}
-                    >
-                      {tc(meta.labelKey as Parameters<typeof tc>[0])}
-                    </Label>
-                    {capabilityIsScoped(meta.id) && dataScopeForRole(role) === 'own' && (
-                      <p className="text-xs text-muted-foreground">{t('scopedHint')}</p>
-                    )}
-                  </div>
-                  <Switch
-                    id={`${role}-${meta.id}`}
-                    checked={held}
-                    onCheckedChange={(v: boolean) => toggle(meta.id, v)}
-                    disabled={!canEdit}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {editableRole && (
-        <p className="text-xs text-muted-foreground">{t('coachAssignHint')}</p>
-      )}
-
-      {canEdit && (
-        <SettingsSaveBar onSave={save} saving={saving} saved={saved} disabled={!dirty} />
-      )}
+      {/* ONE SECTION, the selected role's. The scope note rides in the
+          heading because it is a fact about the whole role; what the role is
+          (built in, or yours to change) is behind the ⓘ beside its badge. */}
+      <SettingsSection
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {roleLabel(role)}
+            <Badge variant={editableRole ? 'secondary' : 'outline'} className="text-xs font-normal">
+              {editableRole ? t('badgeCustomizable') : t('badgeFixed')}
+            </Badge>
+            <HintTip>
+              {editableRole ? `${t('coachSubtitle')} ${t('coachAssignHint')}` : t('fixedRoleNote')}
+            </HintTip>
+          </span>
+        }
+        action={
+          <span className="text-xs text-muted-foreground">
+            {dataScopeForRole(role) === 'own' ? t('ownScopeNote') : t('allScopeNote')}
+          </span>
+        }
+      >
+        {isLoading && editableRole ? (
+          <p className="py-4 text-sm text-muted-foreground">…</p>
+        ) : (
+          rows.map(({ meta, held }) => (
+            <SettingsRow
+              key={meta.id}
+              inline
+              htmlFor={`${role}-${meta.id}`}
+              label={
+                <span className={held ? '' : 'text-muted-foreground'}>
+                  {tc(meta.labelKey as Parameters<typeof tc>[0])}
+                </span>
+              }
+              hint={
+                capabilityIsScoped(meta.id) && dataScopeForRole(role) === 'own'
+                  ? t('scopedHint')
+                  : undefined
+              }
+            >
+              <Switch
+                id={`${role}-${meta.id}`}
+                checked={held}
+                onCheckedChange={(v: boolean) => toggle(meta.id, v)}
+                disabled={!canEdit}
+              />
+            </SettingsRow>
+          ))
+        )}
+      </SettingsSection>
     </div>
   )
 }
