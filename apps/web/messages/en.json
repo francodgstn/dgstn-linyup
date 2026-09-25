@@ -1433,10 +1433,6 @@
     "peekCapacity": "Booked seats / capacity",
     "viewPlanning": "Event planning",
     "timezoneNoticeDevice": "The calendar uses this device's time zone ({zone}). Your studio's is {studioZone}.",
-    "newAppointmentDesc": "An appointment at a time you pick",
-    "newAvailabilityDesc": "Times clients can book with you",
-    "newSessionDesc": "A class on the calendar, once or repeating",
-    "newEventDesc": "A one-off or multi-day event",
     "newGroupCalendar": "On the calendar",
     "newGroupAppointments": "Appointments"
   },

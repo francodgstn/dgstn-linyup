@@ -1433,10 +1433,6 @@
     "peekCapacity": "Gebuchte Plätze / Kapazität",
     "viewPlanning": "Veranstaltungsplanung",
     "timezoneNoticeDevice": "Der Kalender verwendet die Zeitzone dieses Geräts ({zone}). Die deines Studios ist {studioZone}.",
-    "newAppointmentDesc": "Ein Termin zu einer Zeit, die du wählst",
-    "newAvailabilityDesc": "Zeiten, die Kund:innen bei dir buchen können",
-    "newSessionDesc": "Eine Klasse im Kalender, einmalig oder wiederkehrend",
-    "newEventDesc": "Ein einmaliger oder mehrtägiger Anlass",
     "newGroupCalendar": "Im Kalender",
     "newGroupAppointments": "Termine"
   },

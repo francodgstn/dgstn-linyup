@@ -1433,10 +1433,6 @@
     "peekCapacity": "Places réservées / capacité",
     "viewPlanning": "Planification des événements",
     "timezoneNoticeDevice": "Le calendrier utilise le fuseau horaire de cet appareil ({zone}). Celui de votre studio est {studioZone}.",
-    "newAppointmentDesc": "Un rendez-vous à l'heure que vous choisissez",
-    "newAvailabilityDesc": "Les créneaux que vos clients peuvent réserver",
-    "newSessionDesc": "Un cours au calendrier, unique ou récurrent",
-    "newEventDesc": "Un événement ponctuel ou sur plusieurs jours",
     "newGroupCalendar": "Au calendrier",
     "newGroupAppointments": "Rendez-vous"
   },

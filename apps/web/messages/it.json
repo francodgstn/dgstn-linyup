@@ -1433,10 +1433,6 @@
     "peekCapacity": "Posti prenotati / capienza",
     "viewPlanning": "Pianificazione eventi",
     "timezoneNoticeDevice": "Il calendario usa il fuso orario di questo dispositivo ({zone}). Quello del tuo studio è {studioZone}.",
-    "newAppointmentDesc": "Un appuntamento all'orario che scegli tu",
-    "newAvailabilityDesc": "Gli orari che i clienti possono prenotare",
-    "newSessionDesc": "Una lezione in calendario, singola o ricorrente",
-    "newEventDesc": "Un evento singolo o di più giorni",
     "newGroupCalendar": "In calendario",
     "newGroupAppointments": "Appuntamenti"
   },

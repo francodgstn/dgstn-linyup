@@ -1184,21 +1184,14 @@ export default function CalendarPage() {
   /** THE "NEW" MENU, grouped by what the studio is doing (Franco, 2026-09-25).
    *  It used to be four peer verbs, and "New appointment" read as "open a slot"
    *  when it books ONE client in — so a studio wanting bookable hours clicked
-   *  it. Now: what goes on the calendar, then the two appointment actions, each
-   *  with one line saying which is which. Shared by the header button and the
-   *  mobile button, so the two can never list different things. */
-  const newEntryItem = (
-    onClick: () => void,
-    Icon: typeof CalendarDays,
-    label: string,
-    desc: string
-  ) => (
-    <DropdownMenuItem onClick={onClick} className="items-start gap-2.5 py-1.5">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
-      <span className="min-w-0">
-        <span className="block">{label}</span>
-        <span className="block text-xs text-muted-foreground">{desc}</span>
-      </span>
+   *  it. The group headings and the labels carry the difference; no
+   *  description lines (the same cleanup as the settings hints). Shared by the
+   *  header button and the mobile button, so the two can never list different
+   *  things. */
+  const newEntryItem = (onClick: () => void, Icon: typeof CalendarDays, label: string) => (
+    <DropdownMenuItem onClick={onClick}>
+      <Icon className="mr-2 h-4 w-4" />
+      {label}
     </DropdownMenuItem>
   )
   const newEntryItems = (
@@ -1208,14 +1201,12 @@ export default function CalendarPage() {
         {newEntryItem(
           () => setSessionDialog({ open: true, editing: null }),
           CalendarDays,
-          t('newSession'),
-          t('newSessionDesc')
+          t('newSession')
         )}
         {newEntryItem(
           () => setEventDialog({ open: true, editing: null }),
           CalendarRange,
-          t('newEvent'),
-          t('newEventDesc')
+          t('newEvent')
         )}
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
@@ -1224,14 +1215,12 @@ export default function CalendarPage() {
         {newEntryItem(
           () => setNewAvailabilityOpen(true),
           CalendarClock,
-          t('newAvailability'),
-          t('newAvailabilityDesc')
+          t('newAvailability')
         )}
         {newEntryItem(
           () => setAppointmentFormOpen(true),
           User,
-          t('newAppointment'),
-          t('newAppointmentDesc')
+          t('newAppointment')
         )}
       </DropdownMenuGroup>
     </>
@@ -1340,7 +1329,7 @@ export default function CalendarPage() {
                 {t('newEntry')}
                 <ChevronDown className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuContent align="end">
                 {newEntryItems}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1663,7 +1652,7 @@ export default function CalendarPage() {
             <DropdownMenuTrigger className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors">
               <Plus className="h-6 w-6" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="top" className="w-72">
+            <DropdownMenuContent align="end" side="top">
               {newEntryItems}
             </DropdownMenuContent>
           </DropdownMenu>
