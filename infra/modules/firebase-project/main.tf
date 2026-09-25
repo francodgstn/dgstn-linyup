@@ -32,12 +32,19 @@ data "google_firebase_web_app_config" "app" {
 # ── Hosting sites — site_id MUST match the IDs declared in .firebaserc ─────────
 # The target→site mapping (target:apply) stays with the Firebase CLI; Terraform
 # only owns the site shells.
-resource "google_firebase_hosting_site" "app" {
-  provider = google-beta
-  project  = var.project_id
-  site_id  = var.app_site_id
+# The project's DEFAULT site (site_id == project_id) was managed here as "app",
+# for a web app that moved to App Hosting. It is not obsolete: it serves
+# <project>.firebaseapp.com, the auth domain the web app and the operator console
+# sign in through (/__/auth/handler, which Google and Apple sign-in go through).
+# Firebase creates it with the project and refuses to delete it, so deleting the
+# resource block would make every apply try to destroy it. Terraform forgets it
+# instead and the site stays exactly as it is.
+removed {
+  from = google_firebase_hosting_site.app
 
-  depends_on = [google_firebase_project.this]
+  lifecycle {
+    destroy = false
+  }
 }
 
 resource "google_firebase_hosting_site" "landing" {

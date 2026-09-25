@@ -52,12 +52,6 @@ variable "deploy_sa_email" {
 }
 
 # ── Hosting site IDs (must match .firebaserc) ─────────────────────────────────
-variable "app_site_id" {
-  type        = string
-  description = "Hosting site ID for the web app."
-  default     = "linyup-prod"
-}
-
 variable "landing_site_id" {
   type        = string
   description = "Hosting site ID for the landing site."
