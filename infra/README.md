@@ -42,7 +42,7 @@ infra/
 ├── bootstrap/            # run ONCE: TF state bucket + WIF + CI deploy SA (local→GCS state)
 ├── modules/
 │   ├── project-services/ # API enablement
-│   ├── firebase-project/ # firebase project + web app + hosting sites (google-beta)
+│   ├── firebase-project/ # firebase project + web app + hosting sites (google-beta; not the default site)
 │   ├── firestore/        # database instance only (location LOCKED to europe-west6)
 │   ├── storage/          # default Firebase Storage bucket (location LOCKED to europe-west6)
 │   ├── secrets/          # secret containers + accessor IAM (no values)

@@ -18,11 +18,6 @@ output "web_config" {
   }
 }
 
-output "app_site_id" {
-  description = "Hosting site ID for the web app."
-  value       = google_firebase_hosting_site.app.site_id
-}
-
 output "landing_site_id" {
   description = "Hosting site ID for the landing site."
   value       = google_firebase_hosting_site.landing.site_id
