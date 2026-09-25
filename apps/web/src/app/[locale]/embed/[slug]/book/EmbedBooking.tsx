@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import { PublicTeamProvider } from '@/app/[locale]/(public)/public/[slug]/PublicTeamProvider'
 import { PublicContactAuthProvider } from '@/app/[locale]/(public)/public/[slug]/PublicContactAuthProvider'
 import BookingForm from '@/app/[locale]/(public)/public/[slug]/booking/BookingForm'
-import AppointmentPicker from '@/app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker'
 import { BookingChromeProvider, type BookingChromeValue } from '@/components/booking/BookingChrome'
 import { publicHrefLocalized, publicSubHrefLocalized } from '@/lib/publicRoutes'
 import { EMBED_MESSAGE, isFramed, postToHost } from '@/lib/embedBridge'
@@ -31,7 +30,7 @@ import { EMBED_MESSAGE, isFramed, postToHost } from '@/lib/embedBridge'
 //     — the top-level `/pay/result` that Stripe redirects to would not see it.
 //     The buyer lands on the app's own confirmation instead, which signs them in
 //     and states what they bought (see docs/embed-booking.md → "Paying").
-//   • `switchToAppointments` swaps in place, as on the website. Here it is local
+//   • an appointment opens inside the same funnel, so nothing is swapped.
 //     state: the host does not know what a funnel step is, and must not have to.
 
 interface Props {
@@ -140,7 +139,6 @@ export default function EmbedBooking({
           type: EMBED_MESSAGE.navigate,
           href: new URL(href, window.location.href).toString(),
         }),
-      switchToAppointments: (id) => setAppointment({ activityId: id }),
     }),
     []
   )
@@ -154,24 +152,21 @@ export default function EmbedBooking({
       <PublicTeamProvider slug={slug}>
         <PublicContactAuthProvider>
           <BookingChromeProvider value={chrome}>
-            {appointment ? (
-              <AppointmentPicker
-                key={appointmentKey(appointment)}
-                slug={slug}
-                presetActivityId={appointment.activityId}
-                presetProviderId={appointment.providerId}
-                presetDate={appointment.date}
-                from="site"
-                disableStepUrl
-              />
-            ) : (
-              <BookingForm
+            {
+              // ONE funnel, whatever the panel was opened for. An appointment
+              // used to be a second component swapped in here; it is a step
+              // inside this one now, so the panel never re-mounts a funnel
+              // mid-booking.
+            }
+            <BookingForm
+                key={appointment ? appointmentKey(appointment) : 'booking'}
                 slug={slug}
                 from="site"
                 initialSession={session}
                 preSelectedActivitySlug={activitySlug}
-                initialActivityId={activityId}
-                initialDate={date}
+                initialActivityId={appointment?.activityId ?? activityId}
+                initialProviderId={appointment?.providerId}
+                initialDate={appointment?.date ?? date}
                 referral={referral}
                 // The host page owns the address bar. A `pushState` in here would
                 // land in the TOP window's joint session history, so the visitor's
@@ -180,7 +175,6 @@ export default function EmbedBooking({
                 // would be buried under them.
                 disableStepUrl
               />
-            )}
           </BookingChromeProvider>
         </PublicContactAuthProvider>
       </PublicTeamProvider>

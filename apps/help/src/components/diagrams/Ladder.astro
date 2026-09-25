@@ -1,0 +1,113 @@
+---
+// Rungs that step up and to the right: each one a bigger commitment than the
+// last. For the Pricing recipes page, where a newcomer climbs from a free look
+// to a membership and each rung is a recipe. Things that sit beside the ladder
+// rather than on it go in `aside`. Server-rendered HTML and CSS only, like Flow.
+
+export interface Rung {
+  title: string
+  text?: string
+  /** Usually the recipe for this rung. */
+  href?: string
+}
+
+interface Props {
+  /** Accessible name for the diagram. */
+  label: string
+  /** Lowest commitment first. */
+  rungs: Rung[]
+  /** Short line under the ladder, e.g. what sits beside it. */
+  aside?: string
+}
+
+const { label, rungs, aside } = Astro.props
+---
+
+<figure class="ladder not-content" role="group" aria-label={label}>
+  <ol class="ladder-rungs">
+    {
+      rungs.map((r, i) => (
+        <li class="ladder-rung" style={`--step:${i}`}>
+          <span class="ladder-num" aria-hidden="true">{i + 1}</span>
+          <span class="ladder-body">
+            {r.href ? (
+              <a class="ladder-title" href={r.href}>
+                {r.title}
+              </a>
+            ) : (
+              <span class="ladder-title">{r.title}</span>
+            )}
+            {r.text && <span class="ladder-text">{r.text}</span>}
+          </span>
+        </li>
+      ))
+    }
+  </ol>
+  {aside && <figcaption class="ladder-aside">{aside}</figcaption>}
+</figure>
+
+<style>
+  .ladder {
+    margin: 1.5rem 0;
+  }
+  .ladder-rungs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .ladder-rung {
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  /* The step: each rung starts a little further right, on screens with room. */
+  @media (min-width: 50rem) {
+    .ladder-rung {
+      margin-left: calc(var(--step) * 2.25rem);
+    }
+  }
+  .ladder-num {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  .ladder-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ladder-title {
+    font-weight: 700;
+    color: var(--sl-color-white);
+    text-decoration: none;
+  }
+  a.ladder-title:hover {
+    color: var(--sl-color-accent-high);
+    text-decoration: underline;
+  }
+  .ladder-text {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .ladder-aside {
+    margin-top: 0.6rem;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+</style>

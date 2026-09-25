@@ -15,12 +15,17 @@ import {
   TEAMS_COLLECTION,
   ROLE_CONFIG_SUBCOLLECTION,
   CAPABILITY_CATALOG,
-  COACH_ASSIGNABLE_CAPABILITIES,
+  CAPABILITY_GROUPS,
   COACH_DEFAULT_CAPABILITIES,
   SYSTEM_ROLE_CAPABILITIES,
+  capabilityEnforcement,
+  capabilityGroup,
   capabilityIsScoped,
+  coachLockReason,
   dataScopeForRole,
   type Capability,
+  type CapabilityGroup,
+  type CoachLockReason,
   type TeamRole,
 } from '@linyup/shared'
 import { toast } from 'sonner'
@@ -41,28 +46,50 @@ import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/Set
  * the other roles were fixed and left the reader to guess what they were fixed
  * AT.
  *
- * So the page now picks a role first. Owner, Manager and Viewer render the same
- * capability list, READ-ONLY, from `SYSTEM_ROLE_CAPABILITIES` — the one
- * definition the rules and the callables read, so this screen cannot drift from
- * what is enforced. Coach renders the editable subset it always did.
+ * So the page picks a role first. Owner, Manager and Viewer render the capability
+ * list READ-ONLY from `SYSTEM_ROLE_CAPABILITIES` — the one definition the rules
+ * and the callables read, so this screen cannot drift from what is enforced.
+ * Coach renders the same list, editable.
  *
- * ── FIXED ROLES SHOW THE WHOLE CATALOGUE ───────────────────────────────────
- * …including the capabilities they do NOT have, greyed and off. A list of only
- * what a manager can do cannot answer "can a manager do X" for any X outside it
- * — the reader is left unable to tell "no" from "not listed here". Coach shows
- * the assignable subset instead, because there the list is a set of controls and
- * a switch that can never move is not one.
+ * ── EVERY ROLE SHOWS THE WHOLE CATALOGUE ───────────────────────────────────
+ * …including the capabilities the role does NOT have, and (for Coach) the ones
+ * it can never be given. A list of only what a role can do cannot answer "can
+ * this role do X" for any X outside it — the reader is left unable to tell "no"
+ * from "not listed here".
+ *
+ * Coach used to be the exception, rendering only the thirteen assignable rows on
+ * the reasoning that "a switch that can never move is not one". Two things were
+ * wrong with that. The fixed roles already render switches that never move, so
+ * the rule was not applied consistently; and the list CHANGING LENGTH as you
+ * click between roles is worse than an inert row, because it silently reframes
+ * what you are looking at. The five ungrantable rows are locked and say which
+ * wall they are behind (`coachLockReason`) instead of vanishing.
+ *
+ * ── THE ROWS SAY WHAT THEY ACTUALLY GOVERN ─────────────────────────────────
+ * Not every id in the catalogue gates something in the app. `contacts.view`,
+ * `contacts.view.all`, `schedule.view` and `schedule.view.all` are read only by
+ * the public-API scope table — reading a contact in the web app is
+ * `canAccessContact` in firestore.rules, which asks for team membership and
+ * own-scope and no capability at all. Presenting those four identically to
+ * `contacts.manage` told studios they had a restriction they did not have, so
+ * they carry an "API only" tag. `capabilityEnforcement` owns that answer and
+ * packages/functions/src/utils/capabilityEnforcement.test.ts re-derives it from
+ * the source, so wiring one of them into a page makes the tag correct itself
+ * rather than going quietly stale.
+ *
+ * ── GROUPED, WITH THE SCOPE NOTE ON THE HEADING ────────────────────────────
+ * The "Applies only to their own records" note was per-row, on the scoped rows
+ * only, which made rows two different heights for a fact that is true of a whole
+ * area. It sits on the group heading now. The widening rows inside those groups
+ * ("View all contacts", "View full calendar") say so in their own labels — that
+ * is what they are for.
  *
  * ── ROWS, AND THE PAGE'S SAVE BAR ───────────────────────────────────────────
- * The list is a settings section of switch rows (the Settings → General
- * layout), not a Card, and the Coach role saves from the floating bar the
- * other settings pages use. The draft lives on the page, so switching to
- * another role to compare keeps the Coach edits and the bar stays up.
+ * Each capability group is a settings section of switch rows (the Settings →
+ * General layout), not a block inside a Card, and the Coach role saves from the
+ * floating bar the other settings pages use. The draft lives on the page, so
+ * switching to another role to compare keeps the Coach edits and the bar up.
  */
-
-const ASSIGNABLE = new Set(COACH_ASSIGNABLE_CAPABILITIES)
-/** The Coach editor's menu: what a team may grant. */
-const COACH_CATALOG = CAPABILITY_CATALOG.filter((c) => ASSIGNABLE.has(c.id))
 
 /** Selector order: most powerful first, which is also how the roles are ranked
  *  for member management (ROLE_RANK). */
@@ -123,7 +150,7 @@ function RolePermissions() {
     enabled: !!currentTeamId,
     queryFn: async () => {
       const snap = await getDoc(
-        doc(db, TEAMS_COLLECTION, currentTeamId!, ROLE_CONFIG_SUBCOLLECTION, 'coach'),
+        doc(db, TEAMS_COLLECTION, currentTeamId!, ROLE_CONFIG_SUBCOLLECTION, 'coach')
       )
       const d = snap.exists() ? snap.data() : null
       return {
@@ -132,9 +159,13 @@ function RolePermissions() {
     },
   })
 
+  // `?? ` and not `||`: a stored EMPTY array means "this studio grants its coaches
+  // nothing", which is a real answer and not the same as never having saved.
+  // `resolveRoleCapabilities` makes the same distinction — it did not always, and
+  // the disagreement was a silent grant of the five defaults.
   const initial = useMemo<Set<Capability>>(
     () => new Set(stored?.capabilities ?? COACH_DEFAULT_CAPABILITIES),
-    [stored],
+    [stored]
   )
   const [draft, setDraft] = useState<Set<Capability> | null>(null)
   const coachSelected = draft ?? initial
@@ -144,18 +175,42 @@ function RolePermissions() {
     draft !== null &&
     (draft.size !== initial.size || [...draft].some((c) => !initial.has(c)))
 
-  /** The rows to render for the selected role, and whether each is held. ONE
-   *  source for both halves: the fixed sets come from `SYSTEM_ROLE_CAPABILITIES`
-   *  (what the rules read), never from a list retyped for display. */
+  /** The rows to render for the selected role. ONE source for what is held: the
+   *  fixed sets come from `SYSTEM_ROLE_CAPABILITIES` (what the rules read), never
+   *  from a list retyped for display. */
   const rows = useMemo(() => {
-    if (editableRole) {
-      return COACH_CATALOG.map((c) => ({ meta: c, held: coachSelected.has(c.id) }))
-    }
-    const held = new Set(SYSTEM_ROLE_CAPABILITIES[role as 'owner' | 'manager' | 'viewer'])
-    return CAPABILITY_CATALOG.map((c) => ({ meta: c, held: held.has(c.id) }))
+    const held: ReadonlySet<Capability> = editableRole
+      ? coachSelected
+      : new Set(SYSTEM_ROLE_CAPABILITIES[role as 'owner' | 'manager' | 'viewer'])
+    return CAPABILITY_CATALOG.map((meta) => {
+      const lock = editableRole ? coachLockReason(meta.id) : null
+      return {
+        meta,
+        group: capabilityGroup(meta.domain),
+        // A locked row is always OFF. `resolveRoleCapabilities` strips these from
+        // any stored override, so rendering one ON would show a grant that does
+        // not exist — which is the class of bug this page is being fixed for.
+        held: lock ? false : held.has(meta.id),
+        lock,
+        apiOnly: capabilityEnforcement(meta.id) === 'api',
+      }
+    })
   }, [editableRole, coachSelected, role])
 
+  const groups = useMemo(
+    () =>
+      CAPABILITY_GROUPS.map((group) => ({
+        group,
+        rows: rows.filter((r) => r.group === group),
+      })).filter((g) => g.rows.length > 0),
+    [rows]
+  )
+
   function toggle(cap: Capability, on: boolean) {
+    // Defensive: a locked row renders disabled, and its capability would be
+    // stripped on resolve anyway — but storing one would put a grant in the
+    // document that the screen then shows as off.
+    if (coachLockReason(cap)) return
     const next = new Set(draft ?? initial)
     if (on) next.add(cap)
     else next.delete(cap)
@@ -173,7 +228,7 @@ function RolePermissions() {
           updatedBy: user?.uid ?? null,
           updated_at: serverTimestamp(),
         },
-        { merge: true },
+        { merge: true }
       )
       await qc.invalidateQueries({ queryKey: ['role-config', currentTeamId, 'coach'] })
       setDraft(null)
@@ -195,6 +250,27 @@ function RolePermissions() {
   })
 
   const roleLabel = (r: TeamRole) => tm(`role_${r}` as Parameters<typeof tm>[0])
+
+  // Written out as literals rather than built from a prefix: `pnpm i18n:check`
+  // cannot verify a computed key against the message files, so it counts and
+  // reports them instead of failing them — and a section heading that silently
+  // renders its own key id is exactly what that check exists to catch.
+  function groupLabel(g: CapabilityGroup): string {
+    switch (g) {
+      case 'contacts':
+        return t('group_contacts')
+      case 'schedule':
+        return t('group_schedule')
+      case 'studio':
+        return t('group_studio')
+      case 'administration':
+        return t('group_administration')
+    }
+  }
+
+  function lockLabel(reason: CoachLockReason): string {
+    return reason === 'owners_only' ? t('lock_owners_only') : t('lock_owners_and_managers')
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -246,56 +322,90 @@ function RolePermissions() {
         />
       )}
 
-      {/* ONE SECTION, the selected role's. The scope note rides in the
-          heading because it is a fact about the whole role; what the role is
-          (built in, or yours to change) is behind the ⓘ beside its badge. */}
-      <SettingsSection
-        title={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            {roleLabel(role)}
-            <Badge variant={editableRole ? 'secondary' : 'outline'} className="text-xs font-normal">
-              {editableRole ? t('badgeCustomizable') : t('badgeFixed')}
-            </Badge>
-            <HintTip>
-              {editableRole ? `${t('coachSubtitle')} ${t('coachAssignHint')}` : t('fixedRoleNote')}
-            </HintTip>
-          </span>
-        }
-        action={
-          <span className="text-xs text-muted-foreground">
-            {dataScopeForRole(role) === 'own' ? t('ownScopeNote') : t('allScopeNote')}
-          </span>
-        }
-      >
-        {isLoading && editableRole ? (
-          <p className="py-4 text-sm text-muted-foreground">…</p>
-        ) : (
-          rows.map(({ meta, held }) => (
-            <SettingsRow
-              key={meta.id}
-              inline
-              htmlFor={`${role}-${meta.id}`}
-              label={
-                <span className={held ? '' : 'text-muted-foreground'}>
-                  {tc(meta.labelKey as Parameters<typeof tc>[0])}
-                </span>
-              }
-              hint={
-                capabilityIsScoped(meta.id) && dataScopeForRole(role) === 'own'
-                  ? t('scopedHint')
-                  : undefined
-              }
-            >
-              <Switch
-                id={`${role}-${meta.id}`}
-                checked={held}
-                onCheckedChange={(v: boolean) => toggle(meta.id, v)}
-                disabled={!canEdit}
-              />
-            </SettingsRow>
-          ))
-        )}
-      </SettingsSection>
+      {/* THE SELECTED ROLE, then its groups as sections. The scope note is a
+          fact about the whole role, so it rides beside the role's name; what
+          the role is (built in, or yours to change) and the Members note sit
+          behind the ⓘ. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span className="font-heading text-lg font-semibold tracking-tight">{roleLabel(role)}</span>
+          <Badge variant={editableRole ? 'secondary' : 'outline'} className="text-xs font-normal">
+            {editableRole ? t('badgeCustomizable') : t('badgeFixed')}
+          </Badge>
+          <HintTip>
+            {editableRole ? `${t('coachSubtitle')} ${t('coachAssignHint')}` : t('fixedRoleNote')}
+          </HintTip>
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {dataScopeForRole(role) === 'own' ? t('ownScopeNote') : t('allScopeNote')}
+        </span>
+      </div>
+
+      {isLoading && editableRole ? (
+        <p className="text-sm text-muted-foreground">…</p>
+      ) : (
+        <div className="space-y-8">
+          {groups.map(({ group, rows: groupRows }) => {
+            // The scope note belongs to the AREA, not the row. Shown only where
+            // it is true: an own-scoped role, in a group that actually holds
+            // scoped capabilities.
+            const showScopeNote =
+              dataScopeForRole(role) === 'own' &&
+              groupRows.some((r) => capabilityIsScoped(r.meta.id))
+            return (
+              <SettingsSection
+                key={group}
+                title={groupLabel(group)}
+                action={
+                  showScopeNote ? (
+                    <span className="text-xs text-muted-foreground">{t('scopedHint')}</span>
+                  ) : undefined
+                }
+              >
+                {groupRows.map(({ meta, held, lock, apiOnly }) => (
+                  <SettingsRow
+                    key={meta.id}
+                    inline
+                    htmlFor={`${role}-${meta.id}`}
+                    label={
+                      <span
+                        className={`flex flex-wrap items-center gap-x-2 ${
+                          held ? '' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {tc(meta.labelKey as Parameters<typeof tc>[0])}
+                        {apiOnly && (
+                          // Visible text, so `title` is extending something already
+                          // labelled rather than being the label — which is the line
+                          // components/ui/tip.tsx draws for when a styled tooltip is owed.
+                          <span
+                            title={t('apiOnlyTitle')}
+                            className="rounded border px-1 py-px text-[10px] font-normal uppercase tracking-wide text-muted-foreground"
+                          >
+                            {t('apiOnlyTag')}
+                          </span>
+                        )}
+                      </span>
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      {lock && (
+                        <span className="text-xs text-muted-foreground">{lockLabel(lock)}</span>
+                      )}
+                      <Switch
+                        id={`${role}-${meta.id}`}
+                        checked={held}
+                        onCheckedChange={(v: boolean) => toggle(meta.id, v)}
+                        disabled={!canEdit || !!lock}
+                      />
+                    </div>
+                  </SettingsRow>
+                ))}
+              </SettingsSection>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

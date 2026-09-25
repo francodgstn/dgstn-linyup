@@ -25,10 +25,12 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8').replace(/\r\
 /** Every file that may touch the step-URL mechanics, and why. */
 const MECHANICS = 'hooks/useStepUrl'
 const OWNER = 'apps/web/src/components/booking/flow/useBookingFlowUrl.ts'
-const FUNNELS = [
-  'apps/web/src/app/[locale]/(public)/public/[slug]/booking/BookingForm.tsx',
-  'apps/web/src/app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker.tsx',
-]
+// ONE funnel, since the appointment route became a redirect: an appointment is
+// a step inside this one rather than a second machine with its own URL writer.
+// The list stays a list because the next offer type to arrive will be a step
+// here too, and because a second funnel reappearing is exactly what this pin
+// exists to notice.
+const FUNNELS = ['apps/web/src/app/[locale]/(public)/public/[slug]/booking/BookingForm.tsx']
 
 const importsMechanics = (src: string) =>
   new RegExp(`from '@/${MECHANICS}'|from '\\.\\./\\.\\./\\.\\./hooks/useStepUrl'`).test(src)

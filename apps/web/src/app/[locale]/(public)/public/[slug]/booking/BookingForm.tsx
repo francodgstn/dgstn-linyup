@@ -19,6 +19,7 @@ import {
   compareActivities,
   classAccessFacts,
   planGiftCardRedemption,
+  bookingGroupsInUse,
   groupActivitiesForBooking,
   resolvePaymentOptions,
   resolveBookingContactFields,
@@ -30,6 +31,7 @@ import {
   type PublicFrom,
   type FormField,
   parseDateKey,
+  parsePositiveInt,
   parseDocId,
   PUBLIC_PROFILE_SUBCOLLECTION,
   SESSIONS_COLLECTION,
@@ -53,7 +55,18 @@ import { usePublicTeam } from '../PublicTeamProvider'
 import { usePublicContactAuth } from '../PublicContactAuthProvider'
 import { CourseWaitlistDialog } from '@/components/booking/CourseWaitlistDialog'
 import { usePublicContactRecord } from '../usePublicContactRecord'
-import { MiniCalendar } from '@/components/booking/MiniCalendar'
+import { heldFrom } from '@/components/booking/identity/bookingCaller'
+import { ClassWhen } from '@/components/booking/when/ClassWhen'
+import { AppointmentWhen } from '@/components/booking/when/AppointmentWhen'
+import type { AvailCoach, AvailActivity } from '@/components/booking/when/availability'
+import {
+  SlotBookingForm,
+  type BookScreen,
+} from '@/components/booking/appointment/SlotBookingForm'
+import {
+  buildWindowBooking,
+  type WindowBooking,
+} from '@/components/booking/appointment/windowBooking'
 import {
   GuestDetailsForm,
   type GuestDetailsFormHandle,
@@ -172,6 +185,11 @@ interface SessionProfile {
   activityIsFreeTrial?: boolean
   start: Timestamp
   end: Timestamp
+  /** WHERE, as an id. `location` below is the studio's free-text note, which
+   *  is all this surface used to have, so two sessions at two venues were
+   *  indistinguishable whenever the note was blank or the same. The id is what
+   *  the place step groups by; `TeamPublicProfile.places` names it. */
+  placeId?: string | null
   location?: string
   providerName?: string
   locationAddress?: string
@@ -191,7 +209,22 @@ interface SessionProfile {
 // component, not needed here).
 
 type Step =
+  // The studio's own sections ("Adults", "Kids"), asked FIRST and only when
+  // there is more than one to choose between. A studio that never grouped its
+  // offers never meets this step, which is why it is derived and not stored.
+  | 'category'
   | 'activities'
+  // WHERE, asked only when the chosen offer actually runs in more than one
+  // place the studio has named. Derived from the sessions already loaded, so a
+  // single-venue studio never sees it and a two-venue one cannot be sent to
+  // the wrong address by a stale field.
+  | 'place'
+  // WHO, on an appointment offer taught by more than one provider. Skipped at
+  // one, which is every coach-plan studio.
+  | 'provider'
+  // An appointment's booking step: the shared rail, in this funnel rather than
+  // behind a navigation to another route.
+  | 'slot'
   | 'sessions'
   | 'who'
   | 'returning'
@@ -250,36 +283,35 @@ function toDateKey(ts: Timestamp): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** A day key as an instant for DISPLAY — noon, not midnight: the formatter
- *  renders in the studio's zone, and a device far east or west of it would
- *  otherwise see the neighbouring day. */
-function dateKeyToDate(key: string): Date {
-  return new Date(key + 'T12:00:00')
-}
-
 function formatDate(fmt: RegionalFormatter, ts: Timestamp): string {
   return fmt.custom(ts, { weekday: 'long', month: 'long', day: 'numeric' })
-}
-
-function formatDateFull(fmt: RegionalFormatter, d: Date): string {
-  return fmt.custom(d, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function formatTime(fmt: RegionalFormatter, ts: Timestamp): string {
   return fmt.time(ts)
 }
 
-function sessionDuration(
-  start: Timestamp,
-  end: Timestamp,
-  t: ReturnType<typeof useTranslations>
-): string {
-  const mins = Math.round((end.toDate().getTime() - start.toDate().getTime()) / 60000)
+/** A length in the studio's visitors' words ("1h 30m"), from minutes rather
+ *  than from two instants: an appointment's chips quote lengths, not slots. */
+function durationLabel(mins: number, t: ReturnType<typeof useTranslations>): string {
   if (mins < 60) return t('durationMinutes', { mins })
   const h = Math.floor(mins / 60)
   const m = mins % 60
   return m ? t('durationHoursMinutes', { h, m }) : t('durationHours', { h })
 }
+
+function sessionDurationFromMs(
+  startMs: number,
+  endMs: number,
+  t: ReturnType<typeof useTranslations>
+): string {
+  const mins = Math.round((endMs - startMs) / 60000)
+  if (mins < 60) return t('durationMinutes', { mins })
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return m ? t('durationHoursMinutes', { h, m }) : t('durationHours', { h })
+}
+
 
 // The activity card itself lives in components/booking/catalogue/OfferCard:
 // one card for one bookable thing, shared with the appointment picker.
@@ -406,6 +438,15 @@ interface Props {
   initialSession?: string
   /** `?activity=` — activity ID (the form the cancellation/rebook emails send). */
   initialActivityId?: string
+  /** `?provider=` — set when the visitor clicked a specific availability
+   *  window, which already names the coach. Without it they would be asked to
+   *  choose again what they just clicked. Appointment offers only. */
+  initialProviderId?: string
+  /** `?start=` / `?duration=` — a link straight to one appointment time, which
+   *  the embed and the website's availability blocks write. Checked against the
+   *  loaded availability before it is shown, never believed. */
+  initialStartMs?: number
+  initialDurationMinutes?: number
   /** `?referral=` — carried through to `bookSession({ referralCode })`. */
   referral?: string
   /** `?from=` — which surface to return to. See `returnHref`. */
@@ -424,8 +465,9 @@ interface Props {
   confirmedSessionId?: string
 }
 
-// MiniCalendar and StickyBar now live in components/booking/ (shared with the
-// appointment picker) — imported at the top of this file.
+// The when step, the offer card and the sticky bar live in components/booking/,
+// shared with the appointment picker. This file owns which sessions a visitor
+// may act on; `ClassWhen` renders that answer.
 
 // ─── component ───────────────────────────────────────────────────────────────
 
@@ -435,6 +477,9 @@ export default function BookingForm({
   initialDate,
   initialSession,
   initialActivityId,
+  initialProviderId,
+  initialStartMs,
+  initialDurationMinutes,
   referral,
   from,
   disableStepUrl,
@@ -459,18 +504,18 @@ export default function BookingForm({
   // enters it.
   const [queueingFor, setQueueingFor] = useState<{ id: string; name: string } | null>(null)
 
-  // WHAT THIS MEMBER HOLDS — every plan on the live record, not the single
+  // WHAT THIS MEMBER HOLDS: every plan on the live record, not the single
   // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
   // covered by a second plan was told she held none and routed to pay a drop-in
   // the server then refused to sell her. The frozen slot survives only as the
-  // floor for a FAILED read, as in AppointmentPicker. Display only: the
-  // callables re-resolve from their own snapshot.
+  // floor for a FAILED read, which is `heldFrom`'s rule, shared with the
+  // appointment funnel. Display only: the callables re-resolve from their own
+  // snapshot.
   const contactRecord = usePublicContactRecord()
-  const heldPlanIds = contactRecord.data
-    ? heldPlanIdsOf(contactRecord.data)
-    : contact?.subscription_type_id
-      ? [contact.subscription_type_id]
-      : []
+  const heldPlanIds = heldFrom(
+    contactRecord.data ? heldPlanIdsOf(contactRecord.data) : null,
+    contact
+  )
   const heldPlanKey = heldPlanIds.join(',')
   // 'page' unless an overlay host wraps this flow — see BookingChrome.
   const chrome = useBookingChrome()
@@ -480,6 +525,9 @@ export default function BookingForm({
   const locale = useLocale()
   const fmt = usePublicFormat()
   const t = useTranslations('PublicBooking')
+  // The appointment arm keeps its own words: they are about a provider's time,
+  // not a class's seat, and they are already written.
+  const tApt = useTranslations('AppointmentBooking')
   const tShop = useTranslations('Shop')
   // The promo widget's own namespace — a promo is not a shop item, and the copy
   // is shared by every mount of PromoCodeField rather than forked per surface.
@@ -894,8 +942,13 @@ export default function BookingForm({
     if (initialActivityId) {
       const matched = actList.find((a) => a.id === initialActivityId)
       if (matched?.activityType === 'appointment') {
-        goToAppointments(matched.id)
-        return 'navigated'
+        setSelectedActivity(matched)
+        pendingSlotRef.current =
+          initialStartMs && initialDurationMinutes
+            ? { startMs: initialStartMs, minutes: initialDurationMinutes }
+            : null
+        void openAppointment(matched.id, initialProviderId)
+        return 'applied'
       }
       if (matched) {
         setSelectedActivity(matched)
@@ -908,12 +961,12 @@ export default function BookingForm({
     if (preSelectedActivitySlug) {
       const matched = actList.find((a) => a.slug === preSelectedActivitySlug)
       if (matched?.activityType === 'appointment') {
-        // Appointments have their own booking flow (per-coach slot picker) — the
-        // class calendar can't render their slots, so hand the visitor over. The
-        // activity id carries over so the picker preselects the same offering
-        // instead of forgetting what was clicked.
-        goToAppointments(matched.id)
-        return 'navigated'
+        // An appointment has no pre-scheduled sessions, so its times come from
+        // availability rather than from the day list. That used to mean a
+        // different ROUTE; it now means a different `when` in this one.
+        setSelectedActivity(matched)
+        void openAppointment(matched.id, initialProviderId)
+        return 'applied'
       }
       if (matched) {
         setSelectedActivity(matched)
@@ -939,28 +992,33 @@ export default function BookingForm({
       actList.length > 0 && actList.every((a) => a.activityType === 'appointment')
 
     if (everyActivityIsAppointment && actList.length === 1) {
-      // The single-appointment studio — a coach selling 1:1s, which is the
-      // whole shape of the coach plan. Straight to the picker.
-      goToAppointments(actList[0].id)
-      return 'navigated'
+      // The single-appointment studio: a coach selling 1:1s, which is the whole
+      // shape of the coach plan. Straight to the times.
+      setSelectedActivity(actList[0])
+      void openAppointment(actList[0].id, initialProviderId)
+      return 'applied'
     }
     if (isDateFirst && !everyActivityIsAppointment) {
       setSelectedActivity(null)
       setStep('sessions')
     } else if (everyActivityIsAppointment) {
       // Date-first has nothing to offer when there are no classes at all, so
-      // show the cards instead of an empty day. (A MIXED studio on date-first
-      // still cannot reach its appointments from here — the day picker only
-      // knows class sessions. That needs a design call, not a patch: see
-      // docs/open-defects.md.)
+      // show the cards instead of an empty day. A MIXED studio on date-first
+      // now reaches its appointments from the same cards: the day picker still
+      // only knows class sessions, but the offer list beside it knows both, and
+      // choosing an appointment no longer leaves this funnel.
       setStep('activities')
     } else if (actList.length === 1) {
       if (actList[0].activityType === 'appointment') {
-        goToAppointments(actList[0].id)
-        return 'navigated'
+        setSelectedActivity(actList[0])
+        void openAppointment(actList[0].id, initialProviderId)
+        return 'applied'
       }
       setSelectedActivity(actList[0])
-      setStep('sessions')
+      setStep(placeChoicesFor(actList[0]).length > 1 ? 'place' : 'sessions')
+    } else if (bookingGroupsInUse(actList).length > 1) {
+      // More than one section: ask which, before a list mixing all of them.
+      setStep('category')
     } else {
       setStep('activities')
     }
@@ -982,6 +1040,21 @@ export default function BookingForm({
   const isDateFirst =
     bookingSettings?.flowType === 'date-first' && !preSelectedActivitySlug && !initialActivityId
 
+  /** The places one offer runs in, named by the team profile. The card, the
+   *  step machine and the deep-link resolver all ask THIS, so none of them can
+   *  believe in a step the others skip. */
+  const placeChoicesFor = (a: ActivityProfile | null) => {
+    const known = team.places ?? []
+    if (!a || known.length === 0) return []
+    const ids = new Set(
+      sessions
+        .filter((sess) => sess.activityId === a.id || sess.activitySlug === a.slug)
+        .map((sess) => sess.placeId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+    return known.filter((place) => ids.has(place.id))
+  }
+
   /** The loaded activity a session belongs to (by id, else by slug). */
   const findActivityForSession = (s: SessionProfile) =>
     activities.find(
@@ -996,9 +1069,154 @@ export default function BookingForm({
     )
   }, [sessions, selectedActivity])
 
+  // ── THE PROLOGUE, DERIVED ────────────────────────────────────────────────
+  //
+  // Category, offer and place are three questions and a studio owes its
+  // visitor only the ones it can actually answer differently. Which steps
+  // exist is therefore COMPUTED on every render from what was loaded, never
+  // stored: a stored `skippedX` survives a history restore with a stale value
+  // and mislabels the Back button, which is exactly the defect
+  // `AppointmentPicker` carries a comment about.
+  const categories = useMemo(() => bookingGroupsInUse(activities), [activities])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedPlace, setSelectedPlace] = useState<string | null>(null)
+
+  /** The offers on the card list, narrowed to the chosen section. */
+  const categoryActivities = useMemo(() => {
+    if (!selectedCategory) return activities
+    const key = selectedCategory.toLowerCase()
+    return activities.filter((a) => (a.bookingGroup ?? '').trim().toLowerCase() === key)
+  }, [activities, selectedCategory])
+
+  /** The places the CHOSEN offer runs in. A place the team profile cannot name
+   *  is not a choice this step can offer: it is folded in with everything else
+   *  rather than shown as a blank row. */
+  const placesForActivity = useMemo(
+    () => placeChoicesFor(selectedActivity),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [team.places, selectedActivity, sessions]
+  )
+
+  // ── THE APPOINTMENT ARM ──────────────────────────────────────────────────
+  //
+  // An appointment offer has no sessions to list: nothing exists until it is
+  // booked, so its times are computed from published availability. That is the
+  // ONE step this funnel forks, and it forks here rather than in another route
+  // the visitor is sent to.
+  //
+  // `listAvailability` is asked for ONE offer and only once the visitor has
+  // picked it. A studio with no appointments never makes the call, and a
+  // visitor browsing classes never pays for it.
+  /** The chosen offer books through availability rather than through a session
+   *  list. One question, asked in one place, so no screen can fork differently
+   *  from another. */
+  const appointmentOffer = selectedActivity?.activityType === 'appointment'
+  const [aptCoaches, setAptCoaches] = useState<AvailCoach[]>([])
+  const [aptLoading, setAptLoading] = useState(false)
+  const [aptError, setAptError] = useState(false)
+  const [aptCoach, setAptCoach] = useState<AvailCoach | null>(null)
+  const [aptActivity, setAptActivity] = useState<AvailActivity | null>(null)
+  const [aptDuration, setAptDuration] = useState<number | null>(null)
+  const [aptDateKey, setAptDateKey] = useState<string | null>(null)
+  const [windowBooking, setWindowBooking] = useState<WindowBooking | null>(null)
+  const [aptScreen, setAptScreen] = useState<BookScreen>('guest')
+  const [aptSubmitting, setAptSubmitting] = useState(false)
+  const [aptSettleAtStudio, setAptSettleAtStudio] = useState(false)
+  const [aptConfirmedEmail, setAptConfirmedEmail] = useState<string | null | undefined>(undefined)
+  const aptGuestFormRef = useRef<GuestDetailsFormHandle>(null)
+
+  /** The length the picker is quoting, clamped to one this offer sells: a
+   *  restored `?duration=` must never reach the callable as a length the studio
+   *  never priced. */
+  const aptEffectiveDuration =
+    aptDuration != null && aptActivity?.durations.some((d) => d.minutes === aptDuration)
+      ? aptDuration
+      : (aptActivity?.durations[0]?.minutes ?? 60)
+
+  /** A time named by the URL, waiting for the availability that can confirm
+   *  it exists. Consumed once, by the load it is waiting for: a crafted link
+   *  must not be able to put an arbitrary hour in front of a visitor. */
+  const pendingSlotRef = useRef<{ startMs: number; minutes: number } | null>(null)
+
+  async function openAppointment(activityId: string, presetProviderId?: string) {
+    setAptLoading(true)
+    setAptError(false)
+    setAptCoach(null)
+    setAptActivity(null)
+    setWindowBooking(null)
+    setAptConfirmedEmail(undefined)
+    setStep('sessions')
+    try {
+      const res = await callFunction<
+        { teamId: string; days?: number; activityId?: string },
+        { coaches: AvailCoach[]; settleAtStudio?: boolean }
+      >('listAvailability')({ teamId, days: 60, activityId })
+      const coaches = res.data.coaches ?? []
+      setAptCoaches(coaches)
+      setAptSettleAtStudio(res.data.settleAtStudio === true)
+      // ONE PROVIDER, OR ASK. An offer taught by one person is not a choice,
+      // and one taught at two places arrives as two entries for that person,
+      // which the place step above has already narrowed.
+      // A link that named the provider has already asked the question.
+      const named = presetProviderId
+        ? coaches.find((c) => c.providerId === presetProviderId)
+        : null
+      const only = named ?? (coaches.length === 1 ? coaches[0] : null)
+      if (only) {
+        setAptCoach(only)
+        // ONE READER of which entry this is: an offer taught at two places
+        // arrives as two, and the place step above has already chosen.
+        const activity =
+          only.activities.find(
+            (a) => a.activityId === activityId && (!selectedPlace || a.placeId === selectedPlace)
+          ) ?? only.activities.find((a) => a.activityId === activityId) ?? null
+        setAptActivity(activity)
+        if (initialDate) setAptDateKey(initialDate)
+        // NOT consumed here. `applyEntry` runs twice in development (React's
+        // double-invoke), and a ref emptied by the first pass leaves the second
+        // one, whose state is the one that survives, with nothing to restore.
+        // It is cleared where the visitor makes the choice themselves instead.
+        const pending = pendingSlotRef.current
+        // The start must be a REAL free slot of that length, not merely a
+        // number, or a crafted link puts an arbitrary time in front of the
+        // visitor and the callable refuses it after the form is filled in.
+        const isRealSlot =
+          !!pending &&
+          !!activity &&
+          activity.days.some((d) =>
+            (d.slotsByDuration[String(pending.minutes)] ?? []).includes(pending.startMs)
+          )
+        if (isRealSlot && activity && pending) {
+          setAptDuration(pending.minutes)
+          setWindowBooking(buildWindowBooking(only, activity, pending.startMs, pending.minutes))
+          setStep('slot')
+          return
+        }
+        setStep('sessions')
+      } else {
+        setStep('provider')
+      }
+    } catch {
+      setAptError(true)
+    } finally {
+      setAptLoading(false)
+    }
+  }
+
+  /** What the `when` step is choosing among: the offer's sessions, narrowed to
+   *  the place the visitor picked. The DAY list is narrowed by the same rule,
+   *  or the calendar offers days that hold nothing. */
+  const placeSessions = useMemo(
+    () =>
+      selectedPlace
+        ? activitySessions.filter((s) => s.placeId === selectedPlace)
+        : activitySessions,
+    [activitySessions, selectedPlace]
+  )
+
   const availableDates: string[] = useMemo(
-    () => Array.from(new Set(activitySessions.map((s) => toDateKey(s.start)))).sort(),
-    [activitySessions]
+    () => Array.from(new Set(placeSessions.map((s) => toDateKey(s.start)))).sort(),
+    [placeSessions]
   )
 
   const maxDateKey = useMemo(() => {
@@ -1024,17 +1242,21 @@ export default function BookingForm({
     const candidate =
       initialDate && availableDates.includes(initialDate) ? initialDate : availableDates[0]
     setSelectedDate(candidate)
+    // The PLACE belongs in here beside the activity: it narrows the day list
+    // the same way, so a place chosen without re-running this leaves the
+    // calendar with nothing selected and the slot list showing every day at
+    // once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedActivity?.id, sessions.length])
+  }, [selectedActivity?.id, selectedPlace, sessions.length])
 
   const cutoffMinutes = bookingSettings?.cutoffMinutes
   const filteredSessions = useMemo(
     () =>
       (selectedDate
-        ? activitySessions.filter((s) => toDateKey(s.start) === selectedDate)
-        : activitySessions
+        ? placeSessions.filter((s) => toDateKey(s.start) === selectedDate)
+        : placeSessions
       ).filter((s) => sessionBlockReason(s, cutoffMinutes) !== 'closed'),
-    [selectedDate, activitySessions, cutoffMinutes]
+    [selectedDate, placeSessions, cutoffMinutes]
   )
 
   // Drop-in (pay-per-class): a gated class where the studio lets uncovered contacts
@@ -1645,14 +1867,6 @@ export default function BookingForm({
    * visitor to a full page mid-flow is jarring when picking an appointment off
    * the activity list is, to them, just the next step. As a page it navigates.
    */
-  function goToAppointments(activityId: string) {
-    if (chrome.switchToAppointments) {
-      chrome.switchToAppointments(activityId)
-      return
-    }
-    router.push(publicHref(slug, 'appointments', { activity: activityId, from }))
-  }
-
   function leaveFlowTo(href: string) {
     if (chrome.kind === 'overlay') chrome.navigate(href)
     else router.push(href as Route)
@@ -1699,19 +1913,41 @@ export default function BookingForm({
   // pushing `/booking/{activitySlug}` would turn popstate into a real route
   // transition, remounting the wizard and refetching everything.
   const stepQuery: Record<string, string | undefined> =
-    step === 'activities'
+    step === 'category'
       ? {}
-      : step === 'sessions'
-        ? { activity: selectedActivity?.id, date: selectedDate ?? undefined }
-        : step === 'confirmed'
-          ? { booked: confirmedSession?.id }
-          : step === 'waitlisted'
-            ? { waitlisted: selectedSession?.id }
-            : {
-                session: selectedSession?.id,
-                step: step === 'who' ? undefined : step,
-                path: step === 'details' ? (guestPath ?? undefined) : undefined,
+      : step === 'activities'
+        ? { category: selectedCategory ?? undefined }
+        : step === 'place'
+          ? { activity: selectedActivity?.id, category: selectedCategory ?? undefined }
+          : step === 'provider'
+            ? { activity: selectedActivity?.id }
+            : step === 'slot'
+              ? {
+                  // An appointment is identified by four fields, the same four
+                  // the callables take. Everything else on `windowBooking` is
+                  // denormalised from availability, so it is rebuilt rather
+                  // than serialised.
+                  activity: windowBooking?.activityId,
+                  provider: windowBooking?.providerId,
+                  start: windowBooking ? String(windowBooking.startMs) : undefined,
+                  duration: windowBooking ? String(windowBooking.durationMinutes) : undefined,
+                }
+          : step === 'sessions'
+            ? {
+                activity: selectedActivity?.id,
+                category: selectedCategory ?? undefined,
+                place: selectedPlace ?? undefined,
+                date: selectedDate ?? undefined,
               }
+            : step === 'confirmed'
+              ? { booked: confirmedSession?.id }
+              : step === 'waitlisted'
+                ? { waitlisted: selectedSession?.id }
+                : {
+                    session: selectedSession?.id,
+                    step: step === 'who' ? undefined : step,
+                    path: step === 'details' ? (guestPath ?? undefined) : undefined,
+                  }
 
   // Nothing below sets the URL by hand: the step and its query decide it.
   useBookingFlowUrl({
@@ -1772,24 +2008,55 @@ export default function BookingForm({
         return
       }
 
+      // The section, restored first: it narrows the card list the two branches
+      // below fall back to. An unknown one (a renamed section, an old link) is
+      // dropped rather than filtering the list down to nothing.
+      const restoredCategory = params.get('category')
+      setSelectedCategory(
+        restoredCategory && categories.some((c) => c === restoredCategory)
+          ? restoredCategory
+          : null
+      )
+
       const activityId = parseDocId(params.get('activity'))
       const matched = activityId ? activities.find((a) => a.id === activityId) : null
+      // An appointment restores through the same door it was opened by: the
+      // availability has to come back before any of it means anything, and the
+      // named time is checked against it rather than believed.
+      if (matched?.activityType === 'appointment') {
+        const startMs = parsePositiveInt(params.get('start'))
+        const minutes = parsePositiveInt(params.get('duration'), 24 * 60)
+        pendingSlotRef.current = startMs && minutes ? { startMs, minutes } : null
+        setSelectedActivity(matched)
+        setSelectedSession(null)
+        setGuestPath(null)
+        void openAppointment(matched.id, parseDocId(params.get('provider')))
+        return
+      }
       if (matched) {
         setSelectedActivity(matched)
         setSelectedSession(null)
         setGuestPath(null)
+        // The place, only when this offer still runs there. Absent means "all
+        // of them", which is what a link written before places existed meant.
+        const placeId = parseDocId(params.get('place'))
+        const places = placeChoicesFor(matched)
+        setSelectedPlace(placeId && places.some((pl) => pl.id === placeId) ? placeId : null)
         const day = parseDateKey(params.get('date'))
         if (day) {
           setSelectedDate(day)
           entryResolvedRef.current = true
         }
-        setStep('sessions')
+        // A restored entry with no place named, on an offer that asks: the step
+        // that asks is the one the visitor saw, so it is the one to return to.
+        setStep(!placeId && places.length > 1 ? 'place' : 'sessions')
         return
       }
 
       // Back to the flow's entry step.
       setSelectedSession(null)
       setGuestPath(null)
+      setSelectedPlace(null)
       if (isDateFirst) {
         setSelectedActivity(null)
         // The day IS the state in date-first — restoring the step without it
@@ -1804,20 +2071,64 @@ export default function BookingForm({
         setStep('sessions')
       } else {
         setSelectedActivity(null)
-        setStep('activities')
+        // No offer named: the entry step is the sections when there are
+        // several, and the cards otherwise. Same rule as the first load.
+        setStep(!restoredCategory && categories.length > 1 ? 'category' : 'activities')
       }
     },
   })
 
+  /**
+   * The prologue steps this visitor actually sees, in order, ending at `when`.
+   *
+   * DERIVED, never stored. A stored skip flag survives a history restore with
+   * a stale value and then mislabels the Back button, which is the defect
+   * `AppointmentPicker` records at its own coach step. Computing it each render
+   * costs two array reads and cannot go stale.
+   *
+   * `category` is skipped unless the studio named more than one section, and
+   * whenever the visitor arrived asking for one offer: a deep link means they
+   * have already chosen, and browsing the sections would be asking them to
+   * choose again. `activities` is skipped when there is nothing to choose
+   * between, and `place` when the offer runs in one place or in none this
+   * studio has named.
+   */
+  const visibleSteps = useMemo<Step[]>(() => {
+    const pinned = !!preSelectedActivitySlug || !!initialActivityId || !!initialSession
+    const steps: Step[] = []
+    if (!pinned && !isDateFirst && categories.length > 1) steps.push('category')
+    if (!pinned && !isDateFirst && categoryActivities.length > 1) steps.push('activities')
+    if (placesForActivity.length > 1) steps.push('place')
+    steps.push('sessions')
+    return steps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    preSelectedActivitySlug,
+    initialActivityId,
+    initialSession,
+    isDateFirst,
+    categories.length,
+    categoryActivities.length,
+    placesForActivity.length,
+  ])
+
+  /** The step before this one that the visitor was actually shown, or null when
+   *  this is the first: Back then leaves the flow rather than inventing a step
+   *  nobody saw. */
+  function previousVisibleStep(current: Step): Step | null {
+    const i = visibleSteps.indexOf(current)
+    return i > 0 ? visibleSteps[i - 1] : null
+  }
+
   function backFromSessions() {
-    // `isDateFirst` has no activity step in front of it either — the day picker
-    // IS the entry step there.
-    if (isDateFirst || preSelectedActivitySlug || initialActivityId || activities.length === 1) {
-      // No activity step to go back to — leave the flow altogether.
+    const previous = previousVisibleStep('sessions')
+    if (!previous) {
+      // Nothing in front of the day picker: leave the flow altogether.
       exitFlow(backTo.href)
-    } else {
-      setStep('activities')
+      return
     }
+    if (previous === 'place') setSelectedPlace(null)
+    setStep(previous)
   }
 
   /**
@@ -1914,14 +2225,22 @@ export default function BookingForm({
               providerLabel={
                 selectedSession?.providerName
                   ? t('withInstructor', { name: selectedSession.providerName })
-                  : null
+                  : windowBooking?.providerName
+                    ? t('withInstructor', { name: windowBooking.providerName })
+                    : null
               }
               dateTimeLabel={
                 selectedSession
                   ? `${formatDate(fmt, selectedSession.start)} · ${formatTime(fmt, selectedSession.start)}–${formatTime(fmt, selectedSession.end)}`
-                  : null
+                  : windowBooking
+                    ? `${fmt.custom(windowBooking.startMs, { weekday: 'long', day: 'numeric', month: 'long' })} · ${fmt.time(windowBooking.startMs)}–${fmt.time(windowBooking.startMs + windowBooking.durationMinutes * 60_000)}`
+                    : null
               }
-              location={selectedSession?.location ?? null}
+              location={
+                selectedSession?.location ??
+                ([windowBooking?.placeName, windowBooking?.location].filter(Boolean).join(' · ') ||
+                  null)
+              }
               accentColor={accentColor}
               position={chrome.kind === 'overlay' ? 'container' : 'viewport'}
               // The queue step and the consent step submit from the same bar as
@@ -1932,9 +2251,13 @@ export default function BookingForm({
                 step === 'details' ||
                 step === 'waitlist' ||
                 step === 'waiver' ||
-                (step === 'member' && memberCanBookFree)
+                (step === 'member' && memberCanBookFree) ||
+                // The appointment rail reports which of its screens is showing;
+                // only the guest one has a form, and its submit is here for the
+                // same reason the class one is: one Confirm, one place.
+                (step === 'slot' && aptScreen === 'guest')
               }
-              submitting={isSubmitting}
+              submitting={isSubmitting || (step === 'slot' && aptSubmitting)}
               // Greyed, not hidden, until every outstanding waiver is satisfied
               // by what the visitor did here — the tick, plus the "who is
               // signing" choice on a waiver flagged for minors.
@@ -1942,7 +2265,11 @@ export default function BookingForm({
               confirmLabel={step === 'waitlist' ? t('waitlistJoinCta') : t('ctaConfirm')}
               submittingLabel={step === 'waitlist' ? t('waitlistCtaJoining') : t('ctaBooking')}
               onConfirm={() =>
-                step === 'waiver'
+                step === 'slot'
+                  ? // The appointment rail's guest form, submitted from the
+                    // same control as every other one on this funnel.
+                    aptGuestFormRef.current?.submit()
+                  : step === 'waiver'
                   ? // Re-enters the SAME submit the step interrupted. `ensure()`
                     // is cleared by the local ticks on this second pass, so the
                     // rail is called with the acceptances attached.
@@ -2033,6 +2360,383 @@ export default function BookingForm({
 
   // ─── Step: Activity selection ─────────────────────────────────────────────
 
+  // COURSES STARTING SOON. It belongs to whichever screen the visitor
+  // LANDS on, which is the sections when the studio has them and the card
+  // list when it does not. Rendered by both rather than by the card list
+  // alone, or a studio with sections would hide its courses behind a click
+  // and then hide them again for carrying no section of their own.
+  const coursesBlock = (
+    <>
+      {/* COURSES STARTING SOON, above the weekly slots.
+      "When does the next beginners course start" is the question a visitor
+      brings to this page, and a course is not findable among single
+      sessions: it IS the set of them. Each card carries what somebody
+      chooses on, first date, weekday and time, how many lessons, price and
+      places left, so nobody has to open one to compare two.
+
+      Hidden once a SECTION is chosen: a course carries no section of its
+      own, so leaving it there would file a grappling course under
+      Striking. It keeps its place on the step the visitor lands on. */}
+      {courses.length > 0 && !selectedCategory && (
+    <div className="mb-8 space-y-3">
+      <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+        {t('coursesHeading')}
+      </h2>
+      {courses.map((c) => {
+        const first = c.first_meeting?.toDate()
+        const left =
+          typeof c.places === 'number' && c.places > 0
+            ? Math.max(0, c.places - (c.places_taken ?? 0))
+            : null
+        const closed =
+          !!c.booking_closes_at && c.booking_closes_at.toMillis() <= Date.now()
+        return (
+          <div key={c.id} className="rounded-xl border p-4">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <p className="font-semibold">{c.name}</p>
+              <span className="text-primary text-sm font-semibold">
+                {typeof c.priceAmount === 'number'
+                  ? formatCurrency(c.priceAmount, currency, locale)
+                  : t('coursesFree')}
+              </span>
+            </div>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {[
+                first ? fmt.dateMedium(first) : null,
+                first ? `${fmt.weekdayShort(first)} ${fmt.time(first)}` : null,
+                c.meeting_count ? t('coursesLessons', { count: c.meeting_count }) : null,
+                c.location,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+            {c.description && (
+              <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
+            )}
+            {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
+                remedies, so they are never the same sentence, and only one
+                of them has a remedy at all. A closed course cannot hand a
+                place to anybody, so it is told and left alone; a full one
+                takes a queue, because the place that frees in week four is
+                the whole reason the queue exists. */}
+            <p className="mt-2 text-xs">
+              {closed ? (
+                <span className="text-muted-foreground">{t('coursesClosed')}</span>
+              ) : left === 0 ? (
+                <span className="text-muted-foreground">{t('coursesSoldOut')}</span>
+              ) : left !== null ? (
+                <span className="text-muted-foreground">
+                  {t('coursesPlacesLeft', { count: left })}
+                </span>
+              ) : null}
+            </p>
+            {!closed && left === 0 && teamId && (
+              <button
+                type="button"
+                onClick={() => setQueueingFor({ id: c.id, name: c.name })}
+                className="mt-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+              >
+                {t('coursesJoinWaitlist')}
+              </button>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )}
+    </>
+  )
+
+  /** The appointment arm of the `when` step, and the booking rail behind it.
+   *  Rendered inside this funnel's own shell, which is the whole point: a
+   *  visitor who picked an appointment is still in the funnel they started in,
+   *  on the same URL, with the same identity and the same bar. */
+  const appointmentWhen =
+    aptCoach && aptActivity ? (
+      <AppointmentWhen
+        coach={aptCoach}
+        activity={aptActivity}
+        currency={currency}
+        locale={locale}
+        fmt={fmt}
+        t={tApt}
+        tPublic={t}
+        formatDuration={(mins) => durationLabel(mins, t)}
+        duration={aptEffectiveDuration}
+        onDurationChange={setAptDuration}
+        selectedDateKey={aptDateKey}
+        onDateChange={setAptDateKey}
+        onPick={(startMs, duration) => {
+          pendingSlotRef.current = null
+          setWindowBooking(buildWindowBooking(aptCoach, aptActivity, startMs, duration.minutes))
+          setStep('slot')
+        }}
+      />
+    ) : null
+
+  if (aptConfirmedEmail !== undefined && appointmentOffer) {
+    return withBar(
+      <div className="text-center space-y-4 py-8">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+          <svg
+            aria-hidden
+            className="h-7 w-7 text-green-700"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold">{tApt('confirmedTitle')}</h1>
+        <p className="text-sm text-muted-foreground">
+          {aptConfirmedEmail
+            ? tApt('confirmedMessage', { email: aptConfirmedEmail })
+            : tApt('confirmedMessageNoAddress')}
+        </p>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              // Book another: back to the offer list, with nothing of the last
+              // booking still selected.
+              setAptConfirmedEmail(undefined)
+              setAptCoach(null)
+              setAptActivity(null)
+              setAptDateKey(null)
+              setSelectedActivity(null)
+              setStep(visibleSteps[0] ?? 'activities')
+            }}
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            {t('bookAnotherSession')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'provider' && selectedActivity) {
+    return withBar(
+      <>
+        <div>
+          <BackButton
+            label={t('back')}
+            onClick={() => {
+              setAptCoach(null)
+              setAptActivity(null)
+              setSelectedActivity(null)
+              setStep(previousVisibleStep('sessions') ?? 'activities')
+            }}
+          />
+          <h1 className="text-2xl font-bold">{selectedActivity.name}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{tApt('subtitle')}</p>
+        </div>
+
+        <div className="space-y-3">
+          {aptCoaches.map((coach) => (
+            <button
+              key={coach.providerId}
+              type="button"
+              onClick={() => {
+                setAptCoach(coach)
+                setAptActivity(
+                  coach.activities.find((a) => a.activityId === selectedActivity.id) ?? null
+                )
+                setStep('sessions')
+              }}
+              className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-center gap-3"
+            >
+              <span className="flex-1 font-semibold text-sm">
+                {coach.providerName || tApt('unnamedCoach')}
+              </span>
+              <svg
+                aria-hidden
+                className="h-4 w-4 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  if (step === 'slot' && windowBooking && teamId) {
+    return withBar(
+      <SlotBookingForm
+        key={`${windowBooking.providerId}-${windowBooking.activityId}-${windowBooking.startMs}-${windowBooking.durationMinutes}`}
+        teamId={teamId}
+        guestFormRef={aptGuestFormRef}
+        onScreenChange={setAptScreen}
+        onSubmittingChange={setAptSubmitting}
+        accentColor={accentColor}
+        hasAnyPrice={windowBooking.benefitOnly !== true && windowBooking.priceAmount !== null}
+        settleAtStudio={aptSettleAtStudio}
+        benefitOnly={windowBooking.benefitOnly}
+        shopHref={publicHrefLocalized(locale, slug, 'shop', {
+          tab: 'subscriptions',
+          from: 'booking',
+        })}
+        priceAmount={windowBooking.priceAmount}
+        memberBenefit={windowBooking.memberBenefit}
+        cancellationPolicy={windowBooking.cancellationPolicy}
+        activityContactFields={windowBooking.contactFields}
+        durationMinutes={windowBooking.durationMinutes}
+        providerId={windowBooking.providerId}
+        activityId={windowBooking.activityId}
+        startMs={windowBooking.startMs}
+        currency={currency}
+        locale={locale}
+        backLabel={t('back')}
+        onExit={() => {
+          pendingSlotRef.current = null
+          setWindowBooking(null)
+          setStep('sessions')
+        }}
+        book={(args) =>
+          callFunction('bookAppointment')({
+            teamId,
+            providerId: windowBooking.providerId,
+            activityId: windowBooking.activityId,
+            startMs: windowBooking.startMs,
+            durationMinutes: windowBooking.durationMinutes,
+            ...args,
+          }).then(() => undefined)
+        }
+        checkout={(args) =>
+          callFunction<Record<string, unknown>, { url?: string; amount?: number }>(
+            'createAppointmentCheckout'
+          )({
+            teamId,
+            providerId: windowBooking.providerId,
+            activityId: windowBooking.activityId,
+            startMs: windowBooking.startMs,
+            durationMinutes: windowBooking.durationMinutes,
+            slug,
+            locale,
+            origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+            ...args,
+          }).then((res) => res.data)
+        }
+        onBooked={(email) => {
+          setWindowBooking(null)
+          setAptConfirmedEmail(email)
+        }}
+      />,
+      true
+    )
+  }
+
+  // ─── Step: Category ──────────────────────────────────────────────────────
+  // The studio's own sections, in the studio's own words. It exists only when
+  // there is more than one, so it never stands between a single-section studio
+  // and its offers.
+  if (step === 'category') {
+    return withBar(
+      <>
+        <div>
+          <h1 className="text-2xl font-bold">{t('titleBookSession')}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t('chooseCategorySubtitle')}</p>
+        </div>
+
+        {deepLinkBanner}
+
+        {coursesBlock}
+
+        <div className="space-y-3">
+          {categories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => {
+                setSelectedCategory(category)
+                setStep('activities')
+              }}
+              className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-center gap-3"
+            >
+              <span className="flex-1 font-semibold text-sm">{category}</span>
+              <svg
+                aria-hidden
+                className="h-4 w-4 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  // ─── Step: Place ─────────────────────────────────────────────────────────
+  // WHERE, when the offer runs in more than one place the studio has named. A
+  // studio with one address never meets this step.
+  if (step === 'place' && selectedActivity) {
+    return withBar(
+      <>
+        <div>
+          <BackButton
+            label={t('back')}
+            onClick={() => {
+              const previous = previousVisibleStep('place')
+              if (!previous) {
+                exitFlow(backTo.href)
+                return
+              }
+              setSelectedActivity(null)
+              setStep(previous)
+            }}
+          />
+          <h1 className="text-2xl font-bold">{selectedActivity.name}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t('choosePlaceSubtitle')}</p>
+        </div>
+
+        <div className="space-y-3">
+          {placesForActivity.map((place) => (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => {
+                setSelectedPlace(place.id)
+                setSelectedDate(null)
+                setStep('sessions')
+              }}
+              className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-center gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{place.name}</p>
+                {place.address && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{place.address}</p>
+                )}
+              </div>
+              <svg
+                aria-hidden
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
   if (step === 'activities') {
     return (
       <FlowShell
@@ -2061,85 +2765,14 @@ export default function BookingForm({
           />
         )}
 
+        {coursesBlock}
+
         {activities.length === 0 && courses.length === 0 && (
           <div className="rounded-xl border bg-muted/30 p-8 text-center">
             <p className="text-muted-foreground text-sm">{t('noActivitiesAvailable')}</p>
           </div>
         )}
 
-        {/* COURSES STARTING SOON, above the weekly slots.
-            "When does the next beginners course start" is the question a visitor
-            brings to this page, and a course is not findable among single
-            sessions: it IS the set of them. Each card carries what somebody
-            chooses on, first date, weekday and time, how many lessons, price and
-            places left, so nobody has to open one to compare two. */}
-        {courses.length > 0 && (
-          <div className="mb-8 space-y-3">
-            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
-              {t('coursesHeading')}
-            </h2>
-            {courses.map((c) => {
-              const first = c.first_meeting?.toDate()
-              const left =
-                typeof c.places === 'number' && c.places > 0
-                  ? Math.max(0, c.places - (c.places_taken ?? 0))
-                  : null
-              const closed =
-                !!c.booking_closes_at && c.booking_closes_at.toMillis() <= Date.now()
-              return (
-                <div key={c.id} className="rounded-xl border p-4">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <p className="font-semibold">{c.name}</p>
-                    <span className="text-primary text-sm font-semibold">
-                      {typeof c.priceAmount === 'number'
-                        ? formatCurrency(c.priceAmount, currency, locale)
-                        : t('coursesFree')}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {[
-                      first ? fmt.dateMedium(first) : null,
-                      first ? `${fmt.weekdayShort(first)} ${fmt.time(first)}` : null,
-                      c.meeting_count ? t('coursesLessons', { count: c.meeting_count }) : null,
-                      c.location,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                  {c.description && (
-                    <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
-                  )}
-                  {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
-                      remedies, so they are never the same sentence, and only one
-                      of them has a remedy at all. A closed course cannot hand a
-                      place to anybody, so it is told and left alone; a full one
-                      takes a queue, because the place that frees in week four is
-                      the whole reason the queue exists. */}
-                  <p className="mt-2 text-xs">
-                    {closed ? (
-                      <span className="text-muted-foreground">{t('coursesClosed')}</span>
-                    ) : left === 0 ? (
-                      <span className="text-muted-foreground">{t('coursesSoldOut')}</span>
-                    ) : left !== null ? (
-                      <span className="text-muted-foreground">
-                        {t('coursesPlacesLeft', { count: left })}
-                      </span>
-                    ) : null}
-                  </p>
-                  {!closed && left === 0 && teamId && (
-                    <button
-                      type="button"
-                      onClick={() => setQueueingFor({ id: c.id, name: c.name })}
-                      className="mt-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                    >
-                      {t('coursesJoinWaitlist')}
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
 
         {/* Sections, in the studio's own words — one heading per activity
             group, ungrouped last and unlabelled. THE ONE GROUPER
@@ -2147,10 +2780,22 @@ export default function BookingForm({
             order, so this list and any other surface that sections activities
             cannot disagree. A studio that never set a group sees exactly the
             flat list it saw before. */}
+        {selectedCategory && (
+          <BackButton
+            label={t('back')}
+            onClick={() => {
+              setSelectedCategory(null)
+              setStep('category')
+            }}
+          />
+        )}
+
         <div className="space-y-8">
-          {groupActivitiesForBooking(activities).map((section) => (
+          {/* Inside a chosen section the heading would repeat what the visitor
+              just clicked, so the grouper still runs and the label does not. */}
+          {groupActivitiesForBooking(categoryActivities).map((section) => (
             <div key={section.group ?? '__ungrouped'} className="space-y-3">
-          {section.group ? (
+          {section.group && !selectedCategory ? (
             <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
               {section.group}
             </h2>
@@ -2284,12 +2929,20 @@ export default function BookingForm({
                 }
                 disabled={!hasSessions}
                 onSelect={() => {
+                  setSelectedActivity(a)
+                  setSelectedPlace(null)
                   if (isAppointment) {
-                    goToAppointments(a.id)
+                    // No navigation: the offer opens in the funnel the visitor
+                    // is already in. This is what `switchToAppointments` used
+                    // to work around.
+                    void openAppointment(a.id)
                     return
                   }
-                  setSelectedActivity(a)
-                  setStep('sessions')
+                  // WHERE, but only when this offer has more than one answer.
+                  // Read off the sessions already loaded rather than a field on
+                  // the activity: the sessions are what the visitor is about to
+                  // choose between, so they cannot disagree with the step.
+                  setStep(placeChoicesFor(a).length > 1 ? 'place' : 'sessions')
                 }}
               />
             )
@@ -2306,12 +2959,20 @@ export default function BookingForm({
   if (step === 'sessions') {
     return withBar(
       <>
+        {/* An appointment's `when` carries its own heading (the offer and the
+            provider, which a class slot list does not have), so this one would
+            be the same name twice. Back stays, because leaving the step is the
+            funnel's business either way. */}
         <div>
           <BackButton label={t('back')} onClick={backFromSessions} />
-          <h1 className="text-2xl font-bold">
-            {selectedActivity ? selectedActivity.name : t('titleSessionsFallback')}
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">{t('pickDateTimeSubtitle')}</p>
+          {!appointmentOffer && (
+            <>
+              <h1 className="text-2xl font-bold">
+                {selectedActivity ? selectedActivity.name : t('titleSessionsFallback')}
+              </h1>
+              <p className="text-muted-foreground mt-1 text-sm">{t('pickDateTimeSubtitle')}</p>
+            </>
+          )}
         </div>
 
         {deepLinkBanner}
@@ -2390,131 +3051,66 @@ export default function BookingForm({
           )
         })()}
 
-        {availableDates.length === 0 ? (
-          <div className="rounded-xl border bg-muted/30 p-8 text-center">
-            <p className="text-muted-foreground text-sm">
-              {t('noSessionsAvailable')}
-            </p>
-          </div>
+        {appointmentOffer ? (
+          appointmentWhen
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-start">
-            {/* Calendar */}
-            <div className="bg-card border rounded-xl p-4">
-              <MiniCalendar
-                availableDates={availableDates}
-                selectedDate={selectedDate}
-                onSelect={setSelectedDate}
-                maxDateKey={maxDateKey}
-              />
-            </div>
-
-            {/* Time slots */}
-            <div>
-              {selectedDate && (
-                <p className="text-sm font-medium mb-3 text-muted-foreground">
-                  {formatDateFull(fmt, dateKeyToDate(selectedDate))}
-                </p>
-              )}
-
-              {filteredSessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">{t('noSessionsOnDate')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {filteredSessions.map((s) => {
-                    // A full slot is still rendered (only 'closed' is filtered
-                    // out) — it is either the queue's front door or, without
-                    // one, an honest "no seats" row. What it must never be
-                    // again is a clickable row that dead-ends on a server throw.
-                    const rowActivity = selectedActivity ?? findActivityForSession(s)
-                    const blocked = sessionBlockReason(s, cutoffMinutes)
-                    const waitlistable = offersWaitlist(blocked, rowActivity)
-                    const isFull = blocked === 'full'
-                    return (
-                    <button
-                      key={s.id}
-                      disabled={isFull && !waitlistable}
-                      onClick={() => {
-                        // Date-first browses with no activity pinned, so the
-                        // clicked session is what names it. Everything
-                        // downstream (access gate, pricing, sticky bar) reads
-                        // `selectedActivity`, so resolve it here rather than
-                        // letting those fall back to null.
-                        const activity = rowActivity
-                        if (!selectedActivity && activity) setSelectedActivity(activity)
-                        setSelectedSession(s)
-                        setGuestPath(null)
-                        setGiftCardApplied(null)
-                        // A code is quoted against ONE purchase (the reservation
-                        // key embeds the session), so picking a different class
-                        // must not carry the previous quote across.
-                        setPromoApplied(null)
-                        setDeepLinkNotice(null)
-                        setBookingError(null)
-                        setStep(waitlistable ? 'waitlist' : nextStepAfterSession(activity, paymentsEnabled, isAuthenticated))
-                      }}
-                      className="w-full text-left rounded-xl border bg-card p-3.5 hover:border-primary hover:bg-primary/5 transition-colors flex items-stretch gap-3 group disabled:pointer-events-none disabled:opacity-60"
-                    >
-                      <div
-                        className="w-1 rounded-full shrink-0"
-                        style={{ background: s.activityColor || 'var(--primary)' }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        {!selectedActivity && s.activityName && (
-                          <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                            {s.activityName}
-                          </p>
-                        )}
-                        <p className="font-semibold text-sm">
-                          {formatTime(fmt, s.start)} – {formatTime(fmt, s.end)}
-                        </p>
-                        {s.headline && (
-                          <p className="text-xs text-amber-700 mt-0.5">{s.headline}</p>
-                        )}
-                        <div className="flex flex-wrap gap-x-3 mt-0.5">
-                          {s.providerName && (
-                            <p className="text-xs text-muted-foreground">{s.providerName}</p>
-                          )}
-                          {s.location && (
-                            <p className="text-xs text-muted-foreground">{s.location}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isFull && (
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground font-medium">
-                            {t('waitlistBadgeFull')}
-                          </span>
-                        )}
-                        {waitlistable && (
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 font-medium">
-                            {t('waitlistJoinCta')}
-                          </span>
-                        )}
-                        {s.bookingMandatory && !isFull && (
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-primary/10 text-primary font-medium">
-                            {t('bookingRequired')}
-                          </span>
-                        )}
-                        <span className="text-xs bg-muted rounded-full px-2 py-0.5 text-muted-foreground">
-                          {sessionDuration(s.start, s.end, t)}
-                        </span>
-                        <svg
-                          className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+        <ClassWhen
+          availableDates={availableDates}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          maxDateKey={maxDateKey}
+          showActivityNames={!selectedActivity}
+          fmt={fmt}
+          t={t}
+          formatDuration={(startMs, endMs) =>
+            sessionDurationFromMs(startMs, endMs, t)
+          }
+          rows={filteredSessions.map((s) => {
+            // A full slot is still rendered (only 'closed' is filtered out):
+            // it is either the queue's front door or, without one, an honest
+            // "no seats" row.
+            const rowActivity = selectedActivity ?? findActivityForSession(s)
+            const blocked = sessionBlockReason(s, cutoffMinutes)
+            return {
+              id: s.id,
+              startMs: s.start.toDate().getTime(),
+              endMs: s.end.toDate().getTime(),
+              activityName: s.activityName,
+              activityColor: s.activityColor,
+              providerName: s.providerName,
+              location: s.location,
+              headline: s.headline,
+              bookingMandatory: s.bookingMandatory,
+              full: blocked === 'full',
+              waitlistable: offersWaitlist(blocked, rowActivity),
+            }
+          })}
+          onPick={(id) => {
+            const s = filteredSessions.find((row) => row.id === id)
+            if (!s) return
+            // Date-first browses with no activity pinned, so the clicked
+            // session is what names it. Everything downstream (access gate,
+            // pricing, sticky bar) reads `selectedActivity`, so resolve it
+            // here rather than letting those fall back to null.
+            const activity = selectedActivity ?? findActivityForSession(s)
+            if (!selectedActivity && activity) setSelectedActivity(activity)
+            setSelectedSession(s)
+            setGuestPath(null)
+            setGiftCardApplied(null)
+            // A code is quoted against ONE purchase (the reservation key embeds
+            // the session), so picking a different class must not carry the
+            // previous quote across.
+            setPromoApplied(null)
+            setDeepLinkNotice(null)
+            setBookingError(null)
+            const waitlistable = offersWaitlist(sessionBlockReason(s, cutoffMinutes), activity)
+            setStep(
+              waitlistable
+                ? 'waitlist'
+                : nextStepAfterSession(activity, paymentsEnabled, isAuthenticated)
+            )
+          }}
+        />
         )}
       </>,
       true // wide layout

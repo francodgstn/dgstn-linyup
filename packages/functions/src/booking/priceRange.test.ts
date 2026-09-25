@@ -81,7 +81,6 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8').replace(/\r\
  *  the resolved shape, so a surface cannot re-derive the answer without
  *  re-introducing the comparison this file exists to remove. */
 const QUOTING_SURFACES = [
-  'apps/web/src/app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker.tsx',
   'apps/web/src/app/[locale]/(public)/public/[slug]/booking/BookingForm.tsx',
   'apps/web/src/app/[locale]/(public)/public/[slug]/shop/ShopHome.tsx',
   'apps/web/src/components/site/sections.tsx',

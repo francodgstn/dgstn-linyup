@@ -3,6 +3,29 @@
   "sections": {
     "inProgress": [
       {
+        "id": "DI_lAHOADowus4Bj7lNzgLKHTo",
+        "area": null,
+        "en": {
+          "title": "A calmer, clearer app",
+          "body": "Less clutter on the screens you use most, and fewer steps on the paths you take every day."
+        },
+        "de": {
+          "title": "Eine ruhigere, klarere App",
+          "body": "Weniger Unruhe auf den Ansichten, die du am häufigsten nutzt, und weniger Schritte auf deinen täglichen Wegen.",
+          "srcHash": "4d04276b9df0"
+        },
+        "fr": {
+          "title": "Une app plus claire et plus calme",
+          "body": "Moins d'encombrement sur les écrans que vous utilisez le plus, et moins d'étapes sur vos parcours quotidiens.",
+          "srcHash": "4d04276b9df0"
+        },
+        "it": {
+          "title": "Un'app più chiara e ordinata",
+          "body": "Meno confusione nelle schermate che usi di più e meno passaggi nei percorsi di ogni giorno.",
+          "srcHash": "4d04276b9df0"
+        }
+      },
+      {
         "id": "DI_lAHOADowus4Bj7lNzgLJQK4",
         "area": {
           "key": "payments-and-shop",
@@ -26,58 +49,6 @@
           "title": "Più piani per lo stesso membro",
           "body": "Un membro può avere contemporaneamente, ad esempio, un abbonamento e un pacchetto di lezioni, ciascuno conteggiato correttamente.",
           "srcHash": "bda24bf8be04"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLA",
-        "area": {
-          "key": "members",
-          "label": "Members"
-        },
-        "en": {
-          "title": "WhatsApp for business",
-          "body": "Reach members on WhatsApp for reminders and updates, with their consent."
-        },
-        "de": {
-          "title": "WhatsApp fürs Studio",
-          "body": "Erreiche deine Mitglieder mit Erinnerungen und Neuigkeiten auf WhatsApp — mit ihrer Einwilligung.",
-          "srcHash": "ac79dfebcbc3"
-        },
-        "fr": {
-          "title": "WhatsApp pour votre studio",
-          "body": "Touchez vos membres sur WhatsApp pour les rappels et les nouvelles, avec leur consentement.",
-          "srcHash": "ac79dfebcbc3"
-        },
-        "it": {
-          "title": "WhatsApp per il tuo studio",
-          "body": "Raggiungi i tuoi membri su WhatsApp con promemoria e aggiornamenti, con il loro consenso.",
-          "srcHash": "ac79dfebcbc3"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLQ",
-        "area": {
-          "key": "payments-and-shop",
-          "label": "Payments & shop"
-        },
-        "en": {
-          "title": "Health-insurance receipts (Switzerland)",
-          "body": "Issue the receipts members need to claim fitness costs from their insurer."
-        },
-        "de": {
-          "title": "Belege für die Krankenkasse (Schweiz)",
-          "body": "Stelle die Belege aus, mit denen Mitglieder Fitnesskosten bei ihrer Krankenkasse zurückfordern.",
-          "srcHash": "bd3da0e259d1"
-        },
-        "fr": {
-          "title": "Attestations pour l'assurance maladie (Suisse)",
-          "body": "Émettez les attestations dont vos membres ont besoin pour se faire rembourser leurs frais de fitness par leur assurance.",
-          "srcHash": "bd3da0e259d1"
-        },
-        "it": {
-          "title": "Ricevute per la cassa malati (Svizzera)",
-          "body": "Emetti le ricevute che servono ai membri per chiedere il rimborso dei costi di fitness alla loro cassa malati.",
-          "srcHash": "bd3da0e259d1"
         }
       },
       {
@@ -156,26 +127,55 @@
         }
       },
       {
-        "id": "DI_lAHOADowus4Bj7lNzgLJ3aI",
-        "area": null,
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLA",
+        "area": {
+          "key": "members",
+          "label": "Members"
+        },
         "en": {
-          "title": "Faster, steadier behind the scenes",
-          "body": "Ongoing work under the hood so Linyup stays quick and dependable as more studios come on board. Nothing changes in how you use it."
+          "title": "WhatsApp for business",
+          "body": "Reach members on WhatsApp for reminders and updates, with their consent."
         },
         "de": {
-          "title": "Schneller und stabiler im Hintergrund",
-          "body": "Laufende Arbeit unter der Haube, damit Linyup schnell und verlässlich bleibt, während mehr Studios dazukommen. An der Bedienung ändert sich nichts.",
-          "srcHash": "ac84d0c52482"
+          "title": "WhatsApp fürs Studio",
+          "body": "Erreiche deine Mitglieder mit Erinnerungen und Neuigkeiten auf WhatsApp — mit ihrer Einwilligung.",
+          "srcHash": "ac79dfebcbc3"
         },
         "fr": {
-          "title": "Plus rapide et plus stable en coulisses",
-          "body": "Un travail continu sous le capot pour que Linyup reste rapide et fiable à mesure que de nouveaux studios arrivent. Rien ne change dans votre utilisation.",
-          "srcHash": "ac84d0c52482"
+          "title": "WhatsApp pour votre studio",
+          "body": "Touchez vos membres sur WhatsApp pour les rappels et les nouvelles, avec leur consentement.",
+          "srcHash": "ac79dfebcbc3"
         },
         "it": {
-          "title": "Più veloce e stabile dietro le quinte",
-          "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
-          "srcHash": "ac84d0c52482"
+          "title": "WhatsApp per il tuo studio",
+          "body": "Raggiungi i tuoi membri su WhatsApp con promemoria e aggiornamenti, con il loro consenso.",
+          "srcHash": "ac79dfebcbc3"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLMacI",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "Sell a course as one booking",
+          "body": "A course is a fixed set of lessons with a start and an end, like a beginner block or a term. Members enrol once and keep their place in every lesson, and the studio sells the places rather than each session."
+        },
+        "de": {
+          "title": "Einen Kurs als eine Buchung verkaufen",
+          "body": "Ein Kurs ist eine feste Reihe von Lektionen mit Anfang und Ende, etwa ein Anfängerkurs oder ein Semester. Mitglieder melden sich einmal an und behalten ihren Platz in jeder Lektion, und du verkaufst die Plätze statt jeder einzelnen Lektion.",
+          "srcHash": "e0d56d1aedda"
+        },
+        "fr": {
+          "title": "Vendre un cours en une seule réservation",
+          "body": "Un cours est une série fixe de séances avec un début et une fin, comme un cycle débutant ou un trimestre. Les membres s'inscrivent une fois et gardent leur place à chaque séance, et vous vendez les places plutôt que chaque séance.",
+          "srcHash": "e0d56d1aedda"
+        },
+        "it": {
+          "title": "Vendi un corso con una sola prenotazione",
+          "body": "Un corso è una serie fissa di lezioni con un inizio e una fine, come un ciclo per principianti o un semestre. I membri si iscrivono una volta e mantengono il posto in ogni lezione, e tu vendi i posti invece delle singole lezioni.",
+          "srcHash": "e0d56d1aedda"
         }
       }
     ],
@@ -231,32 +231,58 @@
           "body": "Parti da configurazioni pronte per corsi e piani, come un abbonamento con lezione di prova o un pacchetto di lezioni con ingressi singoli, e adattale al tuo studio.",
           "srcHash": "8badc50cdbe0"
         }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLKHTo",
-        "area": null,
-        "en": {
-          "title": "A calmer, clearer app",
-          "body": "Less clutter on the screens you use most, and fewer steps on the paths you take every day."
-        },
-        "de": {
-          "title": "Eine ruhigere, klarere App",
-          "body": "Weniger Unruhe auf den Ansichten, die du am häufigsten nutzt, und weniger Schritte auf deinen täglichen Wegen.",
-          "srcHash": "4d04276b9df0"
-        },
-        "fr": {
-          "title": "Une app plus claire et plus calme",
-          "body": "Moins d'encombrement sur les écrans que vous utilisez le plus, et moins d'étapes sur vos parcours quotidiens.",
-          "srcHash": "4d04276b9df0"
-        },
-        "it": {
-          "title": "Un'app più chiara e ordinata",
-          "body": "Meno confusione nelle schermate che usi di più e meno passaggi nei percorsi di ogni giorno.",
-          "srcHash": "4d04276b9df0"
-        }
       }
     ],
     "landed": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLQ",
+        "area": {
+          "key": "payments-and-shop",
+          "label": "Payments & shop"
+        },
+        "en": {
+          "title": "Health-insurance receipts (Switzerland)",
+          "body": "Issue the receipts members need to claim fitness costs from their insurer."
+        },
+        "de": {
+          "title": "Belege für die Krankenkasse (Schweiz)",
+          "body": "Stelle die Belege aus, mit denen Mitglieder Fitnesskosten bei ihrer Krankenkasse zurückfordern.",
+          "srcHash": "bd3da0e259d1"
+        },
+        "fr": {
+          "title": "Attestations pour l'assurance maladie (Suisse)",
+          "body": "Émettez les attestations dont vos membres ont besoin pour se faire rembourser leurs frais de fitness par leur assurance.",
+          "srcHash": "bd3da0e259d1"
+        },
+        "it": {
+          "title": "Ricevute per la cassa malati (Svizzera)",
+          "body": "Emetti le ricevute che servono ai membri per chiedere il rimborso dei costi di fitness alla loro cassa malati.",
+          "srcHash": "bd3da0e259d1"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJ3aI",
+        "area": null,
+        "en": {
+          "title": "Faster, steadier behind the scenes",
+          "body": "Ongoing work under the hood so Linyup stays quick and dependable as more studios come on board. Nothing changes in how you use it."
+        },
+        "de": {
+          "title": "Schneller und stabiler im Hintergrund",
+          "body": "Laufende Arbeit unter der Haube, damit Linyup schnell und verlässlich bleibt, während mehr Studios dazukommen. An der Bedienung ändert sich nichts.",
+          "srcHash": "ac84d0c52482"
+        },
+        "fr": {
+          "title": "Plus rapide et plus stable en coulisses",
+          "body": "Un travail continu sous le capot pour que Linyup reste rapide et fiable à mesure que de nouveaux studios arrivent. Rien ne change dans votre utilisation.",
+          "srcHash": "ac84d0c52482"
+        },
+        "it": {
+          "title": "Più veloce e stabile dietro le quinte",
+          "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
+          "srcHash": "ac84d0c52482"
+        }
+      },
       {
         "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
         "area": {
@@ -304,58 +330,6 @@
           "title": "Centro assistenza pubblico",
           "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
           "srcHash": "7187608a91a9"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
-        "area": {
-          "key": "booking-and-schedule",
-          "label": "Booking & schedule"
-        },
-        "en": {
-          "title": "Events programme",
-          "body": "Create multi-day programme for your events. Save and reuse them as templates."
-        },
-        "de": {
-          "title": "Programm für Events",
-          "body": "Erstelle ein mehrtägiges Programm für deine Events. Speichere es als Vorlage und verwende es wieder.",
-          "srcHash": "93b8c404475d"
-        },
-        "fr": {
-          "title": "Programme d'événement",
-          "body": "Créez un programme sur plusieurs jours pour vos événements. Enregistrez-le comme modèle et réutilisez-le.",
-          "srcHash": "93b8c404475d"
-        },
-        "it": {
-          "title": "Programma degli eventi",
-          "body": "Crea un programma di più giorni per i tuoi eventi. Salvalo come modello e riutilizzalo.",
-          "srcHash": "93b8c404475d"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
-        "area": {
-          "key": "members",
-          "label": "Members"
-        },
-        "en": {
-          "title": "AI summaries of your members",
-          "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
-        },
-        "de": {
-          "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
-          "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
-          "srcHash": "5d1578dd63ee"
-        },
-        "fr": {
-          "title": "Résumés IA de vos membres",
-          "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
-          "srcHash": "5d1578dd63ee"
-        },
-        "it": {
-          "title": "Riepiloghi IA dei tuoi membri",
-          "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
-          "srcHash": "5d1578dd63ee"
         }
       }
     ]

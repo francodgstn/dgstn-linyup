@@ -33,6 +33,10 @@ import {
 // precedence, and these tests hold both halves against their source.
 
 const APPOINTMENTS = __dirname
+/** The appointment rail: everything between a chosen time and a booked one.
+ *  It was `AppointmentPicker` until the two public funnels merged; the screens
+ *  and the submits moved together, so the assertions follow them rather than
+ *  being deleted with the route. */
 const PICKER = join(
   __dirname,
   '..',
@@ -42,13 +46,10 @@ const PICKER = join(
   'apps',
   'web',
   'src',
-  'app',
-  '[locale]',
-  '(public)',
-  'public',
-  '[slug]',
-  'appointments',
-  'AppointmentPicker.tsx'
+  'components',
+  'booking',
+  'appointment',
+  'SlotBookingForm.tsx'
 )
 
 /** Strip comments so a grep cannot match prose. */
@@ -57,6 +58,23 @@ function stripComments(src: string): string {
 }
 
 const picker = () => stripComments(readFileSync(PICKER, 'utf8'))
+/** The shared caller model, which this rail's identity moved into when the
+ *  class funnel started sharing it (plan section 4). */
+const CALLER_MODEL = join(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  '..',
+  'apps',
+  'web',
+  'src',
+  'components',
+  'booking',
+  'identity',
+  'bookingCaller.ts'
+)
+const caller = () => stripComments(readFileSync(CALLER_MODEL, 'utf8'))
 const fn = (rel: string) => stripComments(readFileSync(join(APPOINTMENTS, rel), 'utf8'))
 
 describe('THE APPOINTMENT RAIL PRICES THE CALLER IT ACTUALLY HAS', () => {
@@ -141,18 +159,26 @@ describe('THE PICKER FEEDS THE RESOLVER THE SIGNED-IN CONTACT', () => {
   })
 
   it('the caller is DERIVED every render, session first — the server\'s own precedence', () => {
-    const src = picker()
-    assert.ok(
-      src.includes('const caller: Caller = sessionCaller ?? verified ?? GUEST'),
-      'session must outrank an OTP result here because it outranks it in ' +
-        'resolveAppointmentCaller; and it must be derived, not stored, or a sign-in ' +
-        'through the corner pill leaves the screen one render behind the server'
+    assert.match(
+      picker(),
+      /const caller = resolveBookingCaller\(\{/,
+      'it must be derived, not stored, or a sign-in through the corner pill leaves ' +
+        'the screen one render behind the server'
     )
+    // The order itself is the shared model's now, so it is asserted there.
+    assert.match(
+      caller(),
+      /if \(isAuthenticated && sessionContact\) \{[\s\S]*?return \{\s*kind: 'session'/,
+      'session must outrank an OTP result because it outranks it in ' +
+        'resolveAppointmentCaller, which returns from the session branch before it ' +
+        'reads authenticatedContactId or contactDetails'
+    )
+    assert.match(caller(), /return verified \?\? GUEST/)
   })
 
   it('the snapshot is built from the caller, so a member is never quoted as a guest', () => {
     const src = picker()
-    const quote = src.slice(src.indexOf('const quote = (c: Caller)'))
+    const quote = src.slice(src.indexOf('const quote = (c: BookingCaller)'))
     assert.ok(quote.length > 0, 'the one price computation must take the caller')
     const snapshot = quote.slice(0, quote.indexOf('promoApplied'))
     assert.match(snapshot, /authenticated:\s*c\.kind !== 'guest'/)
@@ -160,8 +186,8 @@ describe('THE PICKER FEEDS THE RESOLVER THE SIGNED-IN CONTACT', () => {
   })
 
   it('a contact session sends NO identity in the body — the token is the proof', () => {
-    const src = picker()
-    const body = src.slice(src.indexOf('function bodyIdentity('), src.indexOf('function waiverIdentity('))
+    const src = caller()
+    const body = src.slice(src.indexOf('export function bodyIdentity('), src.indexOf('export function waiverIdentity('))
     assert.match(
       body,
       /if \(caller\.kind === 'session'\) return \{\}/,
@@ -255,8 +281,17 @@ describe('AND WHEN THE CALLER MOVES, EVERYTHING SAID TO THE OLD ONE GOES WITH IT
         'divergence points the unsafe way: the screen quotes a benefit the member no ' +
         'longer holds and the server charges the real figure'
     )
+    // The live read has to REACH the caller, which is what prices the booking.
+    assert.match(src, /resolveBookingCaller\(\{[^}]*\bliveHeld\b/)
     // The fallback direction matters: a FAILED read is not an empty entitlement.
-    assert.match(src, /liveHeld \?\?\s*\(sessionContact\.subscription_type_id/)
+    // The rule moved to the shared module when the class funnel started sharing
+    // it, so it is checked THERE rather than dropped.
+    assert.match(
+      caller(),
+      /if \(liveHeld\) return liveHeld\s*\n\s*return sessionContact\?\.subscription_type_id/,
+      'heldFrom must prefer the live union and fall back to the frozen slot, never ' +
+        'the other way round'
+    )
     assert.match(
       src,
       /const heldPending = caller\.kind === 'session' && hasAnyPrice && !heldSettled/,

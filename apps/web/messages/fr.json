@@ -1743,7 +1743,7 @@
   },
   "Roles": {
     "title": "Rôles et autorisations",
-    "coachSubtitle": "Choisissez ce qu'un coach peut faire. Tout ce qui ne figure pas ici n'est jamais accordé au rôle.",
+    "coachSubtitle": "Choisissez ce qu'un coach peut faire. Les lignes verrouillées ne peuvent jamais être accordées au rôle.",
     "coachAssignHint": "Qui compte comme coach se règle par personne dans Réglages → Membres, indépendamment de ce rôle.",
     "coachEligibleTitle": "Qui peut être coach",
     "coachEligibleHint": "Ces rôles peuvent être assignés comme coach d'un contact.",
@@ -1763,7 +1763,15 @@
     "badgeCustomizable": "Défini par vous",
     "badgeFixed": "Intégré",
     "fixedRoleNote": "Intégré à Linyup et identique pour tous les studios : non modifiable. Ce que ce rôle ne peut pas faire figure aussi dans la liste, désactivé.",
-    "allScopeNote": "Tout le studio"
+    "allScopeNote": "Tout le studio",
+    "group_contacts": "Contacts",
+    "group_schedule": "Planning",
+    "group_studio": "Studio",
+    "group_administration": "Administration",
+    "lock_owners_only": "Propriétaires uniquement",
+    "lock_owners_and_managers": "Propriétaires et gestionnaires",
+    "apiOnlyTag": "API uniquement",
+    "apiOnlyTitle": "Restreint uniquement ce qu'une clé API Linyup peut lire. Cela ne change rien à ce que ce rôle voit dans l'application."
   },
   "Capabilities": {
     "contacts_view": "Voir les contacts",
@@ -5806,7 +5814,9 @@
     "coursesPlacesLeft": "{count, plural, one {# place restante} other {# places restantes}}",
     "coursesSoldOut": "Complet",
     "coursesClosed": "Inscriptions fermées",
-    "coursesJoinWaitlist": "Me prévenir si une place se libère"
+    "coursesJoinWaitlist": "Me prévenir si une place se libère",
+    "chooseCategorySubtitle": "Que souhaitez-vous réserver ?",
+    "choosePlaceSubtitle": "Choisissez où vous souhaitez venir."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",

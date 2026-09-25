@@ -28,16 +28,6 @@ export interface BookingChromeValue {
    * where to come back to before handing off.
    */
   navigate: (href: string) => void
-  /**
-   * Swap the CLASS funnel for the APPOINTMENT one, in place.
-   *
-   * Appointments are a separate flow (a per-provider slot picker), but from the
-   * visitor's point of view picking "Personal Training" off the activity list is
-   * just the next step — bouncing them to a full page mid-overlay is jarring.
-   * Only overlay hosts provide this; page chrome leaves it undefined and the
-   * flow navigates as before.
-   */
-  switchToAppointments?: (activityId: string) => void
 }
 
 const PAGE_CHROME: BookingChromeValue = {

@@ -297,19 +297,6 @@ export default function PublicSite({
     []
   )
 
-  /**
-   * Swap the panel from the class funnel to the appointment picker in place.
-   *
-   * `replace`, not `push`: the visitor is refining the SAME booking intent, not
-   * taking a step they should be able to Back out of into a half-state — Back
-   * should still close the overlay in one press.
-   */
-  const switchToAppointments = useCallback((activityId: string) => {
-    const intent: BookIntent = { kind: 'appointment', activityId }
-    setBookIntent(intent)
-    writeBookUrl(intent, 'replace')
-  }, [])
-
   const closeBooking = useCallback(() => {
     setBookIntent(null)
     const params = new URLSearchParams(window.location.search)
@@ -413,7 +400,6 @@ export default function PublicSite({
         slug={slug}
         intent={bookIntent}
         paidSessionId={paidSessionId}
-        onSwitchToAppointments={switchToAppointments}
         onClose={closeBooking}
       />
     </>
