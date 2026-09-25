@@ -74,6 +74,7 @@ import { triggerScoresRebuild } from '../gamification/triggerScoresRebuild'
 import { checkSenderDomain, registerSenderDomain, useManagedSender } from '../mail/domainAuth'
 import { sendTestEmail } from '../mail/sendTestEmail'
 import { applyOfferingDraft, draftOfferings } from '../offer/draftOfferings'
+import { applyOfferingSetup } from '../offer/offeringSetup'
 import { unlockPlugin } from '../plugins/unlockPlugin'
 import { confirmReferral, generateReferralCodes } from '../referrals'
 import { cancelSession, generateRecurringSessions, updateRecurringSession } from '../sessions'
@@ -188,6 +189,7 @@ export const rpcStudio = callableRouter(
     useManagedSender,
     applyOfferingDraft,
     draftOfferings,
+    applyOfferingSetup,
     unlockPlugin,
     confirmReferral,
     generateReferralCodes,

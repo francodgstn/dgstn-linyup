@@ -72,6 +72,7 @@ import {
   Pencil,
   Plus,
   Sparkles,
+  Wand2,
   Trash2,
   type LucideIcon,
   Users,
@@ -144,6 +145,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tip } from '@/components/ui/tip'
 import { AiDraftDialog } from '@/components/offer/AiDraftDialog'
+import { OfferingWizardDialog } from '@/components/offer/OfferingWizardDialog'
 import {
   PaneDirtyProvider,
   usePaneDirtyState,
@@ -242,11 +244,14 @@ function CreateAction({
   tabs,
   onOpen,
   onDraftWithAi,
+  onGuide,
 }: {
   tabs: { key: TabKey }[]
   onOpen: (kind: 'activity' | 'plan') => void
   /** Absent unless the `ai-offer-drafting` module is installed and the reader is the owner. */
   onDraftWithAi?: () => void
+  /** The setup wizard: the help centre's walkthrough, creating what it describes. */
+  onGuide: () => void
 }) {
   const t = useTranslations('OfferCatalogue')
   const has = (k: TabKey) => tabs.some((x) => x.key === k)
@@ -289,14 +294,18 @@ function CreateAction({
             this menu — but it makes SEVERAL records from a sentence where every
             row above makes one from a form, and that difference is worth a
             rule. */}
+        <DropdownMenuSeparator />
+        {/* The guide asks what the studio wants to offer, in its words, and
+            creates it: one thing per run, reviewed before anything is written. */}
+        <DropdownMenuItem onClick={onGuide}>
+          <Wand2 className="mr-2 h-4 w-4" />
+          {t('setUpWithGuide')}
+        </DropdownMenuItem>
         {onDraftWithAi && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onDraftWithAi}>
-              <Sparkles className="mr-2 h-4 w-4" />
-              {t('aiDraft')}
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem onClick={onDraftWithAi}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            {t('aiDraft')}
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -474,6 +483,7 @@ export default function CataloguePage() {
   const { isInstalled } = useInstalledPlugins()
   const aiDrafting = isInstalled(AI_MODULES.offerDrafting) && teamRole === 'owner'
   const [aiOpen, setAiOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   const { data: activities = [], isLoading: loadingActivities } = useActivities(currentTeamId)
   // The studio's default drop-in, for every class that follows it — the rail
@@ -1198,6 +1208,7 @@ export default function CataloguePage() {
               tabs={tabs}
               onOpen={setCreating}
               onDraftWithAi={aiDrafting ? () => setAiOpen(true) : undefined}
+              onGuide={() => setGuideOpen(true)}
             />
             </div>
           ) : undefined
@@ -2070,6 +2081,23 @@ export default function CataloguePage() {
           // The records exist by the time this runs — the applier commits one
           // batch — so the rail only has to re-read.
           onApplied={() => refreshQueries(qc, ['activities'], ['subscription-types'])}
+        />
+      )}
+
+      {currentTeamId && (
+        <OfferingWizardDialog
+          open={guideOpen}
+          onOpenChange={setGuideOpen}
+          teamId={currentTeamId}
+          currency={currency}
+          plans={plans}
+          activities={activities}
+          bookingSettings={bookingSettings}
+          onHandoff={(kind) => (kind === 'course' ? setCourseEditing('new') : setCreating('activity'))}
+          onCreated={({ kind, id }) => {
+            refreshQueries(qc, ['activities'], ['subscription-types'])
+            select({ kind: kind === 'plan' ? 'plan' : 'activity', id })
+          }}
         />
       )}
 

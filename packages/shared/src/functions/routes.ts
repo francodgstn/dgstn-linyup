@@ -187,6 +187,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   useManagedSender: 'rpcStudio',
   applyOfferingDraft: 'rpcStudio',
   draftOfferings: 'rpcStudio',
+  applyOfferingSetup: 'rpcStudio',
   unlockPlugin: 'rpcStudio',
   confirmReferral: 'rpcStudio',
   generateReferralCodes: 'rpcStudio',

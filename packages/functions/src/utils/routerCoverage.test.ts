@@ -87,6 +87,8 @@ const ALIAS_REMOVED = new Set<string>([
  *  and the deploy runs with --force. */
 const BORN_ROUTED = new Set<string>([
   'getPaymentReceiptUrl',
+  // The offering setup wizard, routed from the day it existed.
+  'applyOfferingSetup',
   // Course blocks, routed from the day they existed, so no alias to retire.
   'createCourseBlock',
   'updateCourseBlock',
