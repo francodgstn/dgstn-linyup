@@ -1179,7 +1179,8 @@
     "planSource_staff": "Zugewiesen",
     "planSource_purchase": "Gekauft",
     "planSource_gateway": "Ausserhalb von Linyup bezahlt",
-    "planSource_import": "Importiert"
+    "planSource_import": "Importiert",
+    "planPaymentsCount": "{count, plural, one {# Zahlung} other {# Zahlungen}}"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -5035,7 +5036,10 @@
     "stripeReceiptNone": "Stripe hat für diese Zahlung keinen Beleg.",
     "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden.",
     "lineKind_course_block": "Kurs",
-    "selectCourseBlock": "Welcher Kurs"
+    "selectCourseBlock": "Welcher Kurs",
+    "planLinkExact": "Der Plan, für den diese Zahlung bezahlt wurde. Öffnet seine Karte.",
+    "planLinkByType": "Über den Plantyp zugeordnet: Diese Zahlung nennt ihren Plan, nicht das bezahlte Abo. Öffnet die Karte.",
+    "planLinkFallback": "Plan"
   },
   "PaymentErrors": {
     "setupIncomplete": "Die Einrichtung des Zahlungskontos ist noch nicht abgeschlossen, daher konnte dies nicht durchgeführt werden. Einrichtung unter Einstellungen → Zahlungen abschliessen.",

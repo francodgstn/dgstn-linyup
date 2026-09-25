@@ -1179,7 +1179,8 @@
     "planSource_staff": "Assigned",
     "planSource_purchase": "Bought",
     "planSource_gateway": "Paid outside Linyup",
-    "planSource_import": "Imported"
+    "planSource_import": "Imported",
+    "planPaymentsCount": "{count, plural, one {# payment} other {# payments}}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -5035,7 +5036,10 @@
     "stripeReceiptNone": "Stripe has no receipt for this payment.",
     "stripeReceiptError": "Could not fetch the Stripe receipt.",
     "lineKind_course_block": "Course",
-    "selectCourseBlock": "Which course"
+    "selectCourseBlock": "Which course",
+    "planLinkExact": "The plan this payment paid for. Opens its card.",
+    "planLinkByType": "Matched by plan type: this payment records its plan, not the subscription it paid. Opens the card.",
+    "planLinkFallback": "Plan"
   },
   "PaymentErrors": {
     "setupIncomplete": "Payment account setup isn't finished yet, so this couldn't go through. Finish setup in Settings → Payments.",

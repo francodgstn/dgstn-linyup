@@ -1179,7 +1179,8 @@
     "planSource_staff": "Assegnato",
     "planSource_purchase": "Acquistato",
     "planSource_gateway": "Pagato fuori da Linyup",
-    "planSource_import": "Importato"
+    "planSource_import": "Importato",
+    "planPaymentsCount": "{count, plural, one {# pagamento} other {# pagamenti}}"
   },
   "TeamAffiliations": {
     "title": "Affiliazioni",
@@ -5035,7 +5036,10 @@
     "stripeReceiptNone": "Stripe non ha una ricevuta per questo pagamento.",
     "stripeReceiptError": "Impossibile recuperare la ricevuta Stripe.",
     "lineKind_course_block": "Corso",
-    "selectCourseBlock": "Quale corso"
+    "selectCourseBlock": "Quale corso",
+    "planLinkExact": "Il piano pagato con questo pagamento. Apre la sua scheda.",
+    "planLinkByType": "Abbinato per tipo di piano: questo pagamento indica il suo piano, non l'abbonamento pagato. Apre la scheda.",
+    "planLinkFallback": "Piano"
   },
   "PaymentErrors": {
     "setupIncomplete": "La configurazione del conto di pagamento non è ancora completata, quindi l'operazione non è riuscita. Completare la configurazione in Impostazioni → Pagamenti.",
