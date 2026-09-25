@@ -55,7 +55,7 @@ export interface DaySheetEntry {
 /**
  * The roster: the people who are actually expected in the room.
  *
- * Cancelled and rebooked seats are gone. So is an UNCLAIMED waitlist offer —
+ * Canceled and rebooked seats are gone. So is an UNCLAIMED waitlist offer —
  * the promoter's hold is a real booking document that really occupies a seat
  * (`heldOfferSeats` below counts it), but its holder has not taken it up and is
  * printed on the waiting line instead. Listing them in both places is the same

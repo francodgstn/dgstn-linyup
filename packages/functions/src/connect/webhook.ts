@@ -233,7 +233,7 @@ async function resolveContactId(
 }
 
 /**
- * Materialise a lesson-credit grant for a paid credit pack (metadata.credits on
+ * Materialize a lesson-credit grant for a paid credit pack (metadata.credits on
  * a one-off membership charge). Doc id = paymentIntentId, so the two webhook
  * events a purchase produces (checkout.session.completed + payment_intent.succeeded)
  * converge on one grant — `create()` refuses the second write. The
@@ -673,7 +673,7 @@ async function handlePaymentIntent(
       // whatever is already recorded, then the default — so the checkout
       // handler's 'membership' is never overwritten with 'payment'.
       purpose: md.purpose ?? (prior?.purpose as string | undefined) ?? 'payment',
-      // Product sales (kind === 'product') carry the catalogue reference so the
+      // Product sales (kind === 'product') carry the catalog reference so the
       // payments dashboard can show what was bought + which variant.
       ...(md.kind === 'product'
         ? {
@@ -766,7 +766,7 @@ async function handlePaymentIntent(
   )
 
   // A successful one-off membership charge updates the buyer's contact membership
-  // (and materialises the credit grant when the price is a credit pack).
+  // (and materializes the credit grant when the price is a credit pack).
   if (status === 'succeeded') {
     const months = md.includedMonths ? parseInt(md.includedMonths, 10) : 0
     await applyMembership(team.teamId, md, {
@@ -1194,7 +1194,7 @@ async function handleInvoice(
   //
   // Stripe gives no delivery-order guarantee between the two, so a late or
   // retried `invoice.paid` landing after `customer.subscription.deleted` would
-  // flip a cancelled subscription back to 'active' — resurrecting a membership
+  // flip a canceled subscription back to 'active' — resurrecting a membership
   // nobody is paying for, and re-granting the entitlement behind it.
   //
   // Nothing is lost by staying out of it: the status an invoice implies is
@@ -1256,7 +1256,7 @@ async function handleInvoice(
     // what was bought. It matters because Stripe gives no ordering guarantee: an
     // `invoice.paid` that lands before the `customer.subscription.*` event which
     // stamps these fields finds a member_subscriptions doc that does not carry
-    // them yet, and the payment row is then labelled from nothing.
+    // them yet, and the payment row is then labeled from nothing.
     //
     // LABELS ONLY, deliberately. `contactId` is NOT taken from here even though
     // the metadata carries one: metadata is client-supplied at checkout creation,
@@ -1280,7 +1280,7 @@ async function handleInvoice(
         // OMITTED, not nulled, when unknown — the same rule `contactId` above
         // follows and for the same reason. This row is written with
         // `{merge: true}` on a document the checkout path may already have
-        // labelled correctly, so an unconditional `?? null` is not "no opinion",
+        // labeled correctly, so an unconditional `?? null` is not "no opinion",
         // it is an opinion that overwrites a resolved value with nothing.
         ...(typeName ? { subscriptionTypeName: typeName } : {}),
         purpose: 'membership',
@@ -1538,12 +1538,12 @@ async function handleCheckoutCompleted(
               idempotencyKey: `dup-refund:${subId}`,
             })
           } else {
-            // Money, not display: the subscription IS cancelled above, so a
+            // Money, not display: the subscription IS canceled above, so a
             // charge we cannot name is a charge nobody gives back. This branch
             // ran silently for every duplicate while the PaymentIntent was
             // unreachable — never let it be quiet again.
             console.error(
-              `[connect] duplicate subscription ${subId} cancelled but its charge could NOT be ` +
+              `[connect] duplicate subscription ${subId} canceled but its charge could NOT be ` +
                 `resolved — the member has paid and has NOT been refunded. Refund by hand ` +
                 `(team=${team.teamId}, contact=${contactId}).`
             )
@@ -1559,12 +1559,12 @@ async function handleCheckoutCompleted(
       // Say which of the two actually happened. The refund is CONDITIONAL — it
       // is skipped whenever the PaymentIntent could not be resolved, and the
       // branch above logs an error saying the member has NOT been refunded. A
-      // success line that claims "cancelled + refunded" regardless contradicts
+      // success line that claims "canceled + refunded" regardless contradicts
       // that error five lines up, and the cheerful line is the one a reader
       // believes.
       console.log(
         `[connect] duplicate same-type subscription ${subId} (type=${md.subscriptionTypeId}, ` +
-          `contact=${contactId}) — cancelled, ` +
+          `contact=${contactId}) — canceled, ` +
           (latestPaymentIntentId
             ? `refunded (pi=${latestPaymentIntentId})`
             : `NOT refunded (charge unresolved — needs a manual refund)`)
@@ -1599,7 +1599,7 @@ async function handleCheckoutCompleted(
     if (piId) {
       await memberPaymentRef(team.teamId, piId).set({ contactId }, { merge: true })
       await stampFinanceContact(team.teamId, piId, contactId)
-      // Credit pack purchase → materialise the grant (idempotent vs the
+      // Credit pack purchase → materialize the grant (idempotent vs the
       // payment_intent.succeeded sibling event; doc id = piId).
       await applyCreditGrant(team.teamId, contactId, md, piId)
     }
@@ -1644,7 +1644,7 @@ async function handleCheckoutCompleted(
   // FINAL state rather than having to go first.
   //
   // Both `return`s above skip it correctly: no contact means nobody to write to,
-  // and a duplicate same-type subscription has just been cancelled and refunded
+  // and a duplicate same-type subscription has just been canceled and refunded
   // — announcing that one would be a receipt for money that has gone back.
   await sendMembershipPurchaseReceipt({
     teamId: team.teamId,
@@ -1661,7 +1661,7 @@ async function handleCheckoutCompleted(
     recurring: session.mode === 'subscription',
     // Only the ONE-OFF rail: there `membershipExpiration` is the run of months
     // the payment included. On the recurring rail the same variable holds the
-    // period end, which is a renewal date, not an "included until" — labelling
+    // period end, which is a renewal date, not an "included until" — labeling
     // one as the other is exactly the confusion this receipt should not add.
     validUntil: session.mode === 'subscription' ? null : (membershipExpiration?.toDate() ?? null),
     paid: amountRappen > 0 ? { amount: amountRappen / 100, currency: sessionCurrency } : null,
@@ -1784,7 +1784,7 @@ async function handleProductCheckout(
   // THE RECEIPT (UX-77) — ALWAYS ON; see connect/purchaseReceipts.ts. It names
   // what was bought and says what happens next, which for a product is "the
   // studio arranges handover" — the truth, because nothing in the product model
-  // carries fulfilment or collection terms and the checkout collects no address.
+  // carries fulfillment or collection terms and the checkout collects no address.
   //
   // WHERE IT SITS: after the payment stamps and before the activity-log tail.
   // This handler has no short-circuiting redelivery guard (its two early
@@ -1833,8 +1833,8 @@ async function handleProductCheckout(
  *
  * The beats that matter, in order:
  *
- * 1. IDEMPOTENT ON REDELIVERY. Confirming an already-confirmed enrolment is a
- *    no-op rather than a second place, because the enrolment's doc id is the
+ * 1. IDEMPOTENT ON REDELIVERY. Confirming an already-confirmed enrollment is a
+ *    no-op rather than a second place, because the enrollment's doc id is the
  *    contact id and this only ever moves it from `hold` to `enrolled`.
  * 2. RE-CHECK THE PLACE. The hold may have lapsed while the buyer was paying
  *    (a slow card, a closed tab reopened), and a lapsed hold frees its place
@@ -1906,11 +1906,11 @@ async function handleCourseBlockCheckout(
   }
 
   // A WAITING-LIST CLAIM, settled. Two writes, and both are owed whether or not
-  // the metadata carries the token, because the enrolment may have been minted
+  // the metadata carries the token, because the enrollment may have been minted
   // as an offer either way.
   //
   // Clearing the claim fields is not tidying: `takeCourseBlockPlace` merges, so
-  // a settled enrolment would otherwise keep `waitlist_claim` and a
+  // a settled enrollment would otherwise keep `waitlist_claim` and a
   // `claim_expires_at` in the past. The class rail learned what that costs, a
   // leftover claim marker hides the person from the reminder job, and here it
   // would also make the sweep try to release a place they have paid for.
@@ -1928,8 +1928,8 @@ async function handleCourseBlockCheckout(
     .doc(contactId)
   const [, queueEntry] = await to(queueEntryRef.get())
   if (queueEntry?.exists && queueEntry.get('status') === 'offered') {
-    // The entry is a DERIVED VIEW of the enrolment, so it is set to what the
-    // enrolment now says. Left as 'offered' it would sit there for ever and the
+    // The entry is a DERIVED VIEW of the enrollment, so it is set to what the
+    // enrollment now says. Left as 'offered' it would sit there for ever and the
     // hourly sweep would try to hand the place on.
     await to(
       queueEntryRef.update({
@@ -2436,7 +2436,7 @@ async function handleDropInCheckout(
   // THE RECEIPT (UX-76), and it goes FIRST of the post-confirm effects.
   //
   // ALWAYS ON — not behind the `booking_confirmation` toggle the FREE path
-  // honours; see the header of booking/paidConfirmation.ts for why the two
+  // honors; see the header of booking/paidConfirmation.ts for why the two
   // differ on purpose. Past both refund branches above (duplicate charge, class
   // full), which return before here, so it only ever announces a seat the buyer
   // actually got.
@@ -2513,7 +2513,7 @@ async function handleDropInCheckout(
 
 /**
  * ONE PAID DATE, CONFIRMED: the hold confirmed in place (case 2), re-acquired
- * when it lapsed or was cancelled (case 3), or reported when the slot was
+ * when it lapsed or was canceled (case 3), or reported when the slot was
  * retaken or the session is gone (case 4) so the caller can refund. Extracted
  * so a basket runs the very same cases once per date; a one-date payment calls
  * it once, exactly as before.
@@ -2604,7 +2604,7 @@ async function confirmPaidAppointmentSlot(params: {
       })
       confirmed = true
     } else {
-      // 3) Session cancelled or the hold expired (sweep/admin/checkout.session.expired)
+      // 3) Session canceled or the hold expired (sweep/admin/checkout.session.expired)
       // — RE-ACQUIRE, rebuilding the session doc from the swept doc's OWN fields
       // (the what/when — activityName/providerId/location/… — are all still on
       // it, only status differs). Conflict (slot retaken) → refund.
@@ -2688,7 +2688,7 @@ async function confirmPaidAppointmentSlot(params: {
  *   1. Already confirmed with a DIFFERENT payment_intent_id → a duplicate charge
  *      for an already-paid slot (two tabs) — refund it.
  *   2. Hold still live (not expired) → CONFIRM in place (the common case).
- *   3. Session cancelled/expired-hold (swept, admin-cancelled, lapsed) →
+ *   3. Session cancelled/expired-hold (swept, admin-canceled, lapsed) →
  *      RE-ACQUIRE via the same overlap-safe slot transaction, rebuilt from the
  *      swept doc's own fields (still all present, only status differs).
  *      Conflict (slot retaken) → refund.
@@ -3158,9 +3158,9 @@ async function handleAppointmentBasketCheckout(
  *    used to cancel the session and delete the booking on PRESENCE alone, which
  *    is unsound at a deterministic, SHARED session id: a retry by the same
  *    contact rewrites the hold in place (`allowRewriteByHolder`), so an expiry
- *    for the SUPERSEDED attempt cancelled the hold the retry's live, payable
+ *    for the SUPERSEDED attempt canceled the hold the retry's live, payable
  *    session was guarding — the buyer pays for an appointment that has just been
- *    cancelled out from under them.
+ *    canceled out from under them.
  *
  * Phase 3 turned that from rare into likely: a promo refresh EXPIRES the
  * superseded Checkout Session at Stripe before writing anything, so this event
@@ -3186,7 +3186,7 @@ async function handleCheckoutExpired(session: StripeWebhookPayload<StripeCheckou
     }
   }
 
-  // …and the promo reservation, for ANY kind, beside its gift-card neighbour.
+  // …and the promo reservation, for ANY kind, beside its gift-card neighbor.
   //
   // THIS IS THE PRIMARY RELEASE PATH FOR A PROMO SLOT, not a nicety on top of
   // lazy expiry, and the distinction is the cap. This event is POSITIVE EVIDENCE

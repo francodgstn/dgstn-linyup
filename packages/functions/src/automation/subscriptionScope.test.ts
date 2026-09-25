@@ -1,10 +1,10 @@
-// The subscription-type scope has to be honoured by everything that OFFERS it.
+// The subscription-type scope has to be honored by everything that OFFERS it.
 //
 // It spans the functions/web boundary for the same reason connect/commitSites.test.ts
 // and automation/delayedRules.test.ts do: that boundary is where corrections stop
-// travelling. `subscription_cancel_requested` shipped emitting a subscriptionTypeId
+// traveling. `subscription_cancel_requested` shipped emitting a subscriptionTypeId
 // delta that `fireEventRules` never matched on, so a rule narrowed to one plan fired
-// when any plan was cancelled. Nothing typed catches that — the delta field is
+// when any plan was canceled. Nothing typed catches that — the delta field is
 // optional, the branch is a valid boolean expression, and the rule fires; it is only
 // the NARROWING that is missing. It was found by driving the emulator.
 //

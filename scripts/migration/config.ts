@@ -13,7 +13,7 @@ export const ORG_NAME = 'HMD'
  * THE FEDERATION'S OTHER ADMINS — people who run HMD itself, beyond whoever
  * ran the migration (`--org-admin-email`, the org's `createdBy`).
  *
- * A standing fact about the organisation, not a property of a run: these people
+ * A standing fact about the organization, not a property of a run: these people
  * are org admins whoever launches the import and however often it is re-run, so
  * it belongs here with the other HMD facts rather than on the command line
  * where it could be forgotten on the wave that matters.
@@ -169,7 +169,7 @@ export const PLAN_GATED_TEAMS: string[] = [
 // the drift direction the comment above does NOT cover: an EXTRA member the
 // list does not know about is not warned about — it is simply never checked, so
 // the migration would have reported a healthy container while the belt ladder
-// silently failed to materialise. A stale entry is loud; a missing one is not.
+// silently failed to materialize. A stale entry is loud; a missing one is not.
 
 /**
  * hmd-lineup event type → Linyup event type.
@@ -324,7 +324,7 @@ export interface MigrationConfig {
    * cross-club count will not tie out and `verify` compares only what was
    * asked for. Never use it for a real target.
    *
-   * Absent ⇒ every club, which is the behaviour every existing invocation gets.
+   * Absent ⇒ every club, which is the behavior every existing invocation gets.
    */
   teams?: string[]
   /**

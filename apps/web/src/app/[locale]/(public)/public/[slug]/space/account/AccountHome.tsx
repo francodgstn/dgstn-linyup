@@ -20,7 +20,7 @@ import { callFunction } from '@/lib/callFunction'
 /** Whatever a birthdate has been stored as — a Timestamp, a `{seconds}` map,
  *  an ISO string — as a Date, or null. The `<input type="date">` value is then
  *  the app's LOCAL-parts `toDateInputValue`, not a UTC slice: the copy that
- *  used to live here serialised through `toISOString()`, which for any zone
+ *  used to live here serialized through `toISOString()`, which for any zone
  *  ahead of UTC turned a midnight birthdate into the previous day. */
 function toDate(v: unknown): Date | null {
   if (!v) return null
@@ -95,7 +95,7 @@ export default function AccountHome() {
     <div className="mt-6 space-y-4">
       {/* Membership — the SAME component Space Home renders, in its detailed
           variant. It was written twice, and the copies had already diverged:
-          only this one learned to say a membership is cancelling. */}
+          only this one learned to say a membership is canceling. */}
       <SpaceMembershipCard variant="full" />
 
       {/* Profile */}

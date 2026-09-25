@@ -37,7 +37,7 @@ export type BookingAction = 'confirm' | 'no_show' | 'cancel' | 'revert'
 // The windowed list (bookings page), the per-contact list (contact Bookings
 // tab), the reference band and the rebook picker's exclusion set all read the
 // same booking documents, so an action taken from ANY mount has to refresh
-// the others — a cancelled seat that stays in the exclusion set keeps a class
+// the others — a canceled seat that stays in the exclusion set keeps a class
 // out of the picker it is now free for, and a confirm taken from the contact
 // tab that never invalidates `contact-bookings` leaves that tab showing
 // "pending" until the tab remounts.

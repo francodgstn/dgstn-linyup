@@ -16,7 +16,7 @@ import { emulatorFirestoreHost } from './publicMetaRest'
  *
  *   1. `public_domains/{hostname}`            → which tenant claimed this host
  *   2. `teams/{id}/public_profile/{id}` → that studio's slug, or
- *      `org_site_published/{id}` → that organisation's (see below)
+ *      `org_site_published/{id}` → that organization's (see below)
  *
  * **Two reads rather than one, deliberately.** The slug could have been
  * denormalised onto the claim to save a hop, but a team's slug is EDITABLE
@@ -26,7 +26,7 @@ import { emulatorFirestoreHost } from './publicMetaRest'
  * is asked directly.
  *
  * Firestore REST, not the web SDK: SDK queries return empty in the Next server
- * (see `docs/` and the note in `lib/publicQueryError.ts`'s neighbours), and
+ * (see `docs/` and the note in `lib/publicQueryError.ts`'s neighbors), and
  * middleware has no admin credentials. Both documents are world-readable — the
  * profile already was, and `public_domains` allows `get` but denies `list` so a
  * hostname can be resolved by anyone who already has it while the customer list
@@ -53,7 +53,7 @@ export interface CustomDomainTenant {
    * The studio's WEBSITE owns the domain's root: its default public surface is
    * the site and the site is live. Then `/` is the site's home and every path
    * that is not another surface is a page of the site — see
-   * `toTenantInternalPath`'s `siteAtRoot`. Team only: an organisation's site
+   * `toTenantInternalPath`'s `siteAtRoot`. Team only: an organization's site
    * is always its root, so this is false for an org.
    */
   siteAtRoot: boolean
@@ -113,7 +113,7 @@ export async function resolveCustomDomainTenant(
     const scope = str(claim ?? undefined, 'scope') === 'org' ? 'org' : 'team'
 
     if (entityId && scope === 'org') {
-      // An ORGANISATION has no public_profile mirror — nothing writes one — so
+      // An ORGANIZATION has no public_profile mirror — nothing writes one — so
       // its slug comes from its published website, which is world-readable,
       // carries the slug, and is what its domain serves anyway: `/public/org/
       // {slug}` IS the site. No published site ⇒ nothing to serve ⇒ not a

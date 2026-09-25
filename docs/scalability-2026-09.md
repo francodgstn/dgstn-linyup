@@ -109,7 +109,7 @@ native project — dependencies with native code, config plugins, permissions �
   install on the same fingerprint.
 
 This changes how mobile work should be sequenced. **Land native surface area
-early and inert; iterate behaviour over the air.** Push notifications were built
+early and inert; iterate behavior over the air.** Push notifications were built
 that way in September: the module, the plugin, the permission plumbing and token
 registration all shipped in one store build while *nothing sends and nothing
 prompts*. Every subsequent decision — when to ask permission, which events are
@@ -194,17 +194,17 @@ More hands on this repo hit contention before they hit compute limits.
   namespaces still lose one another's work, with no conflict marker and no
   failing build. The `_pending/<lane>.json` fragment scheme exists for exactly
   this; see `apps/web/messages/_pending/README.md`.
-- **`i18n:check` now guards two catalogues** — web and mobile — and names the app
+- **`i18n:check` now guards two catalogs** — web and mobile — and names the app
   in every problem. The member app went English-only for months precisely
-  because nothing was watching it, and a second unguarded catalogue would have
-  repeated that. A catalogue with no messages directory is skipped, so removing
+  because nothing was watching it, and a second unguarded catalog would have
+  repeated that. A catalog with no messages directory is skipped, so removing
   one stays correct.
 - **One agent per app tree.** Two lanes editing `apps/mobile` concurrently will
   collide. Sequence them.
 - **A cross-boundary test must assert STRUCTURE, never COPY.** `deadEnds.test.ts`
   pinned the English sentence `'Failed to book session. Please try again.'` and
   the verbs `'book'` / `'check in'` in mobile source. Translation moved those
-  words into the catalogue and both guards broke — correctly, but for a reason
+  words into the catalog and both guards broke — correctly, but for a reason
   unrelated to what they protect. They now pin the *key* and the call shape.
   Whether a key resolves to real copy in four locales is `i18n:check`'s job; the
   overlap is what made them brittle.
@@ -230,7 +230,7 @@ A deliberate sweep of the three front ends against `packages/shared` — hand-
 copied functions, shadowing types, hardcoded paths, twinned components,
 twice-declared vocabularies — found twenty-three duplications beyond the
 three the first draft had noticed. Twelve had **already drifted**, meaning
-behaviour differed between surfaces today; eleven had not yet, meaning the next
+behavior differed between surfaces today; eleven had not yet, meaning the next
 edit to one copy would make them drift silently. What follows is the ledger,
 ranked drifted-first, then by cost. Everything marked DONE was verified at
 source before being changed.
@@ -239,13 +239,13 @@ source before being changed.
 
 | # | What | Where it now lives |
 |---|---|---|
-| 1 | One `GoalProgressBar` for admin and Space, colour as an optional palette | `apps/web/src/components/coaching/` |
+| 1 | One `GoalProgressBar` for admin and Space, color as an optional palette | `apps/web/src/components/coaching/` |
 | 2 | Mobile imports every path constant shared owns — `contacts`, `push_tokens`, `participants`, and then `goals`, `evaluations`, `performance_checkins`, `contact_alerts`, `contact_weekly_reports` (fourteen literal sites) | `@linyup/shared` paths |
 | 3 | Mobile's hydrated session type renamed `HydratedSession`, with a comment saying why it is not the wire shape's name | `apps/mobile/src/types` |
 | 4 | **Drifted, corrupting.** The Space goal form's UTC `toDateInputValue` copy (§1) replaced by the app's local-date one | `@/lib/format` |
 | 5 | **Drifted.** The member app never called `sortSteps`, so a goal's steps read in reverse there — the fix this document's own `sortSteps` header described as landed "on both surfaces" had missed the third | `sortSteps` via `goalContract` |
 | 6 | **Drifted.** The app showed a lapsed flat plan grant ("2 months included") as the member's current plan; it never called `planGrantIsCurrent`, which the admin and the Space both do. Three tests now pin the asymmetry: the date bites only on the fallback arm, never on a live subscription | `planGrantIsCurrent` |
-| 7 | **Drifted.** The leaderboard's trial-anonymisation rule was inline on both member surfaces with different fallbacks (`'?'` vs `'Unknown'`) and, on mobile, untyped stage comparisons — so a renamed stage would have de-anonymised trials in the app alone | `leaderboardDisplayName`, `isTrialStage` |
+| 7 | **Drifted.** The leaderboard's trial-anonymization rule was inline on both member surfaces with different fallbacks (`'?'` vs `'Unknown'`) and, on mobile, untyped stage comparisons — so a renamed stage would have de-anonymized trials in the app alone | `leaderboardDisplayName`, `isTrialStage` |
 | 8 | The archived-goal cascade — hide the goal AND its steps, or the steps surface as loose General to-dos — was hand-derived on all three surfaces, one of them re-spelling the predicate as `!!archived_at` | `visibleGoals` |
 | 9 | `ALL_STATUSES` was declared three times (the sweep counted two; the Space's evaluation dialog was the third) | `GOAL_STATUSES` beside the type |
 
@@ -255,13 +255,13 @@ The sweep reported "two default accents for the same studio" — the Space's
 `DEFAULT_ACCENT` (`#6366f1`) against a shared `#7c3aed`. Read at source,
 `defaultAccent` is a **per-preset** field: `#6366f1` belongs to `paper`, the
 default preset, and `#7c3aed` to `violet`. The Space *matches* the default. The
-`#7C3AED` in mobile is its Paper chrome colour, a different concept from the
+`#7C3AED` in mobile is its Paper chrome color, a different concept from the
 tenant accent, which mobile resolves through the same preset registry. Nothing
 to do, and worth recording so nobody "fixes" it into being wrong.
 
 ### Drifted — closed (2026-09-10), each with its care taken
 
-These had already parted in behaviour. Each was read at source on every
+These had already parted in behavior. Each was read at source on every
 surface before the shared owner was written, and the tests pin the rule the
 surfaces now share rather than the copy either one had.
 
@@ -295,11 +295,11 @@ surfaces now share rather than the copy either one had.
     `toLocale*` call in the Space is gone. Two things found on the way: the
     leaderboard's month label is now built from a mid-month noon-UTC instant,
     because a studio-zone formatter given local midnight on the 1st can land
-    on the neighbouring month; and the Account page's birthdate field carried
+    on the neighboring month; and the Account page's birthdate field carried
     a second `toISOString().slice(0, 10)` copy of the item-4 bug.
 14. **DONE — `shared/utils/color.ts`**: the WCAG pair (`relativeLuminance`,
     `contrastRatio`, `contrastText`, `isLightColor`) and the hex helpers,
-    moved whole from the app. The YIQ copies — the bio-link's text colour, the
+    moved whole from the app. The YIQ copies — the bio-link's text color, the
     site hero's, and a `contrastTextColor` nothing called — are retired;
     mid-tones now get the same answer on every surface.
 15. **DONE — one ISO-week generator.** `apps/web/src/lib/isoWeek.ts` keeps
@@ -320,7 +320,7 @@ all eight, and the site count on 21 was low.
 
 17. **DONE — Star ratings.** The two DOM copies are one `RatingStars`
     (`apps/web/src/components/coaching/`), read-only or interactive, with the
-    same optional-colour split as `GoalProgressBar`. The admin's filled star
+    same optional-color split as `GoalProgressBar`. The admin's filled star
     is now amber-500 — the hex the member app already used. The aria label
     moved to `Common`, since the component belongs to neither surface. Mobile
     keeps its Paper renderer: a different toolkit is not a duplicate.
@@ -343,11 +343,11 @@ all eight, and the site count on 21 was low.
     copy replaced (the sweep's eleven were thirteen), including the two mobile
     ones that had no `'?'` fallback; `avatarColor` in `@/lib/colors` (Tailwind
     classes, so web-only).
-22. **DONE, with one deliberate remainder — colour maps.** `GOAL_STATUS_COLORS`
+22. **DONE, with one deliberate remainder — color maps.** `GOAL_STATUS_COLORS`
     and `PERFORMANCE_PROFILE_COLORS` are in shared; mobile, the admin's profile
     badge and the admin's evaluation rows (which carried the same four hexes
     inline) read them. The admin's status *pill* keeps Tailwind light/dark
-    class pairs (`components/coaching/goalStatusStyles.ts`) derived by colour
+    class pairs (`components/coaching/goalStatusStyles.ts`) derived by color
     family, because one hex cannot also carry a dark-mode text contrast; the
     file says so and names its owner. The *label* maps stay per surface: they
     are i18n keys in three namespaces, and moving them is a copy migration,
@@ -393,7 +393,7 @@ all eight, and the site count on 21 was low.
 28. Org-scoped coaching dimensions; the editor is team-only.
 29. `resolveAffiliationTerm` resolves over a studio-authored map using the
     *device* locale, outside React. Rewiring it to the app's chosen locale is
-    a behaviour change, not a string migration — separate from item 11.
+    a behavior change, not a string migration — separate from item 11.
 
 ### Tripwires — so the ledger does not regrow (2026-09-11)
 
@@ -412,7 +412,7 @@ errors, so the next copy fails CI rather than waiting for the next sweep:
   form, waitlist, manage-booking, appointments, the event program print, the
   invitation token page) went through `usePublicFormat` first; two day-key
   displays moved to noon so a studio-zone formatter cannot land on the
-  neighbouring day. **Out of scope, on purpose:** the admin tree (`useTeamFormat`
+  neighboring day. **Out of scope, on purpose:** the admin tree (`useTeamFormat`
   exists; a hundred-plus sites, its own pass) and the member app (thirty-one
   sites; it can now read `TeamPublicProfile.regional`, so adopting
   `createRegionalFormatter` there is the natural next step).
@@ -420,7 +420,7 @@ errors, so the next copy fails CI rather than waiting for the next sweep:
 ### Decide, do not drift
 
 30. What the app sends. The capability exists; what is worth interrupting
-    somebody for is a product judgement, and it now ships over the air.
+    somebody for is a product judgment, and it now ships over the air.
 31. Whether the app's scope should shrink to what only an app can do, rather
     than tracking the portal.
 
@@ -431,7 +431,7 @@ errors, so the next copy fails CI rather than waiting for the next sweep:
 > The first analysis of this pass, written before the surfaces work above and
 > restored here on 2026-09-11 after the file had drifted from it. Claims marked
 > ✓ were re-verified at source that day; the cost figures are estimates and are
-> labelled as such. Section 14 records what has been done against it.
+> labeled as such. Section 14 records what has been done against it.
 
 ## 8. Bottom line
 
@@ -507,7 +507,7 @@ rather than something the dispatcher asserts: per-step `reminders_sent` markers,
 a weekly report that refuses to overwrite an existing week, and a no-show pass
 that only ever flips a `pending` booking. The deterministic task id
 (`{teamId}-{runId}`, tenant first — a run id is the most sequential prefix
-available, and Cloud Tasks degrades on those) is a cheap first line of defence
+available, and Cloud Tasks degrades on those) is a cheap first line of defense
 on top, never the guarantee. `utils/tenantFanOut.test.ts` pins all of it.
 
 **A bug found while wiring it, worth its own paragraph.** The obvious tenant
@@ -629,7 +629,7 @@ already run from `infra/workers/`), or Cloud CDN in front of the bucket. A
 secondary issue in the same place: `contactMayReadCourseMedia` in
 `storage.rules` does up to three `firestore.get()`/`exists()` calls per object
 request, each a billed read with latency — worth confirming how often that path
-is hit versus tokenised download URLs.
+is hit versus tokenized download URLs.
 
 **Brevo scales linearly with activity and is the second-biggest line.** Nothing
 wrong with it — budget it as a real per-tenant COGS, and note that if SMS
@@ -671,7 +671,7 @@ obtained.
 
 **Three rules this follows, each of which is the reason it is worth trusting:**
 
-- **Nothing is normalised into one "spend" number.** Money, credits and
+- **Nothing is normalized into one "spend" number.** Money, credits and
   characters are not comparable, and adding them would invent precision the
   inputs do not have.
 - **An absent block means "not measured", never zero** — the same contract
@@ -680,7 +680,7 @@ obtained.
   one place a confident wrong number does real damage. Pinned by a test that
   refuses a `?? 0` on any of these fields.
 - **Google needs no cost API, and there isn't one anyway.** `cloudbilling`
-  returns account metadata and the price catalogue, not consumption; the
+  returns account metadata and the price catalog, not consumption; the
   alternative is a BigQuery billing export (opt-in, delayed, billable). The
   budget already evaluates several times a day and its notification carries the
   cost, so the alarm and the feed are one mechanism.
@@ -774,10 +774,10 @@ invites the reader to assume zero.
 | # | Step | Size | Status |
 |---|---|---|---|
 | 1 | TTL policies on `mail_sends`, `automation_logs`, `activity_log` | hours | **DONE.** `LEDGER_RETENTION_DAYS` (shared) is the one policy; every writer stamps `expires_at` (`utils/ledgerRetention.ts`; the analytics module's own `logActivity` copy included); three `ttl: true` overrides in `firestore.index.json`, pinned against the policy by `ledgerRetention.test.ts`; `pnpm backfill:ledger-ttl` stamps the backlog. **Deploy order matters** and is in the script's header: functions first, one nightly capture, then the backfill, then the index overrides. |
-| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget: the alert PATH is fixed** (2026-09-12) — the budget carried no `all_updates_rule` at all, so alerts fell back to GCP's implicit billing-admin default and never reached the `alert_email` the error and uptime alerts use; they now route to that same channel with the billing-admin default kept on top. Every threshold was also `CURRENT_SPEND` (money already gone), so a `FORECASTED_SPEND` rule was added — the only kind that arrives in time to stop a runaway. `terraform output budget_alerts_named_recipient` is the honest answer, and one `alert_email` now fixes errors, uptime and budget together. **`budget_amount`: DECIDED 2026-09-18 (Franco) — the defaults stand** (prod 500, staging 100, sandbox 30 CHF), so this is settled rather than pending. The consequence is accepted and worth knowing: the 50 % actual-spend rule on prod lands at 250 CHF and will not fire in a normal pre-launch month, so **the FORECASTED_SPEND rule is what detects a runaway** and the budget's Pub/Sub feed — month-to-date spend on the Providers page, several times a day — is what replaced a tight ceiling as the early-warning line. Revisit on the first real tenants or after anything that changes the egress or invocation shape, per `infra/README.md` → "Picking `budget_amount`". Either way it sees the GOOGLE bill only — Brevo, the second-largest COGS line in §12, is a separate vendor and invisible to it. **App Check: DEFERRED by decision** (2026-09-12), not pending. reCAPTCHA Enterprise is a third-party provider with its own billing, and the web-flagged callables (grep them — see the runbook's Scope) are already IP-rate-limited (30/IP/hour, `submitForm` 10/form/IP/hour) behind a `payments_enabled` gate that fails closed — App Check adds defence against an attacker who defeats IP keying, and nothing else. Nothing is half-adopted: no key, flags false, key slot and both Google APIs commented out. The triggers and the provider-free alternative for the gift-card oracle are in `docs/app-check-rollout.md` → "Why it is still off". The rollout wiring it needed (the key's deployment slot, the BUILD-availability trap, the Enterprise provider swap) is done, so the flip is a cold start whenever wanted. |
+| 2 | App Check on + global `maxInstances` + budget alert | small | **`maxInstances: 20` DONE** (a cost ceiling, per function; a hot callable overrides locally). **Budget: the alert PATH is fixed** (2026-09-12) — the budget carried no `all_updates_rule` at all, so alerts fell back to GCP's implicit billing-admin default and never reached the `alert_email` the error and uptime alerts use; they now route to that same channel with the billing-admin default kept on top. Every threshold was also `CURRENT_SPEND` (money already gone), so a `FORECASTED_SPEND` rule was added — the only kind that arrives in time to stop a runaway. `terraform output budget_alerts_named_recipient` is the honest answer, and one `alert_email` now fixes errors, uptime and budget together. **`budget_amount`: DECIDED 2026-09-18 (Franco) — the defaults stand** (prod 500, staging 100, sandbox 30 CHF), so this is settled rather than pending. The consequence is accepted and worth knowing: the 50 % actual-spend rule on prod lands at 250 CHF and will not fire in a normal pre-launch month, so **the FORECASTED_SPEND rule is what detects a runaway** and the budget's Pub/Sub feed — month-to-date spend on the Providers page, several times a day — is what replaced a tight ceiling as the early-warning line. Revisit on the first real tenants or after anything that changes the egress or invocation shape, per `infra/README.md` → "Picking `budget_amount`". Either way it sees the GOOGLE bill only — Brevo, the second-largest COGS line in §12, is a separate vendor and invisible to it. **App Check: DEFERRED by decision** (2026-09-12), not pending. reCAPTCHA Enterprise is a third-party provider with its own billing, and the web-flagged callables (grep them — see the runbook's Scope) are already IP-rate-limited (30/IP/hour, `submitForm` 10/form/IP/hour) behind a `payments_enabled` gate that fails closed — App Check adds defense against an attacker who defeats IP keying, and nothing else. Nothing is half-adopted: no key, flags false, key slot and both Google APIs commented out. The triggers and the provider-free alternative for the gift-card oracle are in `docs/app-check-rollout.md` → "Why it is still off". The rollout wiring it needed (the key's deployment slot, the BUILD-availability trap, the Enterprise provider swap) is done, so the flip is a cold start whenever wanted. |
 | 3 | Convert the four sequential crons to Cloud Tasks dispatchers, `rollSessionSeries` as the template; `sendBookingReminders` first | ~a week | **DONE 2026-09-11** — all four, plus both of the reminder narrowings, on shared machinery (`utils/tenantFanOut.ts`). See §9 for the table and for the `archived_at` bug the wiring turned up. |
 | 4 | Decide course-video hosting before the plugin has real usage | decision | **DECIDED and DONE: embed-only** (§12). Rules refuse video uploads except the kiosk's standby media; the editor offers a video lesson YouTube / Vimeo / link only; the rules test pins both. Owed before deploy: a bucket scan for already-uploaded video. Hosted video later = paid add-on on zero-egress infra. |
-| 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labelled with the window it covers. |
+| 5 | `sent_cumulative` as a stored counter | small | **DONE.** Carried forward from the last snapshot that has one plus the days since; seeded once from the whole ledger; a failed snapshot read yields no block rather than a wrong total. The operator console's "Emails (total)" reads it, and a studio's figure is labeled with the window it covers. |
 
 Steps 1, 3, 4 and 5 are done, and so is step 2: both of its non-code items are
 now settled by decision rather than outstanding. **The prod budget keeps its 500
@@ -867,7 +867,7 @@ visible rows), **server list** (a callable or an index-backed cursor list),
 |---|---|---|---|---|---|---|
 | A1 | **Contacts page** | `useActiveContacts` — the whole live roster; filter presets, dynamic groups, attention sort and search all run over it in memory; **every row is rendered** (`contacts/page.tsx`, no windowing) | correct to ~2,000; the page is sub-second there | at 5,000 the render is the cost, not the read: seconds per filter change, and a 5,000-doc fetch per cache miss (2 min) | **DOM window** now (the one dependency to add: `@tanstack/react-virtual`, not yet in the tree); **materialized attention score** later (§18) | half a day / a week — **DONE 2026-09-11.** The list is DOM-windowed (`useWindowedList`, rows measured) above 120 rows; the read, the filters, the attention sort and the selection are untouched. The materialized score stays Phase 4. |
 | A2 | Contacts page, search panel | `useArchivedContacts` — all archived, grows with churn and never shrinks; also read by the command palette once armed | fine for years | a studio's archive outgrows its roster after ~3 years | **cap + more** ordered `archived_at desc`; search stays over the cached page | small — **DONE 2026-09-11.** The TAB pages (`useArchivedContactsPage`, the count from an aggregation) and says how many of how many are loaded; the sidebar SEARCH keeps the whole read, deliberately (UX-21): a search that only found the recently archived would have quietly stopped answering the question it exists for. |
-| A3 | Contacts page | Deleted tab — all deleted-not-yet-anonymised | shrinks when `anonymizeScheduledContacts` runs | bounded by the anonymisation delay; fine | none — record that the bound is the nightly job | — |
+| A3 | Contacts page | Deleted tab — all deleted-not-yet-anonymized | shrinks when `anonymizeScheduledContacts` runs | bounded by the anonymization delay; fine | none — record that the bound is the nightly job | — |
 | A4 | **Dashboard** | `usePreviewContacts` — the whole live roster on the landing page of every login, for the contacts card, demographics and the attention queue; **its own cache key**, so it is a second roster fetch beside A1's | two roster fetches per session, and more below | the roster is fetched once per distinct key: A1's hook, the dashboard, the session-detail / contact-groups / check-in trio, the affiliations page and the referrals page each hold their own copy | **one key** — every roster read goes through `useActiveContacts`, so a session holds ONE copy; **count** for the headcount and a materialized attention queue later | small / with A1 — **DONE 2026-09-11.** The dashboard reads `useActiveContacts` on the contacts page's cache entry, with the same coach scope; its own query is gone. A count aggregation was NOT added: every card derives from the roster (engagement bands, the attention queue), so a count would be a read on top of the read. |
 | A5 | Session detail, check-in panel | add-participant dialog + gated-roster badges — whole live roster, on open / when gated | fetched only when opened; a key of its own, shared with the contact-groups page and the check-in panel but not with A1 | fine at the expectation size | route through `useActiveContacts` (A4's one-key fix); a **server list** (prefix search) only if A1's ceiling moves | with A4 — **DONE 2026-09-11.** Both session-detail queries and the check-in panel read `useActiveContacts`; the three-segment key they shared among themselves is gone. |
 | A6 | Payments | `useActiveContacts` for the contact picker | shares A1's key | same as A5 | none | — |
@@ -877,7 +877,7 @@ visible rows), **server list** (a callable or an index-backed cursor list),
 | A10 | Affiliations | all non-deleted contacts (its own key), sorted in memory, `filtered` rendered whole | correct | same shape as A1 without the attention sort | **DOM window**; status filter in the query; A4's one key | small — **DONE 2026-09-11.** DOM-windowed tables (`useWindowedList`, uniform rows, no measuring). It keeps its OWN read, deliberately: it needs the archived too (a person who left may still hold a federation affiliation, and its notice reasons over every lifecycle), so `useActiveContacts` would be the wrong set. |
 | A11 | **Org affiliations** | all live contacts with an org affiliation **across every member studio** (`teamId in` chunks of 30) | correct for a 3-studio org | a 30-studio federation lists tens of thousands of people on one page | **expectation** — an org never lists a roster; it gets **counts** per studio and status (`getCountFromServer`) and drills down into one studio's page | a day, and a product decision — **Tables DOM-windowed 2026-09-11**; the counts + per-studio drill-down stay the Phase 4 decision. **The counts + per-studio drill-down landed 2026-09-11** — see §18.2. |
 | A12 | Documents plugin | `WaiverSigners` — all signers per document | correct | one row per member who ever signed; equals the roster | **cap + more** by `accepted_at desc` + search by contact | small — **DONE 2026-09-11.** DIFFERENTLY: the READ stays whole — the evidence line is a count over the whole signed population that no cheap query reproduces, and it is roster-scale — while the TABLE pages a hundred rows at a time. |
-| A13 | Payments | `useMemberSubscriptions` — every subscription incl. cancelled; the hook's own header names the fix | correct, and roster-like by design | headcount **plus churn**: after three years the ended rows outnumber the live | **status filter** — live statuses by default, "show ended" pages the rest | small — **DONE 2026-09-11.** `status in` the live set (`LIVE_SUBSCRIPTION_STATUSES`, now on the hook); the page never listed an ended row, so only the read changed. |
+| A13 | Payments | `useMemberSubscriptions` — every subscription incl. canceled; the hook's own header names the fix | correct, and roster-like by design | headcount **plus churn**: after three years the ended rows outnumber the live | **status filter** — live statuses by default, "show ended" pages the rest | small — **DONE 2026-09-11.** `status in` the live set (`LIVE_SUBSCRIPTION_STATUSES`, now on the hook); the page never listed an ended row, so only the read changed. |
 
 ### B. LOG — grows with time
 
@@ -919,8 +919,8 @@ the onboarding conversation before a customer finds it.
    nightly field on the contact plus an index — and the page becomes a
    server list with a search box. **That is a week, not a limit.** The
    expectation to set: the free, coach and studio tiers are for studios of up
-   to about 3,000 live contacts; larger studios are an organisation-tier
-   conversation, and an organisation lists per studio (next point).
+   to about 3,000 live contacts; larger studios are an organization-tier
+   conversation, and an organization lists per studio (next point).
 
    **Still open after Phase 4, and deliberately — it has a precondition.** A
    nightly field means a nightly pass over every live contact of every tenant,
@@ -941,7 +941,7 @@ the onboarding conversation before a customer finds it.
    loaded, so it is not an approximation of the client answer but the same
    answer. What it costs is a SECOND roster path beside the client one, which is
    Part 1's whole subject — so it is worth building once, late, and not twice.
-2. **An organisation never lists a roster.** A11 is the only page that does,
+2. **An organization never lists a roster.** A11 is the only page that does,
    and at federation scale it cannot: the org level gets counts per studio and
    status, and drills into one studio's page. This is a product decision as
    much as a fix, and it should be made before the first 20-studio org signs.
@@ -952,7 +952,7 @@ the onboarding conversation before a customer finds it.
    federation's books, "all studios" is refused — with a route, never silently:
    the page shows one row per member studio with its count, and each row is the
    way in. The counts are one `count()` per studio, bounded by the studio count
-   inside one organisation rather than by the contact count.
+   inside one organization rather than by the contact count.
 
    Per studio and NOT per studio × status, which is the one deviation from the
    sentence above: the status lives on the affiliation document rather than the
@@ -1005,7 +1005,7 @@ Two rules for the work, both learned in Part 1:
   `tooWide` / `truncated` posture the bookings page and contact detail already
   have: the page says when it is not showing everything. A bare `limit` that
   hides rows without saying which is the one shape not to add (the header of
-  `useMemberSubscriptions` says why in the money context, and it generalises).
+  `useMemberSubscriptions` says why in the money context, and it generalizes).
 - **A tripwire, so the census does not rot — landed with Phase 1.**
   `scripts/census-reads.mjs` (`pnpm census:reads`, in CI's Lint job beside the
   locale check) names the LOG collections, scans every direct `getDocs` /

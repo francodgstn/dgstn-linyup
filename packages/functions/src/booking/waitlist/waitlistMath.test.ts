@@ -392,11 +392,11 @@ describe('offerWasDelivered', () => {
 })
 
 describe('isSessionCancelled', () => {
-  it('recognises the standalone cancellation', () => {
+  it('recognizes the standalone cancellation', () => {
     assert.equal(isSessionCancelled({ status: 'cancelled' }), true)
   })
 
-  it('recognises a cancelled OCCURRENCE of a series, which carries no status', () => {
+  it('recognizes a canceled OCCURRENCE of a series, which carries no status', () => {
     // cancelSession's `markAsException` branch: allowBooking and status are left
     // exactly as they were, so a status-only test reads this class as bookable.
     assert.equal(isSessionCancelled({ isException: true, exceptionType: 'cancelled' }), true)
@@ -406,7 +406,7 @@ describe('isSessionCancelled', () => {
     assert.equal(isSessionCancelled({ isException: true, exceptionType: 'modified' }), false)
   })
 
-  it('an ordinary session is not cancelled', () => {
+  it('an ordinary session is not canceled', () => {
     assert.equal(isSessionCancelled({}), false)
     assert.equal(isSessionCancelled({ status: 'confirmed', isException: false }), false)
     // The exception flag alone means nothing without the type.

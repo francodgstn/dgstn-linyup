@@ -1,11 +1,11 @@
 'use client'
 
 /**
- * WHAT IS WAITING ON A HUMAN — the organisation's queue.
+ * WHAT IS WAITING ON A HUMAN — the organization's queue.
  *
  * A studio's queue is full of things that arrive by themselves: a booking to
  * confirm, a payment with nobody attached, a trial that ends today. An
- * organisation's is almost entirely INVITATIONS AND REQUESTS — a federation's
+ * organization's is almost entirely INVITATIONS AND REQUESTS — a federation's
  * work is admitting people and studios to it — so this list is short by nature,
  * and pretending otherwise with a scroll region would be dressing.
  *

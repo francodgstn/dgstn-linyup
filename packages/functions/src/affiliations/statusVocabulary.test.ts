@@ -17,8 +17,8 @@ import { DEFAULT_ORG_AFFILIATION_STATUSES } from '@linyup/shared'
 // model's way of saying "on the roster, not a member", and every writer in the
 // product already treats it as "write no row". The only way to create one was to
 // pick it from the roster's status list — which writes a row, and a row is what
-// discloses the contact to the organisation (`orgAdminMayReadContact`). The
-// status labelled "not a member" was the one control that made someone a member.
+// discloses the contact to the organization (`orgAdminMayReadContact`). The
+// status labeled "not a member" was the one control that made someone a member.
 // See `docs/org-contact-visibility.md`.
 //
 // Reads the two mirrors as SOURCE, the same way `orgTierRails.test.ts` does, so

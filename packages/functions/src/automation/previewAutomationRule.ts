@@ -81,7 +81,7 @@ export const previewAutomationRule = onCall(async (request) => {
 
   // Automations are available on every tier (Free/Coach are limited to their
   // active modules/add-ons at rule-creation time). requirePlan('free') still
-  // rejects past_due / cancelled subscriptions.
+  // rejects past_due / canceled subscriptions.
   await requirePlan(teamId, 'free')
 
   const db = admin.firestore()

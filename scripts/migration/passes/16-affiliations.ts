@@ -1,6 +1,6 @@
 /**
- * Pass 16 — AFFILIATIONS RE-SYNC: the licence record follows the old system
- * while the old system is still where the organisation manages it.
+ * Pass 16 — AFFILIATIONS RE-SYNC: the license record follows the old system
+ * while the old system is still where the organization manages it.
  *
  * During the cutover the org's managers keep renewing memberships in
  * hmd-lineup; a club that has moved to Linyup would otherwise show no member
@@ -12,9 +12,9 @@
  *
  *   contacts/{id}/affiliations/{id}-aff-{n}
  *
- * Those positional ids are the migration's namespace. A row the organisation
+ * Those positional ids are the migration's namespace. A row the organization
  * created IN LINYUP has a generated id and is never touched; a positional row
- * the source no longer justifies (two licences became one) is DELETED, which
+ * the source no longer justifies (two licenses became one) is DELETED, which
  * is the part `--overwrite` cannot do — it re-sets what still exists and leaves
  * the stale extra standing.
  *
@@ -37,7 +37,7 @@ import { transformContact, AFFILIATIONS_OUTPUT_KEY } from '../transforms/contact
 const AFFILIATIONS_SUBCOLLECTION = 'affiliations'
 
 export async function pass16Affiliations(cfg: MigrationConfig, teamIds: string[]): Promise<void> {
-  console.log('Pass 16: affiliations re-sync (source is master for the licence record)')
+  console.log('Pass 16: affiliations re-sync (source is master for the license record)')
   const src = sourceDb()
   const tgt = targetDb()
 

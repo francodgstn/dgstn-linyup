@@ -50,7 +50,7 @@ function isExpected(err: unknown): boolean {
 /**
  * Emit one entry that Cloud Error Reporting will pick up, group by cause, and
  * count. Detection keys on a stack trace in the message at ERROR severity, so
- * the stack is passed through verbatim rather than summarised — a message
+ * the stack is passed through verbatim rather than summarized — a message
  * without one is logged but never grouped.
  *
  * `context` is free-form and shows up alongside the group. Include the ids that

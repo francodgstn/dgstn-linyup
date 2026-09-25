@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
-// THE ONE PLACE AN ORGANISATION STOPS BEING AN ORGANISATION (UX-9 / UX-10).
+// THE ONE PLACE AN ORGANIZATION STOPS BEING AN ORGANIZATION (UX-9 / UX-10).
 //
 // Two events reach it and nothing else may: the trial sweep
 // (`handleTrialLifecycle` phase 2) and the Stripe webhook's `subscription.
-// cancelled` for an org. Both land here so the answer to "what does a lapsed org
+// canceled` for an org. Both land here so the answer to "what does a lapsed org
 // do to its studios" is written once.
 //
 // ── THE INVARIANT, AND HOW IT SURVIVES ───────────────────────────────────────
@@ -25,7 +25,7 @@
 // It has a real consequence, which is the point rather than a side effect: the
 // rules grant an org admin access to a member studio's data through
 // `isOrgAdminOfTeam(teamId)`, which reads `teams/{teamId}.org_id`. Severing it
-// ends that access. An organisation that stopped paying stops seeing its
+// ends that access. An organization that stopped paying stops seeing its
 // studios' contacts. Getting them back is `inviteTeamToOrg` → the team owner
 // accepting again — a human act, not a flag flip.
 import * as admin from 'firebase-admin'
@@ -45,14 +45,14 @@ import { sendEmail, buildEmailTemplate } from '../utils/email'
 import { ctaButton } from '../utils/emailLayout'
 import { getHostingUrl } from '../utils/env'
 
-/** Why the organisation is being lapsed. Decides the org's own resting status
+/** Why the organization is being lapsed. Decides the org's own resting status
  *  and whether the member studios are told their trial ended — the two things
  *  that legitimately differ between "the trial ran out" and "the subscription
- *  was cancelled". Everything else is identical, deliberately. */
+ *  was canceled". Everything else is identical, deliberately. */
 export type OrgLapseReason = 'trial_lapsed' | 'subscription_cancelled'
 
 /**
- * Wind an organisation down to nothing it does not pay for.
+ * Wind an organization down to nothing it does not pay for.
  *
  *   1. org-level plugin installs → inactive
  *   2. the org's public site → unpublished (draft kept)
@@ -86,7 +86,7 @@ export async function lapseOrganization(
   const fromTrial = opts.reason === 'trial_lapsed'
   const orgRef = db.collection(ORGANIZATIONS_COLLECTION).doc(orgId)
 
-  // ── 0: an exempt organisation is never wound down ──────────────────────────
+  // ── 0: an exempt organization is never wound down ──────────────────────────
   // The daily sweep already skips these (`tenantExemptFromTrialSweep`), so this
   // is belt-and-braces against the OTHER callers: a hand-run script, an operator
   // console action, or a future webhook branch. A comped tenant has no Stripe
@@ -131,19 +131,19 @@ export async function lapseOrganization(
         // `fromTrial` also decides the in-app banner (it writes
         // `downgraded_from_trial_at`, which FreeDowngradeBanner reads and whose
         // copy says "your trial has ended"). True on the trial rail, where that
-        // sentence is what happened; false when the ORGANISATION cancelled a
+        // sentence is what happened; false when the ORGANIZATION canceled a
         // paid subscription, where it would be a lie.
         // `courseMirrors: 'keep_for_buyers'` is the ONE thing an org lapse does
         // differently from a team's own (UX-16 follow-up). A team that stops
         // paying loses its course listings; here the studio did not stop paying
-        // and neither did the member who BOUGHT a course — the organisation
+        // and neither did the member who BOUGHT a course — the organization
         // above them did. Deleting `courses/{id}/public_profile/{id}` would take
         // that course away from the buyer (the entitlement survives, the surface
         // the Space resolves it through does not) and nothing rewrites a mirror
         // on reinstall, so it would not come back when the org pays again.
         await downgradeTeamToFree(teamId, { fromTrial, courseMirrors: 'keep_for_buyers' })
         // The studio owner is told on BOTH rails, because on neither one did
-        // they do anything — the organisation did. A silent drop to a capped
+        // they do anything — the organization did. A silent drop to a capped
         // plan is the thing nobody finds out about until it refuses a signup.
         await sendStudioLapseEmail(teamId, teamSnap.data()!, orgId, opts.reason).catch((e) =>
           console.error(`[org-lapse] studio email failed ${teamId}:`, e)
@@ -171,7 +171,7 @@ export async function lapseOrganization(
   }
 
   // ── 5: the org's own resting state ─────────────────────────────────────────
-  // A cancelled subscription already wrote 'cancelled' onto both documents in
+  // A canceled subscription already wrote 'cancelled' onto both documents in
   // the webhook; only the trial rail has a status to settle here.
   if (!fromTrial) return
 
@@ -196,7 +196,7 @@ async function sendOrgTrialExpiredEmail(orgId: string): Promise<void> {
   const db = admin.firestore()
   const orgSnap = await db.collection(ORGANIZATIONS_COLLECTION).doc(orgId).get()
   if (!orgSnap.exists) return
-  const orgName = (orgSnap.data()?.name as string | undefined) ?? 'your organisation'
+  const orgName = (orgSnap.data()?.name as string | undefined) ?? 'your organization'
 
   const admins = await db
     .collection(ORGANIZATIONS_COLLECTION)
@@ -216,20 +216,20 @@ async function sendOrgTrialExpiredEmail(orgId: string): Promise<void> {
 
   const billingUrl = `${getHostingUrl()}/org/${orgId}/billing`
   const { html, text } = buildEmailTemplate({
-    title: 'Your Linyup organisation trial has ended',
+    title: 'Your Linyup organization trial has ended',
     body: `
       <p>The trial of <strong>${orgName}</strong> on Linyup has ended.</p>
-      <p>The studios that were billed through the organisation have been moved to the
+      <p>The studios that were billed through the organization have been moved to the
       <strong>Free plan</strong> and unlinked from it. All of their data is kept, and each one keeps
       working within the Free plan's limits.</p>
       <p style="margin:16px 0;">${ctaButton(billingUrl, 'Subscribe')}</p>
-      <p>Subscribing reopens the organisation. Its studios then have to be invited back — a studio
+      <p>Subscribing reopens the organization. Its studios then have to be invited back — a studio
       owner has to accept, which is also what restores your access to their data.</p>
     `,
   })
 
   for (const to of recipients) {
-    await sendEmail({ to, subject: 'Your Linyup organisation trial has ended', html, text })
+    await sendEmail({ to, subject: 'Your Linyup organization trial has ended', html, text })
   }
 }
 
@@ -262,11 +262,11 @@ async function sendStudioLapseEmail(
   if (!ownerEmail) return
 
   const orgSnap = await db.collection(ORGANIZATIONS_COLLECTION).doc(orgId).get()
-  const orgName = (orgSnap.data()?.name as string | undefined) ?? 'your organisation'
+  const orgName = (orgSnap.data()?.name as string | undefined) ?? 'your organization'
   const billingUrl = `${getHostingUrl()}/settings/billing`
 
   // Say which of the two happened. They are the same downgrade and completely
-  // different news, and a studio owner asking their organisation "why?" should
+  // different news, and a studio owner asking their organization "why?" should
   // not be told the wrong thing by us.
   const cause =
     reason === 'trial_lapsed'
@@ -280,7 +280,7 @@ async function sendStudioLapseEmail(
     body: `
       <p>${cause}</p>
       <p>Your studio is now on the <strong>Free plan</strong> and no longer linked to the
-      organisation. All your data is kept and everything keeps working within the Free plan's
+      organization. All your data is kept and everything keeps working within the Free plan's
       limits.</p>
       <p style="margin:16px 0;">${ctaButton(billingUrl, 'See plans &amp; upgrade')}</p>
     `,

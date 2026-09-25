@@ -44,9 +44,9 @@ export type GoalStatus = 'open' | 'in_progress' | 'achieved' | 'abandoned'
 export const GOAL_STATUSES: GoalStatus[] = ['open', 'in_progress', 'achieved', 'abandoned']
 
 /**
- * ONE hex per status, for every surface that colours one: the member app's
+ * ONE hex per status, for every surface that colors one: the member app's
  * chips, rails and pickers, the admin's evaluation rows. The admin's status
- * PILL keeps Tailwind light/dark pairs of the same colour FAMILIES (blue /
+ * PILL keeps Tailwind light/dark pairs of the same color FAMILIES (blue /
  * orange / green / gray — `apps/web/src/components/coaching/goalStatusStyles.ts`)
  * because a single hex cannot also carry a dark-mode text contrast; those pairs
  * are derived by family from this map and change together with it.
@@ -109,7 +109,7 @@ export const CANONICAL_DIMENSION_KEYS = [
  * ONE resolver, run identically by the admin tab, the member surfaces and the
  * functions — the same shape `resolveBookingContactFields` follows. An empty or
  * absent list means "never configured", which falls back to the defaults; a
- * team that genuinely wants none is not a case worth modelling, since a
+ * team that genuinely wants none is not a case worth modeling, since a
  * check-in with no axes is a form with nothing to rate.
  */
 export function resolveCoachingDimensions(
@@ -397,7 +397,7 @@ export function groupGoalsWithSteps(goals: Goal[]): {
  *  one taken together in a 1:1. */
 export type PerformanceContext = 'self' | '1to1'
 
-/** A named pattern the heuristic recognises. `default` = no pattern matched,
+/** A named pattern the heuristic recognizes. `default` = no pattern matched,
  *  which is a normal outcome and not an error. */
 export type ProfileKey =
   | 'burnout_risk'
@@ -412,7 +412,7 @@ export type ProfileKey =
  * ONE hex per performance profile — the admin's profile badge and the member
  * app's profile card tint the same reading the same way. The member-facing
  * WORDS stay per surface (they are the most sensitive copy in the product and
- * are translated with care, not shared); the colour is a fact.
+ * are translated with care, not shared); the color is a fact.
  */
 export const PERFORMANCE_PROFILE_COLORS: Record<ProfileKey, string> = {
   burnout_risk: '#EF4444',
@@ -437,7 +437,7 @@ export interface PerformanceCheckin {
   profile_key?: ProfileKey | null
   /** Weakest and strongest dimension keys. Generic: computed for ANY dimension
    *  set, which is what makes the "work on your weakest axis" prompt survive a
-   *  team customising its vocabulary. */
+   *  team customizing its vocabulary. */
   primary_lever?: string | null
   anchor?: string | null
 }

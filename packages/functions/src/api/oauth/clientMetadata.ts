@@ -197,7 +197,7 @@ export function redirectUriAllowed(requested: string, registered: readonly strin
   })
 }
 
-/** Is this a client the consent page may name as recognised? Display only. */
+/** Is this a client the consent page may name as recognized? Display only. */
 export function isRecognisedClient(clientId: string): boolean {
   try {
     const host = new URL(clientId).hostname.toLowerCase()

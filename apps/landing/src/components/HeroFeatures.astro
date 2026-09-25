@@ -104,7 +104,7 @@ const cards = [
   .hf-cta:hover { box-shadow: var(--ring-card), var(--shadow-lg); }
   .hf-cta h3 { color: #fff; }
   /* Higher specificity than `.hf-card p` (same element carries both classes), so the
-     body text actually renders white on the purple card instead of muted grey. */
+     body text actually renders white on the purple card instead of muted gray. */
   .hf-card.hf-cta p { color: color-mix(in oklch, #fff 94%, transparent); display: inline-flex; align-items: center; gap: 8px; }
   .hf-cta p :global(svg) { width: 16px; height: 16px; transition: transform 0.15s ease; }
   .hf-cta:hover p :global(svg) { transform: translateX(3px); }

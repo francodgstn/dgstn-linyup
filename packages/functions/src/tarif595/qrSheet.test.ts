@@ -22,7 +22,7 @@ describe('tarif595 QR sheet — the encoding the Forum sample uses', () => {
     )
     assert.equal(chunks.length, QR_SHEET_MAX_CODES)
     assert.ok(chunks.every((c) => c.length === QR_SHEET_CHUNK_CHARS))
-    // Line endings normalised on both sides: the checkout is CRLF on Windows and
+    // Line endings normalized on both sides: the checkout is CRLF on Windows and
     // LF on CI, and the XML inside the codes carries its own — a raw length
     // comparison drifts by the newline count and nothing else.
     const lf = (s: string) => s.replace(/\r\n/g, '\n')

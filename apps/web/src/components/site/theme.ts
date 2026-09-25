@@ -20,7 +20,7 @@ export interface SitePalette {
   onAccent: string
   /**
    * The fill of a call-to-action button, and the ink on it. The accent unless
-   * the studio chose `buttonColor` — kept apart because the accent also colours
+   * the studio chose `buttonColor` — kept apart because the accent also colors
    * links, icons, chips and the hero gradient, and a black button must not turn
    * every link black.
    */
@@ -28,7 +28,7 @@ export interface SitePalette {
   onButton: string
   /**
    * A solid statement block (the features 'panels' style) and the ink on it.
-   * The studio's BUTTON colour when it chose one — a box that picked black
+   * The studio's BUTTON color when it chose one — a box that picked black
    * buttons means black blocks, which is the look that style exists for — else
    * the page's own ink, so a site that never touched the brand fields still
    * gets a panel that reads on a light or a dark theme.
@@ -37,8 +37,8 @@ export interface SitePalette {
   onPanel: string
 }
 
-/** Relative luminance test for a #rgb / #rrggbb colour. Anything unparseable
- *  reads as dark, which keeps the historic white-on-colour ink. */
+/** Relative luminance test for a #rgb / #rrggbb color. Anything unparseable
+ *  reads as dark, which keeps the historic white-on-color ink. */
 function isLightHex(hex: string): boolean {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim())
   if (!m) return false

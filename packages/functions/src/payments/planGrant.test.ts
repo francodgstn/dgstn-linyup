@@ -108,7 +108,7 @@ describe('the contacts list agrees with the gate', () => {
 })
 
 describe('resolvePlanPurchaseCap — which prices a cap can govern', () => {
-  it('honours a cap on a one-time price', () => {
+  it('honors a cap on a one-time price', () => {
     assert.equal(resolvePlanPurchaseCap({ recurrence: 'one_time', maxPurchasesPerContact: 1 }), 1)
     assert.equal(resolvePlanPurchaseCap({ recurrence: 'one_time', maxPurchasesPerContact: 3 }), 3)
   })

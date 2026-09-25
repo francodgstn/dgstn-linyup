@@ -190,7 +190,7 @@ release must stay backward-compatible with the oldest installed app build.
   is not classified.
 - `purgeTeam` does **not** tear down Stripe. `connect_accounts` is flagged
   `externalTeardown: 'stripe_connect'` and the function logs a warning; the Connect account
-  and its member subscriptions must be cancelled by hand in the Stripe dashboard, or a
+  and its member subscriptions must be canceled by hand in the Stripe dashboard, or a
   purged studio keeps charging real cards.
 
 ---
@@ -253,7 +253,7 @@ without confirming it is fixed.
   (which uses its own ports per `firebase.worktree.json`) and wrong for sandbox. Hand-edit
   the command rather than trusting the script.
 - **`pnpm sandbox:reset` has no `--confirm` wired** and will prompt interactively — do not
-  script it expecting non-interactive behaviour. `staging:reset` does pass `--confirm`.
+  script it expecting non-interactive behavior. `staging:reset` does pass `--confirm`.
 - **`scripts/reset-staging-db.ts` names the wrong npm script in its own output**
   (`reset:staging`; the real one is `staging:reset`).
 - **`emulators:seed` will silently seed or wipe another session's running emulator** if ports
@@ -285,7 +285,7 @@ the doc in the same pass — a stale runbook is worse than no runbook, because i
 
 - **State which project you acted against, every time.** Ambiguity here is how the wrong
   environment gets changed.
-- Paste the actual command and its real output. Never summarise a Terraform plan you have
+- Paste the actual command and its real output. Never summarize a Terraform plan you have
   not shown.
 - Distinguish *verified* from *assumed*, and say plainly when something has never been
   exercised against a real project — several tools in this repo are in exactly that state.

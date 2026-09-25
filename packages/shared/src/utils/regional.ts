@@ -207,7 +207,7 @@ export interface RegionalFormatter {
  *
  * `timeZoneOverride` exists for the surfaces that still POSITION things by the
  * device's clock — a hand-rolled week grid lays its blocks out with local
- * `getHours()`, so labelling them in another zone would put a Zurich time on a
+ * `getHours()`, so labeling them in another zone would put a Zurich time on a
  * New York row. Those pass the device zone explicitly and say why; everything
  * that merely LABELS a stored instant takes the studio's zone.
  */

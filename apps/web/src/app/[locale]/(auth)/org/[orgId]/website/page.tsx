@@ -90,8 +90,8 @@ import {
 } from '@/components/website/pages/SitePageTools'
 
 /**
- * The starters an organisation's new page may take. The studio's 'offer' page
- * ends in a booking band, and an organisation has nothing to book — so it is
+ * The starters an organization's new page may take. The studio's 'offer' page
+ * ends in a booking band, and an organization has nothing to book — so it is
  * left out, not offered with a button that could never publish.
  */
 const ORG_PAGE_STARTERS: readonly PageStarter[] = ['simple', 'empty']
@@ -160,7 +160,7 @@ function AppearancePanel({
         <Input value={meta.title} onChange={(e) => onChange({ title: e.target.value })} className="h-9" />
       </div>
 
-      {/* Theme — ONE control carrying both colour schemes. It replaces a
+      {/* Theme — ONE control carrying both color schemes. It replaces a
           light/dark/auto select that crossed with `meta.background`: "auto"
           followed the viewer for the text and not for the page, and a light
           theme over a dark background was patched by a luminance check that
@@ -195,7 +195,7 @@ function AppearancePanel({
           <Label className="text-xs">{t('apHeaderCtaLabel')}</Label>
           <Input
             value={meta.header.ctaLabel ?? ''}
-            // An organisation's header button opens one of its pages or a link
+            // An organization's header button opens one of its pages or a link
             // (it has no booking page) — so a first label makes it a link, and
             // a button already set to a page keeps that.
             onChange={(e) =>
@@ -341,7 +341,7 @@ export default function OrgWebsiteBuilderPage() {
   // same confirmation as the team builder.
   const [confirmPublish, setConfirmPublish] = useState(false)
 
-  // Initialise the working draft once data has settled.
+  // Initialize the working draft once data has settled.
   useEffect(() => {
     if (draft || draftLoading || !org) return
     setDraft(savedDraft ?? emptyOrgDraft({ id: org.id, name: org.name, slug: org.slug }))
@@ -410,7 +410,7 @@ export default function OrgWebsiteBuilderPage() {
     const ref: SitePageRef = { id, path, title, ...(kind === 'post' ? { kind: 'post' as const, publishedOn } : {}) }
     mutate((d) => ({ ...d, pages: [...(d.pages ?? []), ref] }))
     // A post opens on a text block; a page on the starter picked. Both are
-    // presentational sections an organisation site carries (`simple` is a
+    // presentational sections an organization site carries (`simple` is a
     // hero and a text block — the org starters never include the booking band).
     const first = (
       kind === 'post'
@@ -567,11 +567,11 @@ export default function OrgWebsiteBuilderPage() {
       : `/public/org/${slug}`
   const status = draft.enabled ? t('statusPublished') : t('statusDraft')
   // THE HEADER MENU — the same stored tree a studio edits, through the same
-  // panel and the same sanitiser. Absent until the org first touches it, and
+  // panel and the same sanitizer. Absent until the org first touches it, and
   // `deriveSiteMenu` then produces exactly the header it had before, which is
   // what makes this additive rather than a migration.
   //
-  // `surfaceLinks: []` because an organisation has no cross-surface links to
+  // `surfaceLinks: []` because an organization has no cross-surface links to
   // offer: Shop, My space and Documents are studio surfaces. The panel simply
   // shows no surface rows.
   const menu: SiteMenuItem[] =

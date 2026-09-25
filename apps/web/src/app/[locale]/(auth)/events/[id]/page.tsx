@@ -675,7 +675,7 @@ export default function EventDetailPage() {
             // The studio's own events page lists its org's events too, so the
             // studio link works for either scope.
             publicUrl={team?.slug ? publicSubHref(team.slug, 'events', event.id) : null}
-            // Publishing an org event is the ORGANISATION's call — the rules
+            // Publishing an org event is the ORGANIZATION's call — the rules
             // refuse a studio manager's write, so do not offer the switch.
             canEdit={isOrgEvent ? isOrgAdmin : can('events.manage') || isOrgAdmin}
           />

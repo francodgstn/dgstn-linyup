@@ -1820,7 +1820,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
 
   // WHAT THE ENDPOINT ACTUALLY SENT (docs/open-defects.md → "A BYO studio can
   // double-count its own recurring revenue"). The guidance below the signing
-  // secret is the primary defence; this is the second half — when a studio
+  // secret is the primary defense; this is the second half — when a studio
   // subscribed to both Stripe event families anyway, the rail can SEE it in the
   // rows it wrote, and the owner is the only person who can go and fix it.
   //
@@ -2067,7 +2067,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
         {/* Superseded keys `paymentsGateway` / `paymentsGatewayDescription`
             still exist in the locale files; they said "Payment gateway" and
             "…to collect member payments", which is the claim this rail cannot
-            honour — it holds no credentials and makes no API call. */}
+            honor — it holds no credentials and makes no API call. */}
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium">{t('paymentsExternalTitle')}</p>
           {/* BETA, said out loud. This rail has never been exercised end to end
@@ -2350,7 +2350,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
                   it does produce are flagged in the payments table
                   ("may be a duplicate"), and an endpoint caught sending both
                   families is called out on the card behind this dialog — but
-                  both of those are after the fact. This is the PRIMARY defence
+                  both of those are after the fact. This is the PRIMARY defense
                   (Franco, 2026-08-18: guidance + detection is the close for that
                   defect; dedupe-by-heuristic was rejected), which is why it is a
                   callout and not a footnote. */}

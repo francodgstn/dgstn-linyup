@@ -47,7 +47,7 @@ describe('getMyAttendance', () => {
   // booking (falling back to the participant doc) on a user's tap to find a
   // `booking_token`, and refused any status but `pending`, which refused every
   // cancellation of a booking on an auto-confirm class. It is gone: the token
-  // and whether cancelling is still allowed both ride on the `getMyBookings`
+  // and whether canceling is still allowed both ride on the `getMyBookings`
   // row, so the app cancels by token and reads attendance through this
   // callable. Nothing in the member app addresses a participant document.
   it('nothing addresses a participant document in the member app', () => {

@@ -16,7 +16,7 @@
 // and hands it to `buildTheme` (`theme.ts`).
 //
 // What this is NOT: an org-branded white-label app. That needs a second store
-// listing, bundle id, icon and developer accounts per organisation (roadmap
+// listing, bundle id, icon and developer accounts per organization (roadmap
 // §5) — `app.config.js`'s `APP_VARIANT` is the seam for it, deliberately left
 // with one entry.
 import { resolveSurfacePalette, surfaceThemePreset, type SurfacePalette } from '@linyup/shared';
@@ -48,7 +48,7 @@ export function brandFromProfile(profile: BrandSource): TenantBrand {
   };
 }
 
-/** The MD3 colour roles a tenant overrides. Everything absent keeps Linyup's. */
+/** The MD3 color roles a tenant overrides. Everything absent keeps Linyup's. */
 export interface TenantColorOverrides {
   primary: string;
   onPrimary: string;
@@ -90,8 +90,8 @@ export function resolveTenantTheme(
   const rawAccent = isHexColor(brand.accent) ? brand.accent : (preset?.defaultAccent ?? null);
   if (!preset && !rawAccent) return null;
   if (!rawAccent || !isHexColor(rawAccent)) return null; // a preset always carries a defaultAccent; belt and braces
-  // Normalised (#RRGGBB, upper-case) so equality checks and the mixes below
-  // never see two spellings of one colour.
+  // Normalized (#RRGGBB, upper-case) so equality checks and the mixes below
+  // never see two spellings of one color.
   const norm = (hex: string) => toHex(parseHex(hex)!);
   const accent = norm(rawAccent);
 

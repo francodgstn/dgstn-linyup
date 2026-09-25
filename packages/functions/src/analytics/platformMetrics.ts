@@ -73,7 +73,7 @@ export const capturePlatformMetrics = onSchedule(
       subs.set(sub.entity_id ?? doc.id, sub)
     }
 
-    // HOW MANY STUDIOS EACH ORGANISATION IS BILLED FOR — the organisation tier is
+    // HOW MANY STUDIOS EACH ORGANIZATION IS BILLED FOR — the organization tier is
     // priced per studio, so this is its subscription amount, not a statistic.
     // Counted from the teams already loaded rather than by reading every org's
     // `org_teams` subcollection: `Team.org_id` is set in the SAME batch as the
@@ -139,7 +139,7 @@ export const capturePlatformMetrics = onSchedule(
         trialEndsAtMs: sub?.trial_ends_at?.toMillis?.() ?? team.trial_ends_at?.toMillis?.() ?? null,
         contactCount: contactCount.get(doc.id) ?? 0,
         comped: team.flags?.comped === true,
-        // Its organisation pays for it — see `monthlyChfFor`.
+        // Its organization pays for it — see `monthlyChfFor`.
         billedByOrg: typeof team.org_id === 'string' && team.org_id.length > 0,
       })
     }
@@ -147,7 +147,7 @@ export const capturePlatformMetrics = onSchedule(
     for (const doc of orgsSnap.docs) {
       const org = doc.data()
       // Same rule as the teams loop above — this check was MISSING here, so an
-      // internal organisation counted toward every platform number while an
+      // internal organization counted toward every platform number while an
       // internal team did not.
       if (tenantHiddenFromPlatformMetrics(org.flags)) continue
       const sub = subs.get(doc.id)

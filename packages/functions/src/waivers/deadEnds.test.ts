@@ -233,7 +233,7 @@ describe('MOBILE STOPS TELLING A MEMBER TO RETRY A WAIVER', () => {
   ] as const
 
   // A KEY, NOT THE SENTENCE. This pinned the English literal until the member
-  // app gained i18n, at which point the string moved into the catalogue and this
+  // app gained i18n, at which point the string moved into the catalog and this
   // guard broke — correctly, but for a reason that had nothing to do with what
   // it protects. What it protects is the ORDER: a waiver refusal must be mapped
   // before the rail falls back to "try again". The key is the stable name of
@@ -269,7 +269,7 @@ describe('MOBILE STOPS TELLING A MEMBER TO RETRY A WAIVER', () => {
     const util = mobile('utils/waiverRefusal.ts')
     assert.match(util, /context: WaiverRefusalContext = 'checkin'/)
     // Two DIFFERENT keys, chosen by context — the point survived translation
-    // even though the words moved into the catalogue. Asserting the words here
+    // even though the words moved into the catalog. Asserting the words here
     // would only re-pin English, which is the mistake this file already made
     // once; `pnpm i18n:check` owns whether the keys resolve.
     assert.match(util, /const verb = context === 'booking' \? t\('verbBooking'\) : t\('verbCheckin'\)/)

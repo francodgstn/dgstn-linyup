@@ -5,12 +5,12 @@
 //
 // ONE COMPONENT, TWO SURFACES. The admin tab and the member's Space both draw
 // this, and for a while each carried its own copy — structurally identical,
-// differing only in where the colours came from (Tailwind semantic tokens vs
+// differing only in where the colors came from (Tailwind semantic tokens vs
 // the tenant palette from `useSpaceTheme`). That is the exact shape of drift
 // docs/scalability-2026-09.md is about, freshly created in the same month the
-// document was written. So: the geometry lives here once, and colour is a
+// document was written. So: the geometry lives here once, and color is a
 // parameter. Pass nothing and it uses the app's semantic tokens (dark mode and
-// all); pass a `palette` and it paints with the tenant's colours instead.
+// all); pass a `palette` and it paints with the tenant's colors instead.
 //
 // DELIBERATELY NOT JUST A PERCENTAGE BAR. A goal's tasks are a short, named
 // sequence ("bring a gi", "drill the entry", "spar it") — five of them, not five
@@ -31,9 +31,9 @@
 import { CheckCircle2, Circle } from 'lucide-react'
 import type { Goal } from '@linyup/shared'
 
-/** Tenant colours for a themed surface. Absent ⇒ the app's semantic tokens. */
+/** Tenant colors for a themed surface. Absent ⇒ the app's semantic tokens. */
 export interface GoalProgressPalette {
-  /** The fill and the done-circle — the "progress" colour. */
+  /** The fill and the done-circle — the "progress" color. */
   accent: string
   /** Pending circles and the count label. */
   muted: string

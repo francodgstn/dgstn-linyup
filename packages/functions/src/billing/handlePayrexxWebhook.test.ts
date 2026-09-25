@@ -75,7 +75,7 @@ describe('verifyPayrexxSignature', () => {
 })
 
 describe('handlePayrexxWebhook wiring', () => {
-  // Windows checkouts are CRLF; normalise before reading positions.
+  // Windows checkouts are CRLF; normalize before reading positions.
   const source = fs
     .readFileSync(path.join(__dirname, 'handlePayrexxWebhook.ts'), 'utf8')
     .replace(/\r\n/g, '\n')

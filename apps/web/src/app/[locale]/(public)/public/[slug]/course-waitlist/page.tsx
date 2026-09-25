@@ -200,7 +200,7 @@ export default function CourseWaitlistPage() {
       : formatDay(fmt, c.firstMeeting)
 
   // The course card, shown in every mode: whatever the answer is, it is about
-  // this course and the person needs to recognise it.
+  // this course and the person needs to recognize it.
   const card = (
     <div className="rounded-lg border p-4">
       <h2 className="font-medium">{c.name}</h2>

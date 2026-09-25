@@ -13,7 +13,7 @@ import { restEndpointBase, restMap, restString, type RestValue } from './publicM
 // One REST read per slug per instance, cached like the custom-domain lookup —
 // it runs in middleware, on every unprefixed site request.
 //
-// `scope` picks whose site: a studio's (`site_published`) or an organisation's
+// `scope` picks whose site: a studio's (`site_published`) or an organization's
 // (`org_site_published`) — both carry the slug and `meta.language`.
 
 const TTL_MS = 5 * 60 * 1000
@@ -51,7 +51,7 @@ export async function resolveSiteLanguage(slug: string, scope: 'team' | 'org' = 
     value = (fields && restString(restMap(fields.meta).language)) ?? null
   } catch {
     // A failed read must not 500 a page request — it falls through as "no
-    // language of its own", which is today's behaviour. A THROWN failure is
+    // language of its own", which is today's behavior. A THROWN failure is
     // deliberately not cached, so a blip does not last the whole TTL.
     return null
   }

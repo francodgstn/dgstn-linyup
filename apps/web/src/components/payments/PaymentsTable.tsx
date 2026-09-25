@@ -494,7 +494,7 @@ export function PaymentsTable({
 
                       A HOVER CARD, not a tooltip: the breakdown is a small
                       table with a rule and a total, and a tooltip is a one-line
-                      LABEL whose inverted colours make tabular figures hard to
+                      LABEL whose inverted colors make tabular figures hard to
                       read. See the note at the top of ui/hover-card.tsx. */}
                   {entry ? (
                     <HoverCard>

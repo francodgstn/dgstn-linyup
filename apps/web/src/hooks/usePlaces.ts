@@ -94,7 +94,7 @@ export interface OrgTeamPlace extends Place {
 }
 
 /**
- * EVERY MEMBER STUDIO'S OWN PLACES, for the organisation's Places page.
+ * EVERY MEMBER STUDIO'S OWN PLACES, for the organization's Places page.
  *
  * Read-only by construction: `firestore.rules` admits an org ADMIN to
  * `teams/{id}/team_places` for reading and leaves `write` to that studio's own
@@ -104,11 +104,11 @@ export interface OrgTeamPlace extends Place {
  * `{path=**}` rule, and the gate this needs — "is the caller an org admin of the
  * team that owns this document" — is a cross-document `get()` keyed on the
  * candidate, which a LIST rule cannot satisfy. The fan-out is bounded: MAX_PLACES
- * caps each studio at 25, and the studio count is the organisation's own.
+ * caps each studio at 25, and the studio count is the organization's own.
  *
  * EVERY READ IS GUARDED INDIVIDUALLY. The caller is not a member of these
  * studios, so one denial inside a bare `Promise.all` would reject the whole query
- * and the page would render as an organisation with no places at all — the
+ * and the page would render as an organization with no places at all — the
  * silent-empty failure the Studios page shipped once already.
  */
 export function useOrgTeamPlaces(orgId: string | null) {

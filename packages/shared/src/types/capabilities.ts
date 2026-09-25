@@ -36,7 +36,7 @@ export type Capability =
   | 'schedule.view'
   | 'schedule.manage'
   | 'schedule.view.all'
-  // Activities catalogue (unscoped)
+  // Activities catalog (unscoped)
   | 'activities.manage'
   // Events (unscoped)
   | 'events.manage'
@@ -111,7 +111,7 @@ export const CAPABILITY_CATALOG: CapabilityMeta[] = [
 export const ALL_CAPABILITIES: Capability[] = CAPABILITY_CATALOG.map((c) => c.id)
 
 // ─── Display grouping ───────────────────────────────────────────────────────────
-// How the role editor arranges the catalogue. A GROUP is coarser than a domain —
+// How the role editor arranges the catalog. A GROUP is coarser than a domain —
 // thirteen domain headings over eighteen rows is not a grouping, it is a list with
 // extra lines. The map is a Record over CapabilityDomain, so a new domain fails
 // `turbo run typecheck` rather than silently dropping out of the UI, which is what
@@ -148,7 +148,7 @@ export function capabilityGroup(domain: CapabilityDomain): CapabilityGroup {
 }
 
 // ─── Where each capability actually BITES ───────────────────────────────────────
-// Not every id in the catalogue gates something in the app, and the role editor
+// Not every id in the catalog gates something in the app, and the role editor
 // used to present all eighteen as though they did. Three answers:
 //
 //   'app' — refused by firestore.rules, by a callable's `requireCapability`, or
@@ -162,7 +162,7 @@ export function capabilityGroup(domain: CapabilityDomain): CapabilityGroup {
 //           implying a restriction that is not there.
 //   'none' — not capability-gated anywhere. The surface is gated on the OWNER
 //           ROLE directly (installed_plugins is `hasTeamRole(teamId, 'owner')`),
-//           which is correct behaviour; the capability id is simply not the thing
+//           which is correct behavior; the capability id is simply not the thing
 //           enforcing it.
 //
 // This is a claim about other files, so it is not left to prose: it is re-derived
@@ -206,7 +206,7 @@ export function capabilityIsScoped(cap: Capability): boolean {
 }
 
 // ─── Fixed capability sets for the SYSTEM roles ─────────────────────────────────
-// These reproduce today's EFFECTIVE permissions exactly (Phase 1 is behaviour-
+// These reproduce today's EFFECTIVE permissions exactly (Phase 1 is behavior-
 // preserving), so migrating a check to a capability is a no-op for these roles:
 //   • owner   → everything.
 //   • manager → everything except the owner-only surfaces
@@ -265,7 +265,7 @@ export const COACH_ASSIGNABLE_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filt
 /**
  * WHY a capability cannot be granted to the Coach role, or null when it can.
  *
- * The editor shows the WHOLE catalogue for every role, including the rows a coach
+ * The editor shows the WHOLE catalog for every role, including the rows a coach
  * can never hold — a list of only what a role can do cannot answer "can a coach do
  * X" for any X outside it, and the reader is left unable to tell "no" from "not
  * listed here". Those rows are locked, and a lock with no reason beside it is just
@@ -305,7 +305,7 @@ export function dataScopeForRole(role: TeamRole): DataScope {
 
 /**
  * The effective capability set for a role. For 'coach', pass the team's override
- * (role_config/coach.capabilities) to honour customization; omit to get the default.
+ * (role_config/coach.capabilities) to honor customization; omit to get the default.
  * Unknown/invalid override entries are ignored.
  */
 export function resolveRoleCapabilities(

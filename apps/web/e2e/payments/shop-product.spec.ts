@@ -98,9 +98,9 @@ test('a declined card is refused on Stripe, and going back records nothing', asy
   const session = await stripe.checkout.sessions.retrieve(sessionId, undefined, { stripeAccount: ACCT[STUDIO.teamId] })
   expect(session.payment_status).toBe('unpaid')
 
-  // Stripe's back link returns to our cancelled result, and nothing was sold.
+  // Stripe's back link returns to our canceled result, and nothing was sold.
   await page.goto(session.cancel_url!)
-  await expect(page.getByText('Payment cancelled')).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByText('Payment canceled')).toBeVisible({ timeout: 60_000 })
   const [contact] = await findContactsByEmail(STUDIO.teamId, EMAIL)
   const q = await db.collection(`teams/${STUDIO.teamId}/member_payments`).where('contactId', '==', contact.id).get()
   expect(q.docs.filter((d) => d.data().status === 'succeeded' && d.data().amount === 3500)).toHaveLength(0)

@@ -11,7 +11,7 @@
  *
  * ── WHAT THIS SCREEN OWES THE READER ───────────────────────────────────────
  * Three facts, stated before the button and not after it:
- *   • the members' subscriptions stop IMMEDIATELY, and cancelling the deletion
+ *   • the members' subscriptions stop IMMEDIATELY, and canceling the deletion
  *     does not bring them back — Stripe cannot un-cancel a subscription;
  *   • the data is erased in thirty days, and until then nothing changes;
  *   • the studio's own Stripe account, its money and its payment history are

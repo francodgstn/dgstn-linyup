@@ -3,19 +3,19 @@ import { findRankLevel } from './rankLevels'
 import { withRankLevelIds } from './rankLevelId'
 
 /**
- * THE rule for which ranking systems apply to a team — the organisation's, or
+ * THE rule for which ranking systems apply to a team — the organization's, or
  * its own.
  *
  * `Organization.ranking_systems` says "when set, overrides individual team
  * ranking_systems for all linked teams", and the load-bearing words are WHEN
- * SET. An organisation that has configured none has not thereby taken the
+ * SET. An organization that has configured none has not thereby taken the
  * feature away from its studios; it has simply not used it.
  *
  * That distinction was lost in the one place this used to live: the hook
  * returned the org's list whenever an `org_id` existed, so a studio inside an
- * organisation with no systems of its own saw NONE — its own configuration
+ * organization with no systems of its own saw NONE — its own configuration
  * silently invisible. Every other caller then re-derived the rule inline, and
- * two skipped the organisation entirely, which is why an org-managed tenant's
+ * two skipped the organization entirely, which is why an org-managed tenant's
  * dashboard belt breakdown came out blank.
  *
  * One function, so the client hook, the automation builder and the server-side
@@ -35,7 +35,7 @@ export function effectiveRankingSystems(
   return chosen.map((s) => ({ ...s, levels: withRankLevelIds(s.levels ?? []) }))
 }
 
-/** True when the ORGANISATION owns the systems, so a team-level editor locks. */
+/** True when the ORGANIZATION owns the systems, so a team-level editor locks. */
 export function rankingSystemsManagedByOrg(
   orgSystems: RankingSystem[] | undefined | null,
 ): boolean {

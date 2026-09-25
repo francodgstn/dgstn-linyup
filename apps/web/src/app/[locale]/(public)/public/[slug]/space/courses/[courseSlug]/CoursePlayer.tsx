@@ -90,7 +90,7 @@ interface Props {
 
 // WHY 'purchase' IS HERE (UX-52). It was missing — from this union AND from
 // `CourseSummary.accessType` below — and the denied-read branch fell back to
-// 'registered' for anything it did not recognise. So a signed-in member who
+// 'registered' for anything it did not recognize. So a signed-in member who
 // opened a SOLD course by a shared link was shown the sign-in gate: a padlock,
 // "Sign in to access", and a Sign in button, to somebody already signed in.
 //
@@ -117,7 +117,7 @@ export default function CoursePlayer({ courseSlug, from }: Props) {
   const locale = useLocale()
   const { team } = usePublicTeam()
   const currency = team?.default_currency ?? 'CHF'
-  // Return the visitor to where they came from (shop catalogue vs their Space).
+  // Return the visitor to where they came from (shop catalog vs their Space).
   const backHref = (from === 'shop'
     ? `/public/${slug}/shop?tab=courses`
     : `/public/${slug}/space`) as Route

@@ -133,7 +133,7 @@ describe('events/{id}/invitations rules', function () {
         getDocs(query(invitations(as('managerA'), EVENT_ORG), where('teamId', '==', TEAM_B))),
       )
     })
-    it('the organisation’s admin reads every studio’s rows', async () => {
+    it('the organization’s admin reads every studio’s rows', async () => {
       await assertSucceeds(getDocs(invitations(as('orgAdmin'), EVENT_ORG)))
     })
   })

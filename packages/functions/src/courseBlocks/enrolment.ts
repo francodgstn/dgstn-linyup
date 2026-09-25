@@ -1,4 +1,4 @@
-// ─── ENROLMENT: the place, and the bookings that follow from it ─────────────
+// ─── ENROLLMENT: the place, and the bookings that follow from it ─────────────
 //
 // A course is sold once and attended thirteen times, so two things have to be
 // true at once: the PLACE has to be contended for exactly like a seat, and the
@@ -19,15 +19,15 @@
 //
 // ── THE BOOKINGS ────────────────────────────────────────────────────────────
 //
-// `syncCourseBlockRoster` is the converger. For every live enrolment × every
+// `syncCourseBlockRoster` is the converger. For every live enrollment × every
 // future lesson, it ensures `sessions/{id}/bookings/{contactId}` exists.
 //
 //   IT ONLY EVER CREATES A BOOKING THAT IS MISSING. It never rewrites one that
 //   exists, and never deletes one.
 //
 // That single rule is what makes it safe to run arbitrarily often, after an
-// enrolment, from a Cloud Task, from the nightly reconciliation, and it is also
-// what makes "the member cancelled lesson six" stick: a cancelled booking still
+// enrollment, from a Cloud Task, from the nightly reconciliation, and it is also
+// what makes "the member canceled lesson six" stick: a canceled booking still
 // exists, so the converger leaves it exactly where it is instead of resurrecting
 // it on the next pass.
 //
@@ -37,7 +37,7 @@
 // at CREATION, with `increment(1)`, because that is the shape every existing
 // disposal path already expects, `cancelBooking` decrements unconditionally,
 // and a booking that was never counted would drive a real person's counter
-// negative the first time they cancelled one lesson.
+// negative the first time they canceled one lesson.
 import * as admin from 'firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
@@ -64,10 +64,10 @@ import { optionalContactSessionFromRequest } from '../utils/contactSession'
 import { generateSecureToken } from '../utils/crypto'
 import { SESSIONS_COLLECTION } from '../sessions/series'
 
-/** How many (enrolment × lesson) pairs one inline converge will do before it
+/** How many (enrollment × lesson) pairs one inline converge will do before it
  *  hands the rest to the next run. A term course for a full cohort is ~120
  *  pairs; this keeps a single callable honest while the common case (one new
- *  enrolment, thirteen lessons) finishes inline. */
+ *  enrollment, thirteen lessons) finishes inline. */
 export const ROSTER_CONVERGE_INLINE_MAX = 200
 
 export interface CourseEnrolmentResult {
@@ -121,13 +121,13 @@ export interface EnrolInput {
 }
 
 /**
- * Takes a place, or refuses. THE ONE WRITER of an enrolment.
+ * Takes a place, or refuses. THE ONE WRITER of an enrollment.
  *
- * One transaction on the course and its enrolments: read the whole subcollection,
+ * One transaction on the course and its enrollments: read the whole subcollection,
  * count the live ones at a single sampled instant, refuse when there is no room,
  * and write the counter as an absolute value derived from that read set.
  *
- * The caller's own enrolment is excluded from the count, so re-opening an
+ * The caller's own enrollment is excluded from the count, so re-opening an
  * abandoned checkout or confirming a hold does not refuse somebody the place
  * they are already holding.
  */
@@ -144,7 +144,7 @@ export async function takeCourseBlockPlace(
     if (!blockDoc.exists) throw new HttpsError('not-found', 'That course no longer exists.')
     const block = { ...(blockDoc.data() as CourseBlock), id: blockDoc.id }
     if (block.status === 'cancelled') {
-      throw new HttpsError('failed-precondition', 'That course was cancelled.')
+      throw new HttpsError('failed-precondition', 'That course was canceled.')
     }
 
     const enrolments = await tx.get(enrolmentsRef)
@@ -166,7 +166,7 @@ export async function takeCourseBlockPlace(
       ...(input.email !== undefined ? { email: input.email } : {}),
       expires_at: input.expiresAt ?? null,
       withdrawn_at: null,
-      // Kept from an earlier enrolment so a re-enrol does not read as brand new
+      // Kept from an earlier enrollment so a re-enroll does not read as brand new
       // on the roster; set on a first one.
       enrolled_at: (existing?.get('enrolled_at') as Timestamp | undefined) ?? FieldValue.serverTimestamp(),
     }
@@ -219,14 +219,14 @@ export async function releaseCourseBlockPlace(
 // ─── the converger ───────────────────────────────────────────────────────────
 
 /**
- * Makes the per-lesson bookings match the enrolments.
+ * Makes the per-lesson bookings match the enrollments.
  *
- * Creates what is missing for a live enrolment; cancels a FUTURE booking whose
- * enrolment is no longer live. Never rewrites a booking that exists and is
+ * Creates what is missing for a live enrollment; cancels a FUTURE booking whose
+ * enrollment is no longer live. Never rewrites a booking that exists and is
  * wanted, which is what lets a member cancel one lesson and keep their place.
  *
- * Past lessons are never touched in either direction: a cancelled enrolment does
- * not rewrite attendance history, and a new enrolment does not put somebody on
+ * Past lessons are never touched in either direction: a canceled enrollment does
+ * not rewrite attendance history, and a new enrollment does not put somebody on
  * the register of a lesson that already happened.
  */
 export async function syncCourseBlockRoster(
@@ -256,7 +256,7 @@ export async function syncCourseBlockRoster(
     const e = d.data() as CourseBlockEnrolment
     // A HOLD IS NOT A ROSTER. An open checkout holds a place, but writing its
     // bookings would put an unpaid person on thirteen registers and leave them
-    // there when the checkout lapsed. Bookings follow a SETTLED enrolment.
+    // there when the checkout lapsed. Bookings follow a SETTLED enrollment.
     if (e.status === 'enrolled') live.push({ id: d.id, data: e })
     else gone.push(d.id)
   }
@@ -285,7 +285,7 @@ export async function syncCourseBlockRoster(
       )
       if (err) {
         // A lesson already at capacity from an ordinary booking. Recorded and
-        // shown on the roster, NEVER a reason to fail an enrolment, because
+        // shown on the roster, NEVER a reason to fail an enrollment, because
         // refunding a whole course over one full lesson is the wrong answer.
         conflicts.push(session.id)
       } else {
@@ -357,7 +357,7 @@ async function ensureBooking(
       // CONFIRMED, whatever the activity's autoConfirm says: they bought the
       // course. A course place is not a request to attend.
       status: 'confirmed',
-      // Paid FOR THE COURSE, which is what makes a cancelled lesson mail them
+      // Paid FOR THE COURSE, which is what makes a canceled lesson mail them
       // even when the studio has the notice switched off (`bookingWasPaidFor`).
       payment_status: person.data.payment_status === 'paid' ? 'paid' : 'not_required',
       course_block_id: block.id,
@@ -376,7 +376,7 @@ async function ensureBooking(
   })
 }
 
-/** A withdrawal's future bookings, cancelled through the ordinary shape so
+/** A withdrawal's future bookings, canceled through the ordinary shape so
  *  `trackBookings` recounts, the contact's counter returns once, and the
  *  seat-freed edge fires for any session waitlist. */
 async function cancelBookingForWithdrawal(
@@ -403,11 +403,11 @@ async function cancelBookingForWithdrawal(
 // ─── the recount ─────────────────────────────────────────────────────────────
 
 /**
- * `places_taken`, recounted from the enrolments on every write to one, the
+ * `places_taken`, recounted from the enrollments on every write to one, the
  * direct analogue of `trackBookings`, and what makes the counter self-healing.
  *
  * It writes the course document, which re-fires nothing here (this trigger
- * watches the ENROLMENTS, not the course) but does drive `placeFreedEdge` for
+ * watches the ENROLLMENTS, not the course) but does drive `placeFreedEdge` for
  * whatever hangs on it.
  */
 export const trackCourseBlockEnrolments = onDocumentWritten(
@@ -460,7 +460,7 @@ export const enrolCourseBlockContact = onCall(async (request) => {
 
   // BOTH TENANT CHECKS BEFORE THE WRITE. This one used to sit AFTER
   // `takeCourseBlockPlace`, so a manager aiming at another studio's course
-  // committed the enrolment and consumed one of their places, and the refusal
+  // committed the enrollment and consumed one of their places, and the refusal
   // that followed rolled nothing back: a foreign name and email sat on their
   // roster until somebody noticed. A permission check after the write is not a
   // permission check.
@@ -509,7 +509,7 @@ export const joinCourseBlock = onCall(async (request) => {
 
   // TRUST ONLY THE VERIFIED CONTACT SESSION for who is joining, never a
   // `contactId` from the request body. This callable is on the public member
-  // router, so a body id would let anyone enrol anyone on any free or
+  // router, so a body id would let anyone enroll anyone on any free or
   // plan-covered course of any studio, and probe which contact ids exist by
   // watching which ones come back `not-found`. It read one for a while, which is
   // exactly what `createDropInCheckout` says in as many words not to do.
@@ -563,7 +563,7 @@ export const joinCourseBlock = onCall(async (request) => {
   const option = priced.options[0]
 
   // THE REFUSAL BRANCH MUST COME BEFORE THE FREE ONE. Without it an empty
-  // options array falls through to "enrols without paying", which is the free
+  // options array falls through to "enrolls without paying", which is the free
   // course this rail exists to prevent. The appointment rail learned this.
   if (!option) {
     throw new HttpsError('failed-precondition', 'You cannot book this course.', {
@@ -596,7 +596,7 @@ export const joinCourseBlock = onCall(async (request) => {
   } satisfies CourseEnrolmentResult
 })
 
-/** The studio takes somebody off a course. Their future lessons are cancelled
+/** The studio takes somebody off a course. Their future lessons are canceled
  *  through the ordinary path; the past stays as attendance history. No refund:
  *  money is handed back from the payments page, deliberately and by hand. */
 export const withdrawFromCourseBlock = onCall(async (request) => {

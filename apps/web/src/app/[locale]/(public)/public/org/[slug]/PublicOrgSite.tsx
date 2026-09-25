@@ -36,11 +36,11 @@ export interface PublicOrgSiteInitial {
   pageUnits: SiteTranslationUnits | null
 }
 
-// An organisation's public site — its home at /public/org/{slug} and every
+// An organization's public site — its home at /public/org/{slug} and every
 // other page directly under it. Reads only the fully-public
 // org_site_published collection. The team site's twin is
 // (public)/public/[slug]/site/PublicSite.tsx; this one has none of its booking,
-// member and surface chrome, because an organisation has none of those.
+// member and surface chrome, because an organization has none of those.
 export default function PublicOrgSite({
   slug,
   path = [],
@@ -51,7 +51,7 @@ export default function PublicOrgSite({
   path?: string[]
   /** Present when the server read the site (SSR); absent ⇒ read it here. */
   initial?: PublicOrgSiteInitial
-  /** The organisation's own domain, when the request came through it — the
+  /** The organization's own domain, when the request came through it — the
    *  site's links are then the short ones a visitor sees there. */
   domain?: PublicTeamDomain
 }) {
@@ -59,7 +59,7 @@ export default function PublicOrgSite({
   const t = useTranslations('Site')
   // Plain `<a href>`s, so each click is a full navigation the domain's rewrite
   // resolves server-side. Anything with no short form (English on a German
-  // organisation) keeps its long path, which the domain still serves.
+  // organization) keeps its long path, which the domain still serves.
   const shortenHref = useMemo(
     () =>
       domain

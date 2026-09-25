@@ -15,7 +15,7 @@
 //
 // It spans the functions/web boundary on purpose — the same reason
 // connect/commitSites.test.ts does. That boundary is where corrections stop
-// travelling.
+// traveling.
 
 import { strict as assert } from 'assert'
 import { readFileSync, readdirSync, existsSync } from 'fs'
@@ -180,7 +180,7 @@ describe('DEFAULT_TEAM_PLUGINS is safe to install unasked', () => {
     assert.ok(src.includes('DEFAULT_TEAM_PLUGINS'), 'onTeamCreated must read the constant')
     assert.ok(
       src.includes('planIsAtLeast('),
-      'the trigger must gate on the plan — an install document is honoured by ' +
+      'the trigger must gate on the plan — an install document is honored by ' +
         'useInstalledPlugins with no plan check of its own, so an ungated write hands ' +
         'a Free team a paid-tier feature'
     )

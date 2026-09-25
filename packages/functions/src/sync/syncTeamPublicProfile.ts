@@ -75,7 +75,7 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
   // All three read the TEAM path only, which made an org-level install invisible
   // to the one computation that decides what the PUBLIC sees. A federation that
   // installed `website` for its studios had already granted them the feature —
-  // `publishWebsite`, the kiosk callable and every other server gate honour that
+  // `publishWebsite`, the kiosk callable and every other server gate honor that
   // through `pluginIsActive` — but this flag alone disagreed, so a member studio
   // could publish a site that its own public profile then advertised as absent.
   //
@@ -88,7 +88,7 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
   // EVENTUALLY CONSISTENT, deliberately. Nothing fans an org install out to its
   // member teams; each studio's surfaces recompute on its own next team write.
   // The alternative — a trigger on org installs touching every member team — is
-  // a write amplification this flag does not justify, and the previous behaviour
+  // a write amplification this flag does not justify, and the previous behavior
   // was not "later" but "never".
   //
   // Batched with the team's `org_id`, which this trigger is standing on: two
@@ -124,7 +124,7 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
 
   // Portal (stored under the stable `space` key): the contact's PERSONAL member
   // portal — membership, bookings, profile, and the courses they can open. Decoupled
-  // from the course catalogue (that lives in the shop), so it's a BASE surface,
+  // from the course catalog (that lives in the shop), so it's a BASE surface,
   // available to every team's contacts → always live, plugin-free.
   const spaceActive = true
 
@@ -344,7 +344,7 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     name: data.name || '',
     description: data.description || '',
     slug: data.slug || '',
-    // Which organisation this studio belongs to. Public surfaces need it to show
+    // Which organization this studio belongs to. Public surfaces need it to show
     // the parent org's published events alongside the studio's own — an org
     // event has no teamId, so it cannot be found by a teamId query.
     org_id: data.org_id || null,
@@ -400,7 +400,7 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     // are separate lists answering separate questions (see the header of
     // packages/shared/src/types/goal.ts). Both mirrored because the Space runs
     // on a contact session, which cannot read `teams/{id}` at all; without this
-    // a studio that customises either one never reaches the member filling in
+    // a studio that customizes either one never reaches the member filling in
     // the form, who silently gets the defaults instead. Null when never
     // configured, which `resolveCoachingDimensions` / `resolveGoalCategories`
     // already read as "use the defaults".
@@ -528,8 +528,8 @@ export const syncTeamPublicProfile = onDocumentWritten('teams/{teamId}', async (
     // one (which previously threw and aborted the ENTIRE public-profile sync for
     // the team, leaving kiosk — and every other surface — stale).
     // The RESOLVED install's config — so a studio whose kiosk came from its
-    // organisation gets the organisation's settings rather than none. Precedence
-    // between two active installs still favours the team's own.
+    // organization gets the organization's settings rather than none. Precedence
+    // between two active installs still favors the team's own.
     const kioskCfg = pluginInstalls.get('kiosk')?.config as Partial<KioskConfig> | undefined
     publicProfile.kiosk = toKioskPublicConfig(normalizeKioskConfig(kioskCfg))
   } else {

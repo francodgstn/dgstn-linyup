@@ -77,7 +77,7 @@ export interface DownloadResult {
 }
 
 /** Shape a buffer for a callable's response — base64 over the wire, never a
- *  Buffer (which JSON-serialises as `{type:'Buffer', data:[...]}`, unusable to
+ *  Buffer (which JSON-serializes as `{type:'Buffer', data:[...]}`, unusable to
  *  a browser or the mobile app without re-decoding first). */
 export function toDownloadResult(filename: string, contentType: string, buf: Buffer): DownloadResult {
   return { filename, contentType, base64: buf.toString('base64'), bytes: buf.length }

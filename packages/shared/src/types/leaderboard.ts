@@ -15,7 +15,7 @@ export interface LeaderboardEntry {
   firstname: string
   lastname: string
   /** The stage of a not-yet-joined contact — what `leaderboardDisplayName`
-   *  anonymises on. Absent or null for a member. */
+   *  anonymizes on. Absent or null for a member. */
   acquisition_stage?: string | null
   score: number
   /** 1-based position. */

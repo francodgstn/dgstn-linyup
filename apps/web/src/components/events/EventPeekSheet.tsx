@@ -83,7 +83,7 @@ export function EventPeekSheet({ eventId, onClose, onEdit, onDelete, eventHref }
       : event.type
     : ''
   // RSVPs ONLY. This fell back to `participants_count` — the CHECK-IN count —
-  // and then labelled whichever it found with the same word, so an event with
+  // and then labeled whichever it found with the same word, so an event with
   // no acceptances and twelve people through the door reported "12 RSVPs".
   // They are different facts; the fallback silently substituted one for the
   // other.

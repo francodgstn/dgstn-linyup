@@ -577,7 +577,7 @@ function CheckOption({ label, checked, onToggle, dot }: { label: string; checked
   )
 }
 
-// Band → dot colour for the engagement filter (mirrors the meter on the contact page).
+// Band → dot color for the engagement filter (mirrors the meter on the contact page).
 const ENGAGEMENT_DOT: Record<EngagementBand, string> = {
   active: 'bg-emerald-500',
   low: 'bg-amber-500',
@@ -1852,7 +1852,7 @@ function ContactRow({
   const contactLabel = `${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim() || contactHref
   // ctrl/⌘/middle-click opens the contact in a background tab (keeps the list).
   const openContactInNewTab = () => openInNewTab(contactHref, contactLabel, 'contact')
-  // The whole LEVEL, not just its colour — a level may identify itself by an
+  // The whole LEVEL, not just its color — a level may identify itself by an
   // emoji or uploaded artwork instead, and RankBadge decides which one wins.
   const rankLevel = rankingSystems.length > 0
     ? primaryRank(contact, rankingSystems)?.level
@@ -2448,7 +2448,7 @@ function BulkSetSubscriptionDialog({
           )}
         </div>
 
-        {/* What the apply will write. Stated because the old behaviour — the
+        {/* What the apply will write. Stated because the old behavior — the
             previous plan's price surviving the move — was invisible until it
             reached the books. */}
         {picked && (
@@ -2741,7 +2741,7 @@ export default function ContactsPage() {
   // live contact except the provisional leads, so an EXTERNAL counts too: the
   // cap is about records held, not people looked after. Reading `active.length`
   // here would show "0 / 250" to a studio whose whole book is externals while
-  // the server still refuses the 251st. Over-cap behaviour is tier-specific
+  // the server still refuses the 251st. Over-cap behavior is tier-specific
   // (contactOverageForPlan) and never per-contact metered: Free hard-blocks
   // manual adds (portal signups still land), Coach is prompted to upgrade,
   // Studio can buy +contact blocks. Org is unlimited.
@@ -2763,7 +2763,7 @@ export default function ContactsPage() {
    * attention" is introduced, and `contactAttentionReasons` stays the one
    * predicate.
    *
-   * Read ONCE at mount via lazy initialisers rather than in an effect, so there
+   * Read ONCE at mount via lazy initializers rather than in an effect, so there
    * is no unfiltered first paint, and so clearing the filter by hand afterwards
    * is not snapped back by a re-render.
    */

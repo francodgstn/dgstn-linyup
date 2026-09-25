@@ -12,7 +12,7 @@
 // active tab) lives in localStorage; hydrated after mount to avoid an SSR
 // mismatch.
 //
-// Kept separate from the sidebar's Favourites (NavPinsContext) on purpose: they
+// Kept separate from the sidebar's Favorites (NavPinsContext) on purpose: they
 // answer different questions — "what am I in the middle of" vs "where do I go
 // often". A TAB is the only thing in this app that can be PINNED; the sidebar
 // says "always show" instead. Both mechanisms, and why they are not merged, are

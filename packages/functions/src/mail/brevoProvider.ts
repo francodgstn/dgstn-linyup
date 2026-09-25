@@ -18,7 +18,7 @@ export const brevoProvider: MailProvider = {
 
     const replyToEmail = msg.replyTo || sender.replyTo
     const headers: Record<string, unknown> = {}
-    // Brevo honours an Idempotency-Key header on transactional sends.
+    // Brevo honors an Idempotency-Key header on transactional sends.
     if (msg.idempotencyKey) headers['Idempotency-Key'] = msg.idempotencyKey
     // RFC 2369. Set only by bulk senders (outreach); transactional mail omits it.
     if (msg.listUnsubscribe) headers['List-Unsubscribe'] = msg.listUnsubscribe

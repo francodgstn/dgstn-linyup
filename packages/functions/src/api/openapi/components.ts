@@ -377,7 +377,7 @@ const Subscription = objectOf<ApiSubscription>()(
     current_period_start: time(),
     current_period_end: time(),
     cancelling: bool('Still running, will not renew'),
-    ends_at: time('Null while renewing, and on a record cancelling without a stored date — read `cancelling` for whether'),
+    ends_at: time('Null while renewing, and on a record canceling without a stored date — read `cancelling` for whether'),
     cancellation: nullable(
       objectOf<NonNullable<ApiSubscription['cancellation']>>()(
         {

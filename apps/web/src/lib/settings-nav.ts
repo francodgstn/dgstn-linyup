@@ -1,5 +1,5 @@
-// Shared catalogue of "settings" destinations. Consumed by the sidebar (which shows
-// the subset the user always shows, under Favourites) and by the settings rail
+// Shared catalog of "settings" destinations. Consumed by the sidebar (which shows
+// the subset the user always shows, under Favorites) and by the settings rail
 // (/settings/* — which lists them all, grouped, with an "always show" toggle on
 // each). Keeping it in one place means the sidebar and rail never drift.
 // Vocabulary: see THE NAV-MEMORY CENSUS in contexts/NavPinsContext.tsx.
@@ -166,7 +166,7 @@ export const SETTINGS_ITEMS: SettingsNavItem[] = [
   // templates and the system toggles are one subject, and were already sharing
   // the `EmailSettings` i18n namespace. `?tab=outreach` redirects to /settings/emails,
   // so a pinned `teamOutreach` id resolves to nothing and simply drops out of the
-  // pin list (the catalogue is a Map lookup) rather than breaking it.
+  // pin list (the catalog is a Map lookup) rather than breaking it.
   { id: 'teamEmails', href: '/settings/emails', labelKey: 'teamEmails', icon: Mail, group: 'communication' },
   // Split out of teamEmails (2026-08-27): the templates list + placeholder
   // reference is AUTHORING copy, while teamEmails above is CONFIGURATION

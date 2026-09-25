@@ -12,7 +12,7 @@
 // HOW, AND WHY SO LITTLE IS WRITTEN HERE. A v2 `onCall(...)` value is already an
 // Express-style `(req, res)` handler (`CallableFunction extends HttpsFunction`),
 // and the SDK's `onCallHandler` verifies the ID token, enforces App Check, runs
-// the member's own CORS middleware and serialises `HttpsError` IN-PROCESS. So a
+// the member's own CORS middleware and serializes `HttpsError` IN-PROCESS. So a
 // router is an `onRequest` that reads the callable's name from the LAST path
 // segment — `{base}/{router}/{callableName}`, built by `callableRouteUrl` in
 // @linyup/shared — and hands `(req, res)` to the existing value, untouched.

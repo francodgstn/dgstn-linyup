@@ -16,7 +16,7 @@
  * 2026-08-24.
  *
  * ── IT SHOWS EVERYWHERE YOU CAN STAND, AND TICKS WHERE YOU ARE ─────────────
- * Every studio and every organisation this login can reach, with the current
+ * Every studio and every organization this login can reach, with the current
  * one ticked. It used to hide the studio list for anyone in a single studio;
  * that was right while this lived in the account menu and only answered "take
  * me to my OTHER studio", and wrong as a scope switcher, whose job is the whole
@@ -41,15 +41,15 @@
  * because a team-scoped detail URL (`/contacts/{id}`) does not exist in the
  * studio being switched to.
  *
- * ── IT LISTS ORGANISATIONS TOO NOW, AND STILL DOES NOT NEST ────────────────
- * This used to say organisations were a separate concept with their own sidebar
- * section (`OrgLinks`). That section was deleted when an organisation became a
+ * ── IT LISTS ORGANIZATIONS TOO NOW, AND STILL DOES NOT NEST ────────────────
+ * This used to say organizations were a separate concept with their own sidebar
+ * section (`OrgLinks`). That section was deleted when an organization became a
  * SCOPE rather than a row (docs/org-navigation.md), and its entries moved here —
  * because "which place am I standing in" is one question and answering it in two
  * controls is the ambiguity the scope model removes.
  *
  * They are still two FLAT groups. Nothing nests, groups or rolls up: an
- * organisation is not a parent of the studios listed above it, it is a different
+ * organization is not a parent of the studios listed above it, it is a different
  * place to stand.
  *
  * ── AND IT NO LONGER LIVES IN THE ACCOUNT MENU ─────────────────────────────
@@ -157,7 +157,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
   /** Am I standing in this studio RIGHT NOW? Being the current team is not
    *  enough — in org scope the current team is still set, but you are somewhere
    *  else. Without this, the studio you belong to renders as ticked-and-inert
-   *  inside an organisation, so the switcher's most obvious way back to your own
+   *  inside an organization, so the switcher's most obvious way back to your own
    *  studio does nothing at all. */
   const standingIn = (teamId: string) =>
     currentScope?.kind === 'team' && currentScope.id === teamId
@@ -168,7 +168,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
    * The single-studio rule below holds only in team scope, where the one row
    * would be the studio you are already in. In ORG scope you are somewhere
    * else, so that row is the way BACK — and hiding it left an org admin who
-   * runs one studio with a switcher that could reach the organisation and
+   * runs one studio with a switcher that could reach the organization and
    * nothing else (Franco, 2026-09-02).
    *
    * Same blind spot `standingIn` was written for, one step earlier: that fixed
@@ -243,7 +243,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
               offers to switch you to it — so the heading and the rows are both
               held back and the group is the create row alone (Franco,
               2026-08-28). That is what the switcher shows somebody who has one
-              studio and no organisation: a way to get a second, and the offer
+              studio and no organization: a way to get a second, and the offer
               behind it. */}
           {showStudioList && (
             <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
@@ -280,7 +280,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
           })}
           {/* INSIDE THE STUDIOS GROUP, because it makes a STUDIO — at the foot
               of the whole menu it read as a general action and sat under the
-              organisations, which it has nothing to do with (Franco,
+              organizations, which it has nothing to do with (Franco,
               2026-08-27). Shown to someone with a single studio too — it is
               the only route to a second one, so gating it on already having
               two would make it unreachable. It rides on the group's own gate,
@@ -297,7 +297,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
               the item goes nowhere. */}
           <DropdownMenuItem
             onClick={() => {
-              // A login that already has an organisation has met this offer and
+              // A login that already has an organization has met this offer and
               // is not the audience for it; so has one with no handler, which is
               // every caller that has not opted in.
               if (orgs.length > 0 || !onCreateStudio) {
@@ -312,7 +312,7 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
           </DropdownMenuItem>
         </DropdownMenuGroup>
       )}
-      {/* THE ORGANISATIONS THIS LOGIN CAN STAND IN.
+      {/* THE ORGANIZATIONS THIS LOGIN CAN STAND IN.
           A second GROUP, not a second control, because the question is the same
           one — "which scope am I in" — and answering it in two places would put
           the ambiguity back that the scope model exists to remove.
@@ -321,10 +321,10 @@ export function TeamSwitcher({ onCreateStudio }: { onCreateStudio?: () => void }
           current team does not change, so there is no cache keyed to the wrong
           tenant and none of the hard-reload reasoning below applies.
 
-          IT LINKS TO THE SCOPE ROOT, not to a page. Where an organisation opens
+          IT LINKS TO THE SCOPE ROOT, not to a page. Where an organization opens
           depends on whether you run it or merely belong to one of its studios,
           and `/org/{id}` is the one place that decides — see that route. Naming
-          a page here would mean resolving a role for every organisation in the
+          a page here would mean resolving a role for every organization in the
           list before this menu could render a single row. */}
       {orgs.length > 0 && (
         <DropdownMenuGroup>

@@ -5,7 +5,7 @@
 //
 // Unlike HMD (an org-level install whose switches live on the org plugins page),
 // AI insights is installed by a studio, so this dialog is where its modules are
-// chosen. When an organisation installed it instead, the studio's card shows no
+// chosen. When an organization installed it instead, the studio's card shows no
 // Configure control at all — so the org branch below is a fallback, not a path.
 
 import { useTranslations } from 'next-intl'

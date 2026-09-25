@@ -22,7 +22,7 @@ export function EventPublishCard({
 }: {
   event: Event
   /** Where the published event is shown. The caller knows its own public
-   *  surface (a studio's slug, or an organisation's). Null while unknown. */
+   *  surface (a studio's slug, or an organization's). Null while unknown. */
   publicUrl?: string | null
   canEdit: boolean
 }) {

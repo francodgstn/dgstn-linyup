@@ -30,7 +30,7 @@ describe('site pages — path grammar', () => {
     }
   })
 
-  it('normalises what a studio types', () => {
+  it('normalizes what a studio types', () => {
     assert.equal(normalizeSitePagePath('Über uns / Team'), 'ueber-uns/team')
     assert.equal(normalizeSitePagePath('  Preise & Abos!  '), 'preise-abos')
     assert.equal(normalizeSitePagePath('/a/b/c/d/'), 'a/b/c')

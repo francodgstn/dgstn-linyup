@@ -1,4 +1,4 @@
-// The organisation's own word for an affiliation — "Affiliation", "Lizenz",
+// The organization's own word for an affiliation — "Affiliation", "Lizenz",
 // "Club membership" — resolved for a reader's language. ONE fallback chain,
 // because there were two: the web fell through to the first FILLED translation,
 // so a studio that entered only German got it everywhere; the member app fell
@@ -13,7 +13,7 @@ import type { UiLanguage } from './regional'
 
 export type AffiliationTerm = Partial<Record<UiLanguage, string>>
 
-/** What every surface prints when the organisation has set no term at all. */
+/** What every surface prints when the organization has set no term at all. */
 export const DEFAULT_AFFILIATION_TERM = 'Affiliation'
 
 const filled = (v: string | undefined | null): string | undefined => {

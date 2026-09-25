@@ -15,7 +15,7 @@ import type { PublishOutcome, StudioDocument } from '@linyup/shared'
 // to a few rules rather than to taste:
 //
 //  1. Each option is named by WHAT HAPPENS, never by severity. "Minor / material"
-//     was rejected: it asks a studio to make a judgement it has no way to make,
+//     was rejected: it asks a studio to make a judgment it has no way to make,
 //     and the answer it gets wrong is the one that matters.
 //  2. Each option states what it COSTS EVIDENTIALLY, in one line, in the studio's
 //     own language — at the moment of choosing, not when somebody needs the
@@ -28,7 +28,7 @@ import type { PublishOutcome, StudioDocument } from '@linyup/shared'
 //
 // TWO OUTCOMES, NOT THREE. "Notify signers" — carry the signatures forward but
 // email everyone, with a per-recipient deliverability record — is deferred. It is
-// deliberately not offered as a disabled third option: a greyed-out control that
+// deliberately not offered as a disabled third option: a grayed-out control that
 // never becomes available is worse than one that does not exist. The server
 // refuses `notify` BY NAME rather than downgrading it to `silent`, so an old
 // client can never tell a studio its members were notified when nobody was.

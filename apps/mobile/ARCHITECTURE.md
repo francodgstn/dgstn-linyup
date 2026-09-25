@@ -104,7 +104,7 @@ mirror (`brandFromProfile`), persisted in AsyncStorage, and cleared by
 is dark in both system schemes), lifts the accent in dark mode, and derives
 primary / container / inverse roles, tinted elevation levels and the gradient
 stops. Null = Linyup's own theme, for no brand or anything malformed.
-`theme.semantic` carries the brand-independent colours; `useAppTheme()` is the
+`theme.semantic` carries the brand-independent colors; `useAppTheme()` is the
 typed accessor.
 
 ## Update channel

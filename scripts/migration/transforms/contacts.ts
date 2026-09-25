@@ -265,7 +265,7 @@ export function transformContact(
   //
   // ORG-ISSUED, NOT TEAM-ISSUED. `membership_status` is the federation card:
   // hmd-lineup's Membership route lists it ACROSS EVERY CLUB (`teacherId ===
-  // 'all'`) with exactly the vocabulary Linyup seeds for the organisation
+  // 'all'`) with exactly the vocabulary Linyup seeds for the organization
   // (requested / almost ready / active / expired / guest), and the org's
   // managers are the ones who move it. Until 2026-09-11 this wrote a
   // team-issued row with no `org_id`, and under `orgAdminMayReadContact` (which
@@ -279,7 +279,7 @@ export function transformContact(
   // exists, never read.
   // Soft-deleted AND archived contacts are coerced to 'expired' so they never
   // count as active. Archived was missing until 2026-09-10: HMD's status field
-  // is not cleared when a club archives somebody, so the licence rode along —
+  // is not cleared when a club archives somebody, so the license rode along —
   // Basel's audit found that EVERY affiliation the transform would have marked
   // active belonged to a person the club had already archived (31 of 31), and
   // the federation's member count would have been made of people who had left.
@@ -306,7 +306,7 @@ export function transformContact(
       active: statusCountsAsActive(statusId),
       // Denormalised liveness. The federation's status breakdown counts these
       // rows through a collection group, which cannot reach the parent contact
-      // to read `archived_at` — so an ex-member's licence would sit in its queue
+      // to read `archived_at` — so an ex-member's license would sit in its queue
       // for ever. `isGone` above is the same question this file already asks to
       // coerce an archived person's status to 'expired', so the row's liveness
       // and its status cannot disagree.
@@ -383,7 +383,7 @@ export function transformContact(
   // archived or binned person's plan stays on the record as history — the
   // subscription_history rows pass 05 copies — but nothing claims it is HELD:
   // a "subscribed" chip on an archived person is the same lie as an active
-  // licence on one. Basel's audit: 11 archived contacts would have landed
+  // license on one. Basel's audit: 11 archived contacts would have landed
   // holding an active plan.
   if (match !== null) {
     // A COMPED PLAN HAS NO PRICE, AND THAT IS THE WHOLE POINT OF IT.

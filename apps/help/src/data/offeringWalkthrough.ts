@@ -76,7 +76,7 @@ export const QUESTIONS: WalkQuestion[] = [
       },
       {
         label: 'Something to watch in their own time',
-        hint: 'Recorded lessons, a video programme',
+        hint: 'Recorded lessons, a video program',
         steps: [
           'Install the **Online courses** plugin, then add the course in **Manage → Online courses**.',
           'Choose who can open it: **Free** for anyone, **Sign-in required**, **Subscription** (included in the plans you pick), or **Sold** at a price you set.',
@@ -90,9 +90,9 @@ export const QUESTIONS: WalkQuestion[] = [
         note: 'A product has one price for everyone: plans don\'t include or discount it.',
       },
       {
-        label: 'A camp or an event with a programme',
+        label: 'A camp or an event with a program',
         hint: 'A summer camp, a seminar, a grading',
-        steps: ['Create it under **Events**. An event takes registrations and can carry a programme over several days.'],
+        steps: ['Create it under **Events**. An event takes registrations and can carry a program over several days.'],
         note: 'Events are not paid for online: the fee is shown to people, and you collect it yourself.',
       },
     ],
@@ -348,7 +348,7 @@ export const QUESTIONS: WalkQuestion[] = [
   },
   {
     id: 'course-who',
-    ask: 'Who can enrol?',
+    ask: 'Who can enroll?',
     options: [
       { label: 'Anyone', next: 'course-close' },
       {
@@ -390,7 +390,7 @@ export const QUESTIONS: WalkQuestion[] = [
         hint: 'A 10-class card',
         next: 'plan-includes',
         steps: [
-          'Choose **New plan** (or the **10-class pack** template) and add a one-time price with the number of **Classes** and how many months they stay valid. Each booking uses one credit; a cancelled booking gives it back.',
+          'Choose **New plan** (or the **10-class pack** template) and add a one-time price with the number of **Classes** and how many months they stay valid. Each booking uses one credit; a canceled booking gives it back.',
         ],
       },
       {

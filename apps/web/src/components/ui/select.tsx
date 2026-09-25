@@ -24,7 +24,7 @@ function extractEntries(children: React.ReactNode): SelectEntry[] {
     const p = child.props as Record<string, unknown>
     if (p.value !== undefined && p.value !== null) {
       // `label` also switches the item to the two-line title+sublabel layout, so
-      // a row whose children are inline DECORATION (a colour dot, an icon, a tree
+      // a row whose children are inline DECORATION (a color dot, an icon, a tree
       // indent) uses `textValue` instead: it registers the trigger's text without
       // touching how the row renders.
       const label =
@@ -167,7 +167,7 @@ function SelectItem({
   /** Title of a TWO-LINE item: rendered as the row's text, with `children` shown
    *  beneath it as a muted sublabel. Also what the trigger displays. */
   label?: string
-  /** The trigger's text for a row that renders its own inline content — a colour
+  /** The trigger's text for a row that renders its own inline content — a color
    *  dot, an icon, a hierarchy indent. Registers the label WITHOUT changing the
    *  layout, which is the difference from `label`.
    *

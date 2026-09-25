@@ -39,7 +39,7 @@ Nine things consume install state — the sidebar, plugin nav rows, event types,
 the automation rule builder, the server gate, five ad-hoc server gates, the
 teardown trigger, billing, and `firestore.rules` — and every one keys off **a
 document whose id is the plugin id**. A member that is an ordinary plugin
-therefore resolves through all of them with no changes at all. Modelling modules
+therefore resolves through all of them with no changes at all. Modeling modules
 as a map inside one document would have broken all nine, and rules cannot read
 into a config map to decide anything.
 
@@ -78,7 +78,7 @@ Four rules, each of which is a bug if broken — all pinned by
 - **Two loop breakers.** The `isBundleContainer` guard stops a member document
   this function just wrote from re-entering as if it were a container; the
   empty-diff early return stops a no-op commit re-firing the trigger it runs
-  inside. Neither is an optimisation — without either, the first install loops.
+  inside. Neither is an optimization — without either, the first install loops.
 - **It deletes; it never writes `status: 'inactive'`.** That marker means a plan
   lapse, and `orgs/orgTierRails.test.ts` allows exactly two writers of it.
 - **It only removes what it created.** A member document without this
@@ -97,7 +97,7 @@ the source — a new file reading `PLUGIN_REGISTRY` fails until it is classified
 
 1. **Surfaces that offer an install** call `installableManifests()`: the
    marketplace grid and its `?plugin=` deep link, `DiscoverPanel`, and the org
-   catalogue. A member is not offered; the container is.
+   catalog. A member is not offered; the container is.
 2. **The reconciler.**
 3. **The container's config panel**, plus `settings/event-types`, which keeps
    showing a member's event type (it offers no install) but gates on the
@@ -127,7 +127,7 @@ the statement of assets is an accounting artifact over the register's records
 and the accrual phase's depreciation postings will read them.
 
 **A REQUIREMENT IS NOT A BUNDLE MEMBER**, and conflating the two is the way this
-area goes wrong. A member is hidden from every catalogue, owned by one
+area goes wrong. A member is hidden from every catalog, owned by one
 container, stamped `installedByBundle`, and deleted when the container goes. A
 requirement is a first-class plugin a tenant discovers, installs and KEEPS on
 its own, which something else also happens to need. The bundle file rules itself
@@ -144,7 +144,7 @@ dependency implemented at the install button would be silently absent for
 exactly the tenants it matters most to.
 
 It reconciles **both directions** from whichever document changed: a requirer
-appearing materialises its requirements, and a requirement disappearing while a
+appearing materializes its requirements, and a requirement disappearing while a
 requirer is still active puts it back. Two loop breakers, mirroring the bundle
 reconciler: a plugin in neither side of the relation returns before any read,
 and an empty diff returns before committing.
@@ -169,7 +169,7 @@ Three rules, each pinned by `packages/functions/src/plugins/requirements.test.ts
 ## Audience — discovery, never running
 
 `PluginAudience` + `pluginVisibleToTenant` keep one customer's name out of every
-other tenant's catalogue. **Nothing that resolves an INSTALLED plugin consults
+other tenant's catalog. **Nothing that resolves an INSTALLED plugin consults
 it.** A tenant dropped from the list keeps its card, its Configure and its
 Remove — a list edit must not be a data change with an outage in it.
 
@@ -243,7 +243,7 @@ the grant.
 That change is **eventually consistent by design**: nothing fans an org install
 out to its member teams, so each studio's surfaces recompute on its own next team
 write. A trigger on org installs touching every member team is a write
-amplification this flag does not justify, and the previous behaviour was not
+amplification this flag does not justify, and the previous behavior was not
 "later" but "never".
 
 **The plugin id inside `plugin:{id}:{name}` is parsed in ONE place** —
@@ -256,7 +256,7 @@ types. Rank-progression requirements use the same shape and the same function
 ## Contributions
 
 A manifest DECLARES; a registry IMPLEMENTS. Declarations must be serializable
-data (catalogues and rule builders read them without loading plugin code);
+data (catalogs and rule builders read them without loading plugin code);
 implementations must be code. That is why `automationActions` sits in the
 manifest while `pluginActionHandlers` sits in `packages/functions/src/plugins/`.
 
@@ -276,7 +276,7 @@ import path fails at runtime, in the one branch that renders it. The per-slot
 over every file under `plugins/`.
 
 Icons resolve through **one** map. There used to be three, and they had already
-drifted: the org catalogue's copy was missing five icons, so five plugins
+drifted: the org catalog's copy was missing five icons, so five plugins
 rendered a fallback puzzle piece on that page and nowhere else. The map stays
 explicit rather than using `DynamicIcon`, which reaches its result via
 `import * as LucideIcons` and would pull the whole icon set into the
@@ -294,7 +294,7 @@ authenticated layout.
    publishes something public; if you add one, add its copy to
    `REMOVE_EFFECT_KEY`, because the default text promises the data is kept.
 5. To make it a bundle member: one line in `PLUGIN_BUNDLES`. Nothing else — the
-   catalogues and the reconciler follow.
+   catalogs and the reconciler follow.
 6. To make another plugin depend on it: one line in `PLUGIN_REQUIREMENTS`.
    Nothing else — `reconcileRequirements` and the marketplace's blocked-remove
    follow. If its `minPlan` is below Studio, remember the

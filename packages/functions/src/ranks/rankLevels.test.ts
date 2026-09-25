@@ -145,7 +145,7 @@ describe('matchesFilter — the rank dimension with a ladder in context', () => 
     assert.equal(matchesFilter(contact({ hmd: 'white' }), f, ctx), false)
   })
 
-  it('without the ladder a numeric band against a numeric rank still compares (the old behaviour)', () => {
+  it('without the ladder a numeric band against a numeric rank still compares (the old behavior)', () => {
     const f = { rankRanges: { hmd: { min: 2, max: null } } }
     assert.equal(matchesFilter(contact({ hmd: 3 }), f, { nowMs: NOW }), true)
     assert.equal(matchesFilter(contact({ hmd: 1 }), f, { nowMs: NOW }), false)

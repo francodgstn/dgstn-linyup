@@ -53,7 +53,7 @@ export async function countRankHolders(
 
   try {
     let total = 0
-    // One team at a time, its levels in parallel. An organisation counting a
+    // One team at a time, its levels in parallel. An organization counting a
     // fifteen-step belt scale across every member studio would otherwise open
     // several hundred simultaneous requests the instant somebody clicks a
     // delete icon.

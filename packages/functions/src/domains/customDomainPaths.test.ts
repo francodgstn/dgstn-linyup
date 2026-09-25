@@ -45,7 +45,7 @@ describe('custom domain path mapping', () => {
       assert.strictEqual(toTenantInternalPath('/en/shop', SLUG), `/public/${SLUG}/en/shop`)
     })
 
-    it('routes an organisation to the org tree', () => {
+    it('routes an organization to the org tree', () => {
       assert.strictEqual(
         toTenantInternalPath('/events', SLUG, 'org'),
         `/public/org/${SLUG}/events`

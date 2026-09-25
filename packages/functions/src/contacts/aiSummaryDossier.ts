@@ -307,7 +307,7 @@ function holdingWord(p: HeldPlan): string {
 function planLine(p: HeldPlan): string {
   const bits = [holdingWord(p)]
   const endsAt = p.ends_at_ms != null ? isoDay(new Date(p.ends_at_ms)) : null
-  if (p.status === 'cancelling') bits.push(`cancelled — ends ${endsAt ?? 'at a date not recorded'}`)
+  if (p.status === 'cancelling') bits.push(`canceled — ends ${endsAt ?? 'at a date not recorded'}`)
   else {
     if (p.status !== 'active') bits.push(p.status)
     if (endsAt) bits.push(`ends ${endsAt}`)
@@ -316,7 +316,7 @@ function planLine(p: HeldPlan): string {
 }
 
 /**
- * The facts and the signals, as plain labelled lines. Only the FIRST NAME
+ * The facts and the signals, as plain labeled lines. Only the FIRST NAME
  * identifies the person: email, phone, address, birthdate, emergency
  * contacts, weight and the surname are not read — an analysis of a training
  * relationship needs none of them. Notes ARE read: they are the most useful
@@ -353,7 +353,7 @@ export function buildContactDossier(input: DossierInput): string {
     return `${cr.remaining} left on ${cr.subscription_type_name ?? 'a credit pack'}${exp ? ` (next expiry ${isoDay(exp)})` : ''}`
   })
   if (credits.length) lines.push(`Credits: ${credits.join('; ')}`)
-  if (c.affiliation_summary?.has_active) lines.push('Affiliation: active member of the organisation')
+  if (c.affiliation_summary?.has_active) lines.push('Affiliation: active member of the organization')
 
   const total = c.total_sessions ?? 0
   const last = toDate(c.last_session_at)
@@ -409,7 +409,7 @@ export function buildContactDossier(input: DossierInput): string {
       ? ` — next ${s.nextUpcoming.when ? isoDay(s.nextUpcoming.when) : 'undated'} ${s.nextUpcoming.activity ?? ''}`.trimEnd()
       : ''
     lines.push(
-      `- Bookings, last ${bookings.length}: ${o.kept} kept, ${o.noShow} no-show${o.noShow === 1 ? '' : 's'}${rate}, ${o.cancelled} cancelled, ${o.upcoming} upcoming${next}`
+      `- Bookings, last ${bookings.length}: ${o.kept} kept, ${o.noShow} no-show${o.noShow === 1 ? '' : 's'}${rate}, ${o.cancelled} canceled, ${o.upcoming} upcoming${next}`
     )
     const rhythm: string[] = []
     if (s.favouriteDays.length) rhythm.push(s.favouriteDays.join(' and '))

@@ -394,7 +394,7 @@ describe('the checkout window work budget', () => {
 //    figure is an optimistic render, not a quote, and the two snapshots are
 //    documented as allowed to disagree — so enforcing it there refuses ORDINARY
 //    sales, deterministically (an exhausted credit pack listed in a benefit; a
-//    price raised under a shop tab that fetched its catalogue once).
+//    price raised under a shop tab that fetched its catalog once).
 //  • it is ONE-SIDED. Refusing on ANY difference would refuse a member whose
 //    benefit comes from a SECONDARY held subscription type: the contact session
 //    carries only the primary one, so the client quotes base and the server

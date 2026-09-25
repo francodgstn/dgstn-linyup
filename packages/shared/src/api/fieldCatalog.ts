@@ -242,7 +242,7 @@ export const BOOKING_FIELD_CATALOG: FieldCatalog<Booking> = {
   teamId: 'excluded',
   contact: 'exposed',
   session: 'exposed',
-  // The denormalised identity copies survive anonymisation, which only wipes the
+  // The denormalised identity copies survive anonymization, which only wipes the
   // contact document — so a booking's person always comes from the CONTACT.
   email: 'excluded',
   firstname: 'excluded',
@@ -302,7 +302,7 @@ export const EVENT_FIELD_CATALOG: FieldCatalog<Event> = {
   id: 'exposed',
   teamId: 'excluded',
   orgId: 'excluded',
-  scope: 'excluded', // organisation events are out of v1
+  scope: 'excluded', // organization events are out of v1
   title: 'exposed',
   type: 'exposed',
   start: 'exposed',

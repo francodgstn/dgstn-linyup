@@ -40,7 +40,7 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
   if (!orgId) throw new HttpsError('invalid-argument', 'orgId is required')
 
   await assertOrgAdmin(uid, orgId)
-  // The org site is a surface of the organisation TIER, and a lapse takes it
+  // The org site is a surface of the organization TIER, and a lapse takes it
   // down (`lapseOrganization`). Without this the teardown is one click deep:
   // the draft survives the unpublish by design, so an admin of an expired org
   // could put the public site straight back up. Publishing asks; UNpublishing
@@ -111,7 +111,7 @@ export const publishOrgWebsite = onCall({ timeoutSeconds: 300 }, async (request)
     .filter((x): x is { platform: string; url: string } => x !== null)
 
   const meta = sanitizeOrgMeta(draft.meta, name)
-  // The header menu, through the SAME sanitiser the team site uses — depth,
+  // The header menu, through the SAME sanitizer the team site uses — depth,
   // breadth and target shape are tenant-agnostic. Undefined when the org has
   // never edited its header, and `clean` drops it, so the renderer keeps
   // deriving the old layout.

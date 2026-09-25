@@ -33,7 +33,7 @@ import { isReservedSlug, TRIAL_DAYS } from '@linyup/shared'
 // ─────────────────────────────────────────────────────────────────────────────
 
 // The bio-link starter links every new studio gets — identical to the shape the
-// client `provisionTeam` wrote, so no signup behaviour changes. Everything else a
+// client `provisionTeam` wrote, so no signup behavior changes. Everything else a
 // team needs at birth (default payment modes, the trial-cleanup automation) is
 // provisioned by the `onTeamCreated` trigger, which fires for this create too.
 const DEFAULT_LINKS = [
@@ -53,7 +53,7 @@ const DEFAULT_LINKS = [
   },
 ]
 
-// Server-authoritative slug resolution — same normalisation, reserved-word guard
+// Server-authoritative slug resolution — same normalization, reserved-word guard
 // and single collision query as createTeamRecord (utils/teams.ts). The slug is
 // the tenant's public address; a studio can rename it later from Settings.
 async function resolveTeamSlug(

@@ -1,5 +1,5 @@
 /**
- * One-off migration: retire the org-level "membership" naming in favour of
+ * One-off migration: retire the org-level "membership" naming in favor of
  * "affiliation" for any ALREADY-DEPLOYED data.
  *   - subcollection  organizations/{id}/membership_statuses → affiliation_statuses
  *   - org doc field  membership_term      → affiliation_term

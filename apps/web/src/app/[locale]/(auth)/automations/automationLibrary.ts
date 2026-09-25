@@ -48,7 +48,7 @@ export interface LibraryItem {
    *  `libraryItemUnlocked`: for a long time this field was declared on every
    *  item and consulted by nothing, so a Free team could install a 'studio'
    *  item from the dialog. A declared-but-unenforced gate is worse than none,
-   *  because everyone maintaining the catalogue reads it as a guarantee. */
+   *  because everyone maintaining the catalog reads it as a guarantee. */
   requires_plan: 'free' | 'coach' | 'studio'
   /** Defined only for items that own their email template. Migrated items reference
    *  an existing sys_* template via the action's template_key instead. */
@@ -424,7 +424,7 @@ Il team {{teamName}}`,
     // "AND THE TRIAL PARTICIPATED" NEEDS NO CONDITION. A `session_ended` rule
     // resolves its recipients from the session's `participants` rows at FIRE
     // time, and a participant row is written at check-in — so somebody who
-    // booked and did not turn up, or cancelled, is never in the list. A
+    // booked and did not turn up, or canceled, is never in the list. A
     // condition testing attendance would be a second, weaker answer to a
     // question the trigger has already answered exactly.
     //
@@ -995,7 +995,7 @@ Il team {{teamName}}`,
     library_key: 'lib_milestone_25',
     category: 'milestones',
     name: '25 sessions — committed!',
-    description: 'Recognises the dedication of reaching 25 sessions.',
+    description: 'Recognizes the dedication of reaching 25 sessions.',
     tags: ['milestone', '25 sessions', 'committed', 'congratulations'],
     requires_plan: 'studio',
     template: {
@@ -1096,7 +1096,7 @@ You have shown up fifty times and become a real part of our community. That is s
 
 Thank you for the energy you bring every time — it makes a difference for everyone around you.
 
-If you would like to mark the occasion with a quick review, we would be honoured:
+If you would like to mark the occasion with a quick review, we would be honored:
 
 **[Share your story ↗]({{reviewUrl}})**
 

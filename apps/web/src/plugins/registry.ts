@@ -83,7 +83,7 @@ export function getPluginEventTypeIds(): string[] {
 // split from the source.
 
 /**
- * The catalogue view: containers and standalone plugins, never bundle members.
+ * The catalog view: containers and standalone plugins, never bundle members.
  * THE list every surface that offers an install must iterate.
  */
 export function installableManifests(): PluginManifest[] {
@@ -114,7 +114,7 @@ export function memberManifestsOf(containerId: PluginId): PluginManifest[] {
  * a remove dialog naming the plugin that requires the one being removed, say.
  *
  * A helper rather than a `PLUGIN_REGISTRY.find(...)` at the call site because
- * `bundles.test.ts` forbids the catalogue pages from reaching into the registry
+ * `bundles.test.ts` forbids the catalog pages from reaching into the registry
  * directly, and because this deliberately searches ALL manifests, not
  * `installableManifests()`: a bundle member can be the answer here.
  */

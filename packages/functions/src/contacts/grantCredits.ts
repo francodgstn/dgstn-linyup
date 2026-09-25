@@ -10,7 +10,7 @@
 //   • `idempotencyKey` makes the grant doc id DETERMINISTIC, written with
 //     `.create()`. A double-click used to mint two grants — twice the credits,
 //     silently — and now writes one and reports the second as a duplicate. The
-//     key is optional: an omitted one keeps the old auto-id behaviour, so no
+//     key is optional: an omitted one keeps the old auto-id behavior, so no
 //     existing caller changes shape.
 //   • `sendReceipt` tells the contact they now hold N credits. It is the same
 //     credit-pack body the shop sends, with `granted: true` (nobody bought

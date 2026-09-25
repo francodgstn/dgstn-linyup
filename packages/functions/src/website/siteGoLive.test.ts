@@ -5,7 +5,7 @@ import { sanitizeRedirects } from './sanitize'
 // Phase 6 of the website builder: what a site needs to replace a live website.
 
 describe('site redirects', () => {
-  it('normalises an old path the way a visitor may type it', () => {
+  it('normalizes an old path the way a visitor may type it', () => {
     assert.equal(normalizeSiteRedirectPath('/Ueber-Uns/Unsere-Box/'), '/ueber-uns/unsere-box')
     assert.equal(normalizeSiteRedirectPath('ueber-uns?ref=x#top'), '/ueber-uns')
     assert.equal(normalizeSiteRedirectPath('/%C3%BCber-uns'), '/über-uns')

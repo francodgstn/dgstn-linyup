@@ -9,7 +9,7 @@
  * ./README.md; nothing here seeds or starts anything.
  *
  * Firestore is read and written with the Admin SDK against the slot's emulator.
- * The emulator host MUST be set before firebase-admin initialises, which is why
+ * The emulator host MUST be set before firebase-admin initializes, which is why
  * it is assigned at module load, from the same slot arithmetic local-env uses.
  */
 import { resolve } from 'node:path'

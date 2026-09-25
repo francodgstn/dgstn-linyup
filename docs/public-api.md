@@ -141,7 +141,7 @@ through `registerReadTool`, which validates arguments with the same `parseInput`
 | # | Decision | Why |
 |---|---|---|
 | D1 | Designed from scratch. hmd-lineup's `hmdApi` + stdio MCP proxy is not a reference. | One key per user pinned to a team, raw documents out, no scopes, no audit. |
-| D2 | Audience is **studio staff acting on one team**. No organisation principals, no member-facing agent. | The questions leads ask are a studio's questions; a member agent is a different identity (contact session) and a different risk. |
+| D2 | Audience is **studio staff acting on one team**. No organization principals, no member-facing agent. | The questions leads ask are a studio's questions; a member agent is a different identity (contact session) and a different risk. |
 | D3 | **Read-only** in v1. | Every write path in Linyup runs through a seam (waiver gate, seat writer, payment resolver). An AI that books or cancels needs those seams exposed deliberately, not as a side effect. |
 | D4 | **OAuth + API keys.** OAuth for connectors in claude.ai / ChatGPT; API keys for developers, scripts and Claude Code. | A non-technical owner cannot paste a header into claude.ai. |
 | D5 | Entitlement is a plugin, **`api-connectors`**, `minPlan: 'studio'`. | Landing already sells "API access" on Studio + Organization. Plugin doctrine (`docs/plugins.md`): the plan requirement lives in the manifest, and the gate is on creation, never consumption. |
@@ -189,7 +189,7 @@ Every request — OAuth token or API key — resolves to one `ApiPrincipal`
 
 ### API keys
 
-`teams/{teamId}/api_keys/{keyId}` — **team-owned, authorising as their creator, capped by their
+`teams/{teamId}/api_keys/{keyId}` — **team-owned, authorizing as their creator, capped by their
 scopes.** A key whose creator leaves or is demoted stops working and shows as inactive. Created and
 revoked only with `integrations.manage` (owner). The secret (`lyp_live_…`, `lyp_test_…` outside
 production) is shown once; the credential is stored as its SHA-256 in `api_credentials/{hash}`, so a
@@ -233,7 +233,7 @@ ones were exercised end to end on the emulator):
 - **Refresh tokens rotate single-use.** Presenting a used one revokes the whole grant and deletes
   its credentials — a replay means the token leaked.
 - No remembered consent: every authorization shows the page. Clients outside
-  `OAUTH_RECOGNISED_CLIENT_HOSTS` are labelled as unrecognised.
+  `OAUTH_RECOGNISED_CLIENT_HOSTS` are labeled as unrecognised.
 - Plugin removal revokes every grant with the keys (`sync/onInstalledPluginStatusChange.ts`); the
   plugin gates approval, not use. The teardown re-reads the install before revoking: a trigger can
   arrive late, and a stale deactivation delivered after a reinstall must not close connections made
@@ -306,7 +306,7 @@ is stored on each key and grant.
 
 Never shared in v1, by any scope: notes, AI summary, custom fields, booking question answers,
 emergency contacts, weight, birthplace, login emails, booking tokens and references, payment
-identifiers, meeting links, and anonymised or deleted people (whose names are taken from the contact
+identifiers, meeting links, and anonymized or deleted people (whose names are taken from the contact
 document, never from a denormalised copy on a booking).
 
 Wire conventions: snake_case with an `object` field; money in integer minor units with `currency`;
@@ -329,7 +329,7 @@ The read layer reuses the resolvers the rest of the product answers with — `co
   Connected apps.
 - **Phase 3 — on demand.** DCR fallback, usage dashboard and per-call access log, public developer
   docs, directory submissions, webhooks / incremental sync (needs a `Contact.updated_at` writer),
-  more resources (waivers first), organisation principals, writes.
+  more resources (waivers first), organization principals, writes.
 
 ## Phase 0 findings (staging, 2026-09-14)
 

@@ -4,7 +4,7 @@
 // studio whose classes all cost the same at the door typed that number once
 // per class and kept the copies in step by hand (Franco, 2026-09-11). It is now
 // answered in one of three ways, and every surface that needs the answer —
-// the booking callables, the public mirror, the catalogue chips, the pricing
+// the booking callables, the public mirror, the catalog chips, the pricing
 // page, the activity form — asks HERE, with the studio's default in hand:
 //
 //   'studio'  follow `BookingSettings.dropIn`, the studio-wide default
@@ -61,7 +61,7 @@ export function dropInModeOf(dropIn: ActivityDropIn | null | undefined): DropInM
  * looks at a price (the pre-2026-09 reading, kept on purpose so a deploy
  * changes nothing for a studio that touched nothing), which makes a door
  * there one that opens onto a free room — the mirror must not advertise it
- * and the catalogue must not price it. A class asked the two questions and
+ * and the catalog must not price it. A class asked the two questions and
  * open to anyone is NOT this case: there, the price is exactly what a
  * visitor pays. A 'custom' class without a price and a 'studio' class under a
  * studio with no default both resolve to none: `enabled` is derived from

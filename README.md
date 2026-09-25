@@ -1,6 +1,6 @@
 # Linyup
 
-Studio management for coaches, clubs and multi-club organisations: sessions,
+Studio management for coaches, clubs and multi-club organizations: sessions,
 contacts, bookings, memberships, payments, a public site per studio and a member
 app. A pnpm + Turborepo monorepo; Node 22.
 

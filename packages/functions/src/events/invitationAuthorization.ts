@@ -24,11 +24,11 @@
  *   1. A TEAM EVENT INVITES ITS OWN TEAM. `requestedTeamId` is not consulted on
  *      that branch, so the client cannot redirect it.
  *   2. AN ORG EVENT INVITES THE REQUESTED STUDIO, which must be linked to the
- *      event's organisation (`org_teams/{teamId}`, absent status = active —
+ *      event's organization (`org_teams/{teamId}`, absent status = active —
  *      the same fact `currentTeamInOrg` reads).
  *   3. THE CALLER MUST HOLD `events.manage` IN THE RESOLVED STUDIO — the
  *      capability the `events` rules gate editing on. Being an org admin does
- *      NOT authorise emailing a member studio's contacts: they are the studio's
+ *      NOT authorize emailing a member studio's contacts: they are the studio's
  *      people, and the studio decides when to write to them.
  */
 
@@ -101,10 +101,10 @@ export function decideInvitationAuthorization(s: InvitationAuthSnapshot): Invita
   if (isOrgEvent) {
     const link = s.orgTeamLink
     if (!link || !link.exists) {
-      return refuse('permission-denied', 'That studio is not part of this organisation')
+      return refuse('permission-denied', 'That studio is not part of this organization')
     }
     if ((link.status ?? 'active') !== 'active') {
-      return refuse('permission-denied', 'That studio is no longer part of this organisation')
+      return refuse('permission-denied', 'That studio is no longer part of this organization')
     }
   }
 

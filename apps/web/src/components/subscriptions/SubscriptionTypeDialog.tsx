@@ -39,10 +39,10 @@ import { Globe } from 'lucide-react'
  * manager that lists them.
  *
  * It lived inside `SubscriptionTypesManager`, so the only way to edit a plan was
- * to be on the page that renders that list — the catalogue, which is where a
+ * to be on the page that renders that list — the catalog, which is where a
  * studio actually reasons about what a plan opens, could offer nothing but a
  * link away (Franco, 2026-08-31: "move activities/subscriptions popup modals
- * into the catalogue page, so catalogue now becomes the core offer editing").
+ * into the catalog page, so catalog now becomes the core offer editing").
  *
  * NOTHING ABOUT THE FORM CHANGED in the move. Its schema, its price row, its
  * intro-offer row and its defaults are here with it because nothing else used
@@ -109,7 +109,7 @@ function duplicateDefaults(source: SubscriptionType, copyName: string): SubTypeD
 
 function emptyDefaults(editing: SubscriptionType | null): SubTypeData {
   // Whichever shape the stored plan uses — the per-price list or the legacy
-  // single offer — read through the one normaliser, keyed by price id.
+  // single offer — read through the one normalizer, keyed by price id.
   return {
     name: editing?.name ?? '',
     description: editing?.description ?? '',
@@ -172,7 +172,7 @@ export function SubTypeDialog({
   nextOrder: number
   onSaved: () => void
   /** Render the FORM ONLY, with no dialog around it — see the same prop on
-   *  `ActivityDialog` for why the catalogue's pane needs this and why the form
+   *  `ActivityDialog` for why the catalog's pane needs this and why the form
    *  is not extracted into its own component to provide it. */
   inline?: boolean
 }) {
@@ -222,7 +222,7 @@ export function SubTypeDialog({
   const contactMode = watch('checkout_contact_mode') ?? 'minimal'
 
   /** Resolves `true` once written. A failure is toasted HERE: the save bar
-   *  that calls this in the catalogue pane cannot say what went wrong. */
+   *  that calls this in the catalog pane cannot say what went wrong. */
   async function onSubmit(data: SubTypeData): Promise<boolean> {
     const payload = {
       name: data.name,
@@ -233,7 +233,7 @@ export function SubTypeDialog({
       checkout_contact_mode: data.checkout_contact_mode ?? 'minimal',
       // ── THE MONEY IS NOT THIS FORM'S ──────────────────────────────────
       // `prices`, `introOffers` and `limits` belong to PlanPricingForm in the
-      // catalogue. This payload must not NAME them: it holds an older copy of
+      // catalog. This payload must not NAME them: it holds an older copy of
       // every one, and writing that copy back is exactly how the course
       // settings form un-linked plans for a week.
       // Payout per visit: aggregator types only.
@@ -427,7 +427,7 @@ export function SubTypeDialog({
           {/* Pricing (optional) — kept secondary so the simple flow stays one-field */}
 
 
-          {/* WHAT THIS PLAN OPENS is edited in the catalogue, beside the
+          {/* WHAT THIS PLAN OPENS is edited in the catalog, beside the
               prices that make it worth opening — see
               components/subscriptions/PlanPricingForm.tsx. The control lived
               here for two releases; it moved out with the pricing rather than
@@ -437,7 +437,7 @@ export function SubTypeDialog({
           {/* AUTOMATIONS ARE NOT A FIELD OF THIS FORM. They are other records
               that happen to reference this plan, and they save themselves —
               sitting under a Save button that does not write them said
-              otherwise. The catalogue gives them their own tab; the dialog
+              otherwise. The catalog gives them their own tab; the dialog
               omits them, because a plan being created has none to show
               (Franco, 2026-09-02). */}
     </>

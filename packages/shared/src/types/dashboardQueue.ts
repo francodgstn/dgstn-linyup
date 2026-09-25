@@ -11,7 +11,7 @@
 // splits cleanly in two:
 //
 //   event-backed   alerts · pending_signup · trial_pending · new_lead ·
-//                  cancelling
+//                  canceling
 //   time-derived   gone_quiet · checkin_lapsed  (and goal_overdue, partly)
 //
 // A member goes quiet because a clock ticked, not because anybody wrote

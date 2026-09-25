@@ -26,7 +26,7 @@ export function PublicEventDetail({
   printHref,
 }: {
   event: PublicEventSummary
-  /** The studio or organisation name printed above the title. */
+  /** The studio or organization name printed above the title. */
   ownerName?: string | null
   backHref: string
   backLabel: string

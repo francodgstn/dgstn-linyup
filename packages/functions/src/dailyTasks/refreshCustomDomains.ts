@@ -6,7 +6,7 @@
  * a domain that stops working without anyone touching Linyup. Cloudflare
  * deactivates a custom hostname whose CNAME stops resolving, and certificates
  * lapse — a studio changing DNS providers, letting a domain expire, or
- * "tidying up" a record they no longer recognise all produce a dead public site
+ * "tidying up" a record they no longer recognize all produce a dead public site
  * with no event on our side at all. Without this the studio is the last to
  * know, usually via a customer who could not book.
  *

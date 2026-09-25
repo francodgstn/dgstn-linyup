@@ -31,7 +31,7 @@ export function InternalCard({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  const label = kind === 'org' ? 'organisation' : 'studio'
+  const label = kind === 'org' ? 'organization' : 'studio'
 
   function apply(next: boolean) {
     const question = next

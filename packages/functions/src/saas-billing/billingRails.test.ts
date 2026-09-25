@@ -1,7 +1,7 @@
 /**
  * TWO BILLING RAILS, ONE PER AUTHORIZATION MODEL (UX-75).
  *
- * `saas_subscriptions/{entityId}` is billed to a team OR an organisation, and
+ * `saas_subscriptions/{entityId}` is billed to a team OR an organization, and
  * the two are authorized through different documents:
  *
  *   team → teams/{teamId}/team_members/{uid}          (hasTeamRole 'owner')
@@ -18,7 +18,7 @@
  * for the same reason: the claim is about which guard sits in front of which
  * callable and which callable the client actually calls, which is a property of
  * the text, and the last one crosses the functions/web boundary — where a
- * correction stops travelling.
+ * correction stops traveling.
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'

@@ -3,7 +3,7 @@ import { detailsBox, ctaButton, factLines, BRAND } from '../utils/emailLayout'
 import { escapeHtml } from '../utils/html'
 import { buildICalEvent, icalAttachment, ICAL_FALLBACK_ORGANIZER_EMAIL } from '../utils/ical'
 
-// Localised heading for the studio's custom instructions box (confirmation emails).
+// Localized heading for the studio's custom instructions box (confirmation emails).
 const INSTRUCTIONS_TITLES: Record<'en' | 'de' | 'fr' | 'it', string> = {
   en: 'Important',
   de: 'Wichtig',
@@ -11,7 +11,7 @@ const INSTRUCTIONS_TITLES: Record<'en' | 'de' | 'fr' | 'it', string> = {
   it: 'Importante',
 }
 
-// Localised heading for the cancellation policy box (confirmation emails).
+// Localized heading for the cancellation policy box (confirmation emails).
 const POLICY_TITLES: Record<'en' | 'de' | 'fr' | 'it', string> = {
   en: 'Cancellation policy',
   de: 'Stornobedingungen',

@@ -50,7 +50,7 @@ export { onSignupInviteCreated } from './auth/onSignupInviteCreated'
 // Affiliations
 export { upsertAffiliation, removeAffiliation, approveAffiliation, renewAffiliation } from './affiliations'
 
-// Course places, recounted from the enrolments on every write to one, the
+// Course places, recounted from the enrollments on every write to one, the
 // direct analogue of `trackBookings`. A TRIGGER, so it is bound to an event
 // source and is not routed.
 export { trackCourseBlockEnrolments } from './courseBlocks/enrolment'
@@ -114,7 +114,7 @@ export {
 } from './booking'
 export { createDropInCheckout } from './booking/dropIn'
 // The member's own upcoming bookings. A callable for the same reason
-// `listMyWaitlist` is one — the rules authorise a contact to GET their own
+// `listMyWaitlist` is one — the rules authorize a contact to GET their own
 // booking and never to LIST their bookings across sessions — plus one this
 // surface adds: a booking on a session the STUDIO entered has no public mirror
 // to be found through, because a session is mirrored only while it is on sale.
@@ -138,7 +138,7 @@ export { getMyAttendance } from './booking/myAttendance'
 // joined from the public form has only the token in their mail.
 export { joinWaitlist } from './booking/waitlist/join'
 export { claimWaitlistSeat } from './booking/waitlist/claim'
-// `listMyWaitlist` is the signed-in counterpart: the rules can authorise a
+// `listMyWaitlist` is the signed-in counterpart: the rules can authorize a
 // contact to GET their own entry, but never to LIST their entries across
 // sessions, so the member surfaces need a callable for it. No surface calls it
 // yet, so it has no function of its own: it is served by rpcMember only
@@ -259,7 +259,7 @@ export { loginContactWithCode } from './auth/loginContactWithCode'
 
 // Appointments (1:1 slots) — activity-bound, availability-only. Nothing is
 // pre-generated: listAvailability computes free starts on the fly and
-// bookAppointment materialises a Session lazily (overlap-safe) at booking
+// bookAppointment materializes a Session lazily (overlap-safe) at booking
 // time; the paid-access gate is shared with bookSession via booking/access.ts.
 // Cancellation is handled by the shared cancelBooking callable.
 export { listAvailability, bookAppointment } from './appointments/window'
@@ -330,7 +330,7 @@ export {
 // assertOrgAdmin against org_members — never hasTeamRole (UX-75, UX-34).
 export { addOrgMember, updateOrgMemberRole, removeOrgMember } from './orgs/members'
 
-// Org MEMBER invitations — a PERSON is invited to help run the organisation and
+// Org MEMBER invitations — a PERSON is invited to help run the organization and
 // accepts for themselves, which is the only door open to an address that has no
 // Linyup account yet (decision 12). NOT the org_invitations rail above, which
 // invites a whole STUDIO and moves its billing; see orgs/memberInvitations.ts.
@@ -457,7 +457,7 @@ export { getPublicDocumentVersion } from './documents/publicVersion'
 // One member's COMPLETE consent history, as a self-contained artefact — the
 // answer to "show me what this person signed", which is the whole reason a
 // studio keeps a waiver at all. A callable rather than a client read because it
-// materialises the frozen text from every version an acceptance names and
+// materializes the frozen text from every version an acceptance names and
 // verifies each stored fingerprint against it, and because the SECOND, mandatory
 // query — every record under the same email address — is an operator tool that a
 // member's own download must never receive.
@@ -555,7 +555,7 @@ export {
 } from './referrals'
 
 // A contact closing their own account, from the mobile app. Only moves a date —
-// the dailyTasks sweep is what acts, and it anonymises. See contacts/selfDeletion.ts.
+// the dailyTasks sweep is what acts, and it anonymizes. See contacts/selfDeletion.ts.
 export { requestContactDeletion, cancelContactDeletion } from './contacts/selfDeletion'
 
 // Operator-only: the production demo tenant and the app-store review login.

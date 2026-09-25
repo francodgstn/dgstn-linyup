@@ -37,7 +37,7 @@ This split is the core of the model. Get it wrong and nothing else makes sense.
   **`memberBenefit`** rule (see "Paid appointments" below), and
   `confirmationInstructions`. There is deliberately NO capacity field: an
   appointment is a provider's *exclusive* time, so one booking per slot is the
-  definition, not a setting (the materialised session carries
+  definition, not a setting (the materialized session carries
   `max_participants: 1` for the recount trigger). And there is NO `accessRule`:
   appointments dropped the access gate in 2026-07 — the field still exists on
   `Activity` because classes use it, but appointment forms don't show it and
@@ -61,7 +61,7 @@ Two entry styles, both **lazy**:
 > **Why nothing can be pre-generated.** If a window offers a 30-min *and* a 90-min
 > activity, the 9:00 slot is **indeterminate** — it isn't one session until the
 > client picks the activity. Multi-activity availability is therefore incompatible
-> with pre-materialisation. This is *why* the model is lazy; it isn't a preference.
+> with pre-materialization. This is *why* the model is lazy; it isn't a preference.
 
 ## Booking flow
 
@@ -96,7 +96,7 @@ Two entry styles, both **lazy**:
 - **`createAppointmentCheckout`** — the **paid path**
   (`appointments/checkout.ts`); see "Paid appointments" below.
 
-The materialised session **inherits from the activity**: `activityId`,
+The materialized session **inherits from the activity**: `activityId`,
 `activityName`, `autoConfirm` (plus a fixed `max_participants: 1`) — but **no
 `accessRule`**, which appointment session docs and mirrors stopped carrying;
 `location`/`onlineUrl` come from the matched availability; `templateId` points
@@ -183,7 +183,7 @@ for whoever was there before, so one rule retires all of it:
 
 The sentences are `AppointmentBooking.identityChanged` /
 `identityChangedPromo`. Because a carried code is now impossible, the member
-screen's `PromoCodeField` renders its INPUT for every recognised caller (it used
+screen's `PromoCodeField` renders its INPUT for every recognized caller (it used
 to be `session`-only): whatever is on that screen was applied by that caller,
 under the same advisory-preview contract the guest screen has always had.
 
@@ -252,7 +252,7 @@ memberBenefit: { … }                  // LEGACY — the activity-wide rule
 - **Why it went back to being per length (2026-09-02).** One rule for the whole
   activity could not express `fixed_price` at all: "members pay CHF 40" charged
   the same for thirty minutes and for ninety, an amount that cannot be right for
-  both — offered by the editor and honoured by the resolver, with no way to say
+  both — offered by the editor and honored by the resolver, with no way to say
   the true thing. **This is not the matrix that was cut in 2026-07.** That one
   was per duration × per subscription type — a grid of PRICES, which is what
   produced "who pays base price if only Premium can book?". This is the same ONE
@@ -368,7 +368,7 @@ one. Every date has the same provider, length and party.
   confirmed by another payment, is refunded at its lesson amount under a key
   built from which dates; nothing given is a full refund. One confirmation lists
   every date, each with its own cancel link and calendar file.
-- **Cancelling one date later** is the ordinary `cancelBooking`: the other
+- **Canceling one date later** is the ordinary `cancelBooking`: the other
   dates stand and no money moves.
 
 ### The hold state machine — the hold IS the session
@@ -389,7 +389,7 @@ Booking subdoc: `{ status:'pending', payment_status:'required', expires_at }` �
 `fullname` (that's stamped only on confirm) → webhook → `{ status:'confirmed',
 payment_status:'paid', payment_intent_id, fullname }`.
 
-The slot-blocking predicate is centralised in `packages/shared/src/types/session.ts`
+The slot-blocking predicate is centralized in `packages/shared/src/types/session.ts`
 — `appointmentSlotBlocked(s, nowMs)` / `isExpiredAppointmentHold` — and consumed by
 `listAvailability`'s busy filter, both branches of the slot transaction, and the
 admin calendar. A hold whose `hold_expires_at` has passed stops blocking the slot
@@ -449,7 +449,7 @@ being stranded forever. Fixtures, one block per site:
 lifecycle expires a superseded Checkout Session *at Stripe* before writing
 anything, so `checkout.session.expired` for an attempt the buyer has just retried
 now arrives **seconds** after the retry instead of ~31 minutes later. A rare race
-became a likely one — and it was the release site still cancelling on presence.
+became a likely one — and it was the release site still canceling on presence.
 
 ### Webhook confirmation (`kind: 'appointment'`)
 
@@ -466,7 +466,7 @@ became a likely one — and it was the release site still cancelling on presence
    staff booking, and the charge arriving on it is its first.
 2. Live hold → **confirm in place**: session `{ status:'full', hold_expires_at:
    delete }`, booking `{ confirmed, paid, payment_intent_id, fullname }`.
-3. Hold expired or session cancelled (swept, admin-cancelled, Stripe-expired) →
+3. Hold expired or session canceled (swept, admin-canceled, Stripe-expired) →
    **re-acquire** through the same slot transaction, rebuilding from the swept
    doc's own fields (never from metadata); conflict — slot retaken — → refund.
 4. Session missing entirely → refund.
@@ -528,13 +528,13 @@ payment may already be on its way; the `paid` outcome is the one branch that
 **retracts** it, since there the incoming charge is the client's real and only
 payment and refunding it would be the defect rather than the guard.
 
-### Cancelling an awaiting-payment appointment
+### Canceling an awaiting-payment appointment
 
 The other ending of the same rail, and the same obligation
 (`cancelAppointmentSlot`, `appointments/cancelSlot.ts`). The manager's cancel
 used to be a client-side `updateDoc(status: 'cancelled')`, which left the link
 payable: the client paid days later and the webhook's **case 3 re-acquired and
-confirmed the cancelled slot**. It is now a callable that closes the link.
+confirmed the canceled slot**. It is now a callable that closes the link.
 
 **THE ORDER IS THE REVERSE OF THE SETTLEMENT'S, and that is the point.** A
 settlement and a cancellation face the same racing `checkout.session.expired`,
@@ -608,9 +608,9 @@ shape from `listAvailability`.
 
 ## Where appointments appear
 
-| Surface | Behaviour |
+| Surface | Behavior |
 |---|---|
-| Admin **Schedule** | Booked appointments render like any session; the **Classes / Appointments / Events** filter shows/hides them. Clicking one opens `AppointmentDetail` (bookings roster + cancel), not the session edit form. A `pending_payment` hold renders **ghosted** (dimmed, dashed border) with an amber **"Awaiting payment"** badge; an expired-but-unswept hold renders as cancelled. Cancelling a hold is safe — a late payment re-acquires the slot or refunds. |
+| Admin **Schedule** | Booked appointments render like any session; the **Classes / Appointments / Events** filter shows/hides them. Clicking one opens `AppointmentDetail` (bookings roster + cancel), not the session edit form. A `pending_payment` hold renders **ghosted** (dimmed, dashed border) with an amber **"Awaiting payment"** badge; an expired-but-unswept hold renders as canceled. Canceling a hold is safe — a late payment re-acquires the slot or refunds. |
 | Admin **availability** | **`/schedule/availability`** ("Bookable hours"), reached by a named button in the Schedule header (`AppointmentAvailabilityManager`): per coach, list/add/edit/pause/delete schedules, pick their activities, and add/remove **time off**. Schedule → "+ New" → *Add bookable hours* opens the create form alone. Published hours also render as bands in the left gutter of the Schedule week grid, always — there is no availability "mode" and no availability filter chip (deleted 2026-08-17, UX-3: the manager used to hang off an unlabelled caret on that chip, and a coach testing the product never found it). |
 | Public picker | `/public/{slug}/appointments` — coach → activity → duration (if >1) → day → time. 100% `listAvailability`; reads no Firestore directly. Priced durations show on the chips ("45 min · CHF 65") and route to `createAppointmentCheckout`. No gate: guests always book (pay if priced); when the activity has a `memberBenefit`, sign-in is offered — "have a subscription? sign in to check your price" — and after OTP the member sees their effective price (display-only, the server re-resolves). |
 | Public site / booking flow | Appointment **activity** cards route to the picker. The schedule section is classes-only. |
@@ -652,7 +652,7 @@ benefit on the private lesson; nicole's paid 1:1 deliberately has NO benefit
   own `coachId`, its own counters, and a daily cron that pre-generated 28 days of
   fixed slots. That generator had **no teardown** (pausing a template orphaned its
   slots) and set **no `activityId`**, so appointments were invisible to the website
-  and impossible to subscription-gate. All of it was deleted in favour of the lazy,
+  and impossible to subscription-gate. All of it was deleted in favor of the lazy,
   activity-bound model above. If you're tempted to re-add pre-generation, re-read
   "Why nothing can be pre-generated".
 - **2026-07, later the same month — "the price is the gate".** The initial paid
@@ -662,7 +662,7 @@ benefit on the private lesson; nicole's paid 1:1 deliberately has NO benefit
   and the matrix collapsed into the ONE `memberBenefit` rule (see "Paid
   appointments"). Session docs and appointment mirrors stopped carrying
   `accessRule` in the same pass; classes gained the independent `trialEnabled`
-  toggle, and the seeded "Drop-in" subscription plan was removed in favour of
+  toggle, and the seeded "Drop-in" subscription plan was removed in favor of
   the per-activity `dropIn` price.
 - `instructorId`/`coachId` were unified into **`providerId`** across sessions,
   activities and availability. `Event.coachId` is a different entity and unchanged.

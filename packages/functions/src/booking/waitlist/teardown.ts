@@ -2,7 +2,7 @@
 // Closing a queue for good — what has to happen when the class it is waiting for
 // will never run.
 //
-// A cancelled session leaves two things behind that nothing else cleans up: a
+// A canceled session leaves two things behind that nothing else cleans up: a
 // claim hold on a class that is gone (a `pending` booking whose owner can never
 // use it, and a `pending_bookings_count` that never comes back down), and a
 // queue of people whose "you're on the list" link keeps promising a seat. Both
@@ -15,9 +15,9 @@
 // which is exactly the edge `promoteWaitlistOnSeatFreed` watches for. With the
 // queue already closed the promoter finds nobody waiting and returns without
 // writing; the other way round it would cheerfully offer the freed seat to the
-// next person in line, on a class that is being cancelled as it does so.
+// next person in line, on a class that is being canceled as it does so.
 //
-// That is the SECOND line of defence, not the first: every caller marks the
+// That is the SECOND line of defense, not the first: every caller marks the
 // session called-off before getting here (`cancelSession` writes the exception
 // pair or `allowBooking: false`; the delete trigger's session is already gone),
 // so the promoter refuses on `isSessionCancelled` / `allowBooking` before it
@@ -90,7 +90,7 @@ export async function closeSessionWaitlist(
       closed += page.size
       if (page.size < WAITLIST_QUEUE_SCAN_LIMIT) break
     }
-    // The session is being cancelled, so `waitlist_count` is a display value
+    // The session is being canceled, so `waitlist_count` is a display value
     // nobody reads again — but leaving it is the sort of stale number that shows
     // up on a restored session, and it costs one field.
     if (closed > 0 && !options.sessionDeleted) {
@@ -101,7 +101,7 @@ export async function closeSessionWaitlist(
   }
 
   // Pass 2 — the offers. Through the SAME guarded release every other path uses:
-  // somebody who claimed and paid before the studio cancelled owns a real
+  // somebody who claimed and paid before the studio canceled owns a real
   // booking, and the cancellation flow (not this) is what refunds and notifies
   // them. Deleting it here would take the seat off them silently. Bounded by the
   // session's own capacity — there can never be more live offers than seats.

@@ -150,7 +150,7 @@ have been the most expensive false `PRESENT` in this audit.
 | `MEMBER_PAYMENTS_SUBCOLLECTION` | MISSING | MISSING | MISSING | MISSING | N-A | `/payments`; `/contacts/[id]` PaymentsTab |
 | `MEMBER_SUBSCRIPTIONS_SUBCOLLECTION` | MISSING | MISSING | MISSING | MISSING | N-A | `/contacts/[id]` PaymentsTab; the `subscription_status` rollup |
 | `GIFT_CARDS_SUBCOLLECTION` | PRESENT `seed-emulator.ts:1873` | MISSING | MISSING | CONDITIONAL `seed-lead.ts:1001` | N-A | `/public/{slug}/shop` gift-card redemption |
-| `GIFT_CARD_ISSUES_SUBCOLLECTION` | N-A | N-A | N-A | N-A | N-A | serialisation marker; callable-written only |
+| `GIFT_CARD_ISSUES_SUBCOLLECTION` | N-A | N-A | N-A | N-A | N-A | serialization marker; callable-written only |
 | `PROMO_CODES_SUBCOLLECTION` | MISSING | MISSING | MISSING | MISSING | N-A | `/manage/promo-codes` — empty in every demo |
 | `PROMO_REDEMPTIONS_SUBCOLLECTION` | N-A | N-A | N-A | N-A | N-A | ledger; written only by `commitPromoRedemption` |
 | `PAYMENT_EVENTS_SUBCOLLECTION` | MISSING | MISSING | MISSING | MISSING | N-A | `/payments` BYO-gateway rows |
@@ -227,7 +227,7 @@ overwritten. Seed the journal and the accounts; leave the rollups alone.
 | `EVENT_TYPES_SUBCOLLECTION` | MISSING | MISSING | MISSING | MISSING | MISSING | `/settings/event-types` — degrades gracefully (`BUILTIN_EVENT_TYPES` still render) |
 | `EVENT_CATEGORIES_SUBCOLLECTION` | MISSING | MISSING | MISSING | MISSING | MISSING | HMD Fighting Cup `CategoryManager` (plugin-only) |
 
-### 10 — Organisations
+### 10 — Organizations
 
 | Constant | emu | sbx | stg | lead | mig | The screen that proves it |
 |---|---|---|---|---|---|---|
@@ -316,15 +316,15 @@ sanitizes once and copies (`seed-emulator.ts:2554`).
 alongside `cancel_at_period_end` (`packages/shared/src/types/saas.ts:22-39`).
 Every surface writes only `cancel_at_period_end: false`
 (`seed-emulator.ts:1813`, `seed-sandbox.ts:2612`, `seed-staging.ts:1975`,
-`seed-lead.ts:2191`) and none seeds a **cancelling** subscription at all.
+`seed-lead.ts:2191`) and none seeds a **canceling** subscription at all.
 `SubscriptionCancellationNote` (`apps/web/src/components/payments/`) and the
 operator console's churn-reason column therefore have no state that renders them
 on any surface — and the distinction the record exists for (`payment_failed` vs
 `cancellation_requested`) is undemoable.
 
-### `installed_plugins` — most of the catalogue is never installed
+### `installed_plugins` — most of the catalog is never installed
 
-`PLUGIN_REGISTRY` (`apps/web/src/plugins/registry.ts:28`) is the catalogue. What
+`PLUGIN_REGISTRY` (`apps/web/src/plugins/registry.ts:28`) is the catalog. What
 the surfaces install:
 
 - **emulator**: `kiosk`, `online-courses`, `gift-cards`, plus `products` and `website` via the storefront helper
@@ -359,8 +359,8 @@ Checked against the rules in `CLAUDE.md` and `docs/`.
 | Subscription docs carry the whole cancellation record | **NOT MET on all four seeders** — see the field-gap section. Not a wrong write; an absent one. |
 | Contact status on the three axes, not the retired `Contact.type` / `membership_*` | **HELD in the written documents.** The `type: 'student'` occurrences in the seeders are *local fixture* fields used to derive the axes (e.g. `seed-staging.ts:1749`), never written to Firestore. `acquisition_stage`, `entry`, `source` and `affiliation_summary` are written by all four seeders and by `transforms/contacts.ts`. The one hole is `subscription_status`, above. |
 | Published documents have a `v0001` to copy from | **NOT MET on sandbox, staging and lead. HELD on emulator.** See the field-gap section. |
-| Dynamic contact groups hold a rule and never materialise membership | **HELD, and never exercised.** The only surface writing `contact_groups` is lead (`seed-lead.ts:837`), and every group it writes is manual — no `rule` key, membership via `Contact.group_ids`. The dynamic half of the feature has zero coverage anywhere. |
-| Appointment activities carry `durations` + at most one `memberBenefit` | **HELD on all four seeders.** One appointment activity each, with `durations` and a single `memberBenefit` (`seed-emulator.ts:840`, `seed-sandbox.ts:1824`, `seed-staging.ts:1103`, and the lead engine at `seed-lead.ts:1094`). Both the legacy `{kind, discountPercent}` and the generalized `{effect, percent}` shapes appear; both are valid — `normalizeBenefit` (`types/benefit.ts:49`) is the single normalization point. Availability is availability-only in all four: `scripts/lib/appointments.ts` materialises already-booked sessions and never fabricates open slots. |
+| Dynamic contact groups hold a rule and never materialize membership | **HELD, and never exercised.** The only surface writing `contact_groups` is lead (`seed-lead.ts:837`), and every group it writes is manual — no `rule` key, membership via `Contact.group_ids`. The dynamic half of the feature has zero coverage anywhere. |
+| Appointment activities carry `durations` + at most one `memberBenefit` | **HELD on all four seeders.** One appointment activity each, with `durations` and a single `memberBenefit` (`seed-emulator.ts:840`, `seed-sandbox.ts:1824`, `seed-staging.ts:1103`, and the lead engine at `seed-lead.ts:1094`). Both the legacy `{kind, discountPercent}` and the generalized `{effect, percent}` shapes appear; both are valid — `normalizeBenefit` (`types/benefit.ts:49`) is the single normalization point. Availability is availability-only in all four: `scripts/lib/appointments.ts` materializes already-booked sessions and never fabricates open slots. |
 
 Two further invariants, found while checking the above and worth recording
 because a Phase 2 session will otherwise "fix" them:
@@ -369,7 +369,7 @@ because a Phase 2 session will otherwise "fix" them:
   (`scripts/lib/connect.ts:231`) writes `connect_accounts` and
   `payments_enabled: true` **only** when `STRIPE_CONNECT_TEST_ACCOUNT` names an
   account. Unset is the default, so a fresh clone gets no shop, no drop-in price,
-  no priced trial. That is correct behaviour — but it means every `PRESENT` on a
+  no priced trial. That is correct behavior — but it means every `PRESENT` on a
   priced surface is really `CONDITIONAL`, and seeding "a paid booking" without an
   account seeds a door nobody can open.
 - **Paid bookings are deliberately unseeded.** `scripts/lib/appointments.ts:15-20`
@@ -390,7 +390,7 @@ here.
 | Fixture | Where | Shape of the duplication |
 |---|---|---|
 | Booking write + `bookings_count` roll-up | `seed-emulator.ts:1476-1512`, `seed-sandbox.ts:2420-2459`, `seed-staging.ts:1751-1789`, `seed-lead.ts:2009-2047` | Same `Map` accumulator, same booking field set (`teamId`, `contact`, `session`, `email`, `firstname`, `lastname`, `phone`, `is_new_contact`, `joinedAt`, `status: 'pending'`, `booking_token`), same write-back loop. Four copies, near-identical apart from how the contact is named. |
-| Appointment activity + `durations` + `memberBenefit` + availability template | `seed-emulator.ts:808-905`, `seed-sandbox.ts:1797-1870`, `seed-staging.ts:1077-1150` | Half-extracted already: `scripts/lib/appointments.ts` owns the session/booking materialisation, but the activity and availability documents are still written inline three times. |
+| Appointment activity + `durations` + `memberBenefit` + availability template | `seed-emulator.ts:808-905`, `seed-sandbox.ts:1797-1870`, `seed-staging.ts:1077-1150` | Half-extracted already: `scripts/lib/appointments.ts` owns the session/booking materialization, but the activity and availability documents are still written inline three times. |
 | Documents seed + `public_profile` mirror | `seed-emulator.ts:2546-2608`, `seed-sandbox.ts:3255-3285`, `seed-staging.ts:2176-2205`, `seed-lead.ts:2640-2672` | Four copies — and the one that is correct (emulator) is not the one the other three were copied from. The clearest case in the repo for extraction: the divergence is invisible at a glance and produces a broken waiver ledger. |
 | `installed_plugins` writer | `seed-emulator.ts:1858`, `seed-sandbox.ts:2861-2884`, `lib/storefront.ts:128-148`, `seed-lead.ts:2400-2434` | Identical document shape (`pluginId`, `teamId`, `installedAt`, `installedBy`, `status`, `config`, `updated_at`) written four ways; `lib/storefront.ts` already holds the extracted version. |
 | Subscription-history pair (previous closed + current open) | `seed-emulator.ts:1400-1440`, `seed-sandbox.ts:2190-2225`, `seed-staging.ts:1487-1522`, `seed-lead.ts:1712-1750` | Same two-row pattern, same field set. |
@@ -471,7 +471,7 @@ The most complete surface, and the one shown to actual prospects.
 3. **The shop is switched on and empty.** `passes/11-team-subcollections.ts:146-160`
    installs the `products` plugin and flips `active_public_surfaces.shop` to true,
    but nothing writes any `products` document — so `/public/{slug}/shop` goes live
-   on the first migrated tenant with an empty catalogue. Either seed a product or
+   on the first migrated tenant with an empty catalog. Either seed a product or
    leave the surface off until the studio adds one.
 4. **No `availability`** — correct today (HMD had no appointments), but a migrated
    tenant lands with the appointments feature unusable until someone configures it.

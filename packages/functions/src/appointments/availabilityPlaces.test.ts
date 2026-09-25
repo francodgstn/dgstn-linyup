@@ -6,7 +6,7 @@ import { availabilityBucketKey, availabilityPlaceKey } from './window'
 //
 // The defect this pins produced WRONG OUTPUT, not a missing feature. Grouping
 // on (provider, activity) merged a coach's schedules at different places into a
-// single calendar and labelled it with whichever schedule happened to be read
+// single calendar and labeled it with whichever schedule happened to be read
 // first. A visitor picked a Tuesday believing it was one place; `bookAppointment`
 // then resolved the place from the availability that actually covered that
 // start, and put them in another. Nothing failed anywhere.
@@ -37,7 +37,7 @@ describe('availability buckets: one per (activity, place)', () => {
 
   it('merges two schedules for the same offer at the SAME place', () => {
     // "Saturday mornings" and "Weekday evenings", both at the Hallenbad: one
-    // calendar is right here, and is the behaviour the grouping exists for.
+    // calendar is right here, and is the behavior the grouping exists for.
     const saturdays = availabilityBucketKey('private-lesson', sched({ placeId: 'place-riverside' }))
     const evenings = availabilityBucketKey('private-lesson', sched({ placeId: 'place-riverside' }))
     assert.equal(saturdays, evenings)
@@ -80,7 +80,7 @@ describe('availability buckets: one per (activity, place)', () => {
       availabilityBucketKey('coaching-call', sched({ onlineUrl: 'https://meet.test/a' })),
       availabilityBucketKey('coaching-call', sched({ onlineUrl: 'https://meet.test/b' }))
     )
-    // Nothing set at all: one bucket, which is the pre-existing behaviour for a
+    // Nothing set at all: one bucket, which is the pre-existing behavior for a
     // schedule that says nothing about where it happens.
     assert.equal(availabilityPlaceKey(sched()), '')
     assert.equal(

@@ -29,7 +29,7 @@ export function transformTeam(id: string, src: Record<string, unknown>): Record<
     plan_status: 'active',
     trial_ends_at: null,
     stripe_customer_id: null,
-    // Organisation link
+    // Organization link
     organizationId: ORG_ID,
     org_id: ORG_ID,
     // Defaults for new required fields

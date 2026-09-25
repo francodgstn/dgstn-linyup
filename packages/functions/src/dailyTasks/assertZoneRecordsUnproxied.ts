@@ -36,7 +36,7 @@ import { customDomainsAvailable } from '@linyup/shared'
  *
  * Not the whole zone: MX, TXT and SRV have no proxy toggle, and this is the one
  * place the list is written down. Add a record here when you add one to the zone
- * that must stay grey.
+ * that must stay gray.
  */
 const A_HOSTS = [
   'linyup.com',
@@ -116,7 +116,7 @@ export async function assertZoneRecordsUnproxied(): Promise<{
   if (proxied.length > 0) {
     console.error(
       `assertZoneRecordsUnproxied: ${proxied.length} linyup.com record(s) are PROXIED or ` +
-        `flattened and must be set to DNS-only (grey cloud): ${proxied.join(', ')}. ` +
+        `flattened and must be set to DNS-only (gray cloud): ${proxied.join(', ')}. ` +
         `Proxying breaks DKIM and App Hosting certificate renewal silently.`,
     )
   }

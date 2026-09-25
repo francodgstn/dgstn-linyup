@@ -154,7 +154,7 @@ interface AutomationRule {
   last_run_at?: { toDate(): Date } | null
   last_run_sent?: number
   system_key?: string // present on starter-kit rules — used to prevent duplicate seeding
-  // legacy fields — normalised on read
+  // legacy fields — normalized on read
   template_id?: string
   alert_preset_id?: string
 }
@@ -207,7 +207,7 @@ interface FormAction {
 const TRIGGER_GROUP_ORDER = ['contact', 'booking', 'attendance', 'subscription', 'payment', 'affiliation', 'general', 'plugins']
 const CONDITION_GROUP_ORDER = ['acquisition', 'subscription', 'affiliation', 'attendance', 'other']
 
-// supportsDelay says the DELAY IS HONOURED, not merely stored — which is what
+// supportsDelay says the DELAY IS HONORED, not merely stored — which is what
 // it did not say until UX-85. A trigger marked true is deferred for real:
 // `session_ended` through onSessionWrite, every other event trigger through
 // fireEventRules -> executeDelayedRule. Do not flip one to true without a
@@ -517,7 +517,7 @@ function timeAgo(t: ReturnType<typeof useTranslations>, ts: { toDate(): Date } |
   return t('timeAgo.days', { days: Math.floor(hrs / 24) })
 }
 
-/** Normalise legacy rule docs (template_id / alert_preset_id → actions) */
+/** Normalize legacy rule docs (template_id / alert_preset_id → actions) */
 function normaliseRule(data: Record<string, unknown>, id: string): AutomationRule {
   const actions: AutomationAction[] = []
   if (Array.isArray(data.actions) && (data.actions as unknown[]).length > 0) {
@@ -1181,7 +1181,7 @@ function ActionEditor({
   // definitions).
   //
   // Effective, not `team.ranking_systems`: an org-managed tenant keeps its
-  // systems on the organisation, so this list was empty and an HMD studio saw
+  // systems on the organization, so this list was empty and an HMD studio saw
   // no rank field to automate at all. The server-side engine validates against
   // the same rule (`isKnownRankingSystem` over `resolveRankingSystems`), so a
   // rule built here is one the engine will actually run.

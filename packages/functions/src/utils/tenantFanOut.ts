@@ -29,7 +29,7 @@
 // reminders carry per-step `reminders_sent` markers, the weekly report refuses
 // to overwrite an existing week, no-show only flips `pending` bookings, and the
 // automation engine dedupes on its own run keys. A deterministic task id is
-// added on top as a cheap first line of defence — never as the guarantee.
+// added on top as a cheap first line of defense — never as the guarantee.
 //
 // ── THE TASK ID PUTS THE TENANT FIRST, DELIBERATELY ─────────────────────────
 //

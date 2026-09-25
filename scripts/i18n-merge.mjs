@@ -4,7 +4,7 @@
  *
  * WHY THIS EXISTS. `apps/web/messages/{en,de,fr,it}.json` is the single busiest
  * contention point in the repo — six of the last twenty commits touched all four —
- * and it is the reason UI work has been serialised to one agent at a time. The
+ * and it is the reason UI work has been serialized to one agent at a time. The
  * race is at FILE level, not key level: an agent reads the whole file, edits, and
  * writes it back, so two agents adding keys to completely different namespaces
  * still lose one another's work. Locking keys would not have helped.
@@ -25,7 +25,7 @@
  * THE FOUR TRANSLATIONS OF ONE KEY LIVE TOGETHER, deliberately. A translation is
  * one unit of work; splitting a key across four fragment files is how locales
  * drift, which is the failure this whole scheme exists to prevent. A leaf is
- * recognised BY that shape — an object whose keys are locale codes — so
+ * recognized BY that shape — an object whose keys are locale codes — so
  * namespaces may nest to any depth.
  *
  * Usage:
@@ -162,7 +162,7 @@ for (const [dotted, { value, lane }] of claimed) {
     }
     if (!force) {
       // Name the locales AND show English, because the two cases want
-      // different judgements: changed English is a lane stomping shipped copy,
+      // different judgments: changed English is a lane stomping shipped copy,
       // while changed translations alone is usually a correction.
       const detail = differing.includes('en')
         ? `"${existingEn}" vs "${value.en}"`

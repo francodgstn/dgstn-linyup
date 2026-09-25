@@ -16,7 +16,7 @@ import { buildParticipantDoc, bookingContactId } from '@linyup/shared'
 // Numbers in prose rot, so the census is re-derived from the SOURCE here rather
 // than restated. This file spans the functions/web boundary on purpose, exactly
 // as `connect/commitSites.test.ts` and `waivers/surfaces.test.ts` do — that
-// boundary is where corrections stop travelling, and every one of the
+// boundary is where corrections stop traveling, and every one of the
 // divergences above lived on the web side of it.
 //
 // Run with: pnpm --filter @linyup/functions test
@@ -171,7 +171,7 @@ describe('participants_count — ONE writer', () => {
     // ever written that field — only the seed scripts. The trigger therefore
     // worked in a seeded emulator and returned on line one in production,
     // taking `total_sessions`, `last_session_at`, the trial_attended promotion
-    // and provisional materialisation down with it.
+    // and provisional materialization down with it.
     assert.match(
       trigger,
       /const contactId =\s*\n?\s*participantId \|\|/,

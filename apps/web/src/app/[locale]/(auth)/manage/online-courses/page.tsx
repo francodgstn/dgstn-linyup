@@ -105,7 +105,7 @@ export default function OnlineCoursesPage() {
   const { data: courses = [], isLoading } = useCourses(currentTeamId)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [createOpen, setCreateOpen] = useState(false)
-  // The catalogue's "New course" links here — see the note on the products
+  // The catalog's "New course" links here — see the note on the products
   // page. One-shot, so closing the dialog with the param still in the URL does
   // not immediately reopen it.
   const newParam = useSearchParams().get('new')
@@ -125,7 +125,7 @@ export default function OnlineCoursesPage() {
   }, [newParam, atCourseCap])
 
   // Public shortcut → the shop's Online courses tab (the courses' public home; Space
-  // is the contacts' personal portal, not the catalogue).
+  // is the contacts' personal portal, not the catalog).
   const shopUrl = team?.slug
     ? typeof window !== 'undefined'
       ? `${window.location.origin}/public/${team.slug}/shop?tab=courses`

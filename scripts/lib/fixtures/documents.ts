@@ -494,7 +494,7 @@ export async function seedTeamWaiver(opts: {
 <h3>4. Instructions and safety</h3>
 <p>I will follow the coaches' instructions, train within my own limits, and stop when asked to stop.</p>
 <h3>5. Emergency care</h3>
-<p>If I am injured and cannot consent, I authorise ${teamName} to arrange emergency medical care on my behalf.</p>`,
+<p>If I am injured and cannot consent, I authorize ${teamName} to arrange emergency medical care on my behalf.</p>`,
   }
 
   const seeded = await seedPublishedDocuments(

@@ -83,7 +83,7 @@ export function useKioskSessions(teamId: string) {
         })
         .catch((err: unknown) => {
           if (!alive) return
-          // The old behaviour blanked the board on any failure — one refresh
+          // The old behavior blanked the board on any failure — one refresh
           // through a flaky router and a studio's whole day read "no classes".
           // Keep the last good feed; the schedule surfaces the error only when
           // it has nothing left to show.

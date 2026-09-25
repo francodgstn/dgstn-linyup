@@ -277,7 +277,7 @@ function tsToDate(ts: unknown): Date | undefined {
   return undefined
 }
 
-// Elapsed whole days since a date — the caller maps this to a localised,
+// Elapsed whole days since a date — the caller maps this to a localized,
 // human-readable span ("3 years", "5 months", …) via ICU plurals.
 function daysSince(date: Date): number {
   return Math.floor((Date.now() - date.getTime()) / 86_400_000)
@@ -328,8 +328,8 @@ function moveItem<T>(arr: T[], from: number, to: number): T[] {
 }
 
 // Read-only engagement band — a derived signal-strength "meter" next to the join
-// date. More bars lit + colour = healthier: green = healthy, amber = watch,
-// red = urgent (intervention pays off), grey = dormant/lapsed (not an alarm).
+// date. More bars lit + color = healthier: green = healthy, amber = watch,
+// red = urgent (intervention pays off), gray = dormant/lapsed (not an alarm).
 const ENGAGEMENT_LEVEL: Record<EngagementBand, number> = {
   active: 4,
   low: 3,
@@ -739,7 +739,7 @@ function Field({
 }: {
   label: string
   required?: boolean
-  /** Behind an ⓘ beside the label, not a grey line under the control. */
+  /** Behind an ⓘ beside the label, not a gray line under the control. */
   hint?: React.ReactNode
   children: React.ReactNode
   error?: string
@@ -1143,7 +1143,7 @@ function HeaderActionButton({
    *  accessible name; this is the two-word version that fits a tile. */
   shortLabel?: string
   count?: number
-  /** Greyed out; the `label` tooltip says why. */
+  /** Grayed out; the `label` tooltip says why. */
   disabled?: boolean
   onClick: () => void
 }) {
@@ -1916,7 +1916,7 @@ function ProfileTab({
 
         {/* Custom Fields plugin — the last card, and ONLY when installed. It
             used to render an upsell card on every contact of every studio
-            without it; the plugin catalogue is where a plugin is found. */}
+            without it; the plugin catalog is where a plugin is found. */}
         {isInstalled('custom-fields') && (
         <FormBlock title={t('sectionCustomFields')}>
           <Controller
@@ -1949,8 +1949,8 @@ function ProfileTab({
 // status vocabulary is `BookingRow`'s shared `STATUS_VARIANT` now, not a local
 // `BOOKING_STATUS_KEY` (deleted): both already styled `no_show` `destructive`
 // here, but the BOOKINGS PAGE used to style it `secondary` — sharing a row
-// settles that in favour of red on both surfaces (a no-show is a seat held
-// and wasted), so /bookings' no-show colour changes, not this tab's
+// settles that in favor of red on both surfaces (a no-show is a seat held
+// and wasted), so /bookings' no-show color changes, not this tab's
 // (Franco, 2026-08-29).
 //
 // Status tabs + text search are ported from the bookings page — purely
@@ -2834,7 +2834,7 @@ function GrantCreditsDialog({
 // It ADDS by default (docs/multi-plan-holdings.md: a member may hold several
 // plans), or CHANGES the one grant it was opened from. It used to REPLACE:
 // saving ended every plan the contact held and, unless told otherwise, also
-// cancelled every live Stripe subscription. Stopping billing is now the Stripe
+// canceled every live Stripe subscription. Stopping billing is now the Stripe
 // card's own action, naming the one subscription it stops, and ending a plan
 // is the plan card's — so this dialog never touches a holding it was not
 // opened for.
@@ -3051,7 +3051,7 @@ function GamificationTab({ contact, teamId }: { contact: Contact; teamId: string
         <div className="rounded-xl border bg-card p-4 text-center">
           <p className="text-2xl font-bold">{contact.total_sessions ?? 0}</p>
           {/* `total_sessions` counts ATTENDANCE (the participants trigger), not
-              bookings — it was labelled "Bookings" here, which is the same
+              bookings — it was labeled "Bookings" here, which is the same
               number answering the wrong question (UX-89). */}
           <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
             <Trophy className="h-3 w-3 text-primary" />
@@ -3888,7 +3888,7 @@ function AlertsTab({ contact, teamId }: { contact: Contact; teamId: string | nul
   //   Dismiss & delete-> the document goes.
   //
   // This is the only writer of `archived_at` for a contact alert. Every reader
-  // already honoured the field — the mobile query filters on it and the counter
+  // already honored the field — the mobile query filters on it and the counter
   // respects it — but nothing had ever set it, so "dismiss" was unreachable and
   // permanent deletion was the only way out of a fired alert.
   const dismissOnly = async (alert: ContactAlert) => {
@@ -3974,7 +3974,7 @@ function AlertsTab({ contact, teamId }: { contact: Contact; teamId: string | nul
           {orderedAlerts.map((alert) => {
             const dismissed = !!alert.archived_at
             // A dismissed alert is never "fired" — it has been dealt with, and
-            // showing it in alarm colours would undo the dismissal visually.
+            // showing it in alarm colors would undo the dismissal visually.
             const fired = !dismissed && alertIsFired(alert, { totalSessions: contact.total_sessions })
             return (
               <div
@@ -4848,7 +4848,7 @@ function UpsertAffiliationDialog({
 // — moved to Coaching, where the question it answers is actually asked, and a
 // tab that exists to be empty is worse than one destination fewer. A bookmarked
 // `?tab=stats` is safe: `useTabParam` falls back rather than opening an empty
-// pane on an id it does not recognise.
+// pane on an id it does not recognize.
 // BOTH `payments` and `affiliation` SURVIVE AS IDS, and each keeps the meaning it
 // already had — which is what makes the 2026-08 restructure free:
 //   `payments`    is now "Plans & Payments" (plans, credits, billing AND payments,
@@ -5281,7 +5281,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       before it is something the studio might have to act on;
                       a plan is a standing fact, so it reads as "and what are
                       they on" rather than competing with the to-dos. One chip
-                      per live plan, coloured by its billing state; a plan that
+                      per live plan, colored by its billing state; a plan that
                       is winding down says when it ends. Affiliation left this
                       row on 2026-09-13: it is the secondary fact, and the
                       panel below still links to it. */}

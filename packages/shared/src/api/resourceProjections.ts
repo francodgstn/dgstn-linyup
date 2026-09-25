@@ -35,7 +35,7 @@ export interface ApiPerson {
 /**
  * Who a booking, a check-in or a subscription is about, from the CONTACT
  * document — never from the copy denormalised onto the record, which outlives
- * anonymisation. Null for a deleted or anonymised person, and the caller passes
+ * anonymization. Null for a deleted or anonymized person, and the caller passes
  * null for anyone it may not show.
  */
 export function projectPerson(contact: Contact | null, pii: boolean): ApiPerson | null {
@@ -347,7 +347,7 @@ export interface ApiSubscription {
   current_period_start: string | null
   current_period_end: string | null
   cancelling: boolean
-  /** Null while it renews — AND on a doc cancelling without a stored date. Read `cancelling` for whether. */
+  /** Null while it renews — AND on a doc canceling without a stored date. Read `cancelling` for whether. */
   ends_at: string | null
   cancellation: {
     ended: boolean

@@ -16,7 +16,7 @@
  *   • A COURSE buyer is told nothing about WHERE TO WATCH the thing they bought.
  *     Stripe's receipt names a charge; it cannot name the Space.
  *   • A PRODUCT buyer gets no word of what happens next, and the studio's
- *     fulfilment is entirely manual — so silence here means silence everywhere.
+ *     fulfillment is entirely manual — so silence here means silence everywhere.
  *
  * A studio may reasonably run its own courtesy confirmations from the
  * automations engine, which is why the FREE booking path keeps

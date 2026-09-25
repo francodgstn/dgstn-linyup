@@ -49,7 +49,7 @@ describe('affiliation validity — months mode', () => {
     assert.equal(iso(out), '2026-02-28')
   })
 
-  it('honours an explicit term from the caller', () => {
+  it('honors an explicit term from the caller', () => {
     const out = resolveAffiliationValidUntil({
       type: { default_validity_months: 12 },
       now: new Date(2026, 0, 1),

@@ -1,4 +1,4 @@
-// The organisation's own navigation catalogue — the org-scope twin of
+// The organization's own navigation catalog — the org-scope twin of
 // `settings-nav.ts`, and shaped like it on purpose so the rail and the sidebar
 // can read both through the same components.
 //
@@ -53,7 +53,7 @@ export interface OrgNavItem {
   group?: OrgRailGroupKey
   /**
    * Rendered with the tenant's own word for it rather than the static label —
-   * an organisation renames "Affiliations" (`Organization.affiliation_term`),
+   * an organization renames "Affiliations" (`Organization.affiliation_term`),
    * and the rail reads it off `useOrg`. The static key stays as the fallback
    * for the moment before the org document has loaded.
    */
@@ -67,7 +67,7 @@ export interface OrgNavItem {
 }
 
 /**
- * THE SIDEBAR ROWS — what somebody opens while doing the organisation's work.
+ * THE SIDEBAR ROWS — what somebody opens while doing the organization's work.
  *
  * The test for membership is "would a federation administrator open this during
  * a working day". Program templates sits beside Events because it is read
@@ -76,8 +76,8 @@ export interface OrgNavItem {
  *
  * ── AFFILIATIONS AND PLACES WERE BEHIND THE RAIL, AND THAT WAS WRONG ────────
  * Both are working destinations that a rail full of configuration was hiding
- * (Franco, 2026-08-28). Affiliations is a ROSTER — the people the organisation
- * has issued a licence, badge or membership to — which is daily work, not a
+ * (Franco, 2026-08-28). Affiliations is a ROSTER — the people the organization
+ * has issued a license, badge or membership to — which is daily work, not a
  * setting; it now carries the vocabulary editors too, so the thing and the
  * words for it are in one place instead of two. Places is a shared resource a
  * studio books against, and it already rendered a full page with its own
@@ -100,9 +100,9 @@ export interface OrgNavItem {
  */
 export const ORG_NAV_ITEMS: OrgNavItem[] = [
   // HOME, and the reason it is a sidebar row rather than one more destination
-  // behind the rail: an organisation had no page that was ABOUT the
-  // organisation. Studios was standing in for one — which is why
-  // `orgLandingPath` sent an organiser there — and a roster answers "who is in
+  // behind the rail: an organization had no page that was ABOUT the
+  // organization. Studios was standing in for one — which is why
+  // `orgLandingPath` sent an organizer there — and a roster answers "who is in
   // it", never "how is it doing".
   { id: 'org-dashboard', path: 'dashboard', labelKey: 'navDashboard', icon: LayoutDashboard },
   { id: 'org-teams', path: 'teams', labelKey: 'navStudios', icon: Building2 },
@@ -117,9 +117,9 @@ export const ORG_NAV_ITEMS: OrgNavItem[] = [
     // A CORE ORG FEATURE, not a setting (Franco, 2026-09-05).
     //
     // It sat in the rail's "standards you set" group, beside Ranking, on the
-    // reading that an organisation DEFINES its affiliation types. But the page
-    // is a ROSTER — who holds the federation's licence, badge or membership,
-    // and whether it is current — which is something an organiser opens during
+    // reading that an organization DEFINES its affiliation types. But the page
+    // is a ROSTER — who holds the federation's license, badge or membership,
+    // and whether it is current — which is something an organizer opens during
     // a working day, not something they configure once. Filing it behind a rail
     // of settings is what made it hard to find.
     id: 'org-affiliations',
@@ -135,7 +135,7 @@ export const ORG_NAV_ITEMS: OrgNavItem[] = [
   // The rail rendered only on rail ROUTES, which is a chicken and egg: from
   // Studios or Events there was no rail and no link to any of the seven
   // destinations behind it. A studio does not have this problem because
-  // `/settings` is a real place you can go to; the organisation had no
+  // `/settings` is a real place you can go to; the organization had no
   // equivalent, so eleven tabs became four rows and seven things that had
   // apparently vanished (Franco, 2026-08-27: "where did all the tabs go?").
   //
@@ -148,7 +148,7 @@ export const ORG_NAV_ITEMS: OrgNavItem[] = [
 /**
  * THE ROWS A **MEMBER STUDIO** SEES — the other audience in org scope.
  *
- * Two different people open an organisation and only one of them runs it:
+ * Two different people open an organization and only one of them runs it:
  *
  *   an ORG MEMBER   — has an `org_members` row. Gets ORG_NAV_ITEMS above.
  *   a MEMBER STUDIO — their STUDIO is in `org_teams`; they have no row of their
@@ -162,11 +162,11 @@ export const ORG_NAV_ITEMS: OrgNavItem[] = [
  * yet" about the federation they are a member of (Franco, 2026-08-27).
  *
  * The fix is not to widen the rule. A federation's roster, its billing, its
- * members and its website are the organisers' business, and the honest answer
- * to "what is an organisation to a studio that belongs to one" is a different
+ * members and its website are the organizers' business, and the honest answer
+ * to "what is an organization to a studio that belongs to one" is a different
  * question with a different answer:
  *
- *   Overview           — what this organisation is, what your studio's standing
+ *   Overview           — what this organization is, what your studio's standing
  *                        in it is, and what it hands down to you. The one new
  *                        page; everything on it was already readable.
  *   Events             — the federation's own calendar. `events` admits
@@ -209,14 +209,14 @@ export function orgNavItemsForRole(role: OrgRole | null): OrgNavItem[] {
 }
 
 /**
- * Where `/org/{orgId}` lands. An organiser opens the dashboard; a member studio
+ * Where `/org/{orgId}` lands. An organizer opens the dashboard; a member studio
  * opens the summary — the dashboard reads the roster and the federation's
  * contacts, and their own membership lets them do neither.
  *
- * It used to be the roster for an organiser, for the honest reason that nothing
- * better existed: `/org/{id}/teams` was the only page about the organisation as
+ * It used to be the roster for an organizer, for the honest reason that nothing
+ * better existed: `/org/{id}/teams` was the only page about the organization as
  * a whole. `/org/{id}/dashboard` is now that page, and a scope's front door
- * should be the thing that summarises it rather than one of its lists.
+ * should be the thing that summarizes it rather than one of its lists.
  */
 export function orgLandingPath(role: OrgRole | null): string {
   return role == null ? 'overview' : 'dashboard'
@@ -225,20 +225,20 @@ export function orgLandingPath(role: OrgRole | null): string {
 /**
  * THE RAIL — everything configurational, in ONE group.
  *
- * It used to carry three: what the organisation IMPOSES on its studios, what it
- * LENDS them, and what is about the organisation itself. That grouping was true
+ * It used to carry three: what the organization IMPOSES on its studios, what it
+ * LENDS them, and what is about the organization itself. That grouping was true
  * of the data and still wrong for the reader, because two of the three groups
  * held one row each once Affiliations and Places moved to the sidebar — and a
  * heading over a single row is a label pretending to be a category.
  *
  * So the remainder is one list (Franco, 2026-08-28). Ranking stays because it
  * is a scale you set once and revisit rarely; the other four are the
- * organisation's own administration.
+ * organization's own administration.
  */
 export const ORG_RAIL_ITEMS: (OrgNavItem & { group: OrgRailGroupKey })[] = [
   { id: 'org-ranking', path: 'ranking', labelKey: 'tabRanking', icon: Shield, group: 'general' },
   // WHAT AN AFFILIATION IS, as opposed to WHO HOLDS ONE. The roster is a
-  // sidebar row (an organiser opens it during a working day); its vocabulary and
+  // sidebar row (an organizer opens it during a working day); its vocabulary and
   // policy are configuration, so they belong in the rail — reachable from the
   // roster through a related link rather than mixed into it.
   {

@@ -23,7 +23,7 @@ import { useResetOnOpen } from '@/hooks/useResetOnOpen'
 
 // Applying a template REPLACES the program rather than merging into it —
 // merging two multi-track schedules has no sane automatic answer, so the
-// destructive-but-predictable behaviour is the honest one. Confirmed whenever
+// destructive-but-predictable behavior is the honest one. Confirmed whenever
 // there is something to lose.
 //
 // The list mixes the studio's saved templates with the built-in STARTER library

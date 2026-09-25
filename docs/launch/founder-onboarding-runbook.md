@@ -28,7 +28,7 @@ and the [data-safety checklist](./data-safety-checklist.md) §1 (backups) is don
 | External provider teardown in `purgeTeam` (Stripe cancel/disconnect) | ⏳ **TODO** — do manually for now |
 
 > **Flag semantics** (`TenantFlags`, `packages/shared/src/types/team.ts` — the same
-> type on a team and on an organisation):
+> type on a team and on an organization):
 >
 > | Flag | Trial sweep | Platform metrics | MRR | Meaning |
 > |---|---|---|---|---|

@@ -3,7 +3,7 @@
 //
 // NOT to be confused with its sibling `consentLedger.ts`, which loads the
 // `consent` FILTER dimension (one document's signer map, for matchesFilter). This
-// file is the ARCHIVE: every waiver-shaped artefact a team holds, serialised for
+// file is the ARCHIVE: every waiver-shaped artefact a team holds, serialized for
 // keeping.
 //
 // `TENANT_DATA_COLLECTIONS` sweeps `documents` by `teamId`, and every per-team
@@ -50,7 +50,7 @@ export interface TeamConsentLedgerArchive {
 export interface TeamConsentLedger {
   teamId: string
   counts: { documents: number; versions: number; acceptances: number; signers: number }
-  /** The serialisable archive, or NULL when the team never signed anything — the
+  /** The serializable archive, or NULL when the team never signed anything — the
    *  ordinary sandbox case, where writing an empty artefact would train whoever
    *  reads the output to ignore it. A null archive means "safe to delete, there
    *  was nothing to preserve", NOT "the read failed" (a failed read throws). */
@@ -58,7 +58,7 @@ export interface TeamConsentLedger {
 }
 
 /**
- * Read every waiver-shaped artefact belonging to one team into a serialisable
+ * Read every waiver-shaped artefact belonging to one team into a serializable
  * object. Deliberately raw rather than rendered: an archive is read by whoever
  * asks in three years, and the fewest assumptions about what they will want is
  * the safest shape. Throws on any read failure — a teardown that proceeds past a

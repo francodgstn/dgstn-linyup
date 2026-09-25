@@ -86,7 +86,7 @@ export const joinWaitlist = onCall(async (request) => {
     // meaning; the analogous feature is a queue on an availability window.
     throw new HttpsError('failed-precondition', 'Appointments have no waitlist')
   }
-  // Both cancellation shapes: a cancelled occurrence of a recurring series keeps
+  // Both cancellation shapes: a canceled occurrence of a recurring series keeps
   // its `allowBooking` and gets no `status`, so a status-only test would let a
   // queue form on a class that will never run.
   if (isSessionCancelled(session) || session.allowBooking !== true) {

@@ -144,10 +144,10 @@ export default function ProductsPage() {
   const { data: products = [], isLoading } = useProducts(currentTeamId)
   const searchParams = useSearchParams()
   const editParam = searchParams.get('edit')
-  // The catalogue's pane links here to duplicate, because the copy has to land
-  // in THIS page's create dialog — under the same per-plan catalogue cap.
+  // The catalog's pane links here to duplicate, because the copy has to land
+  // in THIS page's create dialog — under the same per-plan catalog cap.
   const duplicateParam = searchParams.get('duplicate')
-  // The catalogue's "New product" links here rather than carrying a second copy
+  // The catalog's "New product" links here rather than carrying a second copy
   // of this dialog: creation is gated on a per-plan cap this page already
   // knows, and two first-step forms is how the two drift apart.
   const newParam = searchParams.get('new')
@@ -191,7 +191,7 @@ export default function ProductsPage() {
     setCollectionDialogOpen(true)
   }
 
-  // Cancelling (or the dialog's own close button) discards any unsaved typing —
+  // Canceling (or the dialog's own close button) discards any unsaved typing —
   // the draft never leaks into the trigger button behind it.
   function closeCollectionDialog() {
     setCollectionDialogOpen(false)
@@ -254,7 +254,7 @@ export default function ProductsPage() {
     setDialogOpen(true)
   }
 
-  // ── arriving from the catalogue's Edit button (?edit=<id>) ──
+  // ── arriving from the catalog's Edit button (?edit=<id>) ──
   // The same seam the activities and subscriptions pages carry, and for the same
   // reason: landing on a list page with the row somewhere on it is the shape
   // UX-99 is about — a page naming a destination and then making you find it.
@@ -293,7 +293,7 @@ export default function ProductsPage() {
 
   /**
    * Copy a product into the CREATE dialog (`editing` stays null), so it is saved
-   * by the same `createProduct` path — under the same per-plan catalogue cap —
+   * by the same `createProduct` path — under the same per-plan catalog cap —
    * and nothing exists until the studio presses save.
    *
    * Reset: the name gets "(copy)", every VARIANT gets a fresh id (they are the

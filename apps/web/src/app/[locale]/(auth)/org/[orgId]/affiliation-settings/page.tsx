@@ -7,7 +7,7 @@
  * and neither placement was working:
  *
  *   Terminology + Lock affiliation   sat on org SETTINGS, several screens below
- *                                    the organisation's name and language
+ *                                    the organization's name and language
  *   Statuses + Types                 sat beneath the ROSTER on the Affiliations
  *                                    page (moved there 2026-08-28)
  *
@@ -17,7 +17,7 @@
  * which makes a roster you scroll past to reach a form, but "give the config its
  * own destination and link to it from the roster" (Franco, 2026-09-05).
  *
- * So Affiliations is now purely the roster — who holds the federation's licence
+ * So Affiliations is now purely the roster — who holds the federation's license
  * and whether it is current — with a related link up top pointing here.
  *
  * Each card applies its own `isAdmin` gate, and that gate is COURTESY:

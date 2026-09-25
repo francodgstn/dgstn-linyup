@@ -89,7 +89,7 @@ export interface ActivityAccessRule {
 }
 
 /**
- * THE ONE READER of an activity's stored access rule — unchanged in behaviour:
+ * THE ONE READER of an activity's stored access rule — unchanged in behavior:
  * it fills in the legacy `isFreeTrial` default and hands back what is stored.
  *
  * IT DELIBERATELY DOES NOT DERIVE `audience` / `requirePlan`. The legacy
@@ -388,7 +388,7 @@ export interface ActivityMemberBenefit {
  * An appointment's price is attached to its LENGTH, and a rule about that price
  * has to be too. With one rule for the whole activity, "members pay CHF 40"
  * charged the same for thirty minutes and for ninety — an amount that cannot be
- * right for both, offered by the editor and honoured by the resolver, with no
+ * right for both, offered by the editor and honored by the resolver, with no
  * way to say the true thing (Franco, staging, 2026-09-02).
  *
  * This is NOT the matrix that was cut in 2026-07. That one was per duration ×
@@ -404,7 +404,7 @@ export interface ActivityDurationBenefit {
   /** Joins to `ActivityDuration.minutes`. An entry whose length no longer
    *  exists is inert: every reader looks up BY minutes, so an orphan is never
    *  consulted — and re-adding that length restores the rule it had, which is
-   *  the behaviour a studio expects from un-ticking a chip by accident. */
+   *  the behavior a studio expects from un-ticking a chip by accident. */
   minutes: number
   /** `null` means this length has NO member rule. Distinct from a missing
    *  entry, which is what `resolveDurationBenefit` reads the legacy field for. */
@@ -477,7 +477,7 @@ export interface Activity {
    *  all. Stored values were dropped rather than migrated (pre-launch).
    *
    *  Mirrored into the WORLD-READABLE public profile, so the editor says so.
-   *  Normalise through `normalizeActivityTags` on every write. */
+   *  Normalize through `normalizeActivityTags` on every write. */
   tags?: string[]
   /**
    * WHERE THIS LIVES on the public booking page — one heading, in the studio's
@@ -563,7 +563,7 @@ export interface Activity {
    *  see `ActivityMemberBenefit`). */
   trialEnabled?: boolean
   /** CLASS-ONLY. Major units, team `default_currency`. Absent/null ⇒ the trial is
-   *  FREE (today's behaviour — untouched). A number ⇒ the trial costs that instead
+   *  FREE (today's behavior — untouched). A number ⇒ the trial costs that instead
    *  of nothing; the trial's ELIGIBILITY semantics (newcomer/guest-only, once —
    *  enforced via `Contact.trial_used_at`) are unchanged, only the money changes.
    *  No-op unless `trialEnabled === true`. Charged via the same Stripe Connect
@@ -664,7 +664,7 @@ export interface ActivityPublicProfile {
    *  on a gated class ("even when members-only") — present only when true. */
   trialEnabled?: boolean
   /** CLASS-ONLY. Major units, team `default_currency`. Absent/null ⇒ the trial is
-   *  FREE (today's behaviour — untouched). A number ⇒ the trial costs that instead
+   *  FREE (today's behavior — untouched). A number ⇒ the trial costs that instead
    *  of nothing. Mirrored only when `trialEnabled === true` and the value is a
    *  number — see `Activity.trialPriceAmount`. */
   trialPriceAmount?: number | null
@@ -762,7 +762,7 @@ export const MAX_ACTIVITY_TAGS = 6
 /** Longest single tag — a label, never a sentence. */
 export const MAX_ACTIVITY_TAG_LENGTH = 24
 
-/** THE ONE normaliser for `Activity.tags`, run by the editor and the public
+/** THE ONE normalizer for `Activity.tags`, run by the editor and the public
  *  mirror alike: trim, drop empties, cap the length, dedupe
  *  case-insensitively (keeping the first spelling the studio typed) and cap the
  *  count. Free text collected on two surfaces diverges unless both narrow it
@@ -800,7 +800,7 @@ export function normalizeBookingGroup(input: unknown): string | undefined {
  * surfaces will disagree about which heading a class sits under and in what
  * order the headings run.
  *
- * Grouping is CASE-INSENSITIVE ("Kinder" and "kinder" are one section, labelled
+ * Grouping is CASE-INSENSITIVE ("Kinder" and "kinder" are one section, labeled
  * the way the first activity spells it) because the set is open and typed by
  * hand, and two headings differing only in case is a studio's typo made public.
  *

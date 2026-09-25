@@ -2,7 +2,7 @@
 
 /**
  * THE FEDERATION'S CALENDAR — org-scope events, which are the one time-shaped
- * thing an organisation genuinely owns.
+ * thing an organization genuinely owns.
  *
  * An org event carries `scope: 'org'` and NO `teamId` (see `docs/event-program.md`),
  * so no studio-scoped query can ever find it: a member studio's calendar simply

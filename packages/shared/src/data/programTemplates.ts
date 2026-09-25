@@ -32,7 +32,7 @@ export interface StarterProgramTemplate extends ProgramTemplateBody {
   description: string
 }
 
-// A track colour palette kept small and neutral — a studio recolours on the
+// A track color palette kept small and neutral — a studio recolours on the
 // event anyway. Values are Tailwind-ish hexes matching the rest of the app.
 const TRACK_A = '#2563eb' // blue
 const TRACK_B = '#f97316' // orange

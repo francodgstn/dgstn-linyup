@@ -119,7 +119,7 @@ describe('the two facets are independent', () => {
 })
 
 describe('a benefit meaning FREE is read as the gate', () => {
-  // The resolver honours `included` on a course (COURSE_BLOCK_EFFECTS carries
+  // The resolver honors `included` on a course (COURSE_BLOCK_EFFECTS carries
   // it), so reading it as the rate instead would show a plan in neither column
   // while it was live in pricing: invisible and wrong.
   const legacy: CourseBlockEdgeFields = {

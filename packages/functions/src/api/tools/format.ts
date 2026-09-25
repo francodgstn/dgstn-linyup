@@ -89,7 +89,7 @@ export function subscriptionLine(s: ApiSubscription, team: TeamReadContext): str
   const parts = [`- ${personName(s.contact)} · ${s.plan.name ?? s.plan.id ?? '?'} · ${s.status}`]
   if (s.price) parts.push(`${money(s.price)} ${s.recurrence ?? ''}`.trim())
   if (s.paused) parts.push('paused')
-  if (s.cancelling) parts.push(s.ends_at ? `ends ${localDate(s.ends_at, team)}` : 'cancelling (end date unknown)')
+  if (s.cancelling) parts.push(s.ends_at ? `ends ${localDate(s.ends_at, team)}` : 'canceling (end date unknown)')
   if (s.cancellation?.reason) parts.push(`reason: ${s.cancellation.reason}`)
   return parts.join(' · ')
 }

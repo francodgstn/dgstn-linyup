@@ -13,7 +13,7 @@ const LABEL: Record<SaasStatus, string> = {
   active: 'Active',
   trial: 'Trial',
   past_due: 'Past due',
-  cancelled: 'Cancelled',
+  cancelled: 'Canceled',
   expired: 'Expired',
 }
 

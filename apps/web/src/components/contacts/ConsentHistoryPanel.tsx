@@ -13,7 +13,7 @@
 // under the SAME EMAIL ADDRESS but a different contact record. That section is
 // mandatory (one human routinely holds several contact ids here, because the
 // guest match requires email AND name — a dropped umlaut is enough) and it is
-// never merged, because an identity key is sha256(normalised email) and a shared
+// never merged, because an identity key is sha256(normalized email) and a shared
 // family mailbox gives a mother and her child the same one.
 //
 // The member's own download from Space omits that section, and the SERVER — not

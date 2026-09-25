@@ -229,7 +229,7 @@ export function SlotBookingForm({
   const { contact: sessionContact, isAuthenticated } = usePublicContactAuth()
   // ── WHAT THE MEMBER ACTUALLY HOLDS, RE-RESOLVED ON LOAD ───────────────────
   // The session's contact is a SEVEN-DAY SNAPSHOT: it carries the plan types
-  // the contact held when they signed in, serialised into
+  // the contact held when they signed in, serialized into
   // localStorage and never refreshed. On every other surface that is a label; on
   // this one it is the PRICE, and the divergence it produces points the unsafe
   // way — a member whose subscription lapsed, changed, or ran its credits out
@@ -339,7 +339,7 @@ export function SlotBookingForm({
   }
   /** The member screen is quoting from the frozen session snapshot and the live
    *  read has not answered yet. Its CTA waits — a sub-second wait beats a figure
-   *  the server may not honour, and an ERRORED read settles too, so a contact
+   *  the server may not honor, and an ERRORED read settles too, so a contact
    *  whose document is unreadable still gets a working button. */
   const heldPending = caller.kind === 'session' && hasAnyPrice && !heldSettled
 
@@ -549,7 +549,7 @@ export function SlotBookingForm({
   const offersMemberBenefit = !!memberBenefit?.subscriptionTypeIds.length
 
   // Report the current screen UP so the sticky bar can gate its Confirm button.
-  // The guest/member fork is `caller`, never a stored step: a recognised contact
+  // The guest/member fork is `caller`, never a stored step: a recognized contact
   // is on the member screen from the first render, and a sign-in through the
   // corner pill moves them there mid-flow without anything having to notice.
   const currentScreen: BookScreen = !partyConfirmed
@@ -648,7 +648,7 @@ export function SlotBookingForm({
       // walk through the free door, not to claim the slot is gone. That claim is
       // what this branch replaces: `covered` used to fall through to
       // `errorSlotUnavailable` and end the booking of every covered member the
-      // guest form had already mis-recognised.
+      // guest form had already mis-recognized.
       else if (code === 'functions/failed-precondition' && reason === 'covered') {
         try {
           const carried = waiverGate.acceptances
@@ -657,7 +657,7 @@ export function SlotBookingForm({
             ...(carried.length ? { waiverAcceptances: carried } : {}),
           })
           // Whoever the SERVER booked it for, which on this branch is the session
-          // contact — reaching it means the server recognised a session and made
+          // contact — reaching it means the server recognized a session and made
           // the booking free, so naming the address typed into a form it ignored
           // would be the same substitution one line further down the flow.
           //
@@ -733,7 +733,7 @@ export function SlotBookingForm({
   }
 
   /**
-   * A recognised caller's FREE booking — the covered member, and the signed-in
+   * A recognized caller's FREE booking — the covered member, and the signed-in
    * contact on an unpriced slot.
    *
    * Extracted so the consent screen's Confirm and the member screen's Confirm
@@ -803,7 +803,7 @@ export function SlotBookingForm({
     }
   }
 
-  // A recognised caller's effective price is an AMOUNT — pay to confirm.
+  // A recognized caller's effective price is an AMOUNT — pay to confirm.
   async function onMemberPay() {
     if (caller.kind === 'guest') return
     setSubmittingPay(true)
@@ -952,7 +952,7 @@ export function SlotBookingForm({
   // (UX-70). BEFORE every other screen, because none of them can be reached
   // from here: there is no price to quote, no code to type, and the only submit
   // this screen could offer is one the server refuses. It says what to buy —
-  // and, for a visitor we don't recognise, offers the sign-in that might
+  // and, for a visitor we don't recognize, offers the sign-in that might
   // already answer it. The sign-in screen itself is allowed through below.
   // ── THE PARTY, as the rest of the flow shows it ───────────────────────────
   /** The booking's list price: one per person on a party length. What a
@@ -1143,7 +1143,7 @@ export function SlotBookingForm({
     )
   }
 
-  // ── A recognised caller's free booking is in flight. The subscription
+  // ── A recognized caller's free booking is in flight. The subscription
   // sentence is only true when there is a price the subscription is covering —
   // on an unpriced slot nobody's membership is doing anything. ──
   if (autobooking) {
@@ -1157,7 +1157,7 @@ export function SlotBookingForm({
     )
   }
 
-  // ── THE MEMBER SCREEN — a caller this rail RECOGNISES, whether they arrived
+  // ── THE MEMBER SCREEN — a caller this rail RECOGNIZES, whether they arrived
   // with a contact session or signed in on the offer below. It replaces the
   // guest form for them entirely: the server would discard anything they typed
   // into it, so asking is a lie, and asking a member who is standing in their
@@ -1251,7 +1251,7 @@ export function SlotBookingForm({
               lost to a discount that no longer existed. Removing the code
               re-quotes the price above, relabels the button and completes the
               purchase at the member rate.
-              IT RENDERS FOR EVERY RECOGNISED CALLER, and used to render its
+              IT RENDERS FOR EVERY RECOGNIZED CALLER, and used to render its
               input for a `session` caller only — on the reasoning that
               `previewPromoCode` resolves ITS caller from a contact session and
               nothing else, so a `code` caller would be quoted anonymously. True,
@@ -1337,7 +1337,7 @@ export function SlotBookingForm({
     )
   }
 
-  // ── DEFAULT — guest details, for a visitor this rail does NOT recognise. The
+  // ── DEFAULT — guest details, for a visitor this rail does NOT recognize. The
   // sign-in offer is a link, never a gate. The visible submit is sr-only — the
   // parent's sticky bar drives it. ──
   return (

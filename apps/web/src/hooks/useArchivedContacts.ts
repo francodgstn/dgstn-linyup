@@ -23,7 +23,7 @@
 // DELETED CONTACTS ARE NOT HERE AND MUST NOT BE ADDED. Someone asked to be
 // removed; surfacing them in a search box works against that, and `deleted_at ==
 // null` above is the whole of the enforcement on this side. (The rules and the
-// anonymisation job are the rest of it.)
+// anonymization job are the rest of it.)
 //
 // COACH SCOPE: own-scoped members are not served by this hook — pass `null` for
 // them, exactly as the contacts page does when it hides the Archived tab. The

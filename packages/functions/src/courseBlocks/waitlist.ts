@@ -20,7 +20,7 @@
 // writes an absolute value. Wiring the three call sites instead would have
 // missed the fourth.
 //
-// The offer is an ORDINARY ENROLMENT: `status: 'hold'`, `waitlist_claim: true`,
+// The offer is an ORDINARY ENROLLMENT: `status: 'hold'`, `waitlist_claim: true`,
 // `expires_at` at the deadline. So `courseBlockEnrolmentHoldsPlace` already
 // counts it, already lapses it lazily, and nothing else in the codebase has to
 // learn what a waiting list is for the course to stop selling that place.
@@ -157,7 +157,7 @@ export const joinCourseBlockWaitlist = onCall(async (request) => {
   if (block.teamId !== teamId) {
     throw new HttpsError('permission-denied', 'That course belongs to another studio.')
   }
-  // A cancelled or unpublished course has no queue, and one whose sales have
+  // A canceled or unpublished course has no queue, and one whose sales have
   // closed cannot hand a place to anybody. Read through the ONE predicate the
   // public card reads, so nobody is shown a button this refuses.
   if (!courseBlockSalesOpen(block)) {
@@ -257,7 +257,7 @@ export const joinCourseBlockWaitlist = onCall(async (request) => {
   const entryToken = generateSecureToken()
 
   const result = await db.runTransaction(async (tx) => {
-    // The course document is in the read set, which is what serialises a join
+    // The course document is in the read set, which is what serializes a join
     // against a place being taken: joining a course that filled a millisecond
     // ago, or emptied a millisecond ago, resolves one way or the other rather
     // than both.
@@ -275,7 +275,7 @@ export const joinCourseBlockWaitlist = onCall(async (request) => {
       })
     }
     // Already ON it: not a queue candidate at all, and offering them a place
-    // later would replace a settled enrolment with a hold.
+    // later would replace a settled enrollment with a hold.
     const mine = enrolments.docs.find((d) => d.id === contactId)
     if (mine && mine.get('status') === 'enrolled') {
       throw new HttpsError('failed-precondition', 'You are already on that course.', {
@@ -435,10 +435,10 @@ export const leaveCourseBlockWaitlist = onCall(async (request) => {
 /**
  * Give an offered place back. THE ONE way a course offer stops being an offer.
  *
- * The guard is what stands between the queue and a destroyed paid enrolment: an
+ * The guard is what stands between the queue and a destroyed paid enrollment: an
  * offer taken up in the meantime is an ordinary `enrolled` row, possibly paid
  * for, and withdrawing it would take the place off somebody who owns it. So the
- * ENTRY is treated as a derived view of the ENROLMENT: whatever the enrolment
+ * ENTRY is treated as a derived view of the ENROLLMENT: whatever the enrollment
  * says happened is what the entry is set to, and a flip missed anywhere else
  * self-heals here instead of turning into a deletion.
  */
@@ -460,7 +460,7 @@ export async function releaseCourseOffer(
     const isClaim = enrolDoc.get('waitlist_claim') === true
     // They are ON the course. Either the claim settled and the entry flip was
     // missed, or they bought a place another way while holding the offer.
-    // Either way the enrolment is theirs and is left exactly alone.
+    // Either way the enrollment is theirs and is left exactly alone.
     if (status === 'enrolled') return 'self_healed'
     if (!isClaim) return 'noop'
 
@@ -540,7 +540,7 @@ export async function offerCoursePlaces(
     const room = Math.min(free, COURSE_WAITLIST_MAX_OFFERS_PER_RUN)
 
     // Somebody who got onto the course another way since joining must not be
-    // offered a place: the offer would REPLACE their enrolment with a hold, and
+    // offered a place: the offer would REPLACE their enrollment with a hold, and
     // the next release would then withdraw them from a course they had paid
     // for.
     const already = new Set(
@@ -615,7 +615,7 @@ export async function offerCoursePlaces(
     }
 
     // ABSOLUTE, from the read set, never an increment. The offered holds are
-    // counted because they are ordinary enrolments.
+    // counted because they are ordinary enrollments.
     tx.update(ref, {
       places_taken: holding + heads.length,
       updated_at: FieldValue.serverTimestamp(),
@@ -743,7 +743,7 @@ export async function sweepCourseWaitlistOffers(): Promise<{
       stats.errors += 1
       continue
     }
-    // The entry is a DERIVED VIEW of the enrolment: if they got on the course
+    // The entry is a DERIVED VIEW of the enrollment: if they got on the course
     // after all, the entry is corrected rather than expired.
     await to(
       entry.ref.update({
@@ -837,7 +837,7 @@ export const claimCourseBlockPlace = onCall(async (request) => {
   if (option.type === 'pay') {
     // The offer STANDS. Nothing here consumes the token or releases the place:
     // they have until the offer's own deadline to come back through
-    // `createCourseBlockCheckout` with it, which settles the same enrolment.
+    // `createCourseBlockCheckout` with it, which settles the same enrollment.
     throw new HttpsError('failed-precondition', 'This course has to be paid for.', {
       reason: 'payment_required',
       priceAmount: option.amount,
@@ -867,7 +867,7 @@ export const claimCourseBlockPlace = onCall(async (request) => {
 
     // The place is ALREADY HELD by this hold, so settling it takes nothing and
     // `places_taken` does not move. That is the whole point of the offer being
-    // an ordinary enrolment.
+    // an ordinary enrollment.
     tx.set(
       ref.collection(COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION).doc(contactId),
       {
@@ -889,7 +889,7 @@ export const claimCourseBlockPlace = onCall(async (request) => {
     return { settled: true }
   })
 
-  // The bookings follow the settled enrolment, outside the transaction, exactly
+  // The bookings follow the settled enrollment, outside the transaction, exactly
   // as they do for every other way onto a course.
   const roster = await syncCourseBlockRoster(db, blockId)
   return { blockId, contactId, settled, bookingsWritten: roster.written }

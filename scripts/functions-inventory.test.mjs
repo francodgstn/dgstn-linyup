@@ -216,7 +216,7 @@ test('toRecord: only what the function sets, or what differs from the globals, i
   assert.ok(!row.includes('reset'))
 })
 
-test('summarise: counts, the domain matrix, and only genuinely mergeable trigger groups', () => {
+test('summarize: counts, the domain matrix, and only genuinely mergeable trigger groups', () => {
   const at = (name, domain, endpoint) =>
     toRecord(name, endpoint, { from: `./${domain}/${name}`, domain }, GLOBALS)
   const records = [

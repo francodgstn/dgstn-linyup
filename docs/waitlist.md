@@ -11,14 +11,14 @@ A waitlist is **a queue for a seat in a full class**. When a seat frees, the
 oldest waiter is offered it and the seat is *held for them* until a deadline;
 they claim it (free or by paying), or it rolls on to the next person.
 
-**Class-only, and that is a modelling fact rather than a scoping choice.** An
+**Class-only, and that is a modeling fact rather than a scoping choice.** An
 appointment session does not exist until it is booked (`docs/appointments.md`),
 so "this session is full" has no meaning there — one booking per slot is the
 definition of exclusive time. The analogous feature would be a queue on an
 availability *window*, which is a different primitive and is not built
 (`docs/product-strategy.md`, "Slot waiting list"). `joinWaitlist` and
 `offerWaitlistSeats` both refuse `activityType === 'appointment'`, and the
-promotion trigger returns early on one — cancelling an appointment produces the
+promotion trigger returns early on one — canceling an appointment produces the
 seat-freed edge on every single one.
 
 Everything lives in `packages/functions/src/booking/waitlist/`; the seat
@@ -379,7 +379,7 @@ and they read different fields on purpose (`booking/index.ts`, fixtures in
 **`cancelSingleSession` is a release site too** (`sessions/index.ts:188-238`), and
 until 2026-08-17 it was a broken one in both directions. The decrement lived
 *inside the cancellation-notice loop*, so a studio with `session_cancellation`
-switched off cancelled sessions and nobody's counter moved — while with the
+switched off canceled sessions and nobody's counter moved — while with the
 notice on, the loop decremented the two shapes this table says own no count
 (disposed documents, whose disposer already gave it back, and plain drop-in
 holds), driving real contacts negative. It now runs with the bookings read,
@@ -400,7 +400,7 @@ to decide — skipping it would strand a count on every auto-confirming class.
   turns a counted hold into an uncounted one: **−1**. Someone who opened a plain
   checkout and then went back to their claim link: **+1**.
   It reads `status` and `replacedBookingWasCounted` does not, because
-  `createDropInCheckout`'s guard is looser — a **disposed** document (cancelled /
+  `createDropInCheckout`'s guard is looser — a **disposed** document (canceled /
   no_show / rebooked away) reaches this seam and owns no count, so decrementing
   there would drive a real person negative.
 
@@ -418,7 +418,7 @@ Charged against its own rate-limit bucket (`'waitlist-join'`), because sharing t
 checkout counter would let a burst of people queueing for a popular class from one
 gym's NAT lock that address out of paying for anything.
 
-Refuses unless the session is a class, not cancelled (**both** shapes — see
+Refuses unless the session is a class, not canceled (**both** shapes — see
 `isSessionCancelled`), `allowBooking`, in the future, capped
 (`max_participants > 0`), inside the booking cutoff, and its activity has
 `waitlistEnabled === true`. Then `requirePlan(teamId, 'coach')` — the only public
@@ -734,7 +734,7 @@ Three passes, in this order:
 Pass 2 is wrapped so a failed commit costs that pass and not pass 3 — the backstop
 is the one that puts people in classes.
 
-### Leaving, removing, cancelling, deleting
+### Leaving, removing, canceling, deleting
 
 - **`leaveWaitlist({ entryToken })`** — the same guarded release, terminal status
   `left`, then re-offer. Someone who claimed and paid and *then* clicked the older
@@ -835,7 +835,7 @@ The collection-group **read** grant has no client consumer today, and the block
 says so: every collection-group query on `waitlist` in this repo runs in a
 callable over the Admin SDK, which bypasses rules entirely. It is a defensive
 team-scoping grant for a future client-side read — the shape `listMyWaitlist`
-exists to work around, since `isSelfContact` authorises a `get` and not a `list` —
+exists to work around, since `isSelfContact` authorizes a `get` and not a `list` —
 and it widens nothing, because a team member can already read every one of those
 documents individually through the nested block. It grants a query shape, not data.
 
@@ -859,7 +859,7 @@ queries and the overrides identical to every existing precedent.
 
 ## Where the waitlist appears
 
-| Surface | Behaviour |
+| Surface | Behavior |
 |---|---|
 | Public booking form (`BookingForm.tsx`) | A full-but-bookable class keeps its slot rendered with a "join the waitlist" chip, gated on `waitlistEnabled` from the **activity** public profile. The click and the `?session=` deep link route to a `waitlist` step (reusing `GuestDetailsForm` and the activity's `bookingQuestions`); a signed-in contact skips the form. `sessionBlockReason` reports `'closed'` before `'full'`, so a class past the cutoff disappears instead of advertising a queue nothing can be offered from. The access badge is shown as a **warning**, not a gate |
 | Claim page (`/public/{slug}/waitlist?token=…`) | One page, two modes, decided **server-side** by which token matched. `entry_token` → status view (position, "leave the waitlist"). `offer_token` → claim view (countdown, "claim my spot"): free finishes inline; payable shows the price with `appliedBenefit`, offers `GiftCardRedeemField`, and routes to `createDropInCheckout({ waitlistToken })` → Stripe → back into the booking flow's confirmed step |
@@ -972,7 +972,7 @@ Honest list. Several of these are decisions rather than debt.
   the promoter, that is wrong in that case — which is what leaves the sweep's
   backstop pass free to do its real job (re-offering after a missed trigger)
   instead of second-guessing the queue.
-- **Both cancellation shapes, everywhere.** A cancelled *occurrence of a series*
+- **Both cancellation shapes, everywhere.** A canceled *occurrence of a series*
   writes `isException` + `exceptionType: 'cancelled'` and leaves `status` and
   `allowBooking` exactly as they were. `isSessionCancelled` tests the pair; a
   status-only test reads a called-off class as bookable, and the queue would take

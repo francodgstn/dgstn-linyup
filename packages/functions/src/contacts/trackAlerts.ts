@@ -1,7 +1,7 @@
 // `trackContactAlerts` — the ONE writer of `Contact.alerts_count`.
 //
 // `alerts_count` is the highest-weighted attention reason in
-// `contactAttentionReasons` (weight 5, above a trial pending or a cancelling
+// `contactAttentionReasons` (weight 5, above a trial pending or a canceling
 // member) — and until this trigger, NOTHING in the repo wrote it. Both
 // existing alert writers (the booking-notification alert in
 // `booking/index.ts` and the automation engine's `create_alert` action)

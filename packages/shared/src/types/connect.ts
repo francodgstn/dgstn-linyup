@@ -35,7 +35,7 @@ import type { SubscriptionCancellationDetails } from '../utils/subscriptionLifec
 //
 // Both members therefore produce a byte-identical connected account. The value
 // is carried and persisted (teams/{id}.payments.connectModel,
-// connect_accounts/{acct}.model) but branches NO behaviour — computePlatformFee
+// connect_accounts/{acct}.model) but branches NO behavior — computePlatformFee
 // accepts it and deliberately ignores it. It survives because existing documents
 // store it; new onboarding always records 'managed'.
 //
@@ -87,7 +87,7 @@ export interface PlatformFeeInput {
    * the one direction that costs money silently. Absent still means CHARGE.
    *
    * Resolved server-side by `loadEnabledTeam` from `flags.comped` on the team,
-   * or on its organisation — never read off a client payload.
+   * or on its organization — never read off a client payload.
    */
   waived?: boolean
   /**
@@ -232,7 +232,7 @@ export function negotiatedRateExpiresAtMs(lastDay: string, timeZone = 'Europe/Zu
 export function resolveTakeRate(input: {
   tier: SaasPlan
   teamFlags?: TenantFlags | null
-  /** The team's organisation's flags; null/absent when it has none or the read failed. */
+  /** The team's organization's flags; null/absent when it has none or the read failed. */
   orgFlags?: TenantFlags | null
   nowMs: number
 }): ResolvedTakeRate {
@@ -529,7 +529,7 @@ export interface MemberSubscription {
    * `canceled_at` AND `cancellation_details` all set. Both cancellation paths
    * carry a date today; only the BOOLEAN tells them apart (see the file header
    * of shared/utils/subscriptionLifecycle.ts). A reader that treats a missing
-   * date as "cancelled by us" is reading a fact that has not been true since the
+   * date as "canceled by us" is reading a fact that has not been true since the
    * Dahlia migration.
    */
   cancel_at?: Timestamp | null
@@ -560,9 +560,9 @@ export interface MemberSubscription {
   /** Idempotency: last processed subscription/invoice event id for this doc. */
   last_event_id?: string
   /**
-   * Set true when the webhook auto-cancelled this subscription because the contact
+   * Set true when the webhook auto-canceled this subscription because the contact
    * already held a live subscription of the same type (duplicate that slipped past the
-   * checkout guard). The Stripe sub is cancelled and its charge refunded.
+   * checkout guard). The Stripe sub is canceled and its charge refunded.
    */
   duplicate?: boolean
   /**

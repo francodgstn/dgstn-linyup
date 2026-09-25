@@ -138,7 +138,7 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : nul
  * a request.
  *
  * Returns null only when the envelope is unusable (no `data.type` / `data.id`)
- * — an event type we do not recognise is NOT a failure. It is stored as `other`
+ * — an event type we do not recognize is NOT a failure. It is stored as `other`
  * with Apple's own type string, because a webhook that silently drops what it
  * has not been taught about is a webhook nobody can debug. That also means a
  * ping or test delivery is accepted and visible, whatever Apple calls it.

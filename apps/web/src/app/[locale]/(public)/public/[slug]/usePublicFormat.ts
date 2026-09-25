@@ -27,7 +27,7 @@ export function usePublicFormat(): RegionalFormatter {
   const locale = useLocale()
   const { team } = usePublicTeam()
   const stored = team.regional ?? null
-  // Serialised, not by reference: the provider hands out one object per load,
+  // Serialized, not by reference: the provider hands out one object per load,
   // but a key is cheaper than trusting that on every consumer.
   const storedKey = JSON.stringify(stored ?? {})
   // eslint-disable-next-line react-hooks/exhaustive-deps

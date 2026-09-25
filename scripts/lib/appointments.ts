@@ -8,7 +8,7 @@
  * less). Crucially, NOTHING is pre-generated: there is no
  * generator cron and no availability trigger, so an appointment `Session` exists
  * only once a client books one. Seeds must therefore never fabricate "open slots";
- * they materialise a handful of ALREADY-BOOKED appointments instead, shaped exactly
+ * they materialize a handful of ALREADY-BOOKED appointments instead, shaped exactly
  * like the ones the `bookAppointment` callable writes.
  *
  * FREE-PATH ONLY: seeded booked appointments are always free-path-shaped —
@@ -146,7 +146,7 @@ export function buildAppointmentSessionDocs(input: SeedAppointmentInput): {
   }
 
   // The live syncSessionPublicProfile mirrors appointment sessions (allowBooking:
-  // true) unless cancelled, past ones included; the public timetable shows those
+  // true) unless canceled, past ones included; the public timetable shows those
   // muted.
   const publicProfile = {
     type: 'appointment_session',

@@ -15,7 +15,7 @@ export default function PublicOrgEventDetailPage() {
   const { loading, event } = usePublicEvent(eventId)
 
   // The mirror is world-readable by id, so confirm the event really belongs to
-  // THIS organisation before rendering it under the org's slug.
+  // THIS organization before rendering it under the org's slug.
   const belongsHere = !!event && !!org.orgId && event.orgId === org.orgId
 
   if (org.loading || loading) {

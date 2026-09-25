@@ -93,7 +93,7 @@ const getBadgeGroups = (
   const fraction = position >= 0 && top > 0 ? position / top : 0;
   /** The label a tenant's own scale gives the level at `f` — so the badge says
    *  "Reach Blue" for HMD and "Reach Purple" for a BJJ club, instead of naming
-   *  one organisation's belts to everybody. */
+   *  one organization's belts to everybody. */
   const labelAt = (f: number) => levels[Math.ceil(f * top)]?.label ?? '';
   const sessions = contact.total_sessions ?? 0;
   const maxStreak = contact.max_streak ?? 0;

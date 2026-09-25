@@ -1,6 +1,6 @@
 // The studio's day-to-day, behind one function: everything a signed-in member of
 // STAFF does that is not money (routers/finance.ts), not what the studio pays
-// Linyup (routers/billing.ts), not the organisation tier (routers/org.ts) and not
+// Linyup (routers/billing.ts), not the organization tier (routers/org.ts) and not
 // a long job (routers/heavy.ts) — contacts and plans, sessions, events, waivers,
 // team and invitations, domains, mail and WhatsApp settings, automations, API
 // keys, the AI helpers (docs/functions-consolidation-plan.md → "Phase 2").
@@ -19,7 +19,7 @@
 // odd functions out.
 //
 // Every member ALSO stays exported standalone from src/index.ts until its alias
-// is provably unused (utils/frozenFunctions.test.ts says why). Authorisation and
+// is provably unused (utils/frozenFunctions.test.ts says why). Authorization and
 // the TENANT BOUNDARY are each member's own; the router adds none and removes
 // none. This module must NOT call `setGlobalOptions` — src/index.ts owns it.
 

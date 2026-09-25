@@ -1,6 +1,6 @@
 ---
 title: Overview
-description: What Linyup is, where the code lives, and how these docs are organised.
+description: What Linyup is, where the code lives, and how these docs are organized.
 status: living
 area: start
 order: 1
@@ -8,12 +8,12 @@ order: 1
 # Overview
 
 Linyup is a multi-tenant SaaS for coaches, studios and multi-studio
-organisations: classes and appointments, contacts and memberships, payments,
-public booking pages and websites, and a member app. It is the generalised
+organizations: classes and appointments, contacts and memberships, payments,
+public booking pages and websites, and a member app. It is the generalized
 successor of **hmd-lineup**, a martial-arts school platform whose business logic
 it ports (see [HMD port checklist](./migration-checklist.md)).
 
-The tenant boundary is the **team** (`teamId`). An **organisation** groups
+The tenant boundary is the **team** (`teamId`). An **organization** groups
 member studios above it. Everything a visitor sees without signing in is read
 from `public_profile` mirrors, never from the main collections.
 
@@ -47,7 +47,7 @@ and the `/try` playground), **staging** and **production**. See
 [Environments](/rules/environments/), [Local development](/rules/local-development/)
 and [Test accounts](./test-accounts.md).
 
-## How these docs are organised
+## How these docs are organized
 
 - **Start here** — this page, the glossary, and getting a local stack running.
 - **Architecture** — the rules that cut across every feature: the tenant and

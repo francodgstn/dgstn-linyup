@@ -1,11 +1,11 @@
-// Organisation member management — add / change role / remove.
+// Organization member management — add / change role / remove.
 //
 // WHY THESE EXIST (UX-34): the org Members tab has always rendered a complete
 // form — an "Add member" dialog with an email field and a role picker, and a
 // per-row delete with a confirmation — against `addOrgMember` and
 // `removeOrgMember`, neither of which had ever been written. Every submit came
 // back "internal". `createOrganization` makes exactly ONE org_admin (the
-// creator) and there was no second path, so an organisation could never gain an
+// creator) and there was no second path, so an organization could never gain an
 // admin, hand one over, or lose one: a bus factor of one, permanently.
 //
 // AUTHORIZATION follows UX-75's shape and nothing else: `assertOrgAdmin` against
@@ -17,7 +17,7 @@
 // `org_members/{memberId}` directly: the client cannot turn an email address
 // into a uid (that is an Admin SDK read), cannot maintain `users/{uid}.orgIds`
 // (it may only write its OWN user document), and cannot enforce "an
-// organisation keeps at least one admin" — that is a read of the whole
+// organization keeps at least one admin" — that is a read of the whole
 // collection inside a transaction. All three are server obligations.
 //
 // TWO DOORS, ONE WRITER. Since decision 12 there is a second way into
@@ -66,7 +66,7 @@ export function membersRef(orgId: string) {
  * `org_member_invitation` for a second admin must NOT satisfy this guard: an
  * invitation grants nothing until it is accepted, and an unopened mailbox is
  * not an administrator. Counting one would let the last admin walk out against
- * a link that may never be clicked and leave the organisation with nobody. The
+ * a link that may never be clicked and leave the organization with nobody. The
  * guard therefore reads only `org_members`, and in the other direction
  * `inviteOrgMember` never consults it: sending an invitation takes no admin
  * away, so there is nothing for it to protect.
@@ -81,14 +81,14 @@ async function assertNotLastAdmin(
   if (otherAdmins.length === 0) {
     throw new HttpsError(
       'failed-precondition',
-      'An organisation must keep at least one admin.',
+      'An organization must keep at least one admin.',
       { reason: 'last_admin' }
     )
   }
 }
 
 /**
- * THE ONE WRITER of an organisation membership. Writes the `org_members/{uid}`
+ * THE ONE WRITER of an organization membership. Writes the `org_members/{uid}`
  * row and the `users/{uid}.orgIds` entry together, in one batch, because they
  * are two halves of one fact: the row is the grant, and the array is how the
  * sidebar finds it (a collectionGroup query would need an index the app does
@@ -162,7 +162,7 @@ export async function grantOrgMembership(
 //
 // AN IMMEDIATE GRANT, not an invitation — and since decision 12 it is no longer
 // the only door. The Members tab now sends an INVITATION (`inviteOrgMember`),
-// because being made an admin of an organisation is worth the person's consent
+// because being made an admin of an organization is worth the person's consent
 // and because the refusal this callable gives an address with no Linyup account
 // ("no_account") was a dead end with nothing on the other side of it.
 //
@@ -203,7 +203,7 @@ export const addOrgMember = onCall(async (request) => {
   const memberRef = membersRef(data.orgId).doc(uid)
   const existing = await memberRef.get()
   if (existing.exists) {
-    throw new HttpsError('already-exists', 'That person is already a member of this organisation.')
+    throw new HttpsError('already-exists', 'That person is already a member of this organization.')
   }
 
   const userDoc = await db.collection('users').doc(uid).get()
@@ -242,10 +242,10 @@ export const updateOrgMemberRole = onCall(async (request) => {
 
   await admin.firestore().runTransaction(async (tx) => {
     const snap = await tx.get(memberRef)
-    if (!snap.exists) throw new HttpsError('not-found', 'That person is not a member of this organisation.')
+    if (!snap.exists) throw new HttpsError('not-found', 'That person is not a member of this organization.')
     const current = snap.data()!.role as OrgRole
     if (current === role) return
-    // Demoting the last admin locks everyone out of the organisation just as
+    // Demoting the last admin locks everyone out of the organization just as
     // surely as removing them — same guard, same transaction.
     if (current === 'org_admin') await assertNotLastAdmin(tx, orgId, userId)
     tx.update(memberRef, { role, updated_at: FieldValue.serverTimestamp() })
@@ -274,7 +274,7 @@ export const removeOrgMember = onCall(async (request) => {
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(memberRef)
-    if (!snap.exists) throw new HttpsError('not-found', 'That person is not a member of this organisation.')
+    if (!snap.exists) throw new HttpsError('not-found', 'That person is not a member of this organization.')
     if ((snap.data()!.role as OrgRole) === 'org_admin') {
       await assertNotLastAdmin(tx, orgId, userId)
     }

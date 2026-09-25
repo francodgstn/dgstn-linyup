@@ -213,7 +213,7 @@
       'box-shadow:0 20px 60px rgba(15,23,42,.18),inset 0 1px 0 rgba(255,255,255,.8)}}' +
       // LAST, so it wins over the glass above. Forced colors replaces the
       // palette but does NOT turn off a backdrop-filter, so naming the
-      // background alone would leave a system-coloured scrim over a blurred
+      // background alone would leave a system-colored scrim over a blurred
       // page — the one thing high contrast exists to prevent.
       '@media (forced-colors:active){' +
       '.linyup-modal{background:Canvas;backdrop-filter:none;-webkit-backdrop-filter:none}}'
@@ -284,7 +284,7 @@
       pushedHistory: false,
     }
     // Lock BOTH: `html` covers most browsers, `body` covers the ones whose
-    // scroll container is the body (and iOS, which honours neither reliably —
+    // scroll container is the body (and iOS, which honors neither reliably —
     // the panel's own overscroll-contain does the rest).
     html.style.overflow = 'hidden'
     body.style.overflow = 'hidden'
@@ -448,7 +448,7 @@
     if (data.type === 'linyup:embed:open' && typeof data.href === 'string') {
       var url = toBookUrl(data.href, data.hl)
       if (url) openModal(url)
-      // Not something we can place in a panel — honour the click as a link. The
+      // Not something we can place in a panel — honor the click as a link. The
       // widget delegated because we said we were here; dropping it would lose
       // the click entirely.
       else window.open(data.href, '_blank', 'noopener,noreferrer')

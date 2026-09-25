@@ -68,7 +68,7 @@ function formatDateTime(fmt: RegionalFormatter, d: Date | null): string {
 // is a seat that was held and wasted, so it reads RED at a glance on every
 // surface now, not just the one that happened to write it that way first.
 // `cancelled` stays `destructive` too — the two are told apart by their
-// label, not their colour (Franco, 2026-08-29).
+// label, not their color (Franco, 2026-08-29).
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'no_show' | 'rebooked'
 

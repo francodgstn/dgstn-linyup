@@ -122,7 +122,7 @@ export function usePublicContactAuth() {
 // stored record a perfectly valid Firebase session is ignored by every public
 // surface, so a drift in either direction signs a member out for no reason.
 //
-// The one deliberate behaviour change of pointing here: `saveContactSession`
+// The one deliberate behavior change of pointing here: `saveContactSession`
 // SWALLOWS a storage failure (private mode, storage disabled) where the inlined
 // copy threw. Throwing landed in the sign-in catch below and showed "could not
 // sign in" to someone who had in fact just signed in — the Firebase session was
@@ -176,7 +176,7 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
   }, [contact?.id])
 
   // TRUE ON BOTH SIDES OF HYDRATION. Deciding it from localStorage in the
-  // initialiser made the server render `false` (no window) and a returning
+  // initializer made the server render `false` (no window) and a returning
   // member's browser render `true`, so every Space visit by a signed-in member
   // failed hydration: the server's "Sign in" button against the client's
   // placeholder, and React threw the server HTML away. The effect below settles
@@ -199,7 +199,7 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
     // A BOUNDED WAIT. Everything below is asynchronous and one hop of it
     // (`getIdTokenResult`) can go to the network, where "slow" and "never" look
     // the same. Without a deadline a hung refresh leaves the portal spinning
-    // with no way out; with one, the worst case is the OLD behaviour — the
+    // with no way out; with one, the worst case is the OLD behavior — the
     // sign-in prompt — arriving a few seconds later. Waiting is only ever
     // allowed to delay the answer, never to replace it.
     const deadline = setTimeout(() => setRestoring(false), 8000)

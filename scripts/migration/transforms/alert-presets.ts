@@ -18,7 +18,7 @@
  * directly and writes them straight into a new `contact_alerts` doc via the
  * CLIENT SDK's `addDoc`. A migrated preset has neither field (only the
  * nested `schedule` object), so `schedule_type` resolves to `undefined` —
- * which the web Firestore SDK also rejects on write (same default behaviour
+ * which the web Firestore SDK also rejects on write (same default behavior
  * as the Admin SDK: no value, not an omission), throwing instead of
  * creating the alert. The preset list itself renders `AlertPresetRecord`
  * (contacts/[id]/page.tsx:753-760), which is the same flat shape.

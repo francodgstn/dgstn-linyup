@@ -56,7 +56,7 @@ export async function activeCustomDomainHost(
   } catch (err) {
     // A read failure must never fail a checkout. Falling through as "no custom
     // domain" returns the visitor to the canonical app host — the pre-custom-
-    // domain behaviour, which is worse branding and a working payment.
+    // domain behavior, which is worse branding and a working payment.
     // Deliberately NOT cached: a transient failure must not pin "no domain" for
     // a minute across every send that follows it.
     console.warn(`activeCustomDomainHost: read failed for ${scope} ${entityId}:`, err)

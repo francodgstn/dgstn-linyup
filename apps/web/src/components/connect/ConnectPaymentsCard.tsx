@@ -65,7 +65,7 @@ export function ConnectPaymentsCard({
 
   // A COMPED STUDIO IS TOLD THE TRUTH, which is not "0%" — a zero percentage
   // still reads as a rate that could change. The waiver comes from the server
-  // (it may be inherited from the studio's organisation) rather than being
+  // (it may be inherited from the studio's organization) rather than being
   // re-derived here, so this surface cannot disagree with what is charged.
   const feeWaived = status?.feeWaived === true
   // The same goes for a NEGOTIATED rate, which the browser cannot derive at all.
@@ -245,7 +245,7 @@ export function ConnectPaymentsCard({
           {/* Stripe's raw requirement names (`external_account`,
               `identity.individual.verification.document`) mean nothing to an
               owner. The ONE mapping groups them into plain-language kinds and
-              collapses anything it does not recognise into a single generic
+              collapses anything it does not recognize into a single generic
               line — the raw string is never shown. Stripe's own form names the
               exact fields, which is why "Finish setup" stays the way to act. */}
           {requirementKinds.length > 0 && (
@@ -287,7 +287,7 @@ export function ConnectPaymentsCard({
 
           Quiet, at the bottom, below a rule: it is a real need but a rare one,
           and it is refused server-side while any member subscription is still
-          live — cancelling those is a decision about somebody's membership, not
+          live — canceling those is a decision about somebody's membership, not
           a step in changing a login. */}
       {status?.connected && (
         <>

@@ -303,7 +303,7 @@ describe('website publish — what it refuses', () => {
     assert.deepEqual(out, { id: 'f', type: 'features', columns: 3, items: [{ title: 'x', linkLabel: 'go' }] })
   })
 
-  it('refuses colours that are not colours', () => {
+  it('refuses colors that are not colors', () => {
     const meta = sanitizeMeta(
       {
         accentColor: 'red; background: url(https://evil.example/x.png)',

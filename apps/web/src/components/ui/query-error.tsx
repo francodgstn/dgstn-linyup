@@ -22,7 +22,7 @@ function truncateDetail(detail: string): string {
  *
  * Those surfaces paint themselves from the studio's bio-link theme, so the app's
  * own `foreground` / `muted-foreground` / `destructive` tokens are simply not the
- * colours in play: a studio running a dark bio-link theme gets near-black text on
+ * colors in play: a studio running a dark bio-link theme gets near-black text on
  * a near-black card — invisible in exactly the situation this component exists to
  * make visible. Pass the host surface's own values (`useSpaceTheme`, or
  * ShopHome's locals) and the block is legible on any tenant theme.
@@ -31,12 +31,12 @@ function truncateDetail(detail: string): string {
  * the appointment picker, the course player) — there the tokens ARE correct.
  */
 export interface QueryErrorTheme {
-  /** Title colour — the surface's primary text. */
+  /** Title color — the surface's primary text. */
   textMain: string
-  /** Detail-line colour — the surface's secondary text. */
+  /** Detail-line color — the surface's secondary text. */
   textMuted: string
   /** The studio's accent. Used as a WASH BEHIND the retry control, never as its
-   *  text colour — an arbitrary tenant hue as 14px text is a contrast failure
+   *  text color — an arbitrary tenant hue as 14px text is a contrast failure
    *  waiting to happen (see the button below). */
   accent: string
   /** Retry-control outline — the surface's card border. */
@@ -96,7 +96,7 @@ export function QueryErrorState({
         )}
       </div>
       {theme ? (
-        // The label takes the surface's OWN primary text colour — the same colour
+        // The label takes the surface's OWN primary text color — the same color
         // as the title two lines above, which every tenant theme already commits
         // to being readable on this card. The studio's accent was doing that job
         // and failing it: measured against the tenant card backgrounds it came out

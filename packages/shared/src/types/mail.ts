@@ -82,7 +82,7 @@ export interface MessagingPolicy {
    *
    * So this is a per-tenant hole in an environment-wide guard, and it is built
    * to be hard to open by accident:
-   *   • ABSENT ⇒ false ⇒ today's behaviour. Never defaulted on, never inherited.
+   *   • ABSENT ⇒ false ⇒ today's behavior. Never defaulted on, never inherited.
    *   • OPERATOR-ONLY, like the rest of this document: rules deny every client
    *     write, and the console surfaces it only while TEST_MODE is actually on.
    *   • It does NOT bypass the layers that protect recipients rather than

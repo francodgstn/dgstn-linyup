@@ -32,7 +32,7 @@ describe('custom domain — the website at the root', () => {
     assert.strictEqual(toTenantInternalPath('/site/preise', SLUG, 'team', site), `/public/${SLUG}/site/preise`)
   })
 
-  it('changes nothing without the flag, or for an organisation', () => {
+  it('changes nothing without the flag, or for an organization', () => {
     assert.strictEqual(toTenantInternalPath('/', SLUG), `/public/${SLUG}`)
     assert.strictEqual(toTenantInternalPath('/angebot', SLUG), `/public/${SLUG}/angebot`)
     assert.strictEqual(toTenantInternalPath('/events', SLUG, 'org', site), `/public/org/${SLUG}/events`)

@@ -23,7 +23,7 @@ White/Yellow and Yellow/Orange; whether anyone's existing belt moves onto one of
 NOT part of the import — it is `pnpm backfill:rank-reassign`, gated on the federation's
 decision being recorded in `HMD_BELT_REASSIGNMENT` (docs/rank-scale-decoupling.md, Phase 6).
 
-The organisation document, org_admin member entry, and Firebase Auth users are all migrated automatically. The **auth-users pass** calls the Firebase Identity Toolkit API directly using the source service account, downloads all user records including password hashes and the SCRYPT hash config, then imports them into the target with `importUsers()` — so users log in with the same password they had in the source project. No manual export step needed.
+The organization document, org_admin member entry, and Firebase Auth users are all migrated automatically. The **auth-users pass** calls the Firebase Identity Toolkit API directly using the source service account, downloads all user records including password hashes and the SCRYPT hash config, then imports them into the target with `importUsers()` — so users log in with the same password they had in the source project. No manual export step needed.
 
 **3. Grant the SOURCE service account `Firebase Authentication Admin`** on the
 `hmd-lineup` project (role `roles/firebaseauth.admin`). Passwords need TWO
@@ -195,12 +195,12 @@ pnpm migrate:hmd ... --only auth-users          --live "Basel,Ardovini,Marzella"
 pnpm migrate:hmd ... --only activation          --live "Basel,Ardovini,Marzella"
 ```
 
-**The licence record stays with the old system** until the organisation's
+**The license record stays with the old system** until the organization's
 managers move. `--only affiliations --teams "Basel,Ardovini"` re-derives every
 migrated contact's affiliation rows from the source through the same transform
 pass 05 used — including an archived person's coercion to `expired` and the
 row's `contact_live` — and deletes a positional row the source no longer
-justifies. Rows the organisation created *in Linyup* (generated ids) are never
+justifies. Rows the organization created *in Linyup* (generated ids) are never
 touched; `affiliation_summary` is left to `onAffiliationWrite`, its one writer.
 Run it weekly, or after every renewal batch, until the org moves.
 
@@ -341,7 +341,7 @@ production.
 | `users` | Copied as-is (Auth UIDs must match — step 4 above) |
 | `teams` | Copied + `plan: 'studio'`, `organizationId: 'hmd'` added |
 | `activities` | Copied + new fields (`slug`, `type`, `isActive`, `level`) |
-| `session_series` | Copied + recurrence field names normalised |
+| `session_series` | Copied + recurrence field names normalized |
 | `contacts` + subcollections | Copied; `rank → ranks.hmd`; `notes` dropped; `type` → acquisition axis (`acquisition_stage`/`entry` + milestone timestamps); `type: external` → the **External lifecycle bucket** (`external: true`, `external_since` ← `created_at`, journey from attendance only — never `joined`, no tag); `acquisition.channel` → `source` (+ `source_detail`), `acquisition.acknowledged` → `lead_acknowledged`; membership fields → **affiliations** (see below) |
 | `sessions` + participants/bookings | Copied + activity name/type enriched |
 | `events` + invitations/attendees | Copied as `scope='org', orgId='hmd', teamId=null` |
@@ -534,7 +534,7 @@ Mapping (`scripts/migration/transforms/contacts.ts`):
 | Source field (non-`guest`) | → Affiliation |
 |---|---|
 | `membership_status` | **`issuer: 'org'`, `org_id: 'hmd'`**, type `club` (the org-level type seeded in pass 00), `status_id` = the value, `active` = (`active`-status), `contact_live` = not archived/deleted, `valid_until` ← `membership_expiration` |
-| `guest` / none | no affiliation — and therefore invisible to the organisation (`orgAdminMayReadContact`) |
+| `guest` / none | no affiliation — and therefore invisible to the organization (`orgAdminMayReadContact`) |
 
 `membership_status` is the **federation card**, not a club-level membership: hmd-lineup's
 Membership route lists it across every club with the org's own vocabulary, and the org's

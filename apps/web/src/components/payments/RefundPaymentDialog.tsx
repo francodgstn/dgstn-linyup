@@ -6,7 +6,7 @@
 // a manager retype a money figure under pressure is the fat-finger failure this
 // area is about, and a "cancellation fee" is nothing more than a smaller number
 // typed here. It is only ever a suggestion on the wire — the callable checks it
-// against what is still refundable and refuses what it cannot honour.
+// against what is still refundable and refuses what it cannot honor.
 //
 // WHERE THE CLIENT AND THE SERVER MUST AGREE. Two refusals remove partial
 // refunds entirely:

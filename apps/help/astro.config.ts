@@ -49,7 +49,7 @@ export default defineConfig({
         { label: 'Public pages', items: [{ autogenerate: { directory: 'public' } }] },
         { label: 'Messages & automations', collapsed: true, items: [{ autogenerate: { directory: 'messaging' } }] },
         { label: 'Plugins', collapsed: true, items: [{ autogenerate: { directory: 'plugins' } }] },
-        { label: 'Organisations', collapsed: true, items: [{ autogenerate: { directory: 'organisations' } }] },
+        { label: 'Organizations', collapsed: true, items: [{ autogenerate: { directory: 'organisations' } }] },
         { label: 'Member app', collapsed: true, items: [{ autogenerate: { directory: 'member-app' } }] },
         { label: 'Your Linyup account', collapsed: true, items: [{ autogenerate: { directory: 'account' } }] },
         { label: 'Developers', items: [{ autogenerate: { directory: 'developers' } }] },

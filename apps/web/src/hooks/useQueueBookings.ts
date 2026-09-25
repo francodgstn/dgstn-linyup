@@ -48,7 +48,7 @@ import {
  *  taking a few dozen seats a day still sees a full day of arrivals. */
 export const QUEUE_BOOKINGS_LIMIT = 100
 
-/** Statuses that are not work and not news — a cancelled seat is neither. */
+/** Statuses that are not work and not news — a canceled seat is neither. */
 const DEAD_STATUSES = new Set(['cancelled', 'rebooked', 'no_show'])
 
 export interface QueueBooking {

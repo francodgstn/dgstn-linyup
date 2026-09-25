@@ -17,7 +17,7 @@ import { buildActivityPublicProfile } from './syncActivityPublicProfile'
 //   • `durationBenefits`, mapped now for the reason its own comment gives:
 //     `resolveDurationBenefit` reads the PRESENCE of the list to decide whether
 //     the activity-wide `memberBenefit` still applies, so a reader holding one
-//     half quotes a rule the server has stopped honouring.
+//     half quotes a rule the server has stopped honoring.
 //
 // Both are the same defect, and neither is visible in a type error, a lint run
 // or a rendering test, the reader compiles perfectly while silently dropping a
@@ -32,10 +32,10 @@ import { buildActivityPublicProfile } from './syncActivityPublicProfile'
 
 /** SRC → packages/functions → packages → worktree root. This census spans the
  *  functions/web boundary, which is exactly where a correction stops
- *  travelling. */
+ *  traveling. */
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
-/** Line endings normalised: the working tree is LF on CI and CRLF on Windows,
+/** Line endings normalized: the working tree is LF on CI and CRLF on Windows,
  *  and a claim spanning a line break must match on both. */
 function readRoot(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf8').replace(/\r\n/g, '\n')

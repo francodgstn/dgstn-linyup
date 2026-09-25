@@ -125,7 +125,7 @@ export const claimWaitlistSeat = onCall(async (request) => {
   const sessionSnap = await sessionRef.get()
   if (!sessionSnap.exists) throw new HttpsError('not-found', 'Session not found')
   const session = sessionSnap.data()!
-  // Both cancellation shapes — see isSessionCancelled. A cancelled occurrence of
+  // Both cancellation shapes — see isSessionCancelled. A canceled occurrence of
   // a series is the case the teardown races: the queue is closed out on cancel,
   // but a claim already in flight must be refused rather than confirmed into a
   // class that is off.
@@ -280,7 +280,7 @@ export const claimWaitlistSeat = onCall(async (request) => {
   // for the whole claim window) does not carry, and is cited rather than
   // inherited.
   //
-  // THIS RAIL USED TO DEFER, AND NO LONGER DOES — a behaviour change, not a
+  // THIS RAIL USED TO DEFER, AND NO LONGER DOES — a behavior change, not a
   // refactor. The divergence existed only for a guardian's EMAILED signature: a
   // link ran 72 hours against a claim window whose default is 120 minutes, the
   // offer is one per entry ever, and refusing would have spent a queued member's

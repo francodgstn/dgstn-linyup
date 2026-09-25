@@ -1,6 +1,6 @@
 import type { EngagementBand } from '@linyup/shared'
 
-// The colour of each engagement band, shared by the badge on the page and the
+// The color of each engagement band, shared by the badge on the page and the
 // meter on the insights card so the two never disagree about what "at risk"
 // looks like. The band itself comes from `computeEngagementBand` in shared.
 export const ENGAGEMENT_BAR: Record<EngagementBand, string> = {

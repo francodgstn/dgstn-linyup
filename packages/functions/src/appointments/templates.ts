@@ -62,7 +62,7 @@ export interface AppointmentDateLine {
 const CANCEL_SHORT: Record<Lang, string> = { en: 'Cancel', de: 'Absagen', fr: 'Annuler', it: 'Annulla' }
 
 /** Every date on its own line, soonest first, each with its own cancel link
- *  when it has one: cancelling one date of a basket leaves the others. */
+ *  when it has one: canceling one date of a basket leaves the others. */
 function dateLinesHtml(dates: AppointmentDateLine[], lang: Lang, withCancel: boolean): string {
   return [...dates]
     .sort((a, b) => a.start.getTime() - b.start.getTime())
@@ -268,10 +268,10 @@ export function buildAppointmentCancellationEmail(params: CancelParams) {
   const dateStr = formatDateTime(start, lang)
 
   const titles: Record<Lang, string> = {
-    en: 'Appointment Cancelled', de: 'Termin abgesagt', fr: 'Rendez-vous annulé', it: 'Appuntamento annullato',
+    en: 'Appointment Canceled', de: 'Termin abgesagt', fr: 'Rendez-vous annulé', it: 'Appuntamento annullato',
   }
   const bodies: Record<Lang, string> = {
-    en: `<p>Hi ${firstname},</p><p>Your <strong>${slotTitle}</strong> appointment with ${teamName} on ${dateStr} has been cancelled.</p>`,
+    en: `<p>Hi ${firstname},</p><p>Your <strong>${slotTitle}</strong> appointment with ${teamName} on ${dateStr} has been canceled.</p>`,
     de: `<p>Hallo ${firstname},</p><p>Ihr <strong>${slotTitle}</strong>-Termin bei ${teamName} am ${dateStr} wurde abgesagt.</p>`,
     fr: `<p>Bonjour ${firstname},</p><p>Votre rendez-vous <strong>${slotTitle}</strong> avec ${teamName} le ${dateStr} a été annulé.</p>`,
     it: `<p>Ciao ${firstname},</p><p>Il tuo appuntamento <strong>${slotTitle}</strong> con ${teamName} del ${dateStr} è stato annullato.</p>`,

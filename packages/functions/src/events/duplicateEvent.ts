@@ -91,7 +91,7 @@ export const duplicateEvent = onCall(async (request) => {
   const source = sourceSnap.data()!
   const isOrgEvent = source.scope === 'org' && !!source.orgId
 
-  // ── authorisation — the same shape as addEventCheckin ──────────────────────
+  // ── authorization — the same shape as addEventCheckin ──────────────────────
   if (isOrgEvent) {
     const member = await db
       .collection('organizations').doc(source.orgId as string)

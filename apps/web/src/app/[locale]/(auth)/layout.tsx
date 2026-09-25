@@ -132,7 +132,7 @@ type NavItem = {
    *  ("Lizenz", "Membership"), the roster page already titles itself with that
    *  word, and a nav row reading "Affiliations" beside it would be the product
    *  disagreeing with itself. Resolved ONCE in SidebarContent and applied to
-   *  both the row and the search catalogue, so the two cannot diverge. */
+   *  both the row and the search catalog, so the two cannot diverge. */
   dynamicLabel?: 'affiliationTerm'
   /** Pin to the head of its section, ahead of the alphabetical run. Read
    *  `lib/navSort.ts` before adding one — the marker is deliberately hard to
@@ -151,7 +151,7 @@ type NavSection = { labelKey: string; icon: React.ElementType; items: NavItem[] 
 // row and never has been. SCHEDULE_ITEM is declared here too but is rendered
 // FROM `NAV_SECTIONS` — it is Run's first item, and the head tile it fills by
 // default reaches it the same way every other shortcut does, through the
-// catalogue. Declaring it once here and referencing it there keeps one
+// catalog. Declaring it once here and referencing it there keeps one
 // definition of the id, href and icon.
 const DASHBOARD_ITEM: NavItem = {
   id: 'dashboard',
@@ -213,7 +213,7 @@ function navItemIsActive(item: NavItem, pathname: string): boolean {
       other !== item.href && other.startsWith(item.href + '/') && pathIsWithin(pathname, other)
   )
 }
-// Plugin catalogue. Was a text link at the FOOT of the features group, which put
+// Plugin catalog. Was a text link at the FOOT of the features group, which put
 // discovery of most of the product below everything already installed — the one
 // place a new studio, whose nav is nearly empty, is least likely to look. Now an
 // icon button in the utility row at the top, first of the three.
@@ -268,7 +268,7 @@ const NAV_SECTIONS: NavSection[] = [
       //
       // Schedule KEEPS ITS HOME ROW even though it is also the default head
       // tile. A tile is a shortcut, and a shortcut has always been a duplicate
-      // of a row that exists elsewhere — pinning Contacts shows it in Favourites
+      // of a row that exists elsewhere — pinning Contacts shows it in Favorites
       // AND in Run. It briefly lived only as a tile, back when that tile was
       // fixed; now that a studio can swap it out, removing the tile would have
       // deleted the destination from the nav altogether and left it reachable
@@ -314,10 +314,10 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     // THE BACK OFFICE. What the studio sells and the terms it sells on, plus the
-    // records behind both — the catalogue, prices, places, documents,
+    // records behind both — the catalog, prices, places, documents,
     // affiliations, the books and the asset register.
     //
-    // It was "Offer" until 2026-09-02 and that name is now the CATALOGUE PAGE's,
+    // It was "Offer" until 2026-09-02 and that name is now the CATALOG PAGE's,
     // which is the thing a studio actually calls its offer. The section names
     // the scope instead: Run is the working day, Manage is what you do monthly
     // or when something changes, Grow reaches more people. Courses and products
@@ -326,7 +326,7 @@ const NAV_SECTIONS: NavSection[] = [
     icon: Tag,
     items: [
       // THE MAP OF THE SECTION, first — the same shape as `publicPages` at the
-      // head of Grow. The catalogue shows plans against the activities and
+      // head of Grow. The catalog shows plans against the activities and
       // courses they open, which is the one question this section exists to
       // answer and the one no single list page can: a coach asking "what does
       // Premium get?" had to open a plan, then an activity, then a modal.
@@ -359,7 +359,7 @@ const NAV_SECTIONS: NavSection[] = [
       // never gated.
       // "Subscriptions" named the wrong thing: it reads as the list of
       // subscriptions people HOLD, which is `/subscriptions` — a different page
-      // entirely. This one is the catalogue of plans on sale.
+      // entirely. This one is the catalog of plans on sale.
       // The affiliation ROSTER — who is affiliated, at what status, expiring when.
       // It had no nav item at all: reachable only from a link inside the types
       // manager and one dashboard figure, which is the same shape UX-99 fixed
@@ -373,7 +373,7 @@ const NAV_SECTIONS: NavSection[] = [
         dynamicLabel: 'affiliationTerm',
         // Affiliations are an ORG concept — the statuses live on the
         // organization and the roster refuses outright for a team without one
-        // ("This team is not part of an organisation"). Showing the item to
+        // ("This team is not part of an organization"). Showing the item to
         // every studio would put a nav row in front of a page whose whole
         // content is an explanation that it does not apply.
         requiresOrg: true,
@@ -412,7 +412,7 @@ const NAV_SECTIONS: NavSection[] = [
         requiresPlugin: 'products',
       },
       // Documents is a DEFAULT FEATURE on every plan — no `requiresPlugin`, no
-      // `minPlan`. It was never monetised (the retired manifest declared
+      // `minPlan`. It was never monetized (the retired manifest declared
       // minPlan 'free' with no add-on), and its install gate was actively
       // harmful under a waiver gate: deactivating it deleted every public
       // document mirror the team had.
@@ -442,7 +442,7 @@ const NAV_SECTIONS: NavSection[] = [
       // row, deliberately: ONE destination, one shortcut star, one search result.
       // Listing it here is what makes it findable from where public surfaces are
       // actually worked on.
-      // LEAD of Grow, for the same reason Catalogue leads Offer: it is the map
+      // LEAD of Grow, for the same reason Catalog leads Offer: it is the map
       // of everything public, and the rows under it are what it maps.
       { id: 'publicPages', href: '/public-page', labelKey: 'publicPage', icon: LayoutTemplate, exact: true, lead: true },
       { id: 'bioLink', href: '/team/bio-link', labelKey: 'bioLink', icon: Globe },
@@ -457,9 +457,9 @@ const NAV_SECTIONS: NavSection[] = [
  * EVERY href a sidebar row can light — the list `navItemIsActive` consults to
  * decide whether a deeper row owns the page.
  *
- * Declared HERE rather than beside the predicate because it reads the catalogue
+ * Declared HERE rather than beside the predicate because it reads the catalog
  * above; the predicate is only ever called during render, long after this
- * module has finished initialising, so the forward reference is safe.
+ * module has finished initializing, so the forward reference is safe.
  *
  * PLUGIN ROWS ARE NOT IN IT, and that is a limitation rather than a decision:
  * they arrive at runtime from the registry. None of them nests inside another
@@ -478,8 +478,8 @@ const NAV_HREFS: string[] = [
 
 // Small hover-reveal "always show" control on the right of a shortcut-able nav
 // row (needs a `group` ancestor). Clicking adds/removes the destination from the
-// always-shown half of Favourites without navigating. Turning it back OFF is
-// managed from the Favourites group only: menu rows and search results pass
+// always-shown half of Favorites without navigating. Turning it back OFF is
+// managed from the Favorites group only: menu rows and search results pass
 // `addOnly`, which hides the button once the destination is already always
 // shown instead of offering a remove toggle there.
 //
@@ -513,11 +513,11 @@ function ShortcutButton({ id, addOnly }: { id: string; addOnly?: boolean }) {
             a pin already carries one mental model everywhere else in this nav —
             "keep this within reach" — worn by the open-tabs strip (see THE
             NAV-MEMORY CENSUS in contexts/NavPinsContext.tsx). Reusing it here for
-            "this is a personal favourite" doubled that meaning onto one glyph,
+            "this is a personal favorite" doubled that meaning onto one glyph,
             which is also what the star was doing at the other end: a few hundred
             lines below, the same star meant "recommended by Linyup" on a plugin
             suggestion row. Both collisions were solved in the same pass by giving
-            each meaning its own glyph — this one keeps the star ("favourite," a
+            each meaning its own glyph — this one keeps the star ("favorite," a
             personal choice), the plugin suggestion moved to a puzzle piece
             ("plugin," an endorsement) — so no glyph on this screen carries two
             meanings any more. */}
@@ -538,7 +538,7 @@ function NavLink({
   collapsed: boolean
   onClick?: () => void
   // When set (and the sidebar is expanded), a hover "always show" toggle is
-  // shown that adds this destination to the Favourites group.
+  // shown that adds this destination to the Favorites group.
   shortcutId?: string
   /** Pre-resolved label, for items whose name the STUDIO chose (see
    *  NavItem.dynamicLabel). Absent ⇒ translated from `labelKey` as usual. */
@@ -637,8 +637,8 @@ function NavTile({
 }: {
   href: string
   /** Already translated — a tile is fed either a NavItem's labelKey resolved by
-   *  the caller, or a catalogue entry whose label was resolved when it was
-   *  built (plugin rows use a different namespace, which is why the catalogue
+   *  the caller, or a catalog entry whose label was resolved when it was
+   *  built (plugin rows use a different namespace, which is why the catalog
    *  pre-translates). */
   label: string
   icon: React.ElementType
@@ -741,7 +741,7 @@ function UtilityIconLink({
  * They sat permanently beside the search field, at the top of the pane, ahead of
  * the working areas a studio actually opens (see the utility row for the rest).
  *
- * ONE SHAPE IN BOTH MODES — a labelled column. The panel used to repeat the
+ * ONE SHAPE IN BOTH MODES — a labeled column. The panel used to repeat the
  * expanded layout (a horizontal icon strip) because the expanded row WAS the
  * canonical form; now that the row is this control in both modes there is no
  * second form to mirror, and inside an opened menu a name beats a tooltip.
@@ -760,7 +760,7 @@ function UtilityIconLink({
  *
  * So the tray shows ONE icon at rest, which is enough to say "there are tools
  * here", and reveals the others on hover or on a tap of the chevron. The
- * resting icon is the QR in a studio; in an organisation, where the QR has
+ * resting icon is the QR in a studio; in an organization, where the QR has
  * nothing to encode, the first tool leads instead, so the tray is never a bare
  * chevron.
  *
@@ -811,12 +811,12 @@ function UtilityTray({ onLinkClick }: { onLinkClick?: () => void }) {
 
   // Destinations follow the scope AND the role, and the second half was missing.
   //
-  // An organisation has its own settings and its own plugins, and sending
+  // An organization has its own settings and its own plugins, and sending
   // somebody to the studio's from inside it is the silent scope exit this row
   // already had once — so in org scope the links must swap. But they are
-  // `adminOnly` in ORG_RAIL_ITEMS and the search catalogue filters them the same
+  // `adminOnly` in ORG_RAIL_ITEMS and the search catalog filters them the same
   // way, and this row did not: it offered a member studio the federation's
-  // settings and plugin catalogue, with the plugins icon sitting at REST rather
+  // settings and plugin catalog, with the plugins icon sitting at REST rather
   // than behind the reveal (Franco, 2026-08-28). The pages then load — the rules
   // admit a member studio to read them — so it was a real disclosure and a false
   // affordance, not merely a dead end.
@@ -918,14 +918,14 @@ function UtilityFlyout({
   const label = t('utilities')
   // THE ROW FOLLOWS THE SCOPE. These three destinations were hardcoded studio
   // paths, so in org scope "All settings" and "Explore plugins" walked the
-  // reader straight out of the organisation and into the studio's settings —
-  // silently, because both screens look plausible on arrival. An organisation
+  // reader straight out of the organization and into the studio's settings —
+  // silently, because both screens look plausible on arrival. An organization
   // has its own of each; the help center is the product's help and belongs to neither.
   //
   // The QR is studio-only for the same reason and is not swapped: it encodes a
   // STUDIO's public links, and there is no org equivalent to put in its place.
   //
-  // AND THE ROLE. An organisation's settings and plugins are `adminOnly` in
+  // AND THE ROLE. An organization's settings and plugins are `adminOnly` in
   // ORG_RAIL_ITEMS; offering them here to a member studio was the same leak the
   // tray had. A non-admin in org scope is left with the help center, which is the honest
   // answer: the other two belong to the people who run the federation.
@@ -954,7 +954,7 @@ function UtilityFlyout({
         </Tip>
       }
     >
-      {/* A labelled column, not the icon strip this used to be: once the menu is
+      {/* A labeled column, not the icon strip this used to be: once the menu is
           open there is room for names, and the same shape serves both modes. */}
       <div className="flex min-w-40 flex-col gap-0.5">
         {/* THE QR LIVES HERE IN BOTH MODES NOW (Franco, 2026-08-27). It was on
@@ -967,7 +967,7 @@ function UtilityFlyout({
             reached deliberately, minutes apart, never mid-task, and beside the
             scope identity it competed for the top of the pane with the thing
             that says where you are. Studio-only, as ever — it encodes a
-            STUDIO's public links and an organisation has no equivalent. */}
+            STUDIO's public links and an organization has no equivalent. */}
         {/* WITH NO `items` this is the WHOLE set — the collapsed rail's only way
             to these tools, since a w-14 rail has no room for a tray to expand
             into. WITH `items` it is the tray's overflow and holds only what did
@@ -1045,7 +1045,7 @@ function NavFlyout({
 // ─── sidebar content ──────────────────────────────────────────────────────────
 
 /**
- * THE ORGANISATION'S OWN SIDEBAR ROWS, rendered INSTEAD of the studio's when the
+ * THE ORGANIZATION'S OWN SIDEBAR ROWS, rendered INSTEAD of the studio's when the
  * URL is in org scope.
  *
  * This replaced an "Organizations" GROUP that listed each org as one more row
@@ -1055,7 +1055,7 @@ function NavFlyout({
  * word never stop needing a second look. Standing in one scope at a time means
  * the word is never ambiguous — you are somewhere, and the indicator says where.
  *
- * The catalogue is lib/org-nav.ts; the switcher is how you get here.
+ * The catalog is lib/org-nav.ts; the switcher is how you get here.
  */
 function OrgNavRows({
   orgId,
@@ -1069,8 +1069,8 @@ function OrgNavRows({
   const t = useTranslations('Org')
   const pathname = usePathname()
 
-  // WHICH ROWS depends on whether this person RUNS the organisation or merely
-  // belongs to one of its studios — two audiences, two catalogues, see
+  // WHICH ROWS depends on whether this person RUNS the organization or merely
+  // belongs to one of its studios — two audiences, two catalogs, see
   // `orgNavItemsForRole`. The read is shared with `OrgProvider` through one
   // react-query key, so asking here costs nothing.
   const { role, loading } = useOrgRole(orgId)
@@ -1217,7 +1217,7 @@ function useAccordionSection() {
 //   • at most ONE per section — no section can ever read as a shop shelf;
 //   • at most TWO in the whole sidebar.
 // Dismissing one (the × on hover) promotes the next in line, so nothing becomes
-// undiscoverable — it becomes SEQUENTIAL. The full catalogue stays one click away
+// undiscoverable — it becomes SEQUENTIAL. The full catalog stays one click away
 // at the top of the sidebar (EXPLORE_PLUGINS_ITEM) and on the dashboard's Discover
 // panel, which is the surface `recommended` mainly exists to feed: promo-codes was
 // flagged for that panel and contributes no nav entry at all, so the flag's active
@@ -1357,7 +1357,7 @@ function PluginNavItem({
               {/* Replaces the old `discoverTooltip` ("Recommended — add this
                   plugin"), which said the word "Recommended" a second time right
                   under the line that finally explains it, and promised an install
-                  the click doesn't perform — it opens the catalogue entry. */}
+                  the click doesn't perform — it opens the catalog entry. */}
               <span className="block opacity-70">{t('suggestionOpenCatalogue')}</span>
             </TooltipContent>
           </Tooltip>
@@ -1369,7 +1369,7 @@ function PluginNavItem({
             file) and the settings-rail's Plugins row (`lib/settings-nav.ts`)
             already use it as their icon. NOT a star, since 2026-08-29 (UX-84):
             the marketplace still uses an amber star for `recommended`, but the
-            star in THIS nav now belongs to the "always show in Favourites"
+            star in THIS nav now belongs to the "always show in Favorites"
             toggle a few hundred lines above — one glyph cannot carry an
             endorsement and a personal choice, and this is the row where they
             used to collide. Swaps to the × on hover — one slot, two states. */}
@@ -1490,7 +1490,7 @@ function PluginNavLinks({
   )
 }
 
-// A destination resolved against what's currently visible — used by Favourites and
+// A destination resolved against what's currently visible — used by Favorites and
 // search (label pre-translated because entries come from more than one i18n
 // namespace: main nav + settings are in `Nav`, plugin items in `Plugins`).
 type ResolvedNavEntry = {
@@ -1515,7 +1515,7 @@ type ResolvedNavEntry = {
  *
  * A destination may be both the head tile and a shortcut. That duplicate is
  * asked for twice and is not deduplicated: silently hiding a row because it
- * happens to match the tile would make the Favourites group lie about its
+ * happens to match the tile would make the Favorites group lie about its
  * contents.
  *
  * ── WHY DASHBOARD IS NOT ADJUSTABLE ─────────────────────────────────────────
@@ -1537,7 +1537,7 @@ function HeadTiles({
 }: {
   /** The chosen destinations, in order. Empty when cleared (or gated out). */
   tiles: ResolvedNavEntry[]
-  /** Everything a tile may be set to (the visible catalogue). */
+  /** Everything a tile may be set to (the visible catalog). */
   choices: ResolvedNavEntry[]
   onAdd: (id: string) => void
   onSetAt: (index: number, id: string | null) => void
@@ -1649,7 +1649,7 @@ function HeadTiles({
 }
 
 /** The destination chooser behind a tile's control. Reuses the sidebar's own
- *  catalogue, so a tile can be set to anything the nav can reach — including
+ *  catalog, so a tile can be set to anything the nav can reach — including
  *  settings screens and plugin pages. */
 function HeadTilePicker({
   choices,
@@ -1790,7 +1790,7 @@ function ShortcutRow({
   return (
     <div className={`group relative ${dragging ? 'opacity-40' : ''}`} {...dragProps}>
       {link}
-      {/* Remove from Favourites entirely — the star only promotes/demotes
+      {/* Remove from Favorites entirely — the star only promotes/demotes
           (turning "always show" off keeps the row listed as a recent). */}
       <Tip label={t('navRemoveShortcut')}>
         <button
@@ -1811,7 +1811,7 @@ function ShortcutRow({
   )
 }
 
-// A light macro-group heading (General / Favourites / Features) — Firebase-style:
+// A light macro-group heading (General / Favorites / Features) — Firebase-style:
 // small, sentence-case, low-contrast — deliberately quieter than the uppercase
 // section subheaders so it reads as a background label, not a heading. Hidden in
 // the icon-only sidebar, where a hairline divider separates the macro groups.
@@ -1819,7 +1819,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
   return <p className="px-2 pb-1 text-xs font-medium text-muted-foreground/50">{children}</p>
 }
 
-// Marks the whole Favourites area as a region: a thin, flat, brand-violet rule
+// Marks the whole Favorites area as a region: a thin, flat, brand-violet rule
 // down its left edge, spanning the group heading, both runs and the empty-state
 // hint.
 //
@@ -1859,7 +1859,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 const SHORTCUTS_RULE =
   'pointer-events-none absolute inset-y-0 -left-1 z-10 w-px rounded-full bg-primary'
 
-// How many recently-visited items the Favourites group keeps, in addition to the
+// How many recently-visited items the Favorites group keeps, in addition to the
 // pinned ones.
 const MAX_RECENT_SHORTCUTS = 5
 // Rows the group aims to show before "Show more". Pinned rows are never
@@ -1872,7 +1872,7 @@ const SHORTCUTS_VISIBLE_MIN = 5
 // more, a run that renders nothing is a run that is simply gone.
 const RECENT_VISIBLE_MIN = 2
 
-// The "Favourites" macro group — Firebase-style: the destinations a studio keeps
+// The "Favorites" macro group — Firebase-style: the destinations a studio keeps
 // within reach, held as TWO RUNS of ONE mechanism (item 1 of THE NAV-MEMORY
 // CENSUS in contexts/NavPinsContext.tsx):
 //   · pinned — hand-curated, drag-orderable, never truncated, never ages out.
@@ -1946,7 +1946,7 @@ function ShortcutsNav({
   //    it cannot be stored and would be undone by the next navigation — a drag
   //    that silently does nothing, which is worse than one that isn't offered.
   //  · Dragging ACROSS the boundary to promote is not offered either. Promotion
-  //    has one affordance — the star: hoverable, labelled, keyboard-reachable and
+  //    has one affordance — the star: hoverable, labeled, keyboard-reachable and
   //    reversible. A second, invisible path that promotes on an accidental drop
   //    adds no discoverability and one more way to be surprised.
   const commitDrop = () => {
@@ -2299,7 +2299,7 @@ function NavSearch({
     ? subscriptionTypes
         .filter((st) => matches(st.name, st.description))
         .slice(0, 4)
-        // The CATALOGUE, and the row itself — `?sel=` selects it. This used to
+        // The CATALOG, and the row itself — `?sel=` selects it. This used to
         // open the plans list and leave the studio to find the plan they had
         // just searched for by name (Franco, 2026-09-02).
         .map((st) =>
@@ -2539,7 +2539,7 @@ function NavSearch({
         className={
           collapsed
             ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground'
-            : // Hover lifts the border towards the ring colour rather than filling the
+            : // Hover lifts the border towards the ring color rather than filling the
               // box — the fill is reserved for focus, which is the state a keyboard
               // user has to be able to find. focus-visible copies Input's ring
               // exactly (the old trigger had NO focus style at all: tabbing to it
@@ -2549,8 +2549,8 @@ function NavSearch({
       >
         {/* Primary, not inherited muted: search is the fastest route to anything
             in the app and the row is otherwise the quietest thing in the header.
-            Deliberately NOT hover-linked — the colour is the prominence, so it
-            holds at rest; the label beside it still lifts on hover. The colour
+            Deliberately NOT hover-linked — the color is the prominence, so it
+            holds at rest; the label beside it still lifts on hover. The color
             token is theme-aware (the dark palette lightens --primary for exactly
             this), so it holds against both backgrounds. */}
         <Search className="h-4 w-4 shrink-0 text-primary" />
@@ -2653,7 +2653,7 @@ function NavSearch({
             </kbd>
           </div>
           {/* WHO WAS I JUST LOOKING AT — the panel's answer before a question is
-              asked. Contacts only: nav destinations are already the Favourites
+              asked. Contacts only: nav destinations are already the Favorites
               group in the sidebar, and this is the one thing neither that nor
               the tab strip can tell you (see the census in NavPinsContext).
               Rendered under the prompt, so the field → "type to search" reading
@@ -2765,7 +2765,7 @@ function SidebarContent({
   const { alwaysShownIds, recentIds, recordVisit, headTileIds, addHeadTile, setHeadTileAt } =
     useNavPins()
   // ONE call for the whole sidebar. Resolved here rather than inside NavLink so
-  // the row and the search catalogue below read the same string — a per-row hook
+  // the row and the search catalog below read the same string — a per-row hook
   // would also mean ~20 subscriptions to one cached query.
   const affiliationTerm = useAffiliationTerm()
   // Shares one react-query key with `OrgNavRows` and `OrgProvider` — see
@@ -2807,14 +2807,14 @@ function SidebarContent({
   const { open: openSection, toggle: toggleSection } = useAccordionSection()
 
   // Whether a main-nav item passes its plan/plugin/org/shop gates — shared by the
-  // section render and the shortcut-able catalogue so the two never disagree.
+  // section render and the shortcut-able catalog so the two never disagree.
   const mainItemVisible = (item: NavItem) =>
     (!item.requiresOrg || inOrg) &&
     (!item.requiresConnect || connectOn) &&
     (!item.requiresPlugin || isInstalled(item.requiresPlugin)) &&
     (!item.requiresPlan || isAtLeast(item.requiresPlan))
 
-  // Mirrors SettingsRail's gateOk — the sidebar's shortcut-able catalogue and the rail
+  // Mirrors SettingsRail's gateOk — the sidebar's shortcut-able catalog and the rail
   // must never disagree about what exists.
   const settingsItemVisible = (item: SettingsNavItem) => {
     if (item.gate === 'ownerOnly') return canEditTeamSettings
@@ -2859,18 +2859,18 @@ function SidebarContent({
     })
   }
   // The head tile is NOT taken from this list — it is census item 5, stored on
-  // its own (see NavPinsContext). Favourites are rendered whole; a destination
+  // its own (see NavPinsContext). Favorites are rendered whole; a destination
   // that is both a tile and a shortcut is a duplicate the studio asked for
   // twice.
   // Ids that no longer resolve (a gated-off plugin, a deleted destination) are
   // dropped from the RENDER and left in storage — same rule as the recents
-  // half of Favourites. Re-installing the plugin brings the tile back rather
+  // half of Favorites. Re-installing the plugin brings the tile back rather
   // than having silently forgotten it.
   const headTileEntries = headTileIds
     .map((id) => catalogue.get(id))
     .filter((e): e is ResolvedNavEntry => !!e)
 
-  // Favourites = always shown (permanent, stored order) + recently visited
+  // Favorites = always shown (permanent, stored order) + recently visited
   // (rolling history, newest first, minus anything already always shown).
   const alwaysShownEntries = alwaysShownIds
     .map((id) => catalogue.get(id))
@@ -2882,26 +2882,26 @@ function SidebarContent({
     .slice(0, MAX_RECENT_SHORTCUTS)
   const shortcutEntries = [...alwaysShownEntries, ...recentEntries]
 
-  // The search index: everything in the catalogue plus the fixed head/utility
+  // The search index: everything in the catalog plus the fixed head/utility
   // items (searchable but not shortcut-able — they're always visible anyway).
   // A settings destination is tagged as such rather than listed among ordinary
   // pages (UX-90) — including the /settings hub itself, which IS the settings
   // answer to "where do I change this".
   //
   // Schedule is NOT listed here: it is back in NAV_SECTIONS, so it reaches the
-  // index — and the shortcut catalogue, and therefore the head-tile picker —
+  // index — and the shortcut catalog, and therefore the head-tile picker —
   // through the ordinary path with everything else. Dashboard stays here because
   // it is the one destination that is not a section row and never was.
   const settingsIds = new Set(SETTINGS_ITEMS.map((i) => i.id))
 
-  // IN ORG SCOPE THE SEARCH INDEXES THE ORGANISATION, not the studio.
+  // IN ORG SCOPE THE SEARCH INDEXES THE ORGANIZATION, not the studio.
   //
   // It used to index the studio's destinations in both scopes, which was worse
-  // than finding nothing: standing in an organisation, every result led OUT of
+  // than finding nothing: standing in an organization, every result led OUT of
   // it, to pages whose rows were not even on screen. The rest of the sidebar
   // already swaps; this is the last piece that did not.
   //
-  // The org catalogue is small and flat — the rows plus the rail — so it is
+  // The org catalog is small and flat — the rows plus the rail — so it is
   // built here rather than through the shortcut-able `catalogue`, which carries
   // pinning and gating that only mean something for a studio.
   //
@@ -2913,7 +2913,7 @@ function SidebarContent({
   const orgSearchEntries: SearchEntry[] = orgScopeId
     ? [
         ...orgNavItemsForRole(orgRole),
-        // The rail belongs to the organisation's own people. `OrgRail` filters
+        // The rail belongs to the organization's own people. `OrgRail` filters
         // it exactly this way; search agreeing with it is the point.
         ...(orgRole == null ? [] : ORG_RAIL_ITEMS.filter((i) => !i.adminOnly || orgIsAdmin)),
       ].map((item) => ({
@@ -2953,7 +2953,7 @@ function SidebarContent({
     })),
   ]
 
-  // Record the current page into the recents half of Favourites. Longest matching
+  // Record the current page into the recents half of Favorites. Longest matching
   // base path wins (so /contacts/123 records "contacts"); hrefs carrying a query
   // are deprioritised so /settings/team?tab=… variants don't shadow the base page.
   useEffect(() => {
@@ -2969,7 +2969,7 @@ function SidebarContent({
       }
     }
     if (best) recordVisit(best.id)
-    // The catalogue is rebuilt every render; only the path matters for recording.
+    // The catalog is rebuilt every render; only the path matters for recording.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, recordVisit])
 
@@ -3005,7 +3005,7 @@ function SidebarContent({
 
           The scope model invalidated the premise rather than the reasoning.
           "Which place am I standing in" stopped being a rare question — an
-          organisation and a studio each have an Events, a Places, a Website, a
+          organization and a studio each have an Events, a Places, a Website, a
           Plugins, a Members and a Settings — and moving between them is
           something an org admin who also runs a studio does all day. A question
           asked constantly should not be answered at one end of the sidebar and
@@ -3117,7 +3117,7 @@ function SidebarContent({
 
           It is safe to pin only because everything here is fixed-height by
           construction: one search row plus one tile row (or two icon rows
-          collapsed). Favourites stayed in the scroll area precisely because they
+          collapsed). Favorites stayed in the scroll area precisely because they
           are NOT — a studio with a dozen pinned pages would push the working
           areas off-screen and have nothing give way.
 
@@ -3126,19 +3126,19 @@ function SidebarContent({
           keeps the ordinary icon-only rows it already knows how to draw.
 
           THE TOUR ANCHOR STAYS ON THE TILES. It used to wrap the tiles AND the
-          Favourites group, framing them as one "where do the things I use most
+          Favorites group, framing them as one "where do the things I use most
           live?" region. They are no longer in the same box — one is pinned, the
           other scrolls — and a highlight cannot span a scroll boundary, so the
           anchor keeps the half that is a fixed, always-visible target. */}
       {/* NOT IN ORG SCOPE. The pair is Dashboard plus the studio's own most-used
           surface, pinned because they are "the things reached from anywhere" —
-          but that is a claim about a STUDIO. An organisation has neither: no
+          but that is a claim about a STUDIO. An organization has neither: no
           dashboard, no schedule, and its home is the studios list which is
           already the first row below. Leaving them here put two studio
           destinations above the org's own navigation, which is the hierarchy
           inversion the pinning exists to prevent, pointed the other way.
 
-          The same reasoning already removed Favourites and the plugin rows in org
+          The same reasoning already removed Favorites and the plugin rows in org
           scope (they are pinned PER STUDIO). This was missed because it sits
           above the scroll area rather than inside it (Franco, 2026-08-27). */}
       {!orgScopeId && (
@@ -3157,7 +3157,7 @@ function SidebarContent({
           // knows how to draw, in the same order.
           <>
             <NavLink item={DASHBOARD_ITEM} collapsed onClick={onLinkClick} />
-            {/* ShortcutRow, not NavLink: a catalogue entry carries an already
+            {/* ShortcutRow, not NavLink: a catalog entry carries an already
                 translated `label` (plugin rows resolve from the `Plugins`
                 namespace, not `Nav`), and collapsed it renders as a bare icon
                 link with the label as its tooltip. */}
@@ -3170,7 +3170,7 @@ function SidebarContent({
             tiles={headTileEntries}
             // ALPHABETICAL, and no leads: this is a flat searchable list of
             // every destination the nav can reach, in no meaningful order —
-            // catalogue insertion order, which is a fact about the source file.
+            // catalog insertion order, which is a fact about the source file.
             choices={sortNavRows([...catalogue.values()], locale)}
             onAdd={addHeadTile}
             onSetAt={setHeadTileAt}
@@ -3211,13 +3211,13 @@ function SidebarContent({
         {/* ORG SCOPE REPLACES THE STUDIO'S ROWS ENTIRELY — it does not sit
             beside them. That is the whole point of a scope: one Events, one
             Places, one Settings on screen at a time, so the word never needs a
-            second look. Favourites and the plugin rows are studio-scoped too
+            second look. Favorites and the plugin rows are studio-scoped too
             (the pin store is keyed per studio), so they go with it. */}
         {orgScopeId ? (
           <OrgNavRows orgId={orgScopeId} collapsed={collapsed} onLinkClick={onLinkClick} />
         ) : (
         <>
-        {/* Favourites — pinned + recently visited (hidden when empty). THE FIRST
+        {/* Favorites — pinned + recently visited (hidden when empty). THE FIRST
             SCROLLING THING: unlike the head pair above the search, this list
             grows with use, so it is what gives way when the pane runs short. */}
         <ShortcutsNav entries={shortcutEntries} collapsed={collapsed} onLinkClick={onLinkClick} />
@@ -3307,7 +3307,7 @@ function SidebarContent({
                 // wrong.
                 //
                 // The tint stays — knowing which section holds you is useful —
-                // but the PILL goes. Filled = you are here; coloured glyph
+                // but the PILL goes. Filled = you are here; colored glyph
                 // alone = it is in here. Three steps, no new vocabulary:
                 // muted (resting) → primary glyph (contains) → filled pill (is).
                 const sectionHoldsActive =
@@ -3374,7 +3374,7 @@ function SidebarContent({
               )
             })}
 
-            {/* The plugin-catalogue link that used to sit here moved to the
+            {/* The plugin-catalog link that used to sit here moved to the
                 utility icon row at the top (EXPLORE_PLUGINS_ITEM). At the foot of
                 the features group it was below everything already installed —
                 the least visible spot for the thing that reveals the rest of the

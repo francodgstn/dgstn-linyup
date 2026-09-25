@@ -5,7 +5,7 @@
  *                    Stripe → a contact, a member_subscriptions row, the plan
  *   refund         → that payment's row → "Refund" → Stripe refunds it, the
  *                    member_payments row says so, and the membership's Stripe
- *                    subscription is cancelled
+ *                    subscription is canceled
  *   manual payment → a contact's Payments tab → "Record payment" (cash) → a
  *                    payment_events row and the plan → "Void" → both taken back
  *   Tarif 595      → that payment's row → "Tarif 595 receipt" → issued with its
@@ -143,7 +143,7 @@ test('refund: a partial refund of a membership is explained, then the full amoun
   await expect.poll(() => full.status, { timeout: 120_000 }).toBe(200)
   expect(full.body?.result?.reversal?.state).not.toBe('failed')
   expect(full.body?.result?.subscriptionCancelled).toBe('cancelled')
-  await expect(page.getByText('Refunded. The membership is cancelled and will not bill again.').first()).toBeVisible()
+  await expect(page.getByText('Refunded. The membership is canceled and will not bill again.').first()).toBeVisible()
 
   const refunds = await stripe.refunds.list({ payment_intent: linkPaymentIntent }, { stripeAccount: ACCT[STUDIO.teamId] })
   expect(refunds.data.reduce((sum, r) => sum + r.amount, 0)).toBe(13900)
@@ -154,7 +154,7 @@ test('refund: a partial refund of a membership is explained, then the full amoun
 })
 
 // A full refund of a Stripe-billed membership payment ENDS the membership
-// (decided 2026-09-25): the subscription is cancelled on the studio's account at
+// (decided 2026-09-25): the subscription is canceled on the studio's account at
 // once, so it never bills again, and the plan leaves the member.
 test('refund: the full refund of a membership cancels its Stripe subscription', async () => {
   test.skip(!linkSubscriptionId, 'needs the subscription from the payment link test')

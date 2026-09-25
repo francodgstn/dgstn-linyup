@@ -23,7 +23,7 @@
  *     docs/finance-accrual.md) — so both are repaired together, and a run over
  *     older member docs is what fills their missing starts.
  *
- *   • `cancel_at_period_end: false` on a subscription cancelled in the billing
+ *   • `cancel_at_period_end: false` on a subscription canceled in the billing
  *     portal does NOT heal in any useful window. The `updated` event carrying
  *     `cancel_at` has already been delivered, answered 200, and recorded its id
  *     in `last_event_id`; Stripe will not redeliver it. The next event on that
@@ -71,7 +71,7 @@
  * lists the real deltas, not "would touch N docs".
  *
  * The write goes through the Admin SDK, so `onMemberSubscriptionWrite` fires and
- * re-materialises `Contact.active_subscriptions[].cancels_at_ms`. That trigger
+ * re-materializes `Contact.active_subscriptions[].cancels_at_ms`. That trigger
  * is itself idempotent, so a no-change run costs nothing.
  *
  * ── AUTH ────────────────────────────────────────────────────────────────────
@@ -310,7 +310,7 @@ function diff(
 }
 
 /**
- * Compare the three keys, NOT the serialised objects.
+ * Compare the three keys, NOT the serialized objects.
  *
  * `JSON.stringify` compares key ORDER, and Firestore returns map keys in its own
  * (alphabetical) order rather than the order they were written. A stringify
@@ -473,7 +473,7 @@ type StripeSubscriptionStatus =
  * The drift report compared stored to Stripe with raw string equality. The
  * Connect rail survives that (see `expectedStoredStatus`); the SaaS rail does
  * not — it has its own five-value vocabulary (`SaasStatus`, shared/types/team.ts)
- * and Stripe's `canceled` is stored as `cancelled`. So EVERY correctly-cancelled
+ * and Stripe's `canceled` is stored as `cancelled`. So EVERY correctly-canceled
  * studio was printed as drift, under a heading telling the operator a webhook
  * event had been missed. A report that cries wolf on its most common case does
  * not get read carefully, it gets skipped — which costs exactly the real drift
@@ -497,7 +497,7 @@ const SAAS_STATUS_FOR_STRIPE: Record<StripeSubscriptionStatus, SaasStatus | null
   past_due: 'past_due', // payment.failed
   unpaid: 'past_due', // dunning exhausted; payment.failed was still the last
   //                     event to touch the status, so 'past_due' is what stands
-  canceled: 'cancelled', // subscription.cancelled
+  canceled: 'cancelled', // subscription.canceled
   incomplete_expired: 'cancelled', // Stripe fires customer.subscription.deleted
   incomplete: null,
   paused: null,

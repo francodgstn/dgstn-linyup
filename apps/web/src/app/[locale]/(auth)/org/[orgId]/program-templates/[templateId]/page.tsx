@@ -1,6 +1,6 @@
 'use client'
 
-// One organisation-wide program template, edited on its own. The federation
+// One organization-wide program template, edited on its own. The federation
 // authors the standard camp agenda once; every member studio applies it.
 // See the header of components/events/program/ProgramTemplateEditor.tsx.
 

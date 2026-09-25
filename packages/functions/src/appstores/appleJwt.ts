@@ -12,7 +12,7 @@
  *
  * ── THE KEY MAY ARRIVE IN TWO SHAPES ───────────────────────────────────────
  * `getSecret` trims, which is only ever helpful. What it cannot fix is INTERIOR
- * newline damage: a `.p8` pasted through a form or an editor that normalises
+ * newline damage: a `.p8` pasted through a form or an editor that normalizes
  * line endings yields a value `createPrivateKey` rejects, again opaquely. So a
  * single-line base64 of the whole PEM is accepted too, and is the RECOMMENDED
  * way to store it — it makes the secret immune to that entire class.
@@ -49,7 +49,7 @@ function base64url(input: Buffer | string): string {
 }
 
 /**
- * Normalises whichever shape the secret was stored in into a usable PEM.
+ * Normalizes whichever shape the secret was stored in into a usable PEM.
  *
  * Exported for the tests, which is the only way to pin the base64 branch — a
  * caller passing a single-line secret gets no error, just an unusable key.

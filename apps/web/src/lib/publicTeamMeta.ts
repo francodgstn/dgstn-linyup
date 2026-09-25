@@ -6,7 +6,7 @@
 // back EMPTY (fetch-stream buffering), so a page's metadata would silently
 // render as if the team did not exist. `site/page.tsx` hit this first and worked
 // around it with a single unauthenticated REST read; this is the same move,
-// generalised, for the collection-group lookups the public document pages need.
+// generalized, for the collection-group lookups the public document pages need.
 // A silent empty result matters more here than a wrong title: `noindex` is
 // decided from this read, and "we could not tell" must not read as "indexable".
 //

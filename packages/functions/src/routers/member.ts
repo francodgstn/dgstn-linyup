@@ -1,12 +1,12 @@
 // Everything a MEMBER or a GUEST does that is not paying, behind one function:
-// booking and cancelling, appointments, the waitlist, contact sign-in, the Space
+// booking and canceling, appointments, the waitlist, contact sign-in, the Space
 // (bookings, payments list, receipts, waivers, consent), contact-update links,
 // public forms, event invitations, the kiosk, referrals
 // (docs/functions-consolidation-plan.md → "Phase 3").
 //
 // This is the HOT PATH and the public one. Many members are called signed out or
 // with a contact session, and that is theirs to decide: the router adds no
-// authorisation and removes none, and a tenant boundary is never the router's to
+// authorization and removes none, and a tenant boundary is never the router's to
 // enforce.
 //
 // THE MEMBER APP CALLS SOME OF THESE BY THEIR OWN NAME, from store binaries that

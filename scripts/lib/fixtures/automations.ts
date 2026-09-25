@@ -166,7 +166,7 @@ export async function seedMonthlyScores(opts: {
  *
  * Written FLAT (`schedule_type` / `schedule_value`) — the shape the admin page
  * round-trips. The server writers use a nested `schedule`, which that page
- * normalises on read; a seed writing the nested form would round-trip into the
+ * normalizes on read; a seed writing the nested form would round-trip into the
  * flat one on the first save and look like the studio had edited it.
  */
 export async function seedContactAlerts(opts: {

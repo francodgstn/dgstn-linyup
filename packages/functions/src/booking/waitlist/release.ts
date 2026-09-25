@@ -3,7 +3,7 @@
 // Six callers reach the same decision from different directions: the hourly
 // sweep (pass 1, the window lapsed; pass 2, the class has already run),
 // leaveWaitlist (the person gave it up), removeWaitlistEntry (the studio ended
-// it), closeSessionWaitlist (the class was cancelled or deleted), the Connect
+// it), closeSessionWaitlist (the class was canceled or deleted), the Connect
 // webhook's oversell branch (the charge was refunded, so the claim dies with the
 // seat) and the promoter itself (the offer mail reached nobody, so the seat goes
 // straight back). They must apply the identical guard, because the guard is
@@ -47,7 +47,7 @@ export type OfferReleaseOutcome =
   | 'self_healed'
   /** Nothing of the offer is left to release and nothing came of it: the hold is
    *  gone (expirePendingBookings or an admin got there first), what replaced it
-   *  no longer holds a seat (cancelled, no-showed, rebooked away), or what
+   *  no longer holds a seat (canceled, no-showed, rebooked away), or what
    *  replaced it is itself unsettled — a live UNPAID drop-in hold, which
    *  occupies the seat while it lasts but puts nobody in the class. The entry
    *  was closed out and the person is told the offer lapsed, which is the truth
@@ -157,7 +157,7 @@ export async function releaseWaitlistOffer(params: {
         // markers say — see the predicate.
         //
         // Everything else — the booking is gone (expirePendingBookings or an
-        // admin got there first), or it was cancelled, no-showed or rebooked
+        // admin got there first), or it was canceled, no-showed or rebooked
         // away — means the seat is already back in the pool and only the entry
         // is left to close out.
         takenUp = bookingSeatTakenUp(booking, nowMs)

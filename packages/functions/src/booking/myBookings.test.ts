@@ -21,7 +21,7 @@ import { bookingIsLiveForMember, memberCanCancel } from './myBookings'
 //
 // THE DERIVATION SPANS THE functions/web BOUNDARY, like
 // `connect/commitSites.test.ts` and for the same reason: that boundary is where
-// corrections stop travelling. Walking `packages/functions/src` alone declared
+// corrections stop traveling. Walking `packages/functions/src` alone declared
 // this closed while the staff "Add contact" dialog on the session detail page —
 // a direct client write, with no server seam to mount a guard on — created
 // bookings with no `joinedAt` at all. They showed on the session roster (the
@@ -62,7 +62,7 @@ describe('WHICH DOCUMENTS ARE BOOKINGS SHE HOLDS', () => {
     assert.equal(bookingIsLiveForMember({ status: 'confirmed', payment_status: 'gift_card' }), true)
   })
 
-  it('a cancelled or rebooked document is not a seat she holds HERE', () => {
+  it('a canceled or rebooked document is not a seat she holds HERE', () => {
     assert.equal(bookingIsLiveForMember({ status: 'cancelled' }), false)
     // 'rebooked' moved the seat to another session, which has its own document.
     assert.equal(bookingIsLiveForMember({ status: 'rebooked' }), false)
@@ -121,7 +121,7 @@ describe('WHETHER THE CANCEL BUTTON IS A PROMISE', () => {
     assert.equal(memberCanCancel({ ...base, bookingStatus: 'confirmed', autoConfirm: false }), false)
   })
 
-  it('a started session, a missing token and an already-cancelled booking all refuse', () => {
+  it('a started session, a missing token and an already-canceled booking all refuse', () => {
     assert.equal(memberCanCancel({ ...base, startMs: now - 60_000 }), false)
     assert.equal(memberCanCancel({ ...base, hasToken: false }), false)
     assert.equal(memberCanCancel({ ...base, bookingStatus: 'cancelled' }), false)

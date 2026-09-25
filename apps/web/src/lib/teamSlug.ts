@@ -20,14 +20,14 @@ import { callFunction } from '@/lib/callFunction'
  * bypasses rules, sees every team, and reads `teams.slug` itself rather than a
  * mirror that lags behind it.
  *
- * It also owns the normalisation and the reserved-word list, so callers get the
+ * It also owns the normalization and the reserved-word list, so callers get the
  * slug the server would actually store instead of re-deriving it and drifting.
  */
 export type SlugCheck = {
   available: boolean
   /** The slug the server would store. Absent when `available` is false. */
   normalizedSlug?: string
-  /** Server-side English explanation; callers show their own localised copy. */
+  /** Server-side English explanation; callers show their own localized copy. */
   reason?: string
 }
 

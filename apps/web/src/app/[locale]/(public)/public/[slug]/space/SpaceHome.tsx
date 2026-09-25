@@ -1,10 +1,10 @@
 'use client'
 
-// Space Home = the contact's PERSONAL portal, not a course catalogue. It surfaces
+// Space Home = the contact's PERSONAL portal, not a course catalog. It surfaces
 // the signed-in contact's own data — membership (subscriptions + affiliation),
 // the courses they can actually open, and shortcuts to their bookings/profile.
 //
-// Course DISCOVERY + buying lives in the shop (/public/{slug}/shop): the catalogue
+// Course DISCOVERY + buying lives in the shop (/public/{slug}/shop): the catalog
 // with locked/priced cards belongs there. Here we only ever show "My courses" —
 // entitlements the contact already has — linking straight to the player. Anonymous
 // visitors get a sign-in wall (this is a "my account" area), so free-course
@@ -21,7 +21,7 @@
 //   1. the welcome card (name only) — the shell header already names her; the
 //      greeting now rides on the next-up card;
 //   2. the membership section — a second, DIVERGENT copy of Account's (it never
-//      learned to say a membership is cancelling). One component now, two
+//      learned to say a membership is canceling). One component now, two
 //      variants, per `SpaceWaiverCard`;
 //   3. the quick-links grid (Bookings / Account) — the portal nav directly above
 //      it is those same links;
@@ -69,7 +69,7 @@ export interface PublicCourseCard {
 
 // ─── Access check helper ──────────────────────────────────────────────────────
 // Same resolver (@linyup/shared) the shop + Firestore rules' access story is built
-// on; here it filters the catalogue down to the courses this contact may open
+// on; here it filters the catalog down to the courses this contact may open
 // (their "My courses" library). Only ever called for a signed-in contact (Space
 // is sign-in gated — see the early return below). Unlike the shop's optimistic
 // snapshot, Space has the contact's FULL held union (every plan-list entry held
@@ -94,7 +94,7 @@ function hasAccess(
   })
   // COVERED options only — a priced course always yields a `pay` option for
   // any signed-in contact, and "you could buy this" is not an entitlement
-  // (this section shows the contact's library, never a catalogue).
+  // (this section shows the contact's library, never a catalog).
   return resolvePaymentOptions(snapshot, { kind: 'course', accessRule: rule }).options.some(
     (o) => o.type === 'covered'
   )
@@ -173,7 +173,7 @@ export default function SpaceHome() {
   // Upcoming published events — the studio's own plus its parent org's. Read
   // from the same world-readable mirrors the public events page uses. NOT
   // filtered to the events this contact RSVP'd to: the attendees subcollection
-  // is not readable by a contact session, so personalising it needs a callable.
+  // is not readable by a contact session, so personalizing it needs a callable.
   const { events: upcomingEvents } = usePublicEvents(teamId, team?.org_id ?? null, { limit: 3 })
 
   // Load published courses (only needed once signed in — to compute "My courses").
@@ -215,7 +215,7 @@ export default function SpaceHome() {
   }, [isAuthenticated, teamId, retryKey])
 
   // Which 'purchase'-tier courses this contact has bought (lifetime entitlements).
-  // Authorised by the {path=**}/purchases collection-group block in
+  // Authorized by the {path=**}/purchases collection-group block in
   // firestore.rules — which is scoped by BOTH `where` clauses below, so neither
   // may be dropped without the whole query being refused.
   useEffect(() => {
@@ -376,7 +376,7 @@ export default function SpaceHome() {
 
       {/* Membership — ONE implementation, shared with Account (see
           SpaceMembershipCard). The copy this replaced had already fallen behind
-          Account's: it never said a membership was cancelling. */}
+          Account's: it never said a membership was canceling. */}
       <SpaceMembershipCard variant="summary" slug={slug} hasSubscriptionsForSale={hasSubscriptions} />
 
       {/* Lesson credits — compact list of credit-pack balances (denormalised

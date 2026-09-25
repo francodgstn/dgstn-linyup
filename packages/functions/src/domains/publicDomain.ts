@@ -2,7 +2,7 @@
  * Custom public domains — the studio-facing callables.
  *
  * A studio serves its public surfaces from a hostname it owns
- * (`book.theirdojo.ch`) instead of `linyup.com/public/{slug}`. Modelled closely
+ * (`book.theirdojo.ch`) instead of `linyup.com/public/{slug}`. Modeled closely
  * on the BYO *email* domain pair (`mail/domainAuth.ts`), which solved the same
  * shape of problem first: register → show DNS → poll → fall back safely. The
  * access guards are literally shared with it.

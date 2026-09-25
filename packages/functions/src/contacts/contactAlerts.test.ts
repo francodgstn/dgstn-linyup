@@ -59,7 +59,7 @@ describe('contact alerts — the two document shapes', () => {
     assert.equal(alertIsFired(studioAuthored, { totalSessions: 10, now: NOW }), true)
   })
 
-  it('normalises either shape to the same canonical alert', () => {
+  it('normalizes either shape to the same canonical alert', () => {
     const flat = readAlert('a', { schedule_type: 'always', message: 'hi', show_in_app: true })
     const nested = readAlert('a', { schedule: { type: 'always' }, message: 'hi', show_in_app: true })
     assert.equal(flat.schedule_type, nested.schedule_type)

@@ -65,7 +65,7 @@ export default function BookingsHome() {
     retryable: boolean
   } | null>(null)
   // Cancel is a two-step press on this surface: the first arms it (and states
-  // what cancelling returns), the second does it. It used to fire on one click
+  // what canceling returns), the second does it. It used to fire on one click
   // with no confirmation and no explanation — for a destructive action on
   // something the member may have paid for.
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -178,8 +178,8 @@ export default function BookingsHome() {
         {t('bookingsTitle')}
       </h2>
 
-      {/* The cancelled booking's row is gone by now, so the answer lives here.
-          "Cancelled" alone was the old behaviour and it left the one question
+      {/* The canceled booking's row is gone by now, so the answer lives here.
+          "Canceled" alone was the old behavior and it left the one question
           she actually has — what happened to my credit — unanswered. */}
       {cancelled && (
         <div className="mb-4 rounded-2xl p-3.5" style={cardStyle}>
@@ -254,7 +254,7 @@ export default function BookingsHome() {
                       {t('bookingsCancelledByStudio')}
                     </p>
                   )}
-                  {/* Armed, not yet done: what cancelling gives back, stated
+                  {/* Armed, not yet done: what canceling gives back, stated
                       before the second press rather than after it. */}
                   {confirming === b.sessionId &&
                     cancelEffectKeys(b.cancelEffect, 'will').map((key) => (

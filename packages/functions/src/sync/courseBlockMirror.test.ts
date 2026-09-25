@@ -7,7 +7,7 @@ import { buildCourseBlockPublicProfile } from './syncCourseBlockPublicProfile'
 // Two properties, and the first is the one that matters:
 //
 //  1. AGGREGATES, NEVER IDENTITIES. A card needs to say "2 of 9 places", never
-//     who has them. The enrolments live in a subcollection the mirror does not
+//     who has them. The enrollments live in a subcollection the mirror does not
 //     read, so this is true by construction, and this file is what keeps it true
 //     if somebody later reaches for a name to put on a card.
 //  2. A COUNT, NOT A CALENDAR. The meeting list runs to 200 entries; a public

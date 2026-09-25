@@ -30,16 +30,16 @@ export interface AccountMetricInput {
    */
   comped?: boolean
   /**
-   * ORGS ONLY — active member studios, which is what the organisation is billed
+   * ORGS ONLY — active member studios, which is what the organization is billed
    * for (`orgMonthlyForStudios`). Absent falls back to the tier's minimum, which
    * under-states rather than invents.
    */
   studioCount?: number | null
   /**
-   * TEAMS ONLY — this studio belongs to an organisation, so the ORGANISATION is
+   * TEAMS ONLY — this studio belongs to an organization, so the ORGANIZATION is
    * the paying entity and this row contributes nothing to MRR.
    *
-   * Without it every member studio was counted at the organisation tier's own
+   * Without it every member studio was counted at the organization tier's own
    * price: a five-studio federation reported six subscriptions rather than one.
    */
   billedByOrg?: boolean
@@ -67,14 +67,14 @@ export interface PlatformMetrics {
 /**
  * What ONE account contributes to MRR each month.
  *
- * ── THE PAYING ENTITY IS THE ORGANISATION, NOT ITS STUDIOS ──────────────────
- * Joining an organisation sets a studio's `plan` to 'organization', and this
+ * ── THE PAYING ENTITY IS THE ORGANIZATION, NOT ITS STUDIOS ──────────────────
+ * Joining an organization sets a studio's `plan` to 'organization', and this
  * reducer receives every studio AND the org as separate rows — so charging each
  * row the tier's price counted a five-studio federation as six subscriptions.
  * At the old CHF 79 base that reported 474 against a true 139 (Franco,
  * 2026-08-28: attribute the payment to the org, not the single teams).
  *
- * ── AND THE ORGANISATION'S PRICE IS NOT A SCALAR ────────────────────────────
+ * ── AND THE ORGANIZATION'S PRICE IS NOT A SCALAR ────────────────────────────
  * It is CHF 25 per studio, so it cannot be read off `PLAN_PRICING.baseMonthly`
  * like the other three — that field is 0 for this tier, deliberately, and a
  * reducer that trusted it would report every federation as free.
@@ -239,7 +239,7 @@ export interface PlatformMobileMetrics {
  * snapshot's date.
  *
  * ── THESE ARE NOT ALL THE SAME KIND OF NUMBER ───────────────────────────────
- * Deliberately not normalised into one "spend" figure, because they are not
+ * Deliberately not normalized into one "spend" figure, because they are not
  * comparable and pretending otherwise would invent precision:
  *
  *   - GCP reports MONTH-TO-DATE MONEY against a budget.
@@ -264,7 +264,7 @@ export interface PlatformProviderCosts {
  * rather than from any cost API.
  *
  * There is no Cloud Billing API call that returns consumption — `cloudbilling`
- * serves account metadata and the SKU price catalogue, and real cost data
+ * serves account metadata and the SKU price catalog, and real cost data
  * otherwise means enabling a BigQuery billing export (opt-in, hours of delay,
  * and billable itself). The budget we already run publishes `costAmount` and
  * `budgetAmount` to a topic for free, several times a day, so that is the

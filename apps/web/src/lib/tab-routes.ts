@@ -1,6 +1,6 @@
 // Route registry + helpers for the open-pages tab strip (see OpenTabsContext /
 // OpenTabsStrip). Only a curated set of routes become tabs: the high-frequency
-// section pages (labelled from the Nav i18n namespace) and the entity detail
+// section pages (labeled from the Nav i18n namespace) and the entity detail
 // pages (which self-register a rich label once their data loads). Everything
 // else — settings, org admin, plugin config hubs — is intentionally not tracked
 // so the strip stays focused on what a studio manager flips between.

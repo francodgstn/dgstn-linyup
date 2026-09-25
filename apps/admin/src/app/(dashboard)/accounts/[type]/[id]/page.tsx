@@ -156,7 +156,7 @@ export default async function AccountDetailPage({
               <>
                 <Field label="Plan" value={<span className="capitalize">{sub.plan}</span>} />
                 <Field label="Status" value={<StatusBadge status={sub.status} />} />
-                {/* The organisation tier has no base fee — it is a RATE per
+                {/* The organization tier has no base fee — it is a RATE per
                     studio, so `baseMonthly` is 0 for it and printing that showed
                     an operator CHF 0.00 for a paying federation. */}
                 <Field
@@ -172,7 +172,7 @@ export default async function AccountDetailPage({
                 <Field label="Trial ends" value={formatDate(sub.trialEndsAtMs)} />
                 {/* A DATE where we have one — a billing-portal cancellation
                     leaves the boolean false, so this field used to read "No" for
-                    a studio that had already cancelled.
+                    a studio that had already canceled.
 
                     But the date is NOT the signal. Docs written before the
                     Dahlia field migration carry the cancellation with no
@@ -196,7 +196,7 @@ export default async function AccountDetailPage({
                     sub.cancelling || sub.canceledAtMs || sub.cancellationReason ? (
                       <span className="text-sm">
                         {/* A pre-migration doc has the cancellation and none of
-                            its detail. "Cancelling" is still the true and useful
+                            its detail. "Canceling" is still the true and useful
                             answer; an empty cell is not. */}
                         {[
                           sub.canceledAtMs ? `requested ${formatDate(sub.canceledAtMs)}` : null,
@@ -204,7 +204,7 @@ export default async function AccountDetailPage({
                           sub.cancellationFeedback,
                         ]
                           .filter(Boolean)
-                          .join(' · ') || 'cancelling — no reason recorded'}
+                          .join(' · ') || 'canceling — no reason recorded'}
                         {sub.cancellationComment ? (
                           <em className="block text-muted-foreground">
                             “{sub.cancellationComment}”
@@ -247,7 +247,7 @@ export default async function AccountDetailPage({
             />
             {account.type === 'org' && account.comped && (
               <p className="mt-3 text-xs text-muted-foreground">
-                Every studio in this organisation also pays no platform fee on member
+                Every studio in this organization also pays no platform fee on member
                 payments — the waiver is read from this document, so a studio that
                 joins later inherits it.
               </p>

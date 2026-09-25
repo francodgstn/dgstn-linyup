@@ -4,13 +4,13 @@
  * — with NO authorization in them.
  *
  * WHY THEY LIVE HERE (UX-75). A `saas_subscriptions/{id}` document is billed to
- * either a team or an organisation: `entity_type: 'team' | 'org'`, and the doc id
+ * either a team or an organization: `entity_type: 'team' | 'org'`, and the doc id
  * is that entity's id. The four callables in `./index.ts` were written when only
  * teams paid, so each took `data.teamId` and guarded with `assertOwner` →
  * `hasTeamRole` → `teams/{teamId}/team_members/{uid}`. An ORG id put through that
- * guard reads a team-members subcollection under an organisation id, finds
+ * guard reads a team-members subcollection under an organization id, finds
  * nothing, and refuses `permission-denied` — so an org admin could not cancel her
- * own organisation's subscription, reactivate it, or open the portal to fix an
+ * own organization's subscription, reactivate it, or open the portal to fix an
  * expiring card, while the charges kept coming.
  *
  * The fix is two authorization models, one implementation. The org rail gets its

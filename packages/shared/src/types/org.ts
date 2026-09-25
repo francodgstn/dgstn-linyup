@@ -24,7 +24,7 @@ export interface Organization {
    *  is the "when" for support. */
   downgraded_from_trial_at?: Timestamp
   /** Operational flags — the SAME type and the same exemption as `Team.flags`:
-   *  an internal, pilot or comped organisation is never auto-lapsed by the trial
+   *  an internal, pilot or comped organization is never auto-lapsed by the trial
    *  sweep (`tenantExemptFromTrialSweep`). */
   flags?: TenantFlags
   stripe_customer_id?: string
@@ -47,21 +47,21 @@ export interface Organization {
    * first one that wanted a city.
    *
    * Public-facing: the org website's contact section shows these, the way a
-   * studio's primary place does. Absent on every existing organisation, and the
+   * studio's primary place does. Absent on every existing organization, and the
    * section renders whatever is filled in, so this is additive.
    */
   headquarters?: ContactAddress
-  /** Where to write to the organisation. Shown publicly when set. */
+  /** Where to write to the organization. Shown publicly when set. */
   contact_email?: string
-  /** Where to call the organisation. Shown publicly when set. */
+  /** Where to call the organization. Shown publicly when set. */
   contact_phone?: string
-  /** The organisation's public website, if it has one outside Linyup. */
+  /** The organization's public website, if it has one outside Linyup. */
   contact_website?: string
   // When true, a contact's affiliation status is read-only for team managers.
   // Only org admins (and org-level automations when implemented) may change it.
   lock_affiliation?: boolean
   /**
-   * The organisation's own social profiles, rendered by the contact section of
+   * The organization's own social profiles, rendered by the contact section of
    * its website when that section asks for them.
    *
    * SAME TYPE AS A TEAM'S (`Team.socialLinks`), because they are the same thing
@@ -97,7 +97,7 @@ export interface OrgTeam {
   addedBy: string
   removed_at?: Timestamp
   /** Why the link ended. Absent = an org admin removed the team by hand
-   *  (removeTeamFromOrg). 'org_lapsed' = the organisation stopped paying and
+   *  (removeTeamFromOrg). 'org_lapsed' = the organization stopped paying and
    *  the studio was dropped to Free by lapseOrganization — the org admin's
    *  access to that studio's data ended with it. */
   removed_reason?: 'org_lapsed'
@@ -118,7 +118,7 @@ export interface TeamAccessRequest {
 }
 
 /**
- * A whole STUDIO invited into the organisation — accepted by that studio's
+ * A whole STUDIO invited into the organization — accepted by that studio's
  * OWNER, and accepting moves the studio's billing onto the org plan.
  *
  * NOT the same thing as `OrgMemberInvitation` below. See the naming rule beside
@@ -143,17 +143,17 @@ export type OrgMemberInvitationStatus =
   | 'expired'
 
 /**
- * A PERSON invited to help run the organisation — `organizations/{orgId}/
+ * A PERSON invited to help run the organization — `organizations/{orgId}/
  * org_member_invitations/{invitationId}`. Accepting writes exactly one
  * `org_members/{uid}` row and nothing else: no studio changes hands, no billing
  * moves, no team is enrolled.
  *
  * WHY IT EXISTS: `addOrgMember` is a GRANT against an account that already
  * exists, and an address with no Linyup account got a named refusal — so an
- * organisation could not bring in anybody who had not already signed up
+ * organization could not bring in anybody who had not already signed up
  * (decision 12).
  *
- * DOC ID: a deterministic key derived from the normalised address
+ * DOC ID: a deterministic key derived from the normalized address
  * (`orgMemberInvitationId`), NOT an auto-id and NOT the token. Inviting the same
  * address twice therefore REFRESHES one row — a new token, a new deadline —
  * instead of leaving two live tokens and two "pending" rows that disagree about
@@ -202,7 +202,7 @@ export interface OrgMemberInvitation {
  * That is the whole answer to "what happens if the same address is invited
  * twice": the second invite REWRITES the first (new token, new deadline, new
  * role if it changed) instead of creating a second live token. One pending row
- * per (organisation, address), always — the members list cannot show two, the
+ * per (organization, address), always — the members list cannot show two, the
  * admin cannot wonder which one to revoke, and the older mail's link dies the
  * moment the newer one is sent.
  *

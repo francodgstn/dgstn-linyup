@@ -203,7 +203,7 @@ export const VIEWS: C4View[] = [
       { from: 'functions', to: 'auth', label: 'Mints member sessions' },
       { from: 'functions', to: 'storage', label: 'Writes PDFs' },
       { from: 'functions', to: 'secrets', label: 'Reads credentials' },
-      { from: 'functions', to: 'vertex', label: 'Summarises, drafts' },
+      { from: 'functions', to: 'vertex', label: 'Summarizes, drafts' },
       { from: 'functions', to: 'stripe', label: 'Charges, subscriptions' },
       { from: 'stripe', to: 'functions', label: 'Webhooks', async: true },
       { from: 'gateways', to: 'functions', label: 'Webhooks', async: true },

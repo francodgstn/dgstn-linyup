@@ -18,7 +18,7 @@
 // THE PROHIBITION. A payment's plan attribution is either SUPPLIED or ABSENT.
 // This module NEVER infers one — not from a plan span that happens to overlap
 // the payment's date, not from the contact's current plan, and not from
-// proximity in time to a neighbouring attributed payment. Two independent
+// proximity in time to a neighboring attributed payment. Two independent
 // reasons, either of which alone is disqualifying:
 //
 //   1. THE LINK IS TO A TYPE, NEVER TO AN INSTANCE. `PaymentLineItem` carries

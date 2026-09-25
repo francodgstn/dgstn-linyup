@@ -52,7 +52,7 @@ import {
 import { qrInvoiceErrorMessage } from './errors'
 
 /** ONE status chip, so the plugin's list and a contact's Payments segment never
- *  learn two different colour codes for the same status. */
+ *  learn two different color codes for the same status. */
 export function InvoiceStatusBadge({ status }: { status: InvoiceRow['status'] }) {
   const t = useTranslations('QrInvoices')
   const className =

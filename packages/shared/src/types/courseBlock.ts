@@ -40,7 +40,7 @@ import type { RecurrencePattern } from './session'
 // what makes its lessons ORDINARY sessions: roster, attendance, check-in,
 // reminders, cancellation and the trainer's busy set all work with no new code,
 // and the series teardown job cancels the whole course. The series carries
-// `course_block_id` and `status: 'fixed'`, materialised in full, nothing to
+// `course_block_id` and `status: 'fixed'`, materialized in full, nothing to
 // roll, so the daily roller never reads it.
 //
 // The editing callables (`updateRecurringSession`, `cancelSession`) REFUSE a
@@ -115,7 +115,7 @@ export type CourseBlockStatus =
   /** Published. Whether it can be bought right now is `courseBlockSalesOpen`,
    *  which reads the dates, a status is not a clock. */
   | 'published'
-  /** Called off. The series teardown has run (or is running); enrolments stand
+  /** Called off. The series teardown has run (or is running); enrollments stand
    *  as a record of who was in it, and refunds are the studio's own act. */
   | 'cancelled'
 
@@ -130,7 +130,7 @@ export interface CourseBlock {
   curriculum?: CourseCurriculumItem[] | null
 
   /** The class type behind it. The lessons are sessions of this activity, so
-   *  everything an activity already says, colour, image, meeting point, what
+   *  everything an activity already says, color, image, meeting point, what
    *  to bring, cancellation terms, booking questions, is said once. */
   activityId?: string | null
   activityName?: string | null
@@ -204,10 +204,10 @@ export interface CourseBlock {
 
   /** Sessions this course's own callables could not create, a lesson whose
    *  session is already at capacity from an ordinary booking. Surfaced on the
-   *  roster; never a reason to fail an enrolment. */
+   *  roster; never a reason to fail an enrollment. */
   fanout_conflicts?: string[] | null
 
-  /** Bumped whenever the enrolment set or the meeting list changes, so the
+  /** Bumped whenever the enrollment set or the meeting list changes, so the
    *  roster converger can skip work it has already done. A hint, never the
    *  guarantee, the converger re-derives rather than trusting a marker. */
   roster_version?: number
@@ -257,14 +257,14 @@ export function courseBlockIsFull(block: Pick<CourseBlock, 'places' | 'places_ta
   return placesFree(block.places, block.places_taken) <= 0
 }
 
-// ─── ENROLMENTS: one purchase, one place, N lessons ─────────────────────────
+// ─── ENROLLMENTS: one purchase, one place, N lessons ─────────────────────────
 //
 // `course_blocks/{blockId}/enrolments/{contactId}`, the doc id IS the contact
-// id, exactly like `bookings`, `waitlist` and `participants`, so a second enrol
+// id, exactly like `bookings`, `waitlist` and `participants`, so a second enroll
 // is an idempotent write rather than a duplicate row.
 //
-// THE ENROLMENT IS THE TRUTH; the per-session bookings are a PROJECTION of it.
-// Nothing writes thirteen bookings inside one transaction: the enrolment commits
+// THE ENROLLMENT IS THE TRUTH; the per-session bookings are a PROJECTION of it.
+// Nothing writes thirteen bookings inside one transaction: the enrollment commits
 // alone, against the course's own counter, and a converger then ensures each
 // future lesson has a booking for this contact. That is what keeps this inside
 // Firestore's transaction limits AND inside the existing seat rule, each
@@ -294,15 +294,15 @@ export interface CourseBlockEnrolment {
    *  'not_required' for a free course or a place the studio gave. */
   payment_status?: 'not_required' | 'required' | 'paid'
   payment_intent_id?: string | null
-  /** When a hold lapses. Absent on a settled enrolment. */
+  /** When a hold lapses. Absent on a settled enrollment. */
   expires_at?: Timestamp | null
-  /** An offered place from the waiting list, an ORDINARY enrolment carrying
+  /** An offered place from the waiting list, an ORDINARY enrollment carrying
    *  this flag, so every capacity gate already stops selling it. */
   waitlist_claim?: boolean
   claim_expires_at?: Timestamp | null
   enrolled_at?: Timestamp
   withdrawn_at?: Timestamp | null
-  /** Bumped to the course's `roster_version` when this enrolment's bookings were
+  /** Bumped to the course's `roster_version` when this enrollment's bookings were
    *  last written. A cheap skip for the converger, never its guarantee, it
    *  re-derives rather than trusting a marker. */
   roster_version_applied?: number
@@ -317,7 +317,7 @@ export interface PlaceHold {
 }
 
 /**
- * Does this enrolment occupy a place RIGHT NOW? The sibling of
+ * Does this enrollment occupy a place RIGHT NOW? The sibling of
  * `bookingHoldsSeat`, and the single source of truth for the question.
  *
  * A lapsed hold frees its place IMMEDIATELY rather than at the next sweep, for
@@ -325,7 +325,7 @@ export interface PlaceHold {
  * on the strength of an abandoned checkout is a place nobody can reach. Reading
  * it here means the gate and the recount give the same answer.
  *
- * An ABSENT status is an enrolment, and holds.
+ * An ABSENT status is an enrollment, and holds.
  */
 export function courseBlockEnrolmentHoldsPlace(
   e: PlaceHold,
@@ -346,7 +346,7 @@ export function courseBlockEnrolmentHoldsPlace(
  * per document could count a hold live at the top of a pass and lapsed at the
  * bottom.
  *
- * `excludeId` drops the caller's own enrolment, whose document the gate is about
+ * `excludeId` drops the caller's own enrollment, whose document the gate is about
  * to replace, a buyer re-opening an abandoned checkout, a webhook confirming
  * the hold it created. Counting it would refuse them the place they hold.
  */
@@ -382,7 +382,7 @@ export interface PlaceCounts {
  * own write re-fires the trigger, and on that pass the course is full again.
  *
  * An uncapped course never produces it (it was never full), and neither does a
- * cancelled one (there is no place to hand on).
+ * canceled one (there is no place to hand on).
  */
 export function placeFreedEdge(
   before: PlaceCounts | null | undefined,
@@ -400,12 +400,12 @@ export function placeFreedEdge(
  * Can this course be bought RIGHT NOW?
  *
  * One predicate, read by the public card (to hide the button), by the checkout
- * callable and by the free-enrolment callable (to refuse), so a visitor is never
+ * callable and by the free-enrollment callable (to refuse), so a visitor is never
  * shown a button that the server will turn down. The same contract
  * `isPastBookingCutoff` has for a session, and deliberately NOT that function:
  * this asks about a course's sales window, not about minutes before one lesson.
  *
- * A draft is not sellable, a cancelled course is not sellable, and a course
+ * A draft is not sellable, a canceled course is not sellable, and a course
  * whose closing date has passed is not sellable. A course with no closing date
  * stays open, which is what a studio that never set one means.
  *
@@ -432,12 +432,12 @@ export function courseBlockSalesOpen(
 // Three invariants are carried over verbatim, each of which was a bug there
 // first:
 //
-//  1. THE SINGLE-DEADLINE RULE. The offered enrolment's `expires_at`, its
+//  1. THE SINGLE-DEADLINE RULE. The offered enrollment's `expires_at`, its
 //     `claim_expires_at`, the entry's `offer_expires_at` and, for a paid claim,
 //     the Stripe session's own expiry are ONE instant, computed once by
 //     `resolveCourseClaimWindow` and copied. Let them diverge and a place gets
 //     sold twice.
-//  2. AN OFFERED PLACE IS AN ORDINARY ENROLMENT carrying `waitlist_claim`, held
+//  2. AN OFFERED PLACE IS AN ORDINARY ENROLLMENT carrying `waitlist_claim`, held
 //     as `status: 'hold'`. That is what makes every capacity gate already stop
 //     selling it: `courseBlockEnrolmentHoldsPlace` counts it without knowing
 //     what a waiting list is, and lapses it lazily on the same read.
@@ -512,7 +512,7 @@ export interface CourseBlockWaitlistEntry {
    *  direction. This is the claim credential. */
   offer_token?: string | null
   offered_at?: Timestamp | null
-  /** THE SAME INSTANT as the offered enrolment's `expires_at`. */
+  /** THE SAME INSTANT as the offered enrollment's `expires_at`. */
   offer_expires_at?: Timestamp | null
   claimed_at?: Timestamp | null
   left_at?: Timestamp | null
@@ -581,7 +581,7 @@ export function resolveCourseClaimWindow(input: {
 }
 
 /** Does this entry currently hold an OFFER? Separate from the place predicate
- *  on purpose: the place is held by the ENROLMENT, and this only says whether
+ *  on purpose: the place is held by the ENROLLMENT, and this only says whether
  *  the queue believes it made an offer that is still open. */
 export function courseWaitlistOfferIsLive(
   // Narrowed the way `PlaceHold` is, and for the same reason: a raw Firestore

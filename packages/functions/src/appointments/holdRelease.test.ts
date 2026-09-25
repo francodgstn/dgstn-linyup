@@ -13,7 +13,7 @@ import { decideAppointmentCheckoutRollback } from './checkout'
 // construction" is exactly the kind of claim that rots.
 //
 // THE BUG THIS FILE EXISTS FOR was fixed at two of the three shared-address sites
-// and missed at the third for two rounds: `handleCheckoutExpired` cancelled the
+// and missed at the third for two rounds: `handleCheckoutExpired` canceled the
 // session and deleted the booking on PRESENCE alone. Phase 3 then made that fire
 // seconds after a retry instead of ~31 minutes later, because a promo refresh
 // expires the superseded Checkout Session at Stripe.
@@ -258,7 +258,7 @@ describe('census site 2 — createStaffAppointment payment-link catch', () => {
       }),
       { release: true, proof: 'exclusive' }
     )
-    // The session is still cancelled even though there is no booking to delete —
+    // The session is still canceled even though there is no booking to delete —
     // releaseAppointmentHold writes the session and deletes the booking only
     // `if (bSnap.exists)`, which is what makes this outcome useful rather than a
     // no-op that leaves `status: 'pending_payment'` standing forever.
@@ -335,7 +335,7 @@ describe('census sites 4-7 — the divergences, and the proof each one rests on'
   it('4 + 5: the daily sweep and the stale-booking reclaim are DEADLINE-addressed', () => {
     // expirePendingBookings queries status == 'pending_payment' AND
     // hold_expires_at <= now; runAppointmentSlotTransaction reclaims only a
-    // cancelled session or a lapsed hold. Both are the deadline proof applied by
+    // canceled session or a lapsed hold. Both are the deadline proof applied by
     // a query rather than by a read — which this predicate agrees with, and which
     // is why neither is routed through releaseAppointmentHold.
     assert.deepEqual(

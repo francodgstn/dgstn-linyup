@@ -261,7 +261,7 @@ async function dispatch(
   // decides which branch this tenant takes: `ignoreTestMode` lets an operator
   // exempt a single studio from the environment-wide redirect so its own policy
   // applies — the case being "a real person is testing THIS studio on staging
-  // and must receive what they trigger". Absent ⇒ false ⇒ unchanged behaviour,
+  // and must receive what they trigger". Absent ⇒ false ⇒ unchanged behavior,
   // and the extra read costs one document on a path that already reads it in
   // every non-test send.
   const entityId = stream === 'system' ? 'system' : (teamId ?? 'system')

@@ -64,7 +64,7 @@ function whatsappMarkerKey(reason: Exclude<PreviewContact['whatsapp'], 'ok' | un
   return `preview.whatsappReason.${reason}` as const
 }
 
-/** How many matches are rendered before the list is summarised. A studio with
+/** How many matches are rendered before the list is summarized. A studio with
  *  800 matching contacts needs the NUMBER and a sense of who, not 800 rows. */
 const MAX_LISTED = 50
 
@@ -80,7 +80,7 @@ export interface PreviewRunDialogProps {
   ruleActive: boolean
   /** 'preview' = read-only. 'run' = the "Run now" confirmation. */
   mode: 'preview' | 'run'
-  /** One line per action the rule performs — already summarised by the caller
+  /** One line per action the rule performs — already summarized by the caller
    *  (it holds the templates), so this dialog never re-derives that copy. */
   actionLabels: string[]
   /** Performs the run. Resolves when the callable has returned. */

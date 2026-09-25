@@ -1,7 +1,7 @@
-// Anonymises contacts whose self-service deletion window has passed.
+// Anonymizes contacts whose self-service deletion window has passed.
 //
 // The acting half of `contacts/selfDeletion.ts`: that one only writes a date,
-// this is what eventually honours it. It ANONYMISES rather than deletes — the
+// this is what eventually honors it. It ANONYMIZES rather than deletes — the
 // studio's finance rows and its immutable waiver ledger reference this contact
 // and must survive somebody leaving. `utils/contactDeletion.ts` carries the full
 // reasoning and, importantly, THE FIELD LIST: the failure mode of missing one is
@@ -49,8 +49,8 @@ export async function anonymizeScheduledContacts(): Promise<{ anonymized: number
     const batch = db.batch()
     for (const doc of snap.docs.slice(i, i + BATCH_SIZE)) {
       const data = doc.data()
-      // Re-check at write time: the contact may have cancelled between the query
-      // and here, and honouring a request they withdrew is the one mistake this
+      // Re-check at write time: the contact may have canceled between the query
+      // and here, and honoring a request they withdrew is the one mistake this
       // sweep must never make.
       if (!data.deletion_scheduled_for) continue
       if (data.anonymized_at) continue

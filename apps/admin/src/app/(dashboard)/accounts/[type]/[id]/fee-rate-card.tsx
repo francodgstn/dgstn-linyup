@@ -14,7 +14,7 @@ import { clearTenantFeeRate, setTenantFeeRate } from './actions'
  *   2. APPLY it to existing member subscriptions — Stripe stores the fee percent
  *      on each subscription, so they keep the old rate until updated.
  * Folding (2) into (1) would make saving a typo a Stripe write across every
- * member of every studio in an organisation.
+ * member of every studio in an organization.
  */
 
 interface FeeRateView {
@@ -63,7 +63,7 @@ export function FeeRateCard({
   kind: 'team' | 'org'
   entityId: string
   comped: boolean
-  /** Null for an organisation — its studios each have their own plan. */
+  /** Null for an organization — its studios each have their own plan. */
   publishedBps: number | null
   feeRate: FeeRateView | null
 }) {
@@ -77,7 +77,7 @@ export function FeeRateCard({
   const [resyncing, setResyncing] = useState(false)
   const [resync, setResync] = useState<ResyncRow[] | null>(null)
 
-  const label = kind === 'org' ? 'organisation' : 'studio'
+  const label = kind === 'org' ? 'organization' : 'studio'
   // Rendered per request (force-dynamic), so "now" is the request time.
   const expired = feeRate?.expiresAtMs != null && feeRate.expiresAtMs <= Date.now()
   const noEffect = feeRate != null && publishedBps != null && feeRate.bps >= publishedBps
@@ -179,7 +179,7 @@ export function FeeRateCard({
       )}
       {kind === 'org' && (
         <p className="text-xs text-muted-foreground">
-          Applies to every studio in this organisation, unless a studio has its own rate. A studio
+          Applies to every studio in this organization, unless a studio has its own rate. A studio
           is never charged more than its own plan&apos;s published rate.
         </p>
       )}

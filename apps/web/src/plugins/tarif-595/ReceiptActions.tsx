@@ -44,7 +44,7 @@ import {
 } from './hooks'
 
 /** ONE status chip, so the plugin's receipts list and a contact's Receipts
- *  segment never learn two different colour codes for the same status. */
+ *  segment never learn two different color codes for the same status. */
 export function ReceiptStatusBadge({ status }: { status: Tarif595ReceiptRow['status'] }) {
   const t = useTranslations('Tarif595')
   const className =

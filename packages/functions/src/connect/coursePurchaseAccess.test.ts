@@ -17,11 +17,11 @@ import {
 //        ↓
 //   Space/shop LIST it: collectionGroup('purchases')
 //                         .where('contactId','==',me).where('teamId','==',team)
-//        ↓  ← firestore.rules must authorise this SHAPE  (§1 below)
+//        ↓  ← firestore.rules must authorize this SHAPE  (§1 below)
 //        ↓  ← firestore.index.json must serve it in prod  (§2 below)
 //   → purchasedCourseIds → ownsCourse → resolvePaymentOptions → 'covered' (§3)
 //
-// It shipped broken: the rule that was supposed to authorise the list only
+// It shipped broken: the rule that was supposed to authorize the list only
 // existed as a NESTED match, which a collection-group read never reaches, so the
 // query 403'd with "No matching allow statements" and the card silently never
 // rendered. The resolver half (§3) was correct the whole time and proved
@@ -95,7 +95,7 @@ function matchBlock(rules: string, statement: string): string {
 const FALSE_CLAIM = /also governs the Space/
 
 describe('course purchase → Space access', () => {
-  describe('§1 firestore.rules authorises the entitlements collection-group query', () => {
+  describe('§1 firestore.rules authorizes the entitlements collection-group query', () => {
     const rules = readFileSync(join(REPO_ROOT, 'firestore.rules'), 'utf8')
 
     // The block, isolated: a `{path=**}` match is the ONLY statement kind a
@@ -160,7 +160,7 @@ describe('course purchase → Space access', () => {
 
     it('the nested block is scoped to the caller’s team and live session', () => {
       // The sibling of the collection-group rule, and a narrower question: this
-      // one authorises a GET by document id. `contactId` alone is not a tenant
+      // one authorizes a GET by document id. `contactId` alone is not a tenant
       // boundary and carries no expiry, so the team + session check has to be
       // here too — otherwise an expired session, or a session minted for another
       // studio, still reads an entitlement document by name.
@@ -216,7 +216,7 @@ describe('course purchase → Space access', () => {
     }
 
     /** What "My courses" actually asks: is there a COVERED option? A `pay`
-     *  option means "you could buy this", which is a catalogue entry, not a
+     *  option means "you could buy this", which is a catalog entry, not a
      *  library entry — see hasAccess() in space/SpaceHome.tsx. */
     function openableInSpace(snapshot: ContactPaymentSnapshot): boolean {
       return resolvePaymentOptions(snapshot, {

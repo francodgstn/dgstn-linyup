@@ -59,7 +59,7 @@ const environments = {
 // app from the studio's public profile after sign-in). What a runtime theme
 // cannot change is the store listing: name, icon, bundle id, scheme — and
 // behind those, an App Store Connect record and a Play listing, i.e. developer
-// accounts per organisation (docs/mobile-roadmap-2026-09.md §5). That is the
+// accounts per organization (docs/mobile-roadmap-2026-09.md §5). That is the
 // only thing an org-branded variant would add, so it is the only thing this
 // map holds. Adding one = a second entry with its own assets + its own EAS
 // project/credentials; nothing in src/ changes. Until then `APP_VARIANT` is

@@ -50,7 +50,7 @@ export interface WaiverCallerInput {
  *
  * Needed rather than just the contactId: the requirement callable widens its
  * answer to the member's whole portal only for `session` (a widening an
- * anonymous caller could ask for is a catalogue).
+ * anonymous caller could ask for is a catalog).
  *
  * IT IS NOT A RATE-LIMIT INPUT, and an earlier cut making it one is why
  * waivers/limits.ts exists. Charging the arm that "told an unproven caller
@@ -76,7 +76,7 @@ export interface ResolvedWaiverCaller {
   /** How the caller was resolved. Never inferred from `contactId` being set:
    *  three different proofs can set it and they are not interchangeable. */
   proof: WaiverCallerProof
-  /** The address the caller typed or the matched contact carries, normalised. */
+  /** The address the caller typed or the matched contact carries, normalized. */
   email: string | null
   firstname: string
   lastname: string

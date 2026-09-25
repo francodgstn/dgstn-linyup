@@ -9,7 +9,7 @@ import { publicSubHref } from '@/lib/publicRoutes'
 export const dynamic = 'force-dynamic'
 
 // A studio's published events. Reads ONLY the world-readable mirrors, and lists
-// the parent organisation's events alongside the studio's own — an org event has
+// the parent organization's events alongside the studio's own — an org event has
 // no teamId, so it can only be found by orgId (see usePublicEvents).
 export default function PublicEventsIndexPage() {
   const t = useTranslations('EventProgram')

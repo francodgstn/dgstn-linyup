@@ -43,7 +43,7 @@ import { dropInModeOf, resolveActivityDropIn, type DropInPrice, type ResolvedDro
 import { classDoorIsInert, classIsFreeForEveryone, resolveClassGate } from './paymentOptions'
 
 /** The fields these helpers read. A public activity mirror satisfies it, so the
- *  catalogue, the pricing tab and the public pages ask the same questions. */
+ *  catalog, the pricing tab and the public pages ask the same questions. */
 export type ClassAccessInput = Pick<Activity, 'type'> &
   Partial<Pick<Activity, 'accessRule' | 'isFreeTrial' | 'trialEnabled'>> & {
     /** Nullable, like every other reader of it: a document that carries no

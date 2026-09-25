@@ -68,11 +68,11 @@ const RAW_PRESETS: { name: string; levels: RankLevelInput[] }[] = [
     //   8-9            breaststroke and elementary butterfly: introduction, then distance
     //   10             50 m crawl/backstroke with flip turns, 25 m breaststroke/butterfly
     //
-    // The WSC is part of Eisbär, not a level of its own. Levels 8-10 are labelled
+    // The WSC is part of Eisbär, not a level of its own. Levels 8-10 are labeled
     // by what they test, because they have no animal name — a club renames them
     // to whatever its own material calls them.
     //
-    // The animals carry an emoji: a seven-year-old recognises the penguin long
+    // The animals carry an emoji: a seven-year-old recognizes the penguin long
     // before they read "Pinguin". (Seepferd takes a fish — Unicode has no
     // seahorse.)
     name: 'Swiss Swimming (swimsports.ch)',

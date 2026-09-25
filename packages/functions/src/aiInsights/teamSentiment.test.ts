@@ -86,7 +86,7 @@ describe('team sentiment — the reply', () => {
     assert.equal(r?.sections.focus, 'Reach out to members whose plans end soon.')
   })
 
-  it('a mood outside the vocabulary is null, not a word the card cannot colour', () => {
+  it('a mood outside the vocabulary is null, not a word the card cannot color', () => {
     assert.equal(readTeamSentimentReply(JSON.stringify({ ...parts, mood: 'ecstatic' }))?.mood, null)
     assert.equal(readTeamSentimentReply(JSON.stringify({ ...parts, mood: ' Positive ' }))?.mood, 'positive')
   })

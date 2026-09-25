@@ -5,7 +5,7 @@
 // failure scales with how many there are, so callables are being folded into a
 // few domain routers (`docs/functions-consolidation-plan.md`). A router is an
 // `onRequest` that hands `(req, res)` to the EXISTING `onCall` value, so auth,
-// App Check and error serialisation are the SDK's own — nothing is
+// App Check and error serialization are the SDK's own — nothing is
 // re-implemented.
 //
 // Lives in @linyup/shared because both sides read it: the clients build the URL
@@ -88,7 +88,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   recordManualPayment: 'rpcFinance',
   voidManualPayment: 'rpcFinance',
 
-  // What a studio or an organisation pays Linyup: checkout, cancel/reactivate,
+  // What a studio or an organization pays Linyup: checkout, cancel/reactivate,
   // the portal, invoices, plugin add-ons. Called by apps/web.
   createCheckoutSession: 'rpcBilling',
   cancelSaasSubscription: 'rpcBilling',
@@ -103,7 +103,7 @@ export const CALLABLE_ROUTES: Readonly<Record<string, RouterName>> = {
   getOrgBillingPortalUrl: 'rpcBilling',
   getOrgInvoices: 'rpcBilling',
 
-  // The organisation tier: member studios, org members and their invitations.
+  // The organization tier: member studios, org members and their invitations.
   // Called by apps/web; the invitation pages call some of these signed out.
   createOrganization: 'rpcOrg',
   inviteTeamToOrg: 'rpcOrg',

@@ -1,8 +1,8 @@
 /**
- * THE ONE PLACE A STATUS COLOUR BECOMES CLASSES.
+ * THE ONE PLACE A STATUS COLOR BECOMES CLASSES.
  *
  * `OrgAffiliationStatusDef.color` is a NAME (`green`, `red`, …) chosen by the
- * organisation, not a class — the status vocabulary is tenant-configurable, so
+ * organization, not a class — the status vocabulary is tenant-configurable, so
  * the mapping has to live in the app. It was written out twice, identically, in
  * the team and org Affiliations pages; the org dashboard's status strip needed a
  * third form of it, which is the moment to stop copying.
@@ -47,7 +47,7 @@ export const AFFILIATION_STATUS_FILL: Record<AffiliationStatusColor, string> = {
   orange: 'bg-orange-500 dark:bg-orange-400',
 }
 
-/** The colour name is tenant data and may be anything; fall back rather than blank. */
+/** The color name is tenant data and may be anything; fall back rather than blank. */
 export function statusBadgeClass(color: string | undefined): string {
   return AFFILIATION_STATUS_BADGE[color as AffiliationStatusColor] ?? AFFILIATION_STATUS_BADGE.gray
 }

@@ -69,7 +69,7 @@ describe('mintAscJwt', () => {
     const fromPem = parts(mintAscJwt({ keyId: 'k', issuerId: 'i', privateKeyPem: PEM }))
     const fromB64 = parts(mintAscJwt({ keyId: 'k', issuerId: 'i', privateKeyPem: BASE64 }))
     // Same key, so both must verify against the same public half. (The
-    // signatures themselves differ — ECDSA is randomised.)
+    // signatures themselves differ — ECDSA is randomized.)
     for (const p of [fromPem, fromB64]) {
       assert.ok(
         verify('sha256', Buffer.from(p.signingInput), { key: publicKey, dsaEncoding: 'ieee-p1363' }, p.signature),

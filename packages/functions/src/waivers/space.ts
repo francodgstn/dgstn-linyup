@@ -145,7 +145,7 @@ export const signWaiverInSpace = onCall(async (request: CallableRequest<unknown>
     }
     if (step.outcome !== 'record') continue
     const entry = step.entry
-    // The self-declaration, honoured only for a waiver the studio actually
+    // The self-declaration, honored only for a waiver the studio actually
     // flagged — the same rule the booking rails run, from the same helper, so
     // Space cannot record a claim its own step never showed.
     const declaration = declarationFor(entry, step.submission)

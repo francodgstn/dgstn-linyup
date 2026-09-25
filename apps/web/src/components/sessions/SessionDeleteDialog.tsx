@@ -20,7 +20,7 @@ import { callFunction } from '@/lib/callFunction'
  * Series-aware session delete. Standalone sessions are removed directly; sessions
  * that belong to a recurring series offer a "this only / this and following"
  * choice and go through the `cancelSession` Cloud Function (which also notifies
- * booked contacts and marks single deletions as cancelled exceptions).
+ * booked contacts and marks single deletions as canceled exceptions).
  *
  * "This and following" over a LARGE series does not finish inside the callable —
  * every occurrence closes a waitlist, releases seats and mails its roster — so
@@ -58,7 +58,7 @@ export function SessionDeleteDialog({
 }) {
   const t = useTranslations('Sessions')
   // A COURSE'S LESSON OFFERS ONLY "this one". "This and all following" would be
-  // cancelling the course, which owes its participants a mail and hands the
+  // canceling the course, which owes its participants a mail and hands the
   // payments back, the course's own action, and the server refuses it from
   // here. Offering a radio the server will reject is worse than not offering it.
   const isCourseLesson = !!session?.course_block_id
@@ -81,7 +81,7 @@ export function SessionDeleteDialog({
   }
 
   function close() {
-    // A running job is deliberately NOT cancelled here — it is server-side work
+    // A running job is deliberately NOT canceled here — it is server-side work
     // the studio already confirmed. Closing just stops watching it.
     reset()
     onOpenChange(false)

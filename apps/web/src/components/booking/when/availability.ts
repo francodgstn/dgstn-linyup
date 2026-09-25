@@ -30,7 +30,7 @@ export interface AvailDuration {
    *  used to be the same value and the coach could express only one of them. */
   benefitOnly?: boolean
   /** A GROUP books this length and `priceAmount` is per person. Present only
-   *  for a party the server honours. */
+   *  for a party the server honors. */
   party?: DurationParty
 }
 

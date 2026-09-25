@@ -79,7 +79,7 @@ export const TEAM_SENTIMENT_MIN_SUMMARIES = 3
 /** A summary older than this describes somebody who may have changed since. */
 export const TEAM_SENTIMENT_MAX_AGE_DAYS = 180
 
-/** The overall reading, as a word the card can colour — never a score. */
+/** The overall reading, as a word the card can color — never a score. */
 export type TeamSentimentMood = 'positive' | 'steady' | 'mixed' | 'concerning'
 export const TEAM_SENTIMENT_MOODS: readonly TeamSentimentMood[] = [
   'positive',

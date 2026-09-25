@@ -4,7 +4,7 @@
 //
 // A settings page used to be a stack of Cards, each with a header, a
 // description, a form with a hint under every field, and its own Save. Every
-// border is an edge the eye has to cross, and every grey line is one more thing
+// border is an edge the eye has to cross, and every gray line is one more thing
 // to read before finding the field you came for.
 //
 // The shape here: a SECTION is a small heading and a list of ROWS divided by

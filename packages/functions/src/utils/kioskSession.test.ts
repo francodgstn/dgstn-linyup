@@ -6,10 +6,10 @@ import { kioskClaimForTeam } from './kioskSession'
 // THE KIOSK IS AN IDENTITY, NOT A STRING.
 //
 // The defect this file exists to keep closed: `bookSession` selected a security
-// behaviour from `data.source`, an unauthenticated string off the request body.
+// behavior from `data.source`, an unauthenticated string off the request body.
 // Adding `source: 'kiosk'` to a public payload bought it.
 //
-// The behaviour it selected then (a waiver deferral) is gone with the mechanism
+// The behavior it selected then (a waiver deferral) is gone with the mechanism
 // that needed it. What it selects NOW is what an acceptance record and a booking
 // row CLAIM about where they came from — so the same rule applies for the same
 // reason: the one value a caller might want to claim in an evidence record is

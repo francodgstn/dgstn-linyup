@@ -125,7 +125,7 @@ interface ActivityProfile {
   /** CLASS-ONLY: a gated class still accepts a newcomer's free trial booking. */
   trialEnabled?: boolean
   /** CLASS-ONLY: reduced trial price (major units). Absent/null ⇒ the trial is
-   *  FREE (today's behaviour); a number ⇒ the trial costs that instead. */
+   *  FREE (today's behavior); a number ⇒ the trial costs that instead. */
   trialPriceAmount?: number | null
   /** CLASS-ONLY: a full session offers a queue instead of a dead end. The flag
    *  lives on the ACTIVITY mirror only — sessions deliberately carry no copy of
@@ -141,7 +141,7 @@ interface ActivityProfile {
   /** APPOINTMENT-ONLY per-length rules. Carried BECAUSE `memberBenefit` is:
    *  `resolveDurationBenefit` reads the PRESENCE of this list to decide whether
    *  the activity-wide rule still applies, so a card holding one half quotes
-   *  from a rule the server has already stopped honouring. Both halves or
+   *  from a rule the server has already stopped honoring. Both halves or
    *  neither: the same contract the mirror writes them under. */
   durationBenefits?: ActivityDurationBenefit[]
   prerequisites?: string
@@ -273,7 +273,7 @@ type Step =
 const TERMINAL_STEPS = ['confirmed', 'waitlisted'] as const satisfies readonly Step[]
 
 /**
- * Why a `?session=` / `?date=` deep link couldn't be honoured. The visitor is
+ * Why a `?session=` / `?date=` deep link couldn't be honored. The visitor is
  * degraded to the nearest useful step and told why — never silently dumped on
  * the blank activity picker, which is the whole reason deep links exist.
  */
@@ -615,7 +615,7 @@ export default function BookingForm({
   const [guestPath, setGuestPath] = useState<'trial' | 'dropin' | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
-  // Why an inbound deep link couldn't be honoured verbatim (see DeepLinkNotice).
+  // Why an inbound deep link couldn't be honored verbatim (see DeepLinkNotice).
   const [deepLinkNotice, setDeepLinkNotice] = useState<DeepLinkNotice | null>(null)
   // `applyEntry` may pick the date itself (from the deep-linked session). Set once
   // it has, so the default-date effect below doesn't immediately overwrite it.
@@ -845,7 +845,7 @@ export default function BookingForm({
    * Resolve the inbound deep link to a starting step, in precedence order:
    *   ?session=  >  ?activity=  >  /booking/{activitySlug}  >  single activity  >  picker
    *
-   * A `?session=` that can't be honoured (past, full, unpublished) DEGRADES to
+   * A `?session=` that can't be honored (past, full, unpublished) DEGRADES to
    * that activity's date list with a notice — it never falls through to the blank
    * picker, which is the failure this whole contract exists to prevent.
    *
@@ -1315,7 +1315,7 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- heldPlanKey stands for heldPlanIds
   }, [selectedActivity, dropInAvailable, heldPlanKey, isAuthenticated, promoApplied])
 
-  // The member rate as the catalogue card renders it (base struck through). Read
+  // The member rate as the catalog card renders it (base struck through). Read
   // OFF the one result above — `appliedBenefit` and `appliedPromo` are mutually
   // exclusive there by construction, so this is null the moment a code wins.
   const dropInMemberPrice = useMemo(() => {
@@ -1352,7 +1352,7 @@ export default function BookingForm({
   // it opens the site's contact sign-in (no registration, a stranger has no
   // account to find) and, once the session lands, hands over to the 'member'
   // step, which already owns the signed-in paid path. The guest form it used to
-  // open recognised a member only by an exact email-and-name match.
+  // open recognized a member only by an exact email-and-name match.
   const signInToPay = useRef(false)
   useEffect(() => {
     if (!signInToPay.current || !isAuthenticated || !selectedSession) return
@@ -1564,7 +1564,7 @@ export default function BookingForm({
         setBookingError(t('errorTrialUsed'))
       } else if (reason === 'guest') {
         // A class behind "Only people who signed up with you" sells its drop-in
-        // to people the studio knows; the server recognised nobody by this email
+        // to people the studio knows; the server recognized nobody by this email
         // and name, and refused before writing anything.
         setBookingError(t('errorDropInSignedUpOnly'))
       } else if (reason === 'payment_required') {
@@ -1691,7 +1691,7 @@ export default function BookingForm({
   // check, then book). ReturningSignIn owns the email→code→select steps
   // themselves; this only runs once a contact is confirmed. Throwing here
   // surfaces the error on ReturningSignIn's current step, matching the
-  // original inline behaviour. ──────────────────────────────────────────────
+  // original inline behavior. ──────────────────────────────────────────────
 
   async function onVerified({
     contactId,
@@ -1703,7 +1703,7 @@ export default function BookingForm({
     contactData: ContactData
   }) {
     if (!selectedSession) return
-    // Personalised gate warning: the identified contact holds no subscription the
+    // Personalized gate warning: the identified contact holds no subscription the
     // activity accepts — tell them in their language instead of surfacing
     // bookSession's raw permission error. Skipped when drop-in is offered so the
     // contact can back out to the guest pay-per-class path (bookSession itself has
@@ -1958,7 +1958,7 @@ export default function BookingForm({
                   // An appointment is identified by four fields, the same four
                   // the callables take. Everything else on `windowBooking` is
                   // denormalised from availability, so it is rebuilt rather
-                  // than serialised.
+                  // than serialized.
                   activity: windowBooking?.activityId,
                   provider: windowBooking?.providerId,
                   start: windowBooking ? String(windowBooking.startMs) : undefined,
@@ -2312,7 +2312,7 @@ export default function BookingForm({
                 (step === 'slot' && aptScreen === 'guest')
               }
               submitting={isSubmitting || (step === 'slot' && aptSubmitting)}
-              // Greyed, not hidden, until every outstanding waiver is satisfied
+              // Grayed, not hidden, until every outstanding waiver is satisfied
               // by what the visitor did here — the tick, plus the "who is
               // signing" choice on a waiver flagged for minors.
               confirmDisabled={step === 'waiver' && !waiverGate.ready}

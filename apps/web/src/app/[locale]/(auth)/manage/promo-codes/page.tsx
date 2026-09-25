@@ -207,7 +207,7 @@ export default function PromoCodesPage() {
 
   const allowed = isAtLeast(MIN_PLAN)
   const { data: codes = [], isLoading } = useTeamPromoCodes(allowed ? currentTeamId : null)
-  // The catalogues behind the entity allow-lists. Fetched only when the page is
+  // The catalogs behind the entity allow-lists. Fetched only when the page is
   // unlocked; each is a list a manager already knows from its own admin page, so
   // the picker never invents a second name for anything.
   const { data: activities = [] } = useActivities(allowed ? currentTeamId : null)
@@ -669,7 +669,7 @@ export default function PromoCodesPage() {
 
             {/* ── The finer half of the scope: WHICH items ──────────────────
                 `applies_to` says which RAILS; these say which entities on them.
-                Both halves exist in the document and both are honoured by
+                Both halves exist in the document and both are honored by
                 `promoAppliesTo`, so a code that applies to exactly one course is
                 expressible — it simply had no control until now.
 

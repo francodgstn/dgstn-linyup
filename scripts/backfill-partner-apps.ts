@@ -1,5 +1,5 @@
 /**
- * One-time backfill: materialise `TeamPublicProfile.partner_apps` for every team.
+ * One-time backfill: materialize `TeamPublicProfile.partner_apps` for every team.
  *
  * partner_apps is written by two live rails — `syncTeamPublicProfile` (on any
  * write to `teams/{teamId}`) and `syncSubscriptionTypesToPublicProfile` (on any

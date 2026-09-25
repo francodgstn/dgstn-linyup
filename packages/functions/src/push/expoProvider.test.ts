@@ -43,7 +43,7 @@ describe('expoProvider — ticketToReceipt', () => {
     assert.equal(receipt.status, 'error')
   })
 
-  it('an error ticket with no recognised code is still just an error, not dead', () => {
+  it('an error ticket with no recognized code is still just an error, not dead', () => {
     const receipt = ticketToReceipt('tok1', { status: 'error', message: 'unknown thing' })
     assert.equal(receipt.status, 'error')
     assert.equal(receipt.error, 'unknown thing')

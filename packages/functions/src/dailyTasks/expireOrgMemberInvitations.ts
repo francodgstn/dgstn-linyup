@@ -1,4 +1,4 @@
-// Daily task: close out organisation member invitations whose deadline has
+// Daily task: close out organization member invitations whose deadline has
 // passed (organizations/*/org_member_invitations, status 'pending').
 //
 // ─── WHY THIS SWEEP EARNS ITS PLACE, WHEN THE WAIVER WORK ADDED NONE ─────────
@@ -49,7 +49,7 @@ export async function expireOrgMemberInvitations(): Promise<{ expired: number }>
   const db = admin.firestore()
   const now = Timestamp.now()
 
-  // Collection-GROUP query: invitations live under each organisation, and the
+  // Collection-GROUP query: invitations live under each organization, and the
   // sweep is platform-wide. Needs the (status, expires_at) COLLECTION_GROUP
   // index in firestore.index.json — the emulator answers without it, a real
   // project does not.

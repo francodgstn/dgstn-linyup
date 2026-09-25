@@ -6,7 +6,7 @@
 // chips apply; each surface renders them"), because the words differ per
 // surface and the answer must not: an appointment picker's chip, a class
 // card's badge line, the website's pricing block, the shop's pay-per-visit
-// strip and the admin catalogue all quote the same activity, out of five i18n
+// strip and the admin catalog all quote the same activity, out of five i18n
 // namespaces.
 //
 // Before this existed, only the appointment picker knew the 'from' case. The

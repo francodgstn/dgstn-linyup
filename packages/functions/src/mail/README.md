@@ -256,7 +256,7 @@ TTL is ever added, the lifetime figures must move to the daily snapshot.
 - `handleBrevoWebhook.test.ts` — event classification.
 - `mailMetrics.test.ts` — the Zurich day window, including both DST switches.
 - `mailService.test.ts` — which ledger states spend an idempotency key.
-- `smsService.test.ts` — phone normalisation, sender sanitising, and the
+- `smsService.test.ts` — phone normalization, sender sanitizing, and the
   opt-out / suppressed-ledger path of `sendStudioSms` against a fake Firestore.
 - `brevo.integration.test.ts` — live, runs only when `BREVO_API_KEY` (and
   `BREVO_TEST_RECIPIENT` for sends) is set; covers system, managed-studio and BYO sends

@@ -3,7 +3,7 @@
 // Every name on a booking or a check-in comes from the CONTACT document through
 // `loadPeople`, which is the one place that decides whether this principal may
 // see a person: the contact must belong to the team, pass the coach's own-scope
-// (`principalSeesContact`) and not be deleted or anonymised (`projectPerson`).
+// (`principalSeesContact`) and not be deleted or anonymized (`projectPerson`).
 // A row whose person may not be shown is left out and COUNTED, so a coach sees
 // "3 more booked" rather than a list that silently looks shorter.
 

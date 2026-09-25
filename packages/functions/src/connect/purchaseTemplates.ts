@@ -201,7 +201,7 @@ export function buildCreditPackReceiptEmail(p: CreditPackReceiptParams): {
     paidLine ? `<strong>${PAID_LABELS[lang]}:</strong> ${paidLine}` : '',
   ]
 
-  // Named, not summarised: "selected classes" tells a buyer nothing, and a pack
+  // Named, not summarized: "selected classes" tells a buyer nothing, and a pack
   // that turns out not to cover the class they wanted is the complaint this line
   // exists to prevent.
   const scopeLines: Record<Lang, (list: string) => string> = {
@@ -418,7 +418,7 @@ export function buildMembershipReceiptEmail(p: MembershipReceiptParams): {
 
   // "Manage or cancel", not "cancel": the member area opens Stripe's billing
   // portal (Space → Payments), which does both — and claiming only the second
-  // would understate it while claiming a button that is labelled differently.
+  // would understate it while claiming a button that is labeled differently.
   const renewalLines: Record<Lang, string> = {
     en: 'This membership renews automatically until you cancel it. You can manage or cancel it any time from your member area.',
     de: 'Diese Mitgliedschaft verlängert sich automatisch, bis Sie sie kündigen. Verwalten oder kündigen können Sie sie jederzeit im Mitgliederbereich.',

@@ -12,7 +12,7 @@
 // Two rules follow, and they are separate:
 //
 //   1. LOG EVERY SWALLOWED READ. Even where degrading to a terminal state is the
-//      right product behaviour (a bio-link that renders "not found" when its
+//      right product behavior (a bio-link that renders "not found" when its
 //      lookup fails), the failure must leave a trace a developer can grep. Call
 //      `reportPublicLoadFailure` in every catch on a public surface — there is
 //      no acceptable `catch {}` on a read path.

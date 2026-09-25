@@ -38,7 +38,7 @@ import {
 //
 // The four section types both builders share — hero, content, gallery, contact —
 // and their field helpers now live in `components/website/SiteSectionFields`.
-// What stays here is what a STUDIO can do and an organisation cannot: a CTA that
+// What stays here is what a STUDIO can do and an organization cannot: a CTA that
 // can point at the booking page or the signup form, and the four commerce
 // sections (activities, pricing, schedule, places) an org has no equivalent of.
 

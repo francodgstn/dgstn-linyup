@@ -8,7 +8,7 @@
 // is provably unused — see utils/frozenFunctions.test.ts for why a name must
 // never be dropped just because a router lists it.
 //
-// Authorisation is each member's own `requireOperator`; the router adds none and
+// Authorization is each member's own `requireOperator`; the router adds none and
 // removes none. This module must NOT call `setGlobalOptions` — src/index.ts owns it.
 
 import { callableRouter } from '../utils/callableRouter'

@@ -8,7 +8,7 @@ import { keepOwnTeam, waiverHashVerdict } from './export'
 //
 // This file spans the functions/web boundary on purpose, exactly as
 // `connect/commitSites.test.ts` does — and for the same reason: that boundary is
-// where corrections stop travelling. A consent step is only as good as the
+// where corrections stop traveling. A consent step is only as good as the
 // SUBMITS it stands in front of, and this phase's declared likeliest silent miss
 // is a terminal submit that nobody counted:
 //
@@ -172,7 +172,7 @@ describe('NO RAIL DEFERS, AND THE KIOSK TOKEN STILL EARNS SOMETHING', () => {
     assert.equal(shared.includes("| 'outstanding'"), false)
   })
 
-  // THE SURVIVOR. The kiosk token no longer selects a gate behaviour — but it
+  // THE SURVIVOR. The kiosk token no longer selects a gate behavior — but it
   // still decides the one value a caller might want to CLAIM in an evidence
   // record, which is exactly why it must remain an identity rather than a
   // string off the request body.
@@ -236,7 +236,7 @@ describe('THE CHIP — unknown renders NOTHING', () => {
   it('the printed form carries a STROKE and a word, never a fill', () => {
     const src = web('components/WaiverChip.tsx')
     const printBranch = src.slice(src.indexOf('if (print)'), src.indexOf('return (\n    <span'))
-    assert.ok(!/bg-(amber|red|destructive)/.test(printBranch), 'a coloured pill prints as invisible text')
+    assert.ok(!/bg-(amber|red|destructive)/.test(printBranch), 'a colored pill prints as invisible text')
     assert.match(printBranch, /AlertTriangle/)
   })
 
@@ -248,7 +248,7 @@ describe('THE CHIP — unknown renders NOTHING', () => {
     const src = web('components/WaiverChip.tsx')
     const fn = src.slice(src.indexOf('export function WaiverDoorCheckChip'))
     const printBranch = fn.slice(fn.indexOf('if (print)'), fn.indexOf('return (\n    <span'))
-    assert.ok(!/bg-(sky|amber|red|destructive)/.test(printBranch), 'a coloured pill prints as invisible text')
+    assert.ok(!/bg-(sky|amber|red|destructive)/.test(printBranch), 'a colored pill prints as invisible text')
     assert.match(printBranch, /UserCheck/)
   })
 
@@ -365,7 +365,7 @@ describe('SPACE — a member can put a superseded signature right', () => {
     assert.ok(src.includes("throw new HttpsError('', ''"))
   })
 
-  it('the surface asks for the same set, and the server honours it only for a session', () => {
+  it('the surface asks for the same set, and the server honors it only for a session', () => {
     const card = code(
       web('app/[locale]/(public)/public/[slug]/space/SpaceWaiverCard.tsx')
     )
@@ -398,7 +398,7 @@ describe('THE REQUIREMENT CALLABLE CHARGES AT THE TOP, ONCE, AND NEVER FOR THE A
   // keeping in front of whoever edits it next:
   //   1. charge every call at 30/hour  → a gym, a school or a doorway tablet on
   //      one address could not read what it was being asked to sign;
-  //   2. charge only the arm that recognised somebody → every returning walk-in
+  //   2. charge only the arm that recognized somebody → every returning walk-in
   //      IS that arm, so the doorway locked itself out after thirty people, and
   //      the counter was unreachable for a caller who supplied no address at all;
   //   3. this one: one unit, at the top, for an uncredentialed caller asking
@@ -710,7 +710,7 @@ describe('THE SIGNER’S ADDRESS IS THE SIGNER’S — not the subject’s, on t
   })
 })
 
-describe('THE SELF-DECLARATION REACHES THE TAB, AND IS LABELLED AS ONE', () => {
+describe('THE SELF-DECLARATION REACHES THE TAB, AND IS LABELED AS ONE', () => {
   it('the signer row copies signer_role off the winning event', () => {
     // The tab reads the signer row and never the events, so a fact that stops at
     // the event is a fact the studio is never shown.

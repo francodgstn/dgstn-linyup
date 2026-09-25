@@ -63,7 +63,7 @@ interface Props {
 // Resolves the team ONCE by slug — server-side when `initial` is provided
 // (the common case), else CLIENT-SIDE (the Firebase client SDK must not be
 // used for server-side reads — see CLAUDE.md) — and provides it to the whole
-// `/public/{slug}/…` subtree. Centralises the loading / not-found states so the
+// `/public/{slug}/…` subtree. Centralizes the loading / not-found states so the
 // individual surfaces don't each duplicate them.
 export function PublicTeamProvider({ slug, children, initial, domain }: Props) {
   const [status, setStatus] = useState<Status>(initial ? 'found' : 'loading')

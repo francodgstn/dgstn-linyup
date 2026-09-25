@@ -7,7 +7,7 @@ import { appointmentPriceRange } from '@linyup/shared'
 //
 // Five surfaces quote the same activity, the appointment picker's chip, the
 // class booking card's badge line, the website's pricing block, the shop's
-// pay-per-visit strip and the admin catalogue, and each one wrote the
+// pay-per-visit strip and the admin catalog, and each one wrote the
 // arithmetic out again. Four of them arrived at a range over the PRICED
 // lengths, which is a floor that is not the floor as soon as one length is
 // free or benefit-only.

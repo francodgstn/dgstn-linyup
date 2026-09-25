@@ -31,7 +31,7 @@ sidebar order, and each one autogenerates from its pages' `sidebar.order`.
 The components live in `src/components/diagrams/` and are used from `.mdx` pages. Rename a page
 from `.md` to `.mdx` to use them; the URL does not change.
 
-- `ConceptDiagram`: an interactive map. Boxes joined by labelled arrows; selecting a box explains
+- `ConceptDiagram`: an interactive map. Boxes joined by labeled arrows; selecting a box explains
   it in a panel underneath and lights up the arrows that touch it. For the ideas a studio owner
   has to understand before anything else makes sense: core concepts.
 - `PayMatrix`: an interactive grid of rows against columns; selecting a cell shows a one-line
@@ -44,7 +44,7 @@ from `.md` to `.mdx` to use them; the URL does not change.
   funnel, where the money goes.
 - `Ladder`: rungs that step up, each a bigger commitment. The pricing ladder on Pricing recipes.
 
-All are plain HTML/SVG with Starlight's colour variables, so they follow the light and dark
+All are plain HTML/SVG with Starlight's color variables, so they follow the light and dark
 theme and add no dependency. No Mermaid: it would ship a large script to every page that uses it
 and would not look like the rest of the site.
 
@@ -65,7 +65,7 @@ A static Firebase Hosting target, the same pattern as `landing` / `api`:
 - **Deploy**: `deploy.yml` (staging, on push to `main`) and `deploy-prod.yml` (prod, on a `v*`
   tag) build it and ship `hosting:help`. `verify.yml` checks and builds it on every PR.
 - **Domain**: `help.linyup.com` (prod), `help-stg.linyup.com` (staging). Added as a custom
-  domain on the Hosting site, with a **DNS-only** (grey-cloud) record in Cloudflare — never
+  domain on the Hosting site, with a **DNS-only** (gray-cloud) record in Cloudflare — never
   proxied, see `infra/README.md`.
 
 The site must exist before a deploy names `hosting:help`, or the whole deploy fails.

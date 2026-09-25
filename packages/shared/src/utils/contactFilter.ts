@@ -82,7 +82,7 @@ export type RankFilter = Record<string, RankRef[]>
  * automation engine, which sends mail.
  *
  * THE REVERSE SKEW is survivable and worth knowing: an OLD web bundle
- * normalising a filter it loaded will drop `rankRanges` on re-save, degrading a
+ * normalizing a filter it loaded will drop `rankRanges` on re-save, degrading a
  * live "Blue and above" into the frozen snapshot its mirror already holds. That
  * loses the dynamic property, never widens the audience, and is the direction
  * this design deliberately trades toward.
@@ -767,7 +767,7 @@ export type ContactAttentionReason =
    *  brand-new contact, whose "inactivity" is just newness. */
   | 'gone_quiet'
   /**
-   * A live subscription that will not renew — the member cancelled in Stripe's
+   * A live subscription that will not renew — the member canceled in Stripe's
    * billing portal, and the studio found out when the money stopped.
    *
    * IT READS A FACT THE CONTACT ALREADY CARRIES. `active_subscriptions` mirrors

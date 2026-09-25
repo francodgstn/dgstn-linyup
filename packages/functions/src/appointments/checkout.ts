@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 // createAppointmentCheckout — pay-per-appointment booking (Stripe Connect one-off
-// charge), modelled on booking/dropIn.ts. A priced appointment DURATION whose
+// charge), modeled on booking/dropIn.ts. A priced appointment DURATION whose
 // effective price (for the caller) is an amount can't book free — the client
 // calls this instead. THE HOLD IS THE SESSION: we write a 'pending_payment'
 // session + a 'pending'/'required' booking BEFORE creating the Checkout Session,
@@ -83,7 +83,7 @@ const HOLD_MINUTES = 30
  * so it is shared by every visitor racing that slot. `runAppointmentSlotTransaction`
  * refuses the loser precisely BECAUSE the winner's live hold is sitting at that
  * id — which means the loser's catch is running with somebody else's document in
- * `sessionRef`. Cancelling it there would take a slot away from a person who
+ * `sessionRef`. Canceling it there would take a slot away from a person who
  * successfully booked it, and the loser would never notice.
  *
  * So the two rollbacks answer two different questions:
@@ -637,7 +637,7 @@ export const createAppointmentCheckout = onCall(
       //
       // `sessionRef` is a deterministic, SHARED id (apt_{provider}_{start}). When
       // the slot transaction refused us, the document at that id is the WINNER's
-      // live hold: cancelling it here would sell a slot out from under somebody
+      // live hold: canceling it here would sell a slot out from under somebody
       // who successfully booked it, triggered by a concurrent loser. So the hold
       // is released only when we actually acquired it — AND only while we still
       // hold it (decideAppointmentHoldRelease), because "we acquired it" and "it

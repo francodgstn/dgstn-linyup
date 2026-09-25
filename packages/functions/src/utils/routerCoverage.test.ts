@@ -13,7 +13,7 @@
 //
 // index.ts is NOT imported: loading every function in the codebase to check a
 // handful of names is slow and drags in parameters that want a deploy
-// environment. It is read as source instead (line endings normalised, comments
+// environment. It is read as source instead (line endings normalized, comments
 // stripped), and the extractors are checked against synthetic source below.
 //
 // FULL COVERAGE IS ENFORCED: every deployed `onCall` is in exactly one router, or

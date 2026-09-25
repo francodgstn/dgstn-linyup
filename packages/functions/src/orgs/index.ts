@@ -19,7 +19,7 @@ import {
 
 // Exported so other org-scoped callables (e.g. ../orgWebsite, ./billing) reuse
 // the exact same org-admin gate instead of re-implementing the org_members role
-// check. THIS is what authorizes an organisation's own billing — an org admin is
+// check. THIS is what authorizes an organization's own billing — an org admin is
 // not a team owner and has no `team_members` document anywhere (UX-75).
 export async function assertOrgAdmin(uid: string, orgId: string): Promise<void> {
   const memberDoc = await admin.firestore()
@@ -32,13 +32,13 @@ export async function assertOrgAdmin(uid: string, orgId: string): Promise<void> 
 }
 
 /**
- * "Is this organisation currently paying (or still inside its trial)?" — ONE
+ * "Is this organization currently paying (or still inside its trial)?" — ONE
  * definition, read off `saas_subscriptions/{orgId}.status`, which is the
  * document both billing rails write and the org billing page reads.
  *
  * It exists because a lapse is now real (UX-9): `handleTrialLifecycle` phase 2
  * rests a lapsed org on 'expired' and the webhook on 'cancelled'. Anything that
- * would hand the ORGANISATION TIER back out from under a lapsed subscription
+ * would hand the ORGANIZATION TIER back out from under a lapsed subscription
  * asks this first. A missing subscription document reads as 'trial' — an org
  * created before this rail existed is mid-trial, not lapsed.
  *
@@ -47,14 +47,14 @@ export async function assertOrgAdmin(uid: string, orgId: string): Promise<void> 
  * lapse takes down and a click would otherwise put straight back up).
  */
 export async function assertOrgSubscriptionLive(orgId: string): Promise<void> {
-  // A COMPED ORGANISATION HAS NO SUBSCRIPTION AND NEVER WILL — that is the whole
+  // A COMPED ORGANIZATION HAS NO SUBSCRIPTION AND NEVER WILL — that is the whole
   // arrangement, not a fault to gate on. An absent document already reads as
   // 'trial' and passes, so a freshly comped org is fine by accident; a comped
-  // org that USED to pay is not, because cancelling its subscription leaves the
+  // org that USED to pay is not, because canceling its subscription leaves the
   // document on 'cancelled' and this gate then freezes it permanently:
   // `publishOrgWebsite` refuses, and `acceptOrgInvitation` refuses too, so no
   // new studio can ever join. Comping a customer must not cost it its own
-  // organisation.
+  // organization.
   const orgSnap = await admin.firestore().collection(ORGANIZATIONS_COLLECTION).doc(orgId).get()
   const orgFlags = orgSnap.data()?.flags as TenantFlags | undefined
   if (orgFlags?.comped === true) return
@@ -104,7 +104,7 @@ export const createOrganization = onCall(async (request) => {
   const now = FieldValue.serverTimestamp()
   // A DEADLINE, not a countdown: `handleTrialLifecycle`'s org phase reads this
   // stored value and never recomputes it, so a Linyup operator onboarding an
-  // organisation by hand extends its trial by editing this one field (or exempts
+  // organization by hand extends its trial by editing this one field (or exempts
   // it entirely with `flags.internal` / `flags.pilot`).
   const trialEndsAt = Timestamp.fromDate(new Date(Date.now() + ORG_TRIAL_DAYS * 24 * 60 * 60 * 1000))
 
@@ -307,7 +307,7 @@ export const acceptOrgInvitation = onCall(async (request) => {
   const orgPlanStatus = subDoc.exists ? (subDoc.data()?.status ?? 'trial') : 'trial'
 
   // ACCEPTING IS THE GRANT — this write is what puts a studio on the
-  // organisation plan (UX-35: `org_id` IS the grant), so an organisation that is
+  // organization plan (UX-35: `org_id` IS the grant), so an organization that is
   // no longer paying must not be able to issue it. Without this check the whole
   // of UX-9 is undone by two clicks: the trial sweep lapses the org and unlinks
   // its studios, and the org admin re-invites them straight back onto the top
@@ -323,18 +323,18 @@ export const acceptOrgInvitation = onCall(async (request) => {
 
   // A STUDIO THAT IS STILL PAYING FOR ITSELF CANNOT JOIN — it would pay twice.
   //
-  // Accepting puts the studio on the ORGANISATION's plan and the org's
+  // Accepting puts the studio on the ORGANIZATION's plan and the org's
   // subscription is what pays for it (UX-35). Its own Stripe subscription is not
   // touched by that write and goes on invoicing, so the owner is charged for a
   // seat the federation is already paying for — and nothing anywhere says so.
   // The two halves of the old failure are both silent, and the second is worse
-  // than the duplicate charge: cancelling the leftover subscription — the
+  // than the duplicate charge: canceling the leftover subscription — the
   // correct thing to do — fires `subscription.cancelled` into
   // `downgradeTeamToFree` on a paid-up member of the federation, deactivating
   // its plugins, unpublishing its website and deleting its course mirrors
   // one-way. See `docs/studio-independent-contacts.md`.
   //
-  // REFUSING IS THE CHOSEN ANSWER (Franco, 2026-09-09) rather than cancelling
+  // REFUSING IS THE CHOSEN ANSWER (Franco, 2026-09-09) rather than canceling
   // the subscription on the owner's behalf: this callable never takes a money
   // action for somebody, and the refusal mirrors `createCheckoutSession`'s
   // `billed_by_org`, which is this same rule read from the other end.
@@ -350,7 +350,7 @@ export const acceptOrgInvitation = onCall(async (request) => {
     : null
   // `active` covers a subscription already set to stop at period end: it is
   // still live, the studio has paid through the period, and letting it in would
-  // still hand the organisation a bill for the overlap.
+  // still hand the organization a bill for the overlap.
   if (teamSubStatus === 'active' || teamSubStatus === 'past_due') {
     throw new HttpsError(
       'failed-precondition',
@@ -379,7 +379,7 @@ export const acceptOrgInvitation = onCall(async (request) => {
   )
 
   // Link team to org and upgrade its plan. `trial_ends_at` is CLEARED: the
-  // team's own trial is over as a fact — the organisation's subscription is what
+  // team's own trial is over as a fact — the organization's subscription is what
   // governs it now, and a leftover past date on a team whose status is 'trial'
   // (which it is whenever the org is still trialing) is precisely what made
   // handleTrialLifecycle reset member studios to Free (UX-35). One stale field,
@@ -481,7 +481,7 @@ export const createOrgCheckoutSession = onCall(async (request) => {
 
   await assertOrgAdmin(request.auth.uid, data.orgId)
 
-  // A comped organisation is not billed, and its billing page still renders a
+  // A comped organization is not billed, and its billing page still renders a
   // Subscribe button — see `assertNotComped` in saas-billing/index.ts for why
   // the refusal lives at the callable rather than only in the UI.
   const compedSnap = await admin
@@ -492,7 +492,7 @@ export const createOrgCheckoutSession = onCall(async (request) => {
   if ((compedSnap.data()?.flags as TenantFlags | undefined)?.comped === true) {
     throw new HttpsError(
       'failed-precondition',
-      'This organisation is on a comped plan and is not billed. Contact Linyup to change that.',
+      'This organization is on a comped plan and is not billed. Contact Linyup to change that.',
       { reason: 'tenant_comped' }
     )
   }

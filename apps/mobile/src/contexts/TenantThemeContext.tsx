@@ -6,7 +6,7 @@ import type { TenantBrand } from '../utils/tenantTheme';
  * The signed-in member's STUDIO look, held above PaperProvider so the whole
  * app re-themes from it (utils/tenantTheme.ts explains what and why).
  *
- * Persisted: a cold start opens in the studio's colours instead of flashing
+ * Persisted: a cold start opens in the studio's colors instead of flashing
  * Linyup purple until the profile loads. Cleared with the session — the login
  * screen is always Linyup's (no studio is known there), and a member of two
  * studios sees each one's look after switching.

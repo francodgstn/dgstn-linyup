@@ -5,7 +5,7 @@
  * from every club, so a partial import leaves dangling references — but only
  * the clubs on `--live` go live. This pass is what makes the rest DORMANT for
  * mail and SMS: a messaging policy per club, `live` for the activation list and
- * `silent` for every other club, `live` for the organisation itself.
+ * `silent` for every other club, `live` for the organization itself.
  *
  * Without it, a full import into production would hand the seeded automations
  * (trial follow-ups, birthday mail, the lot) thirteen clubs' worth of contacts
@@ -60,7 +60,7 @@ export async function pass15Activation(cfg: MigrationConfig): Promise<void> {
   const bw = new BatchWriter(tgt, cfg.dryRun)
   bw.set(
     tgt.collection(MESSAGING_POLICIES_COLLECTION).doc(ORG_ID),
-    policy(ORG_ID, 'live', 'HMD organisation — live from the first wave'),
+    policy(ORG_ID, 'live', 'HMD organization — live from the first wave'),
   )
 
   let live = 0

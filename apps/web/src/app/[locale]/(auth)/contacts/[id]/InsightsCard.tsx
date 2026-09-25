@@ -10,7 +10,7 @@
  * sees a card of numbers and nothing that hints at a model. Inside it, with the
  * `ai-member-recap` module, a "Send to member" action opens `MemberRecapDialog`
  * with the member-facing part of the same summary. Under it: four figures
- * in a row — the three counters and the engagement band as a coloured dot
+ * in a row — the three counters and the engagement band as a colored dot
  * with its name (it used to be a vertical meter beside the strip, a fill
  * level for something that has four words and no level) — then the
  * attendance chart on the card's bottom edge, since the relationship began
@@ -354,7 +354,7 @@ function StatsRow({
   const t = useTranslations('Contacts')
   return (
     <div className="grid grid-cols-4 divide-x">
-      {/* The same icons and colours the Gamification tab gives these figures,
+      {/* The same icons and colors the Gamification tab gives these figures,
           so the two readings of one number look like one number. */}
       <div className="px-2 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
@@ -503,7 +503,7 @@ function Sparkline({ contact, grow = false }: { contact: Contact; grow?: boolean
 
 // ─── Engagement cell ──────────────────────────────────────────────────────────
 
-/** The fourth figure: a dot in the band's colour and the band's name, sized
+/** The fourth figure: a dot in the band's color and the band's name, sized
  *  to sit level with the three numbers. A band is one of four words, so a
  *  meter was showing a fill level for something that has no level. */
 function EngagementCell({

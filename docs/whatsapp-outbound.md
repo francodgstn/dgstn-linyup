@@ -108,8 +108,8 @@ suppression, so a second contact record with the same number is covered too.
 **The newest answer wins**: a suppression blocks only when it is newer than the
 contact's opt-in (`suppressionBlocks`), so a member who replied STOP and later
 opted in again on a form is not silently blocked, and no opt-in door has to
-know the suppression list exists. Wiped on anonymisation
-(`CONTACT_IDENTIFYING_FIELDS`), added to the API field catalogue as `excluded`.
+know the suppression list exists. Wiped on anonymization
+(`CONTACT_IDENTIFYING_FIELDS`), added to the API field catalog as `excluded`.
 
 ### 3. Connect / disconnect (callables, owner-only, plugin-gated)
 
@@ -150,7 +150,7 @@ in `smsService.ts`'s order, plus what SMS is missing:
 7. Provider send; ledger row with the wamid. Dropped sends write a
    `suppressed` row with the reason, as email does.
 
-Phone normalisation moves out of `smsService.ts` into shared
+Phone normalization moves out of `smsService.ts` into shared
 (`normalizePhoneE164`, same rules) so both channels agree; no storage change.
 Quiet hours reuse `isWithinSmsSendingHours`.
 
@@ -191,8 +191,8 @@ Every Phase 1 door gains a second, independent choice: a second unticked box on
 the booking and signup forms ("News and offers from {studio}"), a second switch
 in the Space and the member app, a second row on the contact page. A STOP ends
 **both**; Meta's own "stop promotions" failure ends **marketing** only. Denied
-to clients by the rules like the first; wiped on anonymisation; `excluded` in
-the API catalogue.
+to clients by the rules like the first; wiped on anonymization; `excluded` in
+the API catalog.
 
 #### 6b. Templates, written in Linyup
 
@@ -292,7 +292,7 @@ reclassification.
 - Statuses update the ledger by wamid, keep `pricing.category` / `billable` for
   the studio's monthly count, and turn "recipient stopped marketing" and
   "not a WhatsApp user" failures into the right outcome (suppression vs. no-op).
-- Inbound `messages`: normalised text in STOP / STOPP / ARRÊT / ARRET / BASTA /
+- Inbound `messages`: normalized text in STOP / STOPP / ARRÊT / ARRET / BASTA /
   ABMELDEN → opt-out. Nothing else is read, logged or stored. No confirmation
   message is sent in v1.
 - Always 200 after the signature passed, so Meta does not retry a

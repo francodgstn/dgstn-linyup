@@ -22,7 +22,7 @@ import type { RankLevel, RankingSystem } from './team'
  * Nothing here knows about belts, dan grades or martial arts. A swim school
  * whose levels require a number of attended lessons, or a dance school with
  * graded exams, expresses that with the same vocabulary. HMD contributes RULE
- * DATA (seeded per organisation), never code.
+ * DATA (seeded per organization), never code.
  *
  * Plugins may contribute new requirement kinds through a namespaced
  * `plugin:{id}:{name}` id — the same shape `PluginActionId` uses for the
@@ -59,7 +59,7 @@ export type ParticipationRole = (typeof PARTICIPATION_ROLES)[number]
  *
  * Every non-camp check-in in HMD's migrated history is in exactly that state —
  * `join_as` has only ever been collected for camps — and reading those as
- * anything but participation would erase twenty years of the organisation's own
+ * anything but participation would erase twenty years of the organization's own
  * record.
  */
 export const DEFAULT_PARTICIPATION_ROLE: ParticipationRole = 'participant'
@@ -167,7 +167,7 @@ export interface RankProgression {
    * merged, so "which rule applied" has exactly one answer.
    *
    * A level with NO band is not an error and not a refusal: it means the
-   * organisation grades it by judgement alone, and the engine says
+   * organization grades it by judgment alone, and the engine says
    * `not_configured` so the UI can say so too.
    */
   rules: RankLevelRule[]
@@ -194,7 +194,7 @@ export interface RankProgression {
  * There is a hard reason the server's is authoritative here and not merely
  * preferable: `checkins` are readable only by the team that recorded them or by
  * an org admin, so a studio cannot see the camps a student attended with a
- * sister studio. Assembled client-side, a member of a multi-studio organisation
+ * sister studio. Assembled client-side, a member of a multi-studio organization
  * would appear to have done less than they have.
  */
 export interface RankFactsSnapshot {
@@ -280,7 +280,7 @@ export interface RequirementResult {
 export type RankEligibility =
   | 'eligible'
   | 'not_eligible'
-  /** The organisation set no rule for this step — it grades by judgement. NOT a
+  /** The organization set no rule for this step — it grades by judgment. NOT a
    *  refusal, and the UI must not render it as one. */
   | 'not_configured'
   /** Already at the highest level the system defines. */
@@ -311,7 +311,7 @@ export interface RankEligibilityResult {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * The band governing `targetLevel`, or null when the organisation set none.
+ * The band governing `targetLevel`, or null when the organization set none.
  *
  * Bands are matched by LADDER POSITION: the target sits between `from` and `to`
  * in `system.levels`. A band whose bound names a level the ladder no longer has

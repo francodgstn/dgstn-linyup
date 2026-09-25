@@ -142,13 +142,13 @@ describe('the seams — every server path that must tell an external apart', () 
     assert.doesNotMatch(src, /external/, 'the cap counts records held, not people looked after')
   })
 
-  it('an affiliation row mirrors LIVE-ness, not roster membership — an external holding the federation\'s licence is still on its books', () => {
+  it('an affiliation row mirrors LIVE-ness, not roster membership — an external holding the federation\'s license is still on its books', () => {
     const trigger = read('sync/syncAffiliationContactLive.ts')
     const create = read('affiliations/index.ts')
     // TWO WRITERS, ONE QUESTION. The trigger owns the transitions (liveness
     // changes on the contact and touches no affiliation), the callable stamps a
     // row created for somebody already archived. Let them disagree and the
-    // organisation's count changes by itself on that contact's next write.
+    // organization's count changes by itself on that contact's next write.
     assert.match(trigger, /return !!data && isLiveContact\(data\)/)
     assert.match(create, /contact_live: isLiveContact\(contactData\)/)
     // Comments stripped: the trigger's own header ARGUES the choice by naming
@@ -191,7 +191,7 @@ describe('the HMD migration — where the old "external" type lands', () => {
     assert.match(contacts, /if \(out\.acquisition_stage\) out\.acquisition_stage_updated_at = milestoneTs/)
   })
 
-  it("an archived contact's licence is coerced to expired, like a deleted one — and no live plan is claimed for either", () => {
+  it("an archived contact's license is coerced to expired, like a deleted one — and no live plan is claimed for either", () => {
     assert.match(contacts, /const isGone = out\.deleted_at != null \|\| out\.archived_at != null/)
     assert.match(contacts, /const statusId = isGone \? 'expired' : statusRaw/)
     // The plan is a grant, handed to pass 05 only for somebody still looked after.
@@ -200,7 +200,7 @@ describe('the HMD migration — where the old "external" type lands', () => {
     assert.doesNotMatch(contacts, /\bisDeleted\b/, 'the narrower test must not survive beside the wider one')
   })
 
-  it('the imported licence carries that same liveness, so an ex-member leaves the federation queue with them', () => {
+  it('the imported license carries that same liveness, so an ex-member leaves the federation queue with them', () => {
     assert.match(contacts, /contact_live: !isGone/)
   })
 

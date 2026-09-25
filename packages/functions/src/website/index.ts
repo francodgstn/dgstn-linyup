@@ -207,7 +207,7 @@ export const publishWebsite = onCall({ timeoutSeconds: 300 }, async (request) =>
   const name = optStr(team.name, 200) ?? 'Site'
   // Hidden sections omitted, unpublishable ones dropped — see ./sanitize.
   // ── PAGES ──────────────────────────────────────────────────────────────
-  // Everything about pages is shared with the organisation site — see
+  // Everything about pages is shared with the organization site — see
   // ./publishPages. What is the team's own runs between reading and writing.
   const { pageRefs, sections, pageSections, lists } = await readSitePages({
     fs,

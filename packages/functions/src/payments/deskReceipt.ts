@@ -91,7 +91,7 @@ import {
 export interface DeskSaleReceiptParams {
   teamId: string
   contactId: string
-  /** What was bought — already normalised by `normalizePaymentLineItem`. */
+  /** What was bought — already normalized by `normalizePaymentLineItem`. */
   lineItem: PaymentLineItem
   /** The payment row's doc id. Doubles as the credit-grant id (that is the ref
    *  `applyPaymentEffects` grants under) and as the mail ledger's tender ref. */

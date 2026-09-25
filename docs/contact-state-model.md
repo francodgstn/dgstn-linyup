@@ -31,7 +31,7 @@ studio owners, so it uses their words and no field names.
 |---|---|---|---|
 | **Journey** | How far did they get toward joining? | Not started · Trial booked · Trial attended · Joined | `acquisition_stage` (absent = not started), plus the immutable `entry` |
 | **Affiliation** | Do they belong: to the club, a federation, a governing body? | None · Requested · Under review · Almost ready · Active · Expired | `affiliations` rows (several per person), rolled up into `affiliation_summary` |
-| **Plan** | What do they hold, and pay for? | None · Trialing · Active · Past due · Paused · Cancelled | `held_plans` (every holding), `active_subscriptions` (live Stripe subscriptions) |
+| **Plan** | What do they hold, and pay for? | None · Trialing · Active · Past due · Paused · Canceled | `held_plans` (every holding), `active_subscriptions` (live Stripe subscriptions) |
 | **Lifecycle** | Does the studio look after them today? | Lead · Active · External · Archived · Deleted | `provisional`, `external`, `archived_at`, `deleted_at`, `anonymized_at` |
 
 Each axis has its own writers, and a value on one never implies a value on
@@ -68,11 +68,11 @@ server seams that must tell the buckets apart is
 
 | Value | Stored | Meaning |
 |---|---|---|
-| **Lead** | `provisional: true` | Not materialised yet. Covers trial bookings never attended, shop registrations awaiting their first payment, public-form leads and waitlist joiners. Shown on the Leads tab. Leads do not count toward the plan's contact cap. |
+| **Lead** | `provisional: true` | Not materialized yet. Covers trial bookings never attended, shop registrations awaiting their first payment, public-form leads and waitlist joiners. Shown on the Leads tab. Leads do not count toward the plan's contact cap. |
 | **Active** | no marker | On the roster: everyone the studio looks after. |
 | **External** | `external: true`, `external_since` | Trains here without being on the roster. |
 | **Archived** | `archived_at` | Left. The record is kept for history. |
-| **Deleted** | `deleted_at` / `anonymized_at` | In the bin, or anonymised. Nothing reads them. |
+| **Deleted** | `deleted_at` / `anonymized_at` | In the bin, or anonymized. Nothing reads them. |
 
 Two predicates sit on it, and they answer different questions:
 
@@ -95,7 +95,7 @@ she was nagged, counted and invited, or archived, where she could not book.
 | hold a plan, a pack or a partner-app plan | shown under Needs attention |
 | count toward the plan's contact cap: the record exists | counted as a lost trial when later archived |
 
-An external holding a federation licence is still on the federation's books:
+An external holding a federation license is still on the federation's books:
 affiliation follows whether a person is live, not whether they are on the roster
 (see [org-contact-visibility.md](./org-contact-visibility.md)).
 
@@ -112,7 +112,7 @@ affiliation follows whether a person is live, not whether they are on the roster
   as a bulk action. The studio brings them back, or completing the public signup
   form does, because that form is the one act that says "I'm joining". **A purchase
   never clears External**: a partner-app plan is a purchase.
-- **→ Archived → Deleted → anonymised**: the studio's decisions. Archiving moves no
+- **→ Archived → Deleted → anonymized**: the studio's decisions. Archiving moves no
   other axis.
 
 ## Journey — how far toward joining
@@ -173,11 +173,11 @@ status and validity. The issuers (`AFFILIATION_ISSUERS` in
 `packages/shared/src/types/affiliation.ts`) are:
 
 - the studio itself, for a club membership;
-- an organisation the studio belongs to, for a federation licence;
+- an organization the studio belongs to, for a federation license;
 - an external governing body that the studio only tracks.
 
 A studio that tracks none never sees the axis, so do not present it to those owners
-as a fourth column. An organisation may define its own statuses. Only a status with
+as a fourth column. An organization may define its own statuses. Only a status with
 `countsAsActive` (built-in: Active) counts as a member. The old `guest` status was
 removed: no affiliation is simply None. What a federation may see of a studio's
 people is decided by affiliation, in any status. See
@@ -192,10 +192,10 @@ the bucket isn't over-applied.
 | Person | Path | Ends as (Journey · Lifecycle · Plan) | What it proves |
 |---|---|---|---|
 | **Lea**, via ClassPass | books a trial, comes once, goes quiet | Trial attended · **External** · None, or her partner plan | the bucket's reason to exist; see her branches below |
-| **Marco**, walks in and joins | walk-in → twice more → signup form → monthly plan → licence | Joined · Active · Active | the ordinary story. External never appears |
+| **Marco**, walks in and joins | walk-in → twice more → signup form → monthly plan → license | Joined · Active · Active | the ordinary story. External never appears |
 | **Elena**, trial no-show | books → no-show → archived | Trial booked · Archived · None | counted as a lost trial, rightly. External leaves her alone |
-| **Anna**, member who lapses | Joined and paying → cancels → stops coming → archived | Joined · Archived · Cancelled | a lapsed member **should** be chased. External is for people who were never the studio's to keep, not members it is losing. `left` / `won_back` are her future, not External |
-| **Tom**, member who drifts to dropping in | cancels, keeps paying per class → marked External | Joined · External · Cancelled | Joined stays as history and his conversion still counts. A later purchase leaves him External until the studio brings him back |
+| **Anna**, member who lapses | Joined and paying → cancels → stops coming → archived | Joined · Archived · Canceled | a lapsed member **should** be chased. External is for people who were never the studio's to keep, not members it is losing. `left` / `won_back` are her future, not External |
+| **Tom**, member who drifts to dropping in | cancels, keeps paying per class → marked External | Joined · External · Canceled | Joined stays as history and his conversion still counts. A later purchase leaves him External until the studio brings him back |
 | **Sofia**, buys a 10-pack, comes monthly | shop → first booking → attends → monthly | Trial attended · External · 10-pack | paying and External go together. Her credits keep working: the door checks what she holds, not the roster. A pack is not a subscription, so she is never counted as a subscriber |
 | **Giulia**, migrated from hmd-lineup as `external` | import → attends | Trial attended, or none · External · None | the old word maps to the same word. Her journey records only what she did, never Joined, and she carries no tag |
 
@@ -274,7 +274,7 @@ as "has a plan" for a standalone one.
 - Marking someone External automatically. The automation engine has no "came
   through a partner app" condition (`Contact.acquisition_partner_app` is recorded,
   but no rule reads it) and no "mark external" action. Marking is manual, by design
-  for now: the partner app is a fact, while External is the studio's judgement.
+  for now: the partner app is a fact, while External is the studio's judgment.
 - An owner-facing home for the interactive page. The two options discussed were
   the in-app How-to and a public docs site. `apps/docs` is internal and never
   deployed, so it isn't that home. The in-app How-to was retired on 2026-09-19,

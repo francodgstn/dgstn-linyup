@@ -6,7 +6,7 @@
  * `active_org_ids` names the orgs whose affiliation currently counts, beside
  * `org_ids`, which is every org that has EVER put the contact on its books. The
  * affiliation figure, the coverage percentage and the Studios column read the
- * old one and so counted last season's lapsed licence as current
+ * old one and so counted last season's lapsed license as current
  * (Franco, 2026-09-08).
  *
  * It once filled a second field, `org_status_ids`, for the dashboard's status

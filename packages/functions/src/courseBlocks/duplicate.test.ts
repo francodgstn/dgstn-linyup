@@ -22,7 +22,7 @@ import { resolveCourseSchedule } from './schedule'
 // THE DENY-LIST. A copy that carried `places_taken` would be born looking half
 // full, one that carried `status: 'published'` would go on sale before anybody
 // checked it, and one that carried `seriesId` would write its lessons into the
-// OLD course's calendar. The list is asserted by behaviour, not by length: a
+// OLD course's calendar. The list is asserted by behavior, not by length: a
 // count would rot the moment a field is added.
 //
 // Run with: pnpm --filter @linyup/functions test

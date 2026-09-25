@@ -291,7 +291,7 @@ export default function DocumentDetailPage() {
   // and freezes the previous wording under the new version number, which is
   // exactly the kind of quiet mismatch the hash exists to make impossible. The
   // alternative (refuse to publish while the editor is dirty) was rejected: a
-  // rich-text editor that re-serialises its own input on mount would leave the
+  // rich-text editor that re-serializes its own input on mount would leave the
   // button permanently dead.
   async function onPublish(outcome: PublishOutcome) {
     if (!draft) return

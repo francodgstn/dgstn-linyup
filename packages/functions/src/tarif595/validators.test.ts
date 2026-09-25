@@ -32,7 +32,7 @@ describe('legal profile — IBAN, QR-IBAN, VAT, creditor reference', () => {
     assert.ok(!isValidChIban('CH9300762011623852958'))
     assert.ok(!isValidChIban('DE89370400440532013000'), 'only CH/LI')
   })
-  it('recognises a QR-IBAN by its IID range', () => {
+  it('recognizes a QR-IBAN by its IID range', () => {
     assert.ok(isQrIban('CH44 3199 9123 0008 8901 2'))
     assert.ok(!isQrIban('CH93 0076 2011 6238 5295 7'))
   })

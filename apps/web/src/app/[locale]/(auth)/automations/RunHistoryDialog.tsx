@@ -18,7 +18,7 @@
  * `last_run_at` says only "something happened once"; this says which runs
  * happened, in which tier, and how many people each one reached.
  *
- * "TO WHOM" — answered as a SAMPLE, and labelled as one. `runRule` stores up to
+ * "TO WHOM" — answered as a SAMPLE, and labeled as one. `runRule` stores up to
  * `RECIPIENT_ID_CAP` (50) contact ids per run plus the exact `recipients_total`,
  * so a run that reached 400 people renders 50 names UNDER a line that says which
  * 400 it is showing 50 of. Never present the capped list as the whole set: the

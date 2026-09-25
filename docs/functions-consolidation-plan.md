@@ -95,7 +95,7 @@ signed out; this is the app itself, with a real staff token, watched at the netw
 **Two routers cannot be reached from a browser on staging, and neither is a fault.** Both
 screens correctly call nothing, which is why this is worth writing down rather than retrying:
 
-- `rpcBilling` — no billed tenant exists there. The HMD organisation is a founding org billed
+- `rpcBilling` — no billed tenant exists there. The HMD organization is a founding org billed
   nothing, and its member studios' billing is managed by the org, so no invoice query runs.
 - `rpcCheckout` — no staging tenant has `payments_enabled` (staging is deliberately not wired
   for Connect), so every paid door is hidden by design and the promo field never renders.
@@ -132,7 +132,7 @@ Two corollaries worth knowing before designing a test:
   (`messaging_policies/{tenantId}`).
 
 Proven rather than reasoned, 2026-09-23: inviting `router-check@example.com` to a seeded
-organisation on staging logged `[mail] TEST MODE → redirecting router-check@example.com to
+organization on staging logged `[mail] TEST MODE → redirecting router-check@example.com to
 <TEST_EMAIL>` and wrote a `mail_sends` row with `status: sent` and a real provider message id.
 
 **Where it stands (2026-09-20).**
@@ -161,7 +161,7 @@ every recurring ops failure scales with that count:
 | Emulator silently loads zero functions | `FUNCTIONS_DISCOVERY_TIMEOUT` in `scripts/emulators-run.mjs` |
 | Long deploys and slow CI | — |
 
-**Goal:** cut the number of deployables sharply without changing any behaviour,
+**Goal:** cut the number of deployables sharply without changing any behavior,
 any external URL or any name a live client calls.
 
 ## 2. Inventory
@@ -389,7 +389,7 @@ the script:
   **in-process**. So an `onRequest` router can hand `(req, res)` to the existing
   callable value unchanged.
   - The callable protocol, `request.auth`, `request.app` and `HttpsError`
-    serialisation are all preserved.
+    serialization are all preserved.
   - Caveat: at runtime the router's own memory, timeout, cpu and concurrency
     govern, and the member's own are ignored.
   - Verified in SDK source only. The Phase 0 spike proves it at runtime.
@@ -570,7 +570,7 @@ monolithic deploy stops hurting.
   is **deleted in the cloud without a prompt**, and `pnpm functions:ready` cannot see
   a function that no longer exists. Phase 0 therefore adds
   `packages/functions/src/utils/frozenFunctions.test.ts`. It reads `index.ts`
-  (CRLF-normalised, see the source-reading rule in CLAUDE.md) and asserts that every
+  (CRLF-normalized, see the source-reading rule in CLAUDE.md) and asserts that every
   name on a checked-in frozen list is still exported. The list holds:
   - the §3 frozen table
   - every task handler
@@ -583,14 +583,14 @@ monolithic deploy stops hurting.
 ## 6. Phases
 
 Every phase is independently shippable and reversible. Until Phase 5, nothing is
-deleted, so reverting the route table always restores the previous behaviour.
+deleted, so reverting the route table always restores the previous behavior.
 
 ### Phase 0: tooling and spike (~2–3 days)
 1. Build `scripts/functions-inventory.mjs` (§2.1) and add `pnpm functions:inventory`.
 2. Build `packages/functions/src/utils/callableRouter.ts` and its unit tests. The tests cover dispatch, an
-   unknown name, and one member that throws `HttpsError` and serialises correctly.
+   unknown name, and one member that throws `HttpsError` and serializes correctly.
 3. Add the route table in `packages/shared`, plus `callFunction` in web, mobile and
-   admin (all names unrouted, so there is no behaviour change).
+   admin (all names unrouted, so there is no behavior change).
 4. Add `frozenFunctions.test.ts`, and a router-coverage test: every callable is in
    one router or on the not-routed list.
 5. **Spike on staging** with a throwaway `rpcSpike` holding two harmless callables.
@@ -664,7 +664,7 @@ environment that turns the flag on.
   radius there is. Its only callers are operators, in the admin app, so a bad router
   inconveniences us and no studio, and it has **zero mobile and zero web call sites**.
   It still exercises the long-timeout option profile: some members run to 540s. What it
-  does not prove is behaviour under load, which Phase 3 owns.
+  does not prove is behavior under load, which Phase 3 owns.
 - **Steps:**
   - Add `packages/functions/src/routers/ops.ts` over the operator callables in
     `packages/functions/src/ops`, with `timeoutSeconds` and `memory` at the max of
@@ -703,9 +703,9 @@ environment that turns the flag on.
   Owed: a signed-in click through the finance screens there (a month's CSV export, an
   invoice PDF, a Tarif 595 preview) — the one path the spike cannot take.
 - **`rpcBilling` built 2026-09-19** (`packages/functions/src/routers/billing.ts`): what
-  a studio or an organisation pays Linyup. Team and org callables sit together because
+  a studio or an organization pays Linyup. Team and org callables sit together because
   `apps/web/src/hooks/useSaasBilling.ts` treats them as one flow; each keeps its own
-  authorisation. That hook still picks the name from the billing scope, so its names
+  authorization. That hook still picks the name from the billing scope, so its names
   reach `callFunction` through a variable and the client-names recipe in §2.1 does not
   see them — read the hook.
 - **`rpcBilling` is on staging since 2026-09-19**, deployed as written, and the spike with
@@ -811,7 +811,7 @@ environment that turns the flag on.
   hundred rollouts, the newest on that page was weeks old, and a "Disabled" column in the CLI
   table was taken as confirmation. To see what a backend serves, read its `traffic` resource
   (`…/backends/{id}/traffic` → `current.splits`), not the head of a list.
-- **The spec was blind on a deployed project at first.** It recognised a functions call by the
+- **The spec was blind on a deployed project at first.** It recognized a functions call by the
   EMULATOR's URL shape, region in the path; on a deployed project the region is in the HOST
   (`europe-west6-{project}.cloudfunctions.net`), so it recorded nothing and failed with "no routed
   callable was requested at all" — which reads like a routing defect and was a watcher that could
@@ -1036,7 +1036,7 @@ See §8.
   secret-name map is in the `packages/functions/src/utils/secrets.ts` call sites).
 - `rpcMember` and `rpcCheckout` would then no longer hold, for example,
   `cloudflare-api-token` or `apple-asc-private-key`.
-- Not required for behaviour parity. It is a follow-up.
+- Not required for behavior parity. It is a follow-up.
 
 ## 10. Effort
 
@@ -1070,7 +1070,7 @@ window.
 ## Verification of this document
 
 - `pnpm docs:check` and `pnpm docs:index:check` pass after `pnpm docs:index`.
-- Every figure in it is either labelled as dated recipe output (§2.2) or points at the
+- Every figure in it is either labeled as dated recipe output (§2.2) or points at the
   recipe.
 - Every claim that has not been proven at runtime is marked unverified. That covers:
   - `cloudfunctions.net` path pass-through

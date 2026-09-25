@@ -67,12 +67,12 @@ export interface Course {
   // `Activity.memberBenefit`: every sub on it shares the one percentage.
   //
   // A benefit with effect 'included' is the LEGACY spelling of the gate, still
-  // honoured by both rule files and by resolvePaymentOptions; the plan editor
+  // honored by both rule files and by resolvePaymentOptions; the plan editor
   // reads it as part of the gate and absorbs it on first write. History: until
   // 2026-09-01 a benefit SUPPRESSED the gate list, which contradicted
   // firestore.rules — see the course arm of resolvePaymentOptions.
   benefit?: Benefit | null
-  // When true, the course is omitted from the public shop catalogue
+  // When true, the course is omitted from the public shop catalog
   // (/public/{slug}/shop). It stays openable via a direct link and still shows in a
   // contact's Space "My courses" if they have access. Absent ⇒ visible in the shop.
   hideFromShop?: boolean

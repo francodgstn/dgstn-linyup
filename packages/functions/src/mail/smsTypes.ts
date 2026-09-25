@@ -7,14 +7,14 @@
 export interface OutboundSms {
   to: string
   /**
-   * The contact this message is for, so the service can honour their
+   * The contact this message is for, so the service can honor their
    * `sms_opt_out`. Required on purpose: a new caller has to say which person it
    * is texting, or say `null` for a send that is about no contact at all.
    */
   contactId: string | null
   /** Plain text. >160 chars is sent as multiple segments (billed per segment). */
   content: string
-  /** Provider-side categorisation tag (e.g. 'booking-reminder'). */
+  /** Provider-side categorization tag (e.g. 'booking-reminder'). */
   tag?: string
   /** App-level idempotency. Duplicate sends with the same key are skipped. */
   idempotencyKey?: string

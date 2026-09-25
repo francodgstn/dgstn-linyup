@@ -48,14 +48,14 @@ and will be until launch. What has content today is release state, TestFlight
 feedback, and the adoption figures derived from our own telemetry.
 
 This is the single biggest risk to the feature: **an empty panel looks exactly
-like a broken integration**, and an operator who learns to ignore one grey card
+like a broken integration**, and an operator who learns to ignore one gray card
 will ignore the one that matters later. Which is why `StoreSourceStatus` has
 four members and the console renders all four differently:
 
 | | meaning | rendered |
 |---|---|---|
 | `ok` | we asked and got an answer | green |
-| `not_configured` | no credential — **the expected steady state today** | grey, not red |
+| `not_configured` | no credential — **the expected steady state today** | gray, not red |
 | `unavailable` | the vendor said "nothing yet" | outline |
 | `error` | it went wrong, and `error` says how | red |
 
@@ -111,7 +111,7 @@ a convenience, and it must stay one click from wherever a key is pasted.
   only chance to capture a review and a lost write is permanent.
 - **TestFlight feedback lives in `store_reviews` too**, as
   `kind: 'beta_feedback'`. Pre-launch it *is* the entire stream; splitting it to
-  honour a schema distinction would produce two empty lists instead of one
+  honor a schema distinction would produce two empty lists instead of one
   useful one.
 - **The vendor's date string is stored verbatim** as the `daily` doc id. Apple
   reports in its own reporting day, Play's CSVs are Pacific, `platform_metrics`
@@ -120,7 +120,7 @@ a convenience, and it must stay one click from wherever a key is pasted.
   throw but not a TIMEOUT, and a task that hangs on a vendor API kills the ones
   after it in the array — `rollSessionSeries` among them. An experimental
   read-only dashboard must not be able to stop recurring classes being
-  materialised.
+  materialized.
 
 ## The webhook
 
@@ -156,7 +156,7 @@ an instance id but **not** the comment text. Two names for one idea:
 `appStoreVersionAppVersionStateUpdated` uses `newValue`, `buildUploadStateUpdated`
 uses `newState`. Reading only one stores a silent null.
 
-**Three behaviours worth keeping:**
+**Three behaviors worth keeping:**
 
 - **It does not write `store_presence`.** That doc is a gauge with one writer
   (the ingest, which replaces it wholesale). The webhook records the event and
@@ -179,7 +179,7 @@ uses `newState`. Reading only one stores a silent null.
 `needs_attention` (`ATTENTION_VERSION_STATES` in the shared types) is a
 **highlight, not a filter** — every event is stored and listed regardless, with
 Apple's state rendered verbatim beside it. So a state Apple adds that we do not
-recognise costs a badge, never visibility. That is what makes matching on a
+recognize costs a badge, never visibility. That is what makes matching on a
 known set of names safe.
 
 **Local testing** needs no public URL: the emulator exposes

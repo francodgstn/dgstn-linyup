@@ -34,7 +34,7 @@ import {
  *    progress bar at 1/5 before anybody had done anything.
  *
  *    That is why the mirror is read for its FIELDS and never for its existence
- *    (see `publicPageHasContent`), and why "star a favourite" (label text since
+ *    (see `publicPageHasContent`), and why "star a favorite" (label text since
  *    2026-08-29, UX-84 — it was "pin a shortcut") is an acknowledgement rather
  *    than a derived check: `NavPinsContext` seeds a default shortcut list, so a
  *    derived check there could never be false.
@@ -63,7 +63,7 @@ import {
  *   browser makes itself.
  *
  *   A BOUNDED POLL — for writes it does NOT make. A recurring save writes one
- *   `session_series` doc and lets `generateRecurringSessions` materialise the
+ *   `session_series` doc and lets `generateRecurringSessions` materialize the
  *   occurrences server-side afterwards, so a refetch fired at the instant of
  *   save legitimately finds nothing. No invalidation can see that; only looking
  *   again can. It is bounded on both ends: it stops the moment there is nothing
@@ -145,7 +145,7 @@ export const setupChecklistKey = (teamId: string | null) =>
  * they show the same numbers, so they must never show different ones.
  *
  * It cannot cover a write the browser does not make: a recurring save writes one
- * `session_series` doc and the occurrences are materialised server-side
+ * `session_series` doc and the occurrences are materialized server-side
  * afterwards, so there is nothing to find at the moment of the save. That is the
  * poll's job, not this one's — neither mechanism replaces the other.
  */
@@ -322,9 +322,9 @@ function publicPageHasContent(
 }
 
 /**
- * Logo or colours — the LOOK, as opposed to `publicPageHasContent`'s WORDS.
+ * Logo or colors — the LOOK, as opposed to `publicPageHasContent`'s WORDS.
  *
- * Reads the mirror too, for the same reason: the accent colour is picked on the
+ * Reads the mirror too, for the same reason: the accent color is picked on the
  * bio-link page, whose team-doc write a manager is not allowed to make.
  */
 function hasBranding(

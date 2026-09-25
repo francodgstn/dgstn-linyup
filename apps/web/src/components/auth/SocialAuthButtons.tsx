@@ -175,7 +175,7 @@ export function SocialAuthButtons({
   )
 }
 
-/** A labelled "or" divider between the social buttons and the email/password form. */
+/** A labeled "or" divider between the social buttons and the email/password form. */
 export function AuthDivider({ label }: { label: string }) {
   return (
     <div className="relative my-1">

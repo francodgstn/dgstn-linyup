@@ -15,7 +15,7 @@
 // refund, which is exactly what a member asking about one needs to see.
 //
 // ── WHY THERE IS NO "RESEND RECEIPT" BESIDE IT ──────────────────────────────
-// It was asked for and it is not buildable on documented behaviour. Stripe has
+// It was asked for and it is not buildable on documented behavior. Stripe has
 // no resend endpoint; the only documented trigger is UPDATING the charge's
 // `receipt_email` — "If this field is updated, then a new email receipt will be
 // sent to the updated address" (docs.stripe.com/api/charges/update), which says

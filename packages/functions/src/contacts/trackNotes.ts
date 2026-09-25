@@ -28,7 +28,7 @@ export const trackContactNotes = onDocumentWritten(
     const beforeExists = event.data?.before.exists ?? false
     const afterExists = event.data?.after.exists ?? false
     // An EDIT changes nothing about the count. Returning early here is not an
-    // optimisation: without it every keystroke-saved note edit would re-read the
+    // optimization: without it every keystroke-saved note edit would re-read the
     // whole subcollection.
     if (beforeExists && afterExists) return
     if (!beforeExists && !afterExists) return

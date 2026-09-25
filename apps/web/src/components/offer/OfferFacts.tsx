@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * THE FACTS BLOCK in the catalogue's detail pane — what the list pages show on
+ * THE FACTS BLOCK in the catalog's detail pane — what the list pages show on
  * a row, shown for the one thing that is selected.
  *
  * ── WHY IT EXISTS ───────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@
  * genuinely non-trivial part of it — an activity's money chips — is the SHARED
  * `activityMoneyChipLabels` the activities list itself reads. A component that
  * knew about four entity types would be a second place for pricing rules to
- * live, which is the failure the catalogue exists to prevent.
+ * live, which is the failure the catalog exists to prevent.
  *
  * ── CHIPS CARRY A TONE ──────────────────────────────────────────────────────
  * `muted` is the default: a fact. `warn` is for a fact that changes whether the

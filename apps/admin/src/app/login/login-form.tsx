@@ -38,7 +38,7 @@ export function LoginForm() {
     } catch (e) {
       // Keep the real reason in the logs; show the user a generic message.
       console.error('operator sign-in failed:', e)
-      setError('Sign-in was cancelled or failed. Please try again.')
+      setError('Sign-in was canceled or failed. Please try again.')
     } finally {
       setLoading(false)
     }

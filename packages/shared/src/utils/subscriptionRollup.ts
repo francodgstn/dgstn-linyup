@@ -109,13 +109,13 @@ export function rollupMemberSubscriptions(
         recurrence: data.recurrence ?? null,
         amount: Math.round(data.amount ?? 0) / 100, // Rappen → major units
         status: s,
-        // A subscription that is cancelled but still LIVE stays 'active' here —
+        // A subscription that is canceled but still LIVE stays 'active' here —
         // the member still trains until it lapses. The date is what says it is
         // winding down, and it rides the summary so the member's own Space can
         // show it without reading member_subscriptions (which it cannot).
         cancels_at_ms: subscriptionEndsAtMs(data),
         // …and WHETHER, which the date cannot express on its own: a
-        // pre-migration doc is cancelling with no date to give, and a Space
+        // pre-migration doc is canceling with no date to give, and a Space
         // keyed only on the date told that member nothing.
         cancelling: subscriptionIsCancelling(data),
       })

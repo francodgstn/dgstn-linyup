@@ -17,7 +17,7 @@
 // preview exists to catch.
 //
 // The lessons appear on the calendar as ordinary sessions. Removing one is
-// cancelling it there, not deleting a row here: people may hold a place on it.
+// canceling it there, not deleting a row here: people may hold a place on it.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -131,7 +131,7 @@ export function CourseBlockDialog({
    * tab. `open` is ignored inline, there is nothing to open.
    *
    * A course used to be edited behind an "Edit details" button, alone among
-   * the offerings, and a button labelled Edit beside fields that are already
+   * the offerings, and a button labeled Edit beside fields that are already
    * on screen says the visible ones are not editing, which is false.
    */
   inline?: boolean

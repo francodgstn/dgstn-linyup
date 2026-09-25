@@ -509,18 +509,18 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
   // motion) and never for a visitor who asked for less of it — the same rule
   // the loop itself follows.
   const kenBurns = section.bgMotion === 'kenburns' && hasImage && !showVideo && !reducedMotion
-  // A solid background colour, only when there is no image — an image is its own
+  // A solid background color, only when there is no image — an image is its own
   // background. Absent ⇒ the bold accent gradient, today's look.
   const solid = !hasImage && section.bgColor ? section.bgColor : null
   const inCard = section.layout === 'card'
 
-  // TEXT COLOUR is the one thing a solid background forces us to decide. Over an
+  // TEXT COLOR is the one thing a solid background forces us to decide. Over an
   // image or the accent gradient the text is white (with a shadow). Over a solid
-  // colour it follows the colour's own perceived brightness, so a pale hero gets
+  // color it follows the color's own perceived brightness, so a pale hero gets
   // dark text.
   const solidDarkText = solid ? hexIsLight(solid) : false
   // Over a photo or loop, a LIGHT wash takes dark copy and no shadow — the
-  // same decision a pale solid colour makes.
+  // same decision a pale solid color makes.
   const lightWash = (hasImage || showVideo) && section.overlayTone === 'light'
   const darkText = solid ? solidDarkText : lightWash
   const fullText = darkText ? '#0f172a' : '#ffffff'
@@ -533,7 +533,7 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
 
   // In CARD layout the content sits on the theme's neutral surface, so it reads
   // the same way cards do everywhere — which is what makes a hero legible over a
-  // busy image or a strong colour without a per-hero text decision.
+  // busy image or a strong color without a per-hero text decision.
   const cardText = inCard ? palette.text : fullText
   const cardMuted = inCard ? palette.muted : fullMuted
   const cardShadow = inCard ? 'none' : shadow
@@ -627,7 +627,7 @@ function HeroBlock({ section, ctx }: { section: HeroSection; ctx: RenderCtx }) {
 /**
  * A studio marks words with `*asterisks*` to accent them inside a heading —
  * "Training, das *Resultate* liefert" — and the marked run renders in the
- * site's accent colour, markers dropped. ONE helper, used by the shared
+ * site's accent color, markers dropped. ONE helper, used by the shared
  * `Heading`, the hero headline and the split section's heading; unmatched or
  * unmarked text renders exactly as it did before this existed. Dependency-free
  * (no markdown lib) and never renders raw HTML — the split parts are always
@@ -836,7 +836,7 @@ interface ActivityEntry {
   /** CLASS-ONLY: a gated class still accepts a newcomer's free trial booking. */
   trialEnabled?: boolean
   /** CLASS-ONLY: reduced trial price (major units). Absent/null ⇒ the trial is
-   *  FREE (today's behaviour); a number ⇒ the trial costs that instead. */
+   *  FREE (today's behavior); a number ⇒ the trial costs that instead. */
   trialPriceAmount?: number | null
   /** APPOINTMENT-ONLY: priced duration menu (member pricing stripped). */
   durations?: Array<{ minutes: number; priceAmount: number | null; benefitOnly?: boolean }>
@@ -1142,7 +1142,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
               // A price is only advertised where somebody could pay it. `false`
               // is a resolved "this studio has no chargeable account"; undefined
               // is "not resolved here" (builder / org site / embed) and keeps
-              // the previous behaviour. See RenderCtx.paymentsEnabled.
+              // the previous behavior. See RenderCtx.paymentsEnabled.
               const showPrices = ctx.paymentsEnabled !== false
               // TWO INDEPENDENT SWITCHES, kept apart on purpose.
               //   `amountsShown`  — the STUDIO'S display choice (UX-94).
@@ -1284,7 +1284,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
                       </span>
                       {/* The studio's own words for this class ("Beginner
                           friendly", "Gi", "Kids"). Same chip shape as the type,
-                          in the SITE palette — a per-site colour scheme cannot
+                          in the SITE palette — a per-site color scheme cannot
                           take Tailwind's fixed greys. No translation: the studio
                           typed these, and nothing looks them up. */}
                       {a.tags?.map((tag) => (
@@ -1305,7 +1305,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
                     {/* Each way to pay is its own row with a hairline between, so a
                         card offering a subscription AND a drop-in AND a trial reads
                         as a list rather than a paragraph of prices. Rules take the
-                        site palette, not Tailwind's divide-* (colours are per-site).
+                        site palette, not Tailwind's divide-* (colors are per-site).
                         The gate/money split — and why only one of them is
                         optional — lives in ActivityPricingLines. */}
                     <ActivityPricingLines
@@ -2754,7 +2754,7 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
 
   // A soft, neutral wash instead of a flat accent fill — a cut-out portrait
   // needs something calm to sit on, in both light and dark themes; the two
-  // faint layers are derived from the palette's own text colour so they never
+  // faint layers are derived from the palette's own text color so they never
   // fight the accent used everywhere else on the card.
   const avatarBg = `linear-gradient(180deg, color-mix(in srgb, ${palette.text} 6%, transparent), color-mix(in srgb, ${palette.text} 12%, transparent)), ${palette.surface}`
 
@@ -2875,7 +2875,7 @@ function TeamBlock({ section, ctx }: { section: TeamSection; ctx: RenderCtx }) {
  * THE CAPTION STYLE IS A LOOK, NOT A DIFFERENT CARD: the same name, role and
  * badge, either under the portrait ('below', today) or laid over its foot on a
  * gradient with a blur behind the text. The overlay reads on any photograph
- * because the gradient is drawn from the card's own ink or surface colour, not
+ * because the gradient is drawn from the card's own ink or surface color, not
  * from black — a light theme keeps a light caption.
  *
  * 'modal' makes the whole card a button. A person with no bio is never one, so
@@ -3584,7 +3584,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
 
   if (style === 'panels') {
     // Solid panels — the row of statements a performance gym puts under its
-    // hero. The studio's BUTTON colour when it chose one (a box that picked
+    // hero. The studio's BUTTON color when it chose one (a box that picked
     // black buttons means black blocks, which is the look this style is for),
     // else the page's own ink, so a site that never touched the brand fields
     // still gets a panel that reads on a light or a dark theme. No icon, text
@@ -3678,7 +3678,7 @@ function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: Rend
 
   if (section.style === 'band') {
     // Edge to edge. Over an image the text is white on a dimmed photo; without
-    // one the band is the accent colour and the text its ink.
+    // one the band is the accent color and the text its ink.
     const onImage = !!section.bgImageUrl
     const ink = onImage ? '#ffffff' : palette.onAccent
     return (
@@ -3743,7 +3743,7 @@ function FaqBlock({ section, ctx }: { section: FaqSection; ctx: RenderCtx }) {
 
   if (section.style === 'panels') {
     // ONE block, not a stack of cards: hard edges, heavy rules between the
-    // rows, and the open row filled in the panel colour — the same contrast the
+    // rows, and the open row filled in the panel color — the same contrast the
     // panel features carry, so a bold page stays bold at the questions. The
     // corner choice is the studio's own, like everywhere else.
     return (

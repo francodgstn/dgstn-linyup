@@ -144,7 +144,7 @@ const SERIES_COLORS = [
 const NONE_COLOR = '#D1D5DB'
 /** Deliberately a NEUTRAL, like `NONE_COLOR`: "more than one" is an answer about
  *  the shape of the roster, not one of the types being compared, and a series
- *  colour would put it in the running with them. */
+ *  color would put it in the running with them. */
 const SEVERAL_COLOR = '#94A3B8'
 
 function tsToMs(ts: unknown): number | null {

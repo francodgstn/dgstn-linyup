@@ -171,8 +171,8 @@ export const requestTeamDeletion = onCall(async (request) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // cancelTeamDeletion — change of mind, any time inside the window.
 //
-// It does NOT restart the billing it stopped. Those subscriptions are cancelled
-// in Stripe and a cancelled subscription cannot be un-cancelled; the members
+// It does NOT restart the billing it stopped. Those subscriptions are canceled
+// in Stripe and a canceled subscription cannot be un-canceled; the members
 // have to be sold a membership again. Saying so is the copy's job — quietly
 // leaving the studio to discover it would be worse than refusing outright.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ export const cancelTeamDeletion = onCall(async (request) => {
       deletion_scheduled_for: FieldValue.delete(),
     })
 
-  console.log(`[teamDeletion] team ${teamId} deletion cancelled`)
+  console.log(`[teamDeletion] team ${teamId} deletion canceled`)
   return { ok: true as const }
 })
 

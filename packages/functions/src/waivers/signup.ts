@@ -188,7 +188,7 @@ export async function recordSignupConsent(input: SignupConsentInput): Promise<nu
       })
       for (const step of steps) {
         if (step.outcome !== 'record') continue
-        // The self-declaration, honoured only for a waiver the studio flagged
+        // The self-declaration, honored only for a waiver the studio flagged
         // `mayIncludeMinors` — one helper, so this rail cannot record a claim
         // its own step never showed.
         const declaration = declarationFor(step.entry, step.submission)

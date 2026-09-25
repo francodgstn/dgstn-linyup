@@ -1,8 +1,8 @@
 'use client'
 
 // Brand controls for a public website — logo, typefaces, heading case, button
-// shape and colour, the top bar, and the footer. ONE component, mounted by both
-// the studio builder and the organisation builder, so the two cannot drift
+// shape and color, the top bar, and the footer. ONE component, mounted by both
+// the studio builder and the organization builder, so the two cannot drift
 // apart the way their appearance panels once did (docs/open-defects.md).
 //
 // The link lists here (top bar, footer columns, legal row) are deliberately

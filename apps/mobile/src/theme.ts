@@ -98,15 +98,15 @@ export const gradientColors = {
   dark: ['#121015', '#1A1028', '#221838'] as const,
 }
 
-// ── Semantic colours ─────────────────────────────────────────────────────────
-// The colours that mean something regardless of the studio's brand: a status,
+// ── Semantic colors ─────────────────────────────────────────────────────────
+// The colors that mean something regardless of the studio's brand: a status,
 // a category, a third-party mark. Components read these through `useAppTheme`
 // instead of carrying their own hex, so a tenant accent never collides with a
 // "success" green — and so the literals live in ONE place per scheme.
 //
 // NOT here, on purpose: the categorical palettes for charts, badge gradients
 // and the attendance calendar (BadgesCard, PerformanceProfileSection,
-// GamificationCard, AttendanceCalendar). Those are data colours, many per
+// GamificationCard, AttendanceCalendar). Those are data colors, many per
 // file, and re-mapping them blind is a visual regression waiting to happen —
 // a device-verified pass (roadmap §6).
 export const semanticColors = {

@@ -24,7 +24,7 @@ import { Tip } from '@/components/ui/tip'
 export interface ContactNote {
   id: string
   content: string
-  /** The colour TAG's name — never a hex value. See NOTE_COLORS. Absent = the
+  /** The color TAG's name — never a hex value. See NOTE_COLORS. Absent = the
    *  plain card, which stays the default. */
   color?: NoteColor
   created_at: Timestamp
@@ -32,12 +32,12 @@ export interface ContactNote {
 }
 
 /**
- * Post-it colour tags for notes (UX-96) — a SMALL FIXED PALETTE, not a colour
+ * Post-it color tags for notes (UX-96) — a SMALL FIXED PALETTE, not a color
  * picker, and the stored value is the NAME.
  *
  * A hex chosen against a white card is unreadable on a dark one, and once it is
  * in Firestore it cannot be re-themed: every note ever written would keep a
- * literal colour from whatever the app looked like the day it was typed. A name
+ * literal color from whatever the app looked like the day it was typed. A name
  * resolves per theme, here, in one map — which is also what keeps the set small
  * enough to mean something at a glance. Grouping is the whole point; a
  * free-form picker produces forty near-identical yellows and groups nothing.
@@ -45,7 +45,7 @@ export interface ContactNote {
 export const NOTE_COLORS = ['none', 'yellow', 'green', 'blue', 'pink', 'purple'] as const
 export type NoteColor = (typeof NOTE_COLORS)[number]
 
-/** name → the classes it resolves to, light and dark. The ONE place a colour
+/** name → the classes it resolves to, light and dark. The ONE place a color
  *  name becomes pixels; a surface that renders a note reads it from here. */
 export const NOTE_COLOR_CLASSES: Record<NoteColor, { card: string; swatch: string }> = {
   none: { card: 'bg-card border-border', swatch: 'bg-muted border-border' },
@@ -72,7 +72,7 @@ export const NOTE_COLOR_CLASSES: Record<NoteColor, { card: string; swatch: strin
 }
 
 /** Tolerant read: an unknown or absent name falls back to the plain card rather
- *  than rendering nothing — a note must never disappear over a colour. */
+ *  than rendering nothing — a note must never disappear over a color. */
 export function noteColorClasses(color: string | null | undefined): { card: string; swatch: string } {
   return NOTE_COLOR_CLASSES[(color ?? 'none') as NoteColor] ?? NOTE_COLOR_CLASSES.none
 }
@@ -353,7 +353,7 @@ export function NotesTab({ contact }: { contact: Contact }) {
       await addDoc(notesRef, {
         content: html,
         // The NAME, and only when it says something — an uncoloured note stores
-        // no colour field at all.
+        // no color field at all.
         ...(color !== 'none' ? { color } : {}),
         created_at: serverTimestamp(),
         updated_at: serverTimestamp(),
@@ -371,7 +371,7 @@ export function NotesTab({ contact }: { contact: Contact }) {
     try {
       await updateDoc(doc(db, CONTACTS_COLLECTION, contact.id, CONTACT_NOTES_SUBCOLLECTION, editingNote.id), {
         content: html,
-        // Written unconditionally on an edit: clearing a colour has to be
+        // Written unconditionally on an edit: clearing a color has to be
         // expressible, and an omitted key on an update leaves the old one.
         color: color === 'none' ? null : color,
         updated_at: serverTimestamp(),

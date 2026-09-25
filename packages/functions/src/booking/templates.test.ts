@@ -22,7 +22,7 @@ describe('instructionsBox', () => {
     assert.ok(html.includes('line one<br>line two'))
   })
 
-  it('uses the localised heading', () => {
+  it('uses the localized heading', () => {
     assert.ok(instructionsBox('x', 'de').includes('Wichtig'))
     assert.ok(instructionsBox('x', 'it').includes('Importante'))
   })

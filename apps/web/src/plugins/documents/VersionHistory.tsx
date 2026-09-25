@@ -16,7 +16,7 @@ import { useDocumentVersions } from '@/plugins/documents/hooks'
 // never asked about" is answered by reading down this list, and a `silent`
 // publish is invisible everywhere else.
 //
-// A version minted by scripts/backfill-document-versions.ts is labelled
+// A version minted by scripts/backfill-document-versions.ts is labeled
 // RETROACTIVE. Somebody who signed a terms document before versioning existed
 // signed text that was captured afterwards; printing that as an ordinary publish
 // would assert more than happened.

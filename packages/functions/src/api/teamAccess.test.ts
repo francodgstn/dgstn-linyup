@@ -12,7 +12,7 @@ import { apiAccessBlocked } from '@linyup/shared'
 // creation path that forgets to ask is the one way this goes quietly wrong, so
 // the call sites are pinned against the source here.
 //
-// Source is read with line endings normalised: a Windows checkout is CRLF and an
+// Source is read with line endings normalized: a Windows checkout is CRLF and an
 // anchor written with a bare \n would fail locally and pass in CI.
 
 const SRC = __dirname

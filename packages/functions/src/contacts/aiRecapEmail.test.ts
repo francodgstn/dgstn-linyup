@@ -67,7 +67,7 @@ describe('member recap — the callable, from source', () => {
     assert.match(body, /coachOwnsContact\(contact, uid\)/)
   })
 
-  it('honours the studio opt-out through the outreach recipient rules', () => {
+  it('honors the studio opt-out through the outreach recipient rules', () => {
     assert.match(body, /partitionRecipients\(/)
   })
 

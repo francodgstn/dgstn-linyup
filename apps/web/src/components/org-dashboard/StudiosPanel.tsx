@@ -26,7 +26,7 @@
  * ── SIZE HERE MEANS MEMBERS BROUGHT, NOT CUSTOMERS SERVED ──────────────────
  *
  * The rank and the left-hand figure count the studio's people ON THE
- * ORGANISATION'S BOOKS, never its contact list — the federation has no claim on
+ * ORGANIZATION'S BOOKS, never its contact list — the federation has no claim on
  * a studio's own clients and, since `orgAdminMayReadContact`, no way to read
  * them either (`docs/org-contact-visibility.md`).
  *
@@ -35,7 +35,7 @@
  * Not "how big" — the number already says that — but what share of the members
  * that studio brought are CURRENT rather than lapsed. That is the single fact a
  * federation is FOR, it varies enormously between member studios, and it exists
- * nowhere else in the product. A studio at 12% is the row an organiser wants to
+ * nowhere else in the product. A studio at 12% is the row an organizer wants to
  * see without running a report. (It used to divide by the studio's whole contact
  * list, which scored a studio down for serving anyone outside the federation.)
  */
@@ -94,7 +94,7 @@ export function StudiosPanel({
             ? t('studiosMetaWithheld')
             : // The tenant's OWN noun, verbatim. Lower-casing it to fit the
               // sentence looked right in English and mangles every other locale
-              // in the product — German capitalises nouns, so a studio that
+              // in the product — German capitalizes nouns, so a studio that
               // renamed the concept "Lizenz" would read "lizenz coverage".
               t('studiosMeta', { term: affiliationTerm })
         }
@@ -108,7 +108,7 @@ export function StudiosPanel({
         }
       />
       {/* `scroll={false}` — THE PAGE SCROLLS, NOT THE PANEL, and for an
-          organisation that is the right way round: the roster is what this page
+          organization that is the right way round: the roster is what this page
           is about, and a federation of sixteen studios reading four at a time
           through a 320px window is a summary of a summary. It also removes the
           only place the two dimensions could disagree — the panel is exactly as

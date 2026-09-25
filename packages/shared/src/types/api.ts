@@ -66,7 +66,7 @@ export function isApiScope(value: unknown): value is ApiScope {
 }
 
 /**
- * A scope list as stored: known scopes only, deduped, in catalogue order, and a
+ * A scope list as stored: known scopes only, deduped, in catalog order, and a
  * scope whose `requires` is missing dropped rather than silently completed — a
  * request for PII without contacts is a malformed request, not a request for
  * contacts.
@@ -137,7 +137,7 @@ export interface ApiKey {
   id: string
   teamId: string
   name: string
-  /** `lyp_live_` + the first characters of the secret — enough to recognise it. */
+  /** `lyp_live_` + the first characters of the secret — enough to recognize it. */
   prefix: string
   last4: string
   scopes: ApiScope[]
@@ -191,7 +191,7 @@ export const OAUTH_ACCESS_TOKEN_TTL_MS = 60 * 60_000
 export const OAUTH_REFRESH_TOKEN_TTL_MS = 30 * 86_400_000
 export const OAUTH_CLIENT_METADATA_TTL_MS = 24 * 3_600_000
 
-/** Hosts whose clients the consent page names as recognised. Display only — never a decision. */
+/** Hosts whose clients the consent page names as recognized. Display only — never a decision. */
 export const OAUTH_RECOGNISED_CLIENT_HOSTS = ['claude.ai', 'claude.com', 'anthropic.com', 'chatgpt.com', 'openai.com'] as const
 
 /**

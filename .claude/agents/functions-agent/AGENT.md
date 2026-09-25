@@ -107,7 +107,7 @@ once and they all want the same ports. The two ways that goes wrong are silent:
 the seeder wipes ANOTHER checkout's data while printing a clean success banner,
 and the functions emulator keeps serving the `packages/functions/dist` of
 whichever checkout started it — so you can rebuild all day and keep observing
-another branch's behaviour, with no error anywhere.
+another branch's behavior, with no error anywhere.
 
 `status` reports which checkout owns each running slot and flags an emulator
 that predates your last build. Read **`.claude/skills/local-env/SKILL.md`**

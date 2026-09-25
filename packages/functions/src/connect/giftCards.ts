@@ -5,7 +5,7 @@
 // confirmed. This file owns:
 //  • createGiftCardCheckout — the public purchase callable.
 //  • issueGiftCard — the manager mint (front desk sells for cash, or comps a
-//    card). Serialised by a gift_card_issues claim doc, NOT by a query.
+//    card). Serialized by a gift_card_issues claim doc, NOT by a query.
 //  • mintGiftCard — the collision-safe, idempotent-by-payment-intent minting
 //    helper both of those rails call.
 //  • reserveGiftCardDrawdown / commitGiftCardDrawdown / reverseGiftCardDrawdown
@@ -87,7 +87,7 @@ const round2 = round2Major
 
 /** Codes are case/space-insensitive to the buyer; the doc id is always the
  *  canonical uppercase form formatGiftCardCode produces. Delegates to the ONE
- *  shared normaliser (shared/utils/codes.ts) so gift cards and promo codes can
+ *  shared normalizer (shared/utils/codes.ts) so gift cards and promo codes can
  *  never fork on what "the same code" means — both key a document on it. */
 function normalizeCode(code: string): string {
   return normalizeRedemptionCode(code)
@@ -137,9 +137,9 @@ export async function mintGiftCard(params: {
   purchaserContactId?: string | null
   purchaserEmail?: string | null
   /** Null on a rail with no Stripe charge behind it (a manager-issued card).
-   *  Such a mint MUST bring its own serialisation — see the guard below. */
+   *  Such a mint MUST bring its own serialization — see the guard below. */
   paymentIntentId: string | null
-  /** The gift_card_issues claim that serialised a manager mint. Stamped for
+  /** The gift_card_issues claim that serialized a manager mint. Stamped for
    *  audit only — never queried: the claim doc, not this field, is what makes
    *  the mint idempotent. */
   issueRef?: string
@@ -445,7 +445,7 @@ export async function commitGiftCardDrawdown(params: {
   //     (connect/payments.ts). There is no fourth — appointments take no gift
   //     card, so that rail has no full-cover branch at all. (This note miscounted
   //     them as 2, and was reported and "fixed" twice — because the correction
-  //     landed on the sibling claim in connect/promoCodes.ts and never travelled
+  //     landed on the sibling claim in connect/promoCodes.ts and never traveled
   //     to this copy. That is exactly the failure a bare number invites, so
   //     connect/commitSites.test.ts now asserts the count against the source and
   //     the next drift fails a gate instead of waiting for a reader.) See
@@ -585,7 +585,7 @@ export async function reverseGiftCardDrawdown(params: {
       currency: card.currency,
       // Only reverse a pair that was actually written. A comp never had one,
       // and neither does a commit whose journal write failed — inventing the
-      // reversal would subtract revenue that was never recognised.
+      // reversal would subtract revenue that was never recognized.
       hadPair: marker.reclassed_at != null,
     }
   })
@@ -798,7 +798,7 @@ export const createGiftCardCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORC
     ...(email ? { purchaserEmail: email } : {}),
   }
 
-  // A client-supplied key is honoured only for a signed-in buyer, whose session
+  // A client-supplied key is honored only for a signed-in buyer, whose session
   // already binds it to one identity. On the guest path the server mints it: an
   // unauthenticated callable that accepts an idempotency key hands Stripe's
   // dedupe namespace to whoever calls it. defaultIdempotencyKey is wrong here
@@ -976,11 +976,11 @@ export const issueGiftCard = onCall(async (request) => {
 
   // ── Idempotency: CLAIM FIRST, never query-then-create ──────────────────────
   // The webhook rail gets away with a `.where(payment_intent_id)` lookup only
-  // because Stripe delivery is already serialised by the event-id ledger. This
-  // rail has no serialiser: two concurrent submits (a double click, a retried
+  // because Stripe delivery is already serialized by the event-id ledger. This
+  // rail has no serializer: two concurrent submits (a double click, a retried
   // request) would both read "no card yet" and both mint — two live cards, and
   // on the paid path two manual payment rows keyed by two different codes,
-  // double-counting the cash. The create() below is the serialisation point:
+  // double-counting the cash. The create() below is the serialization point:
   // exactly one caller can win it, and the loser reads the winner's code back.
   const claimRef = db
     .collection(TEAMS_COLLECTION)
@@ -1006,7 +1006,7 @@ export const issueGiftCard = onCall(async (request) => {
       // returning now leaves live stored value with no `payment_events` row and
       // no `manual:charge` in the books — and because the card is `admin_paid`
       // the redemption reclass still fires, crediting a category with revenue
-      // no charge ever recognised and driving `by_category.gift_card` negative.
+      // no charge ever recognized and driving `by_category.gift_card` negative.
       //
       // Re-running the till write is safe: `writeManualPaymentEvent` is
       // idempotent on `giftcard:{code}`, so a genuine duplicate is a no-op and

@@ -35,7 +35,7 @@ merely cheap — every one of them is IP-rate-limited:
 Plus `payments_enabled` **fails closed**, so a tenant with no chargeable Connect account
 has no priced door to attack at all.
 
-App Check buys exactly ONE thing over that: defence against an attacker who defeats IP
+App Check buys exactly ONE thing over that: defense against an attacker who defeats IP
 keying — a botnet or a rotating residential proxy pool, for whom 30/hour becomes
 30,000/hour. **That attacker, and only that attacker, is what this defers.**
 
@@ -139,7 +139,7 @@ enforcement is the separate `APP_CHECK_ENFORCE_MOBILE` flip (see Caveats).
    key/registration is wrong — fix before proceeding.
 
 4. **Flip enforcement (staging → prod).** Set `APP_CHECK_ENFORCE=true` in
-   `packages/functions/.env.staging` (the neighbouring `APP_CHECK_ENFORCE_MOBILE` stays
+   `packages/functions/.env.staging` (the neighboring `APP_CHECK_ENFORCE_MOBILE` stays
    `false` — it is a separate decision, see Caveats), redeploy functions, and smoke-test a
    drop-in checkout + a form submission. When staging is clean, repeat steps 1–2 for the
    **production** project (register App Check, set the prod web key) and set

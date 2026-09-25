@@ -11,7 +11,7 @@
  * "the app forgot", because it had.
  *
  * The convention is `?tab=` — already what `/settings/team`, `/offer/plans` and
- * the contact detail page used, so this generalises the existing shape rather
+ * the contact detail page used, so this generalizes the existing shape rather
  * than inventing a second one. Two consequences worth knowing:
  *
  *  - The URL is kept TRUTHFUL: whatever tab is showing is in the address bar,

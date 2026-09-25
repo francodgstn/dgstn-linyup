@@ -43,7 +43,7 @@ const ORG_LANGUAGES = [
 // ─── terminology card ─────────────────────────────────────────────────────────
 
 /**
- * The organisation's own social profiles.
+ * The organization's own social profiles.
  *
  * SAME SHAPE AS A STUDIO'S — `SocialLink[]`, the same `SOCIAL_PLATFORMS` list
  * and the same labels — because the renderer is already shared: `ContactBlock`
@@ -87,7 +87,7 @@ function OrgSocialLinksCard({
     try {
       // BLANKS ARE DROPPED, not stored as empty strings: the renderer filters on
       // a truthy url anyway, and a row of empty entries would make an
-      // organisation with no socials look like one with six broken links.
+      // organization with no socials look like one with six broken links.
       const socialLinks = SOCIAL_PLATFORMS.filter((pf) => (urls[pf] ?? '').trim()).map((pf) => ({
         platform: pf,
         url: urls[pf].trim(),
@@ -527,7 +527,7 @@ export default function OrgSettingsPage() {
 
       <Card>
         <CardHeader>
-          {/* "General", not "Settings": this card holds the organisation's name
+          {/* "General", not "Settings": this card holds the organization's name
               and description, and its siblings are Terminology, Lock
               affiliation and the rest. Titling it after the whole page said
               nothing about which card it is. */}
@@ -592,8 +592,8 @@ export default function OrgSettingsPage() {
       <OrgContactDetailsCard orgId={orgId} org={org} isAdmin={isAdmin} onSaved={showToast} />
       <OrgSocialLinksCard orgId={orgId} org={org} isAdmin={isAdmin} onSaved={showToast} />
 
-      {/* The organisation's own domain for its public pages — its website and
-          events. Beside the email sender because an organisation has no
+      {/* The organization's own domain for its public pages — its website and
+          events. Beside the email sender because an organization has no
           public-pages hub for it to sit under (a studio's lives there). */}
       {isAdmin && org && (
         <Card className="p-4 md:p-5">

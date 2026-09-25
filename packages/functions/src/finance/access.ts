@@ -16,7 +16,7 @@ export const FINANCE_PLUGIN_ID = 'finance'
  *
  * Delegates to the ONE resolver rather than reading the install document here:
  * this used to be its own copy, and so it could not see an ORG-level install —
- * a studio inside an organisation that bought finance for it was refused. The
+ * a studio inside an organization that bought finance for it was refused. The
  * named wrapper stays because its refusal copy below is specific.
  */
 export async function isFinancePluginActive(teamId: string): Promise<boolean> {

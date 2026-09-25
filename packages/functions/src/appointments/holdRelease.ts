@@ -4,7 +4,7 @@
 // An appointment hold is a `sessions/{apt_<providerId>_<startMs>}` document with
 // `status: 'pending_payment'` plus its paired booking subdocument. THE HOLD IS
 // THE SESSION: nothing exists on the calendar until somebody books, so releasing
-// a hold means CANCELLING a session and DELETING a booking.
+// a hold means CANCELING a session and DELETING a booking.
 //
 // ── WHY THIS FILE EXISTS ────────────────────────────────────────────────────
 //
@@ -42,7 +42,7 @@
 //     — the Stripe payment-link create failed after the hold was written.
 //         PROOF: booking_token, falling back to EXCLUSIVITY when there is no
 //         stored token to compare it against. Uses releaseAppointmentHold.
-//         (Until Phase 3 this cancelled on PRESENCE, with a comment claiming it
+//         (Until Phase 3 this canceled on PRESENCE, with a comment claiming it
 //         followed site 1. It now actually does.)
 //         THIS RAIL HAS NO DEADLINE. It deliberately writes no
 //         `hold_expires_at`, so the daily sweep (4) can never reach it and
@@ -58,9 +58,9 @@
 //         superseded Checkout Session at Stripe before writing anything
 //         (`reservePromoRedemption`'s pre-flight close), so the expiry event for
 //         a superseded sibling now arrives SECONDS after the buyer's retry
-//         instead of ~31 minutes later. On presence alone it cancelled the hold
+//         instead of ~31 minutes later. On presence alone it canceled the hold
 //         the retry's live, payable session was guarding: the buyer pays for an
-//         appointment that has been cancelled out from under them.
+//         appointment that has been canceled out from under them.
 //  4. `expirePendingBookings` (dailyTasks/) — the daily sweep.
 //         PROOF: THE DEADLINE. It addresses holds by
 //         `status == 'pending_payment' AND hold_expires_at <= now`, and a lapsed
@@ -84,7 +84,7 @@
 //         `booking_token` and it finds the booking by querying for it, so it
 //         cannot address a document it does not own. Same proof as 1–3, arrived
 //         at from the other end.
-//  7. `cancelSession` (sessions/index.ts) — the manager deleting or cancelling a
+//  7. `cancelSession` (sessions/index.ts) — the manager deleting or canceling a
 //     whole session, holds included.
 //         DELIBERATE EXEMPTION, the twin of `releasePromoReservations` on the
 //         promo side: a manager clearing a slot is precisely the operation no
@@ -99,7 +99,7 @@
 //         enforced rather than documented has to move into those rules or
 //         behind a callable first.
 //  8. `cancelAppointmentSlot` (appointments/cancelSlot.ts) — the manager
-//     cancelling ONE appointment from the admin, which is the client-side
+//     canceling ONE appointment from the admin, which is the client-side
 //     `updateDoc(status: 'cancelled')` above moved behind a callable so the
 //     Stripe payment link behind a link-mode hold can be closed with it.
 //         SAME DELIBERATE EXEMPTION AS 7, for the same reason: the manager's
@@ -165,7 +165,7 @@
 //
 //     The argument is about the CURRENT document, not about the rail, and the
 //     difference matters: a deadline-less hold is NOT unreachable.
-//     `runAppointmentSlotTransaction` reuses a session that is cancelled, whose
+//     `runAppointmentSlotTransaction` reuses a session that is canceled, whose
 //     hold has lapsed, or whose own holder is retrying (`allowRewriteByHolder`)
 //     — and the third of those DOES fire here, because the same client booking
 //     the same slot through the public checkout rewrites the staff hold in place.
@@ -228,7 +228,7 @@ export interface AppointmentHoldReleaseInput {
  *   attempt A now fails, or session A expires → and, without this check, cancels
  *   the session and deletes the booking that B's live, payable session guards.
  *
- * The buyer then pays for an appointment that has been cancelled out from under
+ * The buyer then pays for an appointment that has been canceled out from under
  * them. The race pre-dates Phase 3, but Phase 3 is what made it LIKELY rather
  * than rare, twice over: the promo lifecycle refuses losing attempts on purpose
  * (`promo_busy` from the compare-and-set, and from a bind whose slot moved on),
@@ -270,7 +270,7 @@ export function decideAppointmentHoldRelease(
 
 export type AppointmentHoldReleaseOutcome =
   | 'released'
-  /** The session is gone, already cancelled, or already confirmed — nothing to
+  /** The session is gone, already canceled, or already confirmed — nothing to
    *  release. */
   | 'not_a_live_hold'
   /** The booking is confirmed: somebody paid. Never cancel a paid appointment. */
@@ -314,7 +314,7 @@ export async function releaseAppointmentHold(params: {
     // metadata, so it is worth one field comparison never to cancel another
     // tenant's slot.
     if (s.teamId !== params.teamId) return 'not_a_live_hold'
-    // Already confirmed, already cancelled, or re-acquired as 'full' — there is
+    // Already confirmed, already canceled, or re-acquired as 'full' — there is
     // no live hold at this address to give back.
     if (s.status !== 'pending_payment') return 'not_a_live_hold'
     if (bSnap.exists && bSnap.data()?.status === 'confirmed') return 'confirmed'

@@ -11,7 +11,7 @@
 // everyone else, listed beneath those cards — a vendor with neither reads as an
 // unexplained blank, which on a cost page invites the reader to assume zero.
 //
-// The units are deliberately NOT normalised into one "spend" number: GCP reports
+// The units are deliberately NOT normalized into one "spend" number: GCP reports
 // month-to-date money, Stripe a completed month's money split by whose cost it
 // is, Brevo credits remaining, DeepL characters. See `PlatformProviderCosts` in
 // @linyup/shared for why converting them would be inventing precision.

@@ -2,13 +2,13 @@
 
 /**
  * THE THEME PICKER for a public surface — a wall of preset tiles plus one
- * CUSTOM tile whose colours the studio sets directly.
+ * CUSTOM tile whose colors the studio sets directly.
  *
  * ── TWO WAYS IN ─────────────────────────────────────────────────────────────
  * 1. Pick a preset. No effort — a light/dark pair in one hue, drawn split so
  *    both versions are visible before it is chosen.
- * 2. Pick the custom tile and set the colours: a light-page colour and a
- *    dark-page colour, or one colour for the whole site. The colour you pick IS
+ * 2. Pick the custom tile and set the colors: a light-page color and a
+ *    dark-page color, or one color for the whole site. The color you pick IS
  *    the page (see themeDerive.ts) — there is no strength dial, because that was
  *    the thing that made a simple idea feel complicated.
  *
@@ -29,7 +29,7 @@ import { ColorPicker } from '@/components/ui/color-picker'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 
-/** Where the custom colours start before a studio has chosen — a light indigo
+/** Where the custom colors start before a studio has chosen — a light indigo
  *  page and a deep indigo night, recognisably Linyup rather than an arbitrary
  *  pair. */
 export const DEFAULT_CUSTOM_LIGHT = '#eef2ff'
@@ -87,8 +87,8 @@ export function ThemePresetPicker({
   const emit = (patch: Partial<{ light: string; dark?: string; single: boolean; lighting: boolean }>) =>
     onCustomChange?.({ light: cLight, dark, single: cSingle, lighting: cLighting, ...patch })
 
-  /** Selecting the custom tile has to WRITE the colours, not just the id: a
-   *  'custom' theme with no stored light colour resolves to null and the page
+  /** Selecting the custom tile has to WRITE the colors, not just the id: a
+   *  'custom' theme with no stored light color resolves to null and the page
    *  would silently fall back to its legacy look. */
   const pickCustom = () => {
     emit({})
@@ -135,8 +135,8 @@ export function ThemePresetPicker({
       </div>
 
       {/* THE CUSTOM CONTROLS appear only when the custom tile is chosen —
-          two rows, light then dark, the colour on each; a switch to use one
-          colour; and the lighting effect. */}
+          two rows, light then dark, the color on each; a switch to use one
+          color; and the lighting effect. */}
       {offersCustom && isCustom && (
         <div className="space-y-3 rounded-lg border p-3">
           <ColourRow
@@ -146,7 +146,7 @@ export function ThemePresetPicker({
             onChange={(hex) => emit({ light: hex })}
           />
 
-          {/* The dark row is hidden under "one colour", because there is no dark
+          {/* The dark row is hidden under "one color", because there is no dark
               version to set. */}
           {!cSingle && (
             <ColourRow

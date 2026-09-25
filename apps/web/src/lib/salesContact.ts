@@ -1,7 +1,7 @@
 /**
  * THE ONE SALES ROUTE in the product.
  *
- * There is no self-service lane for the Organisation tier — `createOrganization`
+ * There is no self-service lane for the Organization tier — `createOrganization`
  * exists as a callable but nothing in the product calls it — so every surface
  * that offers the tier has to end in a conversation. It ended in a mailto typed
  * inline on the billing page; a second copy on the org upsell would have been

@@ -381,13 +381,13 @@ export const PROMO_DEFAULT_MAX_USES_PER_CONTACT = 1
 export const PROMO_MAX_SCOPE_IDS = 100
 
 /**
- * Code format AFTER normalisation: 3–24 chars, uppercase alphanumerics and
+ * Code format AFTER normalization: 3–24 chars, uppercase alphanumerics and
  * hyphens, no leading hyphen. Enforced at creation (authored → throw) and used
  * by the admin form so client and server refuse the same strings.
  */
 export const PROMO_CODE_FORMAT_RE = /^[A-Z0-9][A-Z0-9-]{2,23}$/
 
-/** True iff `raw` is a well-formed promo code once normalised. */
+/** True iff `raw` is a well-formed promo code once normalized. */
 export function isValidPromoCodeFormat(raw: string): boolean {
   return PROMO_CODE_FORMAT_RE.test(normalizeRedemptionCode(raw))
 }
@@ -665,7 +665,7 @@ export function promoModifier(
 export type { Sha256Hex }
 
 /**
- * The strongest identity a one-off purchase rail actually has — the normalised
+ * The strongest identity a one-off purchase rail actually has — the normalized
  * EMAIL, hashed. See `contactIdentityKey` (utils/identity.ts) for the full
  * reasoning and for what it does NOT promise.
  *

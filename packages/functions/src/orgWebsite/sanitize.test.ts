@@ -5,7 +5,7 @@ import { orgSiteSourceLocale, sanitizeOrgMeta, sanitizeOrgSection } from './sani
 
 // THE ORG SITE'S OWN PUBLISH RULES. The sections it shares with the team site
 // are round-tripped by ../website/sectionRoundTrip.test.ts; this covers what
-// only an organisation has — the three aggregate sections, the header button,
+// only an organization has — the three aggregate sections, the header button,
 // and which language the site is written in. There were no org publish tests
 // before this file, which is how the club directory's layout and search box
 // were lost at publish without anything failing.
@@ -47,7 +47,7 @@ describe('org website publish — the aggregate sections round-trip', () => {
     })
   }
 
-  it('publishes a blog-posts section — organisations write news too', () => {
+  it('publishes a blog-posts section — organizations write news too', () => {
     const posts = { id: 'news', type: 'posts', heading: 'News', limit: 4, layout: 'list', columns: 2 }
     assert.deepEqual(sanitizeOrgSection(structuredClone(posts)), posts)
   })
@@ -80,13 +80,13 @@ describe('org website publish — section buttons open a page or a link', () => 
 describe('org website publish — the header button is a page, a link, or nothing', () => {
   const header = (h: Record<string, unknown>) => sanitizeOrgMeta({ header: { showNav: true, ...h } }, 'Federation').header
 
-  it('keeps a labelled button with an address, as a link', () => {
+  it('keeps a labeled button with an address, as a link', () => {
     const h = header({ ctaLabel: 'Join', ctaAction: 'url', ctaUrl: 'https://example.ch/join' })
     assert.equal(h.ctaAction, 'url')
     assert.equal(h.ctaUrl, 'https://example.ch/join')
   })
 
-  it('never publishes a booking button — an organisation has no booking page', () => {
+  it('never publishes a booking button — an organization has no booking page', () => {
     const h = header({ ctaLabel: 'Book now', ctaAction: 'booking' })
     assert.equal(h.ctaLabel, undefined)
     assert.equal(h.ctaAction, undefined)
@@ -119,10 +119,10 @@ describe('org website publish — the header button is a page, a link, or nothin
 })
 
 describe('org website publish — the language the site is written in', () => {
-  it("prefers the site's own language over the organisation's", () => {
+  it("prefers the site's own language over the organization's", () => {
     assert.equal(orgSiteSourceLocale({ language: 'de' }, { language: 'en' }), 'de')
   })
-  it("falls back to the organisation's, then to English", () => {
+  it("falls back to the organization's, then to English", () => {
     assert.equal(orgSiteSourceLocale({}, { language: 'fr' }), 'fr')
     assert.equal(orgSiteSourceLocale({}, {}), 'en')
   })

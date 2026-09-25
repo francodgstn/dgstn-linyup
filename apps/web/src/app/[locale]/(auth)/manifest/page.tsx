@@ -115,7 +115,7 @@ export default function ManifestPage() {
   })
 
   // Sessions with nobody booked still print — an empty class is exactly the
-  // thing a coach wants to know before travelling to it.
+  // thing a coach wants to know before traveling to it.
   const visible = entries ?? []
   const totalBooked = visible.reduce((n, e) => n + activeBookings(e.bookings).length, 0)
 
@@ -315,7 +315,7 @@ function ManifestSession({ entry }: { entry: DaySheetEntry }) {
                   <span className="shrink-0 text-xs text-amber-700">{t('unpaid')}</span>
                 )}
                 {/* Immediately after `unpaid`, which is the template: one word,
-                    colour-coded, `shrink-0`, read off data already loaded. It is
+                    color-coded, `shrink-0`, read off data already loaded. It is
                     text and a stroke rather than a filled pill because
                     `globals.css` forces these backgrounds transparent for print
                     and most browsers drop background graphics anyway — a pill

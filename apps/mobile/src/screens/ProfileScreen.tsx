@@ -430,7 +430,7 @@ export const ProfileScreen: React.FC = () => {
    * it and the account keeps working for the whole window, which is why the
    * confirmation names the date and the way back rather than shouting.
    *
-   * It ANONYMISES rather than erases when the window closes — the studio's
+   * It ANONYMIZES rather than erases when the window closes — the studio's
    * finance records and its signed waivers have to survive somebody leaving.
    * The copy says so plainly; discovering it afterwards would feel like a trick.
    */
@@ -962,7 +962,7 @@ export const ProfileScreen: React.FC = () => {
           </View>
           {processedEntries.map((entry) => {
             const isCurrentUser = entry.contact_id === contact?.id;
-            // Anonymise not-yet-joined (trial) members — the ONE rule, shared
+            // Anonymize not-yet-joined (trial) members — the ONE rule, shared
             // with the Space's leaderboard (leaderboardName in @linyup/shared).
             // This copy compared stage strings untyped and fell back to
             // 'Unknown' where the Space used '?'.
@@ -1133,7 +1133,7 @@ export const ProfileScreen: React.FC = () => {
         />
 
         {/* The dashboard keeps its own agenda copy (`agendaSessions`); a booking
-            made or cancelled on this tab reloads it, so switching back never
+            made or canceled on this tab reloads it, so switching back never
             offers Book for a class already booked (report 7107, M-03). */}
         <TrainingActivity
           contactId={contact.id}

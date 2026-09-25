@@ -5,7 +5,7 @@
 // STRAIGHT TO FIRESTORE with the Admin SDK, bypassing those writers — so this
 // is the other half of the same guarantee, and it spans the scripts/functions
 // boundary on purpose (CLAUDE.md: that boundary is where corrections stop
-// travelling).
+// traveling).
 //
 // The failure it guards is SILENT in every direction: an unstamped row raises
 // no error, fails no other test, and simply never expires. Nothing on any

@@ -18,7 +18,7 @@ import {
 //
 // "Installing A requires B" is a DIFFERENT relation from "container A installs
 // members B" (PLUGIN_BUNDLES), and the difference is the whole point: a bundle
-// member is hidden from every catalogue and owned by its container, while a
+// member is hidden from every catalog and owned by its container, while a
 // requirement is independently discoverable, installable and keepable.
 // Conflating them is the failure this file exists to catch — see the header of
 // packages/shared/src/types/plugin-requirements.ts.

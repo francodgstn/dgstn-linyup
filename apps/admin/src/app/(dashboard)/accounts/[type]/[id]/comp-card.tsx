@@ -10,8 +10,8 @@ import { setTenantComped } from './actions'
  * ── WHY IT IS NOT A TOGGLE ───────────────────────────────────────────────────
  * Every other control on this page is a switch, and this one deliberately is
  * not. Comping is the widest-reaching operator action there is: it exempts the
- * tenant from the trial sweep and from the organisation wind-down, removes it
- * from the MRR line, refuses its own Subscribe button, and — on an organisation
+ * tenant from the trial sweep and from the organization wind-down, removes it
+ * from the MRR line, refuses its own Subscribe button, and — on an organization
  * — waives Linyup's platform fee on every payment taken by every studio in it.
  * A switch invites a stray click; a form with a required reason asks the
  * operator to state what they are doing before it happens.
@@ -42,7 +42,7 @@ export function CompCard({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  const label = kind === 'org' ? 'organisation' : 'studio'
+  const label = kind === 'org' ? 'organization' : 'studio'
 
   function apply(next: boolean) {
     if (
@@ -96,7 +96,7 @@ export function CompCard({
           value={reason}
           disabled={pending}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="e.g. founding organisation, migrated 2026"
+          placeholder="e.g. founding organization, migrated 2026"
           className="rounded-md border bg-background px-2 py-1.5 text-sm disabled:opacity-50"
         />
       </label>

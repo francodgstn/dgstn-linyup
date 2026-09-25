@@ -38,7 +38,7 @@ import { ALL_CAPABILITIES, capabilityEnforcement, type Capability } from '@linyu
 
 const SRC = join(__dirname, '..')
 /** SRC → packages/functions → packages → worktree root. The claim spans the
- *  rules/functions/web boundary, which is where a correction stops travelling. */
+ *  rules/functions/web boundary, which is where a correction stops traveling. */
 const ROOT = join(SRC, '..', '..', '..')
 
 function read(abs: string): string {

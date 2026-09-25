@@ -21,11 +21,11 @@ import { join } from 'node:path'
 // Run with: pnpm --filter @linyup/functions test
 
 const SRC = join(__dirname, '..')
-// CRLF-normalised: Windows checkouts store these with \r\n, and a bare newline
+// CRLF-normalized: Windows checkouts store these with \r\n, and a bare newline
 // anchor would pass in CI and fail on a laptop.
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')
 
-/** Every callable that can settle a course enrolment without a Stripe charge.
+/** Every callable that can settle a course enrollment without a Stripe charge.
  *  Named rather than counted: a claim checkable by reading the names beside it
  *  fails visibly rather than silently. */
 const FREE_RAILS = [
@@ -63,7 +63,7 @@ describe('every free way onto a course prices it first', () => {
     })
 
     it(`${rail.fn} refuses BEFORE it writes anything`, () => {
-      // Order is the whole guarantee. A refusal raised after the enrolment was
+      // Order is the whole guarantee. A refusal raised after the enrollment was
       // settled would be a place given away and an error shown.
       const src = read(rail.file)
       const start = src.indexOf(`export const ${rail.fn} = onCall`)

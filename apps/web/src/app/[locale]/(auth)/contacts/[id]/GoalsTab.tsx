@@ -50,7 +50,7 @@ import {
 // not the same question, and collapsing them made the picker wrong. See the
 // header of `packages/shared/src/types/goal.ts` for the full reasoning.
 
-// The shared coaching dialogs and chips own the behaviour and take their WORDS
+// The shared coaching dialogs and chips own the behavior and take their WORDS
 // from the surface mounting them (`components/coaching/*` — the Space mounts
 // the same components from its own namespace, see its `useSpaceCoachingLabels`).
 // This builds the Contacts copy. A hook, so the accessors are bound HERE and

@@ -33,7 +33,7 @@ export default function OrgPlacesPage() {
   const { user } = useAuth()
   const qc = useQueryClient()
   const { data: places = [], isLoading } = useOrgPlaces(orgId)
-  // A MEMBER STUDIO'S PLACES ARE READ-ONLY HERE. An organisation needs to see
+  // A MEMBER STUDIO'S PLACES ARE READ-ONLY HERE. An organization needs to see
   // where its studios actually train — the roster alone does not say — but a
   // studio's locations stay the studio's to edit, which is also exactly what the
   // rules allow (read for an org admin, write for the studio's managers).
@@ -173,7 +173,7 @@ export default function OrgPlacesPage() {
       {/* ── THE STUDIOS' OWN PLACES ──────────────────────────────────────────
           A separate, plainly read-only list rather than rows mixed into the
           manager above: the manager's cards carry edit and delete, and an
-          organisation cannot edit these. Showing them in the same control with
+          organization cannot edit these. Showing them in the same control with
           the buttons quietly missing would read as a bug. */}
       {visibleTeamPlaces.length > 0 && (
         <section className="space-y-2 pt-2">

@@ -9,9 +9,9 @@
  * first, shown ONLY in the sidebar search panel before anything is typed.
  *
  * WHY IT IS NOT ANY OF THE OTHER THREE:
- *  · Favourites' recent half is a rolling history of NAV DESTINATIONS (pages),
+ *  · Favorites' recent half is a rolling history of NAV DESTINATIONS (pages),
  *    keyed by nav id. It answers "where do I go often". A person is not a
- *    destination in that catalogue and never enters it — `/contacts/123`
+ *    destination in that catalog and never enters it — `/contacts/123`
  *    records the "contacts" PAGE there, which is exactly the wrong answer to
  *    "who was I just looking at".
  *  · Open tabs answers "what am I in the middle of", and cannot answer this at

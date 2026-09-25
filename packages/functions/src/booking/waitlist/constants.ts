@@ -102,7 +102,7 @@ export function offerWasDelivered(outcome: SendOutcome): boolean {
  * A class is called off in one of TWO shapes, and every waitlist path has to
  * know both.
  *
- * `status: 'cancelled'` is the appointment/standalone form. A cancelled
+ * `status: 'cancelled'` is the appointment/standalone form. A canceled
  * occurrence of a recurring series is different — `cancelSession` writes
  * `isException` + `exceptionType: 'cancelled'` and leaves `allowBooking` and
  * `status` exactly as they were (see sessions/index.ts, `markAsException`), so a

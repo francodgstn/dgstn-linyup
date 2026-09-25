@@ -5,10 +5,10 @@
  *
  * ─── WHY A SCOPE AT ALL ─────────────────────────────────────────────────────
  *
- * Nearly every organisation concept collides by name with a studio one: Events,
+ * Nearly every organization concept collides by name with a studio one: Events,
  * Places, Website, Plugins, Members and Settings all exist at both levels. Two
  * sidebar rows called "Events" never stop being ambiguous, whatever they are
- * labelled — so the org stopped being a section beside the studio and became a
+ * labeled — so the org stopped being a section beside the studio and became a
  * place you stand in, with one unmistakable indicator saying which. The cost is
  * a click when moving between the two, which is what the flip below is for.
  * Full reasoning: docs/org-navigation.md.
@@ -158,7 +158,7 @@ export function ScopeProvider({ children }: { children: React.ReactNode }) {
     return available.find((s) => scopeKey(s) === scopeKey(storedPrevious)) ?? null
   }, [storedPrevious, current, available])
 
-  // THE SCOPE ROOT, not a page inside it. Where an organisation opens depends on
+  // THE SCOPE ROOT, not a page inside it. Where an organization opens depends on
   // whether you run it or merely belong to one of its studios, and `/org/{id}`
   // is the one place that decides (see that route). Naming `/teams` here dropped
   // a member studio on the roster their own membership cannot list — the exact

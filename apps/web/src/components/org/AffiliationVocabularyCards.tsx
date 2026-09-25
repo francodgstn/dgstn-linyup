@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * THE ORGANISATION'S AFFILIATION VOCABULARY — its statuses and its types.
+ * THE ORGANIZATION'S AFFILIATION VOCABULARY — its statuses and its types.
  *
  * These two cards used to sit on the org SETTINGS page, three screens below the
- * organisation's name and language, while the roster they describe lived on the
+ * organization's name and language, while the roster they describe lived on the
  * Affiliations page. One subject, two places, and the half you had to configure
  * was the half nobody could find (Franco, 2026-08-28).
  *
@@ -50,7 +50,7 @@ import {
 } from '@linyup/shared'
 import type { OrgAffiliationStatusDef, AffiliationStatusColor, AffiliationType, AffiliationIssuer } from '@linyup/shared'
 
-// ─── colour config ────────────────────────────────────────────────────────────
+// ─── color config ────────────────────────────────────────────────────────────
 
 const COLORS: { id: AffiliationStatusColor; bg: string; label: string }[] = [
   { id: 'gray',   bg: 'bg-gray-400',   label: 'Gray' },

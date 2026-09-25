@@ -21,7 +21,7 @@ import {
   materializeOccurrences,
   seriesHorizonUpdate,
 } from './series'
-// Cancelling a class lives in ./teardown — ONE definition, shared by the inline
+// Canceling a class lives in ./teardown — ONE definition, shared by the inline
 // path below and the background worker, so "delete three" and "delete two
 // hundred" cannot mean two different things.
 import {
@@ -71,7 +71,7 @@ export const generateRecurringSessions = onCall(async (request) => {
   // The explicit half of the teardown freeze. `rollSessionSeries` is stopped by
   // construction (it rolls `status == 'active'` and a frozen series is
   // 'deleting'), but this callable names a series directly and would happily
-  // re-materialise the occurrences a running job is deleting.
+  // re-materialize the occurrences a running job is deleting.
   if (seriesData.teardown_job_id) {
     throw new HttpsError('failed-precondition', 'teardown-in-progress')
   }
@@ -148,7 +148,7 @@ export const generateRecurringSessions = onCall(async (request) => {
  *      run as it did at the click.
  *   2. FREEZE the series — one synchronous write, BEFORE anything is enqueued.
  *      Enqueue first and there is a window in which the daily roller is still
- *      free to re-materialise the very occurrences the job is deleting.
+ *      free to re-materialize the very occurrences the job is deleting.
  *   3. ENQUEUE.
  *
  * Returns `mode` so the client knows whether it is looking at a finished result
@@ -179,13 +179,13 @@ export const cancelSession = onCall(async (request) => {
 
   // ── The background path ────────────────────────────────────────────────────
   if (isSeriesWide) {
-    // SERIES-WIDE ON A COURSE IS CANCELLING THE COURSE, and that is the course's
+    // SERIES-WIDE ON A COURSE IS CANCELING THE COURSE, and that is the course's
     // own callable: it closes the course first, so nothing can be sold while the
     // lessons are coming down, and it hands back the payments to refund. Reached
     // from here it would strip the lessons and leave a course that still says
     // "13 lessons, 4 places left".
     //
-    // CANCELLING ONE LESSON IS FINE and deliberately not refused: seats return,
+    // CANCELING ONE LESSON IS FINE and deliberately not refused: seats return,
     // the roster is mailed, and the course itself is untouched, which is what
     // "no lesson on 8.10, we'll add a make-up" means.
     const [courseErr, courseSeries] = await to(
@@ -527,7 +527,7 @@ export const updateRecurringSession = onCall(async (request) => {
   // lie: `rollSessionSeries` reads it to decide whether a series still has
   // runway, so a false horizon parks the roller for three months on precisely
   // the series a manager just touched. The field is now written only where
-  // sessions were actually materialised to that instant — the regeneration
+  // sessions were actually materialized to that instant — the regeneration
   // branch at the end of this function, and nowhere else in here.
   const seriesUpdates: Record<string, unknown> = {
     updatedAt: FieldValue.serverTimestamp(),

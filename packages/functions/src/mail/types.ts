@@ -24,7 +24,7 @@ export interface OutboundMessage {
   // Overrides the sender's default Reply-To when set (rare).
   replyTo?: string
   attachments?: MailAttachment[]
-  // Provider-side categorisation (Brevo tags) — also used to namespace events.
+  // Provider-side categorization (Brevo tags) — also used to namespace events.
   tags?: string[]
   // App-level idempotency. When set, a duplicate send with the same key is
   // skipped (see mailService) and the key is forwarded to the provider.

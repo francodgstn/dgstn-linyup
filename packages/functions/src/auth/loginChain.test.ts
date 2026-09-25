@@ -5,7 +5,7 @@
 // decisions were lifted into pure modules and the wiring is pinned by reading
 // the SOURCE, the same technique that file uses.
 //
-// The one behaviour every case here circles: `login_emails`. A parent whose
+// The one behavior every case here circles: `login_emails`. A parent whose
 // address is on two children's allow-lists must be matched (both), must be
 // able to pick one, and must be able to SWITCH to the other afterwards — the
 // last of which was refused until `switchActiveContact` adopted the shared
@@ -36,7 +36,7 @@ describe('contactAcceptsLoginEmail — the ONE "may this email sign in as this c
     assert.equal(contactAcceptsLoginEmail({ email: 'A@B.C' }, 'a@b.c'), true)
   })
 
-  it('accepts a login_emails entry (the parent), normalised on both sides', () => {
+  it('accepts a login_emails entry (the parent), normalized on both sides', () => {
     assert.equal(contactAcceptsLoginEmail(child, 'parent@example.com'), true)
     assert.equal(contactAcceptsLoginEmail(child, 'OTHER@example.com'), true)
   })

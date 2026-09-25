@@ -1,6 +1,6 @@
 // "Cancels at period end" is a THIRD state, and this is the one place that says so.
 //
-// A subscription is not simply active or cancelled. Between the two sits a
+// A subscription is not simply active or canceled. Between the two sits a
 // subscription that is still LIVE — the member still trains, the studio still has
 // access — but will not renew. Every surface that shows a subscription needs that
 // state, and every one of them was getting it wrong in a different way, because
@@ -99,7 +99,7 @@ export interface SubscriptionLifecycleFields {
  * Statuses in which the subscription has already STOPPED, and therefore has a
  * cancellation worth narrating in the past tense.
  *
- * Both spellings of cancelled are here on purpose: Stripe writes `canceled`, the
+ * Both spellings of canceled are here on purpose: Stripe writes `canceled`, the
  * SaaS rail's own vocabulary writes `cancelled`, and a set that knew only one of
  * them would silently drop half the ended subscriptions.
  *
@@ -133,14 +133,14 @@ const ENDED_STATUSES = new Set([
  * period onto the subscription ITEM and the readers being fixed, every
  * `saas_subscriptions` and `member_subscriptions` doc was written by a writer
  * still reading it off the SUBSCRIPTION — so it stored `current_period_end: null`
- * and, having never read the field at all, no `cancel_at`. A CANCELLING doc from
+ * and, having never read the field at all, no `cancel_at`. A CANCELING doc from
  * that window therefore carries `cancel_at_period_end: true` and no date
  * whatsoever. That window is every doc this codebase has ever written under
  * Dahlia, which is what makes it the working population rather than an edge case.
  *
  * So any surface that asks `subscriptionEndsAt(sub) !== null` to decide whether a
- * subscription is cancelling gets `false` for exactly the studios that ARE
- * cancelled and still live — hiding "Reactivate" from the only people who need
+ * subscription is canceling gets `false` for exactly the studios that ARE
+ * canceled and still live — hiding "Reactivate" from the only people who need
  * it, and showing an operator nothing where there is something. Ask THIS instead,
  * and treat the date as optional detail.
  *
@@ -150,7 +150,7 @@ const ENDED_STATUSES = new Set([
  * ── THE STATUS GATE DISQUALIFIES; IT DOES NOT QUALIFY ───────────────────────
  * This asked `LIVE_STATUSES.has(status)` for one round, which is the same
  * mistake as the date one level up: it demanded a SECOND fact to believe the
- * first. A doc whose `status` is absent then read as NOT cancelling — and
+ * first. A doc whose `status` is absent then read as NOT canceling — and
  * status-less docs are not hypothetical. The SaaS webhook's
  * `subscription.updated` branch writes no `status` at all, and it persists with
  * `set(…, {merge:true})`, so a `customer.subscription.updated` that arrives for
@@ -184,10 +184,10 @@ export function subscriptionIsCancelling(
  *
  * Returns null for a subscription that is simply renewing (nothing to announce),
  * for one that has already ended (that is the past, and the UI already says so
- * through `status`), and for one that is cancelling on a date we do not have.
+ * through `status`), and for one that is canceling on a date we do not have.
  * The date prefers Stripe's explicit `cancel_at`, falling back to the period end.
  *
- * ⚠ NULL HERE DOES NOT MEAN "NOT CANCELLING" — see `subscriptionIsCancelling`.
+ * ⚠ NULL HERE DOES NOT MEAN "NOT CANCELING" — see `subscriptionIsCancelling`.
  * Gate UI on that; use this only to fill in a date.
  */
 export function subscriptionEndsAt(sub: SubscriptionLifecycleFields | null | undefined): Timestamp | null {
@@ -208,8 +208,8 @@ export function subscriptionEndsAtMs(
 export interface SubscriptionCancellationRecord {
   /**
    * When it stops. Null once it already has — `ended` then says so — and ALSO
-   * null on a doc that is cancelling without a stored date (the pre-migration
-   * population). A reader that needs "is it cancelling" must not infer it from
+   * null on a doc that is canceling without a stored date (the pre-migration
+   * population). A reader that needs "is it canceling" must not infer it from
    * this field; the record being non-null is that answer.
    */
   endsAt: Timestamp | null

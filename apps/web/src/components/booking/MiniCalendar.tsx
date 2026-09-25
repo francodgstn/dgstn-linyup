@@ -30,7 +30,7 @@ export function dateKeyToDate(key: string): Date {
 
 /** The same day key as an instant for DISPLAY, and NOON is the whole point: the
  *  formatter renders in the studio's zone, so a device far east or west of it
- *  reads a midnight instant as the neighbouring day. Its midnight sibling above
+ *  reads a midnight instant as the neighboring day. Its midnight sibling above
  *  is for calendar arithmetic, where the date parts are what matter and the
  *  instant is never formatted. */
 export function dayKeyAtNoon(key: string): Date {

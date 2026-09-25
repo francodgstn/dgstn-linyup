@@ -113,7 +113,7 @@ export interface GiftCard {
    *  is indistinguishable from a mistake. */
   issue_reason?: string | null
   issued_at?: Timestamp
-  /** The gift_card_issues claim doc that serialised this mint (admin_* only). */
+  /** The gift_card_issues claim doc that serialized this mint (admin_* only). */
   issue_ref?: string | null
   /** payment_events doc id holding the cash an admin_paid card was sold for. */
   payment_event_id?: string | null

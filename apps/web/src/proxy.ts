@@ -42,7 +42,7 @@ interface Rewrite {
  *
  * next-intl resolves the request locale from a header ITS OWN middleware sets
  * (`X-NEXT-INTL-LOCALE`), not from the `[locale]` path segment — so a rewrite
- * that goes around it lands on the German page with the ENGLISH catalogue: the
+ * that goes around it lands on the German page with the ENGLISH catalog: the
  * studio's own copy in German, every app string around it (the language
  * switcher, "read more", the booking funnel) in English, and `<html lang>`
  * wrong for a screen reader. Setting the header is what the locale-prefixed
@@ -100,7 +100,7 @@ async function tenantRewrite(request: NextRequest): Promise<Rewrite | null> {
 
 /** `/public/{slug}/site…` — the website, on the app's own hosts. */
 const PUBLIC_SITE_PATH = /^\/public\/([A-Za-z0-9_-]+)\/site(?:\/|$)/
-/** `/public/org/{slug}…` — an organisation's website, which IS its root; only
+/** `/public/org/{slug}…` — an organization's website, which IS its root; only
  *  the static `events` segment beside the site's catch-all is not a site page. */
 const PUBLIC_ORG_SITE_PATH = /^\/public\/org\/([A-Za-z0-9_-]+)(?:\/(?!events(?:\/|$))|$)/
 

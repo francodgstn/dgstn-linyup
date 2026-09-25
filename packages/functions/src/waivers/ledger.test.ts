@@ -383,7 +383,7 @@ describe('one definition of "the same person"', () => {
     }
   })
 
-  it('normalises the address before hashing, and falls back to the contact id', () => {
+  it('normalizes the address before hashing, and falls back to the contact id', () => {
     assert.equal(
       contactIdentityKey({ email: ' Anna@Example.CH ', contactId: 'c1' }, sha256Hex),
       contactIdentityKey({ email: 'anna@example.ch', contactId: 'c9' }, sha256Hex)
@@ -393,7 +393,7 @@ describe('one definition of "the same person"', () => {
 
   it('a shared household mailbox gives a parent and a child the SAME key', () => {
     // Which is precisely why the signer row is keyed on contactId and this is
-    // only ever a secondary, separately-labelled query.
+    // only ever a secondary, separately-labeled query.
     const mother = contactIdentityKey(
       { email: 'familie-meier@example.ch', contactId: 'mother' },
       sha256Hex

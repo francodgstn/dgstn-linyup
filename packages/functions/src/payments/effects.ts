@@ -49,7 +49,7 @@ const LINE_ITEM_KINDS: PaymentLineItemKind[] = [
   'other',
 ]
 
-/** Validate + normalise a client-supplied line-item. Returns null for junk;
+/** Validate + normalize a client-supplied line-item. Returns null for junk;
  * downgrades an effect-less subscription/course link (missing id) to 'other' so
  * applyPaymentEffects never silently no-ops on what looked like a real link.
  *

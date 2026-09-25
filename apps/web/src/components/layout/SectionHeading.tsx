@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 // ── IT MATCHES CardTitle ON PURPOSE ─────────────────────────────────────────
 // `CardTitle` already renders with the `font-heading` / `text-heading` tokens,
 // and the hand-rolled headings did not — so a heading inside a Card and one
-// directly above it were set in different faces and different colours. The two
+// directly above it were set in different faces and different colors. The two
 // non-muted levels here use the same tokens, so the page reads as one document
 // whether or not a given block happens to be wrapped in a Card.
 //

@@ -214,7 +214,7 @@ describe('seatFreedEdge', () => {
     assert.equal(seatFreedEdge(full, { bookings_count: 10 }), true)
   })
 
-  it('a cancelled session has no seat to hand on', () => {
+  it('a canceled session has no seat to hand on', () => {
     assert.equal(seatFreedEdge(full, { ...room, status: 'cancelled' }), false)
   })
 

@@ -73,7 +73,7 @@ export function requireChargeableAmountFromMajor(major: unknown): number {
  * NOT A QUOTE. Public surfaces price from an OPTIMISTIC snapshot documented as
  * partial (`clientPaymentSnapshot`, and the same note in BookingForm / ShopHome):
  * the contact session carries only the PRIMARY `subscription_type_id`, every held
- * id is reported unmetered, `joined` is assumed, and the catalogue is fetched
+ * id is reported unmetered, `joined` is assumed, and the catalog is fetched
  * once with no listener. The server loads the real thing. The two are two
  * implementations of one resolver and are ALLOWED to disagree — a subscription
  * that lapsed between page load and pay is a legitimate divergence, not an
@@ -169,13 +169,13 @@ export function requireChargeableMinorAmount(amount: unknown): number {
  * verifies the session on the studio's connected account and mints a contact
  * session through `buildContactSession`.
  *
- * SUCCESS ONLY, deliberately. A cancelled checkout identifies nobody and took no
+ * SUCCESS ONLY, deliberately. A canceled checkout identifies nobody and took no
  * money, so there is nothing to claim and no reason to put an id in that URL.
  */
 const CHECKOUT_SESSION_ID_PARAM = '&cs={CHECKOUT_SESSION_ID}'
 
 /**
- * Default `pay/result` URLs (success/cancel), honouring caller overrides.
+ * Default `pay/result` URLs (success/cancel), honoring caller overrides.
  *
  * ASYNC because of `teamId`: the return origin is validated against THAT
  * tenant's verified custom domain, which is a Firestore read. Resolving it here
@@ -277,7 +277,7 @@ export const STRIPE_MAX_CHECKOUT_EXPIRY_MINUTES = 24 * 60
 /**
  * How long a reservation guarding a Checkout Session outlives that session.
  *
- * The generalisation of the old 35-vs-31 constant pair: a gift-card hold used to
+ * The generalization of the old 35-vs-31 constant pair: a gift-card hold used to
  * be a flat 35 minutes because every session it guarded happened to be ~31. Four
  * minutes of slack absorbs clock skew and the gap between "Stripe stopped
  * accepting payment" and "we noticed", and nothing more — a longer margin holds
@@ -309,7 +309,7 @@ export const PROMO_RESERVATION_MARGIN_MINUTES = 4
  *
  * A GIFT-CARD hold keeps the 4-minute margin: it is guarded by a committed-hold
  * marker rather than by a lapse, and 31 + 4 === 35 === DEFAULT_HOLD_MINUTES is
- * pinned behaviour.
+ * pinned behavior.
  */
 export const PROMO_RESERVATION_BACKSTOP_MINUTES = 60
 
@@ -579,7 +579,7 @@ export const CHECKOUT_RATE_LIMIT_PER_HOUR = 30
 export const WAIVER_CHECK_RATE_LIMIT_BUCKET = 'waiver-check'
 
 /**
- * THE COUNTER'S SUBJECT — whatever the quota belongs to, sanitised into a
+ * THE COUNTER'S SUBJECT — whatever the quota belongs to, sanitized into a
  * document-id fragment.
  *
  * An IP is the commonest subject and was the only one this module used to

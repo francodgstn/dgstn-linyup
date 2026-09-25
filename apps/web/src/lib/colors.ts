@@ -1,11 +1,11 @@
-// Colour constants — deliberately dependency-free.
+// Color constants — deliberately dependency-free.
 //
 // These live apart from `components/ui/color-picker.tsx` on purpose: that module
 // is a 'use client' component pulling in react-colorful, Popover and Input, so
 // importing a constant from it would drag the whole picker into any bundle that
 // just wants a hex — including public, unauthenticated routes (the bio-link, the
 // shop, the space theme, the embeddable widget iframe) that render a brand accent
-// but never show a picker. Import colours from here; import the UI from there.
+// but never show a picker. Import colors from here; import the UI from there.
 
 /** The studio accent palette — the single source of truth. Previously copy-pasted
  *  into org/website, plugins/website, team/bio-link and the public BookingForm.
@@ -26,7 +26,7 @@ export const DEFAULT_ACCENT = '#6366f1'
 
 export const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
-/** Normalise anything stored (legacy 3-digit hex, missing '#', empty) to a
+/** Normalize anything stored (legacy 3-digit hex, missing '#', empty) to a
  *  6-digit hex, falling back to the default. Stored values are free text. */
 export function normalizeHex(value: string | undefined | null, fallback = DEFAULT_ACCENT): string {
   if (!value) return fallback
@@ -53,8 +53,8 @@ const AVATAR_COLORS = [
   'bg-indigo-500',
 ] as const
 
-/** A stable colour for an entity id, so the same person's bubble is the same
- *  colour on every list that shows it. */
+/** A stable color for an entity id, so the same person's bubble is the same
+ *  color on every list that shows it. */
 export function avatarColor(id: string): string {
   let h = 0
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0

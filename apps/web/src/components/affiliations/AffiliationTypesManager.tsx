@@ -51,7 +51,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { AffiliationTypeMark } from './AffiliationTypePicker'
 
 /**
- * Manage the team's affiliation TYPES (e.g. club membership, federation licence).
+ * Manage the team's affiliation TYPES (e.g. club membership, federation license).
  * Lives under Offer → Affiliations. Plan-gated (Studio+); below that it shows an
  * upsell. The `affiliations_enabled` toggle gates the type management surface.
  *

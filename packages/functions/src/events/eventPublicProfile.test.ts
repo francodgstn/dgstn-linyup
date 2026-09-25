@@ -69,7 +69,7 @@ describe('event public mirror — item projection', () => {
     assert.equal(published.peopleText, 'Coach Marta')
   })
 
-  it('normalises absent optionals to null rather than dropping them', () => {
+  it('normalizes absent optionals to null rather than dropping them', () => {
     const sparse = publicProgramItem({
       id: 'i2', eventId: 'e1', dayId: 'd1', startTime: '11:00', title: 'Break', order: 1,
     })

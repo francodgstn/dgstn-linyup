@@ -41,7 +41,7 @@ export function ThemePicker({
           return (
             <div key={theme.id} className="flex flex-col gap-3 rounded-lg border p-3">
               {/* A miniature of the look: its typeface in its case, a card in its
-                  shape, a button in its shape and colour. */}
+                  shape, a button in its shape and color. */}
               <div
                 className="border bg-background p-3"
                 style={{

@@ -47,7 +47,7 @@ from `packages/functions/.env.local`.
 - [ ] **Brevo** → `handleBrevoWebhook?token=<brevo-webhook-secret>` (delivered, hardBounce, softBounce, blocked, spam, invalid, unsubscribed)
 - [ ] **Payrexx** (only if a founder uses it) → `handlePayrexxWebhook?teamId=<teamId>` (per-team signing secret in the team's `integrations` doc)
 
-### Stripe catalogue
+### Stripe catalog
 
 - [ ] Run `scripts/stripe-sync.ts --apply` against the env's Stripe account
 - [ ] Verify every lookup key resolves: plans (`linyup_<plan>_monthly`), contact block, and **all add-ons including `linyup_addon_products_monthly`**
@@ -88,7 +88,7 @@ is written once and reconciliation lands in Firestore.
 ## 3. Manual E2E smoke in sandbox (scripted)
 
 All in `linyup-sandbox`, Stripe test cards (incl. a 3DS card and TWINT test
-behaviour). Use `TEST_MODE=true` so mail is safe.
+behavior). Use `TEST_MODE=true` so mail is safe.
 
 **Connect / shop (member → studio):**
 - [ ] Connect onboarding (managed **and** BYO) → `charges_enabled`

@@ -30,7 +30,7 @@ import { reportPublicLoadFailure } from '@/lib/publicQueryError'
 import { resolveRequestHost, tenantDomainContext } from '@/lib/tenantHostContext'
 import PublicOrgSite, { type PublicOrgSiteInitial } from '../PublicOrgSite'
 
-// An organisation's public website — its home at /public/org/{slug} and every
+// An organization's public website — its home at /public/org/{slug} and every
 // other page directly under it (/public/org/{slug}/{path}). The static `events`
 // segment beside this catch-all still wins for /public/org/{slug}/events, and a
 // site page may never take that name (TENANT_ROUTE_SEGMENTS).
@@ -71,10 +71,10 @@ const fetchOrgSite = cache(async (slug: string): Promise<OrgPublishedSite | null
  * The address of a page of `slug`'s site (`segments` [] ⇒ home) for this
  * request, or undefined when that language has no address here.
  *
- * On the organisation's OWN domain it is the short one a visitor sees
+ * On the organization's OWN domain it is the short one a visitor sees
  * (`https://verband.ch/ueber-uns`) — its site is always the domain's root —
- * and English on a non-English organisation has none (the unprefixed path is
- * the organisation's language). On our own hosts the unprefixed path answers
+ * and English on a non-English organization has none (the unprefixed path is
+ * the organization's language). On our own hosts the unprefixed path answers
  * in the SITE's language too (proxy.ts), so English there needs its `/en`.
  */
 async function orgSiteAddress(
@@ -204,7 +204,7 @@ export default async function OrgSiteRoutePage({ params }: Props) {
   const site = await fetchOrgSite(slug)
 
   if (site && segments.length > 0 && !findSitePageByPath(site.pages, segments)) {
-    // A path the site does not have: an old URL of the organisation's previous
+    // A path the site does not have: an old URL of the organization's previous
     // website goes to its new page, permanently; anything else is a real 404,
     // status code included, so a crawler drops a deleted page.
     const redirect = findSiteRedirect(site.redirects, `/${segments.join('/')}`)
@@ -215,7 +215,7 @@ export default async function OrgSiteRoutePage({ params }: Props) {
 
   // The server read failed — the client reads the site itself and renders its
   // own not-found, as this page always did.
-  // On the organisation's own domain the site's links are the short ones.
+  // On the organization's own domain the site's links are the short ones.
   const domain = await tenantDomainContext(slug, 'org')
 
   if (!site) return <PublicOrgSite slug={slug} path={segments} domain={domain} />

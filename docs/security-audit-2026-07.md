@@ -253,7 +253,7 @@ noted for awareness.
   deliberate deferral, not as done.** reCAPTCHA Enterprise is a third-party provider with
   its own billing (the Console no longer offers plain v3), and the callables it would guard
   are already IP-rate-limited behind a `payments_enabled` gate that fails closed — so
-  enforcement buys defence against an attacker who defeats IP keying, and nothing else.
+  enforcement buys defense against an attacker who defeats IP keying, and nothing else.
   Nothing is half-adopted: no site key, both flags false, the key slot and the provider's
   two Google APIs commented out. Reasoning, residual risk, the two triggers that change the
   answer, and a provider-free mitigation for the first of them are in

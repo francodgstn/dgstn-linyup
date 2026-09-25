@@ -2,12 +2,12 @@
 //
 // THE PROBLEM THIS REPLACES. A studio's public surfaces (bio-link, website) each
 // carried TWO independent controls: a light/dark/auto switch and a free
-// background — a hex colour or a gradient. The two cross, and every crossing is
+// background — a hex color or a gradient. The two cross, and every crossing is
 // a way to make an unreadable page:
 //
 //   • "Auto" + a fixed background is a contradiction. The text follows the
 //     viewer's system preference and the background does not, so half the
-//     audience reads dark grey on near-black. It was the DEFAULT pairing.
+//     audience reads dark gray on near-black. It was the DEFAULT pairing.
 //   • "Light" + a dark custom background was patched over with a luminance
 //     check that silently overrode the studio's own choice of theme — so the
 //     switch did nothing, sometimes, and nothing said which times.
@@ -17,7 +17,7 @@
 // So a theme is now ONE choice with BOTH halves in it. A preset carries a light
 // palette and a dark palette; whether a viewer sees one or the other is the
 // preset's own business (`adaptive`), not a second setting. The studio picks a
-// look and an accent colour, and the pair can never disagree.
+// look and an accent color, and the pair can never disagree.
 //
 // ── THE HOOKS FOR A FUTURE CUSTOM THEME ─────────────────────────────────────
 // The registry below is closed on purpose for now — a handful of presets, no
@@ -48,11 +48,11 @@ export type SurfaceThemePresetId =
   | 'violet'
   | 'slate'
   // DERIVED, not a member of SURFACE_THEME_PRESETS. Its palettes are computed
-  // from the tenant's own colours — see `themeDerive.ts` and `resolveThemePreset`
+  // from the tenant's own colors — see `themeDerive.ts` and `resolveThemePreset`
   // below, which is the ONE place the two kinds meet.
   | 'custom'
 
-/** One half of a preset: what the page looks like in one colour scheme. */
+/** One half of a preset: what the page looks like in one color scheme. */
 export interface SurfacePalette {
   /**
    * The page background. A plain hex, or any full CSS background value (a
@@ -79,7 +79,7 @@ export interface SurfaceThemePreset {
   /** The accent a studio gets before it picks one. Always overridable. */
   defaultAccent: string
   /**
-   * Does the preset follow the viewer's system colour scheme?
+   * Does the preset follow the viewer's system color scheme?
    *
    * True for the neutral pairs. FALSE for a preset that IS a look — `ink` is
    * dark on purpose, and swapping it to parchment for a viewer in light mode
@@ -93,13 +93,13 @@ export interface SurfaceThemePreset {
 
 /**
  * The presets, in picker order. Neutral first: most studios want their own
- * colour to be the only colour, and the accent is what carries it.
+ * color to be the only color, and the accent is what carries it.
  */
 export const SURFACE_THEME_PRESETS: readonly SurfaceThemePreset[] = (() => {
   // The surface is NEUTRAL for every preset, from the one rule custom themes use
   // — so a card comes out of the page here exactly as it does there, and there
-  // is no second definition to drift. A preset declares only its page colour and
-  // which text sits on it; `pal` fills in the card colour (Franco, 2026-09-03).
+  // is no second definition to drift. A preset declares only its page color and
+  // which text sits on it; `pal` fills in the card color (Franco, 2026-09-03).
   const pal = (background: string, scheme: 'light' | 'dark'): SurfacePalette => ({
     background,
     scheme,
@@ -130,7 +130,7 @@ export const SURFACE_THEME_PRESETS: readonly SurfaceThemePreset[] = (() => {
     {
       // Each pair is ONE HUE: the dark page is the light page taken much darker,
       // so the two versions read as the same theme at two times of day. The CARD
-      // on each is neutral, so it lifts off the coloured page.
+      // on each is neutral, so it lifts off the colored page.
       id: 'sand',
       nameKey: 'sand',
       light: pal('#faf5ec', 'dark'),
@@ -196,11 +196,11 @@ export function surfaceThemePreset(
  *  they are one choice — see `resolveThemePreset`. */
 export interface ThemeSelection {
   presetId?: string | null
-  /** Custom: the light-page colour (and the whole site when `single`). */
+  /** Custom: the light-page color (and the whole site when `single`). */
   light?: string | null
-  /** Custom: the dark-page colour. Absent ⇒ a correlate of `light`. */
+  /** Custom: the dark-page color. Absent ⇒ a correlate of `light`. */
   dark?: string | null
-  /** Custom: one colour, one look for everyone. */
+  /** Custom: one color, one look for everyone. */
   single?: boolean | null
   /** Custom: a soft gradient instead of a flat background. */
   lighting?: boolean | null

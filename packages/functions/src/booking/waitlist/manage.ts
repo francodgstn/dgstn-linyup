@@ -249,7 +249,7 @@ export const leaveWaitlist = onCall(async (request) => {
  *
  * A callable rather than a client query, and the rules are the reason it has to
  * be: the collection-group read on `waitlist` requires `isTeamMember`, and the
- * nested `isSelfContact(entryId)` grant authorises a GET of one already-known
+ * nested `isSelfContact(entryId)` grant authorizes a GET of one already-known
  * document — neither of them lets a contact LIST their own entries across
  * sessions. A per-contact mirror was the alternative and was rejected: five
  * state transitions to keep in step with the entry, to replace one indexed
@@ -337,7 +337,7 @@ export const listMyWaitlist = onCall(async (request) => {
         end: end ? end.toDate().toISOString() : null,
         location: (session?.location as string | undefined) ?? null,
         activityName: (session?.activityName as string | undefined) ?? null,
-        // Same pair as `getWaitlistEntry` above — a cancelled occurrence of a
+        // Same pair as `getWaitlistEntry` above — a canceled occurrence of a
         // series never gets a `status`.
         cancelled: isSessionCancelled(session ?? {}),
       },

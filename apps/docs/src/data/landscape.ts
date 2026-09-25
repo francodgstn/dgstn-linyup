@@ -51,7 +51,7 @@ export const NODES: LandscapeNode[] = [
     label: 'Studio staff',
     sub: 'owners, managers, coaches',
     layer: 'people',
-    what: 'The people who run a studio or an organisation. They sign in to the dashboard. The tenant boundary is their team (teamId).',
+    what: 'The people who run a studio or an organization. They sign in to the dashboard. The tenant boundary is their team (teamId).',
     links: ['web'],
     docs: [{ label: 'Glossary', href: '/glossary/' }],
   },

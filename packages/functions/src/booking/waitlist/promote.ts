@@ -127,9 +127,9 @@ export async function offerWaitlistSeats(
     if (!start || !teamId || !activityId) return stop('session_unavailable', 'Session not found')
     // Re-verified from storage, never from the event: the trigger may fire on a
     // write that has nothing to do with why we can or cannot offer.
-    // BOTH cancellation shapes — a cancelled occurrence of a series keeps its
+    // BOTH cancellation shapes — a canceled occurrence of a series keeps its
     // `allowBooking` and gets no `status` (see isSessionCancelled).
-    if (isSessionCancelled(session)) return stop('booking_closed', 'This class is cancelled.')
+    if (isSessionCancelled(session)) return stop('booking_closed', 'This class is canceled.')
     if (session.allowBooking !== true) {
       return stop('booking_closed', 'Bookings are not allowed for this session')
     }
@@ -274,7 +274,7 @@ export async function offerWaitlistSeats(
       const phone = (entry.phone as string | null) ?? null
 
       // A full set, not a merge: it deliberately replaces whatever booking
-      // document this contact left behind on this session (a cancelled one, a
+      // document this contact left behind on this session (a canceled one, a
       // lapsed hold). The candidate filter above already excluded anyone whose
       // booking still holds a seat.
       tx.set(bookingsRef.doc(doc.id), {
@@ -466,7 +466,7 @@ export const promoteWaitlistOnSeatFreed = onDocumentWritten(
     const after = event.data?.after.data() ?? null
     if (!seatFreedEdge(before, after)) return
     // Appointments have no waitlist — nothing exists to be full until a booking
-    // creates it — and cancelling one produces this edge on every single one.
+    // creates it — and canceling one produces this edge on every single one.
     if (after?.activityType === 'appointment') return
 
     const { sessionId } = event.params

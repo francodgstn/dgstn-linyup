@@ -41,10 +41,10 @@ export type CheckinCompletionRule = (checkinData?: Record<string, unknown>) => b
  * else — so it confirms on admission. Only a form that ran and left the array
  * EMPTY means "nobody was assigned".
  *
- * This is long-standing behaviour and it is pinned by
+ * This is long-standing behavior and it is pinned by
  * `events/checkinCompletion.test.ts`, whose own comment says it is there "so the
- * exam fix cannot be read as licence to change it". Moving the rule out of core
- * is not that licence either: the predicate below reproduces the old expression
+ * exam fix cannot be read as license to change it". Moving the rule out of core
+ * is not that license either: the predicate below reproduces the old expression
  * exactly.
  */
 const requiresACategory: CheckinCompletionRule = (d) =>

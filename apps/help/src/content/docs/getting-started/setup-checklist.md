@@ -30,7 +30,7 @@ Some steps have a way to close them without doing them, such as **We only take c
 
 These are optional and don't count towards your progress.
 
-- **Add your logo and colours** to your public pages.
+- **Add your logo and colors** to your public pages.
 - **See all your public pages** and **Get your QR codes** to print or share.
 - **Explore plugins** such as online courses or a kiosk. See [Plugins](/plugins/).
 - **Set up an automation**, for example a follow-up after a first trial.

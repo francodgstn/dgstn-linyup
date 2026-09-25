@@ -51,7 +51,7 @@ export interface PlannerSession {
 
 const HOUR_PX = 48
 const MIN_BLOCK_PX = 24
-// Fallback palette for sessions whose activity has no colour set (hashed by id).
+// Fallback palette for sessions whose activity has no color set (hashed by id).
 const PALETTE = ['#7C3AED', '#EC4899', '#3B82F6', '#10B981', '#F59E0B', '#F43F5E', '#0EA5E9', '#22C55E']
 const GRID_COLS = { gridTemplateColumns: '2.75rem repeat(7, minmax(6.5rem, 1fr))' } as const
 
@@ -145,7 +145,7 @@ function layoutDay(
 
 interface Props {
   sessions: PlannerSession[]
-  /** Theme accent (e.g. the website palette) used when a session has no colour. */
+  /** Theme accent (e.g. the website palette) used when a session has no color. */
   accent?: string
   /** When set, each session block links here (e.g. the public booking page). */
   bookingHref?: string

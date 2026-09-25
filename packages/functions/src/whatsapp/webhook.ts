@@ -20,7 +20,7 @@
 //   • a marketing message refused because the member stopped promotions →
 //     that member's news-and-offers answer ends.
 //
-// Anything it does not recognise is acknowledged with 200, so Meta does not
+// Anything it does not recognize is acknowledged with 200, so Meta does not
 // retry an event that was deliberately ignored.
 import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'

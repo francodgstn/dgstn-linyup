@@ -91,7 +91,7 @@ export async function seedTeamLegalProfile(opts: {
  * Install the plugin, write the config and give a handful of members their
  * insurance data. Returns what was seeded, for the run summary.
  *
- * IT READS THE TEAM'S OWN CATALOGUE rather than being handed ids. Every seeder
+ * IT READS THE TEAM'S OWN CATALOG rather than being handed ids. Every seeder
  * builds its activities and plans differently and holds those ids in a
  * different scope, so passing them in meant this block could only live where
  * that scope reached — which is how the first attempt landed in the wrong
