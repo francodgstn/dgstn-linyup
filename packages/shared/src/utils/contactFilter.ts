@@ -498,11 +498,6 @@ export interface ContactFilterSubject {
   acquisition_stage?: string
   source?: string
   affiliation_summary?: { has_active?: boolean }
-  subscription_type_id?: string
-  /** End of a one-off plan grant ("2 months included"). No longer read by the
-   *  subscriptions dimension, which reads `held_plans`; kept for the readers
-   *  phase 3d of docs/multi-plan-holdings.md has still to move. */
-  subscription_expires_at?: { toMillis(): number } | null
   /** The plan list — what the subscriptions dimension reads. */
   held_plans?: ReadonlyArray<HeldPlan> | null
   /** `cancelling` is read by the attention reasons: a member who has asked

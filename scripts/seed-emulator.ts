@@ -144,7 +144,7 @@ import { seedContactAddress } from './lib/address'
 import { seedTeamAssetRegister } from './lib/fixtures/assetRegister'
 import { partnerAppNames } from './lib/partnerApps'
 import { printMemberAppLogin, seedMobileSettings, seedReviewTenant } from './lib/mobile'
-import { importPlanGrants } from './lib/planGrantImport'
+import { rebuildPlanLists, seedPlanGrant } from './lib/planGrantImport'
 import { waitForTriggerQueue } from './lib/triggerDrain'
 
 admin.initializeApp({ projectId: 'demo-linyup' })
@@ -1491,19 +1491,6 @@ async function seedTeam(opts: {
         ...(affiliationDoc
           ? { affiliation_summary: buildAffiliationSummary([affiliationDoc as AffiliationSummaryInput]) }
           : {}),
-        ...(subAssign
-          ? {
-              subscription_type_id: subAssign.subId,
-              subscription_type_name: subAssign.subName,
-              subscription_recurrence: subAssign.recurrence,
-              ...(subAssign.priceId
-                ? {
-                    subscription_price_id: subAssign.priceId,
-                    subscription_amount: subAssign.amount,
-                  }
-                : {}),
-            }
-          : {}),
         // The LEVEL'S ID (docs/rank-scale-decoupling.md), looked up by the index
         // the map above assigns, on the same ids the team's ladder was written with.
         ...(rankValue != null
@@ -1524,6 +1511,19 @@ async function seedTeam(opts: {
         .collection(CONTACT_AFFILIATIONS_SUBCOLLECTION)
         .doc(`${id}-aff-club`)
         .set(affiliationDoc)
+    }
+    // The contact's plan is a plan grant (docs/multi-plan-holdings.md), never a
+    // field on the contact; `rebuildPlanLists` builds its plan list.
+    if (subAssign) {
+      await seedPlanGrant(db, id, {
+        teamId,
+        subscriptionTypeId: subAssign.subId,
+        subscriptionTypeName: subAssign.subName,
+        recurrence: subAssign.recurrence,
+        priceId: subAssign.priceId ?? null,
+        amount: subAssign.priceId ? subAssign.amount : null,
+        startsAt: createdTs.toDate(),
+      })
     }
   }
 
@@ -3384,11 +3384,10 @@ async function main() {
   const memberApp = await seedReviewTenant({ db, seededBy: 'seed-emulator' })
   await seedMobileSettings({ db, seededBy: 'seed-emulator' })
 
-  // Every seeded plan as a plan grant, and every plan list built
-  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
-  // migration run, so a seeded tenant starts in the shape production will have.
-  const planGrants = await importPlanGrants(db, { apply: true })
-  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
+  // Every plan list built from the seeded grants and subscriptions
+  // (docs/multi-plan-holdings.md), through the one writer of `held_plans`.
+  const planLists = await rebuildPlanLists(db)
+  console.log(`\n[plans]  ${planLists.changed} plan lists written`)
 
   // The writes are done; the triggers they fired are not. See lib/triggerDrain.ts.
   await waitForTriggerQueue(db, {

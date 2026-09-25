@@ -41,6 +41,8 @@ import {
   rollupMemberSubscriptions,
 } from '@linyup/shared'
 import type { PaymentLineItem, SubscriptionCancellationDetails } from '@linyup/shared'
+import { planGrantsCollection } from '../../../packages/functions/src/contacts/planGrants'
+import { SEED_PLAN_GRANT_ID, seededPlanOf } from '../planGrantImport'
 
 // ── Firestore path constants (mirror @linyup/shared/paths) ────────────────────
 const TEAMS_COLLECTION = 'teams'
@@ -473,19 +475,24 @@ export async function seedTeamMoney(opts: {
     .limit(opts.limit ?? 8)
     .get()
 
-  // Only contacts the seed already gave a subscription type to — inventing a
-  // membership for someone the studio never sold one to would put a row on the
-  // payments dashboard that contradicts the contact's own profile.
-  const withType = contacts.docs.filter((d) => !!d.data().subscription_type_id)
+  // Only contacts the seed already gave a plan to (their seed plan grant,
+  // scripts/lib/planGrantImport.ts) — inventing a membership for someone the
+  // studio never sold one to would put a row on the payments dashboard that
+  // contradicts the contact's own profile.
+  const withType: Array<{ id: string; plan: FirebaseFirestore.DocumentData }> = []
+  for (const d of contacts.docs) {
+    const plan = await seededPlanOf(db, d.id)
+    if (plan?.subscription_type_id) withType.push({ id: d.id, plan })
+  }
 
   let subscriptions = 0
   for (let i = 0; i < withType.length; i++) {
     const d = withType[i]
-    const c = d.data() as {
+    const c = d.plan as {
       subscription_type_id: string
-      subscription_type_name?: string
-      subscription_recurrence?: string
-      subscription_amount?: number
+      subscription_type_name?: string | null
+      recurrence?: string | null
+      amount?: number | null
     }
     // One winding down and one in dunning per team, and only when the team has
     // enough members that neither is the whole picture.
@@ -499,12 +506,15 @@ export async function seedTeamMoney(opts: {
       contactId: d.id,
       subscriptionTypeId: c.subscription_type_id,
       subscriptionTypeName: c.subscription_type_name ?? 'Membership',
-      recurrence: c.subscription_recurrence ?? 'monthly',
-      amount: c.subscription_amount ?? 89,
+      recurrence: c.recurrence ?? 'monthly',
+      amount: c.amount ?? 89,
       currency: opts.currency,
       state,
       startedDaysAgo: 120 + i * 15,
     })
+    // Stripe now pays for that plan, so it is held through the subscription:
+    // the seed grant would list the same plan twice on the contact's card.
+    await planGrantsCollection(db, d.id).doc(SEED_PLAN_GRANT_ID).delete()
     subscriptions += 1
   }
 
@@ -525,7 +535,7 @@ export async function seedTeamMoney(opts: {
       .filter((t) => t.data.active !== false)
 
     const firstContact = withType[0]
-    const firstTypeId = (firstContact.data() as { subscription_type_id: string }).subscription_type_id
+    const firstTypeId = firstContact.plan.subscription_type_id as string
     const secondType = activeTypes.find((t) => t.id !== firstTypeId)
     if (secondType) {
       const price = secondType.data.prices?.[0]

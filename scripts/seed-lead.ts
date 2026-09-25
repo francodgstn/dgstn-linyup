@@ -97,7 +97,7 @@ import {
   linkSeedConnectAccount,
   reportSeedConnectAccounts,
 } from './lib/connect'
-import { importPlanGrants } from './lib/planGrantImport'
+import { rebuildPlanLists, seedPlanGrant } from './lib/planGrantImport'
 import { requireConsentExport } from './lib/exportConsentLedger'
 import {
   appointmentOccurrences,
@@ -1918,17 +1918,6 @@ async function seedLeadTenant(profile: LeadProfile) {
               .slice(0, 1 + Math.floor(seededRand(seed + 'da') * 2))
               .map((a) => a.slug),
         custom_badges: isKid ? [] : badgesFor(c.totalSessions, maxStreak, seed),
-        ...(sub
-          ? {
-              subscription_type_id: sub.id,
-              subscription_type_name: sub.name,
-              subscription_recurrence: sub.recurrence,
-              ...(sub.priceId
-                ? { subscription_price_id: sub.priceId, subscription_amount: sub.amount }
-                : {}),
-              subscription_type_updated_at: ts(daysFromNow(-30)),
-            }
-          : {}),
         // The LEVEL'S ID (docs/rank-scale-decoupling.md): `rank` is an index into
         // the ladder, and the ladder was written with these same ids.
         ...(rank != null && rankSystemId && rankingSystem
@@ -1944,6 +1933,20 @@ async function seedLeadTenant(profile: LeadProfile) {
         .collection(CONTACT_AFFILIATIONS_SUBCOLLECTION)
         .doc(`${id}-aff-club`)
         .set(affiliationDoc)
+    }
+
+    // The contact's plan is a plan grant (docs/multi-plan-holdings.md), never a
+    // field on the contact; `rebuildPlanLists` builds its plan list.
+    if (sub) {
+      await seedPlanGrant(db, id, {
+        teamId,
+        subscriptionTypeId: sub.id,
+        subscriptionTypeName: sub.name,
+        recurrence: sub.recurrence,
+        priceId: sub.priceId ?? null,
+        amount: sub.priceId ? (sub.amount ?? null) : null,
+        startsAt: daysFromNow(-30),
+      })
     }
 
     if (sub) {
@@ -3572,11 +3575,10 @@ async function main() {
 
   const { studentEmail, sessionCount, demoContact } = await seedLeadTenant(profile)
 
-  // Every seeded plan as a plan grant, and every plan list built
-  // (docs/multi-plan-holdings.md) — the same import the backfill and the HMD
-  // migration run, so a seeded tenant starts in the shape production will have.
-  const planGrants = await importPlanGrants(db, { teamIds: [teamId], apply: true })
-  console.log(`\n[plans]  ${planGrants.grantsCreated} plan grants imported, ${planGrants.mirrorsChanged} plan lists written`)
+  // Every plan list built from the seeded grants and subscriptions
+  // (docs/multi-plan-holdings.md), through the one writer of `held_plans`.
+  const planLists = await rebuildPlanLists(db, { teamIds: [teamId] })
+  console.log(`\n[plans]  ${planLists.changed} plan lists written`)
 
   console.log(
     `\n✅ Lead tenant seeded — ${profile.contacts.length} contacts, ${sessionCount} sessions\n`

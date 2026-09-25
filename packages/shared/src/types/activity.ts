@@ -787,30 +787,6 @@ export interface SubscriptionCoverageSnapshot {
 }
 
 /**
- * THE ONE PREDICATE for "does the contact's flat plan grant still cover her".
- *
- * A one-time price with `included_months` ("CHF 100, 2 months included") is the
- * only thing that sets an end date, because it is the only plan grant with no
- * renewal to end it. Absent stamp = no end, which keeps every pre-existing
- * document, every manual assignment and every recurring subscription behaving
- * exactly as before.
- *
- * Deliberately shaped like the credit-pack expiry two lines below it, because it
- * is the same idea: the ledger states a date, and every reader compares. Nothing
- * writes when the date passes — so never ask whether the field is PRESENT, ask
- * this function. It applies ONLY to the flat `subscription_type_id`;
- * `active_subscriptions` is a mirror of live Stripe subscriptions and removes
- * its own entries when they lapse.
- */
-export function planGrantIsCurrent(
-  contact: { subscription_expires_at?: { toMillis(): number } | null } | null | undefined,
-  nowMs: number = Date.now()
-): boolean {
-  const at = contact?.subscription_expires_at
-  return !at || at.toMillis() > nowMs
-}
-
-/**
  * When a purchase of this price stops covering the member, as epoch ms — or null
  * for "no end of its own". THE ONE rule, in epoch ms rather than any SDK's
  * Timestamp so the server, the client and the seeds all compute the same instant

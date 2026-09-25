@@ -224,15 +224,22 @@ describe('the federation card and the partner plans — what the org can see, an
     assert.match(code(PASS05), /affiliations_enabled: true/)
   })
 
-  it('ONE partner matcher, read by the type copy and by the holder\'s row', () => {
+  it('ONE partner matcher, read by the type copy and by the holder\'s plan', () => {
     assert.match(code(SUBS_TRANSFORM), /export function isPartnerSourceType\(/)
     assert.match(code(SUBS), /sub === 'subscription_types' && isPartnerSourceType\([\s\S]*?source: 'aggregator'/)
-    assert.match(code(TRANSFORM), /if \(isPartnerSourceType\(srcTypeName\) && !isGone\) \{[\s\S]*?status:\s*'active'/)
+    assert.match(code(TRANSFORM), /isPartnerSourceType\(srcTypeName\) && !isGone\) \{\s*out\[PLAN_OUTPUT_KEY\] = \{/)
   })
 
-  it('a partner holder\'s live row is honest about money: amount 0, no recurrence, and never for the archived', () => {
+  it('a partner holder\'s plan is honest about money: no price, no amount, no recurrence, and never for the archived', () => {
     const branch = code(TRANSFORM).slice(code(TRANSFORM).indexOf('isPartnerSourceType(srcTypeName)'))
+    assert.match(branch, /priceId:\s*null/)
     assert.match(branch, /recurrence:\s*null/)
-    assert.match(branch, /amount:\s*0/)
+    assert.match(branch, /amount:\s*null/)
+  })
+
+  it('pass 05 writes the plan as a plan grant, never onto the contact', () => {
+    assert.match(code(PASS05), /delete transformed\[PLAN_OUTPUT_KEY\]/)
+    assert.match(code(PASS05), /collection\('plan_grants'\)\.doc\(IMPORTED_SLOT_GRANT_ID\)/)
+    assert.match(code(TRANSFORM), /for \(const field of SOURCE_SLOT_FIELDS\) delete out\[field\]/)
   })
 })

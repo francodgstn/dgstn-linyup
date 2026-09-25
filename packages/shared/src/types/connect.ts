@@ -431,7 +431,7 @@ export type ReversalTargetOutcome =
   | 'left' // the plan said not to touch it
   | 'absent'
   | 'skipped_not_owner'
-  | 'cleared' // subscription fields
+  | 'cleared' // the retired plan slot, on rows written before the plan list
   | 'reduced' // credit grant
   | 'deleted' // course entitlement
   | 'ended' // plan grant — the row stays, with ended_at set
@@ -445,6 +445,8 @@ export interface MemberPaymentEffectsReversal {
   by?: string | null
   /** Whether the refund that triggered it was full or partial (Rappen). */
   refund_amount?: number | null
+  /** Rows written before the plan list replaced the single plan slot only:
+   *  what happened to that slot. Nothing writes it now — see `plan_grant`. */
   subscription?: ReversalTargetOutcome
   credits?: ReversalTargetOutcome
   /** Credits taken back by this reversal (0 when none were). */

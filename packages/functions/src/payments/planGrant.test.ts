@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict'
-import { Timestamp } from 'firebase-admin/firestore'
 import {
   heldSubscriptionTypeIds,
   matchesFilter,
-  planGrantIsCurrent,
   type ContactFilter,
   type HeldPlan,
 } from '@linyup/shared'
@@ -20,27 +18,8 @@ import { resolvePlanPurchaseCap } from './planPurchases'
 //     the door already turns away.
 
 const ms = (d: string) => new Date(d).getTime()
-const at = (d: string) => Timestamp.fromDate(new Date(d))
 
 const NOW = ms('2026-07-20T12:00:00Z')
-
-describe('planGrantIsCurrent — an end date, compared not trusted', () => {
-  it('no stamp means no end — every pre-existing contact keeps working', () => {
-    assert.equal(planGrantIsCurrent({}, NOW), true)
-    assert.equal(planGrantIsCurrent({ subscription_expires_at: null }, NOW), true)
-  })
-
-  it('is current up to the instant, and not after it', () => {
-    assert.equal(planGrantIsCurrent({ subscription_expires_at: at('2026-07-20T12:00:01Z') }, NOW), true)
-    assert.equal(planGrantIsCurrent({ subscription_expires_at: at('2026-07-20T11:59:59Z') }, NOW), false)
-  })
-
-  it('needs no write to lapse — the SAME document answers differently later', () => {
-    const contact = { subscription_expires_at: at('2026-08-01T00:00:00Z') }
-    assert.equal(planGrantIsCurrent(contact, ms('2026-07-31T23:00:00Z')), true)
-    assert.equal(planGrantIsCurrent(contact, ms('2026-08-01T01:00:00Z')), false)
-  })
-})
 
 // Since phase 3 of docs/multi-plan-holdings.md the union reads the contact's
 // plan LIST, where a one-off grant carries its end as `ends_at_ms` — still

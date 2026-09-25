@@ -1,11 +1,11 @@
 /**
  * Seeds `contacts/{id}/subscription_history` — the ONLY store of a contact's
  * plan PERIODS — using `resolveHeldPlans` (@linyup/shared) so seeded and
- * produced data cannot drift. Run AFTER `seedTeamMoney`: it reads
- * `active_subscriptions` back off the contact document, which `seedTeamMoney`'s
- * `applySubscriptionRollups` is what writes (no trigger fires on an Admin-SDK
- * write — see `money.ts`'s header for why that means "read it back", not
- * "recompute it here").
+ * produced data cannot drift. Run AFTER `seedTeamMoney`: it builds each
+ * contact's plan list first (`rebuildPlanLists`, through the one writer of
+ * `held_plans`) from the seeded plan grants and the member subscriptions
+ * `seedTeamMoney` wrote — no trigger fires on an Admin-SDK write, so nothing
+ * else would have built it yet — and reads what the contact holds from that.
  *
  * ── THE GAP THIS CLOSES ───────────────────────────────────────────────────────
  * The four seeders each wrote their own inline `subscription_history` block,
@@ -27,6 +27,7 @@
 import admin from 'firebase-admin'
 import { resolveHeldPlans, subscriptionHistoryOpenDocId } from '@linyup/shared'
 import type { ContactSubscriptionFields } from '@linyup/shared'
+import { rebuildPlanLists } from '../planGrantImport'
 
 const TEAMS_COLLECTION = 'teams'
 const CONTACTS_COLLECTION = 'contacts'
@@ -68,6 +69,7 @@ export async function seedTeamSubscriptionHistory(
   // deterministic so a reseed with the same population lands on the same slice.
   const everyNth = pastPlanRatio > 0 ? Math.max(1, Math.round(1 / pastPlanRatio)) : 0
 
+  await rebuildPlanLists(db, { teamIds: [teamId] })
   const [contactsSnap, typesSnap] = await Promise.all([
     db.collection(CONTACTS_COLLECTION).where('teamId', '==', teamId).get(),
     db.collection(TEAMS_COLLECTION).doc(teamId).collection(SUBSCRIPTION_TYPES_SUBCOLLECTION).get(),

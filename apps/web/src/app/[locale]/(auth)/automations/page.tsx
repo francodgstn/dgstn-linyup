@@ -316,8 +316,9 @@ const CONDITION_TYPE_OPTIONS = [
   { value: 'subscription_status', input: 'subscription_status_select', group: 'subscription' },
   { value: 'subscription_expires_in', input: 'number', group: 'subscription' },
   // `subscription_expires_in` IS offered again. Both reasons it was withheld are
-  // gone: the engine now tests `subscription_expires_at`, which a one-time price
-  // carrying `included_months` writes ("CHF 100, 2 months included"), and the
+  // gone: the engine now tests the ends on the member's plan list, which a
+  // one-time price carrying `included_months` sets ("CHF 100, 2 months
+  // included"), and the
   // condition takes `value` like every other number condition, so this editor's
   // one number mapping builds it correctly.
   //

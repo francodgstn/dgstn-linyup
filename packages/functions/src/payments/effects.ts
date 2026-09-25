@@ -15,8 +15,8 @@
 //   • drop_in/other→ last_payment_at + an activity-log entry.
 //
 // Every branch appends ONE activity_log entry carrying the payment id + source so
-// the contact timeline links back to the exact payment. writeContactSubscriptionFields
-// is also used by the Connect webhook, so the subscription field-list has one home.
+// the contact timeline links back to the exact payment. A plan a payment buys is a
+// plan grant keyed by the payment (writePaymentPlanGrant), never a field on the contact.
 
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import {
@@ -108,57 +108,15 @@ async function logPaymentActivity(
     }))
 }
 
-/** Set the contact's subscription-axis fields (no affiliation/expiry). Single
- * source of truth for the field list — also used by the Connect webhook.
- *
- * `sourcePaymentRef` is PROVENANCE, and it is a required key precisely so that
- * every call site has to answer the question. It is what a reversal checks
- * before clearing these fields: matching on `subscription_type_id` instead
- * would let a refund of an OLD payment strip a membership that a LATER renewal
- * of the same plan paid for.
- *
- * It is written UNCONDITIONALLY, null included — never omitted. A recurring
- * Stripe subscription renewal has no owning one-off payment and must pass null;
- * omitting the key would leave the ref of some earlier one-off purchase
- * standing, and refunding THAT payment would then clear a membership the
- * renewal is paying for. Same rule as the cancellation record in CLAUDE.md:
- * on a live write, write the record whole.
- *
- * `expiresAt` follows the SAME whole-record rule, for the same reason in the
- * other direction: a member who bought "2 months for CHF 100" and later starts a
- * proper monthly subscription must have that end date ERASED, and an omitted key
- * on a merge would leave it standing until it silently cut off a paying member.
- * So every caller answers the question, and null is a real answer meaning "this
- * grant has no end of its own" (a recurring plan, whose end is Stripe's to say). */
-export async function writeContactSubscriptionFields(
-  db: Db,
-  contactId: string,
-  fields: {
-    subscriptionTypeId: string
-    subscriptionTypeName?: string | null
-    priceId?: string | null
-    recurrence?: string | null
-    amountMajor?: number | null
-    /** Doc id of the payment these fields were written FOR, or null when no
-     *  single payment owns them (a recurring subscription renewal). */
-    sourcePaymentRef: string | null
-    /** When this one-off grant stops covering the member (a one_time price with
-     *  `included_months`), or null for a grant with no end of its own. */
-    expiresAt?: Timestamp | null
-  }
-): Promise<void> {
-  const update: Record<string, unknown> = {
-    last_payment_at: FieldValue.serverTimestamp(),
-    subscription_type_id: fields.subscriptionTypeId,
-    subscription_type_name: fields.subscriptionTypeName ?? null,
-    subscription_price_id: fields.priceId ?? null,
-    subscription_recurrence: fields.recurrence ?? null,
-    subscription_source_ref: fields.sourcePaymentRef ?? null,
-    subscription_expires_at: fields.expiresAt ?? null,
-    subscription_type_updated_at: FieldValue.serverTimestamp(),
-  }
-  if (fields.amountMajor != null) update.subscription_amount = fields.amountMajor
-  await db.collection(CONTACTS_COLLECTION).doc(contactId).set(update, { merge: true })
+/** Stamp the contact's `last_payment_at`. A plan a payment buys is a plan
+ *  grant (`writePaymentPlanGrant`), never a field on the contact — the single
+ *  plan slot that used to live here is gone (docs/multi-plan-holdings.md,
+ *  phase 5). Also used by the Connect webhook. */
+export async function stampLastPayment(db: Db, contactId: string): Promise<void> {
+  await db
+    .collection(CONTACTS_COLLECTION)
+    .doc(contactId)
+    .set({ last_payment_at: FieldValue.serverTimestamp() }, { merge: true })
 }
 
 /** Idempotent credit grant, keyed by the payment ref (create() refuses a second
@@ -294,19 +252,9 @@ export async function applyPaymentEffects(db: Db, input: ApplyPaymentEffectsInpu
       const amountMajor =
         amountRappen != null ? Math.round(amountRappen) / 100 : (price?.amount ?? null)
 
-      await writeContactSubscriptionFields(db, contactId, {
-        subscriptionTypeId: li.subscriptionTypeId,
-        subscriptionTypeName: typeName,
-        priceId: li.priceId ?? null,
-        recurrence: price?.recurrence ?? null,
-        amountMajor,
-        // This payment owns the fields it just wrote — reversing it may clear them.
-        sourcePaymentRef: paymentRef,
-        expiresAt: planGrantExpiry(price),
-      })
+      await stampLastPayment(db, contactId)
       // The grant this payment made (docs/multi-plan-holdings.md), keyed by the
-      // payment so a refund ends exactly it. The slot write above is the bridge
-      // until the readers move — see contacts/planGrants.ts.
+      // payment so a refund ends exactly it.
       await writePaymentPlanGrant(db, contactId, {
         teamId,
         subscriptionTypeId: li.subscriptionTypeId,

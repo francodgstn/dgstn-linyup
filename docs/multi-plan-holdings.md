@@ -7,11 +7,10 @@ order: 7
 ---
 # Multi-plan holdings
 
-Status: **phases 0–4 built, but for the history reconciler** — the guard, the
-store and mirror, the writers, and every reader (coverage and pricing, the
-security rules, the public session, automations, analytics, the AI dossier and
-the UI) on the plan list; the history reconciler and the slot's removal (5)
-follow. Option B, chosen by Franco on 2026-09-13 over the
+Status: **built, phases 0–5** — the guard, the store and mirror, the writers,
+every reader (coverage and pricing, the security rules, the public session,
+automations, analytics, the history reconciler, the AI dossier and the UI) on
+the plan list, and the single plan slot removed. Option B, chosen by Franco on 2026-09-13 over the
 minimal option (stop Stripe events writing the single plan slot). All four
 decisions settled the same day — see §7.
 
@@ -174,8 +173,8 @@ inside an array, compared whole by value, and a pure builder in
 
 ### 2.3 Expiry stays lazy where it can, and refreshes where it cannot
 
-The rule today is "enforced by comparison, never by a job": every coverage
-reader calls `planGrantIsCurrent`. That stays for every server and client
+The rule was "enforced by comparison, never by a job": every coverage reader
+called `planGrantIsCurrent` on the slot. That stays for every server and client
 reader — they compare `ends_at` live, generalised as `holdingIsCurrent(entry, now)`.
 
 Security rules cannot compare per list element. So `held_plan_type_ids` is only
@@ -367,6 +366,25 @@ Each phase is its own PR and leaves `main` shippable.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the
    Contact type, the rules and every remaining reader; the census test's
    allow-list ends empty. No adoption wait — nothing is live.
+   **Built (2026-09-25):**
+   - No server writer touches the slot: payment effects, the Connect webhook,
+     the own-gateway webhooks and the staff callables write only grants (and
+     `last_payment_at`); a refund ends the payment's grant and never writes the
+     contact; `writeContactSubscriptionFields` and `planGrantIsCurrent` are gone.
+   - The history reconciler reads the stored plan list (memberships only), so
+     the daily refresh closes a lapsed grant's row.
+   - Seeders give a contact a staff grant (`seedPlanGrant`,
+     `scripts/lib/planGrantImport.ts`) and finish with `rebuildPlanLists`; the
+     money fixture replaces a seeded grant with the Stripe subscription it
+     seeds for the same plan. The HMD migration writes the plan as a grant in
+     pass 05 (no made-up `active_subscriptions` row, which had also made the
+     old import skip the grant) and pass 17 builds the lists.
+     `repair-hmd-subscriptions` is deleted.
+   - The Contact type, field catalogue and filter subject no longer declare the
+     fields. The rules keep refusing client writes of them. Old documents may
+     still carry them; nothing reads them, and `backfill:plan-grants` still
+     imports one found on data written before this phase.
+   - `contacts/legacyPlanSlot.test.ts` now pins that nothing writes the slot.
 
 ---
 
