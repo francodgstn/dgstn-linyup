@@ -39,7 +39,15 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 
-export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
+export function ConnectPaymentsCard({
+  teamId,
+  embedded = false,
+}: {
+  teamId: string
+  /** Inside a settings section that already carries the title: no card and no
+   *  title of its own, just the status badge and the content. */
+  embedded?: boolean
+}) {
   const t = useTranslations('ConnectPayments')
   const locale = useLocale()
   const { team } = useAuth()
@@ -85,14 +93,19 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
     status?.connected && (status.status === 'pending' || status.status === 'restricted')
   const requirementKinds = connectRequirementKinds(status?.requirements_currently_due)
 
+  const Shell = embedded ? EmbeddedShell : CardShell
   return (
-    <Card>
-      <CardContent className="space-y-4 pt-6">
+    <Shell>
+      <Shell.Content>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium">{t('title')}</p>
-        </div>
+        {embedded ? (
+          <span />
+        ) : (
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-medium">{t('title')}</p>
+          </div>
+        )}
         {isEnabled ? (
           <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
             <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -298,7 +311,7 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
           </div>
         </>
       )}
-      </CardContent>
+      </Shell.Content>
 
       <AlertDialog open={disconnectOpen} onOpenChange={setDisconnectOpen}>
         <AlertDialogContent>
@@ -319,8 +332,23 @@ export function ConnectPaymentsCard({ teamId }: { teamId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </Shell>
   )
+}
+
+// The two frames the block can sit in. Embedded, the settings section draws
+// the heading and the hairlines, and a card here would be a box inside a list.
+function CardShell({ children }: { children: React.ReactNode }) {
+  return <Card>{children}</Card>
+}
+CardShell.Content = function CardShellContent({ children }: { children: React.ReactNode }) {
+  return <CardContent className="space-y-4 pt-6">{children}</CardContent>
+}
+function EmbeddedShell({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>
+}
+EmbeddedShell.Content = function EmbeddedShellContent({ children }: { children: React.ReactNode }) {
+  return <div className="space-y-4 py-4">{children}</div>
 }
 
 /** One bulleted line. Shared by the fee list and, by the same marker, by the

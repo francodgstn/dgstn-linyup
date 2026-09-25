@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Landmark, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   SWISS_CANTONS,
   formatIban,
@@ -29,7 +29,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { usePlaces } from '@/hooks/usePlaces'
 import { useLegalProfile, saveLegalProfile, useInvalidateLegalProfile } from '@/hooks/useLegalProfile'
-import { Button } from '@/components/ui/button'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
+import { HintTip, SettingsSection } from '@/components/settings/SettingsSection'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -95,6 +96,7 @@ function draftsEqual(a: Draft, b: Draft): boolean {
 
 export function LegalProfileCard({ teamId }: { teamId: string }) {
   const t = useTranslations('LegalProfile')
+  const tCommon = useTranslations('Common')
   const { team, teamRole, user } = useAuth()
   const isOwner = teamRole === 'owner'
   const { data: profile, isLoading } = useLegalProfile(teamId)
@@ -105,15 +107,12 @@ export function LegalProfileCard({ teamId }: { teamId: string }) {
   const baseline = draftFromProfile(profile, team?.name ?? '')
   const [draft, setDraft] = useState<Draft>(baseline)
   const [touched, setTouched] = useState<Partial<Record<keyof Draft, boolean>>>({})
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
     setDraft(draftFromProfile(profile, team?.name ?? ''))
     setTouched({})
     setSubmitted(false)
-    setSaved(false)
     // Re-derive the baseline whenever the stored profile (or the team's own
     // name, the empty-doc fallback) changes — never on local edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,19 +142,19 @@ export function LegalProfileCard({ teamId }: { teamId: string }) {
 
   function set<K extends keyof Draft>(field: K, value: Draft[K]) {
     setDraft((d) => ({ ...d, [field]: value }))
-    setSaved(false)
   }
 
   function blur(field: keyof Draft) {
     setTouched((tset) => ({ ...tset, [field]: true }))
   }
 
-  async function save() {
-    if (!isOwner) return
+  /** Resolves `true` once written. An invalid draft is refused HERE, with its
+   *  errors shown on the fields, so the save bar stays up rather than a
+   *  half-valid creditor identity reaching a receipt. */
+  async function save(): Promise<boolean> {
+    if (!isOwner) return false
     setSubmitted(true)
-    if (issues.length > 0) return
-    setSaving(true)
-    setSaved(false)
+    if (issues.length > 0) return false
     try {
       await saveLegalProfile(
         teamId,
@@ -163,33 +162,45 @@ export function LegalProfileCard({ teamId }: { teamId: string }) {
         draftToProfile(draft) as Omit<StudioLegalProfile, 'updated_at' | 'updated_by'>
       )
       invalidate()
-      setSaved(true)
-    } finally {
-      setSaving(false)
+      return true
+    } catch (err) {
+      console.error('[legal profile] save failed:', err)
+      toast.error(tCommon('saveFailed'))
+      return false
     }
   }
 
+  useSaveBarSection('legal-profile', {
+    dirty: isOwner && dirty,
+    valid: true,
+    save,
+    reset: () => {
+      setDraft(baseline)
+      setTouched({})
+      setSubmitted(false)
+    },
+  })
+
   if (isLoading) {
-    return (
-      <div className="rounded-xl border bg-card p-4 space-y-4">
-        <Skeleton className="h-16 rounded" />
-      </div>
-    )
+    return <Skeleton className="h-16 rounded" />
   }
 
   const readOnly = !isOwner
 
+  // A SECTION, NOT A CARD. The fields keep their two-column grid rather than
+  // becoming label-and-control rows: an address reads as one block, and eleven
+  // rows would make it the longest thing on the tab.
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-4">
-      <div className="flex items-start gap-2.5">
-        <Landmark className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
-        <div>
-          <h2 className="text-sm font-semibold">{t('title')}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('subtitle')}</p>
-        </div>
-      </div>
-
-      {readOnly && <p className="text-xs text-muted-foreground">{t('ownerOnlyNote')}</p>}
+    <SettingsSection
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          {t('title')}
+          <HintTip>{t('subtitle')}</HintTip>
+        </span>
+      }
+      description={readOnly ? t('ownerOnlyNote') : undefined}
+    >
+    <div className="space-y-4 py-4">
 
       {primaryPlace?.address && (
         <p className="text-xs text-muted-foreground">
@@ -388,15 +399,7 @@ export function LegalProfileCard({ teamId }: { teamId: string }) {
         </div>
       </div>
 
-      {!readOnly && (
-        <div className="flex items-center justify-end gap-2">
-          {saved && !dirty && <span className="text-xs text-muted-foreground">{t('saved')}</span>}
-          <Button size="sm" onClick={save} disabled={saving || !dirty}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? t('saving') : t('save')}
-          </Button>
-        </div>
-      )}
     </div>
+    </SettingsSection>
   )
 }

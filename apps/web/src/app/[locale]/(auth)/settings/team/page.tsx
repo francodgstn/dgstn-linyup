@@ -116,7 +116,7 @@ import { PlanUpgradeNotice } from '@/components/plan/PlanUpgradeNotice'
 import { ConnectPaymentsCard } from '@/components/connect/ConnectPaymentsCard'
 import { PaymentModesCard } from '@/components/payments/PaymentModesCard'
 import { LegalProfileCard } from '@/components/payments/LegalProfileCard'
-import { BillingCurrencyCard, useGatewayCurrency } from '@/components/connect/BillingCurrencyCard'
+import { BillingCurrencyRow, useGatewayCurrency } from '@/components/connect/BillingCurrencyCard'
 import { RANK_PRESETS } from '@/lib/rank-presets'
 import { useRankHolderCount } from '@/lib/rank-utils'
 import { useRankingSystems } from '@/hooks/useRankingSystems'
@@ -1769,6 +1769,7 @@ function RankingTab({
 
 function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) {
   const t = useTranslations('TeamSettings')
+  const tConnect = useTranslations('ConnectPayments')
   const qc = useQueryClient()
   const { user, team } = useAuth()
   const {
@@ -1929,25 +1930,29 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
           takes money is above the record-only heading, everything that merely
           writes down money already taken is below it. Keep it that way — a card
           moved across that line silently reverses what its heading claims. */}
-      {/* Accept payments with Linyup (Stripe Connect) — own card; renders only when enabled. */}
-      <ConnectPaymentsCard teamId={teamId} />
+      {/* ── SECTIONS, NOT CARDS (the Settings → General layout) ────────────
+          The line between the two sections is the line described above: the
+          first takes money, the second records money taken elsewhere. The
+          billing currency and the legal profile save from the floating bar;
+          the Stripe Connect actions, the payment-mode chips and the provider
+          list act at once, as they always did. No write moved — only the
+          buttons that trigger two of them. */}
+      <SettingsSection title={tConnect('title')}>
+        {/* Stripe Connect — its own status and actions. Renders nothing when
+            an operator has switched the rail off for this team. */}
+        <ConnectPaymentsCard teamId={teamId} embedded />
 
-      {/* The currency the rail above charges in — money-side, so it stays above
-          the record-only heading. */}
-      <BillingCurrencyCard
-        teamId={teamId}
-        current={team?.default_currency}
-        gatewayCurrency={gatewayCurrency}
-        canEdit={canEdit}
-      />
+        {/* The currency the rail above charges in — money-side, so it stays in
+            this section and above the record-only one. */}
+        <BillingCurrencyRow
+          teamId={teamId}
+          current={team?.default_currency}
+          gatewayCurrency={gatewayCurrency}
+          canEdit={canEdit}
+        />
+      </SettingsSection>
 
-      <div className="space-y-4 pt-2">
-        {/* The heading alone. The paragraph that used to sit here restated
-            what both blocks below already say in their own words — and said it
-            first, so a reader met the caveat before the thing it was about. */}
-        <div className="border-t pt-4">
-          <p className="text-sm font-semibold">{t('paymentsRecordOnlyTitle')}</p>
-        </div>
+      <SettingsSection title={t('paymentsRecordOnlyTitle')}>
 
       {/* ── TWO CARDS, CHEAPEST FIRST ─────────────────────────────────────────
           Manual on top and the external provider below it: taking cash is what
@@ -1960,14 +1965,11 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
           The provider card keeps the default surface rather than a tinted one:
           a tint reads as a warning, and the caveats it carries are stated in
           words already. */}
-      <Card>
-        <CardContent className="pt-6">
-          <PaymentModesCard teamId={teamId} current={team?.payment_modes} canEdit={canEdit} />
-        </CardContent>
-      </Card>
+      <SettingsRow stacked label={t('paymentModes')} hint={t('paymentModesDesc')}>
+        <PaymentModesCard teamId={teamId} current={team?.payment_modes} canEdit={canEdit} />
+      </SettingsRow>
 
-      <Card>
-        <CardContent className="pt-6 space-y-3">
+      <div className="space-y-3 py-4">
       <div>
         {/* Superseded keys `paymentsGateway` / `paymentsGatewayDescription`
             still exist in the locale files; they said "Payment gateway" and
@@ -2121,9 +2123,8 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
           </Button>
         </div>
       )}
-        </CardContent>
-      </Card>
       </div>
+      </SettingsSection>
 
       {/* The creditor identity printed on documents (Tarif 595 receipts today,
           QR-bill invoices later) — SHARED, not owned by either plugin. Owner
@@ -2472,7 +2473,12 @@ export default function TeamSettingsPage() {
       {/* Payments + Outreach manage their own stacked cards; General is the
           save-bar pilot (see below); the remaining tabs share one wrapper. */}
       {tab === 'payments' ? (
-        <PaymentsTab teamId={currentTeamId} canEdit={canEdit} />
+        // Its own bar: the billing currency and the legal profile register
+        // with it. The legal profile is owner-only on its own terms, so the
+        // provider is not disabled for a manager here.
+        <SaveBarProvider>
+          <PaymentsTab teamId={currentTeamId} canEdit={canEdit} />
+        </SaveBarProvider>
       ) : tab === 'general' ? (
         // THE SAVE-BAR PILOT. One list of sections, no cards, and one Save for
         // the whole tab, in the floating bar that appears only while something

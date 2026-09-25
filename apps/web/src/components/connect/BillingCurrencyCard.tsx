@@ -3,6 +3,8 @@
 // The studio's billing currency lives in Settings → Payments (it applies to every
 // payment surface — subscriptions, products, courses, shop — not just one page).
 // Extracted from the Subscriptions panel so the setter has a single home.
+// It used to be a card with its own Save; it is now a row of the Payments
+// tab's first section, saved from the page's floating bar.
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -10,9 +12,9 @@ import { useQuery } from '@tanstack/react-query'
 import { collection, doc, getDocs, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { TEAMS_COLLECTION, SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, TEAM_INTEGRATIONS_SUBCOLLECTION } from '@linyup/shared'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
+import { SettingsRow } from '@/components/settings/SettingsSection'
 import {
   Select,
   SelectContent,
@@ -41,7 +43,12 @@ export function useGatewayCurrency(teamId: string | null) {
   })
 }
 
-export function BillingCurrencyCard({
+/**
+ * The billing currency as a settings row, saved from the page's floating bar.
+ * Its write is unchanged — `default_currency` on the team doc — only the button
+ * that triggers it moved.
+ */
+export function BillingCurrencyRow({
   teamId,
   current,
   gatewayCurrency,
@@ -53,9 +60,9 @@ export function BillingCurrencyCard({
   canEdit: boolean
 }) {
   const t = useTranslations('TeamSettings')
+  const tCommon = useTranslations('Common')
   const resolved = (current ?? gatewayCurrency ?? DEFAULT_CURRENCY).toUpperCase()
   const [value, setValue] = useState(resolved)
-  const [saving, setSaving] = useState(false)
 
   // Keep the selection in sync once the team doc / gateway currency loads. A stored
   // value outside the supported subset (legacy free-text entry) still shows as its
@@ -70,45 +77,36 @@ export function BillingCurrencyCard({
     ? SUPPORTED_CURRENCIES
     : [{ code: resolved, name: resolved, symbol: resolved }, ...SUPPORTED_CURRENCIES]
 
-  async function save() {
-    setSaving(true)
-    try {
-      await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { default_currency: value.toUpperCase() })
-    } finally {
-      setSaving(false)
-    }
-  }
+  useSaveBarSection('billing-currency', {
+    dirty: canEdit && dirty,
+    valid: true,
+    reset: () => setValue(resolved),
+    save: async () => {
+      try {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { default_currency: value.toUpperCase() })
+        return true
+      } catch (err) {
+        console.error('[payments] billing currency save failed:', err)
+        toast.error(tCommon('saveFailed'))
+        return false
+      }
+    },
+  })
 
   return (
-    // A CARD, like every other block on this tab. It was a bare bordered box
-    // beside two real cards, which read as a different KIND of thing — a note
-    // about the cards rather than a setting of its own.
-    <Card>
-      <CardContent className="pt-6 space-y-3">
-      <div>
-        <Label>{t('billingCurrency')}</Label>
-        <p className="text-xs text-muted-foreground mt-0.5">{t('billingCurrencyDesc')}</p>
-      </div>
-      <div className="flex items-end gap-3">
-        <Select value={value} onValueChange={(v) => v && setValue(v)} disabled={!canEdit}>
-          <SelectTrigger className="w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((c) => (
-              <SelectItem key={c.code} value={c.code} label={c.code}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {canEdit && dirty && (
-          <Button size="sm" onClick={save} disabled={saving}>
-            {saving ? t('saving') : t('save')}
-          </Button>
-        )}
-      </div>
-      </CardContent>
-    </Card>
+    <SettingsRow htmlFor="billing-currency" label={t('billingCurrency')} hint={t('billingCurrencyDesc')}>
+      <Select value={value} onValueChange={(v) => v && setValue(v)} disabled={!canEdit}>
+        <SelectTrigger id="billing-currency" className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((c) => (
+            <SelectItem key={c.code} value={c.code} label={c.code}>
+              {c.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </SettingsRow>
   )
 }
