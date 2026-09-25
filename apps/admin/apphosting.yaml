@@ -11,12 +11,13 @@
 # SA and all its IAM are managed in Terraform (infra/modules/iam + secrets):
 #   - roles/datastore.user                     — read accounts/metrics + write
 #                                                 app_settings/global_settings
-#   - roles/secretmanager.secretVersionAdder   — set the `smtp-password` secret
-#     on smtp-password                            from the Settings page
+#   - roles/secretmanager.secretVersionAdder   — save the provider keys the
+#     + viewer on admin_writable_secret_ids       Settings pages manage (Brevo,
+#                                                 DeepL, Stripe, Cloudflare)
 #   - roles/firebaseapphosting.computeRunner + firebase.sdkAdminServiceAgent +
 #     developerconnect.readTokenAccessor       — required for an App Hosting backend
-# Terraform creates the `smtp-password` secret CONTAINER, so no create permission
-# is needed at runtime. See the "Operator console" section in infra/README.md.
+# Terraform creates those secret CONTAINERS, so no create permission is needed
+# at runtime. See the "Operator console" section in infra/README.md.
 runConfig:
   minInstances: 0
   maxInstances: 2

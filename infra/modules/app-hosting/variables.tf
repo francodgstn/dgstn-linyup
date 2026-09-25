@@ -46,7 +46,7 @@ variable "backends" {
     backend_id => backend config. service_account must already hold
     roles/firebaseapphosting.computeRunner: the shared firebase-app-hosting-compute
     SA for the web app, the dedicated linyup-admin SA for the operator console (it
-    writes Firestore + the SMTP secret). environment selects apphosting.<env>.yaml;
+    writes Firestore + provider secrets). environment selects apphosting.<env>.yaml;
     null uses apphosting.yaml.
 
     root_directory applies ONLY when var.repository is set (terraform renders the

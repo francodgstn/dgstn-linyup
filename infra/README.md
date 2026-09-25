@@ -130,7 +130,7 @@ plaintext never enters Terraform state:
 ```bash
 echo -n "<value>" | gcloud secrets versions add stripe-secret-key     --project=linyup-staging --data-file=-
 echo -n "<value>" | gcloud secrets versions add stripe-webhook-secret --project=linyup-staging --data-file=-
-echo -n "<value>" | gcloud secrets versions add smtp-password         --project=linyup-staging --data-file=-
+echo -n "<value>" | gcloud secrets versions add brevo-api-key         --project=linyup-staging --data-file=-
 echo -n "<value>" | gcloud secrets versions add posthog-api-key       --project=linyup-staging --data-file=-
 ```
 
@@ -280,7 +280,8 @@ short cutover window. Firestore/Functions (europe-west6) are unaffected.
 The internal **operator console** (`apps/admin`, `@linyup/admin`) is a SEPARATE
 App Hosting backend in the same project, on its own domain (e.g. `ops.linyup.com`).
 Unlike `apps/web`, it **writes** Firestore (`app_settings/global_settings` via the
-Settings page) and **writes** the `smtp-password` secret, so it must run as the
+Settings page) and **writes** the provider secrets its Settings pages manage
+(Brevo, DeepL, Stripe, Cloudflare), so it must run as the
 **dedicated `linyup-admin` service account** — created with all its IAM by
 Terraform — instead of the shared `firebase-app-hosting-compute` SA. This keeps
 those elevated grants off the customer web app's identity.
@@ -312,9 +313,10 @@ exactly as for `linyup-web` above. The `OPERATOR_EMAILS` + public
 **Environment name** to `prod` (Console → App Hosting → backend → settings) so the
 prod overrides apply, mirroring `apps/web`.
 
-**No `apphosting:secrets:grantaccess` is needed** for the SMTP password — Terraform
-already grants `linyup-admin` `secretVersionAdder` on `smtp-password` (write). The
-console never reads the value back (it tracks a `password_set` flag in Firestore).
+**No `apphosting:secrets:grantaccess` is needed** for the secrets the console
+saves — Terraform grants `linyup-admin` `secretVersionAdder` + `viewer` on each of
+`admin_writable_secret_ids` (write a version, see that one exists). The console
+never reads a value back.
 
 ### 5d. Cloudflare — tenant custom domains (NOT SET UP)
 
@@ -608,9 +610,9 @@ terraform apply        # re-run if Firebase resources fail once (async API enabl
 #     are deployed:
 firebase deploy --only firestore,storage,functions --project sandbox
 
-# 2. Secrets (same IDs as staging; demo can reuse test Stripe/SMTP keys)
+# 2. Secrets (same IDs as staging; demo can reuse test Stripe/Brevo keys)
 echo -n "<value>" | gcloud secrets versions add stripe-secret-key --project=linyup-sandbox --data-file=-
-#   …repeat for stripe-webhook-secret, smtp-password, smtp-encryption-key, posthog-api-key
+#   …repeat for stripe-webhook-secret, brevo-api-key, brevo-webhook-secret, posthog-api-key
 
 # 3. Hosting targets (must match .firebaserc)
 firebase target:apply hosting app     linyup-sandbox         --project sandbox
