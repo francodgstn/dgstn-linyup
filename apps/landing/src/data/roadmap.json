@@ -1,5 +1,5 @@
 {
-  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest 4 Done). Do not edit by hand — change the board and re-export.",
+  "_generated": "By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest 6 landed; older landed cards are kept in landedArchive). Do not edit by hand: change the board and re-export.",
   "sections": {
     "inProgress": [
       {
@@ -331,7 +331,60 @@
           "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
           "srcHash": "7187608a91a9"
         }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "Events programme",
+          "body": "Create multi-day programme for your events. Save and reuse them as templates."
+        },
+        "de": {
+          "title": "Programm für Events",
+          "body": "Erstelle ein mehrtägiges Programm für deine Events. Speichere es als Vorlage und verwende es wieder.",
+          "srcHash": "93b8c404475d"
+        },
+        "fr": {
+          "title": "Programme d'événement",
+          "body": "Créez un programme sur plusieurs jours pour vos événements. Enregistrez-le comme modèle et réutilisez-le.",
+          "srcHash": "93b8c404475d"
+        },
+        "it": {
+          "title": "Programma degli eventi",
+          "body": "Crea un programma di più giorni per i tuoi eventi. Salvalo come modello e riutilizzalo.",
+          "srcHash": "93b8c404475d"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
+        "area": {
+          "key": "members",
+          "label": "Members"
+        },
+        "en": {
+          "title": "AI summaries of your members",
+          "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
+        },
+        "de": {
+          "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
+          "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
+          "srcHash": "5d1578dd63ee"
+        },
+        "fr": {
+          "title": "Résumés IA de vos membres",
+          "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
+          "srcHash": "5d1578dd63ee"
+        },
+        "it": {
+          "title": "Riepiloghi IA dei tuoi membri",
+          "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
+          "srcHash": "5d1578dd63ee"
+        }
       }
     ]
-  }
+  },
+  "landedArchive": []
 }
