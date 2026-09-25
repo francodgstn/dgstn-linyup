@@ -24,11 +24,26 @@ export const restString = (v?: RestValue) => v?.stringValue
 export const restMap = (v?: RestValue) => v?.mapValue?.fields ?? {}
 export const restArray = (v?: RestValue) => v?.arrayValue?.values ?? []
 
+/**
+ * The Firestore emulator a SERVER-side read talks to. The port comes from the
+ * same variable the browser SDK reads, so a checkout on another local-env slot
+ * (scripts/local-env.mjs) reads its OWN emulator: a bare `localhost:8080`
+ * fallback sent a worktree's server renders to slot 0's emulator, which is
+ * another checkout's data, or nothing, and every public page then rendered
+ * from the wrong tenant data or none.
+ */
+export function emulatorFirestoreHost(): string {
+  return (
+    process.env.FIRESTORE_EMULATOR_HOST ||
+    `localhost:${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT || '8080'}`
+  )
+}
+
 // Exported so `firestoreRest.ts` (the general REST decoder) reuses the same
 // emulator/API-key endpoint logic instead of a second copy.
 export function restEndpointBase(): { base: string; key?: string } {
   const base = USE_EMULATORS
-    ? `http://${process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080'}/v1`
+    ? `http://${emulatorFirestoreHost()}/v1`
     : 'https://firestore.googleapis.com/v1'
   return { base, key: USE_EMULATORS ? undefined : process.env.NEXT_PUBLIC_FIREBASE_API_KEY }
 }

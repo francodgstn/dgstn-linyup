@@ -2859,7 +2859,14 @@
     "trialEnds": "Période d'essai se termine le {date}",
     "trialStatusBadge": "Essai",
     "updatePayment": "Mettre à jour le moyen de paiement",
-    "updatingPayment": "Ouverture…"
+    "updatingPayment": "Ouverture…",
+    "managedByOrgTitle": "La facturation est gérée par votre organisation",
+    "managedByOrgBody": "Votre formule est gérée par <strong>{org}</strong>. Pour la facturation ou un changement de formule, contactez l'administration de votre organisation.",
+    "planHeading": "Plan {plan}",
+    "status_active": "Actif",
+    "status_trial": "Essai",
+    "status_past_due": "En retard",
+    "status_cancelled": "Annulé"
   },
   "SaasBilling": {
     "cancelSuccess": "Abonnement annulé. Vous conservez l'accès jusqu'à la fin de la période de facturation en cours.",
@@ -5849,7 +5856,8 @@
     "coursesClosed": "Inscriptions fermées",
     "coursesJoinWaitlist": "Me prévenir si une place se libère",
     "chooseCategorySubtitle": "Que souhaitez-vous réserver ?",
-    "choosePlaceSubtitle": "Choisissez où vous souhaitez venir."
+    "choosePlaceSubtitle": "Choisissez où vous souhaitez venir.",
+    "errorDropInSignedUpOnly": "Ce cours est réservé aux personnes inscrites auprès du studio. Utilisez l'e-mail et le nom de votre inscription, ou choisissez « Je suis déjà venu(e) »."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",

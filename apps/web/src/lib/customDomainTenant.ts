@@ -6,6 +6,7 @@ import {
   USER_PUBLIC_PROFILE_SUBCOLLECTION,
 } from '@linyup/shared'
 import { resolveSiteLanguage } from './siteLanguage'
+import { emulatorFirestoreHost } from './publicMetaRest'
 
 /**
  * Resolves an incoming custom hostname to the tenant it belongs to.
@@ -78,7 +79,7 @@ function restDocUrl(path: string): string {
   // The emulator when the app runs against one — otherwise a custom domain can
   // never be exercised locally, and the mapping ships untried.
   const host = USE_EMULATORS
-    ? `http://${process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080'}/v1`
+    ? `http://${emulatorFirestoreHost()}/v1`
     : 'https://firestore.googleapis.com/v1'
   const base = `${host}/projects/${PROJECT_ID}/databases/(default)/documents/${path}`
   return API_KEY && !USE_EMULATORS ? `${base}?key=${API_KEY}` : base

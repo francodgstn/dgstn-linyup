@@ -315,6 +315,12 @@ provisions from the console. Everything else: `docs/test-accounts.md`.
   `docs/ux-review-open-decisions.md` §41 has the investigation.
 - **`next dev` rewrites `apps/web/next-env.d.ts`.** Restore it before
   committing: `git checkout -- apps/web/next-env.d.ts`.
+- **A Stripe plan checkout returns you to another checkout's app.** SaaS
+  checkout, the billing portal and emailed links are built from `HOSTING_URL`
+  in `packages/functions/.env.local`, not from the browser's origin. `init`
+  now writes it into its managed block for the slot's web port; a slot claimed
+  before that has `:3000` there. Re-run `init` (or set it by hand), then restart
+  the emulators, which read it only at start.
 - **Emulator start fails with "port taken" right after a stop.** A previous run
   is still tearing down, or left an orphan. `kill`, then `status`, then retry.
 - **Java is required** for the Firestore emulator. If VS Code's integrated

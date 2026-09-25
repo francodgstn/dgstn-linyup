@@ -224,8 +224,9 @@ export function CreateInvoiceDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{t('amountLabel')}</Label>
+              <Label htmlFor="qr-invoice-amount">{t('amountLabel')}</Label>
               <Input
+                id="qr-invoice-amount"
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => {
@@ -237,8 +238,9 @@ export function CreateInvoiceDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{t('dueDateLabel')}</Label>
+              <Label htmlFor="qr-invoice-due">{t('dueDateLabel')}</Label>
               <Input
+                id="qr-invoice-due"
                 type="date"
                 value={dueOn}
                 onChange={(e) => {
@@ -250,8 +252,9 @@ export function CreateInvoiceDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>{t('descriptionLabel')}</Label>
+            <Label htmlFor="qr-invoice-description">{t('descriptionLabel')}</Label>
             <Input
+              id="qr-invoice-description"
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value)
@@ -262,8 +265,9 @@ export function CreateInvoiceDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>{t('messageLabel')}</Label>
+            <Label htmlFor="qr-invoice-message">{t('messageLabel')}</Label>
             <Textarea
+              id="qr-invoice-message"
               rows={2}
               value={message}
               onChange={(e) => setMessage(e.target.value)}

@@ -443,6 +443,25 @@ export const createDropInCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
     }
   }
 
+  // ── A brand-new guest the class does not sell to: refused BEFORE any write ──
+  // A stranger's answer does not depend on anything this callable is about to
+  // write: they hold nothing, so the resolver's guest view is the whole of it
+  // (a promo only re-prices an option that exists; it never opens a door). The
+  // single resolution point below would reach the same refusal, but only after
+  // minting a provisional contact and recording a waiver acceptance for a sale
+  // that cannot happen. "Only people who signed up with you" is the case: a
+  // visitor cannot book it even paying (docs/class-access-derived.md), so the
+  // web sends them to identify themselves instead, and a request that arrives
+  // anyway leaves no trace.
+  if (pendingGuestContact && !claim) {
+    const guestView = resolvePaymentOptions(GUEST_SNAPSHOT, dropInTarget)
+    if (!guestView.options.some((o) => o.type === 'pay')) {
+      throw new HttpsError('failed-precondition', 'Drop-in is not available for this class', {
+        reason: guestView.denial ?? 'drop_in_unavailable',
+      })
+    }
+  }
+
   // ── The waiver gate — ABOVE the guest contact create ───────────────────────
   // Earlier than every other gate on this callable, and deliberately so: this
   // rail's refusals otherwise sit below a contact that has already been minted,

@@ -2859,7 +2859,14 @@
     "trialEnds": "Testphase endet am {date}",
     "trialStatusBadge": "Testphase",
     "updatePayment": "Zahlungsmethode aktualisieren",
-    "updatingPayment": "Wird geöffnet…"
+    "updatingPayment": "Wird geöffnet…",
+    "managedByOrgTitle": "Die Abrechnung läuft über Ihre Organisation",
+    "managedByOrgBody": "Ihr Abo wird von <strong>{org}</strong> verwaltet. Für Rechnungsfragen oder Planänderungen wenden Sie sich an die Administration Ihrer Organisation.",
+    "planHeading": "Plan {plan}",
+    "status_active": "Aktiv",
+    "status_trial": "Test",
+    "status_past_due": "Überfällig",
+    "status_cancelled": "Gekündigt"
   },
   "SaasBilling": {
     "cancelSuccess": "Abonnement gekündigt. Der Zugang bleibt bis zum Ende der laufenden Abrechnungsperiode bestehen.",
@@ -5849,7 +5856,8 @@
     "coursesClosed": "Anmeldung geschlossen",
     "coursesJoinWaitlist": "Benachrichtigen, wenn ein Platz frei wird",
     "chooseCategorySubtitle": "Was möchten Sie buchen?",
-    "choosePlaceSubtitle": "Wählen Sie, wo Sie kommen möchten."
+    "choosePlaceSubtitle": "Wählen Sie, wo Sie kommen möchten.",
+    "errorDropInSignedUpOnly": "Dieser Kurs ist für Personen, die beim Studio registriert sind. Verwenden Sie die E-Mail-Adresse und den Namen Ihrer Registrierung, oder wählen Sie „Ich war schon einmal hier“."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Probetraining buchen",

@@ -2859,7 +2859,14 @@
     "trialEnds": "Il periodo di prova termina il {date}",
     "trialStatusBadge": "Prova",
     "updatePayment": "Aggiorna metodo di pagamento",
-    "updatingPayment": "Apertura…"
+    "updatingPayment": "Apertura…",
+    "managedByOrgTitle": "La fatturazione è gestita dalla tua organizzazione",
+    "managedByOrgBody": "Il tuo piano è gestito da <strong>{org}</strong>. Per la fatturazione o per cambiare piano, contatta l'amministrazione della tua organizzazione.",
+    "planHeading": "Piano {plan}",
+    "status_active": "Attivo",
+    "status_trial": "Prova",
+    "status_past_due": "Scaduto",
+    "status_cancelled": "Annullato"
   },
   "SaasBilling": {
     "cancelSuccess": "Abbonamento annullato. Mantieni l'accesso fino alla fine del periodo di fatturazione in corso.",
@@ -5849,7 +5856,8 @@
     "coursesClosed": "Iscrizioni chiuse",
     "coursesJoinWaitlist": "Avvisami se si libera un posto",
     "chooseCategorySubtitle": "Cosa desideri prenotare?",
-    "choosePlaceSubtitle": "Scegli dove vuoi venire."
+    "choosePlaceSubtitle": "Scegli dove vuoi venire.",
+    "errorDropInSignedUpOnly": "Questo corso è riservato a chi è registrato presso lo studio. Usa l'email e il nome della tua registrazione, oppure scegli «Sono già stato/a qui»."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",

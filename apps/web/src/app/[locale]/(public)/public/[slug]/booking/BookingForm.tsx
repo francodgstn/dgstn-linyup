@@ -1535,6 +1535,11 @@ export default function BookingForm({
         setBookingError(promoMsg)
       } else if (reason === 'trial_used') {
         setBookingError(t('errorTrialUsed'))
+      } else if (reason === 'guest') {
+        // A class behind "Only people who signed up with you" sells its drop-in
+        // to people the studio knows; the server recognised nobody by this email
+        // and name, and refused before writing anything.
+        setBookingError(t('errorDropInSignedUpOnly'))
       } else if (reason === 'payment_required') {
         // Defensive: the server determined this booking requires payment even
         // though the client took the free path (e.g. a stale/mismatched trial
@@ -3121,6 +3126,16 @@ export default function BookingForm({
 
   if (step === 'who' && selectedSession) {
     const isMembersOnly = membersOnly(selectedActivity)
+    // Each door is offered only where it leads somewhere. The first-timer door is
+    // the TRIAL, or the free guest booking of a class that charges nobody. On a
+    // class a visitor pays for it would send them to the free rail, which refuses
+    // ("registered members only"), so a stranger had no way to pay at all. The
+    // drop-in door is offered on EVERY class with a price: a drop-in price opens
+    // the door to everyone (docs/class-access-derived.md). Behind "Only people
+    // who signed up with you" it serves the studio's known people, whom the
+    // server recognises by email and name; a stranger there is refused before
+    // anything is written, and told why (`dropInRefusalMessage`).
+    const firstTimeDoor = trialAvailable || (!isMembersOnly && !dropInAvailable)
     const trialPriceLabel =
       typeof selectedActivity?.trialPriceAmount === 'number'
         ? formatCurrency(selectedActivity.trialPriceAmount, currency, locale)
@@ -3133,7 +3148,7 @@ export default function BookingForm({
         </div>
 
         <div className="space-y-3">
-          {(!isMembersOnly || trialAvailable) && (
+          {firstTimeDoor && (
             <button
               onClick={() => { setGuestPath('trial'); setStep('details') }}
               className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors group flex items-center gap-3"
@@ -3157,7 +3172,7 @@ export default function BookingForm({
               </svg>
             </button>
           )}
-          {isMembersOnly && dropInAvailable && (
+          {dropInAvailable && (
             <button
               onClick={() => { setGuestPath('dropin'); setStep('details') }}
               className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors group flex items-center gap-3"

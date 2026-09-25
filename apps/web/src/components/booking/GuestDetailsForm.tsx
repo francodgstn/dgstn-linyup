@@ -9,7 +9,7 @@
 // BookingForm triggers the submit from its sticky bar (outside the <form>
 // element) — the forwarded ref exposes an imperative `submit()` for that.
 
-import { forwardRef, useImperativeHandle, useMemo } from 'react'
+import { forwardRef, useId, useImperativeHandle, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -185,6 +185,11 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
     const phoneRequired = contactFields?.some((f) => f.key === 'phone' && f.required) ?? false
     const schema = useMemo(() => createGuestSchema(t, contactFields ?? []), [t, contactFields])
     const form = useForm<GuestDetailsValues>({ resolver: zodResolver(schema) })
+    // Every label names its input (htmlFor/id), so a screen reader announces the
+    // field and a tap on the label focuses it. Scoped per form instance: a page
+    // can mount two of these.
+    const uid = useId()
+    const fieldId = (key: string) => `${uid}-${key}`
 
     useImperativeHandle(ref, () => ({
       submit: () => {
@@ -196,10 +201,11 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-sm font-medium">
+            <label htmlFor={fieldId('firstname')} className="text-sm font-medium">
               {t('labelFirstName')} <span className="text-destructive">*</span>
             </label>
             <input
+              id={fieldId('firstname')}
               type="text"
               {...form.register('firstname')}
               autoComplete="given-name"
@@ -210,10 +216,11 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
             )}
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">
+            <label htmlFor={fieldId('lastname')} className="text-sm font-medium">
               {t('labelLastName')} <span className="text-destructive">*</span>
             </label>
             <input
+              id={fieldId('lastname')}
               type="text"
               {...form.register('lastname')}
               autoComplete="family-name"
@@ -226,10 +233,11 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium">
+          <label htmlFor={fieldId('email')} className="text-sm font-medium">
             {t('labelEmail')} <span className="text-destructive">*</span>
           </label>
           <input
+            id={fieldId('email')}
             type="email"
             {...form.register('email')}
             autoComplete="email"
@@ -242,7 +250,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
 
         {askPhone && (
           <div className="space-y-1">
-            <label className="text-sm font-medium">
+            <label htmlFor={fieldId('phone')} className="text-sm font-medium">
               {t('labelPhone')}{' '}
               {phoneRequired ? (
                 <span className="text-destructive">*</span>
@@ -251,6 +259,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
               )}
             </label>
             <input
+              id={fieldId('phone')}
               type="tel"
               {...form.register('phone')}
               autoComplete="tel"
@@ -306,7 +315,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
             'w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary'
           return (
             <div key={field.key} className="space-y-1">
-              <label className="text-sm font-medium">
+              <label htmlFor={fieldId(field.key)} className="text-sm font-medium">
                 {label}{' '}
                 {field.required ? (
                   <span className="text-destructive">*</span>
@@ -320,6 +329,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
                 // looks at.
                 <div className="grid grid-cols-3 gap-2">
                   <input
+                    id={fieldId(field.key)}
                     {...form.register('contactFieldAnswers.address.route')}
                     placeholder={t('contactFieldAddressRoute')}
                     autoComplete="address-line1"
@@ -346,6 +356,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
                 </div>
               ) : def?.type === 'select' ? (
                 <select
+                  id={fieldId(field.key)}
                   {...form.register(`contactFieldAnswers.${field.key}`)}
                   className={inputClass}
                   defaultValue=""
@@ -359,12 +370,14 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
                 </select>
               ) : def?.type === 'checkbox' ? (
                 <input
+                  id={fieldId(field.key)}
                   type="checkbox"
                   {...form.register(`contactFieldAnswers.${field.key}`)}
                   className="h-4 w-4 accent-primary"
                 />
               ) : (
                 <input
+                  id={fieldId(field.key)}
                   type={
                     def?.type === 'number'
                       ? 'number'

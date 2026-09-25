@@ -2859,7 +2859,14 @@
     "trialEnds": "Trial ends on {date}",
     "trialStatusBadge": "Trial",
     "updatePayment": "Update payment method",
-    "updatingPayment": "Opening…"
+    "updatingPayment": "Opening…",
+    "managedByOrgTitle": "Billing managed by your organisation",
+    "managedByOrgBody": "Your plan is managed by <strong>{org}</strong>. Contact your organisation's administrator for billing details or plan changes.",
+    "planHeading": "{plan} plan",
+    "status_active": "Active",
+    "status_trial": "Trial",
+    "status_past_due": "Past due",
+    "status_cancelled": "Cancelled"
   },
   "SaasBilling": {
     "cancelSuccess": "Subscription cancelled. You keep access until the end of the current billing period.",
@@ -5849,7 +5856,8 @@
     "coursesClosed": "Bookings are closed",
     "coursesJoinWaitlist": "Tell me if a place comes free",
     "chooseCategorySubtitle": "What would you like to book?",
-    "choosePlaceSubtitle": "Choose where you'd like to come."
+    "choosePlaceSubtitle": "Choose where you'd like to come.",
+    "errorDropInSignedUpOnly": "This class is for people registered with the studio. Use the email and name you registered with, or choose “I've been here before”."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",

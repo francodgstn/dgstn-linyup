@@ -309,7 +309,7 @@ export default function AccountingEntriesPage() {
 
       {/* Manual entry dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t('newEntry')}</DialogTitle>
           </DialogHeader>

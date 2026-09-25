@@ -175,9 +175,13 @@ export function PublicContactAuthProvider({ children }: { children: ReactNode })
     }).catch(() => undefined)
   }, [contact?.id])
 
-  const [restoring, setRestoring] = useState<boolean>(
-    () => typeof window !== 'undefined' && loadSession() !== null
-  )
+  // TRUE ON BOTH SIDES OF HYDRATION. Deciding it from localStorage in the
+  // initialiser made the server render `false` (no window) and a returning
+  // member's browser render `true`, so every Space visit by a signed-in member
+  // failed hydration: the server's "Sign in" button against the client's
+  // placeholder, and React threw the server HTML away. The effect below settles
+  // it on mount, synchronously when there is no stored session at all.
+  const [restoring, setRestoring] = useState<boolean>(true)
 
   // Restore session on mount — but only once the UNDERLYING Firebase session is
   // confirmed. The localStorage flag alone used to flip the UI to "signed in"

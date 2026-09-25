@@ -332,10 +332,25 @@ function SubscriptionCard({
                   the cancellation badge included, still renders. */}
               <div className="flex items-center gap-3 flex-wrap">
                 {status && <StatusIcon status={status} />}
-                <span className="font-semibold">{planName(sub.plan)} plan</span>
+                {/* Guarded: the webhook's first write can land before the one
+                    that names the plan, which is exactly the moment a studio
+                    comes back from checkout, and an undefined plan made every
+                    render throw an IntlError. */}
+                {sub.plan && (
+                  <span className="font-semibold">{t('planHeading', { plan: planName(sub.plan) })}</span>
+                )}
                 {status && (
                   <Badge variant={statusVariant(status)} className="capitalize">
-                    {status.replace('_', ' ')}
+                    {status === 'active'
+                      ? t('status_active')
+                      : status === 'trial'
+                        ? t('status_trial')
+                        : status === 'past_due'
+                          ? t('status_past_due')
+                          : status === 'cancelled'
+                            ? t('status_cancelled')
+                            : // Any other value a webhook writes is shown as stored.
+                              status.replace('_', ' ')}
                   </Badge>
                 )}
                 {isCancelling && (
@@ -442,7 +457,7 @@ function SubscriptionCard({
             <div className="space-y-2">
               <div className="flex items-center gap-3 flex-wrap">
                 <StatusIcon status="trial" />
-                <span className="font-semibold">{planName(team.plan)} plan</span>
+                <span className="font-semibold">{t('planHeading', { plan: planName(team.plan) })}</span>
                 <Badge variant={statusVariant('trial')}>{t('trialStatusBadge')}</Badge>
               </div>
               {teamTrialEndDate && (
@@ -700,6 +715,7 @@ function InvoicesSection({ teamId, hasGateway }: { teamId: string; hasGateway: b
 // ─── org-managed banner ───────────────────────────────────────────────────────
 
 function ManagedByOrgBanner({ orgId }: { orgId: string }) {
+  const t = useTranslations('Billing')
   const { data: orgDoc } = useQuery<{ name: string } | null>({
     queryKey: ['org-name', orgId],
     queryFn: async () => {
@@ -712,11 +728,13 @@ function ManagedByOrgBanner({ orgId }: { orgId: string }) {
     <div className="rounded-lg border bg-muted/40 p-5 flex items-start gap-3">
       <CreditCard className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
       <div>
-        <p className="font-medium text-sm">Billing managed by organization</p>
+        <p className="font-medium text-sm">{t('managedByOrgTitle')}</p>
         {orgDoc?.name && (
           <p className="text-sm text-muted-foreground mt-0.5">
-            Your plan is managed by <strong>{orgDoc.name}</strong>. Contact your organization
-            administrator for billing details or plan changes.
+            {t.rich('managedByOrgBody', {
+              org: orgDoc.name,
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         )}
       </div>
