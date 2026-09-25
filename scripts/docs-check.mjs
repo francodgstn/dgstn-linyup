@@ -127,8 +127,9 @@ const files = [...new Set(allFiles)].filter((p) => isMd(p) || SRC_EXT.test(p) ||
 
 const REPO_DIR = '(?:docs|packages|apps|scripts|infra)'
 // Longest alternative FIRST: `ts|tsx` matches `.ts` inside `.tsx` and reports
-// a file that does not exist. Same for `js` before `json`.
-const EXT = '(?:tsx|ts|mjs|json|js|mdx|md|tf|yaml|yml|rules)'
+// a file that does not exist. Same for `js` before `json`, and `json` before
+// `jsonc` (wrangler.jsonc was reported as a missing wrangler.json).
+const EXT = '(?:tsx|ts|mjs|jsonc|json|js|mdx|md|tf|yaml|yml|rules)'
 const PATHISH = `${REPO_DIR}\\/[A-Za-z0-9_@.\\/-]+\\.${EXT}`
 
 // A NAMED pointer is SELF-ANCHORING — `x.md → "Section"` cannot be matched by

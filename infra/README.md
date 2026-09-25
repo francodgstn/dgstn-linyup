@@ -264,7 +264,13 @@ new backend alongside the old one and cutting the custom domain over:
 5. **Cut the custom domain over**: remove it from the old backend, add it to the
    new one, update the DNS records it prints, and re-add it under Authentication →
    Authorized domains if it changed.
-6. **Delete the old us-central1 backend** once traffic is confirmed on the EU one.
+6. **Point the custom-domain Worker at the new backend** (prod only): set `ORIGIN`
+   in `infra/workers/tenant-router/wrangler.jsonc` and run `npx wrangler deploy`
+   there. Studios' own domains do not go through the App Hosting custom domain,
+   so step 5 does not move them; this step was missed once and they kept
+   forwarding to the old backend for a month. `tenantRouterOrigin.test.ts` now
+   fails when `ORIGIN` names a backend `deploy-prod.yml` does not roll out.
+7. **Delete the old us-central1 backend** once traffic is confirmed on the EU one.
 
 Do the same for `linyup-admin`. There is **no zero-downtime in-place move**; plan a
 short cutover window. Firestore/Functions (europe-west6) are unaffected.

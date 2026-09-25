@@ -33,10 +33,14 @@
     // Cloudflare zone entirely. Forwarding to a hostname inside the zone would
     // re-enter the `*/*` route if that record were ever proxied by mistake.
     //
-    // NOTE us-central1, not europe-west4 — the prod backend has not been moved
-    // to the EU (infra/README.md §5b). Verified serving: /login returns 200,
-    // while the europe-west4 name 404s.
-    "ORIGIN": "https://linyup-web--linyup-prod.us-central1.hosted.app"
+    // It MUST be the backend deploy-prod.yml rolls out, and nothing checked that
+    // until it went wrong: this pointed at the old us-central1 `linyup-web` for
+    // a month after production moved to `linyup-web-eu`, so a custom domain
+    // would have served the build of 2026-08-25 while app.linyup.com moved on.
+    // packages/functions/src/utils/tenantRouterOrigin.test.ts now fails when
+    // the two disagree. Changing it here is not a deploy: run `npx wrangler
+    // deploy` in this folder (README.md).
+    "ORIGIN": "https://linyup-web-eu--linyup-prod.europe-west4.hosted.app"
   },
 
   "observability": { "enabled": true }
