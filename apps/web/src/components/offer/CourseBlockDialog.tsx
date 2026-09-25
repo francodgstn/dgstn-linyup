@@ -19,7 +19,7 @@
 // The lessons appear on the calendar as ordinary sessions. Removing one is
 // cancelling it there, not deleting a row here: people may hold a place on it.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -30,6 +30,7 @@ import {
   isAppointmentActivity,
   lastMeeting,
   meetingCount,
+  curriculumPairsWithMeetings,
   type Activity,
   type CourseBlock,
 } from '@linyup/shared'
@@ -87,7 +88,16 @@ interface FormValues {
   endDate: string
   skipDates: string[]
   days: DayRow[]
+  curriculum: CurriculumRow[]
 }
+
+/** One line of the programme, as the form holds it. */
+interface CurriculumRow {
+  title: string
+  detail: string
+}
+
+const emptyCurriculumRow = (): CurriculumRow => ({ title: '', detail: '' })
 
 const NONE = '__none'
 
@@ -165,6 +175,7 @@ export function CourseBlockDialog({
 
   // Days
   const [days, setDays] = useState<DayRow[]>([emptyDay()])
+  const [curriculum, setCurriculum] = useState<CurriculumRow[]>([])
 
   const [saving, setSaving] = useState(false)
 
@@ -200,6 +211,7 @@ export function CourseBlockDialog({
         endDate: '',
         skipDates: [],
         days: [emptyDay()],
+        curriculum: [],
       }
     }
     // An existing course is re-opened on the shape it was authored in, so the
@@ -237,6 +249,10 @@ export function CourseBlockDialog({
               minutes: Math.max(1, Math.round((m.end.toMillis() - m.start.toMillis()) / 60_000)),
             }
           }),
+      curriculum: (editing.curriculum ?? []).map((c) => ({
+        title: c.title ?? '',
+        detail: c.detail ?? '',
+      })),
     }
   }, [editing])
 
@@ -260,6 +276,7 @@ export function CourseBlockDialog({
     setEndDate(v.endDate)
     setSkipDates(v.skipDates)
     setDays(v.days)
+    setCurriculum(v.curriculum)
   }, [initial])
 
   useEffect(() => {
@@ -298,6 +315,15 @@ export function CourseBlockDialog({
     }
     return out
   }, [mode, days, startDate, startTime, endDate, weekday, skipDates])
+
+  /** Does the outline line up with the lessons? Asked of the ROWS ON SCREEN,
+   *  blank ones included, because those are what the labels index: counting
+   *  only titled rows would call eight titles plus one blank row "paired" on an
+   *  eight-lesson course and then look for a ninth date. */
+  const paired = curriculumPairsWithMeetings({
+    curriculum: curriculum.map((c) => ({ title: c.title })),
+    meetings: previewDates.map((d) => ({ start: d })),
+  })
 
   const nameInvalid = name.trim().length === 0
   const scheduleInvalid = previewDates.length === 0
@@ -344,6 +370,13 @@ export function CourseBlockDialog({
         places: places_,
         priceAmount: price,
         audience: membersOnly ? 'members' : 'anyone',
+        // Dropped here as well as on the server: a blank row is a row the
+        // studio added and did not fill, and sending it would make the count
+        // this form shows disagree with the one the card shows.
+        curriculum: curriculum
+          .map((c) => ({ title: c.title.trim(), detail: c.detail.trim() }))
+          .filter((c) => c.title.length > 0)
+          .map((c) => (c.detail ? c : { title: c.title })),
         closeDaysBefore: closeDays,
         schedule,
       }
@@ -396,6 +429,7 @@ export function CourseBlockDialog({
     endDate,
     skipDates,
     days,
+    curriculum,
   }
   //
   // ARMED AFTER THE FILL, NOT BEFORE IT. `hydrate` sets a dozen pieces of state,
@@ -673,7 +707,107 @@ export function CourseBlockDialog({
               </div>
             )}
 
-            {/* THE COUNT, before Save. "13 lessons" is what goes on the card and
+            {/* ── THE PROGRAMME ─────────────────────────────────────────────
+              What makes this a course rather than a class on the calendar. It
+              is optional and empty by default: a studio that just repeats a
+              class owes nobody an outline.
+
+              NUMBERED ONLY WHEN IT LINES UP. The lessons are regenerated
+              whenever the schedule changes, so the numbers are a reading of
+              two lists rather than a stored pairing. When the counts differ,
+              the form says so instead of implying a lesson each. */}
+          <div className="space-y-3 rounded-lg border p-3">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-sm font-medium">{t('curriculumLabel')}</span>
+              <span className="text-xs text-muted-foreground">{t('curriculumHint')}</span>
+            </div>
+
+            {curriculum.length > 0 && (
+              <div className="space-y-2">
+                {curriculum.map((c, i) => (
+                  <div key={i} className="space-y-1.5 rounded-md border bg-muted/30 p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {paired
+                          ? t('curriculumLessonAt', {
+                              n: i + 1,
+                              date: fmt.dateMedium(previewDates[i]),
+                            })
+                          : t('curriculumItemN', { n: i + 1 })}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurriculum(curriculum.filter((_, j) => j !== i))}
+                        aria-label={t('curriculumRemove')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Input
+                      value={c.title}
+                      onChange={(e) =>
+                        setCurriculum(
+                          curriculum.map((x, j) => (j === i ? { ...x, title: e.target.value } : x))
+                        )
+                      }
+                      placeholder={t('curriculumTitlePlaceholder')}
+                      aria-label={t('curriculumTitleLabel')}
+                    />
+                    <Textarea
+                      rows={2}
+                      value={c.detail}
+                      onChange={(e) =>
+                        setCurriculum(
+                          curriculum.map((x, j) => (j === i ? { ...x, detail: e.target.value } : x))
+                        )
+                      }
+                      placeholder={t('curriculumDetailPlaceholder')}
+                      aria-label={t('curriculumDetailLabel')}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setCurriculum([...curriculum, emptyCurriculumRow()])}
+              >
+                {t('curriculumAdd')}
+              </Button>
+              {/* ONE CLICK FOR THE COMMON SHAPE: a coach who plans per lesson
+                  wants as many rows as there are lessons, and adding thirteen
+                  by hand is the kind of chore that ends in a course with four
+                  lines and nine blanks. */}
+              {curriculum.length === 0 && previewDates.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setCurriculum(previewDates.map(() => emptyCurriculumRow()))
+                  }
+                >
+                  {t('curriculumOnePerLesson', { count: previewDates.length })}
+                </Button>
+              )}
+              {curriculum.length > 0 && !paired && previewDates.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {t('curriculumUnpaired', {
+                    items: curriculum.length,
+                    lessons: previewDates.length,
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* THE COUNT, before Save. "13 lessons" is what goes on the card and
                 what the parent pays for; a schedule that quietly makes 12 is the
                 mistake this catches. */}
             <div className="rounded-md bg-muted/50 p-2.5 text-sm" role="status" aria-live="polite">

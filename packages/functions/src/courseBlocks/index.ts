@@ -38,6 +38,9 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import {
   ACTIVITIES_COLLECTION,
   COURSE_BLOCKS_COLLECTION,
+  COURSE_CURRICULUM_DETAIL_MAX,
+  COURSE_CURRICULUM_MAX_ITEMS,
+  COURSE_CURRICULUM_TITLE_MAX,
   MAX_COURSE_BLOCK_NAME_LENGTH,
   MIN_CHARGE_MAJOR,
   SESSION_SERIES_COLLECTION,
@@ -45,6 +48,7 @@ import {
   type ActivityRateChoice,
   type Activity,
   type CourseBlock,
+  type CourseCurriculumItem,
   type CourseMeeting,
 } from '@linyup/shared'
 import { to } from '../utils/async'
@@ -59,6 +63,7 @@ export const FIXED_SERIES_STATUS = 'fixed'
 interface CourseBlockWrite {
   name?: unknown
   description?: unknown
+  curriculum?: unknown
   activityId?: unknown
   placeId?: unknown
   roomId?: unknown
@@ -133,6 +138,31 @@ function optionalString(value: unknown, max = 200): string | null {
   if (typeof value !== 'string') return null
   const trimmed = value.trim().slice(0, max)
   return trimmed || null
+}
+
+/**
+ * THE PROGRAMME, cleaned. Anything that is not a list of titled items is no
+ * programme at all, and an item with no title is a blank row the studio left
+ * behind rather than a lesson it meant: both are dropped rather than stored,
+ * because a card that renders an empty bullet reads as a bug in the studio's
+ * own page.
+ *
+ * Bounded in both directions (`COURSE_CURRICULUM_*`): this is an outline read
+ * on a card, and the mirror carries it to every public surface.
+ */
+function cleanCurriculum(value: unknown): CourseCurriculumItem[] | null {
+  if (!Array.isArray(value)) return null
+  const items = value
+    .map((raw) => {
+      const row = (raw ?? {}) as { title?: unknown; detail?: unknown }
+      const title = optionalString(row.title, COURSE_CURRICULUM_TITLE_MAX)
+      if (!title) return null
+      const detail = optionalString(row.detail, COURSE_CURRICULUM_DETAIL_MAX)
+      return detail ? { title, detail } : { title }
+    })
+    .filter((i): i is CourseCurriculumItem => i !== null)
+    .slice(0, COURSE_CURRICULUM_MAX_ITEMS)
+  return items.length ? items : null
 }
 
 /** Places: absent, null or 0 all mean uncapped, matching `placesFree`. */
@@ -243,6 +273,7 @@ export const createCourseBlock = onCall(async (request) => {
     teamId,
     name: cleanName(data.name),
     description: optionalString(data.description, 2000),
+    curriculum: cleanCurriculum(data.curriculum),
     activityId,
     activityName,
     placeId: optionalString(data.placeId, 200),
@@ -356,6 +387,10 @@ export const updateCourseBlock = onCall(async (request) => {
   const patch: Record<string, unknown> = { updated_at: FieldValue.serverTimestamp() }
   if (data.name !== undefined) patch.name = cleanName(data.name)
   if (data.description !== undefined) patch.description = optionalString(data.description, 2000)
+  // An EMPTY list is an answer: the studio cleared its programme, and the
+  // cleaner returns null for that, which erases the field rather than leaving
+  // yesterday's outline on the card.
+  if (data.curriculum !== undefined) patch.curriculum = cleanCurriculum(data.curriculum)
   if (data.places !== undefined) patch.places = cleanPlaces(data.places)
   if (data.priceAmount !== undefined) patch.priceAmount = cleanPrice(data.priceAmount)
   if (data.audience !== undefined) patch.audience = data.audience === 'members' ? 'members' : 'anyone'

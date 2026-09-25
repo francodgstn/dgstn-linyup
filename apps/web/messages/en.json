@@ -5148,7 +5148,8 @@
     "courseBlockSoldOut": "Sold out",
     "courseBlockClosed": "Bookings are closed",
     "courseBlockJoin": "Join",
-    "courseBlockJoined": "You are on the course"
+    "courseBlockJoined": "You are on the course",
+    "courseBlockCurriculum": "What it covers"
   },
   "Products": {
     "title": "Products",
@@ -5853,7 +5854,8 @@
     "coursesClosed": "Bookings are closed",
     "coursesJoinWaitlist": "Tell me if a place comes free",
     "chooseCategorySubtitle": "What would you like to book?",
-    "choosePlaceSubtitle": "Choose where you'd like to come."
+    "choosePlaceSubtitle": "Choose where you'd like to come.",
+    "coursesCurriculum": "What it covers"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",
@@ -9106,7 +9108,19 @@
     "duplicateLabel": "Run again",
     "paneFreeNoPlans": "This course is free, so there is nothing for a plan to include or discount. Give it a price to link plans to it.",
     "descriptionLabel": "Description",
-    "descriptionPlaceholder": "What this course is, in your own words."
+    "descriptionPlaceholder": "What this course is, in your own words.",
+    "curriculumLabel": "What it covers",
+    "curriculumHint": "Optional. A line per lesson, or one line for the whole course.",
+    "curriculumAdd": "Add a line",
+    "curriculumOnePerLesson": "One per lesson ({count})",
+    "curriculumRemove": "Remove this line",
+    "curriculumItemN": "{n}.",
+    "curriculumLessonAt": "{n} · {date}",
+    "curriculumTitleLabel": "Title",
+    "curriculumTitlePlaceholder": "Turns and breathing",
+    "curriculumDetailLabel": "Detail",
+    "curriculumDetailPlaceholder": "Anything more the participant should know about this one.",
+    "curriculumUnpaired": "{items} lines for {lessons} lessons, so they are shown as a list rather than per lesson"
   },
   "CourseWaitlist": {
     "offerTitle": "A place has come free",

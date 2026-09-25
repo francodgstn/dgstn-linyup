@@ -46,6 +46,7 @@ import {
   type ActivityMemberBenefit,
   type Benefit,
   type CourseAccessRule,
+  type CourseCurriculumItem,
   COURSE_PURCHASES_SUBCOLLECTION,
   PUBLIC_PROFILE_SUBCOLLECTION,
   TEAMS_COLLECTION,
@@ -220,6 +221,10 @@ interface CourseBlockEntry {
   id: string
   name: string
   description?: string
+  /** The programme, in order. Folded away: a visitor scanning the shelf wants
+   *  the price and the dates, and only the one considering thirteen weeks of
+   *  Wednesdays opens it. */
+  curriculum: CourseCurriculumItem[]
   firstMeeting: Date | null
   lastMeeting: Date | null
   lessons: number
@@ -424,6 +429,9 @@ export default function ShopHome({
                 id: d.ref.parent.parent?.id ?? d.id,
                 name: (data.name as string) || '',
                 description: (data.description as string) || undefined,
+                curriculum: Array.isArray(data.curriculum)
+                  ? (data.curriculum as CourseCurriculumItem[]).filter((i) => i?.title)
+                  : [],
                 firstMeeting: toDate(data.first_meeting),
                 lastMeeting: toDate(data.last_meeting),
                 lessons: typeof data.meeting_count === 'number' ? data.meeting_count : 0,
@@ -1657,6 +1665,26 @@ export default function ShopHome({
                     <p className="text-xs line-clamp-2" style={{ color: textMuted }}>
                       {c.description}
                     </p>
+                  )}
+                  {/* WHAT MAKES IT A COURSE rather than a class that repeats.
+                      Unnumbered on purpose: the studio's outline is bound to no
+                      meeting, and numbering it here would read as lesson
+                      labels that a re-scheduled course would quietly get
+                      wrong. */}
+                  {c.curriculum.length > 0 && (
+                    <details className="text-xs" style={{ color: textMuted }}>
+                      <summary className="cursor-pointer select-none">
+                        {t('courseBlockCurriculum')}
+                      </summary>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                        {c.curriculum.map((item, i) => (
+                          <li key={i}>
+                            <span className="font-medium">{item.title}</span>
+                            {item.detail && <span className="block">{item.detail}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
                   {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
                       remedies, so they are never the same sentence, and neither
