@@ -287,55 +287,55 @@
         }
       },
       {
-        "id": "DI_lAHOADowus4Bj7lNzgLJ3aI",
-        "area": null,
+        "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
+        "area": {
+          "key": "member-app",
+          "label": "Member app"
+        },
         "en": {
-          "title": "Faster, steadier behind the scenes",
-          "body": "Ongoing work under the hood so Linyup stays quick and dependable as more studios come on board. Nothing changes in how you use it."
+          "title": "Member app for iPhone and Android",
+          "body": "Members book, cancel and follow their progress from their phone. Available in the App Store and on Google Play."
         },
         "de": {
-          "title": "Schneller und stabiler im Hintergrund",
-          "body": "Laufende Arbeit unter der Haube, damit Linyup schnell und verlässlich bleibt, während mehr Studios dazukommen. An der Bedienung ändert sich nichts.",
-          "srcHash": "ac84d0c52482"
+          "title": "Mitglieder-App für iPhone und Android",
+          "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Im App Store und bei Google Play erhältlich.",
+          "srcHash": "2fac23968334"
         },
         "fr": {
-          "title": "Plus rapide et plus stable en coulisses",
-          "body": "Un travail continu sous le capot pour que Linyup reste rapide et fiable à mesure que de nouveaux studios arrivent. Rien ne change dans votre utilisation.",
-          "srcHash": "ac84d0c52482"
+          "title": "Application membres pour iPhone et Android",
+          "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. Disponible sur l'App Store et Google Play.",
+          "srcHash": "2fac23968334"
         },
         "it": {
-          "title": "Più veloce e stabile dietro le quinte",
-          "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
-          "srcHash": "ac84d0c52482"
+          "title": "App per i membri su iPhone e Android",
+          "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. Disponibile su App Store e Google Play.",
+          "srcHash": "2fac23968334"
         }
       }
     ]
   },
   "landedArchive": [
     {
-      "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
-      "area": {
-        "key": "member-app",
-        "label": "Member app"
-      },
+      "id": "DI_lAHOADowus4Bj7lNzgLJ3aI",
+      "area": null,
       "en": {
-        "title": "Member app for iPhone and Android",
-        "body": "Members book, cancel and follow their progress from their phone. Rolling out to the app stores."
+        "title": "Faster, steadier behind the scenes",
+        "body": "Ongoing work under the hood so Linyup stays quick and dependable as more studios come on board. Nothing changes in how you use it."
       },
       "de": {
-        "title": "Mitglieder-App für iPhone und Android",
-        "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Die App kommt gerade in die App Stores.",
-        "srcHash": "19444eb3d3d4"
+        "title": "Schneller und stabiler im Hintergrund",
+        "body": "Laufende Arbeit unter der Haube, damit Linyup schnell und verlässlich bleibt, während mehr Studios dazukommen. An der Bedienung ändert sich nichts.",
+        "srcHash": "ac84d0c52482"
       },
       "fr": {
-        "title": "Application membres pour iPhone et Android",
-        "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. L'app arrive dans les stores.",
-        "srcHash": "19444eb3d3d4"
+        "title": "Plus rapide et plus stable en coulisses",
+        "body": "Un travail continu sous le capot pour que Linyup reste rapide et fiable à mesure que de nouveaux studios arrivent. Rien ne change dans votre utilisation.",
+        "srcHash": "ac84d0c52482"
       },
       "it": {
-        "title": "App per i membri su iPhone e Android",
-        "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
-        "srcHash": "19444eb3d3d4"
+        "title": "Più veloce e stabile dietro le quinte",
+        "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
+        "srcHash": "ac84d0c52482"
       }
     },
     {
