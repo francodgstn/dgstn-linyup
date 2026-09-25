@@ -23,7 +23,6 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import {
   ACTIVITIES_COLLECTION,
-  classAccessRuleFor,
   TEAMS_COLLECTION,
   SUBSCRIPTION_TYPES_SUBCOLLECTION,
   OFFERING_DRAFT_LIMITS,
@@ -35,6 +34,7 @@ import {
 import { to } from '../utils/async'
 import { hasTeamRole, isTeamMember } from '../utils/teams'
 import { pluginIsActive } from '../utils/plugins'
+import { newAppointmentDocument, newClassDocument, planDocument } from './offeringWriter'
 import { Type } from '@google/genai'
 import { getGenAI, ASSISTANT_MODEL, replyWasStopped } from '../utils/vertexClient'
 
@@ -385,7 +385,6 @@ export const applyOfferingDraft = onCall(async (request) => {
   ])
 
   const batch = db.batch()
-  const now = FieldValue.serverTimestamp()
 
   // PLANS FIRST, so an activity's access rule can name the id of a plan created
   // in the same batch. This is the only place a draft key becomes an id, and it
@@ -394,34 +393,29 @@ export const applyOfferingDraft = onCall(async (request) => {
   draft.plans.forEach((plan, i) => {
     const ref = teamRef.collection(SUBSCRIPTION_TYPES_SUBCOLLECTION).doc()
     planIds.set(plan.key, ref.id)
-    batch.set(ref, {
-      name: plan.name,
-      ...(plan.description ? { description: plan.description } : {}),
-      source: 'internal',
-      active: true,
-      // NOT PUBLIC. A drafted plan is visible to the studio and to nobody else
-      // until they say so — publishing is a decision, and an AI proposal is not
-      // one (mirrors the `public` default in the plan form).
-      public: false,
-      ...(plan.prices?.length
-        ? {
-            prices: plan.prices.map((p, j) => ({
-              id: `${ref.id}-${j}`,
-              amount: p.amount,
-              recurrence: p.recurrence,
-              active: true,
-              ...(p.label ? { label: p.label } : {}),
-              ...(p.credits ? { credits: p.credits } : {}),
-            })),
-          }
-        : {}),
-      ...(plan.limit ? { limits: [plan.limit] } : {}),
-      teamId,
-      order: planCount.data().count + i,
-      created_at: now,
-      createdBy: uid,
-      created_via: 'ai-draft',
-    })
+    // THE SHARED WRITER (offer/offeringWriter.ts), the same one the setup
+    // wizard uses. NOT PUBLIC: a drafted plan is visible to the studio and to
+    // nobody else until they say so, and an AI proposal is not that decision.
+    batch.set(
+      ref,
+      planDocument(
+        {
+          name: plan.name,
+          ...(plan.description ? { description: plan.description } : {}),
+          source: 'internal',
+          public: false,
+          prices: (plan.prices ?? []).map((p) => ({
+            amount: p.amount,
+            recurrence: p.recurrence,
+            ...(p.label ? { label: p.label } : {}),
+            ...(p.credits ? { credits: p.credits } : {}),
+          })),
+          ...(plan.limit ? { limits: [plan.limit] } : {}),
+        },
+        { teamId, uid, order: planCount.data().count + i, createdVia: 'ai-draft' },
+        (j) => `${ref.id}-${j}`
+      )
+    )
   })
 
   draft.activities.forEach((activity, i) => {
@@ -436,45 +430,42 @@ export const applyOfferingDraft = onCall(async (request) => {
     const tier =
       activity.accessTier === 'subscription' && !gatePlanIds.length ? 'open' : (activity.accessTier ?? 'open')
 
-    batch.set(ref, {
-      name: activity.name,
-      slug: activity.name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 60),
-      ...(activity.description ? { description: activity.description } : {}),
-      ...(activity.color ? { color: activity.color } : {}),
-      ...(activity.tags?.length ? { tags: activity.tags } : {}),
-      type: isAppointment ? 'appointment' : 'class',
-      // DURATIONS ARE APPOINTMENT-ONLY and drop-in is CLASS-ONLY — the same
-      // asymmetry the forms enforce. A model that puts both on one activity
-      // gets the half that applies to what it said the activity was.
-      ...(isAppointment && activity.durations?.length ? { durations: activity.durations } : {}),
-      ...(!isAppointment && activity.dropInPriceAmount !== undefined
-        ? { dropIn: { enabled: true, priceAmount: activity.dropInPriceAmount } }
-        : {}),
-      // WHO MAY BOOK IS DERIVED (docs/class-access-derived.md): the model says
-      // which plans include the class and whether it sells at the door, and the
-      // rule follows from those. `tier` survives only as the model's way of
-      // saying "members only" — the sign-up wall.
-      ...(isAppointment
-        ? {}
-        : {
-            accessRule: classAccessRuleFor({
+    const stamp = { teamId, uid, order: actCount.data().count + i, createdVia: 'ai-draft' as const }
+    const extras = { color: activity.color, tags: activity.tags }
+    // THE SHARED WRITER (offer/offeringWriter.ts). DURATIONS ARE APPOINTMENT-ONLY
+    // and drop-in is CLASS-ONLY, the same asymmetry the forms enforce: a model
+    // that puts both on one activity gets the half that applies to what it said
+    // the activity was. WHO MAY BOOK IS DERIVED (docs/class-access-derived.md):
+    // the plans that include the class and the drop-in it sells; `tier`
+    // survives only as the model's way of saying "members only", the wall.
+    // A draft with no drop-in price follows the studio's usual price, which is
+    // exactly how an activity stored with no `dropIn` was always read.
+    batch.set(
+      ref,
+      isAppointment
+        ? newAppointmentDocument(
+            { name: activity.name, description: activity.description, durations: activity.durations ?? [] },
+            stamp,
+            extras
+          )
+        : newClassDocument(
+            {
+              name: activity.name,
+              ...(activity.description ? { description: activity.description } : {}),
               signupRequired: tier === 'members',
               includedPlanIds: gatePlanIds,
-            }),
-          }),
-      teamId,
-      createdBy: uid,
-      isActive: true,
-      order: actCount.data().count + i,
-      created_at: now,
-      created_via: 'ai-draft',
-    })
+              dropIn:
+                activity.dropInPriceAmount !== undefined
+                  ? { mode: 'custom', priceAmount: activity.dropInPriceAmount }
+                  : { mode: 'studio' },
+            },
+            stamp,
+            // A draft sets no trial and no member rate, the only two answers
+            // that read the studio's default price.
+            null,
+            extras
+          )
+    )
   })
 
   await batch.commit()
