@@ -4,7 +4,10 @@ name: Deploy Staging
 # integration. This workflow covers everything else: Cloud Functions, Firestore
 # rules/indexes, Storage rules, and the landing site.
 #
-# Runs on pushes to main and on manual dispatch. Staging *data* is reseeded
+# Runs on pushes to main and on manual dispatch. A push deploys ONLY the
+# targets it can change, and skips the deploy when there are none (the
+# `changes` job and scripts/staging-deploy-targets.mjs); verify still runs on
+# every push. A manual dispatch always deploys everything. Staging *data* is reseeded
 # ONLY on a manual run with reseed_data=true (it wipes all Firestore data + all
 # auth users) — auto-deploys never touch data. You can also reseed locally with
 # `pnpm staging:reset && pnpm staging:seed`.
@@ -48,9 +51,48 @@ jobs:
   verify:
     uses: ./.github/workflows/verify.yml
 
+  # Which Firebase targets this push can change. The deploy below runs only
+  # those, and is skipped outright when there are none: most merges touch the
+  # web app, docs, mobile or skills, none of which this workflow deploys.
+  #
+  # `verify` is deliberately NOT gated on this. It runs for every commit
+  # because it is the only thing that ever checks `main`, which is also why
+  # this is a job output rather than an `on: push: paths:` filter: a path
+  # filter on the trigger would skip verify along with the deploy. The mapping,
+  # and why an unknown base deploys everything, live in the script's header.
+  changes:
+    name: What this push can change
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.pick.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The previous tip of main must be in the clone to diff against. A
+          # base the clone lacks makes the script deploy everything, which is
+          # safe but throws away the point of this job, so fetch it all.
+          fetch-depth: 0
+
+      - name: Pick targets
+        id: pick
+        env:
+          # A manual dispatch is deliberate and may run from another branch,
+          # where "the previous tip" means nothing. No base means everything.
+          BASE: ${{ github.event_name == 'push' && github.event.before || '' }}
+        run: |
+          targets=$(node scripts/staging-deploy-targets.mjs "$BASE" "$GITHUB_SHA" --explain)
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Staging deploy targets"
+            echo "\`${targets:-nothing to deploy}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
     name: Deploy to Staging
-    needs: verify
+    needs: [verify, changes]
+    # success() is written out, not left implicit, because it is load-bearing:
+    # this job must never run after verify has failed, whatever the targets.
+    if: ${{ success() && needs.changes.outputs.targets != '' }}
     runs-on: ubuntu-latest
     environment: staging
 
@@ -101,10 +143,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Each build runs only when its target is being deployed. `shared` is
+      # bundled into functions and nothing else, so it goes with them.
       - name: Build shared
+        if: ${{ contains(needs.changes.outputs.targets, 'functions') }}
         run: pnpm --filter @linyup/shared run build
 
       - name: Build functions
+        if: ${{ contains(needs.changes.outputs.targets, 'functions') }}
         run: pnpm --filter @linyup/functions run build
 
       # Cloud Build (run by `firebase deploy`) only sees packages/functions and
@@ -113,12 +159,15 @@ jobs:
       # packages/functions and rewrite the dep to file:./vendor/shared so npm
       # can install it. Mutates the ephemeral CI checkout only.
       - name: Vendor @linyup/shared for Cloud Build
+        if: ${{ contains(needs.changes.outputs.targets, 'functions') }}
         run: node scripts/vendor-shared-for-deploy.mjs
 
       - name: Build help site
+        if: ${{ contains(needs.changes.outputs.targets, 'hosting:help') }}
         run: pnpm --filter @linyup/help run build
 
       - name: Build landing site
+        if: ${{ contains(needs.changes.outputs.targets, 'hosting:landing') }}
         run: pnpm --filter @linyup/landing run build
         env:
           PUBLIC_APP_URL: https://app.linyup.com
@@ -150,12 +199,18 @@ jobs:
       # retry then re-plans only what was left, because everything finished is
       # skipped as unchanged. The header of scripts/check-functions-ready.mjs has
       # the mechanism.
+      # --only is what `changes` picked: every target on a dispatch or an
+      # unknown base, otherwise only what this push can change. Passed through
+      # env rather than interpolated into the script.
       - name: Deploy to Firebase (Staging)
+        env:
+          TARGETS: ${{ needs.changes.outputs.targets }}
         run: |
           set -o pipefail
           log="$RUNNER_TEMP/firebase-deploy.log"
+          echo "Deploying: $TARGETS"
           for attempt in 1 2 3 4 5; do
-            if npx firebase-tools deploy --project staging --only functions,hosting:landing,hosting:help,hosting:api,firestore,storage --non-interactive --force 2>&1 | tee "$log" \
+            if npx firebase-tools deploy --project staging --only "$TARGETS" --non-interactive --force 2>&1 | tee "$log" \
               && grep -q 'Deploy complete!' "$log"; then
               exit 0
             fi
@@ -173,7 +228,10 @@ jobs:
       # reads the truth off Cloud Run so a green run means a deployed one. The
       # reasoning, and the redeploy it prints, belong to the header of
       # scripts/check-functions-ready.mjs.
+      # Only when functions were deployed: otherwise there is no new code for
+      # them to be serving, and nothing on them changed.
       - name: Verify every function serves the deployed code
+        if: ${{ contains(needs.changes.outputs.targets, 'functions') }}
         run: pnpm functions:ready --project linyup-staging
 
       # Optional web rollout — manual dispatch + rollout_web=true only. Staging
