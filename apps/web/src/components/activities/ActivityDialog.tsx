@@ -61,6 +61,7 @@ import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { usePlanName } from '@/hooks/usePlanName'
 import { ColorPicker, DEFAULT_ACCENT } from '@/components/ui/color-picker'
 import { MoreOptions } from '@/components/forms/MoreOptions'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
 import { ImageIcon, X } from 'lucide-react'
 /**
  * THE ACTIVITY EDITOR, as a component rather than a page fixture.
@@ -348,7 +349,8 @@ export function ActivityDialog({
     control,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
     defaultValues: seed
@@ -542,7 +544,7 @@ export function ActivityDialog({
     }
   }
 
-  async function onSubmit(data: ActivityFormData) {
+  async function onSubmit(data: ActivityFormData): Promise<boolean> {
     // The "gated to subscriptions with nobody on the list" check that used to
     // sit here is gone with the tier control. It is not lost: the catalogue
     // reports it as `gated_empty_allowlist`, continuously and beside the
@@ -554,21 +556,46 @@ export function ActivityDialog({
       // leaving the dialog open with the data intact is the right move: a
       // retry re-attempts the same, still-unsaved, edit.
       try {
-        const updates: Record<string, unknown> = {
+        const payload: Record<string, unknown> = {
           ...sharedPayload(data),
           ...kindSpecificPayload(data),
         }
+        // ONLY WHAT THIS TAB CHANGED, when it is one of the pane's tabs. The
+        // pane mounts one copy of this form per tab, each seeded when the pane
+        // opened and each holding EVERY field — so writing the whole payload
+        // from the Booking tab put the Details tab's opening values back over
+        // an edit saved there a minute earlier. With the save bar writing both
+        // tabs at once that stopped being a sequence a studio had to stumble
+        // into, so each copy now names only the fields its own inputs touched.
+        // The dialog (create, duplicate) still writes everything: it is the
+        // only copy, and a create has nothing to race.
+        const updates: Record<string, unknown> = section
+          ? Object.fromEntries(
+              Object.entries(payload).filter(([key]) => key in dirtyFields)
+            )
+          : payload
         if (imageFile) {
           const url = await uploadImage(editing.id)
           if (url) updates.image_url = url
         } else if (imagePreview === null && editing.image_url) {
           updates.image_url = null
         }
-        await updateDoc(doc(db, ACTIVITIES_COLLECTION, editing.id), updates)
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(doc(db, ACTIVITIES_COLLECTION, editing.id), updates)
+        }
         refreshQueries(qc, ['activities'])
         void invalidateSetupChecklist()
-        toast.success(t('savedToast'))
+        if (inline) {
+          // The saved values are the new baseline: the tab is clean again and
+          // the bar (or the button) has nothing left to offer.
+          reset(data)
+          setImageFile(null)
+          if (!inSaveBar) toast.success(t('savedToast'))
+        } else {
+          toast.success(t('savedToast'))
+        }
         onClose()
+        return true
       } catch (err) {
         // LOGGED, because the toast cannot be. A studio reporting "it wouldn't
         // save" is reporting the only thing this surface tells them, and a bare
@@ -576,8 +603,8 @@ export function ActivityDialog({
         // cause. The message stays generic; the console does not.
         console.error('[activities] save failed:', err)
         toast.error(t('saveErrorToast'))
+        return false
       }
-      return
     }
 
     // CREATE: addDoc runs BEFORE the image upload, so a failed upload leaves
@@ -604,7 +631,7 @@ export function ActivityDialog({
       // Nothing exists yet — keep the dialog open with the data, retry is correct.
       console.error('[activities] create failed:', err)
       toast.error(t('saveErrorToast'))
-      return
+      return false
     }
 
     // The activity document exists from here on. Never leave the dialog open
@@ -621,7 +648,7 @@ export function ActivityDialog({
         toast.error(t('createdImageErrorToast'))
         onCreated?.(newRef.id)
         onClose()
-        return
+        return true
       }
     }
 
@@ -630,6 +657,7 @@ export function ActivityDialog({
     toast.success(t('createdToast'))
     onCreated?.(newRef.id)
     onClose()
+    return true
   }
 
   /**
@@ -1195,6 +1223,29 @@ export function ActivityDialog({
     </>
   )
 
+  // THE PANE'S TABS SAVE FROM THE FLOATING BAR. Only an inline edit registers:
+  // the dialog has its own footer and nothing else on screen to save with it.
+  const imageDirty =
+    imageFile !== null || (imagePreview === null && !!editing?.image_url)
+  const { inSaveBar } = useSaveBarSection(`activity-${section ?? 'form'}`, {
+    dirty: inline && !!editing && (isDirty || imageDirty),
+    // Validation runs on save, as it always has here; a refused save shows the
+    // field errors and leaves the bar up.
+    valid: true,
+    save: () =>
+      new Promise<boolean>((resolve) => {
+        void handleSubmit(
+          async (data) => resolve(await onSubmit(data)),
+          () => resolve(false)
+        )()
+      }),
+    reset: () => {
+      reset()
+      setImageFile(null)
+      setImagePreview(editing?.image_url ?? null)
+    },
+  })
+
   // ONE `FormSections` per host: the pane shows one tab, the dialog both, and
   // the hairlines between the groups run through the whole of either.
   const fields = section ? (
@@ -1227,7 +1278,7 @@ export function ActivityDialog({
     return (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {fields}
-        <div className="flex justify-end border-t pt-3">{submit}</div>
+        {!inSaveBar && <div className="flex justify-end border-t pt-3">{submit}</div>}
       </form>
     )
   }

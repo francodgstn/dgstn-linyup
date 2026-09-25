@@ -308,7 +308,13 @@ export function ActivityPlanLinks({
    * (Franco, 2026-09-02). The host calls `run()` after its own write; `dirty`
    * lets it enable one button for either half being touched.
    */
-  saveHandle?: (h: { run: () => Promise<void>; dirty: boolean; blocked: string | null }) => void
+  saveHandle?: (h: {
+    run: () => Promise<void>
+    dirty: boolean
+    blocked: string | null
+    /** Drop every unsaved tick — the host's Discard. */
+    reset: () => void
+  }) => void
   /** Called whenever this editor gains or loses unsaved ticks, so a host with
    *  its own Save can say that pressing it will not write them. Pass a STABLE
    *  function (a setState updater) — it is an effect dependency. */
@@ -428,7 +434,15 @@ export function ActivityPlanLinks({
   // Reported upward on every change, so the host's one button tracks this
   // editor's state without owning it.
   useEffect(() => {
-    saveHandle?.({ run: save, dirty, blocked: saveBlocked ?? null })
+    saveHandle?.({
+      run: save,
+      dirty,
+      blocked: saveBlocked ?? null,
+      reset: () => {
+        setDrafts({})
+        setShowErrors(false)
+      },
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dirty, saveBlocked, saving, JSON.stringify(drafts)])
 
