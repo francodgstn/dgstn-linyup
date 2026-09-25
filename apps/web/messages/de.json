@@ -1179,7 +1179,8 @@
     "planSource_staff": "Zugewiesen",
     "planSource_purchase": "Gekauft",
     "planSource_gateway": "Ausserhalb von Linyup bezahlt",
-    "planSource_import": "Importiert"
+    "planSource_import": "Importiert",
+    "planPaymentsCount": "{count, plural, one {# Zahlung} other {# Zahlungen}}"
   },
   "TeamAffiliations": {
     "title": "Affiliationen",
@@ -5044,6 +5045,9 @@
     "stripeReceiptError": "Der Stripe-Beleg konnte nicht geladen werden.",
     "lineKind_course_block": "Kurs",
     "selectCourseBlock": "Welcher Kurs",
+    "planLinkExact": "Der Plan, für den diese Zahlung bezahlt wurde. Öffnet seine Karte.",
+    "planLinkByType": "Über den Plantyp zugeordnet: Diese Zahlung nennt ihren Plan, nicht das bezahlte Abo. Öffnet die Karte.",
+    "planLinkFallback": "Plan",
     "refundSubscriptionCancelled": "Erstattet. Das Abo ist gekündigt und wird nicht mehr abgerechnet.",
     "refundSubscriptionCancelFailed": "Das Geld wurde erstattet, das Abo konnte aber nicht gekündigt werden und könnte erneut abgerechnet werden. Bitte im Profil von {name} kündigen."
   },
@@ -5154,7 +5158,8 @@
     "courseBlockSoldOut": "Ausgebucht",
     "courseBlockClosed": "Buchungen geschlossen",
     "courseBlockJoin": "Teilnehmen",
-    "courseBlockJoined": "Sie sind im Kurs dabei"
+    "courseBlockJoined": "Sie sind im Kurs dabei",
+    "courseBlockCurriculum": "Inhalte"
   },
   "Products": {
     "title": "Produkte",
@@ -5860,6 +5865,7 @@
     "coursesJoinWaitlist": "Benachrichtigen, wenn ein Platz frei wird",
     "chooseCategorySubtitle": "Was möchten Sie buchen?",
     "choosePlaceSubtitle": "Wählen Sie, wo Sie kommen möchten.",
+    "coursesCurriculum": "Inhalte",
     "errorDropInSignedUpOnly": "Dieser Kurs ist für Personen, die beim Studio registriert sind. Melden Sie sich mit der E-Mail-Adresse Ihrer Registrierung an, um ihn zu bezahlen.",
     "dropInSubtitleSignIn": "Bei uns registriert? Anmelden und {price} für diese Stunde bezahlen"
   },
@@ -9112,7 +9118,21 @@
     "cancelRefundsHint": "Erstatten Sie diese einzeln über die Zahlungsseite, damit Sie die Kontrolle behalten.",
     "closeButton": "Schliessen",
     "duplicateLabel": "Erneut durchführen",
-    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen."
+    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen.",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Was dieser Kurs ist, in Ihren eigenen Worten.",
+    "curriculumLabel": "Inhalte",
+    "curriculumHint": "Optional. Eine Zeile pro Lektion oder eine für den ganzen Kurs.",
+    "curriculumAdd": "Zeile hinzufügen",
+    "curriculumOnePerLesson": "Eine pro Lektion ({count})",
+    "curriculumRemove": "Zeile entfernen",
+    "curriculumItemN": "{n}.",
+    "curriculumLessonAt": "{n} · {date}",
+    "curriculumTitleLabel": "Titel",
+    "curriculumTitlePlaceholder": "Wenden und Atmung",
+    "curriculumDetailLabel": "Details",
+    "curriculumDetailPlaceholder": "Was die Teilnehmenden sonst noch dazu wissen sollten.",
+    "curriculumUnpaired": "{items} Zeilen für {lessons} Lektionen, daher als Liste statt pro Lektion"
   },
   "CourseWaitlist": {
     "offerTitle": "Ein Platz ist frei geworden",

@@ -69,7 +69,7 @@ export default function EmbedBooking({
   // its Close button would have nothing to talk to and its funnel would dead-end.
   // Send the visitor to the real page instead of rendering a trap.
   const canonical = appointmentActivityId
-    ? publicHrefLocalized(locale, slug, 'appointments', {
+    ? publicHrefLocalized(locale, slug, 'booking', {
         activity: appointmentActivityId,
         provider: providerId,
         date,

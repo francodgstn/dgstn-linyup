@@ -16,7 +16,8 @@
 // model's job is to say what they mean together. Everything below is
 // deterministic and tested; nothing is invented.
 
-import type { Contact, ContactAiMemberRecap, ContactAiSummarySections } from '@linyup/shared'
+import { heldMemberships } from '@linyup/shared'
+import type { Contact, ContactAiMemberRecap, ContactAiSummarySections, HeldPlan } from '@linyup/shared'
 
 /** A stored summary never exceeds this, in characters. Six sentences fit. */
 export const SUMMARY_MAX_CHARS = 900
@@ -286,6 +287,34 @@ export function deriveSignals(input: DossierInput): Signals {
 
 const fmt1 = (n: number) => (Math.round(n * 10) / 10).toString()
 
+/** How a held plan is held, in the words the studio's plan cards use. */
+function holdingWord(p: HeldPlan): string {
+  if (p.source === 'stripe') return 'recurring billing'
+  switch (p.grant_source) {
+    case 'purchase':
+      return 'bought'
+    case 'gateway':
+      return 'paid outside Linyup'
+    case 'import':
+      return 'imported'
+    default:
+      return 'assigned'
+  }
+}
+
+/** One membership on the plan list: name, how it is held, a non-normal status,
+ *  and when it ends — the facts a coach reads a plan card for. */
+function planLine(p: HeldPlan): string {
+  const bits = [holdingWord(p)]
+  const endsAt = p.ends_at_ms != null ? isoDay(new Date(p.ends_at_ms)) : null
+  if (p.status === 'cancelling') bits.push(`cancelled — ends ${endsAt ?? 'at a date not recorded'}`)
+  else {
+    if (p.status !== 'active') bits.push(p.status)
+    if (endsAt) bits.push(`ends ${endsAt}`)
+  }
+  return `${p.subscription_type_name ?? 'unnamed plan'} (${bits.join(', ')})`
+}
+
 /**
  * The facts and the signals, as plain labelled lines. Only the FIRST NAME
  * identifies the person: email, phone, address, birthdate, emergency
@@ -305,17 +334,10 @@ export function buildContactDossier(input: DossierInput): string {
   if (c.acquisition_stage) lines.push(`Journey stage: ${c.acquisition_stage.replace(/_/g, ' ')}`)
   if (c.external === true) lines.push('Roster: external — trains here but is not on the roster')
 
-  const plans = (c.active_subscriptions ?? []).map((sub) => {
-    const endsAt = sub.cancels_at_ms ? isoDay(new Date(sub.cancels_at_ms)) : null
-    const winding = sub.cancelling || endsAt ? `, cancelled — ends ${endsAt ?? 'at a date not recorded'}` : ''
-    return `${sub.subscription_type_name ?? 'unnamed plan'} (${sub.status}${winding})`
-  })
-  if (plans.length) lines.push(`Plans held: ${plans.join('; ')}`)
-  else if (c.subscription_type_name) {
-    lines.push(
-      `Plan: ${c.subscription_type_name}${c.subscription_status ? ` (${c.subscription_status})` : ''}`
-    )
-  } else lines.push('Plans held: none')
+  // Every membership on the plan list (docs/multi-plan-holdings.md); credit
+  // packs have their own line below, as lessons left.
+  const plans = heldMemberships(c, now.getTime()).map(planLine)
+  lines.push(`Plans held: ${plans.length ? plans.join('; ') : 'none'}`)
   if (s.periods.count) {
     const bits = [`${s.periods.count} period${s.periods.count === 1 ? '' : 's'} on record`]
     if (s.periods.firstStart) bits.push(`first started ${isoDay(s.periods.firstStart)}`)

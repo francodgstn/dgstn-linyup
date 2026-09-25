@@ -75,7 +75,6 @@ describe('an external is never waiting on the studio', () => {
     acquisition_stage: 'trial_booked',
     lead_acknowledged: false,
     active_subscriptions: [{ subscription_type_id: 'plan-a', cancelling: true }],
-    subscription_type_id: 'plan-b',
     coaching_overdue_count: 1,
     total_sessions: 3,
     last_session_at: { seconds: 1_700_000_000, nanoseconds: 0 },
@@ -195,7 +194,9 @@ describe('the HMD migration — where the old "external" type lands', () => {
   it("an archived contact's licence is coerced to expired, like a deleted one — and no live plan is claimed for either", () => {
     assert.match(contacts, /const isGone = out\.deleted_at != null \|\| out\.archived_at != null/)
     assert.match(contacts, /const statusId = isGone \? 'expired' : statusRaw/)
-    assert.match(contacts, /if \(!isGone\) \{\s*out\.active_subscriptions = \[/)
+    // The plan is a grant, handed to pass 05 only for somebody still looked after.
+    assert.match(contacts, /if \(!isGone\) \{\s*out\[PLAN_OUTPUT_KEY\] = \{/)
+    assert.doesNotMatch(contacts, /out\.active_subscriptions = /, 'no made-up Stripe row: the plan list is built from the grant')
     assert.doesNotMatch(contacts, /\bisDeleted\b/, 'the narrower test must not survive beside the wider one')
   })
 

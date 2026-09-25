@@ -822,8 +822,9 @@ So, in order of preference:
    (every site that puts a person in a room, with its re-derivation recipe and
    the exemptions stated as explicitly as the inclusions), and
    `packages/functions/src/contacts/legacyPlanSlot.test.ts` (every site that
-   writes a contact's legacy `subscription_type_*` plan slot, which
-   `docs/multi-plan-holdings.md` retires). Add to the owner; never copy it.
+   spells a field of the retired `subscription_type_*` plan slot, pinned so
+   none writes it again — `docs/multi-plan-holdings.md`). Add to the owner;
+   never copy it.
 2. **Name the members and drop the number** — a claim checkable by reading the
    names beside it fails visibly rather than silently.
 3. **Assert it in a test.** `packages/functions/src/connect/commitSites.test.ts`

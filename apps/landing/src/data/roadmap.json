@@ -52,32 +52,6 @@
         }
       },
       {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLc",
-        "area": {
-          "key": "integrations",
-          "label": "Integrations"
-        },
-        "en": {
-          "title": "Connect Linyup to your tools and AI assistants",
-          "body": "Read-only access to your studio data through an API and AI-assistant connectors."
-        },
-        "de": {
-          "title": "Linyup mit deinen Tools und KI-Assistenten verbinden",
-          "body": "Lesezugriff auf deine Studiodaten über eine API und Anbindungen für KI-Assistenten.",
-          "srcHash": "f1da12bec7d2"
-        },
-        "fr": {
-          "title": "Connecter Linyup à vos outils et assistants IA",
-          "body": "Un accès en lecture seule aux données de votre studio, via une API et des connecteurs pour assistants IA.",
-          "srcHash": "f1da12bec7d2"
-        },
-        "it": {
-          "title": "Collega Linyup ai tuoi strumenti e assistenti IA",
-          "body": "Accesso in sola lettura ai dati del tuo studio tramite un'API e connettori per assistenti IA.",
-          "srcHash": "f1da12bec7d2"
-        }
-      },
-      {
         "id": "DI_lAHOADowus4Bj7lNzgLJQLk",
         "area": {
           "key": "booking-and-schedule",
@@ -185,6 +159,32 @@
       }
     ],
     "landed": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLc",
+        "area": {
+          "key": "integrations",
+          "label": "Integrations"
+        },
+        "en": {
+          "title": "Connect Linyup to your tools and AI assistants",
+          "body": "Read-only access to your studio data through an API and AI-assistant connectors."
+        },
+        "de": {
+          "title": "Linyup mit deinen Tools und KI-Assistenten verbinden",
+          "body": "Lesezugriff auf deine Studiodaten über eine API und Anbindungen für KI-Assistenten.",
+          "srcHash": "f1da12bec7d2"
+        },
+        "fr": {
+          "title": "Connecter Linyup à vos outils et assistants IA",
+          "body": "Un accès en lecture seule aux données de votre studio, via une API et des connecteurs pour assistants IA.",
+          "srcHash": "f1da12bec7d2"
+        },
+        "it": {
+          "title": "Collega Linyup ai tuoi strumenti e assistenti IA",
+          "body": "Accesso in sola lettura ai dati del tuo studio tramite un'API e connettori per assistenti IA.",
+          "srcHash": "f1da12bec7d2"
+        }
+      },
       {
         "id": "DI_lAHOADowus4Bj7lNzgLMacI",
         "area": {
@@ -308,33 +308,33 @@
           "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
           "srcHash": "19444eb3d3d4"
         }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
-        "area": null,
-        "en": {
-          "title": "Public help centre",
-          "body": "Step-by-step guides for setting up and running your studio, at help.linyup.com."
-        },
-        "de": {
-          "title": "Öffentliches Hilfe-Center",
-          "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios, auf help.linyup.com.",
-          "srcHash": "7187608a91a9"
-        },
-        "fr": {
-          "title": "Centre d'aide public",
-          "body": "Des guides pas à pas pour configurer et gérer votre studio, sur help.linyup.com.",
-          "srcHash": "7187608a91a9"
-        },
-        "it": {
-          "title": "Centro assistenza pubblico",
-          "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
-          "srcHash": "7187608a91a9"
-        }
       }
     ]
   },
   "landedArchive": [
+    {
+      "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
+      "area": null,
+      "en": {
+        "title": "Public help centre",
+        "body": "Step-by-step guides for setting up and running your studio, at help.linyup.com."
+      },
+      "de": {
+        "title": "Öffentliches Hilfe-Center",
+        "body": "Schritt-für-Schritt-Anleitungen zum Einrichten und Führen deines Studios, auf help.linyup.com.",
+        "srcHash": "7187608a91a9"
+      },
+      "fr": {
+        "title": "Centre d'aide public",
+        "body": "Des guides pas à pas pour configurer et gérer votre studio, sur help.linyup.com.",
+        "srcHash": "7187608a91a9"
+      },
+      "it": {
+        "title": "Centro assistenza pubblico",
+        "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
+        "srcHash": "7187608a91a9"
+      }
+    },
     {
       "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
       "area": {

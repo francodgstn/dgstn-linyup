@@ -310,7 +310,6 @@ export const refundMemberPayment = onCall(async (request) => {
           at: Timestamp.now(),
           by: uid,
           refund_amount: data.amount ?? null,
-          subscription: outcome.subscription,
           credits: outcome.credits,
           credits_revoked: outcome.creditsRevoked,
           course: outcome.course,

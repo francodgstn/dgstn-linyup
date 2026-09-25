@@ -311,12 +311,11 @@ async function enrichPaymentRow(
         { merge: true }
       )
       if (contactId) {
-        const update: Record<string, unknown> = { last_payment_at: FieldValue.serverTimestamp() }
-        const typeId = (d.subscription_type_id as string | null) ?? extracted.subscriptionTypeId
-        if (typeId) update.subscription_type_id = typeId
-        tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), update)
+        tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), {
+          last_payment_at: FieldValue.serverTimestamp(),
+        })
       }
-      // The slot id above is the bridge until the readers move; the grant is the holding.
+      // The grant is the holding (docs/multi-plan-holdings.md).
       if (grantRef && grantSnap && grantTypeId) {
         setPaymentPlanGrantInTx(tx, grantRef, grantSnap, {
           teamId,
@@ -502,11 +501,11 @@ export const handleTeamStripeWebhook = onRequest({ invoker: 'public' }, async (r
           processed_at: FieldValue.serverTimestamp(),
         })
         if (contactId) {
-          const update: Record<string, unknown> = { last_payment_at: FieldValue.serverTimestamp() }
-          if (extracted.subscriptionTypeId) update.subscription_type_id = extracted.subscriptionTypeId
-          tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), update)
+          tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), {
+            last_payment_at: FieldValue.serverTimestamp(),
+          })
         }
-        // The slot id above is the bridge until the readers move; the grant is the holding.
+        // The grant is the holding (docs/multi-plan-holdings.md).
         if (grantRef && grantSnap && extracted.subscriptionTypeId) {
           setPaymentPlanGrantInTx(tx, grantRef, grantSnap, {
             teamId,

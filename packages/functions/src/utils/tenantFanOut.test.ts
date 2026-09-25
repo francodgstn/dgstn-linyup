@@ -94,6 +94,7 @@ describe('the converted crons', () => {
   const JOBS = [
     { file: '../dailyTasks/sendBookingReminders.ts', perTeam: 'sendBookingRemindersForTeam' },
     { file: '../dailyTasks/markNoShowBookings.ts', perTeam: 'markNoShowBookingsForTeam' },
+    { file: '../dailyTasks/refreshHeldPlans.ts', perTeam: 'refreshHeldPlansForTeam' },
     { file: '../dailyTasks/runScheduledRules.ts', perTeam: 'runScheduledRulesForTeam' },
     { file: '../analytics/index.ts', perTeam: 'weeklyReportsForTeam' },
     { file: '../finance/monthlyReports.ts', perTeam: 'monthlyFinanceReportsForTeam' },
@@ -114,6 +115,7 @@ describe('the converted crons', () => {
     const WORKERS = [
       'remindersForTeam',
       'noShowsForTeam',
+      'heldPlansForTeam',
       'scheduledRulesForTeam',
       'weeklyReportForTeam',
       'financeReportForTeam',

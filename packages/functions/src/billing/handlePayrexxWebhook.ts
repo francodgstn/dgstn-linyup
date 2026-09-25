@@ -35,9 +35,9 @@
 // 'unassigned', and a manager assigns it later from the payments dashboard.
 //
 // When (and only when) uniquely assigned, the contact record is also updated:
-//   • membership_expiration ← subscription.valid_until (ISO date)
-//   • subscription_type_id  ← transaction.referenceId (merchant-set) or gateway default
 //   • last_payment_at       ← now
+//   • a plan grant for transaction.referenceId (merchant-set) or the gateway
+//     default, covering the period Payrexx names (docs/multi-plan-holdings.md)
 
 import { onRequest } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
@@ -265,17 +265,15 @@ export const handlePayrexxWebhook = onRequest(
 
         // Apply the subscription to the contact ONLY when uniquely assigned (same
         // transaction for atomicity). Unassigned payments touch no contact.
-        // Note: membership_expiration is NOT written to the contact — the subscription
-        // axis (subscription_type_id) is separate from the affiliation axis.
+        // Note: membership_expiration is NOT written to the contact — the plan
+        // axis is separate from the affiliation axis.
         if (contactId) {
-          const contactUpdate: Record<string, unknown> = {
+          tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), {
             last_payment_at: FieldValue.serverTimestamp(),
-          }
-          if (subscriptionTypeId) contactUpdate.subscription_type_id = subscriptionTypeId
-          tx.update(db.collection(CONTACTS_COLLECTION).doc(contactId), contactUpdate)
+          })
         }
-        // The slot id above is the bridge until the readers move; the grant is
-        // the holding — with the plan's name, and the period Payrexx says it covers.
+        // The grant is the holding — with the plan's name, and the period
+        // Payrexx says it covers.
         if (grantRef && grantSnap && subscriptionTypeId) {
           setPaymentPlanGrantInTx(tx, grantRef, grantSnap, {
             teamId,

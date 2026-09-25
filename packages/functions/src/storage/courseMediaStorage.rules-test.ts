@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getBytes } from 'firebase/storage'
 
 // Security-rules test for tier-aware course-media reads in storage.rules.
@@ -82,7 +82,11 @@ describe('storage.rules — course media tier gating', function () {
         accessRule: { type: 'free' },
       })
       await setDoc(doc(db, 'contacts', 'free1'), { teamId: TEAM }) // no subscription
-      await setDoc(doc(db, 'contacts', 'pro1'), { teamId: TEAM, subscription_type_id: 'pro' })
+      // The course gates read the plan list's flat mirror
+      // (docs/multi-plan-holdings.md). `slot1` carries only the retired single
+      // plan slot, which no longer unlocks anything.
+      await setDoc(doc(db, 'contacts', 'pro1'), { teamId: TEAM, held_plan_type_ids: ['basic', 'pro'] })
+      await setDoc(doc(db, 'contacts', 'slot1'), { teamId: TEAM, subscription_type_id: 'pro' })
       await setDoc(doc(db, 'teams', TEAM, 'team_members', 'staffS'), { role: 'manager' })
 
       const s = ctx.storage()
@@ -103,6 +107,27 @@ describe('storage.rules — course media tier gating', function () {
 
   it('a contact WITH the matching subscription CAN read subscription-tier media', async () => {
     await assertSucceeds(getBytes(ref(contactStorage('pro1'), SUB_MEDIA)))
+  })
+
+  it('the retired single plan slot alone no longer opens subscription-tier media', async () => {
+    await assertFails(getBytes(ref(contactStorage('slot1'), SUB_MEDIA)))
+  })
+
+  // The Firestore twin (canReadPublishedCourse) reads the same mirror, so the
+  // lesson and its media open and close together.
+  const contactDb = (contactId: string) =>
+    testEnv
+      .authenticatedContext('contact:' + contactId, {
+        contactId,
+        teamId: TEAM,
+        sessionExpires: Date.now() + 3_600_000,
+      })
+      .firestore()
+
+  it('the course doc opens for a contact holding an allowed plan, and only for them', async () => {
+    await assertSucceeds(getDoc(doc(contactDb('pro1'), 'courses', SUB_COURSE)))
+    await assertFails(getDoc(doc(contactDb('free1'), 'courses', SUB_COURSE)))
+    await assertFails(getDoc(doc(contactDb('slot1'), 'courses', SUB_COURSE)))
   })
 
   it('team staff can read gated media', async () => {

@@ -16,10 +16,12 @@ import { substituteVariables, renderBody, buildOutreachEmail } from './outreachE
 import { sanitizeRichHtml } from './sanitizeHtml'
 import { pluginActionHandlers } from '../plugins/index'
 import type {
-  PluginActionId, PluginTriggerId, ContactGroup, ConsentLedger, EngagementThresholds,
+  PluginActionId, PluginTriggerId, ContactGroup, ConsentLedger, EngagementThresholds, HeldPlan,
 } from '@linyup/shared'
 import {
   consentDocumentIds,
+  heldMemberships,
+  heldSubscriptionTypeIds,
   matchesFilter,
   TEAMS_COLLECTION, CONTACT_GROUPS_SUBCOLLECTION,
 } from '@linyup/shared'
@@ -195,21 +197,13 @@ export interface ContactData {
   email?: string
   email_unsubscribed?: boolean
   acquisition_stage?: string
-  subscription_type_id?: string
   subscription_status?: string
-  // End of a one-off plan grant, read by `subscription_expires_in`.
-  //
-  // Declared as a real `Timestamp` — NOT the loose `{seconds, nanoseconds}`
-  // union its neighbours carry — because `ContactData` must satisfy
-  // `ContactFilterSubject`, which declares the field with `toMillis()`. The
-  // engine reads contacts through the admin SDK, so that is what the field
-  // always is; the loose union would only make a dynamic group's rule and this
-  // condition disagree about the same contact.
-  subscription_expires_at?: Timestamp | null
-  // All currently-active subscriptions the contact holds, deduped by type.
-  // Maintained by onMemberSubscriptionWrite. Absent/empty = no active subscriptions.
-  // The condition evaluator checks this in addition to subscription_type_id for back-compat.
-  active_subscriptions?: { subscription_type_id: string }[]
+  // The contact's plan list (docs/multi-plan-holdings.md) — what every plan
+  // condition reads, through the same helpers as the contact filter.
+  held_plans?: HeldPlan[] | null
+  // Live Stripe subscriptions, deduped by type (onMemberSubscriptionWrite).
+  // Read here only for `cancelling`; what is HELD comes from `held_plans`.
+  active_subscriptions?: { subscription_type_id: string; cancelling?: boolean }[]
   total_sessions?: number
   last_session_at?: Timestamp | { seconds: number; nanoseconds: number } | null
   deleted_at?: Timestamp | null
@@ -566,13 +560,9 @@ export function evaluateContactConditions(
         break
 
       case 'subscription': {
-        // Gather the full set of subscription type IDs the contact holds.
-        // active_subscriptions is the authoritative multi-sub array; subscription_type_id
-        // is the legacy primary field kept for back-compat. Union both to catch contacts
-        // that only have the primary field set (manual assignment, pre-Stripe data).
-        const activeSubs = contact.active_subscriptions ?? []
-        const activeSubIds = new Set<string>(activeSubs.map((s) => s.subscription_type_id))
-        if (contact.subscription_type_id) activeSubIds.add(contact.subscription_type_id)
+        // Every plan type held now — the same reader as the contact filter's
+        // subscriptions dimension, so a rule and a saved filter agree.
+        const activeSubIds = new Set(heldSubscriptionTypeIds(contact, now.getTime()))
 
         if (cond.value === 'none') {
           // Passes only when the contact holds NO subscriptions at all
@@ -591,19 +581,13 @@ export function evaluateContactConditions(
         if ((contact.subscription_status ?? 'none') !== cond.value) return false
         break
 
-      // legacy aliases — use the same multi-sub logic as the canonical 'subscription' condition
-      case 'subscription_missing': {
-        const activeSubs = contact.active_subscriptions ?? []
-        const hasAny = activeSubs.length > 0 || Boolean(contact.subscription_type_id)
-        if (hasAny) return false
+      // legacy aliases — the same reader as the canonical 'subscription' condition
+      case 'subscription_missing':
+        if (heldSubscriptionTypeIds(contact, now.getTime()).length > 0) return false
         break
-      }
-      case 'subscription_set': {
-        const activeSubs = contact.active_subscriptions ?? []
-        const hasAny = activeSubs.length > 0 || Boolean(contact.subscription_type_id)
-        if (!hasAny) return false
+      case 'subscription_set':
+        if (heldSubscriptionTypeIds(contact, now.getTime()).length === 0) return false
         break
-      }
 
       case 'tag':
         if (!contact.tags?.includes(cond.value)) return false
@@ -617,12 +601,15 @@ export function evaluateContactConditions(
       }
 
       case 'subscription_expires_in': {
-        // THE WIN-BACK WINDOW for a one-off plan grant ("CHF 100, 2 months
-        // included"). It reads `subscription_expires_at` — the same stamp the
-        // booking gate compares — so the studio can reach a member BEFORE the
-        // access she bought runs out.
+        // THE WIN-BACK WINDOW: the member's memberships all end, and the last of
+        // them ends within the window — a one-off grant ("CHF 100, 2 months
+        // included") running out, or a Stripe subscription cancelling at period
+        // end. Read off the plan list's own ends (`heldMemberships`), so the
+        // studio can reach a member BEFORE the access she holds runs out. A
+        // member who also holds a plan with no end is not losing access, and
+        // does not match.
         //
-        // This is why a lazily-expiring field needs no sweep to be useful:
+        // This is why a plan's end needs no sweep to be useful here:
         // nothing fires when the date passes, but the automation scan asks every
         // contact this question on its own schedule, which is the moment the
         // studio actually cares about anyway — a few days BEFORE.
@@ -630,9 +617,10 @@ export function evaluateContactConditions(
         // Already-expired is deliberately NOT a match: this is "ending soon",
         // and a member whose access ran out last month is a different message on
         // a different list, not a late copy of this one.
-        if (!contact.subscription_expires_at) return false
-        const expiresMs = resolveTimestampMs(contact.subscription_expires_at)
-        if (expiresMs === null) return false
+        const memberships = heldMemberships(contact, now.getTime())
+        if (memberships.length === 0) return false
+        if (memberships.some((p) => p.ends_at_ms == null)) return false
+        const expiresMs = Math.max(...memberships.map((p) => p.ends_at_ms as number))
         const daysUntil = (expiresMs - now.getTime()) / 86400000
         if (daysUntil < 0 || daysUntil > cond.value) return false
         break

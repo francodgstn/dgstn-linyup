@@ -1,4 +1,4 @@
-import { planGrantIsCurrent, resolveAffiliationTerm as resolveSharedAffiliationTerm, type AffiliationTerm } from '@linyup/shared';
+import { heldMemberships, resolveAffiliationTerm as resolveSharedAffiliationTerm, type AffiliationTerm } from '@linyup/shared';
 import { AffiliationSummary, ContactAddress, Contact } from '../types';
 
 /** What a few helpers below need from `useTranslations(...)` — the caller's
@@ -125,28 +125,30 @@ export function resolveAffiliationTerm(
   return resolveSharedAffiliationTerm(term, locale);
 }
 
+/** What the profile's plan row shows. */
+export interface HeldPlanSummary {
+  /** The first plan's name, with `+N` when the member holds more than one. */
+  name: string | null;
+  /** The plan's billing rhythm — only when there is exactly one to name. */
+  recurrence: string | null;
+}
+
 /**
- * The plan name to show a member — read off the contact's own denormalised
- * subscription snapshot, never from `teams/{id}/subscription_types/*` (rule-
- * denied to a contact session). Prefers the matching `active_subscriptions`
- * entry; falls back to the single-field snapshot for a manually-assigned
- * subscription that has no Stripe-maintained array entry yet.
+ * The plans to show a member — read off the contact's own plan list
+ * (`held_plans`, docs/multi-plan-holdings.md), never from
+ * `teams/{id}/subscription_types/*` (rule-denied to a contact session).
+ * `heldMemberships` is the one display definition of "subscribed" that the
+ * web header, contacts list and member Space also read, so a lapsed grant or
+ * an ended subscription drops out here exactly as it does there, and a second
+ * plan is counted rather than hidden. Credit packs are not memberships.
  */
-export function resolveSubscriptionTypeName(
-  contact: Pick<
-    Contact,
-    'active_subscriptions' | 'subscription_type_id' | 'subscription_type_name' | 'subscription_expires_at'
-  >,
-): string | null {
-  const active = contact.active_subscriptions ?? [];
-  const matching = contact.subscription_type_id
-    ? active.find((s) => s.subscription_type_id === contact.subscription_type_id)
-    : undefined;
-  const live = matching?.subscription_type_name ?? active[0]?.subscription_type_name;
-  if (live != null) return live;
-  // The flat grant ("2 months included") — a name only while it still COVERS
-  // her, the same `planGrantIsCurrent` comparison the booking gate and the
-  // Space's membership card make. This copy had no date check at all, so a
-  // lapsed grant read as the member's current plan in the app alone.
-  return planGrantIsCurrent(contact) ? (contact.subscription_type_name ?? null) : null;
+export function resolveHeldPlanSummary(
+  contact: Pick<Contact, 'held_plans'>,
+  nowMs: number = Date.now(),
+): HeldPlanSummary {
+  const plans = heldMemberships(contact, nowMs);
+  if (plans.length === 0) return { name: null, recurrence: null };
+  const first = plans[0].subscription_type_name || plans[0].subscription_type_id;
+  if (plans.length === 1) return { name: first, recurrence: plans[0].recurrence ?? null };
+  return { name: `${first} +${plans.length - 1}`, recurrence: null };
 }

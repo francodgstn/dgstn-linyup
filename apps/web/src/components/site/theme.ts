@@ -168,7 +168,7 @@ export function ctaHref(
   // plain click into the overlay. Without an activity it is the booking root.
   if (cta.action === 'appointment')
     return cta.activityId
-      ? publicHrefLocalized(locale, slug, 'appointments', { activity: cta.activityId, from: 'site' })
+      ? publicHrefLocalized(locale, slug, 'booking', { activity: cta.activityId, from: 'site' })
       : publicHrefLocalized(locale, slug, 'booking', { from: 'site' })
   // A class CTA opens that class's own dates (/booking/{slug}?activity={id});
   // like the appointment one it keeps a real address, and without an activity

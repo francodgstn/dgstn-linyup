@@ -212,8 +212,8 @@ export function SlotBookingForm({
   // file makes. Reading it is what makes the screen agree with the server.
   const { contact: sessionContact, isAuthenticated } = usePublicContactAuth()
   // ── WHAT THE MEMBER ACTUALLY HOLDS, RE-RESOLVED ON LOAD ───────────────────
-  // The session's contact is a SEVEN-DAY SNAPSHOT: it carries the one primary
-  // `subscription_type_id` the contact had when they signed in, serialised into
+  // The session's contact is a SEVEN-DAY SNAPSHOT: it carries the plan types
+  // the contact held when they signed in, serialised into
   // localStorage and never refreshed. On every other surface that is a label; on
   // this one it is the PRICE, and the divergence it produces points the unsafe
   // way — a member whose subscription lapsed, changed, or ran its credits out

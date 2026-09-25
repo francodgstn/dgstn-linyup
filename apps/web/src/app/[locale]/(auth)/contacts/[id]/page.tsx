@@ -111,7 +111,6 @@ import type {
   HeldPlan,
   RegionalFormatter,
   Contact,
-  ActiveSubscriptionSummary,
   AcquisitionStage,
   ContactEntry,
   ContactSource,
@@ -143,6 +142,7 @@ import {
   computeEngagementBand,
   MAX_CONTACT_LOGIN_EMAILS,
   subscriptionIsCancelling,
+  heldMemberships,
 } from '@linyup/shared'
 import { usePlan } from '@/hooks/usePlan'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
@@ -1104,46 +1104,25 @@ function AcquisitionTimeline({
 
 // Round icon button for the header action cluster (notes + alerts), with an
 // optional count badge. Kept generic so both surfaces share one look.
-/**
- * The plans a contact is on right now, for the chip row. `active_subscriptions`
- * is the live, webhook-maintained list; a contact from before it existed
- * carries only the legacy `subscription_type_name`, which is shown the same
- * way so an old record does not read as "no plan".
- */
-function livePlans(contact: Contact): ActiveSubscriptionSummary[] {
-  if (contact.active_subscriptions?.length) return contact.active_subscriptions
-  if (!contact.subscription_type_name) return []
-  return [
-    {
-      subscription_type_id: 'legacy',
-      subscription_type_name: contact.subscription_type_name,
-      recurrence: null,
-      amount: 0,
-      status: contact.subscription_status ?? 'active',
-    },
-  ]
-}
-
-/** One live plan as a chip: green while it bills, amber when it is past due
- *  or winding down (with the end date), muted while paused. */
-function PlanChip({ sub }: { sub: ActiveSubscriptionSummary }) {
+/** One held membership as a chip (`heldMemberships`, the plan list): green
+ *  while it runs, amber when it is past due or winding down (with the end
+ *  date), muted while paused. A grant with an end of its own shows it too. */
+function PlanChip({ plan }: { plan: HeldPlan }) {
   const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
-  const winding = sub.cancelling === true || !!sub.cancels_at_ms
+  const winding = plan.status === 'cancelling'
   const tone =
-    winding || sub.status === 'past_due'
+    winding || plan.status === 'past_due'
       ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800'
-      : sub.status === 'paused'
+      : plan.status === 'paused'
         ? 'bg-muted text-muted-foreground border-border'
         : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
-  const ends = sub.cancels_at_ms
-    ? fmt.dayMonth(sub.cancels_at_ms)
-    : null
+  const ends = plan.ends_at_ms ? fmt.dayMonth(plan.ends_at_ms) : null
   return (
     <Badge className={`gap-1 ${tone}`}>
       <BookOpen className="h-3 w-3" />
-      {sub.subscription_type_name ?? t('subscriptionHeadingCard')}
-      {winding && ends && (
+      {plan.subscription_type_name ?? t('subscriptionHeadingCard')}
+      {ends && (winding || plan.source === 'grant') && (
         <span className="font-normal opacity-80">· {t('planChipEnds', { date: ends })}</span>
       )}
     </Badge>
@@ -2236,6 +2215,8 @@ function MembershipTab({
   // How the Payments segment shows its rows. Component state, not the URL: it
   // is a way of looking at one segment, not a place anybody links to.
   const [paymentsView, setPaymentsView] = useState<'list' | 'statement'>('list')
+  // A payment row's plan chip opens Current on that plan's card.
+  const [focusPlan, setFocusPlan] = useState<string | null>(null)
   const SEGMENTS = [
     { id: 'current' as const, label: t('segCurrent') },
     { id: 'history' as const, label: t('segHistory') },
@@ -2265,7 +2246,12 @@ function MembershipTab({
         <Segmented
           options={SEGMENTS.map((s) => ({ value: s.id, label: s.label }))}
           value={seg}
-          onChange={onSegChange}
+          onChange={(next) => {
+            // A card is focused only on the way from a payment, not every
+            // time Current is opened after.
+            setFocusPlan(null)
+            onSegChange(next)
+          }}
         />
         {seg === 'payments' && (
           <Segmented
@@ -2281,7 +2267,9 @@ function MembershipTab({
       </div>
       {/* Each segment body mounts only while it is showing, the same way the tabs
           themselves do — so standing on History never loads payments. */}
-      {seg === 'current' && <CurrentSegment contact={contact} teamId={teamId} />}
+      {seg === 'current' && (
+        <CurrentSegment contact={contact} teamId={teamId} focusPlanRef={focusPlan} />
+      )}
       {seg === 'history' && (
         <PlanGate feature="subscriptions">
           <PlanHistorySegment contact={contact} teamId={teamId} />
@@ -2291,7 +2279,14 @@ function MembershipTab({
         (paymentsView === 'statement' ? (
           <LedgerSegment contact={contact} teamId={teamId} />
         ) : (
-          <PaymentsTab contact={contact} teamId={teamId} />
+          <PaymentsTab
+            contact={contact}
+            teamId={teamId}
+            onOpenPlan={(ref) => {
+              setFocusPlan(ref)
+              onSegChange('current')
+            }}
+          />
         ))}
       {seg === 'receipts' && tarif595Installed && <ReceiptsSegment contact={contact} teamId={teamId} />}
     </div>
@@ -2305,12 +2300,20 @@ function MembershipTab({
  * controls. The figures sit OUTSIDE the plan gate on purpose: a payment was
  * received whether or not the studio's tier sells plans.
  */
-function CurrentSegment({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+function CurrentSegment({
+  contact,
+  teamId,
+  focusPlanRef,
+}: {
+  contact: Contact
+  teamId: string | null
+  focusPlanRef?: string | null
+}) {
   return (
     <div className="space-y-6 pb-16">
       <CurrentFigures contact={contact} teamId={teamId} />
       <PlanGate feature="subscriptions">
-        <CurrentPlans contact={contact} teamId={teamId} />
+        <CurrentPlans contact={contact} teamId={teamId} focusPlanRef={focusPlanRef} />
       </PlanGate>
     </div>
   )
@@ -2432,7 +2435,15 @@ function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string 
  * dialogs. They moved here from the old Plans segment on 2026-09-13, which kept
  * only the history — moved, not copied, so each control still has one home.
  */
-function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+function CurrentPlans({
+  contact,
+  teamId,
+  focusPlanRef,
+}: {
+  contact: Contact
+  teamId: string | null
+  focusPlanRef?: string | null
+}) {
   const qc = useQueryClient()
   const { data: subTypes = [] } = useSubscriptionTypes(teamId)
   // null = closed; 'add' = a new plan; a HeldPlan = changing that grant.
@@ -2466,6 +2477,7 @@ function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | 
         onAddPlan={() => setPlanDialog('add')}
         onChangePlan={(plan) => setPlanDialog(plan)}
         onGrantCredits={() => setGrantOpen(true)}
+        focusRef={focusPlanRef}
       />
 
       <PlanDialog
@@ -5141,30 +5153,37 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         {isHistoryBack ? tCommon('back') : t('title')}
       </button>
 
-      {/* Header — TWO cards. Left, the profile: who they are. Right, the
+      {/* Header — TWO cards. Left, the profile: who they are, in the shape a
+          contact card is expected to take — a round picture overlapping the
+          card's top edge, the name under it, everything centred. Right, the
           insights card: what the studio reads about them (InsightsCard.tsx).
-          COMPACT (Franco, 2026-09-25): it was a centred profile card with the
-          avatar overlapping its top edge, 600px tall, which put the tabs a
-          whole screen down on a phone and left the insights card half empty
-          beside it. Now the avatar sits BESIDE the name and the facts run as
-          one wrapping line, so the header is about a third of that and the
-          tabs are in view on arrival. Three fifths and two fifths at `lg`. */}
-      <div className="grid gap-4 lg:grid-cols-5 lg:items-stretch">
-        <div className="relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card p-5 shadow-sm lg:col-span-3">
-          {/* The card's only decoration: a soft glow behind the avatar. It
-              sits behind everything and takes no clicks. */}
+          Two fifths and three fifths at `lg` (Franco, 2026-09-25): a contact
+          card is naturally narrow, and the summary with the figures and chart
+          gets the room. The summary's text scrolls inside a capped height so
+          it never stretches the row. A horizontal compact card was tried the
+          same day and read like a list row, not a person.
+          The content is centred vertically, so whatever height the row has
+          lands evenly above and below it rather than as a gap. The grid
+          carries top padding so the avatar clears the back button. */}
+      <div className="grid gap-5 pt-12 lg:grid-cols-5 lg:items-stretch">
+        <div className="relative flex flex-col justify-center rounded-2xl border border-border/60 bg-card px-6 pb-6 pt-16 text-center shadow-xl shadow-black/[0.06] dark:shadow-black/40 lg:col-span-2">
+          {/* The card's only decoration: a tinted band along the top and a
+              soft glow behind the avatar. Both sit behind everything else and
+              take no clicks. */}
           <div
-            className="pointer-events-none absolute -left-8 -top-10 h-36 w-36 rounded-full bg-primary/20 blur-2xl"
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-2xl bg-gradient-to-b from-primary/10 to-transparent"
             aria-hidden
           />
-          <div className="relative flex items-start gap-4">
           <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-lg font-bold text-primary-foreground shadow-md shadow-primary/30 sm:h-16 sm:w-16 sm:text-xl"
+            className="pointer-events-none absolute left-1/2 -top-14 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/25 blur-2xl"
+            aria-hidden
+          />
+          <div
+            className="absolute left-1/2 -top-12 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-card"
             aria-hidden
           >
             {personInitials(contact)}
           </div>
-          <div className="min-w-0 flex-1 pr-8">
           {/* The rare actions — the ones that do not earn a tile: asking the
               person to update their details, the roster switch, archiving, and
               choosing the tiles themselves. */}
@@ -5206,13 +5225,13 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               </DropdownMenu>
             </div>
           )}
-          <div className="min-w-0">
+          <div className="relative min-w-0">
             <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">
               {contact.firstname} {contact.lastname}
             </h1>
           </div>
-          <div className="mt-2 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="relative mt-3 min-w-0">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {/* A member has asked to close their own account. It sits with
                   the lifecycle badges because that is what it is — but ABOVE
                   the stage chips, because it outranks anything about chasing
@@ -5266,15 +5285,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       is winding down says when it ends. Affiliation left this
                       row on 2026-09-13: it is the secondary fact, and the
                       panel below still links to it. */}
-                  {livePlans(contact).map((sub) => (
-                    <PlanChip key={sub.subscription_type_id} sub={sub} />
+                  {heldMemberships(contact).map((plan) => (
+                    <PlanChip key={`${plan.source}-${plan.ref}`} plan={plan} />
                   ))}
                 </>
               )}
             </div>
-            {/* The facts as ONE wrapping line, no panel around them: each is
-                an icon and a few words, and a box made them a second card. */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            {/* The facts as a list: left-aligned inside a quiet panel so the
+                icons line up and a long email has room, centred as a block and
+                capped in width so the wide card does not stretch it. */}
+            <div className="mx-auto mt-4 flex w-full max-w-md flex-col gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-left">
               {contact.email && (
                 <span className="group/email flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
                   <Mail className="h-3 w-3 shrink-0" />
@@ -5337,31 +5357,29 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                   Both jump to the Membership tab's matching segment. */}
               {!contact.archived_at && !contact.deleted_at && (
                 <>
-                  {/* Primary live subscription + "+N" when the contact holds several
-                      types (the full list lives in the Membership tab). */}
-                  {((contact.active_subscriptions?.length ?? 0) > 0 ||
-                    contact.subscription_type_name) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMembershipSeg('current')
-                        setTab('payments')
-                      }}
-                      className="flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <BookOpen className="h-3 w-3 shrink-0" />
-                      <span className="truncate">
-                        {t('subscriptionHeadingCard')}:{' '}
-                        {(contact.active_subscriptions?.length ?? 0) > 0
-                          ? `${contact.active_subscriptions![0].subscription_type_name ?? contact.subscription_type_name}${
-                              contact.active_subscriptions!.length > 1
-                                ? ` +${contact.active_subscriptions!.length - 1}`
-                                : ''
-                            }`
-                          : contact.subscription_type_name}
-                      </span>
-                    </button>
-                  )}
+                  {/* The first held membership + "+N" when there are several
+                      (the full list is the Plans list on Current). */}
+                  {(() => {
+                    const held = heldMemberships(contact)
+                    if (held.length === 0) return null
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMembershipSeg('current')
+                          setTab('payments')
+                        }}
+                        className="flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <BookOpen className="h-3 w-3 shrink-0" />
+                        <span className="truncate">
+                          {t('subscriptionHeadingCard')}:{' '}
+                          {held[0].subscription_type_name ?? t('subscriptionHeadingCard')}
+                          {held.length > 1 ? ` +${held.length - 1}` : ''}
+                        </span>
+                      </button>
+                    )
+                  })()}
                   {contact.affiliation_summary?.has_active && (
                     <button
                       type="button"
@@ -5378,16 +5396,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             </div>
             {/* Contact Groups plugin — membership chips */}
             {isInstalled('contact-groups') && !contact.archived_at && !contact.deleted_at && (
-              <ContactGroupsChips contact={contact} onChanged={invalidate} />
+              <div className="flex justify-center">
+                <ContactGroupsChips contact={contact} onChanged={invalidate} />
+              </div>
             )}
-          </div>
-          </div>
           </div>
           {/* The quick actions: four tiles, chosen per browser from the
               "More actions" menu. Margin so they don't crowd the detail lines
               above them. */}
           {!contact.archived_at && !contact.deleted_at && (
-            <div className="relative mt-auto grid grid-cols-4 gap-1.5 pt-4 sm:max-w-md">
+            <div className="relative mx-auto grid w-full max-w-md grid-cols-4 gap-1.5 pt-5">
               {quickActions.map((qa) => {
                 const action = quickActionDefs[qa]
                 if (!action.available) return null
@@ -5410,7 +5428,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         <InsightsCard
           contact={contact}
           thresholds={team?.engagement_thresholds}
-          className="lg:col-span-2"
+          className="lg:col-span-3"
         />
       </div>
 

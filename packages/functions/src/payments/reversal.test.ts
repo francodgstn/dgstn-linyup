@@ -291,10 +291,15 @@ const DELETE_COURSE: ReversalActions = {
   course: 'delete_if_owned',
 }
 
-describe('reversePaymentEffects — subscription ownership', () => {
-  it('clears the five fields when this payment owns them', async () => {
+describe('reversePaymentEffects — the contact document', () => {
+  // A plan is a grant row keyed by the payment, so a refund ends exactly that
+  // row. The contact itself is never written: a slot left on old data is not
+  // cleared, and a later plan of the same type — its own row — is untouched.
+  it('ends only the refunded payment’s grant and never writes the contact', async () => {
     const { db, ops } = mockDb({
       'contacts/ct1': { subscription_type_id: 'st1', subscription_source_ref: 'pi_1' },
+      'contacts/ct1/plan_grants/pi_1': { subscription_type_id: 'st1', ended_at: null },
+      'contacts/ct1/plan_grants/pi_2': { subscription_type_id: 'st1', ended_at: null },
     })
     const out = await reversePaymentEffects(db, {
       teamId: 't1',
@@ -303,86 +308,12 @@ describe('reversePaymentEffects — subscription ownership', () => {
       lineItem: PLAIN_SUB,
       plan: CLEAR,
     })
-    assert.equal(out.subscription, 'cleared')
-    const u = ops.updates.find((x) => x.path === 'contacts/ct1')!
-    for (const f of [
-      'subscription_type_id',
-      'subscription_type_name',
-      'subscription_price_id',
-      'subscription_recurrence',
-      'subscription_amount',
-      'subscription_source_ref',
-    ]) {
-      assert.ok(f in u.data, `${f} cleared`)
-    }
-  })
-
-  it('SKIPS when a LATER payment owns the fields — the over-revoke bug', async () => {
-    const { db, ops } = mockDb({
-      'contacts/ct1': { subscription_type_id: 'st1', subscription_source_ref: 'pi_2' },
-    })
-    const out = await reversePaymentEffects(db, {
-      teamId: 't1',
-      contactId: 'ct1',
-      paymentRef: 'pi_1',
-      lineItem: PLAIN_SUB,
-      plan: CLEAR,
-    })
-    assert.equal(out.subscription, 'skipped_not_owner')
-    assert.equal(ops.updates.length, 0, 'nothing written')
-  })
-
-  it('SKIPS a recurring renewal, which stores a null source ref', async () => {
-    const { db, ops } = mockDb({
-      'contacts/ct1': { subscription_type_id: 'st1', subscription_source_ref: null },
-    })
-    const out = await reversePaymentEffects(db, {
-      teamId: 't1',
-      contactId: 'ct1',
-      paymentRef: 'pi_1',
-      lineItem: PLAIN_SUB,
-      plan: CLEAR,
-    })
-    assert.equal(out.subscription, 'skipped_not_owner')
-    assert.equal(ops.updates.length, 0)
-  })
-
-  it('reports absent when the contact holds no subscription at all', async () => {
-    const { db, ops } = mockDb({ 'contacts/ct1': { subscription_source_ref: 'pi_1' } })
-    const out = await reversePaymentEffects(db, {
-      teamId: 't1',
-      contactId: 'ct1',
-      paymentRef: 'pi_1',
-      lineItem: PLAIN_SUB,
-      plan: CLEAR,
-    })
-    assert.equal(out.subscription, 'absent')
-    assert.equal(ops.updates.length, 0)
-  })
-
-  it('reports absent when the contact is gone', async () => {
-    const { db, ops } = mockDb({})
-    const out = await reversePaymentEffects(db, {
-      teamId: 't1',
-      contactId: 'ct1',
-      paymentRef: 'pi_1',
-      lineItem: PLAIN_SUB,
-      plan: CLEAR,
-    })
-    assert.equal(out.subscription, 'absent')
-    assert.equal(ops.updates.length, 0)
-  })
-
-  it('a second run is a no-op — the ref it owned is gone', async () => {
-    const { db } = mockDb({ 'contacts/ct1': { subscription_type_id: 'st1' } })
-    const out = await reversePaymentEffects(db, {
-      teamId: 't1',
-      contactId: 'ct1',
-      paymentRef: 'pi_1',
-      lineItem: PLAIN_SUB,
-      plan: CLEAR,
-    })
-    assert.equal(out.subscription, 'skipped_not_owner')
+    assert.equal(out.planGrant, 'ended')
+    assert.equal('subscription' in out, false)
+    assert.deepEqual(
+      ops.updates.map((u) => u.path),
+      ['contacts/ct1/plan_grants/pi_1']
+    )
   })
 })
 
@@ -630,7 +561,6 @@ describe('reversePaymentEffects — the read set', () => {
       },
     })
     assert.deepEqual(reads, [
-      'contacts/ct1',
       'contacts/ct1/plan_grants/pi_1',
       'contacts/ct1/credit_grants/pi_1',
       'courses/c1/purchases/ct1',
@@ -652,7 +582,6 @@ describe('reversePaymentEffects — the read set', () => {
     assert.deepEqual(ops.updates, [])
     assert.deepEqual(ops.deletes, [])
     assert.deepEqual(out, {
-      subscription: 'left',
       credits: 'left',
       creditsRevoked: 0,
       course: 'left',

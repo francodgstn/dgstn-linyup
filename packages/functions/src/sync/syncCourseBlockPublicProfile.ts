@@ -27,6 +27,11 @@ export function buildCourseBlockPublicProfile(
     teamId: block.teamId,
     name: block.name ?? '',
     description: block.description ?? null,
+    // THE PROGRAMME. Mirrored whole, unlike the meeting list beside it: an
+    // outline is what a parent reads before paying for thirteen weeks, it is
+    // bounded at COURSE_CURRICULUM_MAX_ITEMS, and a card that had to fetch it
+    // separately would show the price first and the reason second.
+    curriculum: block.curriculum ?? null,
     // The class behind it, so a card can borrow its picture and its terms
     // without the course restating them.
     activityId: block.activityId ?? null,

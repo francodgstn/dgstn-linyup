@@ -72,7 +72,7 @@ import {
 } from '../utils/connect/client'
 import { persistAccountStatus } from './access'
 import { resolveSingleContact } from '../utils/contacts'
-import { grantCourseEntitlement, writeContactSubscriptionFields } from '../payments/effects'
+import { grantCourseEntitlement, stampLastPayment } from '../payments/effects'
 import { writePaymentPlanGrant } from '../contacts/planGrants'
 import { recordPlanPurchase } from '../payments/planPurchases'
 import {
@@ -277,14 +277,12 @@ async function applyCreditGrant(
   }
 }
 
-/** Write the subscription fields onto a known contact + an activity-log entry.
+/** Record a plan purchase on a known contact + an activity-log entry.
  *
- * The affiliation axis is still NOT touched here — `membership_expiration` was
- * an affiliation field and stays gone. What the caller passes as
- * `membershipExpiration` is the SUBSCRIPTION grant's own end date, computed from
- * a one-time price's `included_months`, and it now lands on
- * `subscription_expires_at`. It was computed and discarded until the readers to
- * honour it existed; they do now (`planGrantIsCurrent`).
+ * The affiliation axis is NOT touched here — `membership_expiration` was an
+ * affiliation field and stays gone. What the caller passes as
+ * `membershipExpiration` is the plan grant's own end date, computed from a
+ * one-time price's `included_months`.
  *
  * ONE-TIME ONLY, guarded here rather than trusted from metadata: a recurring
  * plan's end is Stripe's to say, and a second end date stamped alongside it
@@ -303,26 +301,12 @@ async function writeContactMembership(
 ): Promise<void> {
   const db = admin.firestore()
   const grantExpiry = md.recurrence === 'one_time' ? opts.membershipExpiration : null
-  await writeContactSubscriptionFields(db, contactId, {
-    subscriptionTypeId: md.subscriptionTypeId,
-    subscriptionTypeName: md.subscriptionTypeName ?? null,
-    priceId: md.priceId ?? null,
-    recurrence: md.recurrence ?? null,
-    amountMajor: Math.round(opts.amountRappen) / 100, // contact stores major units
-    // NULL on a renewal is load-bearing, not a gap: it OVERWRITES the ref of any
-    // earlier one-off purchase, so refunding that old charge can no longer clear
-    // a membership this renewal is paying for.
-    sourcePaymentRef: opts.paymentIntentId ?? null,
-    // Whole-record rule: written every time, null included, so starting a proper
-    // subscription ERASES the end date an earlier intro purchase left behind.
-    expiresAt: grantExpiry,
-  })
+  await stampLastPayment(db, contactId)
   // A ONE-OFF purchase is a plan grant (docs/multi-plan-holdings.md), keyed by
   // its PaymentIntent, so the checkout and payment_intent events for the same
   // charge converge on one row and a refund ends exactly it. A RECURRING plan
   // arrives here with no PaymentIntent and makes no grant: its
-  // member_subscriptions doc is the holding. The slot write above is the bridge
-  // until the readers move — see contacts/planGrants.ts.
+  // member_subscriptions doc is the holding.
   if (opts.paymentIntentId) {
     await writePaymentPlanGrant(db, contactId, {
       teamId,
@@ -1622,12 +1606,11 @@ async function handleCheckoutCompleted(
     // which, or the next reader "fixes" one by reintroducing the other:
     //
     //  • ONE-OFF ('payment' mode) — a PaymentIntent EXISTS, and this charge is
-    //    what set the membership up, so it owns the fields and refunding it may
-    //    clear them. This call used to pass nothing here, because `piId` was
-    //    scoped to the branch above; that wrote `subscription_source_ref: null`
-    //    and raced handlePaymentIntent, overwriting the correct ref. Every
-    //    refund of a one-off membership or credit pack then answered
-    //    `skipped_not_owner` and revoked nothing — on the main rail.
+    //    what set the membership up, so its grant is keyed by it and refunding
+    //    it may end that grant. This call used to pass nothing here, because
+    //    `piId` was scoped to the branch above; that raced handlePaymentIntent
+    //    and overwrote the correct provenance. Every refund of a one-off
+    //    membership or credit pack then revoked nothing — on the main rail.
     //
     //  • RECURRING ('subscription' mode) — `session.payment_intent` is ALWAYS
     //    null (the first charge sits on the invoice, governed by handleInvoice /

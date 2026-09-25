@@ -7,8 +7,8 @@ import { assignPlan, changePlan, endPlan } from './planCallables'
 // The staff plan callables, run against the Firestore emulator
 // (docs/multi-plan-holdings.md, phase 2). Their pure parts are pinned in
 // planGrants.test.ts; this runs what only a real Firestore can check — the
-// transactions (every read before any write), the grant rows, the legacy-slot
-// bridge — and the contact write check the rules used to make, now made here.
+// transactions (every read before any write), the grant rows — and the contact
+// write check the rules used to make, now made here.
 //
 // A *.rules-test.ts file so it runs in the emulator job, not because it tests
 // rules: the Admin SDK it uses bypasses them.
@@ -89,7 +89,7 @@ describe('plan callables — against the Firestore emulator', function () {
     await db().collection('contacts').doc(OTHER_CONTACT).set({ teamId: TEAM, firstname: 'Sam', assigned_coach_ids: [] })
   })
 
-  it('assignPlan gives a staff grant, writes the slot as the bridge, and materialises a provisional lead', async () => {
+  it('assignPlan gives a staff grant and materialises a provisional lead', async () => {
     const res = await call<{ grantId: string; duplicate: boolean }>(assignPlan, OWNER, { contactId: CONTACT, ...MONTHLY })
     assert.equal(res.duplicate, false)
     const [grant] = await grants()
@@ -100,9 +100,8 @@ describe('plan callables — against the Firestore emulator', function () {
     assert.equal(grant.amount, 89)
     assert.equal(grant.expires_at, null)
     const c = await contact()
-    assert.equal(c.subscription_type_id, 'st-monthly')
-    assert.equal(c.subscription_type_name, 'Monthly')
-    assert.equal(c.subscription_source_ref, null)
+    // The grant is the whole record: the retired single plan slot is not written.
+    assert.equal('subscription_type_id' in c, false)
     assert.equal(c.provisional, undefined)
     assert.equal('last_payment_at' in c, false, 'nobody paid')
   })
@@ -125,7 +124,6 @@ describe('plan callables — against the Firestore emulator', function () {
     assert.equal(replaced?.ended_reason, 'changed')
     assert.ok(replaced?.ended_at instanceof Timestamp)
     assert.equal((await openGrants()).length, 1)
-    assert.equal((await contact()).subscription_type_id, 'st-intro')
   })
 
   it('an idempotency key turns a second click into a duplicate, not a second plan', async () => {
@@ -146,26 +144,22 @@ describe('plan callables — against the Firestore emulator', function () {
     await refusedWith(call(changePlan, OWNER, { contactId: CONTACT, grantId, ...MONTHLY }), 'failed-precondition')
   })
 
-  it('endPlan ends one grant; the slot empties only when nothing open still holds its plan', async () => {
+  it('endPlan ends exactly the named grant, even when another grant holds the same plan', async () => {
     const a = await call<{ grantId: string }>(assignPlan, OWNER, { contactId: CONTACT, ...MONTHLY })
     const b = await call<{ grantId: string }>(assignPlan, OWNER, { contactId: CONTACT, ...MONTHLY })
-    const first = await call<{ ended: string[]; slotCleared: boolean }>(endPlan, OWNER, { contactId: CONTACT, grantId: a.grantId })
+    const first = await call<{ ended: string[] }>(endPlan, OWNER, { contactId: CONTACT, grantId: a.grantId })
     assert.deepEqual(first.ended, [a.grantId])
-    assert.equal(first.slotCleared, false, 'a second grant of the same plan is still open')
-    assert.equal((await contact()).subscription_type_id, 'st-monthly')
-    const second = await call<{ slotCleared: boolean }>(endPlan, OWNER, { contactId: CONTACT, grantId: b.grantId })
-    assert.equal(second.slotCleared, true)
-    assert.equal((await contact()).subscription_type_id, null)
+    assert.deepEqual((await openGrants()).map((g) => g.id), [b.grantId])
+    await call(endPlan, OWNER, { contactId: CONTACT, grantId: b.grantId })
     const again = await call<{ ended: string[] }>(endPlan, OWNER, { contactId: CONTACT, grantId: b.grantId })
     assert.deepEqual(again.ended, [], 'ending an ended grant is a no-op')
   })
 
-  it('endPlan with allCurrent ends every open plan and empties the slot', async () => {
+  it('endPlan with allCurrent ends every open plan', async () => {
     await call(assignPlan, OWNER, { contactId: CONTACT, ...MONTHLY })
     await call(assignPlan, OWNER, { contactId: CONTACT, ...INTRO })
-    const res = await call<{ ended: string[]; slotCleared: boolean }>(endPlan, OWNER, { contactId: CONTACT, allCurrent: true })
+    const res = await call<{ ended: string[] }>(endPlan, OWNER, { contactId: CONTACT, allCurrent: true })
     assert.equal(res.ended.length, 2)
-    assert.equal(res.slotCleared, true)
     assert.equal((await openGrants()).length, 0)
     assert.equal((await grants()).every((g) => g.ended_reason === 'staff'), true)
   })
@@ -188,6 +182,5 @@ describe('plan callables — against the Firestore emulator', function () {
       'not-found'
     )
     assert.equal((await grants()).length, 0)
-    assert.equal((await contact()).subscription_type_id, undefined)
   })
 })

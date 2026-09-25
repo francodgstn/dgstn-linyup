@@ -1179,7 +1179,8 @@
     "planSource_staff": "Attribuée",
     "planSource_purchase": "Achetée",
     "planSource_gateway": "Payée hors de Linyup",
-    "planSource_import": "Importée"
+    "planSource_import": "Importée",
+    "planPaymentsCount": "{count, plural, one {# paiement} other {# paiements}}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -5044,6 +5045,9 @@
     "stripeReceiptError": "Impossible de récupérer le reçu Stripe.",
     "lineKind_course_block": "Cours",
     "selectCourseBlock": "Quel cours",
+    "planLinkExact": "La formule que ce paiement a réglée. Ouvre sa carte.",
+    "planLinkByType": "Associé par type de formule : ce paiement indique sa formule, pas l'abonnement réglé. Ouvre la carte.",
+    "planLinkFallback": "Formule",
     "refundSubscriptionCancelled": "Remboursé. L’abonnement est résilié et ne sera plus facturé.",
     "refundSubscriptionCancelFailed": "L’argent a été remboursé, mais l’abonnement n’a pas pu être résilié et pourrait être facturé à nouveau. Résiliez-le dans le profil de {name}."
   },
@@ -5154,7 +5158,8 @@
     "courseBlockSoldOut": "Complet",
     "courseBlockClosed": "Réservations closes",
     "courseBlockJoin": "Participer",
-    "courseBlockJoined": "Vous êtes inscrit au cours"
+    "courseBlockJoined": "Vous êtes inscrit au cours",
+    "courseBlockCurriculum": "Au programme"
   },
   "Products": {
     "title": "Produits",
@@ -5860,6 +5865,7 @@
     "coursesJoinWaitlist": "Me prévenir si une place se libère",
     "chooseCategorySubtitle": "Que souhaitez-vous réserver ?",
     "choosePlaceSubtitle": "Choisissez où vous souhaitez venir.",
+    "coursesCurriculum": "Au programme",
     "errorDropInSignedUpOnly": "Ce cours est réservé aux personnes inscrites auprès du studio. Connectez-vous avec l'e-mail de votre inscription pour le payer.",
     "dropInSubtitleSignIn": "Inscrit(e) chez nous ? Connectez-vous et payez {price} pour ce cours"
   },
@@ -9112,7 +9118,21 @@
     "cancelRefundsHint": "Remboursez-les depuis la page des paiements, un par un, pour garder la main.",
     "closeButton": "Fermer",
     "duplicateLabel": "Relancer",
-    "paneFreeNoPlans": "Ce cours est gratuit, un abonnement ne peut donc ni l'inclure ni le réduire. Donnez-lui un prix pour y lier des abonnements."
+    "paneFreeNoPlans": "Ce cours est gratuit, un abonnement ne peut donc ni l'inclure ni le réduire. Donnez-lui un prix pour y lier des abonnements.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Ce qu'est ce cours, dans vos propres mots.",
+    "curriculumLabel": "Au programme",
+    "curriculumHint": "Facultatif. Une ligne par séance, ou une pour tout le cours.",
+    "curriculumAdd": "Ajouter une ligne",
+    "curriculumOnePerLesson": "Une par séance ({count})",
+    "curriculumRemove": "Supprimer cette ligne",
+    "curriculumItemN": "{n}.",
+    "curriculumLessonAt": "{n} · {date}",
+    "curriculumTitleLabel": "Titre",
+    "curriculumTitlePlaceholder": "Virages et respiration",
+    "curriculumDetailLabel": "Détail",
+    "curriculumDetailPlaceholder": "Ce que le participant doit savoir de plus sur celle-ci.",
+    "curriculumUnpaired": "{items} lignes pour {lessons} séances, donc affichées en liste et non par séance"
   },
   "CourseWaitlist": {
     "offerTitle": "Une place s'est libérée",

@@ -24,6 +24,8 @@
  *     bookkeeping. They are our implementation, not the studio's data.
  */
 
+import { currentHeldPlans, type HeldPlan } from '../types/planHoldings'
+
 /** Escapes one field per RFC 4180: quote when the value contains a quote, comma
  *  or newline; embedded quotes are doubled. Same rule as `financeCsv`. */
 function csvField(value: string): string {
@@ -81,6 +83,40 @@ function emergencyLine(list: unknown): string {
     .join('; ')
 }
 
+/** How each kind of holding is named in the file — the same words the contact
+ *  page's plan cards use, in English because a CSV header row is English too. */
+const PLAN_SOURCE_WORDS: Record<string, string> = {
+  stripe: 'recurring billing',
+  credits: 'credit pack',
+  staff: 'assigned',
+  purchase: 'bought',
+  gateway: 'paid outside Linyup',
+  import: 'imported',
+}
+
+/**
+ * Every plan the contact holds today, one per `; `, from the plan list
+ * (docs/multi-plan-holdings.md §5 — "a plans column listing every held plan"),
+ * e.g. `Gold (recurring billing, past_due); 10er Karte (credit pack, 4 left,
+ * until 2026-12-31)`. The status is written only when it is not the normal
+ * one, as on the plan cards. No amount: the contact carries no currency, and a
+ * bare number is a worse record than the payments export already gives.
+ */
+function planLine(plans: unknown, nowMs: number): string {
+  if (!Array.isArray(plans)) return ''
+  return currentHeldPlans({ held_plans: plans as HeldPlan[] }, nowMs)
+    .map((p) => {
+      const kind = p.source === 'grant' ? (p.grant_source ?? 'staff') : p.source
+      const details = [PLAN_SOURCE_WORDS[kind] ?? kind]
+      if (p.status !== 'active') details.push(p.status)
+      if (p.source === 'credits') details.push(`${p.credits_remaining ?? 0} left`)
+      if (p.ends_at_ms != null)
+        details.push(`until ${new Date(p.ends_at_ms).toISOString().slice(0, 10)}`)
+      return `${p.subscription_type_name || p.subscription_type_id} (${details.join(', ')})`
+    })
+    .join('; ')
+}
+
 /** The fixed columns, in the order they appear. Custom-field columns are
  *  appended after these, one per definition, in the studio's own order. */
 export const CONTACT_CSV_COLUMNS = [
@@ -98,9 +134,7 @@ export const CONTACT_CSV_COLUMNS = [
   'source',
   'source_detail',
   'partner_app',
-  'subscription_type',
-  'subscription_status',
-  'subscription_amount',
+  'plans',
   'joined_at',
   'trial_booked_at',
   'trial_attended_at',
@@ -125,6 +159,9 @@ export interface ContactCsvOptions {
   customFields?: ContactCsvCustomField[]
   /** groupId → group name, so the export carries names rather than ids. */
   groupNames?: Map<string, string>
+  /** "Today" for the plans column — a plan list is stored ahead of the clock
+   *  (docs/multi-plan-holdings.md), so what is held is decided at export time. */
+  nowMs?: number
 }
 
 /**
@@ -142,6 +179,7 @@ export function toContactsCsv(
 ): string {
   const custom = options.customFields ?? []
   const lookup = options.groupNames ?? new Map<string, string>()
+  const nowMs = options.nowMs ?? Date.now()
 
   const labelCounts = new Map<string, number>()
   for (const f of custom) labelCounts.set(f.label, (labelCounts.get(f.label) ?? 0) + 1)
@@ -169,9 +207,7 @@ export function toContactsCsv(
         str(c.source),
         str(c.source_detail),
         str(c.acquisition_partner_app),
-        str(c.subscription_type_name),
-        str(c.subscription_status),
-        str(c.subscription_amount),
+        planLine(c.held_plans, nowMs),
         isoOrEmpty(c.signup_completed_at),
         isoOrEmpty(c.trial_booked_at),
         isoOrEmpty(c.trial_attended_at),

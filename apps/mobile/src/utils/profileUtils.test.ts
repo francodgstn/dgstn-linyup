@@ -1,4 +1,4 @@
-import { resolveAffiliationTerm, resolveSubscriptionTypeName, formatAddress } from './profileUtils';
+import { resolveAffiliationTerm, resolveHeldPlanSummary, formatAddress } from './profileUtils';
 
 describe('resolveAffiliationTerm', () => {
   const term = { en: 'Membership', de: 'Mitgliedschaft', fr: 'Adhésion' };
@@ -19,63 +19,73 @@ describe('resolveAffiliationTerm', () => {
   });
 });
 
-describe('resolveSubscriptionTypeName', () => {
-  it('prefers the active_subscriptions entry matching subscription_type_id', () => {
-    const name = resolveSubscriptionTypeName({
-      subscription_type_id: 'type-2',
-      subscription_type_name: 'stale single-field snapshot',
-      active_subscriptions: [
-        { subscription_type_id: 'type-1', subscription_type_name: 'Type One' } as any,
-        { subscription_type_id: 'type-2', subscription_type_name: 'Type Two' } as any,
-      ],
-    });
-    expect(name).toBe('Type Two');
+describe('resolveHeldPlanSummary', () => {
+  const NOW = Date.parse('2026-09-25T12:00:00Z');
+  const DAY = 86_400_000;
+  const plan = (over: Record<string, unknown>) =>
+    ({
+      subscription_type_id: 't',
+      subscription_type_name: null,
+      source: 'grant',
+      status: 'active',
+      starts_at_ms: NOW - 30 * DAY,
+      ends_at_ms: null,
+      price_id: null,
+      amount: null,
+      recurrence: null,
+      ref: 'r',
+      ...over,
+    }) as any;
+
+  it('names the one plan held, with its recurrence', () => {
+    const s = resolveHeldPlanSummary(
+      { held_plans: [plan({ subscription_type_name: 'Gold', source: 'stripe', recurrence: 'monthly' })] },
+      NOW,
+    );
+    expect(s).toEqual({ name: 'Gold', recurrence: 'monthly' });
   });
 
-  it('falls back to the first active subscription when subscription_type_id does not match', () => {
-    const name = resolveSubscriptionTypeName({
-      active_subscriptions: [{ subscription_type_id: 'type-1', subscription_type_name: 'Type One' } as any],
-    });
-    expect(name).toBe('Type One');
+  it('counts a second plan instead of hiding it', () => {
+    const s = resolveHeldPlanSummary(
+      {
+        held_plans: [
+          plan({ subscription_type_name: 'Gold', recurrence: 'monthly' }),
+          plan({ subscription_type_name: 'Kids', ref: 'r2' }),
+        ],
+      },
+      NOW,
+    );
+    expect(s).toEqual({ name: 'Gold +1', recurrence: null });
   });
 
-  it('falls back to the single-field snapshot when there is no active_subscriptions array', () => {
-    const name = resolveSubscriptionTypeName({ subscription_type_name: 'Legacy Plan' });
-    expect(name).toBe('Legacy Plan');
+  // The list is stored ahead of the clock: nothing rewrites it when a grant
+  // lapses, so the reader compares the dates itself.
+  it('drops a lapsed grant, a plan not yet begun and credit packs', () => {
+    const s = resolveHeldPlanSummary(
+      {
+        held_plans: [
+          plan({ subscription_type_name: 'Lapsed', ends_at_ms: NOW - DAY }),
+          plan({ subscription_type_name: 'Future', starts_at_ms: NOW + DAY }),
+          plan({ subscription_type_name: '10er', source: 'credits', credits_remaining: 4 }),
+        ],
+      },
+      NOW,
+    );
+    expect(s).toEqual({ name: null, recurrence: null });
   });
 
-  // The flat grant carries an expiry; a live subscription does not. The
-  // date check must therefore bite ONLY on the fallback arm — this is the
-  // asymmetry the admin and the Space already honour and the app did not.
-  it('does NOT show a flat grant whose expiry has passed', () => {
-    const name = resolveSubscriptionTypeName({
-      subscription_type_name: '2 months included',
-      subscription_expires_at: { toMillis: () => Date.now() - 1000 } as any,
-    });
-    expect(name).toBeNull();
+  it('ignores the legacy single-plan slot', () => {
+    expect(
+      resolveHeldPlanSummary({ subscription_type_name: 'Legacy Plan' } as any, NOW),
+    ).toEqual({ name: null, recurrence: null });
   });
 
-  it('still shows a flat grant that has not yet expired', () => {
-    const name = resolveSubscriptionTypeName({
-      subscription_type_name: '2 months included',
-      subscription_expires_at: { toMillis: () => Date.now() + 86_400_000 } as any,
-    });
-    expect(name).toBe('2 months included');
-  });
-
-  it('never gates a LIVE subscription on the grant expiry', () => {
-    const name = resolveSubscriptionTypeName({
-      subscription_expires_at: { toMillis: () => Date.now() - 1000 } as any,
-      active_subscriptions: [{ subscription_type_id: 'type-1', subscription_type_name: 'Type One' } as any],
-    });
-    expect(name).toBe('Type One');
-  });
-
-  it('returns null when the contact has no subscription anywhere', () => {
-    expect(resolveSubscriptionTypeName({})).toBeNull();
+  it('falls back to the type id when a plan has no name', () => {
+    expect(resolveHeldPlanSummary({ held_plans: [plan({ subscription_type_id: 'type-9' })] }, NOW).name).toBe(
+      'type-9',
+    );
   });
 });
-
 
 describe('formatAddress', () => {
   it('joins the route/street_number and postal_code/locality lines', () => {

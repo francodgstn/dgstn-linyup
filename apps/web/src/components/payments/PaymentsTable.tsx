@@ -33,7 +33,7 @@
 // row server-side, so leaving the Edit button up would only produce a refusal.
 
 import { useTranslations } from 'next-intl'
-import { MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
+import { BookOpen, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
 import type { Route } from 'next'
 import { financeSourceRefForPayment } from '@linyup/shared'
 import type { PaymentJournal } from '@/plugins/finance/hooks'
@@ -269,6 +269,7 @@ export function PaymentsTable({
   onVoid,
   extraActions,
   journal,
+  planLink,
 }: {
   rows: UnifiedPaymentRow[]
   /** Hide the contact column on contact-scoped views (it's redundant there). */
@@ -295,6 +296,10 @@ export function PaymentsTable({
    * ledger (Franco, 2026-08-23) — and there is no journal screen to link to.
    */
   journal?: Map<string, PaymentJournal>
+  /** The plan card this payment paid for, on a contact's page — a chip in the
+   *  details cell that opens it. `exact: false` says it matched by plan type
+   *  only (see `planCardForPayment`). Absent on /payments. */
+  planLink?: (row: UnifiedPaymentRow) => { label: string; exact: boolean; onOpen: () => void } | null
 }) {
   const t = useTranslations('PaymentsDashboard')
 
@@ -384,6 +389,23 @@ export function PaymentsTable({
                       {t('trialCharge')}
                     </Badge>
                   )}
+                  {(() => {
+                    const link = planLink?.(row)
+                    if (!link) return null
+                    return (
+                      <button
+                        type="button"
+                        onClick={link.onOpen}
+                        title={link.exact ? t('planLinkExact') : t('planLinkByType')}
+                        // Dashed when matched by plan type only: the same link, a
+                        // softer claim, and the tooltip says which.
+                        className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-normal text-primary transition-colors hover:bg-primary/5 ${link.exact ? '' : 'border-dashed'}`}
+                      >
+                        <BookOpen className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{link.label}</span>
+                      </button>
+                    )
+                  })()}
                   {/* A row a sibling webhook event may have written TWICE. The
                       duplication is the studio's own Stripe endpoint config and
                       cannot be fixed from here (handleTeamStripeWebhook's header

@@ -19,16 +19,25 @@
 // read once rather than listened to, so every action re-reads the contact now
 // and again a few seconds later (`refreshSoon`).
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
-import { Ban, CalendarX, Ellipsis, Pencil, Play, Plus, Snowflake, Ticket } from 'lucide-react'
+import { Ban, CalendarX, ChevronDown, Ellipsis, Pencil, Play, Plus, Snowflake, Ticket } from 'lucide-react'
 import { toast } from 'sonner'
 import { currentHeldPlans, subscriptionIsCancelling } from '@linyup/shared'
 import type { Contact, HeldPlan, MemberSubscription } from '@linyup/shared'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { formatCurrency } from '@/lib/format'
 import { callFunction } from '@/lib/callFunction'
+import { useContactPayments } from '@/hooks/useConnect'
+import {
+  byoToUnified,
+  connectToUnified,
+  formatMoneyMinor,
+  mergePaymentRows,
+  planCardForPayment,
+  type UnifiedPaymentRow,
+} from '@/lib/payments'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -73,6 +82,7 @@ export function PlansList({
   onAddPlan,
   onChangePlan,
   onGrantCredits,
+  focusRef,
 }: {
   contact: Contact
   teamId: string
@@ -80,6 +90,8 @@ export function PlansList({
   onAddPlan: () => void
   onChangePlan: (plan: HeldPlan) => void
   onGrantCredits: () => void
+  /** Opened from a payment row: scroll to this card, open its payments, flash it. */
+  focusRef?: string | null
 }) {
   const t = useTranslations('Contacts')
   const tPay = useTranslations('PaymentsDashboard')
@@ -94,8 +106,39 @@ export function PlansList({
   const [cancelTarget, setCancelTarget] = useState<string | null>(null)
   const [endTarget, setEndTarget] = useState<HeldPlan | null>(null)
   const [ending, setEnding] = useState(false)
+  // Which cards have their payments open. A card opened from a payment row
+  // starts open, so the payment the reader came from is in view.
+  const [openPayments, setOpenPayments] = useState<Set<string>>(
+    () => new Set(focusRef ? [focusRef] : [])
+  )
+  const [flash, setFlash] = useState<string | null>(focusRef ?? null)
 
   const plans = useMemo(() => currentHeldPlans(contact), [contact])
+
+  // EVERY CARD LISTS ITS OWN PAYMENTS (docs/multi-plan-holdings.md §5), found
+  // by the one resolver the Payments tab uses the other way round, so a payment
+  // and its card always agree about each other.
+  const { data: paymentData } = useContactPayments(teamId, contact.id)
+  const paymentsByPlan = useMemo(() => {
+    const rows = mergePaymentRows(
+      connectToUnified(paymentData?.payments ?? []),
+      byoToUnified(paymentData?.events ?? [])
+    )
+    const m = new Map<string, UnifiedPaymentRow[]>()
+    for (const row of rows) {
+      const match = planCardForPayment(row, plans)
+      if (!match) continue
+      m.set(match.plan.ref, [...(m.get(match.plan.ref) ?? []), row])
+    }
+    return m
+  }, [paymentData, plans])
+
+  useEffect(() => {
+    if (!focusRef) return
+    document.getElementById(`plan-card-${focusRef}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const id = setTimeout(() => setFlash(null), 2000)
+    return () => clearTimeout(id)
+  }, [focusRef])
   const subByRef = useMemo(() => {
     const m = new Map<string, MemberSubscription & { id: string }>()
     for (const s of subs) {
@@ -218,7 +261,11 @@ export function PlansList({
             const hasActions =
               plan.source !== 'stripe' || canFreeze || paused || canCancel
             return (
-              <div key={`${plan.source}-${plan.ref}`} className="flex items-start gap-3 px-4 py-3">
+              <div
+                key={`${plan.source}-${plan.ref}`}
+                id={`plan-card-${plan.ref}`}
+                className={`flex items-start gap-3 px-4 py-3 transition-colors duration-700 ${flash === plan.ref ? 'bg-primary/[0.07]' : ''}`}
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className="truncate text-sm font-medium">
@@ -242,6 +289,58 @@ export function PlansList({
                     </p>
                   )}
                   {sub && <SubscriptionCancellationNote subscription={sub} audience="studio" />}
+                  {(() => {
+                    const rows = paymentsByPlan.get(plan.ref) ?? []
+                    if (rows.length === 0) return null
+                    const open = openPayments.has(plan.ref)
+                    return (
+                      <div className="mt-1.5">
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() =>
+                            setOpenPayments((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(plan.ref)) next.delete(plan.ref)
+                              else next.add(plan.ref)
+                              return next
+                            })
+                          }
+                          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronDown
+                            className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`}
+                          />
+                          {t('planPaymentsCount', { count: rows.length })}
+                        </button>
+                        {open && (
+                          <ul className="mt-1 space-y-0.5 border-l pl-3">
+                            {rows.map((row) => {
+                              const off =
+                                row.voided || row.status === 'refunded' || row.status === 'failed'
+                              const when = row.createdAt?.toDate?.()
+                              return (
+                                <li
+                                  key={row.key}
+                                  className="flex items-center gap-2 text-xs text-muted-foreground"
+                                >
+                                  <span className="tabular-nums">{when ? date(when.getTime()) : '—'}</span>
+                                  <span
+                                    className={`tabular-nums text-foreground ${off ? 'line-through opacity-60' : ''}`}
+                                  >
+                                    {formatMoneyMinor(row.amount, row.currency)}
+                                  </span>
+                                  {!['succeeded', 'paid'].includes(row.status) && (
+                                    <span>{tPay(`status_${row.status}` as never)}</span>
+                                  )}
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {hasActions && (

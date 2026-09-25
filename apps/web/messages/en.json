@@ -1179,7 +1179,8 @@
     "planSource_staff": "Assigned",
     "planSource_purchase": "Bought",
     "planSource_gateway": "Paid outside Linyup",
-    "planSource_import": "Imported"
+    "planSource_import": "Imported",
+    "planPaymentsCount": "{count, plural, one {# payment} other {# payments}}"
   },
   "TeamAffiliations": {
     "title": "Affiliations",
@@ -5044,6 +5045,9 @@
     "stripeReceiptError": "Could not fetch the Stripe receipt.",
     "lineKind_course_block": "Course",
     "selectCourseBlock": "Which course",
+    "planLinkExact": "The plan this payment paid for. Opens its card.",
+    "planLinkByType": "Matched by plan type: this payment records its plan, not the subscription it paid. Opens the card.",
+    "planLinkFallback": "Plan",
     "refundSubscriptionCancelled": "Refunded. The membership is cancelled and will not bill again.",
     "refundSubscriptionCancelFailed": "The money was refunded, but the membership could not be cancelled and may bill again. Cancel it on {name}’s profile."
   },
@@ -5154,7 +5158,8 @@
     "courseBlockSoldOut": "Sold out",
     "courseBlockClosed": "Bookings are closed",
     "courseBlockJoin": "Join",
-    "courseBlockJoined": "You are on the course"
+    "courseBlockJoined": "You are on the course",
+    "courseBlockCurriculum": "What it covers"
   },
   "Products": {
     "title": "Products",
@@ -5860,6 +5865,7 @@
     "coursesJoinWaitlist": "Tell me if a place comes free",
     "chooseCategorySubtitle": "What would you like to book?",
     "choosePlaceSubtitle": "Choose where you'd like to come.",
+    "coursesCurriculum": "What it covers",
     "errorDropInSignedUpOnly": "This class is for people registered with the studio. Sign in with the email you registered with to pay for it.",
     "dropInSubtitleSignIn": "Registered with us? Sign in and pay {price} for this class"
   },
@@ -9112,7 +9118,21 @@
     "cancelRefundsHint": "Refund them from the payments page, one by one, so you stay in control of what goes back.",
     "closeButton": "Close",
     "duplicateLabel": "Run again",
-    "paneFreeNoPlans": "This course is free, so there is nothing for a plan to include or discount. Give it a price to link plans to it."
+    "paneFreeNoPlans": "This course is free, so there is nothing for a plan to include or discount. Give it a price to link plans to it.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What this course is, in your own words.",
+    "curriculumLabel": "What it covers",
+    "curriculumHint": "Optional. A line per lesson, or one line for the whole course.",
+    "curriculumAdd": "Add a line",
+    "curriculumOnePerLesson": "One per lesson ({count})",
+    "curriculumRemove": "Remove this line",
+    "curriculumItemN": "{n}.",
+    "curriculumLessonAt": "{n} · {date}",
+    "curriculumTitleLabel": "Title",
+    "curriculumTitlePlaceholder": "Turns and breathing",
+    "curriculumDetailLabel": "Detail",
+    "curriculumDetailPlaceholder": "Anything more the participant should know about this one.",
+    "curriculumUnpaired": "{items} lines for {lessons} lessons, so they are shown as a list rather than per lesson"
   },
   "CourseWaitlist": {
     "offerTitle": "A place has come free",

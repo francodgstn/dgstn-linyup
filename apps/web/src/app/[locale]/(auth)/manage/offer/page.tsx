@@ -1966,6 +1966,25 @@ export default function CataloguePage() {
                 ...(selectedCourseBlock.priceAmount ? {} : { note: tCourses('paneFreeNoPlans') }),
               }}
               actions={paneActionsFor('courseBlock', selectedCourseBlock.id)}
+              // The same pattern every other offering uses: the fields live
+              // under a tab, saved from the pane's one bar, instead of behind
+              // an Edit button that took the studio somewhere else.
+              extraTabs={[
+                {
+                  key: 'details',
+                  label: t('paneTabDetails'),
+                  content: (
+                    <CourseBlockDialog
+                      key={`details-${selectedCourseBlock.id}`}
+                      inline
+                      open
+                      onOpenChange={() => {}}
+                      editing={selectedCourseBlock}
+                      currency={currency}
+                    />
+                  ),
+                },
+              ]}
             >
               {/* Same editor as every other offering, and the same shared fold
                   behind it. Only the WRITE is routed, because the course

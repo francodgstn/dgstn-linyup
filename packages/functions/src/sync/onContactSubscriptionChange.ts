@@ -11,8 +11,7 @@
  * the record of what it once held).
  *
  * ── WHY THE RECONCILER, NOT A FIELD DIFF ─────────────────────────────────────
- * The old writer fired only on the legacy scalar `subscription_type_id`
- * changing, and on every change closed EVERY open row
+ * The old writer fired only on the contact's single plan field changing, and on every change closed EVERY open row
  * (`where('end_date','==',null)`) regardless of type — so a contact holding
  * several plans at once collapsed onto one track, and adding a second plan
  * closed the first one's still-current row. `resolveHeldPlans` +
@@ -27,12 +26,11 @@
  *
  * ── WHAT THIS FUNCTION NEVER DOES ─────────────────────────────────────────────
  * It never writes `contacts/{contactId}` itself — that is what stops it
- * SELF-TRIGGERING (a write here would re-fire this same trigger). It reads
- * `active_subscriptions` as the multi-plan source of truth while still folding
- * in the legacy scalar fields (`resolveHeldPlans`), because a contact whose
- * subscription was assigned manually/offline may carry ONLY the scalar side —
- * `active_subscriptions` is webhook-maintained (`onMemberSubscriptionWrite`)
- * and never touches a manually-assigned plan.
+ * SELF-TRIGGERING (a write here would re-fire this same trigger). What is held
+ * is the contact's stored plan list (`resolveHeldPlans` reads `held_plans`,
+ * docs/multi-plan-holdings.md): staff grants, purchases and Stripe
+ * subscriptions alike, written only by `recomputeHeldPlans` — so a grant that
+ * lapses closes its row when the daily `refreshHeldPlans` job rewrites it.
  */
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 import * as admin from 'firebase-admin'

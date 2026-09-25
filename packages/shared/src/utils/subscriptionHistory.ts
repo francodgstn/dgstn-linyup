@@ -13,128 +13,77 @@
 // the functions and the scripts — same convention as `subscriptionRollup.ts`.
 //
 // ── THE DEFECT THIS REPLACES ─────────────────────────────────────────────────
-// The old writer fired only on `Contact.subscription_type_id` (the scalar)
-// changing, and on every change closed EVERY open row
-// (`where('end_date','==',null)`) regardless of type. A contact holding two
+// The old writer fired only on the contact's single plan field changing, and
+// on every change closed EVERY open row (`where('end_date','==',null)`)
+// regardless of type. A contact holding two
 // memberships at once therefore got ONE track: adding a second plan closed the
 // first one's row even though the member still holds it, and the two plans'
-// histories collapsed into whichever one last touched the scalar. This file
+// histories collapsed into whichever one last touched that field. This file
 // makes "what is held" and "what the history says" the same question asked two
 // ways, reconciled by SET DIFFERENCE rather than by watching one field change —
 // so idempotency is a property of the algorithm (re-running it against unchanged
 // input plans nothing), not a dedup key bolted on afterward.
 
-import type { ActiveSubscriptionSummary } from '../types/contact'
+import type { HeldPlan } from '../types/planHoldings'
 
 // ─── held plans (the "what") ───────────────────────────────────────────────────
 
-/** The `active_subscriptions[]` fields this module reads — a narrow view so a
- *  caller can pass either the real array or a test fixture without importing the
- *  whole `ActiveSubscriptionSummary` shape. */
-export type HeldPlanArrayEntry = Pick<
-  ActiveSubscriptionSummary,
-  'subscription_type_id' | 'subscription_type_name' | 'recurrence' | 'amount'
->
-
-/** The scalar + array fields `resolveHeldPlans` reads off a contact document.
- *  Structurally compatible with `FirebaseFirestore.DocumentData`, so a trigger
- *  can pass a raw snapshot's `.data()` straight through. */
+/** The field `resolveHeldPlans` reads off a contact document — the plan list
+ *  (docs/multi-plan-holdings.md). Structurally compatible with
+ *  `FirebaseFirestore.DocumentData`, so a trigger can pass a raw snapshot's
+ *  `.data()` straight through. */
 export interface ContactSubscriptionFields {
-  subscription_type_id?: string | null
-  subscription_type_name?: string | null
-  subscription_recurrence?: string | null
-  subscription_price_id?: string | null
-  /** MAJOR units, same as `ActiveSubscriptionSummary.amount` — see the warning
-   *  on `HeldPlanSnapshot.amount` below. Never Rappen. */
-  subscription_amount?: number | null
-  active_subscriptions?: HeldPlanArrayEntry[] | null
+  held_plans?: ReadonlyArray<HeldPlan> | null
 }
 
-/** One plan a contact currently holds, unioned from whichever side(s) named it. */
+/** One plan a contact currently holds, as a history row records it. */
 export interface HeldPlanSnapshot {
   subscription_type_id: string
   subscription_type_name: string | null
   recurrence: string | null
-  /** Price CHOSEN at assignment time, when the type had prices. Only the SCALAR
-   *  side ever carries this — `active_subscriptions[]` is a dedup of live Stripe
-   *  rows (`rollupMemberSubscriptions`), which tracks what is CHARGED, not which
-   *  price the studio originally assigned, so it has no such field to offer. */
+  /** The price the plan was given at, when a grant names one. A Stripe entry
+   *  never does: it tracks what is CHARGED, not the price the studio assigned. */
   subscription_price_id: string | null
   /**
-   * ⚠ MAJOR units, on BOTH sides. `Contact.subscription_amount` is a snapshot in
-   * the same unit as `SubscriptionType.prices[].amount` (never Rappen), and
-   * `ActiveSubscriptionSummary.amount` is ALREADY divided down from Rappen by
-   * `rollupMemberSubscriptions` (`subscriptionRollup.ts:110`,
-   * `Math.round(data.amount ?? 0) / 100`) before it ever reaches this contact
-   * field. Sourcing this from a raw `member_subscriptions.amount` — which IS
-   * Rappen — would silently write a number 100x too large into history. Pinned
-   * by a test.
+   * ⚠ MAJOR units. `HeldPlan.amount` is already divided down from Rappen by
+   * `buildHeldPlans` for a Stripe entry, and a grant's `amount` is stored in
+   * major units. Sourcing this from a raw `member_subscriptions.amount` — which
+   * IS Rappen — would silently write a number 100x too large into history.
+   * Pinned by a test.
    */
   amount: number | null
 }
 
 /**
- * The set of plan types a contact currently HOLDS, unioned from the legacy
- * scalar "primary" fields and `active_subscriptions[]` — mirrors `resolveSubIds`
- * in `functions/src/automation/onContactWrite.ts:56-66`, which keys the same way
- * for the same reason: a contact may carry only the scalar (manual/offline
- * assignment), only the array (Stripe-only), or both.
+ * The plan types a contact HOLDS, one snapshot each, read off the STORED plan
+ * list — every membership on it, whatever holds it (a staff grant, a purchase,
+ * a Stripe subscription). Credit packs are not periods of membership and are
+ * left out, as they are everywhere "subscribed" is displayed (`heldMemberships`).
  *
- * When one type id appears on BOTH sides, the SCALAR wins for
- * `subscription_price_id` (the array side never has one to offer — see
- * `HeldPlanSnapshot`); every other field takes the first non-null value, scalar
- * first. This is safe as a UNION rather than a merge of conflicting facts about
- * the same live subscription, because `Contact.subscription_type_id` is
- * guaranteed never to duplicate an `active_subscriptions` entry's type
- * (`types/contact.ts:255-256`, "never two of the same").
+ * The list is read AS STORED, not re-filtered against the clock: a grant that
+ * simply runs out is not a write, and its row closes when the daily
+ * `refreshHeldPlans` job rewrites the mirror. Comparing both sides of a write
+ * against "now" would make that rewrite look like no change at all.
  *
- * Array entries with no `subscription_type_id` are skipped — there is nothing to
- * key them on.
+ * Two entries of one type (a grant and a Stripe subscription) make one period:
+ * each field takes the first non-null value, in list order.
  */
 export function resolveHeldPlans(
   contact: ContactSubscriptionFields | null | undefined
 ): Map<string, HeldPlanSnapshot> {
   const held = new Map<string, HeldPlanSnapshot>()
-  if (!contact) return held
-
-  const scalarId = contact.subscription_type_id || null
-  if (scalarId) {
-    held.set(scalarId, {
-      subscription_type_id: scalarId,
-      subscription_type_name: contact.subscription_type_name ?? null,
-      recurrence: contact.subscription_recurrence ?? null,
-      subscription_price_id: contact.subscription_price_id ?? null,
-      amount: typeof contact.subscription_amount === 'number' ? contact.subscription_amount : null,
+  for (const entry of contact?.held_plans ?? []) {
+    const typeId = entry?.subscription_type_id
+    if (!typeId || entry.source === 'credits') continue
+    const existing = held.get(typeId)
+    held.set(typeId, {
+      subscription_type_id: typeId,
+      subscription_type_name: existing?.subscription_type_name ?? entry.subscription_type_name ?? null,
+      recurrence: existing?.recurrence ?? entry.recurrence ?? null,
+      subscription_price_id: existing?.subscription_price_id ?? entry.price_id ?? null,
+      amount: existing?.amount ?? (typeof entry.amount === 'number' ? entry.amount : null),
     })
   }
-
-  for (const entry of contact.active_subscriptions ?? []) {
-    const typeId = entry?.subscription_type_id
-    if (!typeId) continue
-    const existing = held.get(typeId)
-    const entryAmount = typeof entry.amount === 'number' ? entry.amount : null
-    if (existing) {
-      // Scalar already claimed this type — fill only the gaps. NEVER overwrite
-      // subscription_price_id: the array side has none to offer, and a missing
-      // one here must stay missing rather than becoming a wrong-but-present value.
-      held.set(typeId, {
-        subscription_type_id: typeId,
-        subscription_type_name: existing.subscription_type_name ?? entry.subscription_type_name ?? null,
-        recurrence: existing.recurrence ?? entry.recurrence ?? null,
-        subscription_price_id: existing.subscription_price_id,
-        amount: existing.amount ?? entryAmount,
-      })
-    } else {
-      held.set(typeId, {
-        subscription_type_id: typeId,
-        subscription_type_name: entry.subscription_type_name ?? null,
-        recurrence: entry.recurrence ?? null,
-        subscription_price_id: null,
-        amount: entryAmount,
-      })
-    }
-  }
-
   return held
 }
 

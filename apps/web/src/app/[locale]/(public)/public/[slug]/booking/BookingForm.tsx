@@ -28,6 +28,7 @@ import {
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
+  type CourseCurriculumItem,
   type PublicFrom,
   type FormField,
   parseDateKey,
@@ -163,6 +164,8 @@ interface CourseCard {
   id: string
   name: string
   description?: string | null
+  /** The programme, in order. See `CourseCurriculumItem`. */
+  curriculum?: CourseCurriculumItem[] | null
   first_meeting?: Timestamp | null
   last_meeting?: Timestamp | null
   meeting_count?: number
@@ -505,9 +508,9 @@ export default function BookingForm({
   const [queueingFor, setQueueingFor] = useState<{ id: string; name: string } | null>(null)
 
   // WHAT THIS MEMBER HOLDS: every plan on the live record, not the single
-  // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
+  // plan list frozen onto the session at sign-in (UX-102). A member
   // covered by a second plan was told she held none and routed to pay a drop-in
-  // the server then refused to sell her. The frozen slot survives only as the
+  // the server then refused to sell her. The frozen list survives only as the
   // floor for a FAILED read, which is `heldFrom`'s rule, shared with the
   // appointment funnel. Display only: the callables re-resolve from their own
   // snapshot.
@@ -2431,6 +2434,26 @@ export default function BookingForm({
             </p>
             {c.description && (
               <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
+            )}
+            {/* WHAT MAKES IT A COURSE rather than a class that repeats, and
+                the reason somebody books thirteen weeks at once. Folded away,
+                and unnumbered on purpose: the outline is bound to no meeting,
+                so numbers here would read as lesson labels that a
+                re-scheduled course would quietly get wrong. */}
+            {!!c.curriculum?.length && (
+              <details className="mt-1.5 text-sm">
+                <summary className="text-muted-foreground cursor-pointer select-none">
+                  {t('coursesCurriculum')}
+                </summary>
+                <ul className="text-muted-foreground mt-1 list-disc space-y-0.5 pl-5">
+                  {c.curriculum.map((item, i) => (
+                    <li key={i}>
+                      <span className="text-foreground font-medium">{item.title}</span>
+                      {item.detail && <span className="block">{item.detail}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
             )}
             {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
                 remedies, so they are never the same sentence, and only one

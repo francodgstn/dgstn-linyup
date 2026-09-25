@@ -66,6 +66,49 @@ export interface CourseSchedulePattern {
   recurrence: RecurrencePattern
 }
 
+/**
+ * WHAT THE COURSE COVERS, in order. The thing that answers "why a course and
+ * not just a class in the calendar": a course is a programme, and the
+ * programme is what a parent reads before paying for thirteen weeks.
+ *
+ * ITS ORDER IS ITS OWN, and it is bound to no meeting. The meeting list is
+ * REGENERATED whenever the schedule changes, so anything pinned to "lesson 3"
+ * by position silently becomes a different lesson the moment a studio inserts
+ * a make-up week. A surface that wants to show them side by side pairs them
+ * when `curriculum.length === meetings.length` and renders a plain outline
+ * otherwise; that pairing is DERIVED on every read and never stored, so a
+ * re-schedule degrades to an honest list instead of mislabelling the lessons.
+ *
+ * Both shapes the audience asked for fit: a studio that wants a paragraph
+ * writes one item (or nothing, and uses `description`), a coach who plans each
+ * session writes one per lesson.
+ */
+export interface CourseCurriculumItem {
+  /** The line a card shows: "Turns and breathing". */
+  title: string
+  /** The paragraph behind it, for a studio that plans in detail. */
+  detail?: string
+}
+
+/** A course's programme is bounded: it is read on a card, and a list past this
+ *  is a document rather than an outline. */
+export const COURSE_CURRICULUM_MAX_ITEMS = 60
+export const COURSE_CURRICULUM_TITLE_MAX = 200
+export const COURSE_CURRICULUM_DETAIL_MAX = 2000
+
+/**
+ * Does this outline line up with the lessons, one for one? THE ONE READER of
+ * that question: every surface that numbers the items asks here, so none of
+ * them can number a list the others show plain.
+ */
+export function curriculumPairsWithMeetings(block: {
+  curriculum?: CourseCurriculumItem[] | null
+  meetings?: { start: unknown }[] | null
+}): boolean {
+  const items = block.curriculum?.length ?? 0
+  return items > 0 && items === (block.meetings?.length ?? 0)
+}
+
 export type CourseBlockStatus =
   /** Being set up. Not sellable, not public. Where a duplicate lands. */
   | 'draft'
@@ -83,6 +126,8 @@ export interface CourseBlock {
   /** What the studio calls it: "Level 2 Seepferd", "Crawl for beginners". */
   name: string
   description?: string
+  /** The programme, in order. See `CourseCurriculumItem`. */
+  curriculum?: CourseCurriculumItem[] | null
 
   /** The class type behind it. The lessons are sessions of this activity, so
    *  everything an activity already says, colour, image, meeting point, what

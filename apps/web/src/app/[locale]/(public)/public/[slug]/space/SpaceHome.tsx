@@ -35,7 +35,7 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
 import { GraduationCap, CreditCard, ChevronRight, ShoppingBag, Ticket, CalendarDays } from 'lucide-react'
-import {  resolvePaymentOptions, heldSubscriptionTypeIds, type CourseAccessRule, COURSE_PURCHASES_SUBCOLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
+import {  resolvePaymentOptions, heldSubscriptionTypeIds, heldMemberships, type CourseAccessRule, COURSE_PURCHASES_SUBCOLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { clientPaymentSnapshot } from '@/lib/paymentSnapshot'
 import { QueryErrorState } from '@/components/ui/query-error'
 import { loadFailureDetail, reportPublicLoadFailure } from '@/lib/publicQueryError'
@@ -279,14 +279,11 @@ export default function SpaceHome() {
 
   // ── My courses = accessible entitlements only (no locked/buy cards here) ──
   // The full held union once the fuller contact doc has loaded (its plan list),
-  // falling back to just the session's primary subscription_type_id until it
-  // does. The session carries one plan until phase 3c of
-  // docs/multi-plan-holdings.md gives it the list.
+  // falling back to the plan types the session carried at sign-in until it
+  // does.
   const heldTypeIds = fullContact
     ? heldSubscriptionTypeIds(fullContact)
-    : contact.subscription_type_id
-      ? [contact.subscription_type_id]
-      : []
+    : (contact.held_plan_type_ids ?? [])
   const myCourses = courses.filter((c) => hasAccess(c, heldTypeIds, purchasedCourseIds))
 
   // ── Shop quick links — the studio's sellable channels, deep-linked to the right
@@ -307,8 +304,7 @@ export default function SpaceHome() {
   // A contact with a live plan is here to CHANGE it, not to start one. Without a
   // plan the membership block above is already offering exactly this URL, and
   // two links to one page on one screen is the duplication UX-55 counted.
-  const hasActiveSubscription =
-    (fullContact?.active_subscriptions?.length ?? 0) > 0 || !!fullContact?.subscription_type_id
+  const hasActiveSubscription = heldMemberships(fullContact).length > 0
   const shopLinks = [
     hasSubscriptions && hasActiveSubscription && {
       key: 'subscriptions',
