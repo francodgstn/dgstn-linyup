@@ -48,7 +48,7 @@ type ClaimResult = {
     firstname: string
     lastname: string
     email: string | null
-    subscription_type_id: string | null
+    held_plan_type_ids: string[]
   }
   joined?: boolean
   pendingSignup?: boolean
@@ -104,9 +104,7 @@ export function ClaimCheckoutSession({
                 firstname: data.contact.firstname,
                 lastname: data.contact.lastname,
                 email: data.contact.email,
-                ...(data.contact.subscription_type_id
-                  ? { subscription_type_id: data.contact.subscription_type_id }
-                  : {}),
+                held_plan_type_ids: data.contact.held_plan_type_ids ?? [],
               },
             })
             if (cancelled) return

@@ -70,7 +70,8 @@ interface ClaimedContact {
   firstname: string
   lastname: string
   email: string | null
-  subscription_type_id: string | null
+  /** The plan types held now — the contact's `held_plan_type_ids` mirror. */
+  held_plan_type_ids: string[]
 }
 
 /**
@@ -237,7 +238,9 @@ export const claimCheckoutSession = onCall(async (request) => {
     firstname: ((c.firstname as string | undefined) ?? '').trim(),
     lastname: ((c.lastname as string | undefined) ?? '').trim(),
     email: (c.email as string | undefined) ?? null,
-    subscription_type_id: (c.subscription_type_id as string | undefined) ?? null,
+    held_plan_type_ids: Array.isArray(c.held_plan_type_ids)
+      ? (c.held_plan_type_ids as unknown[]).filter((id): id is string => typeof id === 'string')
+      : [],
   }
 
   console.log(`[connect] claim: signed in contact ${contactId} from checkout ${checkoutSessionId}`)

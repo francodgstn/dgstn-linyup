@@ -166,11 +166,6 @@ const CENSUS: Record<string, CensusEntry> = {
     writers: [],
     note: 'the usage window, the claimed booking, the partner visit',
   },
-  'packages/functions/src/connect/claimCheckoutSession.ts': {
-    sites: 2,
-    writers: [],
-    note: 'the response type and payload — not a write',
-  },
   'packages/functions/src/connect/updatePayment.ts': {
     sites: 1,
     writers: [],
@@ -246,11 +241,6 @@ const CENSUS: Record<string, CensusEntry> = {
     sites: 2,
     writers: [],
     note: 'a display object',
-  },
-  'apps/web/src/app/[locale]/pay/result/ClaimCheckoutSession.tsx': {
-    sites: 2,
-    writers: [],
-    note: 'a type and a coverage snapshot',
   },
 
   // ── scripts ───────────────────────────────────────────────────────────────

@@ -20,9 +20,9 @@ import type { WaiverAcceptancePayload, WaiverCallerIdentity } from '@/lib/waiver
 // disagreement with the server.
 //
 // WHAT A MEMBER HOLDS follows one rule, and both funnels had written it out:
-// the LIVE union of plans from the contact's own record, with the single
-// `subscription_type_id` frozen onto the session at sign-in as the floor for a
-// FAILED read, never as the answer (UX-102: a member covered by a second plan
+// the LIVE union of plans from the contact's own record, with the plan-type
+// list frozen onto the session at sign-in (`held_plan_type_ids`) as the floor
+// for a FAILED read, never as the answer (UX-102: a member covered by a second plan
 // was told she held none and routed to pay a drop-in the server then refused to
 // sell her). Display and routing only, in both funnels: every callable
 // re-resolves the snapshot server side and remains the authority.
@@ -35,9 +35,9 @@ export interface SessionContactLike {
   firstname?: string | null
   lastname?: string | null
   email?: string | null
-  /** The ONE plan frozen onto the session at sign-in. Read only as the floor
+  /** The plan types frozen onto the session at sign-in. Read only as the floor
    *  for a failed live read; see the header. */
-  subscription_type_id?: string | null
+  held_plan_type_ids?: string[] | null
 }
 
 export type BookingCaller =
@@ -111,13 +111,13 @@ export function resolveBookingCaller({
   return verified ?? GUEST
 }
 
-/** The live union first, the frozen slot only as the floor for a failed read. */
+/** The live union first, the frozen list only as the floor for a failed read. */
 export function heldFrom(
   liveHeld: string[] | null,
   sessionContact: SessionContactLike | null
 ): string[] {
   if (liveHeld) return liveHeld
-  return sessionContact?.subscription_type_id ? [sessionContact.subscription_type_id] : []
+  return sessionContact?.held_plan_type_ids ?? []
 }
 
 /**

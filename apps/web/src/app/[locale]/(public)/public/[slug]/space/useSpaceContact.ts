@@ -2,14 +2,14 @@
 
 export { usePublicContactRecord as useSpaceContact } from '../usePublicContactRecord'
 
-// The session `contact` is minimal (id/name/subscription_type_id). Modules that
+// The session `contact` is a snapshot frozen at sign-in. Modules that
 // need the full record (membership, profile) read the own contact doc — permitted
 // by the `isSelfContact` Firestore rule. Cached + shared across modules.
 //
 // THE READ ITSELF NOW LIVES ONE LEVEL UP, in `usePublicContactRecord`, because
 // Space stopped being the only surface that needs it: the appointment picker
 // prices a member off what they hold, and the session's frozen
-// `subscription_type_id` is not that. Two copies of this query would have been
+// plan list is not that. Two copies of this query would have been
 // two cache keys and two answers to "what does this contact hold" on the same
 // page. This file stays as the name Space already calls it by.
 //
