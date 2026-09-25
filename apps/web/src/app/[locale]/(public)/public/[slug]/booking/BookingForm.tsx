@@ -498,7 +498,7 @@ export default function BookingForm({
   // from another surface (Space/Shop). Used ONLY to preview the drop-in
   // member rate here; checkout/booking always re-resolve authoritatively
   // server-side (the callable trusts its own session token, not this).
-  const { contact, isAuthenticated } = usePublicContactAuth()
+  const { contact, isAuthenticated, openSignIn } = usePublicContactAuth()
   // Which full course the visitor asked to be told about, if any. Its own state
   // rather than a step: a course card sits above the booking flow and never
   // enters it.
@@ -1332,6 +1332,20 @@ export default function BookingForm({
   const isPricedTrial =
     guestPath === 'trial' && typeof selectedActivity?.trialPriceAmount === 'number'
   const willCharge = (dropInAvailable && guestPath !== 'trial') || isPricedTrial
+
+  // SIGN IN, THEN PAY, behind "Only people who signed up with you" (Franco,
+  // 2026-09-25). A visitor cannot book such a class even paying, so its drop-in
+  // door is for the studio's known people, and it asks them WHO they are first:
+  // it opens the site's contact sign-in (no registration, a stranger has no
+  // account to find) and, once the session lands, hands over to the 'member'
+  // step, which already owns the signed-in paid path. The guest form it used to
+  // open recognised a member only by an exact email-and-name match.
+  const signInToPay = useRef(false)
+  useEffect(() => {
+    if (!signInToPay.current || !isAuthenticated || !selectedSession) return
+    signInToPay.current = false
+    setStep('member')
+  }, [isAuthenticated, selectedSession])
 
   // ── Guest booking ─────────────────────────────────────────────────────────
 
@@ -3132,10 +3146,11 @@ export default function BookingForm({
     // ("registered members only"), so a stranger had no way to pay at all. The
     // drop-in door is offered on EVERY class with a price: a drop-in price opens
     // the door to everyone (docs/class-access-derived.md). Behind "Only people
-    // who signed up with you" it serves the studio's known people, whom the
-    // server recognises by email and name; a stranger there is refused before
-    // anything is written, and told why (`dropInRefusalMessage`).
+    // who signed up with you" it serves the studio's known people only, so it
+    // signs them in first (`signInToPay`); the server refuses a stranger there
+    // before anything is written.
     const firstTimeDoor = trialAvailable || (!isMembersOnly && !dropInAvailable)
+    const signUpOnly = !!selectedActivity && guestFacts(selectedActivity).signupRequired
     const trialPriceLabel =
       typeof selectedActivity?.trialPriceAmount === 'number'
         ? formatCurrency(selectedActivity.trialPriceAmount, currency, locale)
@@ -3174,7 +3189,15 @@ export default function BookingForm({
           )}
           {dropInAvailable && (
             <button
-              onClick={() => { setGuestPath('dropin'); setStep('details') }}
+              onClick={() => {
+                if (signUpOnly) {
+                  signInToPay.current = true
+                  openSignIn({ allowRegistration: false })
+                  return
+                }
+                setGuestPath('dropin')
+                setStep('details')
+              }}
               className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors group flex items-center gap-3"
             >
               <div className="flex-1">
@@ -3189,6 +3212,8 @@ export default function BookingForm({
                         price: formatCurrency(dropInMemberPrice.amount, currency, locale),
                       })}
                     </>
+                  ) : signUpOnly ? (
+                    t('dropInSubtitleSignIn', { price: formatCurrency(selectedDropInPrice ?? 0, currency, locale) })
                   ) : (
                     t('dropInSubtitle', { price: formatCurrency(selectedDropInPrice ?? 0, currency, locale) })
                   )}
@@ -3619,6 +3644,14 @@ export default function BookingForm({
           submitting={isSubmitting}
           error={bookingError}
           onSubmit={onSubmitGuest}
+          // A signed-in member reaches this step from 'member' ("Continue to
+          // payment"); asking them to retype their own name and email left the
+          // form empty and the Confirm refused ("Invalid email").
+          defaultValues={
+            isAuthenticated && contact
+              ? { firstname: contact.firstname, lastname: contact.lastname, email: contact.email ?? '' }
+              : undefined
+          }
         />
 
         <p className="text-xs text-muted-foreground">

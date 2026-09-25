@@ -2,7 +2,8 @@
  * The public booking funnel's priced doors, each paid for real:
  *
  *   open drop-in (guest)       → createDropInCheckout → Stripe → the booking confirmed
- *   sign-up-only drop-in       → a registered member pays; a stranger is refused, nothing written
+ *   sign-up-only drop-in       → a registered member signs in, then pays; a stranger is
+ *                                sent to sign up, and the server refuses before any write
  *   drop-in paid by gift card  → no Stripe at all (`paidWithGiftCard`), booking confirmed
  *   priced trial (guest)       → the trial door of a plan-gated class, trial_used_at stamped
  *   paid appointment (guest)   → the hold IS the session: pending_payment → full on payment
@@ -13,8 +14,12 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
   ACCT,
+  FUNCTIONS_BASE,
   STUDIO,
   captureCallable,
+  clearCodesFor,
+  clearRateLimits,
+  contactSignIn,
   db,
   deleteContactsByEmail,
   findContactsByEmail,
@@ -132,15 +137,19 @@ async function bookingOf(sessionId: string, email: string) {
   return b.exists ? { contact: c, booking: b.data()! } : null
 }
 
-test('drop-in, sign-up-only class: a registered member with no plan pays CHF 30', async ({ page }) => {
-  // MMA is seeded behind "Only people who signed up with you". Its drop-in is
-  // for people the studio knows: the server recognises Emma (joined, no plan)
-  // by her email and name, and charges her the drop-in.
+test('drop-in, sign-up-only class: a registered member signs in, then pays CHF 30', async ({ page }) => {
+  // MMA is seeded behind "Only people who signed up with you". Its drop-in door
+  // signs the member in first (no guest form), then the member step takes the
+  // payment as that contact.
   const errors = watchErrors(page)
   const sessionId = await openFirstSession(page, MMA)
   await db.doc(`sessions/${sessionId}/bookings/${EMMA.id}`).delete() // a rerun's leftover
+  await expect(page.getByText(/Sign in and pay CHF\s30\.00/)).toBeVisible()
+  await clearCodesFor(EMMA.email)
+  await clearRateLimits()
   await page.getByRole('button', { name: /Pay for a single class/ }).click()
-  await fillDetails(page, EMMA.first, EMMA.last, EMMA.email)
+  await contactSignIn(page, EMMA.email)
+  await page.getByRole('button', { name: 'Continue to payment' }).click()
   const box = await captureCallable(page, 'createDropInCheckout')
   await confirmAndSign(page)
   await payOnStripeCheckout(page, { email: EMMA.email, name: `${EMMA.first} ${EMMA.last}` })
@@ -159,18 +168,43 @@ test('drop-in, sign-up-only class: a registered member with no plan pays CHF 30'
   expect(errors, errors.join('\n')).toEqual([])
 })
 
-test('drop-in, sign-up-only class: a stranger is told why, and nothing is written', async ({ page }) => {
-  // "Visitors cannot book even paying" (docs/class-access-derived.md). The
-  // refusal must come BEFORE the callable mints a contact or records a waiver.
-  const errors = watchErrors(page, [/createDropInCheckout/, /status of 400/])
-  await openFirstSession(page, MMA)
+test('drop-in, sign-up-only class: a stranger is sent to sign up, and the server writes nothing', async ({ page }) => {
+  // "Visitors cannot book even paying" (docs/class-access-derived.md).
+  const errors = watchErrors(page)
+  const sessionId = await openFirstSession(page, MMA)
+  await clearCodesFor(DROPIN)
+  await clearRateLimits()
   await page.getByRole('button', { name: /Pay for a single class/ }).click()
-  await fillDetails(page, 'Dora', 'Dropin', DROPIN)
-  const box = await captureCallable(page, 'createDropInCheckout')
-  await confirmAndSign(page)
-  await expect.poll(() => box.status, { timeout: 120_000 }).toBe(400)
-  expect(box.body?.error?.details?.reason).toBe('guest')
-  await expect(page.getByText(/registered with the studio/).first()).toBeVisible()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByPlaceholder('your@email.com').fill(DROPIN)
+  await dialog.getByRole('button', { name: /send verification code/i }).click()
+  const code = await waitFor('the code', async () => {
+    const q = await db.collection('verification_codes').where('email', '==', DROPIN).get()
+    return q.docs[0]?.data().code as string | undefined
+  })
+  await dialog.getByPlaceholder('000000').fill(code)
+  await dialog.getByRole('button', { name: /^verify$/i }).click()
+  // No registration on this door: the way in is the studio's own sign-up.
+  await expect(dialog.getByText('Sign up for membership')).toBeVisible({ timeout: 60_000 })
+  await expect(dialog.getByRole('button', { name: /create account/i })).toHaveCount(0)
+
+  // The server's own guard, for a request that skips the page: refused before
+  // any write, with the reason the funnel turns into words.
+  const res = await fetch(`${FUNCTIONS_BASE}/rpcCheckout/createDropInCheckout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: {
+        teamId: STUDIO.teamId,
+        sessionId,
+        contactDetails: { firstname: 'Dora', lastname: 'Dropin', email: DROPIN },
+        locale: 'en',
+      },
+    }),
+  })
+  const body = await res.json()
+  expect(res.status).toBe(400)
+  expect(body.error?.details?.reason).toBe('guest')
   expect(await findContactsByEmail(STUDIO.teamId, DROPIN)).toHaveLength(0)
   expect(errors, errors.join('\n')).toEqual([])
 })

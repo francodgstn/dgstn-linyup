@@ -3542,7 +3542,8 @@
     "compedBadge": "Not billed",
     "compedFree": "Free",
     "compedNote": "Linyup charges this organisation nothing. There is no subscription and no invoice to settle.",
-    "perMonthSuffix": "/mo"
+    "perMonthSuffix": "/mo",
+    "talkToUs": "Talk to us"
   },
   "OrgSettings": {
     "title": "Settings",
@@ -5859,7 +5860,8 @@
     "coursesJoinWaitlist": "Tell me if a place comes free",
     "chooseCategorySubtitle": "What would you like to book?",
     "choosePlaceSubtitle": "Choose where you'd like to come.",
-    "errorDropInSignedUpOnly": "This class is for people registered with the studio. Use the email and name you registered with, or choose “I've been here before”."
+    "errorDropInSignedUpOnly": "This class is for people registered with the studio. Sign in with the email you registered with to pay for it.",
+    "dropInSubtitleSignIn": "Registered with us? Sign in and pay {price} for this class"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",

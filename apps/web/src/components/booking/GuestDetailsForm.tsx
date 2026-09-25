@@ -147,6 +147,11 @@ export interface GuestDetailsFormProps {
    *  is set. */
   submittingLabel?: string
   accentColor?: string | null
+  /** What the form already knows: a SIGNED-IN contact's name and email, so a
+   *  member continuing to payment is not asked to type again who the studio
+   *  already knows they are (the callable books as the session's contact
+   *  either way). Read once, on mount. */
+  defaultValues?: Partial<Pick<GuestDetailsValues, 'firstname' | 'lastname' | 'email'>>
 }
 
 export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsFormProps>(
@@ -164,6 +169,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
       submitLabel,
       submittingLabel,
       accentColor,
+      defaultValues,
     },
     ref
   ) {
@@ -184,7 +190,7 @@ export const GuestDetailsForm = forwardRef<GuestDetailsFormHandle, GuestDetailsF
     const askPhone = contactFields ? contactFields.some((f) => f.key === 'phone') : showPhone
     const phoneRequired = contactFields?.some((f) => f.key === 'phone' && f.required) ?? false
     const schema = useMemo(() => createGuestSchema(t, contactFields ?? []), [t, contactFields])
-    const form = useForm<GuestDetailsValues>({ resolver: zodResolver(schema) })
+    const form = useForm<GuestDetailsValues>({ resolver: zodResolver(schema), defaultValues })
     // Every label names its input (htmlFor/id), so a screen reader announces the
     // field and a tap on the label focuses it. Scoped per form instance: a page
     // can mount two of these.

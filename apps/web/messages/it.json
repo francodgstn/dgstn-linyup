@@ -3542,7 +3542,8 @@
     "compedBadge": "Non fatturato",
     "compedFree": "Gratuito",
     "compedNote": "Linyup non addebita nulla a questa organizzazione. Non c'è alcun abbonamento né fattura da saldare.",
-    "perMonthSuffix": "/mese"
+    "perMonthSuffix": "/mese",
+    "talkToUs": "Contattaci"
   },
   "OrgSettings": {
     "title": "Impostazioni",
@@ -5859,7 +5860,8 @@
     "coursesJoinWaitlist": "Avvisami se si libera un posto",
     "chooseCategorySubtitle": "Cosa desideri prenotare?",
     "choosePlaceSubtitle": "Scegli dove vuoi venire.",
-    "errorDropInSignedUpOnly": "Questo corso è riservato a chi è registrato presso lo studio. Usa l'email e il nome della tua registrazione, oppure scegli «Sono già stato/a qui»."
+    "errorDropInSignedUpOnly": "Questo corso è riservato a chi è registrato presso lo studio. Accedi con l'email della tua registrazione per pagarlo.",
+    "dropInSubtitleSignIn": "Sei registrato/a da noi? Accedi e paga {price} per questa lezione"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",

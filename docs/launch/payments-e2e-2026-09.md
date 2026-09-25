@@ -14,12 +14,9 @@ from Firestore and, where the number is the point, from Stripe. The specs are in
 
 Nothing here touched a deployed environment.
 
-**Result of the full run** (fresh seed, rebased on main, all fixes in, including
-the refund decision, fix 12): 31 passed, 1 skipped across `e2e/payments` and
-`e2e/promo-code-checkout.spec.ts`, counting the staff appointment test, whose
-only failure was a slot a previous run had left booked; its cleanup was then
-fixed and it passed twice back to back. The skip is the organisation checkout,
-kept as `test.fixme` until it is decided.
+**Result of the full run** (rebased on main, every fix and all three decisions
+in): 33 passed, 0 skipped, 0 failed across `e2e/payments` and
+`e2e/promo-code-checkout.spec.ts`.
 
 ## What was covered
 
@@ -33,7 +30,7 @@ kept as `test.fixme` until it is decided.
 | | Gift card bought by a guest, then redeemed as a tender on a product (Stripe charged the difference) | `member-shop` |
 | | Space: payment history, "Manage billing in Stripe" opens the billing portal | `member-shop` |
 | Booking funnel | Open drop-in (anyone may pay), guest | `booking` |
-| | Sign-up-only class: a registered member pays; a stranger is told why and nothing is written | `booking` |
+| | Sign-up-only class: a registered member signs in, then pays; a stranger is sent to sign up, and the server writes nothing | `booking` |
 | | Drop-in paid in full by a gift card (no Stripe) | `booking` |
 | | Priced trial on a plan-gated class | `booking` |
 | | Paid appointment (the hold is the session) | `booking` |
@@ -48,7 +45,7 @@ kept as `test.fixme` until it is decided.
 | | Billing portal, cancel at period end, resume | `saas-billing` |
 | | Paid add-on on a Coach subscription (the Stripe item is added) | `saas-billing` |
 | Organisation | A member studio's Billing says the organisation pays, in the studio's language | `org-billing` |
-| | The organisation subscribes (open decision below) | `org-billing` (fixme) |
+| | An unpaid organisation is offered "Talk to us", never a checkout | `org-billing` |
 
 The earlier `promo-code-checkout.spec.ts` stays where it is.
 
@@ -115,18 +112,23 @@ The earlier `promo-code-checkout.spec.ts` stays where it is.
     staff cancel action; the dialog and the toast say so, and a failed cancel is
     a warning, not a failed refund. `docs/payment-contact-studio.md`.
 
-## Needs a decision
-
-- **Organisation checkout.** The org Billing page offers a self-serve
-  "Subscribe", but `linyup_organization_monthly` is archived on the platform
-  (`scripts/stripe-sync.ts` treats the org tier as sales-led and never creates
-  it), so it fails with "Failed to create checkout session". Either "Subscribe"
-  becomes "Talk to us", or the price goes live. Check live mode too: only test
-  mode was reachable from here. Pinned as a `fixme` in `org-billing.spec.ts`.
-- **Sign-up-only classes with a drop-in price.** A known member pays through the
-  guest form, recognised by email and exact name; a stranger now gets a clear
-  refusal after the form and the waiver. A cleaner flow would identify first
-  (sign in, then pay), which the funnel's step machine does not do today.
+13. **The organisation "Subscribe" always failed at Stripe** (decided
+    2026-09-25: sales-led). `linyup_organization_monthly` is archived on the
+    platform (`scripts/stripe-sync.ts` treats the tier as quoted), so the
+    self-serve button failed with "Failed to create checkout session". An
+    unpaid organisation is now offered "Talk to us", the same door as the
+    Organisation card on a studio's plan picker. The checkout callable and its
+    hook stay, for when the tier gets a live price.
+14. **Sign-up-only classes: sign in, then pay** (decided 2026-09-25). The
+    drop-in door on a class behind "Only people who signed up with you" opens
+    the site's contact sign-in (no registration: a stranger is pointed to the
+    studio's sign-up instead) and then hands over to the member step, rather
+    than a guest form that recognised a member only by an exact email-and-name
+    match.
+15. **A signed-in member continuing to payment got an empty guest form.** From
+    the member step, "Continue to payment" opened the details step with blank
+    name and email, and Confirm refused ("Invalid email") until the member typed
+    them again. The form now starts from the signed-in contact.
 
 ## Seen, not changed
 

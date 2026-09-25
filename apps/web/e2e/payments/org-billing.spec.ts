@@ -3,15 +3,14 @@
  *
  *   member studio → its own Billing page says the organisation pays, in the
  *                   studio's language, and offers no checkout of its own
- *   org subscribe → an org with no paid subscription subscribes on the
- *                   platform's Stripe Checkout, comes back to its billing page,
- *                   and handleStripeWebhook writes saas_subscriptions/{orgId}
+ *   org, unpaid   → offered "Talk to us" (the tier is sales-led), never a
+ *                   self-serve checkout
  *
  * Nothing in an organisation sells to MEMBERS (events carry a free-text fee,
  * affiliations are labels), so there is no member-side org payment to test.
  */
 import { test, expect } from '@playwright/test'
-import { captureCallable, db, payOnStripeCheckout, staffContext, stripe, waitFor, watchErrors } from './lib'
+import { db, staffContext, watchErrors } from './lib'
 
 const ORG = 'seed-org'
 
@@ -29,45 +28,36 @@ test('member studio: billing is the organisation\'s, said in the studio\'s langu
   await db.doc('users/seed-studio-uid').set({ locale: 'en' }, { merge: true })
 })
 
-// OPEN DECISION (docs/launch/payments-e2e-2026-09.md, "Organisation checkout").
-// The org Billing page offers a self-serve "Subscribe", but the price it looks up,
-// `linyup_organization_monthly`, is ARCHIVED on the platform (scripts/stripe-sync.ts
-// treats the org tier as sales-led and never creates it), so the callable fails
-// with "The price specified is inactive" and the page says "Failed to create
-// checkout session". Either the button becomes "Talk to us", or the price goes
-// live; this test is the self-serve half and waits on that call.
-test.fixme('org subscribe: an organisation without a paid plan subscribes on Stripe', async ({ browser }) => {
-  // The seed marks the org active with no Stripe subscription behind it; put it
-  // back to what a new organisation looks like before it pays.
+// SALES-LED (decided 2026-09-25). The organisation tier has no live self-serve
+// price (`linyup_organization_monthly` is archived; scripts/stripe-sync.ts
+// treats the tier as quoted), so the "Subscribe" this page used to offer always
+// failed at Stripe. An organisation without a paid plan is offered "Talk to us",
+// the same door as the Organisation card on a studio's plan picker, and nothing
+// reaches Stripe.
+test('org without a paid plan: "Talk to us", never a checkout', async ({ browser }) => {
+  // The seed marks the org active with no Stripe subscription behind it; show
+  // the page what a new, unpaid organisation looks like, and put it back after.
   const subRef = db.doc(`saas_subscriptions/${ORG}`)
-  const prev = (await subRef.get()).data()
-  const prevId = prev?.gateway_data?.subscription_id as string | undefined
-  if (prevId) await stripe.subscriptions.cancel(prevId).catch(() => {})
-  await subRef.set(
-    { entity_type: 'organization', entity_id: ORG, plan: 'organization', status: 'trialing', gateway_type: null, gateway_data: null },
-    { merge: false }
-  )
-  await db.doc(`organizations/${ORG}`).set({ plan_status: 'trialing' }, { merge: true })
-  const attempts = await db.collection('saas_checkout_attempts').where('orgId', '==', ORG).get()
-  for (const d of attempts.docs) await d.ref.delete()
-
+  const before = (await subRef.get()).data()
+  await subRef.set({ status: 'trialing', gateway_type: null, gateway_data: null }, { merge: true })
   const ctx = await staffContext(browser, 'org@linyup.com')
   const page = await ctx.newPage()
   const errors = watchErrors(page, [/status of 500/, /Encountered a script tag/])
-  await page.goto(`/org/${ORG}/billing`, { waitUntil: 'domcontentloaded' })
-  const box = await captureCallable(page, 'createOrgCheckoutSession')
-  await page.getByRole('button', { name: 'Subscribe' }).click()
-  await expect.poll(() => box.status, { timeout: 120_000 }).not.toBe(0)
-  expect(box.status, JSON.stringify(box.body)).toBe(200)
-  await payOnStripeCheckout(page, { name: 'Rafael Torres' })
-  await page.waitForURL(new RegExp(`/org/${ORG}/billing\\?checkout=success`), { timeout: 120_000 })
-
-  const sub = await waitFor('the org subscription written by the webhook', async () => {
-    const d = (await subRef.get()).data()
-    return d?.gateway_data?.subscription_id && d.status === 'active' ? d : null
+  let checkoutCalls = 0
+  page.on('request', (r) => {
+    if (r.url().includes('createOrgCheckoutSession')) checkoutCalls++
   })
-  const s = await stripe.subscriptions.retrieve(sub.gateway_data.subscription_id)
-  expect(s.items.data.map((i) => i.price.lookup_key)).toContain('linyup_organization_monthly')
-  expect(errors, errors.join('\n')).toEqual([])
-  await ctx.close()
+  try {
+    await page.goto(`/org/${ORG}/billing`, { waitUntil: 'domcontentloaded' })
+    const talk = page.getByRole('button', { name: 'Talk to us' })
+    await expect(talk).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByRole('button', { name: 'Subscribe' })).toHaveCount(0)
+    await talk.click()
+    await page.waitForTimeout(2_000)
+    expect(checkoutCalls).toBe(0)
+    expect(errors, errors.join('\n')).toEqual([])
+  } finally {
+    await ctx.close()
+    if (before) await subRef.set(before)
+  }
 })
