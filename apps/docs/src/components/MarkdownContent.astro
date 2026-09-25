@@ -1,10 +1,12 @@
 ---
 // Starlight's own MarkdownContent, plus one thing: the landscape page gets the
-// interactive diagram above its text. A Markdown page cannot mount a component,
+// interactive landscape above its text and the C4 viewer after it (the page's
+// last section introduces it). A Markdown page cannot mount a component,
 // and the page's prose stays in docs/landscape.md where the rest of the docs
 // live (and where GitHub renders it, as the text version of the diagram).
 import Default from '@astrojs/starlight/components/MarkdownContent.astro'
 import Landscape from './Landscape.astro'
+import C4 from './C4.astro'
 
 const isLandscape = Astro.locals.starlightRoute.id === 'landscape'
 ---
@@ -12,4 +14,5 @@ const isLandscape = Astro.locals.starlightRoute.id === 'landscape'
 <Default>
   {isLandscape && <Landscape />}
   <slot />
+  {isLandscape && <C4 />}
 </Default>

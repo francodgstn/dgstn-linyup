@@ -85,3 +85,19 @@ See [Environments](/rules/environments/).
 - **Two regions.** Functions, Firestore and Storage run in `europe-west6`
   (Zurich). The App Hosting backends run in `europe-west4` (Netherlands), the
   nearest EU region App Hosting offers.
+
+## How they connect (C4)
+
+The landscape shows what exists. The C4 views below show what calls what, at
+three levels of zoom:
+
+- **Context:** Linyup as one box, with the people who use it and the outside
+  systems it depends on.
+- **Containers:** what runs inside that box, with a labelled arrow for every
+  call. A dashed arrow is an event, a webhook or a queue: nobody waits on it.
+- **Components:** inside the web app and inside Cloud Functions.
+
+Select an element to follow its arrows. An element marked ⊕ opens up: double-click
+it, or use the button in the panel. **Full screen** opens the viewer in a modal
+where scrolling zooms. The views are laid out automatically when the site is
+built. Their model is `apps/docs/src/data/c4.ts`.

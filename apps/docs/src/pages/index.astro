@@ -6,6 +6,7 @@ import { Card, CardGrid, LinkCard, Badge } from '@astrojs/starlight/components'
 import { getCollection } from 'astro:content'
 import { AREAS, AREA_TITLE, byOrder } from '../../../../scripts/lib/docsMeta.mjs'
 import Landscape from '../components/Landscape.astro'
+import C4 from '../components/C4.astro'
 
 const docs = await getCollection('docs')
 const current = docs.filter((d) => d.data.status === 'living' || d.data.status === 'plan')
@@ -47,6 +48,7 @@ const areas: Group[] = AREAS.filter((a) => a !== 'start')
     The <a href="/landscape/">Landscape</a> page walks through how a request travels across it.
   </p>
   <Landscape compact />
+  <C4 launcher />
 
   <h2 id="map">Map</h2>
   <CardGrid>
