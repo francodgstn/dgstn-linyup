@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { startOfWeek, weekdayOrder, type WeekStart } from '@linyup/shared'
@@ -651,8 +651,27 @@ export default function SessionsCalendar({
   const [selected, setSelected] = useState<Date>(() => new Date(today))
   const [peekSessionId, setPeekSessionId] = useState<string | null>(null)
   const [peekEventId, setPeekEventId] = useState<string | null>(null)
-  // Expand the week grid to full width, hiding the month mini-calendar + day agenda.
+  // FOCUS MODE (Franco, 2026-09-25). Expand used to hide only the side pane,
+  // leaving the page header, the view switch and the filters above the grid.
+  // It now takes the whole window: the week grid alone, with its own week
+  // navigation and an exit. Escape leaves, and the page underneath stops
+  // scrolling while it is open. It sits above the floating dock (z-40) and
+  // below dialogs and sheets (z-50), so a class opened from the grid still
+  // shows its peek on top. Desktop only, like the button that opens it.
   const [fullWeek, setFullWeek] = useState(false)
+  useEffect(() => {
+    if (!fullWeek) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setFullWeek(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [fullWeek])
 
   const viewYear = externalYear ?? internalYear
   const viewMonth = externalMonth ?? internalMonth
@@ -862,9 +881,11 @@ export default function SessionsCalendar({
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-      {/* ── Calendar pane (right on desktop) — hidden when the week is expanded ── */}
+      {/* ── Mini-month + day list — LEFT on desktop (Franco, 2026-09-25), the
+          Google / Outlook convention: the month is navigation, so it is read
+          first. Hidden in focus mode. ── */}
       {!fullWeek && (
-      <div className="lg:order-2 lg:w-72 shrink-0 lg:flex lg:flex-col lg:min-h-0">
+      <div className="lg:order-1 lg:w-72 shrink-0 lg:flex lg:flex-col lg:min-h-0">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-3 px-0.5">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth}>
@@ -949,8 +970,13 @@ export default function SessionsCalendar({
       </div>
       )}
 
-      {/* ── Detail pane (left on desktop) — week grid; fills the row when expanded ── */}
-      <div className="lg:order-1 flex-1 min-w-0">
+      {/* ── Week grid — RIGHT on desktop; the whole window in focus mode ── */}
+      <div
+        className={cn(
+          'lg:order-2 flex-1 min-w-0',
+          fullWeek && 'fixed inset-0 z-[45] overflow-y-auto bg-background p-4 sm:p-6'
+        )}
+      >
         {/* Week header: stepper + range + today */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-1 min-w-0">
