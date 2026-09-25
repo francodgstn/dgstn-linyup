@@ -2399,7 +2399,7 @@ export default function AutomationsPage() {
 
         {/* Loading */}
         {rulesLoading && (
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-36 rounded-xl" />
             ))}
@@ -2442,7 +2442,7 @@ export default function AutomationsPage() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('common.active')}
             </h2>
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               {activeRules.map((rule) => (
                 <RuleCard
                   key={rule.id}
@@ -2478,7 +2478,7 @@ export default function AutomationsPage() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('common.paused')}
             </h2>
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               {pausedRules.map((rule) => (
                 <RuleCard
                   key={rule.id}
