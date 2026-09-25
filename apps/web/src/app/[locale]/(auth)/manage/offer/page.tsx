@@ -1819,7 +1819,11 @@ export default function CataloguePage() {
             </SaveBarProvider>
           )}
 
+          {/* One save for the plan pane too: Access & pricing and Details
+              register with this bar. Automations has nothing to save — each
+              rule saves in its own dialog. */}
           {selectedPlan && (
+            <SaveBarProvider key={selectedPlan.id} disabled={!canEdit}>
             <PaneBody
               key={selectedPlan.id}
               title={selectedPlan.name}
@@ -1900,6 +1904,7 @@ export default function CataloguePage() {
                 />
               )}
             </PaneBody>
+            </SaveBarProvider>
           )}
 
           {selectedCourse && (
