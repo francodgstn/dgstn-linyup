@@ -7,10 +7,11 @@ order: 7
 ---
 # Multi-plan holdings
 
-Status: **phases 0–2, 3a, 3b and 4 built** — the guard, the store and mirror,
-the writers, coverage and pricing, the security rules and the UI reading the
-plan list; the public session (3c), the remaining server readers (3d) and the
-slot's removal (5) follow. Option B, chosen by Franco on 2026-09-13 over the
+Status: **phases 0–4 built, but for the history reconciler** — the guard, the
+store and mirror, the writers, and every reader (coverage and pricing, the
+security rules, the public session, automations, analytics, the AI dossier and
+the UI) on the plan list; the history reconciler and the slot's removal (5)
+follow. Option B, chosen by Franco on 2026-09-13 over the
 minimal option (stop Stripe events writing the single plan slot). All four
 decisions settled the same day — see §7.
 
@@ -319,6 +320,16 @@ Each phase is its own PR and leaves `main` shippable.
    - **3d. The rest.** Automations and contact-write events, analytics and
      dashboard figures, CSV, the contacts-list badge, the billing warning, the
      history reconciler, the AI summary dossier, mobile.
+     **Built (2026-09-25):** the automation conditions (`subscription`, its
+     aliases and `subscription_expires_in`, which now matches when the member's
+     memberships all end and the last ends inside the window) read the plan
+     list; the plan events (`subscription_added` / `_removed` / `_changed`)
+     diff the stored `held_plan_type_ids`, so the daily refresh fires them for a
+     lapsed grant (`automation/contactEvents.ts`); the contact activity log's
+     plan change and the weekly report's "subscribed" read the list; the AI
+     summary dossier lists every membership with how it is held and its end.
+     The history reconciler moves in phase 5, with the seeders it shares a
+     fixture with.
 4. **UI.** The Current Plans list and dialogs; header, list, Space, Payments tab
    and dashboard; mobile profile.
    - **Built (2026-09-25): the Current Plans list.** One card per `held_plans`

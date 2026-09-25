@@ -1,13 +1,14 @@
-// Unit tests for automationEngine condition evaluation and the delta-aware
-// subscription/affiliation trigger helpers extracted below.
+// Unit tests for automationEngine condition evaluation and the contact-write
+// events of automation/contactEvents.ts.
 //
 // Tests cover:
-//   1. evaluateContactConditions — 'subscription' condition honours active_subscriptions
+//   1. evaluateContactConditions — the plan conditions read the plan list
 //   2. evaluateContactConditions — legacy subscription_missing / subscription_set aliases
-//   3. resolveSubIds (exported via test helper) — multi-sub union logic
-//   4. resolveContactEvents (exported via test helper) — delta diff logic
+//   3. evaluateContactConditions — subscription_expires_in reads the plan list's ends
+//   4. resolveContactEvents — plan events diff the stored plan-list mirror
 
 import assert from 'node:assert/strict'
+import type { HeldPlan } from '@linyup/shared'
 import {
   evaluateContactConditions,
   recordRecipient,
@@ -15,74 +16,37 @@ import {
   type ContactData,
   type RuleStats,
 } from './automationEngine'
-
-// ---------------------------------------------------------------------------
-// Helpers replicating the pure logic from onContactWrite — we duplicate them
-// here so the tests don't import the trigger module (which pulls in Firebase).
-// ---------------------------------------------------------------------------
-
-function resolveSubIds(doc: Record<string, unknown> | undefined): Set<string> {
-  const ids = new Set<string>()
-  if (!doc) return ids
-  const primary = doc.subscription_type_id as string | undefined
-  if (primary) ids.add(primary)
-  const active = doc.active_subscriptions as Array<{ subscription_type_id: string }> | undefined
-  for (const s of active ?? []) {
-    if (s.subscription_type_id) ids.add(s.subscription_type_id)
-  }
-  return ids
-}
-
-interface ContactEvent {
-  triggerType: string
-  delta?: { subscriptionTypeId?: string }
-}
-
-function resolveContactEvents(
-  before: Record<string, unknown> | undefined,
-  after: Record<string, unknown> | undefined
-): ContactEvent[] {
-  if (!after) return []
-  const events: ContactEvent[] = []
-  if (!before) {
-    events.push({ triggerType: 'contact_created' })
-    return events
-  }
-
-  const beforeSubIds = resolveSubIds(before)
-  const afterSubIds = resolveSubIds(after)
-
-  const hasSubChange =
-    before.subscription_type_id !== after.subscription_type_id ||
-    before.subscription_status !== after.subscription_status ||
-    JSON.stringify([...beforeSubIds].sort()) !== JSON.stringify([...afterSubIds].sort())
-
-  if (hasSubChange) {
-    for (const id of afterSubIds) {
-      if (!beforeSubIds.has(id)) {
-        events.push({ triggerType: 'subscription_added', delta: { subscriptionTypeId: id } })
-      }
-    }
-    for (const id of beforeSubIds) {
-      if (!afterSubIds.has(id)) {
-        events.push({ triggerType: 'subscription_removed', delta: { subscriptionTypeId: id } })
-      }
-    }
-    events.push({ triggerType: 'subscription_changed' })
-  }
-
-  return events
-}
-
-// ---------------------------------------------------------------------------
-// 1. evaluateContactConditions — subscription condition with active_subscriptions
-// ---------------------------------------------------------------------------
+import {
+  resolveContactEvents,
+  resolveHeldTypeIds,
+  type ContactEvent,
+} from '../automation/contactEvents'
 
 const NOW = new Date('2026-01-15T12:00:00Z')
+const DAY = 86_400_000
 
 function makeContact(overrides: Partial<ContactData> = {}): ContactData {
   return { id: 'c1', ...overrides }
 }
+
+function plan(typeId: string, over: Partial<HeldPlan> = {}): HeldPlan {
+  return {
+    subscription_type_id: typeId,
+    subscription_type_name: null,
+    source: 'grant',
+    status: 'active',
+    starts_at_ms: NOW.getTime() - 30 * DAY,
+    ends_at_ms: null,
+    price_id: null,
+    amount: null,
+    recurrence: null,
+    ref: `ref-${typeId}`,
+    ...over,
+  }
+}
+
+/** A contact holding the given plan types, each through a grant with no end. */
+const holding = (...typeIds: string[]) => makeContact({ held_plans: typeIds.map((id) => plan(id)) })
 
 describe('evaluateContactConditions — unknown condition types fail closed', () => {
   it('blocks the rule when a condition type is unrecognized (e.g. legacy contact_type)', () => {
@@ -94,247 +58,234 @@ describe('evaluateContactConditions — unknown condition types fail closed', ()
   })
 })
 
+// ---------------------------------------------------------------------------
+// 1. evaluateContactConditions — subscription condition
+// ---------------------------------------------------------------------------
+
 describe('evaluateContactConditions — subscription condition', () => {
-  it('none: passes when contact has no subscription (empty active_subscriptions, no primary)', () => {
-    const c = makeContact({ subscription_type_id: undefined, active_subscriptions: [] })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'none' }], c, NOW), true)
+  const sub = (value: string) => [{ type: 'subscription' as const, value }]
+
+  it('none: passes when the contact holds no plan', () => {
+    assert.equal(evaluateContactConditions(sub('none'), makeContact(), NOW), true)
+    assert.equal(evaluateContactConditions(sub('none'), makeContact({ held_plans: [] }), NOW), true)
   })
 
-  it('none: passes when active_subscriptions is absent and no primary', () => {
-    const c = makeContact({})
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'none' }], c, NOW), true)
+  it('none: fails when the contact holds any plan, whatever holds it', () => {
+    assert.equal(evaluateContactConditions(sub('none'), holding('sub-A'), NOW), false)
+    const stripe = makeContact({ held_plans: [plan('sub-B', { source: 'stripe' })] })
+    assert.equal(evaluateContactConditions(sub('none'), stripe, NOW), false)
   })
 
-  it('none: fails when contact has primary subscription_type_id only', () => {
-    const c = makeContact({ subscription_type_id: 'sub-A' })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'none' }], c, NOW), false)
+  it('any: passes with one plan, fails with none', () => {
+    assert.equal(evaluateContactConditions(sub('any'), holding('sub-A'), NOW), true)
+    assert.equal(evaluateContactConditions(sub('any'), makeContact(), NOW), false)
   })
 
-  it('none: fails when contact has an active_subscription entry (no primary)', () => {
-    const c = makeContact({ active_subscriptions: [{ subscription_type_id: 'sub-B' }] })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'none' }], c, NOW), false)
+  it('specific id: passes for ANY held plan, not only the first', () => {
+    const c = holding('yoga', 'boxing', 'swim')
+    assert.equal(evaluateContactConditions(sub('boxing'), c, NOW), true)
+    assert.equal(evaluateContactConditions(sub('karate'), c, NOW), false)
   })
 
-  it('any: passes when contact has primary subscription_type_id only', () => {
-    const c = makeContact({ subscription_type_id: 'sub-A' })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'any' }], c, NOW), true)
-  })
-
-  it('any: passes when contact has an active_subscription entry only', () => {
-    const c = makeContact({ active_subscriptions: [{ subscription_type_id: 'sub-B' }] })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'any' }], c, NOW), true)
-  })
-
-  it('any: fails when contact has no subscription at all', () => {
-    const c = makeContact({})
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'any' }], c, NOW), false)
-  })
-
-  it('specific id: passes when id is in active_subscriptions (not primary)', () => {
+  // The list is stored ahead of the clock; a lapsed grant is compared, not trusted.
+  it('a grant that has ended or not begun is not held', () => {
     const c = makeContact({
-      subscription_type_id: 'sub-A',
-      active_subscriptions: [
-        { subscription_type_id: 'sub-A' },
-        { subscription_type_id: 'sub-B' },
+      held_plans: [
+        plan('ended', { ends_at_ms: NOW.getTime() - DAY }),
+        plan('future', { starts_at_ms: NOW.getTime() + DAY }),
       ],
     })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'sub-B' }], c, NOW), true)
+    assert.equal(evaluateContactConditions(sub('ended'), c, NOW), false)
+    assert.equal(evaluateContactConditions(sub('future'), c, NOW), false)
+    assert.equal(evaluateContactConditions(sub('none'), c, NOW), true)
   })
 
-  it('specific id: passes when id equals primary (no active_subscriptions)', () => {
-    const c = makeContact({ subscription_type_id: 'sub-A' })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'sub-A' }], c, NOW), true)
-  })
-
-  it('specific id: fails when id is not in either set', () => {
-    const c = makeContact({
-      subscription_type_id: 'sub-A',
-      active_subscriptions: [{ subscription_type_id: 'sub-A' }],
-    })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'sub-X' }], c, NOW), false)
-  })
-
-  it('handles multiple concurrent subscriptions correctly for a specific check', () => {
-    const c = makeContact({
-      active_subscriptions: [
-        { subscription_type_id: 'yoga' },
-        { subscription_type_id: 'boxing' },
-        { subscription_type_id: 'swim' },
-      ],
-    })
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'boxing' }], c, NOW), true)
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'swim' }], c, NOW), true)
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'tennis' }], c, NOW), false)
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'none' }], c, NOW), false)
-    assert.equal(evaluateContactConditions([{ type: 'subscription', value: 'any' }], c, NOW), true)
+  it('the retired single plan slot is not read', () => {
+    const c = makeContact({ subscription_type_id: 'sub-A' } as Partial<ContactData>)
+    assert.equal(evaluateContactConditions(sub('sub-A'), c, NOW), false)
   })
 })
 
 // ---------------------------------------------------------------------------
-// 2. Legacy aliases: subscription_missing / subscription_set
+// 2. legacy aliases
 // ---------------------------------------------------------------------------
 
 describe('evaluateContactConditions — legacy subscription aliases', () => {
-  it('subscription_missing: passes when no subs at all', () => {
-    assert.equal(evaluateContactConditions([{ type: 'subscription_missing' }], makeContact({}), NOW), true)
-  })
-
-  it('subscription_missing: fails when primary is set', () => {
+  it('subscription_missing: passes with no plan, fails with one', () => {
     assert.equal(
-      evaluateContactConditions([{ type: 'subscription_missing' }], makeContact({ subscription_type_id: 'sub-A' }), NOW),
+      evaluateContactConditions([{ type: 'subscription_missing' }], makeContact(), NOW),
+      true
+    )
+    assert.equal(
+      evaluateContactConditions([{ type: 'subscription_missing' }], holding('sub-A'), NOW),
       false
     )
   })
 
-  it('subscription_missing: fails when active_subscriptions has entries', () => {
+  it('subscription_set: passes with a plan, fails with none', () => {
     assert.equal(
-      evaluateContactConditions(
-        [{ type: 'subscription_missing' }],
-        makeContact({ active_subscriptions: [{ subscription_type_id: 'sub-B' }] }),
-        NOW
-      ),
+      evaluateContactConditions([{ type: 'subscription_set' }], holding('sub-A'), NOW),
+      true
+    )
+    assert.equal(
+      evaluateContactConditions([{ type: 'subscription_set' }], makeContact(), NOW),
+      false
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 3. subscription_expires_in — the win-back window
+// ---------------------------------------------------------------------------
+
+describe('evaluateContactConditions — subscription_expires_in', () => {
+  const within7 = [{ type: 'subscription_expires_in' as const, value: 7 }]
+  const endsIn = (days: number, over: Partial<HeldPlan> = {}) =>
+    plan('grant', { ends_at_ms: NOW.getTime() + days * DAY, ...over })
+
+  it('matches a membership ending inside the window', () => {
+    assert.equal(
+      evaluateContactConditions(within7, makeContact({ held_plans: [endsIn(3)] }), NOW),
+      true
+    )
+  })
+
+  it('does not match one ending after the window', () => {
+    assert.equal(
+      evaluateContactConditions(within7, makeContact({ held_plans: [endsIn(10)] }), NOW),
       false
     )
   })
 
-  it('subscription_set: passes when primary is set', () => {
-    assert.equal(
-      evaluateContactConditions([{ type: 'subscription_set' }], makeContact({ subscription_type_id: 'sub-A' }), NOW),
-      true
-    )
+  it('does not match when another membership has no end — the member is not losing access', () => {
+    const c = makeContact({ held_plans: [endsIn(3), plan('stripe', { source: 'stripe' })] })
+    assert.equal(evaluateContactConditions(within7, c, NOW), false)
   })
 
-  it('subscription_set: passes when active_subscriptions has entries (no primary)', () => {
-    assert.equal(
-      evaluateContactConditions(
-        [{ type: 'subscription_set' }],
-        makeContact({ active_subscriptions: [{ subscription_type_id: 'sub-B' }] }),
-        NOW
-      ),
-      true
-    )
+  it('reads the LAST end when every membership ends', () => {
+    const c = makeContact({
+      held_plans: [endsIn(3), plan('later', { ends_at_ms: NOW.getTime() + 20 * DAY })],
+    })
+    assert.equal(evaluateContactConditions(within7, c, NOW), false)
   })
 
-  it('subscription_set: fails when no subs at all', () => {
-    assert.equal(evaluateContactConditions([{ type: 'subscription_set' }], makeContact({}), NOW), false)
+  it('ignores credit packs, which are not memberships', () => {
+    const c = makeContact({
+      held_plans: [
+        plan('pack', {
+          source: 'credits',
+          credits_remaining: 3,
+          ends_at_ms: NOW.getTime() + 2 * DAY,
+        }),
+      ],
+    })
+    assert.equal(evaluateContactConditions(within7, c, NOW), false)
+  })
+
+  it('does not match a contact holding nothing', () => {
+    assert.equal(evaluateContactConditions(within7, makeContact(), NOW), false)
   })
 })
 
 // ---------------------------------------------------------------------------
-// 3. resolveSubIds — correctly unions primary and active_subscriptions
+// 4. resolveContactEvents — plan delta
 // ---------------------------------------------------------------------------
 
-describe('resolveSubIds', () => {
-  it('returns empty set for undefined doc', () => {
-    assert.equal(resolveSubIds(undefined).size, 0)
-  })
-
-  it('picks up the primary subscription_type_id alone', () => {
-    const ids = resolveSubIds({ subscription_type_id: 'sub-A' })
-    assert.deepEqual([...ids].sort(), ['sub-A'])
-  })
-
-  it('picks up entries from active_subscriptions only (no primary)', () => {
-    const ids = resolveSubIds({
-      active_subscriptions: [{ subscription_type_id: 'sub-B' }, { subscription_type_id: 'sub-C' }],
-    })
-    assert.deepEqual([...ids].sort(), ['sub-B', 'sub-C'])
-  })
-
-  it('deduplicates when primary is also in active_subscriptions', () => {
-    const ids = resolveSubIds({
-      subscription_type_id: 'sub-A',
-      active_subscriptions: [{ subscription_type_id: 'sub-A' }, { subscription_type_id: 'sub-B' }],
-    })
-    assert.deepEqual([...ids].sort(), ['sub-A', 'sub-B'])
+describe('resolveHeldTypeIds', () => {
+  it('reads the stored mirror, and nothing else', () => {
+    assert.equal(resolveHeldTypeIds(undefined).size, 0)
+    assert.deepEqual([...resolveHeldTypeIds({ held_plan_type_ids: ['a', 'b'] })], ['a', 'b'])
+    assert.equal(resolveHeldTypeIds({ subscription_type_id: 'a' }).size, 0)
   })
 })
 
-// ---------------------------------------------------------------------------
-// 4. resolveContactEvents — subscription delta diff
-// ---------------------------------------------------------------------------
+describe('resolveContactEvents — plan delta', () => {
+  const types = (events: ContactEvent[], t: string) => events.filter((e) => e.triggerType === t)
 
-describe('resolveContactEvents — subscription delta', () => {
   it('fires contact_created and nothing else for a new document', () => {
     const events = resolveContactEvents(undefined, { teamId: 't1' })
-    assert.equal(events.length, 1)
-    assert.equal(events[0].triggerType, 'contact_created')
+    assert.deepEqual(
+      events.map((e) => e.triggerType),
+      ['contact_created']
+    )
   })
 
-  it('returns empty array for a delete (after = undefined)', () => {
-    const events = resolveContactEvents({ subscription_type_id: 'sub-A' }, undefined)
-    assert.equal(events.length, 0)
+  it('returns nothing for a delete', () => {
+    assert.equal(resolveContactEvents({ held_plan_type_ids: ['sub-A'] }, undefined).length, 0)
   })
 
-  it('fires subscription_added + subscription_changed when a type is added to active_subscriptions', () => {
-    const before = { subscription_type_id: 'sub-A', active_subscriptions: [] }
-    const after = {
-      subscription_type_id: 'sub-A',
-      active_subscriptions: [{ subscription_type_id: 'sub-A' }, { subscription_type_id: 'sub-B' }],
-    }
-    const events = resolveContactEvents(before, after)
-    const added = events.filter((e) => e.triggerType === 'subscription_added')
-    const changed = events.filter((e) => e.triggerType === 'subscription_changed')
-    const removed = events.filter((e) => e.triggerType === 'subscription_removed')
-    assert.equal(added.length, 1)
-    assert.equal(added[0].delta?.subscriptionTypeId, 'sub-B')
-    assert.equal(changed.length, 1)
-    assert.equal(removed.length, 0)
+  it('fires subscription_added + subscription_changed when a type joins the list', () => {
+    const events = resolveContactEvents(
+      { held_plan_type_ids: ['sub-A'] },
+      { held_plan_type_ids: ['sub-A', 'sub-B'] }
+    )
+    assert.deepEqual(
+      types(events, 'subscription_added').map((e) => e.delta?.subscriptionTypeId),
+      ['sub-B']
+    )
+    assert.equal(types(events, 'subscription_removed').length, 0)
+    assert.equal(types(events, 'subscription_changed').length, 1)
   })
 
-  it('fires subscription_removed + subscription_changed when a type is dropped', () => {
-    const before = {
-      subscription_type_id: 'sub-A',
-      active_subscriptions: [{ subscription_type_id: 'sub-A' }, { subscription_type_id: 'sub-B' }],
-    }
-    const after = {
-      subscription_type_id: 'sub-A',
-      active_subscriptions: [{ subscription_type_id: 'sub-A' }],
-    }
-    const events = resolveContactEvents(before, after)
-    const removed = events.filter((e) => e.triggerType === 'subscription_removed')
-    const changed = events.filter((e) => e.triggerType === 'subscription_changed')
-    assert.equal(removed.length, 1)
-    assert.equal(removed[0].delta?.subscriptionTypeId, 'sub-B')
-    assert.equal(changed.length, 1)
+  it('fires subscription_removed when a type leaves — including the daily refresh dropping a lapsed grant', () => {
+    const events = resolveContactEvents(
+      { held_plan_type_ids: ['sub-A', 'sub-B'] },
+      { held_plan_type_ids: ['sub-A'] }
+    )
+    assert.deepEqual(
+      types(events, 'subscription_removed').map((e) => e.delta?.subscriptionTypeId),
+      ['sub-B']
+    )
+    assert.equal(types(events, 'subscription_changed').length, 1)
   })
 
-  it('fires both added and removed when two different types swap in one write', () => {
-    const before = { active_subscriptions: [{ subscription_type_id: 'sub-A' }] }
-    const after = { active_subscriptions: [{ subscription_type_id: 'sub-B' }] }
-    const events = resolveContactEvents(before, after)
-    const added = events.filter((e) => e.triggerType === 'subscription_added')
-    const removed = events.filter((e) => e.triggerType === 'subscription_removed')
-    assert.equal(added.length, 1)
-    assert.equal(added[0].delta?.subscriptionTypeId, 'sub-B')
-    assert.equal(removed.length, 1)
-    assert.equal(removed[0].delta?.subscriptionTypeId, 'sub-A')
+  it('fires both when two types swap in one write', () => {
+    const events = resolveContactEvents(
+      { held_plan_type_ids: ['sub-A'] },
+      { held_plan_type_ids: ['sub-B'] }
+    )
+    assert.deepEqual(
+      types(events, 'subscription_added').map((e) => e.delta?.subscriptionTypeId),
+      ['sub-B']
+    )
+    assert.deepEqual(
+      types(events, 'subscription_removed').map((e) => e.delta?.subscriptionTypeId),
+      ['sub-A']
+    )
   })
 
-  it('fires no sub events when the subscription set is unchanged', () => {
-    const before = { active_subscriptions: [{ subscription_type_id: 'sub-A' }] }
-    const after = { active_subscriptions: [{ subscription_type_id: 'sub-A' }] }
-    const events = resolveContactEvents(before, after)
-    assert.equal(events.length, 0)
+  it('fires no plan events when the list is unchanged or an unrelated field moves', () => {
+    const before = { acquisition_stage: 'trial_booked', held_plan_type_ids: ['sub-A'] }
+    const after = { acquisition_stage: 'trial_booked', held_plan_type_ids: ['sub-A'], notes: 'x' }
+    assert.equal(resolveContactEvents(before, after).length, 0)
   })
 
-  it('correctly handles a contact with only primary subscription_type_id changing', () => {
-    const before = { subscription_type_id: 'sub-A' }
-    const after = { subscription_type_id: 'sub-B' }
-    const events = resolveContactEvents(before, after)
-    const added = events.filter((e) => e.triggerType === 'subscription_added')
-    const removed = events.filter((e) => e.triggerType === 'subscription_removed')
-    assert.equal(added.length, 1)
-    assert.equal(added[0].delta?.subscriptionTypeId, 'sub-B')
-    assert.equal(removed.length, 1)
-    assert.equal(removed[0].delta?.subscriptionTypeId, 'sub-A')
+  it('the retired single plan slot changing fires nothing', () => {
+    assert.equal(
+      resolveContactEvents({ subscription_type_id: 'sub-A' }, { subscription_type_id: 'sub-B' })
+        .length,
+      0
+    )
   })
 
-  it('no sub events for an unrelated field change', () => {
-    const before = { acquisition_stage: 'trial_booked', subscription_type_id: 'sub-A' }
-    const after = { acquisition_stage: 'trial_booked', subscription_type_id: 'sub-A' }
-    const events = resolveContactEvents(before, after)
-    assert.equal(events.filter((e) => e.triggerType.startsWith('subscription')).length, 0)
+  it('a Stripe status change still fires subscription_changed, and past_due fires payment_failed', () => {
+    const events = resolveContactEvents(
+      { subscription_status: 'active' },
+      { subscription_status: 'past_due' }
+    )
+    assert.equal(types(events, 'subscription_changed').length, 1)
+    assert.equal(types(events, 'subscription_payment_failed').length, 1)
+  })
+
+  it('a member asking to cancel fires subscription_cancel_requested once per type', () => {
+    const events = resolveContactEvents(
+      { active_subscriptions: [{ subscription_type_id: 'sub-A' }] },
+      { active_subscriptions: [{ subscription_type_id: 'sub-A', cancelling: true }] }
+    )
+    assert.deepEqual(
+      types(events, 'subscription_cancel_requested').map((e) => e.delta?.subscriptionTypeId),
+      ['sub-A']
+    )
   })
 })
 

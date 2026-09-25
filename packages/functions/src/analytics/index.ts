@@ -11,6 +11,7 @@ import {
   PARTICIPANTS_SUBCOLLECTION,
   TEAM_WEEKLY_REPORTS_SUBCOLLECTION,
   bookingHoldsSeat,
+  heldMemberships,
   holdsOwnPlan,
   holdsPartnerPlan,
   partnerSubscriptionTypeIds,
@@ -502,19 +503,33 @@ export const trackContacts = onDocumentWritten('contacts/{contactId}', async (ev
     }
   }
 
-  // Subscription change
-  if ((oldData.subscription_type_id ?? null) !== (newData.subscription_type_id ?? null)) {
-    const before = (oldData.subscription_type_name ??
-      oldData.subscription_type_id ??
-      'none') as string
-    const after = (newData.subscription_type_name ??
-      newData.subscription_type_id ??
-      'none') as string
+  // Plan change — the stored plan-list mirror moved (docs/multi-plan-holdings.md).
+  // Compared as stored, not against the clock, so the daily refresh that drops a
+  // lapsed grant logs the change too. Named by each held plan, in list order.
+  const heldIds = (d: Record<string, unknown>) =>
+    Array.isArray(d.held_plan_type_ids) ? [...(d.held_plan_type_ids as string[])].sort().join(',') : ''
+  if (heldIds(oldData) !== heldIds(newData)) {
+    const names = (d: Record<string, unknown>) => {
+      const list = Array.isArray(d.held_plans)
+        ? (d.held_plans as Array<{ subscription_type_id?: string; subscription_type_name?: string | null }>)
+        : []
+      const seen = new Set<string>()
+      const out: string[] = []
+      for (const p of list) {
+        const id = p?.subscription_type_id
+        if (!id || seen.has(id)) continue
+        seen.add(id)
+        out.push(p.subscription_type_name || id)
+      }
+      return out.length ? out.join(', ') : 'none'
+    }
+    const before = names(oldData)
+    const after = names(newData)
     promises.push(
       logActivity(teamId, {
         event: 'subscription_change',
         parameters: {
-          description: `${fullname} subscription changed from "${before}" to "${after}".`,
+          description: `${fullname} plans changed from "${before}" to "${after}".`,
           contact_firstname: firstname,
           contact_lastname: lastname,
           subscription: { before, after },
@@ -752,12 +767,15 @@ export async function weeklyReportsForTeam(teamId: string, now: Date = new Date(
     const partnerIds = partnerSubscriptionTypeIds(
       (typesSnap?.docs ?? []).map((d) => ({ id: d.id, source: (d.data() as { source?: string }).source }))
     )
-    const liveSubs = (c: admin.firestore.DocumentData) =>
-      (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
+    // Every membership on the plan list held at the report's instant — the one
+    // display definition of "subscribed" (heldMemberships), the same the
+    // dashboard figures read — so a staff-assigned or bought plan counts, not
+    // only Stripe billing.
+    const liveSubs = (c: admin.firestore.DocumentData) => heldMemberships(c, now.getTime())
     const contacts_with_active_subscription = contacts.filter((c) => holdsOwnPlan(liveSubs(c), partnerIds)).length
     const contacts_with_aggregator_subscription = contacts.filter((c) => holdsPartnerPlan(liveSubs(c), partnerIds)).length
     const contacts_count_by_subscription_type = countByDistinctKeys(contacts, (c) => {
-      const subs = (c.active_subscriptions as Array<{ subscription_type_id: string }> | undefined) ?? []
+      const subs = liveSubs(c)
       return subs.map((s) => s.subscription_type_id)
     })
 

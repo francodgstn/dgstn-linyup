@@ -118,11 +118,6 @@ interface CensusEntry {
 
 const CENSUS: Record<string, CensusEntry> = {
   // ── functions ─────────────────────────────────────────────────────────────
-  'packages/functions/src/analytics/index.ts': {
-    sites: 2,
-    writers: [],
-    note: 'type annotations on active_subscriptions entries',
-  },
   'packages/functions/src/appointments/checkout.ts': {
     sites: 1,
     writers: [],
@@ -137,11 +132,6 @@ const CENSUS: Record<string, CensusEntry> = {
     sites: 1,
     writers: [],
     note: 'the booking records which benefit priced it',
-  },
-  'packages/functions/src/automation/onContactWrite.ts': {
-    sites: 1,
-    writers: [],
-    note: 'a type annotation',
   },
   'packages/functions/src/billing/handlePayrexxWebhook.ts': {
     sites: 2,

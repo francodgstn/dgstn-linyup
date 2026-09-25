@@ -39,15 +39,31 @@ const contact = {
   weight: 999,
   created_at: ts('2025-03-12T09:00:00Z'),
   acquisition_stage: 'joined',
-  active_subscriptions: [
+  held_plans: [
     {
       subscription_type_id: 's1',
       subscription_type_name: 'Unlimited',
+      source: 'stripe',
+      status: 'cancelling',
+      starts_at_ms: null,
+      ends_at_ms: Date.UTC(2026, 9, 1),
+      price_id: null,
       recurrence: 'monthly',
       amount: 89,
+      ref: 'sub_1',
+    },
+    {
+      subscription_type_id: 's3',
+      subscription_type_name: 'Kids',
+      source: 'grant',
+      grant_source: 'purchase',
       status: 'active',
-      cancelling: true,
-      cancels_at_ms: Date.UTC(2026, 9, 1),
+      starts_at_ms: Date.UTC(2026, 6, 1),
+      ends_at_ms: Date.UTC(2026, 11, 31),
+      price_id: null,
+      recurrence: null,
+      amount: null,
+      ref: 'pay_1',
     },
   ],
   credit_summary: [{ subscription_type_id: 's2', subscription_type_name: 'Ten-pack', remaining: 4 }],
@@ -94,7 +110,7 @@ describe('contact summary — the dossier the model sees', () => {
   it('carries the training relationship and the computed signals', () => {
     for (const expected of [
       'Person: Anna',
-      'Unlimited (active, cancelled — ends 2026-10-01)',
+      'Plans held: Unlimited (recurring billing, cancelled — ends 2026-10-01); Kids (bought, ends 2026-12-31)',
       'Membership history: 2 periods on record; first started 2025-03-12; last ended 2026-02-28 (renewed)',
       'Credits: 4 left on Ten-pack',
       '47 sessions in total',
