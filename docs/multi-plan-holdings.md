@@ -335,7 +335,12 @@ Each phase is its own PR and leaves `main` shippable.
      compared Stripe billing to the legacy slot, and with a plan list a Stripe
      subscription IS a held plan, so there is nothing for it to diverge from.
      Payments → Subscriptions still flags live billing no plan list knows about.
-     Still to do: CSV, the mobile profile.
+   - **Built (2026-09-25): the contacts CSV** (`toContactsCsv`,
+     `packages/shared/src/utils/contactsCsv.ts`). One `plans` column lists every
+     plan held at export time — name, how it is held, a non-normal status, the
+     credits left, the end date — and replaces the slot's `subscription_type`,
+     `subscription_status` and `subscription_amount` columns.
+     Still to do: the mobile profile.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the
    Contact type, the rules and every remaining reader; the census test's
    allow-list ends empty. No adoption wait — nothing is live.
