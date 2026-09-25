@@ -18,7 +18,7 @@ If your studio already has a website, you don't need to send visitors away to bo
 Replace `YOUR-STUDIO` with your studio's public address. Include the script **once** per page, anywhere. It is safe to load more than once.
 
 - **The link always works.** Until the script has loaded, or if it is blocked, the link simply opens your booking page in the normal way.
-- On wide screens the flow opens as a centred dialog, and on phones as a bottom sheet. Escape, a click outside and the browser's Back button all close it.
+- On wide screens the flow opens as a centered dialog, and on phones as a bottom sheet. Escape, a click outside and the browser's Back button all close it.
 - Payment happens inside the same flow.
 
 ## Embed a section of your Linyup website

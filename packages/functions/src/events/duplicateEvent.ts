@@ -158,7 +158,7 @@ export const duplicateEvent = onCall(async (request) => {
     // would look complete and be wrong.
     throw new HttpsError(
       'failed-precondition',
-      `This programme has ${programItemsSnap.size} items, above the ${MAX_PROGRAM_ITEMS} limit.`,
+      `This program has ${programItemsSnap.size} items, above the ${MAX_PROGRAM_ITEMS} limit.`,
     )
   }
 

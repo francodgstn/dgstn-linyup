@@ -78,7 +78,7 @@ export const ELEMENTS: Record<string, C4Element> = {
   mobile: { name: 'Member app', kind: 'container', tech: 'Expo, React Native', desc: 'Bookings, plans and Space for members.', ref: 'mobile' },
   admin: { name: 'Operator console', kind: 'container', tech: 'Next.js, App Hosting', desc: 'Linyup\'s back office.', ref: 'admin' },
   landing: { name: 'Landing site', kind: 'container', tech: 'Astro, Hosting', desc: 'Marketing, pricing, roadmap, legal.', ref: 'landing' },
-  help: { name: 'Help centre', kind: 'container', tech: 'Starlight, Hosting', desc: 'Guides for studio owners.', ref: 'help' },
+  help: { name: 'Help center', kind: 'container', tech: 'Starlight, Hosting', desc: 'Guides for studio owners.', ref: 'help' },
   functions: {
     name: 'Cloud Functions',
     kind: 'container',

@@ -90,7 +90,7 @@
       "body": "Everything Linyup can do"
     },
     "help": {
-      "title": "Help centre",
+      "title": "Help center",
       "body": "Guides for every step"
     }
   },
@@ -500,7 +500,7 @@
   "footer": {
     "tagline": "The modern management tool for coaches and studios.",
     "links": {
-      "help": "Help centre",
+      "help": "Help center",
       "privacy": "Privacy",
       "terms": "Terms",
       "dpa": "Data processing",

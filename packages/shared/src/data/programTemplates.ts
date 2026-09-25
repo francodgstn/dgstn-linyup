@@ -123,7 +123,7 @@ const campTrainingDay = (dayIndex: number): ProgramTemplateItem[] =>
     { startTime: '15:00', endTime: '16:30', title: 'Afternoon session', kind: 'activity' },
     { startTime: '16:30', endTime: '17:00', title: 'Cool-down & recovery', kind: 'activity' },
     { startTime: '18:30', endTime: '19:30', title: 'Dinner', kind: 'meal' },
-    { startTime: '20:00', endTime: '21:00', title: 'Evening programme', kind: 'free' },
+    { startTime: '20:00', endTime: '21:00', title: 'Evening program', kind: 'free' },
   ])
 const FIVE_DAY_CAMP: StarterProgramTemplate = {
   id: 'five-day-camp',
