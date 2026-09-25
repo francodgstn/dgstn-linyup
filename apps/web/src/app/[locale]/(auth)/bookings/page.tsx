@@ -457,7 +457,16 @@ export default function BookingsPage() {
       {/* Header */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <QuickLinks
+              links={[
+                { href: '/schedule' as Route, label: tNav('calendar') },
+                { href: '/manifest' as Route, label: tNav('manifest') },
+                { href: '/settings/booking' as Route, label: tNav('bookingPage') },
+              ]}
+            />
+          </div>
           {/* WHERE THESE BOOKINGS COME FROM. Every row in this list arrived
               through the public booking page, and there was no way to open it
               from here — the studio had to know the URL, or go looking for it in
@@ -468,13 +477,6 @@ export default function BookingsPage() {
             themselves, and the two surfaces a studio moves to from a booking
             list — the grid it sits on, and the sheet it gets printed onto — had
             no pointer at all. */}
-        <QuickLinks
-          links={[
-            { href: '/schedule' as Route, label: tNav('calendar') },
-            { href: '/manifest' as Route, label: tNav('manifest') },
-            { href: '/settings/booking' as Route, label: tNav('bookingPage') },
-          ]}
-        />
         {/* The truncation warning STAYS, and is not a description: without it a
             capped list looks like a complete one. The count is what was actually
             loaded, not the ceiling — the class axis stops on a class boundary,

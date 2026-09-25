@@ -131,7 +131,7 @@
     "groupStudio": "Studio",
     "dashboard": "Dashboard",
     "contacts": "Kontakte",
-    "calendar": "Zeitplan",
+    "calendar": "Kalender",
     "manifest": "Tagesblatt",
     "sessions": "Einheiten",
     "activities": "Aktivitäten",
@@ -1349,13 +1349,13 @@
     "deleteCourseLessonNote": "Der Kurs behält seine Plätze, und alle Teilnehmenden werden informiert. Den ganzen Kurs sagst du im Angebot ab."
   },
   "Calendar": {
-    "title": "Zeitplan",
+    "title": "Kalender",
     "subtitle": "{count} bevorstehend",
-    "viewCalendar": "Zeitplan",
+    "viewCalendar": "Woche",
     "viewList": "Liste",
     "newEntry": "Neu",
     "newSession": "Neue Klasse",
-    "newAppointment": "Neuer Termin",
+    "newAppointment": "Termin für jemanden buchen",
     "newEvent": "Neue Veranstaltung",
     "tabUpcoming": "Bevorstehend",
     "tabPast": "Vergangen",
@@ -1371,8 +1371,8 @@
     "modeDay": "Tag",
     "modeWeek": "Woche",
     "emptyDay": "Für diesen Tag ist nichts geplant",
-    "expandWeek": "Auf volle Breite",
-    "collapseWeek": "Seitenpanels anzeigen",
+    "expandWeek": "Vollbild",
+    "collapseWeek": "Vollbild beenden (Esc)",
     "noActivitiesTitle": "Noch keine Aktivitäten",
     "noActivitiesBody": "Aktivitäten sind die Grundlage deines Zeitplans. Lege zuerst eine an, dann kannst du Sessions dafür hinzufügen.",
     "noActivitiesCta": "Aktivität anlegen",
@@ -1431,7 +1431,10 @@
     "countCheckedIn": "{count} eingecheckt",
     "countCapacity": "Kapazität {count}",
     "peekCapacity": "Gebuchte Plätze / Kapazität",
-    "viewPlanning": "Veranstaltungsplanung"
+    "viewPlanning": "Veranstaltungsplanung",
+    "timezoneNoticeDevice": "Der Kalender verwendet die Zeitzone dieses Geräts ({zone}). Die deines Studios ist {studioZone}.",
+    "newGroupCalendar": "Im Kalender",
+    "newGroupAppointments": "Termine"
   },
   "Events": {
     "title": "Veranstaltungen",
@@ -1468,7 +1471,7 @@
     "deleteEvent": "Veranstaltung löschen",
     "emptyUpcoming": "Keine bevorstehenden Veranstaltungen.",
     "emptyPast": "Keine vergangenen Veranstaltungen.",
-    "detail_back": "Zeitplan",
+    "detail_back": "Kalender",
     "detail_tabOverview": "Übersicht",
     "detail_tabInvitations": "Einladungen",
     "detail_sendInvitations": "Einladungen senden",
@@ -7495,7 +7498,8 @@
   },
   "QuickLinks": {
     "related": "Verwandt:",
-    "availabilityToActivities": "Termin-Aktivitäten verwalten"
+    "availabilityToActivities": "Termin-Aktivitäten verwalten",
+    "relatedPages": "Verwandte Seiten"
   },
   "Site": {
     "loading": "Laden…",

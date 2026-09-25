@@ -57,12 +57,12 @@ export function PageHeader({
               </Tip>
             )}
             <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            {quickLinks && <QuickLinks links={quickLinks} />}
           </div>
           {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
         </div>
         {action && <div className="flex shrink-0 items-center gap-3">{action}</div>}
       </div>
-      {quickLinks && <QuickLinks links={quickLinks} />}
     </div>
   )
 }

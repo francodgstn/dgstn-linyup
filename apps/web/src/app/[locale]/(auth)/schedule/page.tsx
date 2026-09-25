@@ -62,7 +62,10 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -83,6 +86,7 @@ import {
   EyeOff,
   Zap,
   Loader2,
+  Globe,
 } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import { SessionFormDialog } from '@/components/sessions/SessionFormDialog'
@@ -101,7 +105,7 @@ import { PlacesSheet } from '@/components/schedule/PlacesSheet'
 import { QUICK_ACTION_PARAM } from '@/lib/quickActions'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import { QuickLinks } from '@/components/layout/QuickLinks'
-import { PublicSurfaceLink } from '@/components/layout/PublicSurfaceLink'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tip } from '@/components/ui/tip'
 
 // `ssr: false` for the same reason the org events page does it: the timeline
@@ -1178,6 +1182,51 @@ export default function CalendarPage() {
     { key: 'upcoming', label: t('tabUpcoming') },
     { key: 'past', label: t('tabPast') },
   ]
+
+  /** THE "NEW" MENU, grouped by what the studio is doing (Franco, 2026-09-25).
+   *  It used to be four peer verbs, and "New appointment" read as "open a slot"
+   *  when it books ONE client in — so a studio wanting bookable hours clicked
+   *  it. The group headings and the labels carry the difference; no
+   *  description lines (the same cleanup as the settings hints). Shared by the
+   *  header button and the mobile button, so the two can never list different
+   *  things. */
+  const newEntryItem = (onClick: () => void, Icon: typeof CalendarDays, label: string) => (
+    <DropdownMenuItem onClick={onClick}>
+      <Icon className="mr-2 h-4 w-4" />
+      {label}
+    </DropdownMenuItem>
+  )
+  const newEntryItems = (
+    <>
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>{t('newGroupCalendar')}</DropdownMenuLabel>
+        {newEntryItem(
+          () => setSessionDialog({ open: true, editing: null }),
+          CalendarDays,
+          t('newSession')
+        )}
+        {newEntryItem(
+          () => setEventDialog({ open: true, editing: null }),
+          CalendarRange,
+          t('newEvent')
+        )}
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>{t('newGroupAppointments')}</DropdownMenuLabel>
+        {newEntryItem(
+          () => setNewAvailabilityOpen(true),
+          CalendarClock,
+          t('newAvailability')
+        )}
+        {newEntryItem(
+          () => setAppointmentFormOpen(true),
+          User,
+          t('newAppointment')
+        )}
+      </DropdownMenuGroup>
+    </>
+  )
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -1185,25 +1234,14 @@ export default function CalendarPage() {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <QuickLinks
+              links={[
+                { href: '/offer/activities' as Route, label: tNav('activities') },
+                { href: '/bookings' as Route, label: tNav('bookings') },
+                { href: '/settings/booking' as Route, label: tNav('bookingPage') },
+              ]}
+            />
           </div>
-          {/* NAME THE CLOCK WHEN IT IS NOT THE READER'S. Every time on this page
-              is printed in the studio's display zone (`Team.regional.timezone`,
-              Swiss by default when the field was never set). When that differs
-              from the browser's zone the numbers are correct and still look
-              wrong, so the line says which clock they are on and links to the
-              control that changes it. Same zone on both sides ⇒ nothing to
-              explain, and no line. */}
-          {fmt.timeZone !== deviceTimeZone() && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t('timezoneNotice', { zone: fmt.timeZone })}{' '}
-              <Link
-                href={'/settings/team?tab=general' as Route}
-                className="underline hover:text-foreground"
-              >
-                {t('timezoneChange')}
-              </Link>
-            </p>
-          )}
           {/* WHAT FILLS THIS CALENDAR, AND WHAT COMES OUT OF IT. A session is an
               instance of an ACTIVITY and produces BOOKINGS, and the calendar
               pointed at neither — the two pages a studio moves between all day
@@ -1211,14 +1249,6 @@ export default function CalendarPage() {
               because it is where the bookings actually come from; it opens in a
               new tab rather than joining the QuickLinks line, which types its
               hrefs as in-app Routes. */}
-          <QuickLinks
-            links={[
-              { href: '/offer/activities' as Route, label: tNav('activities') },
-              { href: '/bookings' as Route, label: tNav('bookings') },
-              { href: '/settings/booking' as Route, label: tNav('bookingPage') },
-            ]}
-          />
-          <PublicSurfaceLink subPath="booking" label={tNav('bookingPage')} className="mt-1.5" />
         </div>
         {/* ONE height across this row. These controls were hand-sized
             independently — a `size="sm"` link and a px-4/py-2 trigger — so
@@ -1278,25 +1308,7 @@ export default function CalendarPage() {
                 <ChevronDown className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSessionDialog({ open: true, editing: null })}>
-                  <CalendarDays className="h-4 w-4 mr-2" />
-                  {t('newSession')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setAppointmentFormOpen(true)}>
-                  <User className="h-4 w-4 mr-2" />
-                  {t('newAppointment')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setEventDialog({ open: true, editing: null })}>
-                  <CalendarRange className="h-4 w-4 mr-2" />
-                  {t('newEvent')}
-                </DropdownMenuItem>
-                {/* Four peer verbs, no separator to explain: the last one
-                    publishes hours rather than putting one thing on the
-                    calendar, and its label says so. */}
-                <DropdownMenuItem onClick={() => setNewAvailabilityOpen(true)}>
-                  <CalendarClock className="h-4 w-4 mr-2" />
-                  {t('newAvailability')}
-                </DropdownMenuItem>
+                {newEntryItems}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -1308,79 +1320,118 @@ export default function CalendarPage() {
           read as a save that half-worked. */}
       <GeneratingSeriesNotice teamId={currentTeamId} />
 
-      {/* WHICH VIEW — ON ITS OWN LINE, ON THE LEFT (Franco, 2026-09-08).
-          It had been sharing the header's right-hand group with three ACTIONS
-          (bookable hours, places, new), which put a question about what you are
-          looking at among the things you can do to it, and left a long label no
-          room. On its own line it is read before the page it switches, in the
-          direction the page is read from — and above the filters, because
-          choosing a view and narrowing it are different questions. */}
-      <div className="hidden w-fit gap-1 rounded-lg bg-muted p-1 sm:flex">
-        {(
-          [
-            { key: 'calendar', icon: CalendarDays, label: t('viewCalendar') },
-            { key: 'list', icon: List, label: t('viewList') },
-            { key: 'planning', icon: ChartNoAxesGantt, label: t('viewPlanning') },
-          ] as const
-        ).map(({ key, icon: Icon, label }) => (
-          <button
-            key={key}
-            onClick={() => setView(key)}
-            className={`flex h-6 items-center gap-1.5 px-2.5 rounded-md text-sm font-medium transition-colors ${
-              view === key
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* ONE ROW: WHICH VIEW, THEN WHAT IS IN IT (Franco, 2026-09-25). The view
+          switch and the filters had a line each; side by side they still read
+          left to right as "which view, narrowed how", and the grid starts one
+          row higher. The notes below still hold for each half. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* WHICH VIEW — ON ITS OWN LINE, ON THE LEFT (Franco, 2026-09-08).
+            It had been sharing the header's right-hand group with three ACTIONS
+            (bookable hours, places, new), which put a question about what you are
+            looking at among the things you can do to it, and left a long label no
+            room. On its own line it is read before the page it switches, in the
+            direction the page is read from — and above the filters, because
+            choosing a view and narrowing it are different questions. */}
+        <div className="hidden w-fit gap-1 rounded-lg bg-muted p-1 sm:flex">
+          {(
+            [
+              { key: 'calendar', icon: CalendarDays, label: t('viewCalendar') },
+              { key: 'list', icon: List, label: t('viewList') },
+              { key: 'planning', icon: ChartNoAxesGantt, label: t('viewPlanning') },
+            ] as const
+          ).map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`flex h-6 items-center gap-1.5 px-2.5 rounded-md text-sm font-medium transition-colors ${
+                view === key
+                  ? 'bg-background shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
 
-      {/* Filters — ONE control group, read left to right as <who> | <what>.
-          Both chips carry a caret and open checkboxes: same shape, same
-          gesture, and the label on each names its current state rather than a
-          static noun. Nothing here switches the view.
+        {/* Filters — ONE control group, read left to right as <who> | <what>.
+            Both chips carry a caret and open checkboxes: same shape, same
+            gesture, and the label on each names its current state rather than a
+            static noun. Nothing here switches the view.
 
-          HIDDEN IN PLANNING, because neither chip can do anything there but
-          subtract: the events layer would empty the view entirely and the coach
-          filter blanks `scopedEvents` although an event has no coach to be
-          scoped by. A control that is visible and inert is worse than one that
-          is absent — it invites the reader to blame it for what they cannot
-          see. */}
-      <div
-        className={`flex flex-wrap items-center gap-x-1 gap-y-2 ${
-          view === 'planning' ? 'hidden' : ''
-        }`}
-      >
-        {/* WHO — first, because it scopes everything to its right. */}
-        {coachRoster.length > 1 && (
-          <>
-            <CoachFilterMenu
-              coaches={coachRoster}
-              selected={coachIds}
-              onChange={setCoachIds}
-              currentUserId={user?.uid ?? null}
-            />
-            <span aria-hidden className="mx-1 h-4 w-px self-center bg-border" />
-          </>
+            HIDDEN IN PLANNING, because neither chip can do anything there but
+            subtract: the events layer would empty the view entirely and the coach
+            filter blanks `scopedEvents` although an event has no coach to be
+            scoped by. A control that is visible and inert is worse than one that
+            is absent — it invites the reader to blame it for what they cannot
+            see. */}
+        <div
+          className={`flex flex-wrap items-center gap-x-1 gap-y-2 ${
+            view === 'planning' ? 'hidden' : ''
+          }`}
+        >
+          {/* WHO — first, because it scopes everything to its right. */}
+          {coachRoster.length > 1 && (
+            <>
+              <CoachFilterMenu
+                coaches={coachRoster}
+                selected={coachIds}
+                onChange={setCoachIds}
+                currentUserId={user?.uid ?? null}
+              />
+              <span aria-hidden className="mx-1 h-4 w-px self-center bg-border" />
+            </>
+          )}
+
+          {/* WHAT — four CALENDARS, ticked on and off independently, plus
+              show-all and reset-to-default. See VisibleCalendarsMenu. */}
+          <VisibleCalendarsMenu
+            calendars={calendars}
+            calendarView={view === 'calendar'}
+            onCalendarHidden={(calendar) => {
+              // The activity picker narrows classes; with classes hidden it
+              // narrows nothing and would silently survive the calendar coming
+              // back.
+              if (calendar === 'classes') setActivityFilter(null)
+            }}
+          />
+        </div>
+        {/* NAME THE CLOCK WHEN IT IS NOT THE READER'S — as a chip, not a line
+            (Franco, 2026-09-25). Times here are printed in one zone, and when
+            it is not the browser's the numbers are right and still look wrong.
+            It used to be a full sentence under the page title, a line spent on
+            something a studio reads once; now it is the zone's name at the end
+            of this row, and the sentence and the Change link open from it.
+            The WEEK view runs on the device's clock (see THE CALENDAR'S CLOCK
+            in SessionsCalendar), the list on the studio's, so it names the
+            clock of the view on screen. Same zone on both sides ⇒ no chip. */}
+        {fmt.timeZone !== deviceTimeZone() && (
+          <Popover>
+            <PopoverTrigger
+              openOnHover
+              delay={150}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              {view === 'calendar' ? deviceTimeZone() : fmt.timeZone}
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 text-xs leading-relaxed text-muted-foreground">
+              <p>
+                {view === 'calendar'
+                  ? t('timezoneNoticeDevice', { zone: deviceTimeZone(), studioZone: fmt.timeZone })
+                  : t('timezoneNotice', { zone: fmt.timeZone })}{' '}
+                <Link
+                  href={'/settings/team?tab=general' as Route}
+                  className="underline hover:text-foreground"
+                >
+                  {t('timezoneChange')}
+                </Link>
+              </p>
+            </PopoverContent>
+          </Popover>
         )}
-
-        {/* WHAT — four CALENDARS, ticked on and off independently, plus
-            show-all and reset-to-default. See VisibleCalendarsMenu. */}
-        <VisibleCalendarsMenu
-          calendars={calendars}
-          calendarView={view === 'calendar'}
-          onCalendarHidden={(calendar) => {
-            // The activity picker narrows classes; with classes hidden it
-            // narrows nothing and would silently survive the calendar coming
-            // back.
-            if (calendar === 'classes') setActivityFilter(null)
-          }}
-        />
       </div>
-
       {/* Hidden-calendars notice — an empty grid must never read as "you have
           nothing scheduled" when the truth is "you switched it off". Only
           raised for calendars that would actually have drawn something (see
@@ -1614,22 +1665,7 @@ export default function CalendarPage() {
               <Plus className="h-6 w-6" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="top">
-              <DropdownMenuItem onClick={() => setSessionDialog({ open: true, editing: null })}>
-                <CalendarDays className="h-4 w-4 mr-2" />
-                {t('newSession')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setAppointmentFormOpen(true)}>
-                <User className="h-4 w-4 mr-2" />
-                {t('newAppointment')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setEventDialog({ open: true, editing: null })}>
-                <CalendarRange className="h-4 w-4 mr-2" />
-                {t('newEvent')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setNewAvailabilityOpen(true)}>
-                <CalendarClock className="h-4 w-4 mr-2" />
-                {t('newAvailability')}
-              </DropdownMenuItem>
+              {newEntryItems}
             </DropdownMenuContent>
           </DropdownMenu>
         </FloatingSlot>
