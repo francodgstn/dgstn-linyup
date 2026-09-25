@@ -7,10 +7,10 @@
 // the whole shape (docs/scalability-2026-09.md §9).
 //
 // THEY ARE SEPARATE HANDLERS AND NOT ONE GENERIC WORKER, deliberately. Firebase
-// creates one Cloud Tasks queue per handler name, so four handlers means four
-// queues: the hourly reminder flood cannot sit behind Monday's weekly reports,
+// creates one Cloud Tasks queue per handler name, so each job gets its own
+// queue: the hourly reminder flood cannot sit behind Monday's weekly reports,
 // and each job gets retry and concurrency settings that suit its own work
-// rather than the worst of the four.
+// rather than the worst of them.
 //
 // ── WHAT THROWS AND WHAT RETURNS ────────────────────────────────────────────
 //
@@ -27,6 +27,7 @@ import { onTaskDispatched } from 'firebase-functions/v2/tasks'
 import type { TenantTaskPayload } from '../utils/tenantFanOut'
 import { sendBookingRemindersForTeam } from './sendBookingReminders'
 import { markNoShowBookingsForTeam } from './markNoShowBookings'
+import { refreshHeldPlansForTeam } from './refreshHeldPlans'
 import { runScheduledRulesForTeam } from './runScheduledRules'
 import { weeklyReportsForTeam } from '../analytics'
 import { monthlyFinanceReportsForTeam } from '../finance/monthlyReports'
@@ -44,7 +45,7 @@ function teamOf(data: TenantTaskPayload | undefined, label: string): string | nu
 /**
  * Booking reminders for ONE tenant.
  *
- * The busiest of the four — it fires every hour — so it gets the widest
+ * The busiest of them — it fires every hour — so it gets the widest
  * concurrency. Sending is idempotent per step through the booking's
  * `reminders_sent` markers, which is what makes at-least-once delivery safe
  * here: a retried task re-reads the markers and sends nothing twice.
@@ -79,6 +80,24 @@ export const noShowsForTeam = onTaskDispatched<TenantTaskPayload>(
     const stats = await markNoShowBookingsForTeam(teamId)
     if (stats.updated > 0 || stats.errors > 0) {
       console.log(`[noShowsForTeam] ${teamId}:`, stats)
+    }
+  }
+)
+
+/** Plan lists due for a recompute, for ONE tenant (dailyTasks/refreshHeldPlans.ts).
+ *  The recompute moves the due mark past today, so a redelivery finds nothing. */
+export const heldPlansForTeam = onTaskDispatched<TenantTaskPayload>(
+  {
+    timeoutSeconds: 300,
+    retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
+    rateLimits: { maxConcurrentDispatches: 10 },
+  },
+  async (req) => {
+    const teamId = teamOf(req.data, 'heldPlansForTeam')
+    if (!teamId) return
+    const stats = await refreshHeldPlansForTeam(teamId)
+    if (stats.changed > 0 || stats.errors > 0) {
+      console.log(`[heldPlansForTeam] ${teamId}:`, stats)
     }
   }
 )

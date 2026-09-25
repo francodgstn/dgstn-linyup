@@ -7,9 +7,10 @@ order: 7
 ---
 # Multi-plan holdings
 
-Status: **phases 0–2 and 3a built** — the guard, the store and mirror, the
-writers, and coverage and pricing reading the plan list; the other readers, the UI
-and the slot's removal follow. Option B, chosen by Franco on 2026-09-13 over the
+Status: **phases 0–2, 3a, 3b and 4 built** — the guard, the store and mirror,
+the writers, coverage and pricing, the security rules and the UI reading the
+plan list; the public session (3c), the remaining server readers (3d) and the
+slot's removal (5) follow. Option B, chosen by Franco on 2026-09-13 over the
 minimal option (stop Stripe events writing the single plan slot). All four
 decisions settled the same day — see §7.
 
@@ -306,6 +307,13 @@ Each phase is its own PR and leaves `main` shippable.
    - **3b. Rules.** Course read and course media use
      `held_plan_type_ids.hasAny(...)`; the daily expiry refresh job; the course
      checkout workaround goes; recurring Stripe events stop writing the slot.
+     **Built (2026-09-25):** `callerHeldPlanTypeIds()` in `firestore.rules` and
+     `storage.rules`; the daily `refreshHeldPlans` job
+     (`dailyTasks/refreshHeldPlans.ts`, one `heldPlansForTeam` task per tenant,
+     indexed on `teamId` + `held_plans_next_change_at_ms`); the course checkout
+     refuses an entitled buyer when the covering type is on the mirror, not
+     only the slot. Recurring Stripe events stop writing the slot with the rest
+     of the writers, in phase 5.
    - **3c. Public.** The contact session carries the held list; shop, booking
      form, checkout claim and the Space membership card read it.
    - **3d. The rest.** Automations and contact-write events, analytics and

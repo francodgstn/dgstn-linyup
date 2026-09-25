@@ -20,11 +20,14 @@
 // map key order, and a naive JSON compare would rewrite an unchanged mirror on
 // every event.
 //
-// ── WHAT IS NOT HERE YET ────────────────────────────────────────────────────
-// Nothing reads the mirror before phase 3, and the daily refresh that
-// recomputes contacts whose `held_plans_next_change_at_ms` has passed is phase
-// 3 too. The import backfill (scripts/backfill-plan-grants.ts) calls this same
-// function, so there is never a second writer.
+// ── WHEN A DATE SIMPLY PASSES ───────────────────────────────────────────────
+// A grant ending or starting, or a credit pack expiring, is not a write, so no
+// trigger here fires. The daily `refreshHeldPlans` job
+// (dailyTasks/refreshHeldPlans.ts) recomputes every contact whose
+// `held_plans_next_change_at_ms` has passed — which matters to the security
+// rules, the one reader that cannot compare dates per list element. The import
+// backfill (scripts/backfill-plan-grants.ts) calls this same function, so there
+// is never a second writer.
 
 import * as admin from 'firebase-admin'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'

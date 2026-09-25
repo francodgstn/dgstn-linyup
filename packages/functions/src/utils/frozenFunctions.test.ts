@@ -76,6 +76,7 @@ const FROZEN: { holder: string; names: string[] }[] = [
     names: [
       'executeDelayedRule',
       'financeReportForTeam',
+      'heldPlansForTeam',
       'noShowsForTeam',
       'refreshTeamSentimentRound',
       'remindersForTeam',

@@ -421,26 +421,13 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/contacts/$(request.auth.token.contactId)).data;
     }
 
-    // Is the contact's flat plan grant still in force? The rules twin of
-    // `planGrantIsCurrent` (@linyup/shared) — a one-time price with
-    // `included_months` stamps an end date, and access must stop at it HERE too,
-    // or a member whose two months ran out could still open the course the gate
-    // and the checkout both refuse her.
-    //
-    // The `== null` guard is not decoration: the field is written EXPLICITLY as
-    // null for every grant with no end of its own, so a `get(…, default)`
-    // fallback would return that stored null and compare it to a timestamp.
-    function planGrantCurrent(d) {
-      return d.get('subscription_expires_at', null) == null
-             || d.subscription_expires_at > request.time;
-    }
-
-    // The calling contact's active subscription type id, or '' once the grant
-    // that carried it has lapsed. Only evaluated for the gated course tiers.
-    function callerContactSubscriptionTypeId() {
-      return planGrantCurrent(callerContactData())
-             ? callerContactData().get('subscription_type_id', '')
-             : '';
+    // The plan types the calling contact holds: the flat mirror of its plan list
+    // (docs/multi-plan-holdings.md). Rules cannot compare a list element's dates,
+    // so this is only as fresh as the last recompute — every store write, plus the
+    // daily refreshHeldPlans job for a date that simply passes (decision D1).
+    // Only evaluated for the gated course tiers.
+    function callerHeldPlanTypeIds() {
+      return callerContactData().get('held_plan_type_ids', []);
     }
 
     // Whether the calling contact session owns a lifetime purchase of a course.
@@ -451,22 +438,22 @@ service cloud.firestore {
     }
 
     // Whether a course's benefit grants the calling contact INCLUDED access:
-    // Course.benefit {effect:'included', subscriptionTypeIds} held via the
-    // contact's primary subscription type. Mirrors the resolver's covered
+    // Course.benefit {effect:'included', subscriptionTypeIds} held through any
+    // plan on the contact's plan list. Mirrors the resolver's covered
     // decision (checkout refuses the sale for exactly these holders, so the
     // rules MUST grant the read or they could neither pay nor watch). The
     // `is map` guard matters: benefit may be absent OR stored as null.
     function courseBenefitIncludesCaller(c) {
       return c.get('benefit', null) is map
              && c.benefit.get('effect', '') == 'included'
-             && c.benefit.get('subscriptionTypeIds', []).hasAny([callerContactSubscriptionTypeId()]);
+             && c.benefit.get('subscriptionTypeIds', []).hasAny(callerHeldPlanTypeIds());
     }
 
     // Whether the public web (anonymous or a contact session) may read a course doc.
     //  - free         → anyone
     //  - registered   → any signed-in contact of the owning team
-    //  - subscription → signed-in contact whose subscription_type_id is allowed
-    //  - purchase     → signed-in contact who bought it, OR whose subscription_type_id
+    //  - subscription → signed-in contact holding an allowed plan
+    //  - purchase     → signed-in contact who bought it, OR holding a plan that
     //                   is in the (optional) "included free" list or the course's
     //                   included-for-subscribers benefit
     function canReadPublishedCourse(courseId, c) {
@@ -474,10 +461,10 @@ service cloud.firestore {
            c.accessRule.type == 'free'
         || (c.accessRule.type == 'registered' && isContactOfTeam(c.teamId))
         || (c.accessRule.type == 'subscription' && isContactOfTeam(c.teamId)
-            && c.accessRule.subscriptionTypeIds.hasAny([callerContactSubscriptionTypeId()]))
+            && c.accessRule.subscriptionTypeIds.hasAny(callerHeldPlanTypeIds()))
         || (c.accessRule.type == 'purchase' && isContactOfTeam(c.teamId)
             && (hasPurchasedCourse(courseId)
-                || c.accessRule.get('subscriptionTypeIds', []).hasAny([callerContactSubscriptionTypeId()])
+                || c.accessRule.get('subscriptionTypeIds', []).hasAny(callerHeldPlanTypeIds())
                 || courseBenefitIncludesCaller(c)))
       );
     }
