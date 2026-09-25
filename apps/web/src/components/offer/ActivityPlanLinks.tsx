@@ -71,6 +71,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { SectionHeading } from '@/components/layout/SectionHeading'
 import { Tip } from '@/components/ui/tip'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
+import { toast } from 'sonner'
 
 const DEFAULT_ACCENT = '#6366f1'
 
@@ -322,6 +324,7 @@ export function ActivityPlanLinks({
 }) {
   const t = useTranslations('OfferCatalogue')
   const tb = useTranslations('Benefit')
+  const tCommon = useTranslations('Common')
   const qc = useQueryClient()
   // A class following the studio's default drop-in stores no price, so both
   // "is there a price for a member rate to reduce?" and the edge writer's
@@ -452,6 +455,34 @@ export function ActivityPlanLinks({
       return d.edge.rate ? rateError(d.rate) : null
     })
     .filter(Boolean)
+
+  // A STANDALONE editor (a course pane, where nothing else hosts it) saves
+  // from the page's floating bar when there is one. A hosted editor hands its
+  // save to the host through `saveHandle` instead, so it never registers.
+  const { inSaveBar } = useSaveBarSection('plan-links', {
+    dirty: !saveHandle && canEdit && dirty,
+    valid: !saveBlocked,
+    save: async () => {
+      // Rate errors are refused by `save` itself, which then shows them on
+      // their rows; the bar stays up rather than claiming a save.
+      if (errors.length) {
+        setShowErrors(true)
+        return false
+      }
+      try {
+        await save()
+        return true
+      } catch (err) {
+        console.error('[offer] plan table save failed:', err)
+        toast.error(tCommon('saveFailed'))
+        return false
+      }
+    },
+    reset: () => {
+      setDrafts({})
+      setShowErrors(false)
+    },
+  })
 
   async function save() {
     if (errors.length || saveBlocked) {
@@ -1145,7 +1176,10 @@ export function ActivityPlanLinks({
         </div>
       )}
 
-      {canEdit && !saveHandle && (
+      {canEdit && !saveHandle && inSaveBar && saveBlocked && (
+        <p className="border-t pt-3 text-right text-xs text-destructive">{saveBlocked}</p>
+      )}
+      {canEdit && !saveHandle && !inSaveBar && (
         <div className="flex items-center justify-end gap-3 border-t pt-3">
           {saveBlocked ? (
             <span className="text-xs text-destructive">{saveBlocked}</span>

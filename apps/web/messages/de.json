@@ -30,7 +30,8 @@
     "close": "Schliessen",
     "unsavedChanges": "Ungespeicherte Änderungen",
     "unsavedChangesInvalid": "Markierte Felder korrigieren, um zu speichern",
-    "discard": "Verwerfen"
+    "discard": "Verwerfen",
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut."
   },
   "Plans": {
     "free": "Free",

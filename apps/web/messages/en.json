@@ -30,7 +30,8 @@
     "close": "Close",
     "unsavedChanges": "Unsaved changes",
     "unsavedChangesInvalid": "Fix the highlighted fields to save",
-    "discard": "Discard"
+    "discard": "Discard",
+    "saveFailed": "Couldn't save. Please try again."
   },
   "Plans": {
     "free": "Free",

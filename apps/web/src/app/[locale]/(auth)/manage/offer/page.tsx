@@ -1907,7 +1907,11 @@ export default function CataloguePage() {
             </SaveBarProvider>
           )}
 
+          {/* The course panes hold one editor, the plan table, which saves
+              from the same floating bar as the activity and plan panes. The
+              product pane has nothing to save: it is facts plus actions. */}
           {selectedCourse && (
+            <SaveBarProvider key={selectedCourse.id} disabled={!canEdit}>
             <PaneBody
               key={selectedCourse.id}
               title={selectedCourse.title}
@@ -1940,9 +1944,11 @@ export default function CataloguePage() {
                 canEdit={canEdit}
               />
             </PaneBody>
+            </SaveBarProvider>
           )}
 
           {selectedCourseBlock && (
+            <SaveBarProvider key={selectedCourseBlock.id} disabled={!canEdit}>
             <PaneBody
               key={selectedCourseBlock.id}
               title={selectedCourseBlock.name}
@@ -1982,6 +1988,7 @@ export default function CataloguePage() {
                 />
               )}
             </PaneBody>
+            </SaveBarProvider>
           )}
 
           {selectedProduct && (

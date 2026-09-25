@@ -30,7 +30,8 @@
     "close": "Fermer",
     "unsavedChanges": "Modifications non enregistrées",
     "unsavedChangesInvalid": "Corrigez les champs signalés pour enregistrer",
-    "discard": "Ignorer"
+    "discard": "Ignorer",
+    "saveFailed": "Impossible d'enregistrer. Veuillez réessayer."
   },
   "Plans": {
     "free": "Free",

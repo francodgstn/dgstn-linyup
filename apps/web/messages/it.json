@@ -30,7 +30,8 @@
     "close": "Chiudi",
     "unsavedChanges": "Modifiche non salvate",
     "unsavedChangesInvalid": "Correggi i campi evidenziati per salvare",
-    "discard": "Scarta"
+    "discard": "Scarta",
+    "saveFailed": "Impossibile salvare. Riprova."
   },
   "Plans": {
     "free": "Free",
