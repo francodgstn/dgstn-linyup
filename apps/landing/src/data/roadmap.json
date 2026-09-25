@@ -104,29 +104,6 @@
         }
       },
       {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLo",
-        "area": null,
-        "en": {
-          "title": "Multi-location organisations",
-          "body": "Run several studios under one organisation with a shared website and shared content."
-        },
-        "de": {
-          "title": "Organisationen mit mehreren Standorten",
-          "body": "Führe mehrere Studios unter einer Organisation, mit gemeinsamer Website und gemeinsamen Inhalten.",
-          "srcHash": "99c21dc1596f"
-        },
-        "fr": {
-          "title": "Organisations multi-sites",
-          "body": "Gérez plusieurs studios au sein d'une même organisation, avec un site web et des contenus partagés.",
-          "srcHash": "99c21dc1596f"
-        },
-        "it": {
-          "title": "Organizzazioni con più sedi",
-          "body": "Gestisci più studi in un'unica organizzazione, con un sito web e contenuti condivisi.",
-          "srcHash": "99c21dc1596f"
-        }
-      },
-      {
         "id": "DI_lAHOADowus4Bj7lNzgLJQLA",
         "area": {
           "key": "members",
@@ -150,32 +127,6 @@
           "title": "WhatsApp per il tuo studio",
           "body": "Raggiungi i tuoi membri su WhatsApp con promemoria e aggiornamenti, con il loro consenso.",
           "srcHash": "ac79dfebcbc3"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLMacI",
-        "area": {
-          "key": "booking-and-schedule",
-          "label": "Booking & schedule"
-        },
-        "en": {
-          "title": "Sell a course as one booking",
-          "body": "A course is a fixed set of lessons with a start and an end, like a beginner block or a term. Members enrol once and keep their place in every lesson, and the studio sells the places rather than each session."
-        },
-        "de": {
-          "title": "Einen Kurs als eine Buchung verkaufen",
-          "body": "Ein Kurs ist eine feste Reihe von Lektionen mit Anfang und Ende, etwa ein Anfängerkurs oder ein Semester. Mitglieder melden sich einmal an und behalten ihren Platz in jeder Lektion, und du verkaufst die Plätze statt jeder einzelnen Lektion.",
-          "srcHash": "e0d56d1aedda"
-        },
-        "fr": {
-          "title": "Vendre un cours en une seule réservation",
-          "body": "Un cours est une série fixe de séances avec un début et une fin, comme un cycle débutant ou un trimestre. Les membres s'inscrivent une fois et gardent leur place à chaque séance, et vous vendez les places plutôt que chaque séance.",
-          "srcHash": "e0d56d1aedda"
-        },
-        "it": {
-          "title": "Vendi un corso con una sola prenotazione",
-          "body": "Un corso è una serie fissa di lezioni con un inizio e una fine, come un ciclo per principianti o un semestre. I membri si iscrivono una volta e mantengono il posto in ogni lezione, e tu vendi i posti invece delle singole lezioni.",
-          "srcHash": "e0d56d1aedda"
         }
       }
     ],
@@ -234,6 +185,55 @@
       }
     ],
     "landed": [
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLMacI",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "Sell a course as one booking",
+          "body": "A course is a fixed set of lessons with a start and an end, like a beginner block or a term. Members enrol once and keep their place in every lesson, and the studio sells the places rather than each session."
+        },
+        "de": {
+          "title": "Einen Kurs als eine Buchung verkaufen",
+          "body": "Ein Kurs ist eine feste Reihe von Lektionen mit Anfang und Ende, etwa ein Anfängerkurs oder ein Semester. Mitglieder melden sich einmal an und behalten ihren Platz in jeder Lektion, und du verkaufst die Plätze statt jeder einzelnen Lektion.",
+          "srcHash": "e0d56d1aedda"
+        },
+        "fr": {
+          "title": "Vendre un cours en une seule réservation",
+          "body": "Un cours est une série fixe de séances avec un début et une fin, comme un cycle débutant ou un trimestre. Les membres s'inscrivent une fois et gardent leur place à chaque séance, et vous vendez les places plutôt que chaque séance.",
+          "srcHash": "e0d56d1aedda"
+        },
+        "it": {
+          "title": "Vendi un corso con una sola prenotazione",
+          "body": "Un corso è una serie fissa di lezioni con un inizio e una fine, come un ciclo per principianti o un semestre. I membri si iscrivono una volta e mantengono il posto in ogni lezione, e tu vendi i posti invece delle singole lezioni.",
+          "srcHash": "e0d56d1aedda"
+        }
+      },
+      {
+        "id": "DI_lAHOADowus4Bj7lNzgLJQLo",
+        "area": null,
+        "en": {
+          "title": "Multi-location organisations",
+          "body": "Run several studios under one organisation with a shared website and shared content."
+        },
+        "de": {
+          "title": "Organisationen mit mehreren Standorten",
+          "body": "Führe mehrere Studios unter einer Organisation, mit gemeinsamer Website und gemeinsamen Inhalten.",
+          "srcHash": "99c21dc1596f"
+        },
+        "fr": {
+          "title": "Organisations multi-sites",
+          "body": "Gérez plusieurs studios au sein d'une même organisation, avec un site web et des contenus partagés.",
+          "srcHash": "99c21dc1596f"
+        },
+        "it": {
+          "title": "Organizzazioni con più sedi",
+          "body": "Gestisci più studi in un'unica organizzazione, con un sito web e contenuti condivisi.",
+          "srcHash": "99c21dc1596f"
+        }
+      },
       {
         "id": "DI_lAHOADowus4Bj7lNzgLJQLQ",
         "area": {
@@ -331,60 +331,61 @@
           "body": "Guide passo passo per configurare e gestire il tuo studio, su help.linyup.com.",
           "srcHash": "7187608a91a9"
         }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
-        "area": {
-          "key": "booking-and-schedule",
-          "label": "Booking & schedule"
-        },
-        "en": {
-          "title": "Events programme",
-          "body": "Create multi-day programme for your events. Save and reuse them as templates."
-        },
-        "de": {
-          "title": "Programm für Events",
-          "body": "Erstelle ein mehrtägiges Programm für deine Events. Speichere es als Vorlage und verwende es wieder.",
-          "srcHash": "93b8c404475d"
-        },
-        "fr": {
-          "title": "Programme d'événement",
-          "body": "Créez un programme sur plusieurs jours pour vos événements. Enregistrez-le comme modèle et réutilisez-le.",
-          "srcHash": "93b8c404475d"
-        },
-        "it": {
-          "title": "Programma degli eventi",
-          "body": "Crea un programma di più giorni per i tuoi eventi. Salvalo come modello e riutilizzalo.",
-          "srcHash": "93b8c404475d"
-        }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
-        "area": {
-          "key": "members",
-          "label": "Members"
-        },
-        "en": {
-          "title": "AI summaries of your members",
-          "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
-        },
-        "de": {
-          "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
-          "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
-          "srcHash": "5d1578dd63ee"
-        },
-        "fr": {
-          "title": "Résumés IA de vos membres",
-          "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
-          "srcHash": "5d1578dd63ee"
-        },
-        "it": {
-          "title": "Riepiloghi IA dei tuoi membri",
-          "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
-          "srcHash": "5d1578dd63ee"
-        }
       }
     ]
   },
-  "landedArchive": []
+  "landedArchive": [
+    {
+      "id": "DI_lAHOADowus4Bj7lNzgLJdUs",
+      "area": {
+        "key": "booking-and-schedule",
+        "label": "Booking & schedule"
+      },
+      "en": {
+        "title": "Events programme",
+        "body": "Create multi-day programme for your events. Save and reuse them as templates."
+      },
+      "de": {
+        "title": "Programm für Events",
+        "body": "Erstelle ein mehrtägiges Programm für deine Events. Speichere es als Vorlage und verwende es wieder.",
+        "srcHash": "93b8c404475d"
+      },
+      "fr": {
+        "title": "Programme d'événement",
+        "body": "Créez un programme sur plusieurs jours pour vos événements. Enregistrez-le comme modèle et réutilisez-le.",
+        "srcHash": "93b8c404475d"
+      },
+      "it": {
+        "title": "Programma degli eventi",
+        "body": "Crea un programma di più giorni per i tuoi eventi. Salvalo come modello e riutilizzalo.",
+        "srcHash": "93b8c404475d"
+      }
+    },
+    {
+      "id": "DI_lAHOADowus4Bj7lNzgLJQLU",
+      "area": {
+        "key": "members",
+        "label": "Members"
+      },
+      "en": {
+        "title": "AI summaries of your members",
+        "body": "A short briefing on each member's attendance and trends, and a pulse on your studio as a whole."
+      },
+      "de": {
+        "title": "KI-Zusammenfassungen zu deinen Mitgliedern",
+        "body": "Eine kurze Übersicht zu Anwesenheit und Trends jedes Mitglieds – und ein Stimmungsbild deines ganzen Studios.",
+        "srcHash": "5d1578dd63ee"
+      },
+      "fr": {
+        "title": "Résumés IA de vos membres",
+        "body": "Un bref aperçu de la fréquentation et des tendances de chaque membre, et le pouls de votre studio dans son ensemble.",
+        "srcHash": "5d1578dd63ee"
+      },
+      "it": {
+        "title": "Riepiloghi IA dei tuoi membri",
+        "body": "Un breve quadro della frequenza e delle tendenze di ogni membro, e il polso del tuo studio nel suo insieme.",
+        "srcHash": "5d1578dd63ee"
+      }
+    }
+  ]
 }
