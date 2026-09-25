@@ -340,7 +340,11 @@ Each phase is its own PR and leaves `main` shippable.
      plan held at export time — name, how it is held, a non-normal status, the
      credits left, the end date — and replaces the slot's `subscription_type`,
      `subscription_status` and `subscription_amount` columns.
-     Still to do: the mobile profile.
+   - **Built (2026-09-25): the mobile profile** (`resolveHeldPlanSummary`,
+     `apps/mobile/src/utils/profileUtils.ts`). The plan row on the member's
+     profile reads `heldMemberships`: the one plan's name and recurrence, or the
+     first name with `+N` when there are more. The legacy slot and
+     `active_subscriptions` are no longer read there. Phase 4 is done.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the
    Contact type, the rules and every remaining reader; the census test's
    allow-list ends empty. No adoption wait — nothing is live.
