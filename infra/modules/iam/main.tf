@@ -53,15 +53,15 @@ resource "google_service_account_iam_member" "deploy_acts_as_runtime" {
 # ── Dedicated admin console (App Hosting) runtime SA ──────────────────────────
 # The operator console (apps/admin) runs on its own App Hosting backend and needs
 # MORE than the shared default firebase-app-hosting-compute SA used by apps/web:
-# Firestore WRITE (Settings page) + write access to the smtp-password secret
-# (granted in the secrets module). A dedicated SA keeps those elevated grants off
+# Firestore WRITE (Settings page) + write access to the provider secrets its
+# Settings pages manage (granted in the secrets module). A dedicated SA keeps those elevated grants off
 # the customer web app's identity. Point the admin backend at this SA — see the
 # "Operator console" section in infra/README.md.
 resource "google_service_account" "admin_runtime" {
   project      = var.project_id
   account_id   = "linyup-admin"
   display_name = "Linyup Admin Console Runtime"
-  description  = "Runtime identity for the apps/admin App Hosting backend. Reads accounts/metrics, writes app_settings, sets the global SMTP password."
+  description  = "Runtime identity for the apps/admin App Hosting backend. Reads accounts/metrics, writes app_settings, sets provider API keys."
 }
 
 resource "google_project_iam_member" "admin_runtime_roles" {

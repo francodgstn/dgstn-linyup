@@ -3,8 +3,8 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
 
 // Whether we're pointed at the Firebase emulators (local dev). Secret Manager
 // has no emulator, so writing a secret locally is a no-op — the Functions
-// emulator reads SMTP_PASSWORD from packages/functions/.env.local instead
-// (see packages/functions/src/utils/secrets.ts).
+// emulator reads each secret from packages/functions/.env.local instead, as its
+// env name (brevo-api-key → BREVO_API_KEY; see packages/functions/src/utils/secrets.ts).
 export const useEmulators =
   process.env.USE_FIREBASE_EMULATORS === 'true' ||
   !!process.env.FIRESTORE_EMULATOR_HOST
