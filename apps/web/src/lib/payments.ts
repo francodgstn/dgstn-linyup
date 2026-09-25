@@ -4,7 +4,7 @@
 // them the same — amount, status, contact assignment, and the "what was paid"
 // label (linked line item → explicit comment → derived gateway default).
 
-import type { MemberPayment, ExternalPayment, PaymentLineItem } from '@linyup/shared'
+import type { MemberPayment, ExternalPayment, PaymentLineItem, HeldPlan } from '@linyup/shared'
 
 export type PaymentSource = 'connect' | 'byo'
 
@@ -65,9 +65,9 @@ export interface UnifiedPaymentRow {
    *  `null` when it does not. Read for the contact ledger's "what did they pay
    *  for" column.
    *
-   *  THIS IS A PLAN **TYPE**, NEVER A SUBSCRIPTION INSTANCE. Nothing in the
-   *  system writes a subscription id onto a payment row, so "this was the March
-   *  invoice of sub_1ABC" is not answerable here and must not be implied.
+   *  THIS IS A PLAN **TYPE**, NEVER A SUBSCRIPTION INSTANCE. Which subscription
+   *  a charge paid is `subscriptionId` below, and only where the row recorded
+   *  it; this field must never be used to imply one.
    *
    *  A null is a FACT, not a gap to fill: it must never be resolved by inferring
    *  from an overlapping plan span, from the contact's current plan, or from
@@ -82,6 +82,11 @@ export interface UnifiedPaymentRow {
    *  'legacy_field' — a BYO row's top-level `subscription_type_id` (pre-line-item)
    *  'none'         — the row does not record a plan */
   planAttribution: 'line_item' | 'legacy_field' | 'none'
+  /** Connect only: WHICH Stripe subscription this charge paid
+   *  (`MemberPayment.subscriptionId`, stamped on the first charge by checkout
+   *  and on every renewal by handleInvoice). Null on rows written before it
+   *  existed and on every non-subscription charge. */
+  subscriptionId: string | null
   // Connect-only management affordances:
   refundable: boolean
   disputed: boolean
@@ -228,6 +233,7 @@ export function connectToUnified(payments: MemberPayment[]): UnifiedPaymentRow[]
     // The Connect rail has no legacy top-level carrier — the plan id has always
     // lived in the line item here.
     ...resolvePlanAttribution(p.line_item),
+    subscriptionId: p.subscriptionId ?? null,
     refundable: p.status === 'succeeded' || p.status === 'partially_refunded',
     disputed: !!p.dispute_status,
     amountRefunded: p.amount_refunded ?? 0,
@@ -272,11 +278,41 @@ export function byoToUnified(events: Array<ExternalPayment & { id: string }>): U
       createdAt: (e.processed_at as unknown as { toDate?: () => Date }) ?? null,
       feeAmount: 0, // BYO has no platform fee — money never touches Linyup
       ...resolvePlanAttribution(e.line_item, e.subscription_type_id),
+      subscriptionId: null,
       refundable: false, // BYO is record-only — refunds happen in the studio's own gateway
       disputed: false,
       amountRefunded: 0,
     }
   })
+}
+
+/**
+ * WHICH PLAN CARD A PAYMENT PAID FOR, among the plans the contact holds now
+ * (docs/multi-plan-holdings.md §5). Exact where the data records it:
+ *
+ *   - a Stripe charge that recorded its subscription → that subscription's card;
+ *   - a payment that CREATED a grant → that grant's card (a payment's grant is
+ *     keyed by the payment id, see functions/contacts/planGrants.ts).
+ *
+ * Otherwise, and only for a row that records its plan TYPE, the one held card
+ * of that type — `exact: false`, so the UI can say it matched by type. Two
+ * cards of one type is ambiguous and gets no link; so does a row that recorded
+ * a subscription the contact no longer holds. Never a guess from dates or from
+ * what they hold now: see `planTypeId`.
+ */
+export function planCardForPayment(
+  row: Pick<UnifiedPaymentRow, 'paymentId' | 'subscriptionId' | 'planTypeId'>,
+  plans: ReadonlyArray<HeldPlan>
+): { plan: HeldPlan; exact: boolean } | null {
+  if (row.subscriptionId) {
+    const sub = plans.find((p) => p.source === 'stripe' && p.ref === row.subscriptionId)
+    return sub ? { plan: sub, exact: true } : null
+  }
+  const grant = plans.find((p) => p.source === 'grant' && p.ref === row.paymentId)
+  if (grant) return { plan: grant, exact: true }
+  if (!row.planTypeId) return null
+  const sameType = plans.filter((p) => p.subscription_type_id === row.planTypeId)
+  return sameType.length === 1 ? { plan: sameType[0], exact: false } : null
 }
 
 /** Merge + sort newest-first across both rails. */

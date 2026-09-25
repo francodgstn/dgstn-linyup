@@ -12,7 +12,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { CreditCard, FileText, HeartPulse, Plus } from 'lucide-react'
-import type { Contact } from '@linyup/shared'
+import { currentHeldPlans, type Contact } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContactPayments } from '@/hooks/useConnect'
 import {
@@ -20,6 +20,7 @@ import {
   byoToUnified,
   mergePaymentRows,
   formatMoneyMinor,
+  planCardForPayment,
   type UnifiedPaymentRow,
 } from '@/lib/payments'
 import {
@@ -36,7 +37,8 @@ import { useStripeReceiptAction } from '@/components/payments/useStripeReceiptAc
 import { CreateInvoiceDialog } from '@/plugins/qr-invoices/CreateInvoiceDialog'
 import { InvoiceActions, InvoiceStatusBadge } from '@/plugins/qr-invoices/InvoiceActions'
 import { useContactInvoices } from '@/plugins/qr-invoices/hooks'
-import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
+import { CreateReceiptFromPaymentDialog } from '@/plugins/tarif-595/CreateReceiptFromPaymentDialog'
+
 import { canReceiptPayment } from '@/plugins/tarif-595/hooks'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -47,12 +49,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 export function PaymentsTab({
   contact,
   teamId,
+  onOpenPlan,
 }: {
   contact: Contact & { id: string }
   teamId: string | null | undefined
+  /** Open the plan card a payment paid for (the Current segment). */
+  onOpenPlan?: (planRef: string) => void
 }) {
   const t = useTranslations('PaymentsDashboard')
-  const tInvoices = useTranslations('QrInvoices')
+  const tInvoices = useTranslations('QrInvoices')
+
   const tT = useTranslations('Tarif595')
   const tid = teamId ?? null
   const { teamRole } = useAuth()
@@ -99,6 +105,17 @@ export function PaymentsTab({
       mergePaymentRows(connectToUnified(data?.payments ?? []), byoToUnified(data?.events ?? [])),
     [data]
   )
+  // Each payment links to the plan card it paid for, when there is one held now.
+  const plans = useMemo(() => currentHeldPlans(contact), [contact])
+  const planLink = (row: UnifiedPaymentRow) => {
+    const match = onOpenPlan ? planCardForPayment(row, plans) : null
+    if (!match) return null
+    return {
+      label: match.plan.subscription_type_name ?? t('planLinkFallback'),
+      exact: match.exact,
+      onOpen: () => onOpenPlan!(match.plan.ref),
+    }
+  }
 
   if (isLoading) {
     return (
@@ -165,6 +182,7 @@ export function PaymentsTab({
           onRefund={setRefundTarget}
           onVoid={setVoidTarget}
           extraActions={rowActions}
+          planLink={planLink}
         />
       )}
 
