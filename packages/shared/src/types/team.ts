@@ -10,7 +10,7 @@ import type { DocumentKind } from './document'
 import type { PublicRequiredWaiver } from './waiver'
 // Type-only import — no runtime cycle (connect.ts imports SaasPlan from here).
 import type { ConnectOnboardingModel, ConnectAccountStatus } from './connect'
-import type { PublicMainAddress } from './place'
+import type { PublicMainAddress, PublicPlace } from './place'
 import type { EngagementThresholds } from './engagement'
 // Type-only — capabilities.ts imports TeamRole from here; erased at compile (no cycle).
 import type { Capability, DataScope } from './capabilities'
@@ -1259,6 +1259,12 @@ export interface TeamPublicProfile {
   // The team's primary place (Main Address), denormalized by
   // syncPrimaryPlaceToPublicProfile so the public bio-link can show address + map.
   mainAddress?: PublicMainAddress | null
+  // EVERY place, by the same trigger. `mainAddress` answers "where is the
+  // studio"; this answers "where is this session", which a public surface
+  // cannot ask of the private team_places collection. Absent on a team whose
+  // places have not been written since the field shipped: a surface that needs
+  // a name falls back to saying nothing, never to a wrong one.
+  places?: PublicPlace[]
   // Which surface the team root `/public/{slug}` resolves to (mirrors
   // teams/{id}.default_public_surface). Unset → 'bio-link'.
   default_public_surface?: PublicSurface
