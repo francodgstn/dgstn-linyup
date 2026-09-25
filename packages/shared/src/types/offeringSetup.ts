@@ -21,11 +21,18 @@
 //   is priced, a trial, a member rate, a plan's billing, intro price, limit and
 //   whether it is public.
 //
+//   APPOINTMENTS AND COURSES ride the same parse. An appointment's member rule
+//   is per LENGTH (`resolveDurationBenefit`), so the wizard's one answer is
+//   written onto each length it means something for; a course is created by
+//   the course creator itself (courseBlocks/index.ts), with the links the
+//   studio picked applied before it is first written.
+//
 //   ONE THING PER RUN. The walkthrough sets up one offering at a time ("walk
 //   through again for the next thing"), and so does this.
 
 import type { UsageLimitPeriod } from './contact'
 import type { DropInMode } from './activity'
+import { MAX_COURSE_MEETINGS } from './courseBlock'
 
 export const OFFERING_SETUP_LIMITS = {
   nameChars: 80,
@@ -36,6 +43,12 @@ export const OFFERING_SETUP_LIMITS = {
   validMonths: 60,
   introPeriods: 24,
   limitCount: 1000,
+  /** An appointment's lengths ("30, 45, 60 and 90 minutes"). */
+  lengths: 8,
+  lengthMinutes: 12 * 60,
+  places: 1000,
+  closeDaysBefore: 365,
+  skipDates: 60,
 } as const
 
 /** How a class answers the drop-in question (`DropInMode`), with its price
@@ -94,7 +107,83 @@ export interface SetupPlan {
   includedActivityIds: string[]
 }
 
-export type OfferingSetup = { kind: 'class'; class: SetupClass } | { kind: 'plan'; plan: SetupPlan }
+/** How one appointment length is sold (`resolveDurationSale`'s three answers):
+ *  a price, free, or only through a plan that includes it. */
+export type SetupLengthSale = 'priced' | 'free' | 'plan_only'
+
+export interface SetupLength {
+  minutes: number
+  sale: SetupLengthSale
+  /** priced: what one booking of this length costs. */
+  priceAmount?: number
+  /** A fixed member price for THIS length. Asked per length on purpose: one
+   *  member price for thirty minutes and for ninety cannot be right for both,
+   *  which is why the rule is per length at all (`ActivityDurationBenefit`). */
+  memberAmount?: number
+}
+
+/** "Do members get a better deal?" on an appointment: one answer for the
+ *  plans, written as each length's rule. A fixed price carries its amount on
+ *  each length (`SetupLength.memberAmount`). */
+export interface SetupMemberDeal {
+  planIds: string[]
+  effect: 'included' | 'percent_off' | 'fixed_price'
+  /** percent_off: 1 to 99. */
+  percent?: number
+}
+
+export interface SetupAppointment {
+  name: string
+  description?: string
+  lengths: SetupLength[]
+  /** Required when any length is `plan_only`, and then it must INCLUDE: a
+   *  percentage off a price that does not exist opens nothing
+   *  (`benefitOpensDoorAt`). */
+  memberDeal?: SetupMemberDeal
+}
+
+/** When a course runs, as the wizard asks it. Instants are the studio's own
+ *  wall clock read in the browser, the same spelling `CourseBlockDialog` uses,
+ *  and the weekday is sent rather than re-derived so the server never has to
+ *  guess which timezone "Wednesday" was meant in. */
+export type SetupCourseSchedule =
+  | {
+      kind: 'weekly'
+      /** The first lesson's start. */
+      startMs: number
+      minutes: number
+      /** 0 (Sunday) to 6. */
+      weekday: number
+      /** The end of the last lesson's day. */
+      endMs: number
+      /** A moment on each day with no lesson. */
+      skipMs: number[]
+    }
+  | { kind: 'dates'; meetings: { startMs: number; minutes: number }[] }
+
+export interface SetupCourse {
+  name: string
+  description?: string
+  schedule: SetupCourseSchedule
+  /** Absent = no limit. */
+  places?: number
+  /** For the whole course. Absent = free, and a free course links to no plan:
+   *  there is nothing to include or discount (`courseBlockPlanFacets`). */
+  priceAmount?: number
+  /** EXISTING plans whose holders get it free. */
+  includedPlanIds: string[]
+  /** EXISTING plans whose holders pay less. */
+  memberRate?: SetupMemberRate
+  signupRequired: boolean
+  /** Absent = bookings stay open until it starts. */
+  closeDaysBefore?: number
+}
+
+export type OfferingSetup =
+  | { kind: 'class'; class: SetupClass }
+  | { kind: 'plan'; plan: SetupPlan }
+  | { kind: 'appointment'; appointment: SetupAppointment }
+  | { kind: 'course'; course: SetupCourse }
 
 // ─── validation ──────────────────────────────────────────────────────────────
 
@@ -106,6 +195,8 @@ export interface SetupProblem {
 const DROP_IN_MODES: DropInMode[] = ['off', 'studio', 'custom']
 const PLAN_KINDS: SetupPlanKind[] = ['membership', 'pack', 'complimentary', 'partner']
 const LIMIT_PERIODS: UsageLimitPeriod[] = ['day', 'week', 'month']
+const LENGTH_SALES: SetupLengthSale[] = ['priced', 'free', 'plan_only']
+const DEAL_EFFECTS: SetupMemberDeal['effect'][] = ['included', 'percent_off', 'fixed_price']
 /** A Firestore auto-id or any id the app writes: no slashes, nothing exotic. */
 const ID = /^[A-Za-z0-9_-]{1,64}$/
 
@@ -119,6 +210,10 @@ function chargeable(v: unknown): v is number {
 }
 function wholeIn(v: unknown, min: number, max: number): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max
+}
+/** An instant a browser could have produced: after 2000, before 2200. */
+function instant(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v > 946_684_800_000 && v < 7_258_118_400_000
 }
 function text(v: unknown, max: number): v is string {
   return typeof v === 'string' && v.trim().length > 0 && v.trim().length <= max
@@ -155,6 +250,26 @@ export function parseOfferingSetup(input: unknown): {
     return (v as string).trim()
   }
 
+  /** "Members pay less", read the same way wherever it is asked. */
+  const memberRate = (v: unknown, path: string): SetupMemberRate | undefined => {
+    if (v === undefined || v === null) return undefined
+    const r = v as Record<string, unknown>
+    const planIds = ids(r.planIds, `${path}.planIds`)
+    let out: SetupMemberRate | undefined
+    if (r.effect === 'percent_off') {
+      if (wholeIn(r.percent, 1, 99)) out = { planIds, effect: 'percent_off', percent: r.percent }
+      else bad(`${path}.percent`, 'bad_number')
+    } else if (r.effect === 'fixed_price') {
+      if (chargeable(r.amount)) out = { planIds, effect: 'fixed_price', amount: r.amount }
+      else bad(`${path}.amount`, 'bad_number')
+    } else bad(`${path}.effect`, 'bad_enum')
+    if (out && planIds.length === 0) {
+      bad(`${path}.planIds`, 'missing')
+      return undefined
+    }
+    return out
+  }
+
   if (!input || typeof input !== 'object') return { setup: null, problems: [{ path: '', code: 'type' }] }
   const root = input as Record<string, unknown>
 
@@ -178,21 +293,8 @@ export function parseOfferingSetup(input: unknown): {
     if (desc) out.description = desc
     if (dropIn) out.dropIn = dropIn
 
-    if (c.memberRate !== undefined && c.memberRate !== null) {
-      const r = c.memberRate as Record<string, unknown>
-      const planIds = ids(r.planIds, 'class.memberRate.planIds')
-      if (r.effect === 'percent_off') {
-        if (wholeIn(r.percent, 1, 99)) out.memberRate = { planIds, effect: 'percent_off', percent: r.percent }
-        else bad('class.memberRate.percent', 'bad_number')
-      } else if (r.effect === 'fixed_price') {
-        if (chargeable(r.amount)) out.memberRate = { planIds, effect: 'fixed_price', amount: r.amount }
-        else bad('class.memberRate.amount', 'bad_number')
-      } else bad('class.memberRate.effect', 'bad_enum')
-      if (out.memberRate && planIds.length === 0) {
-        bad('class.memberRate.planIds', 'missing')
-        delete out.memberRate
-      }
-    }
+    const rate = memberRate(c.memberRate, 'class.memberRate')
+    if (rate) out.memberRate = rate
     if (c.trial !== undefined && c.trial !== null) {
       const tr = c.trial as Record<string, unknown>
       if (tr.priceAmount === undefined || tr.priceAmount === null) out.trial = {}
@@ -254,6 +356,131 @@ export function parseOfferingSetup(input: unknown): {
       }
     }
     return problems.length ? { setup: null, problems } : { setup: { kind: 'plan', plan: out as SetupPlan }, problems }
+  }
+
+  if (root.kind === 'appointment') {
+    const a = (root.appointment ?? {}) as Record<string, unknown>
+    const out: Partial<SetupAppointment> = { name: name(a.name, 'appointment.name') ?? '' }
+    const desc = description(a.description, 'appointment.description')
+    if (desc) out.description = desc
+
+    const rawLengths: unknown[] = Array.isArray(a.lengths) ? a.lengths : []
+    if (rawLengths.length === 0) bad('appointment.lengths', 'missing')
+    if (rawLengths.length > OFFERING_SETUP_LIMITS.lengths) bad('appointment.lengths', 'too_many')
+    const lengths: SetupLength[] = []
+    const seen = new Set<number>()
+    rawLengths.slice(0, OFFERING_SETUP_LIMITS.lengths).forEach((raw, i) => {
+      const l = (raw ?? {}) as Record<string, unknown>
+      const path = `appointment.lengths.${i}`
+      if (!wholeIn(l.minutes, 5, OFFERING_SETUP_LIMITS.lengthMinutes) || seen.has(l.minutes)) {
+        return bad(`${path}.minutes`, 'bad_number')
+      }
+      seen.add(l.minutes)
+      if (!LENGTH_SALES.includes(l.sale as SetupLengthSale)) return bad(`${path}.sale`, 'bad_enum')
+      const length: SetupLength = { minutes: l.minutes, sale: l.sale as SetupLengthSale }
+      if (length.sale === 'priced') {
+        if (chargeable(l.priceAmount)) length.priceAmount = l.priceAmount
+        else bad(`${path}.priceAmount`, 'bad_number')
+      }
+      if (l.memberAmount !== undefined && l.memberAmount !== null) {
+        if (chargeable(l.memberAmount)) length.memberAmount = l.memberAmount
+        else bad(`${path}.memberAmount`, 'bad_number')
+      }
+      lengths.push(length)
+    })
+    out.lengths = lengths
+
+    if (a.memberDeal !== undefined && a.memberDeal !== null) {
+      const m = a.memberDeal as Record<string, unknown>
+      const planIds = ids(m.planIds, 'appointment.memberDeal.planIds')
+      const effect = m.effect as SetupMemberDeal['effect']
+      if (!DEAL_EFFECTS.includes(effect)) bad('appointment.memberDeal.effect', 'bad_enum')
+      else if (planIds.length === 0) bad('appointment.memberDeal.planIds', 'missing')
+      else if (effect === 'percent_off') {
+        if (wholeIn(m.percent, 1, 99)) out.memberDeal = { planIds, effect, percent: m.percent }
+        else bad('appointment.memberDeal.percent', 'bad_number')
+      } else out.memberDeal = { planIds, effect }
+    }
+    // A plan-only length is opened by an INCLUDED rule and by nothing else.
+    if (lengths.some((l) => l.sale === 'plan_only') && out.memberDeal?.effect !== 'included') {
+      bad('appointment.memberDeal', 'missing')
+    }
+    // A fixed member price is a price per length, so every priced length needs one.
+    if (out.memberDeal?.effect === 'fixed_price') {
+      lengths.forEach((l, i) => {
+        if (l.sale === 'priced' && l.memberAmount === undefined) bad(`appointment.lengths.${i}.memberAmount`, 'missing')
+      })
+    }
+    return problems.length
+      ? { setup: null, problems }
+      : { setup: { kind: 'appointment', appointment: out as SetupAppointment }, problems }
+  }
+
+  if (root.kind === 'course') {
+    const c = (root.course ?? {}) as Record<string, unknown>
+    const out: Partial<SetupCourse> = {
+      name: name(c.name, 'course.name') ?? '',
+      signupRequired: c.signupRequired === true,
+      includedPlanIds: ids(c.includedPlanIds, 'course.includedPlanIds'),
+    }
+    const desc = description(c.description, 'course.description')
+    if (desc) out.description = desc
+
+    const sc = (c.schedule ?? {}) as Record<string, unknown>
+    if (sc.kind === 'weekly') {
+      const skip: unknown[] = Array.isArray(sc.skipMs) ? sc.skipMs : []
+      if (skip.length > OFFERING_SETUP_LIMITS.skipDates || skip.some((ms) => !instant(ms))) {
+        bad('course.schedule.skipMs', 'bad_number')
+      }
+      if (
+        instant(sc.startMs) &&
+        instant(sc.endMs) &&
+        sc.endMs > sc.startMs &&
+        wholeIn(sc.minutes, 5, OFFERING_SETUP_LIMITS.lengthMinutes) &&
+        wholeIn(sc.weekday, 0, 6)
+      ) {
+        out.schedule = {
+          kind: 'weekly',
+          startMs: sc.startMs,
+          minutes: sc.minutes,
+          weekday: sc.weekday,
+          endMs: sc.endMs,
+          skipMs: skip.filter(instant).slice(0, OFFERING_SETUP_LIMITS.skipDates),
+        }
+      } else bad('course.schedule', 'bad_number')
+    } else if (sc.kind === 'dates') {
+      const meetings: unknown[] = Array.isArray(sc.meetings) ? sc.meetings : []
+      const clean = meetings
+        .map((m) => (m ?? {}) as Record<string, unknown>)
+        .filter((m) => instant(m.startMs) && wholeIn(m.minutes, 5, OFFERING_SETUP_LIMITS.lengthMinutes))
+        .map((m) => ({ startMs: m.startMs as number, minutes: m.minutes as number }))
+      if (clean.length === 0 || clean.length !== meetings.length) bad('course.schedule.meetings', 'bad_number')
+      else if (clean.length > MAX_COURSE_MEETINGS) bad('course.schedule.meetings', 'too_many')
+      else out.schedule = { kind: 'dates', meetings: clean }
+    } else bad('course.schedule.kind', 'bad_enum')
+
+    if (c.places !== undefined && c.places !== null) {
+      if (wholeIn(c.places, 1, OFFERING_SETUP_LIMITS.places)) out.places = c.places
+      else bad('course.places', 'bad_number')
+    }
+    if (c.priceAmount !== undefined && c.priceAmount !== null) {
+      if (chargeable(c.priceAmount)) out.priceAmount = c.priceAmount
+      else bad('course.priceAmount', 'bad_number')
+    }
+    const rate = memberRate(c.memberRate, 'course.memberRate')
+    if (rate) out.memberRate = rate
+    // A free course is open to everybody: a plan has nothing to include or
+    // discount, so a link there is a mistake to refuse, not to drop silently.
+    if (out.priceAmount === undefined && (out.includedPlanIds?.length || out.memberRate)) {
+      bad('course.priceAmount', 'missing')
+    }
+    if (c.closeDaysBefore !== undefined && c.closeDaysBefore !== null) {
+      if (wholeIn(c.closeDaysBefore, 0, OFFERING_SETUP_LIMITS.closeDaysBefore)) out.closeDaysBefore = c.closeDaysBefore
+      else bad('course.closeDaysBefore', 'bad_number')
+    }
+    return problems.length
+      ? { setup: null, problems }
+      : { setup: { kind: 'course', course: out as SetupCourse }, problems }
   }
 
   return { setup: null, problems: [{ path: 'kind', code: 'bad_enum' }] }

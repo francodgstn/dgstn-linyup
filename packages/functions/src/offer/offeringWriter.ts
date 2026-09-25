@@ -22,14 +22,22 @@ import {
   activityPlanEdgeUpdate,
   classAccessFacts,
   classAccessRuleFor,
+  courseBlockPlanEdgeUpdate,
   type ActivityDuration,
   type ActivityEdgeFields,
+  type ActivityRateChoice,
+  type CourseBlockEdgeFields,
   type DropInPrice,
+  type RecurrencePattern,
+  type SetupAppointment,
   type SetupClass,
+  type SetupCourse,
   type SetupPlan,
   type SubscriptionPrice,
   type SubscriptionUsageLimit,
 } from '@linyup/shared'
+import type { CourseBlockWrite, NewCourseBlockLinks } from '../courseBlocks'
+import type { CourseScheduleInput } from '../courseBlocks/schedule'
 
 /** Who created it, where it sorts, and which way in it came. */
 export interface OfferingStamp {
@@ -139,6 +147,111 @@ export function newAppointmentDocument(
     ...(extras.tags?.length ? { tags: extras.tags } : {}),
     ...(appt.durations.length ? { durations: appt.durations } : {}),
     ...stampFields(stamp),
+  }
+}
+
+/**
+ * A NEW APPOINTMENT from the wizard: its lengths and how each is sold, then the
+ * member deal written as EACH LENGTH'S rule through the edge writer (the rule
+ * is per length, `resolveDurationBenefit`). The one answer lands only where it
+ * means something:
+ *
+ *   included      a priced or plan-only length (a free one is free already)
+ *   percent_off   a priced length (there is no price elsewhere to take it off)
+ *   fixed_price   a priced length, at that length's own member price
+ */
+export function setupAppointmentDocument(appt: SetupAppointment, stamp: OfferingStamp): Record<string, unknown> {
+  const durations: ActivityDuration[] = appt.lengths.map((l) =>
+    l.sale === 'priced'
+      ? { minutes: l.minutes, priceAmount: l.priceAmount ?? null }
+      : l.sale === 'plan_only'
+        ? { minutes: l.minutes, priceAmount: null, benefitOnly: true }
+        : { minutes: l.minutes, priceAmount: null }
+  )
+  let doc = newAppointmentDocument({ name: appt.name, description: appt.description, durations }, stamp)
+  const deal = appt.memberDeal
+  if (!deal) return doc
+  for (const l of appt.lengths) {
+    const applies = deal.effect === 'included' ? l.sale !== 'free' : l.sale === 'priced'
+    if (!applies) continue
+    const choice =
+      deal.effect === 'percent_off'
+        ? { effect: deal.effect, percent: deal.percent ?? null }
+        : deal.effect === 'fixed_price'
+          ? { effect: deal.effect, amount: l.memberAmount ?? null }
+          : { effect: deal.effect }
+    for (const planId of deal.planIds) {
+      const update = activityPlanEdgeUpdate(
+        doc as unknown as ActivityEdgeFields,
+        planId,
+        { access: false, rate: true },
+        choice,
+        l.minutes
+      )
+      if (update) doc = { ...doc, ...update }
+    }
+  }
+  return doc
+}
+
+/** The plan links a wizard course is born with, built through the course's own
+ *  edge writer from an empty edge, the way the Offerings pane would add them one
+ *  by one. A free course gets none (`courseBlockPlanFacets`). */
+export function setupCourseLinks(course: SetupCourse): NewCourseBlockLinks {
+  let edge: CourseBlockEdgeFields = {
+    includedSubscriptionTypeIds: [],
+    benefit: null,
+    priceAmount: course.priceAmount ?? null,
+  }
+  const apply = (planId: string, next: { access: boolean; rate: boolean }, choice?: ActivityRateChoice) => {
+    const update = courseBlockPlanEdgeUpdate(edge, planId, next, choice)
+    if (update) edge = { ...edge, ...update } as CourseBlockEdgeFields
+  }
+  for (const planId of course.includedPlanIds) apply(planId, { access: true, rate: false })
+  const rate = course.memberRate
+  if (rate) {
+    for (const planId of rate.planIds) {
+      // Free wins where a plan is on both: it stays on the gate.
+      if (course.includedPlanIds.includes(planId)) continue
+      apply(
+        planId,
+        { access: false, rate: true },
+        { effect: rate.effect, percent: rate.percent ?? null, amount: rate.amount ?? null }
+      )
+    }
+  }
+  return { includedSubscriptionTypeIds: edge.includedSubscriptionTypeIds ?? [], benefit: edge.benefit ?? null }
+}
+
+/** The wizard's course answers as what the course creator reads. A weekly
+ *  course is the same rule `CourseBlockDialog` sends: weekly, ending on a date,
+ *  with its skip days. */
+export function setupCourseWrite(course: SetupCourse): CourseBlockWrite {
+  const sc = course.schedule
+  const schedule: CourseScheduleInput =
+    sc.kind === 'weekly'
+      ? {
+          kind: 'repeating',
+          recurrence: {
+            frequency: 'weekly',
+            interval: 1,
+            daysOfWeek: [sc.weekday],
+            duration: sc.minutes,
+            startDate: sc.startMs,
+            endCondition: 'date',
+            endDate: sc.endMs,
+            excludeDates: sc.skipMs,
+          } as unknown as RecurrencePattern,
+        }
+      : { kind: 'dates', meetings: sc.meetings.map((m) => ({ startMs: m.startMs, durationMinutes: m.minutes })) }
+  return {
+    name: course.name,
+    description: course.description ?? '',
+    places: course.places ?? null,
+    priceAmount: course.priceAmount ?? null,
+    audience: course.signupRequired ? 'members' : 'anyone',
+    closeDaysBefore: course.closeDaysBefore ?? null,
+    schedule,
   }
 }
 
