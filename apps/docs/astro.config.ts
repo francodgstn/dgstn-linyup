@@ -84,7 +84,10 @@ export default defineConfig({
       sidebar,
       pagefind: true,
       customCss: ['./src/styles/brand.css', './src/styles/docs.css'],
-      components: { SiteTitle: './src/components/SiteTitle.astro' },
+      components: {
+        SiteTitle: './src/components/SiteTitle.astro',
+        MarkdownContent: './src/components/MarkdownContent.astro',
+      },
       favicon: '/favicon.svg',
       head: [
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },

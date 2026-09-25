@@ -1,0 +1,354 @@
+---
+// The system landscape: every app, service, provider and store around Linyup,
+// in layers, on one screen. Select a box (click, tap, or Tab + Enter) and the
+// boxes it talks to light up, and the panel underneath says what it is, where
+// it runs and which pages explain it, right under the layer it sits in.
+//
+// Drawn as HTML rather than SVG so the boxes wrap on a phone instead of
+// shrinking into unreadable text, and connections are shown by highlighting
+// rather than as lines: with a few dozen boxes, every line drawn at once is a
+// hairball. The data is src/data/landscape.ts, the ONE place the boxes and
+// connections are described; the home page and the landscape page mount this.
+
+import { LAYERS, NODES, neighbours } from '../data/landscape'
+
+interface Props {
+  /** A box to select on load. Default none: the whole landscape at full
+   *  strength is the first thing a newcomer should see, not one app's corner. */
+  initial?: string
+  /** A compact version for the home page: no layer descriptions. */
+  compact?: boolean
+}
+
+const { initial, compact = false } = Astro.props
+const byLayer = LAYERS.map((l) => ({ ...l, nodes: NODES.filter((n) => n.layer === l.id) }))
+const adjacency = Object.fromEntries(NODES.map((n) => [n.id, [...neighbours(n.id)]]))
+---
+
+<figure class:list={['ls not-content', { 'ls-compact': compact }]} data-landscape data-initial={initial ?? ''} data-adjacency={JSON.stringify(adjacency)}>
+  <div class="ls-layers" role="group" aria-label="The Linyup system landscape, in layers">
+    {
+      byLayer.map((l) => (
+        <section class="ls-layer" data-layer={l.id}>
+          <header class="ls-layer-head">
+            <p class="ls-layer-title">{l.title}</p>
+            {!compact && l.note && <p class="ls-layer-note">{l.note}</p>}
+          </header>
+          <ul class="ls-nodes">
+            {l.nodes.map((n) => (
+              <li>
+                <button type="button" class:list={['ls-node', `ls-kind-${n.kind ?? 'part'}`]} data-node={n.id} aria-pressed="false">
+                  <span class="ls-node-label">{n.label}</span>
+                  {n.sub && <span class="ls-node-sub">{n.sub}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+
+  <figcaption class="ls-hint">
+    Select a box: what it is connected to lights up. Select it again to clear.
+    <span class="ls-key"><span class="ls-swatch ls-kind-part"></span> our code</span>
+    <span class="ls-key"><span class="ls-swatch ls-kind-platform"></span> Google Cloud, our projects</span>
+    <span class="ls-key"><span class="ls-swatch ls-kind-external"></span> third party</span>
+  </figcaption>
+
+  {
+    NODES.map((n) => (
+      <div class="ls-panel" data-panel={n.id} hidden={n.id !== initial} aria-live="polite">
+        <p class="ls-panel-title">
+          {n.label}
+          {n.kind === 'external' && <span class="ls-tag">third party</span>}
+          {n.kind === 'platform' && <span class="ls-tag">Google Cloud</span>}
+        </p>
+        <p class="ls-panel-what">{n.what}</p>
+        <dl class="ls-facts">
+          {n.runs && (
+            <>
+              <dt>Runs on</dt>
+              <dd>{n.runs}</dd>
+            </>
+          )}
+          {n.code && (
+            <>
+              <dt>Code</dt>
+              <dd>
+                <code>{n.code}</code>
+              </dd>
+            </>
+          )}
+          {adjacency[n.id].length > 0 && (
+            <>
+              <dt>Connected to</dt>
+              <dd>
+                {adjacency[n.id].map((id, i) => (
+                  <>
+                    {i > 0 && ', '}
+                    <button type="button" class="ls-jump" data-jump={id}>
+                      {NODES.find((m) => m.id === id)?.label}
+                    </button>
+                  </>
+                ))}
+              </dd>
+            </>
+          )}
+        </dl>
+        {n.docs && n.docs.length > 0 && (
+          <p class="ls-docs">
+            {n.docs.map((d) => (
+              <a href={d.href}>{d.label} →</a>
+            ))}
+          </p>
+        )}
+      </div>
+    ))
+  }
+</figure>
+
+<script>
+  function wire(root: HTMLElement) {
+    const nodes = [...root.querySelectorAll<HTMLButtonElement>('.ls-node')]
+    const panels = [...root.querySelectorAll<HTMLElement>('.ls-panel')]
+    const adjacency = JSON.parse(root.dataset.adjacency ?? '{}') as Record<string, string[]>
+
+    let current = ''
+
+    // Selecting the selected box again clears the selection.
+    function select(id: string) {
+      if (id === current) id = ''
+      current = id
+      const near = new Set(adjacency[id] ?? [])
+      root.classList.toggle('has-selection', id !== '')
+      for (const n of nodes) {
+        const nid = n.dataset.node!
+        n.classList.toggle('is-selected', nid === id)
+        n.classList.toggle('is-near', near.has(nid))
+        n.setAttribute('aria-pressed', String(nid === id))
+      }
+      for (const p of panels) p.hidden = p.dataset.panel !== id
+      // The panel opens right under the layer holding the box, not under the
+      // whole diagram: that is a screen further down from a box near the top.
+      const panel = panels.find((p) => p.dataset.panel === id)
+      const layer = nodes.find((n) => n.dataset.node === id)?.closest('.ls-layer')
+      if (panel && layer && layer.nextElementSibling !== panel) layer.after(panel)
+    }
+
+    for (const n of nodes) n.addEventListener('click', () => select(n.dataset.node!))
+    for (const j of root.querySelectorAll<HTMLButtonElement>('.ls-jump')) {
+      j.addEventListener('click', () => {
+        const id = j.dataset.jump!
+        if (id !== current) select(id)
+        nodes.find((n) => n.dataset.node === id)?.focus({ preventScroll: true })
+      })
+    }
+    if (root.dataset.initial) select(root.dataset.initial)
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-landscape]')) wire(root)
+</script>
+
+<style>
+  .ls {
+    margin: 1.5rem 0;
+  }
+  .ls-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .ls-layer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  @media (min-width: 50rem) {
+    .ls-layer {
+      grid-template-columns: 9.5rem minmax(0, 1fr);
+      align-items: center;
+    }
+  }
+  .ls-layer-head p {
+    margin: 0;
+  }
+  .ls-layer-title {
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sl-color-gray-2);
+  }
+  .ls-layer-note {
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    line-height: 1.35;
+  }
+  .ls-nodes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .ls-nodes li {
+    margin: 0;
+  }
+  .ls-node {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.05rem;
+    min-width: 7.5rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.55rem;
+    border: 1px solid var(--sl-color-gray-4);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .ls-kind-platform {
+    background: var(--sl-color-gray-6);
+  }
+  .ls-kind-external {
+    border-style: dashed;
+  }
+  .ls-node-label {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .ls-node-sub {
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    line-height: 1.25;
+  }
+  .ls-node:hover,
+  .ls-node:focus-visible {
+    border-color: var(--sl-color-accent);
+    outline: none;
+  }
+  .has-selection .ls-node:not(.is-selected):not(.is-near) {
+    opacity: 0.38;
+  }
+  .ls-node.is-near {
+    border-color: var(--sl-color-accent);
+  }
+  .ls-node.is-selected {
+    background: var(--sl-color-accent-low);
+    border-color: var(--sl-color-accent);
+    border-width: 2px;
+    padding: calc(0.35rem - 1px) calc(0.65rem - 1px);
+  }
+  .ls-node.is-selected .ls-node-label {
+    color: var(--sl-color-accent-high);
+  }
+  .ls-hint {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 1rem;
+    margin-top: 0.5rem;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+  .ls-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .ls-swatch {
+    display: inline-block;
+    width: 1.1rem;
+    height: 0.7rem;
+    border-radius: 0.2rem;
+    border: 1px solid var(--sl-color-gray-3);
+  }
+  .ls-swatch.ls-kind-platform {
+    background: var(--sl-color-gray-6);
+  }
+  .ls-swatch.ls-kind-external {
+    border-style: dashed;
+  }
+  .ls-panel {
+    margin: 0.25rem 0 0.25rem 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-left: 3px solid var(--sl-color-accent);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .ls-panel p {
+    margin: 0;
+  }
+  .ls-panel-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--sl-color-white);
+  }
+  .ls-tag {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    padding: 0.05rem 0.5rem;
+    border-radius: 9999px;
+    border: 1px dashed var(--sl-color-gray-3);
+    color: var(--sl-color-gray-2);
+  }
+  .ls-panel-what {
+    margin-top: 0.3rem !important;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .ls-facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.2rem 0.75rem;
+    margin: 0.6rem 0 0;
+    font-size: var(--sl-text-sm);
+  }
+  .ls-facts dt {
+    font-weight: 600;
+    color: var(--sl-color-gray-3);
+  }
+  .ls-facts dd {
+    margin: 0;
+    color: var(--sl-color-gray-2);
+  }
+  .ls-jump {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--sl-color-text-accent);
+    cursor: pointer;
+  }
+  .ls-jump:hover {
+    text-decoration: underline;
+  }
+  .ls-docs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin-top: 0.6rem !important;
+    font-size: var(--sl-text-sm);
+  }
+  .ls-docs a {
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .ls-docs a:hover {
+    text-decoration: underline;
+  }
+</style>

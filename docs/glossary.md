@@ -3,7 +3,7 @@ title: Glossary
 description: The words the code and these docs use, and which ones they deliberately avoid.
 status: living
 area: start
-order: 2
+order: 3
 ---
 # Glossary
 

@@ -1,0 +1,895 @@
+---
+// C4 views of Linyup: Context → Containers → Components, with the arrows.
+//
+// LAYOUT HAPPENS AT BUILD TIME. ELK (elkjs) places every element and routes
+// every arrow orthogonally, with room for its label, when the site is built;
+// the browser receives plain SVG and a small script. So adding an element or
+// an arrow to src/data/c4.ts is the whole change: nobody re-draws coordinates,
+// and nothing about the layout engine ships to the reader.
+//
+// In the browser: select an element to light up its arrows and read about it
+// in the panel; double-click an element marked ⊕ (or use the panel's button)
+// to open the view inside it; the breadcrumb goes back up. Drag to pan, zoom
+// with the buttons (or Ctrl/⌘ + scroll; plain scroll in full screen), and
+// "Full screen" moves the whole viewer into a modal dialog.
+//
+// `launcher` renders only a button that opens the viewer straight in the
+// dialog: for the home page, where a second inline diagram would crowd it.
+
+import ELK from 'elkjs/lib/elk.bundled.js'
+import type { ElkNode } from 'elkjs/lib/elk-api'
+import { ELEMENTS, VIEWS, type C4Element, type C4Kind } from '../data/c4'
+import { NODES as LANDSCAPE } from '../data/landscape'
+
+interface Props {
+  launcher?: boolean
+}
+const { launcher = false } = Astro.props
+const uid = `c4-${Math.random().toString(36).slice(2, 8)}`
+
+// ── Sizes and text ─────────────────────────────────────────────────────────
+const SIZE: Record<C4Kind, [number, number]> = {
+  person: [190, 124],
+  system: [270, 124],
+  container: [214, 112],
+  store: [214, 118],
+  component: [214, 112],
+  external: [204, 104],
+}
+const HEAD = 30 // a person's head sits above the body
+
+/** Greedy word wrap into at most `max` lines of about `chars` characters. */
+function wrap(text: string, chars: number, max: number): string[] {
+  const lines: string[] = []
+  let line = ''
+  for (const word of text.split(/\s+/)) {
+    if (line && (line + ' ' + word).length > chars) {
+      lines.push(line)
+      line = word
+    } else line = line ? `${line} ${word}` : word
+  }
+  if (line) lines.push(line)
+  if (lines.length > max) {
+    lines.length = max
+    lines[max - 1] = lines[max - 1].replace(/\s*\S*$/, '') + '…'
+  }
+  return lines
+}
+
+const LABEL_CHAR = 6.1
+const labelBox = (label: string, tech?: string) => {
+  const t = tech ? `[${tech}]` : ''
+  return { width: Math.ceil(Math.max(label.length, t.length) * LABEL_CHAR) + 10, height: tech ? 28 : 16, tech: t }
+}
+
+// ── Lay every view out ─────────────────────────────────────────────────────
+const elk = new ELK()
+
+type Box = { id: string; x: number; y: number; w: number; h: number; el: C4Element }
+type Edge = { from: string; to: string; label: string; tech: string; async: boolean; d: string; lx: number; ly: number; lw: number; lh: number }
+type Laid = { id: string; w: number; h: number; boxes: Box[]; boundary?: { x: number; y: number; w: number; h: number; label: string }; edges: Edge[] }
+
+const node = (id: string, row?: 'FIRST' | 'LAST') => {
+  const el = ELEMENTS[id]
+  if (!el) throw new Error(`c4: unknown element "${id}"`)
+  const [width, height] = SIZE[el.kind]
+  return { id, width, height, ...(row ? { layoutOptions: { 'elk.layered.layering.layerConstraint': row } } : {}) }
+}
+
+const laid: Laid[] = []
+for (const v of VIEWS) {
+  const members = v.boundary?.members ?? []
+  const graph: ElkNode = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'DOWN',
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+      'elk.json.shapeCoords': 'ROOT',
+      'elk.json.edgeCoords': 'ROOT',
+      'elk.spacing.nodeNode': '46',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '64',
+      'elk.layered.spacing.edgeNodeBetweenLayers': '22',
+      'elk.spacing.edgeEdge': '14',
+      'elk.spacing.edgeLabel': '4',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.thoroughness': '30',
+      'elk.padding': '[top=16,left=16,bottom=16,right=16]',
+    },
+    children: [
+      ...v.around.map((id) => node(id, v.top?.includes(id) ? 'FIRST' : v.bottom?.includes(id) ? 'LAST' : undefined)),
+      ...(v.boundary
+        ? [{ id: '__boundary', layoutOptions: { 'elk.padding': '[top=44,left=24,bottom=24,right=24]' }, children: members.map((id) => node(id)) }]
+        : []),
+    ],
+    edges: v.rels.map((r, i) => {
+      const lb = labelBox(r.label, r.tech)
+      return { id: `e${i}`, sources: [r.from], targets: [r.to], labels: [{ id: `l${i}`, text: r.label, width: lb.width, height: lb.height }] }
+    }),
+  }
+  const out = await elk.layout(graph)
+  const boxes: Box[] = []
+  let boundary: Laid['boundary']
+  for (const c of out.children ?? []) {
+    if (c.id === '__boundary') {
+      boundary = { x: c.x!, y: c.y!, w: c.width!, h: c.height!, label: v.boundary!.label }
+      for (const m of c.children ?? []) boxes.push({ id: m.id, x: m.x!, y: m.y!, w: m.width!, h: m.height!, el: ELEMENTS[m.id] })
+    } else boxes.push({ id: c.id, x: c.x!, y: c.y!, w: c.width!, h: c.height!, el: ELEMENTS[c.id] })
+  }
+  const edges: Edge[] = (out.edges ?? []).map((e, i) => {
+    const r = v.rels[i]
+    const d = (e.sections ?? [])
+      .map((s) => [s.startPoint, ...(s.bendPoints ?? []), s.endPoint].map((p, j) => `${j ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '))
+      .join(' ')
+    const l = e.labels?.[0]
+    const lb = labelBox(r.label, r.tech)
+    return { from: r.from, to: r.to, label: r.label, tech: lb.tech, async: !!r.async, d, lx: l?.x ?? 0, ly: l?.y ?? 0, lw: lb.width, lh: lb.height }
+  })
+  laid.push({ id: v.id, w: Math.ceil(out.width ?? 800), h: Math.ceil(out.height ?? 600), boxes, boundary, edges })
+}
+
+// ── What the script needs ──────────────────────────────────────────────────
+const docsFor = (ref?: string) => LANDSCAPE.find((n) => n.id === ref)?.docs ?? []
+const model = {
+  views: Object.fromEntries(VIEWS.map((v) => [v.id, { title: v.title, level: v.level, parent: v.parent ?? '', caption: v.caption }])),
+  elements: Object.fromEntries(
+    Object.entries(ELEMENTS).map(([id, e]) => [id, { name: e.name, tech: e.tech ?? '', desc: e.desc, kind: e.kind, drill: e.drill ?? '', docs: docsFor(e.ref) }]),
+  ),
+  rels: Object.fromEntries(VIEWS.map((v) => [v.id, v.rels.map((r) => ({ from: r.from, to: r.to, label: r.label, tech: r.tech ?? '', async: !!r.async }))])),
+}
+
+const KIND_LABEL: Record<C4Kind, string> = {
+  person: 'Person',
+  system: 'Software system',
+  container: 'Container',
+  store: 'Container: data store',
+  component: 'Component',
+  external: 'External system',
+}
+
+/** Text lines of a box, positioned from its top. */
+function boxText(b: Box) {
+  const top = b.y + (b.el.kind === 'person' ? HEAD : 0) + (b.el.kind === 'store' ? 14 : 0)
+  const chars = Math.floor((b.w - 22) / 6.2)
+  const desc = wrap(b.el.desc, chars, 3)
+  const tech = b.el.tech ? `[${b.el.tech}]` : `[${KIND_LABEL[b.el.kind]}]`
+  return { cx: b.x + b.w / 2, nameY: top + 24, tech, techY: top + 40, desc: desc.map((t, i) => ({ t, y: top + 60 + i * 15 })) }
+}
+
+function cylinder(b: Box) {
+  const e = 11
+  const { x, y, w, h } = b
+  const rx = w / 2
+  return {
+    body: `M${x} ${y + e} V${y + h - e} A${rx} ${e} 0 0 0 ${x + w} ${y + h - e} V${y + e} A${rx} ${e} 0 0 0 ${x} ${y + e} Z`,
+    lid: `M${x} ${y + e} A${rx} ${e} 0 0 0 ${x + w} ${y + e}`,
+  }
+}
+---
+
+<div class:list={['c4 not-content', { 'c4-is-launcher': launcher }]} data-c4 data-model={JSON.stringify(model)}>
+  {
+    launcher && (
+      <button type="button" class="c4-launch" data-c4-open>
+        <span class="c4-launch-title">Open the C4 diagram</span>
+        <span class="c4-launch-sub">Context → containers → components, with every arrow. Opens full screen.</span>
+      </button>
+    )
+  }
+
+  <div class="c4-home">
+    <div class="c4-stage">
+      <div class="c4-bar">
+        <nav class="c4-crumbs" aria-label="C4 level"></nav>
+        <div class="c4-tools">
+          <button type="button" data-c4-zoom="in" aria-label="Zoom in" title="Zoom in">+</button>
+          <button type="button" data-c4-zoom="out" aria-label="Zoom out" title="Zoom out">−</button>
+          <button type="button" data-c4-zoom="fit" title="Fit to screen">Fit</button>
+          <button type="button" data-c4-open class="c4-only-inline" title="Open full screen">Full screen</button>
+          <button type="button" data-c4-close class="c4-only-modal" title="Close (Esc)">Close</button>
+        </div>
+      </div>
+      <p class="c4-caption"></p>
+
+      <div class="c4-body">
+        <div class="c4-viewer" tabindex="-1">
+          {
+            laid.map((v) => (
+              <svg class="c4-svg" data-view={v.id} viewBox={`0 0 ${v.w} ${v.h}`} data-w={v.w} data-h={v.h} style={v.id === 'context' ? undefined : 'display:none'} role="group" aria-label={`C4 ${model.views[v.id].title}`}>
+                <defs>
+                  <marker id={`${uid}-a-${v.id}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M0 0 L10 5 L0 10 z" class="c4-head" />
+                  </marker>
+                  <marker id={`${uid}-ah-${v.id}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M0 0 L10 5 L0 10 z" class="c4-head c4-head-on" />
+                  </marker>
+                </defs>
+
+                {v.boundary && (
+                  <g class="c4-boundary">
+                    <rect x={v.boundary.x} y={v.boundary.y} width={v.boundary.w} height={v.boundary.h} rx="14" />
+                    <text x={v.boundary.x + 16} y={v.boundary.y + 26}>
+                      {v.boundary.label}
+                      <tspan class="c4-boundary-kind" dx="6">[{v.id === 'containers' ? 'Software system' : 'Container'}]</tspan>
+                    </text>
+                  </g>
+                )}
+
+                {v.edges.map((e) => (
+                  <path
+                    class:list={['c4-edge', { 'c4-async': e.async }]}
+                    data-from={e.from}
+                    data-to={e.to}
+                    d={e.d}
+                    marker-end={`url(#${uid}-a-${v.id})`}
+                    data-m={`url(#${uid}-a-${v.id})`}
+                    data-mh={`url(#${uid}-ah-${v.id})`}
+                  />
+                ))}
+
+                {v.boxes.map((b) => {
+                  const t = boxText(b)
+                  const cyl = b.el.kind === 'store' ? cylinder(b) : null
+                  return (
+                    <g class:list={['c4-node', `c4-${b.el.kind}`, { 'c4-drill': !!b.el.drill }]} data-id={b.id} tabindex="0" role="button" aria-label={`${b.el.name}, ${KIND_LABEL[b.el.kind]}`}>
+                      {b.el.kind === 'person' && (
+                        <>
+                          <circle cx={t.cx} cy={b.y + 17} r="16" class="c4-shape" />
+                          <rect x={b.x} y={b.y + HEAD} width={b.w} height={b.h - HEAD} rx="20" class="c4-shape" />
+                        </>
+                      )}
+                      {cyl && (
+                        <>
+                          <path d={cyl.body} class="c4-shape" />
+                          <path d={cyl.lid} class="c4-lid" />
+                        </>
+                      )}
+                      {b.el.kind !== 'person' && !cyl && <rect x={b.x} y={b.y} width={b.w} height={b.h} rx="10" class="c4-shape" />}
+                      <text class="c4-name" x={t.cx} y={t.nameY} text-anchor="middle">{b.el.name}</text>
+                      <text class="c4-tech" x={t.cx} y={t.techY} text-anchor="middle">{t.tech}</text>
+                      {t.desc.map((l) => (
+                        <text class="c4-desc" x={t.cx} y={l.y} text-anchor="middle">{l.t}</text>
+                      ))}
+                      {b.el.drill && (
+                        <text class="c4-drill-mark" x={b.x + b.w - 12} y={b.y + (b.el.kind === 'person' ? HEAD : 0) + 18} text-anchor="end">⊕</text>
+                      )}
+                    </g>
+                  )
+                })}
+
+                {v.edges.map((e) => (
+                  <g class="c4-label" data-from={e.from} data-to={e.to}>
+                    <rect x={e.lx - 2} y={e.ly - 1} width={e.lw + 4} height={e.lh + 2} rx="3" />
+                    <text x={e.lx + e.lw / 2} y={e.ly + 12} text-anchor="middle">{e.label}</text>
+                    {e.tech && <text class="c4-label-tech" x={e.lx + e.lw / 2} y={e.ly + 25} text-anchor="middle">{e.tech}</text>}
+                  </g>
+                ))}
+              </svg>
+            ))
+          }
+        </div>
+        <aside class="c4-panel" aria-live="polite"></aside>
+      </div>
+      <p class="c4-help">
+        Select an element to follow its arrows. Double-click one marked ⊕ to open it. Drag to pan; Ctrl or ⌘ + scroll to zoom.
+      </p>
+    </div>
+  </div>
+
+  <dialog class="c4-dialog" aria-label="C4 diagram"></dialog>
+</div>
+
+<script>
+  type Rel = { from: string; to: string; label: string; tech: string; async: boolean }
+  type Model = {
+    views: Record<string, { title: string; level: string; parent: string; caption: string }>
+    elements: Record<string, { name: string; tech: string; desc: string; kind: string; drill: string; docs: { label: string; href: string }[] }>
+    rels: Record<string, Rel[]>
+  }
+
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) {
+    const e = document.createElement(tag)
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v)
+    if (text !== undefined) e.textContent = text
+    return e
+  }
+
+  function wire(root: HTMLElement) {
+    const model = JSON.parse(root.dataset.model ?? '{}') as Model
+    const home = root.querySelector<HTMLElement>('.c4-home')!
+    const stage = root.querySelector<HTMLElement>('.c4-stage')!
+    const dialog = root.querySelector<HTMLDialogElement>('.c4-dialog')!
+    const viewer = stage.querySelector<HTMLElement>('.c4-viewer')!
+    const crumbs = stage.querySelector<HTMLElement>('.c4-crumbs')!
+    const caption = stage.querySelector<HTMLElement>('.c4-caption')!
+    const panel = stage.querySelector<HTMLElement>('.c4-panel')!
+    const svgs = [...stage.querySelectorAll<SVGSVGElement>('svg.c4-svg')]
+
+    let view = 'context'
+    let selected = ''
+    const svgOf = (id: string) => svgs.find((s) => s.dataset.view === id)!
+
+    // ── Pan and zoom: the current view's viewBox ────────────────────────────
+    const vb = { x: 0, y: 0, w: 1, h: 1 }
+    function applyVb() {
+      svgOf(view).setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`)
+    }
+    function fit() {
+      const s = svgOf(view)
+      Object.assign(vb, { x: 0, y: 0, w: Number(s.dataset.w), h: Number(s.dataset.h) })
+      applyVb()
+    }
+    function zoom(factor: number, cx = 0.5, cy = 0.5) {
+      const s = svgOf(view)
+      const full = Number(s.dataset.w)
+      const w = Math.min(Math.max(vb.w * factor, full / 8), full * 2)
+      const h = (vb.h * w) / vb.w
+      vb.x += (vb.w - w) * cx
+      vb.y += (vb.h - h) * cy
+      vb.w = w
+      vb.h = h
+      applyVb()
+    }
+    /** Where a client point falls in the viewBox, as fractions of it. */
+    function fraction(e: { clientX: number; clientY: number }) {
+      const s = svgOf(view)
+      const r = s.getBoundingClientRect()
+      // preserveAspectRatio meet: the drawing is centred inside the element.
+      const scale = Math.min(r.width / vb.w, r.height / vb.h)
+      const ox = (r.width - vb.w * scale) / 2
+      const oy = (r.height - vb.h * scale) / 2
+      return { fx: (e.clientX - r.left - ox) / (vb.w * scale), fy: (e.clientY - r.top - oy) / (vb.h * scale), scale }
+    }
+
+    viewer.addEventListener(
+      'wheel',
+      (e) => {
+        if (!dialog.open && !(e.ctrlKey || e.metaKey)) return
+        e.preventDefault()
+        const { fx, fy } = fraction(e)
+        zoom(e.deltaY > 0 ? 1.15 : 1 / 1.15, Math.min(Math.max(fx, 0), 1), Math.min(Math.max(fy, 0), 1))
+      },
+      { passive: false },
+    )
+
+    let drag: { x: number; y: number; vx: number; vy: number; moved: boolean } | null = null
+    viewer.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return
+      drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y, moved: false }
+    })
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return
+      const dx = e.clientX - drag.x
+      const dy = e.clientY - drag.y
+      if (!drag.moved && Math.hypot(dx, dy) < 5) return
+      if (!drag.moved) viewer.classList.add('is-panning')
+      drag.moved = true
+      const { scale } = fraction(e)
+      vb.x = drag.vx - dx / scale
+      vb.y = drag.vy - dy / scale
+      applyVb()
+    })
+    window.addEventListener('pointerup', (e) => {
+      if (!drag) return
+      const wasDrag = drag.moved
+      drag = null
+      viewer.classList.remove('is-panning')
+      if (wasDrag) return
+      const node = (e.target as Element).closest?.('.c4-node') as SVGGElement | null
+      if (node && viewer.contains(node)) select(node.dataset.id!, true)
+      else if (viewer.contains(e.target as Node)) select('')
+    })
+    viewer.addEventListener('dblclick', (e) => {
+      const node = (e.target as Element).closest('.c4-node') as SVGGElement | null
+      const drill = node && model.elements[node.dataset.id!]?.drill
+      if (drill) show(drill)
+    })
+    viewer.addEventListener('keydown', (e) => {
+      const node = (e.target as Element).closest?.('.c4-node') as SVGGElement | null
+      if (!node || (e.key !== 'Enter' && e.key !== ' ')) return
+      e.preventDefault()
+      const id = node.dataset.id!
+      const drill = model.elements[id]?.drill
+      if (selected === id && drill) show(drill)
+      else select(id)
+    })
+
+    // ── Views and the breadcrumb ────────────────────────────────────────────
+    function show(id: string, focus?: string) {
+      view = id
+      for (const s of svgs) s.style.display = s.dataset.view === id ? '' : 'none'
+      crumbs.replaceChildren()
+      const chain: string[] = []
+      for (let v = id; v; v = model.views[v]?.parent ?? '') chain.unshift(v)
+      chain.forEach((v, i) => {
+        if (i) crumbs.append(el('span', { class: 'c4-sep', 'aria-hidden': 'true' }, '›'))
+        const meta = model.views[v]
+        const b = el('button', { type: 'button', class: 'c4-crumb' }, `${meta.level === 'Components' ? meta.title : meta.level}`)
+        if (v === id) b.setAttribute('aria-current', 'page')
+        b.addEventListener('click', () => show(v))
+        crumbs.append(b)
+      })
+      caption.textContent = model.views[id].caption
+      selected = ''
+      fit()
+      select(focus ?? '')
+    }
+
+    // ── Selection and the panel ─────────────────────────────────────────────
+    function select(id: string, toggle = false) {
+      if (toggle && id === selected) id = ''
+      selected = id
+      const s = svgOf(view)
+      const rels = model.rels[view] ?? []
+      const near = new Set<string>([id])
+      for (const r of rels) if (r.from === id || r.to === id) near.add(r.from === id ? r.to : r.from)
+      s.classList.toggle('has-selection', !!id)
+      for (const n of s.querySelectorAll<SVGGElement>('.c4-node')) {
+        n.classList.toggle('is-selected', n.dataset.id === id)
+        n.classList.toggle('is-near', !!id && near.has(n.dataset.id!) && n.dataset.id !== id)
+      }
+      for (const p of s.querySelectorAll<SVGPathElement>('.c4-edge')) {
+        const on = !!id && (p.dataset.from === id || p.dataset.to === id)
+        p.classList.toggle('is-on', on)
+        p.setAttribute('marker-end', (on ? p.dataset.mh : p.dataset.m) ?? '')
+      }
+      for (const l of s.querySelectorAll<SVGGElement>('.c4-label')) l.classList.toggle('is-on', !!id && (l.dataset.from === id || l.dataset.to === id))
+      renderPanel(id, rels)
+    }
+
+    function renderPanel(id: string, rels: Rel[]) {
+      panel.replaceChildren()
+      const e = model.elements[id]
+      if (!e) {
+        panel.append(el('p', { class: 'c4-panel-hint' }, `${model.views[view].title}: select an element to see what it is and follow its arrows.`))
+        return
+      }
+      panel.append(el('p', { class: 'c4-panel-title' }, e.name))
+      panel.append(el('p', { class: 'c4-panel-tech' }, e.tech ? `[${e.tech}]` : ''))
+      panel.append(el('p', { class: 'c4-panel-desc' }, e.desc))
+      if (e.drill && model.views[e.drill]) {
+        const b = el('button', { type: 'button', class: 'c4-panel-drill' }, `Open ${model.views[e.drill].level === 'Containers' ? 'its containers' : 'its components'} ⊕`)
+        b.addEventListener('click', () => show(e.drill))
+        panel.append(b)
+      }
+      const list = (title: string, items: Rel[], out: boolean) => {
+        if (!items.length) return
+        panel.append(el('p', { class: 'c4-panel-h' }, title))
+        const ul = el('ul', { class: 'c4-panel-rels' })
+        for (const r of items) {
+          const other = out ? r.to : r.from
+          const li = el('li')
+          const b = el('button', { type: 'button', class: 'c4-panel-jump' }, model.elements[other]?.name ?? other)
+          b.addEventListener('click', () => select(other))
+          li.append(el('span', { class: 'c4-panel-arrow' }, out ? '→ ' : '← '), b, el('span', { class: 'c4-panel-rel' }, `: ${r.label}${r.tech ? ` [${r.tech}]` : ''}${r.async ? ' (async)' : ''}`))
+          ul.append(li)
+        }
+        panel.append(ul)
+      }
+      list('Uses', rels.filter((r) => r.from === id), true)
+      list('Used by', rels.filter((r) => r.to === id), false)
+      if (e.docs.length) {
+        const p = el('p', { class: 'c4-panel-docs' })
+        for (const d of e.docs) p.append(el('a', { href: d.href }, `${d.label} →`))
+        panel.append(p)
+      }
+    }
+
+    // ── Full screen: the stage moves into the dialog and back ───────────────
+    function open() {
+      dialog.append(stage)
+      stage.classList.add('is-modal')
+      dialog.showModal()
+      requestAnimationFrame(fit)
+    }
+    // Idempotent: the Close button calls it directly, and the dialog's own
+    // 'close' event (Escape) calls it again, which is dispatched later.
+    function restore() {
+      if (stage.parentElement === home) return
+      stage.classList.remove('is-modal')
+      home.append(stage)
+      requestAnimationFrame(fit)
+    }
+    dialog.addEventListener('close', restore)
+    for (const b of root.querySelectorAll<HTMLButtonElement>('[data-c4-open]')) b.addEventListener('click', open)
+    stage.querySelector('[data-c4-close]')!.addEventListener('click', () => {
+      dialog.close()
+      restore()
+    })
+    for (const b of stage.querySelectorAll<HTMLButtonElement>('[data-c4-zoom]')) {
+      b.addEventListener('click', () => {
+        const k = b.dataset.c4Zoom
+        if (k === 'fit') fit()
+        else zoom(k === 'in' ? 1 / 1.3 : 1.3)
+      })
+    }
+
+    show('context')
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-c4]')) wire(root)
+</script>
+
+<style is:global>
+  /* Global because the breadcrumb and the panel are built by the script, and
+     scoped styles never reach elements created at runtime. Every class is c4-. */
+  .c4 {
+    margin: 1.5rem 0;
+  }
+  /* The launcher keeps its stage out of sight until the dialog takes it. */
+  .c4-is-launcher .c4-home {
+    display: none;
+  }
+  .c4-launch {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    width: 100%;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--sl-color-accent);
+    border-radius: 0.75rem;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-white);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .c4-launch:hover {
+    border-width: 2px;
+    padding: calc(0.9rem - 1px) calc(1.1rem - 1px);
+  }
+  .c4-launch-title {
+    font-weight: 700;
+    color: var(--sl-color-accent-high);
+  }
+  .c4-launch-sub {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+
+  .c4-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .c4-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .c4-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .c4-crumb,
+  .c4-tools button,
+  .c4-panel-drill {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.45rem;
+    border: 1px solid var(--sl-color-gray-5);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+    cursor: pointer;
+  }
+  .c4-crumb[aria-current='page'] {
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+    font-weight: 600;
+  }
+  .c4-sep {
+    color: var(--sl-color-gray-3);
+  }
+  .c4-tools {
+    display: flex;
+    gap: 0.3rem;
+  }
+  .c4-tools button:hover,
+  .c4-crumb:hover,
+  .c4-panel-drill:hover {
+    border-color: var(--sl-color-accent);
+  }
+  .c4-stage:not(.is-modal) .c4-only-modal,
+  .c4-stage.is-modal .c4-only-inline {
+    display: none;
+  }
+  .c4-caption,
+  .c4-help {
+    margin: 0;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+  .c4-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+  }
+  .c4-viewer {
+    height: clamp(24rem, 62vh, 40rem);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.6rem;
+    background: var(--sl-color-bg);
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    outline: none;
+  }
+  .c4-viewer.is-panning {
+    cursor: grabbing;
+  }
+  .c4-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    font-family: var(--sl-font);
+    user-select: none;
+  }
+
+  /* Full screen */
+  .c4-dialog {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--sl-color-bg);
+  }
+  .c4-dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+  .c4-stage.is-modal {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+  }
+  .c4-stage.is-modal .c4-body {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .c4-stage.is-modal .c4-viewer {
+    height: 100%;
+  }
+  .c4-stage.is-modal .c4-panel {
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+  .c4-stage.is-modal .c4-help {
+    display: none;
+  }
+  @media (min-width: 60rem) {
+    .c4-stage.is-modal .c4-body {
+      grid-template-columns: minmax(0, 1fr) 22rem;
+      grid-template-rows: minmax(0, 1fr);
+    }
+    .c4-stage.is-modal .c4-panel {
+      max-height: none;
+    }
+  }
+
+  /* Shapes */
+  .c4-shape {
+    stroke-width: 1.4;
+    transition: opacity 0.15s;
+  }
+  .c4-system .c4-shape {
+    fill: var(--sl-color-accent);
+    stroke: var(--sl-color-accent-high);
+  }
+  .c4-system text {
+    fill: var(--sl-color-black);
+  }
+  .c4-container .c4-shape,
+  .c4-store .c4-shape {
+    fill: var(--sl-color-accent-low);
+    stroke: var(--sl-color-accent);
+  }
+  .c4-lid {
+    fill: none;
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.4;
+  }
+  .c4-component .c4-shape {
+    fill: var(--sl-color-bg-nav);
+    stroke: var(--sl-color-accent);
+  }
+  .c4-person .c4-shape {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-3);
+  }
+  .c4-external .c4-shape {
+    fill: var(--sl-color-bg);
+    stroke: var(--sl-color-gray-3);
+    stroke-dasharray: 6 4;
+  }
+  .c4-name {
+    font-size: 14px;
+    font-weight: 700;
+    fill: var(--sl-color-white);
+  }
+  .c4-tech {
+    font-size: 11px;
+    fill: var(--sl-color-gray-3);
+  }
+  .c4-desc {
+    font-size: 11.5px;
+    fill: var(--sl-color-gray-2);
+  }
+  .c4-system .c4-name,
+  .c4-system .c4-tech,
+  .c4-system .c4-desc {
+    fill: var(--sl-color-black);
+  }
+  .c4-drill-mark {
+    font-size: 16px;
+    fill: var(--sl-color-accent-high);
+  }
+  .c4-system .c4-drill-mark {
+    fill: var(--sl-color-black);
+  }
+  .c4-node {
+    cursor: pointer;
+    outline: none;
+  }
+  .c4-node:focus-visible .c4-shape,
+  .c4-node:hover .c4-shape {
+    stroke-width: 2.5;
+  }
+  .c4-drill {
+    cursor: zoom-in;
+  }
+  .c4-node.is-selected .c4-shape {
+    stroke: var(--sl-color-accent-high);
+    stroke-width: 3;
+  }
+  .has-selection .c4-node:not(.is-selected):not(.is-near) {
+    opacity: 0.3;
+  }
+
+  .c4-boundary rect {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+    stroke-dasharray: 8 5;
+  }
+  .c4-boundary text {
+    font-size: 14px;
+    font-weight: 700;
+    fill: var(--sl-color-gray-2);
+  }
+  .c4-boundary-kind {
+    font-weight: 400;
+    font-size: 11px;
+  }
+
+  .c4-edge {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.3;
+  }
+  .c4-async {
+    stroke-dasharray: 5 4;
+  }
+  .c4-head {
+    fill: var(--sl-color-gray-3);
+  }
+  .c4-head-on {
+    fill: var(--sl-color-accent-high);
+  }
+  .has-selection .c4-edge:not(.is-on),
+  .has-selection .c4-label:not(.is-on) {
+    opacity: 0.12;
+  }
+  .c4-edge.is-on {
+    stroke: var(--sl-color-accent-high);
+    stroke-width: 2.2;
+  }
+  .c4-label rect {
+    fill: var(--sl-color-bg);
+    opacity: 0.9;
+  }
+  .c4-label text {
+    font-size: 11px;
+    fill: var(--sl-color-gray-2);
+  }
+  .c4-label .c4-label-tech {
+    fill: var(--sl-color-gray-3);
+    font-size: 10px;
+  }
+  .c4-label.is-on text {
+    fill: var(--sl-color-accent-high);
+    font-weight: 600;
+  }
+
+  /* Panel */
+  .c4-panel {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-left: 3px solid var(--sl-color-accent);
+    border-radius: 0.6rem;
+    background: var(--sl-color-bg);
+    font-size: var(--sl-text-sm);
+  }
+  .c4-panel p {
+    margin: 0;
+  }
+  .c4-panel .c4-panel-hint {
+    color: var(--sl-color-gray-3);
+  }
+  .c4-panel .c4-panel-title {
+    font-weight: 700;
+    color: var(--sl-color-white);
+    font-size: var(--sl-text-base);
+  }
+  .c4-panel .c4-panel-tech {
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-xs);
+  }
+  .c4-panel .c4-panel-desc {
+    margin-top: 0.3rem;
+    color: var(--sl-color-gray-2);
+  }
+  .c4-panel .c4-panel-drill {
+    margin-top: 0.6rem;
+    border-color: var(--sl-color-accent);
+    color: var(--sl-color-accent-high);
+    font-weight: 600;
+  }
+  .c4-panel .c4-panel-h {
+    margin-top: 0.7rem;
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-gray-3);
+  }
+  .c4-panel .c4-panel-rels {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+  }
+  .c4-panel .c4-panel-rels li {
+    margin: 0.1rem 0;
+    color: var(--sl-color-gray-2);
+  }
+  .c4-panel .c4-panel-arrow {
+    color: var(--sl-color-gray-3);
+  }
+  .c4-panel .c4-panel-jump {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--sl-color-text-accent);
+    cursor: pointer;
+  }
+  .c4-panel .c4-panel-jump:hover {
+    text-decoration: underline;
+  }
+  .c4-panel .c4-panel-docs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin-top: 0.7rem;
+  }
+  .c4-panel .c4-panel-docs a {
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>

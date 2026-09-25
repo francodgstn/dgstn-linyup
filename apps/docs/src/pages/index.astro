@@ -5,6 +5,8 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
 import { Card, CardGrid, LinkCard, Badge } from '@astrojs/starlight/components'
 import { getCollection } from 'astro:content'
 import { AREAS, AREA_TITLE, byOrder } from '../../../../scripts/lib/docsMeta.mjs'
+import Landscape from '../components/Landscape.astro'
+import C4 from '../components/C4.astro'
 
 const docs = await getCollection('docs')
 const current = docs.filter((d) => d.data.status === 'living' || d.data.status === 'plan')
@@ -16,7 +18,7 @@ const inArea = (area: string) =>
     .sort(byOrder)
 
 const start = inArea('start')
-const FIRST = ['overview', 'glossary', 'rules/local-development', 'test-accounts']
+const FIRST = ['overview', 'landscape', 'glossary', 'rules/local-development', 'test-accounts']
 type Group = { area: string; title: string; items: ReturnType<typeof inArea> }
 const areas: Group[] = AREAS.filter((a) => a !== 'start')
   .map((a) => ({ area: a, title: AREA_TITLE[a] ?? a, items: inArea(a) }))
@@ -32,13 +34,21 @@ const areas: Group[] = AREAS.filter((a) => a !== 'start')
   }}
 >
   <p>
-    How Linyup is built and why. If you are new here, start with the four pages below.
+    How Linyup is built and why. If you are new here, start with the pages below.
     Pages marked <Badge text="plan" variant="caution" /> describe work still to do.
   </p>
 
   <CardGrid>
     {start.filter((d) => FIRST.includes(d.id)).map((d) => <LinkCard title={d.title} href={`/${d.id}/`} />)}
   </CardGrid>
+
+  <h2 id="landscape">Landscape</h2>
+  <p>
+    Everything around Linyup on one screen. Select a box to see what it connects to.
+    The <a href="/landscape/">Landscape</a> page walks through how a request travels across it.
+  </p>
+  <Landscape compact />
+  <C4 launcher />
 
   <h2 id="map">Map</h2>
   <CardGrid>

@@ -18,6 +18,7 @@ you may act on it:
 ## Start here
 
 - [**Overview**](./overview.md) — how it works now
+- [**Landscape**](./landscape.md) — how it works now
 - [**Glossary**](./glossary.md) — how it works now
 - [**Test accounts**](./test-accounts.md) — how it works now
 
