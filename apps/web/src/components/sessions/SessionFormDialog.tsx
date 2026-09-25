@@ -507,7 +507,7 @@ function copyStart(source: Session): Date {
 }
 
 export function SessionFormDialog({
-  open, onOpenChange, editing, duplicating, activities, teamId, userId, onSaved,
+  open, onOpenChange, editing, duplicating, initialStart, activities, teamId, userId, onSaved,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
@@ -520,6 +520,9 @@ export function SessionFormDialog({
    * right, since the recurrence controls are shown for a create).
    */
   duplicating?: Session | null
+  /** Where a NEW class starts when the calendar opened this dialog from an
+   *  empty slot. Ignored when editing or duplicating. */
+  initialStart?: Date | null
   activities: Activity[]
   teamId: string
   userId: string
@@ -580,7 +583,7 @@ export function SessionFormDialog({
         activityId:      seed?.activityId ?? '',
         start:           duplicating
           ? copyStart(duplicating)
-          : (editing?.start?.toDate() ?? defaultStart()),
+          : (editing?.start?.toDate() ?? initialStart ?? defaultStart()),
         duration:        deriveDefaultDuration(seed),
         location:        seed?.location ?? '',
         placeId:         seed?.placeId ?? '',

@@ -1434,7 +1434,9 @@
     "viewPlanning": "Event planning",
     "timezoneNoticeDevice": "The calendar uses this device's time zone ({zone}). Your studio's is {studioZone}.",
     "newGroupCalendar": "On the calendar",
-    "newGroupAppointments": "Appointments"
+    "newGroupAppointments": "Appointments",
+    "viewDay": "Day",
+    "viewMonth": "Month"
   },
   "Events": {
     "title": "Events",
