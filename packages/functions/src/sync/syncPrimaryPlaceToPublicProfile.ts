@@ -1,7 +1,16 @@
 /**
- * Denormalises a team's PRIMARY place to its public_profile so public surfaces
- * (the bio-link, which only reads world-readable public_profile) can show the
- * "Main Address" + map without reading the private team_places collection.
+ * Denormalises a team's places to its public_profile so public surfaces (which
+ * only read the world-readable public_profile) can show them without reading
+ * the private team_places collection. Two answers, both written here:
+ *
+ *   mainAddress  WHERE IS THE STUDIO. The primary place, for the bio-link's
+ *                "Main Address" + map.
+ *   places       WHERE IS THIS SESSION. Every place, by id, because a session
+ *                mirror carries `placeId` and nothing that can name it. The
+ *                booking funnel's place step reads the whole list at once.
+ *
+ * Both in ONE merge write, from one read of the collection: a second trigger on
+ * the same path would interleave with this one's merge.
  *
  * Triggered on any write to teams/{teamId}/team_places/{placeId}. Picks the place
  * flagged isPrimary (else the first by order/name) and writes its public fields to
@@ -53,12 +62,30 @@ export const syncPrimaryPlaceToPublicProfile = onDocumentWritten(
         }
       : null
 
-    const [updateErr] = await to(publicProfileRef.set({ mainAddress }, { merge: true }))
+    // Sorted the way the studio ordered them, so every surface lists them the
+    // same way and a place does not move between visits.
+    const places = [...docs]
+      .sort((a, b) => {
+        const ao = (a.data().order as number | undefined) ?? Number.MAX_SAFE_INTEGER
+        const bo = (b.data().order as number | undefined) ?? Number.MAX_SAFE_INTEGER
+        if (ao !== bo) return ao - bo
+        return String(a.data().name ?? '').localeCompare(String(b.data().name ?? ''))
+      })
+      .map((d) => ({
+        id: d.id,
+        name: (d.data().name as string) ?? '',
+        address: (d.data().address as string | undefined) ?? null,
+        mapsLink: (d.data().mapsLink as string | undefined) ?? null,
+      }))
+
+    const [updateErr] = await to(publicProfileRef.set({ mainAddress, places }, { merge: true }))
     if (updateErr) {
       console.error(`Error updating public profile (mainAddress) for team ${teamId}:`, updateErr)
       throw updateErr
     }
 
-    console.log(`Synced mainAddress (${mainAddress ? 'set' : 'cleared'}) for team ${teamId}`)
+    console.log(
+      `Synced mainAddress (${mainAddress ? 'set' : 'cleared'}) and ${places.length} place(s) for team ${teamId}`
+    )
   }
 )

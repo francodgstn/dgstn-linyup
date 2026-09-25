@@ -19,6 +19,7 @@ import {
   compareActivities,
   classAccessFacts,
   planGiftCardRedemption,
+  bookingGroupsInUse,
   groupActivitiesForBooking,
   resolvePaymentOptions,
   resolveBookingContactFields,
@@ -173,6 +174,11 @@ interface SessionProfile {
   activityIsFreeTrial?: boolean
   start: Timestamp
   end: Timestamp
+  /** WHERE, as an id. `location` below is the studio's free-text note, which
+   *  is all this surface used to have, so two sessions at two venues were
+   *  indistinguishable whenever the note was blank or the same. The id is what
+   *  the place step groups by; `TeamPublicProfile.places` names it. */
+  placeId?: string | null
   location?: string
   providerName?: string
   locationAddress?: string
@@ -192,7 +198,16 @@ interface SessionProfile {
 // component, not needed here).
 
 type Step =
+  // The studio's own sections ("Adults", "Kids"), asked FIRST and only when
+  // there is more than one to choose between. A studio that never grouped its
+  // offers never meets this step, which is why it is derived and not stored.
+  | 'category'
   | 'activities'
+  // WHERE, asked only when the chosen offer actually runs in more than one
+  // place the studio has named. Derived from the sessions already loaded, so a
+  // single-venue studio never sees it and a two-venue one cannot be sent to
+  // the wrong address by a stale field.
+  | 'place'
   | 'sessions'
   | 'who'
   | 'returning'
@@ -952,7 +967,10 @@ export default function BookingForm({
         return 'navigated'
       }
       setSelectedActivity(actList[0])
-      setStep('sessions')
+      setStep(placeChoicesFor(actList[0]).length > 1 ? 'place' : 'sessions')
+    } else if (bookingGroupsInUse(actList).length > 1) {
+      // More than one section: ask which, before a list mixing all of them.
+      setStep('category')
     } else {
       setStep('activities')
     }
@@ -974,6 +992,21 @@ export default function BookingForm({
   const isDateFirst =
     bookingSettings?.flowType === 'date-first' && !preSelectedActivitySlug && !initialActivityId
 
+  /** The places one offer runs in, named by the team profile. The card, the
+   *  step machine and the deep-link resolver all ask THIS, so none of them can
+   *  believe in a step the others skip. */
+  const placeChoicesFor = (a: ActivityProfile | null) => {
+    const known = team.places ?? []
+    if (!a || known.length === 0) return []
+    const ids = new Set(
+      sessions
+        .filter((sess) => sess.activityId === a.id || sess.activitySlug === a.slug)
+        .map((sess) => sess.placeId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+    return known.filter((place) => ids.has(place.id))
+  }
+
   /** The loaded activity a session belongs to (by id, else by slug). */
   const findActivityForSession = (s: SessionProfile) =>
     activities.find(
@@ -988,9 +1021,48 @@ export default function BookingForm({
     )
   }, [sessions, selectedActivity])
 
+  // ── THE PROLOGUE, DERIVED ────────────────────────────────────────────────
+  //
+  // Category, offer and place are three questions and a studio owes its
+  // visitor only the ones it can actually answer differently. Which steps
+  // exist is therefore COMPUTED on every render from what was loaded, never
+  // stored: a stored `skippedX` survives a history restore with a stale value
+  // and mislabels the Back button, which is exactly the defect
+  // `AppointmentPicker` carries a comment about.
+  const categories = useMemo(() => bookingGroupsInUse(activities), [activities])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedPlace, setSelectedPlace] = useState<string | null>(null)
+
+  /** The offers on the card list, narrowed to the chosen section. */
+  const categoryActivities = useMemo(() => {
+    if (!selectedCategory) return activities
+    const key = selectedCategory.toLowerCase()
+    return activities.filter((a) => (a.bookingGroup ?? '').trim().toLowerCase() === key)
+  }, [activities, selectedCategory])
+
+  /** The places the CHOSEN offer runs in. A place the team profile cannot name
+   *  is not a choice this step can offer: it is folded in with everything else
+   *  rather than shown as a blank row. */
+  const placesForActivity = useMemo(
+    () => placeChoicesFor(selectedActivity),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [team.places, selectedActivity, sessions]
+  )
+
+  /** What the `when` step is choosing among: the offer's sessions, narrowed to
+   *  the place the visitor picked. The DAY list is narrowed by the same rule,
+   *  or the calendar offers days that hold nothing. */
+  const placeSessions = useMemo(
+    () =>
+      selectedPlace
+        ? activitySessions.filter((s) => s.placeId === selectedPlace)
+        : activitySessions,
+    [activitySessions, selectedPlace]
+  )
+
   const availableDates: string[] = useMemo(
-    () => Array.from(new Set(activitySessions.map((s) => toDateKey(s.start)))).sort(),
-    [activitySessions]
+    () => Array.from(new Set(placeSessions.map((s) => toDateKey(s.start)))).sort(),
+    [placeSessions]
   )
 
   const maxDateKey = useMemo(() => {
@@ -1016,17 +1088,21 @@ export default function BookingForm({
     const candidate =
       initialDate && availableDates.includes(initialDate) ? initialDate : availableDates[0]
     setSelectedDate(candidate)
+    // The PLACE belongs in here beside the activity: it narrows the day list
+    // the same way, so a place chosen without re-running this leaves the
+    // calendar with nothing selected and the slot list showing every day at
+    // once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedActivity?.id, sessions.length])
+  }, [selectedActivity?.id, selectedPlace, sessions.length])
 
   const cutoffMinutes = bookingSettings?.cutoffMinutes
   const filteredSessions = useMemo(
     () =>
       (selectedDate
-        ? activitySessions.filter((s) => toDateKey(s.start) === selectedDate)
-        : activitySessions
+        ? placeSessions.filter((s) => toDateKey(s.start) === selectedDate)
+        : placeSessions
       ).filter((s) => sessionBlockReason(s, cutoffMinutes) !== 'closed'),
-    [selectedDate, activitySessions, cutoffMinutes]
+    [selectedDate, placeSessions, cutoffMinutes]
   )
 
   // Drop-in (pay-per-class): a gated class where the studio lets uncovered contacts
@@ -1691,19 +1767,28 @@ export default function BookingForm({
   // pushing `/booking/{activitySlug}` would turn popstate into a real route
   // transition, remounting the wizard and refetching everything.
   const stepQuery: Record<string, string | undefined> =
-    step === 'activities'
+    step === 'category'
       ? {}
-      : step === 'sessions'
-        ? { activity: selectedActivity?.id, date: selectedDate ?? undefined }
-        : step === 'confirmed'
-          ? { booked: confirmedSession?.id }
-          : step === 'waitlisted'
-            ? { waitlisted: selectedSession?.id }
-            : {
-                session: selectedSession?.id,
-                step: step === 'who' ? undefined : step,
-                path: step === 'details' ? (guestPath ?? undefined) : undefined,
+      : step === 'activities'
+        ? { category: selectedCategory ?? undefined }
+        : step === 'place'
+          ? { activity: selectedActivity?.id, category: selectedCategory ?? undefined }
+          : step === 'sessions'
+            ? {
+                activity: selectedActivity?.id,
+                category: selectedCategory ?? undefined,
+                place: selectedPlace ?? undefined,
+                date: selectedDate ?? undefined,
               }
+            : step === 'confirmed'
+              ? { booked: confirmedSession?.id }
+              : step === 'waitlisted'
+                ? { waitlisted: selectedSession?.id }
+                : {
+                    session: selectedSession?.id,
+                    step: step === 'who' ? undefined : step,
+                    path: step === 'details' ? (guestPath ?? undefined) : undefined,
+                  }
 
   // Nothing below sets the URL by hand: the step and its query decide it.
   useBookingFlowUrl({
@@ -1764,24 +1849,42 @@ export default function BookingForm({
         return
       }
 
+      // The section, restored first: it narrows the card list the two branches
+      // below fall back to. An unknown one (a renamed section, an old link) is
+      // dropped rather than filtering the list down to nothing.
+      const restoredCategory = params.get('category')
+      setSelectedCategory(
+        restoredCategory && categories.some((c) => c === restoredCategory)
+          ? restoredCategory
+          : null
+      )
+
       const activityId = parseDocId(params.get('activity'))
       const matched = activityId ? activities.find((a) => a.id === activityId) : null
       if (matched) {
         setSelectedActivity(matched)
         setSelectedSession(null)
         setGuestPath(null)
+        // The place, only when this offer still runs there. Absent means "all
+        // of them", which is what a link written before places existed meant.
+        const placeId = parseDocId(params.get('place'))
+        const places = placeChoicesFor(matched)
+        setSelectedPlace(placeId && places.some((pl) => pl.id === placeId) ? placeId : null)
         const day = parseDateKey(params.get('date'))
         if (day) {
           setSelectedDate(day)
           entryResolvedRef.current = true
         }
-        setStep('sessions')
+        // A restored entry with no place named, on an offer that asks: the step
+        // that asks is the one the visitor saw, so it is the one to return to.
+        setStep(!placeId && places.length > 1 ? 'place' : 'sessions')
         return
       }
 
       // Back to the flow's entry step.
       setSelectedSession(null)
       setGuestPath(null)
+      setSelectedPlace(null)
       if (isDateFirst) {
         setSelectedActivity(null)
         // The day IS the state in date-first — restoring the step without it
@@ -1796,20 +1899,64 @@ export default function BookingForm({
         setStep('sessions')
       } else {
         setSelectedActivity(null)
-        setStep('activities')
+        // No offer named: the entry step is the sections when there are
+        // several, and the cards otherwise. Same rule as the first load.
+        setStep(!restoredCategory && categories.length > 1 ? 'category' : 'activities')
       }
     },
   })
 
+  /**
+   * The prologue steps this visitor actually sees, in order, ending at `when`.
+   *
+   * DERIVED, never stored. A stored skip flag survives a history restore with
+   * a stale value and then mislabels the Back button, which is the defect
+   * `AppointmentPicker` records at its own coach step. Computing it each render
+   * costs two array reads and cannot go stale.
+   *
+   * `category` is skipped unless the studio named more than one section, and
+   * whenever the visitor arrived asking for one offer: a deep link means they
+   * have already chosen, and browsing the sections would be asking them to
+   * choose again. `activities` is skipped when there is nothing to choose
+   * between, and `place` when the offer runs in one place or in none this
+   * studio has named.
+   */
+  const visibleSteps = useMemo<Step[]>(() => {
+    const pinned = !!preSelectedActivitySlug || !!initialActivityId || !!initialSession
+    const steps: Step[] = []
+    if (!pinned && !isDateFirst && categories.length > 1) steps.push('category')
+    if (!pinned && !isDateFirst && categoryActivities.length > 1) steps.push('activities')
+    if (placesForActivity.length > 1) steps.push('place')
+    steps.push('sessions')
+    return steps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    preSelectedActivitySlug,
+    initialActivityId,
+    initialSession,
+    isDateFirst,
+    categories.length,
+    categoryActivities.length,
+    placesForActivity.length,
+  ])
+
+  /** The step before this one that the visitor was actually shown, or null when
+   *  this is the first: Back then leaves the flow rather than inventing a step
+   *  nobody saw. */
+  function previousVisibleStep(current: Step): Step | null {
+    const i = visibleSteps.indexOf(current)
+    return i > 0 ? visibleSteps[i - 1] : null
+  }
+
   function backFromSessions() {
-    // `isDateFirst` has no activity step in front of it either — the day picker
-    // IS the entry step there.
-    if (isDateFirst || preSelectedActivitySlug || initialActivityId || activities.length === 1) {
-      // No activity step to go back to — leave the flow altogether.
+    const previous = previousVisibleStep('sessions')
+    if (!previous) {
+      // Nothing in front of the day picker: leave the flow altogether.
       exitFlow(backTo.href)
-    } else {
-      setStep('activities')
+      return
     }
+    if (previous === 'place') setSelectedPlace(null)
+    setStep(previous)
   }
 
   /**
@@ -2025,6 +2172,196 @@ export default function BookingForm({
 
   // ─── Step: Activity selection ─────────────────────────────────────────────
 
+  // COURSES STARTING SOON. It belongs to whichever screen the visitor
+  // LANDS on, which is the sections when the studio has them and the card
+  // list when it does not. Rendered by both rather than by the card list
+  // alone, or a studio with sections would hide its courses behind a click
+  // and then hide them again for carrying no section of their own.
+  const coursesBlock = (
+    <>
+      {/* COURSES STARTING SOON, above the weekly slots.
+      "When does the next beginners course start" is the question a visitor
+      brings to this page, and a course is not findable among single
+      sessions: it IS the set of them. Each card carries what somebody
+      chooses on, first date, weekday and time, how many lessons, price and
+      places left, so nobody has to open one to compare two.
+
+      Hidden once a SECTION is chosen: a course carries no section of its
+      own, so leaving it there would file a grappling course under
+      Striking. It keeps its place on the step the visitor lands on. */}
+      {courses.length > 0 && !selectedCategory && (
+    <div className="mb-8 space-y-3">
+      <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+        {t('coursesHeading')}
+      </h2>
+      {courses.map((c) => {
+        const first = c.first_meeting?.toDate()
+        const left =
+          typeof c.places === 'number' && c.places > 0
+            ? Math.max(0, c.places - (c.places_taken ?? 0))
+            : null
+        const closed =
+          !!c.booking_closes_at && c.booking_closes_at.toMillis() <= Date.now()
+        return (
+          <div key={c.id} className="rounded-xl border p-4">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <p className="font-semibold">{c.name}</p>
+              <span className="text-primary text-sm font-semibold">
+                {typeof c.priceAmount === 'number'
+                  ? formatCurrency(c.priceAmount, currency, locale)
+                  : t('coursesFree')}
+              </span>
+            </div>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {[
+                first ? fmt.dateMedium(first) : null,
+                first ? `${fmt.weekdayShort(first)} ${fmt.time(first)}` : null,
+                c.meeting_count ? t('coursesLessons', { count: c.meeting_count }) : null,
+                c.location,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+            {c.description && (
+              <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
+            )}
+            {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
+                remedies, so they are never the same sentence, and only one
+                of them has a remedy at all. A closed course cannot hand a
+                place to anybody, so it is told and left alone; a full one
+                takes a queue, because the place that frees in week four is
+                the whole reason the queue exists. */}
+            <p className="mt-2 text-xs">
+              {closed ? (
+                <span className="text-muted-foreground">{t('coursesClosed')}</span>
+              ) : left === 0 ? (
+                <span className="text-muted-foreground">{t('coursesSoldOut')}</span>
+              ) : left !== null ? (
+                <span className="text-muted-foreground">
+                  {t('coursesPlacesLeft', { count: left })}
+                </span>
+              ) : null}
+            </p>
+            {!closed && left === 0 && teamId && (
+              <button
+                type="button"
+                onClick={() => setQueueingFor({ id: c.id, name: c.name })}
+                className="mt-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+              >
+                {t('coursesJoinWaitlist')}
+              </button>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )}
+    </>
+  )
+
+  // ─── Step: Category ──────────────────────────────────────────────────────
+  // The studio's own sections, in the studio's own words. It exists only when
+  // there is more than one, so it never stands between a single-section studio
+  // and its offers.
+  if (step === 'category') {
+    return withBar(
+      <>
+        <div>
+          <h1 className="text-2xl font-bold">{t('titleBookSession')}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t('chooseCategorySubtitle')}</p>
+        </div>
+
+        {deepLinkBanner}
+
+        {coursesBlock}
+
+        <div className="space-y-3">
+          {categories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => {
+                setSelectedCategory(category)
+                setStep('activities')
+              }}
+              className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-center gap-3"
+            >
+              <span className="flex-1 font-semibold text-sm">{category}</span>
+              <svg
+                aria-hidden
+                className="h-4 w-4 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  // ─── Step: Place ─────────────────────────────────────────────────────────
+  // WHERE, when the offer runs in more than one place the studio has named. A
+  // studio with one address never meets this step.
+  if (step === 'place' && selectedActivity) {
+    return withBar(
+      <>
+        <div>
+          <BackButton
+            label={t('back')}
+            onClick={() => {
+              const previous = previousVisibleStep('place')
+              if (!previous) {
+                exitFlow(backTo.href)
+                return
+              }
+              setSelectedActivity(null)
+              setStep(previous)
+            }}
+          />
+          <h1 className="text-2xl font-bold">{selectedActivity.name}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t('choosePlaceSubtitle')}</p>
+        </div>
+
+        <div className="space-y-3">
+          {placesForActivity.map((place) => (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => {
+                setSelectedPlace(place.id)
+                setSelectedDate(null)
+                setStep('sessions')
+              }}
+              className="w-full text-left rounded-xl border bg-card p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-center gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{place.name}</p>
+                {place.address && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{place.address}</p>
+                )}
+              </div>
+              <svg
+                aria-hidden
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      </>
+    )
+  }
+
   if (step === 'activities') {
     return (
       <FlowShell
@@ -2053,85 +2390,14 @@ export default function BookingForm({
           />
         )}
 
+        {coursesBlock}
+
         {activities.length === 0 && courses.length === 0 && (
           <div className="rounded-xl border bg-muted/30 p-8 text-center">
             <p className="text-muted-foreground text-sm">{t('noActivitiesAvailable')}</p>
           </div>
         )}
 
-        {/* COURSES STARTING SOON, above the weekly slots.
-            "When does the next beginners course start" is the question a visitor
-            brings to this page, and a course is not findable among single
-            sessions: it IS the set of them. Each card carries what somebody
-            chooses on, first date, weekday and time, how many lessons, price and
-            places left, so nobody has to open one to compare two. */}
-        {courses.length > 0 && (
-          <div className="mb-8 space-y-3">
-            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
-              {t('coursesHeading')}
-            </h2>
-            {courses.map((c) => {
-              const first = c.first_meeting?.toDate()
-              const left =
-                typeof c.places === 'number' && c.places > 0
-                  ? Math.max(0, c.places - (c.places_taken ?? 0))
-                  : null
-              const closed =
-                !!c.booking_closes_at && c.booking_closes_at.toMillis() <= Date.now()
-              return (
-                <div key={c.id} className="rounded-xl border p-4">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <p className="font-semibold">{c.name}</p>
-                    <span className="text-primary text-sm font-semibold">
-                      {typeof c.priceAmount === 'number'
-                        ? formatCurrency(c.priceAmount, currency, locale)
-                        : t('coursesFree')}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {[
-                      first ? fmt.dateMedium(first) : null,
-                      first ? `${fmt.weekdayShort(first)} ${fmt.time(first)}` : null,
-                      c.meeting_count ? t('coursesLessons', { count: c.meeting_count }) : null,
-                      c.location,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                  {c.description && (
-                    <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
-                  )}
-                  {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
-                      remedies, so they are never the same sentence, and only one
-                      of them has a remedy at all. A closed course cannot hand a
-                      place to anybody, so it is told and left alone; a full one
-                      takes a queue, because the place that frees in week four is
-                      the whole reason the queue exists. */}
-                  <p className="mt-2 text-xs">
-                    {closed ? (
-                      <span className="text-muted-foreground">{t('coursesClosed')}</span>
-                    ) : left === 0 ? (
-                      <span className="text-muted-foreground">{t('coursesSoldOut')}</span>
-                    ) : left !== null ? (
-                      <span className="text-muted-foreground">
-                        {t('coursesPlacesLeft', { count: left })}
-                      </span>
-                    ) : null}
-                  </p>
-                  {!closed && left === 0 && teamId && (
-                    <button
-                      type="button"
-                      onClick={() => setQueueingFor({ id: c.id, name: c.name })}
-                      className="mt-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                    >
-                      {t('coursesJoinWaitlist')}
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
 
         {/* Sections, in the studio's own words — one heading per activity
             group, ungrouped last and unlabelled. THE ONE GROUPER
@@ -2139,10 +2405,22 @@ export default function BookingForm({
             order, so this list and any other surface that sections activities
             cannot disagree. A studio that never set a group sees exactly the
             flat list it saw before. */}
+        {selectedCategory && (
+          <BackButton
+            label={t('back')}
+            onClick={() => {
+              setSelectedCategory(null)
+              setStep('category')
+            }}
+          />
+        )}
+
         <div className="space-y-8">
-          {groupActivitiesForBooking(activities).map((section) => (
+          {/* Inside a chosen section the heading would repeat what the visitor
+              just clicked, so the grouper still runs and the label does not. */}
+          {groupActivitiesForBooking(categoryActivities).map((section) => (
             <div key={section.group ?? '__ungrouped'} className="space-y-3">
-          {section.group ? (
+          {section.group && !selectedCategory ? (
             <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
               {section.group}
             </h2>
@@ -2281,7 +2559,12 @@ export default function BookingForm({
                     return
                   }
                   setSelectedActivity(a)
-                  setStep('sessions')
+                  setSelectedPlace(null)
+                  // WHERE, but only when this offer has more than one answer.
+                  // Read off the sessions already loaded rather than a field on
+                  // the activity: the sessions are what the visitor is about to
+                  // choose between, so they cannot disagree with the step.
+                  setStep(placeChoicesFor(a).length > 1 ? 'place' : 'sessions')
                 }}
               />
             )

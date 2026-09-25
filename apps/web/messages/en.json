@@ -5801,7 +5801,9 @@
     "coursesPlacesLeft": "{count, plural, one {# place left} other {# places left}}",
     "coursesSoldOut": "Sold out",
     "coursesClosed": "Bookings are closed",
-    "coursesJoinWaitlist": "Tell me if a place comes free"
+    "coursesJoinWaitlist": "Tell me if a place comes free",
+    "chooseCategorySubtitle": "What would you like to book?",
+    "choosePlaceSubtitle": "Choose where you'd like to come."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",

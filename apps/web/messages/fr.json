@@ -5801,7 +5801,9 @@
     "coursesPlacesLeft": "{count, plural, one {# place restante} other {# places restantes}}",
     "coursesSoldOut": "Complet",
     "coursesClosed": "Inscriptions fermées",
-    "coursesJoinWaitlist": "Me prévenir si une place se libère"
+    "coursesJoinWaitlist": "Me prévenir si une place se libère",
+    "chooseCategorySubtitle": "Que souhaitez-vous réserver ?",
+    "choosePlaceSubtitle": "Choisissez où vous souhaitez venir."
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Réserver un cours d'essai",

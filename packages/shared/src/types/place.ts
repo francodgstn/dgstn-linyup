@@ -38,5 +38,25 @@ export interface PublicMainAddress {
   mapsLink?: string
 }
 
+/**
+ * EVERY place, denormalised onto the same public profile beside `mainAddress`,
+ * so a public surface can say WHERE a session is rather than only where the
+ * studio's front door is.
+ *
+ * An array on the team's own profile rather than a mirror per place: a studio
+ * has a handful of these, capped at MAX_PLACES below, and they are read all at
+ * once (the booking funnel's place step lists them) or not at all. One document
+ * the public surfaces already load beats a collection-group query per visit.
+ *
+ * The id is what a session mirror carries, so a name can be resolved without
+ * reading the private `team_places` collection.
+ */
+export interface PublicPlace {
+  id: string
+  name: string
+  address?: string
+  mapsLink?: string
+}
+
 // Flat safeguard count cap — same for every plan (applies per team and per org).
 export const MAX_PLACES = 25
