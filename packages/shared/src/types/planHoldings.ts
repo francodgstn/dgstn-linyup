@@ -131,6 +131,21 @@ export function holdingIsCurrent(
   return true
 }
 
+/**
+ * The MEMBERSHIPS a contact holds at `nowMs`: every current held plan except
+ * credit packs. THE ONE definition of "subscribed" for display — header chips,
+ * the contacts list, the member's Space, Payments → Subscriptions and the
+ * dashboard figures all read it, so "subscribed" means one thing everywhere
+ * (docs/multi-plan-holdings.md §5). Credit packs are held plans too, but every
+ * surface shows them in their own place, as lessons left.
+ */
+export function heldMemberships(
+  contact: { held_plans?: ReadonlyArray<HeldPlan> | null } | null | undefined,
+  nowMs: number = Date.now()
+): HeldPlan[] {
+  return currentHeldPlans(contact, nowMs).filter((entry) => entry.source !== 'credits')
+}
+
 /** The entries of a contact's plan list held at `nowMs`. */
 export function currentHeldPlans(
   contact: { held_plans?: ReadonlyArray<HeldPlan> | null } | null | undefined,

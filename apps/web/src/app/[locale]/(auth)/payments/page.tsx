@@ -17,9 +17,9 @@ import { db } from '@/lib/firebase'
 import {
   DEFAULT_PAYMENT_MODES,
   SESSIONS_COLLECTION,
-  contactBillingIsUnlinked,
   subscriptionEndsAtMs,
   subscriptionIsCancelling,
+  heldMemberships,
   type MemberSubscription,
   type SubscriptionType,
 } from '@linyup/shared'
@@ -377,22 +377,25 @@ export default function PaymentsDashboardPage() {
   }, [contacts])
 
   /**
-   * EVERY MEMBERSHIP, from both sides, keyed by the CONTACT.
+   * EVERY MEMBERSHIP, one row per held plan (docs/multi-plan-holdings.md §5).
    *
-   * A contact holding a plan is a row whether or not Stripe is billing them —
-   * that is what makes this usable by a cash-only studio. A live Stripe
-   * subscription whose contact holds no matching plan is ALSO a row, flagged,
-   * because that divergence (`contactBillingIsUnlinked`) is money moving that
-   * nobody has accounted for, and this is the one screen where it is visible in
-   * aggregate rather than one contact at a time.
+   * It was one row per CONTACT, so a member on two plans showed one, and a
+   * second subscription's failed payment never reached "needs attention". Rows
+   * now come from each contact's plan list (`heldMemberships`, the one
+   * "subscribed" definition): a plan given, bought or paid outside Linyup is a
+   * row whether or not Stripe bills it — what makes this usable by a cash-only
+   * studio — and a Stripe plan carries its subscription for status and actions.
+   *
+   * A live Stripe subscription that NO contact's plan list knows about is also
+   * a row, flagged `unlinked`: money moving that nobody has accounted for, and
+   * this is the one screen where that is visible in aggregate.
    */
   const subscriptionRows = useMemo(() => {
-    const byContact = new Map<string, MemberSubscription>()
+    const liveSubs = new Map<string, MemberSubscription>()
     for (const sub of subscriptions) {
-      if (sub.duplicate || !sub.contactId) continue
+      if (sub.duplicate || !sub.contactId || !sub.subscriptionId) continue
       if (!LIVE_SUBSCRIPTION_SET.has(sub.status as string)) continue
-      // The most live one wins when a contact somehow holds several.
-      if (!byContact.has(sub.contactId)) byContact.set(sub.contactId, sub)
+      liveSubs.set(sub.subscriptionId, sub)
     }
 
     const rows: Array<{
@@ -413,40 +416,40 @@ export default function PaymentsDashboardPage() {
      *   past_due   an invoice failed; the card needs chasing
      *   cancelling still live, will not renew; the win-back window is open and
      *              has a deadline
-     *   unlinked   Stripe is billing for a plan nobody holds (see
-     *              `contactBillingIsUnlinked`) — money moving unaccounted for
+     *   unlinked   Stripe is billing a subscription no contact's plan list
+     *              knows about — money moving unaccounted for
      * Defined once, read by both the chip's count and the rows it filters.
      */
     const attention = (sub: MemberSubscription | null, unlinked: boolean) =>
       unlinked || sub?.status === 'past_due' || (!!sub && subscriptionIsCancelling(sub))
 
+    const nowMs = Date.now()
     for (const c of contacts) {
-      const sub = byContact.get(c.id) ?? null
-      if (!c.subscription_type_id && !sub) continue
-      byContact.delete(c.id)
-      rows.push({
-        key: c.id,
-        contactId: c.id,
-        name: contactName.get(c.id) ?? t('unknownMember'),
-        planName:
-          c.subscription_type_name ?? sub?.subscriptionTypeName ?? t('membership'),
-        // The contact stores MAJOR units, the subscription Rappen — normalise to
-        // minor here so the one formatter below is right for both.
-        amount:
-          typeof c.subscription_amount === 'number'
-            ? Math.round(c.subscription_amount * 100)
-            : (sub?.amount ?? null),
-        recurrence: c.subscription_recurrence ?? sub?.recurrence ?? null,
-        sub,
-        unlinked: contactBillingIsUnlinked(c),
-        needsAttention: attention(sub, contactBillingIsUnlinked(c)),
-      })
+      for (const plan of heldMemberships(c, nowMs)) {
+        const sub = plan.source === 'stripe' ? (liveSubs.get(plan.ref) ?? null) : null
+        if (sub) liveSubs.delete(plan.ref)
+        rows.push({
+          key: `${c.id}:${plan.source}:${plan.ref}`,
+          contactId: c.id,
+          name: contactName.get(c.id) ?? t('unknownMember'),
+          planName: plan.subscription_type_name ?? sub?.subscriptionTypeName ?? t('membership'),
+          // The plan list stores MAJOR units, the subscription Rappen — normalise
+          // to minor here so the one formatter below is right for both.
+          amount:
+            typeof plan.amount === 'number' ? Math.round(plan.amount * 100) : (sub?.amount ?? null),
+          recurrence: plan.recurrence ?? sub?.recurrence ?? null,
+          sub,
+          unlinked: false,
+          needsAttention: attention(sub, false),
+        })
+      }
     }
 
-    // Whatever is left is billing with no contact row we could match.
-    for (const [contactId, sub] of byContact) {
+    // Whatever is left is live billing no contact's plan list knows about.
+    for (const sub of liveSubs.values()) {
+      const contactId = sub.contactId!
       rows.push({
-        key: contactId,
+        key: `${contactId}:unlinked:${sub.subscriptionId}`,
         contactId,
         name: contactName.get(contactId) ?? t('unknownMember'),
         planName: sub.subscriptionTypeName ?? t('membership'),
@@ -772,14 +775,12 @@ export default function PaymentsDashboardPage() {
             both kinds of member had to hold two screens in their head and work
             out which one a given person was on.
 
-            It is one list now, keyed by the CONTACT, because the contact is the
-            thing both halves are about. The billing detail rides along on the
-            rows that have it.
+            It is one list, a row per held PLAN (a member on two plans is two
+            rows), and the billing detail rides along on the rows Stripe bills.
 
-            IT ALSO SHOWS THE ORPHANS: a live Stripe subscription whose contact
-            holds no matching plan gets a row with a warning — the divergence
-            `contactBillingIsUnlinked` names, otherwise visible only one contact
-            at a time.
+            IT ALSO SHOWS THE ORPHANS: a live Stripe subscription no contact's
+            plan list knows about gets a row with a warning, otherwise visible
+            only one contact at a time.
 
             SAME TABLE AS PAYMENTS, deliberately (Franco, 2026-08-23). The two
             tabs are the same studio looking at the same people from two angles,

@@ -463,9 +463,10 @@ function Sparkline({ contact, grow = false }: { contact: Contact; grow?: boolean
             {/* The week KEY on the axis, not its label: a Monday's short date
                 can repeat across years. The tooltip shows the label. */}
             <XAxis dataKey="week" hide />
-            {/* Headroom above the tallest week, so a peak never runs into the
-                card's edge. */}
-            <YAxis hide domain={[0, (dataMax: number) => Math.max(2, Math.ceil(dataMax * 1.35))]} />
+            {/* A little headroom above the tallest week, so a peak never runs
+                into the figures row. It was a third of the chart, which pushed
+                the line down against the bottom edge (Franco, 2026-09-25). */}
+            <YAxis hide domain={[0, (dataMax: number) => Math.max(2, dataMax * 1.08)]} />
             <Tooltip
               contentStyle={tooltipStyle}
               content={({ active, payload }) => {

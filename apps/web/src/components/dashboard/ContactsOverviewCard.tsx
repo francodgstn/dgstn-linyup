@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Contact, EngagementBand, EngagementThresholds, RankingSystem } from '@linyup/shared'
-import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank, rankLevelKey, orderedLevels } from '@linyup/shared'
+import { ENGAGEMENT_BANDS, computeEngagementBand, isRosterContact, primaryRank, rankLevelKey, orderedLevels, heldMemberships } from '@linyup/shared'
 
 // ─── palettes ────────────────────────────────────────────────────────────────
 
@@ -286,13 +286,15 @@ export function ContactsOverviewCard({
     }))
   if (noAff > 0) affData.push({ name: t('filterAffiliationNone'), value: noAff, color: NONE_COLOR })
 
-  // ── Subscription by type (multi) — straight off the denormalised snapshots ──
+  // ── Subscription by type (multi) — off the plan list (`heldMemberships`, the
+  // one "subscribed" definition), so a plan given or bought outside Stripe
+  // counts, as it does on the figures beside it ──
   const subCounts = new Map<string, { name: string; count: number }>()
   let noSub = 0
   for (const c of active) {
     // Distinct subscription types this contact holds (a type counts once per contact).
     const distinct = new Map<string, string>() // typeId → name
-    for (const s of c.active_subscriptions ?? []) {
+    for (const s of heldMemberships(c)) {
       if (!distinct.has(s.subscription_type_id))
         distinct.set(s.subscription_type_id, s.subscription_type_name ?? '—')
     }
