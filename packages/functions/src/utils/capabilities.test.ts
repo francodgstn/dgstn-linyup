@@ -9,6 +9,7 @@ import {
   COACH_ASSIGNABLE_CAPABILITIES,
   ALL_CAPABILITIES,
   ROLE_RANK,
+  coachLockReason,
 } from '@linyup/shared'
 
 describe('capabilities — system role sets', () => {
@@ -63,8 +64,59 @@ describe('capabilities — coach role', () => {
   })
 
   it('coach-assignable menu excludes owner-only + members.manage', () => {
-    for (const forbidden of ['billing.manage', 'plugins.manage', 'members.manage', 'team.settings'] as const) {
+    for (const forbidden of [
+      'billing.manage',
+      'plugins.manage',
+      'members.manage',
+      'team.settings',
+    ] as const) {
       assert.equal(COACH_ASSIGNABLE_CAPABILITIES.includes(forbidden), false)
+    }
+  })
+
+  // AN EMPTY OVERRIDE IS AN ANSWER, NOT THE ABSENCE OF ONE.
+  //
+  // The resolver used to test `coachOverride.length`, so a studio that switched
+  // every coach switch off and saved silently got the five defaults back — in the
+  // capabilities `syncMemberCapabilities` denormalizes onto each coach's member
+  // document, which is what firestore.rules reads. The editor meanwhile showed
+  // every switch off, because it distinguishes null from [] correctly. Screen and
+  // enforcement disagreed, in the permissive direction.
+  //
+  // The three inputs are asserted together on purpose: the fix is a DISTINCTION
+  // between two falsy-looking values, and a test that only pinned [] would pass
+  // just as well against `return coachOverride ?? DEFAULT`, which breaks the
+  // undefined case that every un-customized team is in.
+  it('distinguishes an empty override from no override at all', () => {
+    assert.deepEqual(resolveRoleCapabilities('coach', []), [], 'empty = granted nothing')
+    assert.deepEqual(resolveRoleCapabilities('coach', null), COACH_DEFAULT_CAPABILITIES)
+    assert.deepEqual(resolveRoleCapabilities('coach', undefined), COACH_DEFAULT_CAPABILITIES)
+    // …and the same distinction through the predicate the callables ask.
+    assert.equal(roleHasCapability('coach', 'contacts.manage', []), false)
+    assert.equal(roleHasCapability('coach', 'contacts.manage', null), true)
+  })
+
+  // A LOCK NAMES ITS WALL. Derived from the sets, never retyped: members.manage is
+  // the one a coach cannot hold that is NOT owner-only, and the editor must not
+  // tell a studio "owners only" about a capability its managers are using.
+  it('coachLockReason separates the owner-only wall from the manager wall', () => {
+    assert.equal(coachLockReason('members.manage'), 'owners_and_managers')
+    for (const ownerOnly of [
+      'team.settings',
+      'billing.manage',
+      'integrations.manage',
+      'plugins.manage',
+    ] as const) {
+      assert.equal(coachLockReason(ownerOnly), 'owners_only')
+    }
+    for (const grantable of COACH_ASSIGNABLE_CAPABILITIES) {
+      assert.equal(coachLockReason(grantable), null)
+    }
+    // Every capability is either grantable or locked with a stated reason — no
+    // row can render a lock icon with nothing beside it.
+    for (const cap of ALL_CAPABILITIES) {
+      const locked = coachLockReason(cap) !== null
+      assert.equal(locked, !COACH_ASSIGNABLE_CAPABILITIES.includes(cap))
     }
   })
 })

@@ -1738,7 +1738,7 @@
   },
   "Roles": {
     "title": "Roles & permissions",
-    "coachSubtitle": "Choose what a coach can do. Anything not listed here is never granted to the role.",
+    "coachSubtitle": "Choose what a coach can do. The locked rows can never be granted to the role.",
     "coachAssignHint": "Who counts as a coach is set per person in Settings → Members, and is separate from this role.",
     "coachEligibleTitle": "Who can be a coach",
     "coachEligibleHint": "These roles can be assigned as a contact's coach.",
@@ -1758,7 +1758,15 @@
     "badgeCustomizable": "You set this",
     "badgeFixed": "Built in",
     "fixedRoleNote": "Built into Linyup and the same for every studio, so these cannot be changed. Everything this role does not have is listed too, switched off.",
-    "allScopeNote": "Everything in the studio"
+    "allScopeNote": "Everything in the studio",
+    "group_contacts": "Contacts",
+    "group_schedule": "Schedule",
+    "group_studio": "Studio",
+    "group_administration": "Administration",
+    "lock_owners_only": "Owners only",
+    "lock_owners_and_managers": "Owners & managers",
+    "apiOnlyTag": "API only",
+    "apiOnlyTitle": "Only narrows what a Linyup API key can read. It does not change what this role sees in the app."
   },
   "Capabilities": {
     "contacts_view": "View contacts",

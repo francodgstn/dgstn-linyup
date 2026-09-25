@@ -99,14 +99,106 @@ export const CAPABILITY_CATALOG: CapabilityMeta[] = [
   { id: 'members.manage', domain: 'members', scoped: false, labelKey: 'members_manage' },
   { id: 'team.settings', domain: 'team', scoped: false, labelKey: 'team_settings' },
   { id: 'billing.manage', domain: 'billing', scoped: false, labelKey: 'billing_manage' },
-  { id: 'integrations.manage', domain: 'integrations', scoped: false, labelKey: 'integrations_manage' },
+  {
+    id: 'integrations.manage',
+    domain: 'integrations',
+    scoped: false,
+    labelKey: 'integrations_manage',
+  },
   { id: 'plugins.manage', domain: 'plugins', scoped: false, labelKey: 'plugins_manage' },
 ]
 
 export const ALL_CAPABILITIES: Capability[] = CAPABILITY_CATALOG.map((c) => c.id)
 
+// ─── Display grouping ───────────────────────────────────────────────────────────
+// How the role editor arranges the catalogue. A GROUP is coarser than a domain —
+// thirteen domain headings over eighteen rows is not a grouping, it is a list with
+// extra lines. The map is a Record over CapabilityDomain, so a new domain fails
+// `turbo run typecheck` rather than silently dropping out of the UI, which is what
+// a `.filter()` over a hand-written list would have done.
+
+export type CapabilityGroup = 'contacts' | 'schedule' | 'studio' | 'administration'
+
+/** Render order. */
+export const CAPABILITY_GROUPS: CapabilityGroup[] = [
+  'contacts',
+  'schedule',
+  'studio',
+  'administration',
+]
+
+const GROUP_OF_DOMAIN: Record<CapabilityDomain, CapabilityGroup> = {
+  contacts: 'contacts',
+  schedule: 'schedule',
+  activities: 'studio',
+  events: 'studio',
+  offerings: 'studio',
+  outreach: 'studio',
+  reports: 'studio',
+  coaches: 'studio',
+  members: 'administration',
+  team: 'administration',
+  billing: 'administration',
+  integrations: 'administration',
+  plugins: 'administration',
+}
+
+export function capabilityGroup(domain: CapabilityDomain): CapabilityGroup {
+  return GROUP_OF_DOMAIN[domain]
+}
+
+// ─── Where each capability actually BITES ───────────────────────────────────────
+// Not every id in the catalogue gates something in the app, and the role editor
+// used to present all eighteen as though they did. Three answers:
+//
+//   'app' — refused by firestore.rules, by a callable's `requireCapability`, or
+//           by the web UI's `can(...)`. Turning it off changes what happens in
+//           the product.
+//   'api' — read ONLY by the public-API scope table (packages/shared/src/types/
+//           api.ts) and the API principal. Reading a contact in the web app is
+//           `canAccessContact` — team membership plus own-scope — and asks for no
+//           capability at all, so switching `contacts.view` off narrows an API
+//           key and nothing else. The editor says so on the row rather than
+//           implying a restriction that is not there.
+//   'none' — not capability-gated anywhere. The surface is gated on the OWNER
+//           ROLE directly (installed_plugins is `hasTeamRole(teamId, 'owner')`),
+//           which is correct behaviour; the capability id is simply not the thing
+//           enforcing it.
+//
+// This is a claim about other files, so it is not left to prose: it is re-derived
+// from the source and compared against this map by
+// packages/functions/src/utils/capabilityEnforcement.test.ts, which owns the
+// recipe. Move an enforcement point and that test fails.
+
+export type CapabilityEnforcement = 'app' | 'api' | 'none'
+
+const CAPABILITY_ENFORCEMENT: Record<Capability, CapabilityEnforcement> = {
+  'contacts.view': 'api',
+  'contacts.manage': 'app',
+  'contacts.delete': 'app',
+  'contacts.view.all': 'api',
+  'schedule.view': 'api',
+  'schedule.manage': 'app',
+  'schedule.view.all': 'api',
+  'activities.manage': 'app',
+  'events.manage': 'app',
+  'offerings.manage': 'app',
+  'outreach.manage': 'app',
+  'reports.view': 'app',
+  'coaches.manage': 'app',
+  'members.manage': 'app',
+  'team.settings': 'app',
+  'billing.manage': 'none',
+  'integrations.manage': 'app',
+  'plugins.manage': 'none',
+}
+
+export function capabilityEnforcement(cap: Capability): CapabilityEnforcement {
+  return CAPABILITY_ENFORCEMENT[cap]
+}
+
 const SCOPED_CAPABILITIES: ReadonlySet<Capability> = new Set(
-  CAPABILITY_CATALOG.filter((c) => c.scoped).map((c) => c.id),
+  CAPABILITY_CATALOG.filter((c) => c.scoped).map((c) => c.id)
 )
 
 export function capabilityIsScoped(cap: Capability): boolean {
@@ -134,9 +226,7 @@ const OWNER_ONLY: Capability[] = [
   'plugins.manage',
 ]
 
-const MANAGER_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
-  (c) => !OWNER_ONLY.includes(c),
-)
+const MANAGER_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter((c) => !OWNER_ONLY.includes(c))
 
 const VIEWER_CAPABILITIES: Capability[] = [
   'contacts.view',
@@ -169,8 +259,28 @@ export const COACH_DEFAULT_CAPABILITIES: Capability[] = [
 // never be granted members / billing / integrations / plugins / team-settings.
 const COACH_NEVER: Capability[] = [...OWNER_ONLY, 'members.manage']
 export const COACH_ASSIGNABLE_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
-  (c) => !COACH_NEVER.includes(c),
+  (c) => !COACH_NEVER.includes(c)
 )
+
+/**
+ * WHY a capability cannot be granted to the Coach role, or null when it can.
+ *
+ * The editor shows the WHOLE catalogue for every role, including the rows a coach
+ * can never hold — a list of only what a role can do cannot answer "can a coach do
+ * X" for any X outside it, and the reader is left unable to tell "no" from "not
+ * listed here". Those rows are locked, and a lock with no reason beside it is just
+ * a dead control, so this says which wall it is.
+ *
+ * DERIVED from the sets above rather than retyped: `members.manage` is the one
+ * that is not owner-only (a manager holds it; a coach never does), and if that
+ * ever changes this moves with it.
+ */
+export type CoachLockReason = 'owners_only' | 'owners_and_managers'
+
+export function coachLockReason(cap: Capability): CoachLockReason | null {
+  if (COACH_ASSIGNABLE_CAPABILITIES.includes(cap)) return null
+  return OWNER_ONLY.includes(cap) ? 'owners_only' : 'owners_and_managers'
+}
 
 // ─── Role rank (member-management PRECEDENCE only) ──────────────────────────────
 // NOT a capability hierarchy (a coach is not a superset of a viewer). Used solely to
@@ -200,10 +310,32 @@ export function dataScopeForRole(role: TeamRole): DataScope {
  */
 export function resolveRoleCapabilities(
   role: TeamRole,
-  coachOverride?: Capability[] | null,
+  coachOverride?: Capability[] | null
 ): Capability[] {
   if (role === 'coach') {
-    const base = coachOverride && coachOverride.length ? coachOverride : COACH_DEFAULT_CAPABILITIES
+    // AN EMPTY OVERRIDE IS AN ANSWER, NOT THE ABSENCE OF ONE.
+    //
+    // This read `coachOverride && coachOverride.length ? …`, so a studio that
+    // switched every coach capability off and saved got the five DEFAULTS back:
+    // the editor writes `capabilities: []`, `syncMemberCapabilities` resolved that
+    // to the default set and denormalized it onto every coach's member document,
+    // and `hasTeamCapability` in firestore.rules — which reads that document, not
+    // this function — then granted them. The page reloaded showing every switch
+    // off (it distinguishes null from [] correctly), so the screen and the
+    // enforcement disagreed silently, permanently, and in the permissive
+    // direction.
+    //
+    // `Array.isArray` is the shape `memberCapabilityList` in ./api.ts already
+    // uses for the same question. A doc with no `capabilities` field at all —
+    // written by a future editor that only sets `coachRoles` — is undefined, not
+    // empty, and still falls through to the defaults.
+    //
+    // A team that reaches zero capabilities now has coaches who can do nothing,
+    // which is what it asked for and what its screen already showed. That is the
+    // same direction firestore.rules chose when it closed the missing-field
+    // fallthrough: under-privileged is visibly wrong, over-privileged is silently
+    // wrong.
+    const base = Array.isArray(coachOverride) ? coachOverride : COACH_DEFAULT_CAPABILITIES
     // Never let an override grant an owner-only capability, whatever is stored.
     return base.filter((c) => COACH_ASSIGNABLE_CAPABILITIES.includes(c))
   }
@@ -214,7 +346,7 @@ export function resolveRoleCapabilities(
 export function roleHasCapability(
   role: TeamRole,
   cap: Capability,
-  coachOverride?: Capability[] | null,
+  coachOverride?: Capability[] | null
 ): boolean {
   // Owner is always all-capable, defensively, regardless of any stored set.
   if (role === 'owner') return true
