@@ -6020,7 +6020,9 @@
     "appointmentsEmptyHint": "This is on, but nothing is bookable yet — you need active bookable hours linked to an appointment activity.",
     "appointmentsEmptyHintLink": "Set up bookable hours",
     "toggleShowPricingLabel": "Show prices",
-    "toggleShowPricingDesc": "Put each activity's prices and access behind a \"Prices & access\" hint on the activity selection screen — what a plan includes, the drop-in price, an appointment's price. Off hides the hint there only; checkout always states the amount."
+    "toggleShowPricingDesc": "Put each activity's prices and access behind a \"Prices & access\" hint on the activity selection screen — what a plan includes, the drop-in price, an appointment's price. Off hides the hint there only; checkout always states the amount.",
+    "sectionPage": "Booking page",
+    "sectionPolicies": "Policies"
   },
   "SettingsPlaces": {
     "pageTitle": "Places",

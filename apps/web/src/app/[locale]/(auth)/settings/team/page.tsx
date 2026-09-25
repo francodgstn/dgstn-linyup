@@ -227,7 +227,7 @@ type GatewayFormData = z.infer<typeof gatewaySchema>
 // derived ONCE on the page (useCapabilities().can('team.settings'), the
 // capability that is owner-only by definition) and threaded into each form,
 // which disables its inputs and its Save and renders this line — the same
-// one-line treatment CancellationPolicyCard and SystemEmailsCard already use.
+// one-line treatment CancellationPolicyRow and SystemEmailsCard already use.
 // The rail also hides the sections a non-owner can only look at; see
 // lib/settings-nav.ts.
 
@@ -414,15 +414,13 @@ function TabBarPreference() {
   const { enabled, setEnabled } = useOpenTabs()
   return (
     <SettingsSection title={t('sectionOther')}>
-      <SettingsRow htmlFor="tab-bar" label={t('tabBarTitle')} hint={t('tabBarHelp')}>
-        <div className="flex md:justify-end md:pt-2">
-          <Switch
-            id="tab-bar"
-            checked={enabled}
-            onCheckedChange={setEnabled}
-            aria-label={t('tabBarTitle')}
-          />
-        </div>
+      <SettingsRow inline htmlFor="tab-bar" label={t('tabBarTitle')} hint={t('tabBarHelp')}>
+        <Switch
+          id="tab-bar"
+          checked={enabled}
+          onCheckedChange={setEnabled}
+          aria-label={t('tabBarTitle')}
+        />
       </SettingsRow>
     </SettingsSection>
   )

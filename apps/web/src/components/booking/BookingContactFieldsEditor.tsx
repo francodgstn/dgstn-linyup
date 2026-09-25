@@ -59,6 +59,9 @@ interface Props {
   extendsTeamDefault?: boolean
   /** Keys already asked team-wide, shown as inherited in the activity editor. */
   inheritedKeys?: string[]
+  /** Leave the title and description to the host, when it already shows them
+   *  as a section heading (Settings → Booking). */
+  hideHeader?: boolean
 }
 
 export function BookingContactFieldsEditor({
@@ -68,6 +71,7 @@ export function BookingContactFieldsEditor({
   customFieldsInstalled = false,
   extendsTeamDefault,
   inheritedKeys = [],
+  hideHeader = false,
 }: Props) {
   const t = useTranslations('BookingContactFields')
   const selected = new Map(value.map((f) => [f.key, f]))
@@ -127,12 +131,14 @@ export function BookingContactFieldsEditor({
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm font-medium">{t('title')}</p>
-        <p className="text-xs text-muted-foreground">
-          {extendsTeamDefault ? t('descriptionActivity') : t('descriptionTeam')}
-        </p>
-      </div>
+      {!hideHeader && (
+        <div>
+          <p className="text-sm font-medium">{t('title')}</p>
+          <p className="text-xs text-muted-foreground">
+            {extendsTeamDefault ? t('descriptionActivity') : t('descriptionTeam')}
+          </p>
+        </div>
+      )}
 
       <div className="divide-y rounded-md border px-3">
         {BOOKING_CONTACT_BASE_FIELDS.map((key) =>

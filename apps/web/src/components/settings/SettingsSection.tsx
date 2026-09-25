@@ -68,6 +68,7 @@ export function SettingsRow({
   hintMode = 'tip',
   error,
   stacked = false,
+  inline = false,
   children,
 }: {
   label: ReactNode
@@ -78,8 +79,31 @@ export function SettingsRow({
   /** Put the control under the label at every width, for a control that needs
    *  the full row (a textarea, a group of inputs). */
   stacked?: boolean
+  /** Label and control on ONE line at every width, for a control too small to
+   *  earn a column (a switch). On a phone the split row would put a lone switch
+   *  on a line of its own under its label. */
+  inline?: boolean
   children: ReactNode
 }) {
+  if (inline) {
+    return (
+      <div className="group/row py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Label htmlFor={htmlFor} className="font-medium">
+              {label}
+            </Label>
+            {hint && hintMode === 'tip' && <HintTip>{hint}</HintTip>}
+          </div>
+          <div className="shrink-0">{children}</div>
+        </div>
+        {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+        {hint && hintMode === 'inline' && (
+          <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>
+        )}
+      </div>
+    )
+  }
   return (
     <div
       className={cn(

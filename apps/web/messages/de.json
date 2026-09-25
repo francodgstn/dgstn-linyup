@@ -6020,7 +6020,9 @@
     "appointmentsEmptyHint": "Dies ist aktiviert, aber es ist noch nichts buchbar — Sie brauchen aktive buchbare Zeiten, die mit einer Termin-Aktivität verknüpft sind.",
     "appointmentsEmptyHintLink": "Buchbare Zeiten einrichten",
     "toggleShowPricingLabel": "Preise anzeigen",
-    "toggleShowPricingDesc": "Zeigt Preise und Zugang jeder Aktivität hinter einem Hinweis «Preise & Zugang» auf der Aktivitätsauswahl — was ein Abo einschliesst, der Drop-in-Preis, der Preis eines Termins. Aus blendet nur diesen Hinweis aus; die Kasse nennt den Betrag immer."
+    "toggleShowPricingDesc": "Zeigt Preise und Zugang jeder Aktivität hinter einem Hinweis «Preise & Zugang» auf der Aktivitätsauswahl — was ein Abo einschliesst, der Drop-in-Preis, der Preis eines Termins. Aus blendet nur diesen Hinweis aus; die Kasse nennt den Betrag immer.",
+    "sectionPage": "Buchungsseite",
+    "sectionPolicies": "Richtlinien"
   },
   "SettingsPlaces": {
     "pageTitle": "Standorte",

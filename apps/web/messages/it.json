@@ -6020,7 +6020,9 @@
     "appointmentsEmptyHint": "Questa opzione è attiva, ma non c'è ancora nulla di prenotabile — servono orari prenotabili attivi collegati a un'attività su appuntamento.",
     "appointmentsEmptyHintLink": "Configura gli orari prenotabili",
     "toggleShowPricingLabel": "Mostra i prezzi",
-    "toggleShowPricingDesc": "Mostra prezzi e accesso di ogni attività dietro un suggerimento «Prezzi e accesso» nella schermata di selezione — cosa include un abbonamento, il prezzo a lezione, il prezzo di un appuntamento. Disattivato nasconde solo quel suggerimento; il pagamento indica sempre l'importo."
+    "toggleShowPricingDesc": "Mostra prezzi e accesso di ogni attività dietro un suggerimento «Prezzi e accesso» nella schermata di selezione — cosa include un abbonamento, il prezzo a lezione, il prezzo di un appuntamento. Disattivato nasconde solo quel suggerimento; il pagamento indica sempre l'importo.",
+    "sectionPage": "Pagina di prenotazione",
+    "sectionPolicies": "Condizioni"
   },
   "SettingsPlaces": {
     "pageTitle": "Sedi",
