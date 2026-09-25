@@ -23,9 +23,12 @@ npx wrangler login          # once
 npx wrangler deploy
 ```
 
-Fill both `vars` in `wrangler.jsonc` first — the placeholders are deliberate, so
-a deploy against an unconfigured backend fails loudly instead of silently
-serving the wrong environment.
+`ORIGIN` in `wrangler.jsonc` is the production web backend the Worker forwards
+to. It must be the one `.github/workflows/deploy-prod.yml` rolls out, or custom
+domains serve an older build than app.linyup.com;
+`packages/functions/src/utils/tenantRouterOrigin.test.ts` fails in CI when the
+two disagree. A merged change to it is not live until somebody runs the deploy
+above: nothing in CI deploys this Worker.
 
 ## Pass A → Pass B
 
