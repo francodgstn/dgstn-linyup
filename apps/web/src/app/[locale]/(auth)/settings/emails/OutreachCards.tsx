@@ -18,13 +18,13 @@ import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { doc, updateDoc } from 'firebase/firestore'
-import { CheckCircle2, Clock, Copy, Loader2, Mail, Plus, Send, Trash2, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock, Copy, Loader2, Plus, Send, Trash2, XCircle } from 'lucide-react'
 import { TEAMS_COLLECTION, type Team } from '@linyup/shared'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { HintTip, SettingsSection } from '@/components/settings/SettingsSection'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -142,13 +142,6 @@ function EmailSenderForm({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Mail className="h-4 w-4" />
-          {t('title')}
-        </h3>
-        <p className="text-xs text-muted-foreground mt-1">{t('subtitle')}</p>
-      </div>
 
       {/* Managed sender card — always shown */}
       <div className={`rounded-lg border p-4 space-y-1 ${!isByo ? 'border-primary/40 bg-primary/5' : ''}`}>
@@ -361,13 +354,24 @@ export function OutreachCards({ teamId, team }: { teamId: string; team: Team }) 
   // Custom `{{variables}}` used to render below the sender. They moved to
   // Settings → Email templates (2026-09-08): they exist to be typed INTO a
   // template, so they belong above the templates, not beside the sender.
+  //
+  // A SECTION, NOT A CARD (the Settings → General layout). Everything in it is
+  // an ACTION — register a domain, check its records, send a test — each with
+  // its own button, so none of it joins the page's save bar. The managed and
+  // domain states keep their boxes: each is a status, not a setting.
+  const t = useTranslations('EmailSettings')
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardContent className="pt-6">
-          <EmailSenderForm teamId={teamId} plan={team.plan} />
-        </CardContent>
-      </Card>
-    </div>
+    <SettingsSection
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          {t('title')}
+          <HintTip>{t('subtitle')}</HintTip>
+        </span>
+      }
+    >
+      <div className="py-4">
+        <EmailSenderForm teamId={teamId} plan={team.plan} />
+      </div>
+    </SettingsSection>
   )
 }

@@ -72,6 +72,7 @@ import { formatCurrency } from '@/lib/format'
 import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { refreshQueries } from '@/lib/queryRefresh'
 import { useReportPaneDirty } from '@/components/offer/paneDirty'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
 import { useInvalidateSetupChecklist } from '@/hooks/useSetupChecklist'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -212,6 +213,7 @@ export function ActivityPricingForm({
     run: () => Promise<void>
     dirty: boolean
     blocked: string | null
+    reset: () => void
   } | null>(null)
   // Re-seed when the selection changes, or when the stored document changes
   // under us (the matcher writes it, and a save here refetches it).
@@ -334,20 +336,33 @@ export function ActivityPricingForm({
   /** EITHER half being touched arms the one button. */
   const anyDirty = dirty || !!links?.dirty
   useReportPaneDirty('activity-pricing', anyDirty)
+  // In the catalogue pane this tab's Save is the page's floating bar; the
+  // button at the foot below is only for a host with no bar.
+  const { inSaveBar } = useSaveBarSection('activity-pricing', {
+    dirty: canEdit && anyDirty,
+    valid: !invalid && !links?.blocked,
+    save: () => save(),
+    reset: () => {
+      setDraft(stored)
+      links?.reset()
+    },
+  })
 
   /** What the pair and the tier become, derived exactly as the booking path
    *  will read them back. Both writers of `accessRule` go through this call. */
   const storedRule = storedRuleFor(draft, activity, studioDropIn)
 
-  async function save() {
-    if (invalid || !anyDirty || links?.blocked) return
+  /** Resolves `true` when everything the tab holds was written. A failure is
+   *  toasted HERE, because the save bar that calls this cannot name it. */
+  async function save(): Promise<boolean> {
+    if (invalid || !anyDirty || links?.blocked) return false
     setSaving(true)
     try {
       // The tier has to land before the matcher's transaction reads it — the
       // same ordering `onBeforeSave` enforced when the two had separate buttons.
       if (!dirty && links?.dirty) {
         await links.run()
-        return
+        return true
       }
       // AN APPOINTMENT WRITES ONLY ITS LENGTHS. The class keys below are not
       // merely irrelevant to it — `accessRule` and `dropIn` are read by nothing
@@ -392,7 +407,14 @@ export function ActivityPricingForm({
       // "Set a price" is a derived setup step keyed on `dropIn.enabled`.
       void invalidateSetupChecklist()
       if (links?.dirty) await links.run()
-      toast.success(t('savedToast'))
+      // In the pane the save bar says "Saved" itself; a toast as well would be
+      // the same news twice, in two corners.
+      if (!inSaveBar) toast.success(t('savedToast'))
+      return true
+    } catch (err) {
+      console.error('[activities] pricing save failed:', err)
+      toast.error(t('saveErrorToast'))
+      return false
     } finally {
       setSaving(false)
     }
@@ -664,8 +686,14 @@ export function ActivityPricingForm({
         </FormSections>
       )}
 
-      {/* ONE BUTTON FOR THE TAB, at its foot, below everything it saves. */}
-      {canEdit && (
+      {/* ONE BUTTON FOR THE TAB, at its foot, below everything it saves —
+          unless the host has a save bar, which is then the one button. The
+          matcher's "can't save" reason still shows here, next to the table
+          it is about. */}
+      {canEdit && inSaveBar && links?.blocked && (
+        <p className="border-t pt-3 text-right text-xs text-destructive">{links.blocked}</p>
+      )}
+      {canEdit && !inSaveBar && (
         <div className="flex items-center justify-end gap-3 border-t pt-3">
           {links?.blocked ? (
             <span className="text-xs text-destructive">{links.blocked}</span>

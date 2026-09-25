@@ -27,7 +27,12 @@
     "loadMore": "Charger plus",
     "showingCount": "{count} chargés",
     "showingOf": "{shown} sur {total} chargés",
-    "close": "Fermer"
+    "close": "Fermer",
+    "unsavedChanges": "Modifications non enregistrées",
+    "unsavedChangesInvalid": "Corrigez les champs signalés pour enregistrer",
+    "discard": "Ignorer",
+    "saveFailed": "Impossible d'enregistrer. Veuillez réessayer.",
+    "moreInfo": "Plus d'informations"
   },
   "Plans": {
     "free": "Free",
@@ -6026,7 +6031,9 @@
     "appointmentsEmptyHint": "Ceci est activé, mais rien n'est encore réservable — il vous faut des heures réservables actives liées à une activité sur rendez-vous.",
     "appointmentsEmptyHintLink": "Configurer les heures réservables",
     "toggleShowPricingLabel": "Afficher les prix",
-    "toggleShowPricingDesc": "Place les prix et l'accès de chaque activité derrière une info « Prix & accès » sur l'écran de sélection — ce qu'un abonnement inclut, le prix à la séance, le prix d'un rendez-vous. Désactivé, seule cette info disparaît ; le paiement indique toujours le montant."
+    "toggleShowPricingDesc": "Place les prix et l'accès de chaque activité derrière une info « Prix & accès » sur l'écran de sélection — ce qu'un abonnement inclut, le prix à la séance, le prix d'un rendez-vous. Désactivé, seule cette info disparaît ; le paiement indique toujours le montant.",
+    "sectionPage": "Page de réservation",
+    "sectionPolicies": "Conditions"
   },
   "SettingsPlaces": {
     "pageTitle": "Lieux",

@@ -20,16 +20,14 @@ import { useBookingSettings } from '@/hooks/useBookingSettings'
 import { usePublicSurfaces } from '@/hooks/usePublicSurfaces'
 import { Link } from '@/i18n/navigation'
 import type { Route } from 'next'
-import { useSaveShortcut } from '@/hooks/useSaveShortcut'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import {  TEAMS_COLLECTION, PUBLIC_PROFILE_SUBCOLLECTION } from '@linyup/shared'
 import { resolveBookingContactFields } from '@linyup/shared'
@@ -41,9 +39,10 @@ import type {
 } from '@linyup/shared'
 import { BookingContactFieldsEditor } from '@/components/booking/BookingContactFieldsEditor'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
-import { NoShowPolicyCard } from './NoShowPolicyCard'
-import { CancellationPolicyCard } from './CancellationPolicyCard'
-import { SettingsSaveBar } from '@/components/settings/SettingsSaveBar'
+import { NoShowPolicyRows } from './NoShowPolicyRows'
+import { CancellationPolicyRow } from './CancellationPolicyRow'
+import { SaveBarProvider, useSaveBarSection } from '@/components/forms/SaveBar'
+import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 import { PublicSurfaceLink } from '@/components/layout/PublicSurfaceLink'
 
 // ─── schema ──────────────────────────────────────────────────────────────────
@@ -203,27 +202,12 @@ function FlowPreview({
   )
 }
 
-// One switch row — a ROW IN A GROUP, not a card. It carries no border of its
-// own: the `divide-y rounded-lg border` wrapper draws the box and the hairlines
-// between rows, exactly as the activity and subscription forms do. Fourteen
-// separately-outlined boxes stacked down a settings pane read as fourteen
-// unrelated decisions; one box with dividers reads as one panel, which is what
-// it is.
-//
-// Extracted from the old inline map because the appointments row nests a
-// control inside itself, and two shapes of the same row rendered two different
-// ways is how they drift apart.
-//
-// IT CARRIES NO MATURITY CHIP any more. `badge`/`badgeHint` existed for the
-// waitlist row's "Beta", and left with it — a chip on one row of a settled
-// panel was saying "this is opt-in" in the one place the reader could not act
-// on it. Settings → Experimental says it once, for everything that is.
-function ToggleRow({
+// A switch bound to one boolean of the form. The row around it is the shared
+// SettingsRow, so this is only the control.
+function FormSwitch({
   control,
   name,
-  label,
-  desc,
-  children,
+  id,
 }: {
   control: ReturnType<typeof useForm<FormData>>['control']
   name:
@@ -231,53 +215,58 @@ function ToggleRow({
     | 'booking.showPricing'
     | 'booking.showFitnessAppField'
     | 'booking.appointmentsEnabled'
-  label: string
-  desc: string
-  /** Rendered under the row, inside its border — the settings this switch owns. */
-  children?: React.ReactNode
+  id: string
 }) {
   return (
-    <div>
-      <div className="flex items-center justify-between gap-4 p-3">
-        <div>
-          <p className="text-sm font-medium">{label}</p>
-          <p className="text-xs text-muted-foreground">{desc}</p>
-        </div>
-        <Controller
-          control={control}
-          name={name}
-          render={({ field }) => (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={field.value}
-              onClick={() => field.onChange(!field.value)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
-                field.value ? 'bg-primary' : 'bg-muted'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
-                  field.value ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          )}
-        />
-      </div>
-      {children && <div className="border-t p-3">{children}</div>}
-    </div>
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Switch id={id} checked={!!field.value} onCheckedChange={field.onChange} />
+      )}
+    />
   )
 }
 
+// ── ROWS, NOT A CARD (the Settings → General layout) ──────────────────────
+// This page used to be one Card holding a hand-rolled bordered panel of
+// switch rows, each with its description printed under it, followed by two
+// more Cards (cancellation, no-show) with their own Saves. It is now four
+// sections of rows with hairlines between them and one Save, the floating bar.
+// The descriptions moved behind each row's ⓘ; the two that stay visible are the
+// ones a studio acts on (the "nothing is bookable yet" warning and the no-show
+// terms being public).
+//
+// THE ORDER STILL CARRIES THE WEIGHT the old comment here described: what the
+// page OFFERS comes first (the flow, bookable hours), then how the form
+// BEHAVES (window, cutoff, what it shows), then what it ASKS (contact fields),
+// then the optional button. Every one of them has a default that is right for
+// a studio that never opens this page:
+//   • appointments     -> on (the picker still needs bookable content behind
+//                         it — see appointmentPickerLive)
+//   • booking window   -> 2 months ahead
+//   • booking cutoff   -> none, i.e. bookable up to the start
+//   • contact fields   -> the team default (phone off)
+//   • show description -> on
+//   • show prices      -> on
+//   • partner field    -> on
+//   • custom button    -> empty, so no extra button is rendered
+// Nothing here changes what anybody is charged or who may book.
+//
+// WAITLISTS ARE NOT ON THIS PAGE: the switch and its claim window are in
+// Settings → Experimental. The store did not move — `waitlistEnabled` and
+// `waitlistClaimMinutes` are still carried through a save untouched (see
+// onSubmit).
 function BookingForm({
   control,
   register,
+  errors,
   customFieldDefinitions,
   customFieldsInstalled,
 }: {
   control: ReturnType<typeof useForm<FormData>>['control']
   register: ReturnType<typeof useForm<FormData>>['register']
+  errors: ReturnType<typeof useForm<FormData>>['formState']['errors']
   /** Already gated on the custom-fields plugin by the page. */
   customFieldDefinitions: CustomFieldDefinition[]
   /** Passed on so the field list can point at the plugin rather than at a
@@ -285,6 +274,7 @@ function BookingForm({
   customFieldsInstalled: boolean
 }) {
   const t = useTranslations('SettingsBooking')
+  const tFields = useTranslations('BookingContactFields')
   // The SAME two halves the Public pages screen reads, through the same hook, so
   // the two screens can never say different things about whether the picker is
   // live. `appointmentsLive` is the composed answer (`appointmentPickerLive`);
@@ -293,133 +283,114 @@ function BookingForm({
   const appointmentsEnabled = publicFlags.appointmentsEnabled
   const appointmentsLive = publicFlags.appointmentsLive
   return (
-    <div className="space-y-6">
-      {/* Flow type */}
-      <div className="space-y-2">
-        <p className="text-sm font-medium">{t('flowTitle')}</p>
-        <p className="text-xs text-muted-foreground">{t('flowSubtitle')}</p>
-        <Controller
-          control={control}
-          name="booking.flowType"
-          render={({ field }) => (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {(
-                [
-                  {
-                    value: 'activity-first',
-                    label: t('flowActivityFirstLabel'),
-                    desc: t('flowActivityFirstDesc'),
-                  },
-                  {
-                    value: 'date-first',
-                    label: t('flowDateFirstLabel'),
-                    desc: t('flowDateFirstDesc'),
-                  },
-                ] as const
-              ).map((opt) => {
-                const selected = field.value === opt.value
-                return (
-                  <label
-                    key={opt.value}
-                    className={`flex cursor-pointer flex-col gap-3 rounded-lg border p-3 transition-colors ${
-                      selected
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                        : 'hover:bg-muted/30'
-                    }`}
-                  >
-                    <FlowPreview kind={opt.value} selected={selected} />
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="radio"
-                        value={opt.value}
-                        checked={selected}
-                        onChange={() => field.onChange(opt.value)}
-                        className="mt-0.5 accent-primary"
-                      />
-                      <div>
-                        <p className="text-sm font-medium">{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
+    <>
+      <SettingsSection
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            {t('flowTitle')}
+            <HintTip>{t('flowSubtitle')}</HintTip>
+          </span>
+        }
+      >
+        {/* The two flows as picture cards: a studio chooses by what the
+            visitor will SEE first, and a sketch of it says that faster than
+            either label. */}
+        <div className="py-4">
+          <Controller
+            control={control}
+            name="booking.flowType"
+            render={({ field }) => (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    {
+                      value: 'activity-first',
+                      label: t('flowActivityFirstLabel'),
+                      desc: t('flowActivityFirstDesc'),
+                    },
+                    {
+                      value: 'date-first',
+                      label: t('flowDateFirstLabel'),
+                      desc: t('flowDateFirstDesc'),
+                    },
+                  ] as const
+                ).map((opt) => {
+                  const selected = field.value === opt.value
+                  return (
+                    <label
+                      key={opt.value}
+                      className={`flex cursor-pointer flex-col gap-3 rounded-lg border p-3 transition-colors ${
+                        selected
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                          : 'hover:bg-muted/30'
+                      }`}
+                    >
+                      <FlowPreview kind={opt.value} selected={selected} />
+                      <div className="flex items-start gap-2">
+                        <input
+                          type="radio"
+                          value={opt.value}
+                          checked={selected}
+                          onChange={() => field.onChange(opt.value)}
+                          className="mt-0.5 accent-primary"
+                        />
+                        <div>
+                          <p className="text-sm font-medium">{opt.label}</p>
+                          <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                        </div>
                       </div>
-                    </div>
-                  </label>
-                )
-              })}
-            </div>
-          )}
-        />
-      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          />
+        </div>
+      </SettingsSection>
 
-      {/* ── ONE PANEL, NOT FOURTEEN CARDS ──────────────────────────────────
-          Everything that configures the public booking page now sits in a
-          single outlined group with hairlines between rows — the shape the
-          activity and subscription forms already use. It replaces a stack of
-          individually-bordered cards plus a "More options" disclosure.
-
-          THE DISCLOSURE IS GONE, DELIBERATELY. It was hiding settings that were
-          already answered sensibly by default — which is a good reason to
-          DEMOTE them (put them lower) and a poor reason to HIDE them: a studio
-          looking for the booking window had to guess that a collapsed grey bar
-          contained it. Ordering carries that weight instead: what the page
-          OFFERS comes first (appointments), then how the form BEHAVES (window,
-          cutoff, which fields to ask for), then the optional custom button.
-
-          WAITLISTS USED TO SIT SECOND, as the other thing the page offers, then
-          last with a Beta chip. They are not on this page at all now — the
-          switch is in Settings → Experimental, which is where an opt-in belongs
-          and says the "may change" part once, on a page about exactly that,
-          instead of as a chip on one row of a panel of settled settings.
-
-          Each of these still has a default that is right for a studio that
-          never opens this panel, so none of them is a question it must answer
-          to go live:
-            • appointments     -> on (the picker still needs bookable content
-                                  behind it — see appointmentPickerLive)
-            • booking window   -> 2 months ahead
-            • booking cutoff   -> none, i.e. bookable up to the start
-            • ask for a phone  -> off (one less field on the public form)
-            • show description -> on (what the studio wrote is what visitors see)
-            • fitness-app field-> on
-            • custom button    -> empty, so no extra button is rendered
-          Nothing here changes what anybody is charged or who may book. */}
-      <div className="divide-y rounded-lg border">
-        <ToggleRow
-          control={control}
-          name="booking.appointmentsEnabled"
-          label={t('toggleAppointmentsEnabledLabel')}
-          desc={t('toggleAppointmentsEnabledDesc')}
-        >
-          {/* THE TOGGLE IS AN INTENTION; the picker also needs something behind
-              it (active bookable hours linked to a bookable appointment
-              activity — see `appointmentPickerLive`). That "on, but empty" state
-              had a signal only on the Public pages screen, which is not where
-              anybody is standing when they flip this switch: the studio turned
-              it on, saw nothing appear on the public page, and had no way to
-              learn why. Same fact, said where the decision is made. */}
+      <SettingsSection title={t('sectionPage')}>
+        {/* ONE child of the divided list, so no hairline falls between the
+            switch and the warning that belongs to it. */}
+        <div>
+          <SettingsRow
+            inline
+            htmlFor="booking-appointments"
+            label={t('toggleAppointmentsEnabledLabel')}
+            hint={t('toggleAppointmentsEnabledDesc')}
+          >
+            <FormSwitch
+              control={control}
+              name="booking.appointmentsEnabled"
+              id="booking-appointments"
+            />
+          </SettingsRow>
+          {/* THE TOGGLE IS AN INTENTION; the picker also needs something
+              behind it (active bookable hours linked to a bookable appointment
+              activity — see `appointmentPickerLive`). Said where the switch
+              is, because this is where a studio stands when it wonders why
+              nothing appeared on the public page. Always visible: it is a
+              problem to act on, not a description. */}
           {appointmentsEnabled && !appointmentsLive && (
-            <div className="px-3 pb-3 -mt-1">
-              <p className="text-xs text-amber-600">
-                {t('appointmentsEmptyHint')}{' '}
-                <Link href={'/schedule/availability' as Route} className="underline hover:no-underline">
-                  {t('appointmentsEmptyHintLink')}
-                </Link>
-              </p>
-            </div>
+            <p className="-mt-2 pb-4 text-xs text-amber-600">
+              {t('appointmentsEmptyHint')}{' '}
+              <Link
+                href={'/schedule/availability' as Route}
+                className="underline hover:no-underline"
+              >
+                {t('appointmentsEmptyHintLink')}
+              </Link>
+            </p>
           )}
-        </ToggleRow>
+        </div>
 
-        {/* Booking window */}
-        <div className="flex items-center justify-between gap-4 p-3">
-          <div>
-            <p className="text-sm font-medium">{t('windowTitle')}</p>
-            <p className="text-xs text-muted-foreground">{t('windowSubtitle')}</p>
-          </div>
+        <SettingsRow htmlFor="booking-window" label={t('windowTitle')} hint={t('windowSubtitle')}>
           <Controller
             control={control}
             name="booking.windowMonths"
             render={({ field }) => (
               <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
-                <SelectTrigger className="h-9 w-36">
-                  <span className="flex flex-1 text-left text-sm truncate">
+                <SelectTrigger id="booking-window" className="w-full">
+                  <span className="flex flex-1 truncate text-left text-sm">
                     {t('windowMonths', { count: field.value })}
                   </span>
                 </SelectTrigger>
@@ -432,22 +403,19 @@ function BookingForm({
               </Select>
             )}
           />
-        </div>
+        </SettingsRow>
 
-        {/* Booking cutoff */}
-        <div className="flex items-center justify-between gap-4 p-3">
-          <div>
-            <p className="text-sm font-medium">{t('cutoffTitle')}</p>
-            <p className="text-xs text-muted-foreground">{t('cutoffSubtitle')}</p>
-          </div>
+        <SettingsRow htmlFor="booking-cutoff" label={t('cutoffTitle')} hint={t('cutoffSubtitle')}>
           <Controller
             control={control}
             name="booking.cutoffMinutes"
             render={({ field }) => (
               <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
-                <SelectTrigger className="h-9 w-48">
-                  <span className="flex flex-1 text-left text-sm truncate">
-                    {field.value === 0 ? t('cutoffNone') : t('cutoffMinutesBefore', { minutes: field.value })}
+                <SelectTrigger id="booking-cutoff" className="w-full">
+                  <span className="flex flex-1 truncate text-left text-sm">
+                    {field.value === 0
+                      ? t('cutoffNone')
+                      : t('cutoffMinutesBefore', { minutes: field.value })}
                   </span>
                 </SelectTrigger>
                 <SelectContent>
@@ -461,19 +429,88 @@ function BookingForm({
               </Select>
             )}
           />
-        </div>
+        </SettingsRow>
 
-        {/* Contact fields — a STACKED row (see the CTA block below for the same
-            shape). This replaced the old single "ask for a phone number"
-            switch: phone is now one row of this list, so there is one place
-            that answers "what does the book form ask for" rather than a
-            switch here and a list somewhere else. */}
-        <div className="p-3">
+        <SettingsRow
+          inline
+          htmlFor="booking-show-description"
+          label={t('toggleShowActivityDescriptionLabel')}
+          hint={t('toggleShowActivityDescriptionDesc')}
+        >
+          <FormSwitch
+            control={control}
+            name="booking.showActivityDescription"
+            id="booking-show-description"
+          />
+        </SettingsRow>
+        <SettingsRow
+          inline
+          htmlFor="booking-show-pricing"
+          label={t('toggleShowPricingLabel')}
+          hint={t('toggleShowPricingDesc')}
+        >
+          <FormSwitch control={control} name="booking.showPricing" id="booking-show-pricing" />
+        </SettingsRow>
+        <SettingsRow
+          inline
+          htmlFor="booking-show-partner"
+          label={t('toggleShowFitnessAppLabel')}
+          hint={t('toggleShowFitnessAppDesc')}
+        >
+          <FormSwitch
+            control={control}
+            name="booking.showFitnessAppField"
+            id="booking-show-partner"
+          />
+        </SettingsRow>
+
+        {/* Two inputs cannot sit opposite one title, so the control column
+            holds both, each with its own small label. */}
+        <SettingsRow
+          htmlFor="booking-cta-url"
+          label={t('ctaTitle')}
+          hint={t('ctaSubtitle')}
+          error={errors.booking?.ctaUrl?.message}
+        >
+          <div className="space-y-2">
+            <Input
+              id="booking-cta-url"
+              {...register('booking.ctaUrl')}
+              type="url"
+              aria-label={t('ctaUrlLabel')}
+              aria-invalid={!!errors.booking?.ctaUrl || undefined}
+              placeholder={t('ctaUrlPlaceholder')}
+              className="font-mono"
+            />
+            <Input
+              {...register('booking.ctaLabel')}
+              aria-label={t('ctaLabelLabel')}
+              placeholder={t('ctaLabelPlaceholder')}
+            />
+          </div>
+        </SettingsRow>
+      </SettingsSection>
+
+      {/* WHAT THE FORM ASKS. The editor keeps its own list (a box of rows is
+          right there: each is an item, not a setting); its title and
+          description become this section's heading. Phone is one row of the
+          list, so there is one place that answers "what does the book form ask
+          for". */}
+      <SettingsSection
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            {tFields('title')}
+            <HintTip>{tFields('descriptionTeam')}</HintTip>
+          </span>
+        }
+      >
+        <div className="py-4">
           <Controller
             control={control}
             name="booking.contactFields"
             render={({ field }) => (
               <BookingContactFieldsEditor
+                hideHeader
                 value={field.value ?? []}
                 onChange={field.onChange}
                 definitions={customFieldDefinitions}
@@ -482,69 +519,39 @@ function BookingForm({
             )}
           />
         </div>
-        <ToggleRow
-          control={control}
-          name="booking.showActivityDescription"
-          label={t('toggleShowActivityDescriptionLabel')}
-          desc={t('toggleShowActivityDescriptionDesc')}
-        />
-        <ToggleRow
-          control={control}
-          name="booking.showPricing"
-          label={t('toggleShowPricingLabel')}
-          desc={t('toggleShowPricingDesc')}
-        />
-        <ToggleRow
-          control={control}
-          name="booking.showFitnessAppField"
-          label={t('toggleShowFitnessAppLabel')}
-          desc={t('toggleShowFitnessAppDesc')}
-        />
-
-        {/* CTA button — a STACKED row: two labelled inputs cannot sit opposite
-            their own title the way a switch or a select can, so this row keeps
-            the group's padding and lets its content run full width. */}
-        <div className="space-y-3 p-3">
-          <div>
-            <p className="text-sm font-medium">{t('ctaTitle')}</p>
-            <p className="text-xs text-muted-foreground">{t('ctaSubtitle')}</p>
-          </div>
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">{t('ctaUrlLabel')}</label>
-              <Input
-                {...register('booking.ctaUrl')}
-                type="url"
-                placeholder={t('ctaUrlPlaceholder')}
-                className="h-9 text-sm font-mono"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">{t('ctaLabelLabel')}</label>
-              <Input
-                {...register('booking.ctaLabel')}
-                placeholder={t('ctaLabelPlaceholder')}
-                className="h-9 text-sm"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* THE WAITLIST ROW IS NOT HERE ANY MORE (2026-08-31). It sat last with
-            a "Beta" chip; it now lives in Settings → Experimental, with its
-            claim window, because a queue is not a booking-page setting in the
-            way the window and the cutoff are — those configure a flow every
-            studio has, that one decides whether a whole feature exists for
-            them. The STORE did not move: `bookingSettings.waitlistEnabled` and
-            `waitlistClaimMinutes` are still the fields, still read by the
-            activity editor and by the promoter, and this form still carries
-            them through a save untouched (see onSubmit). */}
-      </div>
-    </div>
+      </SettingsSection>
+    </>
   )
 }
 
 // ─── page ─────────────────────────────────────────────────────────────────────
+
+/** The booking form's registration with the page's save bar. A component of
+ *  its own because the hook must sit INSIDE the provider the page renders. */
+function BookingFormSection({
+  form,
+  onSubmit,
+}: {
+  form: ReturnType<typeof useForm<FormData>>
+  onSubmit: (data: FormData) => Promise<boolean>
+}) {
+  const { handleSubmit, reset, formState } = form
+  useSaveBarSection('booking-settings', {
+    dirty: formState.isDirty,
+    // Validation runs on save (zod); a refused save shows the field error and
+    // leaves the bar up.
+    valid: true,
+    save: () =>
+      new Promise<boolean>((resolve) => {
+        void handleSubmit(
+          async (data) => resolve(await onSubmit(data)),
+          () => resolve(false)
+        )()
+      }),
+    reset: () => reset(),
+  })
+  return null
+}
 
 export default function BookingSettingsPage() {
   const { currentTeamId } = useAuth()
@@ -567,16 +574,16 @@ export default function BookingSettingsPage() {
   const tNav = useTranslations('Nav')
   const schema = useMemo(() => createSchema(t), [t])
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { isSubmitting, isDirty },
-  } = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: getDefaults(stored),
   })
+  const {
+    register,
+    control,
+    reset,
+    formState: { isDirty, errors },
+  } = form
 
   // Re-hydrate from the store whenever it (re)loads or the team changes —
   // unless the studio has edits in flight, which a background refetch must
@@ -585,12 +592,8 @@ export default function BookingSettingsPage() {
     if (stored && !isDirty) reset(getDefaults(stored))
   }, [currentTeamId, stored]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useSaveShortcut(() => {
-    if (isDirty && !isSubmitting) handleSubmit(onSubmit)()
-  })
-
-  async function onSubmit(data: FormData) {
-    if (!currentTeamId) return
+  async function onSubmit(data: FormData): Promise<boolean> {
+    if (!currentTeamId) return false
     const bookingSettings: BookingSettings = {
       flowType: data.booking.flowType,
       windowMonths: data.booking.windowMonths,
@@ -633,10 +636,12 @@ export default function BookingSettingsPage() {
       // and the next background refetch has nothing to disagree with.
       reset(getDefaults(bookingSettings))
       await qc.invalidateQueries({ queryKey: ['booking-settings', currentTeamId] })
-      toast.success(t('toastSaved'))
+      // No success toast: the save bar says "Saved" itself.
+      return true
     } catch (err) {
       console.error('[booking save] failed:', err)
       toast.error(err instanceof Error ? err.message : t('toastSaveFailed'))
+      return false
     }
   }
 
@@ -662,42 +667,29 @@ export default function BookingSettingsPage() {
         <PublicSurfaceLink subPath="booking" label={tNav('bookingPage')} className="shrink-0" />
       </div>
 
-      {/* The save sits at the END of the form, not in the page header. It was
-          the only header save in settings — default-size where every other one
-          is small, and in a position nothing else used — so it read as a
-          different kind of action from the save on the two policy cards
-          directly below it.
-
-          The form's content is wrapped in the shared `Card` (bg-card + border +
-          shadow-sm) — the house convention every other settings page uses
-          (Roles, Emails, the team Payments tab). This page used to be the one
-          exception: a bare `divide-y rounded-lg border` panel with no
-          background, which read as a different, flatter kind of page next to
-          its siblings. `pt-6` because there is no CardHeader here — the page's
-          own <h1> above already carries the title, matching the team Payments
-          tab's headerless cards. */}
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-5">
-        <Card>
-          <CardContent className="pt-6">
-            <BookingForm
-              control={control}
-              register={register}
-              customFieldDefinitions={customFieldDefinitions}
-              customFieldsInstalled={isInstalled('custom-fields')}
-            />
-          </CardContent>
-        </Card>
-        <SettingsSaveBar
-          onSave={handleSubmit(onSubmit)}
-          saving={isSubmitting}
-          disabled={!isDirty}
-        />
-      </form>
-
-      <div className="max-w-2xl space-y-4">
-        <CancellationPolicyCard />
-        <NoShowPolicyCard />
-      </div>
+      {/* ONE SAVE FOR THE PAGE. The booking form (public profile) and the
+          two policies (team doc, owner-only) are three writes to two
+          documents, and used to be three Save buttons. Each still owns its
+          write and registers with this bar; the bar is the only button. */}
+      <SaveBarProvider>
+        <BookingFormSection form={form} onSubmit={onSubmit} />
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          className="max-w-2xl space-y-10"
+        >
+          <BookingForm
+            control={control}
+            register={register}
+            errors={errors}
+            customFieldDefinitions={customFieldDefinitions}
+            customFieldsInstalled={isInstalled('custom-fields')}
+          />
+          <SettingsSection title={t('sectionPolicies')}>
+            <CancellationPolicyRow />
+            <NoShowPolicyRows />
+          </SettingsSection>
+        </form>
+      </SaveBarProvider>
     </div>
   )
 }

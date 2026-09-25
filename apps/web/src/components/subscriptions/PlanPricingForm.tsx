@@ -66,6 +66,7 @@ import {
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/format'
 import { useReportPaneDirty } from '@/components/offer/paneDirty'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -310,7 +311,12 @@ export function PlanPricingForm({
    */
   links?: (props: {
     hostedInForm: true
-    saveHandle: (h: { run: () => Promise<void>; dirty: boolean; blocked: string | null }) => void
+    saveHandle: (h: {
+      run: () => Promise<void>
+      dirty: boolean
+      blocked: string | null
+      reset: () => void
+    }) => void
   }) => React.ReactNode
 }) {
   const t = useTranslations('TeamSettings')
@@ -330,6 +336,7 @@ export function PlanPricingForm({
     run: () => Promise<void>
     dirty: boolean
     blocked: string | null
+    reset: () => void
   } | null>(null)
 
   const {
@@ -391,7 +398,9 @@ export function PlanPricingForm({
     .map((s) => s.draft!)
   const hasIntroProblem = watchedPrices.some((_, i) => introRowState(i).problem)
 
-  async function onSubmit(data: PricingData) {
+  /** Resolves `true` when everything the tab holds was written. A failure is
+   *  toasted here, because the save bar that calls this cannot name it. */
+  async function onSubmit(data: PricingData): Promise<boolean> {
     // Only the matcher touched? Run it and stop — there is nothing of this
     // form's to write, and writing it anyway would stamp `updated_at` for no
     // reason.
@@ -406,15 +415,19 @@ export function PlanPricingForm({
       setSaving(true)
       try {
         await linksHandle.run()
+        return true
+      } catch (err) {
+        console.error('[plans] plan table save failed:', err)
+        toast.error(t('saveError'))
+        return false
       } finally {
         setSaving(false)
       }
-      return
     }
     // Refuse the save and name the rule on the row that broke it.
     if (hasIntroProblem) {
       setShowIntroError(true)
-      return
+      return false
     }
     setSaving(true)
     try {
@@ -476,7 +489,13 @@ export function PlanPricingForm({
       // Back to reading — the change is made, and staying in a form of inputs
       // says it is not.
       setEditing(false)
-      toast.success(t('saved'))
+      // In the pane the save bar says "Saved" itself.
+      if (!inSaveBar) toast.success(t('saved'))
+      return true
+    } catch (err) {
+      console.error('[plans] prices save failed:', err)
+      toast.error(t('saveError'))
+      return false
     } finally {
       setSaving(false)
     }
@@ -484,6 +503,26 @@ export function PlanPricingForm({
 
   const anyDirty = isDirty || !!linksHandle?.dirty
   useReportPaneDirty('plan-pricing', anyDirty)
+  // In the catalogue pane this tab's Save is the floating bar. The prices keep
+  // their read/edit flip, so "Edit prices" still opens the editor, and Cancel
+  // still closes it, but the one Save is the bar's.
+  const { inSaveBar } = useSaveBarSection('plan-pricing', {
+    dirty: canEdit && anyDirty,
+    valid: !linksHandle?.blocked,
+    save: () =>
+      new Promise<boolean>((resolve) => {
+        void handleSubmit(
+          async (data) => resolve(await onSubmit(data)),
+          () => resolve(false)
+        )()
+      }),
+    reset: () => {
+      reset(defaultsOf(plan))
+      setShowIntroError(false)
+      setEditing(false)
+      linksHandle?.reset()
+    },
+  })
 
   /** The matcher alone, from the read view where no form surrounds it. */
   async function runLinksOnly() {
@@ -760,9 +799,11 @@ export function PlanPricingForm({
             other's scope. */}
         {canEdit && (
           <div className="flex items-center gap-2 pt-1">
-            <Button type="submit" size="sm" disabled={saving || hasIntroProblem}>
-              {saving ? tCat('saving') : tCat('savePrices')}
-            </Button>
+            {!inSaveBar && (
+              <Button type="submit" size="sm" disabled={saving || hasIntroProblem}>
+                {saving ? tCat('saving') : tCat('savePrices')}
+              </Button>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -840,7 +881,10 @@ export function PlanPricingForm({
       {/* THE PLAN TABLE'S OWN SAVE, below the table it saves. The prices
           above carry their own flip button, so this row appears only when the
           table is the thing holding an edit. */}
-      {canEdit && linksHandle?.dirty && (
+      {canEdit && inSaveBar && linksHandle?.blocked && (
+        <p className="border-t pt-3 text-right text-xs text-destructive">{linksHandle.blocked}</p>
+      )}
+      {canEdit && !inSaveBar && linksHandle?.dirty && (
         <div className="flex items-center justify-end gap-3 border-t pt-3">
           {linksHandle.blocked ? (
             <span className="text-xs text-destructive">{linksHandle.blocked}</span>

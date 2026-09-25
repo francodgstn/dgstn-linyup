@@ -32,7 +32,8 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select'
-import { MailCheck, Plus, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
+import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 import { Tip } from '@/components/ui/tip'
 
 type ToggleKey =
@@ -271,35 +272,35 @@ export function SystemEmailsCard() {
     }
   }
 
+  // A SECTION OF ROWS (the Settings → General layout). Every switch here
+  // still saves the moment it is flipped, and so does the reminder schedule —
+  // switches that are not part of a form save instantly — so this section is
+  // not part of the page's save bar. What each mail is sits behind its ⓘ.
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-4">
-      <div className="flex items-start gap-2.5">
-        <MailCheck className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
-        <div>
-          <h2 className="text-sm font-semibold">{t('systemEmails.title')}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('systemEmails.subtitle')}</p>
-          {!canEdit && (
-            <p className="text-xs text-muted-foreground mt-0.5">{t('systemEmails.ownerOnly')}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="divide-y">
+    <SettingsSection
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          {t('systemEmails.title')}
+          <HintTip>{t('systemEmails.subtitle')}</HintTip>
+        </span>
+      }
+      description={!canEdit ? t('systemEmails.ownerOnly') : undefined}
+    >
         {TOGGLE_KEYS.map((key) => (
-          <div key={key} className="py-2.5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{t(`systemEmails.${key}` as Parameters<typeof t>[0])}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t(`systemEmails.${key}Desc` as Parameters<typeof t>[0])}
-                </p>
-              </div>
+          <div key={key} className={key === 'booking_reminder' && state.booking_reminder ? 'pb-4' : ''}>
+            <SettingsRow
+              inline
+              htmlFor={`system-email-${key}`}
+              label={t(`systemEmails.${key}` as Parameters<typeof t>[0])}
+              hint={t(`systemEmails.${key}Desc` as Parameters<typeof t>[0])}
+            >
               <Switch
+                id={`system-email-${key}`}
                 checked={state[key]}
                 disabled={!canEdit || saving === key}
                 onCheckedChange={(v) => toggle(key, v)}
               />
-            </div>
+            </SettingsRow>
             {key === 'booking_reminder' && state.booking_reminder && (
               <ReminderStepsEditor
                 steps={steps}
@@ -313,15 +314,11 @@ export function SystemEmailsCard() {
         ))}
 
         {/* Always-on / configured-elsewhere entries — listed for awareness */}
-        <div className="flex items-center justify-between gap-4 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{t('systemEmails.otp')}</p>
-            <p className="text-xs text-muted-foreground">{t('systemEmails.otpDesc')}</p>
-          </div>
-          <Badge variant="outline" className="shrink-0 text-xs">
+        <SettingsRow inline label={t('systemEmails.otp')} hint={t('systemEmails.otpDesc')}>
+          <Badge variant="outline" className="text-xs">
             {t('systemEmails.alwaysOn')}
           </Badge>
-        </div>
+        </SettingsRow>
         {/* A RECEIPT FOR MONEY IS NOT A PREFERENCE. The confirmation for a
             booking somebody PAID for carries the manage-booking link and the
             only invitation into the member area, so switching it off would
@@ -330,43 +327,26 @@ export function SystemEmailsCard() {
             reason the sign-in codes are: a studio should know what goes out in
             its name, especially the part it cannot turn off. Enforcement:
             packages/functions/src/booking/paidConfirmation.ts. */}
-        <div className="flex items-center justify-between gap-4 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{t('systemEmails.paidBookingReceipt')}</p>
-            <p className="text-xs text-muted-foreground">
-              {t('systemEmails.paidBookingReceiptDesc')}
-            </p>
-          </div>
-          <Badge variant="outline" className="shrink-0 text-xs">
+        <SettingsRow inline label={t('systemEmails.paidBookingReceipt')} hint={t('systemEmails.paidBookingReceiptDesc')}>
+          <Badge variant="outline" className="text-xs">
             {t('systemEmails.alwaysOn')}
           </Badge>
-        </div>
+        </SettingsRow>
         {/* The same rule, on the rails that SELL rather than book: a credit
             pack's receipt is the only place the buyer can read how many credits
             they hold, a course's is the only thing that says where to watch it,
             and a product's is the only thing that says what happens next.
             Enforcement: packages/functions/src/connect/purchaseReceipts.ts. */}
-        <div className="flex items-center justify-between gap-4 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{t('systemEmails.purchaseReceipt')}</p>
-            <p className="text-xs text-muted-foreground">
-              {t('systemEmails.purchaseReceiptDesc')}
-            </p>
-          </div>
-          <Badge variant="outline" className="shrink-0 text-xs">
+        <SettingsRow inline label={t('systemEmails.purchaseReceipt')} hint={t('systemEmails.purchaseReceiptDesc')}>
+          <Badge variant="outline" className="text-xs">
             {t('systemEmails.alwaysOn')}
           </Badge>
-        </div>
-        <div className="flex items-center justify-between gap-4 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{t('systemEmails.formReceipt')}</p>
-            <p className="text-xs text-muted-foreground">{t('systemEmails.formReceiptDesc')}</p>
-          </div>
-          <Badge variant="outline" className="shrink-0 text-xs">
+        </SettingsRow>
+        <SettingsRow inline label={t('systemEmails.formReceipt')} hint={t('systemEmails.formReceiptDesc')}>
+          <Badge variant="outline" className="text-xs">
             {t('systemEmails.perForm')}
           </Badge>
-        </div>
-      </div>
-    </div>
+        </SettingsRow>
+    </SettingsSection>
   )
 }

@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
 import {
   collection,
   doc,
@@ -199,7 +201,7 @@ export function SubTypeDialog({
     reset,
     watch,
     setValue,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isDirty },
   } = useForm<SubTypeData>({
     resolver: zodResolver(subTypeSchema),
     defaultValues: initial,
@@ -219,7 +221,9 @@ export function SubTypeDialog({
   const isPublic = watch('public') ?? false
   const contactMode = watch('checkout_contact_mode') ?? 'minimal'
 
-  async function onSubmit(data: SubTypeData) {
+  /** Resolves `true` once written. A failure is toasted HERE: the save bar
+   *  that calls this in the catalogue pane cannot say what went wrong. */
+  async function onSubmit(data: SubTypeData): Promise<boolean> {
     const payload = {
       name: data.name,
       description: data.description || null,
@@ -239,28 +243,55 @@ export function SubTypeDialog({
           ? { payoutPerVisit: deleteField() }
           : {}),
     }
-    if (editing) {
-      await updateDoc(
-        doc(db, TEAMS_COLLECTION, teamId, SUBSCRIPTION_TYPES_SUBCOLLECTION, editing.id),
-        payload
-      )
-    } else {
-      await addDoc(
-        collection(db, TEAMS_COLLECTION, teamId, SUBSCRIPTION_TYPES_SUBCOLLECTION),
-        {
-          ...payload,
-          order: nextOrder,
-          created_at: serverTimestamp(),
-        }
-      )
-      // NOTHING is linked here. What a plan opens is the edge editor's, and it
-      // needs an id to write against — which is why the dialog shows "save
-      // first" until this create has run. Reopening the plan is the next step,
-      // not a fallback.
+    try {
+      if (editing) {
+        await updateDoc(
+          doc(db, TEAMS_COLLECTION, teamId, SUBSCRIPTION_TYPES_SUBCOLLECTION, editing.id),
+          payload
+        )
+      } else {
+        await addDoc(
+          collection(db, TEAMS_COLLECTION, teamId, SUBSCRIPTION_TYPES_SUBCOLLECTION),
+          {
+            ...payload,
+            order: nextOrder,
+            created_at: serverTimestamp(),
+          }
+        )
+        // NOTHING is linked here. What a plan opens is the edge editor's, and it
+        // needs an id to write against — which is why the dialog shows "save
+        // first" until this create has run. Reopening the plan is the next step,
+        // not a fallback.
+      }
+    } catch (err) {
+      console.error('[plans] save failed:', err)
+      toast.error(t('saveError'))
+      return false
     }
+    // Inline, the written values are the new baseline, so the tab is clean
+    // again before the refetch lands.
+    if (inline) reset(data)
     onSaved()
     onOpenChange(false)
+    return true
   }
+
+  // THE PANE'S DETAILS TAB SAVES FROM THE FLOATING BAR. Only an inline edit
+  // registers; the dialog keeps its own footer.
+  const { inSaveBar } = useSaveBarSection('plan-details', {
+    dirty: inline && !!editing && isDirty,
+    // Validation runs on save; a refused save shows the field errors and
+    // leaves the bar up.
+    valid: true,
+    save: () =>
+      new Promise<boolean>((resolve) => {
+        void handleSubmit(
+          async (data) => resolve(await onSubmit(data)),
+          () => resolve(false)
+        )()
+      }),
+    reset: () => reset(initialValues()),
+  })
 
   const fields = (
     <>
@@ -423,7 +454,7 @@ export function SubTypeDialog({
     return (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {fields}
-        <div className="flex justify-end border-t pt-3">{save}</div>
+        {!inSaveBar && <div className="flex justify-end border-t pt-3">{save}</div>}
       </form>
     )
   }

@@ -162,6 +162,7 @@ import { formatCurrency } from '@/lib/format'
 import { OfferFacts, type OfferChip, type OfferFactsProps } from '@/components/offer/OfferFacts'
 import { ActivityDialog } from '@/components/activities/ActivityDialog'
 import { ActivityPricingForm } from '@/components/activities/ActivityPricingForm'
+import { SaveBarProvider } from '@/components/forms/SaveBar'
 import { PlanPricingForm } from '@/components/subscriptions/PlanPricingForm'
 import { PlanTemplatesDialog } from '@/components/subscriptions/PlanTemplatesDialog'
 import { SubTypeDialog } from '@/components/subscriptions/SubscriptionTypeDialog'
@@ -1746,7 +1747,13 @@ export default function CataloguePage() {
             </button>
           )}
 
+          {/* ONE SAVE FOR THE WHOLE PANE. Its three tabs (Access & pricing,
+              Details, Booking) are three forms writing different fields of one
+              activity; they register with this bar instead of each carrying a
+              button at its own foot, where the setup pill sat on top of it.
+              Keyed with the pane, so switching rows starts a clean bar. */}
           {selectedActivity && (
+            <SaveBarProvider key={selectedActivity.id} disabled={!canEdit}>
             <PaneBody
               key={selectedActivity.id}
               title={selectedActivity.name}
@@ -1809,9 +1816,14 @@ export default function CataloguePage() {
                 canEdit={canEdit}
               />
             </PaneBody>
+            </SaveBarProvider>
           )}
 
+          {/* One save for the plan pane too: Access & pricing and Details
+              register with this bar. Automations has nothing to save — each
+              rule saves in its own dialog. */}
           {selectedPlan && (
+            <SaveBarProvider key={selectedPlan.id} disabled={!canEdit}>
             <PaneBody
               key={selectedPlan.id}
               title={selectedPlan.name}
@@ -1892,9 +1904,14 @@ export default function CataloguePage() {
                 />
               )}
             </PaneBody>
+            </SaveBarProvider>
           )}
 
+          {/* The course panes hold one editor, the plan table, which saves
+              from the same floating bar as the activity and plan panes. The
+              product pane has nothing to save: it is facts plus actions. */}
           {selectedCourse && (
+            <SaveBarProvider key={selectedCourse.id} disabled={!canEdit}>
             <PaneBody
               key={selectedCourse.id}
               title={selectedCourse.title}
@@ -1927,9 +1944,11 @@ export default function CataloguePage() {
                 canEdit={canEdit}
               />
             </PaneBody>
+            </SaveBarProvider>
           )}
 
           {selectedCourseBlock && (
+            <SaveBarProvider key={selectedCourseBlock.id} disabled={!canEdit}>
             <PaneBody
               key={selectedCourseBlock.id}
               title={selectedCourseBlock.name}
@@ -1969,6 +1988,7 @@ export default function CataloguePage() {
                 />
               )}
             </PaneBody>
+            </SaveBarProvider>
           )}
 
           {selectedProduct && (
@@ -2281,7 +2301,7 @@ function PaneBody({
                 when they wonder whether they still owe a save — the button is
                 a scroll away past the plan table. */}
             {dirty && (
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700">
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                 {t('unsaved')}
               </span>
             )}

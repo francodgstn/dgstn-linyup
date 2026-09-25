@@ -49,6 +49,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { FlaskConical } from 'lucide-react'
+import { SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 
 /** Absent falls back to the SAME default the promoter applies server-side
  *  (WAITLIST_DEFAULT_CLAIM_MINUTES) — showing a different number here than the
@@ -147,21 +148,23 @@ export default function ExperimentalSettingsPage() {
   }
 
   /** The one bespoke sub-control on this page: the waitlist's claim window,
-   *  which is the waitlist's OWN setting and means nothing without it. It sits
-   *  inside the row rather than as a peer, so a studio with no queue never meets
-   *  it as a question (UX-41). */
+   *  which is the waitlist's OWN setting and means nothing without it. It is a
+   *  row under the waitlist's own switch, grouped with it, so a studio with no
+   *  queue never meets it as a question (UX-41). */
   function subControl(feature: ExperimentalFeature) {
     if (feature.id !== 'waitlist' || !waitlistOn) return null
     return (
-      <div className="mt-3 space-y-2 border-t pt-3">
-        <p className="text-sm font-medium">{tb('waitlistClaimMinutesLabel')}</p>
-        <p className="text-xs text-muted-foreground">{tb('waitlistClaimMinutesHint')}</p>
+      <SettingsRow
+        htmlFor="waitlist-claim-window"
+        label={tb('waitlistClaimMinutesLabel')}
+        hint={tb('waitlistClaimMinutesHint')}
+      >
         <Select
           value={String(claimMinutes)}
           onValueChange={(v) => setClaimMinutes(Number(v))}
           disabled={!canEdit || pending === 'waitlist'}
         >
-          <SelectTrigger className="h-9 w-48">
+          <SelectTrigger id="waitlist-claim-window" className="w-full">
             <span className="flex flex-1 truncate text-left text-sm">
               {tb('waitlistClaimMinutesValue', { minutes: claimMinutes })}
             </span>
@@ -174,7 +177,7 @@ export default function ExperimentalSettingsPage() {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </SettingsRow>
     )
   }
 
@@ -208,38 +211,48 @@ export default function ExperimentalSettingsPage() {
             <p className="mt-1 text-xs text-muted-foreground">{t('emptyBody')}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          // ROWS, NOT CARDS (the Settings → General layout). Each switch still
+          // saves the moment it is flipped — one switch that is not part of a
+          // form saves instantly — so this page has no save bar. What a feature
+          // does and where it shows up are behind its ⓘ; the plan note stays
+          // visible, because it explains why switching it on changes nothing.
+          <SettingsSection>
             {features.map((feature) => {
               const on = isOn(feature)
+              const name = t(feature.nameKey as Parameters<typeof t>[0])
+              const planNote =
+                feature.minPlan && !isAtLeast(feature.minPlan)
+                  ? t('planNote', { plan: planName(feature.minPlan) })
+                  : null
               return (
-                <div key={feature.id} className="rounded-xl border bg-card p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 space-y-1">
-                      <h3 className="text-sm font-medium">
-                        {t(feature.nameKey as Parameters<typeof t>[0])}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {t(feature.descriptionKey as Parameters<typeof t>[0])}
-                      </p>
-                      <p className="text-xs text-muted-foreground/80">
-                        {t('whereLabel')} {t(feature.surfaceKey as Parameters<typeof t>[0])}
-                        {feature.minPlan && !isAtLeast(feature.minPlan) && (
-                          <> {t('planNote', { plan: planName(feature.minPlan) })}</>
-                        )}
-                      </p>
-                    </div>
+                <div key={feature.id}>
+                  <SettingsRow
+                    inline
+                    htmlFor={`experiment-${feature.id}`}
+                    label={name}
+                    hint={
+                      <>
+                        {t(feature.descriptionKey as Parameters<typeof t>[0])}{' '}
+                        <span className="mt-1.5 block">
+                          {t('whereLabel')} {t(feature.surfaceKey as Parameters<typeof t>[0])}
+                        </span>
+                      </>
+                    }
+                  >
                     <Switch
+                      id={`experiment-${feature.id}`}
                       checked={on}
                       disabled={!canEdit || pending === feature.id}
                       onCheckedChange={(checked: boolean) => toggle(feature, checked)}
-                      aria-label={t(feature.nameKey as Parameters<typeof t>[0])}
+                      aria-label={name}
                     />
-                  </div>
+                  </SettingsRow>
+                  {planNote && <p className="-mt-2 pb-4 text-xs text-muted-foreground">{planNote}</p>}
                   {subControl(feature)}
                 </div>
               )
             })}
-          </div>
+          </SettingsSection>
         )}
       </div>
     </div>

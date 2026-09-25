@@ -15,7 +15,6 @@ import { db } from '@/lib/firebase'
 import { TEAMS_COLLECTION, DEFAULT_PAYMENT_MODES } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 const MAX_MODE_LEN = 60
 
@@ -55,12 +54,10 @@ export function PaymentModesCard({
   }
 
   return (
-    // BARE — the parent owns the card; a border here would box a box.
+    // BARE — the host row owns the label and the hint. Each add and remove
+    // writes at once: this is a list of chips, not a form, so it is not part of
+    // the page's save bar.
     <div className="space-y-3">
-      <div>
-        <Label>{t('paymentModes')}</Label>
-        <p className="text-xs text-muted-foreground mt-0.5">{t('paymentModesDesc')}</p>
-      </div>
 
       <div className="flex flex-wrap gap-1.5">
         {(configured ? modes : DEFAULT_PAYMENT_MODES).map((m) => (

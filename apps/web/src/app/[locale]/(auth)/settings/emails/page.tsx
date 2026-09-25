@@ -11,25 +11,22 @@
 // purely because both were "email", and the templates list was pushing the
 // sender/system-email cards below the fold. The Automations page links here.
 import { useTranslations } from 'next-intl'
-import { Mail } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Link } from '@/i18n/navigation'
 import { OutreachCards } from './OutreachCards'
 import { SystemEmailsCard } from './SystemEmailsCard'
 import { BookingInstructionsCard } from './BookingInstructionsCard'
 import { SmsSenderCard } from './SmsSenderCard'
+import { SaveBarProvider } from '@/components/forms/SaveBar'
 
 export default function SettingsEmailsPage() {
   const t = useTranslations('SettingsEmails')
   const { currentTeamId, team } = useAuth()
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-2xl space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Mail className="h-6 w-6" />
-          {t('title')}
-        </h1>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t('emailsSubtitle')}</p>
         {/* Forward pointer to the authoring half — see the header comment for
             why the two split. Not a back-link on the templates page: both rows
@@ -51,6 +48,10 @@ export default function SettingsEmailsPage() {
           the system toggles are meaningless until the studio knows what address
           its members will see. Came from Settings → Team's Outreach tab when the
           two halves were merged (2026-08-25). */}
+      {/* ONE SAVE FOR THE PAGE'S FORMS. The booking note and the SMS sender
+          register with this bar; the sender's actions and the system-mail
+          switches act at once and never join it. */}
+      <SaveBarProvider>
       {currentTeamId && team && <OutreachCards teamId={currentTeamId} team={team} />}
 
       {/* ── System (transactional) emails ── */}
@@ -61,6 +62,7 @@ export default function SettingsEmailsPage() {
 
       {/* ── SMS sender (owner-only; hidden for managers) ── */}
       <SmsSenderCard />
+      </SaveBarProvider>
     </div>
   )
 }
