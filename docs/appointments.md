@@ -296,6 +296,42 @@ charges the CALLER's effective amount (base or discounted) and refuses with
 falls back to the free path) and `{ reason: 'not_priced' }` when the duration
 has no price at all. The refusal shapes are unchanged from the matrix era.
 
+### Priced per person: a party books one length together
+
+"I come with another person, CHF 75 each" is a length whose price is PER PERSON
+(`ActivityDuration.party: { min, max }`, the booker included). It is its own
+length on its own offer, never a multiplier on the solo price: the studio that
+sells "I come alone" at CHF 110 sells the pair at a different price. A party is
+ONE booking of the provider's time, whatever its size. Decisions (Franco,
+2026-09-25): companions are NAMES on the booking, never contacts; the booker's
+own place takes their member price and any promo, and every companion place
+pays list with the promo only.
+
+- **One reader, one check.** `resolveDurationParty` reads the bounds (null for
+  one person, and always null on a `benefit_only` length, where nothing would
+  cover the people brought along). `normalizePartyRequest` checks what a caller
+  asked for, and the picker and every booking callable run it, so they cannot
+  accept different parties. A refusal names its reason: `party_required` is an
+  older client booking a length that cannot be booked alone.
+- **Priced in the resolver, place by place.** The appointment arm of
+  `resolvePaymentOptions` takes `people` and prices each place through
+  `applyModifiers`, then sums, so the comparator, floor and rounding are the
+  solo path's own. The result is always a `pay` (companions owe), and a booker
+  whose plan covers their own place is recorded on `party.bookerCoveredBy`. A
+  credit pack does not pay for a party: that would be a mixed tender.
+- **The party a payment bought travels with the payment.** The paid rail puts
+  it in the Checkout Session's metadata (`appointments/party.ts`), and the
+  webhook writes the booking's party from there, erasing it on a solo payment.
+  A retry that changes the party rewrites the hold, but the older session can
+  still be the one paid, and the booking must say what that money bought. The
+  party is also part of the Checkout idempotency key (zero parts for one
+  person), or a re-priced retry inside the key's minute is refused by Stripe.
+- **The picker asks first.** "Who's coming" is its own screen before any
+  identity screen, because a member whose code verifies is booked at once, and
+  a party refused after that would have spent the one-time code.
+- **The studio's own booking** (`createStaffAppointment`) takes the same bounds
+  but optional names: a studio books a pair before it knows who is coming.
+
 ### The hold state machine — the hold IS the session
 
 An appointment session doesn't exist until booked, so a payment must first reserve

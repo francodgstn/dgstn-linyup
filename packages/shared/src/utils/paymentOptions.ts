@@ -18,6 +18,7 @@
 // server re-resolves authoritatively on every write path.
 
 import {
+  resolveDurationParty,
   resolveDurationSale,
   type ActivityAccessRule,
   type ActivityAccessTier,
@@ -111,6 +112,10 @@ export interface AppointmentTarget {
   kind: 'appointment'
   duration: ActivityDuration
   benefit?: AnyBenefit | null
+  /** How many people this booking is for, the booker included. Only a party
+   *  length (`resolveDurationParty`) reads it; checked against the party by
+   *  `normalizePartyRequest` before anything is priced. Absent = 1. */
+  people?: number
 }
 
 export interface CourseTarget {
@@ -220,6 +225,18 @@ export type PaymentOption =
          *  `appliedBenefit?.subscriptionTypeId ?? appliedPromo?.supersededBenefit?.subscriptionTypeId ?? null`. */
         supersededBenefit?: { subscriptionTypeId: string; effect: BenefitEffect } | null
       } | null
+      /** A PARTY priced this: `amount` is the whole booking, made of the
+       *  booker's place (their member price or a promo) plus `people - 1`
+       *  companion places at list (a promo still applies to each). Present only
+       *  for more than one person. `bookerCoveredBy` names the plan that made
+       *  the booker's own place free, which no other field can say: the option
+       *  is a `pay` because the companions still owe. */
+      party?: {
+        people: number
+        /** The per-person list price. */
+        unitAmount: number
+        bookerCoveredBy?: string
+      }
     }
 
 /** Why there is NO option — exactly extends BookingAccessDenialReason. */
@@ -785,6 +802,95 @@ export const APPOINTMENT_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
   'percent_off',
   'fixed_price',
 ])
+
+/** A party's booker may take their member price or be covered by their plan,
+ *  but may not SPEND A CREDIT: the companions still owe money, and one booking
+ *  paid half in credits and half by card is a mixed tender no rail settles. */
+const PARTY_BOOKER_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
+  'included',
+  'percent_off',
+  'fixed_price',
+])
+
+/**
+ * A PARTY, priced one place at a time and summed (Franco, 2026-09-25): the
+ * booker's place takes their member rule and the promo exactly as a solo
+ * booking would; every companion place is priced at list with the promo only.
+ * Each place goes through `applyModifiers`, so the comparator, the floor and
+ * the rounding are the solo path's own, never a parallel calculation.
+ *
+ * The result is always a `pay`: the companions owe at least the floor each,
+ * even when the booker's plan covers the booker. That coverage is recorded on
+ * `party.bookerCoveredBy`, because no other field of a pay option can say it.
+ *
+ * At most one modifier is reported, as on the solo path. A code that lowered
+ * ANY place is the event (`appliedPromo`, and the benefit it beat on the
+ * booker's place rides on `supersededBenefit`); otherwise the booker's benefit
+ * is the provenance. Both `baseAmount`s are the party's list total.
+ */
+function priceParty(
+  snapshot: ContactPaymentSnapshot,
+  benefit: AnyBenefit | null | undefined,
+  unit: number,
+  people: number,
+  promo: PromoModifier | null
+): PaymentOptionsResult {
+  const booker = applyModifiers(snapshot, benefit, unit, 'base', PARTY_BOOKER_EFFECTS, promo)
+  const companion = applyModifiers(snapshot, null, unit, 'base', PARTY_BOOKER_EFFECTS, promo)
+  const bookerOption = booker.options[0]
+  const companionOption = companion.options[0]
+  if (companionOption?.type !== 'pay') {
+    // No benefit is passed for a companion, so a place at list always pays.
+    return companion
+  }
+
+  const bookerPay = bookerOption?.type === 'pay' ? bookerOption : null
+  const bookerCoveredBy =
+    bookerOption?.type === 'covered' && bookerOption.via.reason === 'benefit_included'
+      ? bookerOption.via.subscriptionTypeId
+      : undefined
+  const amount = round2Major((bookerPay?.amount ?? 0) + companionOption.amount * (people - 1))
+  const listTotal = round2Major(unit * people)
+
+  const promoSource = bookerPay?.appliedPromo ?? companionOption.appliedPromo ?? null
+  const bookerBenefit = bookerPay?.appliedBenefit ?? null
+  const appliedPromo = promoSource
+    ? {
+        code: promoSource.code,
+        effect: promoSource.effect,
+        baseAmount: listTotal,
+        ...(promoSource.supersededBenefit
+          ? { supersededBenefit: promoSource.supersededBenefit }
+          : bookerBenefit
+            ? {
+                supersededBenefit: {
+                  subscriptionTypeId: bookerBenefit.subscriptionTypeId,
+                  effect: bookerBenefit.effect,
+                },
+              }
+            : {}),
+      }
+    : null
+  const appliedBenefit = !appliedPromo && bookerBenefit ? { ...bookerBenefit, baseAmount: listTotal } : null
+  const outcome = appliedPromo
+    ? { code: appliedPromo.code, status: 'applied' as const }
+    : (booker.promo ?? companion.promo ?? null)
+
+  return {
+    options: [
+      {
+        type: 'pay',
+        amount,
+        source: 'base',
+        ...(appliedBenefit ? { appliedBenefit } : {}),
+        ...(appliedPromo ? { appliedPromo } : {}),
+        party: { people, unitAmount: unit, ...(bookerCoveredBy ? { bookerCoveredBy } : {}) },
+      },
+    ],
+    denial: null,
+    ...(outcome ? { promo: outcome } : {}),
+  }
+}
 // Classes: coverage (free/credits) is the accessRule's job — the drop-in
 // benefit is a MEMBER RATE, price-modifying effects only.
 //
@@ -975,14 +1081,21 @@ function resolveTarget(
       if (sale.priceAmount === null) {
         return { options: [{ type: 'covered', via: { reason: 'unpriced' } }], denial: null }
       }
-      return applyModifiers(
-        snapshot,
-        target.benefit,
-        sale.priceAmount,
-        'base',
-        APPOINTMENT_EFFECTS,
-        promo
-      )
+      const people =
+        resolveDurationParty(target.duration) && Number.isInteger(target.people)
+          ? Math.max(1, target.people as number)
+          : 1
+      if (people === 1) {
+        return applyModifiers(
+          snapshot,
+          target.benefit,
+          sale.priceAmount,
+          'base',
+          APPOINTMENT_EFFECTS,
+          promo
+        )
+      }
+      return priceParty(snapshot, target.benefit, sale.priceAmount, people, promo)
     }
 
     case 'course': {

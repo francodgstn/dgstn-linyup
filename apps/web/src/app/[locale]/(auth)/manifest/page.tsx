@@ -30,6 +30,7 @@ import {
   type WaitlistEntry,
 } from '@linyup/shared'
 import { WaiverChip, WaiverDoorCheckChip } from '@/components/WaiverChip'
+import { BookingPartyLine } from '@/components/sessions/BookingPartyLine'
 import { useWaiverRoster } from '@/hooks/useWaiverStates'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -337,6 +338,8 @@ function ManifestSession({ entry }: { entry: DaySheetEntry }) {
                 {/* Book-form answers — the reason the studio asked. Rendered
                     inline (not behind a toggle) because the whole point is that
                     the coach reads them on paper at the door. */}
+                {/* Who else is coming, on the sheet the coach reads at the door. */}
+                <BookingPartyLine booking={b} className="w-full pl-7 text-xs text-muted-foreground" />
                 {b.question_answers && Object.keys(b.question_answers).length > 0 && (
                   <span className="w-full pl-7 text-xs text-muted-foreground">
                     {formatAnswers(b.question_answers)}

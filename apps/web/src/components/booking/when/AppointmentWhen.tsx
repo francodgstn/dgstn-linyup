@@ -133,7 +133,13 @@ export function AppointmentWhen({
                     {d.benefitOnly === true
                       ? ` · ${t('durationBenefitOnly')}`
                       : typeof d.priceAmount === 'number' &&
-                        ` · ${formatCurrency(d.priceAmount, currency, locale)}`}
+                        ` · ${
+                          d.party
+                            ? t('durationPricePerPerson', {
+                                price: formatCurrency(d.priceAmount, currency, locale),
+                              })
+                            : formatCurrency(d.priceAmount, currency, locale)
+                        }`}
                   </button>
                 ))}
               </div>

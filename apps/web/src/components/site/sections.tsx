@@ -864,6 +864,7 @@ function activityTermLabel(term: ActivityTerm, currency: string, t: SiteT): stri
             money: (amount) => formatCurrency(amount, currency),
             from: (price) => t('termFrom', { price }),
             range: (min, max) => `${min}–${max}`,
+            perPerson: (price) => t('termPerPerson', { price }),
           })
         : null
     case 'benefitIncluded':
@@ -1223,6 +1224,7 @@ function ActivitiesBlock({ section, ctx }: { section: ActivitiesSection; ctx: Re
                       money: (amount) => formatCurrency(amount, currency),
                       from: (price) => t('termFrom', { price }),
                       range: (min, max) => `${min}–${max}`,
+                      perPerson: (price) => t('termPerPerson', { price }),
                     })
                   )
               }

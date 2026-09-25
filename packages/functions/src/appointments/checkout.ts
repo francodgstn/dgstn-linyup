@@ -56,6 +56,12 @@ import {
   runAppointmentSlotTransaction,
 } from './booking'
 import { releaseAppointmentHold } from './holdRelease'
+import {
+  partyBookingFields,
+  partyCheckoutMetadata,
+  partyKeyParts,
+  readAppointmentParty,
+} from './party'
 import { resolveContactFieldPatchForBooking } from '../booking/contactFields'
 
 const HOLD_MINUTES = 30
@@ -145,6 +151,10 @@ export const createAppointmentCheckout = onCall(
       quotedAmount?: number
       /** Ticks from the waiver step — see waivers/gate.ts. */
       waiverAcceptances?: unknown
+      /** A party length: how many people, the booker included. See party.ts. */
+      people?: number
+      /** The companions' names, one per person beyond the booker. */
+      participants?: string[]
     }
     if (
       !data?.teamId ||
@@ -178,6 +188,9 @@ export const createAppointmentCheckout = onCall(
     if (resolveDurationSale(ctx.chosenDuration).mode !== 'priced') {
       throw new HttpsError('failed-precondition', 'This duration is not for sale', { reason: 'not_priced' })
     }
+    // Before the caller is resolved, which spends the one-time code: a party
+    // the length cannot take is the caller's to fix, not a re-verification.
+    const party = readAppointmentParty(ctx.chosenDuration, data)
 
     // ── Caller + effective price — THE PRICE IS THE GATE, there's no access
     // check any more: a guest always pays base; a benefit holder pays their
@@ -215,6 +228,7 @@ export const createAppointmentCheckout = onCall(
       activityId,
       startMs,
       durationMinutes,
+      people: party.people,
     }
     const promoCaller: PromoCaller = await resolvePromoCaller({
       teamId,
@@ -239,6 +253,7 @@ export const createAppointmentCheckout = onCall(
         kind: 'appointment',
         duration: ctx.chosenDuration,
         benefit: durationRule,
+        people: party.people,
       },
       promo.modifier ? { promo: promo.modifier } : undefined
     )
@@ -383,7 +398,11 @@ export const createAppointmentCheckout = onCall(
       subscription_type_id:
         payOption.appliedBenefit?.subscriptionTypeId ??
         payOption.appliedPromo?.supersededBenefit?.subscriptionTypeId ??
+        // A party whose booker's own place the plan covered: the companions
+        // still paid, so the option is a `pay` with no benefit on it.
+        payOption.party?.bookerCoveredBy ??
         null,
+      ...partyBookingFields(party),
       // NO fullname — that's only stamped once the webhook confirms payment.
       status: 'pending',
       payment_status: 'required',
@@ -487,6 +506,10 @@ export const createAppointmentCheckout = onCall(
       // taken — a plain session's payload is unchanged, and so is a session
       // whose code loaded but lost best-one-wins.
       ...promoCheckoutMetadata(promoTicket, payOption.amount),
+      // WHAT THIS PAYMENT BUYS, read back by the webhook. A retry that changed
+      // the party rewrites the hold, but this older session can still be paid,
+      // and the booking must then say what this money bought. See party.ts.
+      ...partyCheckoutMetadata(party),
     }
     const idempotencyKey =
       data.idempotencyKey ??
@@ -500,7 +523,8 @@ export const createAppointmentCheckout = onCall(
         teamId,
         sessionRef.id,
         contactId,
-        ...instrumentKeyParts(promoTicket, null)
+        ...instrumentKeyParts(promoTicket, null),
+        ...partyKeyParts(party)
       )
 
     // The two rollback questions are DIFFERENT, and this flag is what separates
@@ -526,7 +550,7 @@ export const createAppointmentCheckout = onCall(
       const checkoutSession = await startOneOffCheckout({
         team,
         amountMinor: amount,
-        productName: `${ctx.activity.name} · ${durationMinutes} min`,
+        productName: `${ctx.activity.name} · ${durationMinutes} min${party.people > 1 ? ` × ${party.people}` : ''}`,
         successUrl,
         cancelUrl,
         customerEmail: caller.sanitized.email || undefined,

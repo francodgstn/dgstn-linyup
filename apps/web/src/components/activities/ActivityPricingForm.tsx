@@ -83,6 +83,7 @@ import { StudioDropInButton } from '@/components/offer/StudioDropInDialog'
 import { ActivityPlanLinks } from '@/components/offer/ActivityPlanLinks'
 import {
   AppointmentDurationsEditor,
+  durationPartyProblem,
   durationPriceProblem,
   toActivityDurations,
   toDurationFormValues,
@@ -326,7 +327,9 @@ export function ActivityPricingForm({
     draft.trialPrice.trim() !== '' && !(parsePrice(draft.trialPrice) >= 0.5)
   // Through the editor's own predicate, so a length saved from here can never
   // be one the create dialog would have refused.
-  const durationPriceInvalid = isAppointment && draft.durations.some(durationPriceProblem)
+  const durationPriceInvalid =
+    isAppointment &&
+    draft.durations.some((d) => durationPriceProblem(d) || durationPartyProblem(d))
   // An appointment with no length at all falls back to one unpriced 60-minute
   // slot everywhere it is read (`resolveAppointmentDurations`). That is a
   // working state, not an error — so it is not refused here; it is simply what

@@ -5,10 +5,12 @@ import {
   normalizeBookingGroup,
   resolveActivityAccessRule,
   resolveActivityDropIn,
+  resolveDurationParty,
   resolveDurationSale,
   studioDropInOf,
   type ActivityAccessRule,
   type ActivityDropIn,
+  type ActivityDuration,
   type ActivityType,
   type DropInPrice,
 } from '@linyup/shared'
@@ -114,19 +116,22 @@ export function buildActivityPublicProfile(
     // (the old subscriptionPricing matrix is gone).
     ...(data.type === 'appointment' && Array.isArray(data.durations) && data.durations.length
       ? {
-          durations: data.durations.map(
-            (d: { minutes: number; priceAmount?: number | null; benefitOnly?: boolean }) => {
-              // Through `resolveDurationSale`, so a benefit_only length mirrors
-              // with NO price at all: a stale amount left by a mode switch must
-              // never reach a public card as a sellable figure (UX-70).
-              const sale = resolveDurationSale(d)
-              return {
-                minutes: d.minutes,
-                priceAmount: sale.priceAmount,
-                ...(sale.mode === 'benefit_only' ? { benefitOnly: true } : {}),
-              }
+          durations: data.durations.map((d: ActivityDuration) => {
+            // Through `resolveDurationSale`, so a benefit_only length mirrors
+            // with NO price at all: a stale amount left by a mode switch must
+            // never reach a public card as a sellable figure (UX-70).
+            const sale = resolveDurationSale(d)
+            // Through `resolveDurationParty` for the same reason: only a party
+            // the server will honour reaches the picker, never a malformed one
+            // that would quote a group price the callable then refuses.
+            const party = resolveDurationParty(d)
+            return {
+              minutes: d.minutes,
+              priceAmount: sale.priceAmount,
+              ...(sale.mode === 'benefit_only' ? { benefitOnly: true } : {}),
+              ...(party ? { party } : {}),
             }
-          ),
+          }),
         }
       : {}),
     // The one member-benefit rule, mirrored verbatim — public-safe, since the

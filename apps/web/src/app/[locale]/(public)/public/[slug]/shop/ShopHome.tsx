@@ -724,6 +724,7 @@ export default function ShopHome({
                 money: (amount) => formatCurrency(amount, currency),
                 from: (price) => t('payPerVisitFromPrice', { price }),
                 range: (min, max) => t('payPerVisitPriceRange', { min, max }),
+                perPerson: (price) => t('payPerVisitPerPerson', { price }),
               })
             : null
         case 'benefitIncluded': {

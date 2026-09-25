@@ -23,15 +23,22 @@ export interface PriceRangeCopy {
   /** Given already-formatted endpoints. A surface with no range key of its own
    *  joins them with an en dash. */
   range: (min: string, max: string) => string
+  /** Wraps the whole label when every sold length is priced per person.
+   *  Required, not optional: "CHF 75" on something a pair pays CHF 150 for is
+   *  the one price on the page a visitor would be surprised by at checkout. */
+  perPerson: (label: string) => string
 }
 
 export function priceRangeLabel(range: PriceRange, copy: PriceRangeCopy): string {
-  switch (range.kind) {
-    case 'one':
-      return copy.money(range.amount)
-    case 'from':
-      return copy.from(copy.money(range.amount))
-    case 'range':
-      return copy.range(copy.money(range.min), copy.money(range.max))
-  }
+  const label = (() => {
+    switch (range.kind) {
+      case 'one':
+        return copy.money(range.amount)
+      case 'from':
+        return copy.from(copy.money(range.amount))
+      case 'range':
+        return copy.range(copy.money(range.min), copy.money(range.max))
+    }
+  })()
+  return range.perPerson ? copy.perPerson(label) : label
 }

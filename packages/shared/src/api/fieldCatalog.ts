@@ -253,6 +253,8 @@ export const BOOKING_FIELD_CATALOG: FieldCatalog<Booking> = {
   booking_reference: 'excluded', // a desk lookup code
   source: 'exposed',
   question_answers: 'excluded', // "any injuries today?"
+  party_size: 'exposed', // a count, no person in it
+  participants: 'excluded', // the companions' names: people with no contact behind them
   status: 'exposed',
   rebooked_from: 'exposed',
   rebooked_to: 'exposed',

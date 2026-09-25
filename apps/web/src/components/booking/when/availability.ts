@@ -3,6 +3,7 @@ import type {
   ActivityMemberBenefit,
   Benefit,
   BookingContactField,
+  DurationParty,
 } from '@linyup/shared'
 
 // THE SHAPE `listAvailability` ANSWERS IN.
@@ -28,6 +29,9 @@ export interface AvailDuration {
    *  Distinct from `priceAmount: null`, which means free for anyone. The two
    *  used to be the same value and the coach could express only one of them. */
   benefitOnly?: boolean
+  /** A GROUP books this length and `priceAmount` is per person. Present only
+   *  for a party the server honours. */
+  party?: DurationParty
 }
 
 export interface AvailActivity {
