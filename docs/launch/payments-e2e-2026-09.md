@@ -4,7 +4,7 @@ description: "Every payment and receipt surface driven end to end in Stripe test
 status: record
 area: ops
 ---
-# Payments e2e review, 2026-09-25
+# Payments e2e review 2026-09
 
 Every money path a studio or a member can take, clicked through in a real
 browser against one local slot, paid for on Stripe's hosted Checkout with test
