@@ -15,7 +15,7 @@ import { keepOwnTeam, waiverHashVerdict } from './export'
 //   • `BookingForm`'s returning-member path books from `onVerified` and never
 //     renders the details form at all, so anything hung off that form is not on
 //     that path;
-//   • `AppointmentPicker`'s `autobooking` screen books the INSTANT a covered
+//   • the appointment rail's `autobooking` screen books the INSTANT a covered
 //     member's code verifies, with a spinner and no confirm control whatsoever.
 //
 // Both had already spent the caller's verification code by the time the server
@@ -61,7 +61,7 @@ describe('THE SURFACE CENSUS — every terminal submit is behind the consent ste
       note: 'onSubmitGuest (free + paid) and onVerified (the member path that never renders details)',
     },
     {
-      file: 'app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker.tsx',
+      file: 'components/booking/appointment/SlotBookingForm.tsx',
       submits: 3,
       note: 'onSubmitGuest, onVerifiedAppointment → autobooking, onMemberPay',
     },

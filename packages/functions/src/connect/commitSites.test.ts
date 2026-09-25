@@ -205,12 +205,12 @@ describe('THE PROMO MOUNTS — renders and surfaces, counted separately', () => 
   const SURFACES = [
     'apps/web/src/app/[locale]/(public)/public/[slug]/booking/BookingForm.tsx',
     'apps/web/src/app/[locale]/(public)/public/[slug]/shop/ShopHome.tsx',
-    'apps/web/src/app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker.tsx',
+    'apps/web/src/components/booking/appointment/SlotBookingForm.tsx',
   ]
 
   it('four renders across three surfaces, and the appointment picker holds two', () => {
     const renders = SURFACES.map((f) => (readRoot(f).match(/<PromoCodeField\b/g) ?? []).length)
-    assert.deepEqual(renders, [1, 1, 2], 'BookingForm, ShopHome, AppointmentPicker')
+    assert.deepEqual(renders, [1, 1, 2], 'BookingForm, ShopHome, SlotBookingForm')
     assert.equal(
       renders.reduce((a, b) => a + b, 0),
       4

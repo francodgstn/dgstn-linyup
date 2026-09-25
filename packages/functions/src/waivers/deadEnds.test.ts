@@ -45,7 +45,7 @@ function count(src: string, needle: string): number {
 /** Every public surface that owns a gate and can be refused by a rail. */
 const BOOKING_SURFACES = [
   'app/[locale]/(public)/public/[slug]/booking/BookingForm.tsx',
-  'app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker.tsx',
+  'components/booking/appointment/SlotBookingForm.tsx',
   'app/[locale]/(public)/public/[slug]/waitlist/page.tsx',
   'app/[locale]/(public)/public/[slug]/kiosk/WalkIn.tsx',
   'app/[locale]/(public)/public/[slug]/signup/SignupForm.tsx',
