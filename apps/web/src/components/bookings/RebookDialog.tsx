@@ -96,7 +96,7 @@ export function RebookDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t('rebookTitle')}</DialogTitle>
         </DialogHeader>

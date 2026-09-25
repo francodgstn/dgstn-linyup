@@ -202,7 +202,7 @@ export function PlacesManager({
 
       {/* Create / edit dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingId ? t('dialogTitleEdit') : t('addPlace')}</DialogTitle>
           </DialogHeader>

@@ -74,7 +74,7 @@ export function BulkSetCustomFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>{t('bulkSetCustomFieldTitle')}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-1">
           {definitions.length > 1 && (

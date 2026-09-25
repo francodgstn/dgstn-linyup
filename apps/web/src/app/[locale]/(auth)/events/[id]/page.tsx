@@ -323,7 +323,7 @@ function DeleteConfirmDialog({
   const t = useTranslations('Events')
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onCancel() }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t('deleteEvent')}</DialogTitle>
         </DialogHeader>

@@ -196,7 +196,7 @@ function OrgEventDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? t('dialogEditTitle') : t('dialogNewTitle')}</DialogTitle>
         </DialogHeader>

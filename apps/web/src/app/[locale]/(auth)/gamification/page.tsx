@@ -509,7 +509,7 @@ function ScoringTab({
       </div>
 
       <Dialog open={resetDialogOpen} onOpenChange={(o) => { if (!o) setResetDialogOpen(false) }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>{t('resetConfirmTitle')}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground py-2">{t('resetConfirmDesc')}</p>
           <DialogFooter className="gap-2">

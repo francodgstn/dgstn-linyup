@@ -582,7 +582,7 @@ export default function AssetRegisterPage() {
 
       {/* Add / edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingId ? t('editAsset') : t('addAsset')}</DialogTitle>
           </DialogHeader>
@@ -709,7 +709,7 @@ export default function AssetRegisterPage() {
 
       {/* Dispose dialog */}
       <Dialog open={!!disposeTarget} onOpenChange={(open) => !open && setDisposeTarget(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('disposeAsset')}</DialogTitle>
           </DialogHeader>

@@ -61,7 +61,7 @@ export function UpgradeModal({ open, onClose, feature, minPlan }: UpgradeModalPr
         if (!o) onClose()
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${colors.badge}`}

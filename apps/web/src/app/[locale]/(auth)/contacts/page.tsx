@@ -309,7 +309,7 @@ function CreateContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('addContact')}</DialogTitle>
         </DialogHeader>
@@ -428,7 +428,7 @@ function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <p className="text-sm text-muted-foreground">{desc}</p>
         <DialogFooter>
@@ -2094,7 +2094,7 @@ function ContactRequestDialog({
 
   return (
     <Dialog open={!!request} onOpenChange={(v) => { if (!v) onClose() }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('reqTitle')}</DialogTitle>
         </DialogHeader>
@@ -2245,7 +2245,7 @@ function BulkSetRankDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>{t('bulkSetRankTitle')}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-1">
           {rankingSystems.length > 1 && (
@@ -2392,7 +2392,7 @@ function BulkSetSubscriptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>{t('bulkSetSubscriptionTitle')}</DialogTitle></DialogHeader>
         <div className="space-y-1 py-1 max-h-72 overflow-y-auto">
           <button
@@ -2493,7 +2493,7 @@ function BulkPromoteStageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xs">
+      <DialogContent className="sm:max-w-xs">
         <DialogHeader><DialogTitle>{t('bulkSetStageTitle')}</DialogTitle></DialogHeader>
         <div className="py-1">
           <div className="flex gap-2">

@@ -751,7 +751,7 @@ function AddParticipantsDialog({
           `DialogBody` replaced its own `max-h-72` scroller. */}
       <DialogContent
         className={cn(
-          'max-w-sm p-0 gap-0',
+          'sm:max-w-sm p-0 gap-0',
           // ONLY the list state is fixed-height. The uncovered-contacts confirm
           // below replaces the list with three lines of prose, and holding 32rem
           // for it would open a dialog that is mostly empty space.
@@ -2089,7 +2089,7 @@ export default function SessionDetailPage() {
           would have to join again, at the back. Confirmation dialog, like every
           other destructive action here. */}
       <Dialog open={!!waitlistRemoving} onOpenChange={(open) => !open && setWaitlistRemoving(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-base">{t('waitlistRemove')}</DialogTitle>
           </DialogHeader>

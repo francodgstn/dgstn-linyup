@@ -186,7 +186,7 @@ function RankSystemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? t('dialogTitleEdit') : t('dialogTitleAdd')}</DialogTitle>
         </DialogHeader>
@@ -523,7 +523,7 @@ export default function OrgRankingPage() {
       />
 
       <Dialog open={!!deleting} onOpenChange={(v) => { if (!v) closeDelete() }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>{t('deleteDialogTitle')}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground py-1">
             {t('deleteDialogBody')}

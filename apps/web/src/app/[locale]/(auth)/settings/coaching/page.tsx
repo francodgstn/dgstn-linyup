@@ -105,7 +105,7 @@ function DimensionDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{initial ? t('editDimension') : t('addDimension')}</DialogTitle>
         </DialogHeader>
