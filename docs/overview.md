@@ -19,6 +19,9 @@ from `public_profile` mirrors, never from the main collections.
 
 ## Repository map
 
+For what runs where, and which services and providers sit around the code, see
+[Landscape](./landscape.md).
+
 | Path | What it is |
 |---|---|
 | `apps/web/` | Studio dashboard **and** every public surface (`/public/{slug}/…`, `/embed/…`). Next.js App Router, shadcn/ui, TanStack Query, next-intl. |
