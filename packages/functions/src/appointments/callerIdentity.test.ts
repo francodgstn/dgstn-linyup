@@ -33,6 +33,10 @@ import {
 // precedence, and these tests hold both halves against their source.
 
 const APPOINTMENTS = __dirname
+/** The appointment rail: everything between a chosen time and a booked one.
+ *  It was `AppointmentPicker` until the two public funnels merged; the screens
+ *  and the submits moved together, so the assertions follow them rather than
+ *  being deleted with the route. */
 const PICKER = join(
   __dirname,
   '..',
@@ -42,13 +46,10 @@ const PICKER = join(
   'apps',
   'web',
   'src',
-  'app',
-  '[locale]',
-  '(public)',
-  'public',
-  '[slug]',
-  'appointments',
-  'AppointmentPicker.tsx'
+  'components',
+  'booking',
+  'appointment',
+  'SlotBookingForm.tsx'
 )
 
 /** Strip comments so a grep cannot match prose. */

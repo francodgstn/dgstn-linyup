@@ -121,6 +121,10 @@ const REASONS: Record<string, string> = {
   '':
     'The bio-link root is a link menu — it books, buys and shows nothing. The ' +
     'sign-in pill from the layout is the whole of its identity story.',
+  appointments:
+    'A redirect shim since the funnels merged: it forwards its query to /booking, ' +
+    'where an appointment is a step rather than a route of its own. There is no ' +
+    'visitor to identify on a redirect.',
   'appointments/cancel':
     'The `?token=` in the appointment\'s own confirmation mail IS the identity, and ' +
     '`cancelBooking` accepts nothing else. A session would be a second, weaker answer ' +
@@ -228,7 +232,6 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
   // written, which is why the guard is here and not in a comment.
   it('comment stripping does not swallow the file it is checking', () => {
     for (const rel of [
-      ['appointments', 'AppointmentPicker.tsx'],
       ['booking', 'BookingForm.tsx'],
       ['shop', 'ShopHome.tsx'],
     ]) {
@@ -242,12 +245,30 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
   })
 
   // THE REGRESSION THIS CENSUS WAS BUILT AROUND.
+  //
+  // The appointment rail was the one surface that derived no identity at all
+  // while the session's token rode on every callable it made. It is not a route
+  // any more — an appointment is a step of the booking funnel — so the check
+  // follows it to the funnel and to the rail itself, which is where the guest
+  // form and the member screen now live.
   it('the APPOINTMENT rail reads the session — it was the one surface that did not', () => {
     assert.ok(
-      consumesSession('appointments'),
-      'AppointmentPicker must consume usePublicContactAuth: the provider wraps it, its ' +
+      consumesSession('booking'),
+      'the booking funnel must consume usePublicContactAuth: the provider wraps it, its ' +
         'token is already on every callable it makes, and the server resolves the caller ' +
         'from that token before it reads anything this surface sends.'
+    )
+    const rail = code(
+      readFileSync(
+        join(WEB, 'components', 'booking', 'appointment', 'SlotBookingForm.tsx'),
+        'utf8'
+      )
+    )
+    assert.ok(
+      rail.includes('usePublicContactAuth('),
+      'the appointment booking rail must read the session too: it is the screen that ' +
+        'asks for details, and asking a contact the server has already recognised is the ' +
+        'defect this census was built around'
     )
   })
 
@@ -255,7 +276,10 @@ describe('THE PUBLIC-SURFACE IDENTITY CENSUS', () => {
     // Comments only — these two needles CONTAIN string literals, so the
     // literal-stripping form would erase the thing being asserted.
     const src = stripComments(
-      readFileSync(join(SLUG_ROOT, 'appointments', 'AppointmentPicker.tsx'), 'utf8')
+      readFileSync(
+        join(WEB, 'components', 'booking', 'appointment', 'SlotBookingForm.tsx'),
+        'utf8'
+      )
     )
     // The guest form and the sign-in offer live behind the SAME derived fork,
     // so neither can be shown to somebody the server already recognises.

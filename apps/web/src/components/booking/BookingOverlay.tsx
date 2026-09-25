@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import BookingForm from '@/app/[locale]/(public)/public/[slug]/booking/BookingForm'
-import AppointmentPicker from '@/app/[locale]/(public)/public/[slug]/appointments/AppointmentPicker'
 import { rememberBookingReturn } from '@/lib/bookingReturn'
 import { BookingChromeProvider, type BookingChromeValue } from './BookingChrome'
 
@@ -37,7 +36,6 @@ export interface BookingOverlayProps {
   slug: string
   intent: BookIntent | null
   /** Swap to the appointment picker in place (the host also updates the URL). */
-  onSwitchToAppointments: (activityId: string) => void
   /**
    * The session a SUCCESSFUL Stripe payment just confirmed, vouched for by
    * /pay/result — never inferred from the URL. Opens the funnel on its
@@ -55,7 +53,6 @@ export function BookingOverlay({
   slug,
   intent,
   paidSessionId,
-  onSwitchToAppointments,
   onClose,
 }: BookingOverlayProps) {
   const t = useTranslations('PublicBooking')
@@ -74,9 +71,8 @@ export function BookingOverlay({
         rememberBookingReturn(window.location.pathname + window.location.search)
         window.location.href = href
       },
-      switchToAppointments: onSwitchToAppointments,
     }),
-    [onClose, onSwitchToAppointments]
+    [onClose]
   )
 
   const handleOpenChange = useCallback(
@@ -92,37 +88,28 @@ export function BookingOverlay({
   // rather than resuming the previous funnel's step.
   const body = intent ? (
     <BookingChromeProvider value={chrome}>
-      {/* Appointments are a different funnel (per-provider slot picker), but the
-          same chrome — so the swap happens inside the panel, not by navigating. */}
-      {intent.kind === 'appointment' ? (
-        <AppointmentPicker
-          key={intentKey(intent)}
-          slug={slug}
-          presetActivityId={intent.activityId}
-          presetProviderId={intent.providerId}
-          presetDate={intent.date}
-          from="site"
-          disableStepUrl
-        />
-      ) : (
-        <BookingForm
-          key={intentKey(intent)}
-          slug={slug}
-          from="site"
-          initialSession={intent.kind === 'session' ? intent.sessionId : undefined}
-          preSelectedActivitySlug={intent.kind === 'activity' ? intent.activitySlug : undefined}
-          confirmedSessionId={
-            // Only when the confirmed booking IS the one being shown.
-            intent.kind === 'session' && paidSessionId === intent.sessionId
-              ? intent.sessionId
-              : undefined
-          }
-          // The host page owns the URL while the overlay is open, so the funnel
-          // must not also write history entries — two writers would fight and
-          // Back would need two presses to close.
-          disableStepUrl
-        />
-      )}
+      {/* One funnel for every kind of offer. An appointment used to be a second
+          component swapped in here; it is a step inside this one now. */}
+      <BookingForm
+        key={intentKey(intent)}
+        slug={slug}
+        from="site"
+        initialSession={intent.kind === 'session' ? intent.sessionId : undefined}
+        preSelectedActivitySlug={intent.kind === 'activity' ? intent.activitySlug : undefined}
+        initialActivityId={intent.kind === 'appointment' ? intent.activityId : undefined}
+        initialProviderId={intent.kind === 'appointment' ? intent.providerId : undefined}
+        initialDate={intent.kind === 'appointment' ? intent.date : undefined}
+        confirmedSessionId={
+          // Only when the confirmed booking IS the one being shown.
+          intent.kind === 'session' && paidSessionId === intent.sessionId
+            ? intent.sessionId
+            : undefined
+        }
+        // The host page owns the URL while the overlay is open, so the funnel
+        // must not also write history entries — two writers would fight and
+        // Back would need two presses to close.
+        disableStepUrl
+      />
     </BookingChromeProvider>
   ) : null
 
