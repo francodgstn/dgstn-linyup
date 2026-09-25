@@ -3250,14 +3250,19 @@ async function seedStudioCoach() {
     await c.ref.update({ assigned_coach_ids: admin.firestore.FieldValue.arrayUnion(uid) })
   }
 
-  // Give the coach a couple of their own sessions to manage.
-  const sessionsSnap = await db.collection('sessions').where('teamId', '==', teamId).limit(3).get()
-  for (const s of sessionsSnap.docs) {
+  // Give the coach a couple of their own CLASS sessions to manage. Never an
+  // appointment: its id is `apt_{providerId}_{startMs}` and its provider is the
+  // availability window's, so moving the field alone leaves a booked time that
+  // listAvailability offers and bookAppointment then refuses as taken. Class
+  // sessions carry no activityType, so this is decided in memory.
+  const sessionsSnap = await db.collection('sessions').where('teamId', '==', teamId).get()
+  const coachSessions = sessionsSnap.docs.filter((s) => s.get('activityType') !== 'appointment').slice(0, 3)
+  for (const s of coachSessions) {
     await s.ref.update({ providerId: uid, providerName: displayName })
   }
 
   console.log(
-    `   Coach: ${displayName} (${email}) — studio team, ${contactsSnap.size} contacts + ${sessionsSnap.size} sessions assigned`
+    `   Coach: ${displayName} (${email}) — studio team, ${contactsSnap.size} contacts + ${coachSessions.length} sessions assigned`
   )
 }
 
