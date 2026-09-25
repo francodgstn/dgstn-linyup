@@ -97,7 +97,6 @@ import {
   contactDeletionState,
   readAlert,
   alertIsFired,
-  planGrantIsCurrent,
   personInitials,
   ORG_AFFILIATION_STATUSES_SUBCOLLECTION,
   OUTREACH_TEMPLATES_SUBCOLLECTION,
@@ -109,6 +108,7 @@ import {
 } from '@linyup/shared'
 import type {
   DateLike,
+  HeldPlan,
   RegionalFormatter,
   Contact,
   ActiveSubscriptionSummary,
@@ -142,9 +142,7 @@ import {
   DEFAULT_ORG_AFFILIATION_STATUSES,
   computeEngagementBand,
   MAX_CONTACT_LOGIN_EMAILS,
-  SUBSCRIPTION_ROLLUP_STATUSES,
   subscriptionIsCancelling,
-  type SubscriptionRollupStatus,
 } from '@linyup/shared'
 import { usePlan } from '@/hooks/usePlan'
 import { useInstalledPlugins } from '@/hooks/useInstalledPlugins'
@@ -186,7 +184,6 @@ import {
   BarChart2,
   Lock,
   Flag,
-  Info,
   Pencil,
   ShieldCheck,
   ShieldOff,
@@ -208,15 +205,10 @@ import {
   UserPen,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  Tooltip as UITooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from '@/components/ui/tooltip'
 
 import { GoalsTab } from './GoalsTab'
 import { NotesTab, useContactNotesCount } from './NotesTab'
+import { PlansList } from './PlansList'
 import { PaymentsTab } from './PaymentsTab'
 import { useContactPayments } from '@/hooks/useConnect'
 import {
@@ -225,11 +217,7 @@ import {
   formatMoneyMinor,
   mergePaymentRows,
 } from '@/lib/payments'
-import {
-  MemberSubscriptionsSection,
-  RollupBadge,
-  useContactMemberSubscriptions,
-} from '@/components/contacts/MemberSubscriptionsSection'
+import { useContactMemberSubscriptions } from '@/components/contacts/MemberSubscriptionsSection'
 import { InsightsCard } from './InsightsCard'
 import { ENGAGEMENT_BAR, ENGAGEMENT_TEXT } from './engagement'
 import { PlanGate } from '@/components/plan/PlanGate'
@@ -2405,8 +2393,16 @@ function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string 
     .filter((d): d is Date => !!d)
     .sort((a, b) => a.getTime() - b.getTime())[0]
 
+  // Nothing billed, nothing paid, no pack: a row of dashes says less than no
+  // row, and the plan cards below already say what they hold.
+  if (!next && !lastPayment && credits.length === 0) return null
+
   return (
-    <div className="grid grid-cols-3 divide-x rounded-xl border bg-card">
+    // Lessons left only for someone who has ever held a pack: "—" as a headline
+    // figure for every member on a plain membership read as a missing number.
+    <div
+      className={`grid divide-x rounded-xl border bg-card ${credits.length ? 'grid-cols-3' : 'grid-cols-2'}`}
+    >
       <FigureCell
         icon={CalendarCheck}
         label={t('currentNextCharge')}
@@ -2419,12 +2415,14 @@ function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string 
         value={lastPayment ? formatMoneyMinor(lastPayment.amount, lastPayment.currency) : '—'}
         detail={lastDate ? fmt(lastDate) : null}
       />
-      <FigureCell
-        icon={Ticket}
-        label={t('currentCreditsLeft')}
-        value={credits.length ? String(lessonsLeft) : '—'}
-        detail={nextExpiry ? t('creditsExpiresOn', { date: fmt(nextExpiry) }) : null}
-      />
+      {credits.length > 0 && (
+        <FigureCell
+          icon={Ticket}
+          label={t('currentCreditsLeft')}
+          value={String(lessonsLeft)}
+          detail={nextExpiry ? t('creditsExpiresOn', { date: fmt(nextExpiry) }) : null}
+        />
+      )}
     </div>
   )
 }
@@ -2435,160 +2433,50 @@ function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string 
  * only the history — moved, not copied, so each control still has one home.
  */
 function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | null }) {
-  const fmt = useTeamFormat()
-  const t = useTranslations('Contacts')
-  const tPayments = useTranslations('PaymentsDashboard')
   const qc = useQueryClient()
   const { data: subTypes = [] } = useSubscriptionTypes(teamId)
-  const [assignOpen, setAssignOpen] = useState(false)
+  // null = closed; 'add' = a new plan; a HeldPlan = changing that grant.
+  const [planDialog, setPlanDialog] = useState<'add' | HeldPlan | null>(null)
   const [grantOpen, setGrantOpen] = useState(false)
   const { team } = useAuth()
   const currency = (team?.default_currency ?? 'CHF').toUpperCase()
-  // The one-word summary of what Stripe is doing, denormalised onto the contact
-  // by the rollup trigger. It came with the billing section from the Payments
-  // tab — the copy that used to live there was the only one that showed it.
-  const rollupStatus = contact.subscription_status as SubscriptionRollupStatus | undefined
 
-  const invalidateContact = () => {
-    qc.invalidateQueries({ queryKey: ['contact', contact.id] })
-    qc.invalidateQueries({ queryKey: ['contacts'] })
+  // The plan list is rebuilt by a trigger after the write lands, and the
+  // contact is read once, so read it again now and once more shortly after.
+  const refreshSoon = () => {
+    const run = () => {
+      qc.invalidateQueries({ queryKey: ['contact', contact.id] })
+      qc.invalidateQueries({ queryKey: ['contacts'] })
+      qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
+    }
+    run()
+    setTimeout(run, 2500)
+    setTimeout(run, 6000)
   }
-  const invalidateHistory = () =>
-    qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
+
+  if (!teamId) return null
+  const changing = planDialog && planDialog !== 'add' ? planDialog : null
 
   return (
-    <div className="space-y-6">
-      {/* ── Current type assignment ── */}
-      <div className="rounded-xl border bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              {t('subscriptionHeadingCard')}
-              <TooltipProvider delay={200}>
-                <UITooltip>
-                  <TooltipTrigger className="inline-flex text-muted-foreground/50 cursor-help">
-                    <Info className="h-3 w-3 shrink-0" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-56">
-                    {t('tooltipSubscription')}
-                  </TooltipContent>
-                </UITooltip>
-              </TooltipProvider>
-            </p>
-            {contact.subscription_type_name ? (
-              <div className="mt-1 space-y-0.5">
-                <p className="text-sm font-medium">{contact.subscription_type_name}</p>
-                {contact.subscription_recurrence && (
-                  <p className="text-xs text-muted-foreground">
-                    {t(`recurrence_${contact.subscription_recurrence}`)}
-                    {contact.subscription_amount != null && (
-                      <span> · {formatCurrency(contact.subscription_amount, currency)}</span>
-                    )}
-                  </p>
-                )}
-                {/* WHEN A ONE-OFF GRANT RUNS OUT ("2 months included"). It ends
-                    by comparison and nothing writes when it passes, so this
-                    line is the only place the studio can see it coming — and
-                    once it has passed, the only explanation of why a member
-                    the screen still lists is being turned away at the door. */}
-                {contact.subscription_expires_at && (
-                  <p
-                    className={`text-xs ${
-                      planGrantIsCurrent(contact) ? 'text-muted-foreground' : 'text-amber-600'
-                    }`}
-                  >
-                    {t(
-                      planGrantIsCurrent(contact)
-                        ? 'subscriptionExpiresOn'
-                        : 'subscriptionExpired',
-                      {
-                        date: formatDate(fmt, contact.subscription_expires_at),
-                      }
-                    )}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-1">{t('noSubscriptions')}</p>
-            )}
-          </div>
-          <button
-            onClick={() => setAssignOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm hover:bg-muted transition-colors shrink-0"
-          >
-            <Pencil className="h-4 w-4" />
-            {t('addSubscription')}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Lesson credits (packs) ── */}
-      <div className="rounded-xl border bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Ticket className="h-3.5 w-3.5" />
-            {t('creditsHeadingCard')}
-          </p>
-          <button
-            onClick={() => setGrantOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm hover:bg-muted transition-colors shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            {t('grantCredits')}
-          </button>
-        </div>
-        {(contact.credit_summary?.length ?? 0) === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('noCredits')}</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {contact.credit_summary!.map((entry) => (
-              <li key={entry.subscription_type_id} className="text-sm flex items-center gap-1.5">
-                <span className="font-medium">
-                  {entry.subscription_type_name ?? t('subscriptionHeadingCard')}
-                </span>
-                <span className="text-muted-foreground">
-                  ·{' '}
-                  {t('creditsRemaining', { count: entry.remaining })}
-                  {entry.next_expires_at && (
-                    <> · {t('creditsExpiresOn', { date: formatDate(fmt, entry.next_expires_at) })}</>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* ── Stripe billing (freeze / resume / cancel) ──
-          The ONLY copy of this section. It was rendered here and on the Payments
-          tab at the same time; the badge below came only from that other copy,
-          so a plain deletion would have lost it. */}
-      {teamId && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {tPayments('stripeSubscriptionsTitle')}
-            </p>
-            {rollupStatus && SUBSCRIPTION_ROLLUP_STATUSES.includes(rollupStatus) && (
-              <RollupBadge status={rollupStatus} />
-            )}
-          </div>
-          <MemberSubscriptionsSection
-            teamId={teamId}
-            contactId={contact.id}
-            assignedTypeId={contact.subscription_type_id ?? null}
-          />
-        </div>
-      )}
-
-      <SetSubscriptionDialog
-        open={assignOpen}
-        onOpenChange={setAssignOpen}
+    <>
+      <PlansList
         contact={contact}
         teamId={teamId}
+        currency={currency}
+        onAddPlan={() => setPlanDialog('add')}
+        onChangePlan={(plan) => setPlanDialog(plan)}
+        onGrantCredits={() => setGrantOpen(true)}
+      />
+
+      <PlanDialog
+        key={changing ? `change-${changing.ref}` : 'add'}
+        open={planDialog !== null}
+        onOpenChange={(v) => !v && setPlanDialog(null)}
+        contactId={contact.id}
+        changing={changing}
         subTypes={subTypes}
         currency={currency}
-        onSaved={() => { invalidateContact(); invalidateHistory() }}
+        onSaved={refreshSoon}
       />
 
       <GrantCreditsDialog
@@ -2596,9 +2484,9 @@ function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | 
         onOpenChange={setGrantOpen}
         contact={contact}
         subTypes={subTypes}
-        onGranted={invalidateContact}
+        onGranted={refreshSoon}
       />
-    </div>
+    </>
   )
 }
 
@@ -2929,54 +2817,40 @@ function GrantCreditsDialog({
   )
 }
 
-// ─── set subscription dialog (price-aware, writes flat contact fields) ────────
+// ─── plan dialog: add a plan, or change one staff-given plan ─────────────────
+//
+// It ADDS by default (docs/multi-plan-holdings.md: a member may hold several
+// plans), or CHANGES the one grant it was opened from. It used to REPLACE:
+// saving ended every plan the contact held and, unless told otherwise, also
+// cancelled every live Stripe subscription. Stopping billing is now the Stripe
+// card's own action, naming the one subscription it stops, and ending a plan
+// is the plan card's — so this dialog never touches a holding it was not
+// opened for.
 
-function SetSubscriptionDialog({
+function PlanDialog({
   open,
   onOpenChange,
-  contact,
-  teamId,
+  contactId,
+  changing,
   subTypes,
   currency,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
-  contact: Contact
-  teamId: string | null
+  contactId: string
+  /** The staff-given plan being changed; null to add a new one. */
+  changing: HeldPlan | null
   subTypes: SubscriptionType[]
   currency: string
   onSaved: () => void
 }) {
   const t = useTranslations('Contacts')
-  const qc = useQueryClient()
-  const [typeId, setTypeId] = useState(contact.subscription_type_id ?? '')
-  const [priceId, setPriceId] = useState(contact.subscription_price_id ?? '')
-  const [recurrence, setRecurrence] = useState(contact.subscription_recurrence ?? '')
+  const [typeId, setTypeId] = useState(changing?.subscription_type_id ?? '')
+  const [priceId, setPriceId] = useState(changing?.price_id ?? '')
+  const [recurrence, setRecurrence] = useState(changing?.recurrence ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // true = cancel any live Stripe subscription as part of this reassignment;
-  // false = leave it running.
-  //
-  // DEFAULTS TO STOPPING (2026-08-23). "Non-destructive" was the wrong frame:
-  // leaving the old billing running while a new plan is assigned charges the
-  // member TWICE, and the studio finds out from the member. The genuinely
-  // destructive outcome here is the one that keeps taking money for something
-  // that has been replaced — so the safe default is the one that stops it, and
-  // "keep it running" is the deliberate choice (a member moving to a second,
-  // additional membership).
-  const [stopCurrent, setStopCurrent] = useState(true)
-
-  // Live Stripe subscriptions (billing) — distinct from the manual single field. Only
-  // these can be "stopped" (the manual field is replaced by the assignment regardless).
-  const { data: memberSubs = [] } = useContactMemberSubscriptions(teamId, contact.id)
-  const liveStripeSubs = memberSubs.filter(
-    (s) =>
-      !!s.subscriptionId &&
-      !s.duplicate &&
-      ['active', 'trialing', 'past_due', 'paused'].includes(s.status as string)
-  )
-  const hasActive = liveStripeSubs.length > 0 || !!contact.subscription_type_id
 
   const RECURRENCES = ['weekly', 'biweekly', 'monthly', 'quarterly', 'annual']
 
@@ -2992,90 +2866,27 @@ function SetSubscriptionDialog({
     setSaving(true)
     setError(null)
     try {
-      // Stop current billing first (if chosen) so a failure aborts before we reassign.
-      if (stopCurrent && liveStripeSubs.length > 0 && teamId) {
-        const cancelFn = callFunction<
-          { teamId: string; subscriptionId: string },
-          { ok: boolean }
-        >('cancelMemberSubscription')
-        for (const s of liveStripeSubs) {
-          await cancelFn({ teamId, subscriptionId: s.subscriptionId })
-        }
-        qc.invalidateQueries({ queryKey: ['contact-member-subscriptions', teamId, contact.id] })
-      }
-
-      // The SERVER gives the plan (docs/multi-plan-holdings.md, phase 2) — the
-      // rules refuse this write from the browser. Saving this single-plan dialog
-      // REPLACES: the callable ends every open plan, gives the new one (its end
-      // date computed from the chosen price there), and keeps the legacy slot
-      // in step until the readers move to the plan list.
-      const chosenPrice = activePrices.find((p) => p.id === priceId)
-      const assignFn = callFunction<
-        {
-          contactId: string
-          subscriptionTypeId: string
-          priceId: string | null
-          recurrence: string | null
-          replace: boolean
-        },
-        { grantId: string }
-      >('assignPlan')
-      await assignFn({
-        contactId: contact.id,
+      const plan = {
+        contactId,
         subscriptionTypeId: typeId,
-        priceId: chosenPrice ? chosenPrice.id : null,
-        recurrence: chosenPrice ? null : recurrence || null,
-        replace: true,
-      })
-      onSaved()
-      onOpenChange(false)
-    } catch (err) {
-      console.error('[contact] set subscription failed:', err)
-      setError(t('cancelError'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  /**
-   * Remove the plan from the contact — and, unless told otherwise, stop the
-   * billing behind it.
-   *
-   * THIS IS THE DIVERGENCE THE CANARY FOUND. Clearing used to null the
-   * contact's subscription fields and never touch Stripe, so a studio that
-   * froze a membership and then cleared the plan was left with a live (frozen)
-   * Stripe subscription, nothing on screen admitting it existed, and an
-   * apparent way back that RESUMED the billing. The two systems could diverge
-   * in one click and there was no way to reconcile them.
-   *
-   * The Stripe call goes FIRST, exactly as in `save()`: a failure there aborts
-   * before the contact is touched, so the two never end up half-applied in the
-   * direction that keeps charging.
-   */
-  const handleClear = async () => {
-    setSaving(true)
-    setError(null)
-    try {
-      if (stopCurrent && liveStripeSubs.length > 0 && teamId) {
-        const cancelFn = callFunction<
-          { teamId: string; subscriptionId: string },
-          { ok: boolean }
-        >('cancelMemberSubscription')
-        for (const sub of liveStripeSubs) {
-          await cancelFn({ teamId, subscriptionId: sub.subscriptionId })
-        }
-        qc.invalidateQueries({ queryKey: ['contact-member-subscriptions', teamId, contact.id] })
+        priceId: selectedPrice ? selectedPrice.id : null,
+        recurrence: selectedPrice ? null : recurrence || null,
       }
-      // Ends every open plan the contact holds and empties the legacy slot, on
-      // the server (docs/multi-plan-holdings.md, phase 2).
-      const endFn = callFunction<{ contactId: string; allCurrent: true }, { ended: string[] }>(
-        'endPlan'
-      )
-      await endFn({ contactId: contact.id, allCurrent: true })
+      if (changing) {
+        const fn = callFunction<typeof plan & { grantId: string }, { grantId: string }>(
+          'changePlan'
+        )
+        await fn({ ...plan, grantId: changing.ref })
+      } else {
+        const fn = callFunction<typeof plan & { replace: false }, { grantId: string }>(
+          'assignPlan'
+        )
+        await fn({ ...plan, replace: false })
+      }
       onSaved()
       onOpenChange(false)
     } catch (err) {
-      console.error('[contact] clear subscription failed:', err)
+      console.error('[contact] plan save failed:', err)
       setError(t('cancelError'))
     } finally {
       setSaving(false)
@@ -3084,9 +2895,9 @@ function SetSubscriptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>{t('addSubscription')}</DialogTitle>
+          <DialogTitle>{changing ? t('changePlanTitle') : t('addPlanTitle')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <Field label={t('subscriptionTypeName')} required>
@@ -3154,95 +2965,22 @@ function SetSubscriptionDialog({
             </Field>
           ) : null}
 
-          {/* Active-subscription awareness: a contact may hold several different plans,
-              never two of the same. We surface what's already active (the manual plan +
-              any live Stripe billing) and — when there's live billing to act on — let the
-              manager keep it running or stop it as part of this reassignment. */}
-          {hasActive && (
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                {t('currentlyActiveTitle')}
-              </p>
-              <ul className="space-y-1">
-                {contact.subscription_type_name && (
-                  <li className="flex items-center gap-2 text-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
-                    <span className="truncate">{contact.subscription_type_name}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {t('currentManualTag')}
-                    </span>
-                  </li>
-                )}
-                {liveStripeSubs.map((s) => (
-                  <li key={s.id} className="flex items-center gap-2 text-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
-                    <span className="truncate">
-                      {s.subscriptionTypeName || formatCurrency((s.amount ?? 0) / 100, currency)}
-                    </span>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {t('currentBillingTag')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {/* THE ORDER IS THE RECOMMENDATION. Stopping is first and
-                  selected: it governs BOTH buttons below — Save and Clear — so
-                  whichever way this dialog is left, the live billing does not
-                  quietly outlive the plan it was selling. */}
-              {liveStripeSubs.length > 0 && (
-                <div className="pt-1 space-y-1.5">
-                  <label className="flex items-start gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="stopCurrent"
-                      checked={stopCurrent}
-                      onChange={() => setStopCurrent(true)}
-                      className="mt-0.5 accent-primary"
-                    />
-                    <span className="text-sm">{t('stopCurrentOption')}</span>
-                  </label>
-                  <label className="flex items-start gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="stopCurrent"
-                      checked={!stopCurrent}
-                      onChange={() => setStopCurrent(false)}
-                      className="mt-0.5 accent-primary"
-                    />
-                    <span className="text-sm">{t('keepCurrentOption')}</span>
-                  </label>
-                </div>
-              )}
-            </div>
-          )}
-
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
-        <DialogFooter className="flex items-center justify-between">
-          {contact.subscription_type_id && (
-            <button
-              onClick={handleClear}
-              disabled={saving}
-              className="text-xs text-destructive hover:underline disabled:opacity-50"
-            >
-              {t('clearSubscription')}
-            </button>
-          )}
-          <div className="flex gap-2 ml-auto">
-            <button
-              onClick={() => onOpenChange(false)}
-              className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              onClick={save}
-              disabled={saving || !typeId}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {t('saveChanges')}
-            </button>
-          </div>
+        <DialogFooter>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors"
+          >
+            {t('cancel')}
+          </button>
+          <button
+            onClick={save}
+            disabled={saving || !typeId}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {changing ? t('saveChanges') : t('addPlan')}
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -5884,16 +5622,22 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             />
           )}
           {addPlanOpen && (
-            <SetSubscriptionDialog
+            <PlanDialog
               open
               onOpenChange={setAddPlanOpen}
-              contact={contact}
-              teamId={currentTeamId}
+              contactId={contact.id}
+              changing={null}
               subTypes={subTypes}
               currency={(team?.default_currency ?? 'CHF').toUpperCase()}
               onSaved={() => {
-                invalidate()
-                qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
+                // The plan list is rebuilt by a trigger after the write lands.
+                const run = () => {
+                  invalidate()
+                  qc.invalidateQueries({ queryKey: ['subscription-history', contact.id] })
+                }
+                run()
+                setTimeout(run, 2500)
+                setTimeout(run, 6000)
               }}
             />
           )}

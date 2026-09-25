@@ -23,6 +23,7 @@
 // they need to act on) and nothing they authored themselves.
 
 import { useTranslations } from 'next-intl'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { subscriptionCancellation, type SubscriptionLifecycleFields } from '@linyup/shared'
 
 /**
@@ -43,6 +44,7 @@ export function SubscriptionCancellationNote({
   className?: string
 }) {
   const t = useTranslations('SubscriptionCancellation')
+  const fmt = useTeamFormat()
   const record = subscriptionCancellation(subscription)
   // Null covers both "renewing normally" and "reactivated", so a stale field left
   // on the doc cannot put a dead cancellation on screen.
@@ -55,7 +57,11 @@ export function SubscriptionCancellationNote({
       typeof record.requestedAt.toMillis === 'function'
         ? record.requestedAt.toMillis()
         : record.requestedAt.seconds * 1000
-    parts.push(t('requestedOn', { date: new Date(ms).toLocaleDateString() }))
+    parts.push(
+      t('requestedOn', {
+        date: fmt.custom(ms, { day: 'numeric', month: 'short', year: 'numeric' }),
+      })
+    )
   }
   if (record.reason) parts.push(t(`reason_${record.reason}`))
   if (showSurvey && record.feedback) parts.push(t(`feedback_${record.feedback}`))

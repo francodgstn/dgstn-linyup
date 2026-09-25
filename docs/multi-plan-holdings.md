@@ -313,6 +313,14 @@ Each phase is its own PR and leaves `main` shippable.
      history reconciler, the AI summary dossier, mobile.
 4. **UI.** The Current Plans list and dialogs; header, list, Space, Payments tab
    and dashboard; mobile profile.
+   - **Built (2026-09-25): the Current Plans list.** One card per `held_plans`
+     entry (`contacts/[id]/PlansList.tsx`), labelled by source, its status only
+     when not the normal one, and its own menu: freeze / resume / cancel THAT
+     Stripe subscription, change / end THAT grant, grant credits. "Add plan"
+     adds (`assignPlan`, `replace: false`) and never touches billing; the old
+     dialog's replace-everything save and its cancel-all-billing default are
+     gone. Ended Stripe billing keeps its cancellation record under the list.
+     Still to do: payment ↔ plan-card links, and the other surfaces above.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the
    Contact type, the rules and every remaining reader; the census test's
    allow-list ends empty. No adoption wait — nothing is live.
