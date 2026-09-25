@@ -1699,7 +1699,10 @@ export default function ShopHome({
                           ? t('courseBlockPlacesLeft', { count: left })
                           : ''}
                   </p>
-                  {!closed && !soldOut && (
+                  {/* A PRICED course in a price list is read, not bought: its
+                      checkout would die at the callable. A free one still
+                      joins, because joining moves no money. */}
+                  {!closed && !soldOut && !(priceListMode && c.priceAmount != null) && (
                     <button
                       type="button"
                       onClick={() => startCheckout({ kind: 'course_block', block: c })}
