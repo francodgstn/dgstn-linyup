@@ -160,6 +160,32 @@
     ],
     "landed": [
       {
+        "id": "DI_lAHOADowus4Bj7lNzgLMwnA",
+        "area": {
+          "key": "booking-and-schedule",
+          "label": "Booking & schedule"
+        },
+        "en": {
+          "title": "One booking page for everything you offer",
+          "body": "Visitors see classes, appointments and courses together on your booking page and choose where they train, without having to know which kind of offer they need first."
+        },
+        "de": {
+          "title": "Eine Buchungsseite für alles, was du anbietest",
+          "body": "Besucher sehen Gruppentrainings, Termine und Kurse zusammen auf deiner Buchungsseite und wählen, wo sie trainieren, ohne vorher wissen zu müssen, welche Art von Angebot sie brauchen.",
+          "srcHash": "56d521695342"
+        },
+        "fr": {
+          "title": "Une seule page de réservation pour toute votre offre",
+          "body": "Les visiteurs voient les cours collectifs, les rendez-vous et les cycles de cours réunis sur votre page de réservation et choisissent où ils s'entraînent, sans devoir savoir d'avance de quel type d'offre ils ont besoin.",
+          "srcHash": "56d521695342"
+        },
+        "it": {
+          "title": "Un'unica pagina di prenotazione per tutto ciò che offri",
+          "body": "I visitatori vedono lezioni di gruppo, appuntamenti e corsi insieme sulla tua pagina di prenotazione e scelgono dove allenarsi, senza dover sapere prima di che tipo di offerta hanno bisogno.",
+          "srcHash": "56d521695342"
+        }
+      },
+      {
         "id": "DI_lAHOADowus4Bj7lNzgLJQLc",
         "area": {
           "key": "integrations",
@@ -282,36 +308,36 @@
           "body": "Lavoro continuo sotto il cofano perché Linyup resti rapido e affidabile mentre arrivano nuovi studi. Nel modo di usarlo non cambia nulla.",
           "srcHash": "ac84d0c52482"
         }
-      },
-      {
-        "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
-        "area": {
-          "key": "member-app",
-          "label": "Member app"
-        },
-        "en": {
-          "title": "Member app for iPhone and Android",
-          "body": "Members book, cancel and follow their progress from their phone. Rolling out to the app stores."
-        },
-        "de": {
-          "title": "Mitglieder-App für iPhone und Android",
-          "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Die App kommt gerade in die App Stores.",
-          "srcHash": "19444eb3d3d4"
-        },
-        "fr": {
-          "title": "Application membres pour iPhone et Android",
-          "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. L'app arrive dans les stores.",
-          "srcHash": "19444eb3d3d4"
-        },
-        "it": {
-          "title": "App per i membri su iPhone e Android",
-          "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
-          "srcHash": "19444eb3d3d4"
-        }
       }
     ]
   },
   "landedArchive": [
+    {
+      "id": "DI_lAHOADowus4Bj7lNzgLJQKw",
+      "area": {
+        "key": "member-app",
+        "label": "Member app"
+      },
+      "en": {
+        "title": "Member app for iPhone and Android",
+        "body": "Members book, cancel and follow their progress from their phone. Rolling out to the app stores."
+      },
+      "de": {
+        "title": "Mitglieder-App für iPhone und Android",
+        "body": "Mitglieder buchen, stornieren und verfolgen ihre Fortschritte direkt auf dem Handy. Die App kommt gerade in die App Stores.",
+        "srcHash": "19444eb3d3d4"
+      },
+      "fr": {
+        "title": "Application membres pour iPhone et Android",
+        "body": "Vos membres réservent, annulent et suivent leur progression depuis leur téléphone. L'app arrive dans les stores.",
+        "srcHash": "19444eb3d3d4"
+      },
+      "it": {
+        "title": "App per i membri su iPhone e Android",
+        "body": "I membri prenotano, disdicono e seguono i propri progressi dal telefono. L'app sta arrivando negli store.",
+        "srcHash": "19444eb3d3d4"
+      }
+    },
     {
       "id": "DI_lAHOADowus4Bj7lNzgLJQLg",
       "area": null,
