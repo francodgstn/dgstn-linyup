@@ -31,7 +31,8 @@
     "unsavedChanges": "Modifiche non salvate",
     "unsavedChangesInvalid": "Correggi i campi evidenziati per salvare",
     "discard": "Scarta",
-    "saveFailed": "Impossibile salvare. Riprova."
+    "saveFailed": "Impossibile salvare. Riprova.",
+    "moreInfo": "Maggiori informazioni"
   },
   "Plans": {
     "free": "Free",

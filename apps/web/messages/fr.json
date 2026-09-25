@@ -31,7 +31,8 @@
     "unsavedChanges": "Modifications non enregistrées",
     "unsavedChangesInvalid": "Corrigez les champs signalés pour enregistrer",
     "discard": "Ignorer",
-    "saveFailed": "Impossible d'enregistrer. Veuillez réessayer."
+    "saveFailed": "Impossible d'enregistrer. Veuillez réessayer.",
+    "moreInfo": "Plus d'informations"
   },
   "Plans": {
     "free": "Free",

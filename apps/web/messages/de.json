@@ -31,7 +31,8 @@
     "unsavedChanges": "Ungespeicherte Änderungen",
     "unsavedChangesInvalid": "Markierte Felder korrigieren, um zu speichern",
     "discard": "Verwerfen",
-    "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut."
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut.",
+    "moreInfo": "Weitere Informationen"
   },
   "Plans": {
     "free": "Free",

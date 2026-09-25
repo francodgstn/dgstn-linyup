@@ -28,6 +28,7 @@
 
 import type { ReactNode } from 'react'
 import { Info } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -40,7 +41,9 @@ export function SettingsSection({
   children,
   className,
 }: {
-  title: ReactNode
+  /** Omit on a page that is ONE section: the page's own h1 is its heading,
+   *  and a second heading repeating it would be noise. */
+  title?: ReactNode
   /** Rare. One short line when the heading alone would mislead. */
   description?: ReactNode
   action?: ReactNode
@@ -49,13 +52,17 @@ export function SettingsSection({
 }) {
   return (
     <section className={cn('space-y-1', className)}>
-      <div className="flex items-end justify-between gap-3 pb-1">
-        <div className="min-w-0">
-          <h2 className="font-heading text-base font-semibold tracking-tight">{title}</h2>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      {(title || description || action) && (
+        <div className="flex items-end justify-between gap-3 pb-1">
+          <div className="min-w-0">
+            {title && (
+              <h2 className="font-heading text-base font-semibold tracking-tight">{title}</h2>
+            )}
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          </div>
+          {action && <div className="shrink-0">{action}</div>}
         </div>
-        {action && <div className="shrink-0">{action}</div>}
-      </div>
+      )}
       <div className="divide-y border-y">{children}</div>
     </section>
   )
@@ -140,13 +147,17 @@ export function SettingsRow({
 /** The ⓘ. A popover rather than a tooltip so a tap opens it too. A tooltip never
  *  shows on touch, and a studio owner on a phone would never see the sentence. */
 export function HintTip({ children }: { children: ReactNode }) {
+  // A SHORT name, not the sentence: the sentence is the popover's content and
+  // is read when it opens. As the trigger's name it was read in full on every
+  // pass through the page, and it made the ⓘ answer to any word in it.
+  const t = useTranslations('Common')
   return (
     <Popover>
       <PopoverTrigger
         openOnHover
         delay={150}
         className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={typeof children === 'string' ? children : undefined}
+        aria-label={t('moreInfo')}
       >
         <Info className="h-3.5 w-3.5" />
       </PopoverTrigger>

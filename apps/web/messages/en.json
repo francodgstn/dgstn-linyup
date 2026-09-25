@@ -31,7 +31,8 @@
     "unsavedChanges": "Unsaved changes",
     "unsavedChangesInvalid": "Fix the highlighted fields to save",
     "discard": "Discard",
-    "saveFailed": "Couldn't save. Please try again."
+    "saveFailed": "Couldn't save. Please try again.",
+    "moreInfo": "More information"
   },
   "Plans": {
     "free": "Free",

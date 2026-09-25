@@ -17,10 +17,11 @@ import {
   SMS_SENDER_INTEGRATION_DOC,
 } from '@linyup/shared'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { MessageSquareText, Loader2} from 'lucide-react'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
+import { HintTip, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 
 interface SmsSenderConfig {
   senderName?: string
@@ -33,6 +34,7 @@ function sanitize(name: string): string {
 
 export function SmsSenderCard() {
   const t = useTranslations('SettingsEmails')
+  const tCommon = useTranslations('Common')
   const { currentTeamId, user, teamRole } = useAuth()
   const canEdit = teamRole === 'owner'
   const qc = useQueryClient()
@@ -58,8 +60,6 @@ export function SmsSenderCard() {
 
   const [name, setName] = useState('')
   const [enabled, setEnabled] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     setName(config?.senderName ?? '')
@@ -68,10 +68,8 @@ export function SmsSenderCard() {
 
   const dirty = sanitize(name) !== (config?.senderName ?? '') || enabled !== (config?.enabled ?? false)
 
-  async function save() {
-    if (!currentTeamId || !canEdit) return
-    setSaving(true)
-    setSaved(false)
+  async function save(): Promise<boolean> {
+    if (!currentTeamId || !canEdit) return false
     try {
       await setDoc(
         doc(
@@ -91,65 +89,56 @@ export function SmsSenderCard() {
         { merge: true }
       )
       await qc.invalidateQueries({ queryKey: ['sms_sender', currentTeamId] })
-      setSaved(true)
-    } finally {
-      setSaving(false)
+      return true
+    } catch (err) {
+      console.error('[emails] sms sender save failed:', err)
+      toast.error(tCommon('saveFailed'))
+      return false
     }
   }
+
+  useSaveBarSection('sms-sender', {
+    dirty: canEdit && dirty,
+    valid: true,
+    save,
+    reset: () => {
+      setName(config?.senderName ?? '')
+      setEnabled(config?.enabled ?? false)
+    },
+  })
 
   // Managers can't read or write the config — hide the card entirely.
   if (!canEdit) return null
 
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-4">
-      <div className="flex items-start gap-2.5">
-        <MessageSquareText className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
-        <div>
-          <h2 className="text-sm font-semibold">{t('smsTitle')}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('smsSubtitle')}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="sms-sender-name">
-            {t('smsSenderLabel')}
-          </label>
-          <Input
-            id="sms-sender-name"
-            value={name}
-            onChange={(e) => {
-              setName(sanitize(e.target.value))
-              setSaved(false)
-            }}
-            placeholder="Linyup"
-            maxLength={11}
-            className="w-44"
-          />
-          <p className="text-xs text-muted-foreground">{t('smsSenderHelp')}</p>
-        </div>
-        <label className="flex items-center gap-2 text-sm cursor-pointer pb-6">
-          <Switch
-            checked={enabled}
-            onCheckedChange={(v: boolean) => {
-              setEnabled(v)
-              setSaved(false)
-            }}
-          />
-          {t('smsEnabledLabel')}
-        </label>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
+    <SettingsSection
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          {t('smsTitle')}
+          <HintTip>{t('smsSubtitle')}</HintTip>
+        </span>
+      }
+    >
+      <SettingsRow inline htmlFor="sms-sender-enabled" label={t('smsEnabledLabel')}>
+        <Switch id="sms-sender-enabled" checked={enabled} onCheckedChange={setEnabled} />
+      </SettingsRow>
+      <SettingsRow
+        htmlFor="sms-sender-name"
+        label={t('smsSenderLabel')}
+        hint={t('smsSenderHelp')}
+        hintMode="focus"
+      >
+        <Input
+          id="sms-sender-name"
+          value={name}
+          onChange={(e) => setName(sanitize(e.target.value))}
+          placeholder="Linyup"
+          maxLength={11}
+          className="w-44"
+        />
+        {/* Visible: it is what the studio pays, and it is easy to miss. */}
         <p className="text-xs text-muted-foreground">{t('smsCostNote')}</p>
-        <div className="flex items-center gap-2 shrink-0">
-          {saved && !dirty && <span className="text-xs text-muted-foreground">{t('instructionsSaved')}</span>}
-          <Button size="sm" onClick={save} disabled={saving || !dirty}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? t('instructionsSaving') : t('instructionsSave')}
-          </Button>
-        </div>
-      </div>
-    </div>
+      </SettingsRow>
+    </SettingsSection>
   )
 }
