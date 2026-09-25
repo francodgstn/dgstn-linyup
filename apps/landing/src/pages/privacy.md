@@ -14,7 +14,7 @@ A summary of the sections below. The sections themselves are what applies.
 | What we do | What data | Legal basis | How long we keep it |
 |---|---|---|---|
 | Deliver and secure the website | IP address, browser and device, page and time of access | Legitimate interest (GDPR Art. 6(1)(f); FADP Art. 31) | Up to 30 days |
-| Answer your enquiry or sign-up | What you enter: name, email, studio, message | Steps you ask for before a contract, and/or consent (GDPR Art. 6(1)(b), (a)) | Until your request is handled, or until you ask us to delete it |
+| Answer your inquiry or sign-up | What you enter: name, email, studio, message | Steps you ask for before a contract, and/or consent (GDPR Art. 6(1)(b), (a)) | Until your request is handled, or until you ask us to delete it |
 | Provide Linyup to Customers | Account, profile, billing and usage data | Performance of the contract (GDPR Art. 6(1)(b)) | For the contract, then as long as legal retention requires (generally 10 years for accounting records) |
 | Payments | Transaction details from Stripe (status, amount, reference), never card details | Performance of the contract (GDPR Art. 6(1)(b)) | As billing data above |
 | Product news by email | Name and email address | Consent, withdrawable at any time (GDPR Art. 6(1)(a)) | See [section 5](#5-how-long-we-keep-data) |
@@ -76,7 +76,7 @@ We use **PostHog** for product analytics — to understand which pages and featu
 
 **Inside the Linyup app (for Customers).** When you are signed in and using the product, we also use PostHog to understand how the app is used so we can improve it. There, analytics is **on by default** under our legitimate interest in operating and improving the service (GDPR Art. 6(1)(f) / FADP Art. 31); session recording is switched off, and you can **opt out at any time** from the user menu in the app. The consent banner above governs the public website only.
 
-For two strictly functional purposes we use your browser's local storage: to remember your light or dark theme preference, and to remember your analytics-consent choice. These are essential to honour your own settings, are kept only on your device, hold no personal data, and are not shared — so no separate consent is needed for them.
+For two strictly functional purposes we use your browser's local storage: to remember your light or dark theme preference, and to remember your analytics-consent choice. These are essential to honor your own settings, are kept only on your device, hold no personal data, and are not shared — so no separate consent is needed for them.
 
 To display the site, your browser loads some resources from third-party content-delivery networks — web fonts from Google Fonts (Google) and interface icons from unpkg. Fetching those files makes your IP address and browser information visible to those providers; we do not use this to track you. When you submit an email form, the address you enter is sent to Google Firestore to record your request (see Sections 2 and 4).
 
@@ -176,7 +176,7 @@ with the app version it registered under. It addresses a device, not you.
 Turning notifications off in your phone's settings stops them, and a token that
 has stopped working is deleted.
 
-**Health-insurance receipts and invoices.** If your studio is recognised by a
+**Health-insurance receipts and invoices.** If your studio is recognized by a
 Swiss health-insurer label and uses Linyup to issue the reimbursement receipt
 (Rückforderungsbeleg) you hand to your supplementary insurer, your studio may
 record your **AHV number**, your insurer and your insured number, because the
@@ -197,9 +197,9 @@ transmitted.
 the app: [linyup.com/delete-account](/delete-account).
 
 Either route schedules the deletion **30 days** ahead. Your account keeps
-working for that whole window, and signing in and cancelling stops it — so an
+working for that whole window, and signing in and canceling stops it — so an
 accidental tap costs you nothing. At the deadline your record is
-**anonymised** rather than deleted outright: the details that identify you are
+**anonymized** rather than deleted outright: the details that identify you are
 removed, while your studio's financial and consent records of things that
 actually happened survive with no person attached to them. The insurer data
 described above (AHV number, insurer, insured number) is deleted with the
