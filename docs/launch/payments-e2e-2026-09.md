@@ -80,9 +80,10 @@ The earlier `promo-code-checkout.spec.ts` stays where it is.
    date, clipped to the row).
 6. **Dialogs in the payments area rendered at 384px on desktop**, so the Tarif
    595 receipt dialog's table and footer spilled out of the box. The shared
-   dialog's `sm:max-w-sm` outranks a bare `max-w-*`; fixed here for the Tarif 595
-   and finance dialogs. The same defect sits in about fifty other dialogs; that
-   sweep is a separate task.
+   dialog's `sm:max-w-sm` outranks a bare `max-w-*`. #507 swept most of the app
+   the same day; this branch fixes the three payments-area dialogs it missed
+   (Tarif 595 receipt from a payment, and two finance dialogs). One bare
+   `max-w-*` is still left in `contacts/[id]/page.tsx`.
 7. **Billing page copy was English in every language**: the "Billing managed by
    organization" banner a member studio sees, the "{plan} plan" heading and the
    status badge. Translated.
