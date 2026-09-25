@@ -9104,7 +9104,9 @@
     "cancelRefundsHint": "Remboursez-les depuis la page des paiements, un par un, pour garder la main.",
     "closeButton": "Fermer",
     "duplicateLabel": "Relancer",
-    "paneFreeNoPlans": "Ce cours est gratuit, un abonnement ne peut donc ni l'inclure ni le réduire. Donnez-lui un prix pour y lier des abonnements."
+    "paneFreeNoPlans": "Ce cours est gratuit, un abonnement ne peut donc ni l'inclure ni le réduire. Donnez-lui un prix pour y lier des abonnements.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Ce qu'est ce cours, dans vos propres mots."
   },
   "CourseWaitlist": {
     "offerTitle": "Une place s'est libérée",

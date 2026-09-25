@@ -9104,7 +9104,9 @@
     "cancelRefundsHint": "Rimborsali dalla pagina dei pagamenti, uno per uno, così mantieni il controllo.",
     "closeButton": "Chiudi",
     "duplicateLabel": "Riproponi",
-    "paneFreeNoPlans": "Questo corso è gratuito, quindi un abbonamento non può includerlo né scontarlo. Dagli un prezzo per collegare gli abbonamenti."
+    "paneFreeNoPlans": "Questo corso è gratuito, quindi un abbonamento non può includerlo né scontarlo. Dagli un prezzo per collegare gli abbonamenti.",
+    "descriptionLabel": "Descrizione",
+    "descriptionPlaceholder": "Che cos'è questo corso, con parole tue."
   },
   "CourseWaitlist": {
     "offerTitle": "Si è liberato un posto",

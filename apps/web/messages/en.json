@@ -9104,7 +9104,9 @@
     "cancelRefundsHint": "Refund them from the payments page, one by one, so you stay in control of what goes back.",
     "closeButton": "Close",
     "duplicateLabel": "Run again",
-    "paneFreeNoPlans": "This course is free, so there is nothing for a plan to include or discount. Give it a price to link plans to it."
+    "paneFreeNoPlans": "This course is free, so there is nothing for a plan to include or discount. Give it a price to link plans to it.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What this course is, in your own words."
   },
   "CourseWaitlist": {
     "offerTitle": "A place has come free",

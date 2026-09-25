@@ -9104,7 +9104,9 @@
     "cancelRefundsHint": "Erstatten Sie diese einzeln über die Zahlungsseite, damit Sie die Kontrolle behalten.",
     "closeButton": "Schliessen",
     "duplicateLabel": "Erneut durchführen",
-    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen."
+    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen.",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Was dieser Kurs ist, in Ihren eigenen Worten."
   },
   "CourseWaitlist": {
     "offerTitle": "Ein Platz ist frei geworden",

@@ -19,7 +19,7 @@
 // The lessons appear on the calendar as ordinary sessions. Removing one is
 // cancelling it there, not deleting a row here: people may hold a place on it.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -53,6 +53,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MoreOptions } from '@/components/forms/MoreOptions'
+import { Textarea } from '@/components/ui/textarea'
+import { useSaveBarSection } from '@/components/forms/SaveBar'
 
 type ScheduleMode = 'repeating' | 'days'
 
@@ -63,6 +65,28 @@ interface DayRow {
   /** `HH:MM`, local. */
   time: string
   minutes: number
+}
+
+/** Every field this form holds, as one value: what `initial` produces, what
+ *  `hydrate` applies, and what the save bar compares against. */
+interface FormValues {
+  name: string
+  description: string
+  activityId: string
+  placeId: string
+  providerId: string
+  places: string
+  price: string
+  membersOnly: boolean
+  closeDays: string
+  mode: ScheduleMode
+  startDate: string
+  startTime: string
+  minutes: number
+  weekday: number | null
+  endDate: string
+  skipDates: string[]
+  days: DayRow[]
 }
 
 const NONE = '__none'
@@ -83,6 +107,7 @@ export function CourseBlockDialog({
   editing,
   currency,
   onSaved,
+  inline = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -90,6 +115,16 @@ export function CourseBlockDialog({
   /** The live document when editing; absent when creating. */
   editing?: CourseBlock | null
   onSaved?: (id: string) => void
+  /**
+   * Rendered as a PANE TAB rather than as a dialog: no chrome of its own, and
+   * it saves from the pane's floating bar like every other offering's Details
+   * tab. `open` is ignored inline, there is nothing to open.
+   *
+   * A course used to be edited behind an "Edit details" button, alone among
+   * the offerings, and a button labelled Edit beside fields that are already
+   * on screen says the visible ones are not editing, which is false.
+   */
+  inline?: boolean
 }) {
   // A namespace of its own, not the online-courses plugin's `Courses`: the two
   // are displayed as *Course* and *Online course*, and sharing a namespace is
@@ -110,6 +145,7 @@ export function CourseBlockDialog({
   const classes = useMemo(() => activities.filter((a: Activity) => !isAppointmentActivity(a)), [activities])
 
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [activityId, setActivityId] = useState(NONE)
   const [placeId, setPlaceId] = useState(NONE)
   const [providerId, setProviderId] = useState(NONE)
@@ -132,69 +168,105 @@ export function CourseBlockDialog({
 
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (!open) return
-    setSaving(false)
-    if (editing) {
-      setName(editing.name ?? '')
-      setActivityId(editing.activityId ?? NONE)
-      setPlaceId(editing.placeId ?? NONE)
-      setProviderId(editing.providerId ?? NONE)
-      setPlaces(editing.places ? String(editing.places) : '')
-      setPrice(typeof editing.priceAmount === 'number' ? String(editing.priceAmount) : '')
-      setMembersOnly(editing.audience === 'members')
-      setCloseDays(
-        typeof editing.close_days_before === 'number' ? String(editing.close_days_before) : ''
-      )
-      // An existing course is re-opened on the shape it was authored in, so the
-      // studio edits what it typed rather than a list of thirteen dates.
-      const rule = editing.pattern?.recurrence
-      if (rule) {
-        setMode('repeating')
-        const from = rule.startDate?.toDate?.()
-        if (from) {
-          setStartDate(toDateInputValue(from))
-          setStartTime(
-            `${String(from.getHours()).padStart(2, '0')}:${String(from.getMinutes()).padStart(2, '0')}`
-          )
-          setWeekday(rule.daysOfWeek?.[0] ?? from.getDay())
-        }
-        setMinutes(rule.duration ?? 60)
-        const until = rule.endDate?.toDate?.()
-        setEndDate(until ? toDateInputValue(until) : '')
-        setSkipDates((rule.excludeDates ?? []).map((d) => toDateInputValue(d.toDate())))
-      } else {
-        setMode('days')
-        setDays(
-          (editing.meetings ?? []).map((m) => {
+  // ONE HYDRATE, called by the open effect and by the pane bar's Reset:
+  // "discard" has to put back exactly what "open" put there, and two
+  // copies of that is how the two answers drift apart.
+  /**
+   * THE FORM AS THE RECORD HAS IT. Pure, so the same value can be applied to
+   * the fields AND kept as the mark the save bar measures "changed" against.
+   *
+   * Deriving the mark from a RENDER instead was the bug: `hydrate` queues a
+   * dozen setState calls, so the render that takes the snapshot is still
+   * looking at the empty form, and the bar announced unsaved changes before
+   * the studio had touched anything.
+   */
+  const initial = useCallback((): FormValues => {
+    if (!editing) {
+      return {
+        name: '',
+        description: '',
+        activityId: NONE,
+        placeId: NONE,
+        providerId: NONE,
+        places: '',
+        price: '',
+        membersOnly: false,
+        closeDays: '',
+        mode: 'repeating',
+        startDate: '',
+        startTime: '15:45',
+        minutes: 60,
+        weekday: null,
+        endDate: '',
+        skipDates: [],
+        days: [emptyDay()],
+      }
+    }
+    // An existing course is re-opened on the shape it was authored in, so the
+    // studio edits what it typed rather than a list of thirteen dates.
+    const rule = editing.pattern?.recurrence
+    const from = rule?.startDate?.toDate?.()
+    const until = rule?.endDate?.toDate?.()
+    return {
+      name: editing.name ?? '',
+      description: editing.description ?? '',
+      activityId: editing.activityId ?? NONE,
+      placeId: editing.placeId ?? NONE,
+      providerId: editing.providerId ?? NONE,
+      places: editing.places ? String(editing.places) : '',
+      price: typeof editing.priceAmount === 'number' ? String(editing.priceAmount) : '',
+      membersOnly: editing.audience === 'members',
+      closeDays:
+        typeof editing.close_days_before === 'number' ? String(editing.close_days_before) : '',
+      mode: rule ? 'repeating' : 'days',
+      startDate: from ? toDateInputValue(from) : '',
+      startTime: from
+        ? `${String(from.getHours()).padStart(2, '0')}:${String(from.getMinutes()).padStart(2, '0')}`
+        : '15:45',
+      minutes: rule?.duration ?? 60,
+      weekday: from ? (rule?.daysOfWeek?.[0] ?? from.getDay()) : null,
+      endDate: until ? toDateInputValue(until) : '',
+      skipDates: (rule?.excludeDates ?? []).map((d) => toDateInputValue(d.toDate())),
+      days: rule
+        ? [emptyDay()]
+        : (editing.meetings ?? []).map((m) => {
             const at = m.start.toDate()
             return {
               date: toDateInputValue(at),
               time: `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`,
               minutes: Math.max(1, Math.round((m.end.toMillis() - m.start.toMillis()) / 60_000)),
             }
-          })
-        )
-      }
-      return
+          }),
     }
-    setName('')
-    setActivityId(NONE)
-    setPlaceId(NONE)
-    setProviderId(NONE)
-    setPlaces('')
-    setPrice('')
-    setMembersOnly(false)
-    setCloseDays('')
-    setMode('repeating')
-    setStartDate('')
-    setStartTime('15:45')
-    setMinutes(60)
-    setWeekday(null)
-    setEndDate('')
-    setSkipDates([])
-    setDays([emptyDay()])
-  }, [open, editing])
+  }, [editing])
+
+  const hydrate = useCallback(() => {
+    const v = initial()
+    setSaving(false)
+    setName(v.name)
+    setDescription(v.description)
+    setActivityId(v.activityId)
+    setPlaceId(v.placeId)
+    setProviderId(v.providerId)
+    setPlaces(v.places)
+    setPrice(v.price)
+    setMembersOnly(v.membersOnly)
+    setCloseDays(v.closeDays)
+    setMode(v.mode)
+    setStartDate(v.startDate)
+    setStartTime(v.startTime)
+    setMinutes(v.minutes)
+    setWeekday(v.weekday)
+    setEndDate(v.endDate)
+    setSkipDates(v.skipDates)
+    setDays(v.days)
+  }, [initial])
+
+  useEffect(() => {
+    if (!open && !inline) return
+    hydrate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing?.id, inline])
 
   // ── The preview: the same arithmetic the server will do ──────────────────
   //
@@ -231,8 +303,8 @@ export function CourseBlockDialog({
   const scheduleInvalid = previewDates.length === 0
   const canSave = !nameInvalid && !scheduleInvalid && !saving
 
-  async function save() {
-    if (!currentTeamId || !canSave) return
+  async function save(): Promise<boolean> {
+    if (!currentTeamId || !canSave) return false
     setSaving(true)
     try {
       const schedule =
@@ -260,6 +332,7 @@ export function CourseBlockDialog({
       const payload = {
         teamId: currentTeamId,
         name: name.trim(),
+        description: description.trim(),
         activityId: activityId === NONE ? '' : activityId,
         placeId: placeId === NONE ? '' : placeId,
         providerId: providerId === NONE ? '' : providerId,
@@ -285,22 +358,61 @@ export function CourseBlockDialog({
       await qc.invalidateQueries({ queryKey: ['course-blocks', currentTeamId] })
       toast.success(editing ? t('saved') : t('created', { count: previewDates.length }))
       onSaved?.(res.data.id)
-      onOpenChange(false)
+      if (!inline) onOpenChange(false)
+      return true
     } catch (err) {
       console.error('[course save] failed:', err)
       toast.error(err instanceof Error ? err.message : t('saveFailed'))
+      return false
     } finally {
       setSaving(false)
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{editing ? t('editTitle') : t('newTitle')}</DialogTitle>
-        </DialogHeader>
-        <DialogBody className="space-y-5">
+  // THE SAME FORM, TWO HOSTS. As a pane tab it has no chrome and saves from
+  // the pane's floating bar, like every other offering's Details tab; as a
+  // dialog it keeps its own header and footer, because creating a course
+  // starts from a button and ends on a decision.
+  // WHAT THE BAR ASKS: does the form still say what the record says. Compared
+  // whole rather than per field, because the schedule half is a list and a
+  // rule, and a flag per control would miss the day somebody edits a skip
+  // date. Against `initial()`, never against a captured render: see the note
+  // on it.
+  const live: FormValues = {
+    name,
+    description,
+    activityId,
+    placeId,
+    providerId,
+    places: places_,
+    price,
+    membersOnly,
+    closeDays,
+    mode,
+    startDate,
+    startTime,
+    minutes,
+    weekday,
+    endDate,
+    skipDates,
+    days,
+  }
+  //
+  // ARMED AFTER THE FILL, NOT BEFORE IT. `hydrate` sets a dozen pieces of state,
+  // so the first snapshot of a freshly opened form is of an EMPTY one, and
+  // comparing against that makes the bar announce unsaved changes before the
+  // studio has touched anything. `hydrate` therefore disarms the reference and
+  // the next render, the one that sees the filled form, arms it.
+  const dirty = JSON.stringify(live) !== JSON.stringify(initial())
+
+  const { inSaveBar } = useSaveBarSection('course-block-details', {
+    dirty: inline && !!editing && dirty,
+    valid: canSave,
+    save,
+    reset: hydrate,
+  })
+
+  const fields = <div className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="course-name">{t('nameLabel')}</Label>
             <Input
@@ -308,6 +420,20 @@ export function CourseBlockDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('namePlaceholder')}
+            />
+          </div>
+
+          {/* The studio's own words about the course. The server has accepted
+              this since the first version and no screen ever sent it, so a
+              course's description was unreachable until this tab existed. */}
+          <div className="space-y-1.5">
+            <Label htmlFor="course-description">{t('descriptionLabel')}</Label>
+            <Textarea
+              id="course-description"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('descriptionPlaceholder')}
             />
           </div>
 
@@ -606,6 +732,33 @@ export function CourseBlockDialog({
           {editing && (
             <p className="text-xs text-muted-foreground">{t('editScheduleNote')}</p>
           )}
+  </div>
+
+  if (inline) {
+    return (
+      <div className="space-y-5">
+        {fields}
+        {/* Only when the pane has no bar to save from: inside one, a second
+            button beside the floating one is two answers to one question. */}
+        {!inSaveBar && (
+          <div className="flex justify-end">
+            <Button size="sm" onClick={save} disabled={!canSave}>
+              {saving ? t('saving') : t('save')}
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{editing ? t('editTitle') : t('newTitle')}</DialogTitle>
+        </DialogHeader>
+        <DialogBody className="space-y-5">
+          {fields}
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
