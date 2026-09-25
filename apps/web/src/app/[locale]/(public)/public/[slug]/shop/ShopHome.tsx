@@ -221,7 +221,7 @@ interface CourseBlockEntry {
   id: string
   name: string
   description?: string
-  /** The programme, in order. Folded away: a visitor scanning the shelf wants
+  /** The program, in order. Folded away: a visitor scanning the shelf wants
    *  the price and the dates, and only the one considering thirteen weeks of
    *  Wednesdays opens it. */
   curriculum: CourseCurriculumItem[]

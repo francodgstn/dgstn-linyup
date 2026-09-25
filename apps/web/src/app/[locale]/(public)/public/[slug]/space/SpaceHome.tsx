@@ -474,7 +474,7 @@ export default function SpaceHome() {
       )}
 
       {/* Upcoming events — read-only teaser; the full list lives on the public
-          events page, and each card links straight to its programme. */}
+          events page, and each card links straight to its program. */}
       {upcomingEvents.length > 0 && (
         <section className="rounded-2xl p-4" style={cardStyle}>
           <div className="flex items-center justify-between gap-2 mb-3">

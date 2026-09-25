@@ -65,7 +65,7 @@ export interface ProgramTimelineProps {
    *
    * For a TEMPLATE, whose days are a relative `dayIndex` and whose dates are a
    * scratch anchor invented so the shared editor has something to key items on.
-   * Printing "Monday 1 September" over a reusable programme states a fact that
+   * Printing "Monday 1 September" over a reusable program states a fact that
    * is not one — the studio would reasonably read it as when the camp runs.
    */
   hideDayDates?: boolean
@@ -322,7 +322,7 @@ export function ProgramTimeline({
         <DaySection
           key={day.id}
           day={day}
-          // Index within the WHOLE programme, not within `visibleDays` — with one
+          // Index within the WHOLE program, not within `visibleDays` — with one
           // day selected the filtered list is length 1 and every day would
           // caption itself "Day 1".
           dayIndex={days.findIndex((d) => d.id === day.id)}

@@ -11,7 +11,7 @@
  *  • `external: true` means HMD does not organise it. It still belongs on the
  *    calendar — members compete at these — but nobody at HMD runs the door.
  *  • `id` is the Firestore document id. NEVER change one after a run: check-ins,
- *    invitations and programme items all hang off it, and a changed id creates a
+ *    invitations and program items all hang off it, and a changed id creates a
  *    second event rather than moving the first.
  *
  * ── THE TYPE IS NOT COSMETIC ────────────────────────────────────────────────

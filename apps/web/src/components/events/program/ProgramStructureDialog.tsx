@@ -44,7 +44,7 @@ export interface ProgramStructureDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /**
-   * The event whose programme this is — absent for a TEMPLATE, which has no
+   * The event whose program this is — absent for a TEMPLATE, which has no
    * dates of its own. Without it the "fill from the event's dates" shortcut has
    * nothing to fill from and is not rendered, and a new day is simply appended
    * after the last one.

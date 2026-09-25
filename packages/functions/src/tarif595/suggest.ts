@@ -81,10 +81,10 @@ const UNIT_WORDS: Record<Tarif595Lang, Record<Tarif595Unit, string>> = {
 
 const SYSTEM_PROMPT = `You map the offerings of a Swiss sports, fitness or wellness studio to positions of "Tarif 595" — the Swiss health-insurance tariff for health-promotion services (Forum Datenaustausch), whose position list you are given.
 
-Each position is one METHOD billed in one UNIT: chapter 2 is flat-rate access to a training centre or group-fitness studio (per month, per year, single entry); chapter 3 is courses and personal training by method (endurance/strength, body-and-mind such as yoga and pilates, diverse courses, specific training), per lesson or per month, with "Personal Training" and "Einzelsetting" variants for 1:1; chapters 4–6 are nutrition, lifestyle and maternity. Position 9999 is free text for what no other position covers.
+Each position is one METHOD billed in one UNIT: chapter 2 is flat-rate access to a training center or group-fitness studio (per month, per year, single entry); chapter 3 is courses and personal training by method (endurance/strength, body-and-mind such as yoga and pilates, diverse courses, specific training), per lesson or per month, with "Personal Training" and "Einzelsetting" variants for 1:1; chapters 4–6 are nutrition, lifestyle and maternity. Position 9999 is free text for what no other position covers.
 
 For EVERY offering return the best position:
-- pick the method from the name and description; when the name is generic ("Unlimited", "Membership", "Open Gym") and the studio is a training centre, the training-floor positions of chapter 2 apply;
+- pick the method from the name and description; when the name is generic ("Unlimited", "Membership", "Open Gym") and the studio is a training center, the training-floor positions of chapter 2 apply;
 - pick the row whose unit matches the unit hint ("pro 1 Monat", "pro 1 Lektion", …) — the hint is derived from the offering's prices and is reliable;
 - for a 1:1 offering ("Personal Training", "PT", "1:1", "Einzel", "privé", "individuale") also return the Personal Training companion position of the same method in ptPosition;
 - an online-live offering takes the "online live" variant; a recorded-video course takes 1105;

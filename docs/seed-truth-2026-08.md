@@ -214,7 +214,7 @@ overwritten. Seed the journal and the accounts; leave the rollups alone.
 | `FEEDBACK_COLLECTION` | MISSING | MISSING | MISSING | MISSING | N-A | operator console feedback inbox |
 | `FEEDBACK_PROMPTS_COLLECTION` | N-A | N-A | N-A | N-A | N-A | ops-authored, platform-global |
 
-### 9 — Events and programmes
+### 9 — Events and programs
 
 | Constant | emu | sbx | stg | lead | mig | The screen that proves it |
 |---|---|---|---|---|---|---|
@@ -338,7 +338,7 @@ alone: `custom-fields`, `contact-groups`, `custom-forms`. `ai-assistant`,
 `ai-insights` and `whatsapp` are correctly excluded — they are locked/key-gated,
 and both `lib/storefront.ts:126` and `seed-sandbox.ts:2857` say so in a comment.
 
-### `events` — no programme
+### `events` — no program
 
 `Event.program` embeds days and tracks; the rows live in
 `events/{id}/program_items` (`docs/event-program.md`). No surface writes either,
@@ -486,7 +486,7 @@ The most complete surface, and the one shown to actual prospects.
    every seeded tenant behaves as "no waiver required" and the whole feature — the
    roster chip, the minors prompt, Ask-to-Sign, the printed manifest column — is
    invisible in every demo and unexercised by every rehearsal.
-2. **Event programmes — zero coverage.** `program_items`, `program_templates`,
+2. **Event programs — zero coverage.** `program_items`, `program_templates`,
    `org_program_templates`.
 3. **Finance and accounting — zero coverage**, and the plugin is never installed.
 4. **Promo codes — zero coverage**, and the plugin is never installed;

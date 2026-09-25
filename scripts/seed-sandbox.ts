@@ -1413,7 +1413,7 @@ const SECTOR_PROFILES: SectorProfile[] = [
         tags: [],
         isFreeTrial: true,
         base_score: 10,
-        description: 'Classical technique from barre to centre work.',
+        description: 'Classical technique from barre to center work.',
       },
       {
         name: 'Contemporary',

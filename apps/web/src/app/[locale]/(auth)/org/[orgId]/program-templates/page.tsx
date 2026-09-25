@@ -6,8 +6,8 @@ import { useOrg } from '@/contexts/OrgContext'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ProgramTemplatesManager } from '@/components/events/program/ProgramTemplatesManager'
 
-// Org-wide programme templates: the federation authors the standard camp or
-// competition programme once and every member studio can apply it. Only an org
+// Org-wide program templates: the federation authors the standard camp or
+// competition program once and every member studio can apply it. Only an org
 // admin can change them (enforced in firestore.rules, not just here).
 
 export default function OrgProgramTemplatesPage() {

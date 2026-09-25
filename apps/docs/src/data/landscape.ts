@@ -144,7 +144,7 @@ export const NODES: LandscapeNode[] = [
   },
   {
     id: 'help',
-    label: 'Help centre',
+    label: 'Help center',
     sub: 'help.linyup.com · Starlight',
     layer: 'apps',
     what: 'Public how-to guides for studio owners. Static. Staging and production only.',
@@ -170,7 +170,7 @@ export const NODES: LandscapeNode[] = [
     sub: 'landing · help · api',
     layer: 'edge',
     kind: 'platform',
-    what: 'Static hosting for the landing site and the help centre, and the front door of the public API: every path on the api target is rewritten to the api function.',
+    what: 'Static hosting for the landing site and the help center, and the front door of the public API: every path on the api target is rewritten to the api function.',
     links: ['api'],
   },
   {

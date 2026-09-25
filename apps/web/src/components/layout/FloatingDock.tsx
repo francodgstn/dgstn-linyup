@@ -20,7 +20,7 @@
  * without knowing what the shell has mounted, and vice versa.
  *
  * Bottom column, from the corner upwards:
- *   'page-bar'      full-width centred bar (bulk-selection / renew bars)
+ *   'page-bar'      full-width centered bar (bulk-selection / renew bars)
  *   'page-primary'  the page's ONE primary floating action (FAB, floating Save)
  *   'shell'         shell-level overlays (the AI assistant launcher)
  * Its own region, deliberately outside that column:

@@ -1726,7 +1726,7 @@ service cloud.firestore {
         allow read: if isAuthed() && (
                          (itemTeam() != null
                             && (isTeamMember(itemTeam()) || isOrgAdminOfTeam(itemTeam())))
-                         // An org event's programme is visible to the whole org:
+                         // An org event's program is visible to the whole org:
                          // to org members directly, and to any studio whose
                          // current team belongs to that org (mirrors org_places
                          // and the parent event's own read rule).
@@ -2706,7 +2706,7 @@ service cloud.firestore {
       }
 
       // Org-wide event programs: the federation authors the standard camp or
-      // competition programme once and every sub-studio can apply it (read-only),
+      // competition program once and every sub-studio can apply it (read-only),
       // exactly like org_places. Applying it to an event and saving back always
       // produces a TEAM template — a club can never write to the org's.
       match /org_program_templates/{templateId} {

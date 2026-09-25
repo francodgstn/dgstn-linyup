@@ -21,13 +21,13 @@ import type {
 import { useProgramTemplates } from './useProgramTemplates'
 import { useResetOnOpen } from '@/hooks/useResetOnOpen'
 
-// Applying a template REPLACES the programme rather than merging into it —
+// Applying a template REPLACES the program rather than merging into it —
 // merging two multi-track schedules has no sane automatic answer, so the
 // destructive-but-predictable behaviour is the honest one. Confirmed whenever
 // there is something to lose.
 //
 // The list mixes the studio's saved templates with the built-in STARTER library
-// (badged "Starter"), so an event can start from a ready-made programme without
+// (badged "Starter"), so an event can start from a ready-made program without
 // anyone having authored one first. Both flow through `materialiseTemplate`.
 
 const newId = () =>
@@ -58,7 +58,7 @@ export interface ApplyTemplateDialogProps {
   event: Event
   teamId: string | null
   orgId: string | null
-  /** How many items the programme currently holds — drives the replace warning. */
+  /** How many items the program currently holds — drives the replace warning. */
   existingItemCount: number
   onApply: (config: EventProgramConfig, items: MaterialisedItem[]) => Promise<void> | void
   applying?: boolean

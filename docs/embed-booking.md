@@ -34,7 +34,7 @@ open the same pop-up instead of a new tab, as soon as the script is present.
 
 **The modal is drawn by the host page, not inside the iframe.** A dialog rendered
 inside a content-sized iframe can only ever cover that iframe — the backdrop
-would stop at its edges. So `embed.js` owns the backdrop, the sizing (centred
+would stop at its edges. So `embed.js` owns the backdrop, the sizing (centered
 dialog ≥ 640px, bottom sheet below), the backdrop click, the scroll lock and the
 history entry that makes Back close the panel; the iframe **is** the panel, and
 renders the funnel with `FlowShell`'s overlay chrome — the same header, X and

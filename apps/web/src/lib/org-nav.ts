@@ -70,7 +70,7 @@ export interface OrgNavItem {
  * THE SIDEBAR ROWS — what somebody opens while doing the organisation's work.
  *
  * The test for membership is "would a federation administrator open this during
- * a working day". Programme templates sits beside Events because it is read
+ * a working day". Program templates sits beside Events because it is read
  * while creating one; Website is authoring, exactly as a studio's Website is a
  * sidebar row rather than a setting.
  *
@@ -172,7 +172,7 @@ export const ORG_NAV_ITEMS: OrgNavItem[] = [
  *   Events             — the federation's own calendar. `events` admits
  *                        `currentTeamInOrg`, and the page already gates its
  *                        authoring on `isAdmin`.
- *   Programme templates — the camp programmes the org authors and a studio
+ *   Program templates — the camp programs the org authors and a studio
  *                        applies. Same story: readable, and the manager already
  *                        takes `canEdit={isAdmin}`.
  *

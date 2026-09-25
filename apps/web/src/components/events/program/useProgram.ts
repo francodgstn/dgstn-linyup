@@ -194,9 +194,9 @@ export function useDeleteProgramTrack(eventId: string) {
   })
 }
 
-/** Firestore caps a write batch at 500 operations. Replacing a programme costs
+/** Firestore caps a write batch at 500 operations. Replacing a program costs
  *  `deletes + writes + 1`, which at the 300-item cap reaches 601 — so a single
- *  batch is not merely inelegant, it FAILS outright on a large programme. */
+ *  batch is not merely inelegant, it FAILS outright on a large program. */
 const BATCH_LIMIT = 500
 
 /** Replace the whole program with a materialised template: writes the new config
@@ -204,7 +204,7 @@ const BATCH_LIMIT = 500
  *
  *  Ordering matters, because this cannot be one atomic batch (see BATCH_LIMIT).
  *  The old items are removed FIRST and the config written LAST, so an
- *  interruption leaves a programme that is missing rows — visibly incomplete,
+ *  interruption leaves a program that is missing rows — visibly incomplete,
  *  and fixed by applying the template again — rather than one showing two
  *  templates' items merged together, which looks correct and is not. */
 export function useReplaceProgram(eventId: string, tenant: ProgramTenant) {

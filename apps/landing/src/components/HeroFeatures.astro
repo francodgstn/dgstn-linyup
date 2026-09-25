@@ -17,7 +17,7 @@ const DEMO_URL = import.meta.env.PUBLIC_DEMO_URL ?? 'https://demo.linyup.com';
 // heroFeatures.cards.<key>.{title,benefit}. Eight feature cards fill two rows.
 // The row beneath holds the three doors, left to right: the full feature list
 // (#more-features, Features.astro), the accent demo CTA (half the row), and the
-// help centre. The two outer doors share one tinted "door" style, so the eye
+// help center. The two outer doors share one tinted "door" style, so the eye
 // reads them as ways onward rather than as features.
 const cards = [
   { key: 'sessions', icon: 'calendar-range' },
@@ -110,7 +110,7 @@ const cards = [
   .hf-cta:hover p :global(svg) { transform: translateX(3px); }
   .hf-cta-icon { background: color-mix(in oklch, #fff 18%, transparent); border-color: color-mix(in oklch, #fff 28%, transparent); color: #fff; }
 
-  /* The doors — "Check all features" and the help centre. The third style:
+  /* The doors — "Check all features" and the help center. The third style:
      neither the primary CTA nor a plain card. A tinted surface with a primary
      hairline reads as "a door", not a feature. */
   .hf-door {

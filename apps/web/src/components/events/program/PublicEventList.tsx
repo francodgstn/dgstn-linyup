@@ -69,7 +69,7 @@ export function PublicEventList({
               <span className="font-medium">{event.title}</span>
               {event.programItemCount > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  {t('publicHasProgramme')}
+                  {t('publicHasProgram')}
                 </Badge>
               )}
             </div>

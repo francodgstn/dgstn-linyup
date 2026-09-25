@@ -222,7 +222,7 @@ describe('firestore.rules — event program items', function () {
       await assertSucceeds(deleteDoc(orgItem(db)))
     })
 
-    it('a member studio can read the org programme but not edit it', async () => {
+    it('a member studio can read the org program but not edit it', async () => {
       const db = asManagerA()
       await assertSucceeds(getDoc(orgItem(db)))
       await assertFails(updateDoc(orgItem(db), { title: 'Nope' }))

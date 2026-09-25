@@ -18,7 +18,7 @@ const asDate = (v: unknown): Date | null =>
   (v as { toDate?: () => Date } | null)?.toDate?.() ?? null
 
 /**
- * The staff printout of an event's programme — the handout members get, from
+ * The staff printout of an event's program — the handout members get, from
  * the event's OWN documents rather than the public mirror, so it works for an
  * event that is not published (most are not: events are private by default).
  *

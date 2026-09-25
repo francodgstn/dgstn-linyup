@@ -4,7 +4,7 @@ import type { EventProgramItem } from '@linyup/shared'
 
 // The public mirror is WORLD-READABLE. These tests pin the two things that
 // would be damaging to get wrong: a staff-only internal note leaking onto a
-// public page, and an unbounded programme pushing the mirror past Firestore's
+// public page, and an unbounded program pushing the mirror past Firestore's
 // 1 MB document limit.
 //
 // The projection is re-declared here rather than imported from the sync module
@@ -91,7 +91,7 @@ describe('event public mirror — item projection', () => {
 })
 
 describe('event public mirror — size guard', () => {
-  it('caps the embedded programme so the mirror cannot exceed the 1 MB limit', () => {
+  it('caps the embedded program so the mirror cannot exceed the 1 MB limit', () => {
     const many: EventProgramItem[] = Array.from({ length: MAX_PROGRAM_ITEMS + 50 }, (_, i) => ({
       ...ITEM,
       id: `i${i}`,
@@ -102,10 +102,10 @@ describe('event public mirror — size guard', () => {
     const published = many.sort(compareProgramItems).slice(0, MAX_PROGRAM_ITEMS).map(publicProgramItem)
     assert.equal(published.length, MAX_PROGRAM_ITEMS)
 
-    // Headroom check: the capped programme must stay well inside 1 MB even with
+    // Headroom check: the capped program must stay well inside 1 MB even with
     // every optional field populated.
     const bytes = Buffer.byteLength(JSON.stringify(published), 'utf8')
-    assert.ok(bytes < 500_000, `capped programme should stay well under 1 MB, got ${bytes} bytes`)
+    assert.ok(bytes < 500_000, `capped program should stay well under 1 MB, got ${bytes} bytes`)
   })
 
   it('keeps the canonical ordering when truncating', () => {

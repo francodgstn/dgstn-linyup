@@ -119,7 +119,7 @@ export const CLAUDE_SECTIONS = {
   'Key patterns': { skip: true },
   'Using the reference project': { skip: true },
   // A dedicated doc covers these.
-  'Event programmes': { skip: true },
+  'Event programs': { skip: true },
   'Embeds': { skip: true },
   'Email sending': { skip: true },
   'WhatsApp': { skip: true },

@@ -1,12 +1,12 @@
 ---
-title: Event programmes
+title: Event programs
 status: living
 area: booking
 order: 7
 ---
-# Event programmes
+# Event programs
 
-An event is not just a session with a different label — it **has a programme**: a
+An event is not just a session with a different label — it **has a program**: a
 multi-day, multi-track agenda of what happens, where, and with whom. A summer camp
 runs five days with a kids stream and an adults stream; a seminar runs two rooms in
 parallel; a competition has weigh-in, pools, finals, ceremony. None of that fits in
@@ -18,26 +18,26 @@ parallel; a competition has weigh-in, pools, finals, ceremony. None of that fits
 |---|---|
 | `Event.program` | `EventProgramConfig` — the days and tracks, embedded on the event doc (they are few, like `Place.rooms`) |
 | `events/{id}/program_items/{itemId}` | The agenda rows. A subcollection because a five-day multi-track camp runs to hundreds |
-| `teams/{teamId}/program_templates/{id}` | Reusable programmes owned by a studio |
+| `teams/{teamId}/program_templates/{id}` | Reusable programs owned by a studio |
 | `organizations/{orgId}/org_program_templates/{id}` | Org-wide templates, read-only for member studios |
-| `events/{id}/public_profile/{id}` | The world-readable mirror, with the whole programme embedded |
+| `events/{id}/public_profile/{id}` | The world-readable mirror, with the whole program embedded |
 
 Types: `packages/shared/src/types/event.ts`. Pure helpers:
 `packages/shared/src/utils/programTime.ts`.
 
 ## Times are wall-clock, and that is deliberate
 
-A programme item stores `startTime: 'HH:MM'` plus its day's `date: 'YYYY-MM-DD'` —
+A program item stores `startTime: 'HH:MM'` plus its day's `date: 'YYYY-MM-DD'` —
 **never an absolute `Timestamp`**.
 
-A programme is a printed schedule. "09:00 breakfast" is 09:00 wherever the camp is.
+A program is a printed schedule. "09:00 breakfast" is 09:00 wherever the camp is.
 Storing instants would mean a camp in Spain renders an hour off for a Swiss studio,
 and a DST boundary mid-camp would shift half the agenda. Wall-clock sidesteps both.
 `EventProgramConfig.timezoneLabel` is **display only** — nothing converts.
 
 Same convention as `availability.ts`. Day arithmetic (`addDaysISO`,
 `daysBetweenISO`) is done on the calendar in UTC, never via a local `Date`, so
-shifting a programme across a DST boundary cannot collapse two days onto one.
+shifting a program across a DST boundary cannot collapse two days onto one.
 
 `endTime` earlier than `startTime` means the item **crosses midnight** — valid, not
 an error.
@@ -66,14 +66,14 @@ makes a template portable to any future event. `materialiseTemplate` turns it in
 real dated days counted from a chosen start; `extractTemplate` is the inverse.
 Track ids are **regenerated on every apply**, so two events never share track ids.
 
-Applying a template **replaces** the programme rather than merging — merging two
+Applying a template **replaces** the program rather than merging — merging two
 multi-track schedules has no sane automatic answer.
 
-It is **not atomic**, and cannot be: replacing a programme costs
+It is **not atomic**, and cannot be: replacing a program costs
 `deletes + writes + 1` operations, which at the 300-item cap reaches 601 against
 Firestore's 500-per-batch limit — a single batch does not merely lose elegance,
 it fails outright. The writes are chunked instead, ordered so the old items go
-first and the config last: an interruption leaves a programme that is visibly
+first and the config last: an interruption leaves a program that is visibly
 *missing* rows (fix it by applying again) rather than one showing two templates'
 items merged, which would look correct and not be.
 
@@ -88,12 +88,12 @@ A studio that applies an **org** template and saves it back produces its own
 
 ### Starter library + cloning
 
-A studio need not build the first programme from a blank agenda. Two shortcuts
+A studio need not build the first program from a blank agenda. Two shortcuts
 produce a full template without authoring one on an event first:
 
 - **A built-in starter library** — `STARTER_PROGRAM_TEMPLATES`
   (`packages/shared/src/data/programTemplates.ts`), a handful of ready-made
-  programmes (half-day workshop, weekend seminar, five-day camp, one-day
+  programs (half-day workshop, weekend seminar, five-day camp, one-day
   competition, grading day). Each entry **is** a `ProgramTemplate` body, so it
   flows through `materialiseTemplate` and the save hook **unchanged** — no
   special-casing in the engine. A starter can be **applied straight onto an
@@ -106,7 +106,7 @@ produce a full template without authoring one on an event first:
   create through the same save hook and counts against `MAX_PROGRAM_TEMPLATES`.
 
 Starter *content* (day titles, item titles, `note`) is authoring-language free
-text like every other programme field — see the "Never translated" list in
+text like every other program field — see the "Never translated" list in
 `docs/site-translations.md`. The surrounding UI chrome is translated; the
 library entries are seeded in the source language and renamed on clone. Their
 well-formedness (valid times, tracks that exist, complete day coverage, clean
@@ -153,7 +153,7 @@ gates `syncEventPublicProfile`; flipping it off deletes the mirror, so the publi
 page 404s immediately. No existing event became public as a result of this feature.
 
 The mirror is an **aggregate** one (like `syncPrimaryPlaceToPublicProfile`): the
-whole programme is embedded into the single mirror doc, so a public page is one
+whole program is embedded into the single mirror doc, so a public page is one
 document read. It therefore reacts to writes on the event **and** on
 `program_items` — otherwise a published agenda would silently go stale.
 
@@ -178,13 +178,13 @@ hand-built, so `packages/functions` can emit the same links in email.
 | Route | Shows |
 |---|---|
 | `/public/{slug}/events` | A studio's published events **plus its parent org's** |
-| `/public/{slug}/events/{eventId}` | Event + programme, as the handout |
+| `/public/{slug}/events/{eventId}` | Event + program, as the handout |
 | `/public/{slug}/events/{eventId}/print` | The printable handout |
 | `/public/org/{slug}/events` | An organisation's own published events |
 | `/public/org/{slug}/events/{eventId}` | The same, under the organisation |
 | `/public/org/{slug}/events/{eventId}/print` | The organisation's printable handout |
 
-Staff print from the Programme tab (**Print / PDF**), at `/events/{id}/print` or
+Staff print from the Program tab (**Print / PDF**), at `/events/{id}/print` or
 `/org/{orgId}/events/{id}/print`. Those read the event's own documents rather
 than the mirror, so they work for an unpublished event, and can include the
 internal notes (off by default) for a coaches' copy.
@@ -200,13 +200,13 @@ An org event has no `teamId`, so a studio's page runs **two queries and merges**
 (own `teamId` + parent `orgId`) — mirroring what `useAllEvents` already does in the
 admin calendar. `Team.org_id` is denormalised onto the team public profile so a
 public surface can tell which org a studio belongs to. For a federation this is the
-point: publish one event with one programme, and it appears on the federation's
+point: publish one event with one program, and it appears on the federation's
 page *and* on every member club's page.
 
 ### Two renderers: the working view and the handout
 
 `ProgramTimeline` is the **working** view — cards, coloured track bars, edit
-affordances — for the people building the agenda in the Programme tab.
+affordances — for the people building the agenda in the Program tab.
 `ProgramSheet` is the **handout**: black on white, a time column and a rule
 under each day, parallel tracks as table columns (a plenary item runs across
 them), and nothing that needs a mouse. Every surface a member reads — the public
@@ -253,7 +253,7 @@ copies an event's **setup** and never its **participants**.
 |---|---|
 | Settings, place, coach, fee, description | `attendees`, `invitations`, `checkins` |
 | `categories` (per-event setup, not participant data) | every counter → 0 |
-| The whole programme, days shifted to the new start | `publicVisibility` → **`'hidden'`** |
+| The whole program, days shifted to the new start | `publicVisibility` → **`'hidden'`** |
 
 Fields are dropped by **deny-list**, so a future setup field is inherited by
 default — the safe direction. Days shift by whole **calendar** days, not by the
@@ -266,7 +266,7 @@ draft event the moment it is created.
 Per-item booking or capacity · FK links to Places/Activities/Coaches ·
 org-wide invitations from the org page (each studio invites its own) ·
 drag-and-drop reordering (times drive the order; `order` is only a tie-break) ·
-attendee-personalised programmes in Space (the `attendees` subcollection is not
+attendee-personalised programs in Space (the `attendees` subcollection is not
 readable by a contact session, so it needs a callable) · bulk time-shift ·
 per-item media · duplicating across teams ·
 unifying the team and org event detail pages (only the tab strip was added) ·

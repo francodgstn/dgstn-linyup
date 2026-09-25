@@ -335,7 +335,7 @@ function cylinder(b: Box) {
     function fraction(e: { clientX: number; clientY: number }) {
       const s = svgOf(view)
       const r = s.getBoundingClientRect()
-      // preserveAspectRatio meet: the drawing is centred inside the element.
+      // preserveAspectRatio meet: the drawing is centered inside the element.
       const scale = Math.min(r.width / vb.w, r.height / vb.h)
       const ox = (r.width - vb.w * scale) / 2
       const oy = (r.height - vb.h * scale) / 2

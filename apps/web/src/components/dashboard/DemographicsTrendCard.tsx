@@ -4,7 +4,7 @@
  * WHO THE STUDIO IS COACHING, OVER TIME.
  *
  * The contacts snapshot answers "who is here now". This answers "who has been
- * arriving" — a kids programme that has quietly become a teens programme is
+ * arriving" — a kids program that has quietly become a teens program is
  * invisible in a snapshot and obvious in a trend.
  *
  * ── IT READS CONTACTS, NOT WEEKLY REPORTS ───────────────────────────────────

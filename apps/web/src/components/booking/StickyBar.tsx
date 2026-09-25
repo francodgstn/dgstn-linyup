@@ -99,11 +99,11 @@ export function StickyBar({
         // The desktop margins are what hold it off the panel's own edges.
         'sticky bottom-0 w-full sm:w-auto sm:mx-4 sm:mb-4 z-10 border-x-0 sm:border-x border-b-0 sm:border-b sm:rounded-2xl'
 
-  // The centring translate lives in the KEYFRAMES for the viewport variant, not
+  // The centering translate lives in the KEYFRAMES for the viewport variant, not
   // only in a class: an `animation` that sets `transform` replaces the whole
-  // property while it runs, so a bar centred by `-translate-x-1/2` slid up from
+  // property while it runs, so a bar centered by `-translate-x-1/2` slid up from
   // half a panel to the right and snapped into place at the end.
-  const animation = position === 'viewport' ? 'slideUpBarCentred' : 'slideUpBar'
+  const animation = position === 'viewport' ? 'slideUpBarCentered' : 'slideUpBar'
 
   return (
     <div
@@ -134,7 +134,7 @@ export function StickyBar({
           from { transform: translateY(100%); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }
         }
-        @keyframes slideUpBarCentred {
+        @keyframes slideUpBarCentered {
           from { transform: translate(-50%, 100%); opacity: 0; }
           to   { transform: translate(-50%, 0);    opacity: 1; }
         }

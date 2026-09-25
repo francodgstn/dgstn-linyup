@@ -22,7 +22,7 @@ Booking Holdings).
 Three inputs:
 
 1. **FareHarbor's product glossary** (~150 domain concepts, from their public help
-   centre) — the most complete map of what the product actually models.
+   center) — the most complete map of what the product actually models.
 2. **A live booking walked end to end** on a real operator's page (a NYC harbour
    cruise): item page → date → time slot → ticket types → add-ons → cart →
    checkout. Every UI observation below comes from that walkthrough, not from

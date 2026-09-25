@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProgramTemplatesManager } from '@/components/events/program/ProgramTemplatesManager'
 import type { Team } from '@linyup/shared'
 
-// Reusable event programmes for this studio, plus any inherited from the parent
+// Reusable event programs for this studio, plus any inherited from the parent
 // organisation (read-only). Authored EITHER here — "New template" opens the
 // standalone editor at ./[templateId] — or on an event via "Save as template".
 

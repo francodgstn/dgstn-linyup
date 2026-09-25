@@ -469,7 +469,7 @@
   }
 }
 
-/* ── Print: the event programme sheet ────────────────────────────────────────
+/* ── Print: the event program sheet ────────────────────────────────────────
    The second printable surface (/public/{slug}/events/{id}/print). Browser
    "Save as PDF" over these rules produces the A4 handout, which is why there
    is no jsPDF path — hand-laying a multi-day multi-track grid there would be

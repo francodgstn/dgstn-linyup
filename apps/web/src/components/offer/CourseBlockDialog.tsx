@@ -91,7 +91,7 @@ interface FormValues {
   curriculum: CurriculumRow[]
 }
 
-/** One line of the programme, as the form holds it. */
+/** One line of the program, as the form holds it. */
 interface CurriculumRow {
   title: string
   detail: string
@@ -707,7 +707,7 @@ export function CourseBlockDialog({
               </div>
             )}
 
-            {/* ── THE PROGRAMME ─────────────────────────────────────────────
+            {/* ── THE PROGRAM ─────────────────────────────────────────────
               What makes this a course rather than a class on the calendar. It
               is optional and empty by default: a studio that just repeats a
               class owes nobody an outline.

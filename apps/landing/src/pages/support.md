@@ -53,7 +53,7 @@ all. If no studio has invited you, there is nothing in the app for you yet.
 ## Coaches and studio owners
 
 If you run a studio on Linyup rather than train at one, start with the
-[Help centre](https://help.linyup.com): setting up, pricing, your schedule, your
+[Help center](https://help.linyup.com): setting up, pricing, your schedule, your
 team and check-in, step by step. For anything it doesn't answer, email the same
 address — say that you are an account owner and we will pick it up from there.
 

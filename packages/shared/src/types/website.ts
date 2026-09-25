@@ -198,7 +198,7 @@ export interface CtaBannerSection extends SectionBase {
   text?: string
   cta?: SiteCta
   /**
-   * - 'card' (default): one centred card, spaced above and below.
+   * - 'card' (default): one centered card, spaced above and below.
    * - 'band': full width, edge to edge — over `bgImageUrl` when set.
    */
   style?: 'card' | 'band'

@@ -18,7 +18,7 @@ import { join, relative } from 'node:path'
 // colour dot, an icon — registers nothing, and the trigger then prints the raw
 // `value`: a Firestore document id, a level number, an account code. It looks
 // like a rendering glitch and is reported as one; it was found in the wild on the
-// event programme's Day picker, and a sweep turned up EIGHTEEN of them across
+// event program's Day picker, and a sweep turned up EIGHTEEN of them across
 // finance, contacts, automations, documents, bookings, affiliations,
 // appointments, subscriptions and connect.
 //

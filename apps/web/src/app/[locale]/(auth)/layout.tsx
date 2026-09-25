@@ -108,7 +108,7 @@ type NavItem = {
   // Stable id used for pinning (distinct from href, which can carry query params).
   id: string
   href: string
-  // An absolute URL outside the app (the help centre). Rendered as a plain
+  // An absolute URL outside the app (the help center). Rendered as a plain
   // new-tab <a>, never through the locale-aware Link, and never "active".
   external?: boolean
   labelKey: string
@@ -231,14 +231,14 @@ const ALL_SETTINGS_ITEM: NavItem = {
   icon: Settings, // cog — the settings hub
   exact: true,
 }
-// The public help centre (help.linyup.com, apps/help). It replaced the in-app
+// The public help center (help.linyup.com, apps/help). It replaced the in-app
 // How-to area on 2026-09-19: the guides live in ONE published place, written for
 // a studio owner, instead of a second copy inside the app that went stale. An
 // external link, so it opens in a new tab and the studio keeps its place.
-const HELP_CENTRE_ITEM: NavItem = {
-  id: 'helpCentre',
+const HELP_CENTER_ITEM: NavItem = {
+  id: 'helpCenter',
   href: 'https://help.linyup.com',
-  labelKey: 'helpCentre',
+  labelKey: 'helpCenter',
   icon: HelpCircle, // question mark — help
   external: true,
 }
@@ -673,7 +673,7 @@ function NavTile({
 }
 
 // A compact icon-only link for the utility destinations (plugins, settings,
-// the help centre) that sit in their own row under the search bar rather than in the nav
+// the help center) that sit in their own row under the search bar rather than in the nav
 // list. Always shows its label as a tooltip, since there's no text beside the
 // icon.
 function UtilityIconLink({
@@ -731,7 +731,7 @@ function UtilityIconLink({
 }
 
 /**
- * The occasional utilities — Plugins, Settings, the help centre, plus the studio QR when
+ * The occasional utilities — Plugins, Settings, the help center, plus the studio QR when
  * the sidebar is collapsed — behind ONE "⋯" control. Used in BOTH modes.
  *
  * WHY IT EXISTS: collapsed, the icons stack vertically and cost ~144px, which
@@ -832,9 +832,9 @@ function UtilityTray({ onLinkClick }: { onLinkClick?: () => void }) {
               { ...ALL_SETTINGS_ITEM, href: orgHref(orgId, 'settings') },
             ]
           : []),
-        HELP_CENTRE_ITEM,
+        HELP_CENTER_ITEM,
       ]
-    : [EXPLORE_PLUGINS_ITEM, ALL_SETTINGS_ITEM, HELP_CENTRE_ITEM]
+    : [EXPLORE_PLUGINS_ITEM, ALL_SETTINGS_ITEM, HELP_CENTER_ITEM]
 
   // In org scope the first tool is the RESTING icon, so it is not also in the
   // reveal — one control never appears twice on one row.
@@ -862,7 +862,7 @@ function UtilityTray({ onLinkClick }: { onLinkClick?: () => void }) {
       onMouseLeave={() => setHovered(false)}
     >
       {!orgId ? <TeamQrButton /> : <UtilityIconLink item={tools[0]} onClick={onLinkClick} />}
-      {/* A member studio's org tray is the help centre alone, so there is nothing to
+      {/* A member studio's org tray is the help center alone, so there is nothing to
           reveal and the chevron would open onto empty space. */}
       {/* THE SECOND RESTING ICON. Notifications are a studio-level fact — "does
           my team have something waiting" — not a scope-level one, so it sits
@@ -920,14 +920,14 @@ function UtilityFlyout({
   // paths, so in org scope "All settings" and "Explore plugins" walked the
   // reader straight out of the organisation and into the studio's settings —
   // silently, because both screens look plausible on arrival. An organisation
-  // has its own of each; the help centre is the product's help and belongs to neither.
+  // has its own of each; the help center is the product's help and belongs to neither.
   //
   // The QR is studio-only for the same reason and is not swapped: it encodes a
   // STUDIO's public links, and there is no org equivalent to put in its place.
   //
   // AND THE ROLE. An organisation's settings and plugins are `adminOnly` in
   // ORG_RAIL_ITEMS; offering them here to a member studio was the same leak the
-  // tray had. A non-admin in org scope is left with the help centre, which is the honest
+  // tray had. A non-admin in org scope is left with the help center, which is the honest
   // answer: the other two belong to the people who run the federation.
   const { current: scope } = useScope()
   const orgId = scope?.kind === 'org' ? scope.id : null
@@ -974,7 +974,7 @@ function UtilityFlyout({
             not fit. The QR belongs to the full set alone: expanded, the tray
             shows it at rest, and one control must not appear twice on a row. */}
         {!items && !orgId && <TeamQrButton showLabel />}
-        {(items ?? (orgToolsAllowed ? [pluginsItem, settingsItem, HELP_CENTRE_ITEM] : [HELP_CENTRE_ITEM])).map((item) => (
+        {(items ?? (orgToolsAllowed ? [pluginsItem, settingsItem, HELP_CENTER_ITEM] : [HELP_CENTER_ITEM])).map((item) => (
           <UtilityIconLink key={item.id} item={item} onClick={onLinkClick} showLabel />
         ))}
       </div>
@@ -1835,7 +1835,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 // at 8px — the same place the rule sat, so the two touched. Indenting the rows to
 // separate them would undo the paragraph above, so the rule moves the other way
 // instead: `-left-1` puts it at 4px, inside `nav`'s own `px-2` padding, ~3px clear
-// of any row background and ~4px clear of the sidebar edge — near enough centred
+// of any row background and ~4px clear of the sidebar edge — near enough centered
 // in the gutter.
 //
 // That negative offset is SAFE against the scroll container, which is the thing to
@@ -2930,7 +2930,7 @@ function SidebarContent({
       }))
     : []
 
-  // Search finds pages INSIDE the app; the help centre is an external site and
+  // Search finds pages INSIDE the app; the help center is an external site and
   // is reached from the utility row and the user menu instead.
   const searchEntries: SearchEntry[] = orgScopeId ? [
     ...orgSearchEntries,
@@ -3059,7 +3059,7 @@ function SidebarContent({
       {/* Search row. First of the two pinned rows; the head pair sits under it,
           and the scroll area starts below them both. Expanded, search has this
           row to ITSELF — the "⋯" utilities moved up to the studio-name row
-          above on 2026-08-23; collapsed, they stack here as centred icons
+          above on 2026-08-23; collapsed, they stack here as centered icons
           because there is no studio row to move them to.
 
           Search is a mini-input rather than the full-width field it used to be a
@@ -3068,7 +3068,7 @@ function SidebarContent({
           as an overlay anchored to itself, and ⌘K/Ctrl+K opens it too — behind an
           icon it would otherwise lose the discoverability a permanent field had.
 
-          In icon-only mode the row stacks as centred icons. */}
+          In icon-only mode the row stacks as centered icons. */}
       <div
         // No bottom rule: this row reads as part of the header block above it,
         // and a second line so close to the studio row's was clutter. The same
@@ -3087,7 +3087,7 @@ function SidebarContent({
 
             Expanded they cost only one 32px row, so nothing forced it there —
             but the same argument holds for ATTENTION rather than for space.
-            Plugins, Settings and the help centre are reached deliberately, minutes
+            Plugins, Settings and the help center are reached deliberately, minutes
             apart, never mid-task; sitting permanently beside the search field
             they compete with the working areas below for the top of the pane.
             Behind "⋯" they cost one click and stop competing (Franco,

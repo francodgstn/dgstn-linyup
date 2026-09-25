@@ -203,7 +203,7 @@
     "groupCommunication": "Kommunikation",
     "catalogue": "Angebote",
     "apiKeys": "API-Schlüssel",
-    "helpCentre": "Hilfe-Center"
+    "helpCenter": "Hilfe-Center"
   },
   "PublicHub": {
     "title": "Öffentliche Seiten",
@@ -1663,8 +1663,8 @@
     "duplicateFailed": "Dieses Event konnte nicht dupliziert werden.",
     "publicEventsTitle": "Events",
     "publicNoEvents": "Keine bevorstehenden Events.",
-    "publicHasProgramme": "Programm",
-    "publicProgrammeTitle": "Programm",
+    "publicHasProgram": "Programm",
+    "publicProgramTitle": "Programm",
     "publicEventNotFound": "Dieses Event ist nicht verfügbar.",
     "publicBackToEvents": "Alle Events",
     "print": "Drucken",

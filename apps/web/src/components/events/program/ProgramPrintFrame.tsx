@@ -8,7 +8,7 @@ import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 
 /**
- * The page around a printable programme — public and staff alike.
+ * The page around a printable program — public and staff alike.
  *
  * The controls sit above the sheet and never print (`no-print` for the auth
  * layout's print stylesheet, `print:hidden` for the public one). "Save as PDF"

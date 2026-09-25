@@ -66,7 +66,7 @@ describe('duplicateEvent — what carries over', () => {
     }
   })
 
-  it('leaves title, dates and programme to be set explicitly', () => {
+  it('leaves title, dates and program to be set explicitly', () => {
     for (const field of ['title', 'start', 'end', 'program']) {
       assert.ok(!(field in carried), `${field} is set explicitly, not carried`)
     }
@@ -102,7 +102,7 @@ describe('duplicateEvent — what carries over', () => {
   })
 })
 
-describe('duplicateEvent — programme day shifting', () => {
+describe('duplicateEvent — program day shifting', () => {
   const config: EventProgramConfig = {
     days: [
       { id: 'd1', date: '2026-08-01', title: 'Arrival', order: 0 },

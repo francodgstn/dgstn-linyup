@@ -39,7 +39,7 @@ you may act on it:
 - [**Waitlist**](./waitlist.md) — how it works now
 - [**Courses**](./courses.md) — how it works now
 - [**Waivers**](./waivers.md) — how it works now
-- [**Event programmes**](./event-program.md) — how it works now
+- [**Event programs**](./event-program.md) — how it works now
 
 ## Payments & finance
 

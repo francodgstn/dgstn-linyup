@@ -14,8 +14,8 @@ import { HMD_SEASON_EVENTS, HMD_SEASON_LABEL, type SeasonEvent } from '../data/h
 // Each row carries its own document id, so a re-run updates the same event
 // instead of creating a second one. But it only writes the fields the CALENDAR
 // owns — title, type, dates, location, description — and never touches the
-// counters, the programme, the publication state or anything a human has since
-// set on the event. Re-running after somebody has built a programme for the
+// counters, the program, the publication state or anything a human has since
+// set on the event. Re-running after somebody has built a program for the
 // Family Camp must not flatten it.
 //
 // ── ORG-WIDE, LIKE EVERY OTHER HMD EVENT ────────────────────────────────────
@@ -79,7 +79,7 @@ export async function pass14SeasonCalendar(cfg: MigrationConfig): Promise<void> 
     const ref = db.collection(EVENTS_COLLECTION).doc(e.id)
     const existing = await ref.get()
 
-    // Only what the calendar owns. Counters, programme, publication state and
+    // Only what the calendar owns. Counters, program, publication state and
     // anything a human set are deliberately absent from this object.
     const owned: Record<string, unknown> = {
       title: e.title,

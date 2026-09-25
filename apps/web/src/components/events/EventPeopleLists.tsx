@@ -5,7 +5,7 @@
  *
  * Extracted from the team event page so the ORG event page can show them too.
  * An organisation runs the federation's events (HMD's Fighting Cup is the case
- * that prompted it) and could see only the programme and the check-ins, which
+ * that prompted it) and could see only the program and the check-ins, which
  * is the half of the story that happens on the day.
  *
  * ── TENANT-AGNOSTIC, LIKE `ProgramTab` ─────────────────────────────────────

@@ -19,7 +19,7 @@
  *   WHAT IT IS        the name and description, off the org document.
  *   WHERE YOU STAND   your own `org_teams` row: joined when, active or not.
  *   WHAT IT HANDS DOWN the standards it imposes and the resources it lends —
- *                     belts, affiliation types, places, programmes, events.
+ *                     belts, affiliation types, places, programs, events.
  *
  * ── EVERY READ HERE WAS ALREADY PERMITTED ───────────────────────────────────
  *

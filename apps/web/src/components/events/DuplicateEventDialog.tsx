@@ -14,7 +14,7 @@ import type { Event } from '@linyup/shared'
 import { callFunction } from '@/lib/callFunction'
 
 // Duplicating copies the event's SETUP — settings, categories, the whole
-// programme — and never its participants. The server callable owns that
+// program — and never its participants. The server callable owns that
 // contract (see packages/functions/src/events/duplicateEvent.ts); this dialog
 // only collects the new title and start date.
 

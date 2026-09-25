@@ -82,7 +82,7 @@ export default function OrgEventDetailPage() {
   // The program tab label lives in the shared Events namespace — one key, not
   // a duplicate per surface.
   const tp = useTranslations('Events')
-  // Programme + duplication copy lives in its own namespace.
+  // Program + duplication copy lives in its own namespace.
   const tpp = useTranslations('EventProgram')
   const { orgId, id: eventId } = useParams<{ orgId: string; id: string }>()
   const { isAdmin, org } = useOrg()
@@ -92,7 +92,7 @@ export default function OrgEventDetailPage() {
   const [toggling, setToggling] = useState<string | null>(null)
   // PARITY WITH THE TEAM EVENT PAGE. An organisation RUNS the federation's
   // events — HMD's Fighting Cup is the case — and could previously see only the
-  // programme and the check-ins, which is the half of the story that happens on
+  // program and the check-ins, which is the half of the story that happens on
   // the day. Who accepted, who was asked and the competition categories were all
   // team-only, on events the org itself owns.
   //
