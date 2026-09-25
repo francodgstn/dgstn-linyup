@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { RegionalFormatter } from '@linyup/shared'
 import { MiniCalendar, dayKeyAtNoon, toDateKey } from '@/components/booking/MiniCalendar'
 import { formatCurrency } from '@/lib/format'
@@ -34,6 +34,10 @@ export interface AppointmentWhenProps {
   selectedDateKey: string | null
   onDateChange: (dateKey: string | null) => void
   onPick: (startMs: number, duration: AvailDuration) => void
+  /** A BASKET (the offer's `maxDatesPerBooking` above one): times are added
+   *  to a list instead of chosen, and Continue hands the whole list over. When
+   *  absent, a time is chosen with one click, as always. */
+  onPickMany?: (starts: number[], duration: AvailDuration) => void
   /** Bound to `AppointmentBooking`. */
   t: (key: string, values?: Record<string, string | number>) => string
   /** Bound to `PublicBooking`, for the one line both funnels say. */
@@ -53,12 +57,36 @@ export function AppointmentWhen({
   selectedDateKey,
   onDateChange,
   onPick,
+  onPickMany,
   t,
   tPublic,
   formatDuration,
 }: AppointmentWhenProps) {
   const setDuration = onDurationChange
   const setSelectedDateKey = onDateChange
+
+  // ── THE BASKET ────────────────────────────────────────────────────────────
+  // Only for an offer that sells several dates at once. Every date shares one
+  // length (the server's rule too), so changing the length empties it.
+  const maxDates = Math.max(1, activity.maxDatesPerBooking ?? 1)
+  const basketMode = maxDates > 1 && !!onPickMany
+  const [picked, setPicked] = useState<number[]>([])
+  useEffect(() => {
+    setPicked([])
+  }, [duration, activity.activityId])
+  const durationMs = duration * 60_000
+  const togglePicked = (startMs: number) =>
+    setPicked((prev) =>
+      prev.includes(startMs)
+        ? prev.filter((p) => p !== startMs)
+        : prev.length < maxDates
+          ? [...prev, startMs].sort((a, b) => a - b)
+          : prev
+    )
+  /** A time that would overlap a date already in the basket: the provider
+   *  cannot be in two places, and the server would refuse it by name. */
+  const clashesWithPicked = (startMs: number) =>
+    picked.some((p) => p !== startMs && Math.abs(p - startMs) < durationMs)
 
   // Only days with a free start for the CHOSEN duration are selectable: a
   // window may offer several lengths and not every day has room for all of them.
@@ -160,20 +188,88 @@ export function AppointmentWhen({
             <p className="text-sm text-muted-foreground py-4">{t('noTimesThisDay')}</p>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {times.map((startMs) => (
-                <button
-                  key={startMs}
-                  type="button"
-                  onClick={() => onPick(startMs, chosenDuration)}
-                  className="rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5"
-                >
-                  {fmt.time(startMs)}
-                </button>
-              ))}
+              {times.map((startMs) => {
+                const inBasket = picked.includes(startMs)
+                const unavailable =
+                  basketMode && !inBasket && (picked.length >= maxDates || clashesWithPicked(startMs))
+                return (
+                  <button
+                    key={startMs}
+                    type="button"
+                    disabled={unavailable}
+                    aria-pressed={basketMode ? inBasket : undefined}
+                    onClick={() =>
+                      basketMode ? togglePicked(startMs) : onPick(startMs, chosenDuration)
+                    }
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40 ${
+                      inBasket
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'hover:border-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {fmt.time(startMs)}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
       </div>
+
+      {/* THE BASKET: every date chosen so far, across days, each removable,
+          with the total and one Continue. */}
+      {basketMode && (
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-sm font-semibold">
+              {t('basketTitle', { count: picked.length, max: maxDates })}
+            </p>
+            {picked.length > 0 &&
+              typeof chosenDuration.priceAmount === 'number' &&
+              chosenDuration.benefitOnly !== true && (
+                <p className="text-sm font-semibold tabular-nums">
+                  {chosenDuration.party
+                    ? t('basketTotalPerPerson', {
+                        total: formatCurrency(chosenDuration.priceAmount * picked.length, currency, locale),
+                      })
+                    : t('basketTotal', {
+                        total: formatCurrency(chosenDuration.priceAmount * picked.length, currency, locale),
+                      })}
+                </p>
+              )}
+          </div>
+          {picked.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('basketHint', { max: maxDates })}</p>
+          ) : (
+            <ul className="divide-y text-sm">
+              {picked.map((startMs) => {
+                const label = `${fmt.custom(startMs, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmt.time(startMs)}–${fmt.time(startMs + durationMs)}`
+                return (
+                  <li key={startMs} className="flex items-center justify-between gap-2 py-1.5">
+                    <span className="tabular-nums">{label}</span>
+                    <button
+                      type="button"
+                      onClick={() => togglePicked(startMs)}
+                      aria-label={t('basketRemove', { date: label })}
+                      className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      {t('basketRemoveShort')}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          <button
+            type="button"
+            disabled={picked.length === 0}
+            onClick={() => onPickMany?.(picked, chosenDuration)}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {t('basketContinue', { count: picked.length })}
+          </button>
+        </div>
+      )}
     </>
   )
 }

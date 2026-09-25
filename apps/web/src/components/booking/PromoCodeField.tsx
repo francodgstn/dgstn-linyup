@@ -63,6 +63,8 @@ export type PromoPreviewTarget =
       durationMinutes: number
       /** A party length's size, so the preview prices every place. */
       people?: number
+      /** A basket's number of dates, so the preview prices every date. */
+      quantity?: number
     }
   | { kind: 'course'; courseId: string }
   | { kind: 'product'; productId: string; variantId?: string }
