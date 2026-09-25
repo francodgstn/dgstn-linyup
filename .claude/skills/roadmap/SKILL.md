@@ -113,11 +113,24 @@ change, tell Franco what to click.
 ## Publish — the public /roadmap page on the landing site
 
 `linyup.com/roadmap` (and `/de|fr|it/roadmap`) shows the board's **In progress**
-and **Next** cards, plus the first `LANDED_MAX` (4) of **Done** as "Landed
+and **Next** cards, plus the newest `LANDED_MAX` (6) that have landed as "Landed
 recently" — nothing else leaves the board. The page reads
 `apps/landing/src/data/roadmap.json`, written ONLY by
 `node scripts/roadmap-export.mjs` (header explains the determinism). The weekly
 routine publishes; run it by hand only when asked.
+
+**The landed list is ACCUMULATED, not read from the board.** An archived card
+cannot be read back (the API returns only live items), so every card seen as Done
+is recorded in `roadmap.json` and CARRIED after it leaves the board. Archiving a
+Done card therefore no longer removes it from the page: it drops to
+`landedArchive` once six newer ones exist. Two consequences when you archive:
+
+- **Archiving to keep Done short is free**: the page keeps showing six.
+- **Archiving does NOT unpublish.** Taking a landed card off the page is the one
+  case where `roadmap.json` is edited by hand: delete its entry in the publish PR
+  and say why, because a re-export carries it forward rather than dropping it. If
+  it is one of the cards in `scripts/roadmap-landed-seed.json`, remove it there
+  too, or the next export puts it back.
 
 1. Work in a throwaway worktree off `origin/main`, never the main checkout (a
    parallel session may be using it). If an open PR from a `roadmap/publish-*`

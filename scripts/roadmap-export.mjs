@@ -12,6 +12,21 @@
  * ago, and the newest sits first — board order is what the page prints, and the
  * board carries no dates to sort by (Franco, 2026-09-20).
  *
+ * WHY THIS FILE REMEMBERS WHAT LANDED. Keeping the Done column short means
+ * archiving cards, and an ARCHIVED CARD CANNOT BE READ BACK: ProjectV2.items
+ * returns only live items and takes no includeArchived argument, so the board
+ * forgets a card the moment it is archived. So the landed list is ACCUMULATED
+ * here instead of derived: every card seen as Done is recorded, and one that
+ * later leaves the board is CARRIED rather than dropped. `sections.landed` is
+ * the newest LANDED_MAX of that list (what the page shows today) and
+ * `landedArchive` is the remainder, for a future "show everything" disclosure.
+ *
+ * That a card enters the history ONLY by being Done is load-bearing, not
+ * incidental: a dropped idea is archived from Backlog or "In review", never from
+ * Done, so it can never appear in a list the page presents as shipped.
+ * `scripts/roadmap-landed-seed.json` covers the cards archived before this
+ * existed; its header says why it cannot be regenerated.
+ *
  * WHY THE OUTPUT IS DETERMINISTIC. The weekly routine opens a PR only when
  * `git diff` on this file is non-empty, so an unchanged board MUST reproduce the
  * file byte-for-byte. Two things make that true:
@@ -44,16 +59,18 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = join(ROOT, 'apps/landing/src/data/roadmap.json')
+const SEED = join(ROOT, 'scripts/roadmap-landed-seed.json')
 const OWNER = 'francodgstn'
 const PROJECT = '2'
 const LOCALES = ['de', 'fr', 'it']
+// How many landed cards the page shows. The rest go to `landedArchive`.
+const LANDED_MAX = 6
 // Board status → page section. Order here is the order on the page.
-// The third entry caps how many of that column's cards are published.
-const LANDED_MAX = 4
+// Done is built in FULL and then split against the accumulated history below.
 const SECTIONS = [
   ['In progress', 'inProgress'],
   ['Next', 'next'],
-  ['Done', 'landed', LANDED_MAX],
+  ['Done', 'landed'],
 ]
 
 const args = process.argv.slice(2)
@@ -90,12 +107,39 @@ function readBoard() {
   return JSON.parse(raw).items
 }
 
+const readOut = () => (existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : {})
+
 function readExisting() {
-  if (!existsSync(OUT)) return new Map()
-  const data = JSON.parse(readFileSync(OUT, 'utf8'))
+  const data = readOut()
   const byId = new Map()
   for (const cards of Object.values(data.sections ?? {})) for (const c of cards) byId.set(c.id, c)
+  for (const c of data.landedArchive ?? []) byId.set(c.id, c)
   return byId
+}
+
+/** Everything this file already knows landed, newest first (shown + archived). */
+function priorLanded() {
+  const data = readOut()
+  const seed = existsSync(SEED) ? (JSON.parse(readFileSync(SEED, 'utf8')).cards ?? []) : []
+  return [...(data.sections?.landed ?? []), ...(data.landedArchive ?? []), ...seed]
+}
+
+/**
+ * Board Done (newest first) followed by everything that landed earlier and has
+ * since left the board. A card the board still shows is rebuilt from the board,
+ * so a rewording reaches the page; a carried one is kept exactly as it was,
+ * because there is nothing left to rebuild it from.
+ */
+function landedHistory(doneCards) {
+  const onBoard = new Set(doneCards.map((c) => c.id))
+  const carried = []
+  const seen = new Set()
+  for (const c of priorLanded()) {
+    if (onBoard.has(c.id) || seen.has(c.id)) continue
+    seen.add(c.id)
+    carried.push(c)
+  }
+  return [...doneCards, ...carried]
 }
 
 function build(board, existing, incoming) {
@@ -137,15 +181,24 @@ const incoming = opt('--translations')
   : undefined
 const { sections, missing } = build(board, readExisting(), incoming)
 
+// Split the accumulated landed list: the newest LANDED_MAX are shown, the rest
+// are kept for a future "show everything" disclosure. Read the history BEFORE
+// overwriting sections.landed, which currently holds every Done card.
+const history = landedHistory(sections.landed)
+sections.landed = history.slice(0, LANDED_MAX)
+const landedArchive = history.slice(LANDED_MAX)
+
 const file = {
   _generated:
-    `By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest ${LANDED_MAX} Done). Do not edit by hand — change the board and re-export.`,
+    `By scripts/roadmap-export.mjs from the roadmap board (In progress + Next + the newest ${LANDED_MAX} landed; older landed cards are kept in landedArchive). Do not edit by hand: change the board and re-export.`,
   sections,
+  landedArchive,
 }
 writeFileSync(OUT, JSON.stringify(file, null, 2) + '\n')
 
 const count = Object.values(sections).reduce((n, s) => n + s.length, 0)
 console.log(`roadmap.json: ${count} cards (${SECTIONS.map(([s, k]) => `${s} ${sections[k].length}`).join(', ')})`)
+console.log(`landed history: ${history.length} (${sections.landed.length} shown, ${landedArchive.length} archived)`)
 for (const i of skipped)
   console.warn(`skipped (not a draft item — never published): ${i.title}`)
 if (missing.length) {
