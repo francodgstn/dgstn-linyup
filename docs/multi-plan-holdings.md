@@ -330,8 +330,12 @@ Each phase is its own PR and leaves `main` shippable.
      card and its "change subscription" link, Payments → Subscriptions (one row
      per held plan; "unlinked" = live Stripe billing no plan list knows about),
      and the dashboard's figures, donut and overview card.
-     Still to do: the billing warning (`contactBillingIsUnlinked`, which still
-     compares Stripe billing to the legacy slot), CSV, the mobile profile.
+     **The billing warning is dropped** (Franco, 2026-09-25):
+     `contactBillingIsUnlinked` and the `billing_unlinked` attention reason
+     compared Stripe billing to the legacy slot, and with a plan list a Stripe
+     subscription IS a held plan, so there is nothing for it to diverge from.
+     Payments → Subscriptions still flags live billing no plan list knows about.
+     Still to do: CSV, the mobile profile.
 5. **Remove the slot.** Delete the `subscription_type_*` fields from the
    Contact type, the rules and every remaining reader; the census test's
    allow-list ends empty. No adoption wait — nothing is live.
