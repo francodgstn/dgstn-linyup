@@ -29,7 +29,7 @@ import { useTranslations, useLocale, LOCALES } from '../i18n';
 import { FirestoreService } from '../services/firestore';
 import { TeamPublicProfile, Leaderboard, SessionWithStatus, ContactAlert, GamificationSettings, AppointmentWithStatus, RankingSystem } from '../types';
 import { LoadingOverlay } from '../components/LoadingOverlay';
-import { formatDateValue, formatAddress, formatGender, resolveAffiliationTerm, resolveSubscriptionTypeName } from '../utils/profileUtils';
+import { formatDateValue, formatAddress, formatGender, resolveAffiliationTerm, resolveHeldPlanSummary } from '../utils/profileUtils';
 import { waiverRefusal } from '../utils/waiverRefusal';
 
 // Redesigned Components
@@ -137,7 +137,6 @@ export const ProfileScreen: React.FC = () => {
   const { setBrand } = useTenantTheme();
   const [affiliationTerm, setAffiliationTerm] = useState<string>('Affiliation');
   const [rankingSystems, setRankingSystems] = useState<RankingSystem[]>([]);
-  const [subscriptionTypeName, setSubscriptionTypeName] = useState<string | null>(null);
   const [affiliationCollapsed, setAffiliationCollapsed] = useState(true);
   const [teamCardCollapsed, setTeamCardCollapsed] = useState(true);
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
@@ -208,10 +207,6 @@ export const ProfileScreen: React.FC = () => {
         setAffiliationTerm(resolveAffiliationTerm(loadedProfile?.affiliation_term));
         setRankingSystems(loadedProfile?.ranking_systems ?? []);
       }
-      // The plan name lives on the contact's own denormalised subscription
-      // snapshot — never `teams/{id}/subscription_types/*`, which a contact
-      // session cannot read.
-      setSubscriptionTypeName(resolveSubscriptionTypeName(contact));
       if (contact.teamId) {
         const lb = await FirestoreService.getTeamLeaderboard(contact.teamId);
         setLeaderboard(lb);
@@ -490,6 +485,10 @@ export const ProfileScreen: React.FC = () => {
 
   if (!contact) return <LoadingOverlay visible message={t('loadingProfile')} />;
 
+  // Every plan the member holds today, from the contact's own plan list —
+  // never `teams/{id}/subscription_types/*`, which a contact session cannot read.
+  const heldPlans = resolveHeldPlanSummary(contact);
+
   // Each row is shown once the studio offers WhatsApp OR the contact already
   // answered THAT question (opted in or out) — so a member who opted in
   // before the studio disconnected can still switch it off, and a "reminders"
@@ -571,8 +570,8 @@ export const ProfileScreen: React.FC = () => {
             <TeamCard
               teamName={teamProfile.name}
               logoUrl={teamProfile.profileImage ?? null}
-              subscriptionName={subscriptionTypeName}
-              subscriptionRecurrence={contact.subscription_recurrence}
+              subscriptionName={heldPlans.name}
+              subscriptionRecurrence={heldPlans.recurrence}
               lastSeenAt={contact.last_seen_at}
             />
           )}
