@@ -47,6 +47,30 @@ interface ConfirmParams {
   /** Studio-authored plain-text note (activity override ?? team setting). */
   instructions?: string | null
   lang?: Lang
+  /** A BASKET's dates, when more than one was booked together. The mail then
+   *  lists every date with its own cancel link in place of the one button. */
+  dates?: AppointmentDateLine[] | null
+}
+
+/** One date of a basket as a mail lists it. */
+export interface AppointmentDateLine {
+  start: Date
+  end: Date
+  cancelUrl?: string | null
+}
+
+const CANCEL_SHORT: Record<Lang, string> = { en: 'Cancel', de: 'Absagen', fr: 'Annuler', it: 'Annulla' }
+
+/** Every date on its own line, soonest first, each with its own cancel link
+ *  when it has one: canceling one date of a basket leaves the others. */
+function dateLinesHtml(dates: AppointmentDateLine[], lang: Lang, withCancel: boolean): string {
+  return [...dates]
+    .sort((a, b) => a.start.getTime() - b.start.getTime())
+    .map((d) => {
+      const when = `${formatDateTime(d.start, lang)} – ${formatTime(d.end, lang)}`
+      return withCancel && d.cancelUrl ? `${when} · <a href="${d.cancelUrl}">${CANCEL_SHORT[lang]}</a>` : when
+    })
+    .join('<br>')
 }
 
 export function buildAppointmentConfirmationEmail(params: ConfirmParams) {
@@ -58,6 +82,9 @@ export function buildAppointmentConfirmationEmail(params: ConfirmParams) {
   const location = params.location ? escapeHtml(params.location) : params.location
   const dateStr = formatDateTime(start, lang)
   const endTime = formatTime(end, lang)
+  // A basket lists every date, each with its own cancel link.
+  const many = params.dates && params.dates.length > 1 ? params.dates : null
+  const when = many ? dateLinesHtml(many, lang, true) : `${dateStr} – ${endTime}`
 
   const titles: Record<Lang, string> = {
     en: 'Appointment Confirmed',
@@ -73,37 +100,37 @@ export function buildAppointmentConfirmationEmail(params: ConfirmParams) {
       `Your appointment with <strong>${teamName}</strong> has been confirmed.`,
       `<strong>Session:</strong> ${slotTitle}`,
       `<strong>Coach:</strong> ${providerName}`,
-      `<strong>Date:</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Dates' : 'Date'}:</strong> ${when}`,
       location ? `<strong>Location:</strong> ${location}` : '',
       onlineUrl ? `<strong>Online:</strong> <a href="${onlineUrl}">${onlineUrl}</a>` : '',
-      'A calendar invite (.ics) is attached to this email.',
+      many ? 'A calendar invite (.ics) for each date is attached to this email.' : 'A calendar invite (.ics) is attached to this email.',
     ],
     de: [
       `Ihr Termin bei <strong>${teamName}</strong> wurde bestätigt.`,
       `<strong>Sitzung:</strong> ${slotTitle}`,
       `<strong>Coach:</strong> ${providerName}`,
-      `<strong>Datum:</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Termine' : 'Datum'}:</strong> ${when}`,
       location ? `<strong>Ort:</strong> ${location}` : '',
       onlineUrl ? `<strong>Online:</strong> <a href="${onlineUrl}">${onlineUrl}</a>` : '',
-      'Ein Kalender-Einladung (.ics) ist dieser E-Mail beigefügt.',
+      many ? 'Für jeden Termin ist eine Kalendereinladung (.ics) beigefügt.' : 'Ein Kalender-Einladung (.ics) ist dieser E-Mail beigefügt.',
     ],
     fr: [
       `Votre rendez-vous avec <strong>${teamName}</strong> a été confirmé.`,
       `<strong>Séance :</strong> ${slotTitle}`,
       `<strong>Coach :</strong> ${providerName}`,
-      `<strong>Date :</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Dates' : 'Date'} :</strong> ${when}`,
       location ? `<strong>Lieu :</strong> ${location}` : '',
       onlineUrl ? `<strong>En ligne :</strong> <a href="${onlineUrl}">${onlineUrl}</a>` : '',
-      'Une invitation de calendrier (.ics) est jointe à cet e-mail.',
+      many ? 'Une invitation de calendrier (.ics) est jointe pour chaque date.' : 'Une invitation de calendrier (.ics) est jointe à cet e-mail.',
     ],
     it: [
       `Il tuo appuntamento con <strong>${teamName}</strong> è stato confermato.`,
       `<strong>Sessione:</strong> ${slotTitle}`,
       `<strong>Coach:</strong> ${providerName}`,
-      `<strong>Data:</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Date' : 'Data'}:</strong> ${when}`,
       location ? `<strong>Luogo:</strong> ${location}` : '',
       onlineUrl ? `<strong>Online:</strong> <a href="${onlineUrl}">${onlineUrl}</a>` : '',
-      'Un invito al calendario (.ics) è allegato a questa email.',
+      many ? 'Per ogni data è allegato un invito al calendario (.ics).' : 'Un invito al calendario (.ics) è allegato a questa email.',
     ],
   }
   const cancelLabels: Record<Lang, string> = {
@@ -118,7 +145,7 @@ export function buildAppointmentConfirmationEmail(params: ConfirmParams) {
     detailsBox({ content: factLines(rest) }),
     ...(instructions?.trim() ? [instructionsBox(instructions, lang)] : []),
     `<p>${icsNote}</p>`,
-    ...(cancelUrl
+    ...(cancelUrl && !many
       ? [`<p style="text-align:center;margin-top:24px;">${ctaButton(cancelUrl, cancelLabels[lang])}</p>`]
       : []),
   ].join('\n')
@@ -161,6 +188,8 @@ interface CoachNotifParams {
   end: Date
   notes?: string | null
   lang?: Lang
+  /** A basket's dates, when more than one was booked together. */
+  dates?: AppointmentDateLine[] | null
 }
 
 export function buildAppointmentProviderNotificationEmail(params: CoachNotifParams) {
@@ -176,6 +205,9 @@ export function buildAppointmentProviderNotificationEmail(params: CoachNotifPara
   const notes = params.notes ? escapeHtml(params.notes) : params.notes
   const dateStr = formatDateTime(start, lang)
   const endTime = formatTime(end, lang)
+  // A basket lists every date; the coach cancels from the admin, not from here.
+  const many = params.dates && params.dates.length > 1 ? params.dates : null
+  const when = many ? dateLinesHtml(many, lang, false) : `${dateStr} – ${endTime}`
 
   const titles: Record<Lang, string> = {
     en: `New appointment: ${params.clientName}`,
@@ -188,28 +220,28 @@ export function buildAppointmentProviderNotificationEmail(params: CoachNotifPara
       `Hi ${coachFirstname}, a new appointment has been booked.`,
       `<strong>Session:</strong> ${slotTitle}`,
       `<strong>Client:</strong> ${clientName} (${clientEmail})${clientPhone ? ` · ${clientPhone}` : ''}`,
-      `<strong>Date:</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Dates' : 'Date'}:</strong> ${when}`,
       notes ? `<strong>Notes:</strong> ${notes}` : '',
     ],
     de: [
       `Hallo ${coachFirstname}, ein neuer Termin wurde gebucht.`,
       `<strong>Sitzung:</strong> ${slotTitle}`,
       `<strong>Klient:</strong> ${clientName} (${clientEmail})${clientPhone ? ` · ${clientPhone}` : ''}`,
-      `<strong>Datum:</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Termine' : 'Datum'}:</strong> ${when}`,
       notes ? `<strong>Notizen:</strong> ${notes}` : '',
     ],
     fr: [
       `Bonjour ${coachFirstname}, un nouveau rendez-vous a été réservé.`,
       `<strong>Séance :</strong> ${slotTitle}`,
       `<strong>Client :</strong> ${clientName} (${clientEmail})${clientPhone ? ` · ${clientPhone}` : ''}`,
-      `<strong>Date :</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Dates' : 'Date'} :</strong> ${when}`,
       notes ? `<strong>Notes :</strong> ${notes}` : '',
     ],
     it: [
       `Ciao ${coachFirstname}, è stato prenotato un nuovo appuntamento.`,
       `<strong>Sessione:</strong> ${slotTitle}`,
       `<strong>Cliente:</strong> ${clientName} (${clientEmail})${clientPhone ? ` · ${clientPhone}` : ''}`,
-      `<strong>Data:</strong> ${dateStr} – ${endTime}`,
+      `<strong>${many ? 'Date' : 'Data'}:</strong> ${when}`,
       notes ? `<strong>Note:</strong> ${notes}` : '',
     ],
   }

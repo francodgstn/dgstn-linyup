@@ -23,6 +23,9 @@ export interface WindowBooking {
   activityId: string
   activityName: string
   startMs: number
+  /** Every date booked, soonest first; `[startMs]` for one date. A basket has
+   *  one provider, one length and one party, so only the starts differ. */
+  startMsList: number[]
   durationMinutes: number
   placeName: string | null
   location: string | null
@@ -47,8 +50,11 @@ export function buildWindowBooking(
   coach: AvailCoach,
   activity: AvailActivity,
   startMs: number,
-  durationMinutes: number
+  durationMinutes: number,
+  /** A basket's dates; one date when absent. */
+  startMsList?: number[]
 ): WindowBooking {
+  const dates = [...new Set(startMsList?.length ? startMsList : [startMs])].sort((a, b) => a - b)
   const chosen =
     activity.durations.find((d) => d.minutes === durationMinutes) ?? activity.durations[0] ?? null
   return {
@@ -56,7 +62,8 @@ export function buildWindowBooking(
     providerName: coach.providerName,
     activityId: activity.activityId,
     activityName: activity.activityName,
-    startMs,
+    startMs: dates[0],
+    startMsList: dates,
     durationMinutes: chosen?.minutes ?? durationMinutes,
     placeName: activity.placeName,
     location: activity.location,

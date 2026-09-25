@@ -1139,7 +1139,7 @@ export default function BookingForm({
   /** A time named by the URL, waiting for the availability that can confirm
    *  it exists. Consumed once, by the load it is waiting for: a crafted link
    *  must not be able to put an arbitrary hour in front of a visitor. */
-  const pendingSlotRef = useRef<{ startMs: number; minutes: number } | null>(null)
+  const pendingSlotRef = useRef<{ startMs: number; minutes: number; startMsList?: number[] } | null>(null)
 
   async function openAppointment(activityId: string, presetProviderId?: string) {
     setAptLoading(true)
@@ -1183,15 +1183,25 @@ export default function BookingForm({
         // The start must be a REAL free slot of that length, not merely a
         // number, or a crafted link puts an arbitrary time in front of the
         // visitor and the callable refuses it after the form is filled in.
-        const isRealSlot =
+        const isFree = (startMs: number) =>
           !!pending &&
           !!activity &&
           activity.days.some((d) =>
-            (d.slotsByDuration[String(pending.minutes)] ?? []).includes(pending.startMs)
+            (d.slotsByDuration[String(pending.minutes)] ?? []).includes(startMs)
           )
+        // EVERY date of a basket must still be free, and no more of them than
+        // the offer takes; otherwise the visitor picks again rather than being
+        // refused after filling in the form.
+        const pendingDates = pending?.startMsList ?? (pending ? [pending.startMs] : [])
+        const isRealSlot =
+          !!pending &&
+          pendingDates.length <= Math.max(1, activity?.maxDatesPerBooking ?? 1) &&
+          pendingDates.every(isFree)
         if (isRealSlot && activity && pending) {
           setAptDuration(pending.minutes)
-          setWindowBooking(buildWindowBooking(only, activity, pending.startMs, pending.minutes))
+          setWindowBooking(
+            buildWindowBooking(only, activity, pending.startMs, pending.minutes, pendingDates)
+          )
           setStep('slot')
           return
         }
@@ -1953,6 +1963,12 @@ export default function BookingForm({
                   provider: windowBooking?.providerId,
                   start: windowBooking ? String(windowBooking.startMs) : undefined,
                   duration: windowBooking ? String(windowBooking.durationMinutes) : undefined,
+                  // A basket's other dates, so Back and Forward bring the
+                  // whole basket back rather than its first date.
+                  dates:
+                    windowBooking && windowBooking.startMsList.length > 1
+                      ? windowBooking.startMsList.join(',')
+                      : undefined,
                 }
           : step === 'sessions'
             ? {
@@ -2048,7 +2064,15 @@ export default function BookingForm({
       if (matched?.activityType === 'appointment') {
         const startMs = parsePositiveInt(params.get('start'))
         const minutes = parsePositiveInt(params.get('duration'), 24 * 60)
-        pendingSlotRef.current = startMs && minutes ? { startMs, minutes } : null
+        // A basket's dates, each checked against availability like the first.
+        const dates = (params.get('dates') ?? '')
+          .split(',')
+          .map((d) => parsePositiveInt(d))
+          .filter((d): d is number => typeof d === 'number')
+        pendingSlotRef.current =
+          startMs && minutes
+            ? { startMs, minutes, ...(dates.length > 1 ? { startMsList: dates } : {}) }
+            : null
         setSelectedActivity(matched)
         setSelectedSession(null)
         setGuestPath(null)
@@ -2254,7 +2278,15 @@ export default function BookingForm({
               dateTimeLabel={
                 selectedSession
                   ? `${formatDate(fmt, selectedSession.start)} · ${formatTime(fmt, selectedSession.start)}–${formatTime(fmt, selectedSession.end)}`
-                  : windowBooking
+                  : windowBooking && windowBooking.startMsList.length > 1
+                    ? // A basket: every date, short, soonest first.
+                      tApt('basketSummary', {
+                        count: windowBooking.startMsList.length,
+                        dates: windowBooking.startMsList
+                          .map((ms) => `${fmt.custom(ms, { weekday: 'short', day: 'numeric', month: 'short' })} ${fmt.time(ms)}`)
+                          .join(', '),
+                      })
+                    : windowBooking
                     ? `${fmt.custom(windowBooking.startMs, { weekday: 'long', day: 'numeric', month: 'long' })} · ${fmt.time(windowBooking.startMs)}–${fmt.time(windowBooking.startMs + windowBooking.durationMinutes * 60_000)}`
                     : null
               }
@@ -2513,6 +2545,13 @@ export default function BookingForm({
           setWindowBooking(buildWindowBooking(aptCoach, aptActivity, startMs, duration.minutes))
           setStep('slot')
         }}
+        onPickMany={(starts, duration) => {
+          pendingSlotRef.current = null
+          setWindowBooking(
+            buildWindowBooking(aptCoach, aptActivity, starts[0], duration.minutes, starts)
+          )
+          setStep('slot')
+        }}
       />
     ) : null
 
@@ -2613,7 +2652,7 @@ export default function BookingForm({
   if (step === 'slot' && windowBooking && teamId) {
     return withBar(
       <SlotBookingForm
-        key={`${windowBooking.providerId}-${windowBooking.activityId}-${windowBooking.startMs}-${windowBooking.durationMinutes}`}
+        key={`${windowBooking.providerId}-${windowBooking.activityId}-${windowBooking.startMsList.join('+')}-${windowBooking.durationMinutes}`}
         teamId={teamId}
         guestFormRef={aptGuestFormRef}
         onScreenChange={setAptScreen}
@@ -2635,6 +2674,7 @@ export default function BookingForm({
         providerId={windowBooking.providerId}
         activityId={windowBooking.activityId}
         startMs={windowBooking.startMs}
+        startMsList={windowBooking.startMsList}
         currency={currency}
         locale={locale}
         backLabel={t('back')}
@@ -2649,6 +2689,8 @@ export default function BookingForm({
             providerId: windowBooking.providerId,
             activityId: windowBooking.activityId,
             startMs: windowBooking.startMs,
+            // A basket sends every date; one date sends exactly what it always did.
+            ...(windowBooking.startMsList.length > 1 ? { startMsList: windowBooking.startMsList } : {}),
             durationMinutes: windowBooking.durationMinutes,
             ...args,
           }).then(() => undefined)
@@ -2661,6 +2703,8 @@ export default function BookingForm({
             providerId: windowBooking.providerId,
             activityId: windowBooking.activityId,
             startMs: windowBooking.startMs,
+            // A basket sends every date; one date sends exactly what it always did.
+            ...(windowBooking.startMsList.length > 1 ? { startMsList: windowBooking.startMsList } : {}),
             durationMinutes: windowBooking.durationMinutes,
             slug,
             locale,

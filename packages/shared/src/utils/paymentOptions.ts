@@ -116,6 +116,9 @@ export interface AppointmentTarget {
    *  length (`resolveDurationParty`) reads it; checked against the party by
    *  `normalizePartyRequest` before anything is priced. Absent = 1. */
   people?: number
+  /** How many dates this booking takes (a basket). One date is priced exactly
+   *  as before and the result multiplied; see `priceBasket`. Absent = 1. */
+  quantity?: number
 }
 
 export interface CourseTarget {
@@ -237,6 +240,12 @@ export type PaymentOption =
         unitAmount: number
         bookerCoveredBy?: string
       }
+      /** A BASKET priced this: `amount` is every date together, `lessonAmount`
+       *  what one date costs this caller (after their member price, a promo
+       *  and a party). Each booking records its own share, and a date that
+       *  cannot be given is refunded at exactly this figure. Present only for
+       *  more than one date. */
+      basket?: { lessons: number; lessonAmount: number }
     }
 
 /** Why there is NO option — exactly extends BookingAccessDenialReason. */
@@ -803,14 +812,46 @@ export const APPOINTMENT_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
   'fixed_price',
 ])
 
-/** A party's booker may take their member price or be covered by their plan,
- *  but may not SPEND A CREDIT: the companions still owe money, and one booking
+/** The appointment effects WITHOUT spending a credit, for a booking a credit
+ *  cannot settle on its own: a party's booker (the companions still owe money)
+ *  and a basket of dates (credits would run out partway through). One booking
  *  paid half in credits and half by card is a mixed tender no rail settles. */
-const PARTY_BOOKER_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
+const NO_CREDIT_APPOINTMENT_EFFECTS: ReadonlySet<BenefitEffect> = new Set([
   'included',
   'percent_off',
   'fixed_price',
 ])
+const PARTY_BOOKER_EFFECTS = NO_CREDIT_APPOINTMENT_EFFECTS
+
+/**
+ * A BASKET: one date priced exactly as a one-date booking would be, then taken
+ * `quantity` times. Coverage covers every date (a plan that includes the
+ * length includes each of them), a denial denies them all, and a price is
+ * scaled with its list totals so a struck-through figure stays honest. The
+ * one-date figure rides on `basket.lessonAmount`: it is what each booking
+ * records and what a date that cannot be given is refunded at.
+ */
+function priceBasket(lesson: PaymentOptionsResult, quantity: number): PaymentOptionsResult {
+  const option = lesson.options[0]
+  if (option?.type !== 'pay') return lesson
+  const scale = (n: number) => round2Major(n * quantity)
+  return {
+    ...lesson,
+    options: [
+      {
+        ...option,
+        amount: scale(option.amount),
+        ...(option.appliedBenefit
+          ? { appliedBenefit: { ...option.appliedBenefit, baseAmount: scale(option.appliedBenefit.baseAmount) } }
+          : {}),
+        ...(option.appliedPromo
+          ? { appliedPromo: { ...option.appliedPromo, baseAmount: scale(option.appliedPromo.baseAmount) } }
+          : {}),
+        basket: { lessons: quantity, lessonAmount: option.amount },
+      },
+    ],
+  }
+}
 
 /**
  * A PARTY, priced one place at a time and summed (Franco, 2026-09-25): the
@@ -1085,17 +1126,25 @@ function resolveTarget(
         resolveDurationParty(target.duration) && Number.isInteger(target.people)
           ? Math.max(1, target.people as number)
           : 1
-      if (people === 1) {
-        return applyModifiers(
-          snapshot,
-          target.benefit,
-          sale.priceAmount,
-          'base',
-          APPOINTMENT_EFFECTS,
-          promo
-        )
-      }
-      return priceParty(snapshot, target.benefit, sale.priceAmount, people, promo)
+      const quantity =
+        Number.isInteger(target.quantity) && (target.quantity as number) > 1
+          ? (target.quantity as number)
+          : 1
+      // ONE DATE, priced exactly as a one-date booking is. A basket may not
+      // spend credits (the no-mixed-tender rule a party follows), so its date
+      // is priced without that effect.
+      const lesson =
+        people === 1
+          ? applyModifiers(
+              snapshot,
+              target.benefit,
+              sale.priceAmount,
+              'base',
+              quantity === 1 ? APPOINTMENT_EFFECTS : NO_CREDIT_APPOINTMENT_EFFECTS,
+              promo
+            )
+          : priceParty(snapshot, target.benefit, sale.priceAmount, people, promo)
+      return quantity === 1 ? lesson : priceBasket(lesson, quantity)
     }
 
     case 'course': {

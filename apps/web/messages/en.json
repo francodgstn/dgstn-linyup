@@ -2017,7 +2017,10 @@
     "durationPartyHintPriced": "The price is per person. Whoever books gives everyone's name.",
     "durationPartyHintFree": "Whoever books gives everyone's name.",
     "durationPartyValidation": "Use whole numbers from 1 to {max}, with room for at least 2 people.",
-    "chipPricePerPerson": "{price} per person"
+    "chipPricePerPerson": "{price} per person",
+    "maxDatesLabel": "Dates per booking",
+    "maxDatesHint": "Let clients pick several dates and pay for them together. 1 books one date at a time.",
+    "maxDatesValidation": "Use a whole number from 1 to {max}."
   },
   "Benefit": {
     "fieldLabel": "Member benefit",
@@ -2832,7 +2835,16 @@
     "partyContinue": "Continue",
     "partySummary": "For {count} people, with {names}.",
     "partyChange": "Change",
-    "durationPricePerPerson": "{price} per person"
+    "durationPricePerPerson": "{price} per person",
+    "basketTitle": "{count} of {max} dates",
+    "basketHint": "Pick up to {max} dates across any days, then continue. You pay for them together.",
+    "basketTotal": "Total {total}",
+    "basketTotalPerPerson": "{total} per person",
+    "basketRemove": "Remove {date}",
+    "basketRemoveShort": "Remove",
+    "basketContinue": "Continue with {count, plural, one {# date} other {# dates}}",
+    "basketSummary": "{count} dates: {dates}",
+    "partyTotalDates": "For {count} dates: {total}"
   },
   "AppointmentCancel": {
     "title": "Cancel appointment",

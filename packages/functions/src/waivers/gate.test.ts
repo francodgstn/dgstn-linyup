@@ -627,7 +627,14 @@ describe('RULE 2 — the acceptance is written WITH the commit', () => {
     // It is shared with the paid checkout's hold and the webhook's re-acquire,
     // neither of which may mint an acceptance: the checkout already wrote one
     // before Stripe, and the webhook is a confirm.
-    assert.equal(countCalls(code(read('appointments/window.ts')), 'runAppointmentSlotTransaction'), 1)
+    // Every transaction the free path runs carries the ledger: the one-date
+    // booking, and a basket's holding phase (whose first date records it once).
+    // Counted as calls against mentions, so a free-path call added WITHOUT a
+    // ledger fails here rather than committing a seat with no signature.
+    const freePath = code(read('appointments/window.ts'))
+    const calls = countCalls(freePath, 'runAppointmentSlotTransaction')
+    assert.ok(calls >= 1, 'the free path books through the shared transaction')
+    assert.equal((freePath.match(/\bwaiverLedger:/g) ?? []).length, calls)
     for (const f of ['appointments/checkout.ts', 'appointments/staffBooking.ts', 'connect/webhook.ts']) {
       assert.equal(code(read(f)).includes('waiverLedger'), false, `${f} must not pass a ledger`)
     }

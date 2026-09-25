@@ -2017,7 +2017,10 @@
     "durationPartyHintPriced": "Il prezzo è a persona. Chi prenota indica il nome di tutti.",
     "durationPartyHintFree": "Chi prenota indica il nome di tutti.",
     "durationPartyValidation": "Usa numeri interi da 1 a {max}, con posto per almeno 2 persone.",
-    "chipPricePerPerson": "{price} a persona"
+    "chipPricePerPerson": "{price} a persona",
+    "maxDatesLabel": "Date per prenotazione",
+    "maxDatesHint": "I clienti possono scegliere più date e pagarle insieme. Con 1 si prenota una data alla volta.",
+    "maxDatesValidation": "Usa un numero intero da 1 a {max}."
   },
   "Benefit": {
     "fieldLabel": "Vantaggio membri",
@@ -2832,7 +2835,16 @@
     "partyContinue": "Continua",
     "partySummary": "Per {count} persone, con {names}.",
     "partyChange": "Modifica",
-    "durationPricePerPerson": "{price} a persona"
+    "durationPricePerPerson": "{price} a persona",
+    "basketTitle": "{count} date su {max}",
+    "basketHint": "Scegli fino a {max} date in qualsiasi giorno, poi continua. Le paghi insieme.",
+    "basketTotal": "Totale {total}",
+    "basketTotalPerPerson": "{total} a persona",
+    "basketRemove": "Rimuovi {date}",
+    "basketRemoveShort": "Rimuovi",
+    "basketContinue": "Continua con {count, plural, one {# data} other {# date}}",
+    "basketSummary": "{count} date: {dates}",
+    "partyTotalDates": "Per {count} date: {total}"
   },
   "AppointmentCancel": {
     "title": "Annulla appuntamento",

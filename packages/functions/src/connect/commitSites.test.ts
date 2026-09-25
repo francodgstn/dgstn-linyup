@@ -104,10 +104,10 @@ describe('THE FULL-COVER BRANCHES ARE THREE — asserted, not asserted in prose'
     // commitPromoFromMetadata at each per-kind CONFIRM point, which is what keeps
     // "a use is consumed by a completed sale, never by an attempt" true.
     assert.equal(countCalls(webhook, 'commitPromoRedemption'), 0)
-    // One per per-kind confirm point: drop-in, appointment, product, course,
-    // and the scheduled course. A number is allowed here because here it is
-    // executable, which is the whole point of this file.
-    assert.equal(countCalls(webhook, 'commitPromoFromMetadata'), 5, 'the five confirm points')
+    // One per per-kind confirm point: drop-in, appointment, an appointment
+    // basket, product, course, and the scheduled course. A number is allowed
+    // here because here it is executable, which is the whole point of this file.
+    assert.equal(countCalls(webhook, 'commitPromoFromMetadata'), 6, 'the six confirm points')
   })
 
   it('and every comment that states the count says THREE', () => {
@@ -150,6 +150,7 @@ describe('THE APPOINTMENT-HOLD RELEASE CENSUS — the sites, against its own lis
     'appointments/checkout.ts': 'createAppointmentCheckout',
     'appointments/staffBooking.ts': 'createStaffAppointment',
     'connect/webhook.ts': 'handleCheckoutExpired',
+    'appointments/window.ts': 'bookAppointment',
   }
   const holdRelease = read('appointments/holdRelease.ts')
 
@@ -175,6 +176,10 @@ describe('THE APPOINTMENT-HOLD RELEASE CENSUS — the sites, against its own lis
       'appointments/checkout.ts',
       'appointments/staffBooking.ts',
       'appointments/booking.ts',
+      // The free path. It had no caller until a basket had to give back holds
+      // it took, and it was not searched, so a caller there would have passed.
+      'appointments/window.ts',
+      'appointments/basket.ts',
       'connect/webhook.ts',
       'connect/payments.ts',
       'booking/dropIn.ts',

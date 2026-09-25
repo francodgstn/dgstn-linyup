@@ -38,6 +38,8 @@ export interface AvailActivity {
   activityId: string
   activityName: string
   durations: AvailDuration[]
+  /** How many dates one booking may take; absent means one. */
+  maxDatesPerBooking?: number
   /** The activity-wide rule, the LEGACY reading, correct only while
    *  `durationBenefits` is absent. Never read either directly: the pair goes
    *  through `resolveDurationBenefit`, which is what makes a tenant mirrored

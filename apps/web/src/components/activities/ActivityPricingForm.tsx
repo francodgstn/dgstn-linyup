@@ -51,6 +51,8 @@ import { deleteField, doc, updateDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
 import {
   ACTIVITIES_COLLECTION,
+  BASKET_MAX_DATES,
+  resolveMaxDatesPerBooking,
   benefitOpensDoorAt,
   classAccessFacts,
   classAccessRuleFor,
@@ -122,6 +124,15 @@ interface Draft {
    *  booking gate assumes, not something the studio chose, and seeding the
    *  editor with it would have the next Save write it down as if they had. */
   durations: DurationFormValue[]
+  /** APPOINTMENT-ONLY. How many dates one booking may take, as the studio
+   *  typed it; `maxDatesProblem` refuses anything outside 1..BASKET_MAX_DATES. */
+  maxDates: string
+}
+
+/** Is the "dates per booking" box unusable? A whole number, 1 to the most. */
+function maxDatesProblem(value: string): boolean {
+  const n = Number(value)
+  return !Number.isInteger(n) || n < 1 || n > BASKET_MAX_DATES
 }
 
 /** The `dropIn` field a draft means — written here once, and read by everything
@@ -148,6 +159,7 @@ function draftOf(a: Activity, studioDropIn: DropInPrice | null): Draft {
     dropInPrice:
       dropInMode === 'custom' && a.dropIn?.priceAmount != null ? String(a.dropIn.priceAmount) : '',
     durations: toDurationFormValues(a.durations),
+    maxDates: String(resolveMaxDatesPerBooking(a)),
   }
 }
 
@@ -178,7 +190,8 @@ function same(a: Draft, b: Draft): boolean {
     // Compared by VALUE, not by reference — the draft is rebuilt on every
     // keystroke, so a reference check would report every appointment dirty
     // forever and arm the Save button on a form nobody touched.
-    JSON.stringify(a.durations) === JSON.stringify(b.durations)
+    JSON.stringify(a.durations) === JSON.stringify(b.durations) &&
+    a.maxDates === b.maxDates
   )
 }
 
@@ -334,7 +347,8 @@ export function ActivityPricingForm({
   // slot everywhere it is read (`resolveAppointmentDurations`). That is a
   // working state, not an error — so it is not refused here; it is simply what
   // the studio gets until they pick a length.
-  const invalid = dropInPriceInvalid || trialPriceInvalid || durationPriceInvalid
+  const maxDatesInvalid = isAppointment && maxDatesProblem(draft.maxDates)
+  const invalid = dropInPriceInvalid || trialPriceInvalid || durationPriceInvalid || maxDatesInvalid
   const dirty = !same(draft, stored)
   /** EITHER half being touched arms the one button. */
   const anyDirty = dirty || !!links?.dirty
@@ -374,7 +388,12 @@ export function ActivityPricingForm({
       await updateDoc(
         doc(db, ACTIVITIES_COLLECTION, activity.id),
         isAppointment
-          ? { durations: toActivityDurations(draft.durations) }
+          ? {
+              durations: toActivityDurations(draft.durations),
+              // One date is the default, so it is stored as ABSENT: the field
+              // exists only on an offer that sells a basket.
+              maxDatesPerBooking: Number(draft.maxDates) > 1 ? Number(draft.maxDates) : deleteField(),
+            }
           : {
               // FIELD PATHS, not the whole map: `accessRule.subscriptionTypeIds`
               // is the matcher's and must survive every save from here. The
@@ -563,6 +582,37 @@ export function ActivityPricingForm({
                 : undefined
             }
         />
+      )}
+      {/* A BOOKING RULE, beside the lengths it applies to: "up to 12 lessons,
+          one payment". One (the default) is a date at a time, as always. */}
+      {isAppointment && (
+        <SettingRows>
+          <SettingRow
+            htmlFor={`${rowId}-maxdates`}
+            label={t('maxDatesLabel')}
+            hint={t('maxDatesHint')}
+            disabled={!canEdit}
+            control={
+              <Input
+                id={`${rowId}-maxdates`}
+                type="number"
+                min={1}
+                max={BASKET_MAX_DATES}
+                step={1}
+                value={draft.maxDates}
+                disabled={!canEdit}
+                onChange={(e) => set('maxDates', e.target.value)}
+                className="h-8 w-20 text-sm"
+              />
+            }
+          >
+            {maxDatesInvalid && (
+              <p className="text-destructive text-xs">
+                {t('maxDatesValidation', { max: BASKET_MAX_DATES })}
+              </p>
+            )}
+          </SettingRow>
+        </SettingRows>
       )}
 
       {/* NO RULE ABOVE THE MATCHER. The tab is one continuous answer to "who

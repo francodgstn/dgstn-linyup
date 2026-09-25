@@ -2017,7 +2017,10 @@
     "durationPartyHintPriced": "Der Preis gilt pro Person. Wer bucht, gibt die Namen aller an.",
     "durationPartyHintFree": "Wer bucht, gibt die Namen aller an.",
     "durationPartyValidation": "Verwende ganze Zahlen von 1 bis {max}, mit Platz für mindestens 2 Personen.",
-    "chipPricePerPerson": "{price} pro Person"
+    "chipPricePerPerson": "{price} pro Person",
+    "maxDatesLabel": "Termine pro Buchung",
+    "maxDatesHint": "Kunden können mehrere Termine wählen und gemeinsam bezahlen. Bei 1 wird jeweils ein Termin gebucht.",
+    "maxDatesValidation": "Verwende eine ganze Zahl von 1 bis {max}."
   },
   "Benefit": {
     "fieldLabel": "Mitgliedervorteil",
@@ -2832,7 +2835,16 @@
     "partyContinue": "Weiter",
     "partySummary": "Für {count} Personen, mit {names}.",
     "partyChange": "Ändern",
-    "durationPricePerPerson": "{price} pro Person"
+    "durationPricePerPerson": "{price} pro Person",
+    "basketTitle": "{count} von {max} Terminen",
+    "basketHint": "Wähle bis zu {max} Termine an beliebigen Tagen und fahre dann fort. Du bezahlst sie zusammen.",
+    "basketTotal": "Total {total}",
+    "basketTotalPerPerson": "{total} pro Person",
+    "basketRemove": "{date} entfernen",
+    "basketRemoveShort": "Entfernen",
+    "basketContinue": "Weiter mit {count, plural, one {# Termin} other {# Terminen}}",
+    "basketSummary": "{count} Termine: {dates}",
+    "partyTotalDates": "Für {count} Termine: {total}"
   },
   "AppointmentCancel": {
     "title": "Termin absagen",

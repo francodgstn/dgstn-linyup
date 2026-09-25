@@ -195,6 +195,7 @@ export const ACTIVITY_FIELD_CATALOG: FieldCatalog<Activity> = {
   durations: 'exposed', // through resolveAppointmentDurations / resolveDurationSale
   memberBenefit: 'excluded', // deferred: benefits leave through resolveDurationBenefit, not yet projected
   durationBenefits: 'excluded',
+  maxDatesPerBooking: 'exposed', // a booking rule the public picker already reads
   autoConfirm: 'excluded',
   base_score: 'excluded',
   isFreeTrial: 'excluded', // legacy, read by resolveActivityAccessRule

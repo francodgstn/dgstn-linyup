@@ -145,6 +145,7 @@ export function SlotBookingForm({
   providerId,
   activityId,
   startMs,
+  startMsList,
   currency,
   locale,
   backLabel,
@@ -185,6 +186,9 @@ export function SlotBookingForm({
   providerId: string
   activityId: string
   startMs: number
+  /** Every date of a basket (`[startMs]` for one). Priced as that many
+   *  lessons; the calls themselves carry the list from the parent. */
+  startMsList: number[]
   currency: string
   locale: string
   backLabel: string
@@ -301,7 +305,8 @@ export function SlotBookingForm({
   const partyArgs = party ? { people, participants } : {}
   /** Part of WHAT IS BEING BOUGHT, so it scopes every figure the server named
    *  for this screen: a price accepted for two people is not a price for three. */
-  const partyKey = party ? `|p${people}` : ''
+  const dateCount = Math.max(1, startMsList.length)
+  const partyKey = `${party ? `|p${people}` : ''}${dateCount > 1 ? `|d${dateCount}` : ''}`
   const book = (args: BookArgs) => bookCall({ ...args, ...partyArgs })
   const checkout = (args: BookArgs & CheckoutExtras) => checkoutCall({ ...args, ...partyArgs })
 
@@ -485,6 +490,7 @@ export function SlotBookingForm({
         duration: { minutes: durationMinutes, priceAmount, benefitOnly, ...(party ? { party } : {}) },
         benefit: memberBenefit,
         people,
+        quantity: dateCount,
       },
       promoApplied ? { promo: promoApplied } : undefined
     )
@@ -951,7 +957,7 @@ export function SlotBookingForm({
   // ── THE PARTY, as the rest of the flow shows it ───────────────────────────
   /** The booking's list price: one per person on a party length. What a
    *  lowered price is struck through against. */
-  const listTotal = priceAmount != null ? priceAmount * (party ? people : 1) : null
+  const listTotal = priceAmount != null ? priceAmount * (party ? people : 1) * dateCount : null
   /** Back from an identity screen returns to "who's coming" when there is one,
    *  rather than throwing the names away with the slot. */
   const backFromIdentity = party ? () => setPartyConfirmed(false) : onExit
@@ -1035,13 +1041,23 @@ export function SlotBookingForm({
             ))}
           </div>
           {listTotal != null && priceAmount != null && (
-            <p className="text-sm font-medium">
-              {t('partyTotal', {
-                count: people,
-                unit: formatCurrency(priceAmount, currency, locale),
-                total: formatCurrency(listTotal, currency, locale),
-              })}
-            </p>
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">
+                {t('partyTotal', {
+                  count: people,
+                  unit: formatCurrency(priceAmount, currency, locale),
+                  total: formatCurrency(priceAmount * people, currency, locale),
+                })}
+              </p>
+              {dateCount > 1 && (
+                <p className="text-sm text-muted-foreground">
+                  {t('partyTotalDates', {
+                    count: dateCount,
+                    total: formatCurrency(listTotal, currency, locale),
+                  })}
+                </p>
+              )}
+            </div>
           )}
         </div>
         {namesMissing && people > 1 && participants.some((n) => n.length > 0) && (
@@ -1259,6 +1275,7 @@ export function SlotBookingForm({
                 startMs,
                 durationMinutes,
                 ...(party ? { people } : {}),
+                ...(dateCount > 1 ? { quantity: dateCount } : {}),
               }}
               applied={promoApplied}
               onApplied={onPromoApplied}
@@ -1364,6 +1381,7 @@ export function SlotBookingForm({
                 startMs,
                 durationMinutes,
                 ...(party ? { people } : {}),
+                ...(dateCount > 1 ? { quantity: dateCount } : {}),
               }}
           applied={promoApplied}
           onApplied={onPromoApplied}

@@ -26,6 +26,7 @@ import {
   AVAILABILITY_COLLECTION,
   AVAILABILITY_EXCEPTIONS_COLLECTION,
   ACTIVITIES_COLLECTION,
+  BASKET_MAX_DATES,
   ORGANIZATIONS_COLLECTION,
   ORG_PLACES_SUBCOLLECTION,
   TEAM_PLACES_SUBCOLLECTION,
@@ -37,6 +38,7 @@ import {
   resolveDurationBenefit,
   resolveDurationParty,
   resolveDurationSale,
+  resolveMaxDatesPerBooking,
   resolvePaymentOptions,
   type Activity,
   type BookingContactField,
@@ -64,7 +66,19 @@ import {
 import { sendAppointmentBookingEmails } from './emails'
 import { getDatePartsInTz, localTimeToUtc } from './index'
 import { partyBookingFields, readAppointmentParty } from './party'
+import {
+  appointmentSessionId,
+  basketDateToken,
+  loadBasketContexts,
+  newBasketIdentity,
+  readBasketStarts,
+} from './basket'
+import { releaseAppointmentHold } from './holdRelease'
 import { resolveContactFieldPatchForBooking } from '../booking/contactFields'
+
+/** How long a FREE basket's dates are held between its two phases. Seconds
+ *  in practice; minutes only so a crash between them frees the dates soon. */
+const BASKET_FREE_HOLD_MINUTES = 5
 
 const DEFAULT_RANGE_DAYS = 28
 const MAX_RANGE_DAYS = 60
@@ -111,6 +125,8 @@ interface ActivityInfo {
    *  to the picker so the guest step asks for exactly what the booking
    *  callables will accept — the resolver runs on both sides. */
   contactFields?: BookingContactField[]
+  /** How many dates one booking may take (`resolveMaxDatesPerBooking`). */
+  maxDatesPerBooking: number
 }
 
 function toActivityInfo(id: string, a: Activity): ActivityInfo | null {
@@ -124,6 +140,7 @@ function toActivityInfo(id: string, a: Activity): ActivityInfo | null {
     durationBenefits: a.durationBenefits,
     cancellationPolicy: a.cancellationPolicy?.trim() || null,
     contactFields: a.contactFields,
+    maxDatesPerBooking: resolveMaxDatesPerBooking(a),
   }
 }
 
@@ -408,6 +425,7 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
     durationBenefits?: ActivityDurationBenefit[]
     cancellationPolicy: string | null
     contactFields: BookingContactField[] | null
+    maxDatesPerBooking: number
     location: string | null
     onlineUrl: string | null
     daysMap: Map<number, Record<string, Set<number>>>
@@ -468,6 +486,7 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
             durationBenefits: info.durationBenefits,
             cancellationPolicy: info.cancellationPolicy ?? null,
             contactFields: info.contactFields ?? null,
+            maxDatesPerBooking: info.maxDatesPerBooking,
             location: tpl.location ?? null,
             onlineUrl: tpl.onlineUrl ?? null,
             daysMap: new Map(),
@@ -517,6 +536,9 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
           cancellationPolicy: acc.cancellationPolicy,
           // Extends the team-wide contact-field list on the guest step.
           contactFields: acc.contactFields,
+          // Only when a basket is offered: a one-date offer answers in the
+          // shape every installed client already reads.
+          ...(acc.maxDatesPerBooking > 1 ? { maxDatesPerBooking: acc.maxDatesPerBooking } : {}),
           placeId: acc.placeId,
           placeName: acc.placeName,
           location: acc.location,
@@ -561,12 +583,14 @@ export const bookAppointment = onCall(async (request) => {
     people?: number
     /** The companions' names, one per person beyond the booker. */
     participants?: string[]
+    /** A BASKET: several starts booked as one, up to the offer's
+     *  `maxDatesPerBooking`. See basket.ts. */
+    startMsList?: number[]
   }
   if (
     !data?.teamId ||
     !data?.providerId ||
     !data?.activityId ||
-    typeof data.startMs !== 'number' ||
     typeof data.durationMinutes !== 'number'
   ) {
     throw new HttpsError(
@@ -574,9 +598,12 @@ export const bookAppointment = onCall(async (request) => {
       'teamId, providerId, activityId, startMs and durationMinutes are required'
     )
   }
-  const { teamId, providerId, activityId, startMs, durationMinutes } = data
+  const { teamId, providerId, activityId, durationMinutes } = data
+  // One date or a basket; the offer's own limit is checked once it is loaded.
+  const starts = readBasketStarts(data, BASKET_MAX_DATES)
 
-  const ctx = await loadAppointmentBookingContext({ teamId, providerId, activityId, startMs, durationMinutes })
+  const contexts = await loadBasketContexts({ teamId, providerId, activityId, starts, durationMinutes })
+  const ctx = contexts[0]
   // Checked BEFORE the caller is resolved: that call spends the one-time code,
   // and a party the length cannot take is the caller's to fix, not a reason to
   // make them verify their email again.
@@ -604,6 +631,7 @@ export const bookAppointment = onCall(async (request) => {
     duration: ctx.chosenDuration,
     benefit: durationRule,
     people: party.people,
+    quantity: starts.length,
   })
   const priceOption = priced.options[0]
 
@@ -624,7 +652,12 @@ export const bookAppointment = onCall(async (request) => {
   // confirmed appointment, and it is gated on a fact the caller cannot
   // influence: whether the studio finished Connect onboarding.
   const settleAtStudio = !paymentsAreChargeable(ctx.team.payments as EnabledTeam['payments'])
-  const owedAtStudio = priceOption?.type === 'pay' && settleAtStudio ? priceOption.amount : null
+  // PER BOOKING: each date of a basket owes its own share, so settling one date
+  // at the desk (`markAppointmentPaid`) closes exactly that date.
+  const owedAtStudio =
+    priceOption?.type === 'pay' && settleAtStudio
+      ? (priceOption.basket?.lessonAmount ?? priceOption.amount)
+      : null
 
   if (priceOption?.type === 'pay' && !settleAtStudio) {
     throw new HttpsError('failed-precondition', 'This duration requires payment.', {
@@ -711,25 +744,36 @@ export const bookAppointment = onCall(async (request) => {
   waiverOutcome = attachWaiverContact(waiverOutcome, contactId)
 
   // ── Overlap-safe create (transaction) ──
-  const bookingToken = generateSecureToken()
-  const sessionRef = admin.firestore().collection('sessions').doc(`apt_${providerId}_${ctx.start.getTime()}`)
+  // A BASKET holds every date at its own shared address, each booking with its
+  // own token derived from one secret (basket.ts says why). One date keeps the
+  // attempt's token and books exactly as before.
+  const attemptToken = generateSecureToken()
+  const basket = starts.length > 1 ? newBasketIdentity(attemptToken) : null
+  const holds = contexts.map((c) => {
+    const sessionId = appointmentSessionId(providerId, c.start.getTime())
+    return {
+      c,
+      sessionRef: admin.firestore().collection('sessions').doc(sessionId),
+      token: basket ? basketDateToken(basket.secret, sessionId) : attemptToken,
+    }
+  })
 
-  const sessionDoc = {
+  const sessionDocFor = (c: typeof ctx) => ({
     teamId,
-    templateId: ctx.tpl.id,
+    templateId: c.tpl.id,
     origin: 'window',
     activityType: 'appointment',
     // The session INHERITS FROM THE ACTIVITY: name/capacity come from the
     // offering the client picked, not the schedule — exactly like a class.
     // NOTE: no accessRule any more — appointments dropped the gate entirely.
     activityId,
-    activityName: ctx.activity.name,
+    activityName: c.activity.name,
     // Denormalised from the activity — see `autoConfirm` above.
-    autoConfirm: ctx.autoConfirm,
+    autoConfirm: c.autoConfirm,
     providerId,
-    providerName: ctx.providerName,
-    start: Timestamp.fromDate(ctx.start),
-    end: Timestamp.fromDate(ctx.end),
+    providerName: c.providerName,
+    start: Timestamp.fromDate(c.start),
+    end: Timestamp.fromDate(c.end),
     duration_minutes: durationMinutes,
     // An appointment is a provider's exclusive time — one booking per slot, by
     // definition. trackBookings reads this to drive the 'full' flip.
@@ -740,28 +784,29 @@ export const bookAppointment = onCall(async (request) => {
     // demoted to a note beside it — so both travel, or the place a studio picked
     // on the window would be stored and then silently dropped from every session
     // booked against it.
-    ...(ctx.tpl.placeId ? { placeId: ctx.tpl.placeId } : {}),
-    ...(ctx.tpl.roomId ? { roomId: ctx.tpl.roomId } : {}),
-    location: ctx.tpl.location ?? null,
-    onlineUrl: ctx.tpl.onlineUrl ?? null,
+    ...(c.tpl.placeId ? { placeId: c.tpl.placeId } : {}),
+    ...(c.tpl.roomId ? { roomId: c.tpl.roomId } : {}),
+    location: c.tpl.location ?? null,
+    onlineUrl: c.tpl.onlineUrl ?? null,
     allowBooking: true,
     status: 'full',
     has_bookings: true,
     last_booking_at: FieldValue.serverTimestamp(),
     created_at: FieldValue.serverTimestamp(),
-  }
-  const bookingDoc = {
+  })
+  const bookingDocFor = (h: (typeof holds)[number]) => ({
     firstname: caller.sanitized.firstname,
     lastname: caller.sanitized.lastname,
     email: caller.sanitized.email,
     phone: caller.sanitized.phone,
     contact: contactId,
-    session: sessionRef.id,
+    session: h.sessionRef.id,
     teamId,
     joinedAt: FieldValue.serverTimestamp(),
     fromBioLink: true,
     is_new_contact: isNewContact,
-    booking_token: bookingToken,
+    booking_token: h.token,
+    ...(basket ? { basket_id: basket.basketId } : {}),
     authenticated_booking: !!caller.authenticatedContact,
     // The resolved member-benefit type (free/discount), if any — not an access
     // gate match any more, just which benefit (if any) priced this booking.
@@ -789,42 +834,119 @@ export const bookAppointment = onCall(async (request) => {
           settle_at_studio: true,
         }
       : {}),
-  }
-
-  await runAppointmentSlotTransaction({
-    sessionRef,
-    sessionDoc,
-    bookingDocId: contactId,
-    bookingDoc,
-    teamId,
-    providerId,
-    startMs: ctx.start.getTime(),
-    endMs: ctx.end.getTime(),
-    bufferMs: ctx.bufferMs,
-    creditSpend: creditSpendTypeId ? { contactId, subscriptionTypeId: creditSpendTypeId } : undefined,
-    // The acceptance rides INSIDE the slot transaction — the free path's seat
-    // and its signature commit together or not at all.
-    waiverLedger: { accepts: waiverOutcome.accepts, nowMs: waiverNowMs },
   })
 
-  if (!isNewContact) {
+  if (!basket) {
+    const h = holds[0]
+    await runAppointmentSlotTransaction({
+      sessionRef: h.sessionRef,
+      sessionDoc: sessionDocFor(h.c),
+      bookingDocId: contactId,
+      bookingDoc: bookingDocFor(h),
+      teamId,
+      providerId,
+      startMs: h.c.start.getTime(),
+      endMs: h.c.end.getTime(),
+      bufferMs: h.c.bufferMs,
+      creditSpend: creditSpendTypeId ? { contactId, subscriptionTypeId: creditSpendTypeId } : undefined,
+      // The acceptance rides INSIDE the slot transaction — the free path's seat
+      // and its signature commit together or not at all.
+      waiverLedger: { accepts: waiverOutcome.accepts, nowMs: waiverNowMs },
+    })
+  } else {
+    // ── A BASKET, IN TWO PHASES ──────────────────────────────────────────────
+    // A free booking written straight to 'full' cannot be given back by the
+    // ownership executor, and half a basket is the one outcome US-07 forbids.
+    // So every date is first HELD exactly as a paid checkout holds it, then all
+    // are confirmed in ONE transaction. A refusal while holding gives back
+    // every hold already taken; a crash between the phases leaves holds that
+    // lapse on their own deadline like any abandoned checkout.
+    const holdUntil = Timestamp.fromMillis(Date.now() + BASKET_FREE_HOLD_MINUTES * 60_000)
+    const acquired: (typeof holds)[number][] = []
+    try {
+      for (const [i, h] of holds.entries()) {
+        await runAppointmentSlotTransaction({
+          sessionRef: h.sessionRef,
+          sessionDoc: { ...sessionDocFor(h.c), status: 'pending_payment', hold_expires_at: holdUntil },
+          bookingDocId: contactId,
+          // Shaped as a checkout hold's booking, so a lapsed one is reclaimed
+          // and swept by the same rules.
+          bookingDoc: { ...bookingDocFor(h), status: 'pending', payment_status: 'required', expires_at: holdUntil },
+          teamId,
+          providerId,
+          startMs: h.c.start.getTime(),
+          endMs: h.c.end.getTime(),
+          bufferMs: h.c.bufferMs,
+          allowRewriteByHolder: contactId,
+          // The acceptance is a fact about the person, recorded once.
+          ...(i === 0 ? { waiverLedger: { accepts: waiverOutcome.accepts, nowMs: waiverNowMs } } : {}),
+        }).catch((err: unknown) => {
+          if (err instanceof HttpsError && err.code === 'failed-precondition') {
+            throw new HttpsError('failed-precondition', err.message, {
+              reason: 'date_unavailable',
+              startMs: h.c.start.getTime(),
+            })
+          }
+          throw err
+        })
+        acquired.push(h)
+      }
+      // Every date confirmed together, or none: each still ours, then written.
+      await admin.firestore().runTransaction(async (tx) => {
+        const read = await Promise.all(
+          holds.map((h) =>
+            Promise.all([tx.get(h.sessionRef), tx.get(h.sessionRef.collection('bookings').doc(contactId))])
+          )
+        )
+        read.forEach(([sSnap, bSnap], i) => {
+          if (sSnap.data()?.status !== 'pending_payment' || bSnap.data()?.booking_token !== holds[i].token) {
+            throw new HttpsError('failed-precondition', 'This time was just taken. Please pick another.', {
+              reason: 'date_unavailable',
+              startMs: holds[i].c.start.getTime(),
+            })
+          }
+        })
+        for (const h of holds) {
+          tx.set(h.sessionRef, { status: 'full', hold_expires_at: FieldValue.delete() }, { merge: true })
+          tx.set(h.sessionRef.collection('bookings').doc(contactId), bookingDocFor(h))
+        }
+      })
+    } catch (err) {
+      // Every hold THIS call took, proven by its own token (census entry in
+      // appointments/holdRelease.ts).
+      for (const h of acquired) {
+        await releaseAppointmentHold({
+          teamId,
+          sessionId: h.sessionRef.id,
+          contactId,
+          bookingToken: h.token,
+          label: 'bookAppointment basket',
+        }).catch((releaseErr: unknown) => console.error('[appointments] basket release failed:', releaseErr))
+      }
+      throw err
+    }
+  }
+
+  // A contact this booking created already counts one pending booking.
+  const newPending = holds.length - (isNewContact ? 1 : 0)
+  if (newPending > 0) {
     await to(
       admin
         .firestore()
         .collection('contacts')
         .doc(contactId)
-        .update({ pending_bookings_count: FieldValue.increment(1) })
+        .update({ pending_bookings_count: FieldValue.increment(newPending) })
     )
   }
 
   // ── Emails (confirmation + .ics + coach notification) ──
   // Locale-pinned to the studio's language, like the mail it goes into — an
   // unprefixed link opens in the reader's browser language instead.
-  const cancelUrl = ctx.teamSlug
-    ? localizedPublicUrl(getHostingUrl(), ctx.lang, ctx.teamSlug, 'appointments/cancel', {
-        token: bookingToken,
-      })
-    : null
+  const cancelUrlFor = (token: string) =>
+    ctx.teamSlug
+      ? localizedPublicUrl(getHostingUrl(), ctx.lang, ctx.teamSlug, 'appointments/cancel', { token })
+      : null
+  const cancelUrl = cancelUrlFor(holds[0].token)
   await sendAppointmentBookingEmails({
     teamId,
     teamName: ctx.teamName,
@@ -837,7 +959,19 @@ export const bookAppointment = onCall(async (request) => {
     location: ctx.tpl.location ?? null,
     onlineUrl: ctx.tpl.onlineUrl ?? null,
     cancelUrl,
-    bookingId: `${sessionRef.id}-${contactId}`,
+    bookingId: `${holds[0].sessionRef.id}-${contactId}`,
+    // A basket: ONE confirmation listing every date, each with its own cancel
+    // link and calendar entry.
+    ...(basket
+      ? {
+          dates: holds.map((h) => ({
+            start: h.c.start,
+            end: h.c.end,
+            cancelUrl: cancelUrlFor(h.token),
+            bookingId: `${h.sessionRef.id}-${contactId}`,
+          })),
+        }
+      : {}),
     // FREE BY CONSTRUCTION. This callable refuses a payable caller outright
     // (`payment_required` above) — the money rail is createAppointmentCheckout →
     // the Connect webhook, which sends its own confirmation as a receipt. A
