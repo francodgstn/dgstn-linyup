@@ -1958,12 +1958,15 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
   }
 
   // Locale-pinned: this URL goes into a mail written in the studio's language.
+  //
+  // ONE URL for both kinds since the funnels merged: an appointment is a step
+  // of the booking funnel, not a route of its own. The appointment arm used to
+  // send the member to the picker's LIST, dropping the offer they had just
+  // cancelled; naming the activity puts them back where they were.
   const rebookUrl = teamSlug
-    ? isAppointment
-      ? localizedPublicUrl(getHostingUrl(), teamLanguage, teamSlug, 'appointments')
-      : localizedPublicUrl(getHostingUrl(), teamLanguage, teamSlug, 'booking', {
-          activity: session.activityId,
-        })
+    ? localizedPublicUrl(getHostingUrl(), teamLanguage, teamSlug, 'booking', {
+        activity: session.activityId,
+      })
     : null
 
   const sessionEnd = (session.end as Timestamp).toDate()

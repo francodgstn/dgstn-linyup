@@ -1493,7 +1493,7 @@ export default function ShopHome({
                     // than to the team's default landing surface.
                     const href =
                       a.activityType === 'appointment'
-                        ? publicHref(slug, 'appointments', { activity: a.id, from: 'shop' })
+                        ? publicHref(slug, 'booking', { activity: a.id, from: 'shop' })
                         : a.slug
                           ? publicSubHref(slug, 'booking', a.slug, { from: 'shop' })
                           : publicHref(slug, 'booking', { from: 'shop' })

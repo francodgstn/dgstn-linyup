@@ -44,6 +44,19 @@ export interface BookingParams {
   referral?: string
   /** Where the visitor came from — resolves the back link. See `returnHref`. */
   from?: PublicFrom
+
+  // ── An appointment offer, which books through this funnel too ────────────
+  // The four fields below identify one appointment, the same four its
+  // callables take. They arrived here when `/public/{slug}/appointments`
+  // became a redirect: the funnel reads them on entry and REBUILDS the slot
+  // from live availability, so a start that is not a free slot of that length
+  // lands on the times rather than in front of the visitor.
+  /** Provider (coach) id. Skips the provider step when the link already names one. */
+  provider?: string
+  /** Epoch ms of the chosen start. */
+  start?: number
+  /** Length in minutes. */
+  duration?: number
 }
 
 /** `/public/{slug}/appointments` */
@@ -404,7 +417,13 @@ export function routableSurfaces<T extends Partial<Record<PublicSurface, boolean
 }
 
 /**
- * IS THE APPOINTMENT PICKER (`/public/{slug}/appointments`) LIVE?
+ * CAN THIS STUDIO'S APPOINTMENTS BE BOOKED AT ALL?
+ *
+ * It was "is the appointment picker live" until the public funnels merged and
+ * `/public/{slug}/appointments` became a redirect: an appointment is an offer
+ * in the booking funnel now. The question survives the route because it is the
+ * studio-facing one, asked by the settings screens and the public-page
+ * overview, and both halves below still answer it.
  *
  * THE ONE PLACE THE TWO HALVES ARE COMBINED. Neither half is the answer:
  *
