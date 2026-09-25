@@ -18,7 +18,7 @@
  * write, and it goes through `generateContactSummary`.
  */
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { useQueryClient } from '@tanstack/react-query'
@@ -195,7 +195,7 @@ function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean
             // grew the card, and the grid stretched the profile card beside it
             // to match, leaving a blank block under the name. The header, the
             // date line and the send action stay outside the scroll.
-            <div className="mt-2 max-h-44 space-y-1.5 overflow-y-auto pr-1 text-sm leading-relaxed">
+            <SummaryScroll className="space-y-1.5">
               {sections.status && (
                 <p>
                   <span className="font-semibold">{t('summarySectionStatus')}</span> {sections.status}
@@ -212,9 +212,11 @@ function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean
                   {sections.nextSession}
                 </p>
               )}
-            </div>
+            </SummaryScroll>
           ) : (
-            <p className="mt-2 max-h-44 overflow-y-auto pr-1 text-sm leading-relaxed">{text}</p>
+            <SummaryScroll>
+              <p>{text}</p>
+            </SummaryScroll>
           )}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <p className="text-xs text-muted-foreground">
@@ -248,6 +250,41 @@ function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">{t('summaryEmpty')}</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * The summary's text, capped in height and scrolling inside, with a FADE at the
+ * bottom edge while there is more below — the one sign that the text goes on,
+ * since a scrollbar is invisible until hovered on most systems. It lifts once
+ * the reader reaches the end, and never shows for a summary that fits.
+ */
+function SummaryScroll({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [more, setMore] = useState(false)
+  const measure = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    setMore(el.scrollTop + el.clientHeight < el.scrollHeight - 2)
+  }, [])
+  useEffect(() => {
+    measure()
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [measure])
+  return (
+    <div
+      ref={ref}
+      onScroll={measure}
+      className={`mt-2 max-h-44 overflow-y-auto pr-1 text-sm leading-relaxed ${
+        more ? '[mask-image:linear-gradient(to_bottom,#000_calc(100%-2.5rem),transparent)]' : ''
+      } ${className}`}
+    >
+      {children}
     </div>
   )
 }
