@@ -10,7 +10,7 @@ Your schedule is built from two things. **Activities** describe what you offer, 
 
 ## Create an activity
 
-Go to **Activities** and choose **New activity**.
+In **Manage → Offerings**, choose **New activity**. Not sure how to set it up? The [walkthrough on Offerings](/studio/offerings/#set-it-up-step-by-step) asks you a few questions and gives you the exact setup.
 
 - **Name, description, colour and cover image** are what people see on your booking page.
 - **Offer as** decides how it is booked:
