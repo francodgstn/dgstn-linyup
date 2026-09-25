@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
 import {
   collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc,
   doc, serverTimestamp, Timestamp,
@@ -273,10 +274,11 @@ function NoteCard({
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const dateLabel = note.updated_at?.toDate().toLocaleString([], {
-    day: '2-digit', month: 'short', year: 'numeric',
+  const fmt = useTeamFormat()
+  const dateLabel = fmt.custom(note.updated_at, {
+    day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
-  }) ?? ''
+  })
 
   return (
     <div className={`group rounded-lg border ${noteColorClasses(note.color).card}`}>
