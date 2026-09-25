@@ -65,7 +65,7 @@ describe('live contact counter', () => {
   it('the nightly reconciliation writes an absolute value, never an increment', () => {
     // Read as LF whatever the checkout: `core.autocrlf` hands a Windows working
     // tree CRLF, and a `\n` in a source anchor then never matches — the same
-    // normalisation `commitSites.test.ts` and `gate.test.ts` do.
+    // normalization `commitSites.test.ts` and `gate.test.ts` do.
     const src = readFileSync(resolve(__dirname, 'platformMetrics.ts'), 'utf8').replace(/\r\n/g, '\n')
     const start = src.indexOf('RECONCILE THE STORED COUNTER')
     assert.notStrictEqual(start, -1, 'the reconciliation block is still there')

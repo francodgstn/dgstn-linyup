@@ -73,7 +73,7 @@ export interface StoreReleaseBlock {
   /**
    * Apple's `appStoreState` / Play's rollout state, VERBATIM.
    *
-   * Not normalised into our own enum: collapsing WAITING_FOR_REVIEW,
+   * Not normalized into our own enum: collapsing WAITING_FOR_REVIEW,
    * IN_REVIEW and PENDING_DEVELOPER_RELEASE loses exactly the distinction
    * somebody opened the console to see.
    */
@@ -165,7 +165,7 @@ export interface StorePresenceDoc {
   /**
    * The ONLY always-present block, and the reason a half-configured
    * integration is legible: "Apple is fine, Play's bucket grant is missing"
-   * rather than one grey card.
+   * rather than one gray card.
    */
   sources: Partial<Record<StoreSourceId, StoreSourceHealth>>
   updated_at: Timestamp
@@ -176,7 +176,7 @@ export interface StorePresenceDoc {
  *
  * Both live in ONE collection on purpose. Pre-launch the beta feedback IS the
  * entire stream, and an operator wants one chronological list of "what people
- * said about the app"; splitting it to honour a schema distinction produces two
+ * said about the app"; splitting it to honor a schema distinction produces two
  * empty lists instead of one useful one.
  */
 export type StoreReviewKind = 'review' | 'beta_feedback'
@@ -276,7 +276,7 @@ export interface StoreEventDoc {
    *
    * A HIGHLIGHT, NOT A FILTER. Every event is stored and shown whatever this
    * says, and `new_value` is always rendered verbatim beside it — so a state
-   * Apple adds that this does not recognise costs a badge, never visibility.
+   * Apple adds that this does not recognize costs a badge, never visibility.
    * That is what makes it safe to match on a known set of names.
    */
   needs_attention: boolean

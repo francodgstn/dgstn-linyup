@@ -8,7 +8,7 @@ order: 3
 # Open decisions
 
 Questions raised while working the UX review that need a product call rather than a
-code judgement. Recorded here as they arise so the autonomous run does not stall
+code judgment. Recorded here as they arise so the autonomous run does not stall
 and does not guess. Each entry states what was done in the meantime, so nothing is
 blocked waiting for an answer.
 
@@ -40,12 +40,12 @@ an org-level customization bundle exists so the org's studios can run it, and
 `org_id` is already the grant everywhere else (`useInstalledPlugins`). Its one
 reader is `pluginVisibleToTenant`, whose doc comment owns **the census** of
 discovery surfaces (marketplace + its `?plugin=` deep link, event-types "From
-plugins", DiscoverPanel, org catalogue) and names the one deliberate
+plugins", DiscoverPanel, org catalog) and names the one deliberate
 non-caller — the sidebar suggestion in `(auth)/layout.tsx`, unreachable for a
 restricted plugin because it takes only `recommended` manifests with nav rows.
 
 **The gate is on DISCOVERY, never on running.** Nothing that resolves an
-installed plugin consults it, and each catalogue ORs the predicate with its own
+installed plugin consults it, and each catalog ORs the predicate with its own
 install check, so a tenant dropped from a list keeps its card, its Configure and
 its Remove — a list edit must not be a data change with an outage in it.
 
@@ -182,7 +182,7 @@ declined became the specification.
 
 - **Where a pending invitation lives.** `organizations/{orgId}/`
   **`org_member_invitations`**`/{id}`, with the doc id DERIVED FROM THE
-  NORMALISED ADDRESS (`orgMemberInvitationId`, a hashed key — `/` is legal in an
+  NORMALIZED ADDRESS (`orgMemberInvitationId`, a hashed key — `/` is legal in an
   RFC 5322 local part). So inviting the same address twice rewrites ONE row: a
   new token, a new deadline, the older mail's link dead on the spot. Never two
   live tokens, never two "pending" rows disagreeing about which one accepting
@@ -219,7 +219,7 @@ declined became the specification.
   no admin away).
 - **Follow-up, not done:** the invitee's signup allowlist entry
   (`source: 'org_member_invitation'`) is never removed — it permits creating an
-  account, which is not a grant of anything in the organisation, but it does mean
+  account, which is not a grant of anything in the organization, but it does mean
   an org admin can widen the closed-signup allowlist one address at a time.
 
 ## 13. `public_profile` is client-writable by any team member
@@ -262,7 +262,7 @@ recipients" sentence, which is no longer true.
 The emulator hides a missing index; a real project returns 400. Order:
 rules+indexes, then functions, then web.
 
-## 16. Cancelling a link-mode appointment does not close its Stripe link (UX-59)
+## 16. Canceling a link-mode appointment does not close its Stripe link (UX-59)
 **ANSWERED 2026-08-18 — Franco: close it. Shipped.** The manager's cancel moved
 behind a callable, `cancelAppointmentSlot`
 (`packages/functions/src/appointments/cancelSlot.ts`), which closes the Checkout
@@ -274,7 +274,7 @@ a session makes Stripe deliver `checkout.session.expired` — census site 3, whi
 carries this hold's own booking token, so its ownership proof SUCCEEDS. For a
 SETTLEMENT that event is an UNDO, which is why `markAppointmentPaid` settles
 first. For a CANCELLATION it writes the same end state, so the two writers
-COMMUTE: event first and our transaction re-reads an already-cancelled session;
+COMMUTE: event first and our transaction re-reads an already-canceled session;
 transaction first and `releaseAppointmentHold` answers `not_a_live_hold`. What
 does NOT commute is a PAYMENT landing between a cancel write and a successful
 close — that is the defect itself, merely narrowed to milliseconds. So the
@@ -282,7 +282,7 @@ irreversible half goes first: close, then cancel. Pinned by source assertions in
 `appointments/cancelSlot.test.ts`.
 
 The three outcomes, all surfaced: `closed` → the cancellation proceeds silently;
-`paid` → **refused**, nothing is cancelled and the manager is told the client
+`paid` → **refused**, nothing is canceled and the manager is told the client
 paid and the appointment is confirmed (the refusal clears itself once the webhook
 confirms the session, so it is not a deadlock); `failed` → the cancellation
 proceeds (Stripe being unreachable must not block a manager clearing a slot) and
@@ -412,7 +412,7 @@ and now names the same tiers, pinned to `PLAN_FEATURES` by
 
 **Original note.** `PLAN_FEATURES` puts
 `multiple_managers` at **studio**, while `/settings/members` unlocks invites at
-**coach**. The roles page was gated at `coach` to match the behaviour the product
+**coach**. The roles page was gated at `coach` to match the behavior the product
 actually ships, rather than the flag. Decide which is true and make the other
 agree.
 
@@ -468,7 +468,7 @@ alternative is the reverse (Pricing owns it, the class tab only links). Either
 satisfies "one place". *Meanwhile:* both stay, unchanged.
 
 ## 30. A plan that covers "all classes" by default (UX-114)
-**ANSWERED 2026-09-17 — Franco: keep as is** unless studios ask; the catalogue already flags a class no plan includes. Original note: Today a plan stores no
+**ANSWERED 2026-09-17 — Franco: keep as is** unless studios ask; the catalog already flags a class no plan includes. Original note: Today a plan stores no
 scope; each class lists the plans that include it, so an unlimited membership
 covers no class added after it was set up. Proposal (model review S2): a plan-side
 scope, `all classes` (default for new memberships and passes) or `selected`, unioned
@@ -539,7 +539,7 @@ review. The shapes worth choosing between:
 - **(c) Leave it where it is.** Defensible for a one-page site, which is most
   studios today; CFZ (12 pages + posts) is the case that breaks it.
 
-*Meanwhile:* the strip is labelled "Pages · 8/30" and the row actions are named,
+*Meanwhile:* the strip is labeled "Pages · 8/30" and the row actions are named,
 so the current arrangement is at least legible. Nothing here is hard to undo.
 
 ## 36. Does Publish get a real diff?
@@ -565,7 +565,7 @@ the draft on a debounce would remove the whole failure class — the draft is on
 `setDoc` overwrite — but it changes what "Save draft" means and makes every
 half-finished edit durable. Product call, not a code one.
 
-## 38. Does the organisation builder track the team builder?
+## 38. Does the organization builder track the team builder?
 **ANSWERED 2026-09-18 — Franco: yes, the same functionality, plus the org's own sub-team sections.** Built on `claude/org-website-pages`: org sites publish pages, posts and redirects through the team's own page publisher (`website/publishPages.ts`); the public org site is a catch-all route rendered on the server; and the org builder uses the page tools moved out of the team builder (`components/website/pages/SitePageTools.tsx`). Org buttons open a page or a link — never booking, signup or an appointment. The original question follows.
 
 **Was PARKED.** `(auth)/org/[orgId]/website/` re-implements its own AppearancePanel

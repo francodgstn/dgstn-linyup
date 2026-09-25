@@ -109,11 +109,11 @@ export const dailyTasks = onSchedule(
       { name: 'purgeScheduledTeams', handler: purgeScheduledTeams },
       // Self-service account deletions whose 30-day window has passed. Runs
       // AFTER purgeProvisionalContacts on purpose: a provisional contact that
-      // asked to be deleted is better hard-deleted by that one than anonymised
+      // asked to be deleted is better hard-deleted by that one than anonymized
       // into a permanent 'Deleted account' row nobody can explain.
       { name: 'anonymizeScheduledContacts', handler: anonymizeScheduledContacts },
       // The rolling 6-month horizon for recurring classes. Without it a series
-      // simply stops at whatever was materialised the day it was created, and
+      // simply stops at whatever was materialized the day it was created, and
       // every public booking link for it goes with it.
       { name: 'rollSessionSeries', handler: rollSessionSeries },
       // Recurring accounting entry templates (finance plugin) — e.g. monthly rent.

@@ -190,7 +190,7 @@ describe('sendStudioSms — contact opt-out', () => {
     assert.ok(!fake.reads.some((p) => p.startsWith('contacts/')))
   })
 
-  it('is honoured under TEST_MODE too — the redirect shows what production would send', async () => {
+  it('is honored under TEST_MODE too — the redirect shows what production would send', async () => {
     process.env.TEST_MODE = 'true'
     process.env.TEST_SMS_NUMBER = '+41790000000'
     const fake = install({ 'contacts/c-test': { sms_opt_out: true } })

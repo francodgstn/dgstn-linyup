@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * WHERE THE ORGANISATION'S AFFILIATIONS STAND — the breakdown of the figure
+ * WHERE THE ORGANIZATION'S AFFILIATIONS STAND — the breakdown of the figure
  * directly above it.
  *
  * The AFFILIATION figure says how many people currently hold one. That is the
@@ -28,7 +28,7 @@
  *
  * ── THE HEADER IS NOT THE SUM OF THE SEGMENTS, DELIBERATELY ────────────────
  *
- * A person holding a licence that is active and a grading that is merely
+ * A person holding a license that is active and a grading that is merely
  * requested is one person in two segments — real, because affiliation types are
  * reused across one vocabulary. So the header states DISTINCT people (its own
  * count, never above the headcount) while the bar is sized by the segment sum,
@@ -65,7 +65,7 @@ export function AffiliationStatusStrip({
 }) {
   const t = useTranslations('OrgDashboard')
 
-  // Answered AND non-empty. A status the organisation defined but has never used
+  // Answered AND non-empty. A status the organization defined but has never used
   // is noise in a legend that is already six items long.
   const answered = (breakdown?.rows ?? []).filter((r) => r.count != null && r.count > 0)
   // The bar's own scale — see the header note above on why it is not what the

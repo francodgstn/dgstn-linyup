@@ -115,7 +115,7 @@ export async function getReviewAccessStatus(): Promise<ReviewAccessStatus> {
     enabled: d.enabled === true,
     email: (d.email as string) ?? null,
     // Same union the server does (`reviewAccessAddresses`): legacy + list,
-    // normalised and de-duplicated, so the count here is the count that logs in.
+    // normalized and de-duplicated, so the count here is the count that logs in.
     addresses: [
       ...new Set(
         [d.email, ...(Array.isArray(d.emails) ? d.emails : [])]

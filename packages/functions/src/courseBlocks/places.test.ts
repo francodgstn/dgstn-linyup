@@ -16,7 +16,7 @@ import {
 // and `places_taken` obeys the same rule `bookings_count` does:
 //
 //   an ABSOLUTE value, from a recount or from a transaction that read the
-//   enrolments in the same read set. No `FieldValue.increment`, anywhere.
+//   enrollments in the same read set. No `FieldValue.increment`, anywhere.
 //
 // These fixtures pin the predicates that turn documents into that number, and
 // the last one pins the rule itself against the source, because "we always
@@ -33,13 +33,13 @@ const docs = (
 ) => entries.map((e) => ({ id: e.id, data: () => e }))
 
 describe('a course place', () => {
-  it('is held by an enrolment, and by a hold that has not lapsed', () => {
+  it('is held by an enrollment, and by a hold that has not lapsed', () => {
     assert.equal(courseBlockEnrolmentHoldsPlace({ status: 'enrolled' }, NOW), true)
     assert.equal(
       courseBlockEnrolmentHoldsPlace({ status: 'hold', expires_at: ts(NOW + 60_000) }, NOW),
       true
     )
-    // An absent status is an enrolment. A row with no opinion is somebody on the
+    // An absent status is an enrollment. A row with no opinion is somebody on the
     // course, not somebody who is not.
     assert.equal(courseBlockEnrolmentHoldsPlace({}, NOW), true)
   })
@@ -101,10 +101,10 @@ describe('the place-freed edge', () => {
     assert.equal(placeFreedEdge({ places: 9, places_taken: 9 }, { places: 12, places_taken: 9 }), true)
   })
 
-  it('never fires on an uncapped or a cancelled course', () => {
+  it('never fires on an uncapped or a canceled course', () => {
     // Uncapped was never full, so there is no edge to cross…
     assert.equal(placeFreedEdge({ places: null, places_taken: 9 }, { places: null, places_taken: 8 }), false)
-    // …and a cancelled course has no place to hand on.
+    // …and a canceled course has no place to hand on.
     assert.equal(
       placeFreedEdge({ places: 9, places_taken: 9 }, { places: 9, places_taken: 0, status: 'cancelled' }),
       false
@@ -114,7 +114,7 @@ describe('the place-freed edge', () => {
 
 describe('the ONE PLACE WRITER rule, asserted against the source', () => {
   // Structural, not a sample: the defect is a future `increment` on this field,
-  // which no behaviour test would see until two people had bought one place.
+  // which no behavior test would see until two people had bought one place.
   // Matched on ANY receiver and any spelling of the field, a pin that requires
   // one spelling passes against the very edit it exists to catch.
   const SRC = join(__dirname, '..')

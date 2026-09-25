@@ -84,11 +84,11 @@ function InvoicesSection({
 }: {
   orgId: string
   hasGateway: boolean
-  /** A comped organisation is never charged. Nothing to fetch, nothing to show. */
+  /** A comped organization is never charged. Nothing to fetch, nothing to show. */
   comped: boolean
 }) {
   const t = useTranslations('OrgBilling')
-  // A comped organisation is never charged, so it has nothing to list — and
+  // A comped organization is never charged, so it has nothing to list — and
   // fetching anyway is what put "open invoices" in front of HMD.
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ['saas-invoices', orgId],
@@ -186,10 +186,10 @@ export default function OrgBillingPage() {
     cancel.mutate(orgId, { onSuccess: () => setCancelOpen(false) })
   }
 
-  // ── IS THIS ORGANISATION BILLED AT ALL? ──────────────────────────────────
+  // ── IS THIS ORGANIZATION BILLED AT ALL? ──────────────────────────────────
   // `flags.comped` means the platform agreed to bill it nothing, indefinitely.
   // Everything below it on this page — the status badge, the Subscribe button,
-  // the invoice list — is written for an organisation that pays, and shown to
+  // the invoice list — is written for an organization that pays, and shown to
   // one that does not it is a screen full of wrong answers. HMD read "open
   // invoices" on staging for exactly this reason (Franco, 2026-09-05).
   //
@@ -199,7 +199,7 @@ export default function OrgBillingPage() {
 
   // What it WOULD cost, struck through — the point is not to hide the price but
   // to show what is being waived. Counted from the roster because the
-  // organisation tier is priced per studio; the minimum applies below two.
+  // organization tier is priced per studio; the minimum applies below two.
   const { data: studioCount = 0 } = useQuery<number>({
     queryKey: ['org-active-teams-count', orgId],
     enabled: !!orgId && comped,
@@ -222,9 +222,9 @@ export default function OrgBillingPage() {
   //
   // WHETHER and WHEN are two questions, and this page must not fuse them. Asking
   // `subscriptionEndsAt(...) !== null` additionally demands a DATE — and a
-  // cancelling saas_subscriptions doc from the pre-fix window carries the boolean
+  // canceling saas_subscriptions doc from the pre-fix window carries the boolean
   // and no date at all (see shared/utils/subscriptionLifecycle.ts), so fusing
-  // them hid "Reactivate" from exactly the orgs that are cancelled and still
+  // them hid "Reactivate" from exactly the orgs that are canceled and still
   // live. The date is shown when we have it and simply omitted when we do not.
   const isCancelling = subscriptionIsCancelling(subscription)
   const endsAt = subscriptionEndsAt(subscription) as { seconds: number } | null
@@ -261,7 +261,7 @@ export default function OrgBillingPage() {
             /* NOT BILLED. Deliberately static: no status badge (there is no
                subscription to have a status), no Subscribe, no cancel, no
                billing portal. An action here would either fail at the callable
-               or start charging an organisation that was promised it would not
+               or start charging an organization that was promised it would not
                be. */
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -316,7 +316,7 @@ export default function OrgBillingPage() {
                 </p>
               )}
 
-              {/* Access until (cancelling) */}
+              {/* Access until (canceling) */}
               {endsAt && (
                 <p className="text-sm text-amber-600">
                   {t('activeUntil', { date: formatDate(endsAt) })}
@@ -329,7 +329,7 @@ export default function OrgBillingPage() {
               <SubscriptionCancellationNote subscription={subscription} audience="self" />
 
               {/* Trial ended (handleTrialLifecycle phase 2). The studios this
-                  organisation was paying for are on Free and unlinked — say so,
+                  organization was paying for are on Free and unlinked — say so,
                   because the org's Studios tab is now empty and nothing else on
                   this page would explain why. */}
               {status === 'expired' && (
@@ -349,11 +349,11 @@ export default function OrgBillingPage() {
 
               {isAdmin && (
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {/* SALES-LED (Franco, 2026-09-25). The organisation tier has no
+                  {/* SALES-LED (Franco, 2026-09-25). The organization tier has no
                       live self-serve price (`linyup_organization_monthly` is
                       archived; scripts/stripe-sync.ts treats the tier as quoted),
                       so a "Subscribe" here always failed at Stripe. Same door as
-                      the Organisation card on a studio's plan picker. */}
+                      the Organization card on a studio's plan picker. */}
                   {!hasActiveSubscription && !isCancelling && (
                     <Button
                       onClick={() => {

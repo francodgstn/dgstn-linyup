@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * WHAT A PLAN COSTS, AND HOW MUCH IT BUYS — hosted by the catalogue, beside the
+ * WHAT A PLAN COSTS, AND HOW MUCH IT BUYS — hosted by the catalog, beside the
  * activities it opens.
  *
  * ── WHY IT MOVED ────────────────────────────────────────────────────────────
@@ -503,7 +503,7 @@ export function PlanPricingForm({
 
   const anyDirty = isDirty || !!linksHandle?.dirty
   useReportPaneDirty('plan-pricing', anyDirty)
-  // In the catalogue pane this tab's Save is the floating bar. The prices keep
+  // In the catalog pane this tab's Save is the floating bar. The prices keep
   // their read/edit flip, so "Edit prices" still opens the editor, and Cancel
   // still closes it, but the one Save is the bar's.
   const { inSaveBar } = useSaveBarSection('plan-pricing', {

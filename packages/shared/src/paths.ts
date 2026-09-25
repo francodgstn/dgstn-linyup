@@ -130,11 +130,11 @@ export const ORG_TEAMS_SUBCOLLECTION = 'org_teams'
 // is what it would be called today); it is shipped data behind a live route
 // (/org-invite/{orgId}/{invId}), so it keeps its name and the rule is enforced
 // on everything after it. Never conflate the two — an org admin who receives
-// "you've been invited" must not land on a screen that enrols their studio.
+// "you've been invited" must not land on a screen that enrolls their studio.
 export const ORG_INVITATIONS_SUBCOLLECTION = 'org_invitations'
 export const ORG_MEMBER_INVITATIONS_SUBCOLLECTION = 'org_member_invitations'
 export const ORG_ACCESS_REQUESTS_SUBCOLLECTION = 'org_access_requests'
-/** A studio asking to join the organisation — `organizations/{id}/team_access_requests`. */
+/** A studio asking to join the organization — `organizations/{id}/team_access_requests`. */
 export const ORG_TEAM_ACCESS_REQUESTS_SUBCOLLECTION = 'team_access_requests'
 export const ORG_AFFILIATION_STATUSES_SUBCOLLECTION = 'affiliation_statuses'
 export const ORG_PLACES_SUBCOLLECTION = 'org_places'
@@ -231,7 +231,7 @@ export const CONTACT_PLAN_PURCHASES_SUBCOLLECTION = 'plan_purchases'
 // or a credit pack (docs/multi-plan-holdings.md). Cloud Functions only.
 export const CONTACT_PLAN_GRANTS_SUBCOLLECTION = 'plan_grants'
 export const SUBSCRIPTION_TRANSITIONS_SUBCOLLECTION = 'subscription_transitions'
-// Affiliation set — a contact may hold several (club + federation licence + grading).
+// Affiliation set — a contact may hold several (club + federation license + grading).
 export const CONTACT_AFFILIATIONS_SUBCOLLECTION = 'affiliations'
 // Push-notification device registrations, doc id = the token itself. See
 // `PushToken` (types/push.ts) for why. Client writes are self-only
@@ -275,7 +275,7 @@ export const SESSION_SERIES_JOBS_COLLECTION = 'session_series_jobs'
 // carries capacity and (from the sale stage) a price.
 export const COURSE_BLOCKS_COLLECTION = 'course_blocks'
 // course_blocks/{blockId}/enrolments/{contactId}, the doc id is the contactId,
-// exactly like `bookings` and `waitlist`, so a second enrol is an idempotent
+// exactly like `bookings` and `waitlist`, so a second enroll is an idempotent
 // write rather than a duplicate row. Deliberately NOT registered in
 // tenantData.ts: tenant teardown uses recursiveDelete on the parent course.
 export const COURSE_BLOCK_ENROLMENTS_SUBCOLLECTION = 'enrolments'
@@ -467,7 +467,7 @@ export const PARTNER_VISITS_SUBCOLLECTION = 'partner_visits'
 // Gift cards (E3): teams/{teamId}/gift_cards/{code} — the code is the doc id.
 export const GIFT_CARDS_SUBCOLLECTION = 'gift_cards'
 // Manager-mint claims: teams/{teamId}/gift_card_issues/{issueRef}. A create()
-// on this doc is the serialisation point for issueGiftCard — whoever wins mints,
+// on this doc is the serialization point for issueGiftCard — whoever wins mints,
 // everyone else reads the code back. Server-only: no firestore.rules block, and
 // there is no `match /{document=**}` wildcard, so clients are denied by default.
 export const GIFT_CARD_ISSUES_SUBCOLLECTION = 'gift_card_issues'
@@ -479,7 +479,7 @@ export const GIFT_CARD_ISSUES_SUBCOLLECTION = 'gift_card_issues'
 export const PROMO_CODES_SUBCOLLECTION = 'promo_codes'
 // Durable per-PERSON redemption ledger:
 // teams/{teamId}/promo_codes/{CODE}/redemptions/{identityKey}. The doc id is
-// promoIdentityKey(...) — a hash of the normalised email, NOT a contactId — so
+// promoIdentityKey(...) — a hash of the normalized email, NOT a contactId — so
 // the per-person cap survives a contact document being purged and recreated,
 // and the ids are not a harvestable list of a studio's customer emails.
 export const PROMO_REDEMPTIONS_SUBCOLLECTION = 'redemptions'

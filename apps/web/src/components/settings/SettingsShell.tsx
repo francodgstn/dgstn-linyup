@@ -12,7 +12,7 @@
 // Its surface section shares it too; see the note on that layout for why it was
 // excluded at first.
 //
-// Behaviour:
+// Behavior:
 //   desktop → rail (left) + detail (right), always both; /settings shows an overview.
 //   mobile  → /settings shows just the rail (the list); a section shows just the
 //             detail with a "back to Settings" link.

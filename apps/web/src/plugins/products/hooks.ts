@@ -1,7 +1,7 @@
 'use client'
 
 // Products plugin — Firestore CRUD for a team's sellable products.
-// Catalogue lives at teams/{teamId}/products/{productId}; the public storefront
+// Catalog lives at teams/{teamId}/products/{productId}; the public storefront
 // reads the world-readable public_profile summary (synced by a Cloud Function).
 
 import { useQuery } from '@tanstack/react-query'
@@ -84,7 +84,7 @@ export async function deleteProduct(teamId: string, productId: string): Promise<
   await deleteDoc(doc(productsCol(teamId), productId))
 }
 
-// Live product count — enforces the per-team catalogue cap even when the cached
+// Live product count — enforces the per-team catalog cap even when the cached
 // list query is stale.
 export async function countProducts(teamId: string): Promise<number> {
   const snap = await getCountFromServer(productsCol(teamId))

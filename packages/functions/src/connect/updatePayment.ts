@@ -33,7 +33,7 @@
 // bank transfer to the member it belonged to is the moment their pack becomes
 // real, and until now they were told nothing; re-linking a mis-assigned row is a
 // correction and usually warrants silence. The caller decides — `sendReceipt`,
-// omitted means no — and it is honoured only when this edit actually APPLIED
+// omitted means no — and it is honored only when this edit actually APPLIED
 // effects to somebody. Deliberately after step 4, so no mail can describe a
 // holder the row does not yet name.
 //

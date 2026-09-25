@@ -107,7 +107,7 @@ describe('THE BUYER IS SIGNED IN FROM THE CHECKOUT THEY PAID FOR', () => {
   it('the success URL carries Stripe’s session-id template variable', () => {
     const checkout = code(read('connect/checkout.ts'))
     assert.match(checkout, /successUrl: opts\?\.successUrl \?\?[\s\S]{0,120}CHECKOUT_SESSION_ID_PARAM/)
-    // SUCCESS ONLY. A cancelled checkout identifies nobody and took no money.
+    // SUCCESS ONLY. A canceled checkout identifies nobody and took no money.
     assert.doesNotMatch(checkout, /cancelUrl:[^\n]*CHECKOUT_SESSION_ID/)
   })
 

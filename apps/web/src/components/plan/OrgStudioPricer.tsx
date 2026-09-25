@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * THE ORGANISATION TIER'S PRICE IS A RATE, so the card states the rate.
+ * THE ORGANIZATION TIER'S PRICE IS A RATE, so the card states the rate.
  *
  * Every other tier is a scalar — CHF 9, CHF 35 — and the card renders it. This
  * one is CHF 25 PER STUDIO, which is a complete answer on its own: multiply by

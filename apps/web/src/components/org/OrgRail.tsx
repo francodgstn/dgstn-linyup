@@ -1,15 +1,15 @@
 'use client'
 
 /**
- * The organisation's settings rail — the org-scope twin of `SettingsRail`,
+ * The organization's settings rail — the org-scope twin of `SettingsRail`,
  * drawn by the same `NavRail` so the two are the same object visually.
  *
  * It resolves its own rows, because everything a studio rail resolves differs
  * here: labels come from the `Org` namespace, Affiliations is rendered with the
- * organisation's own word for it, the gate is an ORG ROLE rather than a team
+ * organization's own word for it, the gate is an ORG ROLE rather than a team
  * capability, and there is no pin — the "always show" store is keyed per studio
  * (see THE NAV-MEMORY CENSUS in contexts/NavPinsContext.tsx), so pinning an org
- * destination into a studio's Favourites would file it under whichever studio
+ * destination into a studio's Favorites would file it under whichever studio
  * happened to be current.
  */
 
@@ -37,7 +37,7 @@ export function OrgRail({ orgId }: { orgId: string }) {
     // ALPHABETICAL WITHIN THE GROUP — the one rule all three navs follow, in
     // `lib/navSort.ts`. No org row is a `lead`: none of them is opened often
     // enough for its position to be load-bearing, which is the only thing that
-    // marker is for. Affiliations sorts under the ORGANISATION'S OWN WORD for
+    // marker is for. Affiliations sorts under the ORGANIZATION'S OWN WORD for
     // it, which is the label actually on screen.
     rows: sortNavRows(
       ORG_RAIL_ITEMS.filter((i) => i.group === group.key)

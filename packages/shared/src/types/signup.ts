@@ -17,7 +17,7 @@ export interface SignupAllowlistEntry {
   added_at: Timestamp
   note?: string
   /** WHO PUT THIS HERE. Absent = the operator console, which is where every
-   *  entry came from until organisations could invite their own admins.
+   *  entry came from until organizations could invite their own admins.
    *
    *  'org_member_invitation' means `inviteOrgMember` added it so the invitee can
    *  create the account the invitation is waiting for — without it the whole
@@ -28,7 +28,7 @@ export interface SignupAllowlistEntry {
    *  operator reviewing the allowlist can see which entries a customer added
    *  and which they did. */
   source?: 'operator' | 'org_member_invitation'
-  /** Set with `source: 'org_member_invitation'` — the organisation whose admin
+  /** Set with `source: 'org_member_invitation'` — the organization whose admin
    *  caused the entry. Attribution only; nothing reads it as state. */
   org_id?: string
 }

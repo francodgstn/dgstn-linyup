@@ -235,7 +235,7 @@ async function assertAllowed(uid: string, teamId: string) {
   if (roleErr || !isOwner) {
     throw new HttpsError('permission-denied', 'Only the studio owner can draft offerings.')
   }
-  // `pluginIsActive` also sees the module installed at the ORGANISATION.
+  // `pluginIsActive` also sees the module installed at the ORGANIZATION.
   if (!(await pluginIsActive(teamId, AI_MODULES.offerDrafting))) {
     throw new HttpsError('failed-precondition', 'Offer drafting is not switched on for this team.')
   }
@@ -354,7 +354,7 @@ export const draftOfferings = onCall(async (request) => {
     console.warn('[draftOfferings] rejected draft:', JSON.stringify(problems).slice(0, 400))
     throw new HttpsError('internal', 'The draft came back in a shape we could not read.')
   }
-  // Problems are returned, not thrown: a draft with one dropped colour is still
+  // Problems are returned, not thrown: a draft with one dropped color is still
   // worth showing, and the studio is the one who decides whether it is useful.
   return { draft, problems }
 })

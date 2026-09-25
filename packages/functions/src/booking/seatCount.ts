@@ -83,7 +83,7 @@ export async function healSessionSeatCount(
     }
 
     // A paid-appointment hold owns its own lifecycle (createAppointmentCheckout,
-    // the Connect webhook, the daily sweep) and a cancelled session has no seats
+    // the Connect webhook, the daily sweep) and a canceled session has no seats
     // to account for. trackBookings skips both for the same reason; re-deriving
     // either would clobber a status only its owner may write.
     if (status === 'pending_payment' || status === 'cancelled') return base

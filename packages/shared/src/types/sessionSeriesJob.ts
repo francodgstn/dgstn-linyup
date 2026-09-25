@@ -1,6 +1,6 @@
 // ─── Series teardown: deleting "this and all following" in the background ─────
 //
-// Cancelling one occurrence is a click. Cancelling the REST OF A SERIES is a
+// Canceling one occurrence is a click. Canceling the REST OF A SERIES is a
 // walk over every future session — each one closing its waitlist, giving seats
 // back, moving per-contact counters and mailing everybody who held a booking.
 // A six-month weekly series is ~26 of those; a daily one is ~180. That does not
@@ -22,7 +22,7 @@
 //  2. THE SERIES IS FROZEN BEFORE THE JOB IS ENQUEUED — one synchronous write,
 //     inside the callable. `status: 'deleting'` is what the daily roller already
 //     filters on (it rolls `status == 'active'` only), so the generator cannot
-//     re-materialise occurrences behind the job that is deleting them. The
+//     re-materialize occurrences behind the job that is deleting them. The
 //     editing callables refuse on `teardown_job_id` for the same reason.
 //  3. EVERY UNIT IS IDEMPOTENT AND TOLERATES A MISSING DOCUMENT. A session
 //     somebody else deleted mid-run is simply already done — the drain query
@@ -32,7 +32,7 @@
 //     deleted session leaves it by itself.
 //
 // The one thing idempotency alone does NOT cover is a duplicate *worker* — two
-// runs mailing the same roster "your class is cancelled" twice. That is why a
+// runs mailing the same roster "your class is canceled" twice. That is why a
 // session is CLAIMED (a transaction, `teardown_claim`) before it is torn down,
 // and why the claim carries a timestamp: a worker that died mid-session must not
 // wedge that session forever, so a stale claim can be taken over.
@@ -143,12 +143,12 @@ export interface SeriesTeardownJob {
    * notice each is one notice per thing the member lost.
    *
    * A COURSE is the case that needs it false. Its lessons are not thirteen
-   * things somebody booked, they are one thing somebody bought, so cancelling it
+   * things somebody booked, they are one thing somebody bought, so canceling it
    * is ONE message: nine enrolled people would otherwise receive a hundred and
    * seventeen mails, each correct and none of them the news. `cancelCourseBlock`
    * sends that message itself and sets this, which is why the flag lives on the
    * job rather than being inferred from the series: it describes the OPERATION,
-   * not the documents. Cancelling ONE lesson of a course still mails the roster,
+   * not the documents. Canceling ONE lesson of a course still mails the roster,
    * through the very same function, because there "no class this Wednesday" is
    * exactly the news.
    */

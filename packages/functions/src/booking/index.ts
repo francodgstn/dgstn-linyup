@@ -88,7 +88,7 @@ export interface TrialGateResult {
 const TRIAL_GATE_OK: TrialGateResult = { ok: true }
 
 /** Whether a FREE-path trial booking attempt on a PRICED trial must be refused.
- *  Defence-in-depth: the client normally routes straight to the paid-trial
+ *  Defense-in-depth: the client normally routes straight to the paid-trial
  *  checkout (createDropInCheckout with `trial: true`) and never reaches the
  *  free booking path when a price is configured. Absent/null `trialPriceAmount`
  *  (today's default) always passes — the free path is untouched. */
@@ -380,7 +380,7 @@ export interface ReplacedBookingShape {
    *  THAT seam is a live pending booking and the status carries no information
    *  there.
    *  `createDropInCheckout`'s guard is looser — it blocks only `'confirmed'` and
-   *  a `participants` doc — so a terminal document (cancelled / no_show /
+   *  a `participants` doc — so a terminal document (canceled / no_show /
    *  rebooked away) does reach the hold seam, and a terminal document owns no
    *  count: whoever moved it out of `pending` already gave the count back. */
   status?: string
@@ -402,7 +402,7 @@ export interface ReplacedBookingShape {
  * `already-exists`):
  *
  *  • a plain drop-in payment hold — `createDropInCheckout` writes it and NEVER
- *    increments the counter, so the replacing write must. It is recognised by
+ *    increments the counter, so the replacing write must. It is recognized by
  *    `payment_status: 'required'` WITHOUT `waitlist_claim`, because a PAID
  *    waitlist claim carries both and the promoter counted that one when it
  *    minted the offer.
@@ -433,13 +433,13 @@ export function replacedBookingWasCounted(
   return !uncountedDropInHold
 }
 
-/** A booking status that has already been disposed of — cancelled, marked absent
+/** A booking status that has already been disposed of — canceled, marked absent
  *  or moved to another session. Every one of those transitions hands the
  *  contact's count back (`cancelBooking`'s own decrement, `markNoShowBookings`,
  *  the admin bookings page, `rebookSession`'s own ledger), so the document left
  *  behind owns no count. Unreachable at bookSession's seam, reachable at the
  *  hold seam — and at `cancelSingleSession`, which reads a whole bookings
- *  subcollection including the documents somebody already cancelled. */
+ *  subcollection including the documents somebody already canceled. */
 export const DISPOSED_BOOKING_STATUSES = new Set(['cancelled', 'no_show', 'rebooked'])
 
 /**
@@ -756,7 +756,7 @@ export const bookSession = onCall(async (request) => {
   if (sessionData.teamId !== data.teamId)
     throw new HttpsError('permission-denied', 'Session does not belong to this team')
   // bookSession is class-only — no pre-generated appointment session can exist any
-  // more; a coach's time is materialised lazily by bookAppointment (see appointments/window.ts).
+  // more; a coach's time is materialized lazily by bookAppointment (see appointments/window.ts).
   if (sessionData.activityType === 'appointment') {
     throw new HttpsError('failed-precondition', 'Appointments are booked via bookAppointment')
   }
@@ -789,7 +789,7 @@ export const bookSession = onCall(async (request) => {
   // booking when set — see the access-gate override below.
   let activityTrialEnabled = false
   // CLASS-ONLY (Activity.trialPriceAmount, @linyup/shared). Absent/null ⇒ the
-  // trial stays FREE (today's behaviour). A number means this trial is paid —
+  // trial stays FREE (today's behavior). A number means this trial is paid —
   // see the payment gate below.
   let activityTrialPriceAmount: number | null = null
   // The class's paid door, read for the GATE (not for pricing — bookSession is
@@ -949,7 +949,7 @@ export const bookSession = onCall(async (request) => {
   if (isTrialDoor) {
     // Refuse a FREE booking of a PRICED trial — the price is the gate; the
     // client normally routes straight to the paid-trial checkout instead
-    // (createDropInCheckout with trial: true). Defence-in-depth only.
+    // (createDropInCheckout with trial: true). Defense-in-depth only.
     const paymentGate = resolveFreeTrialPaymentGate(activityTrialPriceAmount)
     if (!paymentGate.ok) {
       throw new HttpsError('failed-precondition', 'This trial requires payment.', {
@@ -1013,7 +1013,7 @@ export const bookSession = onCall(async (request) => {
   // because the obvious reading is wrong in a way that TESTS AS FINE — this
   // callable never re-checks `used` (its entry checks are `exists`, `verified`,
   // `team_id` and `matched_contact_ids`), so re-calling it with the same
-  // `codeId` still succeeds. The cost only materialises if the SURFACE unwinds
+  // `codeId` still succeeds. The cost only materializes if the SURFACE unwinds
   // to the email step, because `verifyBookingCode` does refuse a used code and
   // re-requesting is capped per email+team per hour. That is why the returning-
   // member path must present the waiver step BEFORE calling this callable rather
@@ -1756,7 +1756,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
     throw cancelRefused(
       'not-found',
       'not_found',
-      'Booking not found. The link may have expired or the booking was already cancelled.'
+      'Booking not found. The link may have expired or the booking was already canceled.'
     )
   }
 
@@ -1774,7 +1774,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
   const session = sessionDoc.data()!
   const isAppointment = session.activityType === 'appointment'
 
-  // Resolve the parent activity once — used both for the cancellable-status
+  // Resolve the parent activity once — used both for the cancelable-status
   // re-key below (session-level autoConfirm, else the activity's) and for the
   // activity name shown in the cancellation email.
   let activityName = 'Session'
@@ -1803,7 +1803,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
         })
 
   // A session that auto-confirms treats 'confirmed' as the normal (still
-  // cancellable) booked state; one that doesn't uses 'confirmed' to mean the
+  // cancelable) booked state; one that doesn't uses 'confirmed' to mean the
   // studio checked the client in — that stays locked.
   const cancellableStatuses = sessionAutoConfirm
     ? ['pending', 'no_show', 'confirmed']
@@ -1812,7 +1812,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
     throw cancelRefused(
       'failed-precondition',
       'already_settled',
-      'This booking has already been cancelled or confirmed.'
+      'This booking has already been canceled or confirmed.'
     )
   }
 
@@ -1867,7 +1867,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
       throw cancelRefused('not-found', 'session_gone', 'Session no longer exists.')
     const freshSessionData = freshSession.data()!
     const bookingsSnap = await tx.get(sessionRef.collection('bookings'))
-    // The document being cancelled still counts as holding a seat in this read
+    // The document being canceled still counts as holding a seat in this read
     // set — exclude it, since the very next write releases it. Only when it IS
     // a booking: a `participants` hit (checked-in attendee) leaves the bookings
     // subcollection untouched, so the honest post-state is the plain recount.
@@ -1914,7 +1914,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
       //
       // Decided from the IN-TRANSACTION snapshot, not the pre-read `session`:
       // `status` is exactly the field a concurrent writer moves, and reopening a
-      // slot from a copy taken before the lock was held is how a cancelled
+      // slot from a copy taken before the lock was held is how a canceled
       // session gets flipped back to 'open'.
       ...(isAppointment && {
         ...(freshSessionData.origin === 'window'
@@ -1944,7 +1944,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
     }
   })
 
-  // Partner visit ledger: a cancelled booking earns no payout. Best-effort —
+  // Partner visit ledger: a canceled booking earns no payout. Best-effort —
   // most bookings have no ledger row (update on a missing doc just throws).
   try {
     await db
@@ -1962,7 +1962,7 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
   // ONE URL for both kinds since the funnels merged: an appointment is a step
   // of the booking funnel, not a route of its own. The appointment arm used to
   // send the member to the picker's LIST, dropping the offer they had just
-  // cancelled; naming the activity puts them back where they were.
+  // canceled; naming the activity puts them back where they were.
   const rebookUrl = teamSlug
     ? localizedPublicUrl(getHostingUrl(), teamLanguage, teamSlug, 'booking', {
         activity: session.activityId,
@@ -1985,22 +1985,22 @@ export const cancelBooking = onCall(async (request): Promise<CancelBookingResult
   try {
     if (await systemEmailEnabledFor(teamId, 'booking_confirmation')) {
       const { html } = buildEmailTemplate({
-        title: 'Booking cancelled',
-        body: `<p>Hi ${firstname},</p><p>Your booking for <strong>${activityName}</strong> with ${teamName} on ${dateStr} at ${timeStr} has been cancelled.</p>${rebookLine}`,
+        title: 'Booking canceled',
+        body: `<p>Hi ${firstname},</p><p>Your booking for <strong>${activityName}</strong> with ${teamName} on ${dateStr} at ${timeStr} has been canceled.</p>${rebookLine}`,
       })
       await sendEmail({
         to: booking.email as string,
         teamId,
-        subject: `Booking Cancelled – ${activityName}`,
+        subject: `Booking Canceled – ${activityName}`,
         html,
-        text: `Hi ${firstname},\n\nYour booking for ${activityName} with ${teamName} on ${dateStr} at ${timeStr} has been cancelled.\n${rebookUrl ? `Book another session: ${rebookUrl}` : ''}`,
+        text: `Hi ${firstname},\n\nYour booking for ${activityName} with ${teamName} on ${dateStr} at ${timeStr} has been canceled.\n${rebookUrl ? `Book another session: ${rebookUrl}` : ''}`,
       })
     }
   } catch (err) {
     console.error('Error sending cancellation confirmation email:', err)
   }
 
-  return { success: true, message: 'Your booking has been cancelled.', rebookUrl, returned }
+  return { success: true, message: 'Your booking has been canceled.', rebookUrl, returned }
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2028,7 +2028,7 @@ export const getBookingDetails = onCall(async (request) => {
   if (bookingsSnapshot.empty) {
     throw new HttpsError(
       'not-found',
-      'Booking not found. The link may have expired or the booking was cancelled.'
+      'Booking not found. The link may have expired or the booking was canceled.'
     )
   }
 
@@ -2122,13 +2122,13 @@ export const getBookingDetails = onCall(async (request) => {
   const sessionStart = (session.start as Timestamp).toDate()
   const isPastSession = sessionStart < new Date()
   const bookingStatus = (booking.status as string) || 'pending'
-  // ONE cancellable rule, shared with the member portal (`memberCanCancel`),
+  // ONE cancelable rule, shared with the member portal (`memberCanCancel`),
   // which re-derives `cancelBooking`'s own gates. The local copy this replaces
   // was a THIRD reading of them and disagreed with both: it hard-coded
   // ['pending','no_show'], so on a session that AUTO-CONFIRMS — where
   // 'confirmed' is the ordinary booked state — the emailed link offered no
   // Cancel button at all for a booking the callable would happily have
-  // cancelled, and the portal did. It also offered one on a session the studio
+  // canceled, and the portal did. It also offered one on a session the studio
   // had already called off.
   const autoConfirm =
     typeof session.autoConfirm === 'boolean'
@@ -2148,7 +2148,7 @@ export const getBookingDetails = onCall(async (request) => {
   })
   const canRebook = canCancel && availableSessions.length > 0
 
-  // What cancelling would give back, so the confirmation step can SAY it before
+  // What canceling would give back, so the confirmation step can SAY it before
   // the member commits rather than after. Read off this booking's own markers —
   // the same three fields `cancelBooking`'s transaction acts on. `paid` is the
   // one that has to be stated without softening: nothing here refunds money.
@@ -2220,7 +2220,7 @@ export const rebookSession = onCall(async (request) => {
   if (bookingsSnapshot.empty) {
     throw new HttpsError(
       'not-found',
-      'Booking not found. The link may have expired or the booking was already cancelled.'
+      'Booking not found. The link may have expired or the booking was already canceled.'
     )
   }
 
@@ -2260,7 +2260,7 @@ export const rebookSession = onCall(async (request) => {
   if (newSessionStart < new Date())
     throw new HttpsError('failed-precondition', 'Cannot book a session in the past.')
   if (newSession.isException && newSession.exceptionType === 'cancelled') {
-    throw new HttpsError('failed-precondition', 'This session has been cancelled.')
+    throw new HttpsError('failed-precondition', 'This session has been canceled.')
   }
 
   const [[, existBookDoc], [, existPartDoc]] = await Promise.all([
@@ -2336,7 +2336,7 @@ export const rebookSession = onCall(async (request) => {
   // The contact's `pending_bookings_count` is a per-DOCUMENT ledger: whoever
   // creates a pending booking counts it, whoever takes it out of that state
   // gives it back. A rebook does both at once and used to do neither, which
-  // cancelled out only when the old document was itself a live pending booking.
+  // canceled out only when the old document was itself a live pending booking.
   // It is not, whenever the token came from a `no_show` (rebookable, and its
   // count was already released when it was marked) or from a `participants`
   // document (a checked-in attendee — released at check-in). Then the new

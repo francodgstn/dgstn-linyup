@@ -13,7 +13,7 @@
  * a task that hangs on a vendor API kills the ones after it in the array —
  * `rollSessionSeries` (the rolling six-month booking horizon) among them. An
  * experimental read-only dashboard must not be able to stop recurring classes
- * being materialised.
+ * being materialized.
  *
  * ── THE PARENT DOC IS WRITTEN WHOLE, NOT MERGED ────────────────────────────
  * `{merge:true}` does not delete an absent key, so a block omitted because its
@@ -94,7 +94,7 @@ function mergeTally(a: StoreIngestTally, b: StoreIngestTally): StoreIngestTally 
 /**
  * Runs one source and records its health, never throwing.
  *
- * The status a failure maps to is the client's own judgement (`AscError` and
+ * The status a failure maps to is the client's own judgment (`AscError` and
  * `PlayError` both carry a `sourceStatus`), because only the client knows
  * whether a 404 meant "no data yet" or something went wrong.
  */

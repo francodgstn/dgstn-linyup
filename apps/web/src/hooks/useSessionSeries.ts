@@ -29,7 +29,7 @@ export interface SessionSeriesDoc {
   teamId?: string
   status?: string
   recurrence?: SeriesRecurrence
-  /** How far ahead sessions have actually been materialised. Extended daily by
+  /** How far ahead sessions have actually been materialized. Extended daily by
    *  the `rollSessionSeries` task. */
   lastGeneratedUntil?: Timestamp | null
 }

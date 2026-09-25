@@ -101,7 +101,7 @@ export const EXPERIMENTAL_FEATURES: readonly ExperimentalFeature[] = [
     // were consolidated. The matrix now lives INSIDE this section, so a second
     // per-card flag would have been two switches for one card. Studios that had
     // the old id switched on read as off — `resolveExperimentalFeatures` drops
-    // ids it does not recognise, which is the safe direction for an opt-in.
+    // ids it does not recognize, which is the safe direction for an opt-in.
     id: 'extra-dashboard',
     nameKey: 'extraDashboardName',
     descriptionKey: 'extraDashboardDescription',

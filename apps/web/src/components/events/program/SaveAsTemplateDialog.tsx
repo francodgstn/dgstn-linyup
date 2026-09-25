@@ -27,7 +27,7 @@ import {
 // Saving always writes to the OWNER passed in (a team, or an org when an org
 // admin is working on an org event). A club that applied an org template and
 // saves it back therefore produces its own team template — never a write to the
-// organisation's copy, which the rules refuse anyway.
+// organization's copy, which the rules refuse anyway.
 
 const NEW = '__new__'
 

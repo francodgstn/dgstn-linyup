@@ -1,7 +1,7 @@
 /**
  * Declarative Stripe catalog sync.
  *
- * The whole catalogue lives IN THE REPO:
+ * The whole catalog lives IN THE REPO:
  *   - plan prices  → PLAN_PRICING   (packages/shared/src/types/plan.ts)
  *   - add-on prices → PLUGIN_ADDONS (packages/shared/src/types/plugin-addons.ts)
  *
@@ -46,11 +46,11 @@ const REPRICE = process.argv.includes('--reprice')
 
 // ── --only <lookup_key> ───────────────────────────────────────────────────────
 //
-// `--reprice` is GLOBAL, and a catalogue accumulates drift: the day the
-// organisation's per-studio rate changed, the live account also had Coach at
+// `--reprice` is GLOBAL, and a catalog accumulates drift: the day the
+// organization's per-studio rate changed, the live account also had Coach at
 // 7.99 against the repo's 9 and Studio at 29.99 against 35 — two prices nobody
 // had asked to move. Repricing them as a side effect of an unrelated change is
-// how a live catalogue gets edited by accident.
+// how a live catalog gets edited by accident.
 //
 // So a reprice can be scoped. It is a FILTER, not a mode: everything else still
 // reports, so the drift you are not fixing stays visible instead of being
@@ -209,7 +209,7 @@ const catalog: CatalogEntry[] = [
     lookupKey: STUDIO_CONTACT_BLOCK.stripeLookupKey,
     chf: STUDIO_CONTACT_BLOCK.monthly,
   },
-  // Organisation per-studio price — billed alongside the org base price
+  // Organization per-studio price — billed alongside the org base price
   // (linyup_organization_monthly). Quantity = number of studios (2-studio
   // minimum). Org is sales-led, so these prices back the quote, not self-serve
   // checkout.
@@ -289,7 +289,7 @@ async function syncEntry(entry: CatalogEntry) {
 }
 
 // ─── Webhook endpoints ────────────────────────────────────────────────────────
-// Same idea as the catalogue above: the desired state lives in the repo, and the
+// Same idea as the catalog above: the desired state lives in the repo, and the
 // script converges Stripe onto it. Idempotency is keyed by URL, which is
 // deterministic per project.
 //
@@ -346,7 +346,7 @@ const WEBHOOKS: WebhookSpec[] = [
     secretId: 'stripe-webhook-secret',
     connect: false,
     description: 'Linyup — platform / SaaS billing (studios paying Linyup)',
-    // utils/gateway/stripe.ts normalises exactly these into the internal events
+    // utils/gateway/stripe.ts normalizes exactly these into the internal events
     // saas-billing/index.ts switches on.
     events: [
       'customer.subscription.created',
@@ -395,7 +395,7 @@ function argValue(flag: string): string | undefined {
 //   https://<region>-<project>.cloudfunctions.net/<fn>
 //   https://<fn-lowercased>-<hash>-<region>.a.run.app       ← the Cloud Run service
 // Matching the canonical URL alone would miss an endpoint registered by the
-// other form and happily create a DUPLICATE, so both are recognised.
+// other form and happily create a DUPLICATE, so both are recognized.
 function endpointMatches(url: string, fn: string): boolean {
   try {
     const u = new URL(url)
@@ -541,7 +541,7 @@ async function main() {
   const project = argValue('--project')
 
   const key = resolveSecretKey(project)
-  // Only checkable when the target project is known; the catalogue mode without
+  // Only checkable when the target project is known; the catalog mode without
   // --project is trusted to the caller as before.
   if (project) assertModeMatchesProject(key, project)
   stripe = new Stripe(key)

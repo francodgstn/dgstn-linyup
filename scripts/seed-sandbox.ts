@@ -527,7 +527,7 @@ const CONTACT_POOL: PoolEntry[] = [
   },
 ]
 
-// Badge catalogue — assigned by attendance milestones / behaviour.
+// Badge catalog — assigned by attendance milestones / behavior.
 function badgesFor(totalSessions: number, streak: number, seed: string): string[] {
   const out: string[] = []
   if (totalSessions >= 50) out.push('50_sessions')
@@ -961,7 +961,7 @@ const SECTOR_PROFILES: SectorProfile[] = [
         tags: [],
         isFreeTrial: true,
         base_score: 10,
-        description: 'Drill-based group clinic, organised by rating band.',
+        description: 'Drill-based group clinic, organized by rating band.',
       },
       {
         name: 'Cardio Tennis',
@@ -2402,7 +2402,7 @@ async function seedDemoTeam(profile: SectorProfile) {
               score: 3 + e,
               notes:
                 e === 0
-                  ? 'Good start — keep practising.'
+                  ? 'Good start — keep practicing.'
                   : 'Visible improvement over last session.',
               status_after: 'in_progress',
               edited: false,
@@ -2858,7 +2858,7 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
     {
       id: `${teamId}-course-foundations`,
       title: `${primary} Foundations`,
-      summary: `A self-paced introduction to ${primary.toLowerCase()} — watch, learn, and practise between classes.`,
+      summary: `A self-paced introduction to ${primary.toLowerCase()} — watch, learn, and practice between classes.`,
       status: 'published' as const,
       access: 'free' as const,
       createdDaysAgo: 90,
@@ -2889,7 +2889,7 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
               body: '<p>The building blocks every member should master early on.</p>',
             },
             {
-              title: 'Drills to practise at home',
+              title: 'Drills to practice at home',
               type: 'video' as const,
               body: '<p>Three short drills you can do between classes.</p>',
               media: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
@@ -3157,7 +3157,7 @@ async function seedTeamPlugins(profile: SectorProfile, teamId: string, uid: stri
 <h3>1. Membership</h3>
 <p>Your membership is personal and non-transferable. Access to classes requires a valid subscription or a valid drop-in pass.</p>
 <h3>2. Cancellation</h3>
-<p>Monthly subscriptions can be cancelled at any time with 30 days' notice. Annual plans are non-refundable once the commitment period begins.</p>
+<p>Monthly subscriptions can be canceled at any time with 30 days' notice. Annual plans are non-refundable once the commitment period begins.</p>
 <h3>3. Conduct</h3>
 <p>All members are expected to maintain respectful conduct during classes. The Studio reserves the right to revoke access for repeated violations.</p>
 <h3>4. Liability</h3>

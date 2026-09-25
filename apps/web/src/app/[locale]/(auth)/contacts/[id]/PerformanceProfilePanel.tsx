@@ -11,7 +11,7 @@
 // `@linyup/shared`) but never read back into any web UI — a member could be
 // told on their phone "you're at burnout risk, talk to your coach" while the
 // coach's own screen showed nothing. The badge below is that read-back.
-// Colours are ported from `apps/mobile/src/components/profile/
+// Colors are ported from `apps/mobile/src/components/profile/
 // PerformanceProfileSection.tsx` (`PROFILE_DISPLAY`) so the two surfaces agree
 // visually; the labels and message copy are new and DELIBERATELY third-person
 // (coach-facing) rather than the mobile copy's second-person member directive.
@@ -72,7 +72,7 @@ import {
 } from 'recharts'
 
 // ─── profile display metadata ─────────────────────────────────────────────────
-// Colours ONLY are ported from the mobile PROFILE_DISPLAY map — labels/messages
+// Colors ONLY are ported from the mobile PROFILE_DISPLAY map — labels/messages
 // are new i18n keys (see module header).
 
 

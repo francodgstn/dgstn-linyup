@@ -180,7 +180,7 @@ function connectLineItem(p: MemberPayment): PaymentLineItem | null {
 /** The plan TYPE a row records, and how firmly — see `UnifiedPaymentRow.planTypeId`
  *  for why a `'none'` must never be resolved by inference.
  *
- *  `stored` is the row's OWN line item, never `connectLineItem`'s synthesised
+ *  `stored` is the row's OWN line item, never `connectLineItem`'s synthesized
  *  fallback: that fallback is built from `kind`/names to keep the assign dialog's
  *  label non-empty, and it carries no plan id. Reading it here would report
  *  `'line_item'` confidence for a row that records no plan at all.
@@ -218,7 +218,7 @@ export function connectToUnified(payments: MemberPayment[]): UnifiedPaymentRow[]
     comment: p.comment ?? null,
     lineItem: connectLineItem(p),
     // From the stored line item only — connectLineItem's legacy fallbacks are
-    // synthesised from kind/names and can never carry a code.
+    // synthesized from kind/names and can never carry a code.
     promoCode: p.line_item?.promoCode ?? null,
     // Same source and the same reason as promoCode: the stored line item only.
     trial: p.line_item?.trial === true,

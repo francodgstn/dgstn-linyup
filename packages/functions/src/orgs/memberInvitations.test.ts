@@ -9,7 +9,7 @@
  * mocked Firestore would notice any of it.
  *
  * The claim it exists to protect above all others: THIS RAIL AND THE
- * TEAM-INTO-ORG RAIL ARE DIFFERENT RELATIONSHIPS. `org_invitations` enrols a
+ * TEAM-INTO-ORG RAIL ARE DIFFERENT RELATIONSHIPS. `org_invitations` enrolls a
  * whole studio and moves its billing; `org_member_invitations` grants one
  * person a row in `org_members`. Conflating them in code or in copy is the
  * failure mode this whole file is watching for.
@@ -102,7 +102,7 @@ describe('the invitation link', () => {
   })
 
   it('is NOT the team-into-org accept route', () => {
-    // /org-invite/{orgId}/{invId} asks a studio owner to enrol their studio and
+    // /org-invite/{orgId}/{invId} asks a studio owner to enroll their studio and
     // move its billing. A person invited personally must never land there.
     assert.ok(!orgMemberInvitePath('org1', 'tok').startsWith('/org-invite/'))
   })
@@ -157,7 +157,7 @@ describe('org MEMBER invitations are not org TEAM invitations', () => {
       assert.ok(
         !src.includes(forbidden),
         `memberInvitations.ts mentions "${forbidden}" — that belongs to the team-into-org rail, ` +
-          'which enrols a studio and changes its billing. This one grants a person a row in org_members.',
+          'which enrolls a studio and changes its billing. This one grants a person a row in org_members.',
       )
     }
   })

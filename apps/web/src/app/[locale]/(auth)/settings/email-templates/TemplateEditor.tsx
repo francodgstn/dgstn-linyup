@@ -1,7 +1,7 @@
 'use client'
 
 // Email template editor — subject + markdown body are the studio's to
-// customise; the branded layout (ring card, header, footer, powered-by) is
+// customize; the branded layout (ring card, header, footer, powered-by) is
 // applied at send time and shown here read-only via the live preview, rendered
 // with the SAME wrapInLayout/buildTeamFooter the Cloud Functions use
 // (@linyup/shared — single source of truth, no drift).

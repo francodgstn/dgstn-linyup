@@ -5,7 +5,7 @@ import { collection, getDocs, limit, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { ORG_SITE_PUBLISHED_COLLECTION } from '@linyup/shared'
 
-/** Resolve an organisation from the fully-public `org_site_published` snapshot
+/** Resolve an organization from the fully-public `org_site_published` snapshot
  *  — the same single read the org site page performs. An org without a
  *  published site has no public surface to hang events off. */
 export function usePublicOrgBySlug(slug: string) {

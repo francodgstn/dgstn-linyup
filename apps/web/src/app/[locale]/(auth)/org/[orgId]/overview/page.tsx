@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * THE ORGANISATION, SEEN FROM A MEMBER STUDIO.
+ * THE ORGANIZATION, SEEN FROM A MEMBER STUDIO.
  *
  * The org console is built for the people who RUN a federation. Most people who
- * ever open an organisation do not: they own a studio that belongs to one, they
+ * ever open an organization do not: they own a studio that belongs to one, they
  * have no `org_members` row, and until this page existed the switcher offered
  * them a scope whose landing page told them "No teams have joined this
  * organization yet" about the federation they are a member of.
@@ -12,8 +12,8 @@
  * ── WHY THIS IS A SUMMARY AND NOT A SMALLER CONSOLE ─────────────────────────
  *
  * The roster, the billing, the org's own members and its website belong to the
- * organisers, and the answer is not to widen a rule so a studio can see them.
- * The useful question is a different one — *what is this organisation to MY
+ * organizers, and the answer is not to widen a rule so a studio can see them.
+ * The useful question is a different one — *what is this organization to MY
  * studio* — and it has three parts, which are the three sections below:
  *
  *   WHAT IT IS        the name and description, off the org document.
@@ -36,7 +36,7 @@
  *
  * ── WHAT IS DELIBERATELY ABSENT ─────────────────────────────────────────────
  *
- * No way to CONTACT the organisation, because there is nothing to contact:
+ * No way to CONTACT the organization, because there is nothing to contact:
  * `Organization` carries no public address, and its admins live in
  * `org_members`, which a member studio cannot read. A "get in touch" affordance
  * needs a field and a callable behind it, and Franco named it as later work
@@ -96,7 +96,7 @@ export default function OrgOverviewPage() {
 
   // ── Where this studio stands ───────────────────────────────────────────────
   //
-  // BY DOCUMENT ID, and that is not an optimisation. `org_teams` admits
+  // BY DOCUMENT ID, and that is not an optimization. `org_teams` admits
   // `isOrgMember(orgId) || isTeamMember(teamId)`; a LIST returns sibling rows
   // that satisfy neither and Firestore denies the whole query, which is exactly
   // how the roster page fails for this audience. Asking for your own row asks a
@@ -114,7 +114,7 @@ export default function OrgOverviewPage() {
     },
   })
 
-  // ── What the organisation hands down ──────────────────────────────────────
+  // ── What the organization hands down ──────────────────────────────────────
   //
   // COUNTS, not contents. The page answers "is there anything here", and a
   // server-side count is one round trip that does not grow with the federation
@@ -186,9 +186,9 @@ export default function OrgOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* WHAT IT IS. The page owns its heading (`ownsHeader` in the catalogue)
-          because the organisation's NAME is the title here — this is the one
-          org page that is about the organisation rather than about a section of
+      {/* WHAT IT IS. The page owns its heading (`ownsHeader` in the catalog)
+          because the organization's NAME is the title here — this is the one
+          org page that is about the organization rather than about a section of
           it. */}
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">{org?.name ?? ''}</h1>
@@ -229,7 +229,7 @@ export default function OrgOverviewPage() {
             </div>
           ) : (
             // Reachable: an org admin's OWN current studio may sit outside the
-            // organisation they administer, so "your studio's standing" has no
+            // organization they administer, so "your studio's standing" has no
             // answer rather than a bad one.
             <p className="text-sm text-muted-foreground">{t('overviewStandingNone')}</p>
           )}
@@ -310,7 +310,7 @@ export default function OrgOverviewPage() {
 }
 
 /**
- * One thing the organisation shares.
+ * One thing the organization shares.
  *
  * A null count means the read did not answer — NOT zero. Showing "0" for a
  * denied or failed count states something false about the federation, so the

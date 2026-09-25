@@ -15,7 +15,7 @@ Port a Cloud Function from hmd-lineup. Usage: `/port-function <functionName>`
 
 3. **Check target utils** — scan `packages/functions/src/utils/` to see if equivalent helpers already exist. Use them instead of re-porting the same logic.
 
-4. **Identify what to omit** — skip or generalise any HMD-specific logic:
+4. **Identify what to omit** — skip or generalize any HMD-specific logic:
    - Swiss QR bill, belt ranks, federation identifiers → remove
    - `teacher` field fallback (`data.teacher || data.teamId`) → keep for now (legacy compat)
    - HMD-specific `regionalFunctions` → replace with v2 pattern

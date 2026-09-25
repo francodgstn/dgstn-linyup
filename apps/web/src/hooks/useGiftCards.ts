@@ -34,7 +34,7 @@ export function useTeamGiftCards(teamId: string | null) {
 /**
  * Manager mint — the front desk sells a card for cash, or the studio comps one.
  * `idempotencyKey` must be minted when the DIALOG OPENS, not per submit: it is
- * the server's serialisation key, so a double click (or a retried request) has
+ * the server's serialization key, so a double click (or a retried request) has
  * to carry the same one to get the same card back instead of a second one.
  */
 export function useIssueGiftCard() {

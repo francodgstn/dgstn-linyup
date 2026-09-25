@@ -52,7 +52,7 @@ export interface SubscriptionView {
   /**
    * WHETHER the subscription is winding down — still live, not renewing.
    *
-   * This is the field to read for "is it cancelling", and it is deliberately
+   * This is the field to read for "is it canceling", and it is deliberately
    * separate from `endsAtMs`. It replaces the raw `cancel_at_period_end` the view
    * used to carry, but keeps that field's REACH: it is true for either of the two
    * ways Stripe expresses a cancellation, including a billing-portal cancellation
@@ -63,10 +63,10 @@ export interface SubscriptionView {
   /**
    * WHEN it stops, when that is known — via the shared `subscriptionEndsAt`.
    *
-   * Null does NOT mean "not cancelling". A saas_subscriptions doc written while
+   * Null does NOT mean "not canceling". A saas_subscriptions doc written while
    * the readers still looked for the period on the SUBSCRIPTION — which is every
    * doc this codebase wrote under Dahlia, so the whole working population —
-   * stored `current_period_end: null` and no `cancel_at`, so a cancelling one
+   * stored `current_period_end: null` and no `cancel_at`, so a canceling one
    * from that window has the boolean and no date at all. A console that inferred
    * cancellation from this date alone therefore showed an operator nothing for
    * exactly the accounts worth looking at. Read `cancelling` for the question and
@@ -85,7 +85,7 @@ export interface SubscriptionView {
   subscriptionId: string | null
   lastPaymentStatus: string | null
   baseMonthly: number
-  /** ORGS ONLY — the per-studio rate. The organisation tier has no base fee, so
+  /** ORGS ONLY — the per-studio rate. The organization tier has no base fee, so
    *  `baseMonthly` is 0 for it and reading that as "the price" shows an operator
    *  CHF 0.00 for a paying federation. */
   perStudioMonthly: number | null
@@ -250,7 +250,7 @@ async function resolveEmails(uids: string[]): Promise<Map<string, string>> {
 }
 
 function toSubscriptionView(sub: SaasSubscription): SubscriptionView {
-  // The cancellation is a RECORD, not a boolean: a studio that cancelled in the
+  // The cancellation is a RECORD, not a boolean: a studio that canceled in the
   // Stripe billing portal leaves `cancel_at_period_end` false and sets a
   // `cancel_at` timestamp instead, so an operator reading only the boolean was
   // told "No" about a studio that had already left.

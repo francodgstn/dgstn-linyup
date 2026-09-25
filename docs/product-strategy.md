@@ -46,13 +46,13 @@ The system is structured around **business maturity**, not arbitrary feature gro
   * **50 active contacts — hard cap** (manual adds blocked at the limit; public
     bio link signups still land, so the cap breach itself becomes the upgrade prompt)
   * **Single user** (no team member invitations)
-  * **No plugin add-ons** (catalogue browsable, everything upgrade-locked)
+  * **No plugin add-ons** (catalog browsable, everything upgrade-locked)
   * **"Powered by Linyup" badge** on the public bio link (every free bio link is a
     referral surface; removing the badge is a paid perk)
 * CHF 0, no payment method, no Stripe subscription
 * Lifecycle: every signup still starts on the **30-day** full-access Studio trial
   (no opt-in extension — the old 14-day + extension model was retired 2026-06); on
-  expiry the team **downgrades to Free** (data kept, no wall, no purge). Cancelled
+  expiry the team **downgrades to Free** (data kept, no wall, no purge). Canceled
   paid subscriptions also land here.
 
 **Why it exists:** the contact cap scales with customer success — Free is
@@ -305,7 +305,7 @@ outgrows it quickly, converting exactly when the product has proven its value.
 There is **no per-active-contact metering**. The earlier "variable fee per
 active student" model was dropped: per-head billing is unpredictable for the
 customer and operationally fiddly. Instead each tier has a generous cap, and
-growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
+growth is monetized by moving up a tier (or, for Studio, buying flat blocks).
 
 ### What counts as a contact
 
@@ -316,7 +316,7 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
 * **Terminology (2026-06):** use **"members"** for people in customer-facing copy
   and **"contacts"** in data/CRM contexts. A studio's sellable recurring plans are
   **"subscriptions"** (not "memberships"). Reserve **"membership"** for the
-  Organisation level only (a studio's membership in an org / member teams).
+  Organization level only (a studio's membership in an org / member teams).
 * **Guardians are not contact records**, and the counting invariant is the whole
   of what that sentence means: a guardian never becomes a separate counted row.
   **Corrected 2026-08 (Wave 3 Phase 4):** it used to add "guardian / emergency
@@ -337,9 +337,9 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
 ### Archived contacts & retention
 
 * Archived contacts **do not count** toward the cap — studios can archive freely.
-* Archived contacts are **auto-anonymised after 2 years** by default (retention
+* Archived contacts are **auto-anonymized after 2 years** by default (retention
   policy). Frame this as a **privacy feature**, not a limit: nDSG / GDPR data
-  minimisation — *"old archived contacts are automatically anonymised, so you
+  minimization — *"old archived contacts are automatically anonymized, so you
   don't hoard ex-members' data."* A differentiator vs international tools.
 
 ### Pricing Structure
@@ -348,15 +348,15 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
 |--------------|------------|-------------------|--------------|
 | Free         | CHF 0      | 50 (hard cap)     | Blocked — prompt to upgrade to Coach / Studio |
 | Coach        | CHF 9      | 150               | Prompt to upgrade to Studio (no overage charge) |
-| Studio       | CHF 35     | 300               | Add +300-contact blocks at CHF 10/mo each, or upgrade to Organisation |
+| Studio       | CHF 35     | 300               | Add +300-contact blocks at CHF 10/mo each, or upgrade to Organization |
 | Organization | From CHF 103 · *Talk to us* | Unlimited | — |
 
-> **Organisation pricing (not flat-published).** Org is **base CHF 79/mo + CHF 12
+> **Organization pricing (not flat-published).** Org is **base CHF 79/mo + CHF 12
 > per studio**, 2-studio minimum, so the entry point is ~CHF 103 (two studios) and
 > scales with locations. It is **sales-led** — published only as "From CHF 103 ·
 > Talk to us", never as the base/per-studio split. The base fee is deliberate: it
 > makes the org wrapper cost something so unrelated studios can't group up purely
-> to undercut individual Studio plans. Modelled in code as the org base price plus
+> to undercut individual Studio plans. Modeled in code as the org base price plus
 > `ORG_PER_STUDIO` (`linyup_organization_studio_monthly`, quantity = studios).
 > Eligibility: studios under common ownership or a single federating body.
 
@@ -366,8 +366,8 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
   grown past a solo operation into a studio). No per-contact charge.
 * **Studio (300)** — **never hard-block** an active Studio for being slightly
   over. Prompt to add a flat **+300 block (~CHF 10/mo)** for predictable extra
-  room, or to move to Organisation when going multi-location.
-* **Organisation** — unlimited contacts.
+  room, or to move to Organization when going multi-location.
+* **Organization** — unlimited contacts.
 
 > **Implementation status (2026-09):** the caps (50 / 150 / 300 / unlimited)
 > are live in `PLAN_PRICING` and enforced — Free hard-blocks, while Coach and
@@ -382,7 +382,7 @@ growth is monetised by moving up a tier (or, for Studio, buying flat blocks).
 > **Launch offer (PUBLIC):** 50% off **Coach and Studio** for the first **6 months**
 > for new signups during launch (Coach ~CHF 4.50, Studio ~CHF 17.50), framed as
 > scarce ("limited availability"). This is the single public promo and doubles as
-> the early-adopter offer. Organisation is "Talk to us", not a published discount.
+> the early-adopter offer. Organization is "Talk to us", not a published discount.
 
 > **Founder pricing (PRIVATE):** Studio **CHF 15/mo locked for life**, founding
 > clubs only — handled by direct outreach, kept **off** the public pricing page.
@@ -423,7 +423,7 @@ portal; add-ons (Gamification, Online Courses, …) are the content that fills i
 freely; Coach activations go through a Cloud Function that adds the Stripe item
 (so paid value can't be self-granted). During the **trial**, coaches activate
 add-ons **free** to explore; on conversion the active add-ons carry into the paid
-subscription. The catalogue (plans + add-ons) is declared in the repo and synced
+subscription. The catalog (plans + add-ons) is declared in the repo and synced
 to Stripe — see `docs/stripe-catalog.md`.
 
 ### Optional Revenue Layer

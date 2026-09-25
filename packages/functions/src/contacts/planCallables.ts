@@ -84,7 +84,7 @@ async function staffContext(request: CallableRequest, contactId: unknown): Promi
   return { db, uid, contactId, contactRef, teamId }
 }
 
-/** The plan a staff call names, resolved against the studio's own catalogue. */
+/** The plan a staff call names, resolved against the studio's own catalog. */
 async function resolvePlan(
   db: Db,
   teamId: string,
@@ -161,7 +161,7 @@ export const assignPlan = onCall(async (request) => {
     for (const d of open) endPlanGrantInTx(tx, d.ref, 'changed', ctx.uid)
     tx.set(newRef, newPlanGrantDoc(ctx.teamId, plan, { source: 'staff', sourceRef: null, createdBy: ctx.uid }))
     tx.update(ctx.contactRef, {
-      // Assigning a plan materialises a provisional lead (offline-paid members
+      // Assigning a plan materializes a provisional lead (offline-paid members
       // count toward the cap too). See Contact.provisional.
       provisional: FieldValue.delete(),
       provisional_expires_at: FieldValue.delete(),

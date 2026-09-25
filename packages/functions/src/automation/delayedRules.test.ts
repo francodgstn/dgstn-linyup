@@ -6,7 +6,7 @@
 // itself and executeDelayedRule's Firestore reads — are covered by the
 // invariants pinned here plus the source-reading parity test at the bottom,
 // which spans the functions/web boundary on purpose: `supportsDelay` in the
-// rule builder is a PROMISE that the engine honours the delay, and the two
+// rule builder is a PROMISE that the engine honors the delay, and the two
 // files are where that promise has already been broken once.
 
 import assert from 'node:assert/strict'
@@ -81,7 +81,7 @@ describe('resolveEventDelayMinutes — absent or zero delay runs inline', () => 
 })
 
 // ---------------------------------------------------------------------------
-// The event triggers that store a delay now honour it. Named rather than counted:
+// The event triggers that store a delay now honor it. Named rather than counted:
 // the list grows, and a tally in the heading goes wrong the moment it does.
 // ---------------------------------------------------------------------------
 
@@ -108,7 +108,7 @@ describe('resolveEventDelayMinutes — the triggers that stored a delay nothing 
     })
   }
 
-  it('acquisition_stage_changed honours a delay too — "welcome them 3 days after they join"', () => {
+  it('acquisition_stage_changed honors a delay too — "welcome them 3 days after they join"', () => {
     assert.equal(resolveEventDelayMinutes(rule('acquisition_stage_changed', 4320)), 4320)
   })
 })

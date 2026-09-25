@@ -43,7 +43,7 @@ export type SiteCtaAction = 'booking' | 'signup' | 'url' | 'page' | 'appointment
 /** A call-to-action button. `booking`/`signup` resolve to the team's bio-link
  *  flows; `appointment` opens the booking panel straight on ONE appointment
  *  activity (a free intro, a trial call) and `class` does the same for ONE
- *  class — both save the visitor a hunt through the catalogue for the thing
+ *  class — both save the visitor a hunt through the catalog for the thing
  *  the page they are reading is about; `url` opens an external link. ('membership' is a legacy alias
  *  for 'signup', still accepted on read/publish for older stored sites.) */
 export interface SiteCta {
@@ -92,8 +92,8 @@ export interface HeroSection extends SectionBase {
   /** Dark overlay strength over the background image, 0–100. */
   overlay?: number
   /**
-   * A solid background colour used WHEN THERE IS NO IMAGE. Absent ⇒ the theme's
-   * page colour, today's behaviour. Ignored while `bgImageUrl` is set — an image
+   * A solid background color used WHEN THERE IS NO IMAGE. Absent ⇒ the theme's
+   * page color, today's behavior. Ignored while `bgImageUrl` is set — an image
    * is its own background.
    */
   bgColor?: string
@@ -102,7 +102,7 @@ export interface HeroSection extends SectionBase {
    *  - 'full' (default): text directly on the background, edge to edge.
    *  - 'card': the text in a surface card floating on the background — the same
    *    "comes out of the page" idea the theme applies to cards, for a hero over
-   *    a busy image or a strong colour.
+   *    a busy image or a strong color.
    *
    * Absent ⇒ 'full', so existing heroes are unaffected.
    */
@@ -128,7 +128,7 @@ export interface HeroSection extends SectionBase {
    */
   overlayStyle?: 'solid' | 'gradient-left' | 'gradient-bottom' | 'gradient-left-bottom'
   /**
-   * The wash colour. 'dark' (default): black, white text — today's look.
+   * The wash color. 'dark' (default): black, white text — today's look.
    * 'light': white, dark text, for a bright, airy hero.
    */
   overlayTone?: 'dark' | 'light'
@@ -242,7 +242,7 @@ export interface FaqSection extends SectionBase {
   /**
    * 'cards' (the default) is one soft card per question. 'panels' is the bold
    * treatment — one hard-edged block, heavy rules between the rows, and the
-   * open row filled in the panel colour — so an FAQ can carry the same contrast
+   * open row filled in the panel color — so an FAQ can carry the same contrast
    * as the panel features and a black-button brand instead of going soft
    * halfway down the page.
    */
@@ -321,7 +321,7 @@ export interface ActivitiesSection extends SectionBase {
   /**
    * How much of the commercial story each card states.
    *
-   *  - 'list' (default): every line, one per row — today's behaviour.
+   *  - 'list' (default): every line, one per row — today's behavior.
    *  - 'compact': the money collapses behind one "Prices" control that reveals
    *    the same lines on tap/hover.
    *  - 'hidden': no amount is rendered at all.
@@ -354,7 +354,7 @@ export interface PricingSection extends SectionBase {
   ctaLabel?: string
   /**
    * How the plans are laid out:
-   *  - 'cards' (default): one card per plan — today's behaviour.
+   *  - 'cards' (default): one card per plan — today's behavior.
    *  - 'table': the comparison a prospect actually makes — activities as ROWS,
    *    plans as COLUMNS, each cell saying what that plan gets you for that
    *    activity. No new data: it is the same activity mirrors + plan list the
@@ -657,7 +657,7 @@ export function flattenSiteMenu(
 }
 
 /**
- * The menu a site with no stored tree gets: exactly today's behaviour, as data.
+ * The menu a site with no stored tree gets: exactly today's behavior, as data.
  *
  * Section anchors first, in section order, then the live surface links — which
  * is the two-run layout the header already drew. Producing it here rather than
@@ -803,7 +803,7 @@ export interface SiteMeta {
    */
   themePreset?: SurfaceThemePresetId
   /**
-   * The studio's own colour, read ONLY when `themePreset` is 'custom'. Both
+   * The studio's own color, read ONLY when `themePreset` is 'custom'. Both
    * halves of the page are derived from it — see `types/themeDerive.ts`.
    *
    * NOT the accent. `accentColor` is what must be noticed (a button, a link);
@@ -812,14 +812,14 @@ export interface SiteMeta {
    * the fixed presets could not express at all.
    */
   /**
-   * Custom theme — the studio's own colours. Read only when `themePreset` is
-   * 'custom'; the colour you pick IS the page background (see themeDerive.ts).
+   * Custom theme — the studio's own colors. Read only when `themePreset` is
+   * 'custom'; the color you pick IS the page background (see themeDerive.ts).
    */
-  /** The light-page colour, and the whole site when `themeSingle`. */
+  /** The light-page color, and the whole site when `themeSingle`. */
   themeLight?: string
-  /** The dark-page colour. Absent ⇒ a correlate of `themeLight`. */
+  /** The dark-page color. Absent ⇒ a correlate of `themeLight`. */
   themeDark?: string
-  /** One colour, one look for everyone — no separate dark version. */
+  /** One color, one look for everyone — no separate dark version. */
   themeSingle?: boolean
   /** A soft gradient instead of a flat background. */
   themeLighting?: boolean
@@ -877,7 +877,7 @@ export interface SiteMeta {
    *  fields above, where the studio may have changed it since. */
   appliedTheme?: SiteThemeId
   /** Button fill, when it should differ from the accent (a black button on a
-   *  blue-accented site). Absent ⇒ the accent colour, today's look. */
+   *  blue-accented site). Absent ⇒ the accent color, today's look. */
   buttonColor?: string
   /** The studio's logo, shown in the header in place of the site title. The
    *  title stays the accessible name. Absent ⇒ the title as text. */
@@ -941,7 +941,7 @@ export interface SitePageRef {
 /**
  * A page's content — `{site_drafts|site_published}/{teamId}/pages/{pageId}`,
  * or `{org_site_drafts|org_site_published}/{orgId}/pages/{pageId}` for an
- * organisation, whose sections are its own union (`OrgSiteSection`). The page
+ * organization, whose sections are its own union (`OrgSiteSection`). The page
  * INDEX (`SitePageRef`) and everything about addresses is identical for both.
  */
 export interface SitePageDoc<S = WebsiteSection> {
@@ -1090,7 +1090,7 @@ export interface WidgetTheme {
   /** 'transparent' lets the host page's background show through (blends in). */
   background: 'solid' | 'transparent'
   /** Which language the embedded widget renders in. 'auto' (or absent — today's
-   *  behaviour) follows the visitor's Accept-Language; a pinned locale bakes the
+   *  behavior) follows the visitor's Accept-Language; a pinned locale bakes the
    *  language into the embed snippet URL. */
   locale?: 'auto' | UiLanguage
 }

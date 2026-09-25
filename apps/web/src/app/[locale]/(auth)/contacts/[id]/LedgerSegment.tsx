@@ -348,7 +348,7 @@ function LedgerRowView({ row }: { row: LedgerRow }) {
 
 /**
  * WHICH PLAN a payment was for — and, just as importantly, when the row does not
- * say. A muted "no plan linked" chip, deliberately NOT a warning colour: legacy
+ * say. A muted "no plan linked" chip, deliberately NOT a warning color: legacy
  * rows and the renewal race are common and are not the studio's mistake, and an
  * alarm on a third of a contact's history is an alarm nobody reads.
  */

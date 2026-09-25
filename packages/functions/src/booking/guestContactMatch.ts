@@ -27,7 +27,7 @@
 // rather than a candidate's. Asking someone to tick again costs a tick; not
 // asking costs the gate.
 //
-// ── BEHAVIOUR IS PRESERVED EXACTLY ──────────────────────────────────────────
+// ── BEHAVIOR IS PRESERVED EXACTLY ──────────────────────────────────────────
 // This is the two rails' code, moved. It deliberately does NOT filter archived
 // or deleted contacts, because neither rail did: adding that filter here would
 // change which contact a booking attaches to, which is a booking change wearing

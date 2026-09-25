@@ -5,7 +5,7 @@
  * a shape at all.
  *
  * It is the shared `Card` in its **accent** variant: `border-2`, a 4px primary
- * left bar, `shadow-md`. That variant was criticised in the review that started
+ * left bar, `shadow-md`. That variant was criticized in the review that started
  * this redesign — for being the loudest treatment in the system wrapped around
  * the *least* information, seven bare figures. The critique was about the
  * pairing, not the frame: on the two blocks that carry the day's work it is the

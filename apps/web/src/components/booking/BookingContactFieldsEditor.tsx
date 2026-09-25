@@ -172,7 +172,7 @@ export function BookingContactFieldsEditor({
       </div>
 
       {/* Where the rest of the fields come from. Without it a studio reads the
-          three base fields as the whole catalogue — and when the plugin is not
+          three base fields as the whole catalog — and when the plugin is not
           installed the list above is all it will ever have, with nothing on
           screen saying why. */}
       <div className="rounded-md border border-dashed px-3 py-2.5 text-center">

@@ -57,14 +57,14 @@ import { join } from 'node:path'
 //
 // Both read the web SOURCE deliberately: `apps/web` has no test runner, and the
 // claim spans the functions/web boundary, which is where corrections stop
-// travelling (same reasoning as connect/commitSites.test.ts).
+// traveling (same reasoning as connect/commitSites.test.ts).
 //
 // Run with: pnpm --filter @linyup/functions test
 
 /** SRC → packages/functions → packages → root. */
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
-/** Line endings normalised: LF on CI, CRLF in a Windows checkout. */
+/** Line endings normalized: LF on CI, CRLF in a Windows checkout. */
 function readRoot(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf8').replace(/\r\n/g, '\n')
 }

@@ -111,7 +111,7 @@ describe('projectContact', () => {
     assert.strictEqual(withPii.address?.street, 'LEAK_address')
   })
 
-  it('never returns a deleted or anonymised person', () => {
+  it('never returns a deleted or anonymized person', () => {
     const deleted = { ...sentinelContact(), deleted_at: { toMillis: () => NOW - DAY } } as unknown as Contact
     const anonymised = { ...sentinelContact(), anonymized_at: { toMillis: () => NOW - DAY } } as unknown as Contact
     assert.strictEqual(projectContact(deleted, ctx(true)), null)
@@ -187,7 +187,7 @@ describe('projectSession', () => {
     assert.strictEqual(
       projectSession(sentinelSession({ status: 'cancelled', bookings_count: 8, max_participants: 8 }), { nowMs: NOW })!.status,
       'cancelled',
-      'cancelled wins over full'
+      'canceled wins over full'
     )
   })
 

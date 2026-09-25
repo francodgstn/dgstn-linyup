@@ -14,7 +14,7 @@
  * came back.
  *
  * WHAT IS DELIBERATELY NOT HERE:
- *   - anonymised records. `anonymized_at` means the identifying data is already
+ *   - anonymized records. `anonymized_at` means the identifying data is already
  *     gone by design; exporting the husk would suggest otherwise.
  *   - bookings, payments and attendance. They belong to different exports with
  *     different shapes, and cramming them into a contact row would produce
@@ -165,7 +165,7 @@ export interface ContactCsvOptions {
 }
 
 /**
- * Serialise contacts to CSV: UTF-8, CRLF, header row always present, rows in
+ * Serialize contacts to CSV: UTF-8, CRLF, header row always present, rows in
  * the order given.
  *
  * A custom-field column header is the studio's LABEL, which is not guaranteed

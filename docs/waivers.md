@@ -181,7 +181,7 @@ publishing a privacy policy is free.
 
 The chooser (`apps/web/src/plugins/documents/PublishDialog.tsx`) names each option
 by **what happens**, never by severity ("minor / material" was rejected as a
-judgement studios will get wrong), and each option carries its **evidential cost**
+judgment studios will get wrong), and each option carries its **evidential cost**
 in one line beside the choice — stated when a studio can still act on it, not when
 it needs the document. The default is `require_resign` for a waiver and `silent`
 for every other kind.
@@ -193,7 +193,7 @@ specified in full and **is not built**. `PublishOutcome` has two members, and
 `publishDocumentVersion` refuses `'notify'` **by name** rather than silently
 downgrading it to `silent`, which would tell a studio its members were notified
 when nobody was. The chooser does not offer it, and deliberately does not offer it
-*disabled* either: a greyed-out control that never becomes available is worse than
+*disabled* either: a grayed-out control that never becomes available is worse than
 one that does not exist.
 
 **What stayed, and must not be "simplified away".** The
@@ -302,7 +302,7 @@ constrained only `kind`, so the one write that decides a document's whole
 starting state constrained none of it. A manager could `setDoc` a document
 already at `status: 'published'` with no version behind it, or at a
 `current_version` naming a snapshot that does not exist — which is the state the
-acceptance ledger has no defence against, because an acceptance stores only the
+acceptance ledger has no defense against, because an acceptance stores only the
 hash and trusts the version to hold the text. Both clauses now say the same
 thing, and the editor's own create (status `draft`, neither pointer) is
 unaffected.
@@ -358,7 +358,7 @@ Two rails used to **complete with a waiver outstanding** — the waitlist claim
 PIN-paired kiosk walk-in (a tablet with an idle timer). Both exceptions existed
 for the same thing: a signature only *somebody else* could give. That mechanism
 is gone (see "Minors" below), the consent step is completable by whoever is
-standing in front of it, and so there is one behaviour on every door — sign, or
+standing in front of it, and so there is one behavior on every door — sign, or
 be refused. `WaiverGateStep` has no `defer` arm and `enforceWaiverGate` takes no
 posture parameter, which is the checkable form of the sentence.
 
@@ -439,7 +439,7 @@ Widening is sound **because Space is not a rail**: it books nothing, admits
 nobody and refuses no attendance. Which waivers a BOOKING requires is still
 decided by the gate, from the policy, against the activity in hand; signing early
 can satisfy a requirement, never impose one. The requirement callable takes
-`surface: 'space'` for the same set, honoured for a caller holding a contact
+`surface: 'space'` for the same set, honored for a caller holding a contact
 session.
 
 **It writes for its own tenant only, asserted on the snapshot it writes from.**
@@ -667,7 +667,7 @@ right now* — nothing else does.
 consent history as a self-contained artefact: the studio, the contact, the export
 instant, the honest paragraph above, then per document every version that ever
 existed with its outcome and its `backfilled_at` marker, every acceptance and
-revocation event with the **full materialised text**, the stored hash and an
+revocation event with the **full materialized text**, the stored hash and an
 explicit **match verdict**.
 
 **Both queries always run for an operator, and they render differently.** The
@@ -678,7 +678,7 @@ name — Anna books in March as "Anna Müller", a phone drops the umlaut in June
 a second contact is created. Exporting from the second and getting June only is an
 artefact headed with her name that omits the version she actually signed under.
 
-But the two are **never merged**: `identity_key` is sha256(normalised email), and
+But the two are **never merged**: `identity_key` is sha256(normalized email), and
 a shared family mailbox gives a mother and her child the same one. The second
 query's rows are printed in their own section, headed *"other records for this
 email address"*, each carrying its `contactId`, `subject_name` and `signer_role`.
@@ -688,7 +688,7 @@ entirely** — it would show them somebody else's records — and the **server**
 the client, decides which of the two artefacts it is producing.
 
 **And both are scoped to ONE TEAM.** A collection group spans every tenant, so an
-unscoped `identity_key` pass hands studio A its neighbours' signature rows the
+unscoped `identity_key` pass hands studio A its neighbors' signature rows the
 moment two studios share a member — names, addresses and consent history, printed
 under the wrong studio's letterhead. `loadEvents` therefore takes `teamId` as a
 **required parameter** (taken from the contact document that authorization was
@@ -894,7 +894,7 @@ resolves properly. `recover()` deliberately survives `reset()`, because it is a
 fact about the team and not about the person — the next walk-in at the same
 kiosk should not have to be refused once to rediscover it.
 
-**`resolveWaiverRequirement` does not trust a body `contactId`.** Honouring one
+**`resolveWaiverRequirement` does not trust a body `contactId`.** Honoring one
 would turn a public callable into an oracle over a compliance fact — *has contact
 X signed the release?*, one call per guessed id. It accepts the rails' own proofs
 in the rails' own order: a contact session; or `authenticatedContactId` +
@@ -936,7 +936,7 @@ recorded recommendation:
 |---|---|---|---|
 | Q1 | A `Guardian[]` type on the contact | **Narrowed out**, and doubly so after the guardian machinery was withdrawn: the ledger snapshots the signer, and a freely-editable array would be a second source of truth for a question the ledger already answers | Nothing pre-fills a repeat guardian's name; they type it, or leave it |
 | Q2 | Acceptance **inside** the booking commit rather than after it | **Inside.** Post-commit is the zone where the partner ledger and the contact alert swallow their own failures | One extra single-document read in the transaction |
-| Q3 | The publish chooser's default | **`require_resign` preselected** for a waiver, labelled *recommended*; `silent` for every other kind | Friction on the booking path by default — deliberate, because it is the option most studios will never change |
+| Q3 | The publish chooser's default | **`require_resign` preselected** for a waiver, labeled *recommended*; `silent` for every other kind | Friction on the booking path by default — deliberate, because it is the option most studios will never change |
 | Q4 | The kiosk when the walk-in is a **minor** | **Superseded.** It admitted with a chip because the only way past a guardian requirement was an emailed link and a tablet cannot wait for one. The tablet now takes the whole signature, so the kiosk refuses like every rail | Nothing outstanding anywhere. The `mayIncludeMinors` chip still prompts the desk |
 | Q5 | Age of majority | **Withdrawn.** No age is asked, computed or stored anywhere in this feature | The studio decides who is a minor, at the door, prompted by the chip |
 | Q6 | Staff-initiated attendance (add-participant, `checkInContact`) | **Accepted, not closed.** Surfaced loudly on the roster | "We have a waiver gate" is not literally true. If a `bookParticipant` callable is ever built, the honest version gates the staff scanner with it |

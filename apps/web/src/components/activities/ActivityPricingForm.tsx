@@ -2,7 +2,7 @@
 
 /**
  * WHO CAN BOOK, AND WHAT IT COSTS — the money half of an activity, hosted by
- * the catalogue rather than by the activity dialog.
+ * the catalog rather than by the activity dialog.
  *
  * ── WHY IT MOVED ────────────────────────────────────────────────────────────
  * These three decisions (the access tier, the newcomer trial, the drop-in
@@ -10,10 +10,10 @@
  * conversation: what someone is charged, and which plans change that. Split
  * across a modal and a pane, a studio answered half of it in each and could
  * never see the two halves at once — the drop-in price lived in the dialog
- * while the member rate ON that price lived in the catalogue, one scroll and
+ * while the member rate ON that price lived in the catalog, one scroll and
  * one modal apart (Franco, 2026-09-01).
  *
- * The dialog keeps what an activity IS: its name, kind, colour, tags, session
+ * The dialog keeps what an activity IS: its name, kind, color, tags, session
  * lengths, the prose, and the two switches that are not about money
  * (auto-confirm and the waitlist).
  *
@@ -90,7 +90,7 @@ import {
 } from '@/components/activities/AppointmentDurationsEditor'
 
 // ── WHO MAY BOOK, AS TWO QUESTIONS ──────────────────────────────────────────
-// The old single tier answered "who books FREE" while being labelled "who can
+// The old single tier answered "who books FREE" while being labeled "who can
 // book", which is why "Any member" and "Specific subscriptions" read as two
 // overlapping walls. They are now the two questions a studio actually has:
 //
@@ -336,7 +336,7 @@ export function ActivityPricingForm({
   /** EITHER half being touched arms the one button. */
   const anyDirty = dirty || !!links?.dirty
   useReportPaneDirty('activity-pricing', anyDirty)
-  // In the catalogue pane this tab's Save is the page's floating bar; the
+  // In the catalog pane this tab's Save is the page's floating bar; the
   // button at the foot below is only for a host with no bar.
   const { inSaveBar } = useSaveBarSection('activity-pricing', {
     dirty: canEdit && anyDirty,

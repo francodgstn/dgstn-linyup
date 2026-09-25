@@ -3,7 +3,7 @@
 //
 // ── WHY THIS AND NOT A COST API ─────────────────────────────────────────────
 // There is no Cloud Billing API call that returns consumption. `cloudbilling`
-// serves billing-account metadata and the SKU price catalogue; actual cost data
+// serves billing-account metadata and the SKU price catalog; actual cost data
 // otherwise means enabling a BigQuery billing export — opt-in, hours of delay,
 // and billable itself — which is a lot of machinery for one number on one page.
 //
@@ -144,7 +144,7 @@ export const handleBudgetNotification = onMessagePublished(
     // `merge: true` DEEP-merges the nested map, which is load-bearing here and
     // for once desirable: `providers.brevo` / `providers.deepl` are written by
     // the daily capture job and must survive this write, and vice versa. (Note
-    // the same behaviour is a documented HAZARD where a partial write must not
+    // the same behavior is a documented HAZARD where a partial write must not
     // leave stale siblings standing — see the cancellation-record rules in
     // CLAUDE.md. Here the two writers own disjoint keys by construction.)
     const [writeErr] = await to(

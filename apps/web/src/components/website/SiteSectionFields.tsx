@@ -3,12 +3,12 @@
 /**
  * THE SECTION FIELD EDITORS BOTH SITE BUILDERS SHARE.
  *
- * A studio's website and an organisation's are authored by two components —
+ * A studio's website and an organization's are authored by two components —
  * `plugins/website/SectionEditor.tsx` and `org/[orgId]/website/OrgSectionEditor.tsx`
  * — and four of their section types are literally the same type: `HeroSection`,
  * `ContentSection`, `GallerySection` and `ContactSection` are declared once in
  * `@linyup/shared` and admitted by both unions. The render layer, the type layer
- * and the sanitiser were shared already; only the authoring SHELL was copied,
+ * and the sanitizer were shared already; only the authoring SHELL was copied,
  * and a copy drifts.
  *
  * It had drifted, in ways that were invisible until the two were read side by
@@ -21,10 +21,10 @@
  *   • Its image-size limit was a bare `const MAX_IMAGE_SIZE_MB = 5` where the
  *     team's goes through `getWebsiteLimits()`, the seam that exists so an
  *     operator can raise it. Same number today, one of them unreachable.
- *   • `ContactFields` was identical in behaviour and different in whitespace,
+ *   • `ContactFields` was identical in behavior and different in whitespace,
  *     which is the state a copy reaches just before someone edits one of them.
  *
- * ── THE DISCRIMINATOR CARRIES BEHAVIOUR, NOT A LABEL ────────────────────────
+ * ── THE DISCRIMINATOR CARRIES BEHAVIOR, NOT A LABEL ────────────────────────
  * `SiteEditorTenant.kind` exists for anything that must branch on which tenant
  * is authoring — but the thing that actually differs between them is WHERE AN
  * IMAGE GOES, so the tenant carries its own `uploadImage` rather than this
@@ -37,7 +37,7 @@
  * Neither set belongs in the other's union, so neither belongs here.
  *
  * The HERO'S CALL TO ACTION is a SLOT for the same reason. A studio's can point
- * at its booking page or its signup form; an organisation has neither surface,
+ * at its booking page or its signup form; an organization has neither surface,
  * so its CTA is a plain URL. That is a real difference in what the tenants CAN
  * do, not drift, so each builder passes its own control in.
  */
@@ -215,7 +215,7 @@ export function HeroFields({
         />
         <p className="text-xs text-muted-foreground">{t('editorHeroBgVideoHint')}</p>
       </Field>
-      {/* The colour is read only WHEN THERE IS NO IMAGE (see HeroSection.bgColor) —
+      {/* The color is read only WHEN THERE IS NO IMAGE (see HeroSection.bgColor) —
           hidden here the moment one is uploaded, so the control never implies it
           does something it does not. */}
       {!s.bgImageUrl && (
@@ -265,8 +265,8 @@ export function HeroFields({
           className="w-full accent-primary"
         />
       </Field>
-      {/* How the shading lies over the photo, and its colour. Only meaningful with
-          a background image or video — a solid colour hero has nothing to shade. */}
+      {/* How the shading lies over the photo, and its color. Only meaningful with
+          a background image or video — a solid color hero has nothing to shade. */}
       {(s.bgImageUrl || s.bgVideoUrl) && (
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('editorHeroOverlayStyle')}>
@@ -497,7 +497,7 @@ export function ContactFields({ s, onChange }: { s: ContactSection; onChange: (p
       {/* Both tenants can show social links now. The org's switch was removed on
           2026-08-28 because `Organization` had no such field and nothing could
           set any — then put back the same day with the field, an editor in
-          Organisation settings, and `publishOrgWebsite` (which had been reading
+          Organization settings, and `publishOrgWebsite` (which had been reading
           `org.socialLinks` defensively all along) finally having something to
           read. */}
       <label className="flex items-center justify-between rounded-lg border p-3">
@@ -1010,7 +1010,7 @@ export function CtaBannerFields({
   onChange: (p: Patch) => void
   /** The tenant's own call-to-action control, passed in for the same reason
    *  `HeroFields` takes one: a studio's CTA can point at its booking page or
-   *  signup form, and an organisation has neither. */
+   *  signup form, and an organization has neither. */
   cta: React.ReactNode
 }) {
   const t = useTranslations('Website')
@@ -1283,7 +1283,7 @@ function AddItemButton({ label, onClick }: { label: string; onClick: () => void 
   )
 }
 
-// ─── Posts (a site's own blog — team and organisation sites alike) ─────────────
+// ─── Posts (a site's own blog — team and organization sites alike) ─────────────
 
 export function PostsFields({ s, onChange }: { s: PostsSection; onChange: (p: Patch) => void }) {
   const t = useTranslations('Website')

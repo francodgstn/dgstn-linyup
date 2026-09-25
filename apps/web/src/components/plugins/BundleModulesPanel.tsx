@@ -8,7 +8,7 @@
 // ONE field on ONE document and never touches a member — which is why the whole
 // product downstream can stay bundle-blind.
 //
-// TWO SCOPES, ONE PANEL. HMD installs at the ORGANISATION, so its switches are
+// TWO SCOPES, ONE PANEL. HMD installs at the ORGANIZATION, so its switches are
 // rendered on the org plugins page (an org-installed plugin shows no Configure
 // control on a studio's own settings page, by design). AI insights installs at
 // the STUDIO, so its switches are rendered in the studio's Configure dialog. The

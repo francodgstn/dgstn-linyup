@@ -4,7 +4,7 @@ import { db } from '@/lib/firebase'
 import { SESSION_SERIES_COLLECTION } from '@linyup/shared'
 
 /**
- * Recurring series whose occurrences are still being materialised.
+ * Recurring series whose occurrences are still being materialized.
  *
  * Creating a series no longer blocks on generation (see SessionFormDialog's
  * recurring branch): the `session_series` doc is the commit, and the sessions
@@ -14,7 +14,7 @@ import { SESSION_SERIES_COLLECTION } from '@linyup/shared'
  *
  * THE SIGNAL IS THE ONE THE WRITER ALREADY LEAVES. A new series is written with
  * `lastGeneratedUntil: null`, and `seriesHorizonUpdate` sets it once
- * materialisation finishes. So "still filling in" is an equality query over two
+ * materialization finishes. So "still filling in" is an equality query over two
  * fields the doc already carries — no new flag, no new writer, nothing to
  * backfill and nothing that can go stale on its own.
  *

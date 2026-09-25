@@ -11,7 +11,7 @@
 // on its own line, as "- item"), links keep their text and lose their URL,
 // images keep their alt text. It is deliberately a small, predictable set of
 // rewrites rather than a parser: the input is a sentence-sized description, and
-// anything it does not recognise passes through as the characters it is.
+// anything it does not recognize passes through as the characters it is.
 
 /** Strip Markdown marks from `text`, keeping words and line breaks. */
 export function markdownToPlainText(text: string): string {

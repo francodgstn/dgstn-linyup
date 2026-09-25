@@ -60,7 +60,7 @@ describe('parseOfferingDraft', () => {
     assert.equal(problems.some((x) => x.code === 'unknown_key'), true)
   })
 
-  // ── enums, money and colour ───────────────────────────────────────────────
+  // ── enums, money and color ───────────────────────────────────────────────
 
   it('refuses an unknown activity type rather than defaulting it', () => {
     const { draft, problems } = parseOfferingDraft({
@@ -90,7 +90,7 @@ describe('parseOfferingDraft', () => {
     }
   })
 
-  it('refuses a colour that is not a plain hex — it feeds an inline style', () => {
+  it('refuses a color that is not a plain hex — it feeds an inline style', () => {
     const { draft, problems } = parseOfferingDraft({
       activities: [{ key: 'a', name: 'A', color: 'red; background: url(https://evil)' }],
       plans: [],

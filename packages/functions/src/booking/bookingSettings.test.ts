@@ -67,7 +67,7 @@ describe('the cutoff, read from the one store', () => {
     assert.equal(isPastBookingCutoff(ts(start), cutoffMinutes, start - 90 * MIN), false)
   })
 
-  it('an unconfigured studio has no cutoff (today’s behaviour)', () => {
+  it('an unconfigured studio has no cutoff (today’s behavior)', () => {
     const { cutoffMinutes } = bookingSettingsFrom(undefined)
     assert.equal(isPastBookingCutoff(ts(start), cutoffMinutes, start - 1), false)
   })

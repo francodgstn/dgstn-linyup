@@ -6,7 +6,7 @@
  * WHAT BELONGS HERE is settled in `lib/quickActions.ts` — every entry starts
  * something. This file is only the rendering and the choosing.
  *
- * ── THE AUTOMATIONS ARE DATA, THE REST IS A CATALOGUE ────────────────────────
+ * ── THE AUTOMATIONS ARE DATA, THE REST IS A CATALOG ────────────────────────
  *
  * Four of the five fixed actions are a route with a `?new=1` on it; the QR is a
  * dialog with nothing behind it, so it opens in place. Automations are neither:
@@ -81,7 +81,7 @@ export function QuickActionsBar() {
 
   const available: QuickActionDef[] = [...QUICK_ACTION_CATALOGUE, ...automationActions]
   const byId = new Map(available.map((a) => [a.id, a]))
-  // The studio's ORDER, not the catalogue's — the bar reads the way it was
+  // The studio's ORDER, not the catalog's — the bar reads the way it was
   // built. Anything that no longer resolves is dropped for this render only.
   const resolvedAll = ids.map((id) => byId.get(id)).filter((a): a is QuickActionDef => !!a)
   /**

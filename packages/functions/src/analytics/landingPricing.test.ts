@@ -1,11 +1,11 @@
-// THE LANDING SITE'S COPY OF THE ORGANISATION'S PRICING NUMBERS.
+// THE LANDING SITE'S COPY OF THE ORGANIZATION'S PRICING NUMBERS.
 //
 // `apps/landing` cannot import `@linyup/shared`: it compiles to CommonJS and
 // Astro's Rollup build fails on it outright, which is why every price on that
 // page is hand-copied — the plan prices into four locale files, the
 // contact-block note into four more, the payment fees again.
 //
-// The organisation's numbers, and the per-tier CONTACT CAPS, are mirrored into
+// The organization's numbers, and the per-tier CONTACT CAPS, are mirrored into
 // ONE place (the Pricing.astro
 // frontmatter) instead of being scattered, and this test keeps that mirror honest.
 // It reads the .astro source and compares it to plan.ts, so raising the rate in
@@ -14,7 +14,7 @@
 //
 // It spans the functions/landing boundary on purpose — the same technique as
 // connect/commitSites.test.ts, and for the same reason: that boundary is where
-// corrections stop travelling.
+// corrections stop traveling.
 
 import { strict as assert } from 'assert'
 import { readFileSync } from 'fs'
@@ -30,7 +30,7 @@ function constant(src: string, name: string): number {
   return Number(m[1])
 }
 
-describe('the landing page mirrors the organisation pricing exactly', () => {
+describe('the landing page mirrors the organization pricing exactly', () => {
   const src = readFileSync(PRICING, 'utf8')
 
   it('the per-studio rate matches', () => {

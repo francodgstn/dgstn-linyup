@@ -70,14 +70,14 @@ export function buildActivityPublicProfile(
     image_url: data.image_url || null,
     // Denormalised display order so public consumers sort like the admin list.
     order: typeof data.order === 'number' ? data.order : null,
-    // Free-text display labels for the public cards. Normalised here as well as
+    // Free-text display labels for the public cards. Normalized here as well as
     // in the editor — the mirror is the copy the world reads, and an activity
     // written by anything other than that form still has to arrive tidy.
     ...(Array.isArray(data.tags) && data.tags.length
       ? { tags: normalizeActivityTags(data.tags) }
       : {}),
     // The heading this card sits under on the public booking page — the
-    // studio's own word, normalised here for the same reason as the tags
+    // studio's own word, normalized here for the same reason as the tags
     // above. Absent ⇒ ungrouped, which is what every existing activity is.
     ...(normalizeBookingGroup(data.bookingGroup)
       ? { bookingGroup: normalizeBookingGroup(data.bookingGroup) }
@@ -97,7 +97,7 @@ export function buildActivityPublicProfile(
     ...(data.type !== 'appointment' && data.trialEnabled === true ? { trialEnabled: true } : {}),
     // CLASS-ONLY paid-trial price — mirrored only alongside a live trial door
     // (same conditional style as trialEnabled above). Absent ⇒ the trial stays
-    // FREE, today's behaviour untouched.
+    // FREE, today's behavior untouched.
     ...(data.type !== 'appointment' &&
     data.trialEnabled === true &&
     typeof data.trialPriceAmount === 'number'
@@ -137,7 +137,7 @@ export function buildActivityPublicProfile(
     // BOTH HALVES OR NEITHER, on an appointment. `resolveDurationBenefit` reads
     // the PRESENCE of `durationBenefits` to decide whether the activity-wide
     // rule still applies, so mirroring one without the other makes the public
-    // picker quote from a rule the server has already stopped honouring.
+    // picker quote from a rule the server has already stopped honoring.
     ...(data.type === 'appointment' && data.memberBenefit
       ? { memberBenefit: data.memberBenefit }
       : {}),

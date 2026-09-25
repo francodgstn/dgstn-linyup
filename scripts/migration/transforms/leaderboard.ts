@@ -1,5 +1,5 @@
 /**
- * Renames the one per-entry field the mobile app's trial-anonymisation check
+ * Renames the one per-entry field the mobile app's trial-anonymization check
  * reads, on the `leaderboard/current` doc only — `leaderboard` is a REAL,
  * live subcollection (no dead-weight question here: it has no
  * packages/shared/src/paths.ts constant only because nobody added one, not
@@ -17,8 +17,8 @@
  * (packages/functions/src/utils/leaderboard.ts:24-35) — a straight
  * consequence of the Contact.type → acquisition_stage axis change
  * (transforms/contacts.ts), not a leaderboard-specific decision. The
- * reader, ProfileScreen.tsx:729-734, uses exactly that field to anonymise a
- * still-trial contact's name on the leaderboard ("Anonymise not-yet-joined
+ * reader, ProfileScreen.tsx:729-734, uses exactly that field to anonymize a
+ * still-trial contact's name on the leaderboard ("Anonymize not-yet-joined
  * (trial) members on the public leaderboard"): `isTrial =
  * entry.acquisition_stage === 'trial_booked' || 'trial_attended'`. A
  * migrated entry carries `type` but never `acquisition_stage`, so `isTrial`
@@ -48,7 +48,7 @@
 // `external` both read `trial_attended` — an external never joined THIS club
 // (they land in the Contact.external lifecycle bucket, journey from what they
 // did), and the leaderboard entry must say the same thing the contact says or
-// the mobile anonymisation check disagrees with the contact page. Only
+// the mobile anonymization check disagrees with the contact page. Only
 // `student` is `joined`.
 function mapEntryAcquisitionStage(type: unknown): 'trial_attended' | 'joined' {
   return type === 'trial' || type === 'external' ? 'trial_attended' : 'joined'

@@ -685,7 +685,7 @@ function severityIcon(severity: PricingWarning['severity']) {
   return <Info className="h-4 w-4 text-muted-foreground shrink-0" />
 }
 
-/** Where a warning's "Fix" goes. The catalogue takes a selection in the URL, so
+/** Where a warning's "Fix" goes. The catalog takes a selection in the URL, so
  *  an activity or plan warning now lands ON the subject with the edge editor
  *  open beside it — where every one of these warnings is actually repaired —
  *  rather than on a list page with the fix somewhere on it. */

@@ -319,7 +319,7 @@ export async function resolveBookingCoverage(params: {
  * contact (or null for a guest). Throws HttpsError on denial. Shared by
  * bookSession (group classes) and bookAppointment (1:1 appointments) so both
  * agree on the paid-access axis. Thin thrower over resolveBookingCoverage —
- * class behaviour is unchanged.
+ * class behavior is unchanged.
  */
 export async function resolveBookingAccessGate(params: {
   teamId: string

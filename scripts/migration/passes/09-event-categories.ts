@@ -136,14 +136,14 @@ function mapCategory(
   //   min_weight / max_weight — a source category has no weight bracket. HMD
   //     recorded weight on the CHECK-IN and matched divisions by age and rank
   //     only, so there is nothing to carry across and nothing to invent.
-  //   color — the source had none; the manager falls back to grey.
+  //   color — the source had none; the manager falls back to gray.
   //
   // CARRIED VERBATIM: `deleted_at`. EventCategory has no soft-delete field of
   // its own, but a category still referenced by a check-in has to be written or
   // that check-in points at nothing again — so the fact travels with it rather
   // than being dropped, which would resurrect a retired division as pristine.
   //
-  // THE READER THAT HONOURS IT is the check-in form's eligibility filter
+  // THE READER THAT HONORS IT is the check-in form's eligibility filter
   // (plugins/hmd-fighting-cup/CheckinForm.tsx), which refuses to OFFER a
   // retired division for a new entry. The categories hook still returns it, on
   // purpose: the lineup export has to be able to name what a twenty-year-old

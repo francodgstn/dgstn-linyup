@@ -270,7 +270,7 @@ export const createMembershipPayment = onCall(async (request) => {
   }
   if (data.contactId) metadata.contactId = data.contactId
   if (price.included_months) metadata.includedMonths = String(price.included_months)
-  // Credit pack: the webhook materialises a CreditGrant alongside the membership.
+  // Credit pack: the webhook materializes a CreditGrant alongside the membership.
   if (price.credits) metadata.credits = String(price.credits)
 
   const interval = recurrenceToStripeInterval(price.recurrence)
@@ -412,7 +412,7 @@ export const createMembershipCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFO
   // — the finish-your-profile nudge — but ONLY if this contact hasn't completed
   // registration yet (signup_completed_at unset): a returning buyer shouldn't be
   // asked to register again after every purchase. Everyone else returns to the
-  // shop. The result page only honours seg=signup on success.
+  // shop. The result page only honors seg=signup on success.
   let seg = 'shop'
   if (contactMode === 'full') {
     const contactSnap = await admin
@@ -445,7 +445,7 @@ export const createMembershipCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFO
     contactMode,
   }
   if (price.included_months) metadata.includedMonths = String(price.included_months)
-  // Credit pack: the webhook materialises a CreditGrant alongside the membership.
+  // Credit pack: the webhook materializes a CreditGrant alongside the membership.
   if (price.credits) metadata.credits = String(price.credits)
 
   const interval = recurrenceToStripeInterval(price.recurrence)
@@ -636,7 +636,7 @@ export const createProductCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE
   const priceMajor = payOption.amount
   const amount = requireChargeableAmountFromMajor(priceMajor)
   // Promo-carrying checkouts only — see assertQuotedAmount (and the course
-  // branch below, which has the same stale-catalogue exposure). `promo.refusal`
+  // branch below, which has the same stale-catalog exposure). `promo.refusal`
   // rides along so a refused code is reported AS a refused code: a buyer who
   // applied it before signing in, then signed in as a member, must be told the
   // code is for new customers, not that the studio moved the price.
@@ -1062,7 +1062,7 @@ export const createCourseCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
   // course price on the fall-through path above.
   const priceMajor = payOption?.type === 'pay' ? payOption.amount : pricing.listMajor
   const amount = requireChargeableAmountFromMajor(priceMajor)
-  // Promo-carrying checkouts only — the shop fetches its catalogue once with no
+  // Promo-carrying checkouts only — the shop fetches its catalog once with no
   // listener, so a price raised underneath an open tab would otherwise refuse
   // that tab's every attempt forever. See assertQuotedAmount; `promo.refusal`
   // rides along so a refused code is named rather than blamed on the price.
@@ -1399,7 +1399,7 @@ export const resumeMemberSubscription = onCall(async (request) => {
 
 // Cancel a member's recurring subscription on the studio's connected account. Used when
 // a manager reassigns a contact's plan and chooses to STOP their current billing (the
-// manual-assign "stop current" path). Idempotent-ish: cancelling an already-cancelled
+// manual-assign "stop current" path). Idempotent-ish: canceling an already-canceled
 // sub throws, which we surface as 'internal'.
 /**
  * End a member's Stripe subscription NOW, on the studio's connected account, and
@@ -1407,7 +1407,7 @@ export const resumeMemberSubscription = onCall(async (request) => {
  * contact before the webhook confirms it (onMemberSubscriptionWrite recomputes
  * the rollup; the `customer.subscription.deleted` event writes the rest).
  *
- * The one place a member subscription is cancelled from Linyup: the staff
+ * The one place a member subscription is canceled from Linyup: the staff
  * action below, and a full refund of a membership payment (connect/refunds.ts).
  * A subscription Stripe already ended answers `already_ended` rather than
  * failing, so a refund of an old payment never trips over it.

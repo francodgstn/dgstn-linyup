@@ -69,14 +69,14 @@ course_blocks/{blockId}
 That is what makes the lessons **ordinary sessions**: roster, attendance,
 check-in, reminders, cancellation, the coach's busy set and the existing
 teardown job all work with no new code, and `materializeOccurrences` stays the
-one materialisation path with its one `(seriesId, instanceDate)` dedupe rule.
+one materialization path with its one `(seriesId, instanceDate)` dedupe rule.
 
 The series document is **not** an indirection to skip. `freezeSeriesForTeardown`
 and `endSeriesAfterTeardown` call `update()` on it, and an `update()` on a
 missing document throws. A course with no series doc would break "cancel the
 whole course" silently.
 
-`status: 'fixed'` means *materialised in full, nothing to roll*. The daily
+`status: 'fixed'` means *materialized in full, nothing to roll*. The daily
 roller queries `status == 'active'`, so a course's series is never even read.
 
 ### The refusals
@@ -91,7 +91,7 @@ Reuse cuts both ways, so three guards:
   beside them already uses. The first one's regeneration branch deletes future
   sessions outright with no bookings check; the second would strip the lessons
   and leave the course still advertising thirteen.
-- **Cancelling ONE lesson stays allowed.** That is what "no lesson on 8.10,
+- **Canceling ONE lesson stays allowed.** That is what "no lesson on 8.10,
   we'll add a make-up" means: seats return, the roster is mailed, the course is
   untouched.
 
@@ -134,7 +134,7 @@ decides not to promote**, or a harmless touch re-enters it for ever.
 
 ## One purchase, thirteen bookings
 
-**The enrolment is the truth; the per-session bookings are a projection.**
+**The enrollment is the truth; the per-session bookings are a projection.**
 Nothing writes thirteen bookings inside one transaction.
 
 `syncCourseBlockRoster` is the converger, and its whole safety rests on one
@@ -143,9 +143,9 @@ rule:
 > **It only ever CREATES a booking that is missing.** It never rewrites one that
 > exists.
 
-That is what makes it safe to run arbitrarily often (inline after an enrolment,
+That is what makes it safe to run arbitrarily often (inline after an enrollment,
 from a Cloud Task, from a nightly reconciliation), and it is also what makes
-*"the member cancelled lesson six"* stick: a cancelled booking still exists, so
+*"the member canceled lesson six"* stick: a canceled booking still exists, so
 the converger leaves it where it is instead of resurrecting it next pass.
 
 Each ensure is its own small transaction in the shape `bookSession` already
@@ -159,7 +159,7 @@ lapses is worse than waiting for the money.
 **`pending_bookings_count` moves at creation**, with `increment`, because that is
 what every existing disposal path expects. It is per-contact, spans every
 session and nothing recounts it, so a booking that was never counted would drive
-a real person's counter negative the first time they cancelled one lesson.
+a real person's counter negative the first time they canceled one lesson.
 
 **A conflict is not a failure.** A lesson already full from an ordinary drop-in
 is recorded in `fanout_conflicts` and shown on the roster. Refunding a whole
@@ -188,15 +188,15 @@ money:
 | What happened | What moves |
 |---|---|
 | The studio cancels **one lesson** | Seats return, the roster is mailed, and the course is untouched. No place moves and no money moves |
-| A participant **withdraws** | The enrolment goes `withdrawn`, the place returns, their **future** bookings are cancelled through the ordinary path. Past bookings stay: they are attendance history. No automatic refund |
+| A participant **withdraws** | The enrollment goes `withdrawn`, the place returns, their **future** bookings are canceled through the ordinary path. Past bookings stay: they are attendance history. No automatic refund |
 | A member cancels **one lesson** themselves | Allowed, deliberately. They keep their place, and the converger never resurrects the booking |
 | The studio cancels **the whole course** | The door shuts first, everyone is told once, the remaining lessons go. No money moves: `cancelCourseBlock` RETURNS the payments that may be owed back |
 
-An enrolment is marked `withdrawn`, never deleted: who was on a course is the
+An enrollment is marked `withdrawn`, never deleted: who was on a course is the
 studio's record, and a deleted row would also lose the fact that they paid.
-Cancelling the whole course withdraws nobody, for the same reason.
+Canceling the whole course withdraws nobody, for the same reason.
 
-### Cancelling the whole course: one message, not one per lesson
+### Canceling the whole course: one message, not one per lesson
 
 The order is the design, and each step closes something the next one depends on:
 
@@ -214,7 +214,7 @@ The order is the design, and each step closes something the next one depends on:
    (`SeriesTeardownJob.notify`), and the course sends one mail per enrolled
    person itself. **It suppresses the MESSAGE and nothing else**: every
    `pending_bookings_count` still moves, the waitlists still close, the deletes
-   still happen. Cancelling ONE lesson of a course still mails the roster
+   still happen. Canceling ONE lesson of a course still mails the roster
    through the very same function, because there it is the news.
 3. **The lessons go, from now forward.** Past lessons are attendance history.
 
@@ -233,13 +233,13 @@ queue reuses the class waitlist's **shape** and none of its **storage**.
 Three invariants are carried over verbatim (`docs/waitlist.md` owns the
 originals):
 
-- **The single-deadline rule.** The offered enrolment's `expires_at`, its
+- **The single-deadline rule.** The offered enrollment's `expires_at`, its
   `claim_expires_at`, the entry's `offer_expires_at` and, for a paid claim, the
   Stripe session all come from ONE `resolveCourseClaimWindow` call and are
   copied. Diverge and a place is sold twice. Stripe's 24-hour ceiling clamps its
   own session DOWN, which is the safe direction: a checkout that dies before the
   hold costs one more click, one that outlives it sells a place that has gone.
-- **An offered place is an ordinary enrolment** carrying `waitlist_claim`, held
+- **An offered place is an ordinary enrollment** carrying `waitlist_claim`, held
   as `status: 'hold'`. So `courseBlockEnrolmentHoldsPlace` already counts it and
   already lapses it lazily, and nothing else had to learn what a queue is.
 - **Release before re-offering.** The sweep's pass 1 releases, pass 2 offers.
@@ -270,7 +270,7 @@ done nothing. Whether a place is still worth offering with two lessons left is
 the studio's question, and `booking_closes_at` is the control that answers it.
 
 **Every free way onto a course prices it first.** The claim rail settles an
-enrolment without a charge, so it runs `resolvePaymentOptions` and refuses a
+enrollment without a charge, so it runs `resolvePaymentOptions` and refuses a
 payable caller with `payment_required` before it writes anything, exactly as the
 free join rail does. It shipped without that check while the header above it
 said otherwise, which made an offer token the whole gate: whoever held a valid
@@ -314,7 +314,7 @@ to `CourseBlock` later is inherited by default, which is the safe direction for
 setup data. `seriesId` is on it for the worst reason available: a copy that kept
 it would write its lessons into LAST term's calendar.
 
-**The make-up lesson** is the other half of "one lesson was cancelled":
+**The make-up lesson** is the other half of "one lesson was canceled":
 `addCourseBlockMeeting` appends one meeting and converges, so everybody already
 enrolled gets a booking for it and nobody is sold anything.
 
@@ -330,7 +330,7 @@ document a client may edit. That asymmetry is asserted out loud in
 `courseBlocks/courseBlockAccess.rules-test.ts` rather than left to be
 rediscovered.
 
-**Both subcollections authorise from the PARENT course, never from
+**Both subcollections authorize from the PARENT course, never from
 `resource`.** `belongsToUserTeam(resource)` reads `resource.data.teamId`:
 fine on a **get**, where there is a document in hand, and fatal on a **list**,
 where there is not. The property access raises and the whole query is denied,
@@ -349,9 +349,9 @@ test is now asserted as a list as well as a get.
 | Type, predicates, the place rule | `packages/shared/src/types/courseBlock.ts` |
 | The meeting-list resolver | `packages/functions/src/courseBlocks/schedule.ts` |
 | Create / reschedule / publish / delete | `packages/functions/src/courseBlocks/index.ts` |
-| Enrolment, the converger, the recount | `packages/functions/src/courseBlocks/enrolment.ts` |
+| Enrollment, the converger, the recount | `packages/functions/src/courseBlocks/enrolment.ts` |
 | The sale, and the waiting-list claim arm | `packages/functions/src/courseBlocks/checkout.ts` |
-| Cancelling the whole course | `packages/functions/src/courseBlocks/cancel.ts` |
+| Canceling the whole course | `packages/functions/src/courseBlocks/cancel.ts` |
 | Duplicate, and the make-up lesson | `packages/functions/src/courseBlocks/duplicate.ts` |
 | The waiting list | `packages/functions/src/courseBlocks/waitlist.ts` |
 | Seeding a term course | `scripts/lib/courseBlocks.ts` (+ `courseSchedule.ts`, pure) |
@@ -382,12 +382,12 @@ read as a working seed until somebody opens them.
 
 Two rules the helper follows, each of which was a defect first:
 
-- **Money together or not at all.** One enrolment is paid and is written with
+- **Money together or not at all.** One enrollment is paid and is written with
   its `member_payments` row in the same call; the rest are studio-granted, which
   is what `enrolCourseBlockContact` writes. Its PaymentIntent id carries a
   `_course_block` suffix, because `pi_seed_{contact}_course` already belongs to
   the online-courses fixture and the two collided on one document: a course sale
-  silently became an online-course sale, with the enrolment still pointing at it.
+  silently became an online-course sale, with the enrollment still pointing at it.
 - **The anchor is the most recent occurrence that has ALREADY HAPPENED.** On the
   course's own weekday, before the lesson's time of day, "this week's
   occurrence" is still ahead, so anchoring on it leaves one fewer lesson behind
@@ -437,7 +437,7 @@ against one course, so "set all" is the ordinary use rather than the edge one.
 
 A `benefit` meaning "free" is read as the GATE and absorbed on the next write,
 as the online course does. Nothing writes that state today, but the resolver
-honours it, so reading it as the rate would show a plan in neither column while
+honors it, so reading it as the rate would show a plan in neither column while
 it was live in pricing.
 
 ### In the Shop

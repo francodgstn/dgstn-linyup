@@ -8,7 +8,7 @@ import {
 } from '@firebase/rules-unit-testing'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
-// Security-rules coverage for an organisation site's PAGES —
+// Security-rules coverage for an organization site's PAGES —
 // `org_site_drafts/{orgId}/pages/{pageId}` and
 // `org_site_published/{orgId}/pages/{pageId}`.
 //
@@ -46,7 +46,7 @@ const PAGE = { orgId: ORG, pageId: 'p-about', sections: [] }
 
 let testEnv: RulesTestEnvironment
 
-describe('firestore.rules — organisation site pages', function () {
+describe('firestore.rules — organization site pages', function () {
   this.timeout(30_000)
 
   before(async () => {

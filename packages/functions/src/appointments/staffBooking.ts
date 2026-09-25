@@ -255,7 +255,7 @@ export const createStaffAppointment = onCall(async (request) => {
   const allowedDurations = resolveAppointmentDurations(activity)
   const chosenDuration = allowedDurations.find((d) => d.minutes === durationMinutes)
   if (!chosenDuration) throw new HttpsError('failed-precondition', 'Duration is not offered')
-  // A staff booking is the studio's own judgement and is NOT refused on a
+  // A staff booking is the studio's own judgment and is NOT refused on a
   // benefit_only length — but it carries no price either: `resolveDurationSale`
   // returns null for every mode but 'priced', so a stale amount can't be billed.
   const basePriceMajor = resolveDurationSale(chosenDuration).priceAmount

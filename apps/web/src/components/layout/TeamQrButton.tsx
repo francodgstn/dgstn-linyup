@@ -21,7 +21,7 @@ import { QRDialog } from '@/components/layout/QRDialog'
  * cluster, and this being a button that opens a dialog rather than a link is an
  * implementation detail, not something to telegraph. That includes `showLabel`,
  * which UtilityIconLink also takes: inside the utilities menu every entry is a
- * labelled row, and one bare icon among them would read as a different kind of
+ * labeled row, and one bare icon among them would read as a different kind of
  * thing.
  */
 export function TeamQrButton({ showLabel }: { showLabel?: boolean }) {

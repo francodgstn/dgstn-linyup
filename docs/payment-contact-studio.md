@@ -41,7 +41,7 @@ parent's address routinely controls several child contacts — so a payment link
 contact only when **exactly one** active contact matches the payer email
 (`resolveSingleContact`, `packages/functions/src/utils/contacts.ts`). Zero or
 multiple matches → the payment is still **recorded as Unassigned**, and a manager
-assigns it. (The public Connect **shop** keeps its approved behaviour: 1 match →
+assigns it. (The public Connect **shop** keeps its approved behavior: 1 match →
 link, 0 → auto-create the contact cap-aware, >1 → Unassigned, never guess.)
 
 **Assign, link, comment.** `updatePaymentRecord({ teamId, source:'connect'|'byo',
@@ -128,7 +128,7 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
    platform's connected accounts, list each account's billable subscriptions
    (`active`, `trialing`, `past_due`, `unpaid`, `paused`) and compare the stored
    `application_fee_percent` against `takeRatePercent(team.plan, waived, rate)` — resolved
-   through those functions and through `resolvePlatformFee`'s read-to-the-organisation,
+   through those functions and through `resolvePlatformFee`'s read-to-the-organization,
    never re-derived, because a second implementation of a money decision is the one
    copy never worth making. The map from account to team is
    `connect_accounts/{acct}.teamId`; an account with no such document has no
@@ -141,7 +141,7 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
    **Per tenant, this is now a button** (2026-09-17): the operator console's
    *Platform fee on member payments* card calls `resyncTenantFeeRate`, which runs
    exactly that comparison and repair for one team or every team in an
-   organisation (`connect/feeRateSync.ts`). It exists for negotiated rates (below),
+   organization (`connect/feeRateSync.ts`). It exists for negotiated rates (below),
    and is the right tool after a plan change too. A platform-wide sweep after a
    change to `CONNECT_TAKE_RATE` still has no script, for the reason that follows.
 
@@ -152,17 +152,17 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
    stale against the very comp logic it copies, and be trusted post-launch precisely
    when being wrong costs money. Write it fresh, against whatever the code says then.
 
-   The Stripe **catalogue** (`pnpm stripe:sync`) is NOT involved: it holds Linyup's
-   own plan Products and Prices, and the take-rate is not a catalogue object.
+   The Stripe **catalog** (`pnpm stripe:sync`) is NOT involved: it holds Linyup's
+   own plan Products and Prices, and the take-rate is not a catalog object.
 
    **Negotiated rates (per tenant, 2026-09-17).** An operator can agree a flat rate
    with a club — `TenantFlags.fee_rate: { bps, reason, since, expires_at | null }`,
-   set on a team or on an organisation (which reaches all its studios) from the
+   set on a team or on an organization (which reaches all its studios) from the
    console. `resolveTakeRate` (shared) is the one decision:
    comped → the team's rate → its org's → the plan, and a negotiated rate is
    **capped at the published rate** — a discount, never a surcharge, so a plan
    upgrade past a deal gives the cheaper plan rate. Malformed values fall back to
-   the published rate, as does a failed organisation read.
+   the published rate, as does a failed organization read.
 
    - **Expiry** is the first instant the rate no longer applies (the console asks
      for the *last day*, in Zurich time). One-off charges compare it at checkout,
@@ -172,7 +172,7 @@ through Linyup's balance. This is the first-class, fully-integrated rail.
    - **Setting or ending a rate does NOT touch existing memberships** until the
      operator presses *Apply to existing subscriptions*. Deliberately two steps:
      saving a typo should not be a Stripe write across every member of an
-     organisation.
+     organization.
    - Each one-off payment records the rate it was charged at —
      `member_payments.platform_fee_bps` + `platform_fee_source` (`plan` /
      `team_rate` / `org_rate` / `comped`), stamped into Checkout metadata.
@@ -313,7 +313,7 @@ subscription: one per person, newcomer-only, no membership created.
 
 - **Config.** `Activity.trialPriceAmount` (major units, class-only) sits next to the
   `trialEnabled` toggle in `offer/activities`. **Absent/null ⇒ the trial stays FREE** —
-  today's behaviour, untouched. Only offered (and only mirrored to the activity
+  today's behavior, untouched. Only offered (and only mirrored to the activity
   `public_profile`) on a **gated** class with `trialEnabled === true`: on an `open` class
   the trial door grants nothing extra — everyone books free — so a price there would be
   inert, and both the form and `bookSession` treat it as absent.
@@ -438,7 +438,7 @@ deliberately, as a separate decision.
 > of it). Without a code the rendered price is an optimistic render, not a quote:
 > the public surfaces price from a documented-as-partial client snapshot (a
 > contact session carries only the *primary* `subscription_type_id`, every held id
-> is reported unmetered, the shop fetches its catalogue once), and that snapshot
+> is reported unmetered, the shop fetches its catalog once), and that snapshot
 > and the server's are allowed to disagree. Enforcing a quote there refuses
 > ordinary sales — an exhausted credit pack listed in a benefit, a price raised
 > under an open tab — deterministically and with no way out.
@@ -841,7 +841,7 @@ or the gateway default, `last_payment_at` ← now.
    `referenceId`. Set `referenceId` to the subscription-type ID on each Payrexx link for
    per-plan control. Resolution order: `transaction.referenceId` → gateway default → none.
 
-### Behaviour
+### Behavior
 
 - **Signature**: `HMAC-SHA256(rawBody, signingSecret)` compared to `X-Webhook-Signature`
   with a constant-time comparison. **Fails closed:** a blank secret → `401
@@ -885,7 +885,7 @@ A studio charging on its **own** Stripe account. Handler:
 4. Optionally set a **Default subscription type** — applied when a payment carries no
    `metadata.subscriptionTypeId`.
 
-### Behaviour
+### Behavior
 
 - **Signature** is verified against the team's own signing secret
   (`stripe.webhooks.constructEventAsync`). No Stripe API key is needed.
@@ -900,7 +900,7 @@ A studio charging on its **own** Stripe account. Handler:
 - Scope is **record + assign** only — no in-app checkout, no refunds (those happen in the
   studio's own Stripe dashboard, or use Connect).
 
-## BYO — webhook behaviour (shared)
+## BYO — webhook behavior (shared)
 
 - **Always 200** after signature verification, so the gateway stops retrying for
   expected conditions (misconfigured team, no contact match, …). Only genuine server

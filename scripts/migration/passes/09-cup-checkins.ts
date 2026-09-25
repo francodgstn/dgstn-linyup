@@ -32,7 +32,7 @@ import { BatchWriter } from '../batch-writer'
  * and otherwise asks for a non-empty `categories` array — which, before this
  * pass, it looked for in `checkin_data` and never found. Recomputing would
  * therefore flip rows whose stored answer came from the SOURCE app's own
- * judgement, which is the better record of what a grader decided a decade ago.
+ * judgment, which is the better record of what a grader decided a decade ago.
  * The stored value stands.
  *
  * Note on `--dry-run`: this pass reads the check-ins in the TARGET, so a dry run

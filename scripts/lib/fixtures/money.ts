@@ -140,7 +140,7 @@ export async function seedMemberSubscription(
         ? {
             cancel_at: null,
             canceled_at: null,
-            // A dunning subscription has not been cancelled — but when it is,
+            // A dunning subscription has not been canceled — but when it is,
             // this is the reason that will be on it, and it is the one a studio
             // must be able to tell apart from a member who chose to leave.
             cancellation_details: null,
@@ -187,10 +187,10 @@ export async function seedMemberSubscription(
   for (let i = 0; i < invoices; i++) {
     const daysAgo = 30 * (i + 1)
     const failed = state === 'past_due' && i === 0
-    // A studio refunding the last month of a member who cancelled is an ordinary
+    // A studio refunding the last month of a member who canceled is an ordinary
     // thing that happens, and it is the only way the refund arm of the payments
     // dashboard and the finance journal has any data behind it. Tying it to the
-    // cancelling member rather than inventing an unrelated refund keeps the two
+    // canceling member rather than inventing an unrelated refund keeps the two
     // stories consistent with each other.
     const refunded = state === 'cancelling' && i === 0
     await seedMemberPayment(teamId, {
@@ -338,7 +338,7 @@ export async function seedMemberPayment(
       // The webhook FETCHES the balance transaction, so a real row carries
       // Stripe's own fee and `fee_source: 'balance_transaction'`. Seeding
       // `fees: null` looked like the modest choice and was the wrong one: it
-      // modelled the DEGRADED path as the norm, so every demo showed "this is
+      // modeled the DEGRADED path as the norm, so every demo showed "this is
       // an estimate" on rows that in production are exact, and — because
       // Stripe's fee was zero — hid the fact that a refund leaves the studio
       // out of pocket by it. Seed what Stripe would actually report.

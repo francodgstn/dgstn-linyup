@@ -1,7 +1,7 @@
 ---
 import type { Language } from '~/i18n';
 import { useTranslations, useTranslationList } from '~/i18n';
-// THE ORGANISATION'S PRICING NUMBERS, mirrored from the billing source of truth
+// THE ORGANIZATION'S PRICING NUMBERS, mirrored from the billing source of truth
 // (`packages/shared/src/types/plan.ts` — ORG_MIN_STUDIOS, ORG_MAX_LISTED_STUDIOS,
 // ORG_PER_STUDIO.monthly).
 //
@@ -182,7 +182,7 @@ const cmpText = (v: CmpVal): string | null => {
               <p class="price-note">
                 {/* The PRICE carries the weight, not the sentence around it —
                     what a reader is checking on this line is what they pay once
-                    the launch offer ends, and it was set in the same muted grey
+                    the launch offer ends, and it was set in the same muted gray
                     as "after 6 months". */}
                 * <strong>{t(`plans.${key}.price`)}{t('plans.perMonth')}</strong>{' '}
                 {t('plans.afterPromo')}

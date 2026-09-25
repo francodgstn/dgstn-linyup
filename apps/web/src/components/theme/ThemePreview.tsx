@@ -6,12 +6,12 @@
  * one, for a single-look theme).
  *
  * It is NOT a copy of any real website component, on purpose: a studio changing
- * colours wants to see the COLOURS decide something, quickly, without the
+ * colors wants to see the COLORS decide something, quickly, without the
  * preview pretending to be their actual page. So it is a small, honest mock that
  * exercises every role a palette fills — page, surface, text, muted, accent —
  * and nothing else (Franco, 2026-09-03).
  *
- * The text colours are the SAME ones the site renderer uses (`inkFor` in
+ * The text colors are the SAME ones the site renderer uses (`inkFor` in
  * `components/site/theme.ts`), so what the preview promises is what ships.
  */
 
@@ -43,7 +43,7 @@ function PreviewCard({
           {label}
         </span>
         {/* THE CARD — the surface, floating on the page. It is neutral on
-            purpose, so it comes out of a coloured background rather than
+            purpose, so it comes out of a colored background rather than
             blending into it. The heading, text and button live on it, which is
             where they live on the real site. */}
         <div

@@ -7,9 +7,9 @@ import type { PluginManifest } from '@linyup/shared'
 
 /**
  * Resolves the current tenant once and hands back the DISCOVERY predicate every
- * plugin catalogue filters on. A plugin with no `audience` is public; one with
+ * plugin catalog filters on. A plugin with no `audience` is public; one with
  * an audience is visible only to the teams it names and to every team belonging
- * to an organisation it names.
+ * to an organization it names.
  *
  * The org half comes from `team.org_id` — the same field `useInstalledPlugins`
  * reads to merge org-level installs, so "which org am I in" is answered from one

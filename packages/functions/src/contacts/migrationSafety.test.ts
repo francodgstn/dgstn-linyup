@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 // Source pins on the HMD migration's PRODUCTION safety: the activation list, the
-// collision guard, the org admin's target login, and the licence re-sync. The
+// collision guard, the org admin's target login, and the license re-sync. The
 // script lives outside this package's rootDir, so it is pinned by reading it —
 // the same way the lifecycle census pins the server seams.
 // Run with: pnpm --filter @linyup/functions test
@@ -45,7 +45,7 @@ describe('HMD migration — a real project never gets a full import without an a
     )
   })
 
-  it('the licence re-sync is never part of a full run', () => {
+  it('the license re-sync is never part of a full run', () => {
     assert.match(code(CLI), /if \(only === 'affiliations'\)\s+await pass16Affiliations\(cfg, teamIds\)/)
     assert.doesNotMatch(code(CLI), /!only \|\| only === 'affiliations'/)
   })

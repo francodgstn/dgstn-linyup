@@ -1,5 +1,5 @@
 // Resolves the stock (default) content for a predefined outreach template from
-// its `system_key`, so customised templates can show a "Customised" badge and
+// its `system_key`, so customized templates can show a "Customized" badge and
 // be reset to default at any time.
 //
 // Two key shapes exist (see automationLibrary.ts):

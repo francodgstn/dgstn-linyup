@@ -12,7 +12,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
  * appears on touch at all, and a keyboard user tabbing through a toolbar of
  * fifteen icons is told nothing by any of them.
  *
- * Native `title=` stays correct on content that is ALREADY LABELLED — a
+ * Native `title=` stays correct on content that is ALREADY LABELED — a
  * truncated name, a date, a chip — where the tooltip repeats or extends
  * something visible. It is also the better tool for revealing clamped text: no
  * JS, no portal, and it works on any `truncate` without ceremony. And an
@@ -41,7 +41,7 @@ export function Tip({
    * That is not a convenience: it is how the collapsed-sidebar pattern works.
    * Those rows carried `title={collapsed ? label : undefined}` — a tooltip only
    * while the label is hidden, and silence once the row shows its own name,
-   * which is exactly right. Modelling that here keeps the call sites a
+   * which is exactly right. Modeling that here keeps the call sites a
    * one-for-one swap instead of a conditional wrapper each.
    */
   label?: string

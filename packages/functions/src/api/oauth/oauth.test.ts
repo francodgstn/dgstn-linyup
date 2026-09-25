@@ -126,7 +126,7 @@ describe('oauth: client metadata documents', () => {
     assert.deepStrictEqual(meta.redirect_uris, ['https://claude.ai/api/mcp/auth_callback'])
   })
 
-  it('recognises known client hosts for display, and not look-alikes', () => {
+  it('recognizes known client hosts for display, and not look-alikes', () => {
     assert.ok(isRecognisedClient(CLIENT))
     assert.ok(isRecognisedClient('https://chatgpt.com/connector/client.json'))
     assert.ok(!isRecognisedClient('https://evilclaude.ai/client.json'))

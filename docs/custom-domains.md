@@ -32,7 +32,7 @@ Built:
   (`sendEntityMail`), not at the ~39 `getHostingUrl()` call sites: threading a
   per-tenant base through all of them is 39 chances to miss one, and a missed one
   is invisible because the link still works. Anchored on the exact
-  origin + locale + `/public/{slug}` prefix, so it cannot drag a neighbouring
+  origin + locale + `/public/{slug}` prefix, so it cannot drag a neighboring
   studio (`hmd-basel-nord`) onto the wrong domain — pinned by
   `domains/tenantLinks.test.ts`.
 - **The Stripe return stays on the domain.** `buildResultUrls` resolves the
@@ -134,11 +134,11 @@ Two alternatives were considered and rejected:
   records were never reachable from this feature either way. `connect.linyup.com`
   is also the more legible target for a studio's IT person, and the move brings
   Cloudflare's WAF/analytics in front of the marketing site, which is wanted
-  eventually regardless. (`linyup.app` may still be registered as brand defence —
+  eventually regardless. (`linyup.app` may still be registered as brand defense —
   parked, no role here.)
 
 **Moving the zone is not proxying it.** Every pre-existing record stays
-**grey-cloud / DNS-only**, where Cloudflare is a plain authoritative host and MX,
+**gray-cloud / DNS-only**, where Cloudflare is a plain authoritative host and MX,
 SPF/DKIM/DMARC and the App Hosting records behave exactly as at OVH. Only the two
 new records (`origin`, `connect`) are proxied. Migration preconditions are in
 `infra/README.md` §5d — the one that actually bites is DNSSEC.
@@ -158,7 +158,7 @@ visitor → theirdojo.ch
 **The wildcard route makes every proxied record in the zone this Worker's
 problem — so its default for anything it does not own is "carry on".** Learned
 on 2026-08-21: every proxyable `linyup.com` record was orange-clouded at once,
-and the Worker *refused* the ones it did not recognise, taking the apex, `app`,
+and the Worker *refused* the ones it did not recognize, taking the apex, `app`,
 `ops` and `demo` down together. Without a Worker they would have kept working —
 Cloudflare would simply have forwarded to App Hosting. A guard turned a
 degradation into an outage.
@@ -216,9 +216,9 @@ for five minutes:
 
 1. `public_domains/{hostname}` → which tenant claimed the host
 2. `teams/{id}/public_profile/{id}` → that studio's slug — or, for an
-   organisation, `org_site_published/{id}` → its slug and its site's language
+   organization, `org_site_published/{id}` → its slug and its site's language
 
-**An organisation has no `public_profile` mirror** — nothing writes one — so
+**An organization has no `public_profile` mirror** — nothing writes one — so
 until 2026-09-19 every org domain resolved to nothing. Its published website
 is world-readable, carries the slug, and is what the domain serves anyway
 (`/public/org/{slug}` IS the site, so an org's site is always the domain's

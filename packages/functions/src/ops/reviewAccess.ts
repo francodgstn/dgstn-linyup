@@ -16,7 +16,7 @@
  *
  * ── THIS IS A DELIBERATE AUTH BYPASS. THE GUARDS ARE THE DESIGN ──────────────
  *
- * - **A bounded list of addresses**, each matched exactly after normalisation.
+ * - **A bounded list of addresses**, each matched exactly after normalization.
  *   It was one address until 2026-09-04, when Play's closed test needed a dozen
  *   people signing in as THEMSELVES rather than sharing the reviewer's contact —
  *   sharing it meant any curious tester could delete or rename the account the
@@ -25,7 +25,7 @@
  *   rather than being truncated to a silently different configuration.
  * - **Synthetic addresses are expected.** These are demo-tenant contacts, so a
  *   listed address outside `@example.com` is logged as unusual. It is not
- *   refused — that is a judgement for whoever configures it — but it is never
+ *   refused — that is a judgment for whoever configures it — but it is never
  *   silent, because a fixed code on a REAL mailbox is the failure worth seeing.
  * - **`expires_at` is mandatory** and enforced here. A review window, not a
  *   standing door: past it the address behaves like any other, with a random
@@ -61,7 +61,7 @@ export const REVIEW_ACCESS_DOC = 'review_access'
 
 export interface ReviewAccess {
   enabled: boolean
-  /** LEGACY single address. Still honoured so an existing document keeps
+  /** LEGACY single address. Still honored so an existing document keeps
    *  working untouched; `emails` supersedes it and both may be present. */
   email?: string
   /** Every contact address this code opens, capped at REVIEW_ACCESS_MAX_EMAILS. */
@@ -144,7 +144,7 @@ export function decideReviewCode(
   return access.code
 }
 
-/** Every address the document covers, normalised and de-duplicated. Legacy
+/** Every address the document covers, normalized and de-duplicated. Legacy
  *  `email` and modern `emails` are unioned so a half-migrated document behaves
  *  as the sum of what it says, never as neither. */
 export function reviewAccessAddresses(access: ReviewAccess | null): string[] {

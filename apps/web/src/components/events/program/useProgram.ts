@@ -199,7 +199,7 @@ export function useDeleteProgramTrack(eventId: string) {
  *  batch is not merely inelegant, it FAILS outright on a large program. */
 const BATCH_LIMIT = 500
 
-/** Replace the whole program with a materialised template: writes the new config
+/** Replace the whole program with a materialized template: writes the new config
  *  and deletes whatever was there before.
  *
  *  Ordering matters, because this cannot be one atomic batch (see BATCH_LIMIT).

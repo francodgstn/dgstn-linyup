@@ -17,7 +17,7 @@
 //  · `cancellationPolicy` — free prose, from `Activity.cancellationPolicy` with
 //    a fallback to `TeamPublicProfile.bookingCancellationPolicy`. NOTHING
 //    ENFORCES IT. `cancelBooking` has no window, no late-cancel fee and no
-//    refund arithmetic; the text is the studio's word, honoured by the studio.
+//    refund arithmetic; the text is the studio's word, honored by the studio.
 //    So it is rendered verbatim, as the studio's statement, and this component
 //    adds no sentence of its own about what happens if you cancel late.
 //

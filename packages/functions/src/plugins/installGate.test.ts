@@ -8,14 +8,14 @@
 //   the plugin was removed.
 //
 //   `syncTeamPublicProfile` probed the TEAM install path only, so an org-level
-//   install — which every other server gate honours through `pluginIsActive` —
+//   install — which every other server gate honors through `pluginIsActive` —
 //   was invisible to the one computation that decides what the PUBLIC sees.
 //
 // Both are `docs/plugins.md` Phase 1b. The first also turned out to hide a
 // second defect, pinned below: a rule whose ONLY action was a plugin action was
 // skipped wholesale, because `hasResolvableActions` had no arm for one.
 //
-// The behaviour tests are pure. The source assertions exist because a gate is
+// The behavior tests are pure. The source assertions exist because a gate is
 // exactly the kind of line that gets deleted while "simplifying" a dispatch —
 // same argument as `connect/commitSites.test.ts`, and the same technique.
 

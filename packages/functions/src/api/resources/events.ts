@@ -21,7 +21,7 @@ export async function listEvents(
   if (input.toMs - input.fromMs > EVENT_WINDOW_MAX_DAYS * DAY_MS) {
     throw new ApiError('window_too_wide', `The window is wider than ${EVENT_WINDOW_MAX_DAYS} days`, 'Ask for at most a year at a time')
   }
-  // The (teamId, deleted_at, start) index; organisation events carry no teamId.
+  // The (teamId, deleted_at, start) index; organization events carry no teamId.
   const snap = await admin
     .firestore()
     .collection(EVENTS_COLLECTION)

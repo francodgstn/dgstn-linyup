@@ -28,7 +28,7 @@ export function LeadDemoBanner() {
   if (!marker) return null
   const url = marker.official_url
 
-  // Loud on purpose, and in LINYUP's colours rather than the studio's: the bar
+  // Loud on purpose, and in LINYUP's colors rather than the studio's: the bar
   // is Linyup speaking, so it wears the brand purples (apps/landing's
   // --purple-* scale: 950 → 600 primary → 950) and a 950/400 stripe along the
   // edge that faces the page. White text keeps AA contrast on every stop of the

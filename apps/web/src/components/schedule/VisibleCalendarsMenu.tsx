@@ -66,8 +66,8 @@
 // says why on a second line: a disabled control never receives hover, so an
 // explanation that lives in a tooltip is an explanation nobody reads.
 //
-// No colour swatches, deliberately. The grid colours events by event TYPE and
-// availability bands by COACH — there is no per-calendar colour anywhere on it,
+// No color swatches, deliberately. The grid colors events by event TYPE and
+// availability bands by COACH — there is no per-calendar color anywhere on it,
 // so a swatch here would be a new mapping that matches nothing the studio can
 // see. The icons are the ones the "+ New" menu already uses for the same four
 // things, so recognition carries across the two menus.
@@ -190,7 +190,7 @@ export function VisibleCalendarsMenu({ calendars, calendarView, onCalendarHidden
             if it is not inside a `Menu.Group` — a runtime crash on first open
             that typecheck, lint and the production build all pass straight
             over, because the popup only mounts when the menu is opened. Two
-            labelled sections is the structure the primitive wanted anyway. */}
+            labeled sections is the structure the primitive wanted anyway. */}
         {CALENDAR_SECTIONS.map((section) => (
           <DropdownMenuGroup key={section.key}>
             <DropdownMenuLabel>{sectionLabel[section.key]}</DropdownMenuLabel>

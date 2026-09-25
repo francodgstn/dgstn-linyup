@@ -7,7 +7,7 @@ import type { PluginId } from './plugin'
  * ── WHY IT LIVES HERE AND NOT IN THE MANIFEST ────────────────────────────────
  * The server-side reconciler needs the member list, and it cannot import
  * `PLUGIN_REGISTRY`: that lives in `apps/web`. `PLUGIN_ADDONS` next door sets
- * exactly this precedent — the catalogue, the billing functions and the scripts
+ * exactly this precedent — the catalog, the billing functions and the scripts
  * all need one list, and `@linyup/shared` is the only module all three can
  * reach. Declaring it in both places would be a copy for a test to police.
  *

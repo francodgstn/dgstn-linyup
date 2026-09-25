@@ -17,7 +17,7 @@ export default async function ContactUpdatePage({ params, searchParams }: Props)
   // TWO RAILS, and the token wins. `?t=` is a grant the studio just handed over
   // in person; `?contactId=` is the email-verification flow, which proves
   // ownership of an address before it edits anything. A URL carrying both is
-  // not a combination anything mints, and honouring the token is the safe
+  // not a combination anything mints, and honoring the token is the safe
   // reading of it: the token resolves its own contact server-side, so the id in
   // the query string is never consulted.
   if (t) return <ContactLinkForm token={t} />

@@ -7,7 +7,7 @@
 //
 // Enrolling writes ONE document, the place, and a converger then puts that
 // person on every future lesson. So the number that matters here is the COURSE's
-// (4 of 9), not any lesson's, and the panel says how many lessons the enrolment
+// (4 of 9), not any lesson's, and the panel says how many lessons the enrollment
 // reached so a partial converge is visible rather than silent.
 //
 // Withdrawing cancels their FUTURE lessons and leaves the past alone: that is
@@ -33,7 +33,7 @@ import { callFunction } from '@/lib/callFunction'
 import { ContactPicker } from '@/components/payments/ContactPicker'
 import { Button } from '@/components/ui/button'
 
-/** A course's enrolments. A course holds a handful of people, so the whole
+/** A course's enrollments. A course holds a handful of people, so the whole
  *  subcollection is read and filtered in memory. */
 function useCourseEnrolments(blockId: string | null) {
   return useQuery<Array<CourseBlockEnrolment & { id: string }>>({
@@ -93,7 +93,7 @@ export function CourseRosterPanel({
         toast.warning(t('enrolConflicts', { count: res.data.conflicts.length }))
       }
     } catch (err) {
-      console.error('[course enrol] failed:', err)
+      console.error('[course enroll] failed:', err)
       toast.error(err instanceof Error ? err.message : t('enrolFailed'))
     } finally {
       setBusy(false)

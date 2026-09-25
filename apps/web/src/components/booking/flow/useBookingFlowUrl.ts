@@ -19,7 +19,7 @@ import { useStepUrl } from '@/hooks/useStepUrl'
 //
 // **A restore writes nothing.** popstate has already put the URL where it
 // belongs; writing back would add a duplicate entry Back then has to walk
-// twice. The run that follows a restore is recognised by the COUNTER moving,
+// twice. The run that follows a restore is recognized by the COUNTER moving,
 // never by a flag on a timer: an `isRestoring` flag cleared in
 // requestAnimationFrame never clears in a backgrounded tab, and every later
 // step then stops updating the URL with nothing on screen to say so.

@@ -2,13 +2,13 @@
 //
 // A COURSE IS PUBLIC ONLY WHEN PUBLISHED. A draft exists so the studio can put
 // its lessons on the calendar and look at them before anybody can see it, so the
-// mirror is deleted for a draft exactly as it is for a cancelled course. The
+// mirror is deleted for a draft exactly as it is for a canceled course. The
 // door being shut for the season (`booking_closes_at` passed, or the course
 // full) is NOT the same thing and must stay visible: "closed" and "sold out"
 // are answers a visitor needs, and a card that vanishes instead reads as a
 // studio that stopped running the course.
 //
-// AGGREGATES ONLY. `places` and `places_taken` are numbers; the enrolments
+// AGGREGATES ONLY. `places` and `places_taken` are numbers; the enrollments
 // themselves never leave the tenant. The same rule the class mirror follows with
 // `bookings_count` and `waitlist_count`.
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
@@ -66,7 +66,7 @@ export function buildCourseBlockPublicProfile(
   }
 }
 
-/** Published and not cancelled. A draft has no public existence at all. */
+/** Published and not canceled. A draft has no public existence at all. */
 function shouldBePublic(data: FirebaseFirestore.DocumentData | undefined): boolean {
   return !!data && data.status === 'published'
 }

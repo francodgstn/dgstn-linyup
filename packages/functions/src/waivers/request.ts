@@ -66,7 +66,7 @@ import { buildWaiverRequestEmail, isLang, waiverRequestSubject, type Lang } from
 
 /**
  * The ceiling on one call. A studio-plan roster is 250 people and an
- * organisation's is larger, so a "select all, ask everyone" is a legitimate
+ * organization's is larger, so a "select all, ask everyone" is a legitimate
  * request — but an unbounded one is a callable that runs for minutes and a
  * mailing that cannot be stopped. The client sends the selection in chunks; the
  * refusal names the number so it can.

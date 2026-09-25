@@ -140,11 +140,11 @@ Worth knowing, because it is what makes the demo tenant safe to leave standing:
   Since 2026-08-21 a team owner cannot write `plan`, `plan_status`,
   `trial_ends_at` or `flags` from the client either.
 - **Can delete the account** — Profile → Delete my account, with a 30-day
-  window. Expect a reviewer to try it; cancelling is on the same screen.
+  window. Expect a reviewer to try it; canceling is on the same screen.
 
 ## Related
 
 - `packages/functions/src/ops/demoTenant.ts` — what gets provisioned, and why
 - `packages/functions/src/ops/reviewAccess.ts` — the bypass and its bounds
-- `packages/shared/src/utils/contactDeletion.ts` — anonymise-not-erase
+- `packages/shared/src/utils/contactDeletion.ts` — anonymize-not-erase
 - `docs/launch/data-safety-checklist.md` — teardown and external providers

@@ -88,7 +88,7 @@ export default function ExperimentalSettingsPage() {
 
   // The whole map is written at once, never a per-key dotted path: a feature id
   // is kebab-case and a hyphen is not legal in an unquoted Firestore field path.
-  // Rebuilding from `enabled` (already normalised) also drops any stale id a
+  // Rebuilding from `enabled` (already normalized) also drops any stale id a
   // withdrawn experiment left behind.
   async function toggleTeamSetting(id: ExperimentalFeatureId, next: boolean) {
     const map: Record<string, boolean> = {}

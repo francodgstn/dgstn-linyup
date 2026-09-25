@@ -74,7 +74,7 @@ export interface ActiveSubscriptionSummary {
   status: SubscriptionRollupStatus
   /**
    * Epoch MILLISECONDS at which this subscription stops, when it is winding down
-   * (cancelled but still live) — otherwise absent. Computed by
+   * (canceled but still live) — otherwise absent. Computed by
    * onMemberSubscriptionWrite via `subscriptionEndsAtMs`, the epoch-ms form of
    * `subscriptionEndsAt`, so the member's Space and the studio's contact detail
    * answer "when does this end" the same way.
@@ -92,7 +92,7 @@ export interface ActiveSubscriptionSummary {
    * member_subscriptions doc holds the cancellation boolean and NO dates (the
    * period had moved onto the subscription item and the writer stored null), so
    * its summary gets `cancels_at_ms: null` and a member's Space showed them
-   * nothing at all about a membership they had cancelled. Same population gap
+   * nothing at all about a membership they had canceled. Same population gap
    * the operator console and the studio's contact detail both had to close.
    */
   cancelling?: boolean
@@ -230,7 +230,7 @@ export interface Contact {
   weight?: number
   avatar_url?: string
   // Contact asked not to receive SMS (reminders etc.). Email is unaffected.
-  // Honoured by the SMS service (functions mail/smsService.ts) for every send
+  // Honored by the SMS service (functions mail/smsService.ts) for every send
   // that names this contact; a dropped send leaves a 'suppressed' ledger row.
   // A per-number block lives separately in sms_suppressions.
   sms_opt_out?: boolean
@@ -275,7 +275,7 @@ export interface Contact {
   // the booking, not here — the booking event PROMOTES the milestone.
   // OPTIONAL: absent = the contact is NOT on the trial funnel. An off-funnel entry
   // ('shop' / 'form' — a buyer or a captured lead) has no stage until it first books
-  // a trial, at which point it enters the funnel normally. Never synthesise a stage
+  // a trial, at which point it enters the funnel normally. Never synthesize a stage
   // for these; "not applicable" is the honest value (don't assert a milestone that
   // didn't happen). The purchase itself is never a stage — a recurring purchase lives
   // on the subscription axis, a one-off on order/payment history.
@@ -436,7 +436,7 @@ export interface Contact {
   // so what the page labels "written by AI" was. Regeneration is MANUAL today
   // (a button on the contact's insights card); a scheduled refresh, when it
   // comes, keys on `generated_at` and writes this same record — nothing needs
-  // to change shape for it. Wiped with the identifying fields on anonymisation:
+  // to change shape for it. Wiped with the identifying fields on anonymization:
   // it is prose ABOUT the person.
   ai_summary?: ContactAiSummary
 
@@ -458,7 +458,7 @@ export interface Contact {
   coaching_overdue_count?: number
   last_checkin_at?: Timestamp
 
-  // Marketing opt-out. Honoured by the automation engine and by outreach sends;
+  // Marketing opt-out. Honored by the automation engine and by outreach sends;
   // DISTINCT from the ESP suppression list (mail_suppressions), which records
   // bounces/blocks/spam reports and is applied inside the mail service.
   // Transactional mail (bookings, codes, receipts) is unaffected.
@@ -490,9 +490,9 @@ export interface Contact {
    *
    * Nothing is destroyed when these are set — the account keeps working for the
    * whole window and the contact can cancel by signing in. A `dailyTasks` sweep
-   * anonymises once `deletion_scheduled_for` passes. See
+   * anonymizes once `deletion_scheduled_for` passes. See
    * `utils/contactDeletion.ts` for the state machine and for why this
-   * anonymises rather than erases.
+   * anonymizes rather than erases.
    */
   deletion_requested_at?: Timestamp | null
   deletion_scheduled_for?: Timestamp | null
@@ -596,7 +596,7 @@ export interface SubscriptionPrice {
   // Counted from the `plan_purchases` ledger (doc id = the payment ref, so a
   // retried webhook cannot inflate it) and ENFORCED on the self-service rail
   // only. Manager rails record a purchase but are never refused by it — a studio
-  // selling the same offer again is exercising judgement, not making a mistake.
+  // selling the same offer again is exercising judgment, not making a mistake.
   maxPurchasesPerContact?: number
   label?: string // optional, e.g. "Intro offer"
   active?: boolean // default true; inactive prices are hidden from the table + assignment
@@ -701,7 +701,7 @@ export interface SubscriptionUsageLimit {
 // ONE offer PER PRICE — a plan that sells a monthly and an annual price can put
 // a different opener on each, which is the shape studios actually price in
 // ("first 3 months at 29, or your first year at 490"). The plan-level singular
-// (`introOffer`) came first and is still read: `introOffersOf` normalises the
+// (`introOffer`) came first and is still read: `introOffersOf` normalizes the
 // two, so no stored document needs rewriting and no reader needs to know which
 // shape it is looking at.
 //
@@ -737,7 +737,7 @@ export interface SubscriptionType {
   // one: the type means a third party owns the money relationship with the
   // member — a fitness app (ClassPass, Urban Sports Club), a gym the club
   // teaches inside, an employer, an insurer. The studio charges the member
-  // nothing in every one of those cases, which is the whole behaviour.
+  // nothing in every one of those cases, which is the whole behavior.
   //
   // THERE IS NO THIRD SOURCE, deliberately. Ask what a reader would do
   // differently for a host gym than for a fitness app: nothing. Every consumer

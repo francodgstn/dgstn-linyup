@@ -232,7 +232,7 @@ function SubscriptionCard({
 
   const plans = ['free', 'coach', 'studio', 'organization'] as const
   const status = storedStatus(sub)
-  // Free teams have no subscription doc (or a cancelled one) — current-plan
+  // Free teams have no subscription doc (or a canceled one) — current-plan
   // detection for Free must come from the team doc, not the sub.
   const onFreePlan = team?.plan === 'free' && (!sub || status === 'cancelled')
   // UX-7 interim: self-service signup provisions `teams/{id}.plan` +
@@ -299,13 +299,13 @@ function SubscriptionCard({
   // last surface still asking the RAW `cancel_at_period_end` at its three
   // DECISION points, and that boolean is FALSE for every cancellation made in
   // the Stripe billing portal (which states a `cancel_at` timestamp instead). A
-  // studio that cancelled there got no "cancels at period end" badge, no
+  // studio that canceled there got no "cancels at period end" badge, no
   // Reactivate button, and a "Cancel subscription" link it had already used.
   // (The end-date line below was already asking the predicate; the actions were
   // not, which is the half that actually strands someone.)
   //
   // Not `subscriptionEndsAt(sub) !== null` either: that additionally demands a
-  // DATE, and a cancelling doc from the pre-fix window carries no date at all
+  // DATE, and a canceling doc from the pre-fix window carries no date at all
   // (see shared/utils/subscriptionLifecycle.ts). The date is shown when we have
   // one and simply omitted when we do not.
   const isCancelling = subscriptionIsCancelling(sub)
@@ -360,7 +360,7 @@ function SubscriptionCard({
                 )}
               </div>
 
-              {/* Cancelled sub → the team now runs on the Free plan */}
+              {/* Canceled sub → the team now runs on the Free plan */}
               {onFreePlan && <p className="text-sm text-muted-foreground">{t('onFreePlan', { count: PLAN_PRICING.free.includedContacts ?? 0 })}</p>}
 
               {/* Billing period */}
@@ -379,7 +379,7 @@ function SubscriptionCard({
               )}
 
               {/* Winding down: say WHEN, always — not only when the period start
-                  happens to be missing. This is the line a studio that cancelled
+                  happens to be missing. This is the line a studio that canceled
                   in the Stripe portal was never shown. */}
               {endsAtDate && (
                 <p className="text-sm text-amber-600">
@@ -494,7 +494,7 @@ function SubscriptionCard({
                     : sub?.plan === plan && status !== 'cancelled'
               const isDowngrade = !isCurrent && currentPlanRank > planRank(plan)
               // Free is never "selected" via checkout — you land on it by
-              // cancelling (or letting the trial lapse).
+              // canceling (or letting the trial lapse).
               const selectable = plan !== 'free' && !isCurrent && !isDowngrade
               const featured = plan === 'studio'
               const suffix = PLAN_SUFFIX[plan]
@@ -530,14 +530,14 @@ function SubscriptionCard({
                   </div>
 
                   {/* Price. Three tiers are a scalar from PLAN_PRICING; the
-                      organisation is a RATE plus a calculator, so it gets its own
+                      organization is a RATE plus a calculator, so it gets its own
                       branch — see OrgStudioPricer.
 
                       THE ORG BRANCH COMES FIRST, and that ordering is
                       load-bearing: `baseMonthly === 0` means "free", and the
-                      organisation's base fee is now zero because the tier is
+                      organization's base fee is now zero because the tier is
                       priced entirely per studio. Tested second, it rendered the
-                      Organisation card as Free. */}
+                      Organization card as Free. */}
                   {plan === 'organization' ? (
                     <OrgStudioPricer className="mt-3" />
                   ) : (
@@ -560,7 +560,7 @@ function SubscriptionCard({
 
                   <div className="mt-auto pt-4">
                     {plan === 'organization' && !isCurrent ? (
-                      // Organisation is sales-led ("Talk to us") — not self-serve
+                      // Organization is sales-led ("Talk to us") — not self-serve
                       // checkout. Route to a contact email rather than Stripe.
                       <Button
                         size="sm"

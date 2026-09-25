@@ -71,9 +71,9 @@ export interface DraftActivity {
   /** Absent ⇒ 'class', matching `resolveActivityType`'s own default. */
   type?: ActivityType
   /**
-   * A HEX COLOUR ONLY, and validated as one. The field feeds an inline style on
+   * A HEX COLOR ONLY, and validated as one. The field feeds an inline style on
    * the rail's dot, so anything else here is an injection surface rather than a
-   * wrong colour.
+   * wrong color.
    */
   color?: string
   tags?: string[]

@@ -12,7 +12,7 @@
  *
  * The scope model (docs/org-navigation.md) invalidated the premise rather than
  * the reasoning. "Which place am I standing in" stopped being a rare question:
- * an organisation and a studio each have an Events, a Places, a Website, a
+ * an organization and a studio each have an Events, a Places, a Website, a
  * Plugins, a Members and a Settings, so the answer is load-bearing on every
  * screen, and moving between the two is something an org admin who also runs a
  * studio does all day. A question asked constantly should not be answered at
@@ -22,13 +22,13 @@
  * band this replaced is deleted — its accent moves ONTO this trigger, because
  * the design's own stated failure mode is "just the org's name where the
  * studio's name used to be". A different name in the same slot is exactly that;
- * a different colour is not.
+ * a different color is not.
  *
  * ── IT OPENS A MENU. IT DOES NOT NAVIGATE. ──────────────────────────────────
  *
  * The row it replaced was a link to the studio dashboard, which in org scope
- * meant the topmost control in an organisation's sidebar quietly left the
- * organisation. A control that both navigates and opens a menu has to guess
+ * meant the topmost control in an organization's sidebar quietly left the
+ * organization. A control that both navigates and opens a menu has to guess
  * which you meant; this one never does.
  */
 
@@ -66,12 +66,12 @@ export function ScopeSwitcher({ collapsed }: { collapsed: boolean }) {
 
   // THE SWITCHER IS ALWAYS A CONTROL, and it used not to be.
   //
-  // A single-studio login with no organisation got a plain label on the rule
+  // A single-studio login with no organization got a plain label on the rule
   // that "a chevron and a dropdown whose only row is Create another studio"
   // was not worth the promise it broke. That rule assumed the row led nowhere
-  // interesting. It now leads to the Organisation offer — and it was ALSO the
+  // interesting. It now leads to the Organization offer — and it was ALSO the
   // only route to studio creation anywhere in the product, so the audience the
-  // Organisation tier is sold to was the one audience that could not reach it
+  // Organization tier is sold to was the one audience that could not reach it
   // (Franco, 2026-08-28). The old comment said they "reach studio creation
   // where it already lives"; there was nowhere else.
   //
@@ -84,19 +84,19 @@ export function ScopeSwitcher({ collapsed }: { collapsed: boolean }) {
   const kindLabel = isOrg ? t('scopeOrganisation') : t('scopeStudio')
   const name = current.name || kindLabel
 
-  // BOTH SCOPES ARE BOXED; ONLY THE COLOUR DIFFERS (Franco, 2026-08-27).
+  // BOTH SCOPES ARE BOXED; ONLY THE COLOR DIFFERS (Franco, 2026-08-27).
   //
   // Studio scope was left deliberately unboxed at first, on the rule the deleted
   // indicator band followed: a badge on the DEFAULT case is noise rather than
   // information. That rule is right about badges and wrong about this control,
   // because it made the SHAPE change between scopes — and a control that changes
-  // shape is harder to learn than one that changes colour. Boxed in both, the
-  // eye finds the same object in the same place every time and reads the colour
+  // shape is harder to learn than one that changes color. Boxed in both, the
+  // eye finds the same object in the same place every time and reads the color
   // for which place it is.
   //
   // SAME WEIGHTS, DIFFERENT HUE. The two use identical opacities — the org in
   // amber, the studio in the product's own primary — so the control is one
-  // object that changes colour rather than two that look related.
+  // object that changes color rather than two that look related.
   //
   // The studio started fainter (`/20` border on a `/5` fill) and read as a
   // search field rather than an identity: too quiet to be a thing, present
@@ -113,7 +113,7 @@ export function ScopeSwitcher({ collapsed }: { collapsed: boolean }) {
   //
   // COLLAPSED IS THE OPPOSITE CASE, by the same reasoning: there is no label at
   // w-14, so the glyph is the only thing carrying the kind and it earns its
-  // place. A two-letter abbreviation was tried first and "OR" for Organisation
+  // place. A two-letter abbreviation was tried first and "OR" for Organization
   // reads as the conjunction.
   const Icon = isOrg ? Landmark : Building2
   const identity = collapsed ? (

@@ -7,7 +7,7 @@ import { type Affiliation } from '@linyup/shared'
 // as one function below and kept identical to the trigger's body. That is worth
 // something because every bug this area has had was in the derivation, never in
 // the plumbing: `org_ids` was read as if it meant `active_org_ids`, and a
-// federation's headline numbers counted last season's lapsed licence as current.
+// federation's headline numbers counted last season's lapsed license as current.
 //
 // There were THREE lists here until 2026-09-10. `org_status_ids` — one
 // `org:status` key per bucket — existed so the dashboard's status breakdown
@@ -46,16 +46,16 @@ function aff(over: Partial<Affiliation>): Affiliation {
 }
 
 describe('affiliation summary — the org-derived lists', () => {
-  it('a current licence lands in both', () => {
+  it('a current license lands in both', () => {
     const s = orgSummary([aff({})])
     assert.deepEqual(s.org_ids, ['fed'])
     assert.deepEqual(s.active_org_ids, ['fed'])
   })
 
-  it('a lapsed licence keeps the org but not its currency', () => {
+  it('a lapsed license keeps the org but not its currency', () => {
     // THE 2026-09-08 BUG, still pinned: `org_ids` is "ever", not "now". It is
     // also what `orgAdminMayReadContact` reads, so this is now a PERMISSION as
-    // well as a figure — an expired licence must keep the organisation able to
+    // well as a figure — an expired license must keep the organization able to
     // see the person it needs to chase.
     const s = orgSummary([aff({ status_id: 'expired', active: false })])
     assert.deepEqual(s.org_ids, ['fed'])
@@ -75,7 +75,7 @@ describe('affiliation summary — the org-derived lists', () => {
   })
 
   it('two affiliations of one org are one entry, whatever their statuses', () => {
-    // Real, because affiliation types share one status vocabulary: a licence
+    // Real, because affiliation types share one status vocabulary: a license
     // that is active and a grading merely requested is ONE person, on the books
     // once and current once.
     const s = orgSummary([
@@ -98,7 +98,7 @@ describe('affiliation summary — the org-derived lists', () => {
   })
 
   it('an affiliation with no status still puts the org on the books', () => {
-    // `org_ids` asks whether the organisation knows this person, and a row with
+    // `org_ids` asks whether the organization knows this person, and a row with
     // no status is still a row somebody created.
     const s = orgSummary([aff({ status_id: undefined as unknown as string })])
     assert.deepEqual(s.org_ids, ['fed'])

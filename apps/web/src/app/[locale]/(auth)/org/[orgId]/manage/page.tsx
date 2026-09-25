@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * THE ORGANISATION'S SETTINGS HUB — the org's answer to `/settings`.
+ * THE ORGANIZATION'S SETTINGS HUB — the org's answer to `/settings`.
  *
  * It exists because the rail alone was not reachable. The layout renders the
  * rail on rail ROUTES, which is a chicken and egg: standing on Studios or
@@ -19,7 +19,7 @@
  * by the layout), and on desktop the rail sits beside this, which says what the
  * section is for rather than duplicating the list next to it.
  *
- * IT IS FOR THE PEOPLE WHO RUN THE ORGANISATION. A member studio has no rail
+ * IT IS FOR THE PEOPLE WHO RUN THE ORGANIZATION. A member studio has no rail
  * (see the layout) and no row that leads here, so for them this was a hub with
  * nothing in it that stayed open to a typed URL and to the rail's own mobile
  * back-link. It sends them to the summary instead — navigation, not

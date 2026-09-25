@@ -79,7 +79,7 @@ export const inboundWebhook = onRequest(
     }
 
     // Extract email from the payload — try the most common shapes.
-    // Normalise first: a non-JSON content-type yields a string (or Buffer) body,
+    // Normalize first: a non-JSON content-type yields a string (or Buffer) body,
     // which must not become the {{payload.*}} root.
     const rawBody: unknown = req.body
     const body: Record<string, unknown> =

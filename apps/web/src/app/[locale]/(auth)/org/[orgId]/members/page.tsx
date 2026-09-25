@@ -441,7 +441,7 @@ export default function OrgMembersPage() {
       {/* Pending invitations — people who have been asked but have not accepted
           yet. Deliberately a SEPARATE list from the members table: an invitation
           is not a membership, and showing the two together is how a list starts
-          claiming an organisation has an admin it does not have. */}
+          claiming an organization has an admin it does not have. */}
       {isAdmin && pendingInvitations.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">

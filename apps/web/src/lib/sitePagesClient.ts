@@ -1,7 +1,7 @@
 'use client'
 
 // A site's PAGES as the builder reads and writes them — the same for a team
-// site (site_drafts/{teamId}/pages) and an organisation site
+// site (site_drafts/{teamId}/pages) and an organization site
 // (org_site_drafts/{orgId}/pages). Each builder's hooks file wraps these with
 // its own collection and owner field; nothing here knows which tenant it is.
 

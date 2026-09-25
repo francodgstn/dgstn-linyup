@@ -99,7 +99,7 @@ now spans both roots.
    functions deploy. Existing tenants have no `partner_apps` on their public profile, so the
    fitness-app question stays hidden for a live studio that sells through a partner until
    something writes it. **The previous note here was wrong**:
-   `backfill-public-subscription-types.ts` does NOT materialise `partner_apps` — it is guarded
+   `backfill-public-subscription-types.ts` does NOT materialize `partner_apps` — it is guarded
    (`!isActiveAggregator || alreadyPublic → continue`), so it writes nothing for a team whose
    aggregator types are already `public`, or that has none, and is a total no-op where
    everything is already public. The new script writes `partner_apps` with the SAME resolver

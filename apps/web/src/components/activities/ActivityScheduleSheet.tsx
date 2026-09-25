@@ -20,12 +20,12 @@
 // list.
 //
 // ── WHY IT READS SESSIONS AND NOT session_series ─────────────────────────────
-// A series is materialised into real `sessions` documents six months ahead
+// A series is materialized into real `sessions` documents six months ahead
 // (SERIES_HORIZON_MONTHS, rolled by the daily task), so the sessions collection
 // already contains every occurrence anyone can book. Expanding recurrence rules
-// here would be a second implementation of the one materialisation path, and it
+// here would be a second implementation of the one materialization path, and it
 // would disagree with the calendar the first time a single occurrence was
-// edited or cancelled. Reading what was actually written cannot drift.
+// edited or canceled. Reading what was actually written cannot drift.
 //
 // Note this is also why a PAUSED or ENDED series simply stops appearing: its
 // occurrences are in the past or were never generated. That is the truth the

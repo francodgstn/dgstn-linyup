@@ -87,7 +87,7 @@ function useOrgTeams(orgId: string) {
           // WHOLE PAGE.
           //
           // An org admin is NOT automatically a member of the studios in the
-          // organisation, and each of these reads is gated on membership rather
+          // organization, and each of these reads is gated on membership rather
           // than on org role: `teams/{id}` is member-or-creator (rules ~L462),
           // `team_members` is member-only, and `users/{id}` is own-profile-only
           // ("Restricts PII (email) exposure"). For a real federation — studios
@@ -95,7 +95,7 @@ function useOrgTeams(orgId: string) {
           //
           // They were unguarded inside a `Promise.all`, so ONE denial rejected
           // the whole query function and the page rendered "No teams have joined
-          // this organization yet." to an organisation that had two. It reads as
+          // this organization yet." to an organization that had two. It reads as
           // an empty org rather than as a failed read, which is why it was
           // reported as the org account having no team (Franco, 2026-08-27).
           //
@@ -134,19 +134,19 @@ function useOrgTeams(orgId: string) {
 
           // THE SAME NUMBER THE ORG DASHBOARD SHOWS, and it now asks the same
           // question — because two org pages printing different figures under
-          // the organisation's own word for affiliation is worse than either
+          // the organization's own word for affiliation is worse than either
           // being wrong alone. Two things changed here:
           //
           //   LIVE CONTACTS ONLY (`liveContactConstraints`). It counted every
           //   contact that was not in the bin, archived ones included, so a
           //   studio's column included the people who had left it.
           //
-          //   THIS ORGANISATION'S affiliation, and a CURRENT one. `has_active`
+          //   THIS ORGANIZATION'S affiliation, and a CURRENT one. `has_active`
           //   is true for a studio's own internal club membership and for a
           //   governing body the studio merely tracks; under a column headed
           //   with the org's own term that read as the federation's coverage.
           //   `active_org_ids` answers both halves — whose, and whether it is
-          //   still valid (`org_ids` would count a licence that lapsed last
+          //   still valid (`org_ids` would count a license that lapsed last
           //   season). It needs the backfill; see AffiliationSummary.
           try {
             const countSnap = await getCountFromServer(
@@ -447,8 +447,8 @@ export default function OrgTeamsPage() {
                     `Active {affiliationTerm.toLowerCase()}` — hardcoded English
                     in a four-locale product, and a `toLowerCase()` on arbitrary
                     tenant text that reads as a typo in German, where nouns are
-                    capitalised ("Aktive lizenz"). The word alone is unambiguous
-                    in a table of the organisation's own studios, and it is
+                    capitalized ("Aktive lizenz"). The word alone is unambiguous
+                    in a table of the organization's own studios, and it is
                     exactly what the dashboard figure showing this number is
                     captioned with. */}
                 <th className="text-right font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">{affiliationTerm}</th>

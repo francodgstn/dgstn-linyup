@@ -337,7 +337,7 @@ Apple/Google (see the roadmap §7), plus the prod key.
 
   **So batch config changes.** Three separate config commits on 2026-09-03
   produced three Android builds back to back, and because EAS runs them on a
-  queue they serialised — the third (the one actually wanted) started last. Each
+  queue they serialized — the third (the one actually wanted) started last. Each
   merge also strands the previously installed APK: OTA updates only reach a
   build whose fingerprint matches, so a tester on the older APK silently stops
   receiving them. One commit, one rebuild, one reinstall.

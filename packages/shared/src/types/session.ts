@@ -142,7 +142,7 @@ export interface SeatCounts {
  *  re-enters it forever.
  *
  *  An uncapped session never produces the edge (it was never full), and neither
- *  does a cancelled one (there is no seat to hand on). */
+ *  does a canceled one (there is no seat to hand on). */
 export function seatFreedEdge(
   before: SeatCounts | null | undefined,
   after: SeatCounts | null | undefined
@@ -161,7 +161,7 @@ export function seatFreedEdge(
  *  money or stored value — and deleting it would destroy a seat somebody has
  *  already paid for, then hand that seat to the next person in the queue.
  *
- *  Anything already RESOLVED (cancelled, no_show, rebooked) is equally not a
+ *  Anything already RESOLVED (canceled, no_show, rebooked) is equally not a
  *  hold: its seat has been accounted for by whoever resolved it, and deleting it
  *  a second time would decrement the same person's pending-booking counter
  *  twice. Only a still-pending claim qualifies.
@@ -493,7 +493,7 @@ export interface Session {
   // ── Recurring session fields ──
   seriesId?: string
   /** Present ⇒ this session is a lesson of a COURSE (`course_blocks/{id}`).
-   *  Stamped by the ONE materialisation path from the series, so it cannot be
+   *  Stamped by the ONE materialization path from the series, so it cannot be
    *  edited off a lesson. It is why the recurrence-edit and series-wide-cancel
    *  callables refuse: they delete future sessions, and these are paid for. */
   course_block_id?: string

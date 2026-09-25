@@ -45,7 +45,7 @@ you may act on it:
 
 - [**Member payments**](./payment-contact-studio.md) — how it works now
 - [**SaaS billing**](./payment-studio-linyup.md) — how it works now
-- [**Stripe catalogue**](./stripe-catalog.md) — how it works now
+- [**Stripe catalog**](./stripe-catalog.md) — how it works now
 - [**Promo codes**](./promo-codes.md) — how it works now
 - [**Multi-plan holdings**](./multi-plan-holdings.md) — work to do
 - [**Money triggers**](./automations-money-triggers.md) — how it works now
@@ -71,7 +71,7 @@ you may act on it:
 - [**AI insights**](./ai-insights.md) — how it works now
 - [**Contact AI summary**](./contact-summary.md) — how it works now
 
-## Organisations
+## Organizations
 
 - [**Org navigation**](./org-navigation.md) — how it works now
 - [**Member visibility**](./org-contact-visibility.md) — how it works now

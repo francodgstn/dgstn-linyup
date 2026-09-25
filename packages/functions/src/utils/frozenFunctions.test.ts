@@ -14,7 +14,7 @@
 // Removing a name from FROZEN is a deliberate act, done in the same PR as the
 // removal, with the evidence its group's comment asks for in the PR body.
 //
-// It reads SOURCE, so: line endings are normalised (Windows checkouts are
+// It reads SOURCE, so: line endings are normalized (Windows checkouts are
 // CRLF, CI is LF), comments are stripped (index.ts carries a commented-out
 // export), and the hand-kept list is RE-DERIVED where the source can say who
 // holds a name — a new webhook, task handler or mobile call site that nobody

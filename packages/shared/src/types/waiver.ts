@@ -129,7 +129,7 @@ export type PublishOutcome = 'silent' | 'require_resign'
  *
  * THREE INVARIANTS DEPEND ON THAT, and the export's storage decision rests on
  * all three: an acceptance stores only the HASH of the text, the one copy of
- * the text lives here, and the export materialises it. If any of these is ever
+ * the text lives here, and the export materializes it. If any of these is ever
  * relaxed, that decision must be revisited in the same change.
  *   • a version document is never updated (this docblock, and the rules);
  *   • a published document can never be deleted (firestore.rules);
@@ -231,7 +231,7 @@ export interface WaiverAcceptanceEvent {
 
   contactId: string
   /**
-   * `contactIdentityKey` of the normalised email at signing time. Survives the
+   * `contactIdentityKey` of the normalized email at signing time. Survives the
    * contact document being purged and recreated, and lets the export find a
    * person's history when their contact id changed.
    *
@@ -631,7 +631,7 @@ export interface WaiverEventFacts {
  *
  * The comparison must be made against a row RE-READ INSIDE THE SAME TRANSACTION
  * that writes. A signer write outside a transaction is a bug, not an
- * optimisation — Firestore's optimistic-concurrency detection is the only thing
+ * optimization — Firestore's optimistic-concurrency detection is the only thing
  * standing between these two sequences and a lost update.
  */
 export function waiverEventImprovesSigner(

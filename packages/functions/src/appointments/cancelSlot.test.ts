@@ -2,22 +2,22 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-// CANCELLING A LINK-MODE APPOINTMENT (decision 16) — source assertions on the
+// CANCELING A LINK-MODE APPOINTMENT (decision 16) — source assertions on the
 // ordering the callable rests on.
 //
 // Same technique and same reasoning as deskSettlement.test.ts: the property is
 // about ORDER inside a handler that takes the Admin SDK, a live Stripe client
-// and firebase-functions, and reversing it is invisible to every behavioural
+// and firebase-functions, and reversing it is invisible to every behavioral
 // test in this package.
 //
 // The defect: a manager cancels a link-mode appointment, the emailed Checkout
 // Session stays payable for the rest of its seven days, the client pays it, and
-// `handleAppointmentCheckout`'s case 3 RE-ACQUIRES the cancelled session and
+// `handleAppointmentCheckout`'s case 3 RE-ACQUIRES the canceled session and
 // confirms the booking. Somebody arrives to a locked door.
 
 const SRC = join(__dirname, '..')
 
-/** LF-normalised: CRLF on Windows, LF on CI, and these patterns span lines. */
+/** LF-normalized: CRLF on Windows, LF on CI, and these patterns span lines. */
 function read(rel: string): string {
   return readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')
 }
@@ -42,7 +42,7 @@ describe('cancelAppointmentSlot — the ordering that makes the cancellation saf
     assert.ok(
       closeAt < cancelAt,
       'cancelAppointmentSlot must close the Checkout Session before it cancels the session — ' +
-        'cancelling first leaves a window in which a payment re-acquires the cancelled slot'
+        'canceling first leaves a window in which a payment re-acquires the canceled slot'
     )
   })
 
@@ -52,7 +52,7 @@ describe('cancelAppointmentSlot — the ordering that makes the cancellation saf
     assert.ok(paidBranch > 0, "the 'paid' close outcome is no longer handled")
     assert.ok(
       paidBranch < cancelAt,
-      'the already-paid branch must return before the cancel transaction — cancelling a ' +
+      'the already-paid branch must return before the cancel transaction — canceling a ' +
         'just-paid appointment keeps the money with nothing said about it'
     )
     assert.match(handler, /paid_in_window/)
@@ -79,7 +79,7 @@ describe('cancelAppointmentSlot — the ordering that makes the cancellation saf
     // Moving a client write behind a callable swaps the rules for whatever the
     // callable checks. `assertManager` would read as the safe choice here and is
     // not: it would take the cancel button away from every coach who has been
-    // cancelling their own appointments all along.
+    // canceling their own appointments all along.
     assert.match(handler, /requireCapability\(uid, teamId, 'schedule\.manage'\)/)
     assert.match(handler, /callerIsAllScoped\(uid, teamId\)/)
     // The CALL, not the word — the gate comment names `assertManager` to explain

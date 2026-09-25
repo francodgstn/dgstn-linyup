@@ -35,7 +35,7 @@ export async function getPublicSignupSettings(): Promise<PublicSignupView> {
 }
 
 /** How many allow-list entries the settings page shows. It grows with every
- *  manual authorisation and never shrinks, so it is a LOG, not config — small
+ *  manual authorization and never shrinks, so it is a LOG, not config — small
  *  for a limited launch and unbounded in principle. */
 export const ALLOWLIST_PAGE = 200
 

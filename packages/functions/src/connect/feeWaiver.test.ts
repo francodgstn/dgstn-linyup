@@ -9,7 +9,7 @@
 //
 // So this file reads the SOURCE and pins the call sites, the same technique as
 // `connect/commitSites.test.ts` and for the same reason — it spans the
-// functions/shared boundary, which is where corrections stop travelling.
+// functions/shared boundary, which is where corrections stop traveling.
 //
 // It is deliberately a COUNT plus the NAMES. CLAUDE.md forbids a comment that
 // asserts a count of code sites, because a comment rots silently; a test is the
@@ -23,7 +23,7 @@ import { chargeHasApplicationFee, computePlatformFee, takeRatePercent } from '@l
 const SRC = join(__dirname, '..')
 
 function read(...parts: string[]): string {
-  // Normalised: a Windows checkout is CRLF, and the needles below span lines.
+  // Normalized: a Windows checkout is CRLF, and the needles below span lines.
   return readFileSync(join(SRC, ...parts), 'utf8').replace(/\r\n/g, '\n')
 }
 
@@ -137,7 +137,7 @@ describe('THE CENSUS — every site that computes a platform fee', () => {
     )
     assert.ok(
       access.includes("data.org_id as string | undefined"),
-      'the resolver no longer reads through to the organisation — a member studio of a ' +
+      'the resolver no longer reads through to the organization — a member studio of a ' +
         'comped org would be charged'
     )
   })

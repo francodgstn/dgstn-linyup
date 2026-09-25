@@ -12,7 +12,7 @@ Your schedule is built from two things. **Activities** describe what you offer, 
 
 Go to **Activities** and choose **New activity**.
 
-- **Name, description, colour and cover image** are what people see on your booking page.
+- **Name, description, color and cover image** are what people see on your booking page.
 - **Offer as** decides how it is booked:
   - **Class**: you put it on the calendar, and people book a seat.
   - **Appointment**: people pick a time from a coach's availability. See [Appointments & availability](/coaches/appointments/).

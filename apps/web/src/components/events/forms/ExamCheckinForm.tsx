@@ -53,7 +53,7 @@ export function ExamCheckinForm({
   // ABSENCE means "not examined"; 0 is a real result. Every scale's first level
   // is `value: 0` — the white belt, the entry grade — so testing `> 0` made the
   // one level a beginner actually earns unrecordable: it read back as nothing
-  // examined, greyed the button and lit the warning. The key being present is
+  // examined, grayed the button and lit the warning. The key being present is
   // the whole question, which is the same rule `isCheckinCompleted`'s exam arm
   // applies in @linyup/shared.
   const examined = (systemId: string) =>
@@ -68,7 +68,7 @@ export function ExamCheckinForm({
       {rankingSystems.length === 0 && (
         // WHERE the systems live decides where this sends them. An org-managed
         // studio has no editable ranking tab of its own — its systems come from
-        // the organisation — so "add them in Team settings" pointed at a screen
+        // the organization — so "add them in Team settings" pointed at a screen
         // that is read-only for exactly the tenants most likely to run exams.
         <p className="text-sm text-muted-foreground italic">
           {t('examNoSystems')}{' '}

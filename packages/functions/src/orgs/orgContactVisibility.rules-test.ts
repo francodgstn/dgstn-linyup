@@ -19,24 +19,24 @@ import {
   where,
 } from 'firebase/firestore'
 
-// Security-rules tests for WHICH CONTACTS AN ORGANISATION MAY READ.
+// Security-rules tests for WHICH CONTACTS AN ORGANIZATION MAY READ.
 //
 // The rule under test is `orgAdminMayReadContact`, and the thing it exists to
 // stop is a federation reading a member studio's whole address book. A studio
-// inside an organisation has contacts who are nobody's business but its own —
+// inside an organization has contacts who are nobody's business but its own —
 // someone training at the club spot, a lead from a fitness app, a person doing
 // an activity the studio runs under its own name. The old rule
 // (`isOrgAdminOfTeam`) admitted all of them on the strength of the STUDIO's
 // membership, so belonging to a federation meant handing it your customer list.
 //
 // THE AFFILIATION ROW IS THE DISCLOSURE. A contact becomes readable when — and
-// only when — they hold an affiliation issued by THIS organisation, in ANY
+// only when — they hold an affiliation issued by THIS organization, in ANY
 // status. The tests are as much about what that does NOT admit: a contact with
 // no row at all, a studio's own internal club membership, another federation's
 // member, and a contact whose summary predates the field.
 //
 // The `active_org_ids` / `org_ids` distinction is deliberate and is pinned
-// below: an EXPIRED licence still admits the org, because renewing it is
+// below: an EXPIRED license still admits the org, because renewing it is
 // precisely what an administrator opens the page to do. Narrowing to
 // `active_org_ids` would hide the people the federation most needs to chase.
 //
@@ -70,7 +70,7 @@ const asFedAdmin = () => testEnv.authenticatedContext('fedAdmin').firestore()
 /** The studio's own owner, whose current team is the studio. */
 const asStudioOwner = () => testEnv.authenticatedContext('studioOwner').firestore()
 
-describe('firestore.rules — an organisation reads only the contacts on its books', function () {
+describe('firestore.rules — an organization reads only the contacts on its books', function () {
   this.timeout(30_000)
 
   before(async () => {
@@ -193,12 +193,12 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     })
   })
 
-  it('reads a contact who holds this organisation’s affiliation', async () => {
+  it('reads a contact who holds this organization’s affiliation', async () => {
     await assertSucceeds(getDoc(doc(asFedAdmin(), 'contacts', 'affiliated')))
   })
 
   it('STILL reads one whose affiliation has lapsed — org_ids, not active_org_ids', async () => {
-    // The whole reason the permission uses `org_ids`. An expired licence is the
+    // The whole reason the permission uses `org_ids`. An expired license is the
     // case an administrator opens the roster to act on; hiding it would make the
     // renewal queue unreachable through the very page that exists to work it.
     await assertSucceeds(getDoc(doc(asFedAdmin(), 'contacts', 'lapsed')))
@@ -214,7 +214,7 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     await assertFails(getDoc(doc(asFedAdmin(), 'contacts', 'clubOnly')))
   })
 
-  it('cannot read a contact on another organisation’s books', async () => {
+  it('cannot read a contact on another organization’s books', async () => {
     await assertFails(getDoc(doc(asFedAdmin(), 'contacts', 'rivalMember')))
   })
 
@@ -226,7 +226,7 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     await assertFails(getDoc(doc(asFedAdmin(), 'contacts', 'noSummary')))
   })
 
-  it('an admin of the OTHER organisation reads none of this studio’s contacts', async () => {
+  it('an admin of the OTHER organization reads none of this studio’s contacts', async () => {
     const rival = testEnv.authenticatedContext('rivalAdmin').firestore()
     await assertFails(getDoc(doc(rival, 'contacts', 'affiliated')))
     await assertFails(getDoc(doc(rival, 'contacts', 'rivalMember')))
@@ -290,7 +290,7 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
   })
 
   it('REFUSES the unfiltered roster — the query this page used to run', async () => {
-    // Dropping the affiliation clause is the old behaviour, and it must fail
+    // Dropping the affiliation clause is the old behavior, and it must fail
     // rather than quietly return everyone.
     await assertFails(
       getDocs(
@@ -329,9 +329,9 @@ describe('firestore.rules — an organisation reads only the contacts on its boo
     )
   })
 
-  it('and that count reaches ONLY this organisation\u2019s rows', async () => {
+  it('and that count reaches ONLY this organization\u2019s rows', async () => {
     // The other half of the same rule. A studio's own club membership
-    // (`issuer: 'team'`) and a rival federation's licence live in this very
+    // (`issuer: 'team'`) and a rival federation's license live in this very
     // subcollection, and `org_id` is what keeps them out.
     await assertFails(
       getCountFromServer(

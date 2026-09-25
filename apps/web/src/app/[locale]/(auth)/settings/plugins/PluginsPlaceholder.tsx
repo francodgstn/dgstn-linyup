@@ -11,9 +11,9 @@ import { buttonVariants } from '@/components/ui/button'
  *
  * The rail's Plugins row used to link to /plugins directly, so one click in a
  * settings list took the studio out of the settings area without warning — the
- * rail vanished and the page it had been reading was gone. The catalogue stays
+ * rail vanished and the page it had been reading was gone. The catalog stays
  * a full page (see the redirect note in ./page.tsx for why), but the rail row
- * lands HERE first: a heading, one line saying what the catalogue is, and one
+ * lands HERE first: a heading, one line saying what the catalog is, and one
  * button. The extra click is the point — it is the studio choosing to leave.
  */
 export function PluginsPlaceholder() {

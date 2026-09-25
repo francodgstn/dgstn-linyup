@@ -1,9 +1,9 @@
 /**
- * RETIRED — see the note on the activities page. The catalogue's Plans tab
+ * RETIRED — see the note on the activities page. The catalog's Plans tab
  * holds the same list plus the prices, the usage limit and the activity
  * matcher, all of which this page could only link to.
  *
- * `?tab=affiliations` IS STILL HONOURED, as it was before: this was a two-tab
+ * `?tab=affiliations` IS STILL HONORED, as it was before: this was a two-tab
  * hub, affiliations moved to their own destination, and that query string is in
  * bookmarks and in the /offer/affiliations stub. Sending it on beats landing
  * somebody on a list of plans they did not ask for.

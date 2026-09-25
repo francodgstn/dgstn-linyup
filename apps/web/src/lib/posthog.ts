@@ -1,4 +1,4 @@
-// PostHog browser client — singleton initialised once on the client side.
+// PostHog browser client — singleton initialized once on the client side.
 // Import this only from client components or the PostHogProvider.
 // Server Components and API routes should not import this file.
 

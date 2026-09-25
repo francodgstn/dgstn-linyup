@@ -45,7 +45,7 @@ import {
 } from '@linyup/shared'
 import { buildCreditSummary } from './onCreditGrantWrite'
 
-/** Sorted-key serialisation, so a mirror read back from Firestore compares equal. */
+/** Sorted-key serialization, so a mirror read back from Firestore compares equal. */
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
   if (value !== null && typeof value === 'object') {

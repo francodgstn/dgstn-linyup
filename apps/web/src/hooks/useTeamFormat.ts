@@ -51,7 +51,7 @@ export function useTeamFormat(options: UseTeamFormatOptions = {}): RegionalForma
   const { team } = useAuth()
   const { zone = 'team', regional } = options
   const stored = regional ?? team?.regional ?? null
-  // Serialised rather than passed by reference: the team doc is a fresh object
+  // Serialized rather than passed by reference: the team doc is a fresh object
   // on every snapshot, so an identity dep would rebuild the Intl instances (and
   // their caches) on every unrelated team write.
   const storedKey = JSON.stringify(stored ?? {})

@@ -50,7 +50,7 @@ import {
 // STARTER library (`STARTER_PROGRAM_TEMPLATES`, added as the studio's own
 // editable copy) and a Clone action on any row. Clone deliberately works on an
 // INHERITED org template too: that is how a member studio takes the
-// organisation's standard agenda and adapts it, since the org's own copy is
+// organization's standard agenda and adapts it, since the org's own copy is
 // read-only here. Both go through `useSaveProgramTemplate` and both are gated
 // by the same cap, because both mint a template.
 
@@ -96,7 +96,7 @@ export function ProgramTemplatesManager({
   const open = (tpl: ProgramTemplate) => router.push(`${basePath}/${tpl.id}` as Route)
 
   /** The cap counts what this page OWNS — an inherited org template lives in
-   *  the organisation's collection and is not one of this studio's. */
+   *  the organization's collection and is not one of this studio's. */
   const ownedCount = templates.filter(isOwned).length
 
   /** One gate for both minting paths. */
@@ -275,7 +275,7 @@ export function ProgramTemplatesManager({
           >
             <LayoutTemplate className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             {/* Only an OWNED template opens. An inherited one lives in the
-                organisation's collection, which this page's editor route does
+                organization's collection, which this page's editor route does
                 not address — offering a click that 404s is worse than not
                 offering it. The row still says what is in it (days, items) and
                 the apply dialog on an event shows the rest. */}
@@ -309,7 +309,7 @@ export function ProgramTemplatesManager({
             {canEdit && (
               <div className="flex shrink-0 gap-1">
                 {/* Clone is the ONE action offered on an inherited org template:
-                    it is how a studio takes the organisation's agenda and makes
+                    it is how a studio takes the organization's agenda and makes
                     an editable copy of its own. */}
                 <Button
                   size="icon" variant="ghost"

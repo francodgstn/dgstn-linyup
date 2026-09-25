@@ -159,7 +159,7 @@ describe('SPACE WRITES FOR ITS OWN TENANT ONLY', () => {
     assert.match(src('space.ts'), /'permission-denied', 'This account is no longer active'/)
   })
 
-  it('the session helper still carries its own check, so this is defence and not the only line', () => {
+  it('the session helper still carries its own check, so this is defense and not the only line', () => {
     const helper = code(readFileSync(join(__dirname, '..', 'utils', 'contactSession.ts'), 'utf8'))
     const fn = helper.slice(at(helper, 'export async function requireContactSessionForTeam'))
     assert.match(fn, /c\?\.teamId !== teamId/)

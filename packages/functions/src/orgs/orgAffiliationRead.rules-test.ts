@@ -9,7 +9,7 @@ import {
 import { collectionGroup, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
 
 // Security-rules tests for the COLLECTION-GROUP read of contact affiliations —
-// the studio's own roster, and the issuing organisation's.
+// the studio's own roster, and the issuing organization's.
 //
 // BOTH Affiliations pages asked the same shape and NEITHER worked:
 //   collectionGroup('affiliations').where('teamId','==',myTeam)      (studio)
@@ -25,9 +25,9 @@ import { collectionGroup, doc, getDoc, getDocs, query, setDoc, where } from 'fir
 // member of the studios in the federation.
 //
 // The issuer's arm reads `org_id` off the affiliation itself, so what it admits
-// is exactly what this organisation granted. The tests below are as much about
+// is exactly what this organization granted. The tests below are as much about
 // what it does NOT admit: a studio's own club membership, a governing body the
-// studio merely tracks, another organisation's rows, an org_viewer, an
+// studio merely tracks, another organization's rows, an org_viewer, an
 // own-scoped coach, and any write at all.
 //
 // Runs against the isolated emulator only:
@@ -50,7 +50,7 @@ const STUDIO = 'memberStudio'
 
 let testEnv: RulesTestEnvironment
 
-describe('firestore.rules — an organisation reads the affiliations it issued', function () {
+describe('firestore.rules — an organization reads the affiliations it issued', function () {
   this.timeout(30_000)
 
   before(async () => {
@@ -175,7 +175,7 @@ describe('firestore.rules — an organisation reads the affiliations it issued',
     await assertFails(getDoc(doc(db, 'contacts', 'c1', 'affiliations', 'externalGrading')))
   })
 
-  it('a DIFFERENT organisation’s admin cannot read this org’s licence', async () => {
+  it('a DIFFERENT organization’s admin cannot read this org’s license', async () => {
     const db = testEnv.authenticatedContext('rivalAdmin').firestore()
     await assertFails(getDoc(doc(db, 'contacts', 'c1', 'affiliations', 'orgLicence')))
   })

@@ -45,7 +45,7 @@
  *
  * THE SLOT ALSO DECIDES MOBILE POSITION. A dialog carrying a `DialogBody` is
  * pinned near the TOP of a phone screen instead of being centered — see the note
- * beside that rule in `DialogContent`. So opting into the scroll behaviour and
+ * beside that rule in `DialogContent`. So opting into the scroll behavior and
  * opting into the mobile placement are one decision, made once, by the same
  * signal: this dialog can be tall.
  *

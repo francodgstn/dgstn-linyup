@@ -25,7 +25,7 @@
 // types/aiInsights.ts), checked here as well as on the card. It was the
 // `contact-summary` experiment until 2026-09-16. The install document is
 // owner-written, so a client cannot spend model calls on a module that is off;
-// `pluginIsActive` also sees an install made at the ORGANISATION.
+// `pluginIsActive` also sees an install made at the ORGANIZATION.
 //
 // ONE CALL, TWO AUDIENCES. The same reply carries the member RECAP
 // (`ai_summary.member`): two parts written to the person, which the
@@ -77,7 +77,7 @@ export const generateContactSummary = onCall(async (request) => {
   const contact = contactSnap.exists ? ({ ...contactSnap.data(), id: contactSnap.id } as Contact) : null
   if (!contact || contact.teamId !== teamId) throw new HttpsError('not-found', 'Contact not found.')
   // The rules' own-scope narrowing, repeated here because this write goes
-  // through a callable and not through them: a coach summarises their own
+  // through a callable and not through them: a coach summarizes their own
   // book only.
   if (!(await callerIsAllScoped(uid, teamId)) && !coachOwnsContact(contact, uid)) {
     throw new HttpsError('permission-denied', 'This contact is not in your book.')

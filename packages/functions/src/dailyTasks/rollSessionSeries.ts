@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // ─── The rolling horizon for recurring sessions ───────────────────────────────
 //
-// A series is materialised six months ahead ONCE, at creation, by the
+// A series is materialized six months ahead ONCE, at creation, by the
 // `generateRecurringSessions` callable. Nothing extended it. So a studio that
 // set "every Tuesday, ends never" had an empty calendar in month seven — taking
 // every public booking link with it — and nothing in the product could have
@@ -53,9 +53,9 @@ export interface SeriesRollPlan {
   /** Where the occurrence CALCULATION starts (see the count-series note). */
   calcFromMs: number
   /** Occurrences before this instant are discarded — they are already
-   *  materialised, or in the past. */
+   *  materialized, or in the past. */
   keepFromMs: number
-  /** The horizon: where materialisation stops. */
+  /** The horizon: where materialization stops. */
   toMs: number
 }
 
@@ -65,7 +65,7 @@ export interface SeriesRollPlan {
  *
  * - Only `status === 'active'` rolls. Paused, ended and soft-deleted series are
  *   left exactly as they are (matching hmd-lineup's original query).
- * - A COURSE'S SERIES NEVER ROLLS. Its meetings are a list, materialised in full
+ * - A COURSE'S SERIES NEVER ROLLS. Its meetings are a list, materialized in full
  *   at creation, so there is nothing to extend, and extending one would invent
  *   lessons nobody bought. The query's `status == 'active'` filter already keeps
  *   it out (a course series is `fixed`), which is what makes this free; the
@@ -201,7 +201,7 @@ export async function rollSessionSeries(
       // The horizon is written AFTER the sessions exist, and only to the instant
       // they were actually generated to. A series with nothing left to generate
       // (its end date falls inside the horizon) still records the horizon: we
-      // did materialise everything up to it — there was simply nothing there.
+      // did materialize everything up to it — there was simply nothing there.
       // A series that hit its per-run cap records the last occurrence it
       // actually wrote, so the next run resumes rather than believing a horizon
       // it never reached.

@@ -3,7 +3,7 @@
 /**
  * The state a plugin page shows when its plugin is not installed.
  *
- * IT IS A WAY IN, NOT A DEAD END. The asset register shipped with a bare grey
+ * IT IS A WAY IN, NOT A DEAD END. The asset register shipped with a bare gray
  * sentence, which was both a dead end and — because the page's copy had been
  * copied from Finance's namespace — named the WRONG plugin. A page that tells
  * you something is missing and leaves you to find the marketplace yourself is

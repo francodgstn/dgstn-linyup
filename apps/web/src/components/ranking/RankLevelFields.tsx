@@ -2,14 +2,14 @@
 
 // The editable controls for ONE ranking level, shared by both ranking editors.
 //
-// There are two — the organisation's (`org/[orgId]/ranking`) and the team's
+// There are two — the organization's (`org/[orgId]/ranking`) and the team's
 // (`settings/team`) — and they had already diverged: only one of them assigns a
 // new level a value that cannot collide with an existing one. Adding four more
 // visual fields to each separately would have doubled that. One component, used
 // twice.
 //
 // A club identifies a level the way its sport does, so all four ways sit here
-// together: a colour, a second colour for a split belt, an emoji (a swim
+// together: a color, a second color for a split belt, an emoji (a swim
 // school's sea animal), or the club's own uploaded artwork. Precedence when more
 // than one is set is decided by `rankLevelBadge` in @linyup/shared, never here.
 //

@@ -16,7 +16,7 @@
  * It also refreshes `teams/{id}/public_profile/{id}.ranking_systems` for every
  * team whose EFFECTIVE systems changed. That mirror is normally rebuilt by
  * `syncTeamPublicProfile` on a TEAM write, and its own header records that an
- * org-only write does not re-trigger it. An organisation's ladder gaining ids
+ * org-only write does not re-trigger it. An organization's ladder gaining ids
  * is exactly such a write, so without this step every member studio's public
  * mirror — and the member app, which reads it — would keep the id-less copy.
  * The one field is written here with the same shared resolver the sync uses,
@@ -99,7 +99,7 @@ async function main() {
     }
   }
 
-  // ── organisations ──────────────────────────────────────────────────────────
+  // ── organizations ──────────────────────────────────────────────────────────
   // Their filled systems are kept for the team loop below, which needs them to
   // rebuild each member studio's EFFECTIVE list for the public mirror.
   const orgSystems = new Map<string, RankingSystem[]>()
@@ -139,7 +139,7 @@ async function main() {
   }
 
   console.log(
-    `\n${dryRun ? 'Would write' : 'Wrote'}: ${changedOrgs.size} organisation(s), ${teamsWritten} team(s), ${mirrorsWritten} public mirror(s).`,
+    `\n${dryRun ? 'Would write' : 'Wrote'}: ${changedOrgs.size} organization(s), ${teamsWritten} team(s), ${mirrorsWritten} public mirror(s).`,
   )
 }
 

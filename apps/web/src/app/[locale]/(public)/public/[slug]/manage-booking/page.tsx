@@ -51,7 +51,7 @@ interface BookingDetails {
   availableSessions: AvailableSession[]
   canCancel: boolean
   canRebook: boolean
-  /** What cancelling returns — a lesson credit, a usage-window unit — and
+  /** What canceling returns — a lesson credit, a usage-window unit — and
    *  whether the seat was paid for (in which case nothing returns the money).
    *  Absent when the server predates the field; the copy then simply omits it
    *  rather than guessing. */
@@ -315,7 +315,7 @@ export default function ManageBookingPage() {
           <p className="text-sm font-medium">
             {t('cancelConfirm', { activity: activity.name, date: sessionDateStr })}
           </p>
-          {/* What cancelling costs and what it returns, at the moment of the
+          {/* What canceling costs and what it returns, at the moment of the
               decision — not in the mail that arrives afterwards. */}
           {willReturn.map((key) => (
             <p key={key} className="text-sm text-muted-foreground">

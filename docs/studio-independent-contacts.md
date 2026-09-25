@@ -8,11 +8,11 @@ order: 5
 # Coach-owned contacts
 
 **Status: DECIDED, LARGELY NOT BUILT (2026-09-08, Franco).** A coach who belongs to an
-organisation and also works for themselves gets **a second studio**, not a
+organization and also works for themselves gets **a second studio**, not a
 private partition inside the first. Recorded before implementation so the shape
 is agreed rather than discovered halfway. The two seams in "What we owe it later"
 are the roadmap and neither is built. Of the three defects in "What is wrong
-today", one — the silent organisation invitation — **shipped with this
+today", one — the silent organization invitation — **shipped with this
 document**, because it could undo the whole decision in two clicks; the other
 two are open, and the split calendar exists whether or not any of this ships.
 
@@ -30,7 +30,7 @@ Only one of them is hard:
 | | Who owns the client relationship | Shape |
 |---|---|---|
 | The club's business, on the org's books | HMD invoices or the club does; the person is a federation member | One studio. Already built. |
-| **The club's business, NOT the org's books** | **The club invoices; the person is nobody's member — a walk-in, a fitness-app lead, a personalised activity** | **One studio, and no affiliation row. See `docs/org-contact-visibility.md`.** |
+| **The club's business, NOT the org's books** | **The club invoices; the person is nobody's member — a walk-in, a fitness-app lead, a personalized activity** | **One studio, and no affiliation row. See `docs/org-contact-visibility.md`.** |
 | The coach's business, entangled | The coach invoices, but same room, same people, adjacent brand | The hard case — this document |
 | A separate business | Own name, own clients, own tax | Two studios. Never in doubt. |
 
@@ -50,7 +50,7 @@ studio owner or the org admin, because in that case they are entitled to it.
 
 ## The decision
 
-**A second studio — a second `teamId` — outside the organisation.** The coach
+**A second studio — a second `teamId` — outside the organization.** The coach
 sees both in the switcher (`TeamSwitcher.tsx:311`, which already offers "Create
 studio") and switches between them; the two tenants share nothing but the
 person.
@@ -68,7 +68,7 @@ about where the money goes.
 **Controllership is the second.** A self-employed coach's clients sit under a
 different data controller from the club: their own privacy notice, their own
 lawful basis for health data, their own subject-access obligations. Contacts in
-a tenant an org admin can read are contacts the organisation is processing with
+a tenant an org admin can read are contacts the organization is processing with
 no basis to.
 
 And worth stating plainly, because the product should not pretend otherwise:
@@ -87,15 +87,15 @@ flag inside a tenant that the studio owner, the org admin and the platform all
 administer is a **policy, not a boundary**. It would claim a separation that does
 not structurally exist. Narrowing `isOrgAdminOfTeam` is also not a local change —
 it is an unconditioned read disjunct wherever a member studio's data is exposed
-to its organisation in `firestore.rules` (grep it; contacts are one of several),
-and the organisation's own roster figures read through it.
+to its organization in `firestore.rules` (grep it; contacts are one of several),
+and the organization's own roster figures read through it.
 
-**A second studio that joins the organisation** ("the org sponsors its coaches'
+**A second studio that joins the organization** ("the org sponsors its coaches'
 personal studios") is the genuinely interesting variant and is **deferred, not
 rejected**. It would fix the economics — org tier, 0.5% take rate, shared places
 (`Place.scope: 'team' | 'org'` already exists), shared plugins — while keeping a
 real tenant boundary. It needs an explicit, consented posture at link time,
-because `org_id ⇒ plan 'organization'` (UX-35) means the organisation would be
+because `org_id ⇒ plan 'organization'` (UX-35) means the organization would be
 paying for a studio it cannot read. Revisit it as an org-tier product feature; do
 not arrive at it by accident, which today is exactly what could happen.
 
@@ -112,8 +112,8 @@ Nobody solves the middle case well, which is itself the finding.
   is this decision, on the member side — and Linyup already has it (below).
 - **SportsEngine** models org > club > team and puts private lessons *inside*
   the club. They answer the first case and do not model this one.
-- **General SaaS** — Stripe accounts under one login with an organisation for
-  roll-up, Shopify stores plus a Plus organisation, Xero's N orgs — consistently
+- **General SaaS** — Stripe accounts under one login with an organization for
+  roll-up, Shopify stores plus a Plus organization, Xero's N orgs — consistently
   puts a **person-level layer above tenants** and never a private compartment
   inside one. Google Workspace, Notion and Slack all give the owner reach;
   Slack's answer to "keep it separate" is a separate workspace.
@@ -166,7 +166,7 @@ matches (an 08:30–09:30 class and a 09:00 appointment collide in reality and n
 in the id), and when it does fire it refuses a booking because of a session the
 caller cannot see. Keep it as a backstop; do not mistake it for the fix.
 
-### ~~The organisation invitation does not say what the organisation will see~~
+### ~~The organization invitation does not say what the organization will see~~
 
 **FIXED 2026-09-08**, and recorded here because the reasoning outlives the diff.
 
@@ -176,13 +176,13 @@ populated a **"Select your team" dropdown from a `collectionGroup` query for
 `role == 'owner'`: every studio the caller owns, by name, in a plain select**.
 The `OrgInvite` copy said only "You have been invited to join your team to …".
 Nothing stated that accepting hands the chosen studio's entire contact book to
-the organisation's admins via `isOrgAdminOfTeam`, that it moves that studio onto
+the organization's admins via `isOrgAdminOfTeam`, that it moves that studio onto
 the org plan, or that only an org admin can undo it (`removeTeamFromOrg` asserts
 org admin, and there is no team-side leave).
 
 So the exact outcome this design exists to prevent was **two clicks away, framed
 as a free upgrade, with the wrong studio one line above the right one in a
-select**. The neighbouring `OrgMemberInvite.scopeNote` already did the right
+select**. The neighboring `OrgMemberInvite.scopeNote` already did the right
 thing for the other invitation ("This invitation is for you personally. It does
 not change anything about a studio you may run, and it does not affect
 billing."); the studio invitation had no equivalent.
@@ -190,7 +190,7 @@ billing."); the studio invitation had no equivalent.
 The page now states all three facts in a panel between the select and the accept
 button, plus a fourth line — shown only when the caller owns more than one
 studio, which is the only case where it is a choice — saying that a studio kept
-out of the organisation keeps its contacts to itself. Deliberately **neutral
+out of the organization keeps its contacts to itself. Deliberately **neutral
 styling, not a warning**: joining a federation is a legitimate, usually
 desirable act, and dressing it as a hazard would train people to click past it.
 The copy names what changes and lets the owner decide.
@@ -198,7 +198,7 @@ The copy names what changes and lets the owner decide.
 One thing it does NOT claim, because it was not verified: anything about what a
 **viewer**-role org member sees as distinct from an admin.
 
-It also does not claim the team's own subscription is cancelled, because it is
+It also does not claim the team's own subscription is canceled, because it is
 not — see the next entry, which that omission turned up.
 
 ### ~~A studio that was already paying is charged twice, and then torn down~~ — FIXED
@@ -211,12 +211,12 @@ Four steps, none of them guarded:
 
 1. A studio buys its own Coach or Studio plan. `saas_subscriptions/{teamId}` is
    live and so is the Stripe subscription.
-2. It accepts an organisation invitation. `acceptOrgInvitation` writes `org_id`,
+2. It accepts an organization invitation. `acceptOrgInvitation` writes `org_id`,
    `plan: 'organization'`, `plan_status` and clears `trial_ends_at` — and
    touches nothing else. `inviteTeamToOrg` checks only that the team is not
    already in an org. The one `teams/{teamId}` trigger is
    `syncTeamPublicProfile`, which is not billing. **So the old subscription
-   keeps invoicing while the organisation also pays.**
+   keeps invoicing while the organization also pays.**
 3. Every `customer.subscription.updated` from that still-live subscription
    carries a plan (`extractPlanFromSubscription` reads the price lookup key
    `linyup_{plan}_monthly`), and the webhook's team branch writes
@@ -254,7 +254,7 @@ to cancel first, in their own language.
 
 `active` deliberately includes a subscription already set to stop at period end:
 it is still live, the studio has paid through the period, and letting it in would
-hand the organisation a bill for the overlap. **A trial is not a subscription and
+hand the organization a bill for the overlap. **A trial is not a subscription and
 is not refused** — a trialing studio joining a federation is the ordinary path,
 and it is safe by construction, because no `saas_subscriptions/{teamId}` document
 exists until Stripe fires for a real one (a team's trial lives on `teams/{id}`;
@@ -267,10 +267,10 @@ end. Between them, `org_id` and a live own subscription should never coexist.
 **The webhook is guarded anyway, for the gap between them.** A refusal cannot
 stop an event arriving LATE for a subscription that ended before the studio
 joined. So the SaaS webhook's team branch now checks `org_id` first and, when the
-studio is billed by an organisation, writes nothing: not the plan (step 3), not
+studio is billed by an organization, writes nothing: not the plan (step 3), not
 the teardown (step 4), and not the add-on reconcile — which DELETES installs
 whose item the payload does not carry, and an ex-subscription's payload carries
-none, on a studio whose organisation is what grants its plugins.
+none, on a studio whose organization is what grants its plugins.
 
 Pinned by two tests in `packages/functions/src/orgs/orgTierRails.test.ts`, both
 verified to fail against the unguarded source. One of them asserts the guard does
@@ -288,7 +288,7 @@ Switching scope is a click, and the org navigation work already established that
 (`docs/org-navigation.md`). A coach alternating between the federation studio and
 their own all day is the same problem with higher stakes — a contact created in
 the wrong tenant is a data-protection error, not a nuisance. Whatever the
-switcher does for organisations should reach personal studios too.
+switcher does for organizations should reach personal studios too.
 
 ## What we owe it later
 
@@ -314,7 +314,7 @@ availability. Design constraints, each of which is a way to get it wrong:
   default.
 - **Server-side only.** The client has no rules path to another tenant's
   sessions and must not get one; the query belongs inside `listAvailability`
-  over the Admin SDK, authorised from `team_members/{uid}` in each team.
+  over the Admin SDK, authorized from `team_members/{uid}` in each team.
 
 ### 2. A person-level dashboard across the studios someone owns
 
@@ -323,9 +323,9 @@ High-level figures from every team the signed-in **uid** owns, in one place.
 - **It cannot be a client query.** Every read is pinned to
   `getUserCurrentTeam()` (`belongsToUserTeam`, `firestore.rules:254`), so a
   browser can only ever hold one tenant at a time. Two viable mechanisms: a
-  callable that authorises per team over the Admin SDK, or a per-uid rollup
+  callable that authorizes per team over the Admin SDK, or a per-uid rollup
   document written by a scheduled function. `docs/org-navigation.md` already
-  identifies the same missing machinery for organisations ("the home for them is
+  identifies the same missing machinery for organizations ("the home for them is
   a scheduled function writing an org rollup") — this is that, keyed by uid.
 - **Scope it by ROLE, not by membership.** "Owned" is the right word and it must
   be enforced: a coach-role membership in HMD must not put HMD's revenue on a

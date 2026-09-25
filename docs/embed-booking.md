@@ -80,7 +80,7 @@ page, which works. Same principle as `bookProps` in `components/site/sections.ts
 
 Every snippet already pasted in the wild opens booking links in a **new tab**
 (`EmbedSection`'s click delegation), because the app's own pages send
-`X-Frame-Options: DENY` and would fail silently in a frame. That behaviour must
+`X-Frame-Options: DENY` and would fail silently in a frame. That behavior must
 not change under a studio that never updates its page.
 
 So the panel is **opt-in by announcement**: `embed.js` tells each widget frame

@@ -9,12 +9,12 @@
  * studio owner to discover at filing time, so every surface that shows a figure
  * derived from the ledger says so where the figure is.
  *
- * A CHIP, NOT AN ICON. The plugin catalogue already marked finance beta — with a
+ * A CHIP, NOT AN ICON. The plugin catalog already marked finance beta — with a
  * hover-only flask glyph, which tells a reader who is already hovering something
  * they were not asking about. A caveat nobody reads is not a caveat.
  *
  * ONE definition of the word: `Plugins.statusBeta` is the same string the
- * catalogue uses. The hint underneath it is the finance-specific part, and it
+ * catalog uses. The hint underneath it is the finance-specific part, and it
  * says what the reader should DO — check before filing — rather than merely
  * naming the maturity level.
  */

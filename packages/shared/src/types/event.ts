@@ -6,7 +6,7 @@ import type { RankRef } from './team'
 // `other` IS THE CATCH-ALL, and it exists because there was nowhere else to
 // put a thing. Custom event types are TEAM-scoped
 // (`teams/{teamId}/event_types`, and nothing reads an org-level one), so an
-// organisation running an AGM, an open day or a demo night could not name it:
+// organization running an AGM, an open day or a demo night could not name it:
 // the only honest-looking slot was `seminar`, which asserts that training
 // happened.
 //

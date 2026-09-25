@@ -23,9 +23,9 @@ in): 33 passed, 0 skipped, 0 failed across `e2e/payments` and
 | Area | Flow | Spec |
 |---|---|---|
 | Member shop | New customer buys a product (login-first registration, direct charge, provisional contact confirmed) | `shop-product` |
-| | Declined card: refused on Stripe, back to "Payment cancelled", nothing recorded | `shop-product` |
+| | Declined card: refused on Stripe, back to "Payment canceled", nothing recorded | `shop-product` |
 | | Membership (monthly Starter): Stripe subscription, `member_subscriptions`, plan on the contact | `member-shop` |
-| | Course block (8-week course): enrolment | `member-shop` |
+| | Course block (8-week course): enrollment | `member-shop` |
 | | Online course (purchase tier): lifetime entitlement, opens in Space | `member-shop` |
 | | Gift card bought by a guest, then redeemed as a tender on a product (Stripe charged the difference) | `member-shop` |
 | | Space: payment history, "Manage billing in Stripe" opens the billing portal | `member-shop` |
@@ -44,8 +44,8 @@ in): 33 passed, 0 skipped, 0 failed across `e2e/payments` and
 | Studio to Linyup | Free studio upgrades to Coach on Stripe Checkout and lands back active | `saas-billing` |
 | | Billing portal, cancel at period end, resume | `saas-billing` |
 | | Paid add-on on a Coach subscription (the Stripe item is added) | `saas-billing` |
-| Organisation | A member studio's Billing says the organisation pays, in the studio's language | `org-billing` |
-| | An unpaid organisation is offered "Talk to us", never a checkout | `org-billing` |
+| Organization | A member studio's Billing says the organization pays, in the studio's language | `org-billing` |
+| | An unpaid organization is offered "Talk to us", never a checkout | `org-billing` |
 
 The earlier `promo-code-checkout.spec.ts` stays where it is.
 
@@ -112,18 +112,18 @@ The earlier `promo-code-checkout.spec.ts` stays where it is.
     staff cancel action; the dialog and the toast say so, and a failed cancel is
     a warning, not a failed refund. `docs/payment-contact-studio.md`.
 
-13. **The organisation "Subscribe" always failed at Stripe** (decided
+13. **The organization "Subscribe" always failed at Stripe** (decided
     2026-09-25: sales-led). `linyup_organization_monthly` is archived on the
     platform (`scripts/stripe-sync.ts` treats the tier as quoted), so the
     self-serve button failed with "Failed to create checkout session". An
-    unpaid organisation is now offered "Talk to us", the same door as the
-    Organisation card on a studio's plan picker. The checkout callable and its
+    unpaid organization is now offered "Talk to us", the same door as the
+    Organization card on a studio's plan picker. The checkout callable and its
     hook stay, for when the tier gets a live price.
 14. **Sign-up-only classes: sign in, then pay** (decided 2026-09-25). The
     drop-in door on a class behind "Only people who signed up with you" opens
     the site's contact sign-in (no registration: a stranger is pointed to the
     studio's sign-up instead) and then hands over to the member step, rather
-    than a guest form that recognised a member only by an exact email-and-name
+    than a guest form that recognized a member only by an exact email-and-name
     match.
 15. **A signed-in member continuing to payment got an empty guest form.** From
     the member step, "Continue to payment" opened the details step with blank

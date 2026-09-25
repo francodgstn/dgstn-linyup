@@ -35,7 +35,7 @@
 // signer row is updated only when `waiverEventImprovesSigner` says the event
 // strictly improves it, evaluated against a row RE-READ INSIDE THE SAME
 // TRANSACTION. A signer write outside a transaction is a bug, not an
-// optimisation. `rounds` is read + 1, absolute, never FieldValue.increment —
+// optimization. `rounds` is read + 1, absolute, never FieldValue.increment —
 // the same rule `bookings_count` and `usage_count` carry.
 
 import * as admin from 'firebase-admin'

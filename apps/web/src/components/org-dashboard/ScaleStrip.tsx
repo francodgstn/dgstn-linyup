@@ -7,7 +7,7 @@
  *
  * A studio's figures sit in a 2×2 rail in the right-hand column, BESIDE the
  * day, because a studio's dashboard is answering "what is happening now" and the
- * figures are the margin next to it. An organisation has no "now": no agenda, no
+ * figures are the margin next to it. An organization has no "now": no agenda, no
  * queue of bookings, nothing that changes between breakfast and lunch. What it
  * has is SCALE and COMPOSITION, so the numbers stop being the margin and become
  * the first thing on the page — one row, across the full width, above the
@@ -37,16 +37,16 @@ export interface ScaleStripProps {
   /** Studios invited that have not accepted — surfaced as the note, not as a
    *  second figure: it is a queue item, and the queue is its own panel. */
   invitedStudios: number
-  /** People ON THE ORGANISATION'S BOOKS — holding an affiliation it issued, in
+  /** People ON THE ORGANIZATION'S BOOKS — holding an affiliation it issued, in
    *  ANY status. NOT a headcount of the member studios' contacts, which the
-   *  organisation neither has nor may read (`docs/org-contact-visibility.md`).
+   *  organization neither has nor may read (`docs/org-contact-visibility.md`).
    *  `null` = not asked or denied. */
   onBooks: number | null
   /** Of those, the ones whose affiliation is valid RIGHT NOW. */
   affiliated: number | null
   /** Upcoming org-scope events. */
   events: number | null
-  /** The organisation's own word for "affiliation". */
+  /** The organization's own word for "affiliation". */
   affiliationTerm: string
   loading: boolean
   /** True for an `org_viewer`, whose role cannot read contacts at all. */
@@ -67,8 +67,8 @@ export function ScaleStrip({
   const t = useTranslations('OrgDashboard')
 
   // COVERAGE IS THE ONE DERIVED NUMBER ON THIS PAGE, and what it measures
-  // changed with its denominator: of the people on the organisation's books, how
-  // many hold a CURRENT licence. That is renewal health.
+  // changed with its denominator: of the people on the organization's books, how
+  // many hold a CURRENT license. That is renewal health.
   //
   // It used to divide by every contact of every member studio, which asked what
   // share of those studios' customers were the federation's — a question the

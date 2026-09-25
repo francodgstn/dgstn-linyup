@@ -42,13 +42,13 @@ describe('resolveTakeRate — a negotiated rate', () => {
     assert.equal(r.expiresAtMs, null)
   })
 
-  it("an organisation's rate reaches its studios", () => {
+  it("an organization's rate reaches its studios", () => {
     const r = resolveTakeRate({ tier: 'coach', orgFlags: rate(60), nowMs: NOW })
     assert.equal(r.rate.bps, 60)
     assert.equal(r.source, 'org_rate')
   })
 
-  it("the studio's own rate wins over its organisation's", () => {
+  it("the studio's own rate wins over its organization's", () => {
     const r = resolveTakeRate({ tier: 'coach', teamFlags: rate(90), orgFlags: rate(40), nowMs: NOW })
     assert.equal(r.rate.bps, 90)
     assert.equal(r.source, 'team_rate')
@@ -96,7 +96,7 @@ describe('resolveTakeRate — a negotiated rate', () => {
     assert.equal(ended.source, 'plan')
   })
 
-  it("an expired studio rate falls through to its organisation's", () => {
+  it("an expired studio rate falls through to its organization's", () => {
     const r = resolveTakeRate({
       tier: 'studio',
       teamFlags: rate(30, NOW - 1),

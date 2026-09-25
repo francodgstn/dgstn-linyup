@@ -91,13 +91,13 @@ export interface PluginEventType {
 
 /**
  * The DISCOVERY allow-list of a tenant-specific plugin — who may SEE it in a
- * catalogue. A plugin built for one customer (a bespoke customization bundle)
+ * catalog. A plugin built for one customer (a bespoke customization bundle)
  * should not advertise that customer's name to every other tenant browsing the
  * marketplace, so it names the tenants it belongs to and nobody else finds it.
  *
  * Two identifiers, either of which admits:
  *  - `teamIds` — a single studio.
- *  - `orgIds`  — an organisation, AND every team whose `org_id` is in the list.
+ *  - `orgIds`  — an organization, AND every team whose `org_id` is in the list.
  *    A member studio of an allowed org is treated as ALLOWED: an org-level
  *    customization bundle exists precisely so the org's studios can run it, and
  *    org membership already confers plugin access everywhere else in the product
@@ -120,7 +120,7 @@ export interface PluginEventType {
 export interface PluginAudience {
   /** Team ids that may discover this plugin. */
   teamIds?: string[]
-  /** Organisation ids that may discover it — INCLUDING their member teams. */
+  /** Organization ids that may discover it — INCLUDING their member teams. */
   orgIds?: string[]
 }
 
@@ -136,13 +136,13 @@ export interface PluginAudience {
  *  - `settings/event-types` — the "From plugins" section, which prints
  *    "Provided by {pluginId}" for every plugin event type in the registry.
  *  - `dashboard/DiscoverPanel` — the unsolicited suggestion list.
- *  - `org/{orgId}/plugins` — the org catalogue, which passes the ROUTE's org id
+ *  - `org/{orgId}/plugins` — the org catalog, which passes the ROUTE's org id
  *    rather than the signed-in team's.
  *
  * BUNDLE MEMBERSHIP IS A SECOND, ORTHOGONAL REASON A PLUGIN IS NOT OFFERED, and
  * it is not this function's. `pluginIsInstallable` (below) hides a member of a
  * container from the surfaces above that OFFER AN INSTALL — the marketplace grid,
- * its `?plugin=` deep link, `DiscoverPanel` and the org catalogue — because the
+ * its `?plugin=` deep link, `DiscoverPanel` and the org catalog — because the
  * container is the card a tenant installs. `settings/event-types` calls THIS
  * function and not that one on purpose: it offers no install, so it keeps showing
  * a member's event type and simply attributes it to the container.
@@ -206,7 +206,7 @@ export interface PluginManifest {
    * customer was built for; its manifest is written in the same change that
    * creates it, so naming the audience costs one line in a file already being
    * added. A data-backed list would need a collection, rules, an operator
-   * screen and a read on every catalogue render before the FIRST one worked —
+   * screen and a read on every catalog render before the FIRST one worked —
    * and a globally-readable "which plugin belongs to whom" document leaks the
    * customer names this field exists to hide, while a per-tenant grant document
    * spreads one plugin's audience across N tenants' data. If a plugin ever
@@ -268,7 +268,7 @@ export interface InstalledPlugin {
    * `online-courses` only, and server-written only. Set on the write that
    * deactivates the install, it tells `onInstalledPluginStatusChange` whether to
    * delete this team's `courses/{id}/public_profile/{id}` mirrors — the only
-   * thing that keeps a bought course openable. `true` on an ORGANISATION lapse
+   * thing that keeps a bought course openable. `true` on an ORGANIZATION lapse
    * (the studio's member paid for a course and a third party stopped paying),
    * absent/false everywhere else. Written by `downgradeTeamToFree`, which is the
    * only writer of an inactive install; see its comment for why it cannot go

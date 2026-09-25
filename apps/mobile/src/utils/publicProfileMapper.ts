@@ -34,7 +34,7 @@ export function mapPublicProfileMirror(teamId: string, data: Record<string, unkn
     whatsapp_opt_in_offered: data.whatsapp_opt_in_offered as boolean | undefined,
     // The team's coaching / gamification / ranking configuration — mirrored
     // here specifically so a contact session (which cannot read `teams/{id}`
-    // or `organizations/{id}`) still sees the studio's own customisation
+    // or `organizations/{id}`) still sees the studio's own customization
     // instead of silently falling back to defaults everywhere.
     performance_indicators: data.performance_indicators as TeamPublicProfile['performance_indicators'],
     goal_categories: data.goal_categories as TeamPublicProfile['goal_categories'],

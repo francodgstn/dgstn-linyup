@@ -6,11 +6,11 @@
 //
 // Two facts it has to hold, both of which it got wrong before these fixtures:
 //
-//   1. THE ORGANISATION IS THE PAYING ENTITY, not its studios. Joining an
-//      organisation sets a studio's `plan` to 'organization', and the reducer
+//   1. THE ORGANIZATION IS THE PAYING ENTITY, not its studios. Joining an
+//      organization sets a studio's `plan` to 'organization', and the reducer
 //      receives every studio AND the org as separate rows — so charging each row
 //      the tier's price counted a five-studio federation as six subscriptions.
-//   2. THE ORGANISATION'S PRICE IS NOT A SCALAR. It is per studio, so it cannot
+//   2. THE ORGANIZATION'S PRICE IS NOT A SCALAR. It is per studio, so it cannot
 //      be read off `PLAN_PRICING.baseMonthly` — that field is 0 for this tier,
 //      and a reducer trusting it reports every federation as free.
 //
@@ -38,7 +38,7 @@ function account(over: Partial<AccountMetricInput> = {}): AccountMetricInput {
   }
 }
 
-/** An organisation and its member studios, as the loaders actually produce them. */
+/** An organization and its member studios, as the loaders actually produce them. */
 function federation(studios: number, over: Partial<AccountMetricInput> = {}) {
   return [
     account({ type: 'org', plan: 'organization', contactCount: null, studioCount: studios, ...over }),
@@ -50,7 +50,7 @@ function federation(studios: number, over: Partial<AccountMetricInput> = {}) {
 
 const mrr = (inputs: AccountMetricInput[]) => computePlatformMetrics(inputs, NOW).mrr
 
-describe('platform MRR — the organisation tier', () => {
+describe('platform MRR — the organization tier', () => {
   it('bills the ORG for its studios, and the studios for nothing', () => {
     const m = mrr(federation(5))
     assert.equal(m.estimatedChf, 5 * ORG_PER_STUDIO.monthly)
@@ -92,7 +92,7 @@ describe('platform MRR — the organisation tier', () => {
 
   it('an org with no studios yet falls back to the minimum, never to zero', () => {
     // Absent/zero under-states rather than inventing — but an active
-    // organisation subscription is never worth CHF 0.
+    // organization subscription is never worth CHF 0.
     const m = mrr([
       account({ type: 'org', plan: 'organization', contactCount: null, studioCount: 0 }),
     ])
@@ -115,7 +115,7 @@ describe('platform MRR — the flat tiers are unchanged', () => {
   })
 
   it('an INDEPENDENT studio is still billed — `billedByOrg` is the only exemption', () => {
-    // The exemption keys on belonging to an organisation, not on the plan name,
+    // The exemption keys on belonging to an organization, not on the plan name,
     // so an ordinary studio cannot fall through it.
     assert.equal(
       mrr([account({ plan: 'studio', billedByOrg: false })]).estimatedChf,

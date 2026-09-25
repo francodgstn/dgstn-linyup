@@ -7,7 +7,7 @@
 //
 //   settings/booking      default size, in the PAGE HEADER, top-right, no
 //                         confirmation at all
-//   settings/roles        default size, bottom-LEFT, "Saved" in muted grey
+//   settings/roles        default size, bottom-LEFT, "Saved" in muted gray
 //   settings/team         size="sm",    bottom-LEFT, "Saved" in GREEN
 //   NoShowPolicyCard      size="sm",    bottom-RIGHT, a spinner, no "Saved"
 //
@@ -24,8 +24,8 @@
 //
 // ── THE CONFIRMATION IS PART OF THE CONTROL, NOT AN EXTRA ───────────────────
 // `saved` renders a muted "Saved" beside the button — muted, NOT green. Green
-// is a status colour in this app (a paid invoice, an active subscription); a
-// form doing what it was asked is not a status, and spending a semantic colour
+// is a status color in this app (a paid invoice, an active subscription); a
+// form doing what it was asked is not a status, and spending a semantic color
 // on it makes the genuine ones quieter.
 //
 // Callers that already toast on success can leave `saved` undefined; the label

@@ -8,7 +8,7 @@ import { COLOR_PRESETS } from '@/lib/colors'
 // verbatim (same markup, animation, shadow); generalized so the caller composes
 // the display strings (provider label, date/time line) and this stays
 // flow-agnostic. Fixed at max-w-2xl for BOTH flows regardless of the content
-// column width — the original class-flow behaviour.
+// column width — the original class-flow behavior.
 
 // Deterministic gradient from a name — the thumbnail fallback when an activity
 // has no image (appointments never do). Exported because BookingForm's activity

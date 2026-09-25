@@ -147,7 +147,7 @@ export function tarif595PositionsOn(dateIso: string): Tarif595Position[] {
 // first receipt of the new year. The settings page warns ahead of that.
 //
 // There is NO successor map: the new edition regroups methods (no 2027 row is
-// called "Pilates"), so a replacement is a judgement, proposed by
+// called "Pilates"), so a replacement is a judgment, proposed by
 // suggestTarif595Mappings as of the day after expiry and confirmed by the
 // studio — never derived here.
 

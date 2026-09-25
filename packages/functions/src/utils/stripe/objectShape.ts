@@ -108,7 +108,7 @@ export type StripeBalanceTransactionListResponse = Awaited<
   ReturnType<StripeInstance['balanceTransactions']['list']>
 >
 /** The CREATE params, not the object — the intro-offer coupon is minted with a
- *  DETERMINISTIC `id`, so `id` disappearing is a silent behaviour change (Stripe
+ *  DETERMINISTIC `id`, so `id` disappearing is a silent behavior change (Stripe
  *  would generate a random code and every retry would mint a new coupon). */
 export type StripeCouponCreateParams = NonNullable<
   Parameters<StripeInstance['coupons']['create']>[0]
@@ -238,7 +238,7 @@ export interface StripeSubscriptionCancellation {
    */
   details: SubscriptionCancellationDetails | null
   /**
-   * How Stripe expressed it. `'none'` is the ordinary "not cancelling" answer —
+   * How Stripe expressed it. `'none'` is the ordinary "not canceling" answer —
    * NOT a missing field — which is why this is not a `StripeFieldSource`.
    */
   expression: 'cancel_at' | 'cancel_at_period_end' | 'none'

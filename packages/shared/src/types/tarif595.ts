@@ -61,7 +61,7 @@ export interface Tarif595OfferingMapping {
   /** Personal training = the method's position PLUS the PT position (Qualitop FAQ
    *  4.6): a second line with the same quantity and a zero price. */
   ptPosition?: string | null
-  /** Only honoured for TARIF595_FREE_TEXT_CODE — every other description is the
+  /** Only honored for TARIF595_FREE_TEXT_CODE — every other description is the
    *  official text and must not be altered. */
   customName?: string | null
   /** For `unit: 'entry'`: how many entries the pass holds (e.g. 10). */
@@ -649,7 +649,7 @@ export function tarif595BulkIsTerminal(status: Tarif595BulkStatus): boolean {
 // bills (the unit) follows from the offering's own data — a monthly price is
 // billed per month, a credit pack per entry, a class per lesson — so it is a
 // deterministic default, computed here and applied to unmapped rows by the
-// settings page. WHICH method the offering is (the position) is a judgement
+// settings page. WHICH method the offering is (the position) is a judgment
 // the studio owns: the insurer reimburses per method its label body certified,
 // and a plan named "Unlimited" says nothing about whether it is fitness or
 // yoga. So the position is only ever PROPOSED (`suggestTarif595Mappings`, a

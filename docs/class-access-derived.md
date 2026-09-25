@@ -44,11 +44,11 @@ separate in the data (`accessRule.subscriptionTypeIds` vs the benefit's
 
 **Screen order** (Franco, 2026-09-17): the summary sentence, then the drop-in
 price, then the plan table, then the trial, then More options. The base price
-comes before what plans change about it — and a member price is greyed out until
+comes before what plans change about it — and a member price is grayed out until
 there is a drop-in to reduce, which is a puzzle if the plans come first.
 
 The pricing tab opens on one generated sentence — *"Unlimited monthly books free
-· everyone else pays CHF 25 · newcomers: first class free"* — and the catalogue
+· everyone else pays CHF 25 · newcomers: first class free"* — and the catalog
 chip says the same in two words (`Free for anyone`, `CHF 25 drop-in`,
 `Plan holders only`, `Members · CHF 25`).
 
@@ -67,7 +67,7 @@ chip says the same in two words (`Free for anyone`, `CHF 25 drop-in`,
 already behaved (`resolveClassGate`: `requirePlan = !paidDoor`), so the resolver
 change is a narrowing, not a new engine.
 
-## Behaviour that changes
+## Behavior that changes
 
 1. **A drop-in price now always opens the door.** "Members only + plan required +
    a drop-in price" (a price only discounted-plan holders could use) is no longer
@@ -120,7 +120,7 @@ Each stage leaves main green and deployable. Owners in brackets.
    the sign-up switch. The access cards and the "members without a plan" switch
    are gone; the draft holds `signupRequired` and nothing else about access, and
    both writers (`save` and the matcher's `onBeforeSave`) store through
-   `classAccessRuleFor`. The catalogue chip and the Pricing page's doors and
+   `classAccessRuleFor`. The catalog chip and the Pricing page's doors and
    health loop ask `classAccessFacts`; `gated_empty_allowlist` is now unreachable
    and a fixture pins that. Tab descriptions → tooltip (`4cbb3b2b`).
    PUBLIC surfaces still read the stored `accessRule.type`, which every writer

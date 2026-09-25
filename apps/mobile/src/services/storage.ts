@@ -68,7 +68,7 @@ export const StorageService = {
   },
 
   // The signed-in member's studio look (utils/tenantTheme.ts TenantBrand) —
-  // persisted so a cold start opens in the studio's colours. Cleared with auth.
+  // persisted so a cold start opens in the studio's colors. Cleared with auth.
   async saveTenantBrand(brand: object): Promise<void> {
     await AsyncStorage.setItem(TENANT_BRAND_KEY, JSON.stringify(brand));
   },

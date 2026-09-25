@@ -7,7 +7,7 @@
 // The section that used to render them as a separate billing list is gone
 // (2026-09-25): a plan and the billing that pays for it are one card now
 // (docs/multi-plan-holdings.md §5), drawn by the contact page's PlansList, which
-// uses these hooks. The confirm copy and the reasoning about why cancelling is
+// uses these hooks. The confirm copy and the reasoning about why canceling is
 // offered even while paused live there too.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

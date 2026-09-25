@@ -202,7 +202,7 @@ function accumulateCandidates(
  *
  * `listAvailability` returns one entry per (provider, activity, PLACE), and
  * this is the "place" half. Grouping on (provider, activity) alone merged a
- * coach's schedules at DIFFERENT places into one calendar labelled with
+ * coach's schedules at DIFFERENT places into one calendar labeled with
  * whichever schedule was read first, so a visitor picked a Tuesday believing
  * it was one place and `bookAppointment` put them in another, because booking
  * resolves the place from the availability that covers the start, not from
@@ -329,12 +329,12 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
     teamSnap.data()?.payments as EnabledTeam['payments']
   )
 
-  // ── THE STUDIO'S OWN TOGGLE, HONOURED WHERE IT ACTUALLY MATTERS ───────────
+  // ── THE STUDIO'S OWN TOGGLE, HONORED WHERE IT ACTUALLY MATTERS ───────────
   // `bookingSettings.appointmentsEnabled` ("Show bookable hours") had exactly
   // one web reader, `usePublicSurfaces`, imported only by `(auth)` routes — so
   // it governed what the STUDIO was told about its own surfaces and nothing a
   // visitor could reach. Switching it off hid nothing public (Franco,
-  // 2026-08-28: honour it on public routes).
+  // 2026-08-28: honor it on public routes).
   //
   // It is enforced HERE, at the callable, rather than on the page: this is the
   // one door every client goes through, so the web picker, the mobile app and

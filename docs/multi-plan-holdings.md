@@ -175,7 +175,7 @@ inside an array, compared whole by value, and a pure builder in
 
 The rule was "enforced by comparison, never by a job": every coverage reader
 called `planGrantIsCurrent` on the slot. That stays for every server and client
-reader — they compare `ends_at` live, generalised as `holdingIsCurrent(entry, now)`.
+reader — they compare `ends_at` live, generalized as `holdingIsCurrent(entry, now)`.
 
 Security rules cannot compare per list element. So `held_plan_type_ids` is only
 as fresh as the last recompute, and a **daily per-tenant job** (the
@@ -260,13 +260,13 @@ write until phase 3b, because the course rules read only the slot until then.
     today `handleInvoice` stamps the plan type and name on the payment but not
     the subscription id, so phase 2 adds it. Rows written before that fall back
     to matching by plan type.
-- **Current segment — one Plans list.** A card per holding, labelled by source
+- **Current segment — one Plans list.** A card per holding, labeled by source
   (assigned, bought, Stripe billing, credit pack), with its own status, next
   charge or end date, lessons left where relevant, and its own actions: end or
   change a grant; freeze, resume or cancel that one Stripe subscription; grant
   credits. Replaces the separate Subscription card, credits card and billing
   section. "Add plan" is the primary action.
-- **Everywhere a contact is summarised** — header chips, contacts-list badge,
+- **Everywhere a contact is summarized** — header chips, contacts-list badge,
   member Space — every held plan, with a +N overflow.
 - **Payments → Subscriptions**: one row per subscription, not per contact, so a
   second subscription's failed payment reaches "needs attention".
@@ -332,7 +332,7 @@ Each phase is its own PR and leaves `main` shippable.
 4. **UI.** The Current Plans list and dialogs; header, list, Space, Payments tab
    and dashboard; mobile profile.
    - **Built (2026-09-25): the Current Plans list.** One card per `held_plans`
-     entry (`contacts/[id]/PlansList.tsx`), labelled by source, its status only
+     entry (`contacts/[id]/PlansList.tsx`), labeled by source, its status only
      when not the normal one, and its own menu: freeze / resume / cancel THAT
      Stripe subscription, change / end THAT grant, grant credits. "Add plan"
      adds (`assignPlan`, `replace: false`) and never touches billing; the old
@@ -380,7 +380,7 @@ Each phase is its own PR and leaves `main` shippable.
      pass 05 (no made-up `active_subscriptions` row, which had also made the
      old import skip the grant) and pass 17 builds the lists.
      `repair-hmd-subscriptions` is deleted.
-   - The Contact type, field catalogue and filter subject no longer declare the
+   - The Contact type, field catalog and filter subject no longer declare the
      fields. The rules keep refusing client writes of them. Old documents may
      still carry them; nothing reads them, and `backfill:plan-grants` still
      imports one found on data written before this phase.
@@ -409,6 +409,6 @@ Each phase is its own PR and leaves `main` shippable.
   tenants (preserved across resets, so they need the backfill or a lead
   reseed) and the HMD migration data. Idempotent by grant id derived from the
   contact, dry run first.
-- **Pricing behaviour changes for members holding several plans** once the
+- **Pricing behavior changes for members holding several plans** once the
   resolver picks the best plan. Intended, but visible: it belongs in the release
   note.

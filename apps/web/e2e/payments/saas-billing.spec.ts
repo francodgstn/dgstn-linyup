@@ -10,7 +10,7 @@
  *   resume   → "Resume plan" → it renews again
  *
  * Every run starts the team from Free: a previous run's Stripe subscription is
- * cancelled on Stripe and the Firestore state reset, so the upgrade is real
+ * canceled on Stripe and the Firestore state reset, so the upgrade is real
  * each time.
  */
 import { test, expect, type BrowserContext, type Page } from '@playwright/test'

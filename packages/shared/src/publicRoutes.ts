@@ -93,7 +93,7 @@ export interface ContactUpdateParams {
   /**
    * A contact update LINK token (see types/contactLink.ts). Present instead of
    * `contactId`, never beside it: the token resolves the contact server-side,
-   * and putting an id in a pre-authorised URL is how the code-based flow was
+   * and putting an id in a pre-authorized URL is how the code-based flow was
    * once talked into authoring an update against an arbitrary contact.
    */
   t?: string
@@ -263,8 +263,8 @@ export function publicLocalePrefix(locale: string | null | undefined): string {
 }
 
 /**
- * An organisation site's path: `/public/org/{slug}` for its home, with a page's
- * segments after it. Organisation sites live one level under the team tree
+ * An organization site's path: `/public/org/{slug}` for its home, with a page's
+ * segments after it. Organization sites live one level under the team tree
  * (`/public/org/…`, a static segment Next resolves before the team `[slug]`),
  * and their pages sit directly under the org slug — there is no `/site` level,
  * because an org's public presence IS its site.
@@ -301,7 +301,7 @@ export function localizedPublicSubUrl<R extends PublicRoutable>(
 // ─── Locale-prefixed APP routes ──────────────────────────────────────────────
 //
 // Not every emailed link is a tenant route. An invitation to help run an
-// ORGANISATION belongs to no studio, so it has no `{slug}` and cannot go
+// ORGANIZATION belongs to no studio, so it has no `{slug}` and cannot go
 // through `publicPath` — but it has exactly the same locale problem, and
 // solving it a second way is how the two halves drift.
 //
@@ -326,10 +326,10 @@ export function localizedAppUrl(
 
 /**
  * `/org-member-invite/{orgId}/{token}` — where a person invited to help run an
- * ORGANISATION lands.
+ * ORGANIZATION lands.
  *
  * Deliberately NOT `/org-invite/{orgId}/{invId}`, which is the other
- * relationship entirely: that page asks a studio OWNER to enrol their studio
+ * relationship entirely: that page asks a studio OWNER to enroll their studio
  * and move its billing onto the org plan. An org admin who clicks "you've been
  * invited" must never arrive there. See the naming rule beside
  * `ORG_INVITATIONS_SUBCOLLECTION` in paths.ts.

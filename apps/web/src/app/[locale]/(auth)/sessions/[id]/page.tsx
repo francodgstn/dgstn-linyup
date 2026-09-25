@@ -173,7 +173,7 @@ interface ParticipantDoc {
  * The roster's "No subscription" chip was computed from the CONTACT alone — the
  * subscription snapshot against the activity's required types — and never
  * looked at the booking. So a member who paid a drop-in price, redeemed a gift
- * card, spent a class credit or used up a weekly allowance was labelled "holds
+ * card, spent a class credit or used up a weekly allowance was labeled "holds
  * no valid subscription", which at the door reads as "do not let this person
  * in".
  *
@@ -663,7 +663,7 @@ function AddParticipantsDialog({
                     // finds a booking only by token, so a seat entered here
                     // would render in her Space as a class she cannot cancel —
                     // worse than a coach's manual entry becoming
-                    // member-cancellable like any other booking (Franco).
+                    // member-cancelable like any other booking (Franco).
                     booking_token: generateBookingToken(),
                   }),
             },
@@ -941,7 +941,7 @@ export default function SessionDetailPage() {
   // Share the public booking link for THIS session. Native share sheet where the
   // platform has one (a coach on a phone sends it straight into WhatsApp), else
   // the clipboard. An ABSOLUTE url either way — a relative path is useless the
-  // moment it leaves the app. A cancelled share sheet throws AbortError, which is
+  // moment it leaves the app. A canceled share sheet throws AbortError, which is
   // not a failure and must not surface as one.
   async function shareBookingLink() {
     if (!teamSlug) return
@@ -1664,11 +1664,11 @@ export default function SessionDetailPage() {
                   on the page they are standing on.
                   `?session=` is the booking form's highest-precedence entry point and
                   degrades on its own to the slot list when the session can't be
-                  honoured (past, full, unpublished), so a link that has aged in
+                  honored (past, full, unpublished), so a link that has aged in
                   someone's inbox is never a dead end.
                   Slug, not team id: public routes are slug-addressed.
                   An ICON, at the bottom of the heading: sharing is occasional, and
-                  as a full-width labelled button in the action row it competed with
+                  as a full-width labeled button in the action row it competed with
                   "Add contact", which is the page's job. The copied state is the
                   only feedback there is, so it stays visible (a green check), not
                   just a title attribute. */}

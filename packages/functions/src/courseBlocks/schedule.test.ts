@@ -145,7 +145,7 @@ describe('a course schedule', () => {
     assert.ok(!meetings.map(dayOf).includes('2025-10-08'))
   })
 
-  it('normalises the stored pattern, so what is saved is Timestamps and not wire maps', () => {
+  it('normalizes the stored pattern, so what is saved is Timestamps and not wire maps', () => {
     const wire = (d: Date) => ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0 })
     const { recurrence } = resolveCourseSchedule({
       kind: 'repeating',

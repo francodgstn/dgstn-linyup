@@ -161,7 +161,7 @@ export function SaveBarProvider({
             {dirty ? (
               <>
                 <span className="flex items-center gap-2 text-sm font-medium" aria-live="polite">
-                  {/* The Linyup violet, and the one spot of colour on the bar:
+                  {/* The Linyup violet, and the one spot of color on the bar:
                       it says "something here is yours and not stored yet". */}
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />

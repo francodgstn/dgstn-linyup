@@ -60,7 +60,7 @@ export const startConnectOnboarding = onCall(async (request) => {
   let model: ConnectOnboardingModel = team.payments?.connectModel ?? 'managed'
 
   if (!accountId) {
-    // The onboarding model is historical and branches no behaviour — see the note
+    // The onboarding model is historical and branches no behavior — see the note
     // on ConnectOnboardingModel in @linyup/shared. The UI no longer sends one, so
     // absent means 'managed'; a value that IS sent is still validated, so an older
     // client cannot persist a junk string onto the account document.
@@ -158,7 +158,7 @@ export const getConnectStatus = onCall(async (request) => {
   // take-rate from the CLIENT's plan, which for a comped studio names a fee the
   // platform does not charge — the studio then reconciles its Stripe payouts
   // against a rate that was never taken. The waiver is server state (it can come
-  // from the studio's organisation), so the answer travels with the status
+  // from the studio's organization), so the answer travels with the status
   // rather than being recomputed in the browser: one resolver, not two.
   // The same holds for a NEGOTIATED rate, which the browser cannot know at all.
   const feeWaived = team.feeWaived
@@ -219,7 +219,7 @@ export const getConnectStatus = onCall(async (request) => {
 //
 // THE ONE REFUSAL. A live subscription on the account would go on charging a
 // member every month into an account this product no longer watches — nobody
-// would see the money and nobody would see it stop. Those are cancelled first,
+// would see the money and nobody would see it stop. Those are canceled first,
 // from the contact page, which is where the control is.
 export const disconnectConnectAccount = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Authentication required')

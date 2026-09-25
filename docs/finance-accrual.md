@@ -282,7 +282,7 @@ deferred-income / owner-loan accounts are exactly for this), and hand-roll
 monthly releases or depreciation with custom accounts + recurring templates if
 wanted. This plan AUTOMATES and COMPUTES that; it does not newly enable it.
 
-**Migrated tenants (HMD):** the migration carries the subscription catalogue
+**Migrated tenants (HMD):** the migration carries the subscription catalog
 and each contact's plan — NOT paid-until dates or credit balances. So a
 migrated tenant's pre-migration obligations enter the computed opening as
 manual adjustment lines (the flow supports that by design). Optional lever,

@@ -103,7 +103,7 @@ async function fetchSourceUsers(sourceCredsPath: string): Promise<{
   const creds     = JSON.parse(readFileSync(sourceCredsPath, 'utf8')) as { project_id: string }
   const projectId = creds.project_id
 
-  // Borrow the access token from the already-initialised source app credential
+  // Borrow the access token from the already-initialized source app credential
   const credential = getApp('source').options.credential as {
     getAccessToken(): Promise<{ access_token: string }>
   }
@@ -111,7 +111,7 @@ async function fetchSourceUsers(sourceCredsPath: string): Promise<{
   const allUsers: IdentityUser[]   = []
   // The authoritative source, asked once. The per-page read below stays as a
   // fallback: it costs nothing, and an API that starts returning it there again
-  // would be honoured without a change here.
+  // would be honored without a change here.
   let hashConfig: HashConfig | undefined = await fetchHashConfig(projectId, credential)
   let pageToken:  string | undefined
 

@@ -1,6 +1,6 @@
 ---
 title: Org navigation
-description: Organisation navigation — design
+description: Organization navigation — design
 status: living
 area: orgs
 order: 1
@@ -19,7 +19,7 @@ ctrlKey + altKey on the layouts this product is built for.
 
 - **Ten org pages had no `<h1>` of their own** — the deleted tab strip was their
   only title. The layout supplies the destination heading; the two pages that
-  always had one say so in the catalogue (`ownsHeader`) rather than being
+  always had one say so in the catalog (`ownsHeader`) rather than being
   remembered.
 - **The rail needed a front door, and `/org/{id}/manage` is it.** The rail
   rendered only on rail ROUTES, so from Studios or Events there was no rail and
@@ -32,9 +32,9 @@ ctrlKey + altKey on the layouts this product is built for.
 - ~~**The mobile rail is a disclosure, not an index page.**~~ Superseded by the
   above; the disclosure existed only because that route did not exist yet.
 - **(original note) The mobile rail is a disclosure, not an index page.** The studio rail can be
-  an index because `/settings` is a real route that lists it. The organisation
+  an index because `/settings` is a real route that lists it. The organization
   has no equivalent — `/org/{id}` redirects straight to the studios list — and
-  inventing one would put a second "organisation home" in the reader's head for
+  inventing one would put a second "organization home" in the reader's head for
   a scope that already has one.
 - **`NavRail` was extracted** so both rails are one markup. It resolves nothing:
   labels, gates, the active rule and the pin all differ between the two, and the
@@ -56,7 +56,7 @@ ctrlKey + altKey on the layouts this product is built for.
   outside the gated block and stayed studio-scoped: the "⋯" menu's destinations
   (`/settings` and the plugin marketplace — so from an org, both landed in the
   studio's), the pinned head-pair tiles (two studio destinations ABOVE the org's
-  own rows), and the quick-search catalogue, which indexed destinations whose
+  own rows), and the quick-search catalog, which indexed destinations whose
   rows were not even on screen.
 - **The QR is hidden in org scope, not repointed** — it reads a studio's public
   profile and an org has no equivalent document, so a repointed QR would be some
@@ -64,14 +64,14 @@ ctrlKey + altKey on the layouts this product is built for.
 
 **Revised 2026-09-07 — the scope gained a front door:**
 
-- **`/org/{id}/dashboard` is home, and `orgLandingPath` sends an organiser
+- **`/org/{id}/dashboard` is home, and `orgLandingPath` sends an organizer
   there.** The landing was the roster, for the honest reason that nothing better
-  existed: `/org/{id}/teams` was the only page ABOUT the organisation as a whole,
+  existed: `/org/{id}/teams` was the only page ABOUT the organization as a whole,
   and a roster answers "who is in it", never "how is it doing". Every scope in
-  this product now opens on the thing that summarises it.
+  this product now opens on the thing that summarizes it.
 - **It is not the studio dashboard with a wider `where` clause**, and the reason
   is structural rather than aesthetic. A studio's dashboard is a DAY — agenda,
-  queue, trends — and an organisation has no day: it runs no sessions and takes
+  queue, trends — and an organization has no day: it runs no sessions and takes
   no bookings, its studios do. What it has is scale, composition and a queue of
   invitations, so the figures LEAD at full width (a studio's sit in a 2×2 rail
   beside the agenda) and exactly one block wears the accent frame, because a
@@ -130,11 +130,11 @@ compressed into a tab strip.
 
 ## The decisions
 
-**1. An organisation is a SCOPE you switch into, not a section beside the team.**
+**1. An organization is a SCOPE you switch into, not a section beside the team.**
 
 Nearly every org concept collides by name with a team one: Events, Places,
 Website, Plugins, Members and Settings all exist at both levels. Two sidebar rows
-called "Events" never stop being ambiguous, whatever they are labelled; one
+called "Events" never stop being ambiguous, whatever they are labeled; one
 unmistakable scope indicator resolves it once.
 
 The cost is a click when moving between HMD and Basel — which the org admin who
@@ -150,12 +150,12 @@ made the strip eleven long in the first place.
 
 ## The information architecture
 
-**Org sidebar rows** — opened while doing the organisation's work:
+**Org sidebar rows** — opened while doing the organization's work:
 
 (The table below is the ORIGINAL design. The rows and the rail have both moved
 since — Affiliations and Places came out of the rail, the rail's three groups
 collapsed to one, and Dashboard was added as home. `lib/org-nav.ts` is the
-catalogue and the only authority; the revision notes above say why each change
+catalog and the only authority; the revision notes above say why each change
 happened.)
 
 | Row | Today |
@@ -174,10 +174,10 @@ happened.)
 | Shared resources | Places |
 | Administration | Members, Plugins, Billing, Settings |
 
-The grouping is not cosmetic: the first group is what an organisation imposes on
+The grouping is not cosmetic: the first group is what an organization imposes on
 its member studios (and is exactly what `Organization.ranking_systems` and the
 org affiliation types already override downward), the second is what it lends
-them, the third is about the organisation itself.
+them, the third is about the organization itself.
 
 ## What this reuses
 
@@ -185,10 +185,10 @@ The point of the design is that almost nothing is new:
 
 - the sidebar shell, its section rendering, collapse mode, and mobile drawer;
 - `SettingsRail`'s grouping, search, pin affordance and mobile-as-index
-  behaviour;
+  behavior;
 - `TeamSwitcher` (inside `UserMenu`) becomes the scope switcher — it already
   lists the studios a user belongs to, and `useOrgLinks` already supplies the
-  organisations that today render as the sidebar's "Organizations" group;
+  organizations that today render as the sidebar's "Organizations" group;
 - every existing `/org/{orgId}/*` route, unchanged, so there is no redirect map
   and no link rot.
 
@@ -238,7 +238,7 @@ very platform this design is written for. Most of the Ctrl+Shift+letter space is
 similarly spoken for — DevTools, private window, reopen-closed-tab, hard reload —
 and a few of those the browser will not surrender to `preventDefault()` at all.
 
-**Two chords survive, and the pick is a judgement call.** Both are free in
+**Two chords survive, and the pick is a judgment call.** Both are free in
 Chrome, Edge and Firefox on Windows, and both are letters, which matters:
 
 | Chord | For | Against |
@@ -291,7 +291,7 @@ Three details decide whether it feels right:
 - **Nav search does not index org destinations.** The sidebar search groups
   pages and settings; org pages should join it once they are real nav items,
   otherwise the switcher becomes the only way in.
-- **Multiple organisations** are allowed by the model though HMD is the only one
+- **Multiple organizations** are allowed by the model though HMD is the only one
   today. The switcher handles this by construction; the sidebar-section
   alternative would not have.
 - **Mobile.** The rail already knows how to be an index on small screens. The org

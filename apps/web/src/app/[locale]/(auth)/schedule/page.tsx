@@ -260,7 +260,7 @@ type EventForm = z.infer<typeof eventSchema>
  * Sessions in an EXPLICIT window.
  *
  * This used to be `useAllSessions(teamId, year, month)`, which hard-coded
- * `[month-1, month+2)` — right for a month grid that wants its neighbours
+ * `[month-1, month+2)` — right for a month grid that wants its neighbors
  * prefetched, and the reason the LIST could never show more than three months
  * (UX-64): the list was reading the calendar's cursor window. A studio planning
  * a season had to page the calendar forward one month at a time and read the
@@ -325,7 +325,7 @@ function useActivities(teamId: string | null) {
  *  field Firestore cannot combine with the first. */
 const EVENT_LOOKBACK_DAYS = 31
 
-/** The team's events, and its organisation's, overlapping the visible window.
+/** The team's events, and its organization's, overlapping the visible window.
  *
  *  WINDOWED LIKE THE SESSIONS BESIDE THEM. This read every event the team had
  *  ever held, on every calendar open, while `useSessionsInRange` right above it
@@ -776,7 +776,7 @@ function ListItemRow({
                 <Badge variant="secondary" className="text-xs shrink-0">
                   {tS(`type_${s.activityType ?? 'class'}` as Parameters<typeof tS>[0])}
                 </Badge>
-                {/* Labelled, not bare — the pattern and end date live one click
+                {/* Labeled, not bare — the pattern and end date live one click
                     away in the peek sheet, but the glyph must at least say what
                     it means. */}
                 {s.seriesId && (
@@ -925,7 +925,7 @@ function ListItemRow({
 /**
  * "Still filling in" — the visible half of the background series generation.
  *
- * It also owns the REFRESH: while a series is materialising, the sessions
+ * It also owns the REFRESH: while a series is materializing, the sessions
  * query is invalidated on every tick, so the calendar grows as the occurrences
  * land instead of waiting for the studio to reload. When the list empties, one
  * final invalidation picks up whatever arrived after the last tick.
@@ -1114,7 +1114,7 @@ export default function CalendarPage() {
   //
   // Selecting several coaches meets the calendar's own lane cap, and THE CAP
   // WINS: SessionsCalendar draws one sub-lane per coach up to MAX_AVAIL_LANES
-  // (3), coaches past the third share the last lane with their own colour, and
+  // (3), coaches past the third share the last lane with their own color, and
   // the legend says "+N more". That is not a new case introduced here — an
   // unfiltered team with four coaches already renders exactly this — so a
   // five-coach selection degrades the way the unfiltered week already does.
@@ -1295,7 +1295,7 @@ export default function CalendarPage() {
               calendar and hunting for it (UX-67). Peer of Bookable hours: both are
               the scheduling reference data this page consumes, both are edited
               from here. Label hidden below `sm` only — the icon is a map pin next
-              to a labelled sibling, so it does not have to carry the meaning
+              to a labeled sibling, so it does not have to carry the meaning
               alone on a narrow screen.
               It now opens a SIDE SHEET, for the reason its sibling above already
               gives: the moment a room is needed is the moment somebody is
@@ -1331,7 +1331,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* A recurring series commits on its own doc and materialises behind it
+      {/* A recurring series commits on its own doc and materializes behind it
           (SessionFormDialog). Say so, or the classes that have not landed yet
           read as a save that half-worked. */}
       <GeneratingSeriesNotice teamId={currentTeamId} />
@@ -1543,9 +1543,9 @@ export default function CalendarPage() {
           has no coach to be scoped by. Both can subtract everything here and
           add nothing.
 
-          The studio's own events and its organisation's arrive together (see
+          The studio's own events and its organization's arrive together (see
           `useEventsInRange`), which is what makes the timeline's by-owner banding
-          worth having: the organisation's dates are the fixed ones to plan
+          worth having: the organization's dates are the fixed ones to plan
           around. */}
       {view === 'planning' && (
         <EventsTimeline

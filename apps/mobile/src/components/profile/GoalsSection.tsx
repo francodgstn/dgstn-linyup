@@ -44,7 +44,7 @@ const statusLabel = (t: Translate, status: GoalStatus): string => {
 // (FirestoreService.getGoalCategories). They are NOT the check-in axes, which
 // say how someone is doing; the two lists were briefly merged and are separate
 // again — see the header of packages/shared/src/types/goal.ts. The axes are
-// still loaded here, for one job only: labelling a goal's `from_dimension`
+// still loaded here, for one job only: labeling a goal's `from_dimension`
 // provenance chip, which records the axis a goal was created FROM.
 
 function formatGoalDate(value: any): string {

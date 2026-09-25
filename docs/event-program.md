@@ -84,7 +84,7 @@ served badly: a studio writing its standard camp agenda before any camp exists
 had to invent an event, build on it, save, and delete the event again. It also
 holds the name and description, which is why there is no rename dialog.
 A studio that applies an **org** template and saves it back produces its own
-**team** template — the rules refuse a club write to the organisation's copy.
+**team** template — the rules refuse a club write to the organization's copy.
 
 ### Starter library + cloning
 
@@ -110,7 +110,7 @@ text like every other program field — see the "Never translated" list in
 `docs/site-translations.md`. The surrounding UI chrome is translated; the
 library entries are seeded in the source language and renamed on clone. Their
 well-formedness (valid times, tracks that exist, complete day coverage, clean
-materialise + round-trip) is pinned by `STARTER_PROGRAM_TEMPLATES` tests in
+materialize + round-trip) is pinned by `STARTER_PROGRAM_TEMPLATES` tests in
 `packages/functions/src/events/programTime.test.ts`.
 
 ## Org events
@@ -119,7 +119,7 @@ Org-scoped events (`scope: 'org'`, `teamId` null, `orgId` set) are first-class.
 Two things make that work:
 
 - **Every program item carries a denormalised tenant stamp** (`teamId`/`orgId`/
-  `scope`). Rules authorise from the stamp, so an org event — which has no
+  `scope`). Rules authorize from the stamp, so an org event — which has no
   `teamId` — works by construction.
 - `ProgramTab` is **tenant-agnostic**: it reads the tenant off the `Event`
   document, never from team context, so the team and org event pages mount the
@@ -180,9 +180,9 @@ hand-built, so `packages/functions` can emit the same links in email.
 | `/public/{slug}/events` | A studio's published events **plus its parent org's** |
 | `/public/{slug}/events/{eventId}` | Event + program, as the handout |
 | `/public/{slug}/events/{eventId}/print` | The printable handout |
-| `/public/org/{slug}/events` | An organisation's own published events |
-| `/public/org/{slug}/events/{eventId}` | The same, under the organisation |
-| `/public/org/{slug}/events/{eventId}/print` | The organisation's printable handout |
+| `/public/org/{slug}/events` | An organization's own published events |
+| `/public/org/{slug}/events/{eventId}` | The same, under the organization |
+| `/public/org/{slug}/events/{eventId}/print` | The organization's printable handout |
 
 Staff print from the Program tab (**Print / PDF**), at `/events/{id}/print` or
 `/org/{orgId}/events/{id}/print`. Those read the event's own documents rather
@@ -205,7 +205,7 @@ page *and* on every member club's page.
 
 ### Two renderers: the working view and the handout
 
-`ProgramTimeline` is the **working** view — cards, coloured track bars, edit
+`ProgramTimeline` is the **working** view — cards, colored track bars, edit
 affordances — for the people building the agenda in the Program tab.
 `ProgramSheet` is the **handout**: black on white, a time column and a rule
 under each day, parallel tracks as table columns (a plenary item runs across
@@ -227,14 +227,14 @@ title (the event name) becomes the file name.
 An org event is published from **the org event page** (Overview → the public
 switch), which only org admins can flip — the rules refuse a studio manager's
 write, so the studio page shows the switch read-only for an org event. Once
-published it is on the organisation's public events page and on every member
+published it is on the organization's public events page and on every member
 studio's.
 
 Invitations go out **per studio**: `sendEventInvitations` emails the roster of
 ONE studio, and a member studio invites its own members from the org event in
 its own calendar (the callable takes `teamId` only for an org event). Who may
 send is decided purely in `packages/functions/src/events/invitationAuthorization.ts`
-— the requested studio must be linked to the event's organisation, and the
+— the requested studio must be linked to the event's organization, and the
 caller must hold `events.manage` in it. An org admin cannot email a member
 studio's contacts. Each invitation row is stamped with the studio it was sent
 for; the rules let a studio read only its own rows (its list filters on
@@ -266,7 +266,7 @@ draft event the moment it is created.
 Per-item booking or capacity · FK links to Places/Activities/Coaches ·
 org-wide invitations from the org page (each studio invites its own) ·
 drag-and-drop reordering (times drive the order; `order` is only a tie-break) ·
-attendee-personalised programs in Space (the `attendees` subcollection is not
+attendee-personalized programs in Space (the `attendees` subcollection is not
 readable by a contact session, so it needs a callable) · bulk time-shift ·
 per-item media · duplicating across teams ·
 unifying the team and org event detail pages (only the tab strip was added) ·

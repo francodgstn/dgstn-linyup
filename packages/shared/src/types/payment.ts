@@ -32,7 +32,7 @@ export type PaymentAssignmentStatus = 'assigned' | 'unassigned'
 //
 // 'gift_card' is deliberately effect-less here: the entitlement is the CODE, and
 // the card doc under teams/{id}/gift_cards is what carries it. This kind exists
-// so the sale is CATEGORISED as a gift-card sale in the journal — without it,
+// so the sale is CATEGORIZED as a gift-card sale in the journal — without it,
 // normalizePaymentLineItem rejects the kind and the row lands in 'other'.
 export type PaymentLineItemKind =
   | 'subscription'

@@ -362,7 +362,7 @@ export function AppointmentFormDialog({
                         {formatDuration(d.minutes)}
                         <span className="ml-1.5 opacity-80">
                           {/* Three modes, not two: a length sold only through a
-                              plan is not free, and labelling it "Free" here is
+                              plan is not free, and labeling it "Free" here is
                               what would have a coach book it as one (UX-70). */}
                           {resolveDurationSale(d).mode === 'benefit_only'
                             ? t('durationBenefitOnly')

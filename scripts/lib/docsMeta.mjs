@@ -16,7 +16,7 @@
 import { readFileSync } from 'node:fs'
 
 /**
- * Read a text file with its line endings normalised to LF.
+ * Read a text file with its line endings normalized to LF.
  *
  * Every parse here is line-based, and a Windows checkout (core.autocrlf=true,
  * `* text=auto`) hands us CRLF while the committed blobs — and CI's Linux
@@ -61,7 +61,7 @@ export const AREA_TITLE = {
   public: 'Public surfaces',
   messaging: 'Messaging',
   plugins: 'Plugins',
-  orgs: 'Organisations',
+  orgs: 'Organizations',
   mobile: 'Member app',
   ops: 'Operations',
   product: 'Product',

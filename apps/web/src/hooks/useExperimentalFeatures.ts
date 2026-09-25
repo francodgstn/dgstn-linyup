@@ -20,7 +20,7 @@ import {
 export interface UseExperimentalFeaturesResult {
   /** The registry, in list order — what the settings page renders. */
   features: readonly ExperimentalFeature[]
-  /** The stored map, normalised (unknown ids dropped, only `true` counts). */
+  /** The stored map, normalized (unknown ids dropped, only `true` counts). */
   enabled: ExperimentalFeatureSettings
   /** Off unless the team explicitly switched it on. */
   isEnabled: (id: ExperimentalFeatureId) => boolean

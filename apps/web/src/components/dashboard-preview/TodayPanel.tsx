@@ -302,7 +302,7 @@ export function TodayPanel({ teamId }: { teamId: string | null }) {
         ) : rows.length === 0 ? (
           /* AN EMPTY DAY IS A REAL DAY. It offers the one thing a studio
              looking at an empty day wants — a way to put something in it —
-             rather than a grey line saying nothing is there. */
+             rather than a gray line saying nothing is there. */
           <div className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
             <p className="text-sm font-medium">{t('dayEmptyTitle')}</p>
             <Link

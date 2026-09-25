@@ -26,10 +26,10 @@ export const siteThemesManifest: PluginManifest = {
   iconName: 'Palette',
   // No nav contribution: the picker lives in Website → Design.
   //
-  // HIDDEN FROM EVERY CATALOGUE (2026-09-17). Its only theme, Box, was built
+  // HIDDEN FROM EVERY CATALOG (2026-09-17). Its only theme, Box, was built
   // to reproduce one client's site and now belongs to that client's plugin
   // (CLIENT_SITE_PARTS), so installing this would unlock a picker with nothing
-  // in it. An empty audience keeps the card out of every catalogue without
+  // in it. An empty audience keeps the card out of every catalog without
   // touching existing installs — the audience gates discovery, never running.
   // Give it a public audience again when a generic theme exists.
   audience: { teamIds: [] },

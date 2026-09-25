@@ -15,7 +15,7 @@ export function personInitials(person: {
 /** Initials from ONE display-name string — "Ada Lovelace" → "AL", "Ada" →
  *  "A" — for people who are not contacts: a coach (whose fallback is an
  *  email address, which the caller passes in place of a missing name), an
- *  organisation's member club. */
+ *  organization's member club. */
 export function nameInitials(name: string | null | undefined): string {
   const parts = (name ?? '').trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'

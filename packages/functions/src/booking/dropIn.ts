@@ -777,7 +777,7 @@ export const createDropInCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
   //    would have been reserved against a price that no longer applies.
   //
   // A promo refusal REFUSES THE CHECKOUT — it never silently re-prices. The
-  // caller was quoted a discount we can no longer honour, which is the one case
+  // caller was quoted a discount we can no longer honor, which is the one case
   // a checkout must refuse rather than charge something else.
   //
   // THE TICKET IS THE ONLY PROOF ANYTHING WAS RESERVED. It stays null unless the
@@ -1017,7 +1017,7 @@ export const createDropInCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
         fallbackAmountMajor: priceMajor,
         targetKind: 'drop_in',
       }).catch((err) => {
-        // Best-effort, exactly like its gift-card neighbour: the customer paid
+        // Best-effort, exactly like its gift-card neighbor: the customer paid
         // and owning the seat matters more than the count. A lapsed reservation
         // under-reports by one, which is the safe direction.
         console.error('[promo] full-cover drop-in commit failed:', err)

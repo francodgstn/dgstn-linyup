@@ -16,7 +16,7 @@
 // Deliberately NOT folded into `onInstalledPluginStatusChange`, which carries a
 // non-idempotent activation hook and must stay `retry: false`.
 //
-// THE ORG TRIGGER IS NEW. Organisations had no `installed_plugins` trigger at
+// THE ORG TRIGGER IS NEW. Organizations had no `installed_plugins` trigger at
 // all — `orgs/lifecycle.ts` hand-calls its teardown to work around the absence.
 // It owns install-document reconciliation ONLY. Org website teardown stays
 // where it is: that path is documented as resumable-not-atomic, and moving a

@@ -1759,7 +1759,7 @@ async function seedLeadTenant(profile: LeadProfile) {
    * It used to be `rand * 14` for everyone with a session to their name, which
    * made every seeded roster uniformly ACTIVE: no at-risk members, no quiet
    * ones, nothing for the win-back automation to have noticed, and a dashboard
-   * whose whole point is spotting who is slipping showed one flat colour.
+   * whose whole point is spotting who is slipping showed one flat color.
    *
    * So the default now SPREADS, weighted the way a real roster sits — most
    * people recent, a tail that is drifting, a few gone quiet — and a lapsed
@@ -2131,7 +2131,7 @@ async function seedLeadTenant(profile: LeadProfile) {
               score: 3 + e,
               notes:
                 e === 0
-                  ? 'Good start — keep practising.'
+                  ? 'Good start — keep practicing.'
                   : 'Visible improvement over last session.',
               status_after: 'in_progress',
               edited: false,

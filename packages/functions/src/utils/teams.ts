@@ -147,7 +147,7 @@ async function coachCapabilityOverride(teamId: string): Promise<Capability[] | n
   return Array.isArray(caps) ? (caps as Capability[]) : null
 }
 
-/** Effective capabilities + data scope for a role in a team (honours coach override). */
+/** Effective capabilities + data scope for a role in a team (honors coach override). */
 export async function resolveMemberCapabilities(
   teamId: string,
   role: TeamRole

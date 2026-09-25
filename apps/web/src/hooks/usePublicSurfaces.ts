@@ -39,7 +39,7 @@ export interface PublicSurfaceFlags {
   /** A published website exists (plugin + content) — the /site surface is live. */
   siteLive: boolean
   /** The contacts' personal portal (membership, bookings, profile, their courses).
-   *  A base surface, decoupled from the course catalogue — effectively always live. */
+   *  A base surface, decoupled from the course catalog — effectively always live. */
   spaceLive: boolean
   /** The /shop surface is live. It ALWAYS is (`routableSurfaces`): with a
    *  chargeable Connect account it is a till, without one it is a read-only

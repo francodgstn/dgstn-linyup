@@ -32,7 +32,7 @@ import { SessionPeekSheet } from '@/components/sessions/SessionPeekSheet'
 import { EventPeekSheet } from '@/components/events/EventPeekSheet'
 import { Tip } from '@/components/ui/tip'
 
-// ─── colour palette ───────────────────────────────────────────────────────────
+// ─── color palette ───────────────────────────────────────────────────────────
 
 const PALETTE = [
   '#7C3AED',
@@ -242,7 +242,7 @@ function SessionCard({ session, activities, onOpen, onEdit, onDelete }: SessionC
       onKeyDown={(e) => e.key === 'Enter' && onOpen(session)}
       className="flex gap-3 rounded-lg px-2 py-2 hover:bg-accent/50 transition-colors group cursor-pointer"
     >
-      {/* activity colour strip */}
+      {/* activity color strip */}
       <div className="w-1 rounded-full shrink-0 self-stretch" style={{ backgroundColor: color }} />
 
       <div className="flex-1 min-w-0 space-y-1.5">
@@ -634,7 +634,7 @@ interface SessionsCalendarProps {
 
 export type CalendarRange = 'day' | 'week' | 'month'
 
-// Stable per-coach colour for the availability lanes (hashed, same palette the
+// Stable per-coach color for the availability lanes (hashed, same palette the
 // activity blocks use).
 function providerColor(providerId: string): string {
   let h = 0
@@ -1096,7 +1096,7 @@ export default function SessionsCalendar({
           </div>
         </div>
 
-        {/* Bookable-hours legend — the bands in the left gutter are a coloured
+        {/* Bookable-hours legend — the bands in the left gutter are a colored
             tick; without a name they're a mystery, and this is the only thing on
             the page that says what they are. Rendered only when there are any. */}
         {range !== 'month' && availabilityProviders.length > 0 && (
@@ -1312,7 +1312,7 @@ export default function SessionsCalendar({
                         // Squaring off the inner edges is what turns seven
                         // separate chips into one continuous bar; the label is
                         // printed only on the day it starts, and on a
-                        // continuation the bar carries the colour alone —
+                        // continuation the bar carries the color alone —
                         // repeating the title in every column reads as seven
                         // events, which is the bug this fix exists to remove.
                         const span = spanOnDay(
@@ -1460,23 +1460,23 @@ export default function SessionsCalendar({
                       ))}
 
                       {/* Availability bands — A LINE, NOT A BAND. Each is a
-                          coloured rule in the left gutter spanning the bookable
+                          colored rule in the left gutter spanning the bookable
                           window, one sub-lane per coach, so it still reads under
                           an overlapping session and never fights a session's
                           fill, and capped round at both ends. Tooltip carries
                           the coach + schedule name; the legend above the grid
-                          names the colours.
+                          names the colors.
 
                           The translucent fill beside the rule is gone (Franco,
                           2026-08-21). A lane is a handful of pixels wide, so the
                           fill was never an area anybody could read as one — it
                           was a smudge next to a 2px line that already carried
-                          the same colour and the same extent. Dropping it is
+                          the same color and the same extent. Dropping it is
                           what let the gutter narrow. */}
                       {bands.map((band) => {
                         const c = providerColor(band.providerId)
                         // Coaches past the third share the last lane (see
-                        // MAX_AVAIL_LANES) — colour still tells them apart.
+                        // MAX_AVAIL_LANES) — color still tells them apart.
                         const laneIdx = Math.min(
                           Math.max(availabilityProviders.findIndex((p) => p.id === band.providerId), 0),
                           laneCount - 1
@@ -1522,7 +1522,7 @@ export default function SessionsCalendar({
                         const expiredHold = isExpiredAppointmentHold(s, now.getTime())
                         const cancelled = s.status === 'cancelled' || expiredHold
                         // A LIVE paid-booking hold — ghosted like 'cancelled' (dimmed +
-                        // dashed border) but NOT struck through: it isn't cancelled, it's
+                        // dashed border) but NOT struck through: it isn't canceled, it's
                         // reserved pending payment.
                         const awaitingPayment = s.status === 'pending_payment' && !expiredHold
                         const name = s.activityName ?? t('noActivity')

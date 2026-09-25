@@ -51,7 +51,7 @@ export const CLIENT_SITE_PARTS: {
 /**
  * Whether a part owned by `owner` (absent ⇒ a generic part) may be offered to a
  * tenant for which `hasPlugin` answers. No `hasPlugin` at all — a surface that
- * does not know the tenant's plugins, like the organisation builder — offers
+ * does not know the tenant's plugins, like the organization builder — offers
  * only generic parts.
  */
 export function sitePartOffered(owner: string | undefined, hasPlugin?: (pluginId: string) => boolean): boolean {

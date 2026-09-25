@@ -10,7 +10,7 @@
 //     /schedule/availability ROUTE (`variant='page'`, sections expanded), which the
 //     sheet links out to and which stays bookmarkable. It used to be a dialog opened
 //     from an unlabelled caret welded to a filter chip, which no first-time user ever
-//     found — the sheet is NOT a return to that: it is labelled, and the route stayed.
+//     found — the sheet is NOT a return to that: it is labeled, and the route stayed.
 //     Publishes
 //     the *when*: a time range or a list of explicit times, linked to one or more
 //     type === 'appointment' activities that own the *what* — duration, price,
@@ -898,7 +898,7 @@ export function AppointmentDetail({ slot, onClose, onCancelled }: {
   // THROUGH THE CALLABLE, not a direct write. A link-mode hold has a Stripe
   // Checkout Session that stays payable for a week, and a client-side
   // `updateDoc(status: 'cancelled')` left it live: the client paid days later
-  // and the Connect webhook RE-ACQUIRED the cancelled slot and confirmed it.
+  // and the Connect webhook RE-ACQUIRED the canceled slot and confirmed it.
   // `cancelAppointmentSlot` closes the link first and cancels second (its header
   // owns that reasoning), and reports the three things a close can mean.
   async function cancelSlot() {
@@ -912,7 +912,7 @@ export function AppointmentDetail({ slot, onClose, onCancelled }: {
       const res = await fn({ teamId: slot.teamId, sessionId: slot.id })
       if (res.data?.ok === false) {
         // The client paid the link in the seconds before this call. Nothing was
-        // cancelled on purpose — the appointment is theirs and paid for.
+        // canceled on purpose — the appointment is theirs and paid for.
         toast.warning(t('cancelSlotPaidInWindow'), { duration: 10_000 })
       } else if (res.data?.linkStillOpen) {
         toast.warning(t('cancelSlotLinkStillOpen'), { duration: 10_000 })

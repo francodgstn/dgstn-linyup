@@ -3,7 +3,7 @@
 // The settings rail — a searchable, grouped vertical tab list shared by the whole
 // /settings/* area via the settings layout. Highlights the active destination
 // (matching path + ?tab= for the team sub-sections) and carries the "always show"
-// toggle that adds/removes an item from the sidebar's Favourites group (vocabulary:
+// toggle that adds/removes an item from the sidebar's Favorites group (vocabulary:
 // THE NAV-MEMORY CENSUS in contexts/NavPinsContext.tsx). On desktop it sits beside
 // the detail pane; on mobile it IS the /settings index list.
 
@@ -35,7 +35,7 @@ export function SettingsRail() {
   const labelOf = (key: string) => t(key as Parameters<typeof t>[0])
 
   // THE SAME KEYWORD INDEX THE GLOBAL SEARCH USES (`Nav.searchKeywords`, keyed by
-  // the item's id — see the catalogue built in (auth)/layout.tsx).
+  // the item's id — see the catalog built in (auth)/layout.tsx).
   //
   // This box used to match the visible LABEL and nothing else, which made it
   // strictly worse than the global search it sits next to: typing "stripe",
@@ -105,7 +105,7 @@ export function SettingsRail() {
                   : 'text-muted-foreground/40 opacity-0 hover:bg-muted hover:text-foreground group-hover:opacity-100'
               }`}
             >
-              {/* A star, matching the "always show in Favourites" toggle in the
+              {/* A star, matching the "always show in Favorites" toggle in the
                   main sidebar (ShortcutButton, app/[locale]/(auth)/layout.tsx) —
                   the two must never drift, since both read/write the same
                   `useNavPins` state.
@@ -116,7 +116,7 @@ export function SettingsRail() {
                   we set, not a personal choice) wearing the same glyph on one
                   screen. It was out of scope for the 2026-08-29 rename (UX-84),
                   which only moved the SIDEBAR's version of that clash (nav
-                  favourite vs. nav plugin-suggestion) onto a puzzle piece. The
+                  favorite vs. nav plugin-suggestion) onto a puzzle piece. The
                   marketplace is now a full page at /plugins with no rail on it,
                   so the two never share a screen and neither had to move. */}
               <Star className={`h-3.5 w-3.5 ${shown ? 'fill-current' : ''}`} />

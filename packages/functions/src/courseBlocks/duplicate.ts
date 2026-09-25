@@ -7,7 +7,7 @@
 //
 // "Level 2 Seepferd ran last term; run it again from 4 March." The copy carries
 // the price, the places, the plan edge, the class it runs on and the whole
-// shape of the timetable; it carries no enrolments, no waiting list, no
+// shape of the timetable; it carries no enrollments, no waiting list, no
 // counters, no public mirror, and it lands in DRAFT.
 //
 // Two rules are decisions rather than plumbing:
@@ -38,7 +38,7 @@
 //
 // ── THE MAKE-UP LESSON ──────────────────────────────────────────────────────
 //
-// The other half of "one lesson was cancelled". `cancelSession` on one lesson
+// The other half of "one lesson was canceled". `cancelSession` on one lesson
 // is the existing path and the course is untouched by it: no place moves, no
 // money moves. What the studio then wants is to put the lesson back on another
 // day, and that is one meeting appended plus one converge, so everybody already
@@ -325,7 +325,7 @@ export const addCourseBlockMeeting = onCall(async (request) => {
   const db = admin.firestore()
   const { ref, block } = await loadOwnCourse(db, teamId, blockId)
   if (block.status === 'cancelled') {
-    throw new HttpsError('failed-precondition', 'That course was cancelled.')
+    throw new HttpsError('failed-precondition', 'That course was canceled.')
   }
   const seriesId = block.seriesId
   if (!seriesId) throw new HttpsError('failed-precondition', 'That course has no lessons.')

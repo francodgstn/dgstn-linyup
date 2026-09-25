@@ -10,7 +10,7 @@
  * `org_members/{sourceUid}`, `team_members/{sourceUid}` and `createdBy` against
  * a login nobody uses, while the auth import of the source account either
  * duplicated the email or was refused. The person who owns the migration would
- * have been locked out of the organisation it created.
+ * have been locked out of the organization it created.
  *
  * So the TARGET's auth is asked first — that is the login that will actually be
  * typed — and the source `users` collection only when the target has never

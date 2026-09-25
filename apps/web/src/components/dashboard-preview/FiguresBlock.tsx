@@ -7,7 +7,7 @@
  *
  * The incumbent's six, now FIVE: four stats (engaged, bookings ahead,
  * subscribed, affiliation) plus revenue, each with the SUBTITLE AND NOTE that
- * tell it apart from its neighbour. That pairing is the point of the block and
+ * tell it apart from its neighbor. That pairing is the point of the block and
  * the reason it is worth the cells: a bare "84" beside a bare "96" is the
  * confusion this page has now failed to fix twice.
  *
@@ -70,7 +70,7 @@
  *
  * THE "Snapshot" HEADING IS GONE. It was set at `text-2xl font-black` — the
  * loudest word on the page — and was the last thing carried over from the
- * column this block replaced. It labelled the one block that needs no label,
+ * column this block replaced. It labeled the one block that needs no label,
  * and it did so at the top of a column already over its height budget.
  *
  * DEGRADATION IS BY SUBTRACTION. Revenue is Studio-tier, so Free and Coach get
@@ -135,7 +135,7 @@ function Figure({
           {caption}
         </p>
         {/* EVERY FIGURE IS A LINK, and until now nothing said so: the only
-            affordance was a colour change on hover, which a touch device never
+            affordance was a color change on hover, which a touch device never
             shows at all. Revenue was the one that made this a report — the
             studio wanted a way to the payments list and did not know the number
             already was one. A persistent arrow, on all of them rather than on
@@ -269,7 +269,7 @@ export function FiguresBlock({
   return (
     <div>
       {/* NO HEADING (Franco, 2026-08-21). "Snapshot" was the loudest word on the
-          page and it labelled the one block that needs no label: six captioned
+          page and it labeled the one block that needs no label: six captioned
           figures under a greeting are self-evidently a summary, and the word
           cost a 24px line plus its margin at the top of a column that was
           already over its height budget. What it used to buy — a name for the

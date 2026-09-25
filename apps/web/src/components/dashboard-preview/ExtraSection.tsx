@@ -50,7 +50,7 @@
  *
  * That is also why the matrix no longer wears its own "Experimental" chip: the
  * whole shelf is the experiment, said once in its heading and again in Settings
- * → Experimental. A chip inside it was labelling one card as less settled than
+ * → Experimental. A chip inside it was labeling one card as less settled than
  * the equally unsettled cards beside it.
  *
  * ── THE PERIOD IS FIXED, DELIBERATELY ────────────────────────────────────────

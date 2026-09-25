@@ -15,7 +15,7 @@
  *
  * ── THERE IS NO ANDROID EQUIVALENT, DELIBERATELY ───────────────────────────
  * Google publishes no public lookup API. The only credential-free route is
- * scraping the Play listing HTML, which is ToS-grey, breaks on markup changes
+ * scraping the Play listing HTML, which is ToS-gray, breaks on markup changes
  * and would put an HTML parser on a cron. The console shows the asymmetry
  * instead — `store_presence/android` simply has no `listing` block.
  */

@@ -17,7 +17,7 @@
  * These two callables only move a date. The account keeps working for the whole
  * window and the contact can cancel by signing in; the sweep
  * (`dailyTasks/anonymizeScheduledContacts`) is what eventually acts, and it
- * ANONYMISES rather than erases — see `utils/contactDeletion.ts` for why the
+ * ANONYMIZES rather than erases — see `utils/contactDeletion.ts` for why the
  * studio's finance and consent records have to survive somebody leaving.
  *
  * Authenticated by the CONTACT SESSION, which is the only thing that proves the
@@ -103,6 +103,6 @@ export const cancelContactDeletion = onCall(async (request) => {
 
   await ref.update({ deletion_requested_at: null, deletion_scheduled_for: null })
   // eslint-disable-next-line no-console
-  console.log(`[contact-deletion] cancelled for ${contactId}`)
+  console.log(`[contact-deletion] canceled for ${contactId}`)
   return { scheduled: false }
 })

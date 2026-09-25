@@ -3,7 +3,7 @@
 // A pure `computeClassFill` over projected sessions, so the model never pages
 // through a schedule and adds it up itself, and the arithmetic is fixture-tested.
 // Classes only: an appointment is one person's exclusive time and is "full" by
-// definition. Cancelled sessions are left out; a session with no capacity is
+// definition. Canceled sessions are left out; a session with no capacity is
 // counted but has no fill rate.
 
 import type { ApiSession } from '@linyup/shared'

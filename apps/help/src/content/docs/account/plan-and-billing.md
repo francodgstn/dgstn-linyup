@@ -6,4 +6,4 @@ sidebar:
   order: 1
 ---
 
-Linyup has a free plan and paid plans for coaches, studios and organisations. This page will explain what each includes, how the contact limits work, and how to change your plan.
+Linyup has a free plan and paid plans for coaches, studios and organizations. This page will explain what each includes, how the contact limits work, and how to change your plan.

@@ -12,7 +12,7 @@
 // Everything here is already the caller's own data — her booking, on a session
 // she is in. `cancelToken` is the `booking_token` from HER booking document,
 // which she was also mailed; it is the credential `cancelBooking` takes, and it
-// is returned ONLY when cancelling is actually still allowed (see `cancellable`).
+// is returned ONLY when canceling is actually still allowed (see `cancellable`).
 
 /** Which scheduling primitive this booking sits on — `Session.activityType`.
  *  A class is a seat in a scheduled event; an appointment is a provider's
@@ -43,17 +43,17 @@ export interface MyBooking {
    * Is `cancelBooking` still going to accept this? Resolved server-side against
    * the SAME rules that callable applies (a live token, a session that has not
    * started, a status the session's auto-confirm setting still treats as
-   * cancellable) so the button is never offered for a call that will refuse.
+   * cancelable) so the button is never offered for a call that will refuse.
    */
   cancellable: boolean
   /** The `booking_token` for `cancelBooking`, or null when `cancellable` is false. */
   cancelToken: string | null
   /** The studio called this session off (either cancellation shape — a status
-   *  flip, or a cancelled occurrence of a recurring series). The row stays
+   *  flip, or a canceled occurrence of a recurring series). The row stays
    *  visible, because a class silently disappearing from her list is exactly
    *  the sort of thing she would read as "my booking was lost". */
   sessionCancelled: boolean
-  /** What cancelling this one would give back — see `BookingCancelEffect`. It
+  /** What canceling this one would give back — see `BookingCancelEffect`. It
    *  travels with the row so the member reads it BEFORE she presses, which is
    *  the only moment the answer can change her mind. */
   cancelEffect: BookingCancelEffect
@@ -80,7 +80,7 @@ export interface MyBookingsResult {
   scanned: number
 }
 
-// ─── Cancelling: what actually comes back, and why a refusal is final ────────
+// ─── Canceling: what actually comes back, and why a refusal is final ────────
 //
 // `cancelBooking` is the authority for both, and the copy on every surface has
 // to say what IT does rather than what a cancellation usually does elsewhere:
@@ -101,7 +101,7 @@ export interface MyBookingsResult {
 // ENFORCES IT (see components/booking/BookingTerms.tsx) — never restate it as
 // if the product applied it.
 
-/** What cancelling this booking gives back. Every field is a statement about
+/** What canceling this booking gives back. Every field is a statement about
  *  what the server WILL do (on `getBookingDetails`) or DID do (on the
  *  `cancelBooking` response) — never a guess made on the client. */
 export interface BookingCancelEffect {
@@ -109,7 +109,7 @@ export interface BookingCancelEffect {
   credit: boolean
   /** A usage-limited plan's window unit is freed ("up to 3 classes per week"). */
   usageUnit: boolean
-  /** The booking was PAID for (card or gift card). Cancelling does not refund
+  /** The booking was PAID for (card or gift card). Canceling does not refund
    *  it — the money stays with the studio until the studio acts. */
   paid: boolean
 }
@@ -133,11 +133,11 @@ export const NO_CANCEL_EFFECT: BookingCancelEffect = {
  * the transient case, and is the only case a retry belongs on.
  */
 export type BookingCancelRefusal =
-  /** No booking matches this token — cancelled already, or the link is dead. */
+  /** No booking matches this token — canceled already, or the link is dead. */
   | 'not_found'
   /** The booking is there; its session is gone. */
   | 'session_gone'
-  /** Already cancelled, or the studio has checked this person in. */
+  /** Already canceled, or the studio has checked this person in. */
   | 'already_settled'
   /** The session has already started. */
   | 'past'

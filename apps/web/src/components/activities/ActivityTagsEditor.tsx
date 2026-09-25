@@ -30,7 +30,7 @@ export function ActivityTagsEditor({
   const [draft, setDraft] = useState('')
   const full = value.length >= MAX_ACTIVITY_TAGS
 
-  // COMMITS THROUGH THE SHARED NORMALISER, never straight onto the list: the
+  // COMMITS THROUGH THE SHARED NORMALIZER, never straight onto the list: the
   // trim, the length cap, the case-insensitive dedupe and the count are the
   // public mirror's rules too, so a tag that would be dropped on the way out is
   // never shown here as accepted.
@@ -84,7 +84,7 @@ export function ActivityTagsEditor({
       {/* The box stays MOUNTED at the cap, disabled — swapping it for the cap
           message left the field's label pointing at a control that was no longer
           there, and a paste that overflows the cap is silently trimmed by the
-          normaliser, so the message beside a still-visible box is the only place
+          normalizer, so the message beside a still-visible box is the only place
           the studio learns why. Removing a chip re-enables it. */}
       <Input
         id="act-tags"
@@ -94,7 +94,7 @@ export function ActivityTagsEditor({
         // Bounded by what a WHOLE commit may carry, not by one tag: the draft
         // is split on commas, so capping it at a single tag's length silently
         // truncated a pasted list mid-word before the split ever ran. Each
-        // tag is still cut to MAX_ACTIVITY_TAG_LENGTH by the normaliser, where
+        // tag is still cut to MAX_ACTIVITY_TAG_LENGTH by the normalizer, where
         // the studio can see the result in the chip.
         maxLength={MAX_ACTIVITY_TAGS * (MAX_ACTIVITY_TAG_LENGTH + 2)}
         onChange={(e) => setDraft(e.target.value)}

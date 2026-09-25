@@ -4,7 +4,7 @@ import type { SaasPlan } from './team'
 // Sellable physical/merchandise products (e.g. a club's own equipment, apparel).
 //
 // Deliberately minimal — this is NOT a retailer/inventory tool:
-//   • No stock tracking (sell freely; the studio fulfils manually).
+//   • No stock tracking (sell freely; the studio fulfills manually).
 //   • One-off purchase only (physical goods) — never recurring. Payment rides the
 //     same Stripe Connect one-off rail as a drop-in / shop-item charge.
 //   • Variants exist for non-priced dimensions like size/colour. A variant may
@@ -14,7 +14,7 @@ import type { SaasPlan } from './team'
 // world-readable summary at teams/{teamId}/public_profile/{teamId}.products
 // (written by syncProductsToPublicProfile), never the raw collection.
 
-/** A non-priced product dimension instance (a size, a colour, a bundle option). */
+/** A non-priced product dimension instance (a size, a color, a bundle option). */
 export interface ProductVariant {
   id: string // client-generated; stable across edits
   label: string // e.g. "M", "Large", "Red / XL"
@@ -45,7 +45,7 @@ export interface Product {
   // `resolveProductCollectionNote`, never directly, so the shop card and the
   // receipt cannot disagree about which of the two applies.
   //
-  // DELIBERATELY TEXT, and deliberately not a fulfilment MODEL. A studio handing
+  // DELIBERATELY TEXT, and deliberately not a fulfillment MODEL. A studio handing
   // over a gi at the front desk and one posting a water bottle need the same
   // field to say different things; a shipping-method enum plus an address the
   // checkout does not collect would be a bigger feature answering a smaller
@@ -79,8 +79,8 @@ export function resolveProductPrice(
   return product.priceAmount
 }
 
-// ─── Per-team catalogue cap ───────────────────────────────────────────────────
-// The number of DISTINCT products a team may list for sale. The product catalogue
+// ─── Per-team catalog cap ───────────────────────────────────────────────────
+// The number of DISTINCT products a team may list for sale. The product catalog
 // is intentionally capped so the feature stays a light "sell your own equipment"
 // surface rather than a storefront. Variants do NOT count against the cap.
 // Plan IDs are stable machine identifiers — see plan.ts. Coach reaches this via the

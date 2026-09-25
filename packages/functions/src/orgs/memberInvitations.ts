@@ -1,10 +1,10 @@
-// Organisation member invitations — invite a PERSON to help run the org,
+// Organization member invitations — invite a PERSON to help run the org,
 // by email, whether or not they have a Linyup account yet.
 //
 // ─── THE COLLECTION THIS IS NOT ──────────────────────────────────────────────
 //
 // `organizations/{orgId}/org_invitations` already exists and means something
-// else entirely: a whole STUDIO is invited into the organisation, the studio's
+// else entirely: a whole STUDIO is invited into the organization, the studio's
 // OWNER accepts, and accepting moves that studio's billing onto the org plan
 // (./index.ts — inviteTeamToOrg / acceptOrgInvitation, landing on
 // /org-invite/{orgId}/{invId}).
@@ -12,7 +12,7 @@
 // This one grants a person a row in `org_members` and nothing else. No studio
 // changes hands, no billing moves, no team is enrolled. The two must not be
 // conflated in code OR in copy: an org admin who receives "you've been invited"
-// must never land on a screen that enrols their studio.
+// must never land on a screen that enrolls their studio.
 //
 // So the collection is `org_member_invitations`, the route is
 // `/org-member-invite/{orgId}/{token}`, and the naming rule that keeps them
@@ -24,7 +24,7 @@
 // `addOrgMember` is a GRANT against an account that already exists. An address
 // with no Linyup account got a named refusal, because the client cannot resolve
 // email→uid and a placeholder user would be worse than a refusal. That refusal
-// was a dead end: an organisation could not bring in anybody who had not
+// was a dead end: an organization could not bring in anybody who had not
 // already signed up on their own. The pending invitation is the thing that was
 // missing on the other side of it.
 //
@@ -138,7 +138,7 @@ export const inviteOrgMember = onCall(async (request) => {
     if (already.exists) {
       throw new HttpsError(
         'already-exists',
-        'That person is already a member of this organisation.',
+        'That person is already a member of this organization.',
         { reason: 'already_member' }
       )
     }
@@ -192,7 +192,7 @@ export const inviteOrgMember = onCall(async (request) => {
         email,
         added_by: 'inviteOrgMember',
         added_at: FieldValue.serverTimestamp(),
-        note: `Invited to organisation ${orgName}`,
+        note: `Invited to organization ${orgName}`,
         source: 'org_member_invitation',
         org_id: orgId,
       },
@@ -219,7 +219,7 @@ export const inviteOrgMember = onCall(async (request) => {
   // COPY IS THE OTHER HALF OF KEEPING THE TWO INVITATIONS APART. Nothing here
   // may suggest a studio is being enrolled or that billing moves — that is the
   // OTHER invitation. This one says, plainly, that a person is being asked to
-  // help run an organisation.
+  // help run an organization.
   const { html, text } = buildEmailTemplate({
     title: `Join ${orgName} on Linyup`,
     body: `
@@ -234,7 +234,7 @@ export const inviteOrgMember = onCall(async (request) => {
     `,
   })
 
-  // Linyup SYSTEM mail (no teamId): an organisation is not a studio, and the
+  // Linyup SYSTEM mail (no teamId): an organization is not a studio, and the
   // studio sender resolution is keyed on teams.
   await sendEmail({ to: email, subject: `Join ${orgName} on Linyup`, html, text })
 
@@ -327,7 +327,7 @@ export const acceptOrgMemberInvitation = onCall(async (request) => {
   // person may have signed up with a DIFFERENT address than the one invited —
   // by accident (their browser was already signed in as someone else) or on
   // purpose (a forwarded link). The token proves control of a mailbox, not of
-  // an identity, so attaching whoever is signed in would grant an organisation
+  // an identity, so attaching whoever is signed in would grant an organization
   // admin role to an account nobody invited.
   //
   // So: refuse, by name, and hand back the invited address so the page can say
@@ -478,7 +478,7 @@ export const declineOrgMemberInvitation = onCall(async (request) => {
 // It does NOT touch the last-admin guard: an invitation grants nothing, so
 // withdrawing one takes no admin away. It also does not remove the signup
 // allowlist entry — that entry says "this address may create a Linyup account",
-// which is not a grant of anything in the organisation, and an operator may
+// which is not a grant of anything in the organization, and an operator may
 // have added the same address themselves.
 
 export const revokeOrgMemberInvitation = onCall(async (request) => {

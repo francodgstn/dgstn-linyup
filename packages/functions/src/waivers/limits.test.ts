@@ -95,7 +95,7 @@ describe('A SHARED-NAT DOORWAY IS NOT LOCKED OUT OF ITS OWN BOOKING PATH', () =>
     }
   })
 
-  it('a returning member recognised by name and address costs NOTHING extra', () => {
+  it('a returning member recognized by name and address costs NOTHING extra', () => {
     // The previous cut charged exactly this shape, because `guest_match` was
     // read as "we disclosed something". Every returning walk-in at a doorway is
     // a guest match, so the doorway locked itself out after thirty of them.
@@ -104,7 +104,7 @@ describe('A SHARED-NAT DOORWAY IS NOT LOCKED OUT OF ITS OWN BOOKING PATH', () =>
     const decided = code(src('requirement.ts'))
     assert.ok(
       decided.indexOf('chargeWaiverResolve(') < decided.indexOf('resolveWaiverCaller('),
-      'the charge must be decided before anybody is recognised'
+      'the charge must be decided before anybody is recognized'
     )
     assert.equal(count(decided, 'caller.proof'), 1, 'only the Space widening reads the proof')
   })
@@ -258,7 +258,7 @@ describe('THE MODEL IS STATED ONCE, AND THE CALLABLE REACHES IT THROUGH ONE DOOR
     const checkout = readFileSync(join(__dirname, '..', 'connect', 'checkout.ts'), 'utf8')
     const hits = (checkout.match(/waiver/gi) ?? []).length
     assert.ok(hits > 0 && hits < 20, 'only the one bucket constant and its reasoning')
-    // The counters generalised (a subject key, not only an IP) and the waiver
+    // The counters generalized (a subject key, not only an IP) and the waiver
     // SIZES stayed out. A ceiling in this module would be a number about mail
     // living on the money path, which is the shape W21 forbids.
     for (const name of ['MAIL_PER', 'MINT_LIMIT', 'RESOLVE_LIMIT', 'emailHash']) {

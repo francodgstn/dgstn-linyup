@@ -12,11 +12,11 @@
 // sessions. That is what makes them ORDINARY sessions, roster, attendance,
 // check-in, reminders, cancellation, the coach's busy set and the existing
 // teardown job all work with no new code, and `materializeOccurrences` stays
-// the ONE materialisation path with its one `(seriesId, instanceDate)` dedupe
+// the ONE materialization path with its one `(seriesId, instanceDate)` dedupe
 // rule.
 //
 // The series is written with `course_block_id` and `status: 'fixed'`, a status
-// that means MATERIALISED IN FULL, NOTHING TO ROLL. The daily roller queries
+// that means MATERIALIZED IN FULL, NOTHING TO ROLL. The daily roller queries
 // `status == 'active'`, so a fixed series is never even read; `planSeriesRoll`
 // refuses it a second time, structurally, in case somebody flips a status back.
 //
@@ -446,7 +446,7 @@ export const updateCourseBlock = onCall(async (request) => {
   // `places` is the course's own counter; `max_participants` on each lesson is
   // the session-level backstop copied down from the template. Raising the course
   // from 9 to 12 updated the template only, so every existing lesson still
-  // refused the tenth: the enrolment succeeded, the converger hit
+  // refused the tenth: the enrollment succeeded, the converger hit
   // `resource-exhausted` on every session, swallowed each as a "conflict", and
   // the buyer was charged for a course with no bookings written at all. The
   // conflict list is meant for one lesson a drop-in happened to fill, not for
@@ -492,7 +492,7 @@ export const updateCourseBlock = onCall(async (request) => {
 
 // ─── setCourseBlockStatus ────────────────────────────────────────────────────
 
-/** Publish a draft, or put a published course back into draft. Cancelling a
+/** Publish a draft, or put a published course back into draft. Canceling a
  *  whole course is its own callable (it tears the lessons down and mails the
  *  roster), and is not reachable from here. */
 export const setCourseBlockStatus = onCall(async (request) => {
@@ -515,7 +515,7 @@ export const setCourseBlockStatus = onCall(async (request) => {
     throw new HttpsError('permission-denied', 'That course belongs to another studio.')
   }
   if (block.status === 'cancelled') {
-    throw new HttpsError('failed-precondition', 'That course was cancelled.')
+    throw new HttpsError('failed-precondition', 'That course was canceled.')
   }
 
   await blockRef.update({ status, updated_at: FieldValue.serverTimestamp() })
@@ -527,10 +527,10 @@ export const setCourseBlockStatus = onCall(async (request) => {
 /**
  * Deletes a course that never ran.
  *
- * REFUSES ONCE ANYONE IS IN IT. A course with enrolments is CANCELLED, not
+ * REFUSES ONCE ANYONE IS IN IT. A course with enrollments is CANCELED, not
  * deleted: people are owed a mail, seats are owed back, and the record of who
- * was in it is the studio's. That callable arrives with enrolment; until then
- * there is nothing to enrol, so this is the whole story.
+ * was in it is the studio's. That callable arrives with enrollment; until then
+ * there is nothing to enroll, so this is the whole story.
  *
  * The lessons go through the existing teardown path rather than a delete loop
  * of its own, `cancelSession` is the ONE path that calls a session off, and it
@@ -559,7 +559,7 @@ export const deleteCourseBlock = onCall(async (request) => {
     )
   }
 
-  // The lessons: nobody holds a booking (no enrolments, and a course lesson is
+  // The lessons: nobody holds a booking (no enrollments, and a course lesson is
   // not separately bookable), so a plain delete is honest here. Batched, because
   // a term course is a few dozen documents.
   if (block.seriesId) {

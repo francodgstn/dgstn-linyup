@@ -1,10 +1,10 @@
 'use client'
 
-// The accept surface for an ORGANISATION MEMBER invitation — a person invited
-// to help run an organisation.
+// The accept surface for an ORGANIZATION MEMBER invitation — a person invited
+// to help run an organization.
 //
 // NOT /org-invite/{orgId}/{invId}, which is the other relationship entirely:
-// that page asks a studio OWNER to enrol their studio and move its billing onto
+// that page asks a studio OWNER to enroll their studio and move its billing onto
 // the org plan. Somebody who was invited personally must never land there, so
 // nothing on this page mentions studios, teams or billing, and it never asks
 // which team you own.

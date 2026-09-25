@@ -64,7 +64,7 @@ describe('firestore.rules — organization access', function () {
     await testEnv.clearFirestore()
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore()
-      // The victim organisation and its real admin.
+      // The victim organization and its real admin.
       await setDoc(doc(db, 'organizations', ORG), {
         name: 'Victim Federation',
         slug: 'victim-fed',
@@ -121,7 +121,7 @@ describe('firestore.rules — organization access', function () {
       })
 
       // A place belonging to the MEMBER STUDIO — what Org > Places lists beside
-      // the organisation's own.
+      // the organization's own.
       await setDoc(doc(db, 'teams', 'legitTeam', 'team_places', 'tp1'), {
         name: 'Studio Hall',
         teamId: 'legitTeam',
@@ -211,10 +211,10 @@ describe('firestore.rules — organization access', function () {
   //
   // An org admin is NOT a member of the studios it federates, so without an
   // explicit disjunct `teams/{id}/team_places` is closed to them and the page
-  // renders as an organisation whose studios have no locations at all — a denied
+  // renders as an organization whose studios have no locations at all — a denied
   // list and an empty one are the same thing on screen, which is how this class
   // of defect ships twice.
-  describe('a member studio’s places, from the organisation', () => {
+  describe('a member studio’s places, from the organization', () => {
     it('the org admin CAN read them', async () => {
       const orgAdmin = testEnv.authenticatedContext('realOrgAdmin').firestore()
       await assertSucceeds(getDocs(collection(orgAdmin, 'teams', 'legitTeam', 'team_places')))

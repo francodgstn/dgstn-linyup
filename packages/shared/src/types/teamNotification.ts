@@ -58,7 +58,7 @@ export type TeamNotificationType =
 export interface TeamNotification {
   id: string
   type: TeamNotificationType | string
-  /** One line, already localised at write time by the function. */
+  /** One line, already localized at write time by the function. */
   title: string
   /** The detail under the title. May be empty. */
   body: string

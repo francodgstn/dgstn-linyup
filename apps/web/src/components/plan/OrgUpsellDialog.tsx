@@ -3,14 +3,14 @@
 /**
  * THE OFFER BEFORE THE SECOND STUDIO.
  *
- * Somebody about to create a second studio is describing an organisation, and
+ * Somebody about to create a second studio is describing an organization, and
  * the product has a tier for exactly that. Until this screen they went straight
  * to the signup wizard and got a second, entirely separate tenant — its own
  * members, its own contacts, its own bill — which is usually not what "I run two
  * places" means (Franco, 2028-08-28).
  *
  * IT IS AN OFFER, NOT A WALL. "Continue anyway" is a real control and does
- * exactly what it always did. There is no self-service lane for the Organisation
+ * exactly what it always did. There is no self-service lane for the Organization
  * tier — nothing calls `createOrganization` — so the primary action is a
  * conversation, and a screen that ended in a conversation with no way past it
  * would simply stop people doing something they are entitled to do.
@@ -73,7 +73,7 @@ export function OrgUpsellDialog({
 
         {/* The tier's own name and RATE — not a total, and not "from". This
             tier is priced per studio at a flat rate, so the number that is true
-            of every organisation is the rate; the total is composed on the
+            of every organization is the rate; the total is composed on the
             pricing page, where there is room for the calculator. */}
         <p className="text-center text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{planName('organization')}</span>

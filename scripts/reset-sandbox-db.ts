@@ -61,7 +61,7 @@ const { values } = parseArgs({
     'dry-run': { type: 'boolean', default: false },
     'include-leads': { type: 'boolean', default: false },
     // Q13's escape hatch. It has to be TYPED, and it is echoed rather than
-    // silently honoured: the console output of a destructive run is its only
+    // silently honored: the console output of a destructive run is its only
     // record, and this flag is the one that throws away the artefact a studio
     // most needs after the relationship ends.
     'no-consent-export': { type: 'boolean', default: false },

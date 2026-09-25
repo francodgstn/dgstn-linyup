@@ -23,9 +23,9 @@ interface RankingSystemsResult {
  * this hook, the automation builder and the server-side automation engine give
  * the same answer. Only the READ is here.
  *
- * Two behaviours worth knowing, both corrected here:
+ * Two behaviors worth knowing, both corrected here:
  *
- *  - An organisation with NO systems of its own does not blank its studios.
+ *  - An organization with NO systems of its own does not blank its studios.
  *    This used to return the org's list whenever an `org_id` existed, so a
  *    studio inside such an org saw none of its OWN systems — configuration it
  *    could still see in its settings, applying nowhere.

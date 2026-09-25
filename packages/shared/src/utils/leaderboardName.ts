@@ -7,7 +7,7 @@
 //
 // The Space and the member app each carried this rule inline, and they had
 // already parted: the app compared stage strings untyped (so a renamed stage
-// would silently de-anonymise trials in the app alone) and fell back to
+// would silently de-anonymize trials in the app alone) and fell back to
 // "Unknown" where the Space fell back to "?". The Space's comment even said
 // "same as the mobile app's leaderboard". It was not, and nothing could have
 // told either side. Owned here so the two cannot disagree again.
@@ -18,7 +18,7 @@ import { ACQUISITION_STAGES, type AcquisitionStage } from '../types/contact'
  *  so a renamed stage fails the build instead of quietly showing a name. */
 const TRIAL_STAGES: readonly AcquisitionStage[] = ['trial_booked', 'trial_attended']
 
-/** Is this stage one that must be anonymised on a shared surface? Accepts the
+/** Is this stage one that must be anonymized on a shared surface? Accepts the
  *  loose `string | null` the entry rows actually carry. */
 export function isTrialStage(stage: string | null | undefined): boolean {
   return (

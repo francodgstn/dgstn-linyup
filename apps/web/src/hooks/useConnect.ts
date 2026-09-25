@@ -207,7 +207,7 @@ export function useMemberPayments(
  * Payments are an EVENT LOG that only grows, which is why that side is time
  * bounded instead.
  *
- * Cancelled subscriptions accumulate, so this is headcount plus churn rather
+ * Canceled subscriptions accumulate, so this is headcount plus churn rather
  * than headcount alone — and after a few years the ended rows outnumber the
  * live. So the query carries the STATUS FILTER this header always named as the
  * fix (never a bare limit that hides rows without saying which): the one reader

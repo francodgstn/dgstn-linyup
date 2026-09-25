@@ -450,7 +450,7 @@ export function PageSettingsDialog({
   onOpenChange: (v: boolean) => void
   page: SitePageRef
   /** What precedes a page's path in its address — '/site/' on a team site,
-   *  '/' on an organisation's, whose pages sit directly under its slug. */
+   *  '/' on an organization's, whose pages sit directly under its slug. */
   pathPrefix?: string
   /** Every OTHER page's path — this page's own path may stay unchanged. */
   existingPaths: string[]
@@ -639,7 +639,7 @@ export function PageSettingsDialog({
  *
  * Pages used to be a dropdown inside the Sections tab, so the one thing a
  * studio owner thinks of a website as — a set of pages — had no place of its
- * own: you had to already be in Sections, notice the grey strip, and open a
+ * own: you had to already be in Sections, notice the gray strip, and open a
  * select to see what existed. The rail is the Wix/Squarespace answer: the list
  * is permanent, beside every tab, and picking a page opens it.
  *

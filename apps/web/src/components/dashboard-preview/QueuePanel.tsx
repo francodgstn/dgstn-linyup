@@ -51,7 +51,7 @@
  * ── A ROW IS ONE LINE, and that is what the width bought ─────────────────────
  *
  * This block spent a version in a 332px column, where a name and a reason could
- * not share a line, so the reason went underneath in 11px grey — a two-line row
+ * not share a line, so the reason went underneath in 11px gray — a two-line row
  * whose second line was the whole point of the row. Moved under the day at
  * ~683px, the row is one line again: avatar, name, reason chip, chevron. That
  * also makes rows CHEAP, so the people cap went from 5 to 8 and the block shows
@@ -477,7 +477,7 @@ export function QueuePanel({
             ))}
           </div>
         ) : total === 0 ? (
-          /* EMPTY IS THE GOOD ANSWER, and it has to read as one — a greyed
+          /* EMPTY IS THE GOOD ANSWER, and it has to read as one — a grayed
              placeholder here would look like a load that failed. */
           <div className="flex h-full items-center justify-center gap-3 py-6 text-center">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />

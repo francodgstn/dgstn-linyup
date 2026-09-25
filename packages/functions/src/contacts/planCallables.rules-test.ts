@@ -89,7 +89,7 @@ describe('plan callables — against the Firestore emulator', function () {
     await db().collection('contacts').doc(OTHER_CONTACT).set({ teamId: TEAM, firstname: 'Sam', assigned_coach_ids: [] })
   })
 
-  it('assignPlan gives a staff grant and materialises a provisional lead', async () => {
+  it('assignPlan gives a staff grant and materializes a provisional lead', async () => {
     const res = await call<{ grantId: string; duplicate: boolean }>(assignPlan, OWNER, { contactId: CONTACT, ...MONTHLY })
     assert.equal(res.duplicate, false)
     const [grant] = await grants()

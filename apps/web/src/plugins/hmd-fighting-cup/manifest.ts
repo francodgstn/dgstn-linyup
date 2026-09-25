@@ -9,7 +9,7 @@ import type { PluginManifest } from '@linyup/shared'
 // installed_plugins document, every `event.type` value and the event-type label
 // map are untouched.
 //
-// It is no longer offered in any catalogue — the container is the card a tenant
+// It is no longer offered in any catalog — the container is the card a tenant
 // installs — but nothing else changes: once installed, this manifest resolves
 // through its own id exactly as before (`pluginIsInstallable` is the only
 // predicate that treats it differently).
@@ -22,8 +22,8 @@ export const hmdFightingCupManifest: PluginManifest = {
   status: 'available',
   iconName: 'Trophy',
   hasOwnerConfig: false,
-  // Kept for defence in depth, though a member is already hidden from every
-  // catalogue by `pluginIsInstallable`. If this plugin were ever taken OUT of
+  // Kept for defense in depth, though a member is already hidden from every
+  // catalog by `pluginIsInstallable`. If this plugin were ever taken OUT of
   // the bundle it would become directly installable again, and this line is
   // what stops that from putting a customer's name in every tenant's
   // marketplace. See PluginAudience in @linyup/shared.

@@ -18,7 +18,7 @@
 // would tie every future copy fix to a store build and its review queue — the
 // slowest possible release path for the fastest-moving kind of change. `Intl`
 // is present in Hermes on both platforms; if it ever is not, the catch below
-// lands on English, which is exactly today's behaviour and so cannot regress.
+// lands on English, which is exactly today's behavior and so cannot regress.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'

@@ -65,7 +65,7 @@ import { kioskClaimForTeam, type KioskTokenClaims } from '../utils/kioskSession'
  * caller holding no credential of ours.
  *
  * SIZED FOR THE BUSIEST DOORWAY, NOT FOR A PROBE BUDGET, and the difference is
- * the whole reason this number is not 30 like its neighbours. The callable is a
+ * the whole reason this number is not 30 like its neighbors. The callable is a
  * PRECONDITION for booking at a waiver-configured tenant, so a ceiling a shared
  * address can reach is a ceiling that stops a gym, a school or a tablet at a
  * class door from booking anything. The worst legitimate case anybody has been
@@ -91,7 +91,7 @@ export interface WaiverCredentialClaims extends KioskTokenClaims {
  * PURE. Which credential, if any, does this token present for this team?
  *
  * Pure so the exemption is asserted by a fixture rather than by reading a
- * callable — the last two rounds both shipped a limiter whose real behaviour was
+ * callable — the last two rounds both shipped a limiter whose real behavior was
  * only visible by tracing which branch reached which counter.
  *
  * An EXPIRED contact session is not a credential: it is checked here exactly as

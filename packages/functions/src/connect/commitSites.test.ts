@@ -42,10 +42,10 @@ import { join } from 'node:path'
 const SRC = join(__dirname, '..')
 /** The worktree root: SRC → packages/functions → packages → root. Needed because
  *  two of the censuses below span the functions/web boundary, which is exactly
- *  where a correction stops travelling. */
+ *  where a correction stops traveling. */
 const ROOT = join(SRC, '..', '..', '..')
 
-/** Line endings normalised: the working tree is checked out LF on CI and CRLF on
+/** Line endings normalized: the working tree is checked out LF on CI and CRLF on
  *  Windows, and a claim spanning a comment line break must match on both. */
 function read(rel: string): string {
   return readFileSync(join(SRC, rel), 'utf8').replace(/\r\n/g, '\n')

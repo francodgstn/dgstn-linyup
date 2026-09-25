@@ -1,6 +1,6 @@
 'use client'
 
-// Admin-side client hooks for promo codes (Wave 3 Phase 3), modelled on
+// Admin-side client hooks for promo codes (Wave 3 Phase 3), modeled on
 // useGiftCards.ts. The PUBLIC side (previewPromoCode) is called inline from the
 // public surfaces themselves — same convention every other public checkout uses.
 //

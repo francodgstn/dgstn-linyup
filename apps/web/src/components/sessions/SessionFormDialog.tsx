@@ -179,7 +179,7 @@ interface RecurrencePattern {
   excludeDates:   Date[]
 }
 
-// How far ahead the backend actually materialises a series — SERIES_HORIZON_MONTHS
+// How far ahead the backend actually materializes a series — SERIES_HORIZON_MONTHS
 // in packages/functions/src/sessions/series.ts. The daily `rollSessionSeries`
 // task keeps an open-ended series topped up to this horizon, so "never" is now a
 // truthful option; it is nonetheless not the DEFAULT, because a timetable that
@@ -282,7 +282,7 @@ function RecurrencePanel({ value, onChange, startDate }: {
   // The ZONE, though, is the DEVICE's, and deliberately: `getPreviewDates`
   // picks its dates with device-local weekday arithmetic (`cursor.getDay()`,
   // `cursor.setDate()`) from a start date the device-local picker produced.
-  // Labelling those instants in the studio's zone would name a weekday the
+  // Labeling those instants in the studio's zone would name a weekday the
   // coach never ticked and a clock time they never typed. Week start, date
   // order and hour cycle still come from the team — the override moves the zone
   // and nothing else (see the `zone` option in hooks/useTeamFormat.ts).
@@ -353,7 +353,7 @@ function RecurrencePanel({ value, onChange, startDate }: {
                     {t('endsOnDate')}
                     {/* The date field round-trips through `toDateInputValue`, not
                         `toISOString()` — see its docstring: converting to UTC
-                        first makes midnight in any zone ahead of UTC serialise
+                        first makes midnight in any zone ahead of UTC serialize
                         as the PREVIOUS day. */}
                     {value.endCondition === 'date' && (
                       <input type="date"
@@ -386,7 +386,7 @@ function RecurrencePanel({ value, onChange, startDate }: {
           away. Hidden behind its own toggle: most timetables never skip a day,
           and a date picker sitting open on every recurring class is a question
           nobody asked. It removes nothing already on the calendar, a session
-          that exists is cancelled from the calendar, because people may already
+          that exists is canceled from the calendar, because people may already
           hold bookings on it. */}
       <div className="space-y-2">
         {value.excludeDates.length === 0 && !addingSkip ? (
@@ -748,7 +748,7 @@ export function SessionFormDialog({
 
     if (isRecurring) {
       // ── THE SERIES DOC IS THE COMMIT; GENERATION IS NOT ───────────────────
-      // Materialising a series is one dedupe query and one write per
+      // Materializing a series is one dedupe query and one write per
       // occurrence: a 6-month weekly class is ~26 server round-trips, a daily
       // one ~180. Waiting for that behind a spinner is what the 30-second
       // timeout below existed to survive.
@@ -1291,7 +1291,7 @@ export function SessionFormDialog({
                   <label className="min-w-0 text-sm font-medium">
                     {/* NOT `fieldLocation`. In German and French that key is the
                         SAME WORD as `fieldPlace` ("Ort"/"Ort", "Lieu"/"Lieu"),
-                        so the two fields were labelled identically and the hint
+                        so the two fields were labeled identically and the hint
                         below was the only thing telling them apart. This key
                         names the free-text one for what it is; `fieldLocation`
                         is left alone for the other surfaces that read it. */}

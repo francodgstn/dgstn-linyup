@@ -71,7 +71,7 @@ export interface BadgeStats {
   /** THIS calendar month's score (`Contact.current_month_score`). Carries the
    *  same "resets with the month" quirk as mobile's own score badges — a
    *  superstar badge can be lost when the month turns over. Not a bug this
-   *  surface introduces; matching existing product behaviour on purpose. */
+   *  surface introduces; matching existing product behavior on purpose. */
   monthScore: number
 }
 

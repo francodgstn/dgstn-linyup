@@ -9,7 +9,7 @@ import { CONTACT_PLUGIN_RECORDS, TARIF595_CONTACTS_SUBCOLLECTION, TARIF595_CONTA
 //     TARIF595_CONTACT_SELF_FIELDS in @linyup/shared (what the Space form
 //     writes) and the literal `hasOnly([...])` in firestore.rules (what the
 //     server allows). Rules cannot import a constant, so the copy is checked.
-//   • the plugin-owned records the anonymisation sweep removes with the
+//   • the plugin-owned records the anonymization sweep removes with the
 //     identity — CONTACT_PLUGIN_RECORDS (the census, beside the field list in
 //     utils/contactDeletion.ts) and the sweep's own source.
 
@@ -55,7 +55,7 @@ describe('tarif595 — the contact self-write list, rules ↔ shared', () => {
   })
 })
 
-describe('tarif595 — the anonymisation arm', () => {
+describe('tarif595 — the anonymization arm', () => {
   const sweep = readFileSync(join(__dirname, '..', 'dailyTasks', 'anonymizeScheduledContacts.ts'), 'utf8').replace(/\r\n/g, '\n')
 
   it('the census names the insurer row, and the sweep deletes it in the same batch as the patch', () => {

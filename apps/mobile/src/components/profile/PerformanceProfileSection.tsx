@@ -64,7 +64,7 @@ type ProfileDisplay = {
   message: string;
 };
 
-// The colour is the shared fact (`PERFORMANCE_PROFILE_COLORS` — the admin's
+// The color is the shared fact (`PERFORMANCE_PROFILE_COLORS` — the admin's
 // profile badge tints the same reading the same way); the words stay here.
 const profileDisplay = (t: Translate, key: ProfileKey, lever?: string, anchor?: string): ProfileDisplay => {
   const labels = axisLabels(t);

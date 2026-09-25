@@ -3,7 +3,7 @@ import { createHash } from 'crypto'
 import { FieldValue } from 'firebase-admin/firestore'
 import { MAIL_SUPPRESSIONS_COLLECTION, type MailSuppressionReason } from '@linyup/shared'
 
-// Doc id for a suppressed recipient — sha256 of the normalised address, so a raw
+// Doc id for a suppressed recipient — sha256 of the normalized address, so a raw
 // email is never used as a Firestore key.
 export function emailHash(email: string): string {
   return createHash('sha256').update(email.trim().toLowerCase()).digest('hex')

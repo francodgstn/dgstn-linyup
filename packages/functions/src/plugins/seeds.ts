@@ -17,7 +17,7 @@
 //
 // ── IT DOES NOT UNDO ITSELF ─────────────────────────────────────────────────
 // There is no teardown arm and no `status !== 'active'` branch that deletes. A
-// rule that has been grading people for a year is the organisation's, and
+// rule that has been grading people for a year is the organization's, and
 // removing it would strand every grading recorded against it. An uninstall
 // simply stops this from running; a re-install finds the documents again and
 // converges on `seed_version`.

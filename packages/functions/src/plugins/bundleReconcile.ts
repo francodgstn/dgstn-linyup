@@ -10,7 +10,7 @@
 // ── IDEMPOTENT, AND SELF-LIMITING ────────────────────────────────────────────
 // It computes the desired set, diffs it against what is there, and COMMITS
 // NOTHING when the diff is empty. That empty-diff early return is not an
-// optimisation: this function's own writes land in the very collection its
+// optimization: this function's own writes land in the very collection its
 // triggers watch, so without it the first install would loop forever. The
 // `isBundleContainer` guard at the top is the other half — it stops a member
 // write (which this function just made) from re-entering.
@@ -19,7 +19,7 @@
 // `status: 'inactive'` on an install document means one specific thing — a plan
 // lapse — and `orgs/orgTierRails.test.ts` sweeps every file that writes it,
 // allowing only `saas-billing/downgrade.ts` and `orgs/lifecycle.ts`. So removal
-// here is a delete. That is the right behaviour anyway: a deleted document
+// here is a delete. That is the right behavior anyway: a deleted document
 // carries no stale `keep_course_mirrors` marker into a later reinstall.
 //
 // ── WHY IT IS NOT PART OF onInstalledPluginStatusChange ──────────────────────

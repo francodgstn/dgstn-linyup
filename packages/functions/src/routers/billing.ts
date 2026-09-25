@@ -1,10 +1,10 @@
-// What a studio or an organisation pays LINYUP, behind one function: checkout,
+// What a studio or an organization pays LINYUP, behind one function: checkout,
 // cancel and reactivate, the billing portal, invoices, and plugin add-ons
 // (docs/functions-consolidation-plan.md → "Phase 2").
 //
 // Team and org callables sit together because the client treats them as one
 // flow — apps/web/src/hooks/useSaasBilling.ts picks the team or the org name
-// from the billing scope. They are NOT merged: an org payer is authorised
+// from the billing scope. They are NOT merged: an org payer is authorized
 // through org_members and a team payer through team_members (UX-75), and each
 // member keeps its own check. The router adds none and removes none.
 //

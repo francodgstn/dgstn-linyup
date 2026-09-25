@@ -110,12 +110,12 @@ export const getAffiliationColors = (
 };
 
 /**
- * The organisation's affiliation-concept label (`TeamPublicProfile
+ * The organization's affiliation-concept label (`TeamPublicProfile
  * .affiliation_term`, e.g. "Membership", "Lizenz") — THE shared fallback chain
  * (`resolveAffiliationTerm` in @linyup/shared, the same one the org-facing web
  * surfaces run), asked for the DEVICE's language. That default is this app's
  * only contribution; rewiring it to the app's chosen locale is a separate,
- * behaviour-changing step (docs/scalability-2026-09.md item 29). `locale` is
+ * behavior-changing step (docs/scalability-2026-09.md item 29). `locale` is
  * injectable for tests.
  */
 export function resolveAffiliationTerm(

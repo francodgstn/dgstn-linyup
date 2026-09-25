@@ -74,7 +74,7 @@ export function teamFormatter(
  *
  * Not a display format and not the formatter's `isoDate`: the native control is
  * device-local, and the obvious `toISOString().slice(0,10)` converts to UTC
- * first — so midnight in any zone ahead of UTC serialises as the PREVIOUS day
+ * first — so midnight in any zone ahead of UTC serializes as the PREVIOUS day
  * and the field shows a date nobody picked.
  */
 export function toDateInputValue(date: Date | null | undefined): string {

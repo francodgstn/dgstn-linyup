@@ -100,7 +100,7 @@ export const AffiliationCard: React.FC<AffiliationCardProps> = ({
   const affiliationLabel = getAffiliationLabel(t, affiliationSummary);
 
   // Neither concept exists on every tenant. Ranks are configured per tenant
-  // (`ranking_systems`); affiliations are an organisation-tier concept, so an
+  // (`ranking_systems`); affiliations are an organization-tier concept, so an
   // independent studio (no `org_id`) has none to be "not affiliated" with. A
   // card reading NO RANK / NOT AFFILIATED on a studio that uses neither is a
   // wrong answer, not an empty one (PrimeTestLab report 7107, S-03) — each

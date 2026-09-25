@@ -8,7 +8,7 @@ import { ProgramTemplatesManager } from '@/components/events/program/ProgramTemp
 import type { Team } from '@linyup/shared'
 
 // Reusable event programs for this studio, plus any inherited from the parent
-// organisation (read-only). Authored EITHER here — "New template" opens the
+// organization (read-only). Authored EITHER here — "New template" opens the
 // standalone editor at ./[templateId] — or on an event via "Save as template".
 
 export default function ProgramTemplatesSettingsPage() {

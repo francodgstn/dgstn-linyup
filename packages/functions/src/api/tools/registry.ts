@@ -364,7 +364,7 @@ export const READ_TOOLS: readonly ReadTool[] = [
     name: 'list_memberships',
     title: 'Memberships',
     description:
-      'Stripe memberships by state: live, cancelling (running but will not renew — with the end date and reason), past_due, trialing or ended.',
+      'Stripe memberships by state: live, canceling (running but will not renew — with the end date and reason), past_due, trialing or ended.',
     shape: subscriptionListShape(25, 100),
     available: may('subscriptions:read'),
     run: async ({ principal, team, nowMs }, args) => {

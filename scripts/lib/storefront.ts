@@ -46,7 +46,7 @@ export interface StorefrontOpts {
   teamSlug: string
   accentColor: string
   description: string
-  /** Primary activity/class name, e.g. 'BJJ', 'Yoga' — flavours the course copy. */
+  /** Primary activity/class name, e.g. 'BJJ', 'Yoga' — flavors the course copy. */
   primaryActivity: string
   /** Contact email shown on the website contact section. */
   email: string
@@ -396,7 +396,7 @@ export async function seedStoreCourses(
     courses.push({
       id: `${o.teamId}-course-starter`,
       title: `${act} Starter`,
-      summary: `A free, self-paced intro to ${act.toLowerCase()} — watch, learn and practise between classes.`,
+      summary: `A free, self-paced intro to ${act.toLowerCase()} — watch, learn and practice between classes.`,
       access: 'free',
       modules: [
         {

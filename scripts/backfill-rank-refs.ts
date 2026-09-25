@@ -31,7 +31,7 @@
  * Once every record above holds an id, the `value` still sitting on each
  * ladder level is dead weight — and the one thing that would let a stray
  * number resolve again by accident. `--strip-values` removes it from every
- * `ranking_systems[].levels[]` on organisations and teams, and rewrites each
+ * `ranking_systems[].levels[]` on organizations and teams, and rewrites each
  * team's public mirror, AFTER the conversion in the same run. It REFUSES when
  * that run left any orphan number behind: with the values gone those records
  * could never be resolved, so they are fixed or accepted first. Run it once
@@ -162,7 +162,7 @@ async function main() {
   // The precondition is checked on the STORED documents, before anything is
   // resolved through `effectiveRankingSystems` — which mints a missing id on
   // read (Phase 4) and would otherwise make this check pass on a ladder that
-  // has never been backfilled. The org ladders are then normalised the same
+  // has never been backfilled. The org ladders are then normalized the same
   // way the team ladders are, so an org-scoped record (a cup event with no
   // team) resolves against levels that carry ids; before this, every bound on
   // staging's 971 categories came back an "orphan" for exactly that reason.
@@ -292,7 +292,7 @@ async function main() {
   // `events/{id}/categories/{id}` — the root `categories` collection is
   // something else and is skipped by its parent. The ladder is the event's
   // tenant's: a team event resolves through its team, an org-scoped one
-  // (teamId null) through the organisation's own systems.
+  // (teamId null) through the organization's own systems.
   const eventLadder = new Map<string, RankingSystem[] | undefined>()
   for (const doc of (await db.collectionGroup('categories').get()).docs) {
     const eventRef = doc.ref.parent.parent

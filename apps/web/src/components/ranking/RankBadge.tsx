@@ -3,7 +3,7 @@
 // THE rank badge.
 //
 // A level identifies itself visually, and clubs do not all do it the same way:
-// a belt colour, a split belt's two colours, a swim school's animal, or a club's
+// a belt color, a split belt's two colors, a swim school's animal, or a club's
 // own uploaded artwork. Which one wins is decided ONCE, by `rankLevelBadge` in
 // @linyup/shared, so this component and the member app cannot disagree — and so
 // adding a fifth way later is one change rather than five.
@@ -29,7 +29,7 @@ export function RankBadge({
 }) {
   const badge = rankLevelBadge(level)
   const s = SIZES[size]
-  // The label is the accessible name in every arm — a colour alone tells a
+  // The label is the accessible name in every arm — a color alone tells a
   // screen reader nothing, and two adjacent belts differ only by it.
   const shell = cn('inline-block shrink-0 rounded-full overflow-hidden align-middle', s.box, className)
 
@@ -60,7 +60,7 @@ export function RankBadge({
   }
 
   if (badge.kind === 'split') {
-    // Two halves, because that is what a split belt looks like. A single colour
+    // Two halves, because that is what a split belt looks like. A single color
     // would render two adjacent grades identically.
     return (
       <span

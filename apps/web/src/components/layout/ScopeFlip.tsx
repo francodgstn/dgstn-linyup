@@ -6,7 +6,7 @@
  * This module is the KEY HANDLER ONLY. It kept its name when the visible button
  * was removed (see below) so the import in the shell did not churn.
  *
- * The one real cost of making an organisation a scope is the click to get back,
+ * The one real cost of making an organization a scope is the click to get back,
  * and an org admin who also runs a studio pays it all day.
  *
  * IT TOGGLES BETWEEN TWO; IT DOES NOT CYCLE N. What makes alt-tab worth having

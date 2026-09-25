@@ -11,7 +11,7 @@ import type { PluginManifest } from '@linyup/shared'
  * (@linyup/shared); this manifest renders and publishes nothing itself.
  *
  * ── WHO SEES IT ──────────────────────────────────────────────────────────────
- * `audience` keeps the client's name out of every other tenant's catalogue. It
+ * `audience` keeps the client's name out of every other tenant's catalog. It
  * names the lead tenant today; when CFZ signs, their production team id is added
  * here — a one-line change in the deploy that onboards them. The lead id stays
  * harmless: it only ever matches in the sandbox and on local emulators.

@@ -83,7 +83,7 @@ are covered by SCCs / DPF per §2.4 — the DPA should name the same mechanism.
 
 | What | Rule | Where |
 |---|---|---|
-| Contact self-deletion | **30-day** grace, then anonymisation | `CONTACT_DELETION_GRACE_DAYS`, `shared/utils/contactDeletion.ts:32`; actor is `dailyTasks/anonymizeScheduledContacts.ts` |
+| Contact self-deletion | **30-day** grace, then anonymization | `CONTACT_DELETION_GRACE_DAYS`, `shared/utils/contactDeletion.ts:32`; actor is `dailyTasks/anonymizeScheduledContacts.ts` |
 | Studio account deletion | **30-day** reversible window, then purge | `TEAM_DELETION_GRACE_DAYS`, `functions/src/teams/deleteAccount.ts:50`; actor is `dailyTasks/purgeScheduledTeams.ts` |
 | Unverified signups | Hard-deleted after **7 days** | `UNVERIFIED_MAX_AGE_DAYS`, `dailyTasks/purgeUnverifiedSignups.ts:43` |
 | Provisional contacts | Hard-deleted nightly once expired | `dailyTasks/purgeProvisionalContacts.ts` |
@@ -178,7 +178,7 @@ forms the agreement; a notice on the team step says so and links both documents.
 This is the MAJORITY practice in the field, not a shortcut: Webling forms the
 contract on its activation email, Eversports on activation after the operator
 supplies its details, and KLARA §3 makes the act of REGISTERING carry the user's
-confirmation that they are legally capable and authorised to represent — which is
+confirmation that they are legally capable and authorized to represent — which is
 the load-bearing part for B2B formation, and what §3.1 of the draft now says.
 Only Fairgate uses an explicit tick-box. Amendments: **six
 weeks' notice** by email with a **written objection right** and a termination

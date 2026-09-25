@@ -11,7 +11,7 @@ import type { EventPublicProfile } from '@linyup/shared'
 // root `events` collection.
 //
 // An org event has no teamId, so a studio's public page runs TWO queries and
-// merges: its own events plus its parent organisation's. That mirrors what the
+// merges: its own events plus its parent organization's. That mirrors what the
 // admin calendar already does (useAllEvents in schedule/page.tsx), so admin and
 // public agree on what an org event is.
 
@@ -53,7 +53,7 @@ export interface PublicEventsState {
 }
 
 /** Upcoming published events for a studio, including any inherited from its
- *  parent organisation. Pass `orgId` null for an independent studio. */
+ *  parent organization. Pass `orgId` null for an independent studio. */
 export function usePublicEvents(
   teamId: string | null,
   orgId: string | null,

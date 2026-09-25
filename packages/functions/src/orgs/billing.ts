@@ -1,14 +1,14 @@
 /**
- * An ORGANISATION's own Linyup billing — cancel, reactivate, billing portal,
+ * An ORGANIZATION's own Linyup billing — cancel, reactivate, billing portal,
  * invoices (UX-75).
  *
- * WHY THESE EXIST AT ALL. An organisation and a team are both billed through
+ * WHY THESE EXIST AT ALL. An organization and a team are both billed through
  * `saas_subscriptions/{id}`, but they are authorized through completely
  * different documents: a team's owner lives at `teams/{teamId}/team_members/{uid}`,
  * an org's admin at `organizations/{orgId}/org_members/{uid}`. The four team
  * callables in `../saas-billing/index.ts` guard with the first of those, so an
  * org admin calling them was refused `permission-denied` — she could not stop
- * her organisation's subscription, restart it, or fix an expiring card, and the
+ * her organization's subscription, restart it, or fix an expiring card, and the
  * charges continued. It stayed invisible because the org billing page rendered
  * every outcome through one banner styled green, so the refusal read as success.
  *
@@ -46,7 +46,7 @@ async function requireOrgAdmin(
   return orgId
 }
 
-/** Marks the organisation's subscription to stop at the end of the paid period. */
+/** Marks the organization's subscription to stop at the end of the paid period. */
 export const cancelOrgSubscription = onCall(async (request) => {
   const data = request.data as { orgId?: string }
   const orgId = await requireOrgAdmin(request.auth, data?.orgId)
@@ -74,7 +74,7 @@ export const getOrgBillingPortalUrl = onCall(async (request) => {
 })
 
 /**
- * The organisation's invoices. Included because the org billing page called
+ * The organization's invoices. Included because the org billing page called
  * `getSaasInvoices` with an org id and was refused by the same guard — and a
  * refused list renders as "No invoices yet", which is a lie an org admin has no
  * way to see through.

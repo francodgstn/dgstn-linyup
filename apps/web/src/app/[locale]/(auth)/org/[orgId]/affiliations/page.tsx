@@ -45,7 +45,7 @@ import {
 } from '@/components/affiliations/remove'
 import { callFunction } from '@/lib/callFunction'
 
-// ─── colour map ───────────────────────────────────────────────────────────────
+// ─── color map ───────────────────────────────────────────────────────────────
 
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -79,17 +79,17 @@ function useOrgTeamIds(orgId: string) {
 }
 
 /**
- * THE PEOPLE ON THIS ORGANISATION'S BOOKS — and deliberately not the member
+ * THE PEOPLE ON THIS ORGANIZATION'S BOOKS — and deliberately not the member
  * studios' contact lists, which this page used to download whole.
  *
  * `affiliation_summary.org_ids` array-contains THIS org: the contact holds an
- * affiliation the organisation issued, in ANY status. Someone a studio looks
+ * affiliation the organization issued, in ANY status. Someone a studio looks
  * after who has never been put on the federation's books does not appear here
  * at all, and since `orgAdminMayReadContact` they cannot be read either — so
  * this filter is not a courtesy, it is what keeps the query from being denied
  * document by document. See `docs/org-contact-visibility.md`.
  *
- * `org_ids` and NOT `active_org_ids`: an expired or merely requested licence is
+ * `org_ids` and NOT `active_org_ids`: an expired or merely requested license is
  * precisely what an administrator opens this page to chase. The status columns
  * do the narrowing; the query must not.
  *
@@ -103,7 +103,7 @@ function useOrgTeamIds(orgId: string) {
  * ABOVE THIS MANY PEOPLE ON THE FEDERATION'S BOOKS, THERE IS NO "ALL STUDIOS".
  *
  * A studio's roster is client-side by design and correct up to a size
- * (docs/scalability-2026-09.md §18); an ORGANISATION's roster is the sum of its
+ * (docs/scalability-2026-09.md §18); an ORGANIZATION's roster is the sum of its
  * studios', so the same design reaches the same ceiling several times faster —
  * a thirty-studio federation would download tens of thousands of contacts to
  * draw one table. Past this the page stops offering the whole list and offers
@@ -118,7 +118,7 @@ export const ORG_ROSTER_CAP = 2000
  * How many people each member studio has on the federation's books.
  *
  * One `count()` per studio rather than the contacts themselves — bounded by the
- * STUDIO count (tens, inside one organisation), not by the contact count, and
+ * STUDIO count (tens, inside one organization), not by the contact count, and
  * it runs on the same index the roster query uses. This is what lets the page
  * show a federation its shape without downloading it, and what decides whether
  * "all studios" is offered at all.
@@ -658,7 +658,7 @@ export default function OrgAffiliationsPage() {
   // BULK STATUS — the same job the row dropdown does, for a selection.
   //
   // It mirrors the row's rule rather than inventing a second one: a status that
-  // does NOT count as active clears the expiry (a lapsed licence has no
+  // does NOT count as active clears the expiry (a lapsed license has no
   // meaningful end date), and a status that DOES count is applied by RENEWING,
   // so the end date comes from the type's own validity rule — HMD's 1 September
   // for a fixed-date type — instead of this page guessing a date per contact.
@@ -809,7 +809,7 @@ export default function OrgAffiliationsPage() {
       )}
 
       {/* THE FEDERATION, STUDIO BY STUDIO — the view that replaces a roster the
-          organisation is too large to list (docs/scalability-2026-09.md §18).
+          organization is too large to list (docs/scalability-2026-09.md §18).
           It is not a fallback screen: each row is the way INTO that studio's
           people, which is the unit renewal season is worked in anyway. Nothing
           below it renders, because there is no list to filter or search yet. */}

@@ -3,12 +3,12 @@
 /**
  * WHAT AN AFFILIATION IS CALLED, AND WHETHER A STUDIO MAY OVERRIDE IT.
  *
- * The organisation's affiliation POLICY, as opposed to its vocabulary (the
+ * The organization's affiliation POLICY, as opposed to its vocabulary (the
  * statuses and types, next door in `AffiliationVocabularyCards`). Both are
  * mounted by `org/{orgId}/affiliation-settings`.
  *
  * Moved out of the org settings page, where they sat several screens below the
- * organisation's name and language — the same diagnosis that moved the
+ * organization's name and language — the same diagnosis that moved the
  * vocabulary cards off it in 2026-08-28, applied to the two that were left
  * behind. Nothing about them changed in the move: same queries, same fields,
  * same `isAdmin` gate, which each applies for itself.

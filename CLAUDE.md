@@ -2,10 +2,10 @@
 
 ## What this project is
 
-Linyup is a generalised SaaS version of **hmd-lineup** — a martial-arts school
+Linyup is a generalized SaaS version of **hmd-lineup** — a martial-arts school
 management platform. The goal is to strip out sport-specific logic and offer the
 same feature set (sessions, contacts, bookings, trial forms, team management,
-student mobile app) to any type of coach, club, or multi-club organisation.
+student mobile app) to any type of coach, club, or multi-club organization.
 
 **Reference implementation**: the original project lives at
 `C:\git\hmd\hmd-lineup` (or `~/git/hmd/hmd-lineup` on Mac/Linux). When porting
@@ -77,7 +77,7 @@ Root tooling: **pnpm workspaces** + **Turborepo**. Node 22 required.
 
 ### Features not yet started
 - **Stripe billing** — `SaasSubscription` type is stubbed, `saas_subscriptions` rules deny all
-- **Organisation tier** — multi-team hierarchy, `organizations/` collection stub only
+- **Organization tier** — multi-team hierarchy, `organizations/` collection stub only
 - **SaaS operator console** — no admin panel for managing tenants
 - **Full function port** — only ~15 of ~81 functions are implemented; the rest are stubbed with a `TODO: port from hmd-lineup/functions/src/{name}/index.js` comment
 - **Outreach/automation engine** — not started
@@ -160,7 +160,7 @@ Five invariants, each a bug before it was a rule:
   through a router. A callable that needs minutes or a gigabyte goes in
   `routers/heavy.ts`, whatever its domain — put it in `rpcStudio` and it is cut off
   at that router's timeout with no error at deploy time.
-- **The router adds no authorisation and removes none.** Each callable keeps its own
+- **The router adds no authorization and removes none.** Each callable keeps its own
   check, and the tenant boundary is never the router's to enforce.
 - **A name leaves `index.ts` only on the record.** The deploy runs with `--force`,
   so a dropped export DELETES the function. `ALIAS_REMOVED` (same test file) holds
@@ -272,7 +272,7 @@ common and dropping those contacts silently is exactly the failure nobody spots.
 
 `contactLifecycle(c)` in `packages/shared/src/utils/contactLifecycle.ts` is the
 only reader of the lifecycle markers, in a fixed order: `deleted` (also
-anonymised) → `archived` → `provisional` → `external` → `active`. Two
+anonymized) → `archived` → `provisional` → `external` → `active`. Two
 predicates sit on it, and they answer **different questions**:
 
 | | asks | includes |
@@ -305,7 +305,7 @@ tested against, and the names that lost — is `docs/contact-state-model.md`.
 bio-link root and `/public/{slug}/site`) — the signed-in **contact's** personal portal:
 membership (subscriptions + affiliation), bookings, editable profile, and **My courses** (the
 courses they can open). It's a **base surface** (always live, not gated on the online-courses
-plugin) and sign-in-gated — anonymous visitors get a sign-in wall. The course **catalogue**
+plugin) and sign-in-gated — anonymous visitors get a sign-in wall. The course **catalog**
 (browse + buy, incl. locked/priced cards) lives in the **Shop**, NOT here; Space only ever shows
 a contact's own entitlements, filtered from the world-readable
 `courses/{courseId}/public_profile/{courseId}` summaries (written by `syncCoursePublicProfile`,
@@ -566,24 +566,24 @@ Four invariants, each a bug before it was a rule:
   is `status: 'fixed'` (nothing to roll) and carries `course_block_id`, and
   `updateRecurringSession` + the series-wide `cancelSession` **refuse** it: the
   first deletes future sessions with no bookings check, and those are lessons
-  people paid for. Cancelling ONE lesson stays allowed.
+  people paid for. Canceling ONE lesson stays allowed.
 - **ONE PLACE WRITER.** `places_taken` is only ever an ABSOLUTE value, from
   `trackCourseBlockEnrolments`' recount or a transaction that read the
   `enrolments` subcollection. No `FieldValue.increment` on it anywhere. The
   seat rule, one level up, with sibling predicates
   (`courseBlockEnrolmentHoldsPlace`, `countHoldingPlaces`, `placesFree`,
   `placeFreedEdge`).
-- **The enrolment is the truth; the bookings are a projection.**
+- **The enrollment is the truth; the bookings are a projection.**
   `syncCourseBlockRoster` **only ever creates a booking that is missing**. That
-  one rule is what makes it re-runnable, and what makes "the member cancelled
+  one rule is what makes it re-runnable, and what makes "the member canceled
   lesson six" stick. A hold writes no bookings at all.
-- **Cancelling a whole course is ONE message, not one per lesson.** A series
+- **Canceling a whole course is ONE message, not one per lesson.** A series
   teardown mails each session's roster, so nine people on a thirteen-week course
   would get 117 mails. `cancelSingleSession` therefore takes a `notify`
   argument, carried on the job for the background path
   (`SeriesTeardownJob.notify`), and `cancelCourseBlock` sends the one mail
   itself. It suppresses the MESSAGE only: counters, waitlist closes and deletes
-  all still happen. Cancelling ONE lesson still mails the roster, through the
+  all still happen. Canceling ONE lesson still mails the roster, through the
   same function, because there it is the news. The door shuts (status write)
   BEFORE the teardown, and **no money moves**: the callable returns the
   payments that may be owed back.
@@ -602,7 +602,7 @@ Four invariants, each a bug before it was a rule:
   collection-group query is a global namespace, and the class sweep reads
   `collectionGroup('waitlist')` then walks each hit as a session booking. The
   three carried invariants (single deadline from one `resolveCourseClaimWindow`
-  call, an offered place is an ordinary enrolment carrying `waitlist_claim`,
+  call, an offered place is an ordinary enrollment carrying `waitlist_claim`,
   release before re-offering) are `docs/courses.md` → "The waiting list". The
   window is **days**, not the class queue's hours.
 
@@ -787,7 +787,7 @@ Two rules when adding one:
 - **Idempotence is the JOB's, not the queue's.** Cloud Tasks is at-least-once.
   The deterministic task id (`{teamId}-{runId}`, tenant first because a run id
   is a sequential prefix and Cloud Tasks degrades on those) is a first line of
-  defence; the guarantee has to be the job's own marker — a `reminders_sent`
+  defense; the guarantee has to be the job's own marker — a `reminders_sent`
   key, a report that refuses to overwrite its week, a status that is only ever
   flipped from `pending`.
 - **`teams where archived_at == null` matches almost nothing.** A Firestore
@@ -829,7 +829,7 @@ So, in order of preference:
    names beside it fails visibly rather than silently.
 3. **Assert it in a test.** `packages/functions/src/connect/commitSites.test.ts`
    reads the SOURCE and pins call-site tallies (it spans the functions/web
-   boundary on purpose — that boundary is where corrections stop travelling).
+   boundary on purpose — that boundary is where corrections stop traveling).
    That file is where a bare number is allowed, because there it is executable.
 
 ### A guard that SAMPLES a race is not a guard
@@ -905,7 +905,7 @@ plugin-gated, download/void/email are not. The year-end **bulk run** is a
 job (`tarif595_jobs`) drained by Cloud Task rounds through the SAME issue
 function; the member's own copy is the Space's contact-session callable
 `listMyTarif595Receipts` plus a self-write arm on `tarif595_contacts` limited
-to `TARIF595_CONTACT_SELF_FIELDS`; anonymisation deletes that row and keeps
+to `TARIF595_CONTACT_SELF_FIELDS`; anonymization deletes that row and keeps
 the receipts. Full doc: `docs/tarif-595.md`.
 The sibling `qr-invoices` plugin (an invoice with a Swiss QR-bill, the ONE
 recorded AR exception) sits on the same rails; "mark as paid" records the
@@ -929,7 +929,7 @@ this was worth more than a date.
 it through. **WHETHER and WHEN are two questions**, and fusing them was its own
 bug: **`subscriptionIsCancelling()`** answers whether (gate UI on this),
 **`subscriptionEndsAt()`** answers when *if the date is known* — it returns null
-for a pre-migration doc that is plainly cancelling — and
+for a pre-migration doc that is plainly canceling — and
 **`subscriptionCancellation()`** returns the whole record or null. All three gate
 on the current LIFECYCLE STATE, never on the presence of a cancellation field, so
 a stale record left by a reactivation is stale data, not a wrong screen.
@@ -947,7 +947,7 @@ Two writer rules, each of which was a bug first:
   unconditionally — that is the HAZARD, not the standard: a `deleted` payload
   without `cancellation_details` blanks a member's churn reason at the moment it
   is most worth having. The SaaS rule is the safe direction if it ever bites.
-  Both behaviours are pinned in `connect/dahliaReads.test.ts`; anything
+  Both behaviors are pinned in `connect/dahliaReads.test.ts`; anything
   repairing these docs reproduces ITS RAIL's rule rather than picking one.
 - **`cancellation_details` is set whole or set to null — never key-by-key.**
   Firestore DEEP-merges a nested map, so a partial write keeps the previous
@@ -1295,7 +1295,7 @@ workspace. `typecheck:seeds`, `docs:check` and `docs:index:check` are the rest
 of CI's **Lint** job, which runs more than `pnpm lint`.
 
 **After any deploy, `pnpm functions:ready --project <id>` is the truth — not the run's
-colour.** `firebase deploy` can go green while Cloud Run refuses the new revisions, and a
+color.** `firebase deploy` can go green while Cloud Run refuses the new revisions, and a
 redeploy of the same tree then skips those functions as unchanged; the deploy workflows
 run this check after `firebase deploy` and fail before any web rollout. The header of
 `scripts/check-functions-ready.mjs` owns the why and the targeted redeploy it prints.
@@ -1343,7 +1343,7 @@ hmd-lineup's UI patterns were designed carefully — especially for mobile. When
 
 - Visual style: MUI components → shadcn/ui + Tailwind equivalents
 - Redux state → TanStack Query + React context
-- Sport-specific fields: belt ranks, Swiss QR Bill, federation logic → remove or generalise
+- Sport-specific fields: belt ranks, Swiss QR Bill, federation logic → remove or generalize
 - HMD-specific copy and branding
 
 ### Rule

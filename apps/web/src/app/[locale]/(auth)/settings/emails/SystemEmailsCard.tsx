@@ -43,7 +43,7 @@ type ToggleKey =
   | 'contact_update_review'
 
 // Firestore field per key. booking_reminder reuses the pre-existing
-// settings.bookingRemindersEnabled flag (already honoured by the daily task).
+// settings.bookingRemindersEnabled flag (already honored by the daily task).
 const FIELD_PATH: Record<ToggleKey, string> = {
   booking_confirmation: 'settings.system_emails.booking_confirmation',
   booking_reminder: 'settings.bookingRemindersEnabled',

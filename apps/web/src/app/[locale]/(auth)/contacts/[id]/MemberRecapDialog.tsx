@@ -3,7 +3,7 @@
 /**
  * SEND THE MEMBER RECAP — the `ai-member-recap` module's dialog.
  *
- * It shows the email as it will arrive: the greeting, the two labelled parts and
+ * It shows the email as it will arrive: the greeting, the two labeled parts and
  * the sign-off come from `composeMemberRecap` in @linyup/shared — the very
  * function the server renders the email with — so the preview cannot drift from
  * the message. The two parts are editable, because model text addressed to a

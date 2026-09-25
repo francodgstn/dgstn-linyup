@@ -123,7 +123,7 @@ describe('the PAID appointment confirms too, and ignores the same toggle', () =>
 })
 
 describe('the FREE path keeps its toggle — the asymmetry is the design', () => {
-  it('bookSession still honours booking_confirmation', () => {
+  it('bookSession still honors booking_confirmation', () => {
     const src = read('booking/index.ts')
     assert.ok(
       /systemEmailEnabledFor\(data\.teamId, 'booking_confirmation'\)/.test(src),

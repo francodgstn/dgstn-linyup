@@ -128,7 +128,7 @@ export function isCustomDomainPassthrough(pathname: string): boolean {
  * `/de/shop` → `/de/public/{slug}/shop`; `/` → `/public/{slug}`.
  *
  * `scope` picks the tree: a team's surfaces live at `/public/{slug}`, an
- * organisation's at `/public/org/{slug}`.
+ * organization's at `/public/org/{slug}`.
  *
  * `siteAtRoot` (a team whose website is its front door): `/` is the site's
  * home, `/angebot/crossfit` its page, and only the tenant's own route segments

@@ -1,7 +1,7 @@
 // `exportContactConsentHistory` — one member's COMPLETE consent history, as a
 // self-contained artefact.
 //
-// ── WHY IT MATERIALISES THE TEXT ────────────────────────────────────────────
+// ── WHY IT MATERIALIZES THE TEXT ────────────────────────────────────────────
 // An acceptance row stores only the HASH of what was accepted; the one copy of
 // the text lives in the immutable version document. That is a complete snapshot
 // at every point that matters, at one copy of the text instead of one per
@@ -33,7 +33,7 @@
 // ── THE TWO QUERIES, AND WHY THEY ARE NEVER MERGED ──────────────────────────
 // The primary query is `acceptances where contactId == …`. The second is
 // `acceptances where identity_key == …`, and it is MANDATORY rather than an
-// optimisation:
+// optimization:
 //
 //   Anna books in March as "Anna Müller" and signs. In June a phone drops the
 //   umlaut, "Anna Muller" fails the guest match's name half, a second contact is
@@ -41,10 +41,10 @@
 //   history from contact B and gets June only — the March version, the one she
 //   actually signed under, absent from an artefact headed with her name.
 //
-// But an identity key is sha256(normalised email) and is NOT unforgeable, so a
+// But an identity key is sha256(normalized email) and is NOT unforgeable, so a
 // shared family mailbox gives a mother and her child the SAME key. Over-
 // inclusion is harmless for a redemption cap and is a FABRICATION in a consent
-// artefact. The second query's rows therefore render in their own labelled
+// artefact. The second query's rows therefore render in their own labeled
 // section — "other records for this email address" — carrying `contactId`,
 // `subject_name` and `signer_role` on every row, under a header that says an
 // email address is not a person.
@@ -59,7 +59,7 @@
 // `loadEvents` by a required parameter rather than by a caller remembering. The
 // identity-key pass is the reason it has to be said out loud: a collection group
 // spans every tenant and an identity key is sha256(an email address), so an
-// unscoped pass hands studio A its neighbours' signature rows the moment two
+// unscoped pass hands studio A its neighbors' signature rows the moment two
 // studios share a member. The second section is therefore "other records at THIS
 // studio for this email address" and the artefact says so; a person's history at
 // another studio is not this studio's to print.
@@ -133,7 +133,7 @@ export interface ConsentExportEvent {
   revoked_by?: string | null
   revoked_reason?: string | null
   revokes_acceptance_id?: string | null
-  /** The exact text, materialised from the immutable version document. */
+  /** The exact text, materialized from the immutable version document. */
   bodyHtml: string | null
   stored_body_hash: string
   /** `match` | `mismatch` | `version_missing`. Printed, never suppressed. */
@@ -245,7 +245,7 @@ function toExportEvent(
  * ── THE DEFECT THIS SIGNATURE EXISTS TO PREVENT ─────────────────────────────
  * The first cut ran `where('identity_key', '==', …)` with no team filter. A
  * collection group spans EVERY tenant, and an identity key is
- * sha256(normalised email) — a value two studios' members share the moment they
+ * sha256(normalized email) — a value two studios' members share the moment they
  * share an address. So a manager at studio A exporting one of their own members
  * received studio B's signature rows: names, addresses, consent history,
  * rendered into a downloadable artefact under studio A's letterhead. In a
@@ -440,7 +440,7 @@ export const exportContactConsentHistory = onCall(async (request: CallableReques
   // alarm, in the artefact a studio hands a lawyer, fired unconditionally by the
   // export's own shortcut. An artefact that cries wolf on every row of a section
   // teaches its reader to ignore the one row that means something. The text is
-  // still deliberately NOT materialised here (these rows are a pointer for an
+  // still deliberately NOT materialized here (these rows are a pointer for an
   // operator, not a signed artefact about this person) — but the fingerprint is
   // checked against the real snapshot, exactly as it is above.
   for (const id of otherIds) {
@@ -472,7 +472,7 @@ export const exportContactConsentHistory = onCall(async (request: CallableReques
         otherTitles.get(e.data.documentId) ?? e.data.documentId,
         versionsByDocument.get(e.data.documentId) ?? new Map()
       ),
-      // The text is deliberately NOT materialised for this section: these rows
+      // The text is deliberately NOT materialized for this section: these rows
       // are a pointer for an operator, not a signed artefact about this person.
       // The VERDICT is real, though — see above.
       bodyHtml: null,

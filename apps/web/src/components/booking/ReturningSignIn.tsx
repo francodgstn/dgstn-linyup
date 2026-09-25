@@ -11,7 +11,7 @@
 // fallback for classes; price resolution + pay-vs-free routing for
 // appointments) is NOT this component's concern — it lives in each caller's
 // `onVerified`. If `onVerified` throws, the thrown error's `.message` is
-// shown on the CURRENT step (matching the original inline behaviour where a
+// shown on the CURRENT step (matching the original inline behavior where a
 // booking failure surfaced right there on the code/select screen). A thrown
 // error with `.code === 'already-exists'` gets the shared "already
 // registered" copy, same as a bad-code rejection from the server.

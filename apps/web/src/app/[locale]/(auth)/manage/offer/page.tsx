@@ -1,6 +1,6 @@
 'use client'
 
-// ─── THE CATALOGUE ───────────────────────────────────────────────────────────
+// ─── THE CATALOG ───────────────────────────────────────────────────────────
 //
 // Activities and plans are a many-to-many, and the thing a studio is actually
 // editing is the EDGE between them — "Premium includes Yoga Basics". That edge
@@ -33,7 +33,7 @@
 // PRODUCTS ARE HERE NOW, and the file used to say flatly that they were not.
 // The old reasoning was sound about the EDGE — a product carries no access rule
 // and no benefit, so no plan can open it and the edge editor has nothing to
-// draw. It was wrong about the PAGE: a studio opening "the catalogue" expects
+// draw. It was wrong about the PAGE: a studio opening "the catalog" expects
 // everything it sells to be in it, and being told nothing is worse than being
 // told "this one is sold on its own" (Franco, 2026-08-31). So a product selects
 // like anything else, the pane shows its facts, and where the edge editor would
@@ -205,7 +205,7 @@ type PaneActionRun = { run: () => void } | { href: Route }
  * `danger` marks the destructive one, which is the only one that opens a
  * confirmation. Which destruction it is follows the kind's OWN page rather than
  * a rule invented here: an activity and a course ARCHIVE, a plan and a product
- * DELETE. The catalogue is a second door onto those records, not a second
+ * DELETE. The catalog is a second door onto those records, not a second
  * policy about them.
  */
 /** Archive or delete — whichever the kind's own page does. */
@@ -437,7 +437,7 @@ export default function CataloguePage() {
   // must not be able to move the reader somewhere else.
   const [pickedTab, setPickedTab] = useState<TabKey | null>(null)
   // ── THE EDITORS, MOUNTED HERE ────────────────────────────────────────────
-  // The catalogue is where a studio reasons about what it sells, so it is where
+  // The catalog is where a studio reasons about what it sells, so it is where
   // the things it sells should be editable — it used to be able to do nothing
   // but link away to the list page that owned the form (Franco, 2026-08-31).
   // Both dialogs are the SAME components those pages mount, lifted out of them
@@ -459,7 +459,7 @@ export default function CataloguePage() {
   /** The course dialog: null = closed, 'new' = creating, otherwise the course
    *  being edited. One piece of state, so it cannot be open twice. */
   const [courseEditing, setCourseEditing] = useState<'new' | CourseBlock | null>(null)
-  // Their own state rather than the shared confirm dialog: cancelling a course
+  // Their own state rather than the shared confirm dialog: canceling a course
   // is not a delete with a different word on the button. It has something to
   // say before (no money moves) and something to show after (who is owed it).
   const [courseDuplicating, setCourseDuplicating] = useState<CourseBlock | null>(null)
@@ -600,7 +600,7 @@ export default function CataloguePage() {
     : plans
 
   // The SAME icons name these things in the sidebar, so they are what a studio
-  // already recognises them by. The strip's layout lives with the strip.
+  // already recognizes them by. The strip's layout lives with the strip.
   // ONE LINE PER TAB saying what it holds. Written as four literal keys rather
   // than `t(`hint_${key}`)`: `i18n:check` counts computed keys and never fails
   // them, so a typo in one would ship silently. Shown on the tab's tooltip, and
@@ -743,7 +743,7 @@ export default function CataloguePage() {
    * THE RAIL'S LEADING GLYPH — the same fact the first chip states, so a studio
    * scanning twenty rows sees who may book without reading any of them.
    *
-   * The vocabulary is the catalogue's own, which is why `IdCard` means PLAN
+   * The vocabulary is the catalog's own, which is why `IdCard` means PLAN
    * REQUIRED and not "members": this page already spends that glyph on the
    * Plans rail tab, and one icon meaning both on one screen is worse than no
    * icon. `Users` is what the org nav already calls Members. The pricing form's
@@ -840,7 +840,7 @@ export default function CataloguePage() {
   }
 
   /** Click a row: select it, or clear it if it was already the selection. Was
-   *  written out per row four times over; one helper is one behaviour. */
+   *  written out per row four times over; one helper is one behavior. */
   function toggle(kind: NonNullable<Selection>['kind'], id: string) {
     select(selection?.kind === kind && selection.id === id ? null : { kind, id })
   }
@@ -849,7 +849,7 @@ export default function CataloguePage() {
    * The row's second line — the chips, flattened.
    *
    * THE SAME DERIVATION THE PANE USES, joined rather than re-decided: a row that
-   * summarised the thing differently from the pane it opens would make the
+   * summarized the thing differently from the pane it opens would make the
    * reader check which one to believe. Truncation is the layout's job (the row
    * is `truncate`), not this function's — cutting the string here would put an
    * ellipsis in the middle of the accessible name too.
@@ -926,8 +926,8 @@ export default function CataloguePage() {
       const c = courseBlocks.find((x) => x.id === id)
       if (!c) return []
       // Destroy is DELETE, not archive, and the callable refuses once anyone is
-      // enrolled: a course with people on it is CANCELLED, which owes them a
-      // mail and hands the payments back. That callable arrives with enrolment.
+      // enrolled: a course with people on it is CANCELED, which owes them a
+      // mail and hands the payments back. That callable arrives with enrollment.
       //
       // PUBLISH COMES FIRST because it is the one a studio is looking for: a
       // course lands as a draft on purpose, so its lessons can be checked on the
@@ -1154,19 +1154,19 @@ export default function CataloguePage() {
         // same thing in the first second of looking at it (Franco, 2026-08-31).
         // The related links are what this page CANNOT answer about itself:
         // what everything costs, when it actually runs, and the one sellable
-        // thing that has no catalogue row at all.
+        // thing that has no catalog row at all.
         //
         // "All activities" was not one of those — the Activities tab is right
         // there, so the link led out of the page to a subset of it. Gift cards
         // take its place: a studio sells them, but there is nothing here to
         // list, because a gift card is a CONFIG (`settings.giftCards` — enabled
         // plus the denominations) and then a ledger of issued codes. Neither is
-        // a catalogue item, so it is a link rather than a tab (Franco,
+        // a catalog item, so it is a link rather than a tab (Franco,
         // 2026-09-01).
         // Places and Payment settings join them for the same reason: both are
         // things a studio reaches for WHILE filling this page in — a class needs
         // a room that does not exist yet, and a price needs a gateway before it
-        // can be charged — and neither is a catalogue row, so neither can be a
+        // can be charged — and neither is a catalog row, so neither can be a
         // tab (Franco, 2026-09-02). Labels come from `Nav`, so the shortcut and
         // the sidebar row it leads to can never drift apart.
         quickLinks={[
@@ -1177,7 +1177,7 @@ export default function CataloguePage() {
           { href: '/payments?tab=giftCards' as Route, label: t('toGiftCards') },
         ]}
         // CREATE BELONGS TO THE ACTIVE TAB. One button that makes whatever the
-        // rail is currently listing — the catalogue could not make anything at
+        // rail is currently listing — the catalog could not make anything at
         // all before, which was the one thing its own pages still had to be
         // opened for (Franco, 2026-09-02).
         //
@@ -1189,8 +1189,8 @@ export default function CataloguePage() {
         action={
           canEdit ? (
             // THE USUAL DROP-IN PRICE sits beside Create: it prices every class
-            // that follows it, so it is a catalogue-wide setting and belongs in
-            // the catalogue's own header rather than on the read-only Pricing
+            // that follows it, so it is a catalog-wide setting and belongs in
+            // the catalog's own header rather than on the read-only Pricing
             // page (decision 29).
             <div className="flex flex-wrap items-center gap-2">
             <StudioDropInButton currency={currency} />
@@ -1247,7 +1247,7 @@ export default function CataloguePage() {
           NO TILES. Four bordered cards made four boxes to look at before you
           could read any of them, and the borders were doing work the words
           already did. The icon and the word sit straight on the background,
-          divided by hairlines, and ONLY THE ACTIVE ONE is marked — by colour and
+          divided by hairlines, and ONLY THE ACTIVE ONE is marked — by color and
           an underline, the two cheapest signals there are (Franco, 2026-09-02).
 
           Size is still the point: this is where a studio spends its first weeks
@@ -2333,9 +2333,9 @@ function PaneBody({
              shows so much (facts, prices, the plan table) that a small pencil
              among three others read as "one more of those" rather than "there
              is a whole other half of this thing", which is the name, the
-             description, the colour, the prose (Franco, 2026-09-01).
+             description, the color, the prose (Franco, 2026-09-01).
 
-             So it sits BELOW the icon row, labelled, in the same place on every
+             So it sits BELOW the icon row, labeled, in the same place on every
              kind. The icons stay icon-only — three same-shaped verbs where
              position teaches faster than repeated words. */
           <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -2373,7 +2373,7 @@ function PaneBody({
             </div>
             {/* Edit stays a BUTTON only where the editor is somewhere else — a
                 course and a product are edited on their own page. Where the
-                fields are right here under a tab, a button labelled "Edit"
+                fields are right here under a tab, a button labeled "Edit"
                 beside them said the visible fields were not editing, which was
                 false, and gave no hint of what it hid (Franco, 2026-09-02). */}
             {(extraTabs?.length ? [] : actions.filter((a) => a.key === 'edit')).map((a) =>
@@ -2417,7 +2417,7 @@ function PaneBody({
  *
  * The pane holds two different questions — what this costs and who it is for,
  * and what the thing itself is. Splitting the second further would trade one
- * hunt for another: a name, a colour, the prose and the session lengths are all
+ * hunt for another: a name, a color, the prose and the session lengths are all
  * "what this is", and a studio reads them together.
  *
  * Booking and pricing leads because it is the one asked most often, and it is
@@ -2538,10 +2538,10 @@ function RailRow({
   name: string
   /** The second line — see `detailLine` in the page. */
   detail?: string
-  /** Leads the detail line, labelling the fact the line OPENS with. Only the
+  /** Leads the detail line, labeling the fact the line OPENS with. Only the
    *  activity rows pass one, and `activityChips` puts the access fact first for
    *  exactly that reason — an icon sitting next to a freeform tag would look
-   *  like it labelled the tag. */
+   *  like it labeled the tag. */
   detailIcon?: LucideIcon
   color?: string
   warn?: boolean
@@ -2565,7 +2565,7 @@ function RailRow({
       // 2026-09-02).
       //
       // The border carries selection rather than a fill: on a card the fill
-      // reads as a hover that got stuck, while a coloured edge reads as "this
+      // reads as a hover that got stuck, while a colored edge reads as "this
       // one", and it survives the drag shadow without fighting it.
       className={`group flex items-center rounded-lg border bg-card transition-colors ${
         sortable?.isDragging ? 'shadow-lg' : ''

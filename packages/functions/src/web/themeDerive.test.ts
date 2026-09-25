@@ -6,8 +6,8 @@ import {
   SURFACE_THEME_PRESETS,
 } from '@linyup/shared'
 
-// The derivation turns a studio's own colours into a page that is still
-// READABLE. These tests are about that guarantee, and about the colour a studio
+// The derivation turns a studio's own colors into a page that is still
+// READABLE. These tests are about that guarantee, and about the color a studio
 // picks reaching the page unchanged when it safely can.
 
 function luminance(hex: string): number {
@@ -16,21 +16,21 @@ function luminance(hex: string): number {
   return hsl!.l
 }
 
-/** A gradient background carries no single hex — pull the base colour a light
+/** A gradient background carries no single hex — pull the base color a light
  *  test can read from either form. */
 function bgHex(background: string): string {
   const m = background.match(/#[0-9a-f]{6}/gi)
   return m ? m[m.length - 1] : background
 }
 
-describe('deriveCustomPreset — the colour you pick is the page', () => {
-  it('uses a light colour verbatim as the light page', () => {
+describe('deriveCustomPreset — the color you pick is the page', () => {
+  it('uses a light color verbatim as the light page', () => {
     const p = deriveCustomPreset({ light: '#eef2ff' })!
     assert.equal(p.light.background, '#eef2ff')
     assert.equal(p.light.scheme, 'dark')
   })
 
-  it('uses an explicit dark colour verbatim as the dark page', () => {
+  it('uses an explicit dark color verbatim as the dark page', () => {
     const p = deriveCustomPreset({ light: '#eef2ff', dark: '#101425' })!
     assert.equal(p.dark.background, '#101425')
     assert.equal(p.dark.scheme, 'light')
@@ -45,7 +45,7 @@ describe('deriveCustomPreset — the colour you pick is the page', () => {
     assert.ok(luminance(p.dark.background) <= 20, 'and be actually dark')
   })
 
-  it('single: one colour, one look, non-adaptive', () => {
+  it('single: one color, one look, non-adaptive', () => {
     const p = deriveCustomPreset({ light: '#12162a', single: true })!
     assert.equal(p.light.background, '#12162a')
     assert.deepEqual(p.light, p.dark)
@@ -53,7 +53,7 @@ describe('deriveCustomPreset — the colour you pick is the page', () => {
     assert.equal(p.light.scheme, 'light')
   })
 
-  it('single with a light colour gives a light site', () => {
+  it('single with a light color gives a light site', () => {
     const p = deriveCustomPreset({ light: '#fdf2f6', single: true })!
     assert.equal(p.light.scheme, 'dark')
     assert.equal(p.adaptive, false)
@@ -72,7 +72,7 @@ describe('deriveCustomPreset — the colour you pick is the page', () => {
     assert.ok(l <= 40 || l >= 66, `mid L=${l} would carry no text`)
   })
 
-  it('returns null for a colour that will not parse', () => {
+  it('returns null for a color that will not parse', () => {
     assert.equal(deriveCustomPreset({ light: 'chartreuse' }), null)
     assert.equal(deriveCustomPreset({ light: '' }), null)
   })
@@ -97,7 +97,7 @@ describe('hexToHsl', () => {
   it('accepts shorthand and full hex, with or without the hash', () => {
     for (const v of ['#fff', 'fff', '#ffffff', 'FFFFFF']) assert.equal(hexToHsl(v)?.l, 100, v)
   })
-  it('returns null for anything that is not a hex colour', () => {
+  it('returns null for anything that is not a hex color', () => {
     for (const v of ['', 'red', 'rgb(0,0,0)', '#12345', 'linear-gradient(red, blue)', '#ggg']) {
       assert.equal(hexToHsl(v), null, v)
     }
@@ -121,7 +121,7 @@ describe('resolveThemePreset — one door for both kinds', () => {
     assert.equal(resolveThemePreset({ presetId: 'not-a-preset' }), null)
   })
 
-  it('returns null for custom with no or an unusable colour', () => {
+  it('returns null for custom with no or an unusable color', () => {
     assert.equal(resolveThemePreset({ presetId: 'custom' }), null)
     assert.equal(resolveThemePreset({ presetId: 'custom', light: 'nope' }), null)
   })
@@ -160,7 +160,7 @@ describe('deriveCustomPreset — the card is neutral, so it comes out of the pag
   it('a strongly-tinted page gets a near-hueless card', () => {
     const p = deriveCustomPreset({ light: '#0a3d0a' })! // saturated green
     assert.ok(chroma(p.dark.surface) <= 20, `card chroma ${chroma(p.dark.surface)} should be near-neutral`)
-    assert.ok(chroma(p.dark.surface) < chroma('#0a3d0a'), 'and far less coloured than the page')
+    assert.ok(chroma(p.dark.surface) < chroma('#0a3d0a'), 'and far less colored than the page')
   })
 
   it('a light page gets a near-white card, a dark page a light-neutral one', () => {

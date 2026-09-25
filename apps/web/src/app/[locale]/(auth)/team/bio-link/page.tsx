@@ -80,7 +80,7 @@ const linkSchema = z.object({
 })
 
 const schema = z.object({
-  // ONE choice, both colour schemes — see packages/shared/src/types/themePreset.ts.
+  // ONE choice, both color schemes — see packages/shared/src/types/themePreset.ts.
   // '' means "still on the legacy theme + background fields", which is what a
   // bio-link authored before presets has and what the picker shows as unchosen.
   themePreset: z.string(),
@@ -232,8 +232,8 @@ function AppearanceTab({
         </div>
       </div>
 
-      {/* Theme — ONE control carrying both colour schemes.
-          It replaces a light/dark/auto switch AND a free background colour or
+      {/* Theme — ONE control carrying both color schemes.
+          It replaces a light/dark/auto switch AND a free background color or
           gradient. Those two crossed: "auto" with a fixed background followed
           the viewer for the text and not for the page, and a light theme with a
           dark background was patched over by a luminance check that silently
@@ -274,8 +274,8 @@ function AppearanceTab({
 
       {/* THE BACKGROUND PICKER IS GONE, and that is the point. It was the
           half of the pair that crossed with the theme above; a preset carries
-          the background for BOTH colour schemes, so there is nothing left to
-          choose separately. A studio that had picked a colour or a gradient
+          the background for BOTH color schemes, so there is nothing left to
+          choose separately. A studio that had picked a color or a gradient
           keeps it until it chooses a preset here — the renderer falls back. */}
     </div>
   )
@@ -661,7 +661,7 @@ export default function TeamBioLinkEditorPage() {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null)
 
-  // Initialise image state when team loads
+  // Initialize image state when team loads
   useEffect(() => {
     if (team) {
       setProfileImageUrl(team.profileImage ?? null)
@@ -964,7 +964,7 @@ function stripUndefined<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj)) as T
 }
 
-// Normalises stored links for the form, mapping any legacy is{Booking,Membership,
+// Normalizes stored links for the form, mapping any legacy is{Booking,Membership,
 // Courses,Shop}Link booleans to the new `target` page-link discriminator. No
 // injection/filtering — page links are added explicitly via the "+ Add" menu.
 function buildLinks(rawLinks: Team['links']): FormData['links'] {
@@ -1002,7 +1002,7 @@ function getDefaults(team: Team | null): FormData {
     whatsapp: getSocial('whatsapp'),
     website: getSocial('website'),
     review: getSocial('review'),
-    // Normalise stored links + map any legacy boolean flags to `target`.
+    // Normalize stored links + map any legacy boolean flags to `target`.
     links: buildLinks(team?.links ?? []),
   }
 }

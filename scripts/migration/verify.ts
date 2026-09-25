@@ -42,7 +42,7 @@ export async function verify(teamIds: string[], sampled = false): Promise<void> 
     // `users` is filtered a different way — pass 1 migrates ACTIVE users only —
     // so a raw count over-reports there too. It is left raw and flagged rather
     // than silently reconciled, because "how many users are active" is the
-    // migration's own judgement and not something this check should re-derive.
+    // migration's own judgment and not something this check should re-derive.
     // A SAMPLE IMPORTS THREE CLUBS OUT OF SIXTEEN, and `teams` is the one row
     // that would call that a failure: its source side is a raw collection count,
     // so it compares the whole federation against the handful that was asked

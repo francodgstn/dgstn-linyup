@@ -195,7 +195,7 @@ QR-only app unless configured.
    and a `Settings → Member app` page for the min-version gate; the login
    chain's decisions lifted into pure modules with mocha tests incl.
    `login_emails` (`auth/loginChain.test.ts`) and `switchActiveContact` now
-   honours `login_emails` like the login does; `app_settings/mobile` rule +
+   honors `login_emails` like the login does; `app_settings/mobile` rule +
    rules test; the update-required screen (fails open); a Maestro smoke flow
    (`apps/mobile/.maestro/login.yaml`, not in CI). Sandbox was already in the
    config map since step 1.
@@ -215,7 +215,7 @@ QR-only app unless configured.
 
 ## 5. White-label — what it would take, recorded so it is not re-derived
 
-- *Runtime theming in the one app* (step 5) honours the marketing claim with
+- *Runtime theming in the one app* (step 5) honors the marketing claim with
   zero new data: `TeamPublicProfile` already carries `bioLinkThemePreset`,
   accent, background, `profileImage`, `heroImage`.
 - *Per-org variant binaries* are mechanically cheap (`APP_VARIANT` env →
@@ -270,13 +270,13 @@ Collected during autonomous execution; none blocks the current steps.
   gradients, chart series, the attendance calendar, the gamification card
   (`BadgesCard`, `PerformanceProfileSection`, `GamificationCard`,
   `AttendanceCalendar`, most of `ProfileScreen`'s detail rows). They are
-  categorical colours, many per file, and remapping them without a device to
+  categorical colors, many per file, and remapping them without a device to
   look at is a visual regression waiting to happen. The brand-adjacent ones
   (anything that was Linyup purple/indigo and now fights the studio accent)
-  are tokenised; the rest is a device-verified pass.
+  are tokenized; the rest is a device-verified pass.
 - **`APP_VARIANT` has one entry and no consumer.** An org-branded build is a
   second entry (name, slug, scheme, bundle id, icon set) plus its own EAS
-  project and credentials — i.e. the per-organisation developer accounts §5
+  project and credentials — i.e. the per-organization developer accounts §5
   names as the deciding cost. Nothing in `src/` would change: the runtime
   theme already follows the studio.
 - **Maestro is not in CI.** The flow exists and runs locally against any

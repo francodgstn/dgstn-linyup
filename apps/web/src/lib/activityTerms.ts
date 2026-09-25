@@ -40,7 +40,7 @@ export type ActivityTermKind =
 export interface ActivityTerm {
   kind: ActivityTermKind
   /** dropIn — the flat per-class price. trial — the paid-trial price (major
-   *  units); absent/undefined means the trial is FREE (today's behaviour). */
+   *  units); absent/undefined means the trial is FREE (today's behavior). */
   amount?: number
   /** price only (appointments) — lowest priced duration. Equal to `max` when
    *  every priced duration shares the same price. */
@@ -77,7 +77,7 @@ export interface ActivityTermsInput {
    *  take a newcomer's trial booking. */
   trialEnabled?: boolean
   /** CLASS-ONLY. Reduced trial price (major units), sitting next to
-   *  `trialEnabled`. Absent/null ⇒ FREE trial (today's behaviour); a number ⇒
+   *  `trialEnabled`. Absent/null ⇒ FREE trial (today's behavior); a number ⇒
    *  the trial costs that instead of the class's normal price. */
   trialPriceAmount?: number | null
   /** CLASS-ONLY. Ignored for appointments (money is the only gate there). */
@@ -213,7 +213,7 @@ export type SubLookup = (subscriptionTypeId: string) => ResolvedSub | null
 export interface ActivityPricingDisplay {
   type: 'class' | 'appointment'
   /** null ⇒ no trial offered. `{ priceAmount: null }` ⇒ FREE trial (today's
-   *  behaviour). `{ priceAmount: 15 }` ⇒ a paid trial at that price. */
+   *  behavior). `{ priceAmount: 15 }` ⇒ a paid trial at that price. */
   trial: { priceAmount: number | null } | null
   /** "Included with {name} — {priceLabel}" — a class gated at the 'subscription'
    *  tier OR an appointment's INCLUDED member benefit. One per resolvable
@@ -232,7 +232,7 @@ export interface ActivityPricingDisplay {
    *  So a surface must NOT name subscription plans or quote a price here: the
    *  true answer to "what do I have to buy?" is NOTHING, and a price would send
    *  a prospect to the shop for something they do not need. It points at the
-   *  signup surface instead. This resolver takes no plan catalogue for exactly
+   *  signup surface instead. This resolver takes no plan catalog for exactly
    *  that reason — the wrong line is not merely discouraged, it is
    *  unrepresentable.
    *
@@ -242,7 +242,7 @@ export interface ActivityPricingDisplay {
   signedUpOnly: boolean
   /** TRUE for a 'subscription'-tier class whose gate names NO plan this surface
    *  can resolve — either the rule lists no ids at all, or every id it lists is
-   *  missing from the public plan catalogue (a legacy plan the studio no longer
+   *  missing from the public plan catalog (a legacy plan the studio no longer
    *  sells still gates its classes, and `public: false` hides it from the
    *  lookup).
    *
@@ -337,10 +337,10 @@ export function resolveActivityPricingDisplay(
 /**
  * The money chips an ADMIN surface shows for one activity, as ready labels.
  *
- * Extracted from the activities list (2026-08-31) when the catalogue's detail
+ * Extracted from the activities list (2026-08-31) when the catalog's detail
  * pane started showing the same facts. Two surfaces deriving "what does this
  * cost" from `resolveActivityTerms` in two places is how they end up disagreeing
- * about, say, whether a benefit chip names its plan — and the catalogue exists
+ * about, say, whether a benefit chip names its plan — and the catalog exists
  * precisely to be believed about pricing.
  *
  * It stays HERE rather than in a component because it is the same kind of thing

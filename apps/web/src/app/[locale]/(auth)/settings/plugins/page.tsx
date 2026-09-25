@@ -1,17 +1,17 @@
 // The Settings stop for plugins, and the legacy path of the marketplace.
 //
 // WITH A QUERY it redirects, as it always has: `?plugin=<id>` deep links (below)
-// must keep opening the catalogue on that plugin's card. WITHOUT ONE it renders
+// must keep opening the catalog on that plugin's card. WITHOUT ONE it renders
 // PluginsPlaceholder — this is where the settings rail's Plugins row lands, so a
 // click in the settings list keeps the studio in settings until it chooses to
-// open the catalogue (see PluginsPlaceholder).
+// open the catalog (see PluginsPlaceholder).
 //
 // The plugins marketplace is a FULL PAGE again, at /plugins —
 // where its per-plugin editors already live (/plugins/website, /plugins/finance,
-// …), so the catalogue and the things it installs finally share a prefix.
+// …), so the catalog and the things it installs finally share a prefix.
 //
 // It spent 2026-08→09 inside the settings shell so it would read like a settings
-// section (UX-61). It does not: it is a catalogue you browse, compare and buy
+// section (UX-61). It does not: it is a catalog you browse, compare and buy
 // from, and the rail beside it cost the card grid a third of its width on the
 // one screen in the app that is nothing but a grid (Franco, 2026-09-20).
 //

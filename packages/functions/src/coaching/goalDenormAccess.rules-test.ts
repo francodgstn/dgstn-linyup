@@ -17,7 +17,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 // trackContactAlerts, all Admin-SDK — which bypasses these rules entirely).
 // No client write — not even a team owner's — may forge them.
 //
-// This file also pins the true (and asymmetric) behaviour around evaluating a
+// This file also pins the true (and asymmetric) behavior around evaluating a
 // COACH-created goal: the evaluation CREATE is allowed, but the client cannot
 // then cascade the parent goal's own `status` field, because that update
 // branch is gated on `resource.data.created_by == 'student'`.
@@ -173,7 +173,7 @@ describe('firestore.rules — coaching denormalized fields', function () {
 
   // Not a counter but the same guard: `ai_summary` is written by the
   // generateContactSummary callable only, so what the page labels "written by
-  // AI" was. A client that could set it would be labelling its own prose.
+  // AI" was. A client that could set it would be labeling its own prose.
   it('a team owner CANNOT forge ai_summary on the contact', async () => {
     const db = ownerSession()
     await assertFails(

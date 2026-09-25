@@ -83,7 +83,7 @@ export default function AppointmentCancelPage() {
             <h1 className="text-xl font-bold">{t('cancelledTitle')}</h1>
             <p className="text-sm text-muted-foreground">{t('cancelledMessage')}</p>
             {/* An appointment is the rail most likely to have been PAID for, and
-                cancelling it returns no money — saying so here is the difference
+                canceling it returns no money — saying so here is the difference
                 between a member who asks the studio and one who waits. */}
             {cancelEffectKeys(returned, 'did').map((key) => (
               <p key={key} className="text-sm text-muted-foreground">

@@ -25,7 +25,7 @@
  * `useState` initializer, and opens its own existing create dialog. Nothing is
  * lifted or duplicated — the dialog stays where it lives, owned by the page
  * that owns the data. `quickActionOpensDialog` names the param so the pages and
- * this catalogue cannot drift on the spelling.
+ * this catalog cannot drift on the spelling.
  */
 
 import type React from 'react'
@@ -47,7 +47,7 @@ export const QUICK_ACTION_MAX = 5
 export const QUICK_ACTION_PARAM = 'new'
 
 /** Prefix for the per-rule automation entries, which are DATA (one per active
- *  rule) rather than members of the static catalogue below. */
+ *  rule) rather than members of the static catalog below. */
 export const QUICK_ACTION_AUTOMATION_PREFIX = 'automation:'
 
 export interface QuickActionDef {
@@ -66,7 +66,7 @@ export interface QuickActionDef {
 }
 
 /**
- * The fixed catalogue. Order here is the order in the picker — roughly how
+ * The fixed catalog. Order here is the order in the picker — roughly how
  * often a studio reaches for each, not alphabetical, for the same reason
  * NAV_SECTIONS is not sorted.
  */
@@ -97,7 +97,7 @@ export const QUICK_ACTION_CATALOGUE: QuickActionDef[] = [
   },
   // The one that does NOT navigate: the QR is a dialog with nothing behind it,
   // so sending someone to a page to see it would be the bare-link failure this
-  // catalogue exists to avoid.
+  // catalog exists to avoid.
   { id: 'studio-qr', labelKey: 'studioQr', icon: QrCode, href: null },
 ]
 
@@ -122,7 +122,7 @@ export function quickActionForAutomation(ruleId: string, name: string): QuickAct
   }
 }
 
-/** The rule id behind an automation entry, or null for a catalogue action. */
+/** The rule id behind an automation entry, or null for a catalog action. */
 export function quickActionAutomationRuleId(id: string): string | null {
   return id.startsWith(QUICK_ACTION_AUTOMATION_PREFIX)
     ? id.slice(QUICK_ACTION_AUTOMATION_PREFIX.length) || null

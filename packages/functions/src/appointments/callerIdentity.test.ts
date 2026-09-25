@@ -17,7 +17,7 @@ import {
 // one the bug report noticed:
 //
 //   1. the screen quoted a member the GUEST price and then Stripe charged the
-//      member price — wrong in the customer's favour, self-correcting at the
+//      member price — wrong in the customer's favor, self-correcting at the
 //      payment page, a display bug;
 //   2. a COVERED member was routed into `createAppointmentCheckout`, which
 //      refuses `{ reason: 'covered' }` by design, and the picker rendered that
@@ -201,7 +201,7 @@ describe('THE PICKER FEEDS THE RESOLVER THE SIGNED-IN CONTACT', () => {
     assert.equal(
       (src.match(/reason === 'covered'/g) ?? []).length,
       2,
-      'both paid submits — the guest form and the member CTA — must recognise a ' +
+      'both paid submits — the guest form and the member CTA — must recognize a ' +
         "`covered` refusal and walk through the free door instead of ending the booking"
     )
   })

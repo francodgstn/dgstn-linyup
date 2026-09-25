@@ -81,7 +81,7 @@ Different requirements, same sources:
   exists precisely to avoid maintaining an iPad set forever
   (`docs/mobile-store-setup.md`). The set here is 1290×2796 (6.7"), captured
   on a physical iPhone and moved over USB — anything that treats an image as a
-  photo to be optimised (a messaging app, mail's "resize to medium") silently
+  photo to be optimized (a messaging app, mail's "resize to medium") silently
   downscales them, and the first attempt arrived at 590×1280, which Apple
   rejects on sight. **Three screens, not four:** 01/02/04 keep the Android
   numbering so one screen has one number on both stores; 03, the performance

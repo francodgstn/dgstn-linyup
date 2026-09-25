@@ -95,7 +95,7 @@ export default function GamificationHome() {
     const month = leaderboard?.month
     if (!month) return ''
     // Mid-month, noon UTC: an instant that is inside `month` in EVERY zone, so
-    // the studio-zone formatter cannot land on the neighbouring month.
+    // the studio-zone formatter cannot land on the neighboring month.
     const parsed = new Date(`${month}-15T12:00:00Z`)
     if (Number.isNaN(parsed.getTime())) return month
     return fmt.monthYear(parsed)

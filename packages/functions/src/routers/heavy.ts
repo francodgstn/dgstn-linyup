@@ -12,7 +12,7 @@
 // whole run, so a second one on the same instance is competition, not sharing.
 //
 // Every member ALSO stays exported standalone from src/index.ts until its alias
-// is provably unused (utils/frozenFunctions.test.ts says why). Authorisation is
+// is provably unused (utils/frozenFunctions.test.ts says why). Authorization is
 // each member's own; the router adds none and removes none. This module must NOT
 // call `setGlobalOptions` — src/index.ts owns it.
 

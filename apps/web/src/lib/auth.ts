@@ -61,7 +61,7 @@ export async function resetPassword(email: string) {
 
 // ─── social providers ──────────────────────────────────────────────────────
 // Each provider must also be enabled in the Firebase console (Authentication →
-// Sign-in method) and, for production, the OAuth redirect domain authorised.
+// Sign-in method) and, for production, the OAuth redirect domain authorized.
 // The Auth emulator renders a fake account-picker popup so these work locally.
 
 export type SocialProvider = 'google' | 'apple'

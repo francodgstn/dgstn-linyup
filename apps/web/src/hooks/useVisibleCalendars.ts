@@ -151,7 +151,7 @@ export interface VisibleCalendarsValue {
 
 export function useVisibleCalendars(): VisibleCalendarsValue {
   // Starts at the default and hydrates after mount — localStorage does not exist
-  // during SSR, and reading it in the initialiser would hydrate-mismatch.
+  // during SSR, and reading it in the initializer would hydrate-mismatch.
   const [calendars, setCalendars] = useState<ScheduleCalendar[]>(() => [
     ...DEFAULT_VISIBLE_CALENDARS,
   ])

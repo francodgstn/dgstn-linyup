@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 import { goalIsArchived, sortSteps, type Goal } from '@linyup/shared'
 
 // The two predicates behind the admin tab's sort control and the archive that
-// every surface honours. Both are pure; the ordering rules they encode are the
+// every surface honors. Both are pure; the ordering rules they encode are the
 // ones a coach notices immediately when they are wrong — an unplaced task
 // jumping to the top of a list, or a filed-away goal reappearing.
 

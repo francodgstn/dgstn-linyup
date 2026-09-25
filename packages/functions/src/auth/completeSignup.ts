@@ -133,7 +133,7 @@ export const completeSignup = onCall(async (request) => {
     if (codeData.used) {
       throw new HttpsError('already-exists', 'This verification code has already been used')
     }
-    // Defence in depth: bind completion to knowledge of the code itself, not just
+    // Defense in depth: bind completion to knowledge of the code itself, not just
     // the (client-held) codeId. The 15-min expiry is intentionally NOT re-checked
     // here — verifyContactCode already enforced it; signup completion may legitimately
     // happen later. Constant-time compare to avoid a timing oracle on the code.

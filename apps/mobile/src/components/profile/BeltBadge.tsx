@@ -5,13 +5,13 @@ import type { RankBadge } from '@linyup/shared';
 /**
  * A level's badge, drawn from the ONE resolved shape — `RankBadge`, the output
  * of @linyup/shared's `rankLevelBadge`: uploaded artwork, else an emoji, else
- * a split colour, else a solid one. This component switches on `kind` and
+ * a split color, else a solid one. This component switches on `kind` and
  * never re-derives that precedence from loose colour/emoji/image props, which
  * is what its previous version did (and what the shared function exists to
  * prevent — "which of these four fields wins" answered slightly differently
  * on every surface).
  *
- * A club identifies its levels the way its sport does — a belt colour here, a
+ * A club identifies its levels the way its sport does — a belt color here, a
  * sea animal at a swim school, a club's own artwork elsewhere — so this renders
  * all of them rather than assuming a belt.
  */

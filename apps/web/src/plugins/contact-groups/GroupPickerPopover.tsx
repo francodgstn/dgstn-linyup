@@ -3,7 +3,7 @@
 // The group check-list popover. Extracted from ContactGroupsChips so the same
 // control serves both places a contact's groups get changed: the contact detail
 // header, and the groups page's member rows (quick-assign without leaving the
-// group you're working in). One component means one behaviour — toggling,
+// group you're working in). One component means one behavior — toggling,
 // nesting indentation, and the empty state can't drift apart.
 //
 // Caller supplies the trigger, since the two sites look nothing alike (a dashed

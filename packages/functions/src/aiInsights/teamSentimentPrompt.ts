@@ -9,7 +9,7 @@
 // The input is the per-contact AI summaries the studio has already generated
 // (`Contact.ai_summary`), not the contacts' records. That is the design Franco
 // asked for (2026-09-16), and it has two consequences worth stating: the reading
-// covers only the people somebody summarised, so the card always says how many
+// covers only the people somebody summarized, so the card always says how many
 // it read; and no new fact about any person reaches the model — every line here
 // was already written by the model about that person.
 //
@@ -120,7 +120,7 @@ function unfence(text: string): string {
  * The reply → a mood and four parts. The same discipline as the contact summary:
  * each part through `normaliseSummary` with its own caps; a reply stopped
  * mid-JSON keeps the parts whose string closed; a mood outside the vocabulary is
- * null rather than a word the card cannot colour. Null when nothing usable came
+ * null rather than a word the card cannot color. Null when nothing usable came
  * back — the caller refuses rather than storing an empty reading.
  */
 export function readTeamSentimentReply(

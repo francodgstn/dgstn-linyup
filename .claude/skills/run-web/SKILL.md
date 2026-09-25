@@ -131,7 +131,7 @@ Driver gotchas (each one cost a debugging round):
   prefer keyboard interaction, or design the flow to keep the defaults.
 - **Scope card locators tightly.** A broad
   `.filter({ has: text }).getByRole('button')` on a card grid matched a
-  NEIGHBOURING card's button once. Anchor on the card's own heading and walk
+  NEIGHBORING card's button once. Anchor on the card's own heading and walk
   down, and screenshot after every mutating click.
 - **Check browser console errors before declaring success** (collect
   `page.on('console')` / `page.on('pageerror')`).

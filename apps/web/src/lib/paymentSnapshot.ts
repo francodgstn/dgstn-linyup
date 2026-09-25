@@ -9,7 +9,7 @@
 // union of live subscriptions + usable credit packs — see
 // `Activity.heldSubscriptionTypeIds` in packages/shared/src/types/activity.ts), so
 // every id is reported as unmetered and `heldCreditTypes` stays empty. This
-// reproduces today's optimistic client behaviour exactly: a held credit-pack type
+// reproduces today's optimistic client behavior exactly: a held credit-pack type
 // is treated as "covered", never as "spend one credit" — the server is what
 // actually spends the credit atomically at booking time.
 

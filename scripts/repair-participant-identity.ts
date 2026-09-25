@@ -13,8 +13,8 @@
  *
  * ── WHY NOT JUST RE-RUN PASS 6 WITH `--overwrite` ───────────────────────────
  * Because that pass also re-stamps every BOOKING from the source, and a booking
- * on a live target has since been confirmed, cancelled or marked no-show by a
- * real person. Repairing attendance must not roll back attendance's neighbour.
+ * on a live target has since been confirmed, canceled or marked no-show by a
+ * real person. Repairing attendance must not roll back attendance's neighbor.
  *
  * ── IDEMPOTENT, AND CHEAP ON A SECOND RUN ───────────────────────────────────
  * A session whose rows all carry `checkedInAt` is already canonical and is

@@ -3,7 +3,7 @@ import type { PluginManifest } from '@linyup/shared'
 /**
  * HMD — a TENANT-SPECIFIC plugin CONTAINER.
  *
- * HMD (Hwal Moo Do) is the organisation Linyup's predecessor was built for, and
+ * HMD (Hwal Moo Do) is the organization Linyup's predecessor was built for, and
  * its first migrated customer. Everything HMD needs that no other tenant should
  * see lives inside this container: the Fighting Cup today, and later its belt
  * progression rules, its predefined automations and templates, its technical
@@ -23,7 +23,7 @@ import type { PluginManifest } from '@linyup/shared'
  * deferred is settled by not renaming anything.
  *
  * ── THE AUDIENCE GATES DISCOVERY, NEVER RUNNING ──────────────────────────────
- * `audience` keeps one customer's name out of every other tenant's catalogue —
+ * `audience` keeps one customer's name out of every other tenant's catalog —
  * see `PluginAudience` in @linyup/shared, which is emphatic that nothing
  * resolving an INSTALLED plugin may consult it. So yes: a studio owner on
  * studio/organization could hand-write a member install document and get the

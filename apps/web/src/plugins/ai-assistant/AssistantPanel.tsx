@@ -161,7 +161,7 @@ function AssistantPanel() {
  * An IN-APP link (a path starting with `/`) goes through the locale-aware router
  * and closes the panel, so "open Settings › Roles" lands on the page in the
  * member's language without a full reload. A modified click (new tab, new window)
- * and every external link keep the browser's own behaviour — external ones open
+ * and every external link keep the browser's own behavior — external ones open
  * in a new tab, set by `renderChatMarkdown`.
  */
 function AssistantReply({ content, onNavigate }: { content: string; onNavigate: () => void }) {

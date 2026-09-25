@@ -109,7 +109,7 @@ export interface LeadActivityDef {
   description: string
   /** The heading this activity sits under on the public booking page
    *  (Activity.bookingGroup) — the studio's own words, open set, absent ⇒
-   *  ungrouped (renders last). A long catalogue reads as a few sections
+   *  ungrouped (renders last). A long catalog reads as a few sections
    *  instead of one flat list. */
   bookingGroup?: string
   /** Group-class capacity shown/enforced on the public booking surface. */
@@ -325,7 +325,7 @@ export interface LeadAvailabilityDef {
   times?: string[]
   /** Gap enforced before/after each appointment (minutes). Default 0. */
   bufferMinutes?: number
-  /** Demo realism only: already-booked appointments to materialise against this
+  /** Demo realism only: already-booked appointments to materialize against this
    *  availability, shaped exactly as the `bookAppointment` callable writes them. */
   booked?: LeadBookedAppointmentDef[]
 }

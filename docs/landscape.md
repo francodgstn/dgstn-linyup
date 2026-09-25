@@ -93,7 +93,7 @@ three levels of zoom:
 
 - **Context:** Linyup as one box, with the people who use it and the outside
   systems it depends on.
-- **Containers:** what runs inside that box, with a labelled arrow for every
+- **Containers:** what runs inside that box, with a labeled arrow for every
   call. A dashed arrow is an event, a webhook or a queue: nobody waits on it.
 - **Components:** inside the web app and inside Cloud Functions.
 

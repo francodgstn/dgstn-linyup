@@ -427,7 +427,7 @@ describe('resolvePaymentOptions — course (shop/Space tiers incl. P6 widening)'
       expected: covered({ reason: 'subscription', subscriptionTypeId: 'gold' }),
     },
     {
-      name: 'P6: coverage honours active_subscriptions beyond the primary (held union)',
+      name: 'P6: coverage honors active_subscriptions beyond the primary (held union)',
       snapshot: contact({ heldUnmeteredTypeIds: ['second-sub'] }),
       target: t({ type: 'subscription', subscriptionTypeIds: ['second-sub'] }),
       expected: covered({ reason: 'subscription', subscriptionTypeId: 'second-sub' }),

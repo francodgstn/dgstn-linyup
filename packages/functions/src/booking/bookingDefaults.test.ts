@@ -49,10 +49,10 @@ describe('migration: transformSession.allowBooking', () => {
     )
   })
 
-  it('opens an upcoming session and keeps a past or cancelled one closed', () => {
+  it('opens an upcoming session and keeps a past or canceled one closed', () => {
     assert.ok(
       src.includes('out.allowBooking = !cancelled && startMs != null && startMs >= Date.now()'),
-      'the allowBooking rule changed shape — re-pin it here, and keep past + cancelled closed'
+      'the allowBooking rule changed shape — re-pin it here, and keep past + canceled closed'
     )
   })
 })

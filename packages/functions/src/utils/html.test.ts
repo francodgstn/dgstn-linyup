@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { escapeHtml } from './html'
 
 describe('escapeHtml', () => {
-  it('neutralises script tags', () => {
+  it('neutralizes script tags', () => {
     assert.equal(
       escapeHtml('<script>alert(1)</script>'),
       '&lt;script&gt;alert(1)&lt;/script&gt;',
     )
   })
 
-  it('neutralises anchor / attribute injection', () => {
+  it('neutralizes anchor / attribute injection', () => {
     assert.equal(
       escapeHtml('"><a href="https://evil.example">click</a>'),
       '&quot;&gt;&lt;a href=&quot;https://evil.example&quot;&gt;click&lt;/a&gt;',

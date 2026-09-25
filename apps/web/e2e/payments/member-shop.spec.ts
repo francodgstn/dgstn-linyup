@@ -6,7 +6,7 @@
  *
  *   membership (monthly)  → a Stripe subscription on the studio's account, a
  *                           member_subscriptions row, the plan on the contact
- *   course block          → an enrolment on the block
+ *   course block          → an enrollment on the block
  *   online course         → a lifetime purchase entitlement, unlocked in Space
  *   gift card (guest)     → a minted card with its code…
  *   …redeemed as a tender → on a product checkout, lowering what Stripe charges
@@ -107,7 +107,7 @@ test('membership: a new member buys Starter monthly', async () => {
   expect(contact.provisional).not.toBe(true)
 })
 
-test('course block: the member enrols in the 8-week course', async () => {
+test('course block: the member enrolls in the 8-week course', async () => {
   await openShopTab('Courses')
   const box = await captureCallable(page, 'createCourseBlockCheckout')
   await page.locator('div.rounded-2xl', { hasText: 'Beginners BJJ' }).getByRole('button', { name: 'Buy' }).click()
@@ -122,7 +122,7 @@ test('course block: the member enrols in the 8-week course', async () => {
   expect(session.amount_total).toBe(32000)
   const blockId = session.metadata?.blockId
   expect(blockId).toBeTruthy()
-  await waitFor('the enrolment', async () => {
+  await waitFor('the enrollment', async () => {
     const d = await db.doc(`course_blocks/${blockId}/enrolments/${contactId}`).get()
     if (d.exists) return d.data()
     const q = await db.collection(`course_blocks/${blockId}/enrolments`).where('contactId', '==', contactId).get()

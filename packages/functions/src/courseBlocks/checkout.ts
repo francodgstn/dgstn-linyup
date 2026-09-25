@@ -205,10 +205,10 @@ export const createCourseBlockCheckout = onCall(async (request) => {
   // `enrolled` row to `hold` with an `expires_at`. Abandoning that checkout then
   // lapsed a place the member had paid for, a Stripe failure marked them
   // `withdrawn`, and either way the next roster converge read them as gone and
-  // cancelled every future lesson booking they had. One stray double-click on
+  // canceled every future lesson booking they had. One stray double-click on
   // the Buy button was enough.
   //
-  // A waiting-list claim is the deliberate exception: its enrolment IS a hold,
+  // A waiting-list claim is the deliberate exception: its enrollment IS a hold,
   // and paying is how it settles.
   const existing = await db
     .collection(COURSE_BLOCKS_COLLECTION)
@@ -311,7 +311,7 @@ export const createCourseBlockCheckout = onCall(async (request) => {
         courseName: block.name,
         lessons: String(lessons),
         // Carried so the confirm can close the queue entry out. Without it a
-        // paid claim would settle the enrolment and leave the entry saying
+        // paid claim would settle the enrollment and leave the entry saying
         // 'offered' for ever, which the sweep would then try to release.
         ...(data.waitlistToken ? { waitlistToken: data.waitlistToken } : {}),
         ...(first ? { firstMeetingMs: String(first.start.toMillis()) } : {}),

@@ -1,7 +1,7 @@
 'use client'
 
 // Tarif 595 position picker — a searchable combobox over the ~250-row position
-// table, grouped by chapter and labelled in the receipt language. The table is
+// table, grouped by chapter and labeled in the receipt language. The table is
 // DATA (see the module header of packages/shared/src/data/tarif595/positions.ts
 // for why it lives on its own `@linyup/shared/tarif595-positions` subpath):
 // loaded lazily via a dynamic `import()` inside a `useQuery` so it never lands

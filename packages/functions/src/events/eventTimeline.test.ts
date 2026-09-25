@@ -134,7 +134,7 @@ describe('eventTimeline — a band per event type', () => {
 
   it('a type the order does not name lands after the ones it does', () => {
     // A plugin or team-custom type. It still gets a band, just not a reserved
-    // position — which beats dropping it in with an unrelated colour.
+    // position — which beats dropping it in with an unrelated color.
     const { bands } = placeTimelineEvents(
       [typed('x', 'hmd_fighting_cup', 1), typed('c', 'competition', 6)],
       year,
@@ -516,7 +516,7 @@ describe('eventTimeline — ticks follow the density, not the zoom', () => {
 
   it('lands on the same choices the named branches used to make', () => {
     // A laptop's panel, at each zoom. These three are the whole of the old
-    // behaviour, and they must not have moved.
+    // behavior, and they must not have moved.
     assert.equal(timelineTicks(year, timelinePxPerDay('month', 872)).unit, 'day')
     assert.equal(timelineTicks(year, timelinePxPerDay('year', 872)).unit, 'month')
     assert.equal(timelineTicks(year, timelinePxPerDay('years', 872)).unit, 'quarter')
@@ -723,7 +723,7 @@ describe('eventTimeline — banding is optional', () => {
 
 describe('eventTimeline — banding by owner', () => {
   // The studio schedule bands by WHOSE event it is rather than by type: its
-  // organisation's dates are the fixed ones, its own are what it arranges
+  // organization's dates are the fixed ones, its own are what it arranges
   // around them. The packer needs no new concept for that — it is `groupOrder`
   // over a different group — but the ORDER is the design, so it is pinned here.
   const year = yearRange(2026)
@@ -736,7 +736,7 @@ describe('eventTimeline — banding by owner', () => {
     group: 'org',
   })
 
-  it("puts the organisation's row ABOVE the studio's, whoever started first", () => {
+  it("puts the organization's row ABOVE the studio's, whoever started first", () => {
     // The studio's January event comes first in time, so first-appearance order
     // would put it on top — which reads as the constraints hanging off the
     // choices instead of the other way round.
@@ -752,7 +752,7 @@ describe('eventTimeline — banding by owner', () => {
 
   it('keeps that order when only one side has anything in view', () => {
     // A band with nothing visible is not returned, so a studio with no events
-    // of its own gets one row rather than an empty one labelled "This studio".
+    // of its own gets one row rather than an empty one labeled "This studio".
     const { bands } = placeTimelineEvents([theirs('b', 5)], year, {
       ...WIDE,
       groupOrder: ['org', 'team'],

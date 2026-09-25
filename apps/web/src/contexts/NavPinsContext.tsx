@@ -14,21 +14,21 @@
  * half moved off the pin onto a STAR, and the plugin-suggestion badge moved off
  * that same star onto a puzzle piece — so the pin is once again the ONLY thing
  * that GLYPH means on screen (open tabs alone), and the star is now the ONLY
- * thing ITS glyph means (a personal favourite). The saved-filter sense is gone
+ * thing ITS glyph means (a personal favorite). The saved-filter sense is gone
  * entirely. What exists, and what each one is called where a user can read it:
  *
- * 1. SHORTCUTS — this file's STORED AND CODED name; ON SCREEN it is labelled
- *    "Favourites", since 2026-08-29 (UX-84, display-only rename — same policy as
+ * 1. SHORTCUTS — this file's STORED AND CODED name; ON SCREEN it is labeled
+ *    "Favorites", since 2026-08-29 (UX-84, display-only rename — same policy as
  *    plan IDs vs plan display names, see CLAUDE.md). The storage keys, this
  *    file's exports and every `Shortcut*` component/prop name were left alone
  *    deliberately (see "STORED NAMES KEEP THE OLD WORD" below); only the copy and
  *    the icon changed. A per-browser list of NAV DESTINATIONS (a page, a
  *    settings screen, a plugin item), keyed by a stable nav id, rendered as the
- *    sidebar's "Favourites" group. It has two halves and they are ONE mechanism,
+ *    sidebar's "Favorites" group. It has two halves and they are ONE mechanism,
  *    not two:
  *      · ALWAYS SHOWN (`alwaysShownIds`) — hand-curated, drag-ordered, never
  *        truncated, never ages out. Added from a sidebar row, a settings-rail
- *        row or a search result. UI verb: "Always show in favourites". The row
+ *        row or a search result. UI verb: "Always show in favorites". The row
  *        wears its star FILLED and at rest — which, with no heading and no
  *        divider anywhere in the group, is the ONLY thing that marks a row as
  *        belonging to this run (see the vocabulary note at the end of this
@@ -37,10 +37,10 @@
  *        RECENTS_MAX destinations visited, listed under the always-shown ones
  *        and truncated behind "Show more". No verb: it fills itself.
  *    The control on a row PROMOTES a recent to always-shown (and back); the ×
- *    REMOVES the row from Favourites entirely. Icon: a star, filled while on.
+ *    REMOVES the row from Favorites entirely. Icon: a star, filled while on.
  *
  *    TWO RUNS, ORDERED, MARKED AS ONE REGION BY A LEFT RULE (2026-08-18):
- *    always-shown first, recent after, under the one "Favourites" heading, with a
+ *    always-shown first, recent after, under the one "Favorites" heading, with a
  *    thin flat brand-violet rule down the left edge of the whole area — heading,
  *    both runs and the empty-state hint. NOTHING HARD SEPARATES THE RUNS: no
  *    sub-headings, no divider. Both were built here first, on the same day, and
@@ -94,7 +94,7 @@
  *    NOT THE HEAD TILE — that is item 5 below, and it is deliberately separate.
  *
  *    VOCABULARY, recorded: the only words the user reads are still the verbs on
- *    the control — "Always show in favourites" / "Stop always showing"
+ *    the control — "Always show in favorites" / "Stop always showing"
  *    (`Nav.shortcutAlwaysShow`, `shortcutStopAlwaysShowing` — same KEY names,
  *    text changed 2026-08-29, shared with the sidebar rows and the search
  *    dropdown) — while the glyph is a star (was a pin until 2026-08-29, UX-84).
@@ -105,14 +105,14 @@
  *
  * 2. OPEN TABS — `contexts/OpenTabsContext.tsx`. The Notion-style strip of
  *    pages you currently have OPEN, including individual records (a contact, a
- *    session). Different question: Favourites answers "where do I go often",
+ *    session). Different question: Favorites answers "where do I go often",
  *    Open tabs answers "what am I in the middle of". They are deliberately NOT
  *    merged. A tab may be PINNED, which protects it from Close-others and cap
  *    eviction — the same word every browser uses. Icon: a pin — and, since
  *    2026-08-29 (UX-84), once again the ONLY thing on screen that glyph means:
- *    Favourites moved its curated half off the pin onto a star (item 1), which
+ *    Favorites moved its curated half off the pin onto a star (item 1), which
  *    is what freed "pin" back to one mental model over one object. Before that
- *    it was shared, unlabelled, with Favourites' curated half — deliberately,
+ *    it was shared, unlabelled, with Favorites' curated half — deliberately,
  *    at the time — and it is what UX-23 was NOT: back then "pin" also meant a
  *    saved contact filter, a third, unrelated object, which now says "show in
  *    filter bar".
@@ -126,16 +126,16 @@
  *    few PEOPLE whose detail page you opened, ids only, per TEAM, in
  *    localStorage. Surfaced in exactly one place: the sidebar search panel
  *    BEFORE anything is typed (typing replaces it with results). A third
- *    question again — Favourites answers "where do I go often", Open tabs "what
+ *    question again — Favorites answers "where do I go often", Open tabs "what
  *    am I in the middle of", this one "who was I just looking at" — and neither
  *    of the other two can answer it: a contact page records the "contacts" PAGE
- *    into Favourites' recents, and Open tabs rewrites its active tab in place (so
+ *    into Favorites' recents, and Open tabs rewrites its active tab in place (so
  *    ten contacts leave one tab) and only when the strip is switched on. Names
  *    are resolved live from the roster query, never stored; an id that no longer
  *    resolves is dropped from the rendering, not from storage. UI label:
  *    "Recently viewed contacts". No verb and no control: it fills itself.
  *    VOCABULARY: in code it is `recentContact*`, never `recent*` bare — that
- *    word is spent on the recents half of Favourites above (item 1).
+ *    word is spent on the recents half of Favorites above (item 1).
  *
  * 5. THE HEAD TILES — this file too, but their OWN key
  *    (`linyup_nav_head_tile`, still singular: a stored name is a machine
@@ -175,11 +175,11 @@
  * plan display names (see CLAUDE.md): `linyup_nav_pins`, `linyup_settings_pins`
  * and `TeamNavDefaults.defaultNavPins` are machine identifiers written by
  * seeds and by browsers in the wild, and renaming them buys nothing a user can
- * see. The vocabulary a user reads is "favourites" / "always show", everywhere
+ * see. The vocabulary a user reads is "favorites" / "always show", everywhere
  * (since 2026-08-29, UX-84 — display-only rename, it was "shortcuts" before).
  *
  * ── EVERYTHING HERE IS PER STUDIO ──
- * Favourites, recents and the head tile are all stored as `{ [teamId]: … }`,
+ * Favorites, recents and the head tile are all stored as `{ [teamId]: … }`,
  * keyed by AuthContext's `currentTeamId` — the same shape and the same reason as
  * census item 4. A studio's rail is about ITS pages, so a flat value would bleed
  * one studio's navigation into another's the moment a person can switch between
@@ -289,7 +289,7 @@ function readListStore(key: string): { store: ListStore; flat: string[] | null }
  * flowing back in and making the clear button look broken — the same
  * distinction item 1 draws between a stored `[]` and no entry at all.
  *
- * `flat` carries the pre-team-scoping single value, normalised to a list — so
+ * `flat` carries the pre-team-scoping single value, normalized to a list — so
  * `hasFlat` is what says whether there was one, since an empty list is itself a
  * meaningful stored value here.
  */
@@ -338,9 +338,9 @@ interface NavPinsValue {
   recentIds: string[]
   /** Record a visit to a nav destination (moves it to the front of recents). */
   recordVisit: (id: string) => void
-  /** Remove an item from Favourites entirely (drop from both halves). */
+  /** Remove an item from Favorites entirely (drop from both halves). */
   removeShortcut: (id: string) => void
-  /** Empty Favourites: nothing always shown, no recents. */
+  /** Empty Favorites: nothing always shown, no recents. */
   clearShortcuts: () => void
   /** Census item 5 — the single adjustable tile beside Dashboard. `null` = the
    *  studio cleared it and wants the placeholder. Never overlaps alwaysShownIds. */
@@ -510,7 +510,7 @@ export function NavPinsProvider({ children }: { children: React.ReactNode }) {
       const removing = alwaysShownIds.includes(id)
       writeAlwaysShown(removing ? alwaysShownIds.filter((p) => p !== id) : [...alwaysShownIds, id])
       // Turning "always show" off DEMOTES the row to a recent rather than
-      // dropping it from the Favourites group (removeShortcut does that).
+      // dropping it from the Favorites group (removeShortcut does that).
       if (removing) pushRecent(id)
     },
     [alwaysShownIds, pushRecent, writeAlwaysShown]
