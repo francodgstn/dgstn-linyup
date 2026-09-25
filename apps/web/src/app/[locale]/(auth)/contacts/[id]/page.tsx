@@ -3319,12 +3319,28 @@ function ActivityDetailDialog({
   )
 }
 
-function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+function ActivityTab({
+  contact,
+  teamId,
+  initialCategory = 'all',
+}: {
+  contact: Contact
+  teamId: string | null
+  initialCategory?: ActivityCategory
+}) {
   const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
-  const [period, setPeriod] = useState<ActivityPeriodKey>('30d')
-  const [category, setCategory] = useState<ActivityCategory>('all')
+  const { can } = useCapabilities()
+  // Arriving from an old Emails-tab link: every email, as that tab listed them.
+  const [period, setPeriod] = useState<ActivityPeriodKey>(
+    initialCategory === 'outreach' ? 'all' : '30d'
+  )
+  const [category, setCategory] = useState<ActivityCategory>(initialCategory)
+  // Sending an email lives where the emails are listed: the Outreach chip. It
+  // was the Emails tab's one button; the header's Email tile does the same.
+  const [composeOpen, setComposeOpen] = useState(false)
+  const canSend = can('contacts.manage')
   const [selectedEntry, setSelectedEntry] = useState<ActivityLogEntry | null>(null)
 
   const selectedPeriod = ACTIVITY_PERIODS.find((p) => p.key === period)!
@@ -3384,6 +3400,17 @@ function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | n
             </button>
           ))}
         </div>
+        {category === 'outreach' && canSend && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setComposeOpen(true)}
+            disabled={!contact.email}
+            title={contact.email ? undefined : t('outreachNoEmail')}
+          >
+            <Mail className="mr-1.5 h-4 w-4" /> {t('outreachSend')}
+          </Button>
+        )}
         {/* Period selector */}
         <Segmented
           size="sm"
@@ -3471,6 +3498,12 @@ function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | n
       )}
 
       <ActivityDetailDialog entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+      <SendOutreachDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        contact={contact}
+        teamId={teamId}
+      />
     </div>
   )
 }
@@ -4010,17 +4043,9 @@ function AlertsTab({ contact, teamId }: { contact: Contact; teamId: string | nul
   )
 }
 
-// ─── follow-ups tab (alerts + outreach) ─────────────────────────────────────────
-// Groups the two "staying in touch" surfaces: the alerts manager (scheduled
-// reminders about the contact) and outreach (email history + send). Replaces the
-// former alerts side-panel bell.
-
-function fmtEntryDate(fmt: RegionalFormatter, v: unknown): string {
-  const d = v && typeof v === 'object' && 'toDate' in (v as object)
-    ? (v as { toDate(): Date }).toDate()
-    : null
-  return d ? fmt.custom(d, DATE_OPTS) : ''
-}
+// ─── send an email (outreach) ────────────────────────────────────────────────
+// Opened from the header's Email tile and from Activity's Outreach chip, where
+// the sent emails are listed. (There was an Emails tab; see TABS.)
 
 function SendOutreachDialog({
   open,
@@ -4107,69 +4132,6 @@ function SendOutreachDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function FollowUpsTab({ contact, teamId }: { contact: Contact; teamId: string | null }) {
-  const fmt = useTeamFormat()
-  const t = useTranslations('Contacts')
-  const { can } = useCapabilities()
-  const [composeOpen, setComposeOpen] = useState(false)
-  const { data: activity = [] } = useContactActivityLog(contact.id, teamId)
-  const outreach = activity.filter((e) => e.event === 'outreach_email_sent')
-  const canSend = can('contacts.manage')
-
-  // ONE SECTION NOW. The alerts half moved to the profile column and its own
-  // sheet, beside the notes it is a sibling of; what is left here is email and
-  // nothing else, which is why the tab is labelled "Emails" and why the
-  // two-column grid — which existed only to hold two sections — is gone. The
-  // section heading went with it: it repeated the tab's own name.
-  return (
-    <div className="pb-24">
-      <section className="space-y-3">
-        <div className="flex items-center justify-end">
-          {canSend && (
-            <Button size="sm" onClick={() => setComposeOpen(true)} disabled={!contact.email}>
-              <Mail className="mr-1.5 h-4 w-4" /> {t('outreachSend')}
-            </Button>
-          )}
-        </div>
-        {canSend && !contact.email && (
-          <p className="text-xs text-muted-foreground">{t('outreachNoEmail')}</p>
-        )}
-        {outreach.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('outreachEmpty')}</p>
-        ) : (
-          <div className="space-y-2">
-            {outreach.map((e) => {
-              const p = (e.parameters ?? {}) as { subject?: string; template_name?: string }
-              return (
-                <div key={e.id} className="rounded-lg border p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">
-                      {p.subject || p.template_name || t('outreachEmail')}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {fmtEntryDate(fmt, (e as { created_at?: unknown; date?: unknown }).created_at ?? (e as { date?: unknown }).date)}
-                    </span>
-                  </div>
-                  {p.template_name && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{p.template_name}</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
-      <SendOutreachDialog
-        open={composeOpen}
-        onOpenChange={setComposeOpen}
-        contact={contact}
-        teamId={teamId}
-      />
-    </div>
   )
 }
 
@@ -4934,6 +4896,15 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   // payments table), and the active tab survives a refresh, a shared URL and a
   // reopened tab. Falls back to profile for a missing/unknown value.
   const [tab, setTab] = useTabParam(TAB_IDS, 'profile')
+  // The Emails tab folded into Activity: an old link to it opens Activity on
+  // the Outreach chip. `outreachHint` keys ActivityTab so it opens there.
+  const [outreachHint, setOutreachHint] = useState(0)
+  useEffect(() => {
+    if (tab === 'followups') {
+      setOutreachHint((n) => n + 1)
+      setTab('activity')
+    }
+  }, [tab, setTab])
   // User-reorderable tab strip (opt-in edit mode; order persisted per-browser).
   const [tabOrder, setTabOrder] = useContactTabOrder()
   const [editingTabs, setEditingTabs] = useState(false)
@@ -5142,11 +5113,11 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     // issuer, never processed by Linyup. It was only sharing a tab with plans.
     { id: 'affiliation', label: t('tabAffiliations'), icon: IdCard },
     { id: 'activity', label: t('tabActivity'), icon: Activity },
-    // The ID STAYS `followups` — a `?tab=followups` deep link and every saved
-    // `linyup_contact_tab_order` array in a browser somewhere still name it.
-    // Only the label and the icon change, because with the alerts gone what is
-    // left is email and nothing else.
-    { id: 'followups', label: t('tabEmails'), icon: Mail },
+    // No Emails tab (Franco, 2026-09-25). What it listed was the activity log
+    // filtered to `outreach_email_sent`, which is exactly Activity's Outreach
+    // chip, and its one button is the header's Email tile. `followups` stays in
+    // TAB_IDS so an old `?tab=followups` link (and a saved tab order) still
+    // lands: on Activity, with Outreach selected (see the effect below).
     // What this person has been asked to accept — at signup, before booking, or
     // both — and whether they did. Its own tab: buried under the profile form it
     // was a screen nobody reached, and it rendered nothing at all for a studio
@@ -5568,8 +5539,14 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 contactName={`${contact.firstname ?? ''} ${contact.lastname ?? ''}`.trim()}
               />
             )}
-            {tab === 'activity' && <ActivityTab contact={contact} teamId={currentTeamId} />}
-            {tab === 'followups' && <FollowUpsTab contact={contact} teamId={currentTeamId} />}
+            {tab === 'activity' && (
+              <ActivityTab
+                key={outreachHint}
+                contact={contact}
+                teamId={currentTeamId}
+                initialCategory={outreachHint > 0 ? 'outreach' : 'all'}
+              />
+            )}
             {tab === 'bookings' && <BookingsTab contact={contact} teamId={currentTeamId} />}
             {tab === 'payments' && (
               <MembershipTab
