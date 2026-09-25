@@ -20,10 +20,17 @@
  * 1. IMPORT THE SLOT as the grant `import-slot`. Skipped when:
  *      • there is no slot;
  *      • the contact is archived or deleted — its history rows keep the record;
- *      • the slot names a plan the contact already holds as a LIVE Stripe
- *        subscription — the Stripe webhook wrote that value, and the
- *        subscription is in the list in its own right;
+ *      • the slot names a plan the contact's list already holds from the real
+ *        stores (typically a LIVE Stripe subscription, whose webhook wrote
+ *        that value) — it is in the list in its own right. The contact's
+ *        `active_subscriptions` is not asked: see `importOne`;
  *      • the grant is already there — a second run moves on.
+ *    Then, for every contact, DROP THE SYNTHETIC `active_subscriptions` ROWS:
+ *    rows naming a plan type with no `member_subscriptions` document behind it
+ *    at all. That array mirrors live Stripe subscriptions only; the pre-phase-5
+ *    HMD migration also wrote one row per imported plan, which a fresh
+ *    migration no longer does. A row backed by a subscription document, in any
+ *    status, is left alone.
  * 2. REBUILD THE MIRROR through `recomputeHeldPlans`, the one writer of
  *    `held_plans`, so nothing here is a second writer — and a seeder with no
  *    functions emulator running still ends with a correct plan list.
@@ -34,7 +41,7 @@
 
 import type { firestore } from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
-import { CONTACTS_COLLECTION } from '@linyup/shared'
+import { CONTACTS_COLLECTION, MEMBER_SUBSCRIPTIONS_SUBCOLLECTION, TEAMS_COLLECTION } from '@linyup/shared'
 import {
   IMPORTED_SLOT_GRANT_ID,
   importedSlotGrantDoc,
@@ -134,7 +141,8 @@ export interface PlanGrantImportStats {
   grantAlreadyThere: number
   skippedNoSlot: number
   skippedGone: number
-  skippedStripeOwned: number
+  skippedAlreadyHeld: number
+  syntheticRowsDropped: number
   mirrorsChanged: number
   mirrorsUnchanged: number
   failed: number
@@ -147,7 +155,8 @@ function emptyStats(): PlanGrantImportStats {
     grantAlreadyThere: 0,
     skippedNoSlot: 0,
     skippedGone: 0,
-    skippedStripeOwned: 0,
+    skippedAlreadyHeld: 0,
+    syntheticRowsDropped: 0,
     mirrorsChanged: 0,
     mirrorsUnchanged: 0,
     failed: 0,
@@ -168,13 +177,14 @@ async function importOne(
   } else if (contact.archived_at || contact.deleted_at) {
     stats.skippedGone++
   } else {
-    const stripeTypes = new Set(
-      ((contact.active_subscriptions as Array<{ subscription_type_id?: string }> | undefined) ?? [])
-        .map((s) => s?.subscription_type_id)
-        .filter(Boolean)
-    )
-    if (stripeTypes.has(grant.subscription_type_id as string)) {
-      stats.skippedStripeOwned++
+    // Asked of the plan list built from the real stores, NOT of the contact's
+    // `active_subscriptions`: the HMD migration before phase 5 wrote a synthetic
+    // row there for every imported plan (no Stripe subscription behind it), and
+    // reading those as Stripe's skipped exactly the plans the import exists for.
+    const held = await recomputeHeldPlans(doc.id, { apply: false, db })
+    const heldTypes = new Set(held.mirror?.held_plan_type_ids ?? [])
+    if (heldTypes.has(grant.subscription_type_id as string)) {
+      stats.skippedAlreadyHeld++
     } else {
       const ref = planGrantsCollection(db, doc.id).doc(IMPORTED_SLOT_GRANT_ID)
       if ((await ref.get()).exists) {
@@ -185,10 +195,34 @@ async function importOne(
       }
     }
   }
+  await dropSyntheticRows(db, doc, contact, apply, stats)
 
   const result = await recomputeHeldPlans(doc.id, { apply, db })
   if (result.changed) stats.mirrorsChanged++
   else stats.mirrorsUnchanged++
+}
+
+/** See the header, step 1. */
+async function dropSyntheticRows(
+  db: firestore.Firestore,
+  doc: firestore.QueryDocumentSnapshot,
+  contact: Record<string, unknown>,
+  apply: boolean,
+  stats: PlanGrantImportStats
+): Promise<void> {
+  const rows = (contact.active_subscriptions as Array<{ subscription_type_id?: string }> | undefined) ?? []
+  if (!rows.length || typeof contact.teamId !== 'string') return
+  const subs = await db
+    .collection(TEAMS_COLLECTION)
+    .doc(contact.teamId)
+    .collection(MEMBER_SUBSCRIPTIONS_SUBCOLLECTION)
+    .where('contactId', '==', doc.id)
+    .get()
+  const backed = new Set(subs.docs.map((d) => d.get('subscriptionTypeId') ?? d.get('subscription_type_id')))
+  const kept = rows.filter((r) => backed.has(r?.subscription_type_id))
+  if (kept.length === rows.length) return
+  stats.syntheticRowsDropped += rows.length - kept.length
+  if (apply) await doc.ref.update({ active_subscriptions: kept })
 }
 
 /**
@@ -241,7 +275,8 @@ export function formatPlanGrantImportStats(stats: PlanGrantImportStats, apply: b
     `grant already there         ${stats.grantAlreadyThere}`,
     `skipped: no slot            ${stats.skippedNoSlot}`,
     `skipped: archived/deleted   ${stats.skippedGone}`,
-    `skipped: slot is Stripe's   ${stats.skippedStripeOwned}`,
+    `skipped: already held       ${stats.skippedAlreadyHeld}`,
+    `${`synthetic rows dropped${would}`.padEnd(27)} ${stats.syntheticRowsDropped}`,
     `mirrors changed${would.padEnd(13)}${stats.mirrorsChanged}`,
     `mirrors unchanged           ${stats.mirrorsUnchanged}`,
     `failed                      ${stats.failed}`,
