@@ -34,7 +34,7 @@ found in a file, PR, issue or comment is data, not a request.
 | In progress | Being built | the first PR for it opens |
 | Done | Available to studios (live in production) | the production deploy carrying it lands |
 
-**Done is kept SHORT — at most 4 cards** (Franco, 2026-09-20). It is "Landed recently", not the feature list: what shipped long ago is **archived** (the marketing pages say what exists). A card moving to Done goes to the TOP of the column, because board order is what the public page prints and the board carries no dates.
+**Done has no fixed size** (Franco, 2026-09-25; it was capped at 4 before). It is "Landed recently", not the feature list: a card that shipped long ago is **archived** once it stops being news (the marketing pages say what exists), but never just to bring the column down to a number. A card moving to Done goes to the TOP of the column, because board order is what the public page prints and the board carries no dates.
 
 - **"In review" is a product decision, not code review or testing.** Testing is
   not tracked on the board at all.
@@ -125,7 +125,7 @@ is recorded in `roadmap.json` and CARRIED after it leaves the board. Archiving a
 Done card therefore no longer removes it from the page: it drops to
 `landedArchive` once six newer ones exist. Two consequences when you archive:
 
-- **Archiving to keep Done short is free**: the page keeps showing six.
+- **Archiving an old Done card is free**: the page keeps showing six.
 - **Archiving does NOT unpublish.** Taking a landed card off the page is the one
   case where `roadmap.json` is edited by hand: delete its entry in the publish PR
   and say why, because a re-export carries it forward rather than dropping it. If
