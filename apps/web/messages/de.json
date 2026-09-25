@@ -1431,7 +1431,8 @@
     "countCheckedIn": "{count} eingecheckt",
     "countCapacity": "Kapazität {count}",
     "peekCapacity": "Gebuchte Plätze / Kapazität",
-    "viewPlanning": "Veranstaltungsplanung"
+    "viewPlanning": "Veranstaltungsplanung",
+    "timezoneNoticeDevice": "Der Kalender verwendet die Zeitzone dieses Geräts ({zone}). Die deines Studios ist {studioZone}."
   },
   "Events": {
     "title": "Veranstaltungen",

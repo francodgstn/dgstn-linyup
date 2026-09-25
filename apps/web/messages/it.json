@@ -1431,7 +1431,8 @@
     "countCheckedIn": "{count} presenti",
     "countCapacity": "capienza {count}",
     "peekCapacity": "Posti prenotati / capienza",
-    "viewPlanning": "Pianificazione eventi"
+    "viewPlanning": "Pianificazione eventi",
+    "timezoneNoticeDevice": "Il calendario usa il fuso orario di questo dispositivo ({zone}). Quello del tuo studio è {studioZone}."
   },
   "Events": {
     "title": "Eventi",

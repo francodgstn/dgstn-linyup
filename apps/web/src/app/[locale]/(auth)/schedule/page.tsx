@@ -1193,9 +1193,15 @@ export default function CalendarPage() {
               wrong, so the line says which clock they are on and links to the
               control that changes it. Same zone on both sides ⇒ nothing to
               explain, and no line. */}
+          {/* The WEEK view runs on the device's clock (see THE CALENDAR'S
+              CLOCK in SessionsCalendar), the list on the studio's. So the line
+              names the clock of the view on screen, never one the view does
+              not use. */}
           {fmt.timeZone !== deviceTimeZone() && (
             <p className="text-xs text-muted-foreground mt-0.5">
-              {t('timezoneNotice', { zone: fmt.timeZone })}{' '}
+              {view === 'calendar'
+                ? t('timezoneNoticeDevice', { zone: deviceTimeZone(), studioZone: fmt.timeZone })
+                : t('timezoneNotice', { zone: fmt.timeZone })}{' '}
               <Link
                 href={'/settings/team?tab=general' as Route}
                 className="underline hover:text-foreground"

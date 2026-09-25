@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
+import { startOfWeek, weekdayOrder, type WeekStart } from '@linyup/shared'
 import { cn } from '@/lib/utils'
 import { eventTypeColor } from '@/lib/eventTypeColor'
 import { Button } from '@/components/ui/button'
@@ -55,10 +57,11 @@ function activityAccent(activityId?: string | null, activities: Activity[] = [])
 
 // ─── calendar helpers ─────────────────────────────────────────────────────────
 
-function buildMonthGrid(year: number, month: number): Date[][] {
+function buildMonthGrid(year: number, month: number, weekStartsOn: WeekStart): Date[][] {
   const first = new Date(year, month, 1)
   const last = new Date(year, month + 1, 0)
-  const offset = (first.getDay() + 6) % 7 // Mon=0 … Sun=6
+  // Columns start on the studio's first weekday (Settings → General).
+  const offset = (first.getDay() - weekStartsOn + 7) % 7
   // Pad with real prev/next-month days so every week is complete
   const total = Math.ceil((offset + last.getDate()) / 7) * 7
   const cells = Array.from({ length: total }, (_, i) => new Date(year, month, 1 - offset + i))
@@ -82,16 +85,15 @@ function addDays(d: Date, n: number) {
   return r
 }
 
-/** Monday of the week containing d, at midnight. */
-function startOfWeek(d: Date) {
-  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  r.setDate(r.getDate() - ((r.getDay() + 6) % 7))
-  return r
-}
-
-function formatTs(ts?: { toDate(): Date } | null) {
-  return ts?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) ?? ''
-}
+// ── THE CALENDAR'S CLOCK ─────────────────────────────────────────────────────
+// Every block on this calendar is positioned with the DEVICE's clock
+// (`getHours()`, `new Date(y, m, d)`), and so is the class form it opens
+// (SessionFormDialog, `zone: 'device'`). By the zone rule in useTeamFormat a
+// surface labels in the zone its arithmetic runs in, so every label here comes
+// from `useTeamFormat({ zone: 'device' })`: the studio's hour cycle, date order
+// and week start, on the device's clock. It used to be bare
+// `toLocaleTimeString()`, which asked the BROWSER for the hour cycle too — so a
+// 24-hour studio read "07:00" on the axis and "07:00 AM" on the block beside it.
 
 function itemMs(item: DayItem) {
   return (item.data.start as unknown as { toDate(): Date } | undefined)?.toDate().getTime() ?? 0
@@ -215,6 +217,7 @@ interface SessionCardProps {
 }
 
 function SessionCard({ session, activities, onOpen, onEdit, onDelete }: SessionCardProps) {
+  const fmt = useTeamFormat({ zone: 'device' })
   const t = useTranslations('Calendar')
   const color = activityAccent(session.activityId, activities)
 
@@ -255,7 +258,7 @@ function SessionCard({ session, activities, onOpen, onEdit, onDelete }: SessionC
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {formatTs(session.start)} – {formatTs(session.end)}
+            {fmt.time(session.start)} – {fmt.time(session.end)}
           </span>
           {session.location && (
             <span className="flex items-center gap-1 max-w-[200px] truncate">
@@ -335,6 +338,7 @@ function EventCard({
   day: Date
   onOpen: (e: Event) => void
 }) {
+  const fmt = useTeamFormat({ zone: 'device' })
   const t = useTranslations('Calendar')
   const color = eventTypeColor(event.type)
 
@@ -371,16 +375,16 @@ function EventCard({
             <Clock className="h-3 w-3" />
             {!isMultiDay ? (
               <>
-                {formatTs(event.start as unknown as { toDate(): Date })}
-                {event.end && ` – ${formatTs(event.end as unknown as { toDate(): Date })}`}
+                {fmt.time(event.start as unknown as { toDate(): Date })}
+                {event.end && ` – ${fmt.time(event.end as unknown as { toDate(): Date })}`}
               </>
             ) : (
               <>
                 {t('eventDayOf', { day: index + 1, total: spans.length })}
-                {here?.isFirstDay && ` · ${t('eventFrom')} ${formatTs({ toDate: () => start })}`}
+                {here?.isFirstDay && ` · ${t('eventFrom')} ${fmt.time(start)}`}
                 {here?.isLastDay &&
                   end &&
-                  ` · ${t('eventUntil')} ${formatTs({ toDate: () => end })}`}
+                  ` · ${t('eventUntil')} ${fmt.time(end)}`}
               </>
             )}
           </span>
@@ -637,6 +641,9 @@ export default function SessionsCalendar({
 }: SessionsCalendarProps) {
   const t = useTranslations('Calendar')
   const tCommon = useTranslations('Common')
+  // See THE CALENDAR'S CLOCK above: studio formats, device clock.
+  const fmt = useTeamFormat({ zone: 'device' })
+  const weekStartsOn = fmt.weekStartsOn
   const today = useMemo(() => new Date(), [])
 
   const [internalYear, setInternalYear] = useState(() => today.getFullYear())
@@ -716,9 +723,12 @@ export default function SessionsCalendar({
     [eventsByDate, selected]
   )
 
-  const weeks = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth])
+  const weeks = useMemo(
+    () => buildMonthGrid(viewYear, viewMonth, weekStartsOn),
+    [viewYear, viewMonth, weekStartsOn]
+  )
 
-  const weekStart = useMemo(() => startOfWeek(selected), [selected])
+  const weekStart = useMemo(() => startOfWeek(selected, weekStartsOn), [selected, weekStartsOn])
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -804,30 +814,30 @@ export default function SessionsCalendar({
   const laneWidthPx = lanePx / laneCount
 
   // Locale-aware labels
-  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString([], {
-    month: 'long',
-    year: 'numeric',
-  })
+  const monthLabel = fmt.monthYear(new Date(viewYear, viewMonth, 1))
+  /** The hour axis: "07:00" on a 24-hour studio, "7 AM" on a 12-hour one (the
+   *  minutes are always :00, and "7:00 AM" does not fit the gutter). */
+  const hourLabel = (h: number) =>
+    fmt.regional.timeFormat === '12h'
+      ? fmt.custom(new Date(2024, 0, 1, h), { hour: 'numeric' })
+      : `${String(h).padStart(2, '0')}:00`
+  // 7 January 2024 was a Sunday, so weekday `d` of `weekdayOrder` (0=Sun…6=Sat)
+  // is the 7th + d: one fixed week, read in the studio's order.
   const weekdayNarrow = useMemo(
-    // 2024-01-01 is a Monday — derives Mon-first narrow labels from the browser locale
     () =>
-      Array.from({ length: 7 }, (_, i) =>
-        new Date(2024, 0, 1 + i).toLocaleDateString([], { weekday: 'narrow' })
+      weekdayOrder(weekStartsOn).map((d) =>
+        fmt.custom(new Date(2024, 0, 7 + d), { weekday: 'narrow' })
       ),
-    []
+    [fmt, weekStartsOn]
   )
 
   function weekRangeLabel() {
     const sameMonth = weekStart.getMonth() === weekEnd.getMonth()
-    const startStr = weekStart.toLocaleDateString(
-      [],
+    const startStr = fmt.custom(
+      weekStart,
       sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'short' }
     )
-    const endStr = weekEnd.toLocaleDateString([], {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
+    const endStr = fmt.custom(weekEnd, { day: 'numeric', month: 'short', year: 'numeric' })
     return `${startStr} – ${endStr}`
   }
 
@@ -911,7 +921,7 @@ export default function SessionsCalendar({
             busy day never grows the page. */}
         <div className="mt-6 pt-4 border-t lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 select-none capitalize">
-            {selected.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}
+            {fmt.custom(selected, { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           {daySessions.length === 0 && dayEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
@@ -1011,14 +1021,10 @@ export default function SessionsCalendar({
                         'flex flex-col items-center gap-0.5 py-2 border-l group min-w-0 transition-colors',
                         isSelected && 'bg-primary/[0.07]'
                       )}
-                      title={day.toLocaleDateString([], {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long',
-                      })}
+                      title={fmt.custom(day, { weekday: 'long', day: 'numeric', month: 'long' })}
                     >
                       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {day.toLocaleDateString([], { weekday: 'short' })}
+                        {fmt.weekdayShort(day)}
                       </span>
                       <span
                         className={cn(
@@ -1108,7 +1114,7 @@ export default function SessionsCalendar({
                       className="absolute right-1.5 text-2xs text-muted-foreground tabular-nums select-none"
                       style={{ top: i * HOUR_PX + 2 }}
                     >
-                      {String(weekGrid.startHour + i).padStart(2, '0')}:00
+                      {hourLabel(weekGrid.startHour + i)}
                     </span>
                   ))}
                 </div>
@@ -1263,7 +1269,7 @@ export default function SessionsCalendar({
                             </p>
                             {height >= 36 && (
                               <p className="text-2xs text-muted-foreground truncate">
-                                {formatTs(s.start)} – {formatTs(s.end)}
+                                {fmt.time(s.start)} – {fmt.time(s.end)}
                               </p>
                             )}
                           </button>
