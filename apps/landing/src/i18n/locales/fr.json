@@ -525,6 +525,7 @@
     "inProgress": "En cours",
     "next": "Prochainement",
     "landed": "Arrivé récemment",
+    "landedAll": "Tout le reste, déjà disponible ({count})",
     "disclaimer": "Sans dates, volontairement : nos plans évoluent au fil de ce que nous apprennent les studios, et nous préférons bien faire plutôt que tenir un délai.",
     "askTitle": "Il vous manque quelque chose ?",
     "askBody": "Dites-nous ce dont votre studio a besoin. La plupart des éléments de cette page sont nés de la demande d'un studio.",

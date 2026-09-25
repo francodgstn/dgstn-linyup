@@ -123,9 +123,15 @@ routine publishes; run it by hand only when asked.
 cannot be read back (the API returns only live items), so every card seen as Done
 is recorded in `roadmap.json` and CARRIED after it leaves the board. Archiving a
 Done card therefore no longer removes it from the page: it drops to
-`landedArchive` once six newer ones exist. Two consequences when you archive:
+`landedArchive` once six newer ones exist. What that means when you archive:
 
 - **Archiving an old Done card is free**: the page keeps showing six.
+- **To reword a card that is already archived**, un-archive it, reword it on the
+  board, export, then archive it again. A carried card is never rebuilt, so
+  editing nothing but the board changes nothing on the page. Expect it to return
+  as the newest carried card and push another out of the visible six, because the
+  export takes the carried order from its own previous output. Say so in the PR
+  rather than letting the reordering look accidental.
 - **Archiving does NOT unpublish.** Taking a landed card off the page is the one
   case where `roadmap.json` is edited by hand: delete its entry in the publish PR
   and say why, because a re-export carries it forward rather than dropping it. If

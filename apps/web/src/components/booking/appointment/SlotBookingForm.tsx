@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { type FunctionsError } from 'firebase/functions'
 import {
+  PARTICIPANT_NAME_MAX,
+  normalizePartyRequest,
   resolvePaymentOptions,
   resolveBookingContactFields,
   resolveDurationBenefit,
@@ -11,6 +13,7 @@ import {
   type ActivityMemberBenefit,
   type Benefit,
   type BookingContactField,
+  type DurationParty,
 } from '@linyup/shared'
 import {
   PromoCodeField,
@@ -70,7 +73,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 // arrive as `book` and `checkout`, so this file knows nothing about how an
 // appointment is taken: only about asking a person for what taking one needs.
 
-export type BookArgs = BookingCallBody
+export type BookArgs = BookingCallBody & {
+  /** A party length only: how many people, the booker included, and the
+   *  companions' names. Added by this form to every call it makes. */
+  people?: number
+  participants?: string[]
+}
 
 // Which screen the in-page booking step is showing. Reported UP so the parent's
 // sticky bar shows its Confirm only on the guest screen (the sign-in and member
@@ -84,7 +92,7 @@ export type BookArgs = BookingCallBody
 // invisible on exactly that path, and the refusal that followed would arrive
 // after `resolveAppointmentCaller` had already marked the code used, against a
 // three-per-hour re-request budget.
-export type BookScreen = 'guest' | 'signIn' | 'member' | 'autobooking' | 'waiver'
+export type BookScreen = 'party' | 'guest' | 'signIn' | 'member' | 'autobooking' | 'waiver'
 
 /**
  * The scope of a sentence that belongs to the TRANSITION rather than to a
@@ -129,6 +137,7 @@ export function SlotBookingForm({
   benefitOnly,
   shopHref,
   priceAmount,
+  party,
   memberBenefit,
   cancellationPolicy,
   activityContactFields,
@@ -140,8 +149,8 @@ export function SlotBookingForm({
   locale,
   backLabel,
   onExit,
-  book,
-  checkout,
+  book: bookCall,
+  checkout: checkoutCall,
   onBooked,
 }: {
   teamId: string
@@ -159,6 +168,9 @@ export function SlotBookingForm({
   /** Where "see plans" goes — the parent owns the slug. */
   shopHref: string
   priceAmount: number | null
+  /** A GROUP books this length and `priceAmount` is per person: the form asks
+   *  who is coming before anything else. Null for one person. */
+  party: DurationParty | null
   /** null/empty subscriptionTypeIds = nothing to offer — the sign-in link never
    *  renders (there's no price a member could get that a guest can't). */
   memberBenefit: ActivityMemberBenefit | Benefit | null
@@ -267,6 +279,32 @@ export function SlotBookingForm({
   // Transient state while a covered member's free booking is in flight.
   const [autobooking, setAutobooking] = useState(false)
 
+  // ── WHO IS COMING, for a length a group books together ────────────────────
+  // Asked FIRST, on its own screen, and settled before any identity screen can
+  // submit. Not a field on the guest form: a member whose code verifies is
+  // booked at once (`autobooking`), and a party the server then refuses would
+  // be refused after that one-time code was already spent.
+  const [people, setPeople] = useState(party?.min ?? 1)
+  const [companions, setCompanions] = useState<string[]>([])
+  const [partyConfirmed, setPartyConfirmed] = useState(party === null)
+  const participants = companions.slice(0, Math.max(0, people - 1)).map((n) => n.trim())
+  // THE SAME CHECK every booking callable runs, so this screen cannot let
+  // through a party the server refuses.
+  const partyCheck = party
+    ? normalizePartyRequest(
+        { minutes: durationMinutes, priceAmount, benefitOnly, party },
+        { people, participants }
+      )
+    : null
+  /** What each call adds for a party; nothing for one person, so a solo
+   *  booking's request body is exactly what it always was. */
+  const partyArgs = party ? { people, participants } : {}
+  /** Part of WHAT IS BEING BOUGHT, so it scopes every figure the server named
+   *  for this screen: a price accepted for two people is not a price for three. */
+  const partyKey = party ? `|p${people}` : ''
+  const book = (args: BookArgs) => bookCall({ ...args, ...partyArgs })
+  const checkout = (args: BookArgs & CheckoutExtras) => checkoutCall({ ...args, ...partyArgs })
+
   // ── WHO IS BOOKING, derived ───────────────────────────────────────────────
   // Session first, an OTP result second, a guest last: the shared resolver
   // holds that order because it is the SERVER's order.
@@ -350,7 +388,7 @@ export function SlotBookingForm({
   // what is being bought: a guest can sign in mid-flow (here or through the
   // corner pill) and be re-quoted as a member, and a member can sign out.
   const { acceptedPrice, acceptPrice } = useAcceptedPrice(
-    `${identityKey}|${promoApplied?.code ?? ''}`
+    `${identityKey}|${promoApplied?.code ?? ''}${partyKey}`
   )
 
   // ── The server's `payment_required` figure ────────────────────────────────
@@ -361,7 +399,7 @@ export function SlotBookingForm({
   // on this surface the window between "one render too late" and a submit is a
   // ref-driven sticky bar.
   const [race, setRace] = useState<{ identity: string; amount: number } | null>(null)
-  const racePrice = race && race.identity === identityKey ? race.amount : null
+  const racePrice = race && race.identity === `${identityKey}${partyKey}` ? race.amount : null
 
   // ── ONE RULE FOR AN IDENTITY CHANGE ───────────────────────────────────────
   // Everything this screen SAID or CAPTURED belongs to the caller it was said to
@@ -444,8 +482,9 @@ export function SlotBookingForm({
       }),
       {
         kind: 'appointment',
-        duration: { minutes: durationMinutes, priceAmount, benefitOnly },
+        duration: { minutes: durationMinutes, priceAmount, benefitOnly, ...(party ? { party } : {}) },
         benefit: memberBenefit,
+        people,
       },
       promoApplied ? { promo: promoApplied } : undefined
     )
@@ -507,7 +546,9 @@ export function SlotBookingForm({
   // The guest/member fork is `caller`, never a stored step: a recognized contact
   // is on the member screen from the first render, and a sign-in through the
   // corner pill moves them there mid-flow without anything having to notice.
-  const currentScreen: BookScreen = waiverGate.presented
+  const currentScreen: BookScreen = !partyConfirmed
+    ? 'party'
+    : waiverGate.presented
     ? 'waiver'
     : autobooking
       ? 'autobooking'
@@ -723,7 +764,7 @@ export function SlotBookingForm({
         // attempt — the server is authoritative, fall back to the pay CTA at
         // ITS figure, stamped with the identity it priced.
         if (typeof amt === 'number') {
-          setRace({ identity: callerKey(c), amount: amt })
+          setRace({ identity: `${callerKey(c)}${partyKey}`, amount: amt })
         } else {
           throw new Error(t('errorPaymentRequired'))
         }
@@ -907,6 +948,118 @@ export function SlotBookingForm({
   // this screen could offer is one the server refuses. It says what to buy —
   // and, for a visitor we don't recognize, offers the sign-in that might
   // already answer it. The sign-in screen itself is allowed through below.
+  // ── THE PARTY, as the rest of the flow shows it ───────────────────────────
+  /** The booking's list price: one per person on a party length. What a
+   *  lowered price is struck through against. */
+  const listTotal = priceAmount != null ? priceAmount * (party ? people : 1) : null
+  /** Back from an identity screen returns to "who's coming" when there is one,
+   *  rather than throwing the names away with the slot. */
+  const backFromIdentity = party ? () => setPartyConfirmed(false) : onExit
+  const partySummary =
+    party && people > 1 ? (
+      <p className="text-muted-foreground mt-1 text-sm">
+        {t('partySummary', { count: people, names: participants.join(', ') })}{' '}
+        <button
+          type="button"
+          onClick={() => setPartyConfirmed(false)}
+          className="font-medium text-foreground underline underline-offset-2"
+        >
+          {t('partyChange')}
+        </button>
+      </p>
+    ) : null
+
+  // ── WHO'S COMING: first, for a length a group books together ──
+  if (party && !partyConfirmed) {
+    const namesMissing = partyCheck?.ok === false && partyCheck.reason === 'participant_names'
+    return (
+      <>
+        <div>
+          <BackButton label={backLabel} onClick={onExit} />
+          <h1 className="text-2xl font-bold">{t('partyTitle')}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {party.min === party.max
+              ? t('partyHintFixed', { count: party.min })
+              : t('partyHintRange', { min: party.min, max: party.max })}
+          </p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 space-y-4">
+          {party.min !== party.max && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">{t('partyPeopleLabel')}</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={people <= party.min}
+                  onClick={() => setPeople((n) => Math.max(party.min, n - 1))}
+                  aria-label={t('partyFewer')}
+                  className="h-9 w-9 rounded-full border text-lg leading-none disabled:opacity-40"
+                >
+                  −
+                </button>
+                <span className="w-6 text-center text-base font-semibold tabular-nums">{people}</span>
+                <button
+                  type="button"
+                  disabled={people >= party.max}
+                  onClick={() => setPeople((n) => Math.min(party.max, n + 1))}
+                  aria-label={t('partyMore')}
+                  className="h-9 w-9 rounded-full border text-lg leading-none disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4 shrink-0" />
+              {t('partyYou')}
+            </div>
+            {Array.from({ length: Math.max(0, people - 1) }, (_, i) => (
+              <input
+                key={i}
+                value={companions[i] ?? ''}
+                onChange={(e) =>
+                  setCompanions((prev) => {
+                    const next = [...prev]
+                    next[i] = e.target.value
+                    return next
+                  })
+                }
+                maxLength={PARTICIPANT_NAME_MAX}
+                autoComplete="off"
+                placeholder={t('partyCompanionPlaceholder')}
+                aria-label={t('partyCompanionLabel', { n: i + 2 })}
+                className="h-10 w-full rounded-lg border bg-background px-3 text-sm"
+              />
+            ))}
+          </div>
+          {listTotal != null && priceAmount != null && (
+            <p className="text-sm font-medium">
+              {t('partyTotal', {
+                count: people,
+                unit: formatCurrency(priceAmount, currency, locale),
+                total: formatCurrency(listTotal, currency, locale),
+              })}
+            </p>
+          )}
+        </div>
+        {namesMissing && people > 1 && participants.some((n) => n.length > 0) && (
+          <p className="text-sm text-destructive">{t('partyNamesMissing')}</p>
+        )}
+        <button
+          type="button"
+          disabled={!partyCheck?.ok}
+          onClick={() => setPartyConfirmed(true)}
+          style={accentColor ? { backgroundColor: accentColor, borderColor: accentColor } : undefined}
+          className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          {t('partyContinue')}
+        </button>
+      </>
+    )
+  }
+
   if (noWayIn && screen !== 'signIn') {
     return (
       <>
@@ -1021,7 +1174,7 @@ export function SlotBookingForm({
               screen's. */}
           <BackButton
             label={backLabel}
-            onClick={caller.kind === 'session' ? onExit : backToGuest}
+            onClick={caller.kind === 'session' ? backFromIdentity : backToGuest}
           />
           <h1 className="text-2xl font-bold">{tPublic('welcomeBackTitle')}</h1>
           {caller.name && (
@@ -1029,6 +1182,7 @@ export function SlotBookingForm({
               {t('bookingAs', { name: caller.name })}
             </p>
           )}
+          {partySummary}
         </div>
         <div className="rounded-xl border bg-card p-4 space-y-4">
           {/* The SENTENCE waits on the same fact the CTA does. Gating only the
@@ -1098,7 +1252,14 @@ export function SlotBookingForm({
           {hasAnyPrice && (
             <PromoCodeField
               teamId={teamId}
-              target={{ kind: 'appointment', providerId, activityId, startMs, durationMinutes }}
+              target={{
+                kind: 'appointment',
+                providerId,
+                activityId,
+                startMs,
+                durationMinutes,
+                ...(party ? { people } : {}),
+              }}
               applied={promoApplied}
               onApplied={onPromoApplied}
               outcome={callerQuote?.promo ?? null}
@@ -1165,9 +1326,10 @@ export function SlotBookingForm({
   return (
     <>
       <div>
-        <BackButton label={backLabel} onClick={onExit} />
+        <BackButton label={backLabel} onClick={backFromIdentity} />
         <h1 className="text-2xl font-bold">{tPublic('yourDetailsTitle')}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{tPublic('detailsSubtitle')}</p>
+        {partySummary}
       </div>
 
       {/* The price this screen renders comes from the ONE quote above, so an
@@ -1176,9 +1338,9 @@ export function SlotBookingForm({
           a modifier actually lowered it. */}
       {hasAnyPrice && payNow != null && (
         <p className="text-sm text-muted-foreground">
-          {priceAmount != null && payNow < priceAmount && (
+          {listTotal != null && payNow < listTotal && (
             <span className="mr-1.5 line-through">
-              {formatCurrency(priceAmount, currency, locale)}
+              {formatCurrency(listTotal, currency, locale)}
             </span>
           )}
           {t('payToBook', { price: formatCurrency(payNow, currency, locale) })}
@@ -1195,7 +1357,14 @@ export function SlotBookingForm({
       {hasAnyPrice && (
         <PromoCodeField
           teamId={teamId}
-          target={{ kind: 'appointment', providerId, activityId, startMs, durationMinutes }}
+          target={{
+                kind: 'appointment',
+                providerId,
+                activityId,
+                startMs,
+                durationMinutes,
+                ...(party ? { people } : {}),
+              }}
           applied={promoApplied}
           onApplied={onPromoApplied}
           outcome={callerQuote?.promo ?? null}

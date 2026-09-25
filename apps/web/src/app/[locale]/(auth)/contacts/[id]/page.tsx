@@ -2907,7 +2907,7 @@ function PlanDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{changing ? t('changePlanTitle') : t('addPlanTitle')}</DialogTitle>
         </DialogHeader>

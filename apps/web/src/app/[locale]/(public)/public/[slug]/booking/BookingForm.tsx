@@ -2627,6 +2627,7 @@ export default function BookingForm({
           from: 'booking',
         })}
         priceAmount={windowBooking.priceAmount}
+        party={windowBooking.party}
         memberBenefit={windowBooking.memberBenefit}
         cancellationPolicy={windowBooking.cancellationPolicy}
         activityContactFields={windowBooking.contactFields}
@@ -2928,6 +2929,7 @@ export default function BookingForm({
                   money: (amount) => formatCurrency(amount, currency, locale),
                   from: (price) => t('badgeFromPrice', { price }),
                   range: (min, max) => t('badgePriceRange', { min, max }),
+                  perPerson: (price) => t('badgePerPerson', { price }),
                 })
               )
             if (coveredByPlan) lines.splice(0, lines.length, t('memberCovered'))

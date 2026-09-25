@@ -29,7 +29,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { FormSection, FormSections, SettingRow, SettingRows } from '@/components/offer/FormLayout'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { ACTIVITIES_COLLECTION, resolveAutoConfirm } from '@linyup/shared'
+import { ACTIVITIES_COLLECTION, DURATION_PARTY_MAX, resolveAutoConfirm } from '@linyup/shared'
 import { resolveBookingContactFields } from '@linyup/shared'
 import { benefitOpensDoorAt } from '@linyup/shared'
 import {
@@ -47,6 +47,7 @@ import type { Activity, ActivityType, SaasPlan, FormField, BookingContactField }
 // pane's tabs do not exist yet. See the module doc there.
 import {
   AppointmentDurationsEditor,
+  durationPartyProblem,
   parsePriceInput,
   toActivityDurations,
   toDurationFormValues,
@@ -161,6 +162,7 @@ function createActivitySchema(t: ReturnType<typeof useTranslations>, creating: b
         minutes: z.number(),
         price: z.string(),
         mode: z.enum(['free', 'priced', 'benefit_only'] as const),
+        party: z.object({ min: z.number(), max: z.number() }).nullable(),
       })
     ),
   }).superRefine((d, ctx) => {
@@ -181,6 +183,11 @@ function createActivitySchema(t: ReturnType<typeof useTranslations>, creating: b
       }
       if (dur.mode !== 'priced' && dur.price.trim() !== '' && !(parsePriceInput(dur.price) >= 0.5)) {
         ctx.addIssue({ code: 'custom', path: ['durations', i, 'price'], message: t('durationPriceValidation') })
+      }
+      // The editor shows the group's own message under the row; this only
+      // stops the save, through the same predicate the edit pane uses.
+      if (durationPartyProblem(dur)) {
+        ctx.addIssue({ code: 'custom', path: ['durations', i, 'party'], message: t('durationPartyValidation', { max: DURATION_PARTY_MAX }) })
       }
     })
   })

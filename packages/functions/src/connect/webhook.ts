@@ -93,6 +93,7 @@ import { markPolicyFeePaid } from '../booking/policyFees'
 import { asLang, runAppointmentSlotTransaction } from '../appointments/booking'
 import { releaseAppointmentHold } from '../appointments/holdRelease'
 import { sendAppointmentBookingEmails } from '../appointments/emails'
+import { partyBookingFields, partyFromCheckoutMetadata } from '../appointments/party'
 import {
   linkFinanceTxnContact,
   linkFinanceTxnPayout,
@@ -2613,6 +2614,10 @@ async function handleAppointmentCheckout(
   let bookingToken: string | null = null
   let confirmed = false
   let refundReason: 'missing_session' | 'slot_retaken' | null = null
+  // THE PARTY THIS MONEY BOUGHT, from the Checkout Session rather than the hold:
+  // a retry that changed the party rewrote the hold, and this older session can
+  // still have been the one paid. Null for a solo purchase. See appointments/party.ts.
+  const paidParty = partyFromCheckoutMetadata(md)
 
   if (sSnap.exists) {
     const s = sSnap.data()!
@@ -2656,6 +2661,11 @@ async function handleAppointmentCheckout(
             booking_token: bookingToken,
             expires_at: FieldValue.delete(),
             updated_at: FieldValue.serverTimestamp(),
+            // A merge, so a solo payment must ERASE a party a later retry wrote
+            // onto the hold, or the booking would name people nobody paid for.
+            ...(paidParty
+              ? partyBookingFields(paidParty)
+              : { party_size: FieldValue.delete(), participants: FieldValue.delete() }),
             ...(isNew
               ? {
                   joinedAt: FieldValue.serverTimestamp(),
@@ -2721,6 +2731,7 @@ async function handleAppointmentCheckout(
             payment_status: 'paid',
             payment_intent_id: piId ?? null,
             fullname,
+            ...(paidParty ? partyBookingFields(paidParty) : {}),
           },
           teamId: team.teamId,
           providerId: (s.providerId as string | undefined) ?? md.providerId ?? '',

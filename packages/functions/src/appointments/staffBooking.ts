@@ -55,6 +55,7 @@ import { writeManualPaymentEvent } from '../payments/recordManualPayment'
 import { asLang, runAppointmentSlotTransaction } from './booking'
 import { releaseAppointmentHold } from './holdRelease'
 import { sendAppointmentBookingEmails } from './emails'
+import { partyBookingFields, partyCheckoutMetadata, readStaffAppointmentParty } from './party'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_NOTE_LEN = 500
@@ -91,6 +92,11 @@ interface CreateStaffAppointmentInput {
   paymentMode?: StaffBookingPaymentMode
   /** Minor units (Rappen/cents). Overrides the activity duration's base price. */
   amount?: number
+  /** A party length: how many people, the booker included. Absent = the
+   *  smallest party the length takes. See party.ts. */
+  people?: number
+  /** Companions' names, optional on a studio-made booking. */
+  participants?: string[]
   currency?: string
   /** Studio-configured manual-payment mode label, e.g. "Cash" (paid_offline only). */
   method?: string
@@ -345,6 +351,11 @@ export const createStaffAppointment = onCall(async (request) => {
   }
 
   // ── Amount / currency / settlement plan ──
+  // A party length's price is per person, so its default is one per person. A
+  // blocked slot books nobody.
+  const party = blocked
+    ? { people: 1, participants: [] }
+    : readStaffAppointmentParty(chosenDuration, data)
   let amountMinor: number
   if (typeof data.amount === 'number') {
     if (!Number.isInteger(data.amount) || data.amount < 0) {
@@ -352,7 +363,7 @@ export const createStaffAppointment = onCall(async (request) => {
     }
     amountMinor = data.amount
   } else {
-    amountMinor = basePriceMajor != null ? Math.round(basePriceMajor * 100) : 0
+    amountMinor = basePriceMajor != null ? Math.round(basePriceMajor * 100) * party.people : 0
   }
   const currency = (data.currency ?? team.default_currency ?? 'CHF').toUpperCase().slice(0, 3)
 
@@ -430,6 +441,7 @@ export const createStaffAppointment = onCall(async (request) => {
         status: plan_.bookingStatus,
         fullname: clientName,
         created_by_staff: uid,
+        ...partyBookingFields(party),
         ...(plan_.bookingPaymentStatus ? { payment_status: plan_.bookingPaymentStatus } : {}),
       }
 
@@ -499,6 +511,10 @@ export const createStaffAppointment = onCall(async (request) => {
       // attempt. See appointments/holdRelease.ts.
       bookingToken: bookingToken as string,
       ...platformFeeMetadata(enabledTeam),
+      // The webhook writes the booking's party from what was paid for, and
+      // ERASES it on a solo payment; without this a pair booked here would lose
+      // its party the moment the client paid the link.
+      ...partyCheckoutMetadata(party),
     }
     try {
       const checkoutSession = await createOneOffCheckoutSession({

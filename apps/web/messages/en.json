@@ -2007,7 +2007,17 @@
     "fieldBookingGroup": "Booking page group",
     "fieldBookingGroupPlaceholder": "e.g. Courses",
     "fieldBookingGroupHint": "Groups the booking page under a heading. Leave empty to list it on its own.",
-    "chipPriceFrom": "from {price}"
+    "chipPriceFrom": "from {price}",
+    "durationPartyToggle": "For a group",
+    "durationPartyPerPerson": "per person",
+    "durationPartyPeople": "People",
+    "durationPartyTo": "to",
+    "durationPartyMinLabel": "Fewest people for {duration}",
+    "durationPartyMaxLabel": "Most people for {duration}",
+    "durationPartyHintPriced": "The price is per person. Whoever books gives everyone's name.",
+    "durationPartyHintFree": "Whoever books gives everyone's name.",
+    "durationPartyValidation": "Use whole numbers from 1 to {max}, with room for at least 2 people.",
+    "chipPricePerPerson": "{price} per person"
   },
   "Benefit": {
     "fieldLabel": "Member benefit",
@@ -2807,7 +2817,22 @@
     "memberCoveredHint": "Included in your membership — booking…",
     "errorCheckoutFailed": "Couldn't start checkout. Please try again.",
     "errorPaymentRequired": "This session now requires payment. Please try again.",
-    "payAtStudioNote": "Pay at the studio when you arrive."
+    "payAtStudioNote": "Pay at the studio when you arrive.",
+    "partyTitle": "Who's coming?",
+    "partyHintFixed": "This appointment is for {count} people. Add everyone's name so the coach knows who to expect.",
+    "partyHintRange": "This appointment is for {min} to {max} people. Add everyone's name so the coach knows who to expect.",
+    "partyPeopleLabel": "People",
+    "partyFewer": "One person fewer",
+    "partyMore": "One more person",
+    "partyYou": "You",
+    "partyCompanionLabel": "Person {n}",
+    "partyCompanionPlaceholder": "First and last name",
+    "partyTotal": "{count, plural, one {# person} other {# people}} at {unit} each: {total}",
+    "partyNamesMissing": "Add a name for everyone coming along.",
+    "partyContinue": "Continue",
+    "partySummary": "For {count} people, with {names}.",
+    "partyChange": "Change",
+    "durationPricePerPerson": "{price} per person"
   },
   "AppointmentCancel": {
     "title": "Cancel appointment",
@@ -5159,7 +5184,8 @@
     "courseBlockClosed": "Bookings are closed",
     "courseBlockJoin": "Join",
     "courseBlockJoined": "You are on the course",
-    "courseBlockCurriculum": "What it covers"
+    "courseBlockCurriculum": "What it covers",
+    "payPerVisitPerPerson": "{price} per person"
   },
   "Products": {
     "title": "Products",
@@ -5867,7 +5893,8 @@
     "choosePlaceSubtitle": "Choose where you'd like to come.",
     "coursesCurriculum": "What it covers",
     "errorDropInSignedUpOnly": "This class is for people registered with the studio. Sign in with the email you registered with to pay for it.",
-    "dropInSubtitleSignIn": "Registered with us? Sign in and pay {price} for this class"
+    "dropInSubtitleSignIn": "Registered with us? Sign in and pay {price} for this class",
+    "badgePerPerson": "{price} per person"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Book a Trial Class",
@@ -7643,7 +7670,8 @@
     "emptyPosts": "No posts yet.",
     "readMore": "Read more",
     "navPosts": "Blog",
-    "navSplit": "Overview"
+    "navSplit": "Overview",
+    "termPerPerson": "{price} per person"
   },
   "OrgMemberInvite": {
     "title": "Organization invitation",
@@ -9172,5 +9200,9 @@
     "joinEmailRequired": "We need an email address to hold a place for you.",
     "joinFailed": "That did not work. Try again, or write to the studio.",
     "closeButton": "Close"
+  },
+  "BookingParty": {
+    "group": "Group of {count}",
+    "groupWith": "Group of {count}, with {names}"
   }
 }

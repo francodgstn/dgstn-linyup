@@ -35,6 +35,7 @@ import {
   normalizeBenefit,
   resolveAppointmentDurations,
   resolveDurationBenefit,
+  resolveDurationParty,
   resolveDurationSale,
   resolvePaymentOptions,
   type Activity,
@@ -62,6 +63,7 @@ import {
 } from './booking'
 import { sendAppointmentBookingEmails } from './emails'
 import { getDatePartsInTz, localTimeToUtc } from './index'
+import { partyBookingFields, readAppointmentParty } from './party'
 import { resolveContactFieldPatchForBooking } from '../booking/contactFields'
 
 const DEFAULT_RANGE_DAYS = 28
@@ -496,10 +498,14 @@ export const listAvailability = onCall(async (request): Promise<ListAvailability
           // free-looking slot the server will refuse (UX-70).
           durations: acc.durations.map((d) => {
             const sale = resolveDurationSale(d)
+            // Only a party the booking callables honor; absent for one person,
+            // so an installed member app reads exactly the shape it always has.
+            const party = resolveDurationParty(d)
             return {
               minutes: d.minutes,
               priceAmount: sale.priceAmount,
               benefitOnly: sale.mode === 'benefit_only',
+              ...(party ? { party } : {}),
             }
           }),
           // Verbatim from the activity — the picker mirrors the resolver
@@ -551,6 +557,10 @@ export const bookAppointment = onCall(async (request) => {
     /** Answers to the studio's book-form contact fields — narrowed server side
      *  against the resolved list. See booking/contactFields.ts. */
     contactFieldAnswers?: Record<string, unknown>
+    /** A party length: how many people, the booker included. See party.ts. */
+    people?: number
+    /** The companions' names, one per person beyond the booker. */
+    participants?: string[]
   }
   if (
     !data?.teamId ||
@@ -567,6 +577,10 @@ export const bookAppointment = onCall(async (request) => {
   const { teamId, providerId, activityId, startMs, durationMinutes } = data
 
   const ctx = await loadAppointmentBookingContext({ teamId, providerId, activityId, startMs, durationMinutes })
+  // Checked BEFORE the caller is resolved: that call spends the one-time code,
+  // and a party the length cannot take is the caller's to fix, not a reason to
+  // make them verify their email again.
+  const party = readAppointmentParty(ctx.chosenDuration, data)
   const caller = await resolveAppointmentCaller(request, { ...data, teamId })
   // THE ONE READER, here as everywhere: the member rule for the length being
   // booked, falling back to the activity-wide one on a tenant that predates
@@ -589,6 +603,7 @@ export const bookAppointment = onCall(async (request) => {
     kind: 'appointment',
     duration: ctx.chosenDuration,
     benefit: durationRule,
+    people: party.people,
   })
   const priceOption = priced.options[0]
 
@@ -751,6 +766,7 @@ export const bookAppointment = onCall(async (request) => {
     // The resolved member-benefit type (free/discount), if any — not an access
     // gate match any more, just which benefit (if any) priced this booking.
     subscription_type_id: viaSubscriptionTypeId,
+    ...partyBookingFields(party),
     // The slot is taken the moment it's booked either way (bookings_count: 1
     // above, unconditionally) — only the booking's own status differs by
     // autoConfirm; a non-auto-confirm appointment still holds capacity but

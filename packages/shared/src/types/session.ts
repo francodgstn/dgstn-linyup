@@ -704,6 +704,15 @@ export interface Booking {
    *  so a label edit doesn't rewrite history — an answer whose field id no
    *  longer exists is simply not rendered. */
   question_answers?: Record<string, unknown>
+  /** APPOINTMENT-ONLY. How many people this booking is for, the booker
+   *  included, when a party length was booked (`ActivityDuration.party`).
+   *  Absent = one person. A party is ONE booking of the provider's time, not a
+   *  seat each: the slot is exclusive whatever its size. */
+  party_size?: number
+  /** The companions' names, one per person beyond the booker, in the order
+   *  given. Names, not contacts (Franco, 2026-09-25). A booking the studio
+   *  made may carry fewer: it can book a pair before it knows who is coming. */
+  participants?: string[]
   status?: 'pending' | 'confirmed' | 'cancelled' | 'no_show' | 'rebooked'
   rebooked_from?: string
   rebooked_to?: string

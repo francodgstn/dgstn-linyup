@@ -1,0 +1,327 @@
+---
+// A question-by-question walkthrough: pick an answer, the next question
+// appears, and at the end the answers become a numbered setup checklist in the
+// app's own words. Earlier answers stay on screen and can be changed, which
+// rewinds the walk to that point.
+//
+// The questions are data (src/data/offeringWalkthrough.ts): this component
+// only walks them, so the same tree can later drive a wizard in the app. Plain
+// HTML and a small script, in the style of the other diagrams here: no
+// framework, Starlight's color variables, light and dark.
+
+import type { WalkQuestion } from '../../data/offeringWalkthrough'
+
+interface Props {
+  /** Accessible name for the walkthrough. */
+  label: string
+  questions: WalkQuestion[]
+  start: string
+  /** Steps added to every finished setup. */
+  finalSteps?: string[]
+}
+
+const { label, questions, start, finalSteps = [] } = Astro.props
+const model = { questions: Object.fromEntries(questions.map((q) => [q.id, q])), start, finalSteps }
+
+// Every `next` must name a question, or a visitor walks off the end of the tree
+// with no setup to show. Failing the build is the only place this is caught.
+for (const q of questions) {
+  for (const o of q.options) {
+    if (o.next && !model.questions[o.next]) throw new Error(`walkthrough: "${q.id}" → unknown question "${o.next}"`)
+  }
+}
+if (!model.questions[start]) throw new Error(`walkthrough: unknown start "${start}"`)
+---
+
+<section class="wt not-content" aria-label={label} data-walk data-model={JSON.stringify(model)}>
+  <ol class="wt-trail"></ol>
+  <div class="wt-current" aria-live="polite"></div>
+  <div class="wt-result" hidden></div>
+  <noscript><p class="wt-noscript">This walkthrough needs JavaScript. The sections below cover the same ground.</p></noscript>
+</section>
+
+<script>
+  type Option = { label: string; hint?: string; next?: string; steps?: string[]; note?: string }
+  type Question = { id: string; ask: string; help?: string; options: Option[] }
+  type Model = { questions: Record<string, Question>; start: string; finalSteps: string[] }
+
+  const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+  /** Our own copy, two marks only: **bold** for UI names and [text](/path/). */
+  const rich = (s: string) =>
+    escape(s)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\[([^\]]+)\]\((\/[^)\s]*)\)/g, '<a href="$2">$1</a>')
+  const plain = (s: string) => s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+
+  function wire(root: HTMLElement) {
+    const model = JSON.parse(root.dataset.model ?? '{}') as Model
+    const trail = root.querySelector<HTMLOListElement>('.wt-trail')!
+    const current = root.querySelector<HTMLElement>('.wt-current')!
+    const result = root.querySelector<HTMLElement>('.wt-result')!
+    /** The walk so far: which option was picked on which question. */
+    let path: { q: string; o: number }[] = []
+
+    const questionAt = () => {
+      if (!path.length) return model.questions[model.start]
+      const last = path[path.length - 1]
+      const next = model.questions[last.q].options[last.o].next
+      return next ? model.questions[next] : null
+    }
+
+    function render(focus = false) {
+      trail.replaceChildren()
+      path.forEach((step, i) => {
+        const q = model.questions[step.q]
+        const li = document.createElement('li')
+        li.className = 'wt-done'
+        li.innerHTML = `<span class="wt-done-q">${rich(q.ask)}</span><span class="wt-done-a">${rich(q.options[step.o].label)}</span>`
+        const change = document.createElement('button')
+        change.type = 'button'
+        change.className = 'wt-change'
+        change.textContent = 'Change'
+        change.setAttribute('aria-label', `Change your answer to: ${plain(q.ask)}`)
+        change.addEventListener('click', () => {
+          path = path.slice(0, i)
+          render(true)
+        })
+        li.append(change)
+        trail.append(li)
+      })
+
+      const q = questionAt()
+      current.replaceChildren()
+      result.hidden = !!q
+      if (q) {
+        const card = document.createElement('div')
+        card.className = 'wt-card'
+        card.innerHTML =
+          `<p class="wt-step">Question ${path.length + 1}</p>` +
+          `<p class="wt-ask" tabindex="-1">${rich(q.ask)}</p>` +
+          (q.help ? `<p class="wt-help">${rich(q.help)}</p>` : '')
+        const list = document.createElement('div')
+        list.className = 'wt-options'
+        q.options.forEach((o, i) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'wt-option'
+          b.innerHTML = `<span class="wt-option-label">${rich(o.label)}</span>` + (o.hint ? `<span class="wt-option-hint">${rich(o.hint)}</span>` : '')
+          b.addEventListener('click', () => {
+            path = [...path, { q: q.id, o: i }]
+            render(true)
+          })
+          list.append(b)
+        })
+        card.append(list)
+        current.append(card)
+        if (focus) card.querySelector<HTMLElement>('.wt-ask')?.focus({ preventScroll: false })
+      } else {
+        renderResult(focus)
+      }
+    }
+
+    function renderResult(focus: boolean) {
+      const chosen = path.map((s) => model.questions[s.q].options[s.o])
+      const steps = [...chosen.flatMap((o) => o.steps ?? []), ...model.finalSteps]
+      const notes = chosen.map((o) => o.note).filter((n): n is string => !!n)
+      result.innerHTML =
+        `<p class="wt-result-title" tabindex="-1">Your setup</p>` +
+        `<ol class="wt-steps">${steps.map((s) => `<li>${rich(s)}</li>`).join('')}</ol>` +
+        (notes.length ? `<p class="wt-notes-title">Good to know</p><ul class="wt-notes">${notes.map((n) => `<li>${rich(n)}</li>`).join('')}</ul>` : '') +
+        `<div class="wt-actions"><button type="button" class="wt-copy">Copy the checklist</button><button type="button" class="wt-restart">Start over</button></div>`
+      result.querySelector('.wt-restart')!.addEventListener('click', () => {
+        path = []
+        render(true)
+      })
+      const copy = result.querySelector<HTMLButtonElement>('.wt-copy')!
+      copy.addEventListener('click', async () => {
+        const text = steps.map((s, i) => `${i + 1}. ${plain(s)}`).join('\n')
+        try {
+          await navigator.clipboard.writeText(text)
+          copy.textContent = 'Copied'
+        } catch {
+          copy.textContent = 'Copy failed'
+        }
+        setTimeout(() => (copy.textContent = 'Copy the checklist'), 2000)
+      })
+      if (focus) result.querySelector<HTMLElement>('.wt-result-title')?.focus()
+    }
+
+    render()
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-walk]')) wire(root)
+</script>
+
+<style is:global>
+  /* Global because the walkthrough is built by the script, and scoped styles
+     never reach elements created at runtime. Every class is wt-. */
+  .wt {
+    margin: 1.5rem 0;
+  }
+  .wt-trail {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .wt-done {
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'q change' 'a change';
+    align-items: center;
+    column-gap: 0.75rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.6rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .wt-done-q {
+    grid-area: q;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+  .wt-done-a {
+    grid-area: a;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .wt-change {
+    grid-area: change;
+    font: inherit;
+    font-size: var(--sl-text-xs);
+    padding: 0.15rem 0.6rem;
+    border-radius: 0.45rem;
+    border: 1px solid var(--sl-color-gray-5);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-text-accent);
+    cursor: pointer;
+  }
+  .wt-change:hover {
+    border-color: var(--sl-color-accent);
+  }
+  .wt-card,
+  .wt-result {
+    margin-top: 0.6rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-left: 3px solid var(--sl-color-accent);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+  }
+  .wt-card p,
+  .wt-result p {
+    margin: 0;
+  }
+  .wt-step {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-accent-high);
+  }
+  .wt-ask,
+  .wt-result-title {
+    margin-top: 0.15rem !important;
+    font-size: var(--sl-text-lg);
+    font-weight: 700;
+    color: var(--sl-color-white);
+    outline: none;
+  }
+  .wt-help {
+    margin-top: 0.25rem !important;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .wt-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+  .wt-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.6rem;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .wt-option:hover,
+  .wt-option:focus-visible {
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+    outline: none;
+  }
+  .wt-option-label {
+    font-weight: 600;
+    font-size: var(--sl-text-sm);
+  }
+  .wt-option-hint {
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+  .wt-steps {
+    margin: 0.6rem 0 0;
+    padding-left: 1.3rem;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .wt-steps li {
+    margin: 0.35rem 0;
+  }
+  .wt-steps strong,
+  .wt-notes strong,
+  .wt-help strong,
+  .wt-done strong {
+    color: var(--sl-color-white);
+  }
+  .wt-notes-title {
+    margin-top: 0.9rem !important;
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-gray-3);
+  }
+  .wt-notes {
+    margin: 0.3rem 0 0;
+    padding-left: 1.1rem;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .wt-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+  }
+  .wt-actions button {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    padding: 0.3rem 0.8rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+    cursor: pointer;
+  }
+  .wt-actions .wt-copy {
+    border-color: var(--sl-color-accent);
+    color: var(--sl-color-accent-high);
+    font-weight: 600;
+  }
+  .wt-noscript {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+</style>

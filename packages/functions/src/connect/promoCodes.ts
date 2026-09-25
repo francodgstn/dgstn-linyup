@@ -179,6 +179,9 @@ import {
   promoReservationKey,
   promoUsesLeft,
   promoWindowOpen,
+  normalizeBenefit,
+  resolveDurationBenefit,
+  resolveDurationParty,
   resolveDurationSale,
   resolvePaymentOptions,
   resolveProductPrice,
@@ -244,6 +247,8 @@ export type PromoQuoteTarget =
       activityId: string
       startMs: number
       durationMinutes: number
+      /** A party length's size, the booker included. Absent = one person. */
+      people?: number
     }
   | { kind: 'course'; courseId: string }
   | { kind: 'product'; productId: string; variantId?: string | null }
@@ -1967,6 +1972,8 @@ type PreviewInput = {
     providerId?: string
     startMs?: number
     durationMinutes?: number
+    /** An appointment party: how many people, the booker included. */
+    people?: number
     courseId?: string
     productId?: string
     variantId?: string
@@ -2203,7 +2210,19 @@ async function loadPreviewRail(params: {
       // nothing to discount, and a benefit_only one (UX-70) is not sold here at
       // all — quoting it would invent an individual price the studio removed.
       if (resolveDurationSale(ctx.chosenDuration).mode !== 'priced') return null
-      const benefit = ctx.activity.memberBenefit ?? null
+      // THE ONE READER of the member rule, as createAppointmentCheckout reads
+      // it: the rule for THIS length. Reading the activity-wide field here
+      // quoted a member with a per-length price one figure and then refused
+      // their checkout with `price_changed` at another.
+      const benefit = resolveDurationBenefit(ctx.activity, ctx.chosenDuration.minutes)
+      // The party's size is quoted within the length's own bounds; the names
+      // are the checkout's to check, a quote needs only the count.
+      const party = resolveDurationParty(ctx.chosenDuration)
+      const people =
+        party && typeof t.people === 'number' && Number.isInteger(t.people)
+          ? Math.min(party.max, Math.max(party.min, t.people))
+          : 1
+      if (people > 1) target.people = people
       return {
         target,
         price: async (promo) => {
@@ -2213,12 +2232,12 @@ async function loadPreviewRail(params: {
             ? await loadContactPaymentSnapshot({
                 teamId,
                 contact,
-                relevantTypeIds: benefit?.subscriptionTypeIds ?? [],
+                relevantTypeIds: normalizeBenefit(benefit)?.subscriptionTypeIds ?? [],
               })
             : GUEST_SNAPSHOT
           return resolvePaymentOptions(
             snapshot,
-            { kind: 'appointment', duration: ctx.chosenDuration, benefit },
+            { kind: 'appointment', duration: ctx.chosenDuration, benefit, people },
             { promo }
           )
         },

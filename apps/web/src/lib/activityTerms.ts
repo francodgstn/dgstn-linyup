@@ -26,6 +26,7 @@ import {
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
+  type DurationParty,
 } from '@linyup/shared'
 import { priceRangeLabel } from './priceRange'
 
@@ -86,7 +87,13 @@ export interface ActivityTermsInput {
   dropIn?: { enabled?: boolean; priceAmount?: number | null } | null
   /** APPOINTMENT-ONLY. `benefitOnly` lengths carry no individual price and are
    *  excluded from the price chip — see `resolveDurationSale` (UX-70). */
-  durations?: Array<{ minutes: number; priceAmount?: number | null; benefitOnly?: boolean }> | null
+  durations?: Array<{
+    minutes: number
+    priceAmount?: number | null
+    benefitOnly?: boolean
+    /** A party length: its price is per person (`appointmentPriceRange`). */
+    party?: DurationParty | null
+  }> | null
   /** APPOINTMENT-ONLY (as a money term here — classes also carry a
    *  `memberBenefit` now, a drop-in member rate, but it isn't surfaced as a
    *  term/chip by this resolver; see the class branch below). Accepts the
@@ -381,6 +388,7 @@ export function activityMoneyChipLabels(
                 money: (amount) => formatMoney(amount, currency),
                 from: (price) => t('chipPriceFrom', { price }),
                 range: (min, max) => `${min}–${max}`,
+                perPerson: (price) => t('chipPricePerPerson', { price }),
               })
             : null
         case 'benefitIncluded': {

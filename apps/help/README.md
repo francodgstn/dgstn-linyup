@@ -36,8 +36,9 @@ from `.md` to `.mdx` to use them; the URL does not change.
   has to understand before anything else makes sense: core concepts.
 - `PayMatrix`: an interactive grid of rows against columns; selecting a cell shows a one-line
   example underneath. For every combination at once: the ways to pay on Offerings.
-- `Shelves`: labeled groups of chips. For an overview of what exists rather than how it connects:
-  the three shelves on Offerings.
+- `Walkthrough`: one question at a time; the answers become a numbered setup checklist in the
+  app's own words. The questions are data (`src/data/offeringWalkthrough.ts`), written to double as
+  the analysis for an in-app setup wizard. Setting up an offering, on Offerings.
 - `Flow`: a simple flat diagram. Steps joined by arrows, side by side on a wide screen and stacked
   on a phone, or always stacked with `vertical`. For flows that need no interaction: the contact
   funnel, where the money goes.
