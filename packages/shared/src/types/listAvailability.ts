@@ -51,6 +51,10 @@ export interface ListAvailabilityActivity {
   /** The activity's own CONTACT fields, extending the team-wide list — the
    *  same resolver runs server-side at booking, so this is not display-only. */
   contactFields: BookingContactField[] | null
+  /** How many dates one booking may take, as `resolveMaxDatesPerBooking`
+   *  reads it. Optional so a client that predates baskets reads the shape it
+   *  always has; absent means 1. */
+  maxDatesPerBooking?: number
   /** WHERE. One entry per (provider, activity, PLACE), see the grouping note
    *  in `appointments/window.ts`. Null for a schedule that names no tracked
    *  place (legacy docs carry only the free-text `location`). */

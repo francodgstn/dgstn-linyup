@@ -183,6 +183,7 @@ import {
   resolveDurationBenefit,
   resolveDurationParty,
   resolveDurationSale,
+  resolveMaxDatesPerBooking,
   resolvePaymentOptions,
   resolveProductPrice,
   type PaymentOptionsResult,
@@ -249,6 +250,8 @@ export type PromoQuoteTarget =
       durationMinutes: number
       /** A party length's size, the booker included. Absent = one person. */
       people?: number
+      /** A basket's number of dates. Absent = one date. */
+      quantity?: number
     }
   | { kind: 'course'; courseId: string }
   | { kind: 'product'; productId: string; variantId?: string | null }
@@ -1974,6 +1977,8 @@ type PreviewInput = {
     durationMinutes?: number
     /** An appointment party: how many people, the booker included. */
     people?: number
+    /** An appointment basket: how many dates. */
+    quantity?: number
     courseId?: string
     productId?: string
     variantId?: string
@@ -2223,6 +2228,12 @@ async function loadPreviewRail(params: {
           ? Math.min(party.max, Math.max(party.min, t.people))
           : 1
       if (people > 1) target.people = people
+      // The basket's size, quoted within the offer's own limit.
+      const quantity =
+        typeof t.quantity === 'number' && Number.isInteger(t.quantity) && t.quantity > 1
+          ? Math.min(resolveMaxDatesPerBooking(ctx.activity), t.quantity)
+          : 1
+      if (quantity > 1) target.quantity = quantity
       return {
         target,
         price: async (promo) => {
@@ -2237,7 +2248,7 @@ async function loadPreviewRail(params: {
             : GUEST_SNAPSHOT
           return resolvePaymentOptions(
             snapshot,
-            { kind: 'appointment', duration: ctx.chosenDuration, benefit, people },
+            { kind: 'appointment', duration: ctx.chosenDuration, benefit, people, quantity },
             { promo }
           )
         },

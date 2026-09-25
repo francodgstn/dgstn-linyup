@@ -34,6 +34,10 @@
 //  1. `createAppointmentCheckout`'s rollback (appointments/checkout.ts) — a
 //     failure between the slot transaction and the returned URL.
 //         PROOF: booking_token. Uses releaseAppointmentHold.
+//         A BASKET releases every hold THIS attempt took, in one loop over that
+//         one call, each presenting the token derived for its date
+//         (appointments/basket.ts). A date the loop never reached is somebody
+//         else's, exactly as for one date.
 //  2. `createStaffAppointment`'s payment-link catch (appointments/staffBooking.ts)
 //     — the Stripe payment-link create failed after the hold was written.
 //         PROOF: booking_token, falling back to EXCLUSIVITY when there is no
@@ -108,8 +112,15 @@
 //         without re-deriving it, because the two are right for opposite
 //         reasons.
 //
-// Sites 1–3 are the ones that address a hold BY ITS SHARED ADDRESS while another
-// attempt may own it. They are the ones this file exists for, and they are now
+//  9. `bookAppointment`'s basket rollback (appointments/window.ts). A FREE
+//     basket holds every date first and confirms them together, so a refusal
+//     at any date gives back the holds this call already took.
+//         PROOF: booking_token, the one derived for each date. Uses
+//         releaseAppointmentHold. A one-date free booking never holds, and so
+//         never reaches this site.
+//
+// Sites 1–3 and 9 are the ones that address a hold BY ITS SHARED ADDRESS while
+// another attempt may own it. They are the ones this file exists for, and they are now
 // one call each.
 //
 // ── NOT A RELEASE, though the recipe's third grep finds it ─────────────────
@@ -268,7 +279,7 @@ export type AppointmentHoldReleaseOutcome =
   | 'not_ours'
 
 /**
- * THE ONE way sites 1–3 of the census give a hold back.
+ * THE ONE way sites 1–3 and 9 of the census give a hold back.
  *
  * Both reads and both writes happen inside ONE transaction, so a sibling cannot
  * rewrite the booking between the ownership check and the delete. Idempotent and

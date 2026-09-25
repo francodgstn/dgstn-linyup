@@ -58,7 +58,13 @@ export async function sendAppointmentBookingEmails(p: {
    *  (`@linyup/shared`) where the booking document itself carries the marker. */
   wasPaidFor: boolean
   client: { firstname: string; lastname: string; email: string; phone: string | null }
+  /** A BASKET: every date booked together, each with its own booking id (its
+   *  calendar entry) and cancel link. ONE confirmation lists them all (US-07),
+   *  with one calendar invite per date. Absent for a one-date booking, which
+   *  mails exactly as before. */
+  dates?: { start: Date; end: Date; cancelUrl: string | null; bookingId: string }[]
 }): Promise<void> {
+  const basketDates = p.dates && p.dates.length > 1 ? p.dates : null
   let coachEmail: string | null = null
   let coachFirstname = 'Coach'
   if (p.providerId) {
@@ -86,17 +92,22 @@ export async function sendAppointmentBookingEmails(p: {
         cancelUrl: p.cancelUrl,
         instructions: null,
         lang: p.lang,
+        dates: basketDates,
       })
-      const ical = buildAppointmentICalAttachment({
-        bookingId: p.bookingId,
-        slotTitle: p.activityName,
-        start: p.start,
-        end: p.end,
-        location: p.location,
-        providerName: p.providerName,
-        coachEmail: coachEmail || 'noreply@linyup.com',
-        clientName: `${p.client.firstname} ${p.client.lastname}`,
-        clientEmail: p.client.email,
+      const icals = (basketDates ?? [{ start: p.start, end: p.end, bookingId: p.bookingId }]).map((d, i) => {
+        const ical = buildAppointmentICalAttachment({
+          bookingId: d.bookingId,
+          slotTitle: p.activityName,
+          start: d.start,
+          end: d.end,
+          location: p.location,
+          providerName: p.providerName,
+          coachEmail: coachEmail || 'noreply@linyup.com',
+          clientName: `${p.client.firstname} ${p.client.lastname}`,
+          clientEmail: p.client.email,
+        })
+        // One file per date, each its own name so a mail client keeps them apart.
+        return basketDates ? { ...ical, filename: `appointment-${i + 1}.ics` } : ical
       })
       const subjects: Record<Lang, string> = {
         en: `Appointment Confirmed – ${p.activityName}`,
@@ -110,9 +121,11 @@ export async function sendAppointmentBookingEmails(p: {
         html: email.html,
         text: email.text,
         teamId: p.teamId,
-        attachments: [
-          { filename: ical.filename, content: ical.content, contentType: ical.contentType },
-        ],
+        attachments: icals.map((ical) => ({
+          filename: ical.filename,
+          content: ical.content,
+          contentType: ical.contentType,
+        })),
       })
     } catch (err) {
       console.error('appointment emails: confirmation email failed', err)
@@ -131,6 +144,7 @@ export async function sendAppointmentBookingEmails(p: {
         end: p.end,
         notes: null,
         lang: p.lang,
+        dates: basketDates,
       })
       const subjects: Record<Lang, string> = {
         en: `New appointment: ${p.client.firstname} ${p.client.lastname}`,

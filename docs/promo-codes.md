@@ -727,6 +727,7 @@ claimed *two* for a whole phase, and was "fixed" twice on the wrong copy.
 | Course, paid | `handleCourseCheckout` — same |
 | Drop-in, paid | `handleDropInCheckout`, **after** the confirm transaction and past both refund branches |
 | Appointment, paid | `handleAppointmentCheckout`, after `confirmed = true` and past both refund branches |
+| Appointment basket, paid | `handleAppointmentBasketCheckout`, once at least one date was given. Refunding the dates that could not be given does not reverse the use: the sale completed, for the dates it did. Nothing given is a full refund, and returns before the commit |
 | Gift-card FULL COVER | inside the branch that records the sale (`createDropInCheckout`, `createProductCheckout`, `createCourseCheckout`) — no Stripe session exists, so no webhook will ever run |
 | **Never** | `handleCheckoutCompleted`, before the per-kind dispatch |
 | **Never** | `commitGiftCardDrawdown` |

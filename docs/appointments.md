@@ -332,6 +332,45 @@ pays list with the promo only.
 - **The studio's own booking** (`createStaffAppointment`) takes the same bounds
   but optional names: a studio books a pair before it knows who is coming.
 
+### Several dates in one booking: the basket
+
+"Up to 12 lessons, one payment, one confirmation" (US-07). Opt-in per offer:
+`Activity.maxDatesPerBooking` (read through `resolveMaxDatesPerBooking`, 1 when
+absent, capped at `BASKET_MAX_DATES`), so a coach who sells one session at a
+time sees no change. `listAvailability` carries the limit only when it is above
+one. Every date has the same provider, length and party.
+
+- **No order document.** A basket is N ordinary appointment holds taken
+  together, and on the paid rail the Checkout Session is the order: its
+  metadata carries `providerId` and `startMsList`, from which every session id
+  is derived. Each booking carries `basket_id` so the siblings can be found.
+  One date keeps its wire format, metadata and idempotency key exactly.
+- **One secret, one token per date** (`appointments/basket.ts`). A date's
+  `booking_token` is the credential its cancel link carries, so each date needs
+  its own; the basket mints one secret and derives each token from it and the
+  session id. The webhook and the expiry handler re-derive them from metadata.
+- **All or nothing.** Dates are held one slot transaction at a time; a refusal
+  at any of them releases the holds already taken through
+  `releaseAppointmentHold` with each date's token, and the refusal names the
+  date (`details.startMs`) so the picker can drop it. The census entries are in
+  `appointments/holdRelease.ts`.
+- **The free path is two-phase.** A free booking written straight to `full`
+  cannot be given back by the ownership executor, so `bookAppointment` holds
+  every date first (shaped exactly as a checkout hold) and confirms them all in
+  one transaction. A studio that takes no card payments books the same way,
+  each date owing its own share at the desk.
+- **Priced once, multiplied.** `resolvePaymentOptions` prices one date (member
+  price, promo and party included) and multiplies it (`quantity`), reporting
+  `basket.lessonAmount`. A credit pack does not pay for a basket, the
+  no-mixed-tender rule a party follows.
+- **The webhook confirms date by date** with the one-date cases
+  (`confirmPaidAppointmentSlot`). A date retaken after a lapsed hold, or
+  confirmed by another payment, is refunded at its lesson amount under a key
+  built from which dates; nothing given is a full refund. One confirmation lists
+  every date, each with its own cancel link and calendar file.
+- **Cancelling one date later** is the ordinary `cancelBooking`: the other
+  dates stand and no money moves.
+
 ### The hold state machine — the hold IS the session
 
 An appointment session doesn't exist until booked, so a payment must first reserve

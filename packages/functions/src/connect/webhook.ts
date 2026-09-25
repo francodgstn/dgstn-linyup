@@ -95,6 +95,12 @@ import { releaseAppointmentHold } from '../appointments/holdRelease'
 import { sendAppointmentBookingEmails } from '../appointments/emails'
 import { partyBookingFields, partyFromCheckoutMetadata } from '../appointments/party'
 import {
+  appointmentSessionId,
+  basketDateToken,
+  basketFromCheckoutMetadata,
+  basketRefundKey,
+} from '../appointments/basket'
+import {
   linkFinanceTxnContact,
   linkFinanceTxnPayout,
   recordFinanceTransaction,
@@ -2506,6 +2512,175 @@ async function handleDropInCheckout(
 }
 
 /**
+ * ONE PAID DATE, CONFIRMED: the hold confirmed in place (case 2), re-acquired
+ * when it lapsed or was cancelled (case 3), or reported when the slot was
+ * retaken or the session is gone (case 4) so the caller can refund. Extracted
+ * so a basket runs the very same cases once per date; a one-date payment calls
+ * it once, exactly as before.
+ */
+async function confirmPaidAppointmentSlot(params: {
+  team: TeamRef
+  sessionId: string
+  contactId: string
+  contact: FirebaseFirestore.DocumentData
+  piId: string | null
+  fullname: string
+  paidParty: ReturnType<typeof partyFromCheckoutMetadata>
+  md: Record<string, string>
+  /** Written on the booking alongside the rest, e.g. a basket's `basket_id`. */
+  extraBooking?: Record<string, unknown>
+}): Promise<
+  { outcome: 'confirmed'; bookingToken: string } | { outcome: 'missing_session' | 'slot_retaken' }
+> {
+  const { team, sessionId, contactId, contact, piId, fullname, paidParty, md, extraBooking } = params
+  const db = admin.firestore()
+  const sessionRef = db.collection('sessions').doc(sessionId)
+  const bookingRef = sessionRef.collection('bookings').doc(contactId)
+  const sSnap = await sessionRef.get()
+  const nowMs = Date.now()
+  let bookingToken: string | null = null
+  let confirmed = false
+  let refundReason: 'missing_session' | 'slot_retaken' | null = null
+
+  if (sSnap.exists) {
+    const s = sSnap.data()!
+    const isLiveHold =
+      s.status === 'pending_payment' &&
+      !isExpiredAppointmentHold(s as { status?: string; hold_expires_at?: Timestamp | null }, nowMs)
+
+    if (isLiveHold) {
+      // 2) The common case — confirm the hold in place.
+      await db.runTransaction(async (tx) => {
+        const freshBooking = await tx.get(bookingRef)
+        const isNew = !freshBooking.exists
+        bookingToken = isNew
+          ? generateSecureToken()
+          : ((freshBooking.data()!.booking_token as string | undefined) ?? generateSecureToken())
+        tx.set(
+          sessionRef,
+          {
+            status: 'full',
+            hold_expires_at: FieldValue.delete(),
+            has_bookings: true,
+            bookings_count: 1,
+            last_booking_at: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+        tx.set(
+          bookingRef,
+          {
+            firstname: (contact.firstname as string) ?? '',
+            lastname: (contact.lastname as string) ?? '',
+            email: (contact.email as string) ?? '',
+            phone: (contact.phone as string) ?? null,
+            contact: contactId,
+            session: sessionId,
+            teamId: team.teamId,
+            status: 'confirmed',
+            payment_status: 'paid',
+            payment_intent_id: piId ?? null,
+            fullname,
+            booking_token: bookingToken,
+            expires_at: FieldValue.delete(),
+            updated_at: FieldValue.serverTimestamp(),
+            // A merge, so a solo payment must ERASE a party a later retry wrote
+            // onto the hold, or the booking would name people nobody paid for.
+            ...(paidParty
+              ? partyBookingFields(paidParty)
+              : { party_size: FieldValue.delete(), participants: FieldValue.delete() }),
+            ...(extraBooking ?? {}),
+            ...(isNew
+              ? {
+                  joinedAt: FieldValue.serverTimestamp(),
+                  fromBioLink: true,
+                  is_new_contact: false,
+                  authenticated_booking: false,
+                }
+              : {}),
+          },
+          { merge: true }
+        )
+      })
+      confirmed = true
+    } else {
+      // 3) Session cancelled or the hold expired (sweep/admin/checkout.session.expired)
+      // — RE-ACQUIRE, rebuilding the session doc from the swept doc's OWN fields
+      // (the what/when — activityName/providerId/location/… — are all still on
+      // it, only status differs). Conflict (slot retaken) → refund.
+      bookingToken = generateSecureToken()
+      const rebuiltSessionDoc: Record<string, unknown> = { ...s }
+      delete rebuiltSessionDoc.hold_expires_at
+      rebuiltSessionDoc.status = 'full'
+      rebuiltSessionDoc.bookings_count = 1
+      rebuiltSessionDoc.has_bookings = true
+      rebuiltSessionDoc.last_booking_at = FieldValue.serverTimestamp()
+      const start = s.start as Timestamp
+      const end = s.end as Timestamp
+      // Best-effort recover the original availability's buffer for the overlap
+      // check (not persisted on the session doc itself); 0 if the template was
+      // since deleted/paused — degrades gracefully, never blocks the re-acquire.
+      let bufferMs = 0
+      if (s.templateId) {
+        try {
+          const tplSnap = await db
+            .collection(AVAILABILITY_COLLECTION)
+            .doc(s.templateId as string)
+            .get()
+          bufferMs = ((tplSnap.data()?.bufferMinutes as number | undefined) ?? 0) * 60_000
+        } catch {
+          bufferMs = 0
+        }
+      }
+      try {
+        await runAppointmentSlotTransaction({
+          sessionRef,
+          sessionDoc: rebuiltSessionDoc,
+          bookingDocId: contactId,
+          bookingDoc: {
+            firstname: (contact.firstname as string) ?? '',
+            lastname: (contact.lastname as string) ?? '',
+            email: (contact.email as string) ?? '',
+            phone: (contact.phone as string) ?? null,
+            contact: contactId,
+            session: sessionId,
+            teamId: team.teamId,
+            joinedAt: FieldValue.serverTimestamp(),
+            fromBioLink: true,
+            is_new_contact: false,
+            booking_token: bookingToken,
+            authenticated_booking: false,
+            subscription_type_id: null,
+            status: 'confirmed',
+            payment_status: 'paid',
+            payment_intent_id: piId ?? null,
+            fullname,
+            ...(paidParty ? partyBookingFields(paidParty) : {}),
+            ...(extraBooking ?? {}),
+          },
+          teamId: team.teamId,
+          providerId: (s.providerId as string | undefined) ?? md.providerId ?? '',
+          startMs: start.toMillis(),
+          endMs: end.toMillis(),
+          bufferMs,
+        })
+        confirmed = true
+      } catch (err) {
+        console.warn(`[connect] appointment re-acquire failed (session=${sessionId}):`, err)
+        refundReason = 'slot_retaken'
+      }
+    }
+  } else {
+    // 4) Session missing entirely — never rebuild the what/when from metadata
+    // alone; refund and let the studio/customer re-book if they still want to.
+    refundReason = 'missing_session'
+  }
+
+  if (confirmed && bookingToken) return { outcome: 'confirmed', bookingToken }
+  return { outcome: refundReason ?? 'missing_session' }
+}
+
+/**
  * Appointment checkout (kind === 'appointment') — confirms the paid-booking HOLD
  * created by createAppointmentCheckout. THE HOLD IS THE SESSION: a
  * 'pending_payment' session + a 'pending'/'required' booking already exist;
@@ -2527,6 +2702,10 @@ async function handleAppointmentCheckout(
   accountId: string | undefined,
   md: Record<string, string>
 ): Promise<void> {
+  // A BASKET confirms date by date through the same cases; see below.
+  const basket = basketFromCheckoutMetadata(md)
+  if (basket) return handleAppointmentBasketCheckout(team, session, accountId, md, basket)
+
   const { sessionId, contactId } = md
   if (!sessionId || !contactId) return
   const db = admin.firestore()
@@ -2609,147 +2788,23 @@ async function handleAppointmentCheckout(
     return
   }
 
-  const sSnap = await sessionRef.get()
-  const nowMs = Date.now()
-  let bookingToken: string | null = null
-  let confirmed = false
-  let refundReason: 'missing_session' | 'slot_retaken' | null = null
   // THE PARTY THIS MONEY BOUGHT, from the Checkout Session rather than the hold:
   // a retry that changed the party rewrote the hold, and this older session can
   // still have been the one paid. Null for a solo purchase. See appointments/party.ts.
   const paidParty = partyFromCheckoutMetadata(md)
-
-  if (sSnap.exists) {
-    const s = sSnap.data()!
-    const isLiveHold =
-      s.status === 'pending_payment' &&
-      !isExpiredAppointmentHold(s as { status?: string; hold_expires_at?: Timestamp | null }, nowMs)
-
-    if (isLiveHold) {
-      // 2) The common case — confirm the hold in place.
-      await db.runTransaction(async (tx) => {
-        const freshBooking = await tx.get(bookingRef)
-        const isNew = !freshBooking.exists
-        bookingToken = isNew
-          ? generateSecureToken()
-          : ((freshBooking.data()!.booking_token as string | undefined) ?? generateSecureToken())
-        tx.set(
-          sessionRef,
-          {
-            status: 'full',
-            hold_expires_at: FieldValue.delete(),
-            has_bookings: true,
-            bookings_count: 1,
-            last_booking_at: FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        )
-        tx.set(
-          bookingRef,
-          {
-            firstname: (contact.firstname as string) ?? '',
-            lastname: (contact.lastname as string) ?? '',
-            email: (contact.email as string) ?? '',
-            phone: (contact.phone as string) ?? null,
-            contact: contactId,
-            session: sessionId,
-            teamId: team.teamId,
-            status: 'confirmed',
-            payment_status: 'paid',
-            payment_intent_id: piId ?? null,
-            fullname,
-            booking_token: bookingToken,
-            expires_at: FieldValue.delete(),
-            updated_at: FieldValue.serverTimestamp(),
-            // A merge, so a solo payment must ERASE a party a later retry wrote
-            // onto the hold, or the booking would name people nobody paid for.
-            ...(paidParty
-              ? partyBookingFields(paidParty)
-              : { party_size: FieldValue.delete(), participants: FieldValue.delete() }),
-            ...(isNew
-              ? {
-                  joinedAt: FieldValue.serverTimestamp(),
-                  fromBioLink: true,
-                  is_new_contact: false,
-                  authenticated_booking: false,
-                }
-              : {}),
-          },
-          { merge: true }
-        )
-      })
-      confirmed = true
-    } else {
-      // 3) Session cancelled or the hold expired (sweep/admin/checkout.session.expired)
-      // — RE-ACQUIRE, rebuilding the session doc from the swept doc's OWN fields
-      // (the what/when — activityName/providerId/location/… — are all still on
-      // it, only status differs). Conflict (slot retaken) → refund.
-      bookingToken = generateSecureToken()
-      const rebuiltSessionDoc: Record<string, unknown> = { ...s }
-      delete rebuiltSessionDoc.hold_expires_at
-      rebuiltSessionDoc.status = 'full'
-      rebuiltSessionDoc.bookings_count = 1
-      rebuiltSessionDoc.has_bookings = true
-      rebuiltSessionDoc.last_booking_at = FieldValue.serverTimestamp()
-      const start = s.start as Timestamp
-      const end = s.end as Timestamp
-      // Best-effort recover the original availability's buffer for the overlap
-      // check (not persisted on the session doc itself); 0 if the template was
-      // since deleted/paused — degrades gracefully, never blocks the re-acquire.
-      let bufferMs = 0
-      if (s.templateId) {
-        try {
-          const tplSnap = await db
-            .collection(AVAILABILITY_COLLECTION)
-            .doc(s.templateId as string)
-            .get()
-          bufferMs = ((tplSnap.data()?.bufferMinutes as number | undefined) ?? 0) * 60_000
-        } catch {
-          bufferMs = 0
-        }
-      }
-      try {
-        await runAppointmentSlotTransaction({
-          sessionRef,
-          sessionDoc: rebuiltSessionDoc,
-          bookingDocId: contactId,
-          bookingDoc: {
-            firstname: (contact.firstname as string) ?? '',
-            lastname: (contact.lastname as string) ?? '',
-            email: (contact.email as string) ?? '',
-            phone: (contact.phone as string) ?? null,
-            contact: contactId,
-            session: sessionId,
-            teamId: team.teamId,
-            joinedAt: FieldValue.serverTimestamp(),
-            fromBioLink: true,
-            is_new_contact: false,
-            booking_token: bookingToken,
-            authenticated_booking: false,
-            subscription_type_id: null,
-            status: 'confirmed',
-            payment_status: 'paid',
-            payment_intent_id: piId ?? null,
-            fullname,
-            ...(paidParty ? partyBookingFields(paidParty) : {}),
-          },
-          teamId: team.teamId,
-          providerId: (s.providerId as string | undefined) ?? md.providerId ?? '',
-          startMs: start.toMillis(),
-          endMs: end.toMillis(),
-          bufferMs,
-        })
-        confirmed = true
-      } catch (err) {
-        console.warn(`[connect] appointment re-acquire failed (session=${sessionId}):`, err)
-        refundReason = 'slot_retaken'
-      }
-    }
-  } else {
-    // 4) Session missing entirely — never rebuild the what/when from metadata
-    // alone; refund and let the studio/customer re-book if they still want to.
-    refundReason = 'missing_session'
-  }
+  const slot = await confirmPaidAppointmentSlot({
+    team,
+    sessionId,
+    contactId,
+    contact,
+    piId: piId ?? null,
+    fullname,
+    paidParty,
+    md,
+  })
+  const confirmed = slot.outcome === 'confirmed'
+  const bookingToken = slot.outcome === 'confirmed' ? slot.bookingToken : null
+  const refundReason = slot.outcome === 'confirmed' ? null : slot.outcome
 
   if (refundReason) {
     if (piId && accountId) {
@@ -2873,6 +2928,215 @@ async function handleAppointmentCheckout(
 }
 
 /**
+ * A BASKET'S PAYMENT (US-07): every date confirmed through the one-date cases,
+ * once per date, then ONE set of effects and ONE confirmation listing them all.
+ *
+ * Per date, three answers:
+ *   • already confirmed by THIS payment: a redelivery that got partway, so the
+ *     date is left alone and not mailed again;
+ *   • confirmed or given back by the cases (`confirmPaidAppointmentSlot`);
+ *   • held by something else: a date confirmed by ANOTHER payment or settled at
+ *     the desk is a date this money did not buy.
+ *
+ * Money follows the dates: none given → the whole charge is refunded; some not
+ * given → exactly their share (`lessonAmountMinor`, the figure each date was
+ * priced at) is refunded, under a key built from WHICH dates, so a redelivery
+ * that meets the same dates reissues the same refund rather than a second one.
+ * The dates that were given stand. A partial refund reverses no promo use: the
+ * sale completed, for the dates it did.
+ */
+async function handleAppointmentBasketCheckout(
+  team: TeamRef,
+  session: StripeWebhookPayload<StripeCheckoutSessionObject>,
+  accountId: string | undefined,
+  md: Record<string, string>,
+  basket: NonNullable<ReturnType<typeof basketFromCheckoutMetadata>>
+): Promise<void> {
+  const { contactId, providerId } = md
+  if (!contactId || !providerId) return
+  const db = admin.firestore()
+
+  const cSnap = await db.collection(CONTACTS_COLLECTION).doc(contactId).get()
+  if (!cSnap.exists || cSnap.data()?.teamId !== team.teamId) return
+  const contact = cSnap.data()!
+  // Same parity as one date: a contact created by this booking already carries
+  // one pending booking from creation.
+  const wasProvisional = contact.provisional === true
+  if (wasProvisional) {
+    await cSnap.ref.update({
+      provisional: FieldValue.delete(),
+      provisional_expires_at: FieldValue.delete(),
+    })
+  }
+
+  const piId =
+    typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+  const fullname =
+    `${(contact.firstname as string) ?? ''} ${(contact.lastname as string) ?? ''}`.trim()
+  const paidParty = partyFromCheckoutMetadata(md)
+
+  const given: { sessionId: string; bookingToken: string }[] = []
+  const notGiven: string[] = []
+  let alreadyApplied = 0
+  for (const startMs of basket.starts) {
+    const sessionId = appointmentSessionId(providerId, startMs)
+    const bSnap = await db.collection('sessions').doc(sessionId).collection('bookings').doc(contactId).get()
+    const b = bSnap.exists ? bSnap.data()! : null
+    if (b?.status === 'confirmed') {
+      if (piId && b.payment_intent_id === piId) alreadyApplied++
+      else notGiven.push(sessionId)
+      continue
+    }
+    const slot = await confirmPaidAppointmentSlot({
+      team,
+      sessionId,
+      contactId,
+      contact,
+      piId: piId ?? null,
+      fullname,
+      paidParty,
+      md,
+      extraBooking: { basket_id: basket.basketId },
+    })
+    if (slot.outcome === 'confirmed') given.push({ sessionId, bookingToken: slot.bookingToken })
+    else notGiven.push(sessionId)
+  }
+
+  // ── The money for the dates this payment could not buy ──
+  if (notGiven.length > 0 && piId && accountId) {
+    const nothingGiven = given.length === 0 && alreadyApplied === 0
+    const lessonMinor = Number(md.lessonAmountMinor)
+    try {
+      if (nothingGiven) {
+        await refundDirectCharge({
+          accountId,
+          paymentIntentId: piId,
+          reason: 'requested_by_customer',
+          idempotencyKey: `apt-refund:${piId}`,
+        })
+        await memberPaymentRef(team.teamId, piId).set(
+          { contactId, status: 'refunded', updated_at: FieldValue.serverTimestamp() },
+          { merge: true }
+        )
+      } else if (Number.isInteger(lessonMinor) && lessonMinor > 0) {
+        await refundDirectCharge({
+          accountId,
+          paymentIntentId: piId,
+          amount: lessonMinor * notGiven.length,
+          reason: 'requested_by_customer',
+          idempotencyKey: basketRefundKey(piId, notGiven),
+        })
+      } else {
+        console.error(
+          `[connect] appointment basket: ${notGiven.length} date(s) not given and no lesson amount ` +
+            `to refund them at (pi=${piId}); refund by hand`
+        )
+      }
+    } catch (err) {
+      console.error(`[connect] appointment basket refund failed (pi=${piId}):`, err)
+    }
+  }
+  if (notGiven.length > 0) {
+    console.log(
+      `[connect] appointment basket: ${notGiven.length} of ${basket.starts.length} date(s) could not be given ` +
+        `(pi=${piId ?? 'none'}, basket=${basket.basketId})`
+    )
+  }
+  if (given.length === 0) return
+
+  // ── post-confirm effects, once for the dates this delivery gave ──
+  await commitPromoFromMetadata({
+    teamId: team.teamId,
+    md,
+    targetKind: 'appointment',
+    fallbackContactId: contactId,
+    checkoutSessionId: session?.id ?? null,
+  })
+  if (piId) {
+    await stampFinanceContact(team.teamId, piId, contactId)
+    await memberPaymentRef(team.teamId, piId).set({ contactId }, { merge: true })
+  }
+  // A contact this booking created already counts one from creation.
+  const newPending = given.length - (wasProvisional && alreadyApplied === 0 ? 1 : 0)
+  if (newPending > 0) {
+    try {
+      await db
+        .collection(CONTACTS_COLLECTION)
+        .doc(contactId)
+        .update({ pending_bookings_count: FieldValue.increment(newPending) })
+    } catch (err) {
+      console.error('[connect] appointment basket pending_bookings_count increment failed:', err)
+    }
+  }
+  await db
+    .collection(CONTACTS_COLLECTION)
+    .doc(contactId)
+    .collection('activity_log')
+    .add(withLedgerExpiry('activity_log', {
+      type: 'appointment_booked',
+      source: 'stripe_connect',
+      message: `Appointments booked · ${md.activityName ?? 'Appointment'} · ${given.length} dates`,
+      timestamp: FieldValue.serverTimestamp(),
+    }))
+
+  // ONE confirmation for every date this delivery gave, each with its own
+  // cancel link and calendar entry.
+  try {
+    const [sessionSnaps, teamSnap] = await Promise.all([
+      Promise.all(given.map((g) => db.collection('sessions').doc(g.sessionId).get())),
+      db.collection(TEAMS_COLLECTION).doc(team.teamId).get(),
+    ])
+    const td = teamSnap.data()
+    const teamSlug = (td?.slug as string | undefined) ?? null
+    const lang = asLang(td?.language)
+    const dates = given.flatMap((g, i) => {
+      const sd = sessionSnaps[i].data()
+      if (!sd) return []
+      return [
+        {
+          start: (sd.start as Timestamp).toDate(),
+          end: (sd.end as Timestamp).toDate(),
+          bookingId: `${g.sessionId}-${contactId}`,
+          cancelUrl: teamSlug
+            ? localizedPublicUrl(getHostingUrl(), lang, teamSlug, 'appointments/cancel', {
+                token: g.bookingToken,
+              })
+            : null,
+        },
+      ]
+    })
+    const first = sessionSnaps[0].data()
+    if (first && dates.length > 0) {
+      await sendAppointmentBookingEmails({
+        teamId: team.teamId,
+        teamName: (td?.name as string | undefined) ?? 'Our Team',
+        lang,
+        activityName: (first.activityName as string | undefined) ?? md.activityName ?? 'Appointment',
+        providerId: (first.providerId as string | undefined) ?? null,
+        providerName: (first.providerName as string | undefined) ?? 'Coach',
+        start: dates[0].start,
+        end: dates[0].end,
+        location: (first.location as string | undefined) ?? null,
+        onlineUrl: (first.onlineUrl as string | undefined) ?? null,
+        cancelUrl: dates[0].cancelUrl,
+        bookingId: dates[0].bookingId,
+        // PAID, by construction, as for one date: this is the receipt.
+        wasPaidFor: true,
+        client: {
+          firstname: (contact.firstname as string) ?? '',
+          lastname: (contact.lastname as string) ?? '',
+          email: (contact.email as string) ?? '',
+          phone: (contact.phone as string) ?? null,
+        },
+        dates,
+      })
+    }
+  } catch (err) {
+    console.error('[connect] appointment basket emails failed:', err)
+  }
+}
+
+/**
  * checkout.session.expired — releases whatever the checkout reserved:
  *  • ANY kind carrying a gift-card hold (product/course/drop-in redemption
  *    with a partial gift-card drawdown) — releaseGiftCardHold, independent of
@@ -2943,22 +3207,35 @@ async function handleCheckoutExpired(session: StripeWebhookPayload<StripeCheckou
   const { sessionId, contactId, teamId } = md
   if (!sessionId || !contactId || !teamId) return
 
-  // `md.bookingToken` is THIS session's proof that the hold at the shared
+  // A BASKET holds every one of its dates, each proven by the token derived for
+  // it (appointments/basket.ts). One date is the single hold below.
+  const basket = basketFromCheckoutMetadata(md)
+  const targets =
+    basket && md.providerId
+      ? basket.starts.map((startMs) => {
+          const id = appointmentSessionId(md.providerId, startMs)
+          return { sessionId: id, bookingToken: basketDateToken(basket.secret, id) }
+        })
+      : [{ sessionId, bookingToken: md.bookingToken || null }]
+
+  // `bookingToken` is THIS session's proof that the hold at the shared
   // `apt_{provider}_{start}` id is still the one it wrote. A session created
   // before that key existed presents none, and is then judged on the named
   // secondary proofs — a hold past its own deadline, or a document that STILL
   // presents no deadline at all — never on presence. See
   // appointments/holdRelease.ts, which owns that ladder and the argument for why
   // presence is not on it.
-  const outcome = await releaseAppointmentHold({
-    teamId,
-    sessionId,
-    contactId,
-    bookingToken: md.bookingToken || null,
-    label: 'checkout.session.expired',
-  })
-  if (outcome === 'released') {
-    console.log(`[connect] appointment checkout expired — released hold (session=${sessionId})`)
+  for (const target of targets) {
+    const outcome = await releaseAppointmentHold({
+      teamId,
+      sessionId: target.sessionId,
+      contactId,
+      bookingToken: target.bookingToken,
+      label: 'checkout.session.expired',
+    })
+    if (outcome === 'released') {
+      console.log(`[connect] appointment checkout expired — released hold (session=${target.sessionId})`)
+    }
   }
 }
 

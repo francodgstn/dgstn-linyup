@@ -10,6 +10,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import {
+  BASKET_MAX_DATES,
   GUEST_SNAPSHOT,
   normalizeBenefit,
   resolveDurationBenefit,
@@ -62,6 +63,15 @@ import {
   partyKeyParts,
   readAppointmentParty,
 } from './party'
+import {
+  appointmentSessionId,
+  basketCheckoutMetadata,
+  basketDateToken,
+  basketKeyParts,
+  loadBasketContexts,
+  newBasketIdentity,
+  readBasketStarts,
+} from './basket'
 import { resolveContactFieldPatchForBooking } from '../booking/contactFields'
 
 const HOLD_MINUTES = 30
@@ -131,6 +141,9 @@ export const createAppointmentCheckout = onCall(
       providerId?: string
       activityId?: string
       startMs?: number
+      /** A BASKET: several starts with the same provider, length and party,
+       *  held and paid as one. Up to the offer's `maxDatesPerBooking`. */
+      startMsList?: number[]
       durationMinutes?: number
       contactDetails?: { firstname: string; lastname: string; email: string; phone?: string }
       /** Answers to the studio's book-form contact fields — narrowed server
@@ -160,7 +173,6 @@ export const createAppointmentCheckout = onCall(
       !data?.teamId ||
       !data?.providerId ||
       !data?.activityId ||
-      typeof data.startMs !== 'number' ||
       typeof data.durationMinutes !== 'number'
     ) {
       throw new HttpsError(
@@ -168,7 +180,10 @@ export const createAppointmentCheckout = onCall(
         'teamId, providerId, activityId, startMs and durationMinutes are required'
       )
     }
-    const { teamId, providerId, activityId, startMs, durationMinutes } = data
+    const { teamId, providerId, activityId, durationMinutes } = data
+    // One date or a basket; the offer's own limit is checked once it is loaded.
+    const starts = readBasketStarts(data, BASKET_MAX_DATES)
+    const startMs = starts[0]
     const locale = data.locale ?? 'en'
     const db = admin.firestore()
 
@@ -180,7 +195,8 @@ export const createAppointmentCheckout = onCall(
     requireChargeableAccount(team) // fail before the reads; the orchestrator re-checks
 
     // ── The *what* + the *when* ──
-    const ctx = await loadAppointmentBookingContext({ teamId, providerId, activityId, startMs, durationMinutes })
+    const contexts = await loadBasketContexts({ teamId, providerId, activityId, starts, durationMinutes })
+    const ctx = contexts[0]
     // Covers BOTH non-priced modes: a free length has nothing to charge for,
     // and a benefit_only one (UX-70) is deliberately not sold by the session —
     // reading the mode rather than the raw number is what stops a stale
@@ -229,6 +245,7 @@ export const createAppointmentCheckout = onCall(
       startMs,
       durationMinutes,
       people: party.people,
+      ...(starts.length > 1 ? { quantity: starts.length } : {}),
     }
     const promoCaller: PromoCaller = await resolvePromoCaller({
       teamId,
@@ -254,6 +271,7 @@ export const createAppointmentCheckout = onCall(
         duration: ctx.chosenDuration,
         benefit: durationRule,
         people: party.people,
+        quantity: starts.length,
       },
       promo.modifier ? { promo: promo.modifier } : undefined
     )
@@ -340,33 +358,46 @@ export const createAppointmentCheckout = onCall(
 
     // ── HOLD tx — the hold IS the session. A retry from the SAME contact rewrites
     // its own still-live hold (fresh Checkout Session, same slot). ──
-    const bookingToken = generateSecureToken()
+    const attemptToken = generateSecureToken()
     const holdExpiresAt = Timestamp.fromMillis(Date.now() + HOLD_MINUTES * 60_000)
-    const sessionRef = db.collection('sessions').doc(`apt_${providerId}_${ctx.start.getTime()}`)
+    // A BASKET holds every date at its own shared address, each booking with its
+    // own token derived from one secret (appointments/basket.ts says why). One
+    // date keeps the attempt's token exactly as before.
+    const basket = starts.length > 1 ? newBasketIdentity(attemptToken) : null
+    const holds = contexts.map((c) => {
+      const sessionId = appointmentSessionId(providerId, c.start.getTime())
+      return {
+        c,
+        sessionRef: db.collection('sessions').doc(sessionId),
+        token: basket ? basketDateToken(basket.secret, sessionId) : attemptToken,
+      }
+    })
+    const sessionRef = holds[0].sessionRef
+    const bookingToken = holds[0].token
 
-    const sessionDoc = {
+    const sessionDocFor = (c: typeof ctx) => ({
       teamId,
-      templateId: ctx.tpl.id,
+      templateId: c.tpl.id,
       origin: 'window',
       activityType: 'appointment',
       activityId,
-      activityName: ctx.activity.name,
+      activityName: c.activity.name,
       // NOTE: no accessRule any more — appointments dropped the gate entirely.
-      autoConfirm: ctx.autoConfirm,
+      autoConfirm: c.autoConfirm,
       providerId,
-      providerName: ctx.providerName,
-      start: Timestamp.fromDate(ctx.start),
-      end: Timestamp.fromDate(ctx.end),
+      providerName: c.providerName,
+      start: Timestamp.fromDate(c.start),
+      end: Timestamp.fromDate(c.end),
       duration_minutes: durationMinutes,
       max_participants: 1,
       bookings_count: 1,
       // Structured place + its free-text note, both from the window — same as the
       // free path in window.ts. A paid hold becomes the confirmed session, so
       // dropping the place here would lose it for every paid appointment.
-      ...(ctx.tpl.placeId ? { placeId: ctx.tpl.placeId } : {}),
-      ...(ctx.tpl.roomId ? { roomId: ctx.tpl.roomId } : {}),
-      location: ctx.tpl.location ?? null,
-      onlineUrl: ctx.tpl.onlineUrl ?? null,
+      ...(c.tpl.placeId ? { placeId: c.tpl.placeId } : {}),
+      ...(c.tpl.roomId ? { roomId: c.tpl.roomId } : {}),
+      location: c.tpl.location ?? null,
+      onlineUrl: c.tpl.onlineUrl ?? null,
       allowBooking: true,
       // THE HOLD IS THE SESSION — never published (see syncSessionPublicProfile),
       // never counted by trackBookings (see analytics/index.ts), and skipped by
@@ -376,19 +407,20 @@ export const createAppointmentCheckout = onCall(
       has_bookings: true,
       last_booking_at: FieldValue.serverTimestamp(),
       created_at: FieldValue.serverTimestamp(),
-    }
-    const bookingDoc = {
+    })
+    const bookingDocFor = (h: (typeof holds)[number]) => ({
       firstname: caller.sanitized.firstname,
       lastname: caller.sanitized.lastname,
       email: caller.sanitized.email,
       phone: caller.sanitized.phone,
       contact: contactId,
-      session: sessionRef.id,
+      session: h.sessionRef.id,
       teamId,
       joinedAt: FieldValue.serverTimestamp(),
       fromBioLink: true,
       is_new_contact: isNewContact,
-      booking_token: bookingToken,
+      booking_token: h.token,
+      ...(basket ? { basket_id: basket.basketId } : {}),
       authenticated_booking: !!caller.authenticatedContact,
       // WHICH MEMBERSHIP priced this booking — not an access-gate match any
       // more. The fallback through `supersededBenefit` is what stops a running
@@ -410,7 +442,7 @@ export const createAppointmentCheckout = onCall(
       ...(waiverOutcome.bookingWaiverState
         ? { waiver_state: waiverOutcome.bookingWaiverState }
         : {}),
-    }
+    })
 
     // ── Create the Connect checkout; the webhook (kind: 'appointment') confirms. ──
     const slugQuery = data.slug ? `&slug=${encodeURIComponent(data.slug)}&seg=appointments` : ''
@@ -510,6 +542,14 @@ export const createAppointmentCheckout = onCall(
       // the party rewrites the hold, but this older session can still be paid,
       // and the booking must then say what this money bought. See party.ts.
       ...partyCheckoutMetadata(party),
+      // WHICH DATES this payment buys, and the secret their tokens derive from,
+      // so the webhook and the expiry handler can address every hold. Nothing
+      // for one date. The lesson amount is what a date that cannot be given is
+      // refunded at. See basket.ts.
+      ...basketCheckoutMetadata(starts, basket),
+      ...(basket && payOption.basket
+        ? { lessonAmountMinor: String(requireChargeableAmountFromMajor(payOption.basket.lessonAmount)) }
+        : {}),
     }
     const idempotencyKey =
       data.idempotencyKey ??
@@ -524,33 +564,49 @@ export const createAppointmentCheckout = onCall(
         sessionRef.id,
         contactId,
         ...instrumentKeyParts(promoTicket, null),
-        ...partyKeyParts(party)
+        ...partyKeyParts(party),
+        ...basketKeyParts(starts)
       )
 
     // The two rollback questions are DIFFERENT, and this flag is what separates
     // them — see decideAppointmentCheckoutRollback. The slot transaction is
     // inside the guard so a losing racer's promo reservation comes back; the
     // hold, which the loser never got, is not the loser's to cancel.
-    let holdAcquired = false
+    //
+    // A BASKET IS ALL OR NOTHING: its dates are held one slot transaction at a
+    // time, in order, and a refusal at any of them releases every one already
+    // taken (below). Half a basket is the one outcome US-07 forbids.
+    const acquired: (typeof holds)[number][] = []
     try {
-      await runAppointmentSlotTransaction({
-        sessionRef,
-        sessionDoc,
-        bookingDocId: contactId,
-        bookingDoc,
-        teamId,
-        providerId,
-        startMs: ctx.start.getTime(),
-        endMs: ctx.end.getTime(),
-        bufferMs: ctx.bufferMs,
-        allowRewriteByHolder: contactId,
-      })
-      holdAcquired = true
+      for (const h of holds) {
+        await runAppointmentSlotTransaction({
+          sessionRef: h.sessionRef,
+          sessionDoc: sessionDocFor(h.c),
+          bookingDocId: contactId,
+          bookingDoc: bookingDocFor(h),
+          teamId,
+          providerId,
+          startMs: h.c.start.getTime(),
+          endMs: h.c.end.getTime(),
+          bufferMs: h.c.bufferMs,
+          allowRewriteByHolder: contactId,
+        }).catch((err: unknown) => {
+          // Name the date that could not be held, so the picker can drop it.
+          if (holds.length > 1 && err instanceof HttpsError && err.code === 'failed-precondition') {
+            throw new HttpsError('failed-precondition', err.message, {
+              reason: 'date_unavailable',
+              startMs: h.c.start.getTime(),
+            })
+          }
+          throw err
+        })
+        acquired.push(h)
+      }
 
       const checkoutSession = await startOneOffCheckout({
         team,
         amountMinor: amount,
-        productName: `${ctx.activity.name} · ${durationMinutes} min${party.people > 1 ? ` × ${party.people}` : ''}`,
+        productName: `${ctx.activity.name} · ${holds.length > 1 ? `${holds.length} × ` : ''}${durationMinutes} min${party.people > 1 ? ` × ${party.people}` : ''}`,
         successUrl,
         cancelUrl,
         customerEmail: caller.sanitized.email || undefined,
@@ -588,14 +644,16 @@ export const createAppointmentCheckout = onCall(
       // is still ours" are different facts once a sibling attempt by the same
       // contact can rewrite it.
       const rollback = decideAppointmentCheckoutRollback({
-        holdAcquired,
+        holdAcquired: acquired.length > 0,
         promoReserved: !!promoTicket,
       })
       console.error(
-        `[appointments] createAppointmentCheckout failed (holdAcquired=${holdAcquired}):`,
+        `[appointments] createAppointmentCheckout failed (holds acquired=${acquired.length}/${holds.length}):`,
         err
       )
-      if (rollback.releaseHold) {
+      // Every hold THIS attempt took, and only those: a date the loop never
+      // reached, or was refused at, is somebody else's, exactly as for one date.
+      for (const h of rollback.releaseHold ? acquired : []) {
         try {
           // TWO ROLLBACKS, ONE OWNERSHIP RULE — `releaseAppointmentHold` is the
           // hold's `releasePromoReservation`: read the thing at the shared
@@ -607,9 +665,9 @@ export const createAppointmentCheckout = onCall(
           // asserts that no fourth caller has appeared without a census entry.
           await releaseAppointmentHold({
             teamId,
-            sessionId: sessionRef.id,
+            sessionId: h.sessionRef.id,
             contactId,
-            bookingToken,
+            bookingToken: h.token,
             label: 'createAppointmentCheckout',
           })
         } catch (releaseErr) {

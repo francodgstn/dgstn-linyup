@@ -205,6 +205,18 @@ export function resolveDurationParty(d: ActivityDuration): DurationParty | null 
   return { min, max }
 }
 
+/** The most dates one appointment booking takes (US-07). One payment, one
+ *  confirmation, and a list a person can still read at a glance. */
+export const BASKET_MAX_DATES = 12
+
+/** THE ONE READER of how many dates a booking of this offer may take:
+ *  1..BASKET_MAX_DATES, and 1 for anything absent or malformed. */
+export function resolveMaxDatesPerBooking(a: { maxDatesPerBooking?: number | null }): number {
+  const n = a.maxDatesPerBooking
+  if (typeof n !== 'number' || !Number.isInteger(n) || n < 1) return 1
+  return Math.min(n, BASKET_MAX_DATES)
+}
+
 /** Why a booking's party was refused. `party_required` is an old client (the
  *  member app before parties) asking for a party length as if it were solo:
  *  refused by name rather than guessed, because guessing means either charging
@@ -511,6 +523,11 @@ export interface Activity {
    *  it is authoritative-once-present and how a legacy `memberBenefit` is
    *  absorbed into it. */
   durationBenefits?: ActivityDurationBenefit[]
+  /** APPOINTMENT-ONLY. How many dates one booking may take ("up to 12 lessons,
+   *  one payment"). Absent = 1, today's one-date booking: a coach who sells
+   *  one session at a time sees no basket at all. Read through
+   *  `resolveMaxDatesPerBooking`, never as a raw field. */
+  maxDatesPerBooking?: number | null
   /** Does a booking confirm itself, or does the studio decide?
    *  - `true`  → the booking is written `status: 'confirmed'` on the spot.
    *  - `false` → it stays unconfirmed until the studio confirms/checks them in.
