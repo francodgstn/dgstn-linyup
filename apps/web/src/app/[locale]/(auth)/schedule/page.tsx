@@ -72,6 +72,8 @@ import {
   Plus,
   ChevronDown,
   CalendarDays,
+  Calendar1,
+  Columns3,
   ChartNoAxesGantt,
   CalendarRange,
   CalendarClock,
@@ -116,6 +118,7 @@ const EventsTimeline = dynamic(
 )
 
 const SessionsCalendar = dynamic(() => import('../sessions/SessionsCalendar'), { ssr: false })
+type CalendarRange = 'day' | 'week' | 'month'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -971,6 +974,14 @@ export default function CalendarPage() {
   const [viewMonth, setViewMonth] = useState(() => today.getMonth())
 
   const [view, setView] = useState<CalendarView>('calendar')
+  // Day / Week / Month of the calendar view. A phone opens on the DAY: seven
+  // columns do not fit a 375px screen, and the week there was a sideways
+  // scroll. Set after mount so the server render and the first client render
+  // agree.
+  const [calRange, setCalRange] = useState<CalendarRange>('week')
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 639px)').matches) setCalRange('day')
+  }, [])
   const [tab, setTab] = useTabParam(TIME_TABS, 'upcoming')
   // How far the LIST reaches, in months from today. Three was the old hard cap;
   // it stays the default so nothing gets slower for a studio that never touches
@@ -987,7 +998,12 @@ export default function CalendarPage() {
   // Opened straight from the dashboard's quick action. Read ONCE, in a lazy
   // initializer, so closing the dialog is not undone by the next render.
   const quickActionParams = useSearchParams()
-  const [sessionDialog, setSessionDialog] = useState<{ open: boolean; editing: Session | null }>({
+  const [sessionDialog, setSessionDialog] = useState<{
+    open: boolean
+    editing: Session | null
+    /** Set when the calendar's empty slot opened a NEW class. */
+    initialStart?: Date | null
+  }>({
     open: quickActionParams.get(QUICK_ACTION_PARAM) === '1',
     editing: null,
   })
@@ -1334,17 +1350,27 @@ export default function CalendarPage() {
             choosing a view and narrowing it are different questions. */}
         <div className="hidden w-fit gap-1 rounded-lg bg-muted p-1 sm:flex">
           {(
+            // Day / Week / Month are one view (the calendar) at three
+            // ranges; List and Event planning are views of their own. A
+            // hairline between the two groups says so.
             [
-              { key: 'calendar', icon: CalendarDays, label: t('viewCalendar') },
-              { key: 'list', icon: List, label: t('viewList') },
-              { key: 'planning', icon: ChartNoAxesGantt, label: t('viewPlanning') },
+              { key: 'day', view: 'calendar', icon: Calendar1, label: t('viewDay') },
+              { key: 'week', view: 'calendar', icon: Columns3, label: t('viewCalendar') },
+              { key: 'month', view: 'calendar', icon: CalendarDays, label: t('viewMonth') },
+              { key: 'list', view: 'list', icon: List, label: t('viewList') },
+              { key: 'planning', view: 'planning', icon: ChartNoAxesGantt, label: t('viewPlanning') },
             ] as const
-          ).map(({ key, icon: Icon, label }) => (
+          ).map(({ key, view: target, icon: Icon, label }) => (
             <button
               key={key}
-              onClick={() => setView(key)}
+              onClick={() => {
+                setView(target)
+                if (target === 'calendar') setCalRange(key as CalendarRange)
+              }}
               className={`flex h-6 items-center gap-1.5 px-2.5 rounded-md text-sm font-medium transition-colors ${
-                view === key
+                key === 'list' ? 'ml-1.5 relative before:absolute before:-left-1.5 before:inset-y-1 before:w-px before:bg-border ' : ''
+              }${
+                view === target && (target !== 'calendar' || calRange === key)
                   ? 'bg-background shadow-sm text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
@@ -1495,6 +1521,9 @@ export default function CalendarPage() {
             setViewYear(y)
             setViewMonth(m)
           }}
+          range={calRange}
+          onRangeChange={setCalRange}
+          onCreateAt={(start) => setSessionDialog({ open: true, editing: null, initialStart: start })}
         />
       )}
 
@@ -1675,12 +1704,16 @@ export default function CalendarPage() {
       {currentTeamId && user && (
         <>
           <SessionFormDialog
-            key={sessionDialog.editing?.id ?? 'new-session'}
+            key={
+              sessionDialog.editing?.id ??
+              `new-session-${sessionDialog.initialStart?.getTime() ?? ''}`
+            }
             open={sessionDialog.open}
             onOpenChange={(v) =>
-              setSessionDialog((prev) => ({ open: v, editing: v ? prev.editing : null }))
+              setSessionDialog((prev) => ({ ...prev, open: v, editing: v ? prev.editing : null }))
             }
             editing={sessionDialog.editing}
+            initialStart={sessionDialog.initialStart}
             activities={activitiesQ.data ?? []}
             teamId={currentTeamId}
             userId={user.uid}

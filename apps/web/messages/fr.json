@@ -1434,7 +1434,9 @@
     "viewPlanning": "Planification des événements",
     "timezoneNoticeDevice": "Le calendrier utilise le fuseau horaire de cet appareil ({zone}). Celui de votre studio est {studioZone}.",
     "newGroupCalendar": "Au calendrier",
-    "newGroupAppointments": "Rendez-vous"
+    "newGroupAppointments": "Rendez-vous",
+    "viewDay": "Jour",
+    "viewMonth": "Mois"
   },
   "Events": {
     "title": "Événements",

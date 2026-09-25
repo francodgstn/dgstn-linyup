@@ -1434,7 +1434,9 @@
     "viewPlanning": "Pianificazione eventi",
     "timezoneNoticeDevice": "Il calendario usa il fuso orario di questo dispositivo ({zone}). Quello del tuo studio è {studioZone}.",
     "newGroupCalendar": "In calendario",
-    "newGroupAppointments": "Appuntamenti"
+    "newGroupAppointments": "Appuntamenti",
+    "viewDay": "Giorno",
+    "viewMonth": "Mese"
   },
   "Events": {
     "title": "Eventi",

@@ -404,7 +404,14 @@ function EventCard({
 
 const HOUR_PX = 48
 const MIN_BLOCK_PX = 22
-const WEEK_GRID_COLS = { gridTemplateColumns: '3.25rem repeat(7, minmax(0, 1fr))' } as const
+/** Hour axis + one column per day on screen (seven for a week, one for a day). */
+const gridCols = (days: number) =>
+  ({ gridTemplateColumns: `3.25rem repeat(${days}, minmax(0, 1fr))` }) as const
+/** Click-to-create snaps to this many minutes. Half an hour is what a timetable
+ *  is written in; finer than that and a click lands on 09:07. */
+const CREATE_SNAP_MIN = 30
+/** Items a month cell lists before it says "+N more". */
+const MONTH_CELL_ITEMS = 3
 // Left-hand gutter reserved in every day column (only when availability is shown)
 // so the rules stay visible even under an overlapping session: blocks stop short
 // of it and each coach's rule sits in it. When availability is hidden the gutter
@@ -615,7 +622,17 @@ interface SessionsCalendarProps {
   viewYear?: number
   viewMonth?: number
   onNavigate?: (year: number, month: number) => void
+  /** How much the main pane shows: one day or a week on the time grid, or a
+   *  month of cells. The page owns it (it sits in the page's view switch). */
+  range?: CalendarRange
+  /** Asked to show another range, e.g. a month cell's day number → that day. */
+  onRangeChange?: (range: CalendarRange) => void
+  /** Click on an empty slot of the time grid: a new class starting there,
+   *  snapped to CREATE_SNAP_MIN. Omit and the empty grid only selects days. */
+  onCreateAt?: (start: Date) => void
 }
+
+export type CalendarRange = 'day' | 'week' | 'month'
 
 // Stable per-coach colour for the availability lanes (hashed, same palette the
 // activity blocks use).
@@ -638,6 +655,9 @@ export default function SessionsCalendar({
   viewYear: externalYear,
   viewMonth: externalMonth,
   onNavigate,
+  range = 'week',
+  onRangeChange,
+  onCreateAt,
 }: SessionsCalendarProps) {
   const t = useTranslations('Calendar')
   const tCommon = useTranslations('Common')
@@ -753,6 +773,20 @@ export default function SessionsCalendar({
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart]
   )
+  // The columns of the time grid. Day view is the week grid with one column;
+  // every layout rule below (hour range, blocks, bands) runs unchanged on it.
+  const selectedKey = dayKey(selected)
+  const gridDays = useMemo(
+    () =>
+      range === 'day'
+        ? [new Date(selected.getFullYear(), selected.getMonth(), selected.getDate())]
+        : weekDays,
+    // `selectedKey`, not `selected`: a new Date for the same day must not
+    // re-run the layout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [range, selectedKey, weekDays]
+  )
+  const cols = gridCols(gridDays.length)
 
   // Week time grid: hour range (8–20 by default, stretched to fit) + positioned blocks per day
   const weekGrid = useMemo(() => {
@@ -763,7 +797,7 @@ export default function SessionsCalendar({
     // final hour range so a published window outside the session-derived
     // range (e.g. an early-morning slot with no bookings yet) still stretches
     // the grid to show it in full.
-    const dayRawBands = weekDays.map((day) => expandAvailabilityForDay(day, availability, activities))
+    const dayRawBands = gridDays.map((day) => expandAvailabilityForDay(day, availability, activities))
 
     // The hours the grid must open, asked PER DAY through the same span the
     // blocks are drawn from. Reading the session's own clock times here was the
@@ -771,7 +805,7 @@ export default function SessionsCalendar({
     // start hour (23:00) on today's column and the grid would stretch backwards
     // to open an hour nothing is drawn in, while never opening the 00:00 the
     // continuation actually occupies.
-    for (const d of weekDays) {
+    for (const d of gridDays) {
       for (const s of sessionsByDate.get(dayKey(d)) ?? []) {
         const st = (s.start as { toDate(): Date }).toDate()
         const en = (s.end as { toDate(): Date } | undefined)?.toDate() ?? null
@@ -794,7 +828,7 @@ export default function SessionsCalendar({
     // band's top edge lines up exactly with a session block at the same
     // clock time.
     const rangeStartMin = startHour * 60
-    const days = weekDays.map((day, i) => ({
+    const days = gridDays.map((day, i) => ({
       day,
       events: eventsByDate.get(dayKey(day)) ?? [],
       blocks: layoutDaySessions(sessionsByDate.get(dayKey(day)) ?? [], day, startHour, endHour),
@@ -810,7 +844,7 @@ export default function SessionsCalendar({
       ),
     }))
     return { startHour, endHour, days, hasEvents: days.some((d) => d.events.length > 0) }
-  }, [weekDays, sessionsByDate, eventsByDate, availability, activities])
+  }, [gridDays, sessionsByDate, eventsByDate, availability, activities])
 
   const gridHeight = (weekGrid.endHour - weekGrid.startHour) * HOUR_PX
   const hourCount = weekGrid.endHour - weekGrid.startHour
@@ -850,6 +884,14 @@ export default function SessionsCalendar({
     [fmt, weekStartsOn]
   )
 
+  const weekdayShortLabels = useMemo(
+    () =>
+      weekdayOrder(weekStartsOn).map((d) =>
+        fmt.custom(new Date(2024, 0, 7 + d), { weekday: 'short' })
+      ),
+    [fmt, weekStartsOn]
+  )
+
   function weekRangeLabel() {
     const sameMonth = weekStart.getMonth() === weekEnd.getMonth()
     const startStr = fmt.custom(
@@ -870,7 +912,42 @@ export default function SessionsCalendar({
   }
 
   function step(dir: 1 | -1) {
-    selectDate(addDays(selected, dir * 7))
+    if (range === 'month') selectDate(new Date(viewYear, viewMonth + dir, 1))
+    else selectDate(addDays(selected, dir * (range === 'day' ? 1 : 7)))
+  }
+
+  function rangeLabel() {
+    if (range === 'month') return monthLabel
+    if (range === 'day')
+      return fmt.custom(selected, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    return weekRangeLabel()
+  }
+
+  // ── CLICK TO CREATE ─────────────────────────────────────────────────────────
+  // An empty slot is the fastest way to say "a class here": the day and the
+  // time are already on screen, so the form opens with both filled in. The
+  // ghost under the pointer shows the snapped start before the click, so the
+  // click lands where it looks like it will.
+  const [hoverSlot, setHoverSlot] = useState<{ key: string; min: number } | null>(null)
+  function slotMinutes(e: React.MouseEvent<HTMLElement>): number {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const raw = weekGrid.startHour * 60 + ((e.clientY - rect.top) / HOUR_PX) * 60
+    const snapped = Math.floor(raw / CREATE_SNAP_MIN) * CREATE_SNAP_MIN
+    return Math.min(
+      Math.max(snapped, weekGrid.startHour * 60),
+      weekGrid.endHour * 60 - CREATE_SNAP_MIN
+    )
+  }
+  function createAt(day: Date, min: number) {
+    const start = new Date(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate(),
+      Math.floor(min / 60),
+      min % 60
+    )
+    selectDate(start)
+    onCreateAt?.(start)
   }
   function goToday() {
     selectDate(new Date(today))
@@ -886,6 +963,10 @@ export default function SessionsCalendar({
           first. Hidden in focus mode. ── */}
       {!fullWeek && (
       <div className="lg:order-1 lg:w-72 shrink-0 lg:flex lg:flex-col lg:min-h-0">
+        {/* The mini-month is navigation for the day and week views. In month
+            view the main pane IS the month, so only the day agenda stays. */}
+        {range !== 'month' && (
+        <>
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-3 px-0.5">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth}>
@@ -936,11 +1017,19 @@ export default function SessionsCalendar({
           )
         })}
 
+        </>
+        )}
+
         {/* Selected-day detail — the day agenda, anchored under the calendar.
             On desktop it fills the space below the mini-calendar (the column is
             stretched to the week-grid height by the flex row) and scrolls, so a
             busy day never grows the page. */}
-        <div className="mt-6 pt-4 border-t lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <div
+          className={cn(
+            'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col',
+            range !== 'month' && 'mt-6 pt-4 border-t'
+          )}
+        >
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 select-none capitalize">
             {fmt.custom(selected, { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
@@ -986,7 +1075,7 @@ export default function SessionsCalendar({
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => step(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <h3 className="font-semibold text-base truncate ml-1">{weekRangeLabel()}</h3>
+            <h3 className="font-semibold text-base truncate ml-1 capitalize">{rangeLabel()}</h3>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={goToday}>
@@ -1010,7 +1099,7 @@ export default function SessionsCalendar({
         {/* Bookable-hours legend — the bands in the left gutter are a coloured
             tick; without a name they're a mystery, and this is the only thing on
             the page that says what they are. Rendered only when there are any. */}
-        {availabilityProviders.length > 0 && (
+        {range !== 'month' && availabilityProviders.length > 0 && (
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="font-medium">{t('availabilityLegend')}</span>
             {availabilityProviders.slice(0, MAX_AVAIL_LANES).map((p) => (
@@ -1029,12 +1118,143 @@ export default function SessionsCalendar({
           </div>
         )}
 
-        {/* ── Week timetable grid ── */}
+        {range === 'month' && (
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="grid grid-cols-7 border-b">
+              {weekdayShortLabels.map((label, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'py-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground select-none',
+                    i > 0 && 'border-l'
+                  )}
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+            {weeks.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-7 border-b last:border-b-0">
+                {week.map((day, di) => {
+                  const key = dayKey(day)
+                  const dayEvts = eventsByDate.get(key) ?? []
+                  const daySess = (sessionsByDate.get(key) ?? [])
+                    .slice()
+                    .sort(
+                      (a, b) =>
+                        itemMs({ kind: 'session', data: a }) - itemMs({ kind: 'session', data: b })
+                    )
+                  const total = dayEvts.length + daySess.length
+                  // Events first (they frame the day), then classes by time,
+                  // cut at MONTH_CELL_ITEMS so every cell keeps one height.
+                  const shownEvts = dayEvts.slice(0, MONTH_CELL_ITEMS)
+                  const shownSess = daySess.slice(0, MONTH_CELL_ITEMS - shownEvts.length)
+                  const hidden = total - shownEvts.length - shownSess.length
+                  const isToday = sameDay(day, today)
+                  const isSelected = sameDay(day, selected)
+                  const openDay = () => {
+                    selectDate(day)
+                    onRangeChange?.('day')
+                  }
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        'relative min-h-24 min-w-0 space-y-0.5 p-1',
+                        di > 0 && 'border-l',
+                        day.getMonth() !== viewMonth && 'bg-muted/40 text-muted-foreground',
+                        isSelected && 'bg-primary/[0.07]'
+                      )}
+                    >
+                      {/* Empty space selects the day (its agenda is on the
+                          left); the day number is the accessible route. */}
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        onClick={() => selectDate(day)}
+                        className="absolute inset-0 cursor-default"
+                      />
+                      <div className="relative flex justify-end">
+                        <button
+                          type="button"
+                          onClick={openDay}
+                          title={fmt.custom(day, { weekday: 'long', day: 'numeric', month: 'long' })}
+                          className={cn(
+                            'flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-semibold transition-colors',
+                            isToday
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted'
+                          )}
+                        >
+                          {day.getDate()}
+                        </button>
+                      </div>
+                      {shownEvts.map((e) => {
+                        const color = eventTypeColor(e.type)
+                        return (
+                          <button
+                            key={e.id}
+                            type="button"
+                            onClick={() => openEventPeek(e)}
+                            title={e.title}
+                            className="relative block w-full truncate rounded px-1.5 py-0.5 text-left text-2xs font-semibold transition-opacity hover:opacity-80"
+                            style={{ backgroundColor: `${color}1F`, color }}
+                          >
+                            {e.title}
+                          </button>
+                        )
+                      })}
+                      {shownSess.map((s) => {
+                        const cancelled = s.status === 'cancelled'
+                        const name = s.activityName ?? t('noActivity')
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => openSessionPeek(s)}
+                            title={`${name} · ${fmt.time(s.start)} – ${fmt.time(s.end)}`}
+                            className={cn(
+                              'relative flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left text-2xs transition-colors hover:bg-muted',
+                              cancelled && 'line-through opacity-60'
+                            )}
+                          >
+                            <span
+                              aria-hidden
+                              className="h-1.5 w-1.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: activityAccent(s.activityId, activities) }}
+                            />
+                            <span className="shrink-0 tabular-nums text-muted-foreground">
+                              {fmt.time(s.start)}
+                            </span>
+                            <span className="truncate font-medium text-foreground">{name}</span>
+                          </button>
+                        )
+                      })}
+                      {hidden > 0 && (
+                        <button
+                          type="button"
+                          onClick={openDay}
+                          className="relative block w-full rounded px-1 text-left text-2xs font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          {t('peekMore', { count: hidden })}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Week / day timetable grid ── */}
+        {range !== 'month' && (
         <div className="rounded-xl border bg-card overflow-hidden">
           <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
+            <div className={cn(range === 'week' && 'min-w-[640px]')}>
               {/* Day headers — click to focus that day in the detail panel */}
-              <div className="grid border-b" style={WEEK_GRID_COLS}>
+              <div className="grid border-b" style={cols}>
                 <div />
                 {weekGrid.days.map(({ day }) => {
                   const isToday = sameDay(day, today)
@@ -1045,7 +1265,7 @@ export default function SessionsCalendar({
                       onClick={() => selectDate(day)}
                       className={cn(
                         'flex flex-col items-center gap-0.5 py-2 border-l group min-w-0 transition-colors',
-                        isSelected && 'bg-primary/[0.07]'
+                        isSelected && range === 'week' && 'bg-primary/[0.07]'
                       )}
                       title={fmt.custom(day, { weekday: 'long', day: 'numeric', month: 'long' })}
                     >
@@ -1071,7 +1291,7 @@ export default function SessionsCalendar({
 
               {/* Events strip */}
               {weekGrid.hasEvents && (
-                <div className="grid border-b" style={WEEK_GRID_COLS}>
+                <div className="grid border-b" style={cols}>
                   <div />
                   {weekGrid.days.map(({ day, events: dayEvts }) => (
                     <div
@@ -1083,7 +1303,7 @@ export default function SessionsCalendar({
                       // The text inset lives on the bar instead.
                       className={cn(
                         'border-l py-1 space-y-1 min-w-0',
-                        sameDay(day, selected) && 'bg-primary/[0.07]'
+                        range === 'week' && sameDay(day, selected) && 'bg-primary/[0.07]'
                       )}
                     >
                       {dayEvts.map((e) => {
@@ -1131,7 +1351,7 @@ export default function SessionsCalendar({
               )}
 
               {/* Time grid */}
-              <div className="grid" style={WEEK_GRID_COLS}>
+              <div className="grid" style={cols}>
                 {/* Hour axis */}
                 <div className="relative" style={{ height: gridHeight }}>
                   {Array.from({ length: hourCount }, (_, i) => (
@@ -1158,23 +1378,65 @@ export default function SessionsCalendar({
                       className={cn(
                         'relative border-l',
                         // Selected day (from the mini calendar) gets a stronger tint than today.
-                        isSelected ? 'bg-primary/[0.07]' : isToday && 'bg-primary/[0.03]'
+                        // A lone day column has nothing to be picked out from.
+                        isSelected && range === 'week'
+                          ? 'bg-primary/[0.07]'
+                          : isToday && range === 'week' && 'bg-primary/[0.03]'
                       )}
                       style={{ height: gridHeight }}
                     >
-                      {/* Clicking the day where nothing is scheduled selects it.
-                          The header button is the accessible route and already
-                          does this, so the catcher is hidden from AT and out of
-                          the tab order rather than adding seven duplicate stops
-                          to every week. It is the FIRST child, so every session
-                          block paints — and takes its clicks — above it. */}
+                      {/* Clicking where nothing is scheduled opens a new class
+                          at that time (see CLICK TO CREATE), or only selects
+                          the day when the page offers no create. The header
+                          button and the New menu are the accessible routes, so
+                          the catcher is hidden from AT and out of the tab order
+                          rather than adding a stop per column. It is the FIRST
+                          child, so every session block paints — and takes its
+                          clicks — above it. */}
                       <button
                         type="button"
                         tabIndex={-1}
                         aria-hidden="true"
-                        onClick={() => selectDate(day)}
-                        className="absolute inset-0 cursor-default"
+                        onClick={(e) =>
+                          onCreateAt ? createAt(day, slotMinutes(e)) : selectDate(day)
+                        }
+                        onMouseMove={
+                          onCreateAt
+                            ? (e) => {
+                                const min = slotMinutes(e)
+                                const key = dayKey(day)
+                                setHoverSlot((cur) =>
+                                  cur && cur.key === key && cur.min === min ? cur : { key, min }
+                                )
+                              }
+                            : undefined
+                        }
+                        onMouseLeave={onCreateAt ? () => setHoverSlot(null) : undefined}
+                        className={cn(
+                          'absolute inset-0',
+                          onCreateAt ? 'cursor-pointer' : 'cursor-default'
+                        )}
                       />
+
+                      {/* The slot a click would create — pointer devices only
+                          (there is no hover on touch, and a tap just opens it). */}
+                      {onCreateAt && hoverSlot?.key === dayKey(day) && (
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute z-[1] flex items-start rounded-md border border-dashed border-primary/50 bg-primary/[0.06] px-1.5 py-0.5 text-2xs font-medium text-primary"
+                          style={{
+                            top: ((hoverSlot.min - weekGrid.startHour * 60) / 60) * HOUR_PX + 1,
+                            height: (CREATE_SNAP_MIN / 60) * HOUR_PX - 2,
+                            left: lanePx + 2,
+                            right: 2,
+                          }}
+                        >
+                          +{' '}
+                          {fmt.time(
+                            new Date(2024, 0, 1, Math.floor(hoverSlot.min / 60), hoverSlot.min % 60)
+                          )}
+                        </div>
+                      )}
 
                       {/* Availability gutter — a faint LEFT strip the session
                           blocks stop short of, so a band still reads here even
@@ -1263,10 +1525,14 @@ export default function SessionsCalendar({
                         // dashed border) but NOT struck through: it isn't cancelled, it's
                         // reserved pending payment.
                         const awaitingPayment = s.status === 'pending_payment' && !expiredHold
+                        const name = s.activityName ?? t('noActivity')
                         return (
                           <button
                             key={s.id}
                             onClick={() => openSessionPeek(s)}
+                            // The full range lives in the tooltip and the peek;
+                            // the block itself carries the start and the name.
+                            title={`${name} · ${fmt.time(s.start)} – ${fmt.time(s.end)}`}
                             className={cn(
                               'absolute z-[5] rounded-md border-l-2 px-1.5 py-0.5 text-left overflow-hidden transition-opacity hover:opacity-75',
                               (cancelled || awaitingPayment) && 'opacity-50',
@@ -1285,19 +1551,22 @@ export default function SessionsCalendar({
                               borderLeftColor: color,
                             }}
                           >
+                            {/* SHORT LABEL (Franco, 2026-09-25): the start
+                                time and the name, on one line when the block is
+                                short. The end is where the block ends, which
+                                the grid already draws. */}
                             <p
                               className={cn(
-                                'text-2xs font-medium truncate leading-tight',
+                                'text-2xs leading-tight',
+                                height >= 36 ? 'line-clamp-2' : 'truncate',
                                 cancelled && 'line-through'
                               )}
                             >
-                              {s.activityName ?? t('noActivity')}
+                              <span className="tabular-nums text-muted-foreground">
+                                {fmt.time(s.start)}
+                              </span>{' '}
+                              <span className="font-medium">{name}</span>
                             </p>
-                            {height >= 36 && (
-                              <p className="text-2xs text-muted-foreground truncate">
-                                {fmt.time(s.start)} – {fmt.time(s.end)}
-                              </p>
-                            )}
                           </button>
                         )
                       })}
@@ -1308,6 +1577,7 @@ export default function SessionsCalendar({
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* ── Session preview ── */}

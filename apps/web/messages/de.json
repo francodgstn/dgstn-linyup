@@ -1434,7 +1434,9 @@
     "viewPlanning": "Veranstaltungsplanung",
     "timezoneNoticeDevice": "Der Kalender verwendet die Zeitzone dieses Geräts ({zone}). Die deines Studios ist {studioZone}.",
     "newGroupCalendar": "Im Kalender",
-    "newGroupAppointments": "Termine"
+    "newGroupAppointments": "Termine",
+    "viewDay": "Tag",
+    "viewMonth": "Monat"
   },
   "Events": {
     "title": "Veranstaltungen",
