@@ -28,6 +28,7 @@ import {
   type ActivityDurationBenefit,
   type ActivityMemberBenefit,
   type Benefit,
+  type CourseCurriculumItem,
   type PublicFrom,
   type FormField,
   parseDateKey,
@@ -163,6 +164,8 @@ interface CourseCard {
   id: string
   name: string
   description?: string | null
+  /** The programme, in order. See `CourseCurriculumItem`. */
+  curriculum?: CourseCurriculumItem[] | null
   first_meeting?: Timestamp | null
   last_meeting?: Timestamp | null
   meeting_count?: number
@@ -2412,6 +2415,26 @@ export default function BookingForm({
             </p>
             {c.description && (
               <p className="text-muted-foreground mt-1.5 text-sm">{c.description}</p>
+            )}
+            {/* WHAT MAKES IT A COURSE rather than a class that repeats, and
+                the reason somebody books thirteen weeks at once. Folded away,
+                and unnumbered on purpose: the outline is bound to no meeting,
+                so numbers here would read as lesson labels that a
+                re-scheduled course would quietly get wrong. */}
+            {!!c.curriculum?.length && (
+              <details className="mt-1.5 text-sm">
+                <summary className="text-muted-foreground cursor-pointer select-none">
+                  {t('coursesCurriculum')}
+                </summary>
+                <ul className="text-muted-foreground mt-1 list-disc space-y-0.5 pl-5">
+                  {c.curriculum.map((item, i) => (
+                    <li key={i}>
+                      <span className="text-foreground font-medium">{item.title}</span>
+                      {item.detail && <span className="block">{item.detail}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
             )}
             {/* SOLD OUT AND CLOSED ARE DIFFERENT ANSWERS with different
                 remedies, so they are never the same sentence, and only one

@@ -5148,7 +5148,8 @@
     "courseBlockSoldOut": "Al completo",
     "courseBlockClosed": "Prenotazioni chiuse",
     "courseBlockJoin": "Partecipa",
-    "courseBlockJoined": "Sei iscritto al corso"
+    "courseBlockJoined": "Sei iscritto al corso",
+    "courseBlockCurriculum": "Programma"
   },
   "Products": {
     "title": "Prodotti",
@@ -5853,7 +5854,8 @@
     "coursesClosed": "Iscrizioni chiuse",
     "coursesJoinWaitlist": "Avvisami se si libera un posto",
     "chooseCategorySubtitle": "Cosa desideri prenotare?",
-    "choosePlaceSubtitle": "Scegli dove vuoi venire."
+    "choosePlaceSubtitle": "Scegli dove vuoi venire.",
+    "coursesCurriculum": "Programma"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Prenota una lezione di prova",
@@ -9104,7 +9106,21 @@
     "cancelRefundsHint": "Rimborsali dalla pagina dei pagamenti, uno per uno, così mantieni il controllo.",
     "closeButton": "Chiudi",
     "duplicateLabel": "Riproponi",
-    "paneFreeNoPlans": "Questo corso è gratuito, quindi un abbonamento non può includerlo né scontarlo. Dagli un prezzo per collegare gli abbonamenti."
+    "paneFreeNoPlans": "Questo corso è gratuito, quindi un abbonamento non può includerlo né scontarlo. Dagli un prezzo per collegare gli abbonamenti.",
+    "descriptionLabel": "Descrizione",
+    "descriptionPlaceholder": "Che cos'è questo corso, con parole tue.",
+    "curriculumLabel": "Programma",
+    "curriculumHint": "Facoltativo. Una riga per lezione, o una per tutto il corso.",
+    "curriculumAdd": "Aggiungi una riga",
+    "curriculumOnePerLesson": "Una per lezione ({count})",
+    "curriculumRemove": "Rimuovi questa riga",
+    "curriculumItemN": "{n}.",
+    "curriculumLessonAt": "{n} · {date}",
+    "curriculumTitleLabel": "Titolo",
+    "curriculumTitlePlaceholder": "Virate e respirazione",
+    "curriculumDetailLabel": "Dettaglio",
+    "curriculumDetailPlaceholder": "Altro che il partecipante dovrebbe sapere su questa.",
+    "curriculumUnpaired": "{items} righe per {lessons} lezioni, quindi mostrate come elenco e non per lezione"
   },
   "CourseWaitlist": {
     "offerTitle": "Si è liberato un posto",

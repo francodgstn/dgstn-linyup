@@ -5148,7 +5148,8 @@
     "courseBlockSoldOut": "Ausgebucht",
     "courseBlockClosed": "Buchungen geschlossen",
     "courseBlockJoin": "Teilnehmen",
-    "courseBlockJoined": "Sie sind im Kurs dabei"
+    "courseBlockJoined": "Sie sind im Kurs dabei",
+    "courseBlockCurriculum": "Inhalte"
   },
   "Products": {
     "title": "Produkte",
@@ -5853,7 +5854,8 @@
     "coursesClosed": "Anmeldung geschlossen",
     "coursesJoinWaitlist": "Benachrichtigen, wenn ein Platz frei wird",
     "chooseCategorySubtitle": "Was möchten Sie buchen?",
-    "choosePlaceSubtitle": "Wählen Sie, wo Sie kommen möchten."
+    "choosePlaceSubtitle": "Wählen Sie, wo Sie kommen möchten.",
+    "coursesCurriculum": "Inhalte"
   },
   "PublicTrialBooking": {
     "titleBookTrialClass": "Probetraining buchen",
@@ -9104,7 +9106,21 @@
     "cancelRefundsHint": "Erstatten Sie diese einzeln über die Zahlungsseite, damit Sie die Kontrolle behalten.",
     "closeButton": "Schliessen",
     "duplicateLabel": "Erneut durchführen",
-    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen."
+    "paneFreeNoPlans": "Dieser Kurs ist kostenlos, ein Abo kann ihn also weder enthalten noch vergünstigen. Vergeben Sie einen Preis, um Abos zu verknüpfen.",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Was dieser Kurs ist, in Ihren eigenen Worten.",
+    "curriculumLabel": "Inhalte",
+    "curriculumHint": "Optional. Eine Zeile pro Lektion oder eine für den ganzen Kurs.",
+    "curriculumAdd": "Zeile hinzufügen",
+    "curriculumOnePerLesson": "Eine pro Lektion ({count})",
+    "curriculumRemove": "Zeile entfernen",
+    "curriculumItemN": "{n}.",
+    "curriculumLessonAt": "{n} · {date}",
+    "curriculumTitleLabel": "Titel",
+    "curriculumTitlePlaceholder": "Wenden und Atmung",
+    "curriculumDetailLabel": "Details",
+    "curriculumDetailPlaceholder": "Was die Teilnehmenden sonst noch dazu wissen sollten.",
+    "curriculumUnpaired": "{items} Zeilen für {lessons} Lektionen, daher als Liste statt pro Lektion"
   },
   "CourseWaitlist": {
     "offerTitle": "Ein Platz ist frei geworden",
