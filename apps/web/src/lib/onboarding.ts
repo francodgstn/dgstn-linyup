@@ -15,7 +15,7 @@ import { TEAMS_COLLECTION, USERS_COLLECTION, type UserProfile } from '@linyup/sh
  *
  * The per-page section-intro popovers were removed in 2026-08, and the How-to
  * page that replaced them in 2026-09, when the guides moved to the public help
- * centre (help.linyup.com).
+ * center (help.linyup.com).
  */
 
 /**

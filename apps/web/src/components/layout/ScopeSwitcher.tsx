@@ -138,8 +138,8 @@ export function ScopeSwitcher({ collapsed }: { collapsed: boolean }) {
   // the rest off the end of the sidebar — the switcher itself then collapsed to
   // 18px while its own text overflowed. `flex-1` takes what is left and
   // truncates inside it, which is what `min-w-0` is there to permit.
-  // `text-left` is NOT decorative. A <button> is centre-aligned by default, and
-  // the name below is `w-full` — so its text centred inside a full-width box
+  // `text-left` is NOT decorative. A <button> is center-aligned by default, and
+  // the name below is `w-full` — so its text centered inside a full-width box
   // while the eyebrow, which shrinks to its content, sat flush left. The two
   // lines disagreed and the block read as indented (Franco, 2026-08-27).
   const shape = `flex min-w-0 items-center rounded-lg border text-left transition-colors ${accent} ${

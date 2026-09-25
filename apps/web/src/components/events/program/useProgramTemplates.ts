@@ -1,10 +1,10 @@
 'use client'
 
-// Program templates — reusable event programmes.
+// Program templates — reusable event programs.
 //   team templates → teams/{teamId}/program_templates/{id}
 //   org templates  → organizations/{orgId}/org_program_templates/{id}  (read-only for sub-teams)
 // The scope model deliberately mirrors Places (see usePlaces.ts): an
-// organisation authors the standard camp or competition programme once and
+// organisation authors the standard camp or competition program once and
 // every member studio can apply it, but only an org admin can change it.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

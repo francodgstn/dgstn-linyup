@@ -1265,9 +1265,9 @@ export default function CataloguePage() {
           PADDING, not margin — the page is a `space-y-6` stack, whose
           `> * + *` rule outranks a `mt-*` on a child and silently wins. */}
       <div className={`mb-5 pt-4 ${selection ? 'hidden lg:block' : ''}`}>
-        {/* LEFT-ALIGNED from `sm` up. Centred looked right with four tabs and
+        {/* LEFT-ALIGNED from `sm` up. Centered looked right with four tabs and
             wrong with two: a coach has only Activities and Plans, and two tabs
-            centred in a full-width band read as stranded rather than composed —
+            centered in a full-width band read as stranded rather than composed —
             the strip has to hold for every plan, not the widest one (Franco,
             2026-09-02). Left, they start where every other row on the page
             starts.

@@ -33,16 +33,16 @@ import {
 // The template LIST: create, open, delete.
 //
 // ── IT USED TO BE LIST / RENAME / DELETE ONLY ───────────────────────────────
-// Templates were authored one way — build a programme on a real event, then
+// Templates were authored one way — build a program on a real event, then
 // "Save as template" — and this page said so in its empty state. That is still
-// the right route for saving a programme you have just built; it was the wrong
+// the right route for saving a program you have just built; it was the wrong
 // one for AUTHORING, because a studio writing its standard camp agenda before
 // any camp exists had to invent an event, build on it, save, and delete the
 // event again (Franco, 2026-08-31).
 //
 // So "New template" mints an empty one and opens `ProgramTemplateEditor` on it,
 // and the rename dialog is gone: the editor holds the name and the description
-// beside the programme they belong to, which is one screen instead of two doing
+// beside the program they belong to, which is one screen instead of two doing
 // half the job each.
 //
 // ── TWO WAYS TO START FROM SOMETHING RATHER THAN NOTHING ────────────────────
@@ -155,7 +155,7 @@ export function ProgramTemplatesManager({
   ) : null
 
   // Only the NAME is asked for up front — everything else is authored in the
-  // editor this leads to. A create dialog that collects the whole programme
+  // editor this leads to. A create dialog that collects the whole program
   // would be the editor, twice.
   const createDialog = (
     <Dialog open={creating} onOpenChange={(o) => !o && setCreating(false)}>

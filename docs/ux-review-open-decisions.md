@@ -382,7 +382,7 @@ second look.
 
 ## 23. One sticky bar still needs the mobile-header offset (UX-36)
 **CLOSED 2026-09-19, by removal.** The bar was the section-tab strip on /how-to,
-and the in-app How-to was retired: its guides moved to the public help centre
+and the in-app How-to was retired: its guides moved to the public help center
 (`apps/help`, help.linyup.com). `components/site/WebsiteRenderer.tsx:121` was deliberately left alone: it is
 shared with public routes that have no app header.
 

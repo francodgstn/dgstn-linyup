@@ -146,7 +146,7 @@ const REASONS: Record<string, string> = {
     'page is per-person and there is no identity for it to be wrong about. Attending is ' +
     'not transacted here: RSVP runs off the `?token=` in the invitation mail.',
   'events/[eventId]':
-    'Same as its index — one published event and its programme, world-readable and ' +
+    'Same as its index — one published event and its program, world-readable and ' +
     'identical for everyone. The mirror deliberately carries no per-person field (and no ' +
     'internal note), so a session could not change a single thing it renders.',
   'events/[eventId]/print':

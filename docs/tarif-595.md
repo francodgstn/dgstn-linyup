@@ -82,7 +82,7 @@ suggested row's position clears the mark; nothing is saved until Save.
 
 The position list retires rows each year (the 2026 edition's last valid day is
 2026-12-31 for a set of them — Pilates, Antara, the swimming courses, wellness in the
-fitness centre, the livestream code), and a receipt line dated after a position's last
+fitness center, the livestream code), and a receipt line dated after a position's last
 valid day is **refused** by the preview (`position_invalid_on_date`). A mapping that is
 fine today can therefore block the first receipt of the new year. So the plugin warns
 ahead:

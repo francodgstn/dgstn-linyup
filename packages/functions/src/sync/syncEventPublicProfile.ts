@@ -1,6 +1,6 @@
 // Keeps events/{eventId}/public_profile/{eventId} in sync.
 //
-// Unlike the other mirrors this is an AGGREGATE one: the whole programme
+// Unlike the other mirrors this is an AGGREGATE one: the whole program
 // (tracks, days and every item) is embedded into the single mirror doc, so a
 // public event page is one document read and the "explicit whitelist, never
 // spread" invariant lives in exactly one place. It therefore reacts to writes on
@@ -22,7 +22,7 @@ import { touchTeamForSurfaceRecompute } from '../utils/plugins'
 const isLiveEvent = (d?: Record<string, unknown>): boolean =>
   !!d && d.publicVisibility === 'public' && d.deleted_at == null && d.status !== 'cancelled'
 
-/** Public shape of one programme item. INTERNAL NOTES ARE NEVER INCLUDED —
+/** Public shape of one program item. INTERNAL NOTES ARE NEVER INCLUDED —
  *  `internalNote` is staff-only and must not leak onto a public page. */
 function publicProgramItem(item: EventProgramItem) {
   return {
@@ -64,7 +64,7 @@ export async function rebuildEventPublicProfile(eventId: string): Promise<void> 
   const items = itemsSnap.docs
     .map((d) => ({ ...d.data(), id: d.id }) as EventProgramItem)
     .sort(compareProgramItems)
-    // Hard cap so the embedded programme cannot push the mirror past Firestore's
+    // Hard cap so the embedded program cannot push the mirror past Firestore's
     // 1 MB document limit. The UI enforces the same cap on the way in.
     .slice(0, MAX_PROGRAM_ITEMS)
     .map(publicProgramItem)
@@ -114,7 +114,7 @@ export const syncEventPublicProfile = onDocumentWritten(
   },
 )
 
-/** The programme lives in a subcollection, so item writes must rebuild the
+/** The program lives in a subcollection, so item writes must rebuild the
  *  mirror too — otherwise a published event's public agenda would silently go
  *  stale the moment anyone edited it. */
 export const syncEventProgramPublicProfile = onDocumentWritten(

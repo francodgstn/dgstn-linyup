@@ -5155,14 +5155,14 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Header — TWO cards. Left, the profile: who they are, in the shape a
           contact card is expected to take — a round picture overlapping the
-          card's top edge, the name under it, everything centred. Right, the
+          card's top edge, the name under it, everything centered. Right, the
           insights card: what the studio reads about them (InsightsCard.tsx).
           Two fifths and three fifths at `lg` (Franco, 2026-09-25): a contact
           card is naturally narrow, and the summary with the figures and chart
           gets the room. The summary's text scrolls inside a capped height so
           it never stretches the row. A horizontal compact card was tried the
           same day and read like a list row, not a person.
-          The content is centred vertically, so whatever height the row has
+          The content is centered vertically, so whatever height the row has
           lands evenly above and below it rather than as a gap. The grid
           carries top padding so the avatar clears the back button. */}
       <div className="grid gap-5 pt-12 lg:grid-cols-5 lg:items-stretch">
@@ -5292,7 +5292,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
             {/* The facts as a list: left-aligned inside a quiet panel so the
-                icons line up and a long email has room, centred as a block and
+                icons line up and a long email has room, centered as a block and
                 capped in width so the wide card does not stretch it. */}
             <div className="mx-auto mt-4 flex w-full max-w-md flex-col gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-left">
               {contact.email && (

@@ -269,14 +269,14 @@ export async function seedSessionWaitlist(opts: {
   return { sessionId: target.id, queued }
 }
 
-// ── Event programme ───────────────────────────────────────────────────────────
+// ── Event program ───────────────────────────────────────────────────────────
 
 /**
  * Give the team's first multi-day-capable event a real agenda: days and tracks
  * embedded on the event doc, items in the subcollection.
  *
  * TIMES ARE WALL-CLOCK at the venue ('HH:MM' plus the day's 'YYYY-MM-DD'), never
- * Timestamps. A programme is a printed schedule — "09:00 breakfast" is 09:00
+ * Timestamps. A program is a printed schedule — "09:00 breakfast" is 09:00
  * wherever the camp is.
  *
  * Every item carries the denormalised tenant stamp, because create validates it

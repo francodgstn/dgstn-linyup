@@ -53,7 +53,7 @@ export default function SpaceShell({ children }: { children: React.ReactNode }) 
               than a "Sign in" button to somebody who already is (UX-37). */}
           {/* Language sits with the header controls, the same place the studio's
               website puts it (WebsiteRenderer keeps it in the nav bar) rather
-              than the bio-link's centred footer — this shell HAS a header, so
+              than the bio-link's centered footer — this shell HAS a header, so
               the footer placement would strand it below the fold on a portal
               whose pages scroll. Outside the auth branch on purpose: choosing a
               language is not something you should have to sign in to do. */}

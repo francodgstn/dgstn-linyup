@@ -68,8 +68,8 @@ export interface CourseSchedulePattern {
 
 /**
  * WHAT THE COURSE COVERS, in order. The thing that answers "why a course and
- * not just a class in the calendar": a course is a programme, and the
- * programme is what a parent reads before paying for thirteen weeks.
+ * not just a class in the calendar": a course is a program, and the
+ * program is what a parent reads before paying for thirteen weeks.
  *
  * ITS ORDER IS ITS OWN, and it is bound to no meeting. The meeting list is
  * REGENERATED whenever the schedule changes, so anything pinned to "lesson 3"
@@ -90,7 +90,7 @@ export interface CourseCurriculumItem {
   detail?: string
 }
 
-/** A course's programme is bounded: it is read on a card, and a list past this
+/** A course's program is bounded: it is read on a card, and a list past this
  *  is a document rather than an outline. */
 export const COURSE_CURRICULUM_MAX_ITEMS = 60
 export const COURSE_CURRICULUM_TITLE_MAX = 200
@@ -126,7 +126,7 @@ export interface CourseBlock {
   /** What the studio calls it: "Level 2 Seepferd", "Crawl for beginners". */
   name: string
   description?: string
-  /** The programme, in order. See `CourseCurriculumItem`. */
+  /** The program, in order. See `CourseCurriculumItem`. */
   curriculum?: CourseCurriculumItem[] | null
 
   /** The class type behind it. The lessons are sessions of this activity, so

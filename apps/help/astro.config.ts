@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
-// The PUBLIC help centre — help.linyup.com. The opposite of apps/docs
+// The PUBLIC help center — help.linyup.com. The opposite of apps/docs
 // (internal, never deployed): everything under src/content/docs/ is meant to be
 // read by studios and integrators. Never import or link from the repo's docs/.
 //

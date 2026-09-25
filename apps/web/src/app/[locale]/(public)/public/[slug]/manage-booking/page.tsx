@@ -70,7 +70,7 @@ function formatSessionTime(fmt: RegionalFormatter, startIso: string, endIso: str
 
 // The page has no layout of its own, and nothing above it supplies a container:
 // the tenant layout mounts only the providers and the back bar. So every return
-// branch has to bring its own centred column — including the cancel
+// branch has to bring its own centered column — including the cancel
 // confirmation, which is the screen a member most often ends on. Same
 // content-column metrics as BioLinkShell, without adopting the shell itself:
 // this route already gets a PublicBackBar from the tenant layout, and the shell

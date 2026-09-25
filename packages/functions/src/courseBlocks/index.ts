@@ -141,8 +141,8 @@ function optionalString(value: unknown, max = 200): string | null {
 }
 
 /**
- * THE PROGRAMME, cleaned. Anything that is not a list of titled items is no
- * programme at all, and an item with no title is a blank row the studio left
+ * THE PROGRAM, cleaned. Anything that is not a list of titled items is no
+ * program at all, and an item with no title is a blank row the studio left
  * behind rather than a lesson it meant: both are dropped rather than stored,
  * because a card that renders an empty bullet reads as a bug in the studio's
  * own page.
@@ -387,7 +387,7 @@ export const updateCourseBlock = onCall(async (request) => {
   const patch: Record<string, unknown> = { updated_at: FieldValue.serverTimestamp() }
   if (data.name !== undefined) patch.name = cleanName(data.name)
   if (data.description !== undefined) patch.description = optionalString(data.description, 2000)
-  // An EMPTY list is an answer: the studio cleared its programme, and the
+  // An EMPTY list is an answer: the studio cleared its program, and the
   // cleaner returns null for that, which erases the field rather than leaving
   // yesterday's outline on the card.
   if (data.curriculum !== undefined) patch.curriculum = cleanCurriculum(data.curriculum)

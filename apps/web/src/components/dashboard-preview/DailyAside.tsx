@@ -9,7 +9,7 @@
  * It was then pinned to the foot of the right-hand figure RAIL, using air that
  * the rail had anyway, which was the best home it has had. When the rail became
  * a two-column figure block there was no spare column of air left, so it spent
- * a round as a centred full-width band between the working area and the Trends
+ * a round as a centered full-width band between the working area and the Trends
  * seam — which cost the page ~86px to say nothing, and the queue was short.
  *
  * It is back at the FOOT OF THE REFERENCE COLUMN (Franco, 2026-08-18): under
@@ -18,8 +18,8 @@
  * the whole argument for this placement — the quote occupies air that another
  * block cannot use, and it costs the layout nothing it wanted.
  *
- * LEFT-ALIGNED, not centred: it now lives in a ~417px column under a donut and
- * a legend that both align left. It was centred only because it used to span
+ * LEFT-ALIGNED, not centered: it now lives in a ~417px column under a donut and
+ * a legend that both align left. It was centered only because it used to span
  * the page.
  *
  * IT MUST NOT READ AS A SYSTEM MESSAGE. Beside real figures, a small grey line

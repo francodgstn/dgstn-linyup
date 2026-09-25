@@ -44,7 +44,7 @@ export interface ProgramTabProps {
   /** The org this event's team belongs to, so inherited org templates appear in
    *  the picker. An org-scoped event derives it from the event itself. */
   parentOrgId?: string | null
-  /** The staff printout of this programme. Supplied by the page because the
+  /** The staff printout of this program. Supplied by the page because the
    *  route depends on which page (studio or org) the tab is mounted on. */
   printHref?: string
 }

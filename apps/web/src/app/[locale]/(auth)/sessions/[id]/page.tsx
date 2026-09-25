@@ -740,7 +740,7 @@ function AddParticipantsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* FIXED HEIGHT, NOT MAX-HEIGHT — the search field must not move.
           `DialogBody` alone gives a max-height, so the popup grew and shrank
-          with the result count; and because a desktop dialog is CENTRED
+          with the result count; and because a desktop dialog is CENTERED
           (-translate-y-1/2), a changing height moves the TOP edge, so the
           search box climbed and dropped on every keystroke while being typed
           into. A fixed height makes the list the only thing that changes.

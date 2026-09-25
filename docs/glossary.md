@@ -41,8 +41,8 @@ Short definitions, each with the page that owns the details.
 - **Appointment**: a provider's exclusive time. Nothing exists until it is
   booked. See [Classes vs appointments](/rules/classes-vs-appointments/).
 - **Availability**: the *when* for appointments: a provider's bookable windows.
-- **Event**: a session with a **programme**, a multi-day, multi-track agenda. See
-  [Event programmes](./event-program.md).
+- **Event**: a session with a **program**, a multi-day, multi-track agenda. See
+  [Event programs](./event-program.md).
 - **Plan / subscription type**: a membership a contact holds. It can include
   classes. See [Multi-plan holdings](./multi-plan-holdings.md).
 - **Drop-in**: a single paid class without a plan.

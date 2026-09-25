@@ -133,7 +133,7 @@ describe('nextItemOrder', () => {
     assert.equal(nextItemOrder(afterDelete, 'd1'), 3)
   })
 
-  it('is scoped to the day asked about, not the whole programme', () => {
+  it('is scoped to the day asked about, not the whole program', () => {
     // The Day picker lets an item be filed under a day other than the one on
     // screen, so the answer must come from the destination day.
     const items = [item('d1', 0), item('d1', 1), item('d2', 9)]
@@ -158,7 +158,7 @@ describe('isoDateInTimezone', () => {
     // 2026-07-31 22:30 UTC is already 2026-08-01 in Zurich (CEST, +2). Cloud
     // Functions run in UTC, so reading the date off the Date directly answers
     // '2026-07-31' — a full day out, which used to shift a duplicated camp's
-    // whole programme by one day.
+    // whole program by one day.
     const justAfterMidnightInZurich = new Date('2026-07-31T22:30:00Z')
     assert.equal(isoDateInTimezone(justAfterMidnightInZurich, 'Europe/Zurich'), '2026-08-01')
     assert.equal(isoDateInTimezone(justAfterMidnightInZurich, 'UTC'), '2026-07-31')
@@ -178,7 +178,7 @@ describe('isoDateInTimezone', () => {
 
   it('composes with the calendar helpers it feeds', () => {
     // The duplicate path is exactly this: read both endpoints in the venue's
-    // timezone, diff them, shift the programme by that many days.
+    // timezone, diff them, shift the program by that many days.
     const from = isoDateInTimezone(new Date('2026-07-31T22:30:00Z'), 'Europe/Zurich')
     const to = isoDateInTimezone(new Date('2027-06-13T23:00:00Z'), 'Europe/Zurich')
     assert.equal(from, '2026-08-01')
@@ -348,7 +348,7 @@ describe('extractTemplate', () => {
 describe('STARTER_PROGRAM_TEMPLATES', () => {
   // The starter library is data that ships to studios and is applied verbatim
   // onto events, so a malformed entry (a bad time, an item on a track that does
-  // not exist) would break a real programme. These assertions are the guard.
+  // not exist) would break a real program. These assertions are the guard.
 
   it('ships the built-in library with unique ids and identity fields', () => {
     assert.ok(STARTER_PROGRAM_TEMPLATES.length >= 4)

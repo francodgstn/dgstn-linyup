@@ -2118,7 +2118,7 @@ function PaymentsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean }) 
         />
       ) : integrations.length === 0 ? (
         // Left, small, no vertical padding: with the action moved to the bottom
-        // of the block, a centred line floated between the limits above it and
+        // of the block, a centered line floated between the limits above it and
         // the button below and belonged to neither.
         <p className="text-xs text-muted-foreground">{t('paymentsNoExternal')}</p>
       ) : (

@@ -7,7 +7,7 @@
 // supplementary insurer can reimburse them. Full doc: docs/tarif-595.md.
 //
 // Included from Coach with no add-on (a solo yoga teacher with a Qualitop label
-// needs it exactly as much as a fitness centre does); remember the
+// needs it exactly as much as a fitness center does); remember the
 // CLIENT_INSTALLABLE_FROM / clientInstallableRank pair. Its creditor identity
 // (name, address, IBAN, VAT) is the SHARED legal profile under Settings →
 // Payments, not plugin config.

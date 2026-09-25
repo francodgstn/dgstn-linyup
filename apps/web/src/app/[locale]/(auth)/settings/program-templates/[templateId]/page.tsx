@@ -1,6 +1,6 @@
 'use client'
 
-// One studio programme template, edited on its own — no event required.
+// One studio program template, edited on its own — no event required.
 // See the header of components/events/program/ProgramTemplateEditor.tsx.
 
 import { useTranslations } from 'next-intl'

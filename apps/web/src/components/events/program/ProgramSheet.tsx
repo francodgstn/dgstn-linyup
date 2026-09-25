@@ -15,7 +15,7 @@ import type { DaysAndTracks, ProgramDay, ProgramTrack } from '@linyup/shared'
 import type { TimelineItem } from './ProgramTimeline'
 
 /**
- * THE PROGRAMME AS A PRINTED HANDOUT — what a member reads, on screen and on
+ * THE PROGRAM AS A PRINTED HANDOUT — what a member reads, on screen and on
  * paper.
  *
  * `ProgramTimeline` is the WORKING view: cards, coloured track bars, edit
@@ -54,7 +54,7 @@ export interface ProgramSheetProps {
   className?: string
 }
 
-/** A 'YYYY-MM-DD' programme day as a local calendar date — never via UTC, which
+/** A 'YYYY-MM-DD' program day as a local calendar date — never via UTC, which
  *  would move it a day west of Greenwich. */
 function dayDate(iso: string): Date | null {
   const [y, m, d] = iso.split('-').map(Number)

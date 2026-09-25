@@ -164,7 +164,7 @@ interface CourseCard {
   id: string
   name: string
   description?: string | null
-  /** The programme, in order. See `CourseCurriculumItem`. */
+  /** The program, in order. See `CourseCurriculumItem`. */
   curriculum?: CourseCurriculumItem[] | null
   first_meeting?: Timestamp | null
   last_meeting?: Timestamp | null

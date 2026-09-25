@@ -18,7 +18,7 @@ import { DEFAULT_TIMEZONE } from '../utils/dateFormatting'
 // behavior".
 
 // Duplicating an event copies its SETUP — settings, categories and the whole
-// programme — and never its PARTICIPANTS. Attendees, invitations, check-ins and
+// program — and never its PARTICIPANTS. Attendees, invitations, check-ins and
 // every counter start empty on the copy.
 //
 // Server-side rather than a client batch because it copies a subcollection and
@@ -26,7 +26,7 @@ import { DEFAULT_TIMEZONE } from '../utils/dateFormatting'
 
 interface DuplicateEventInput {
   eventId: string
-  /** ISO date or datetime for the copy's start. The end and every programme day
+  /** ISO date or datetime for the copy's start. The end and every program day
    *  shift by the same delta, so a five-day camp keeps its shape. */
   newStart?: string
   title?: string
@@ -57,7 +57,7 @@ export const DROPPED_FIELDS = new Set([
 ])
 
 /** The subset of the source event that survives duplication, before the copy's
- *  own title/dates/programme/counters are layered on top. Pure, so the "never
+ *  own title/dates/program/counters are layered on top. Pure, so the "never
  *  copy participant state, never inherit published" contract is unit-testable. */
 export function carriedFields(source: Record<string, unknown>): Record<string, unknown> {
   const carried: Record<string, unknown> = {}
@@ -69,7 +69,7 @@ export function carriedFields(source: Record<string, unknown>): Record<string, u
 
 /** The event's calendar date as the STUDIO sees it, not as the server does.
  *  Cloud Functions run in UTC, so reading the date off the Date directly puts an
- *  event starting 00:30 in Zurich on the previous day — and the programme day
+ *  event starting 00:30 in Zurich on the previous day — and the program day
  *  shift derived from it then lands a full day out. */
 function isoDateOfTimestamp(ts: unknown): string | null {
   const d = (ts as Timestamp | undefined)?.toDate?.()
@@ -135,7 +135,7 @@ export const duplicateEvent = onCall(async (request) => {
     sourceStart && nextStart ? nextStart.getTime() - sourceStart.getTime() : 0
   const nextEnd = sourceEnd ? new Date(sourceEnd.getTime() + shiftMs) : null
 
-  // ── programme ──────────────────────────────────────────────────────────────
+  // ── program ──────────────────────────────────────────────────────────────
   // Days are wall-clock calendar dates, so they shift by whole DAYS rather than
   // by the millisecond delta — a camp moved by "one day and two hours" still
   // lands on consecutive calendar days.
@@ -154,7 +154,7 @@ export const duplicateEvent = onCall(async (request) => {
     .collection(EVENT_PROGRAM_ITEMS_SUBCOLLECTION)
     .get()
   if (programItemsSnap.size > MAX_PROGRAM_ITEMS) {
-    // Refuse rather than silently truncating — a partial programme on the copy
+    // Refuse rather than silently truncating — a partial program on the copy
     // would look complete and be wrong.
     throw new HttpsError(
       'failed-precondition',
@@ -188,7 +188,7 @@ export const duplicateEvent = onCall(async (request) => {
     createdBy: request.auth.uid,
   })
 
-  // Programme items keep their tenant stamp — it must match the new event's,
+  // Program items keep their tenant stamp — it must match the new event's,
   // which is identical because scope/teamId/orgId are carried over verbatim.
   for (const item of programItemsSnap.docs) {
     const data = item.data()

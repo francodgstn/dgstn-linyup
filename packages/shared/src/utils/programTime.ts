@@ -187,7 +187,7 @@ export function toISODate(d: Date): string {
  *
  *  Reading `getFullYear()/getMonth()/getDate()` off a Date gives the *runtime's*
  *  calendar, which on Cloud Functions is UTC — so an event starting 00:30 in
- *  Zurich reads as the PREVIOUS day, and anything derived from it (a programme
+ *  Zurich reads as the PREVIOUS day, and anything derived from it (a program
  *  day shift, for one) lands twenty-four hours out. `en-CA` formats as
  *  YYYY-MM-DD, which is exactly the shape stored on a ProgramDay. */
 export function isoDateInTimezone(date: Date, timeZone: string): string {

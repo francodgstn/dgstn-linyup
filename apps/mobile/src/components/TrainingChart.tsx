@@ -141,7 +141,7 @@ export const TrainingChart: React.FC<TrainingChartProps> = ({ contactId, teamId,
     onPress: onMonthPress && useMonthly ? () => onMonthPress(entry.date) : undefined,
   }));
 
-  // Each x-axis label is centred on its data point, so with no edge spacing
+  // Each x-axis label is centered on its data point, so with no edge spacing
   // the first and last points sat ON the chart's edges and half of "Apr" and
   // "Sep" fell outside it (report 7107, M-06). Reserve half a label's width
   // each side and spread the points over what is left.

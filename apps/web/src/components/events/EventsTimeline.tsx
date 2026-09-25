@@ -494,9 +494,9 @@ export function EventsTimeline({
   // events into one, and the 16px threshold drops the rest: the readout says
   // "2026", and no reader can tell it was computed a few pixels ago.
   //
-  // The CENTRE is kept separately and unthrottled, because it is not display —
+  // The CENTER is kept separately and unthrottled, because it is not display —
   // it is the anchor that holds your place when the track is re-scaled.
-  const centreFracRef = useRef<number | null>(null)
+  const centerFracRef = useRef<number | null>(null)
   const trackPxRef = useRef(trackPx)
   trackPxRef.current = trackPx
   const rafRef = useRef(0)
@@ -505,7 +505,7 @@ export function EventsTimeline({
     const el = scrollRef.current
     if (!el) return
     if (trackPxRef.current > 0) {
-      centreFracRef.current = (el.scrollLeft + el.clientWidth / 2) / trackPxRef.current
+      centerFracRef.current = (el.scrollLeft + el.clientWidth / 2) / trackPxRef.current
     }
     if (rafRef.current) return
     rafRef.current = requestAnimationFrame(() => {
@@ -521,7 +521,7 @@ export function EventsTimeline({
   //
   // The track's width changes for two reasons — the zoom was re-scaled, or the
   // window was resized — and in both the reader is looking at something and
-  // expects to go on looking at it. Restoring the CENTRE fraction is what makes
+  // expects to go on looking at it. Restoring the CENTER fraction is what makes
   // zooming feel like a lens rather than a jump; anchoring on the left edge
   // instead would slide the view sideways every time.
   //
@@ -530,7 +530,7 @@ export function EventsTimeline({
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el || trackPx <= 0 || viewPx <= 0) return
-    const frac = initedRef.current && centreFracRef.current !== null ? centreFracRef.current : todayAt
+    const frac = initedRef.current && centerFracRef.current !== null ? centerFracRef.current : todayAt
     initedRef.current = true
     const max = Math.max(0, el.scrollWidth - el.clientWidth)
     el.scrollLeft = Math.max(0, Math.min(max, frac * trackPx - el.clientWidth / 2))
@@ -673,9 +673,9 @@ export function EventsTimeline({
           />
 
           {/* NOTHING IS SAVED WHEN THE ZOOM CHANGES. It is a change of scale,
-              not of place, and the scroll centre that keeps your place was
+              not of place, and the scroll center that keeps your place was
               recorded by the last scroll — the layout effect restores it once
-              the new track width is known. See `centreFracRef`. */}
+              the new track width is known. See `centerFracRef`. */}
           <Segmented
             size="sm"
             ariaLabel={t('timelineZoomLabel')}
@@ -995,7 +995,7 @@ export function EventsTimeline({
                     )
                   })}
 
-                {/* PINNED TO TODAY, not centred in the track. The track is as
+                {/* PINNED TO TODAY, not centered in the track. The track is as
                     long as the archive and the view opens on today, so
                     `justify-center` would put this message halfway along a
                     track that can be forty thousand pixels wide — off screen,

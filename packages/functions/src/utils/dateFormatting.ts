@@ -16,8 +16,8 @@
 // `DEFAULT_REGIONAL` is the product's DISPLAY default, a preference a studio can
 // change; `events/duplicateEvent.ts` feeds DEFAULT_TIMEZONE into
 // `isoDateInTimezone` to compute the wall-clock `YYYY-MM-DD` day keys it WRITES
-// onto duplicated event programme items. Wiring one to the other would let a
-// change to the cosmetic default silently re-date stored programmes — the exact
+// onto duplicated event program items. Wiring one to the other would let a
+// change to the cosmetic default silently re-date stored programs — the exact
 // boundary the header of shared/utils/regional.ts draws. Only the language →
 // locale map is shared with the display model.
 

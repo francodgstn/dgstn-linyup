@@ -3,19 +3,19 @@
 /**
  * THE STANDALONE TEMPLATE EDITOR.
  *
- * Templates used to be authorable in exactly one way: build a programme on a
+ * Templates used to be authorable in exactly one way: build a program on a
  * real event, then "Save as template". The docs said so deliberately — "there is
  * no standalone template editor; the event page already is one" — and for
- * SAVING an existing programme that is still the right route.
+ * SAVING an existing program that is still the right route.
  *
  * It was the wrong rule for CREATING one. A studio setting up its standard camp
  * agenda in January, before any camp exists, had to invent an event, build the
- * programme on it, save the template and then delete the event — four steps and
+ * program on it, save the template and then delete the event — four steps and
  * a throwaway record for a thing that is purely reusable by nature (Franco,
  * 2026-08-31). Settings → Program templates now creates and edits directly.
  *
  * ── HOW IT REUSES THE EVENT EDITOR ──────────────────────────────────────────
- * It does not reimplement the programme UI. A template is materialised onto a
+ * It does not reimplement the program UI. A template is materialised onto a
  * SCRATCH ANCHOR DATE, edited as an ordinary `EventProgramConfig` + item list in
  * local state, and turned back into a template on save — so `ProgramTimeline`,
  * `ProgramItemDialog` and `ProgramStructureDialog` are the same components the
@@ -27,7 +27,7 @@
  * CONSTANT rather than today: it never leaks into what is stored, and it makes
  * the editor's day ids stable within a session. Both the timeline and the item
  * dialog run in `hideDayDates` mode here so the scratch dates are never shown —
- * printing "Monday 3 January" over a reusable programme states a fact that is
+ * printing "Monday 3 January" over a reusable program states a fact that is
  * not one.
  *
  * ── ONE WRITE, LIKE EVERY OTHER TEMPLATE WRITE ──────────────────────────────

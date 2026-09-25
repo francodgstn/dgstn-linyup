@@ -491,7 +491,7 @@ export default function DocumentDetailPage() {
               deliberately NOT widened for this kind: `public_profile` is served
               by an unauthenticated collection-group read, so publishing a
               liability release there would make every studio's text — and the
-              settings beside it, including whether the studio runs programmes
+              settings beside it, including whether the studio runs programs
               for minors — world-readable and enumerable. */}
           {isPublished && !isWaiver && (
             <div className="flex items-center justify-between gap-4 border-t pt-4">

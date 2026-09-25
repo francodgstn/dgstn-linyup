@@ -409,7 +409,7 @@ errors, so the next copy fails CI rather than waiting for the next sweep:
   after `^build` under turbo, so the file is always there.
 - **A bare `toLocale*String()` on a public route** (item 13) — scoped to
   `src/app/*/(public)/**`. The twenty-five sites still there (kiosk, booking
-  form, waitlist, manage-booking, appointments, the event programme print, the
+  form, waitlist, manage-booking, appointments, the event program print, the
   invitation token page) went through `usePublicFormat` first; two day-key
   displays moved to noon so a studio-zone formatter cannot land on the
   neighbouring day. **Out of scope, on purpose:** the admin tree (`useTeamFormat`
@@ -821,7 +821,7 @@ four answers:
 | Axis | Grows with | Examples | Client-side OK? |
 |---|---|---|---|
 | **CONFIG** | the studio's authoring | activities, plans, places, templates, rules, event types, documents, courses, promo codes, integrations | **Yes.** Tens of rows, bounded by somebody's patience. Never a problem. |
-| **PER-ENTITY** | one entity's size | bookings per session, attendees per event, items per programme, lessons per course | **Yes.** Bounded by capacity or by the event; the multiplier is what to watch (see §17 C). |
+| **PER-ENTITY** | one entity's size | bookings per session, attendees per event, items per program, lessons per course | **Yes.** Bounded by capacity or by the event; the multiplier is what to watch (see §17 C). |
 | **ROSTER** | people | contacts, subscriptions, signers, affiliations | **Up to a size** — and that size is the expectation to set. Hundreds to low thousands per studio. |
 | **LOG** | time | notifications, payments, submissions, referrals, events, exceptions, activity | **No.** Every unbounded LOG read is a defect at some date; the only question is which date. |
 

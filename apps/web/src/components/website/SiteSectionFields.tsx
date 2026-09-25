@@ -1036,7 +1036,7 @@ export function CtaBannerFields({
         </Select>
       </Field>
       {/* A band spans the page and can carry a background image (dimmed so the
-          text stays readable); a centred card has no edge-to-edge surface for
+          text stays readable); a centered card has no edge-to-edge surface for
           one to sit on. */}
       {style === 'band' && (
         <ImageField

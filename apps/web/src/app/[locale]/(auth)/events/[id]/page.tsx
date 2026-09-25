@@ -372,7 +372,7 @@ export default function EventDetailPage() {
   const { can } = useCapabilities()
   const { org } = useOrg()
   const t = useTranslations('Events')
-  // Programme + duplication copy lives in its own namespace.
+  // Program + duplication copy lives in its own namespace.
   const tp = useTranslations('EventProgram')
   const router = useRouter()
   const qc = useQueryClient()
@@ -724,7 +724,7 @@ export default function EventDetailPage() {
           event={event}
           printHref={`/events/${id}/print`}
           canEdit={can('events.manage') || isOrgAdmin}
-          // Surfaces the parent org's shared programme templates in the picker.
+          // Surfaces the parent org's shared program templates in the picker.
           parentOrgId={(team as Team & { org_id?: string })?.org_id ?? null}
         />
       )}

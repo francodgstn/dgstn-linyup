@@ -1,7 +1,7 @@
 import type { ProgramTemplate, ProgramTemplateItem } from '../types/event'
 
-// ─── Starter programme library ─────────────────────────────────────────────────
-// A small, built-in repository of ready-made event programmes so a studio can
+// ─── Starter program library ─────────────────────────────────────────────────
+// A small, built-in repository of ready-made event programs so a studio can
 // start from a sensible skeleton instead of a blank agenda. Each entry is a
 // plain `ProgramTemplate` body (the same shape `extractTemplate` produces and
 // `materialiseTemplate` consumes), so a starter can be:

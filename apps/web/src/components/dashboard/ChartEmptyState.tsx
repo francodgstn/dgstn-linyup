@@ -6,7 +6,7 @@
  * A chart with no rows is the one empty state that lies: recharts happily draws
  * the axes and a flat line along zero, which reads as "your studio is dead" or
  * "this card is broken" rather than "there is nothing here yet". Both trend
- * cards used to answer it with a bare centred sentence in hardcoded English,
+ * cards used to answer it with a bare centered sentence in hardcoded English,
  * which is barely better — it states the absence without saying what to do
  * about it.
  *

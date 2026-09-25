@@ -3656,7 +3656,7 @@ function FeaturesBlock({ section, ctx }: { section: FeaturesSection; ctx: Render
   )
 }
 
-// ─── CTA banner (one centred card) ───────────────────────────────────────────
+// ─── CTA banner (one centered card) ───────────────────────────────────────────
 
 function CtaBannerBlock({ section, ctx }: { section: CtaBannerSection; ctx: RenderCtx }) {
   const { palette, slug, locale, preview } = ctx
