@@ -15,6 +15,33 @@ import { buildAffiliationSummary, type AffiliationSummaryInput } from '../../lib
 // Reserved transform-output key the contacts pass reads to emit subcollection docs.
 export const AFFILIATIONS_OUTPUT_KEY = '__affiliations'
 
+// The contact's plan, as the contacts pass writes it: a plan grant
+// (docs/multi-plan-holdings.md), never a field on the contact. Peeled off and
+// written to contacts/{id}/plan_grants the same way affiliations are.
+export const PLAN_OUTPUT_KEY = '__plan'
+
+export interface MigratedPlan {
+  subscriptionTypeId: string
+  subscriptionTypeName: string | null
+  priceId: string | null
+  recurrence: string | null
+  /** Major units. */
+  amount: number | null
+}
+
+// The single plan slot HMD carried on the contact. Read here to find the plan,
+// and never carried onto the migrated contact: Linyup has no such field.
+const SOURCE_SLOT_FIELDS = [
+  'subscription_type_id',
+  'subscription_type_name',
+  'subscription_price_id',
+  'subscription_recurrence',
+  'subscription_amount',
+  'subscription_expires_at',
+  'subscription_source_ref',
+  'subscription_type_updated_at',
+]
+
 // Affiliation type ids seeded into the type catalog by the migration. The HMD
 // org-level 'club' type lives at organizations/{ORG_ID}/affiliation_types/club;
 // a team-local 'club' type at teams/{teamId}/affiliation_types/club.
@@ -348,92 +375,51 @@ export function transformContact(
   const srcTypeName =
     (out.subscription_type_name as string | undefined | null) ??
     (srcTypeId ? (sourceTypeNames?.get(srcTypeId) ?? null) : null)
+  const srcRecurrence = out.subscription_recurrence as string | undefined | null
+  for (const field of SOURCE_SLOT_FIELDS) delete out[field]
   const match = matchSubscriptionType(srcTypeName)
-  if (match !== null) {
-    out.subscription_type_id   = match.typeId
-    out.subscription_type_name = match.typeName
 
+  // THE PLAN IS A GRANT, and only for somebody the club still looks after. An
+  // archived or binned person's plan stays on the record as history — the
+  // subscription_history rows pass 05 copies — but nothing claims it is HELD:
+  // a "subscribed" chip on an archived person is the same lie as an active
+  // licence on one. Basel's audit: 11 archived contacts would have landed
+  // holding an active plan.
+  if (match !== null) {
     // A COMPED PLAN HAS NO PRICE, AND THAT IS THE WHOLE POINT OF IT.
     // `Complimentary` carries no prices, so there is nothing to pick — asking
-    // `pickSubscriptionPrice` for one returns undefined and the next line reads
-    // `.id` off it. The member still gets a plan, a name and a live
-    // `active_subscriptions` row; what they do not get is an amount they never
-    // agreed to pay.
+    // `pickSubscriptionPrice` for one returns undefined. The member still holds
+    // the plan; what they do not get is an amount they never agreed to pay.
     const price =
-      match.prices.length > 0
-        ? pickSubscriptionPrice(
-            match.prices,
-            out.subscription_recurrence as string | undefined | null,
-          )
-        : null
-
-    if (price) {
-      out.subscription_price_id  = price.id
-      out.subscription_amount    = price.amount
-      // Keep subscription_recurrence authoritative from the chosen price
-      out.subscription_recurrence = price.recurrence
-    }
-
-    // Populate active_subscriptions with a single-entry summary so the live
-    // weeklyReports Cloud Function can count subscriptions by type correctly.
-    // This mirrors the shape of ActiveSubscriptionSummary (packages/shared) and
-    // carries the same quality of data as the flat subscription_* snapshot fields
-    // already written above — a best-effort migration record, not a Stripe object.
-    // The `status` is set to 'active' because HMD did not track Stripe rollup
-    // status; contacts with a subscription_type were active members by definition.
-    // onMemberSubscriptionWrite will replace this array once real Stripe
-    // subscriptions are created for the team.
-    //
-    // NOT for somebody the club has archived or binned: the plan stays on the
-    // record as history (type id + name above), but nothing claims it is LIVE —
-    // a "subscribed" chip on an archived person is the same lie as an active
-    // licence on one. Basel's audit: 11 archived contacts would have landed
-    // holding an active plan.
+      match.prices.length > 0 ? pickSubscriptionPrice(match.prices, srcRecurrence) : null
     if (!isGone) {
-      out.active_subscriptions = [
-        {
-          subscription_type_id:   match.typeId,
-          subscription_type_name: match.typeName,
-          recurrence:             price?.recurrence ?? null,
-          // `ActiveSubscriptionSummary.amount` is a required number, and zero is
-          // the honest one for a comp: they hold a live plan and pay nothing.
-          amount:                 price?.amount ?? 0,
-          status:                 'active',
-        },
-      ]
+      out[PLAN_OUTPUT_KEY] = {
+        subscriptionTypeId: match.typeId,
+        subscriptionTypeName: match.typeName,
+        priceId: price?.id ?? null,
+        // The chosen price's recurrence is authoritative.
+        recurrence: price?.recurrence ?? srcRecurrence ?? null,
+        amount: price?.amount ?? null,
+      } satisfies MigratedPlan
     }
-  } else if (srcTypeName) {
-    // NO CANONICAL COUNTERPART — Fitpass, ClassPass, Instructor, Free. The type
-    // itself is copied to the target under this same id, so the id already
-    // points at a real document and only the NAME was missing. Write it: the
-    // contact page gates its subscription panel on the name, so without this a
-    // partner member reads as having no plan at all.
-    out.subscription_type_name = srcTypeName
-
-    // A PARTNER-APP PLAN IS A LIVE PLAN. Pass 11 stamps the copied type
-    // `source: 'aggregator'` (same matcher), and its holder gets the live row a
-    // partner plan means in Linyup: the booking gate can match it, the weekly
-    // report counts them "via a partner app" rather than as subscribers, and
-    // the External tab — where most of these people sit — shows the plan that
-    // lets them through the door. Amount 0 and no recurrence are the honest
-    // values: the partner bills them, the studio is paid per visit. Not for a
-    // person the club has archived or binned, for the same reason as above.
-    // The other unmatched names (Instructor, Free) stay name-only: a type with
-    // no prices and no partner is a label, not a plan anyone can claim.
-    if (isPartnerSourceType(srcTypeName) && !isGone) {
-      out.active_subscriptions = [
-        {
-          subscription_type_id:   srcTypeId,
-          subscription_type_name: srcTypeName,
-          recurrence:             null,
-          amount:                 0,
-          status:                 'active',
-        },
-      ]
-    }
+  } else if (srcTypeId && srcTypeName && isPartnerSourceType(srcTypeName) && !isGone) {
+    // NO CANONICAL COUNTERPART, BUT A PARTNER-APP PLAN IS A LIVE PLAN. The type
+    // is copied to the target under this same id (pass 11 stamps it
+    // `source: 'aggregator'`, same matcher), and its holder holds it: the
+    // booking gate can match it, the weekly report counts them "via a partner
+    // app" rather than as subscribers, and the External tab — where most of
+    // these people sit — shows the plan that lets them through the door. No
+    // price and no recurrence are the honest values: the partner bills them,
+    // the studio is paid per visit. The other unmatched names (Instructor,
+    // Free) are labels, not plans anyone can claim, and give no grant.
+    out[PLAN_OUTPUT_KEY] = {
+      subscriptionTypeId: srcTypeId,
+      subscriptionTypeName: srcTypeName,
+      priceId: null,
+      recurrence: null,
+      amount: null,
+    } satisfies MigratedPlan
   }
-  // A contact with no resolvable type name keeps every subscription_* field as
-  // the source had it.
 
   return out
 }

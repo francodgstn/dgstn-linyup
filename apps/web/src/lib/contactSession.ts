@@ -25,7 +25,10 @@ export interface StoredPublicContact {
   id: string
   firstname: string
   lastname: string
-  subscription_type_id?: string
+  /** The plan types held at sign-in — the contact's `held_plan_type_ids`
+   *  mirror, frozen for the session. Only ever a floor for a failed live read of
+   *  the contact's own record; see `usePublicContactRecord`. */
+  held_plan_type_ids?: string[]
   /** `| null` because that is what `buildContactSession` actually returns for a
    *  contact with no address — an explicit null, not a missing key. */
   email?: string | null

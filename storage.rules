@@ -38,18 +38,12 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/courses/$(courseId)).data.accessRule.type == 'free';
     }
 
-    // The calling contact session's active subscription type id, or '' once the
-    // grant that carried it has lapsed. Same rule as `planGrantCurrent` in
-    // firestore.rules and `planGrantIsCurrent` in @linyup/shared — media must
-    // stop opening at exactly the moment the lesson does, or the object store
-    // becomes the way around the tier check (which is why this function exists
-    // at all). The `== null` guard is required: the field is written explicitly
-    // as null whenever a grant has no end of its own.
-    function callerCourseSubTypeId() {
-      let d = firestore.get(/databases/(default)/documents/contacts/$(request.auth.token.contactId)).data;
-      return (d.get('subscription_expires_at', null) == null || d.subscription_expires_at > request.time)
-        ? d.get('subscription_type_id', '')
-        : '';
+    // The plan types the calling contact session holds — the same flat mirror
+    // `callerHeldPlanTypeIds` reads in firestore.rules. Media must stop opening at
+    // exactly the moment the lesson does, or the object store becomes the way
+    // around the tier check (which is why this function exists at all).
+    function callerHeldPlanTypeIds() {
+      return firestore.get(/databases/(default)/documents/contacts/$(request.auth.token.contactId)).data.get('held_plan_type_ids', []);
     }
     // Whether the calling contact bought this course (lifetime entitlement).
     function contactPurchasedCourse(courseId) {
@@ -69,13 +63,13 @@ service firebase.storage {
            c.accessRule.type == 'free'
         || c.accessRule.type == 'registered'
         || (c.accessRule.type == 'subscription'
-            && c.accessRule.subscriptionTypeIds.hasAny([callerCourseSubTypeId()]))
+            && c.accessRule.subscriptionTypeIds.hasAny(callerHeldPlanTypeIds()))
         || (c.accessRule.type == 'purchase'
             && (contactPurchasedCourse(courseId)
-                || c.accessRule.get('subscriptionTypeIds', []).hasAny([callerCourseSubTypeId()])
+                || c.accessRule.get('subscriptionTypeIds', []).hasAny(callerHeldPlanTypeIds())
                 || (c.get('benefit', null) is map
                     && c.benefit.get('effect', '') == 'included'
-                    && c.benefit.get('subscriptionTypeIds', []).hasAny([callerCourseSubTypeId()]))))
+                    && c.benefit.get('subscriptionTypeIds', []).hasAny(callerHeldPlanTypeIds()))))
       );
     }
 

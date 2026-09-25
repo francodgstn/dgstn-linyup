@@ -1,7 +1,8 @@
 import type { MigrationConfig } from '../config'
 import { sourceDb, targetDb, ORG_ID } from '../config'
 import { BatchWriter } from '../batch-writer'
-import { transformContact, AFFILIATIONS_OUTPUT_KEY } from '../transforms/contacts'
+import { transformContact, AFFILIATIONS_OUTPUT_KEY, PLAN_OUTPUT_KEY, type MigratedPlan } from '../transforms/contacts'
+import { IMPORTED_SLOT_GRANT_ID, newPlanGrantDoc } from '../../../packages/functions/src/contacts/planGrants'
 import { matchSubscriptionType } from '../transforms/subscriptions'
 
 // Affiliation subcollection name (mirrors @linyup/shared CONTACT_AFFILIATIONS_SUBCOLLECTION).
@@ -118,7 +119,29 @@ export async function pass05Contacts(
       const affiliations =
         (transformed[AFFILIATIONS_OUTPUT_KEY] as Array<Record<string, unknown>> | undefined) ?? []
       delete transformed[AFFILIATIONS_OUTPUT_KEY]
+      const plan = transformed[PLAN_OUTPUT_KEY] as MigratedPlan | undefined
+      delete transformed[PLAN_OUTPUT_KEY]
       bw.set(tgtRef, transformed)
+
+      // The contact's plan, as a plan grant (docs/multi-plan-holdings.md). Under
+      // the id earlier imports used, so a re-run rewrites the one row. Pass 17
+      // builds the plan list from it.
+      if (plan) {
+        const grant = newPlanGrantDoc(
+          (transformed.teamId as string | undefined) ?? '',
+          {
+            subscriptionTypeId: plan.subscriptionTypeId,
+            subscriptionTypeName: plan.subscriptionTypeName,
+            priceId: plan.priceId,
+            recurrence: plan.recurrence,
+            amountMajor: plan.amount,
+            expiresAt: null,
+          },
+          { source: 'import', sourceRef: null, createdBy: null }
+        )
+        if (transformed.created_at) grant.starts_at = transformed.created_at
+        bw.set(tgt.collection('contacts').doc(d.id).collection('plan_grants').doc(IMPORTED_SLOT_GRANT_ID), grant)
+      }
 
       affiliations.forEach((aff, idx) => {
         const affId = `${d.id}-aff-${idx}`

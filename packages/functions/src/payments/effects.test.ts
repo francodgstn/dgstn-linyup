@@ -71,7 +71,7 @@ describe('normalizePaymentLineItem', () => {
 })
 
 describe('applyPaymentEffects', () => {
-  it('subscription → sets contact fields + grants credits + logs activity', async () => {
+  it('subscription → gives a plan grant + grants credits + logs activity', async () => {
     const { db, ops } = mockDb({
       'teams/t1/subscription_types/st1': {
         name: 'Monthly',
@@ -88,14 +88,18 @@ describe('applyPaymentEffects', () => {
       paymentRef: 'manual:x',
     })
 
+    // The plan is a grant keyed by the payment — what a reversal ends. The
+    // contact carries no plan field; only the last payment is stamped on it.
+    const planGrant = ops.creates.find((c) => c.path === 'contacts/ct1/plan_grants/manual:x')
+    assert.ok(planGrant, 'plan grant created')
+    assert.equal(planGrant!.data.subscription_type_id, 'st1')
+    assert.equal(planGrant!.data.subscription_type_name, 'Monthly')
+    assert.equal(planGrant!.data.price_id, 'p1')
+    assert.equal(planGrant!.data.amount, 50)
+    assert.equal(planGrant!.data.source_ref, 'manual:x')
     const contactSet = ops.sets.find((s) => s.path === 'contacts/ct1')
-    assert.ok(contactSet, 'contact fields written')
-    assert.equal(contactSet!.data.subscription_type_id, 'st1')
-    assert.equal(contactSet!.data.subscription_type_name, 'Monthly')
-    assert.equal(contactSet!.data.subscription_price_id, 'p1')
-    assert.equal(contactSet!.data.subscription_amount, 50)
-    // PROVENANCE — what a reversal checks before clearing any of the above.
-    assert.equal(contactSet!.data.subscription_source_ref, 'manual:x')
+    assert.ok(contactSet, 'last payment stamped')
+    assert.deepEqual(Object.keys(contactSet!.data), ['last_payment_at'])
 
     const grant = ops.creates.find((c) => c.path === 'contacts/ct1/credit_grants/manual:x')
     assert.ok(grant, 'credit grant created')
@@ -162,9 +166,9 @@ describe('applyPaymentEffects', () => {
 
     // ...and the grant it bought carries its own end date, because a one-time
     // price with included_months has no renewal to end it.
-    const set = ops.sets.find((s) => s.path === 'contacts/ct1')
-    assert.ok(set, 'subscription fields written')
-    assert.ok(set!.data.subscription_expires_at, 'expiry stamped from included_months')
+    const planGrant = ops.creates.find((c) => c.path === 'contacts/ct1/plan_grants/manual:x')
+    assert.ok(planGrant, 'plan grant created')
+    assert.ok(planGrant!.data.expires_at, 'expiry stamped from included_months')
   })
 
   it('course → grants the entitlement + logs activity', async () => {

@@ -71,6 +71,12 @@ describe('the counts that read it', () => {
     assert.doesNotMatch(SRC, /active_subscriptions[^\n]*\.length > 0\s*\)\.length/, 'no raw "has any live plan" count survives')
   })
 
+  // "Subscribed" is the plan list's memberships, the definition the dashboard
+  // reads too — not Stripe billing alone (docs/multi-plan-holdings.md).
+  it('the live plans are heldMemberships at the report instant', () => {
+    assert.match(SRC, /const liveSubs = \(c: admin\.firestore\.DocumentData\) => heldMemberships\(c, now\.getTime\(\)\)/)
+  })
+
   it('the per-type map is untouched — a partner type is honest by NAME', () => {
     assert.match(SRC, /contacts_count_by_subscription_type = countByDistinctKeys\(contacts, \(c\) => \{\s*const subs = /)
   })

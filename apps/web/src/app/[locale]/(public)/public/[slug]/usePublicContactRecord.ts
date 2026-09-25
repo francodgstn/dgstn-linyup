@@ -14,7 +14,7 @@ import { usePublicContactAuth } from './PublicContactAuthProvider'
 // WHY IT IS NOT THE SESSION'S CONTACT. `PublicContactAuthProvider` restores a
 // contact that was serialised into localStorage when the session was minted and
 // is never refreshed for the SEVEN DAYS the token is good for. That copy carries
-// one primary `subscription_type_id`, frozen at sign-in. Anything that only
+// the plan types held at sign-in (`held_plan_type_ids`), frozen there. Anything that only
 // names the member is fine with it; anything that PRICES them is not, because
 // the divergence points the unsafe way — a lapsed or changed subscription still
 // reads as held, and the screen quotes a benefit the server will not honour.

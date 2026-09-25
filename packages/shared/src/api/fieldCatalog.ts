@@ -74,16 +74,6 @@ export const CONTACT_FIELD_CATALOG: FieldCatalog<Contact> = {
 
   affiliation_summary: 'exposed', // `has_active` only
 
-  // The legacy single plan slot. The API is a multi-plan-holdings reader and
-  // reads `held_plans` alone (docs/multi-plan-holdings.md).
-  subscription_type_id: 'excluded',
-  subscription_type_name: 'excluded',
-  subscription_recurrence: 'excluded',
-  subscription_price_id: 'excluded',
-  subscription_amount: 'excluded',
-  subscription_type_updated_at: 'excluded',
-  subscription_source_ref: 'excluded',
-  subscription_expires_at: 'excluded',
   subscription_status: 'excluded',
   active_subscriptions: 'excluded',
   credit_summary: 'exposed',

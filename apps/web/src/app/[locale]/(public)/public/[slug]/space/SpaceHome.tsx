@@ -279,14 +279,11 @@ export default function SpaceHome() {
 
   // ── My courses = accessible entitlements only (no locked/buy cards here) ──
   // The full held union once the fuller contact doc has loaded (its plan list),
-  // falling back to just the session's primary subscription_type_id until it
-  // does. The session carries one plan until phase 3c of
-  // docs/multi-plan-holdings.md gives it the list.
+  // falling back to the plan types the session carried at sign-in until it
+  // does.
   const heldTypeIds = fullContact
     ? heldSubscriptionTypeIds(fullContact)
-    : contact.subscription_type_id
-      ? [contact.subscription_type_id]
-      : []
+    : (contact.held_plan_type_ids ?? [])
   const myCourses = courses.filter((c) => hasAccess(c, heldTypeIds, purchasedCourseIds))
 
   // ── Shop quick links — the studio's sellable channels, deep-linked to the right

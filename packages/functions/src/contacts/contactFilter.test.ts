@@ -134,7 +134,7 @@ describe('matchesFilter — subscriptions', () => {
   })
 
   it('reads nothing but the plan list: the legacy slot alone holds nothing', () => {
-    const slotOnly = contact({ subscription_type_id: 'adult-monthly' })
+    const slotOnly = contact({ subscription_type_id: 'adult-monthly' } as Partial<ContactFilterSubject>)
     assert.equal(matchesFilter(slotOnly, filter({ subscriptions: ['adult-monthly'] }), { nowMs: NOW }), false)
   })
 })

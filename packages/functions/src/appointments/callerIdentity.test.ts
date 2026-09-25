@@ -276,7 +276,7 @@ describe('AND WHEN THE CALLER MOVES, EVERYTHING SAID TO THE OLD ONE GOES WITH IT
     assert.match(
       src,
       /const liveHeld = contactRecord\.data \? heldSubscriptionTypeIds\(contactRecord\.data\) : null/,
-      'the persisted session carries ONE `subscription_type_id`, frozen at sign-in and ' +
+      'the persisted session carries the plan types held at sign-in, frozen and ' +
         'never refreshed for seven days. On this rail that value is the PRICE, and the ' +
         'divergence points the unsafe way: the screen quotes a benefit the member no ' +
         'longer holds and the server charges the real figure'
@@ -288,8 +288,8 @@ describe('AND WHEN THE CALLER MOVES, EVERYTHING SAID TO THE OLD ONE GOES WITH IT
     // it, so it is checked THERE rather than dropped.
     assert.match(
       caller(),
-      /if \(liveHeld\) return liveHeld\s*\n\s*return sessionContact\?\.subscription_type_id/,
-      'heldFrom must prefer the live union and fall back to the frozen slot, never ' +
+      /if \(liveHeld\) return liveHeld\s*\n\s*return sessionContact\?\.held_plan_type_ids/,
+      'heldFrom must prefer the live union and fall back to the frozen list, never ' +
         'the other way round'
     )
     assert.match(

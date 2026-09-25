@@ -352,7 +352,7 @@ export interface Contact {
   // A CLAIM, NOT AN ENTITLEMENT. It is what somebody typed into a public form;
   // it proves nothing about a FitPass membership and must never be read as
   // coverage. Access and payout are answered by the contact's actual
-  // subscription (Contact.subscription_type_id / active_subscriptions) and the
+  // plans (Contact.held_plans) and the
   // partner_visits ledger — never by this field.
   //
   // Absent ⇒ never asked, or answered "not using one". An empty answer never
@@ -367,42 +367,6 @@ export interface Contact {
   // list + Firestore rules read; maintained by the onAffiliationWrite trigger.
   affiliation_summary?: AffiliationSummary
 
-  // Subscription — the single fields below are the "primary / most-recent" snapshot
-  // (manual assignment, or the latest Stripe purchase). A contact may hold SEVERAL
-  // different active subscription types at once (never two of the same) — the full set
-  // lives in active_subscriptions, maintained by onMemberSubscriptionWrite from the
-  // member_subscriptions docs. Read active_subscriptions for display; the single fields
-  // remain for back-compat (filters, manual assignment).
-  subscription_type_id?: string
-  subscription_type_name?: string
-  subscription_recurrence?: string // authoritative; derived from the chosen price when one exists
-  subscription_price_id?: string // set only when the chosen type has prices
-  subscription_amount?: number // amount snapshot at assignment time
-  subscription_type_updated_at?: Timestamp
-  // PROVENANCE: the payment doc id that wrote the fields above, or null when no
-  // single payment owns them (a recurring Stripe renewal). Written on EVERY
-  // subscription-field write by writeContactSubscriptionFields — null included,
-  // never omitted — and read by exactly one thing: reversePaymentEffects, which
-  // clears the fields only when this matches the payment being reversed.
-  // Matching on subscription_type_id instead would strip a renewal of the same
-  // plan when an older payment for it is refunded.
-  subscription_source_ref?: string | null
-  // When the fields above stop covering the member, or null/absent for "no end
-  // of its own". Set ONLY by a one_time price carrying `included_months` — the
-  // "CHF 100, 2 months included" shape, which has no renewal to end it.
-  //
-  // ENFORCED LAZILY, BY COMPARISON, NEVER BY A JOB: `planGrantIsCurrent`
-  // (types/activity.ts) is the ONE predicate, and every reader that decides
-  // coverage calls it. There is no sweep to clear this field and no event when
-  // it passes — which is exactly why nothing may treat the field's PRESENCE as
-  // the fact. The fact is the comparison.
-  //
-  // The consequence worth knowing: artifacts built from write EVENTS (the
-  // subscription-history row, the analytics rollups) do not close themselves
-  // when a grant lapses, because no write happens. The studio-facing answer is
-  // the `subscription_expires_in` automation condition, which reads this field
-  // on a scan rather than waiting for an event.
-  subscription_expires_at?: Timestamp | null
   // Contact-level rollup of member_subscriptions Stripe status (webhook-maintained).
   // 'none' when the contact holds no live subscription. See SubscriptionRollupStatus.
   subscription_status?: SubscriptionRollupStatus
@@ -607,9 +571,10 @@ export interface SubscriptionPrice {
   amount: number // in the team default currency, e.g. 49.9
   recurrence: SubscriptionRecurrence
   // For one_time prices: months of access granted by the ONE charge — "CHF 100,
-  // 2 months included". Sets `Contact.subscription_expires_at` = now + N months,
-  // which is what ENDS the access (there is no renewal to end it, and no cron:
-  // every reader compares the stamp lazily — see `subscriptionGrantIsCurrent`).
+  // 2 months included". The plan grant it buys ends now + N months, which is
+  // what ENDS the access (there is no renewal to end it: every reader compares
+  // the end lazily — `holdingIsCurrent` — and the daily `refreshHeldPlans` job
+  // moves the rules' mirror).
   // On a credit price, this is instead the pack's VALIDITY window (grant expiry).
   included_months?: number
   // Credit pack (one_time only): the purchase grants this many lesson credits,

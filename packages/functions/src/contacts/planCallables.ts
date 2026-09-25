@@ -11,12 +11,9 @@
 // `contacts.manage` capability, and for an own-scoped coach a contact of their
 // own — or the platform admin role.
 //
-// ── THE BRIDGE ───────────────────────────────────────────────────────────────
-// Each call also writes the legacy slot the dialog used to write (see the
-// header of planGrants.ts): assign and change set it to the plan just given,
-// and ending clears it when nothing open still holds that plan. The slot write
-// carries `subscription_source_ref: null` — nobody paid, so no refund may
-// clear it — and never `last_payment_at`.
+// The grant is the whole record: the contact's single plan slot these calls
+// once kept in step is gone (phase 5), and the plan list is rebuilt from the
+// grants by `recomputeHeldPlans`. Nobody paid, so no `last_payment_at`.
 //
 // ── NOT HERE ─────────────────────────────────────────────────────────────────
 // Stopping Stripe billing stays `cancelMemberSubscription`, which already names
@@ -45,56 +42,6 @@ import {
 } from './planGrants'
 
 type Db = admin.firestore.Firestore
-
-// ─── the bridge, pure ─────────────────────────────────────────────────────────
-
-/** The legacy slot for a plan staff just gave: the whole record, nulls
- *  included, and no `last_payment_at`. */
-export function slotFieldsForStaffPlan(plan: PlanGrantPlan): Record<string, unknown> {
-  return {
-    subscription_type_id: plan.subscriptionTypeId,
-    subscription_type_name: plan.subscriptionTypeName,
-    subscription_price_id: plan.priceId,
-    subscription_recurrence: plan.recurrence,
-    subscription_amount: plan.amountMajor,
-    subscription_source_ref: null,
-    subscription_expires_at: plan.expiresAt,
-    subscription_type_updated_at: FieldValue.serverTimestamp(),
-  }
-}
-
-/** The legacy slot emptied, as the dialog's "clear" wrote it. */
-export function clearedSlotFields(): Record<string, unknown> {
-  return {
-    subscription_type_id: null,
-    subscription_type_name: null,
-    subscription_price_id: null,
-    subscription_recurrence: null,
-    subscription_amount: null,
-    subscription_source_ref: null,
-    subscription_expires_at: null,
-    subscription_type_updated_at: FieldValue.serverTimestamp(),
-  }
-}
-
-/**
- * Does ending these grants empty the slot? Ending EVERY current plan does, as
- * the dialog's clear always did. Ending one does only when the slot names its
- * plan and no other open grant still holds that plan (decision D4: two grants
- * of one type may coexist).
- */
-export function shouldClearSlot(input: {
-  allCurrent: boolean
-  slotTypeId: string | null
-  endedTypeIds: readonly string[]
-  openTypeIdsAfter: readonly string[]
-}): boolean {
-  if (!input.slotTypeId) return false
-  if (input.allCurrent) return true
-  return (
-    input.endedTypeIds.includes(input.slotTypeId) && !input.openTypeIdsAfter.includes(input.slotTypeId)
-  )
-}
 
 // ─── shared checks ────────────────────────────────────────────────────────────
 
@@ -214,7 +161,6 @@ export const assignPlan = onCall(async (request) => {
     for (const d of open) endPlanGrantInTx(tx, d.ref, 'changed', ctx.uid)
     tx.set(newRef, newPlanGrantDoc(ctx.teamId, plan, { source: 'staff', sourceRef: null, createdBy: ctx.uid }))
     tx.update(ctx.contactRef, {
-      ...slotFieldsForStaffPlan(plan),
       // Assigning a plan materialises a provisional lead (offline-paid members
       // count toward the cap too). See Contact.provisional.
       provisional: FieldValue.delete(),
@@ -249,7 +195,6 @@ export const changePlan = onCall(async (request) => {
     }
     endPlanGrantInTx(tx, oldRef, 'changed', ctx.uid)
     tx.set(newRef, newPlanGrantDoc(ctx.teamId, plan, { source: 'staff', sourceRef: null, createdBy: ctx.uid }))
-    tx.update(ctx.contactRef, slotFieldsForStaffPlan(plan))
     return { grantId: newRef.id, ended: [grantId] }
   })
 })
@@ -271,7 +216,6 @@ export const endPlan = onCall(async (request) => {
   const nowMs = Date.now()
 
   return ctx.db.runTransaction(async (tx) => {
-    const contactSnap = await tx.get(ctx.contactRef)
     const docs = (await tx.get(grants)).docs
     const open = docs.filter((d) => planGrantIsOpen(d.data(), nowMs))
 
@@ -283,16 +227,6 @@ export const endPlan = onCall(async (request) => {
     }
     for (const d of targets) endPlanGrantInTx(tx, d.ref, 'staff', ctx.uid)
 
-    const endedIds = new Set(targets.map((d) => d.id))
-    const typeOf = (d: admin.firestore.QueryDocumentSnapshot) => String(d.data().subscription_type_id ?? '')
-    const slotTypeId = (contactSnap.data()?.subscription_type_id as string | null | undefined) ?? null
-    const slotCleared = shouldClearSlot({
-      allCurrent,
-      slotTypeId,
-      endedTypeIds: targets.map(typeOf),
-      openTypeIdsAfter: open.filter((d) => !endedIds.has(d.id)).map(typeOf),
-    })
-    if (slotCleared) tx.update(ctx.contactRef, clearedSlotFields())
-    return { ended: [...endedIds], slotCleared }
+    return { ended: targets.map((d) => d.id) }
   })
 })

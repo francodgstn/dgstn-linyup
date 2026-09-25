@@ -13,19 +13,20 @@
 // so.
 //
 // ── Ownership before deletion, always ────────────────────────────────────────
-// Two of the three targets are keyed by the CONTACT, not by the payment:
-//   • courses/{courseId}/purchases/{contactId} — doc id is the contact
-//   • contacts/{contactId}.subscription_* — fields on the contact
-// so their existence proves nothing about which payment produced them. Each
-// therefore carries an explicit provenance stamp (`payment_ref` /
-// `subscription_source_ref`), and this module compares it before touching
-// anything. A mismatch is `skipped_not_owner` and writes NOTHING — the normal
-// case being a second, later purchase, a manual grant, or a gift-card-funded
-// one that no `/payments` row can reach.
+// The course entitlement is keyed by the CONTACT, not by the payment —
+// courses/{courseId}/purchases/{contactId} — so its existence proves nothing
+// about which payment produced it. It therefore carries an explicit provenance
+// stamp (`payment_ref`), and this module compares it before touching anything.
+// A mismatch is `skipped_not_owner` and writes NOTHING — the normal case being a
+// second, later purchase, or a gift-card-funded one that no `/payments` row can
+// reach.
 //
-// The third target — contacts/{contactId}/credit_grants/{paymentRef} — is keyed
-// by the PAYMENT: the doc id IS the provenance, which is why the grant is
-// reached by doc id and never by a field query. The field names disagreed by
+// The other targets are keyed by the PAYMENT: the plan grant
+// (contacts/{contactId}/plan_grants/{paymentRef}) and the credit pack
+// (contacts/{contactId}/credit_grants/{paymentRef}). The doc id IS the
+// provenance, which is why each is reached by doc id and never by a field
+// query. A plan a later payment or staff gave is another row, so ending this
+// one can never strip it. The field names disagreed by
 // rail until Step 0 (`payment_ref` vs `payment_intent_id`), so
 // `where('payment_ref','==',ref)` silently missed every Connect credit pack.
 // Doc id only. Do not reintroduce a query here.
@@ -63,9 +64,8 @@
 // keyed by (paymentRef, contactId) — the credit write is an absolute TARGET
 // (re-running with the same inputs writes the same number, and the `min` clamp
 // stops a re-run raising it), the course delete is ownership-checked (a second
-// run finds it absent), and the subscription clear is ownership-checked (a
-// second run finds the ref gone and reports skipped_not_owner). Nothing needs a
-// lock.
+// run finds it absent), and the plan grant is ended only while open (a second
+// run finds it ended and reports absent). Nothing needs a lock.
 
 import { FieldValue } from 'firebase-admin/firestore'
 import {
@@ -103,7 +103,7 @@ export function lineItemForReversal(
   switch (payment.kind as string | undefined) {
     case 'membership':
       // No subscriptionTypeId to recover — and none is needed: the reversal
-      // proves ownership from `subscription_source_ref`, not from the type.
+      // reaches the plan grant by the payment's own id, not by the type.
       return { kind: 'subscription' }
     case 'course':
       return { kind: 'course', courseId: (payment.courseId as string | undefined) ?? undefined }
@@ -141,6 +141,8 @@ export interface ConsumedPackFacts {
 }
 
 export interface ReversalActions {
+  /** Whether to end the plan grant this payment made (reported as `planGrant`).
+   *  The name predates the plan list, when it cleared a slot on the contact. */
   subscription: 'clear_if_owned' | 'leave'
   /**
    * `reduce_to.total` is a TARGET `credits_total`, never a delta — which is what
@@ -286,7 +288,6 @@ export interface ReversePaymentEffectsInput {
 }
 
 export interface ReversalOutcome {
-  subscription: ReversalTargetOutcome
   credits: ReversalTargetOutcome
   /** Credits actually taken back (0 when none were). */
   creditsRevoked: number
@@ -337,7 +338,6 @@ export async function reversePaymentEffects(
 
   return db.runTransaction(async (tx) => {
     const outcome: ReversalOutcome = {
-      subscription: 'left',
       credits: 'left',
       creditsRevoked: 0,
       course: 'left',
@@ -345,47 +345,11 @@ export async function reversePaymentEffects(
     }
 
     // ── read phase (all by doc id) ───────────────────────────────────────────
-    const contactSnap = plan.subscription === 'clear_if_owned' ? await tx.get(contactRef) : null
     const planGrantSnap = plan.subscription === 'clear_if_owned' ? await tx.get(planGrantRef) : null
     const grantSnap = creditsTarget !== null ? await tx.get(grantRef) : null
     const purchaseSnap = purchaseRef ? await tx.get(purchaseRef) : null
 
     // ── write phase (≤3) ─────────────────────────────────────────────────────
-    if (contactSnap) {
-      const contact = contactSnap.data()
-      if (!contactSnap.exists || !contact) {
-        outcome.subscription = 'absent'
-      } else if (!contact.subscription_type_id) {
-        // Already no subscription on the axis — nothing to clear.
-        outcome.subscription = 'absent'
-      } else if ((contact.subscription_source_ref ?? null) !== paymentRef) {
-        // A LATER payment (or a recurring renewal, which stores null) owns these
-        // fields. Clearing them would strip a membership somebody is paying for.
-        outcome.subscription = 'skipped_not_owner'
-      } else {
-        // Deleting rather than nulling: the Contact type declares these optional,
-        // and "absent" is how every reader already spells "no subscription".
-        // Clearing subscription_type_id also fires onContactSubscriptionChange,
-        // which closes the open history row and writes the transition — the
-        // audit trail for this comes free, with no code here.
-        tx.update(contactRef, {
-          subscription_type_id: FieldValue.delete(),
-          subscription_type_name: FieldValue.delete(),
-          subscription_price_id: FieldValue.delete(),
-          subscription_recurrence: FieldValue.delete(),
-          subscription_amount: FieldValue.delete(),
-          subscription_source_ref: FieldValue.delete(),
-          // The grant's end date goes with the grant. Left standing it would be
-          // a date describing a subscription that is no longer there — harmless
-          // to the gate (which reads the type id first) but read by the
-          // expiring-soon automation, which would chase a member who has none.
-          subscription_expires_at: FieldValue.delete(),
-          subscription_type_updated_at: FieldValue.serverTimestamp(),
-        })
-        outcome.subscription = 'cleared'
-      }
-    }
-
     if (planGrantSnap) {
       const grant = planGrantSnap.data()
       if (!planGrantSnap.exists || !grant || grant.ended_at != null) {
@@ -464,7 +428,7 @@ export async function reversePaymentEffects(
 
     console.log(
       `[reversal] team=${teamId} contact=${contactId} ref=${paymentRef} ` +
-        `subscription=${outcome.subscription} credits=${outcome.credits}` +
+        `credits=${outcome.credits}` +
         `(${outcome.creditsRevoked}) course=${outcome.course} planGrant=${outcome.planGrant}`
     )
     return outcome

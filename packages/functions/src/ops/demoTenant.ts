@@ -51,7 +51,7 @@ import * as admin from 'firebase-admin'
 import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { format } from 'date-fns'
 import { updateTeamLeaderboard } from '../utils/leaderboard'
-import { IMPORTED_SLOT_GRANT_ID, importedSlotGrantDoc, planGrantsCollection } from '../contacts/planGrants'
+import { IMPORTED_SLOT_GRANT_ID, newPlanGrantDoc, planGrantsCollection } from '../contacts/planGrants'
 import { classAccessRuleFor, detectPerformanceProfile } from '@linyup/shared'
 import {
   TEAMS_COLLECTION,
@@ -314,7 +314,6 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
         archived_at: null,
         deleted_at: null,
         created_at: FieldValue.serverTimestamp(),
-        subscription_type_id: SUBSCRIPTION_TYPE_ID,
         // See DEMO_TESTERS: a reseed is the repair for a curious 'Delete
         // account' tap, including on the reviewer's own login.
         deletion_requested_at: null,
@@ -338,7 +337,6 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
         provisional: false,
         archived_at: null,
         deleted_at: null,
-        subscription_type_id: SUBSCRIPTION_TYPE_ID,
         current_month_score: t.score,
         current_streak: t.streak,
         max_streak: t.streak,
@@ -548,11 +546,10 @@ export async function provisionDemoTenant(nowMs: number = Date.now()): Promise<P
 }
 
 /**
- * The demo plan as a plan grant (docs/multi-plan-holdings.md). The contact write
- * sets the legacy slot — the bridge until the readers move to the plan list —
- * and this gives the same plan as the imported-slot row every seeder writes.
- * Written AFTER the contact, so the plan-grant trigger finds the contact and
- * builds its plan list.
+ * The demo plan as a plan grant (docs/multi-plan-holdings.md). Written AFTER
+ * the contact, so the plan-grant trigger finds the contact and builds its plan
+ * list. Kept under the id earlier provisions used, so a reseed rewrites the one
+ * row rather than adding a second.
  */
 async function writeDemoPlanGrant(db: admin.firestore.Firestore, contactId: string): Promise<void> {
   const type = await db
@@ -561,10 +558,17 @@ async function writeDemoPlanGrant(db: admin.firestore.Firestore, contactId: stri
     .collection(SUBSCRIPTION_TYPES_SUBCOLLECTION)
     .doc(SUBSCRIPTION_TYPE_ID)
     .get()
-  const grant = importedSlotGrantDoc({
-    teamId: DEMO_TEAM_ID,
-    subscription_type_id: SUBSCRIPTION_TYPE_ID,
-    subscription_type_name: (type.data()?.name as string | undefined) ?? null,
-  })
-  if (grant) await planGrantsCollection(db, contactId).doc(IMPORTED_SLOT_GRANT_ID).set(grant)
+  const grant = newPlanGrantDoc(
+    DEMO_TEAM_ID,
+    {
+      subscriptionTypeId: SUBSCRIPTION_TYPE_ID,
+      subscriptionTypeName: (type.data()?.name as string | undefined) ?? null,
+      priceId: null,
+      recurrence: null,
+      amountMajor: null,
+      expiresAt: null,
+    },
+    { source: 'staff', sourceRef: null, createdBy: null }
+  )
+  await planGrantsCollection(db, contactId).doc(IMPORTED_SLOT_GRANT_ID).set(grant)
 }

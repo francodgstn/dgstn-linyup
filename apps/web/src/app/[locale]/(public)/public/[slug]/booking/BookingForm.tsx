@@ -508,9 +508,9 @@ export default function BookingForm({
   const [queueingFor, setQueueingFor] = useState<{ id: string; name: string } | null>(null)
 
   // WHAT THIS MEMBER HOLDS: every plan on the live record, not the single
-  // `subscription_type_id` frozen onto the session at sign-in (UX-102). A member
+  // plan list frozen onto the session at sign-in (UX-102). A member
   // covered by a second plan was told she held none and routed to pay a drop-in
-  // the server then refused to sell her. The frozen slot survives only as the
+  // the server then refused to sell her. The frozen list survives only as the
   // floor for a FAILED read, which is `heldFrom`'s rule, shared with the
   // appointment funnel. Display only: the callables re-resolve from their own
   // snapshot.

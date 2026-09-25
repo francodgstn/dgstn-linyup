@@ -242,11 +242,12 @@ export { dailyTasks, bookingRemindersHourly } from './dailyTasks'
 // them inside one 300-second instance, which died partway at a few hundred
 // studios and left some tenants done and some not, silently
 // (docs/scalability-2026-09.md §9; the machinery is utils/tenantFanOut.ts).
-// Four handlers means four queues: the hourly reminder flood never sits behind
+// One handler per job means one queue per job: the hourly reminder flood never sits behind
 // Monday's reports, and each gets retry settings that suit its own work.
 export {
   remindersForTeam,
   noShowsForTeam,
+  heldPlansForTeam,
   scheduledRulesForTeam,
   weeklyReportForTeam,
   financeReportForTeam,

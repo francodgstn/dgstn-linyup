@@ -32,10 +32,10 @@ export interface CoursePricing {
   /** Carries `ownsCourse` already — the purchase entitlement is part of what the
    *  resolver may know about the caller, not a separate check. */
   snapshot: ContactPaymentSnapshot
-  /** The buyer's PRIMARY subscription type — the only one
-   *  `canReadPublishedCourse` checks, which is why the checkout compares against
-   *  it before refusing an already-entitled buyer. */
-  primaryTypeId: string | null
+  /** The plan types `canReadPublishedCourse` checks — the contact's
+   *  `held_plan_type_ids` mirror, which the checkout compares against before
+   *  refusing an already-entitled buyer. */
+  rulesHeldTypeIds: string[]
   /** The buyer's contact document, already read for the snapshot. Returned so the
    *  promo AUDIENCE gate costs no second read — and so the checkout has no reason
    *  to fetch it itself, which is how the two assemblies drifted apart before. */
@@ -83,7 +83,7 @@ export async function loadCoursePricing(params: {
       course,
       target,
       snapshot: GUEST_SNAPSHOT,
-      primaryTypeId: null,
+      rulesHeldTypeIds: [],
       contact: null,
       listMajor,
     }
@@ -119,7 +119,11 @@ export async function loadCoursePricing(params: {
     course,
     target,
     snapshot: { ...base, ownsCourse: purchaseSnap.exists },
-    primaryTypeId: (contact?.subscription_type_id as string | undefined) ?? null,
+    rulesHeldTypeIds: Array.isArray(contact?.held_plan_type_ids)
+      ? (contact!.held_plan_type_ids as unknown[]).filter(
+          (id): id is string => typeof id === 'string'
+        )
+      : [],
     contact,
     listMajor,
   }

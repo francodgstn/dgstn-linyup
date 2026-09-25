@@ -1040,19 +1040,18 @@ export const createCourseCheckout = onCall({ enforceAppCheck: APP_CHECK_ENFORCE 
   }
   const payOption = priced.options[0]
   // Refuse selling only when the buyer's access is GRANTABLE BY THE RULES:
-  // owning the course, or coverage via their PRIMARY subscription type (the
-  // only one canReadPublishedCourse checks). A resolver-covered-but-not-
-  // rules-grantable state (e.g. coverage via a secondary held type) must fall
-  // through to a normal sale — refusing would deadlock the buyer between a
-  // checkout that says "you already have access" and rules that deny the read.
-  const primaryTypeId = pricing.primaryTypeId
+  // owning the course, or coverage via a plan type on the contact's
+  // `held_plan_type_ids` mirror (what canReadPublishedCourse checks). The
+  // resolver compares plan dates live and the mirror is refreshed daily, so on
+  // the day a plan starts the two can briefly disagree — such a buyer falls
+  // through to a normal sale rather than being deadlocked between a checkout
+  // that says "you already have access" and rules that deny the read.
+  const rulesHeldTypeIds = new Set(pricing.rulesHeldTypeIds)
   if (payOption?.type !== 'pay') {
     const via = payOption?.type === 'covered' ? payOption.via : null
+    const viaTypeId = via && 'subscriptionTypeId' in via ? via.subscriptionTypeId : null
     const rulesGrantable =
-      via !== null &&
-      (via.reason === 'owned' ||
-        (('subscriptionTypeId' in via ? via.subscriptionTypeId : null) === primaryTypeId &&
-          primaryTypeId !== null))
+      via !== null && (via.reason === 'owned' || (viaTypeId !== null && rulesHeldTypeIds.has(viaTypeId)))
     if (rulesGrantable) {
       throw new HttpsError('failed-precondition', 'You already have access to this course', {
         reason: 'covered',

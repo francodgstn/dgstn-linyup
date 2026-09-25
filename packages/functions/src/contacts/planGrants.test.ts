@@ -12,13 +12,11 @@ import {
   type PaymentPlanGrantInput,
   type PlanGrantPlan,
 } from './planGrants'
-import { clearedSlotFields, shouldClearSlot, slotFieldsForStaffPlan } from './planCallables'
 
 // Plan grants — the ONE writer of contacts/{c}/plan_grants
 // (docs/multi-plan-holdings.md, phase 2). What is pinned here: a payment's grant
 // is keyed by the payment and converges however often it is applied; an ended
-// grant is never revived; the staff bridge writes the slot whole and clears it
-// only when nothing open still holds its plan.
+// grant is never revived; a legacy slot still on old data imports as one row.
 
 // Minimal Firestore double: get/create/set by full path off a seed map.
 function mockDb(seed: Record<string, Record<string, unknown>>) {
@@ -140,41 +138,6 @@ describe('plan grants — open or not', () => {
     assert.equal(doc.expires_at, null)
     assert.equal(doc.created_by, 'uid1')
     assert.equal(doc.source, 'staff')
-  })
-})
-
-describe('plan grants — the staff bridge to the legacy slot', () => {
-  it('writes the slot whole, with no payment ref and no last payment', () => {
-    const fields = slotFieldsForStaffPlan({ ...PLAN, priceId: null, amountMajor: null, recurrence: null })
-    for (const key of [
-      'subscription_type_id',
-      'subscription_type_name',
-      'subscription_price_id',
-      'subscription_recurrence',
-      'subscription_amount',
-      'subscription_source_ref',
-      'subscription_expires_at',
-    ]) {
-      assert.ok(key in fields, `${key} is written, null included`)
-    }
-    assert.equal(fields.subscription_source_ref, null)
-    assert.equal('last_payment_at' in fields, false)
-  })
-
-  it('clearing nulls every slot field', () => {
-    const fields = clearedSlotFields()
-    assert.equal(fields.subscription_type_id, null)
-    assert.equal(fields.subscription_expires_at, null)
-    assert.equal(fields.subscription_source_ref, null)
-  })
-
-  it('ending every current plan clears the slot; ending one clears it only when nothing open still holds that plan', () => {
-    const base = { slotTypeId: 'st1', endedTypeIds: ['st1'], openTypeIdsAfter: [] as string[] }
-    assert.equal(shouldClearSlot({ ...base, allCurrent: true, endedTypeIds: [] }), true)
-    assert.equal(shouldClearSlot({ ...base, allCurrent: false }), true)
-    assert.equal(shouldClearSlot({ ...base, allCurrent: false, openTypeIdsAfter: ['st1'] }), false)
-    assert.equal(shouldClearSlot({ ...base, allCurrent: false, endedTypeIds: ['st2'] }), false)
-    assert.equal(shouldClearSlot({ ...base, allCurrent: true, slotTypeId: null }), false)
   })
 })
 

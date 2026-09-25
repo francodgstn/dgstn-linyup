@@ -10,6 +10,7 @@ import {
   isSubscriptionHistoryRowOpen,
 } from '@linyup/shared'
 import type {
+  HeldPlan,
   HeldPlanSnapshot,
   SubscriptionHistoryRow,
   ContactSubscriptionFields,
@@ -38,17 +39,54 @@ function row(partial: Partial<SubscriptionHistoryRow> & { id: string }): Subscri
   }
 }
 
-describe('resolveHeldPlans — union cases', () => {
-  it('scalar-only contact', () => {
+function entry(typeId: string, over: Partial<HeldPlan> = {}): HeldPlan {
+  return {
+    subscription_type_id: typeId,
+    subscription_type_name: null,
+    source: 'grant',
+    status: 'active',
+    starts_at_ms: 1,
+    ends_at_ms: null,
+    price_id: null,
+    amount: null,
+    recurrence: null,
+    ref: `ref-${typeId}`,
+    ...over,
+  }
+}
+
+describe('resolveHeldPlans — the stored plan list', () => {
+  it('a staff or bought grant, with its own price', () => {
     const contact: ContactSubscriptionFields = {
+      held_plans: [
+        entry('sub-a', { subscription_type_name: 'Unlimited', recurrence: 'monthly', price_id: 'price-1', amount: 89 }),
+      ],
+    }
+    assert.deepEqual(resolveHeldPlans(contact).get('sub-a'), {
       subscription_type_id: 'sub-a',
       subscription_type_name: 'Unlimited',
-      subscription_recurrence: 'monthly',
+      recurrence: 'monthly',
       subscription_price_id: 'price-1',
-      subscription_amount: 89,
+      amount: 89,
+    })
+  })
+
+  it('a Stripe subscription — no price id (it tracks what is charged)', () => {
+    const contact: ContactSubscriptionFields = {
+      held_plans: [entry('sub-b', { source: 'stripe', subscription_type_name: 'Kids', recurrence: 'monthly', amount: 45 })],
+    }
+    assert.equal(resolveHeldPlans(contact).get('sub-b')!.subscription_price_id, null)
+  })
+
+  it('two entries of one type make one period, each field from the first entry that has it', () => {
+    const contact: ContactSubscriptionFields = {
+      held_plans: [
+        entry('sub-a', { price_id: 'price-1' }),
+        entry('sub-a', { source: 'stripe', subscription_type_name: 'Unlimited', recurrence: 'monthly', amount: 89 }),
+      ],
     }
     const m = resolveHeldPlans(contact)
-    assert.deepEqual([...m.keys()], ['sub-a'])
+    assert.equal(m.size, 1)
     assert.deepEqual(m.get('sub-a'), {
       subscription_type_id: 'sub-a',
       subscription_type_name: 'Unlimited',
@@ -58,65 +96,40 @@ describe('resolveHeldPlans — union cases', () => {
     })
   })
 
-  it('array-only contact — no price id (the array side never carries one)', () => {
-    const contact: ContactSubscriptionFields = {
-      active_subscriptions: [
-        { subscription_type_id: 'sub-b', subscription_type_name: 'Kids', recurrence: 'monthly', amount: 45 },
-      ],
-    }
-    const m = resolveHeldPlans(contact)
-    assert.deepEqual(m.get('sub-b'), {
-      subscription_type_id: 'sub-b',
-      subscription_type_name: 'Kids',
-      recurrence: 'monthly',
-      subscription_price_id: null,
-      amount: 45,
-    })
-  })
-
-  it('same type on both sides — scalar wins subscription_price_id', () => {
-    const contact: ContactSubscriptionFields = {
-      subscription_type_id: 'sub-a',
-      subscription_price_id: 'price-1',
-      active_subscriptions: [{ subscription_type_id: 'sub-a', subscription_type_name: 'Unlimited', recurrence: 'monthly', amount: 89 }],
-    }
-    const m = resolveHeldPlans(contact)
-    const snap = m.get('sub-a')!
-    assert.equal(snap.subscription_price_id, 'price-1')
-    // scalar carried no name/recurrence/amount — falls back to the array side
-    assert.equal(snap.subscription_type_name, 'Unlimited')
-    assert.equal(snap.recurrence, 'monthly')
-    assert.equal(snap.amount, 89)
-  })
-
-  it('different types on each side — both held (a UNION, not one winner)', () => {
-    const contact: ContactSubscriptionFields = {
-      subscription_type_id: 'sub-a',
-      active_subscriptions: [{ subscription_type_id: 'sub-b', subscription_type_name: 'Kids', recurrence: null, amount: 45 }],
-    }
-    const m = resolveHeldPlans(contact)
+  it('different types — every one held (a set, not one winner)', () => {
+    const m = resolveHeldPlans({ held_plans: [entry('sub-a'), entry('sub-b', { source: 'stripe' })] })
     assert.deepEqual(new Set(m.keys()), new Set(['sub-a', 'sub-b']))
   })
 
-  it('array entries with no subscription_type_id are skipped', () => {
-    const contact: ContactSubscriptionFields = {
-      active_subscriptions: [{ subscription_type_id: '', subscription_type_name: 'orphan', recurrence: null, amount: 0 }],
-    }
-    const m = resolveHeldPlans(contact)
+  it('credit packs are not periods of membership', () => {
+    const m = resolveHeldPlans({ held_plans: [entry('pack', { source: 'credits', credits_remaining: 4 })] })
     assert.equal(m.size, 0)
   })
 
-  it('amount stays MAJOR units on both sides — never sourced as Rappen', () => {
-    // Contact.subscription_amount and ActiveSubscriptionSummary.amount are both
-    // already-divided major-unit snapshots (rollupMemberSubscriptions divides
-    // Rappen by 100 before it ever reaches active_subscriptions) — a regression
-    // here would silently write a number 100x too large into history.
-    const scalarOnly = resolveHeldPlans({ subscription_type_id: 'a', subscription_amount: 89 })
-    assert.equal(scalarOnly.get('a')!.amount, 89)
-    const arrayOnly = resolveHeldPlans({
-      active_subscriptions: [{ subscription_type_id: 'b', subscription_type_name: null, recurrence: null, amount: 45 }],
-    })
-    assert.equal(arrayOnly.get('b')!.amount, 45)
+  it('entries with no subscription_type_id are skipped', () => {
+    assert.equal(resolveHeldPlans({ held_plans: [entry('')] }).size, 0)
+  })
+
+  // The list is read as stored: the daily refresh that drops a lapsed grant is
+  // the write that closes its row, so the reader must not re-filter by clock.
+  it('reads the list as stored — an entry is held until the mirror drops it', () => {
+    const m = resolveHeldPlans({ held_plans: [entry('sub-a', { ends_at_ms: 1 })] })
+    assert.deepEqual([...m.keys()], ['sub-a'])
+  })
+
+  it('the retired single plan slot and active_subscriptions are not read', () => {
+    const legacy = {
+      subscription_type_id: 'sub-a',
+      active_subscriptions: [{ subscription_type_id: 'sub-b' }],
+    } as unknown as ContactSubscriptionFields
+    assert.equal(resolveHeldPlans(legacy).size, 0)
+  })
+
+  it('amount stays MAJOR units — never sourced as Rappen', () => {
+    // buildHeldPlans divides a Stripe amount by 100 before it reaches the list;
+    // a regression here would silently write a number 100x too large into history.
+    const m = resolveHeldPlans({ held_plans: [entry('b', { source: 'stripe', amount: 45 })] })
+    assert.equal(m.get('b')!.amount, 45)
   })
 
   it('null/undefined contact returns an empty map', () => {
