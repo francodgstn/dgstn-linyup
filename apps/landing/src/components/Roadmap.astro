@@ -36,6 +36,14 @@ const sections = [
   { key: 'inProgress', icon: 'hammer', cards: roadmap.sections.inProgress as Card[] },
   { key: 'next', icon: 'compass', cards: roadmap.sections.next as Card[] },
 ].filter((s) => s.cards.length > 0);
+
+// Everything that landed before the newest few. These cards have usually been
+// archived off the board, which is why the export accumulates them rather than
+// reading them back — see scripts/roadmap-export.mjs. Folded away because the
+// page answers "what can I use today" first, but never dropped: a studio
+// looking for a feature it was told about should find it here.
+const archived = (roadmap.landedArchive ?? []) as Card[];
+const moreLabel = t('roadmap.landedAll').replace('{count}', String(archived.length));
 ---
 
 <section class="roadmap">
@@ -62,6 +70,23 @@ const sections = [
               </li>
             ))}
           </ul>
+          {s.key === 'landed' && archived.length > 0 && (
+            <details class="rm-more">
+              <summary>
+                <i data-lucide="chevron-down" />
+                {moreLabel}
+              </summary>
+              <ul class="rm-grid">
+                {archived.map((c) => (
+                  <li class="rm-card">
+                    {c.area && <span class="rm-area">{areaLabel(c.area)}</span>}
+                    <h3>{text(c).title}</h3>
+                    <p>{text(c).body}</p>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       ))
     }
@@ -134,6 +159,35 @@ const sections = [
     margin: 0 0 6px;
   }
   .rm-card p { font-size: 14.5px; line-height: 1.55; color: var(--muted-foreground); margin: 0; }
+
+  /* Native <details>: keyboard and screen-reader correct with no JavaScript,
+     which matters on a static page. The marker is replaced by a chevron that
+     turns when it opens. */
+  .rm-more { margin-top: 18px; }
+  .rm-more > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    list-style: none;
+    padding: 6px 2px;
+    border-radius: var(--radius-md);
+  }
+  .rm-more > summary::-webkit-details-marker { display: none; }
+  .rm-more > summary::marker { content: ''; }
+  .rm-more > summary:hover { color: var(--foreground); }
+  .rm-more > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  .rm-more > summary :global(svg) {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.15s ease;
+  }
+  .rm-more[open] > summary :global(svg) { transform: rotate(180deg); }
+  .rm-more[open] > summary { margin-bottom: 18px; }
 
   .rm-note {
     max-width: 62ch;

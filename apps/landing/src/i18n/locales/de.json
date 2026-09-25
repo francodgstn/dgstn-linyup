@@ -525,6 +525,7 @@
     "inProgress": "In Arbeit",
     "next": "Als Nächstes",
     "landed": "Neu erschienen",
+    "landedAll": "Alles Weitere, das schon verfügbar ist ({count})",
     "disclaimer": "Bewusst ohne Daten: Pläne ändern sich, während wir von Studios lernen – und wir liefern lieber richtig als nach Termin.",
     "askTitle": "Fehlt dir etwas?",
     "askBody": "Sag uns, was dein Studio braucht. Das meiste auf dieser Seite begann als Wunsch eines Studios.",
