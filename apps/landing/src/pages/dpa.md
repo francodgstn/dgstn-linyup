@@ -48,7 +48,7 @@ and the staff you invite.
   on its systematic use; **you are responsible for the lawful basis for
   collecting it** and for informing your contacts. We hold it only in a record
   readable by your managers and owners, print it only on the receipts you issue,
-  and delete it when a contact is anonymised; issued receipts and invoices are
+  and delete it when a contact is anonymized; issued receipts and invoices are
   kept as your accounting records;
 - **any additional fields you choose to define.** Linyup lets you create custom
   fields, so the categories above cannot be exhaustive. You decide what goes in
@@ -64,8 +64,8 @@ We will:
   you before doing so, unless the law forbids that. Your instructions include
   your use of the service's features: using a feature is an instruction to
   process the data that feature needs;
-- ensure people authorised to process it are bound by confidentiality;
-- take appropriate technical and organisational security measures (§6);
+- ensure people authorized to process it are bound by confidentiality;
+- take appropriate technical and organizational security measures (§6);
 - respect the sub-processor conditions in §5;
 - help you, so far as we reasonably can, to respond to data-subject requests and
   to meet your obligations on security, breach notification and impact
@@ -81,7 +81,7 @@ If we believe an instruction breaches data-protection law, we will tell you.
 
 ## 5. Sub-processors
 
-You give general authorisation for us to engage the sub-processors below. We
+You give general authorization for us to engage the sub-processors below. We
 impose on each of them, by contract, data-protection obligations materially the
 same as those in this agreement, and **we remain fully responsible to you for
 their performance**.
@@ -109,7 +109,7 @@ each studio account.
 ## 7. International transfers
 
 Application data is processed in Switzerland. Where a sub-processor processes
-data outside Switzerland or the EEA, that transfer is covered by recognised
+data outside Switzerland or the EEA, that transfer is covered by recognized
 safeguards — the EU and Swiss Standard Contractual Clauses and, where applicable,
 an adequacy mechanism such as the EU–U.S. / Swiss–U.S. Data Privacy Framework.
 
@@ -117,7 +117,7 @@ an adequacy mechanism such as the EU–U.S. / Swiss–U.S. Data Privacy Framewor
 
 You can delete individual contacts at any time from within the application; a
 contact deletion request starts a **30-day** window, after which the record is
-anonymised.
+anonymized.
 
 Deleting your studio starts a **30-day** reversible window, after which the
 studio and its data are permanently removed.

@@ -14,11 +14,11 @@ These terms are between **Franco D'Agostino, trading as "D'Agostino Production"*
 the business that creates an account — "you", "the Customer".
 
 Linyup is offered to **businesses only** (coaches, studios, clubs and similar
-organisations). It is not a consumer service, and Swiss consumer-protection rules
+organizations). It is not a consumer service, and Swiss consumer-protection rules
 do not apply to it.
 
 **The agreement takes effect when your studio is created.** By creating a studio
-you confirm that you are acting for a business and are authorised to bind it, and
+you confirm that you are acting for a business and are authorized to bind it, and
 you accept these terms and the [Data Processing Agreement](/dpa), which forms
 part of them. The version in force at that moment is the one that applies, and it
 is recorded against your studio with the date.
@@ -87,7 +87,7 @@ agreement with them. If we change these rates we will give you notice under
 
 Subscription fees, billing period and any trial are as shown when you subscribe.
 Fees are exclusive of VAT and other taxes unless stated. Unless stated otherwise,
-subscriptions renew automatically for successive periods until cancelled.
+subscriptions renew automatically for successive periods until canceled.
 
 You may cancel at any time; cancellation takes effect at the end of the current
 billing period and we do not refund the remainder of a period already paid,
