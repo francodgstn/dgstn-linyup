@@ -177,18 +177,17 @@ async function importOne(
   } else if (contact.archived_at || contact.deleted_at) {
     stats.skippedGone++
   } else {
-    // Asked of the plan list built from the real stores, NOT of the contact's
-    // `active_subscriptions`: the HMD migration before phase 5 wrote a synthetic
-    // row there for every imported plan (no Stripe subscription behind it), and
-    // reading those as Stripe's skipped exactly the plans the import exists for.
-    const held = await recomputeHeldPlans(doc.id, { apply: false, db })
-    const heldTypes = new Set(held.mirror?.held_plan_type_ids ?? [])
-    if (heldTypes.has(grant.subscription_type_id as string)) {
-      stats.skippedAlreadyHeld++
+    const ref = planGrantsCollection(db, doc.id).doc(IMPORTED_SLOT_GRANT_ID)
+    if ((await ref.get()).exists) {
+      stats.grantAlreadyThere++
     } else {
-      const ref = planGrantsCollection(db, doc.id).doc(IMPORTED_SLOT_GRANT_ID)
-      if ((await ref.get()).exists) {
-        stats.grantAlreadyThere++
+      // Asked of the plan list built from the real stores, NOT of the contact's
+      // `active_subscriptions`: the HMD migration before phase 5 wrote a synthetic
+      // row there for every imported plan (no Stripe subscription behind it), and
+      // reading those as Stripe's skipped exactly the plans the import exists for.
+      const held = await recomputeHeldPlans(doc.id, { apply: false, db })
+      if ((held.mirror?.held_plan_type_ids ?? []).includes(grant.subscription_type_id as string)) {
+        stats.skippedAlreadyHeld++
       } else {
         stats.grantsCreated++
         if (apply) await ref.create(grant)
