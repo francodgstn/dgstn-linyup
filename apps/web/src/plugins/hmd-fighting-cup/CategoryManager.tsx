@@ -60,7 +60,7 @@ function CategoryFormDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{initial ? 'Edit category' : 'New category'}</DialogTitle>
         </DialogHeader>

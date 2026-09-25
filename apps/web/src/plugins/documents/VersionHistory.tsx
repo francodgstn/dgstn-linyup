@@ -72,7 +72,7 @@ export function VersionHistory({ documentId }: { documentId: string }) {
       )}
 
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {viewing ? t('versionN', { version: viewing.version }) : ''} — {viewing?.title}

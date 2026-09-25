@@ -157,7 +157,7 @@ function EventTypeFormDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{initial ? t('form.editTitle') : t('form.newTitle')}</DialogTitle>
         </DialogHeader>

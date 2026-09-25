@@ -86,7 +86,7 @@ function GroupFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-1">
           <div className="space-y-1">
@@ -202,7 +202,7 @@ function AddMembersDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{t('addMembersTitle', { name: group.name })}</DialogTitle></DialogHeader>
         <SearchInput
           value={search}
@@ -717,7 +717,7 @@ export default function ContactGroupsPage() {
 
       {/* Delete confirm */}
       <Dialog open={!!confirmDelete} onOpenChange={(v) => { if (!v) setConfirmDelete(null) }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>{t('deleteGroupTitle')}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             {t('deleteGroupDesc', { name: confirmDelete?.name ?? '' })}

@@ -926,7 +926,7 @@ export function AppointmentDetail({ slot, onClose, onCancelled }: {
   return (
     <>
       <Dialog open={!!slot} onOpenChange={(v) => { if (!v) { onClose(); setBookings(null) } }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           {slot && (<>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 flex-wrap">

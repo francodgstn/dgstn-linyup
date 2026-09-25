@@ -2924,7 +2924,7 @@ function GrantCreditsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t('grantCredits')}</DialogTitle>
         </DialogHeader>
@@ -3185,7 +3185,7 @@ function SetSubscriptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t('addSubscription')}</DialogTitle>
         </DialogHeader>
@@ -3634,7 +3634,7 @@ function ActivityDetailDialog({
         if (!open) onClose()
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className={`h-9 w-9 rounded-lg ${bg} flex items-center justify-center shrink-0`}>
@@ -3943,7 +3943,7 @@ function AlertDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t('addAlert')}</DialogTitle>
         </DialogHeader>
@@ -4054,7 +4054,7 @@ function AlertPresetPicker({
   return (
     <>
       <Dialog open={open && !dateStep} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('applyPresetTitle')}</DialogTitle>
           </DialogHeader>
@@ -4091,7 +4091,7 @@ function AlertPresetPicker({
           setPickedDate(undefined)
         }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('selectDateForPreset', { name: dateStep?.name ?? '' })}</DialogTitle>
           </DialogHeader>
@@ -4159,7 +4159,7 @@ function AlertDismissDialog({
 
   return (
     <Dialog open={!!alert} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>
             {dismissed ? t('alertDeleteConfirm') : t('alertDismissTitle')}
@@ -4724,7 +4724,7 @@ function ArchivedContactView({
 
       {/* Delete confirmation */}
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('deleteContactTitle')}</DialogTitle>
           </DialogHeader>
@@ -5179,7 +5179,7 @@ function UpsertAffiliationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{existing ? t('editTitle') : t('addTitle')}</DialogTitle>
         </DialogHeader>

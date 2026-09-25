@@ -920,7 +920,7 @@ function PresetDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{editing ? t('editAlertPreset') : t('addAlertPreset')}</DialogTitle>
         </DialogHeader>
@@ -1109,7 +1109,7 @@ function AlertPresetsTab({ teamId, canEdit }: { teamId: string; canEdit: boolean
       />
 
       <Dialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('deletePreset')}</DialogTitle>
           </DialogHeader>
@@ -1307,7 +1307,7 @@ function RankSystemDialog({
   return (
     <>
       <Dialog open={open && !presetOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{isEdit ? t('editRankingSystem') : t('addRankingSystem')}</DialogTitle>
           </DialogHeader>
@@ -1461,7 +1461,7 @@ function RankSystemDialog({
 
       {/* Preset picker */}
       <Dialog open={presetOpen} onOpenChange={setPresetOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('rankingPresetsTitle')}</DialogTitle>
           </DialogHeader>
@@ -1729,7 +1729,7 @@ function RankingTab({
           if (!v) closeDelete()
         }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('deleteRankingSystem')}</DialogTitle>
           </DialogHeader>

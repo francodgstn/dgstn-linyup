@@ -90,7 +90,7 @@ function CustomFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? t('editCustomField') : t('addCustomField')}</DialogTitle>
         </DialogHeader>
@@ -399,7 +399,7 @@ export function CustomFieldsTab({ teamId, team }: { teamId: string; team: Team }
       />
 
       <Dialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t('deleteCustomField')}</DialogTitle>
           </DialogHeader>

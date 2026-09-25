@@ -93,7 +93,7 @@ export function PublishDialog({ open, onClose, document, onPublish }: PublishDia
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-baseline justify-between gap-3">
             <span className="truncate">{t('publishTitle', { title: document.title })}</span>
