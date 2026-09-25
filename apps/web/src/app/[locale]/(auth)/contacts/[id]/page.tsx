@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import { useBack } from '@/hooks/useBackNavigation'
 import { useTabParam } from '@/hooks/useTabParam'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
 import {
   doc,
   getDoc,
@@ -34,7 +35,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { RankBadge } from '@/components/ranking/RankBadge'
 import { useCapabilities } from '@/hooks/useCapabilities'
 import { Badge } from '@/components/ui/badge'
-import { FloatingSlot } from '@/components/layout/FloatingDock'
+import { SaveBarProvider, useSaveBarSection } from '@/components/forms/SaveBar'
+import { HintTip } from '@/components/settings/SettingsSection'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -106,6 +108,8 @@ import {
   rankLevelKey,
 } from '@linyup/shared'
 import type {
+  DateLike,
+  RegionalFormatter,
   Contact,
   ActiveSubscriptionSummary,
   AcquisitionStage,
@@ -212,7 +216,7 @@ import {
 } from '@/components/ui/tooltip'
 
 import { GoalsTab } from './GoalsTab'
-import { NotesTab, useContactNotesCount, useContactNotes, noteColorClasses, type ContactNote } from './NotesTab'
+import { NotesTab, useContactNotesCount } from './NotesTab'
 import { PaymentsTab } from './PaymentsTab'
 import { useContactPayments } from '@/hooks/useConnect'
 import {
@@ -266,11 +270,14 @@ import { callFunction } from '@/lib/callFunction'
 
 
 
-function formatDate(ts: { toDate(): Date } | null | undefined, opts?: Intl.DateTimeFormatOptions) {
+/** The page's date: "20 Jul 2026", in the studio's language, order and zone
+ *  (`useTeamFormat`). It was `toLocaleDateString([])`, the BROWSER's locale,
+ *  so a 24-hour studio read "08:00 AM" on a laptop set to English (US). */
+const DATE_OPTS: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
+
+function formatDate(fmt: RegionalFormatter, ts: DateLike, opts?: Intl.DateTimeFormatOptions) {
   if (!ts) return '—'
-  return ts
-    .toDate()
-    .toLocaleDateString([], opts ?? { day: '2-digit', month: 'short', year: 'numeric' })
+  return fmt.custom(ts, opts ?? DATE_OPTS) || '—'
 }
 
 function tsToDate(ts: unknown): Date | undefined {
@@ -737,21 +744,27 @@ function useOrgAffiliationStatuses(orgId?: string | null) {
 function Field({
   label,
   required,
+  hint,
   children,
   error,
   className,
 }: {
   label: string
   required?: boolean
+  /** Behind an ⓘ beside the label, not a grey line under the control. */
+  hint?: React.ReactNode
   children: React.ReactNode
   error?: string
   className?: string
 }) {
   return (
     <div className={`space-y-1 ${className ?? ''}`}>
-      <label className="text-sm font-medium">
-        {label}
-        {required && <span className="text-destructive ml-1">*</span>}
+      <label className="flex items-center gap-1.5 text-sm font-medium">
+        <span>
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </span>
+        {hint && <HintTip>{hint}</HintTip>}
       </label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -1126,6 +1139,7 @@ function livePlans(contact: Contact): ActiveSubscriptionSummary[] {
 /** One live plan as a chip: green while it bills, amber when it is past due
  *  or winding down (with the end date), muted while paused. */
 function PlanChip({ sub }: { sub: ActiveSubscriptionSummary }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const winding = sub.cancelling === true || !!sub.cancels_at_ms
   const tone =
@@ -1135,7 +1149,7 @@ function PlanChip({ sub }: { sub: ActiveSubscriptionSummary }) {
         ? 'bg-muted text-muted-foreground border-border'
         : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
   const ends = sub.cancels_at_ms
-    ? new Date(sub.cancels_at_ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    ? fmt.dayMonth(sub.cancels_at_ms)
     : null
   return (
     <Badge className={`gap-1 ${tone}`}>
@@ -1322,208 +1336,41 @@ function AlertsSheet({
   )
 }
 
-/**
- * Read-only preview of this contact's alerts, under the notes in the profile
- * column. Tapping anything opens the alerts sheet — same contract as
- * `NotesGlance`, deliberately, so the two halves of the column behave alike.
- */
-function AlertsGlance({
-  contact,
-  onOpen,
-}: {
-  contact: Contact
-  onOpen: () => void
-}) {
-  const t = useTranslations('Contacts')
-  const { data: alerts = [], isLoading } = useContactAlerts(contact.id)
-  const GLANCE_LIMIT = 4
-  const shown = alerts.slice(0, GLANCE_LIMIT)
-  const extra = alerts.length - shown.length
-
-  const fired = (alert: ContactAlert) =>
-    alertIsFired(alert, { totalSessions: contact.total_sessions })
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t('tabAlerts')}
-          </h3>
-          {alerts.length > 0 && (
-            <span className="text-xs text-muted-foreground">({alerts.length})</span>
-          )}
-        </div>
-        <Tip label={t('addAlert')}>
-          <button
-            type="button"
-            onClick={onOpen}
-            aria-label={t('addAlert')}
-            className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-   >
-            <Plus className="h-4 w-4" />
-          </button>
-        </Tip>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
-          ))}
-        </div>
-      ) : alerts.length === 0 ? (
-        <button
-          type="button"
-          onClick={onOpen}
-          className="flex w-full items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-        >
-          <Plus className="h-4 w-4" />
-          {t('addAlert')}
-        </button>
-      ) : (
-        <div className="space-y-2">
-          {shown.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={onOpen}
-              className={`block w-full rounded-lg border p-2.5 text-left transition-colors hover:border-border ${
-                fired(a) ? 'border-orange-300 bg-orange-50 dark:bg-orange-950/20' : ''
-              }`}
-            >
-              <p className="truncate text-sm">{a.message}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {fired(a) ? t('alertFired') : t('alertPending')}
-              </p>
-            </button>
-          ))}
-          {extra > 0 && (
-            <button
-              type="button"
-              onClick={onOpen}
-              className="w-full rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-            >
-              {t('alertsViewAll', { count: alerts.length })}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Read-only preview of the most recent notes, shown in the profile tab's empty
-// right column on large screens. Each card is truncated with a fade into the
-// card background; tapping anything opens the shared notes sheet to read/edit.
-function NotesGlance({ contact, onOpen }: { contact: Contact; onOpen: () => void }) {
-  const t = useTranslations('Contacts')
-  const { data: notes = [], isLoading } = useContactNotes(contact.id)
-  const GLANCE_LIMIT = 4
-  const shown = notes.slice(0, GLANCE_LIMIT)
-  const extra = notes.length - shown.length
-
-  const fmt = (n: ContactNote) =>
-    n.updated_at?.toDate().toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) ?? ''
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <StickyNote className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t('tabNotes')}
-          </h3>
-          {notes.length > 0 && (
-            <span className="text-xs text-muted-foreground">({notes.length})</span>
-          )}
-        </div>
-        <Tip label={t('notesAddNote')}>
-          <button
-            type="button"
-            onClick={onOpen}
-            aria-label={t('notesAddNote')}
-            className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-   >
-            <Plus className="h-4 w-4" />
-          </button>
-        </Tip>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
-          ))}
-        </div>
-      ) : notes.length === 0 ? (
-        <button
-          type="button"
-          onClick={onOpen}
-          className="flex w-full items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm text-muted-foreground hover:border-border hover:text-foreground transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          {t('notesAddNote')}
-        </button>
-      ) : (
-        <div className="space-y-2">
-          {shown.map((n) => (
-            <button
-              key={n.id}
-              type="button"
-              onClick={onOpen}
-              className={`group relative block w-full overflow-hidden rounded-lg border p-3 text-left transition-colors hover:border-border ${noteColorClasses(n.color).card}`}
-            >
-              <div className="mb-1 text-xs text-muted-foreground">{fmt(n)}</div>
-              <div
-                className="prose-notes max-h-24 overflow-hidden text-sm"
-                dangerouslySetInnerHTML={{ __html: n.content }}
-              />
-              {/* Fade the truncated content into the card background. Only on
-                  an UNCOLOURED card: the gradient is a `from-card` fade, so over
-                  a colour tag it would fade to the wrong colour — and a fade
-                  that ends in the wrong colour reads as a rendering bug. */}
-              {!n.color && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
-              )}
-            </button>
-          ))}
-          {extra > 0 && (
-            <button
-              type="button"
-              onClick={onOpen}
-              className="w-full rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground hover:border-border hover:text-foreground transition-colors"
-            >
-              {t('notesViewAll', { count: notes.length })}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── profile tab ──────────────────────────────────────────────────────────────
 
-/** Lets the floating Save submit this form from inside its FloatingSlot portal. */
-const PROFILE_FORM_ID = 'contact-profile-form'
+/**
+ * THE PROFILE SAVES THROUGH THE PAGE'S SAVE BAR, like every settings page: one
+ * "Unsaved changes · Discard · Save" pill that is there only while something
+ * is. It used to be a floating "Save changes" button of its own, a second
+ * vocabulary for the same act.
+ */
+function ProfileSaveBridge({
+  dirty,
+  valid,
+  save,
+  reset,
+}: {
+  dirty: boolean
+  valid: boolean
+  save: () => Promise<boolean>
+  reset: () => void
+}) {
+  useSaveBarSection('contact-profile', { dirty, valid, save, reset })
+  return null
+}
 
 function ProfileTab({
   contact,
   teamId,
   orgId,
   onSaved,
-  onOpenNotes,
-  onOpenAlerts,
 }: {
   contact: Contact
   teamId: string | null
   orgId?: string | null
   onSaved: () => void
-  onOpenNotes: () => void
-  onOpenAlerts: () => void
 }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
   const { team } = useAuth()
@@ -1538,7 +1385,9 @@ function ProfileTab({
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting, isDirty },
+    reset,
+    getValues,
+    formState: { errors, isDirty },
   } = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -1550,7 +1399,12 @@ function ProfileTab({
       gender: contact.gender,
       birthdate: tsToDate(contact.birthdate),
       birthplace: contact.birthplace ?? '',
-      weight: contact.weight,
+      // "" rather than undefined when unset: an empty number box reads back as
+      // "", so an undefined default made every contact without a weight look
+      // edited on load (and again after Discard), and the save bar came up
+      // before anyone had typed. The schema coerces it, and the write turns
+      // an empty one into null.
+      weight: (contact.weight ?? '') as unknown as number,
       address_route: contact.address?.route ?? '',
       address_street_number: contact.address?.street_number ?? '',
       address_postal_code: contact.address?.postal_code ?? '',
@@ -1617,12 +1471,46 @@ function ProfileTab({
       emergency_contacts: (values.emergency_contacts ?? []).filter((ec) => ec.name.trim() !== ''),
       updatedAt: serverTimestamp(),
     })
+    // What was saved is the new baseline, or the bar would stay up after a
+    // successful save (the defaults are read once, at mount). The RAW form
+    // values, not the parsed ones: parsing coerces an empty weight to 0, and
+    // the box would show "0" straight after saving.
+    reset(getValues())
     onSaved()
   }
 
+  async function saveFromBar(): Promise<boolean> {
+    let ok = false
+    try {
+      await handleSubmit(async (values) => {
+        await onSubmit(values)
+        ok = true
+      })()
+    } catch (err) {
+      console.error('[contact-profile] save failed:', err)
+      toast.error(tCommon('saveFailed'))
+    }
+    return ok
+  }
+
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-    <form id={PROFILE_FORM_ID} onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-24 lg:w-8/12 lg:shrink-0">
+    <SaveBarProvider>
+    <ProfileSaveBridge
+      dirty={isDirty}
+      valid={Object.keys(errors).length === 0}
+      save={saveFromBar}
+      reset={() => reset()}
+    />
+    {/* One column, capped: the Notes / Alerts column that sat beside it
+        repeated the header's Notes and Alerts tiles, which open the same
+        sheets from every tab. */}
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        void saveFromBar()
+      }}
+      className="max-w-4xl space-y-4 pb-24"
+    >
       {/* Single-column section blocks; fields flow into rows within each block on wider screens */}
       <div className="space-y-6">
         {/* Personal information */}
@@ -1732,8 +1620,14 @@ function ProfileTab({
         </FormBlock>
 
         {/* Passwordless-login allow-list — extra emails that may sign in as this contact */}
-        <FormBlock title={t('sectionLoginEmails')}>
-          <p className="-mt-1 mb-1 text-xs text-muted-foreground">{t('loginEmailsDesc')}</p>
+        <FormBlock
+          title={
+            <>
+              {t('sectionLoginEmails')}
+              <HintTip>{t('loginEmailsDesc')}</HintTip>
+            </>
+          }
+        >
           <div className="space-y-2">
             {leFields.map((field, index) => (
               <div key={field.id} className="space-y-1">
@@ -1813,11 +1707,6 @@ function ProfileTab({
                 <Plus className="h-4 w-4" />
                 {t('emergencyContactAdd')}
               </button>
-            )}
-            {ecFields.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-1">
-                {t('emergencyContactNone')}
-              </p>
             )}
           </div>
         </FormBlock>
@@ -1962,7 +1851,7 @@ function ProfileTab({
           {/* On the roster, or external — a lifecycle fact, so it sits with the
               journey. The card's "More actions" menu offers the same switch. */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
-            <div className="min-w-0 space-y-0.5">
+            <div className="flex min-w-0 items-center gap-1.5">
               <p className="text-sm">
                 <span className="text-muted-foreground">{t('rosterLabel')}: </span>
                 <span className="font-medium">
@@ -1971,13 +1860,11 @@ function ProfileTab({
                 {roster.isExternal && contact.external_since && (
                   <span className="text-muted-foreground">
                     {' '}
-                    · {t('externalSince')} {formatDate(contact.external_since)}
+                    · {t('externalSince')} {formatDate(fmt, contact.external_since)}
                   </span>
                 )}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {roster.isExternal ? t('externalHint') : t('rosterActiveHint')}
-              </p>
+              <HintTip>{roster.isExternal ? t('externalHint') : t('rosterActiveHint')}</HintTip>
             </div>
             {can('contacts.manage') && (
               <Button size="sm" variant="outline" onClick={roster.toggle} disabled={roster.busy}>
@@ -1997,7 +1884,7 @@ function ProfileTab({
             {/* Left — entry / source / source detail, stacked */}
             <div className="space-y-4">
               {/* Entry — editable correction, does NOT move stage */}
-              <Field label={t('fieldAcquisitionEntry')}>
+              <Field label={t('fieldAcquisitionEntry')} hint={t('fieldAcquisitionEntryHelp')}>
                 <Controller
                   control={control}
                   name="entry"
@@ -2019,7 +1906,6 @@ function ProfileTab({
                     </Select>
                   )}
                 />
-                <p className="text-xs text-muted-foreground">{t('fieldAcquisitionEntryHelp')}</p>
               </Field>
               {/* Source */}
               <Field label={t('fieldAcquisitionSource')}>
@@ -2061,7 +1947,10 @@ function ProfileTab({
           </div>
         </div>
 
-        {/* Custom Fields plugin — always the last card; upsell prompt when not installed */}
+        {/* Custom Fields plugin — the last card, and ONLY when installed. It
+            used to render an upsell card on every contact of every studio
+            without it; the plugin catalogue is where a plugin is found. */}
+        {isInstalled('custom-fields') && (
         <FormBlock title={t('sectionCustomFields')}>
           <Controller
             control={control}
@@ -2076,40 +1965,11 @@ function ProfileTab({
             )}
           />
         </FormBlock>
+        )}
       </div>
 
-      {/* Floating save — the page's primary action, so it owns the 'page-primary'
-          lane and nothing the shell mounts can be painted over it. Portalled out
-          of this <form>, hence `form={PROFILE_FORM_ID}` rather than a bare
-          type="submit". */}
-      {isDirty && (
-        <FloatingSlot lane="page-primary">
-          <button
-            type="submit"
-            form={PROFILE_FORM_ID}
-            disabled={isSubmitting}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {isSubmitting ? tCommon('loading') : t('saveChanges')}
-          </button>
-        </FloatingSlot>
-      )}
     </form>
-
-    {/* Notes and alerts — the two things a coach writes down about a person,
-        side by side in what used to be an empty column. On smaller screens both
-        live in the header sheets (this column is hidden).
-
-        A DIVIDER, NOT A SUB-TAB. A tab inside a narrow sticky column hides one
-        of the only two things the column exists to show. */}
-    <aside className="hidden lg:sticky lg:top-4 lg:block lg:flex-1 lg:min-w-0">
-      <div className="space-y-5">
-        <NotesGlance contact={contact} onOpen={onOpenNotes} />
-        <div className="h-px bg-border" />
-        <AlertsGlance contact={contact} onOpen={onOpenAlerts} />
-      </div>
-    </aside>
-    </div>
+    </SaveBarProvider>
   )
 }
 
@@ -2151,6 +2011,9 @@ function BookingsTab({ contact, teamId }: { contact: Contact; teamId: string | n
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ContactBookingStatusFilter>('all')
+  // null = not chosen yet: open on Upcoming when there is anything coming up,
+  // on Past otherwise, so a lapsed member does not open on an empty list.
+  const [timeTab, setTimeTab] = useState<'upcoming' | 'past' | null>(null)
   const [rebookTarget, setRebookTarget] = useState<Booking | null>(null)
 
   const { mutate: doAction } = useBookingAction(teamId)
@@ -2192,24 +2055,46 @@ function BookingsTab({ contact, teamId }: { contact: Contact; teamId: string | n
     })
   }, [bookings, sessions, search])
 
-  const counts: Record<ContactBookingStatusFilter, number> = {
-    all: searchFiltered.length,
-    pending: searchFiltered.filter((b) => (b.status ?? 'pending') === 'pending').length,
-    confirmed: searchFiltered.filter((b) => b.status === 'confirmed').length,
-    cancelled: searchFiltered.filter((b) => b.status === 'cancelled').length,
-    no_show: searchFiltered.filter((b) => b.status === 'no_show').length,
-    rebooked: searchFiltered.filter((b) => b.status === 'rebooked').length,
-  }
+  // UPCOMING / PAST, BY THE CLASS'S DATE (Franco, 2026-09-25). The rows came
+  // in the order they were BOOKED (the query's `joinedAt desc`), so a member
+  // who booked a block of classes in one go read "23 Sep, 5 Oct, 28 Sep, 25
+  // Sep, 27 Oct". The question asked here is "what is coming up, what have
+  // they done", which is the class date, split at now. A booking whose
+  // session is gone has no date and sorts with the past.
+  const startMs = useCallback(
+    (b: Booking) => {
+      const iso = b.session ? sessions[b.session]?.start : undefined
+      return iso ? new Date(iso).getTime() : null
+    },
+    [sessions]
+  )
+  const nowMs = useMemo(() => Date.now(), [])
+  const upcoming = useMemo(
+    () =>
+      searchFiltered
+        .filter((b) => (startMs(b) ?? -Infinity) >= nowMs)
+        .sort((a, b) => (startMs(a) ?? 0) - (startMs(b) ?? 0)),
+    [searchFiltered, startMs, nowMs]
+  )
+  const past = useMemo(
+    () =>
+      searchFiltered
+        .filter((b) => (startMs(b) ?? -Infinity) < nowMs)
+        .sort((a, b) => (startMs(b) ?? 0) - (startMs(a) ?? 0)),
+    [searchFiltered, startMs, nowMs]
+  )
+  const activeTime = timeTab ?? (upcoming.length > 0 ? 'upcoming' : 'past')
+  const inTime = activeTime === 'upcoming' ? upcoming : past
 
   const filtered = useMemo(
     () =>
       statusFilter === 'all'
-        ? searchFiltered
-        : searchFiltered.filter((b) => (b.status ?? 'pending') === statusFilter),
-    [searchFiltered, statusFilter]
+        ? inTime
+        : inTime.filter((b) => (b.status ?? 'pending') === statusFilter),
+    [inTime, statusFilter]
   )
 
-  const TABS: { key: ContactBookingStatusFilter; label: string }[] = [
+  const STATUS_OPTIONS: { key: ContactBookingStatusFilter; label: string }[] = [
     { key: 'all', label: tBookings('tabAll') },
     { key: 'pending', label: tBookings('statusPending') },
     { key: 'confirmed', label: tBookings('statusConfirmed') },
@@ -2237,41 +2122,59 @@ function BookingsTab({ contact, teamId }: { contact: Contact; teamId: string | n
         </p>
       )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-        <Input
-          placeholder={t('bookingsSearchPlaceholder')}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-
-      <div className="flex gap-1 border-b overflow-x-auto">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setStatusFilter(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-              statusFilter === key
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {label}
-            {counts[key] > 0 && (
-              <span
-                className={`text-xs rounded-full px-1.5 py-0.5 leading-none ${
-                  statusFilter === key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {counts[key]}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* ONE ROW of controls: when (the question), then which status and
+          which class (the narrowing). They were a search box and a strip of
+          five status tabs, two rows above a list that is usually short. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-fit gap-1 rounded-lg bg-muted p-1">
+          {(
+            [
+              { key: 'upcoming', label: tBookings('rangeGroup_upcoming'), count: upcoming.length },
+              { key: 'past', label: tBookings('rangeGroup_past'), count: past.length },
+            ] as const
+          ).map(({ key, label, count }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTimeTab(key)}
+              className={`flex h-7 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
+                activeTime === key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {label}
+              <span className="text-xs tabular-nums text-muted-foreground">{count}</span>
+            </button>
+          ))}
+        </div>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter((v || 'all') as ContactBookingStatusFilter)}
+        >
+          <SelectTrigger className="h-9 w-auto gap-2">
+            <span className="text-sm">
+              <span className="text-muted-foreground">{t('filterStatus')}: </span>
+              {STATUS_OPTIONS.find((o) => o.key === statusFilter)?.label}
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((o) => (
+              <SelectItem key={o.key} value={o.key}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="relative min-w-[12rem] flex-1 sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder={t('bookingsSearchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 pl-9"
+          />
+        </div>
       </div>
 
       <div className="rounded-xl border overflow-hidden bg-card">
@@ -2465,8 +2368,8 @@ function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string 
   const t = useTranslations('Contacts')
   const { data: subs = [] } = useContactMemberSubscriptions(teamId, contact.id)
   const { data: payments } = useContactPayments(teamId, contact.id)
-  const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  const teamFmt = useTeamFormat()
+  const fmt = (d: Date) => teamFmt.custom(d, DATE_OPTS)
 
   const next = subs
     .filter(
@@ -2532,6 +2435,7 @@ function CurrentFigures({ contact, teamId }: { contact: Contact; teamId: string 
  * only the history — moved, not copied, so each control still has one home.
  */
 function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const tPayments = useTranslations('PaymentsDashboard')
   const qc = useQueryClient()
@@ -2598,13 +2502,7 @@ function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | 
                         ? 'subscriptionExpiresOn'
                         : 'subscriptionExpired',
                       {
-                        date: contact.subscription_expires_at
-                          .toDate()
-                          .toLocaleDateString(undefined, {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          }),
+                        date: formatDate(fmt, contact.subscription_expires_at),
                       }
                     )}
                   </p>
@@ -2652,7 +2550,7 @@ function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | 
                   ·{' '}
                   {t('creditsRemaining', { count: entry.remaining })}
                   {entry.next_expires_at && (
-                    <> · {t('creditsExpiresOn', { date: formatDate(entry.next_expires_at) })}</>
+                    <> · {t('creditsExpiresOn', { date: formatDate(fmt, entry.next_expires_at) })}</>
                   )}
                 </span>
               </li>
@@ -2709,6 +2607,7 @@ function CurrentPlans({ contact, teamId }: { contact: Contact; teamId: string | 
  * deletable as a record.
  */
 function PlanHistorySegment({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  const fmt = useTeamFormat()
   // Styled confirmation — this delete had none at all before.
   const { confirm, confirmDialog } = useConfirm()
   const tCommon = useTranslations('Common')
@@ -2762,8 +2661,8 @@ function PlanHistorySegment({ contact, teamId }: { contact: Contact; teamId: str
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(entry.start_date)} –{' '}
-                    {entry.end_date ? formatDate(entry.end_date) : t('subscriptionEndNone')}
+                    {formatDate(fmt, entry.start_date)} –{' '}
+                    {entry.end_date ? formatDate(fmt, entry.end_date) : t('subscriptionEndNone')}
                   </p>
                   {entry.termination_reason && (
                     <p className="text-xs text-muted-foreground italic">
@@ -3544,24 +3443,25 @@ const EVENT_META: Record<ActivityEventType, EventMeta> = {
   performance_checkin: { Icon: BarChart2, bg: 'bg-indigo-500/10', fg: 'text-indigo-600' },
 }
 
-function formatActivityTimestamp(ts: { toDate(): Date } | null | undefined): string {
+function formatActivityTimestamp(
+  fmt: RegionalFormatter,
+  ts: { toDate(): Date } | null | undefined
+): string {
   if (!ts) return '—'
   const d = ts.toDate()
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
+  const diffMs = Date.now() - d.getTime()
   const diffHrs = diffMs / 3_600_000
-
-  if (diffHrs < 1) {
-    const mins = Math.max(1, Math.round(diffMs / 60_000))
-    return `${mins}m ago`
-  }
-  if (diffHrs < 24) return `${Math.round(diffHrs)}h ago`
-  if (diffHrs < 48)
-    return `Yesterday at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-  return d.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })
+  // Relative for the last two days, in the studio's language ("5 min ago",
+  // "vor 3 Std.", "hier") — these were English literals on every locale.
+  const rtf = new Intl.RelativeTimeFormat(fmt.locale, { numeric: 'auto', style: 'short' })
+  if (diffHrs < 1) return rtf.format(-Math.max(1, Math.round(diffMs / 60_000)), 'minute')
+  if (diffHrs < 24) return rtf.format(-Math.round(diffHrs), 'hour')
+  if (diffHrs < 48) return `${rtf.format(-1, 'day')} · ${fmt.time(d)}`
+  return fmt.custom(d, DATE_OPTS)
 }
 
 function dateDayLabel(
+  fmt: RegionalFormatter,
   ts: { toDate(): Date } | null | undefined,
   tCommon: (k: string) => string
 ): string {
@@ -3573,12 +3473,7 @@ function dateDayLabel(
   const diffDays = (today.getTime() - day.getTime()) / 86_400_000
   if (diffDays < 1) return tCommon('today')
   if (diffDays < 2) return tCommon('yesterday')
-  return d.toLocaleDateString([], {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return fmt.custom(d, { weekday: 'long', ...DATE_OPTS })
 }
 
 function formatEventType(event: ActivityEventType): string {
@@ -3592,6 +3487,7 @@ function ActivityDetailDialog({
   entry: ActivityLogEntry | null
   onClose: () => void
 }) {
+  const fmt = useTeamFormat()
   if (!entry) return null
 
   const meta = EVENT_META[entry.event] ?? {
@@ -3608,20 +3504,13 @@ function ActivityDetailDialog({
   const fullTimestamp = (() => {
     const ts = entry.created_at as { toDate(): Date } | null | undefined
     if (!ts) return '—'
-    return ts.toDate().toLocaleString([], {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
+    return fmt.custom(ts, { ...DATE_OPTS, hour: '2-digit', minute: '2-digit', second: '2-digit' })
   })()
 
   const formatValue = (v: unknown): string => {
     if (v === null || v === undefined) return '—'
     if (typeof v === 'object') {
-      if ('toDate' in (v as object)) return (v as { toDate(): Date }).toDate().toLocaleString()
+      if ('toDate' in (v as object)) return fmt.dateTime(v as { toDate(): Date })
       return JSON.stringify(v, null, 2)
     }
     return String(v)
@@ -3693,6 +3582,7 @@ function ActivityDetailDialog({
 }
 
 function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
   const [period, setPeriod] = useState<ActivityPeriodKey>('30d')
@@ -3717,7 +3607,7 @@ function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | n
   const groups: { label: string; items: ActivityLogEntry[] }[] = []
   let currentLabel = ''
   for (const entry of filtered) {
-    const label = dateDayLabel(entry.created_at as { toDate(): Date } | null | undefined, tCommon)
+    const label = dateDayLabel(fmt, entry.created_at as { toDate(): Date } | null | undefined, tCommon)
     if (label !== currentLabel) {
       groups.push({ label, items: [] })
       currentLabel = label
@@ -3813,6 +3703,7 @@ function ActivityTab({ contact, teamId }: { contact: Contact; teamId: string | n
                             <div className="flex flex-col items-end gap-0.5 shrink-0">
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
                                 {formatActivityTimestamp(
+                                  fmt,
                                   entry.created_at as { toDate(): Date } | null | undefined
                                 )}
                               </span>
@@ -4189,6 +4080,7 @@ function AlertDismissDialog({
 }
 
 function AlertsTab({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
   const qc = useQueryClient()
@@ -4319,13 +4211,7 @@ function AlertsTab({ contact, teamId }: { contact: Contact; teamId: string | nul
                       </span>
                     ) : alert.schedule_type === 'datetime' ? (
                       <span className="text-xs font-medium text-muted-foreground">
-                        {(alert.schedule_value as { toDate(): Date } | null)
-                          ?.toDate()
-                          .toLocaleDateString([], {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          }) ?? '—'}
+                        {formatDate(fmt, alert.schedule_value as { toDate(): Date } | null)}
                       </span>
                     ) : (
                       <span className="text-xs font-medium text-muted-foreground">
@@ -4391,11 +4277,11 @@ function AlertsTab({ contact, teamId }: { contact: Contact; teamId: string | nul
 // reminders about the contact) and outreach (email history + send). Replaces the
 // former alerts side-panel bell.
 
-function fmtEntryDate(v: unknown): string {
+function fmtEntryDate(fmt: RegionalFormatter, v: unknown): string {
   const d = v && typeof v === 'object' && 'toDate' in (v as object)
     ? (v as { toDate(): Date }).toDate()
     : null
-  return d ? d.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) : ''
+  return d ? fmt.custom(d, DATE_OPTS) : ''
 }
 
 function SendOutreachDialog({
@@ -4487,6 +4373,7 @@ function SendOutreachDialog({
 }
 
 function FollowUpsTab({ contact, teamId }: { contact: Contact; teamId: string | null }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const { can } = useCapabilities()
   const [composeOpen, setComposeOpen] = useState(false)
@@ -4525,7 +4412,7 @@ function FollowUpsTab({ contact, teamId }: { contact: Contact; teamId: string | 
                       {p.subject || p.template_name || t('outreachEmail')}
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {fmtEntryDate((e as { created_at?: unknown; date?: unknown }).created_at ?? (e as { date?: unknown }).date)}
+                      {fmtEntryDate(fmt, (e as { created_at?: unknown; date?: unknown }).created_at ?? (e as { date?: unknown }).date)}
                     </span>
                   </div>
                   {p.template_name && (
@@ -4557,6 +4444,7 @@ function ArchivedContactView({
   contact: Contact
   onAction: () => void
 }) {
+  const fmt = useTeamFormat()
   const t = useTranslations('Contacts')
   const tCommon = useTranslations('Common')
   const qc = useQueryClient()
@@ -4662,7 +4550,7 @@ function ArchivedContactView({
         <DetailRow label={t('fieldPhone')} value={contact.phone} />
 
         <SectionHeader>{t('sectionPersonalInfo')}</SectionHeader>
-        <DetailRow label={t('fieldBirthdate')} value={formatDate(contact.birthdate)} />
+        <DetailRow label={t('fieldBirthdate')} value={formatDate(fmt, contact.birthdate)} />
         <DetailRow label={t('fieldBirthplace')} value={contact.birthplace} />
         {(contact.weight ?? 0) > 0 && (
           <DetailRow label={t('fieldWeight')} value={`${contact.weight} kg`} />
@@ -4704,13 +4592,13 @@ function ArchivedContactView({
         <SectionHeader>{t('sectionStats')}</SectionHeader>
         <DetailRow label={t('statTotalSessions')} value={String(contact.total_sessions ?? 0)} />
         {contact.created_at && (
-          <DetailRow label={t('memberSince')} value={formatDate(contact.created_at)} />
+          <DetailRow label={t('memberSince')} value={formatDate(fmt, contact.created_at)} />
         )}
         {contact.external_since && (
-          <DetailRow label={t('externalSince')} value={formatDate(contact.external_since)} />
+          <DetailRow label={t('externalSince')} value={formatDate(fmt, contact.external_since)} />
         )}
         {contact.archived_at && (
-          <DetailRow label={t('archivedSince')} value={formatDate(contact.archived_at)} />
+          <DetailRow label={t('archivedSince')} value={formatDate(fmt, contact.archived_at)} />
         )}
       </div>
 
@@ -4815,6 +4703,7 @@ function AffiliationsTab({
   orgId?: string | null
   membershipFieldLocked?: boolean
 }) {
+  const fmt = useTeamFormat()
   // Styled confirmation, replacing nothing — this action had none.
   const { confirm, confirmDialog } = useConfirm()
   const tCommonAff = useTranslations('Common')
@@ -4874,11 +4763,7 @@ function AffiliationsTab({
       })
       invalidate()
       setRenewTarget(null)
-      const until = new Date(res.valid_until).toLocaleDateString([], {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
+      const until = fmt.custom(new Date(res.valid_until), DATE_OPTS)
       setToast(t('renewedToast', { date: until }))
       setTimeout(() => setToast(null), 3000)
     } finally {
@@ -4971,7 +4856,7 @@ function AffiliationsTab({
                   </div>
                   {(aff.valid_from || aff.valid_until) && (
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(aff.valid_from)} – {aff.valid_until ? formatDate(aff.valid_until) : t('ongoingLabel')}
+                      {formatDate(fmt, aff.valid_from)} – {aff.valid_until ? formatDate(fmt, aff.valid_until) : t('ongoingLabel')}
                     </p>
                   )}
                   {aff.reference && (
@@ -5069,11 +4954,7 @@ function AffiliationsTab({
         const currentUntil = renewTarget.valid_until ? tsToDate(renewTarget.valid_until) : null
         // The TYPE, not just its month count — a fixed-date type has no month count.
         const newUntil = previewRenewedUntil(currentUntil, typeDef)
-        const newUntilStr = newUntil.toLocaleDateString([], {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
+        const newUntilStr = fmt.custom(newUntil, DATE_OPTS)
         const label = typeDef?.label ?? renewTarget.label ?? renewTarget.type_key ?? ''
         return (
           <RenewConfirmDialog
@@ -5296,6 +5177,7 @@ const MEMBERSHIP_SEGMENTS = ['current', 'history', 'payments', 'receipts'] as co
 type MembershipSeg = (typeof MEMBERSHIP_SEGMENTS)[number]
 
 export default function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const fmt = useTeamFormat()
   const { id } = use(params)
   const { currentTeamId, team, isOrgAdmin } = useAuth()
   const { data: contact, isLoading } = useContact(id)
@@ -5550,33 +5432,30 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         {isHistoryBack ? tCommon('back') : t('title')}
       </button>
 
-      {/* Header — TWO cards. Left, the profile: who they are, in the shape a
-          profile is expected to take — a round picture overlapping the card's
-          top edge, the name under it, everything centred. Right, the insights
-          card: what the studio reads about them (InsightsCard.tsx). A third
-          and two thirds at `lg`, stacked below it. The grid carries top
-          padding so the avatar can sit above the card without touching the
-          back button. */}
-      <div className="grid gap-5 pt-12 lg:grid-cols-3 lg:items-stretch">
-        <div className="relative flex flex-col rounded-2xl border border-border/60 bg-card px-6 pb-6 pt-16 text-center shadow-xl shadow-black/[0.06] dark:shadow-black/40 lg:col-span-1">
-          {/* The card's only decoration: a tinted band along the top and a
-              soft glow behind the avatar. Both sit behind everything else
-              (the content blocks are positioned so they paint on top) and
-              take no clicks. */}
+      {/* Header — TWO cards. Left, the profile: who they are. Right, the
+          insights card: what the studio reads about them (InsightsCard.tsx).
+          COMPACT (Franco, 2026-09-25): it was a centred profile card with the
+          avatar overlapping its top edge, 600px tall, which put the tabs a
+          whole screen down on a phone and left the insights card half empty
+          beside it. Now the avatar sits BESIDE the name and the facts run as
+          one wrapping line, so the header is about a third of that and the
+          tabs are in view on arrival. Three fifths and two fifths at `lg`. */}
+      <div className="grid gap-4 lg:grid-cols-5 lg:items-stretch">
+        <div className="relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card p-5 shadow-sm lg:col-span-3">
+          {/* The card's only decoration: a soft glow behind the avatar. It
+              sits behind everything and takes no clicks. */}
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-2xl bg-gradient-to-b from-primary/10 to-transparent"
+            className="pointer-events-none absolute -left-8 -top-10 h-36 w-36 rounded-full bg-primary/20 blur-2xl"
             aria-hidden
           />
+          <div className="relative flex items-start gap-4">
           <div
-            className="pointer-events-none absolute left-1/2 -top-14 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/25 blur-2xl"
-            aria-hidden
-          />
-          <div
-            className="absolute left-1/2 -top-12 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-card"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-lg font-bold text-primary-foreground shadow-md shadow-primary/30 sm:h-16 sm:w-16 sm:text-xl"
             aria-hidden
           >
             {personInitials(contact)}
           </div>
+          <div className="min-w-0 flex-1 pr-8">
           {/* The rare actions — the ones that do not earn a tile: asking the
               person to update their details, the roster switch, archiving, and
               choosing the tiles themselves. */}
@@ -5618,13 +5497,13 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               </DropdownMenu>
             </div>
           )}
-          <div className="relative min-w-0">
+          <div className="min-w-0">
             <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">
               {contact.firstname} {contact.lastname}
             </h1>
           </div>
-          <div className="relative mt-4 flex-1 min-w-0">
-            <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-2 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               {/* A member has asked to close their own account. It sits with
                   the lifecycle badges because that is what it is — but ABOVE
                   the stage chips, because it outranks anything about chasing
@@ -5633,7 +5512,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               {contactDeletionState(contact, Date.now()) === 'scheduled' && (
                 <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
                   {t('deletionScheduledBadge', {
-                    date: formatDate(contact.deletion_scheduled_for) ?? '',
+                    date: formatDate(fmt, contact.deletion_scheduled_for) ?? '',
                   })}
                 </Badge>
               )}
@@ -5684,9 +5563,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 </>
               )}
             </div>
-            {/* The facts as a list: left-aligned inside a quiet panel so the
-                icons line up and a long email has room, centred as a block. */}
-            <div className="mt-4 flex flex-col gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-left">
+            {/* The facts as ONE wrapping line, no panel around them: each is
+                an icon and a few words, and a box made them a second card. */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {contact.email && (
                 <span className="group/email flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
                   <Mail className="h-3 w-3 shrink-0" />
@@ -5719,7 +5598,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <DoorOpen className="h-3 w-3 shrink-0" />
                   <span>
-                    {t('externalSince')} {formatDate(contact.external_since)}
+                    {t('externalSince')} {formatDate(fmt, contact.external_since)}
                   </span>
                 </span>
               )}
@@ -5727,7 +5606,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <CalendarDays className="h-3 w-3 shrink-0" />
                   <span>
-                    {t('joinedOn')} {formatDate(contact.created_at)}
+                    {t('joinedOn')} {formatDate(fmt, contact.created_at)}
                     {(() => {
                       const joined = tsToDate(contact.created_at)
                       if (!joined) return ''
@@ -5793,11 +5672,13 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <ContactGroupsChips contact={contact} onChanged={invalidate} />
             )}
           </div>
+          </div>
+          </div>
           {/* The quick actions: four tiles, chosen per browser from the
               "More actions" menu. Margin so they don't crowd the detail lines
               above them. */}
           {!contact.archived_at && !contact.deleted_at && (
-            <div className="mt-auto grid grid-cols-4 gap-1.5 pt-5">
+            <div className="relative mt-auto grid grid-cols-4 gap-1.5 pt-4 sm:max-w-md">
               {quickActions.map((qa) => {
                 const action = quickActionDefs[qa]
                 if (!action.available) return null
@@ -5865,9 +5746,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             }
 
             return (
-              // Extra room above the strip: the header cards are heavy, and
-              // the page's default rhythm put the tabs right under them.
-              <div className="mt-10 flex items-stretch gap-1 border-b">
+              <div className="mt-2 flex items-stretch gap-1 border-b">
                 <div className="flex flex-1 gap-1 overflow-x-auto overflow-y-hidden no-scrollbar">
                   {editingTabs ? (
                     <SortableList
@@ -5939,8 +5818,6 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 teamId={currentTeamId}
                 orgId={team?.org_id}
                 onSaved={invalidate}
-                onOpenNotes={() => setNotesOpen(true)}
-                onOpenAlerts={() => setAlertsOpen(true)}
               />
             )}
             {/* The operator's copy of this person's consent — every document the

@@ -46,7 +46,7 @@ import { PublicSurfaceLink } from '@/components/layout/PublicSurfaceLink'
 import { SESSIONS_COLLECTION } from '@linyup/shared'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-// `tsToDate`/`formatDate`/`formatTime`/`formatIso`/`initials`/`avatarColor`,
+// `tsToDate`, the row's date formatting, `initials`/`avatarColor`,
 // `STATUS_VARIANT` + `BookingStatus`, `BookingRow`, the booking-action hooks
 // and `RebookDialog` all now live in `@/components/bookings/` and
 // `@/hooks/useBookingActions` — shared with the per-contact Bookings tab.

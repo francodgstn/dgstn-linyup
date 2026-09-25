@@ -15,7 +15,8 @@
 import { useTranslations } from 'next-intl'
 import type { Route } from 'next'
 import { Link, useRouter } from '@/i18n/navigation'
-import type { Booking } from '@linyup/shared'
+import type { Booking, RegionalFormatter } from '@linyup/shared'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { personInitials } from '@linyup/shared'
 import { avatarColor } from '@/lib/colors'
 import { Badge } from '@/components/ui/badge'
@@ -51,26 +52,12 @@ export function tsToDate(ts: unknown): Date | null {
   return null
 }
 
-export function formatDate(ts: unknown): string {
-  const d = tsToDate(ts)
+/** "Mon, 28 Sep 2026 · 18:00" in the studio's language, date order, hour
+ *  cycle and zone. These were `toLocale*String([])`, the BROWSER's settings,
+ *  so a 24-hour studio read "06:00 PM" on a laptop set to English (US). */
+function formatDateTime(fmt: RegionalFormatter, d: Date | null): string {
   if (!d) return '—'
-  return d.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-export function formatTime(ts: unknown): string {
-  const d = tsToDate(ts)
-  if (!d) return ''
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-export function formatIso(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return (
-    d.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) +
-    ' · ' +
-    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  )
+  return `${fmt.custom(d, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${fmt.time(d)}`
 }
 
 // ─── status vocabulary ─────────────────────────────────────────────────────────
@@ -132,14 +119,19 @@ export function BookingRow({
   onRebook: (booking: Booking) => void
 }) {
   const t = useTranslations('Bookings')
+  const fmt = useTeamFormat()
   const router = useRouter()
   const status: BookingStatus = (booking.status as BookingStatus) ?? 'pending'
-  // `formatIso` already renders the day AND the start time. A second
-  // `formatTime` call sat here casting the ISO string to a Timestamp shape it
-  // never had, so it returned '' and printed nothing; spelled honestly it would
-  // print the time twice.
-  const sessionDate = sessionInfo?.start ? formatIso(sessionInfo.start) : null
+  const sessionDate = sessionInfo?.start ? formatDateTime(fmt, new Date(sessionInfo.start)) : null
+  const bookedOn = `${t('labelBookedOn')} ${formatDateTime(fmt, tsToDate(booking.joinedAt))}`
   const activityName = sessionInfo?.activityName
+  // THE QUIET ROW, on a contact's page (Franco, 2026-09-25). There every row is
+  // the same person and nearly every one is confirmed, so a badge per row said
+  // "confirmed" nine times and hid the one that was not. A status shows only
+  // when it is NOT the normal one; the booked-on date moves to the tooltip, so
+  // the class line needs no "Class:" label to say which date it is.
+  const quiet = !showContact
+  const showStatus = !(quiet && status === 'confirmed')
 
   const isPending = status === 'pending'
   const isConfirmed = status === 'confirmed'
@@ -148,7 +140,9 @@ export function BookingRow({
 
   const sessionLine = (
     <>
-      <span className="text-muted-foreground font-normal">{t('labelClassDate')} </span>
+      {!quiet && (
+        <span className="text-muted-foreground font-normal">{t('labelClassDate')} </span>
+      )}
       {activityName && <span>{activityName}</span>}
       {activityName && sessionDate && <span className="text-muted-foreground font-normal"> · </span>}
       {sessionDate && <span>{sessionDate}</span>}
@@ -156,7 +150,10 @@ export function BookingRow({
   )
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b last:border-0 group">
+    <div
+      className="flex items-center gap-3 px-4 py-3 border-b last:border-0 group"
+      title={quiet ? bookedOn : undefined}
+    >
       {showContact ? (
         <div
           className={`h-10 w-10 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-semibold ${avatarColor(booking.id)}`}
@@ -247,23 +244,22 @@ export function BookingRow({
 
       <div className="flex items-center gap-2 shrink-0">
         <div className="hidden sm:flex flex-col items-end gap-1">
-          <Badge variant={STATUS_VARIANT[status]} className="text-xs">
-            {statusLabel[status]}
-          </Badge>
+          {showStatus && (
+            <Badge variant={STATUS_VARIANT[status]} className="text-xs">
+              {statusLabel[status]}
+            </Badge>
+          )}
           {/* Two dates show on a row and only one of them is the one the filter
               is ranging on, so both say which they are. */}
-          <p className="text-xs text-muted-foreground">
-            {t('labelBookedOn')} {formatDate(booking.joinedAt as Parameters<typeof formatDate>[0])}
-            {formatTime(booking.joinedAt as Parameters<typeof formatTime>[0]) && (
-              <> · {formatTime(booking.joinedAt as Parameters<typeof formatTime>[0])}</>
-            )}
-          </p>
+          {!quiet && <p className="text-xs text-muted-foreground">{bookedOn}</p>}
         </div>
-        <div className="flex sm:hidden">
-          <Badge variant={STATUS_VARIANT[status]} className="text-xs">
-            {statusLabel[status]}
-          </Badge>
-        </div>
+        {showStatus && (
+          <div className="flex sm:hidden">
+            <Badge variant={STATUS_VARIANT[status]} className="text-xs">
+              {statusLabel[status]}
+            </Badge>
+          </div>
+        )}
 
         {isActive && (
           <DropdownMenu>

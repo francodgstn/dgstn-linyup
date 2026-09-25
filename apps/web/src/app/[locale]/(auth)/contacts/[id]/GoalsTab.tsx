@@ -3,13 +3,14 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
 import {
   collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc,
   doc, serverTimestamp, Timestamp, writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { CONTACTS_COLLECTION, CONTACT_GOALS_SUBCOLLECTION, resolveGoalCategories, goalCategoryLabel, resolveCoachingDimensions, dimensionLabel, groupGoalsWithSteps, goalIsArchived, sortSteps, CONTACT_GOAL_EVALUATIONS_SUBCOLLECTION, GOAL_STATUS_COLORS, visibleGoals } from '@linyup/shared'
-import type { Contact, Team, Goal, GoalEvaluation, GoalStatus, PerformanceIndicator, StepSortMode } from '@linyup/shared'
+import type { RegionalFormatter, Contact, Team, Goal, GoalEvaluation, GoalStatus, PerformanceIndicator, StepSortMode } from '@linyup/shared'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -56,6 +57,7 @@ import {
 // `i18n:check` resolves each key against its namespace.
 function useCoachingLabels() {
   const t = useTranslations('Contacts')
+  const fmt = useTeamFormat()
   const tCommon = useTranslations('Common')
   return {
     goalDialog: (dialogTitle: string): GoalDialogLabels => ({
@@ -87,7 +89,7 @@ function useCoachingLabels() {
       saveFailed: t('goalEvalSaveFailed'),
     }),
     goalStateChips: {
-      lastEvaluated: (date) => t('goalLastEvaluatedOn', { date: formatDate(date) }),
+      lastEvaluated: (date) => t('goalLastEvaluatedOn', { date: formatDate(fmt, date) }),
       overdue: t('goalOverdueBadge'),
     } satisfies GoalStateChipLabels,
   }
@@ -103,10 +105,11 @@ function tsToDate(ts: unknown): Date | undefined {
   return undefined
 }
 
-function formatDate(ts: unknown): string {
+/** In the studio's language, date order and zone (`useTeamFormat`). */
+function formatDate(fmt: RegionalFormatter, ts: unknown): string {
   const d = tsToDate(ts)
   if (!d) return ''
-  return d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
+  return fmt.custom(d, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // ─── data hooks ───────────────────────────────────────────────────────────────
@@ -155,6 +158,7 @@ interface GoalCardProps {
 
 function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, onAddStep, onEditStep, sortMode, onReorderSteps }: GoalCardProps) {
   const t = useTranslations('Contacts')
+  const fmt = useTeamFormat()
   const labels = useCoachingLabels()
   const qc = useQueryClient()
   const [expanded, setExpanded] = useState(false)
@@ -246,8 +250,8 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
 
   const archived = goalIsArchived(goal)
   const canEval = goal.status === 'open' || goal.status === 'in_progress'
-  const targetDateStr = formatDate(goal.target_date)
-  const startDateStr = formatDate(goal.start_date)
+  const targetDateStr = formatDate(fmt, goal.target_date)
+  const startDateStr = formatDate(fmt, goal.start_date)
   const doneSteps = steps.filter((s) => s.status === 'achieved').length
 
   return (
@@ -437,7 +441,7 @@ function GoalCard({ goal, contactId, categories, dimensions, steps, onChanged, o
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(ev.evaluated_at)} · {t(`goalStatus_${ev.status_after}`)}
+                    {formatDate(fmt, ev.evaluated_at)} · {t(`goalStatus_${ev.status_after}`)}
                   </p>
                   {ev.notes && <p className="text-xs text-foreground">{ev.notes}</p>}
                 </div>
@@ -519,6 +523,7 @@ interface TaskCardProps {
 
 function TaskCard({ goal, contactId, onChanged, nested, onEdit, handle }: TaskCardProps) {
   const t = useTranslations('Contacts')
+  const fmt = useTeamFormat()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [acting, setActing] = useState(false)
   const isDone = goal.status === 'achieved'
@@ -559,8 +564,8 @@ function TaskCard({ goal, contactId, onChanged, nested, onEdit, handle }: TaskCa
           {(goal.start_date || goal.target_date) && (
             <p className="text-xs text-muted-foreground mt-1">
               {[
-                goal.start_date && `${t('goalStartDate')}: ${formatDate(goal.start_date)}`,
-                goal.target_date && `${t('goalTargetDate')}: ${formatDate(goal.target_date)}`,
+                goal.start_date && `${t('goalStartDate')}: ${formatDate(fmt, goal.start_date)}`,
+                goal.target_date && `${t('goalTargetDate')}: ${formatDate(fmt, goal.target_date)}`,
               ].filter(Boolean).join(' · ')}
             </p>
           )}

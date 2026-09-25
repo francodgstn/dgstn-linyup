@@ -20,6 +20,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useTeamFormat } from '@/hooks/useTeamFormat'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   XAxis,
@@ -71,9 +72,10 @@ export function InsightsCard({
       {/* WHERE SPARE HEIGHT GOES. The card is stretched to the profile card's
           height, so there is usually room to spare. The summary block takes
           it (flex-1): the counters follow the summary, the chart sits a fixed
-          32px under the counters at a fixed 128px, and the bottoms of the two
-          cards still meet. With the experiment off there is no summary block
-          to grow, so the strip docks to the bottom edge instead. */}
+          8px under the counters at a fixed 80px, and the bottoms of the two
+          cards still meet. With the module off there is no summary block to
+          grow, so the CHART takes the spare height, under the counters: docking
+          the strip to the bottom left the top of the card empty. */}
       {summaryOn && (
         // Keyed so a summary just generated for one contact never shows over
         // the next contact this component happens to be re-rendered for.
@@ -83,9 +85,9 @@ export function InsightsCard({
           recapOn={isInstalled(AI_MODULES.memberRecap)}
         />
       )}
-      <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'mt-auto'}`}>
+      <div className={`flex min-w-0 flex-col ${summaryOn ? '' : 'flex-1'}`}>
         <StatsRow contact={contact} thresholds={thresholds} />
-        <Sparkline contact={contact} />
+        <Sparkline contact={contact} grow={!summaryOn} />
       </div>
     </div>
   )
@@ -110,6 +112,7 @@ type FreshSummary = {
 
 function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean }) {
   const t = useTranslations('Contacts')
+  const fmt = useTeamFormat()
   const qc = useQueryClient()
   const { can } = useCapabilities()
   const [busy, setBusy] = useState(false)
@@ -213,7 +216,7 @@ function SummaryBlock({ contact, recapOn }: { contact: Contact; recapOn: boolean
             <p className="text-xs text-muted-foreground">
               {updated
                 ? `${t('summaryUpdatedOn', {
-                    date: updated.toLocaleDateString(undefined, { dateStyle: 'medium' }),
+                    date: fmt.custom(updated, { dateStyle: 'medium' }),
                   })} · `
                 : ''}
               {t('summaryDisclaimer')}
@@ -265,6 +268,7 @@ function RecapAction({
   onOpen: () => void
 }) {
   const t = useTranslations('Contacts')
+  const fmt = useTeamFormat()
   // A summary written before 2026-09-16 carries no recap: regenerating writes one.
   const blocked = !member
     ? t('recapNeedsRegenerate')
@@ -277,7 +281,7 @@ function RecapAction({
     <div className="flex items-center gap-2">
       {sentAt && (
         <span className="text-xs text-muted-foreground">
-          {t('recapSentOn', { date: sentAt.toLocaleDateString(undefined, { dateStyle: 'medium' }) })}
+          {t('recapSentOn', { date: fmt.custom(sentAt, { dateStyle: 'medium' }) })}
         </span>
       )}
       <span title={blocked ?? undefined}>
@@ -311,14 +315,14 @@ function StatsRow({
     <div className="grid grid-cols-4 divide-x">
       {/* The same icons and colours the Gamification tab gives these figures,
           so the two readings of one number look like one number. */}
-      <div className="px-4 py-3 text-center">
+      <div className="px-2 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.total_sessions ?? 0}</p>
         <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Trophy className="h-3 w-3 text-primary" />
           {t('statTotalSessions')}
         </p>
       </div>
-      <div className="px-4 py-3 text-center">
+      <div className="px-2 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">
           {contact.current_streak ?? 0}
           <span className="text-sm font-normal">w</span>
@@ -328,7 +332,7 @@ function StatsRow({
           {t('statStreak')}
         </p>
       </div>
-      <div className="px-4 py-3 text-center">
+      <div className="px-2 py-3 text-center">
         <p className="text-2xl font-bold tabular-nums">{contact.current_month_score ?? 0}</p>
         <p className="mt-0.5 flex items-center justify-center gap-1 text-xs leading-tight text-muted-foreground">
           <Star className="h-3 w-3 text-yellow-500" />
@@ -391,7 +395,7 @@ function chartStartIndex(
  *  counters: the area fill never climbs up to the figures, and the gap never
  *  balloons either, because the card's spare height goes to the summary block
  *  (see InsightsCard). */
-function Sparkline({ contact }: { contact: Contact }) {
+function Sparkline({ contact, grow = false }: { contact: Contact; grow?: boolean }) {
   const { data: weeklyReports = [], isLoading } = useContactWeeklyReports(contact.id, CHART_WEEKS)
   const allWeeks = weeklyReports.map((r) => ({
     week: r.iso_week,
@@ -401,7 +405,7 @@ function Sparkline({ contact }: { contact: Contact }) {
   const chartData = allWeeks.slice(chartStartIndex(allWeeks, contact))
 
   return (
-    <div className="mt-8 h-32 shrink-0">
+    <div className={grow ? 'mt-2 min-h-20 flex-1' : 'mt-2 h-20 shrink-0'}>
       {isLoading ? (
         <div className="h-full animate-pulse bg-muted/40" />
       ) : chartData.length === 0 ? (
@@ -474,7 +478,7 @@ function EngagementCell({
   const daysAgo = lastMs != null ? Math.floor((Date.now() - lastMs) / 86_400_000) : null
   const tip = daysAgo == null ? t('engagementNoSessions') : t('engagementLastSession', { days: daysAgo })
   return (
-    <div title={tip} className="cursor-default px-4 py-3 text-center">
+    <div title={tip} className="cursor-default px-2 py-3 text-center">
       <p
         className={`flex h-8 items-center justify-center gap-1.5 text-sm font-semibold ${ENGAGEMENT_TEXT[band]}`}
       >
